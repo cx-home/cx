@@ -8,7 +8,7 @@
    via [case [tag $t] …] — the same idiom scripts/gen_guide/guide_build.cx
    uses).
 
-   Run: cx scripts/gen_stdlib_docs/probe.cx --allow-read   (reads stdlib/path.cx) #]
+   Run: cx --allow-read scripts/gen_stdlib_docs/probe.cx   (reads stdlib/path.cx) #]
 
 [?lib 'cx-stdlib/io']
 [?lib 'cx-stdlib/cx']

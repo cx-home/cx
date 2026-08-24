@@ -1,13 +1,13 @@
 [# Section 1a — The four rings.
    WORKED EXAMPLE for the #826 restructure proposal
-   (spec/02-working/docs_restructure_826.md §5). Authored 2026-08-17.
+   (spec/_archived/docs_restructure_826.md §5). Authored 2026-08-17.
 
    This section is the guide's own statement of the ring model, which it
    has never had. It is written value-first: a ring is presented as how
    much of CX you take on, and the import contract arrives second as the
    promise that keeps that true — not as the definition.
 
-   Authority: spec/02-working/cx_partition.md §2 (the rings) and §3 (the
+   Authority: spec/03-approved/core/cx_partition.md §2 (the rings) and §3 (the
    import contracts). The business-facing account stays in
    docs-src/positioning/ring_value_map.md and links here.
 
@@ -99,8 +99,8 @@
 
     [example lang=sh
       """$ cx report.cx                  # pure: computes, touches nothing
-         $ cx report.cx --allow-read     # now it may read files
-         $ cx report.cx --allow-common   # the common working set"""]
+         $ cx --allow-read report.cx     # now it may read files
+         $ cx --allow-common report.cx   # the common working set"""]
 
     [body
       """What you can do with only Ring 1: evaluate programs; query with

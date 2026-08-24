@@ -1,0 +1,122 @@
+# scripts/check_no_stub_impl.cx — the NO-STUB-IMPL gate.
+#
+# The global no-stub rule (CLAUDE.md): the stdlib has no stubs and no partial
+# implementations. The failure this gate prevents is the one that shipped the
+# cx-native HTTP client / net layer as fake-success placeholders: an effectful
+# primitive returning a *synthetic shape* (a deterministic fake success value)
+# instead of performing the real effect, with conformance fixtures asserting
+# that fake shape — so the stub sailed through the gate.
+#
+# This gate scans the stdlib implementation bundle (vcx/code/*.v +
+# vcx/platform/*.v, the I3 split #651/#516) for the fake-success CONFESSION
+# phrases such a stub leaves behind. It deliberately does NOT flag honest
+# fail-closed errors (`mk_err(... not yet implemented ...)` /
+# `... unsupported ...`): those refuse the effect rather than faking it, which
+# is the correct behavior for a genuinely-unavailable transport. The
+# distinction is exactly the one that matters — faking success is the bug;
+# failing honestly is not.
+#
+# A new transport/effect that cannot yet be done must return an explicit
+# error, never a synthetic success value, and must carry a BEHAVIORAL test (a
+# real socket/process/file round-trip) — not merely a conformance fixture that
+# asserts a deterministic placeholder shape.
+#
+# Token-aware: the flagged phrases only appear when a comment/impl is
+# confessing an active fake-success stub. If a legitimate use ever collides,
+# add it to the $allow list (a "rel:phrase-lower" key) with a justification
+# rather than weakening the phrase set. Empty by design — keep it that way.
+#
+# Exit 0 clean; 1 with hits; 2 when an impl dir is missing. Run from the
+# repo root:
+#   vcx/target/cx --allow-read --allow-write scripts/check_no_stub_impl.cx
+# (or: make check-no-stub-impl)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/fp'      as=fp]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def matched scope=public ($m) [> [?else $m@start -1] -1]]
+
+[?let
+  [= $impl-dirs ("vcx/code", "vcx/platform")]
+
+  # Fake-success stub-confession phrases (case-insensitive). Each only shows
+  # up when an effectful prim returns a deterministic fake instead of doing
+  # the work.
+  [= $flagged-rx [$re:compile [$cat (
+    "(?i)(?:",
+    "(?:synthetic shape)",
+    "|(?:synthetic shapes)",
+    "|(?:deterministic synthetic)",
+    "|(?:synthetic engine)",
+    "|(?:without an actual byte flush)",
+    "|(?:without a byte flush)",
+    "|(?:stubbed handle)",
+    "|(?:stubbed shape)",
+    "|(?:stubbed for the granted)",
+    "|(?:stub for the granted)",
+    "|(?:placeholder for the granted)",
+    "|(?:return(?:s)? (?:a )?fake (?:handle|response|shape|value))",
+    "|(?:gate=pending for a network-granted harness)",
+    ")")]]]
+
+  # Exact "path:phrase-lower" keys that are legitimate and reviewed. Empty by
+  # design — keep it that way. Add an entry ONLY with a one-line justification.
+  [= $allow ()]
+
+  [= $missing-dirs
+    [?for [in $d $impl-dirs]
+      [where [not [$io:is-directory $d]]]
+      [yield $d]]]
+
+  [?if [> [$count $missing-dirs] 0]
+    [then
+      [?let [= $_e [?for [in $d $missing-dirs]
+                     [yield [$cry [$cat ("check-no-stub-impl: impl dir not found: ", $d)]]]]]
+        [$env:exit 2]]]
+    [else
+  [?let
+    # Glob order is sorted per dir and "vcx/code" < "vcx/platform", so the
+    # concatenation matches the Python gate's sorted() walk.
+    [= $files [$fp:flat-map $impl-dirs [?fn ($d) [$io:glob [$cat ($d, "/*.v")]]]]]
+
+    # One hit element per matching line; a file that cannot be decoded is
+    # skipped (read recovers to the empty string).
+    [= $hits
+      [$fp:flat-map $files [?fn ($f)
+        [?let [= $text [?fallback [$io:read-file $f] [recover-with ""]]]
+          [?if [not [$matched [$re:find $flagged-rx $text]]]
+            [then ()]
+            [else
+              [?let [= $lines [$strings:split-lines $text]]
+                [?for [in $i [$range 1 [$count $lines]]]
+                  [= $m [$re:find $flagged-rx $lines[$i]]]
+                  [where [$matched $m]]
+                  [= $key [$cat ($f, ":", [$strings:lower [$re:group $m 0]])]]
+                  [where [= [$count [?for [in $a $allow] [where [= $a $key]] [yield 1]]] 0]]
+                  [yield [hit file=$f line=$i phrase=[$re:group $m 0]
+                              text=[$strings:trim $lines[$i]]]]]]]]]]]]
+
+    [?if [> [$count $hits] 0]
+      [then
+        [?let
+          [= $_h1 [$say "NO-STUB-IMPL gate FAILED — fake-success stub confession(s) in the stdlib impl:"]]
+          [= $_h2 [$say "(an effectful prim must perform the real effect or fail closed with an"]]
+          [= $_h3 [$say " explicit error — never return a synthetic success value, and it must"]]
+          [= $_h4 [$say [$cat (" carry a behavioral test, not just a conformance fixture.)", "\n")]]]
+          [= $_l [?for [in $h $hits]
+                   [yield [?let
+                     [= $_a [$say [$cat ("  ", [$string $h@file], ":", [$string $h@line],
+                                         ": «", [$string $h@phrase], "»")]]]
+                     [$say [$cat ("      ", [$string $h@text])]]]]]]
+          [= $_t [$say [$cat ("\n", [$string [$count $hits]],
+                              " stub confession(s). Make it real or fail closed.")]]]
+          [$env:exit 1]]]
+      [else
+        [?let [= $_ok [$say "NO-STUB-IMPL gate: clean — no fake-success stub confessions in vcx/(code|platform)/*.v"]]
+          [$env:exit 0]]]]]]]]

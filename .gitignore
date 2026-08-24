@@ -19,7 +19,7 @@ _gate_evidence/*.log
 # `make guide` from docs-src/canonical/ (see scripts/gen_guide/README.md).
 docs/guide/
 
-# Synthesized bench fixtures (regenerate via scripts/gen_bench_fixture.py)
+# Synthesized bench fixtures (regenerate via scripts/gen_bench_fixture.cx)
 fixtures/bench/bench_1mb.cx
 fixtures/bench/bench_10mb.cx
 fixtures/bench/bench_100mb.cx
@@ -86,3 +86,7 @@ vcx/tests/runners/eval/eval_conform
 vcx/tests/runners/code_modify_sharing_bench
 .wavelog/
 bench/current.json
+
+# FL-1 (#764): feed-lineage sidecars are runtime artifacts, never committed
+**/.cxstore-lineage
+*.cxstore-lineage

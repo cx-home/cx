@@ -8,7 +8,7 @@
 #
 # Architecture:
 #
-#   1. scripts/compile_binding_api_fixtures.py parses the fixture file
+#   1. scripts/compile_binding_api_fixtures.cx parses the fixture file
 #      and emits a JSONL stream — one self-contained `{id, in_cx, ops,
 #      ...}` per line.
 #
@@ -37,7 +37,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 FIXTURES="$ROOT/conformance/binding_api.cxd"
-COMPILER="$ROOT/scripts/compile_binding_api_fixtures.py"
+COMPILER="$ROOT/scripts/compile_binding_api_fixtures.cx"
 PY_DRIVER="$ROOT/lang/python/cmd/binding_api_driver.py"
 GO_DRIVER_SRC="$ROOT/lang/go/binding_api_driver"
 V_DRIVER_SRC="$ROOT/lang/v/binding_api_driver/main.v"
@@ -57,9 +57,6 @@ if [[ ! -f "$FIXTURES" ]]; then
     echo "error: fixture file not found at $FIXTURES" >&2
     exit 2
 fi
-if [[ ! -x "$COMPILER" ]]; then
-    chmod +x "$COMPILER" 2>/dev/null || true
-fi
 if [[ ! -f "$COMPILER" ]]; then
     echo "error: compiler script not found at $COMPILER" >&2
     exit 2
@@ -76,9 +73,13 @@ if [[ ! -f "$LIBCX" ]]; then
 fi
 export LIBCX_PATH="$LIBCX"
 
+# The fixture compiler IS a CX program (#922 / PYE-5), so `cx` is now a hard
+# prerequisite rather than a convenience for the drivers.
 CX_BIN="${CX_BIN:-$ROOT/vcx/target/cx}"
 if [[ ! -x "$CX_BIN" ]]; then
-    echo "warning: cx binary missing at $CX_BIN — drivers will still run" >&2
+    echo "error: cx binary missing at $CX_BIN — the fixture compiler needs it" >&2
+    echo "       Build with: devbox run -- make build-vcx" >&2
+    exit 2
 fi
 
 # ── build per-binding drivers ───────────────────────────────────────────────
@@ -135,7 +136,9 @@ fi
 # ── compile fixtures ────────────────────────────────────────────────────────
 
 JSONL="$WORK/fixtures.jsonl"
-if ! python3 "$COMPILER" > "$JSONL" 2>"$WORK/compile.err"; then
+# Flag-first invocation, fixture path positional (cli.md §3 / PYE-2).
+if ! "$CX_BIN" --allow-read --allow-write "$COMPILER" "$FIXTURES" \
+        > "$JSONL" 2>"$WORK/compile.err"; then
     echo "error: failed to compile fixtures" >&2
     cat "$WORK/compile.err" >&2
     exit 2
@@ -167,7 +170,9 @@ run_driver() {
 }
 
 while IFS= read -r json_line; do
-    id=$(printf '%s' "$json_line" | python3 -c "import json,sys; print(json.loads(sys.stdin.read())['id'])")
+    # `id` is the first key of every record and fixture ids are bare
+    # [a-z0-9-] — sed reads it without a JSON parser (and without Python).
+    id=$(printf '%s' "$json_line" | sed -n 's/^{"id": "\([^"]*\)".*/\1/p')
 
     py_out=$(printf '%s' "$json_line" | python3 "$PY_DRIVER" 2>/dev/null)
     go_out=$(printf '%s' "$json_line" | "$GO_DRIVER" 2>/dev/null)

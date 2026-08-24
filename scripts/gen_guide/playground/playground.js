@@ -22,8 +22,8 @@
   const renderEl = document.getElementById('cxp-input-render');
   const outTabs  = [...document.querySelectorAll('.cxp-tab')];
   const vizTabs  = [...document.querySelectorAll('.cxp-viz-tab')];
-  const vizSrcToggle = document.getElementById('cxp-viz-src-toggle');
-  const detailTabs = [...document.querySelectorAll('.cxp-detail-tab')];
+  const subjectTabs = [...document.querySelectorAll('.cxp-subject-tab')];
+  const detailSelect = document.getElementById('cxp-detail-select');
   const outs     = {
     cx:   document.querySelector('#cxp-out-cx code'),
     json: document.querySelector('#cxp-out-json code'),
@@ -67,11 +67,23 @@
   }
 
   // ── State ─────────────────────────────────────────────────
-  let vizSource = 'source';         // 'source' | 'output' — which content the view pane visualizes
+  // vizSubject names WHAT the View pane draws:
+  //   'source' — the program in the editor,
+  //   'output' — the value that program evaluated to,
+  //   'all'    — both, stacked, so you can see that a CX program and a
+  //              CX value are the same shape rather than take it on
+  //              faith. Persists across example switches (localStorage).
+  let vizSubject = 'source';
+  try {
+    const storedSubject = localStorage.getItem('cxp.vizSubject');
+    if (storedSubject === 'source' || storedSubject === 'output' || storedSubject === 'all') {
+      vizSubject = storedSubject;
+    }
+  } catch (_) { /* sandboxed / disabled — keep default */ }
   let prettyMode = true;            // output panes are pretty-printed by default
   let lastEvalRawCx   = '';         // last successful raw streaming CX output
   let nodeRegistry    = [];         // [{start, end, el, kind, key}, …] — for source ↔ tree bridge
-  let nodeRegistrySource = '';      // which content (source vs output) nodeRegistry maps onto
+  let nodeRegistrySource = '';      // text of the tree currently being rendered
   let graphScale      = 1;          // current SVG zoom factor
   // Detail level controls how much element-shape information shows up
   // in the View pane (Tree + Graph). 'min' = element name only;
@@ -284,25 +296,37 @@
     if (inputGutter) inputGutter.scrollTop = input.scrollTop;
   }
 
+  // Picking an example RUNS it. A reader clicking through the list sees
+  // each one working — output pane and View pane both populated — with
+  // no run control to hunt for. runProgram() serialises and tokenises,
+  // so a fast switch never paints the previous example's result.
   function loadExample(key) {
     const found = lookup(key);
     if (!found) return;
     input.value = composeSource(found.ex);
     syncRender();
-    for (const k of Object.keys(outs)) { outs[k].dataset.raw = ''; outs[k].textContent = ''; }
-    lastEvalRawCx = '';
-    resetVizPanes();
+    clearResults();
     refreshView();
     // Examples flagged runnable:false need a capability the file:// wasm
     // sandbox can't grant (net / subprocess / fs). They still Run — they just
     // return a capability-denied `[err …]` value. Surface that up front so the
     // result isn't mistaken for a bug.
-    if (found.ex.runnable === false) {
-      setStatus('This example needs a capability unavailable in the wasm playground '
+    const capNote = (found.ex.runnable === false)
+      ? 'This example needs a capability unavailable in the wasm playground '
         + '(network / subprocess / filesystem). Run it under `make guide-http` or '
-        + '`cx --allow-net` in your terminal; here it returns a capability-denied result.',
-        'pending');
-    }
+        + '`cx --allow-net` in your terminal; here it returns a capability-denied result.'
+      : '';
+    if (capNote) setStatus(capNote, 'pending');
+    runProgram({ auto: true, capNote });
+  }
+
+  // Drops any result carried over from the previous program. Called
+  // before every load and at the head of every run, so a pane is never
+  // showing one example's output next to another's source.
+  function clearResults() {
+    for (const k of Object.keys(outs)) { outs[k].dataset.raw = ''; outs[k].textContent = ''; }
+    lastEvalRawCx = '';
+    resetVizPanes();
   }
 
   pick.addEventListener('change', () => loadExample(pick.value));
@@ -331,11 +355,10 @@
     reader.onload = () => {
       input.value = String(reader.result || '');
       syncRender();
-      for (const k of Object.keys(outs)) { outs[k].dataset.raw = ''; outs[k].textContent = ''; }
-      lastEvalRawCx = '';
-      resetVizPanes();
+      clearResults();
       refreshView();
-      setStatus(`Loaded ${escapeHtml(f.name)} (${f.size} bytes). Click Run.`, 'ok');
+      setStatus(`Loaded ${escapeHtml(f.name)} (${f.size} bytes) — evaluating…`, 'pending');
+      runProgram({ auto: true });
     };
     reader.readAsText(f);
     loadFile.value = '';
@@ -365,24 +388,29 @@
     }
     refreshView();
   }
-  if (vizSrcToggle) {
-    vizSrcToggle.addEventListener('click', () => {
-      vizSource = (vizSource === 'source') ? 'output' : 'source';
-      vizSrcToggle.dataset.vizsrc = vizSource;
-      vizSrcToggle.textContent = (vizSource === 'source') ? 'Source' : 'Output';
-      refreshView();
-    });
+  // ── View subject (source / output / all) ─────────────────
+  function applySubjectActiveState() {
+    subjectTabs.forEach(t => t.classList.toggle('is-active', t.dataset.subject === vizSubject));
   }
-  function applyDetailActiveState() {
-    detailTabs.forEach(t => t.classList.toggle('is-active', t.dataset.detail === detailLevel));
-  }
-  applyDetailActiveState();
-  detailTabs.forEach(t => t.addEventListener('click', () => {
-    detailLevel = t.dataset.detail;
-    applyDetailActiveState();
-    try { localStorage.setItem('cxp.detailLevel', detailLevel); } catch (_) {}
+  applySubjectActiveState();
+  subjectTabs.forEach(t => t.addEventListener('click', () => {
+    vizSubject = t.dataset.subject;
+    applySubjectActiveState();
+    try { localStorage.setItem('cxp.vizSubject', vizSubject); } catch (_) {}
     refreshView();
   }));
+  // The three detail tabs collapsed into one compact select — the VIEW
+  // header carried three button groups and read as crowded (owner
+  // report 2026-08-22).
+  function applyDetailActiveState() {
+    if (detailSelect) detailSelect.value = detailLevel;
+  }
+  applyDetailActiveState();
+  if (detailSelect) detailSelect.addEventListener('change', () => {
+    detailLevel = detailSelect.value;
+    try { localStorage.setItem('cxp.detailLevel', detailLevel); } catch (_) {}
+    refreshView();
+  });
 
   function resetVizPanes() {
     vizTreeEl.innerHTML  = '<p class="cxp-viz-placeholder">Run a program to see its structural tree.</p>';
@@ -409,9 +437,15 @@
       setStatus(
         `Powered by <code>libcx.wasm ${ver}</code> · pthreads + SharedArrayBuffer — ` +
         `<code>:par</code> runs on real OS threads.`, null);
+    } else if (mode === 'sync') {
+      setStatus(
+        `Powered by <code>libcx.wasm ${ver}</code> · single-threaded compatibility build ` +
+        `(this browser lacks WebAssembly JSPI) — wall-clock <code>[?sleep]</code> is ` +
+        `unavailable (use <code>[?sleep DUR mock]</code>); <code>:par</code> produces ` +
+        `correct output but doesn't accelerate.`, null);
     } else {
       setStatus(
-        `Powered by <code>libcx.wasm ${ver}</code> · single-threaded ASYNCIFY — ` +
+        `Powered by <code>libcx.wasm ${ver}</code> · single-threaded JSPI — ` +
         `<code>:par</code> produces correct output but doesn't accelerate. ` +
         `For real parallelism: <code>make guide-http</code> or run <code>cx</code> in your terminal.`,
         null);
@@ -425,16 +459,24 @@
   // AST node has loc info. Scalar / attribute values inherit their
   // parent's loc so clicking a leaf value still highlights the
   // covering bracket in the source.
-  function renderTree(treeJson, sourceText) {
-    nodeRegistry = [];
+  // `host` is the element to draw into (the pane itself, or one subject
+  // section of it in `all` mode). `register` says whether this tree's
+  // nodes feed the source ↔ tree bridge — only the SOURCE tree does,
+  // because only its loc offsets index the editor's text.
+  function renderTree(treeJson, sourceText, host, register) {
+    // Attribute rows are split into name/value sub-rows by walking the
+    // text the tree was built from — so this always tracks THIS tree's
+    // text, source or output. Only the node REGISTRY (the editor
+    // bridge) is source-only.
     nodeRegistrySource = sourceText || '';
+    if (register) nodeRegistry = [];
     if (treeJson == null) {
-      vizTreeEl.innerHTML = '<p class="cxp-viz-placeholder">(empty tree)</p>';
+      host.innerHTML = '<p class="cxp-viz-placeholder">(empty tree)</p>';
       return;
     }
-    vizTreeEl.innerHTML = '';
-    vizTreeEl.appendChild(renderNode(treeJson, null, null));
-    vizTreeEl.querySelectorAll('.cxt-toggle').forEach(t => {
+    host.innerHTML = '';
+    host.appendChild(renderNode(treeJson, null, null, register));
+    host.querySelectorAll('.cxt-toggle').forEach(t => {
       t.addEventListener('click', (e) => {
         e.stopPropagation();
         const node = t.closest('.cxt-node');
@@ -442,22 +484,21 @@
         t.textContent = node.classList.contains('is-collapsed') ? '▸' : '▾';
       });
     });
-    vizTreeEl.querySelectorAll('.cxt-row').forEach(row => {
+    host.querySelectorAll('.cxt-row').forEach(row => {
       row.addEventListener('click', (e) => {
         e.stopPropagation();
         const node = row.closest('.cxt-node');
         const locStr = node && node.dataset.loc;
         if (!locStr) return;
         let { start, end } = JSON.parse(locStr);
-        // For source-mode, translate loc offsets (which are computed
-        // against the stripped source) onto the textarea's offsets.
-        // The annotation we append lives strictly AFTER the stripped
-        // source, so program-side offsets are stable — but if the
-        // user has deleted content above the click target, the loc
+        // Only the SOURCE tree indexes the editor: translate loc offsets
+        // (computed against the stripped source) onto the textarea's
+        // offsets. The annotation we append lives strictly AFTER the
+        // stripped source, so program-side offsets are stable — but if
+        // the user has deleted content above the click target, the loc
         // may now point past the end. Clamp.
-        const target = (vizSource === 'source') ? input.value : '';
-        if (vizSource === 'source') {
-          const cap = annotationStart(target);
+        if (register) {
+          const cap = annotationStart(input.value);
           if (end > cap) end = cap;
           if (start > cap) start = cap;
           input.focus();
@@ -505,7 +546,7 @@
     return `<span class="cxt-inline-scalar">${escapeHtml(String(v))}</span>`;
   }
 
-  function renderNode(node, label, inheritedLoc) {
+  function renderNode(node, label, inheritedLoc, register) {
     const wrap = document.createElement('div');
     wrap.className = 'cxt-node';
     // Carry loc; scalars / attribute leaves inherit from the
@@ -516,7 +557,7 @@
     }
     if (loc) {
       wrap.dataset.loc = JSON.stringify(loc);
-      nodeRegistry.push({ start: loc.start, end: loc.end, el: wrap });
+      if (register) nodeRegistry.push({ start: loc.start, end: loc.end, el: wrap });
     }
     const rowHtml = (toggle, body) =>
       `${toggle}<span class="cxt-row">${labelPart(label)}${body}</span>`;
@@ -546,7 +587,7 @@
       wrap.innerHTML = rowHtml(toggle, `<span class="cxt-label-meta">array(${node.length})</span>`);
       const kids = document.createElement('div');
       kids.className = 'cxt-children';
-      node.forEach((c, i) => kids.appendChild(renderNode(c, `[${i}]`, loc)));
+      node.forEach((c, i) => kids.appendChild(renderNode(c, `[${i}]`, loc, register)));
       wrap.appendChild(kids);
       return wrap;
     }
@@ -588,12 +629,12 @@
       // Walk items as children unless we inlined the single scalar.
       if (!inlineScalarValue) {
         for (const child of items) {
-          kids.appendChild(renderNode(child, '', loc));
+          kids.appendChild(renderNode(child, '', loc, register));
         }
       }
       for (const k of keys) {
         if (skipKeys.has(k) || k === 'loc') continue;
-        kids.appendChild(renderNode(node[k], k, loc));
+        kids.appendChild(renderNode(node[k], k, loc, register));
       }
       wrap.appendChild(kids);
       return wrap;
@@ -627,14 +668,14 @@
         // what the user actually sees in source.
         const valLoc   = { start: loc.start + eq + 1,  end: loc.end };
         kids.appendChild(makeLeaf('name',  node.name,
-          'cxt-label-attr',  nameLoc));
+          'cxt-label-attr',  nameLoc, register));
         kids.appendChild(makeLeaf('value', node.value,
-          inferValueClass(node.value), valLoc));
+          inferValueClass(node.value), valLoc, register));
       }
     } else {
       for (const k of keys) {
         if (k === 'loc') continue;
-        kids.appendChild(renderNode(node[k], k, loc));
+        kids.appendChild(renderNode(node[k], k, loc, register));
       }
     }
     wrap.appendChild(kids);
@@ -644,11 +685,11 @@
   // Synthesize a leaf row with a hand-rolled loc — used to split an
   // attribute into name+value rows. Each leaf is registered for the
   // cursor-to-tree bridge just like a real AST node.
-  function makeLeaf(label, value, valueCls, leafLoc) {
+  function makeLeaf(label, value, valueCls, leafLoc, register) {
     const wrap = document.createElement('div');
     wrap.className = 'cxt-node';
     wrap.dataset.loc = JSON.stringify(leafLoc);
-    nodeRegistry.push({ start: leafLoc.start, end: leafLoc.end, el: wrap });
+    if (register) nodeRegistry.push({ start: leafLoc.start, end: leafLoc.end, el: wrap });
     const display = (typeof value === 'string')
       ? `<span class="cxt-label-string">"${escapeHtml(value)}"</span>`
       : `<span class="${valueCls}">${escapeHtml(String(value))}</span>`;
@@ -683,7 +724,7 @@
   }
 
   function highlightTreeAtSourceCursor() {
-    if (vizSource !== 'source') return;
+    if (vizSubject === 'output') return;   // no source tree on screen
     if (!nodeRegistry.length) return;
     const pos = input.selectionStart;
     // Tightest node covering pos.
@@ -708,22 +749,41 @@
       'body > [id^="dcxp-mmd-"], body > svg[id^="cxp-mmd-"], body > [id^="cxp-mmd-"]'
     ).forEach(n => n.remove());
   }
-  async function renderGraph(src) {
-    const canvas = vizGraphEl.querySelector('.cxp-graph-canvas');
-    if (!canvas) return;
+  // Mermaid renders are SERIALISED. mermaid.render() is not reentrant:
+  // it parks a temporary `d<id>` measurement node on <body> and our
+  // sweep removes exactly those — so two renders in flight at once
+  // delete each other's scratch node and one of them dies with
+  // "Cannot read properties of null". `all` mode draws two diagrams,
+  // so the queue is not optional.
+  let graphChain = Promise.resolve();
+  function renderGraph(src, host) {
+    graphChain = graphChain.then(() => renderGraphNow(src, host)).catch((err) => {
+      // eslint-disable-next-line no-console
+      console.error('[cx-playground] graph render error:', err);
+    });
+    return graphChain;
+  }
+
+  // `host` is the element to draw into — the whole canvas, or one
+  // subject section of it in `all` mode. Each await point re-checks
+  // `host.isConnected`: a newer refreshView() may have replaced the
+  // canvas contents while mermaid was working, and a detached host
+  // must not have its (now stale) diagram painted anywhere visible.
+  async function renderGraphNow(src, host) {
+    if (!host) return;
     sweepMermaidOrphans();
     if (!src) {
-      canvas.innerHTML = '<p class="cxp-viz-placeholder">(no diagram available)</p>';
+      host.innerHTML = '<p class="cxp-viz-placeholder">(no diagram available)</p>';
       return;
     }
     let body = src.replace(/^%%cx:[^\n]*\n?/m, '').trim();
     body = body.replace(/^```mermaid\s*/, '').replace(/```\s*$/, '').trim();
     if (!body) {
-      canvas.innerHTML = '<p class="cxp-viz-placeholder">(empty diagram)</p>';
+      host.innerHTML = '<p class="cxp-viz-placeholder">(empty diagram)</p>';
       return;
     }
     if (!window.mermaid || typeof window.mermaid.render !== 'function') {
-      canvas.innerHTML = `<pre><code>${escapeHtml(body)}</code></pre>`;
+      host.innerHTML = `<pre><code>${escapeHtml(body)}</code></pre>`;
       return;
     }
     // Validate FIRST: mermaid.parse() only validates (no DOM injection), so a
@@ -733,25 +793,28 @@
       try {
         await window.mermaid.parse(body);
       } catch (err) {
-        canvas.innerHTML =
+        if (!host.isConnected) return;
+        host.innerHTML =
           `<p class="cxp-viz-placeholder">Diagram not renderable: ${escapeHtml((err && err.message) || String(err))}</p>` +
           `<pre><code>${escapeHtml(body)}</code></pre>`;
         sweepMermaidOrphans();
         return;
       }
     }
+    if (!host.isConnected) return;
     const id = `cxp-mmd-${++mermaidIdCounter}`;
     try {
       const { svg } = await window.mermaid.render(id, body);
-      canvas.innerHTML = svg;
-      const svgEl = canvas.querySelector('svg');
+      if (!host.isConnected) return;
+      host.innerHTML = svg;
+      const svgEl = host.querySelector('svg');
       if (svgEl) {
         svgEl.classList.add('cxp-graph-svg');
-        graphScale = 1;
         applyGraphTransform();
       }
     } catch (err) {
-      canvas.innerHTML =
+      if (!host.isConnected) return;
+      host.innerHTML =
         `<p class="cxp-viz-placeholder">Mermaid render failed: ${escapeHtml(err.message)}</p>` +
         `<pre><code>${escapeHtml(body)}</code></pre>`;
     } finally {
@@ -759,11 +822,13 @@
     }
   }
 
+  // `all` mode paints two diagrams; zoom applies to every one of them
+  // so the program and the value stay at a comparable scale.
   function applyGraphTransform() {
-    const svg = vizGraphEl.querySelector('svg.cxp-graph-svg');
-    if (!svg) return;
-    svg.style.transform = `scale(${graphScale})`;
-    svg.style.transformOrigin = 'top left';
+    vizGraphEl.querySelectorAll('svg.cxp-graph-svg').forEach(svg => {
+      svg.style.transform = `scale(${graphScale})`;
+      svg.style.transformOrigin = 'top left';
+    });
   }
   if (graphZoomBtns.zoomIn)  graphZoomBtns.zoomIn .addEventListener('click', () => { graphScale = Math.min(4, graphScale * 1.25); applyGraphTransform(); });
   if (graphZoomBtns.zoomOut) graphZoomBtns.zoomOut.addEventListener('click', () => { graphScale = Math.max(0.25, graphScale / 1.25); applyGraphTransform(); });
@@ -852,40 +917,93 @@
     }, { passive: false });
   })();
 
+  // The subjects the View pane must draw, in reading order. `text` is
+  // the CX the renderers consume; `register` marks the one tree whose
+  // node locs index the editor (the source).
+  function vizParts() {
+    const srcText = stripAnnotation(input.value);
+    const source = {
+      id: 'source',
+      title: 'Source',
+      note: 'the program you wrote',
+      text: srcText,
+      register: true,
+      empty: 'Source is empty.',
+    };
+    const output = {
+      id: 'output',
+      title: 'Output',
+      note: 'the value it evaluated to',
+      text: lastEvalRawCx || '',
+      register: false,
+      empty: 'No output yet — this program produced none, or its run failed (see the Output pane).',
+    };
+    if (vizSubject === 'source') return [source];
+    if (vizSubject === 'output') return [output];
+    return [source, output];
+  }
+
+  // Makes the container a subject section draws into. In single-subject
+  // mode the pane IS the section (no caption — the toggle already names
+  // it); in `all` mode each subject gets a captioned block so the two
+  // can never be confused for one another.
+  function makeVizSection(parent, part, labelled) {
+    const section = document.createElement('div');
+    section.className = 'cxp-viz-part';
+    section.dataset.subject = part.id;
+    if (labelled) {
+      const head = document.createElement('div');
+      head.className = 'cxp-viz-part-head';
+      head.textContent = part.title;
+      const note = document.createElement('span');
+      note.className = 'cxp-viz-part-note';
+      note.textContent = '— ' + part.note;
+      head.appendChild(note);
+      section.appendChild(head);
+    }
+    const body = document.createElement('div');
+    body.className = 'cxp-viz-part-body';
+    section.appendChild(body);
+    parent.appendChild(section);
+    return body;
+  }
+
   function refreshView() {
     const cxlib = globalThis.cxlib;
     if (!cxlib || !cxlib.ready) return;
-    const srcForViz = (vizSource === 'source')
-      ? stripAnnotation(input.value)
-      : (lastEvalRawCx || '');
     const canvas = vizGraphEl.querySelector('.cxp-graph-canvas');
-    if (!srcForViz) {
-      const msg = (vizSource === 'source')
-        ? 'Source is empty.'
-        : 'No evaluated output yet — click Run.';
-      vizTreeEl.innerHTML = `<p class="cxp-viz-placeholder">${msg}</p>`;
-      if (canvas) canvas.innerHTML = `<p class="cxp-viz-placeholder">${msg}</p>`;
-      nodeRegistry = [];
-      return;
-    }
-    // Tree
-    try {
-      const treeJson = (typeof cxlib.tree === 'function') ? cxlib.tree(srcForViz) : null;
-      const parsed = typeof treeJson === 'string' ? JSON.parse(treeJson) : treeJson;
-      renderTree(parsed, srcForViz);
-    } catch (e) {
-      vizTreeEl.innerHTML = `<p class="cxp-viz-placeholder">Tree view unavailable: ${escapeHtml(e.message)}</p>`;
-      nodeRegistry = [];
-    }
-    // Graph
-    try {
-      // Encode the View pane's current detail level into the format
-      // suffix; the V side parses `mermaid:LEVEL` per render_diagram.
-      const fmtWithDetail = `mermaid:${detailLevel}`;
-      const d = (typeof cxlib.diagram === 'function') ? cxlib.diagram(srcForViz, fmtWithDetail) : '';
-      renderGraph(d);
-    } catch (e) {
-      if (canvas) canvas.innerHTML = `<p class="cxp-viz-placeholder">Diagram unavailable: ${escapeHtml(e.message)}</p>`;
+    const parts = vizParts();
+    const labelled = parts.length > 1;
+    nodeRegistry = [];
+    vizTreeEl.innerHTML = '';
+    if (canvas) canvas.innerHTML = '';
+    for (const part of parts) {
+      const treeHost  = makeVizSection(vizTreeEl, part, labelled);
+      const graphHost = canvas ? makeVizSection(canvas, part, labelled) : null;
+      if (!part.text) {
+        treeHost.innerHTML = `<p class="cxp-viz-placeholder">${escapeHtml(part.empty)}</p>`;
+        if (graphHost) graphHost.innerHTML = `<p class="cxp-viz-placeholder">${escapeHtml(part.empty)}</p>`;
+        continue;
+      }
+      // Tree
+      try {
+        const treeJson = (typeof cxlib.tree === 'function') ? cxlib.tree(part.text) : null;
+        const parsed = typeof treeJson === 'string' ? JSON.parse(treeJson) : treeJson;
+        renderTree(parsed, part.text, treeHost, part.register);
+      } catch (e) {
+        treeHost.innerHTML = `<p class="cxp-viz-placeholder">Tree view unavailable: ${escapeHtml(e.message)}</p>`;
+        if (part.register) nodeRegistry = [];
+      }
+      // Graph
+      try {
+        // Encode the View pane's current detail level into the format
+        // suffix; the V side parses `mermaid:LEVEL` per render_diagram.
+        const fmtWithDetail = `mermaid:${detailLevel}`;
+        const d = (typeof cxlib.diagram === 'function') ? cxlib.diagram(part.text, fmtWithDetail) : '';
+        renderGraph(d, graphHost);
+      } catch (e) {
+        if (graphHost) graphHost.innerHTML = `<p class="cxp-viz-placeholder">Diagram unavailable: ${escapeHtml(e.message)}</p>`;
+      }
     }
   }
 
@@ -916,12 +1034,40 @@
   });
 
   // ── Run ────────────────────────────────────────────────
-  runBtn.addEventListener('click', async () => {
-    if (runBtn.disabled) return;
+  //
+  // One evaluator for both the Run button and the automatic run that
+  // follows an example switch, with two guards:
+  //
+  //   runToken   — every request takes a ticket. Nothing paints unless
+  //                its ticket is still the current one, so a switch
+  //                during an in-flight run can never leave the previous
+  //                example's output (or tree, or diagram) on screen.
+  //   runChain   — requests are serialised. The wasm runtime is a
+  //                single instance, and several examples sleep for
+  //                seconds; overlapping calls would interleave. A
+  //                superseded request is dropped at the head of its
+  //                turn rather than evaluated and thrown away.
+  let runToken = 0;
+  let runChain = Promise.resolve();
+  let runsInFlight = 0;
+
+  function runProgram(opts) {
+    const o = opts || {};
+    const token = ++runToken;
+    runChain = runChain.then(() => runOnce(token, o)).catch((err) => {
+      // eslint-disable-next-line no-console
+      console.error('[cx-playground] run chain error:', err);
+    });
+    return runChain;
+  }
+
+  async function runOnce(token, o) {
+    if (token !== runToken) return;          // superseded before we started
     const cxlib = globalThis.cxlib;
+    if (!cxlib || !cxlib.ready) return;
     const src = input.value;
     if (!src.trim()) {
-      setStatus('Source is empty. Pick an example or type something to evaluate.', 'error');
+      if (!o.auto) setStatus('Source is empty. Pick an example or type something to evaluate.', 'error');
       return;
     }
     // Strip the trailing `[; ─── note ─── ]` annotation before evaluating,
@@ -932,25 +1078,31 @@
     // content; results are identical for well-formed notes.
     const evalSrc = stripAnnotation(src);
     for (const k of Object.keys(outs)) { outs[k].dataset.raw = ''; outs[k].textContent = ''; }
+    runsInFlight++;
     runBtn.classList.add('is-running');
     runBtn.disabled = true;
     setStatus('Evaluating…', 'pending');
-    await new Promise(r => setTimeout(r, 500));
+    // An explicit Run holds the "Evaluating…" state briefly so the click
+    // reads as an action; an automatic run only yields a frame, because
+    // clicking through the example list must not feel padded.
+    await new Promise(r => setTimeout(r, o.auto ? 0 : 500));
 
     let accumulated = '';
     try {
+      if (token !== runToken) return;
       if (typeof cxlib.evalCodeStreamingAsync === 'function') {
         await cxlib.evalCodeStreamingAsync(evalSrc, 'cx', (chunk) => {
           accumulated += chunk;
-          outs.cx.textContent = accumulated;
+          if (token === runToken) outs.cx.textContent = accumulated;
         }, '');
       } else if (typeof cxlib.evalCodeAsync === 'function') {
         accumulated = await cxlib.evalCodeAsync(evalSrc, 'cx', '');
-        outs.cx.textContent = accumulated;
+        if (token === runToken) outs.cx.textContent = accumulated;
       } else {
         accumulated = cxlib.evalCode(evalSrc, 'cx', '');
-        outs.cx.textContent = accumulated;
+        if (token === runToken) outs.cx.textContent = accumulated;
       }
+      if (token !== runToken) return;        // a newer request owns the panes
       outs.cx.dataset.raw = accumulated;
       if (accumulated) {
         try { outs.json.dataset.raw = cxlib.toJson(accumulated); }
@@ -961,15 +1113,50 @@
       applyOutputProjection();
       lastEvalRawCx = accumulated;
       refreshView();
-      setStatus(`Evaluated — ${accumulated.length} bytes.`, 'ok');
+      if (accumulated) {
+        setStatus(o.capNote || `Evaluated — ${accumulated.length} bytes.`,
+                  o.capNote ? 'pending' : 'ok');
+      } else {
+        // An empty result is a real answer (e.g. an empty comprehension),
+        // but a blank pane looks like a failure — say so in the pane.
+        showRefusal('// evaluated to nothing — this program produced no output');
+        setStatus(o.capNote || 'Evaluated — empty result.', o.capNote ? 'pending' : 'ok');
+      }
     } catch (err) {
+      if (token !== runToken) return;
       const msg = (err && err.message) ? err.message : String(err);
+      // Honest failure: the refusal goes in the OUTPUT PANE, not only in
+      // the status bar. A reader clicking through examples must never be
+      // left staring at an empty pane wondering whether it ran.
+      showRefusal(`// this program refused to run\n${msg}`);
+      lastEvalRawCx = '';
+      refreshView();
       setStatus(`Run failed: ${escapeHtml(msg)}`, 'error');
       // eslint-disable-next-line no-console
       console.error('[cx-playground] Run failed:', err);
     } finally {
-      runBtn.classList.remove('is-running');
-      runBtn.disabled = false;
+      runsInFlight--;
+      if (runsInFlight <= 0) {
+        runsInFlight = 0;
+        runBtn.classList.remove('is-running');
+        runBtn.disabled = false;
+      }
     }
+  }
+
+  // Writes a diagnostic into all three output tabs so whichever one the
+  // reader is looking at carries the explanation.
+  function showRefusal(text) {
+    for (const k of Object.keys(outs)) {
+      outs[k].dataset.raw = text;
+      outs[k].textContent = text;
+      updateGutter(outGutters[k], text);
+    }
+    if (fmtBtn) fmtBtn.textContent = prettyMode ? 'Pretty' : 'Minified';
+  }
+
+  runBtn.addEventListener('click', () => {
+    if (runBtn.disabled) return;
+    runProgram({ auto: false });
   });
 })();

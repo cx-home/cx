@@ -31,10 +31,18 @@
     [intro
       """Whether schema v2 accepts everything schema v1 accepted is not
          a matter of judgment — it is a **decidable, pure predicate**
-         over the two declaration forms. CX computes it, and the verdict
-         is three-valued: for every document valid under v1, validation
-         under v2 yields *valid* or a *named diagnostic* — never a
-         silently different meaning."""]
+         over the two declaration forms, and for every document valid
+         under v1, validation under v2 yields *valid* or a *named
+         diagnostic* — never a silently different meaning. The predicate
+         ships as `cx schema compat OLD.cxs NEW.cxs`: it classifies
+         every field-level change, **derives the translator** for the
+         mechanically-derivable classes (a lineage claim carrying the
+         rewrite rules as data — [[se-lineage]]), and **refuses** a
+         change that genuinely reinterprets data, with a prompt naming
+         the missing rule per change. Renames are declared
+         (`--rename TYPE/OLD=NEW`), never guessed — a removed field
+         plus an added same-shaped field is indistinguishable from a
+         rename, and a guessed rename would silently move data."""]
 
     [body
       """The changes that are **safe within a schema line**:"""]
@@ -85,7 +93,11 @@
          value naming the `from` schema address, the `to` schema
          address, the relation (`:additive`, `:narrowing`, `:split`,
          `:merge`), and — when one exists — the upcaster that carries
-         old data forward. Lineage claims form a graph, and the graph
+         old data forward. For the derivable classes, `cx schema
+         compat` emits the claim with the rewrite rules **as data**
+         (`[derived …]`), and the journal applies them natively and
+         losslessly — a derived claim IS a usable upcaster chain.
+         Lineage claims form a graph, and the graph
          must admit a **unique path** between any two endpoints; an
          ambiguous graph is rejected fail-closed at load, because two
          different upgrade paths for the same pair is two different
@@ -102,8 +114,8 @@
   [child id=se-when n=4a.4 title='What to do when, in one table'
     [table
       [tr [th 'You want to…'] [th 'Do this'] [th 'Where it is covered']]
-      [tr [td 'add a field, widen an enum'] [td 'publish v2; the predicate confirms it is additive'] [td 'this section']]
-      [tr [td 'ship a breaking change'] [td 'publish v2 as a new type identity + a lineage claim with an upcaster'] [td 'this section + [[event-evolution]]']]
+      [tr [td 'add a field, widen an enum'] [td '`cx schema compat` confirms it is additive and derives the lineage claim; publish deploys it silently'] [td 'this section']]
+      [tr [td 'ship a breaking change'] [td 'publish v2 as a new type identity + an authored lineage claim with an upcaster — the publish gate stops you until the claim exists'] [td 'this section + [[event-evolution]]']]
       [tr [td 'reread old journal events under v2'] [td 'upcast at read time — journals are never rewritten'] [td '[[event-evolution]]']]
       [tr [td 'migrate stored documents'] [td 'batch-migrate: new docs + ref advances; old docs stay addressable'] [td '[[event-evolution]]']]
       [tr [td 'assert a type at a trust boundary'] [td 'exchange the (name, hash) pair; validate fail-closed'] [td '[[value-model]]']]]

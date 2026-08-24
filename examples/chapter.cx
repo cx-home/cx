@@ -9,8 +9,8 @@
     [dc:author Erik Paulson]
     [dc:date 2026-04-20]
     [dc:identifier urn:cx:chapter:getting-started]
-    [version ::string 1.0]                # forced :string so 1.0 stays "1.0", not float 1
-    [keywords ::string[] cx format tutorial getting-started]
+    [version::string 1.0]                # forced :string so 1.0 stays "1.0", not float 1
+    [keywords::string[] cx format tutorial getting-started]
   ]
 
   [abstract

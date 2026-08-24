@@ -51,10 +51,21 @@
       [item """**An entry no upcaster covers is a loud failure-channel
               error at fold time** — naming the position, the declared
               version, and the chain's endpoints. Never an absence,
-              never a skip. A **coverage pre-flight** — \"would this
+              never a skip. The **coverage pre-flight** — \"would this
               fold cover all N entries?\" — is a pure query over
-              declared versions and the lineage graph, turning
-              mid-replay aborts into pre-execution diagnostics."""]]
+              declared versions and the lineage graph, and it runs
+              **automatically at feature install** when the deployment
+              supplies its journal: an uncovered address refuses the
+              install, naming the address and its entry count."""]
+      [item """**Derivable translators are derived, not written.**
+              `cx schema compat` classifies a schema change and, for
+              the additive/rename/default classes, emits the lineage
+              claim carrying the rewrite rules as data — the journal
+              applies them natively and losslessly at this same seam.
+              Publishing a feature with a schema change derives and
+              records the claim mechanically; only a change that
+              genuinely reinterprets data stops the publish, with the
+              missing rule named."""]]
 
     [note
       """Unknown vocabulary has one reconciled rule platform-wide:
@@ -89,13 +100,17 @@
     [body
       """The retention consequence closes the loop: the rule that a
          snapshot must cover any pruned prefix is read as covered
-         **under the current fold** — re-snapshot under v2 before
+         **under the current fold** — re-derive under v2 before
          pruning a prefix only a v1 snapshot covers, or the prune is
-         refused. Periodic re-snapshotting under the current fold is
-         the named maintenance discipline, and it is also what keeps
-         upcaster chains short. One journal holding mixed payload
-         vocabularies is legal and normal — heterogeneity is the
-         steady state, not a transition."""]]
+         refused. The re-derivation is one verb, not a chore:
+         `resnapshot` re-folds a checkpoint at its own position under
+         the current fold quadruple — chain engaged, identity stamped,
+         signed like any snapshot, idempotent when nothing changed —
+         and both refusals (a stale resume, an uncovered prune) name
+         it. That verb is also what keeps upcaster chains short. One
+         journal holding mixed payload vocabularies is legal and
+         normal — heterogeneity is the steady state, not a
+         transition."""]]
 
   [child id=ee-migration n=18c.4 title='Stored-document migration'
     [intro

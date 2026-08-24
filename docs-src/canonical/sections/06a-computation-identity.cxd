@@ -98,8 +98,8 @@
 
     [body
       """The clause that historically breaks this promise in other
-         systems is parallelism, so CX pins it explicitly: **`[par]`
-         reassembles results in source order, always.** A parallel
+         systems is parallelism, so CX pins it explicitly: `[par]`
+         **reassembles results in source order, always.** A parallel
          `[?for]`, `[?map]`, or `[?reduce]` may *execute* iterations in
          any order across any number of threads, but the value it
          returns is the value the sequential evaluation returns — element
@@ -143,8 +143,9 @@
 
     [body
       """**When `[par]` does not help.** Tiny bodies lose to dispatch
-         overhead — the evaluator skips parallel dispatch for small
-         inputs and detectably trivial bodies. An erroring iteration
+         overhead — for a trivial body over a small input, the cost of
+         distributing the work can exceed the work itself, so
+         sequential evaluation wins. An erroring iteration
          cancels its in-flight siblings cooperatively: iterations
          observe cancellation at safepoints (between CXPath steps and
          directive invocations), so a long CPU-bound body without

@@ -36,7 +36,7 @@
 #
 # Capabilities: glob / read-file need `read`; write-line needs `write`;
 # the env standard streams + exit are ambient (never gated, env.md §7).
-# Run via:  vcx/target/cx eval scripts/stdlib_catalog_gate.cx --allow-all
+# Run via:  vcx/target/cx eval --allow-all scripts/stdlib_catalog_gate.cx
 # (or:      make stdlib-catalog-gate)
 
 [?lib 'cx-stdlib/io'      as=io]

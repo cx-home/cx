@@ -60,7 +60,7 @@ out2="$scratch/${area}_umbrella_2_test.v"
 
 run_gen() { # $1 = out path
   MANIFEST="$manifest" OUT="$1" AREA="$area" \
-    "$CX_BIN" scripts/consolidate_tests.cx --allow-read --allow-write --allow-env
+    "$CX_BIN" --allow-read --allow-write --allow-env scripts/consolidate_tests.cx
 }
 
 echo "── consolidate[$area]: generate (${#inputs[@]} inputs → $out1)"

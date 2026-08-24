@@ -13,6 +13,10 @@ version, library version).
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.16.0] — 2026-08-20
+
 The **partition** release. v0.13.0 made CX consumable and v0.14.0 made a
 deployment survive its own success; this release states what CX *is* — four
 rings with a one-directional import contract — and makes that structure
@@ -21,6 +25,134 @@ enforced, buildable, documented, and demonstrated by a reference application.
 Nothing here is a breaking change to the public surface (§9 versioning
 rules); the partition is a separation of what already existed, not a
 redefinition of it.
+
+### Added — at the cut (2026-08-20)
+
+- **The map-syntax settlement (#917, RULED: MSS-1…MSS-6, 2026-08-22)**: map
+  values are one expression-shaped item in BOTH readers (unquoted prose
+  refuses with quote guidance — the silent slot absorption that read
+  `{a: 1 b: 2}` as one junk-string entry at exit 0 is gone); entries
+  separate by comma or whitespace ([L85] amended, ratifying the shipped
+  form); every ascription coercion arm is checked and a bare `::`-carrying
+  token either ascribes or refuses (`{x: prose ::bool}` invented `false`
+  before; `5::bogus` silently stringified); the **declaration-only entry**
+  `{k: ::T}` lands — declared kind (the [157] KindName vocabulary), value
+  ABSENT (not null), carried by cx text, round-trip XML (`cx:decl-kind`)
+  and ast_bin v10, refused loudly by every lossy target; double-quoted map
+  keys and checked key ascription now behave identically in both readers.
+  `verify-doc-blocks` returns green (the xap.md typed-props fences parse
+  as written, respelled per MSS-5).
+
+- **The studio (#884)**: the visual editor over surface documents — an edit
+  mode of the real web face (capability-gated by a `ux:edit` claim), with
+  the layout-command vocabulary completed by `[ux:place]` / `[ux:remove]`
+  (ux.md P0-105…P0-110), emitter-stamped selection resolution, inverse-command
+  undo, and propose/commit flow.
+- **Durable feed lineage (#764)**: XSP store data-plane resume cursors now
+  survive daemon restarts — a per-substrate lineage sidecar turns the boot
+  token into a durable epoch token (zero wire change); `CXER5020` narrows to
+  wrong-epoch / below-retention-floor / above-head.
+- **Semantic projections (#877, ANC-1)**: every lossy projection
+  (JSON/YAML/TOML/MD/CSV/TSV/PSV) and the `$doc` binding read the RESOLVED
+  document — aliases expand, merges apply — matching strict canonical's
+  identity; default CX, the XML `cx:*` carry, and `--lossless` preserve the
+  authored sharing.
+- **Parse limits (#876, LIM-1/LIM-2)**: `spec/core/limits.md`, the
+  `ParseLimits.max_input_bytes` embedder guard, and the amplification gate
+  (node growth bounded, hard-asserted).
+- **Session guest attach (#857)** and **HTTP/2 on the serve path (#875)** —
+  landed at the cut (see their issues for surface details).
+- **One-command editor install (#874)**: `tooling/install/` — signed
+  tree-sitter parser with a headless load-proof (#883), lazy.nvim `dir=`
+  spec, VS Code VSIX.
+
+### Added — the surface-completion wave (2026-08-21)
+
+The owner's directive for this window: it is the last chance to change
+surfaces across the rings before production clients, after which every
+change carries per-engagement migration cost. These landed under that rule.
+
+- **`cx-stdlib/supervise` (#765)** — restart policies over monitored
+  workers: `:one-for-one` / `:one-for-all` / `:rest-for-one`, per-supervisor
+  restart intensity, per-child exponential backoff with window reset,
+  dynamic children, an observable event stream, and supervision trees by
+  composition. Pure CX over the shipped worker/monitor/select/channel/timer
+  primitives — no new engine primitive, no capability.
+- **`cx-stdlib/diagram` (#758, #889)** — the `code.md` §10.1.2 reference
+  renderer AND the control-flow / entity / sequence renderer both move from
+  V to CX. `code_diagram.v` went 3,219 → 69 lines and `diagram.v` 1,661 →
+  399; the only effect left is one `dot` invocation under `subprocess`.
+  §10.1.1's own sentence — "the renderer is itself a CX program" — is true
+  for the first time. New caller-facing entry `[$diagram:of-source]`.
+- **Uniform postfix path steps (#886)** — every program-position bracketed
+  form's closing bracket now takes the compact step postfix (directive
+  results, operator forms, every literal), not just bindings and calls.
+  One rule, no special cases, nothing to migrate later.
+- **The universal store model** — content-addressed piece storage is
+  available across every substrate (memory, pack, object-per-key, SQLite,
+  S3) and the server tier, with whole-document mode as the compatibility
+  option; the six guarantees (universal dedup, version sharing, cross-tier
+  object identity, self-verifying integrity, canonical round-trip,
+  model-invisible API) are now normative in `store.md`.
+- **Durable feed lineage everywhere (#764, #885, #887)** — data-plane resume
+  cursors survive daemon restarts on local substrates, s3-rooted stores and
+  the columnar backend alike. Zero wire change.
+- **One-command editor install (#874, in-repo half)** — `tooling/install/`
+  with a signed, load-proofed tree-sitter parser and a lazy.nvim spec.
+- The `[?cx]` fixture generator is now CX (#856), the store examples lead
+  with TLS (#745), and `cx -v` reports the DB engines compiled in (#520).
+
+### Fixed — the surface-completion wave (2026-08-21)
+
+- **`[?try-send]` silently lost values sent to fan-out channels** — it
+  answered `[ok]` while the value went to a queue no subscriber reads. Found
+  by sweeping every channel-delivery path after the same class was fixed in
+  the scheduler's timer ticks; both instances are now pinned by conformance
+  cases.
+- **The scheduler's timer ticks never reached fan-out channels** at all — a
+  dead delivery path nothing had exercised until the supervisor did.
+- **`cx diagram --format=svg` emitted malformed SVG** — the source carrier
+  was spliced into the document prolog, so every SVG the tool ever produced
+  was invalid. It now sits where SVG 1.1 puts metadata, and validity is a
+  gate with a negative case pinning the old bytes as rejected.
+- **The `svg`/`png` diagram formats now require an explicit `subprocess`
+  grant** rather than granting themselves one, and a denial is reported
+  rather than silently substituted with the graphviz-absent fallback.
+- **The guide silently truncated nine pages** past ~195 code spans, shipping
+  two ring arcs at roughly a third of their length; the builder now refuses
+  to emit a partial page.
+- **The DSN diagnostic told you to rebuild your binary when your URL was
+  malformed** (#520), and `sqlite::memory:` did not parse at all.
+- **The libcx ABI gate compared vendored C++ symbols** and would have gone
+  red on any toolchain rebuild with no CX change (#888); it now pins the CX
+  surface and additionally verifies that every entry point declared in the
+  public header is exported.
+
+### Fixed — at the cut (2026-08-20)
+
+- **#883**: macOS killed Neovim (and its spawning TUI) on every parser
+  reinstall — the universal build shipped an unsigned arm64 slice and the
+  installer overwrote the old inode; every parser binary is now ad-hoc
+  signed, installed to a fresh inode, and load-proofed at install time.
+- **#879 (CXP-1)**: the `[?cx …]` pragma registry is CLOSED
+  (`include|schema|version|lint-disable|lint-enable`); unknown keys —
+  including the documented-but-inert `output-target` — now refuse at parse
+  with a named message instead of being silently accepted.
+- **#878 (ENT-1)**: XML emission of entity references at item boundaries no
+  longer glues text (`Cheese &amp; Pepper` round-trips); attr-position
+  entity text is carried verbatim by design.
+- **#881 (BP-1)**: explicit `axis::` steps on binding paths refuse with a
+  precise diagnostic naming the compact-step surface and the rooted-path
+  alternative (was a bare `unexpected token '::'`).
+- **#882 (ARR-1)**: the collection read/construct split is normative —
+  readers (`count`, `first`, `nth`, …) destructure any collection kind;
+  constructors (`concat`) keep strict container typing. The engine was
+  already right; the docs taught otherwise.
+- **#880**: silent-acceptance sweep — lint config attr typos, unknown bench
+  flags, and a doubled `CXER0100` error prefix all refuse loudly now.
+- The guide generator no longer silently truncates pages past ~195 code
+  spans (two recursion-ceiling walkers made flat; the builder now REFUSES
+  to emit a partial page).
 
 ### Added — the four-ring partition
 
@@ -166,6 +298,38 @@ arc** rather than a spec link:
   (`actor: deriver:rating`) — the second deriver exemplar, visible on any
   product page after a review lands.
 
+### Added — the ux projection capability, specified
+
+- **`spec/03-approved/xap/ux.md`** is the normative home of the third
+  projection: the same command/query definitions that serve the wire and
+  the agent-tools face project **forms, tables, and live regions** —
+  derived at render time, no UI manifest to drift. The spec pins the four
+  keying regimes, the closed 45-member semantic vocabulary (gate-enforced:
+  unknown members and unknown attributes refuse), the emitter contract
+  (sole attribute author, strict CSP, escaping by construction), the
+  hypermedia obligations (every state a URL; degrade without the kernel),
+  the one-evaluator authorization rule (what is shown is what is allowed),
+  and the accessibility clauses — with the terminal face as the mechanical
+  keyboard-reachability fixture. Implementation rides the x-tier
+  (`cx-x/ux` core + web/terminal faces); the guide teaches it as a Ring 2
+  arc.
+
+### Added — prebuilt downloads and editor distribution
+
+- **Per-profile darwin-arm64 tarballs publish with every release** —
+  `platform` (default) / `cli` / `embed` / `data`, resolved by the hosted
+  installer (`curl -sSL https://cxhome.org/install | sh`; `CX_PROFILE=`
+  selects the lean builds), each gated by extract-and-probe before
+  publish, all under one `SHA256SUMS.txt`. The guide gains a **Downloads
+  page** presenting the profile matrix as the ring ladder.
+- **Editor tooling joins the release motion.** `tooling/neovim/` is a
+  real plugin root — lazy.nvim/LazyVim consume it directly
+  (`{ dir = "…/cx/tooling/neovim" }`) on Neovim 0.11's native
+  `vim.lsp.config`, no nvim-lspconfig dependency, copy-file install
+  retired. The release script packages the VS Code extension and
+  publishes to the Marketplace/Open VSX when publisher tokens are
+  present.
+
 ### Fixed — two owner-felt platform defects, found and closed same-day
 
 - **`[?match]` arm attempts stopped deep-copying the closure table** — a
@@ -180,6 +344,13 @@ arc** rather than a spec link:
   visitors' frames** and swallowed their own requests ("pending" hangs).
   Close notification is now a fan-out with one purge point, invoked on
   every close path and defensively at accept.
+- **A hidden page releases its feed's connection-pool slot** — browsers
+  cap HTTP/1.1 at six connections per host and the liveness contract
+  holds one SSE feed per page, so a handful of open tabs starved
+  navigations. The web kernel now closes the feed while a page is hidden
+  and reconnects on visibility; a background-opened tab takes no slot
+  until first viewed. (The structural fix — HTTP/2 on the serve path,
+  reusing the platform's existing RFC-7540 codec — is queued.)
 
 ### Fixed
 
@@ -187,6 +358,12 @@ arc** rather than a spec link:
   library, V runtime, tooling and XAP — including a signal-free thread
   suspension for the darwin collector, and a sweep of correctness defects
   found by the partition's own gates.
+- **Engine-side findings from the documentation audit**: the shipped
+  `cxstore.service.cx` operator template could not boot the daemon it
+  documents (retired `[auth]` block → the real `[xsp [grants …]]` shape);
+  the LSP's semantic-token directive list carried only the pre-reshape 37
+  names against the registry's 80; two binding manifests declared MIT
+  against the repo's Apache-2.0 license.
 
 ### Documentation
 
@@ -196,6 +373,20 @@ arc** rather than a spec link:
   concept specs written as teaching arcs. A reader can answer "what is Ring
   N, what may it import, and what can I do with only that ring" from the
   guide alone.
+- **The guide is designed** — a coherent visual system (drawing-office
+  chrome with monograph body typography): a sheet frame and title block on
+  every page, the ring model drawn as an annotated engineering figure on
+  the landing, ink code panels with paper output prints, and the
+  playground retinted to the same family. Inline emphasis in prose now
+  renders (the corpus carried ~900 unrendered spans). Works served or
+  double-clicked (`file://`).
+- **The guide is trued** — a full verification audit tested every
+  checkable claim against the live binary and corrected several hundred
+  stale or fictional ones: invented CLI verbs and flags, a fictional
+  limits/env-var surface, wrong error codes, an inverted canonicalization
+  story, fabricated binding APIs and capability-bit tables, and stale
+  perf numbers. Where the docs described a surface the engine should
+  have, that became a tracked decision, never a doc claim.
 - **`x/term` specced** rather than retired, and `ROADMAP.md` trued to this
   release line.
 
@@ -1264,6 +1455,9 @@ wire formats, spec-normative grammar).
 - BREAKING: leading-zero integers are now strings (`02134` is a string, not int 2134).
 - BREAKING: binding `loads()` / `dumps()` preserve integer/float distinction via CXDB v1 (was JSON-coerced in v0.5).
 
-[Unreleased]: https://github.com/cx-home/cx/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/cx-home/cx/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/cx-home/cx/compare/v0.15.0...v0.16.0
+[0.15.0]: https://github.com/cx-home/cx/compare/v0.14.0...v0.15.0
+[0.14.0]: https://github.com/cx-home/cx/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/cx-home/cx/compare/v0.12.0...v0.13.0
 [0.6.0]: https://github.com/cx-home/cx/releases/tag/v0.6.0

@@ -1,0 +1,155 @@
+# Reference: the CX code language — v{{VERSION}}
+
+> **GENERATED.** Source: `docs-src/llm/reference-code-language.md.tmpl` + the
+> conformance corpus. Every output was re-recorded from the `cx` v{{VERSION}}
+> binary. Read `primer.md` first.
+
+Ring 1. A program is a document whose elements include directives. Directives
+are spelled `[?name …]`; the normative registry is
+`spec/03-approved/core/code.md` §4.1, and every directive in it is exercised
+by `conformance/code.cxd`.
+
+## Binding
+
+`[?let]` takes any number of `[= $name value]` bindings and one body. The
+bindings are sequential: each sees the ones before it. There is no
+`let*`, because there is nothing for it to do.
+
+{{EXAMPLE:ev-let-001-sequential-binding-discriminator block}}
+
+`[?with-scope]` merges a map into scope for a body — the form to reach for
+when the names come from data rather than from source.
+
+{{EXAMPLE:program-with-scope-001-basic-merge block}}
+
+## Control flow
+
+`[?if COND [then …] [else …]]`. The clause names are mandatory: `[?if c a b]`
+is a syntax error (`cx-err:CXER0001`), not a positional shorthand.
+
+{{EXAMPLE:program-if-bare-then-else-err block}}
+
+`[else]` may be omitted, and a false condition then yields empty:
+
+{{EXAMPLE:program-if-falsy-no-else-empty block}}
+
+Truthiness is defined per type, not by coercion to boolean: zero and empty
+string are falsy, an empty *element* is truthy (it exists), and an empty
+match set is falsy — which is what makes the existence idiom work:
+
+{{EXAMPLE:program-if-elem-002-existence-idiom block}}
+
+## Pattern matching
+
+`[?match VALUE [case PATTERN result] … [else result]]`. Arms are tried in
+order. `[when …]` adds a predicate arm, `[where …]` guards a case.
+
+{{EXAMPLE:program-match-multi-006-where-guard block}}
+
+A single-arm match with no `[else]` that does not match RAISES rather than
+returning empty — matching is a claim, and a failed claim is an error:
+
+{{EXAMPLE:program-match-multi-009-single-arm-no-match-raises block}}
+
+## Comprehensions
+
+`[?for]` is the one iteration directive: `[in $x SOURCE]` clauses (more than
+one nests), `[where]` filters, `[group-by]` partitions and binds `$count` and
+`$group`, `[order-by]` sorts, `[yield]` emits. Patterns in the source
+position bind by shape.
+
+{{EXAMPLE:program-for-002-active-emails block}}
+
+{{EXAMPLE:program-for-group-010-m5-revenue-by-region block}}
+
+## CXPath
+
+Paths are values: `$doc/child`, `/rooted`, `//descendant`, with predicates.
+They work as a `[?for]` source, as an `[?if]` condition (truthy iff the match
+set is non-empty), and anywhere a value is expected.
+
+{{EXAMPLE:program-cxpath-001-path-value-basic block}}
+
+{{EXAMPLE:program-cxpath-002-attribute-predicate block}}
+
+{{EXAMPLE:program-cxpath-004-count-aggregation block}}
+
+## Functions
+
+`[?def name [attrs] (params) body]` defines; `[?fn (params) body]` is the
+anonymous form. Definitions are order-independent and mutually recursive.
+`scope=public` exports. `pure`/`impure` is checked. `[returns T]` and `::T`
+annotations document by default and are enforced under `--strict`.
+
+{{EXAMPLE:program-def-002-parse-with-returns block}}
+
+{{EXAMPLE:program-def-mutual-recursion block}}
+
+Defs are first-class values, so a def name is usable wherever a function is:
+
+{{EXAMPLE:program-fn-004-def-first-class block}}
+
+Nesting a `[?def]` inside another is refused (`cx-err:CXER0204`) — definitions
+are module-level:
+
+{{EXAMPLE:program-def-003-nested-rejected-CXER0204 block}}
+
+## Pipes
+
+`[?pipe]` threads a value through stages. There is a canonical form and infix
+sugar; both parse to the same thing.
+
+{{EXAMPLE:program-pipe-001-canonical-form block}}
+
+{{EXAMPLE:program-pipe-002-infix-sugar block}}
+
+## Iterators and reduction
+
+The iterator family is lazy: `[?map]`, `[?filter]`, `[?take]`, `[?drop]`,
+`[?zip]`, `[?enumerate]`, `[?chunks]` build a pipeline, and a consumer forces
+it. `[?reduce]` folds; `[par]` marks an associative fold as parallelisable.
+
+{{EXAMPLE:program-iterator-lazy-002-take-bounds-output block}}
+
+{{EXAMPLE:program-reduce-002-sequential-left-fold block}}
+
+An `[?reduce]` declared `ordered` where the operation is not is refused
+rather than silently reordered:
+
+{{EXAMPLE:program-reduce-003-ordered-rejected block}}
+
+## Transformation
+
+`[?modify]` rewrites a document by matching positions and replacing them. It
+is the transform half of the language, and the reason CX does not need a
+separate template dialect.
+
+{{EXAMPLE:program-modify-outer-pred-003-bound-outer-filters block}}
+
+## Errors
+
+An error is the value `[err code=… message=… …]`. It is produced, returned,
+bound, and inspected like any other value; it propagates out of the call that
+made it and through anything constructed from it.
+
+{{EXAMPLE:program-construction-err-002-propagation-is-transitive block}}
+
+A literal `[err …]` written in *data* stays data — the propagation rule is
+about computed positions, not about the head name:
+
+{{EXAMPLE:program-construction-err-003-literal-err-stays-data block}}
+
+`[?else VALUE FALLBACK]` is the recovery idiom. There is no `try`/`catch`
+directive; `[?try]` and `[?chain]` were retired from the surface and now
+appear only in negative fixtures.
+
+## Capabilities
+
+Every effect names the capability it needs, and a denial is an ordinary error
+value carrying the flag that would have granted it:
+
+{{EXAMPLE:io-001-read-file-cap-denied block}}
+
+The nine capabilities are `read write net env clock random subprocess eval
+secret-reveal`. `--allow-common` is all but `secret-reveal`; `--allow-all`
+includes it.

@@ -1,0 +1,114 @@
+# scripts/check_null_absence_conflation.cx — the check-null-absence-conflation
+# gate (SAP C1, §1) — the no-conflation guard.
+#
+# The value-channel model (spec/core/code.md §9.1.2.1 rule (b)) is normative
+# and conformance-checked: **no builtin returns `null` to mean "absent."** An
+# optional, pure, in-memory read that finds nothing rides the **absence
+# channel** (the empty node-set / empty sequence `()`), NEVER a `null` scalar.
+# `null` is a present value (data-null or unit-null) only. This guard makes
+# that guarantee a PERMANENT gate, not a one-time C1 audit.
+#
+# The detectable signal is the **declared optional-or-null return type** in a
+# stdlib module's `[?def …]` surface — the `[returns [or T null]]` shape. That
+# union is precisely "a value of kind T, or null" — i.e. a builtin that hands
+# back `null` to mean "no value here," which is the absent-null violation.
+# Migrate it to the absence channel: `[returns [or T [sequence T]]]` (present
+# = `(x)`, absent = `()` — the Maybe-as-sequence model, §9.1.2.3).
+#
+# What is NOT flagged (deliberately):
+#   - `[returns null]` — a UNIT-null, a successful no-payload side-effect
+#     return (e.g. `log`, `set-alias`, `close`, `exit`). §9.1.2.1 rule (2b)
+#     keeps it.
+#   - `[or T null]` in a PARAMETER / value-literal / type-expression position
+#     (e.g. `$x::[or string null]`) — a param may legitimately ACCEPT a
+#     data-null; the guard targets RETURN declarations only.
+#
+# Token-aware, not a blind grep: it matches the `[returns [or … null]]` clause
+# shape specifically (the `null` arm inside an `[or …]` immediately following
+# `returns`), so a `[returns null]` unit-return and a non-return `[or … null]`
+# both pass.
+#
+# Scope: the stdlib spec surface (spec/03-approved/std-lib/*.md) + the V
+# bundle sources (vcx/{code,platform}: stdlib_*.v, stdlib_bundle.v, mime.v)
+# where the `[?def …]` signatures live. Both must agree (the def text is
+# duplicated between the spec and the bundle), so scanning both catches a
+# drift in either.
+#
+# Allowlist: none today. A future def that genuinely returns a present `null`
+# (data-null, e.g. a JSON round-trip that preserves an explicit null) would
+# use a non-optional return type (`[returns any]` / `[returns null]`), not
+# `[or T null]`, so it does not trip this guard. If a real exception arises,
+# add it to $allow with a one-line CX rationale.
+#
+# Exit 0 clean; 1 with hits. Run from the repo root:
+#   vcx/target/cx --allow-read --allow-write scripts/check_null_absence_conflation.cx
+# (or: make check-null-absence-conflation)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/fp'      as=fp]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def matched scope=public ($m) [> [?else $m@start -1] -1]]
+
+[?let
+  # The violation: a `returns` clause whose type is `[or … null]` (null as an
+  # arm of the return union).
+  #   [returns [or string null]]               → HIT
+  #   [returns null]                           → miss (unit-null, kept)
+  #   [returns [or string [sequence string]]]  → miss (migrated to absence)
+  [= $viol-rx [$re:compile "\\breturns\\s+\\[or\\b[^\\]]*\\bnull\\b[^\\]]*\\]"]]
+
+  # (file-relpath-suffix, substring) pairs ALLOWED to carry the shape, each
+  # with a documented CX rationale. Empty today (the C1 cutover removed every
+  # absent-null return).
+  [= $allow ()]
+
+  # The stdlib def surface lives in two mirrored places: the approved specs
+  # and the V bundle sources (only the stdlib_*/bundle/mime files carry
+  # `[?def …]` text).
+  [= $spec-files [$io:glob "spec/03-approved/std-lib/**/*.md"]]
+  [= $vcx-files
+    [$fp:flat-map ("vcx/code", "vcx/platform") [?fn ($d)
+      [?for [in $p [$io:glob [$cat ($d, "/**/*.v")]]]
+        [= $bn [$path:basename $p]]
+        [where [or [$strings:contains $bn "stdlib_"]
+                   [$strings:ends-with $bn "mime.v"]]]
+        [yield $p]]]]]
+  [= $files [$fp:flat-map ($spec-files, $vcx-files) [?fn ($x) $x]]]
+
+  [= $hits
+    [$fp:flat-map $files [?fn ($f)
+      [?let [= $text [?fallback [$io:read-file $f] [recover-with ""]]]
+        [?if [not [$matched [$re:find $viol-rx $text]]]
+          [then ()]
+          [else
+            [?let [= $lines [$strings:split-lines $text]]
+              [?for [in $i [$range 1 [$count $lines]]]
+                [= $line $lines[$i]]
+                [where [$matched [$re:find $viol-rx $line]]]
+                [where [= [$count [?for [in $a $allow]
+                            [where [and [$strings:ends-with $f [$string $a@suffix]]
+                                        [$strings:contains $line [$string $a@sub]]]]
+                            [yield 1]]] 0]]
+                [yield [$cat ($f, ":", [$string $i], ": ", [$strings:trim $line])]]]]]]]]]]
+
+  [?if [> [$count $hits] 0]
+    [then
+      [?let
+        [= $_h [$say [$cat ("check-null-absence-conflation FAILED — a builtin declares a ",
+                            "null-for-absent return (`[returns [or T null]]`):")]]]
+        [= $_l [?for [in $h $hits] [yield [$say [$cat ("  ", $h)]]]]]
+        [= $_t [$say [$cat ("Per spec/core/code.md §9.1.2.1 (b) the no-conflation guard, an ",
+                            "optional read signals 'nothing here' via the ABSENCE channel ",
+                            "(the empty sequence `()`), never `null`. Migrate the return to ",
+                            "`[returns [or T [sequence T]]]` (present = (x), absent = ()).")]]]
+        [$env:exit 1]]]
+    [else
+      [?let [= $_ok [$say [$cat ("check-null-absence-conflation OK — no builtin returns null-for-absent ",
+                                 "(every optional read uses the absence channel).")]]]
+        [$env:exit 0]]]]]

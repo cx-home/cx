@@ -1,0 +1,107 @@
+[llm-docs
+  [doc [#
+docs-src/llm/manifest.cxd — the LLM onboarding layer's document set (#938).
+
+Read by scripts/gen_docs/primer_build.cx (`make docs`). Declares:
+
+  [site]     the published base URL every llms.txt link is written against
+  [tagline]  the one-line `>` blurb at the top of llms.txt
+  [suites]   the conformance suites the templates may cite, one per line,
+             relative to conformance/ and without the .cxd extension.
+             Declaring them bounds the fixture index (code.cxd alone is
+             ~1200 cases) and records the primer's provenance in one place.
+  [doc]      this block — ignored by the generator.
+  [output]   one output file per entry, in llms-full.txt concatenation
+             order. `id=primer` is special: llms.txt lists it under
+             "Start here", everything else under "Reference".
+
+Adding a section that cites a new suite = add the suite here. A template
+citing an undeclared (or nonexistent) fixture id is a HARD generator
+failure, never a silently empty block.
+#]]
+
+  [; `base` addresses the reference set; `root` is the SITE ROOT, where the
+     two llmstxt.org files live (the convention is /llms.txt — a copy under
+     /llm/ is not discoverable and does not count). scripts/publish.sh puts
+     them in both places and asserts the root pair arrived. ]
+  [site base='https://cxhome.org/llm/' root='https://cxhome.org/']
+
+  [tagline [#
+CX is a homoiconic data-and-code language: one bracketed element syntax for
+documents, queries, programs and its own AST. It post-dates every model's
+training data, so this layer is the context an assistant needs to write it
+correctly.
+#]]
+
+  [suites [#
+code
+core
+llm/antipatterns
+stdlib/store
+stdlib/journal
+stdlib/http
+stdlib/mcp
+stdlib/a2a
+stdlib/strings
+stdlib/fp
+stdlib/json
+stdlib/map
+stdlib/array
+stdlib/re
+stdlib/time
+stdlib/io
+stdlib/env
+stdlib/cx
+xml
+table
+identity
+#]]
+
+  [output id=primer out='primer.md' template='primer.md.tmpl'
+          title='CX primer for LLM assistants'
+    [summary [#
+The one file to load before writing CX. The surface taught through runnable
+examples, a ring decision table, the core idioms, and the anti-patterns that
+Lisp/Clojure/shell priors produce — each with its real diagnostic.
+#]]]
+
+  [output id=data out='reference-data-language.md'
+          template='reference-data-language.md.tmpl'
+          title='Reference: the CX data language'
+    [summary [#
+Elements, attributes, scalars and their auto-typing, collections, raw text,
+tables, identity anchors, and the format conversions the data reading offers.
+#]]]
+
+  [output id=code out='reference-code-language.md'
+          template='reference-code-language.md.tmpl'
+          title='Reference: the CX code language'
+    [summary [#
+The directive surface — binding, control flow, comprehensions, pattern
+matching, definitions, pipes, CXPath — and how errors propagate as values.
+#]]]
+
+  [output id=stdlib out='reference-stdlib.md'
+          template='reference-stdlib.md.tmpl'
+          title='Reference: the standard library'
+    [summary [#
+The bundled module catalog, the [?lib] import form, and the capability each
+effectful pack requires.
+#]]]
+
+  [output id=cli out='reference-cli.md' template='reference-cli.md.tmpl'
+          title='Reference: the cx command line'
+    [summary [#
+The run surface, the convert surface, the subcommand catalog, and the
+capability grant flags — including the flag-placement rule that silently
+denies capabilities when broken.
+#]]]
+
+  [output id=platform out='reference-platform.md'
+          template='reference-platform.md.tmpl'
+          title='Reference: the platform and ecosystem rings'
+    [summary [#
+Ring 2 (store, journal, HTTP, XAP host) and Ring 3 (agent interop, feature
+distribution, language bindings) — what is reachable and how.
+#]]]
+]

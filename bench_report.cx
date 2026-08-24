@@ -1,0 +1,376 @@
+# bench_report.cx — CX language-binding report: implementation details plus
+# parse/stream performance (#922 CX port of the retired bench_report.py).
+#
+# Each language bench shim prints `parse=X.XXX stream=X.XXX` (median ms on the
+# common fixture); this drives every shim, scrapes those two numbers, and
+# renders a comparative table normalised to the V baseline.
+#
+# Usage (program args are positional after the FILE, cli.md §3 / PYE-2):
+#   cx --allow-read --allow-write --allow-subprocess --allow-clock --allow-env \
+#      bench_report.cx [--verbose|-v] [BINDING ...]
+#   (or: make bench)
+#
+# Filters are POSITIONAL binding names, case-insensitive:
+#   cx … bench_report.cx python go rust
+#
+# Unknown flags REFUSE LOUDLY (#880). `--bindings python,go` used to be
+# silently discarded, so the caller believed they had filtered and in fact ran
+# everything. The only flag is --verbose/-v; anything else starting with `-`
+# exits 1 with the same message the Python printed.
+#
+# Environment: CX_BENCH_FIXTURE (default bench_medium.cx) selects the fixture
+# named in the header; CX_BENCH_TIMEOUT (default 600, seconds) bounds each
+# bench run. Both are read with --allow-env.
+#
+# Exit codes: 0 report rendered (a binding that fails is a dash in the table,
+# not a harness failure); 1 unknown flag.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/locale'  as=locale]
+[?lib 'cx-stdlib/time'    as=time]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/map'     as=map]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+# ── implementation details ───────────────────────────────────────────────────
+# Row order IS the table order, unchanged from the Python.
+
+[?const LANGS (
+  {name: 'V',          tier: 'native',
+   ffi: '—',            ptr: '—',
+   decoder: 'V parser (direct)'},
+  {name: 'Python',     tier: 'close (≤4×V)',
+   ffi: 'ctypes',       ptr: 'ctypes.string_at(addr,n)',
+   decoder: 'struct.Struct + pure Python'},
+  {name: 'Go',         tier: 'first-class',
+   ffi: 'CGo',          ptr: 'unsafe.Pointer → C.GoBytes',
+   decoder: 'encoding/binary LE'},
+  {name: 'Rust',       tier: 'first-class',
+   ffi: 'extern "C"',   ptr: 'ptr::copy_nonoverlapping',
+   decoder: 'std::io::Cursor'},
+  {name: 'TypeScript', tier: 'first-class',
+   ffi: 'koffi',        ptr: 'koffi.decode → Buffer.slice',
+   decoder: 'Buffer reads (LE)'},
+  {name: 'C#',         tier: 'first-class',
+   ffi: 'P/Invoke',     ptr: 'Marshal.Copy(ptr+4, bytes, n)',
+   decoder: 'BinaryReader (LE)'},
+  {name: 'Java',       tier: 'first-class',
+   ffi: 'JNA',          ptr: 'Pointer.getByteArray(4, n)',
+   decoder: 'ByteBuffer.order(LE)'},
+  {name: 'Kotlin',     tier: 'first-class',
+   ffi: 'JNA',          ptr: 'Pointer.getByteArray(4, n)',
+   decoder: 'ByteBuffer.order(LE)'},
+  {name: 'Ruby',       tier: 'first-class',
+   ffi: 'ruby-ffi',     ptr: 'pointer.get_bytes(4, n)',
+   decoder: 'String#unpack (V/S/C)'},
+  {name: 'Swift',      tier: 'first-class',
+   ffi: 'CXC C module', ptr: 'UnsafeRawPointer → Data(bytes:)',
+   decoder: 'Data + manual LE reads'})]
+
+# ── bench commands ───────────────────────────────────────────────────────────
+
+[?const JAVA-HOME '/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home']
+[?const RUBY-BIN  '/opt/homebrew/opt/ruby/bin/ruby']
+[?const XCODE-SDK '/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk']
+[?const XCODE-DEV '/Applications/Xcode.app/Contents/Developer']
+
+# V is special-cased in run-bench (compile bench_time.v, then execute the
+# binary), so it carries no build/run entry — the Python's V entry held a
+# `run` list that run_bench never reached.
+[?const BENCH-CMDS {
+  Python: {run: ('python3', 'lang/python/bench_time.py')},
+  Go:     {run: ('go', 'run', './examples/bench/'), cwd: 'lang/go/cxlib'},
+  Rust:   {build: ('cargo', 'build', '--bin', 'bench_time', '--release', '-q'),
+           run: ('./target/release/bench_time'), cwd: 'lang/rust/cxlib'},
+  # tsx from cxlib/node_modules: npx without a local install would try the
+  # registry, which is offline-hostile and hangs.
+  TypeScript: {run: ('lang/typescript/cxlib/node_modules/.bin/tsx',
+                     'lang/typescript/bench_time.ts')},
+  'C#':   {build: ('dotnet', 'build', 'lang/csharp/bench_time/bench_time.csproj',
+                   '--nologo', '-v:m', '-c', 'Release'),
+           run: ('dotnet', 'run', '--project',
+                 'lang/csharp/bench_time/bench_time.csproj',
+                 '--no-build', '-c', 'Release')},
+  Java:   {build: ('mvn', '-f', 'lang/java/cxlib/pom.xml', '-q', 'compile'),
+           run: ('mvn', '-f', 'lang/java/cxlib/pom.xml', '-q', 'exec:java',
+                 '-Dexec.mainClass=cx.BenchTime')},
+  Kotlin: {build: ('gradle', '--project-dir', 'lang/kotlin/cxlib', 'assemble', '-q'),
+           run: ('gradle', '--project-dir', 'lang/kotlin/cxlib', 'benchTime', '-q'),
+           env: {JAVA_HOME: JAVA-HOME}},
+  Ruby:   {run: (RUBY-BIN, 'lang/ruby/bench_time.rb')},
+  Swift:  {build: ('swift', 'build', '--package-path', 'lang/swift/cxlib',
+                   '--product', 'BenchTime', '-c', 'release', '--quiet'),
+           run: ('lang/swift/cxlib/.build/release/BenchTime'),
+           env: {SDKROOT: XCODE-SDK, DEVELOPER_DIR: XCODE-DEV}}}]
+
+[?const BUILD-TIMEOUT-MS 120000]
+[?const V-BIN '/tmp/cx_bench_time_v']
+
+# ── formatting primitives ────────────────────────────────────────────────────
+
+# fixed: N fraction digits, no grouping — Python's f'{v:.Nf}'.
+[?def fixed scope=public ($v $n)
+  [$locale:format-number-with-opts $v
+    {locale: 'en-US', 'min-fraction-digits': $n, 'max-fraction-digits': $n,
+     grouping: false}]]
+
+# grouped: thousands separators — Python's f'{v:,}'.
+[?def grouped scope=public ($v) [$locale:format-number-with-opts $v {locale: 'en-US'}]]
+
+[?def lpad scope=public ($s $w) [$strings:pad-start $s $w ' ']]
+[?def rpad scope=public ($s $w) [$strings:pad-end $s $w ' ']]
+
+# head-chars: Python's s[:n] — never over-slices a short string.
+[?def head-chars scope=public ($s $n)
+  [?let [= $len [$strings:length $s]]
+    [$strings:slice $s 0 [?if [< $len $n] [then $len] [else $n]]]]]
+
+[?const DASH '  —  ']
+
+[?def fmt-ms scope=public ($v)
+  [?if [= $v null]
+    [then DASH]
+    [else [?if [< $v 1]
+      [then [$cat ([$fixed [* $v 1000] 0], 'µs')]]
+      [else [$cat ([$fixed $v 2], 'ms')]]]]]]
+
+# MEASURED (2026-08-23): the threshold MUST be written `1.05e0`. A bare
+# `1.05` literal is a DECIMAL, not a float, and `[< float decimal]` is an
+# error — which propagated out of fmt-x, through `$lpad`, and emptied the
+# whole table row to '' with no diagnostic anywhere. The rows that reported
+# real numbers were the only blank ones; the dash rows were fine because
+# they never reached the comparison. `$strings:to-float` yields a float, so
+# every literal it meets has to be a float literal too.
+[?def fmt-x scope=public ($v)
+  [?if [= $v null]
+    [then DASH]
+    [else [?if [< $v 1.05e0] [then '1×'] [else [$cat ([$fixed $v 1], '×')]]]]]]
+
+# ratio: the Python guarded with `if p and v_parse` — a missing value on
+# either side yields no ratio.
+[?def ratio scope=public ($a $b)
+  [?if [or [= $a null] [= $b null]] [then null] [else [/ $a $b]]]]
+
+# ── output scraping ──────────────────────────────────────────────────────────
+
+[?const OUT-RX 'parse=([0-9.]+)\s+stream=([0-9.]+)']
+
+# parse-output: {parse: F, stream: F} or absence when the shim printed
+# nothing matching — the Python's `_parse_output` returning None.
+[?def parse-output scope=public ($stdout)
+  [?let [= $m [$re:find [$re:compile OUT-RX] $stdout]]
+    [?if [$present $m]
+      [then {parse: [$strings:to-float [$re:group $m 1]],
+             stream: [$strings:to-float [$re:group $m 2]]}]
+      [else ()]]]]
+
+# ── the runner ───────────────────────────────────────────────────────────────
+#
+# Every result is {timing: {...}} | {err: MSG} | {none: true}, mirroring the
+# Python's (timing, err) pair plus its distinct "no output" case.
+
+[?def run-timeout-ms scope=public impure ()
+  [* [$env:var-int 'CX_BENCH_TIMEOUT' 600] 1000]]
+
+[?def proc scope=public impure ($argv $cwd $env-overlay $timeout-ms)
+  [?fallback
+    [$process:run $argv cwd=$cwd env=$env-overlay timeout-ms=$timeout-ms]
+    [recover-with [proc-result exit-code=127 stdout='' stderr='spawn failed']]]]
+
+# run-v: the V baseline compiles bench_time.v first, with the same cflags the
+# Python passed, then runs the produced binary.
+[?def run-v scope=public impure ()
+  [?let [= $c [$proc ('v', '-cflags', '-Os -DNDEBUG -DNO_DEBUGGING -fwrapv',
+                      '-o', V-BIN, 'vcx/bench/bench_time.v')
+                null null BUILD-TIMEOUT-MS]]
+    [?if [not [= $c@exit-code 0]]
+      [then {err: [$cat ('v compile failed: ',
+                         [$head-chars [$string $c@stderr] 200])]}]
+      [else
+        [?let [= $r [$proc (V-BIN) null null [$run-timeout-ms]]]
+          [?if [not [= $r@exit-code 0]]
+            [then {err: [$cat ('bench failed: ',
+                               [$head-chars [$string $r@stderr] 200])]}]
+            [else
+              [?let [= $t [$parse-output [$string $r@stdout]]]
+                [?if [$present $t] [then {timing: $t}] [else {none: true}]]]]]]]]]]
+
+[?def run-other scope=public impure ($cfg $verbose)
+  [?let [= $cwd [?else [$map:get $cfg 'cwd'] null]]
+        [= $envo [?else [$map:get $cfg 'env'] null]]
+        [= $build [?else [$map:get $cfg 'build'] null]]
+        [= $bres [?if [= $build null]
+                   [then [proc-result exit-code=0 stdout='' stderr='']]
+                   [else [$proc $build $cwd $envo BUILD-TIMEOUT-MS]]]]
+    [?if [not [= $bres@exit-code 0]]
+      [then {err: [$cat ('build failed: ',
+                         [$head-chars [$string $bres@stderr] 300])]}]
+      [else
+        [?let [= $r [$proc [?else [$map:get $cfg 'run'] ()] $cwd $envo [$run-timeout-ms]]]
+              [= $_e [?if [and $verbose [not [= [$string $r@stderr] '']]]
+                       [then [$cry [$cat ('  [stderr] ',
+                                          [$head-chars [$string $r@stderr] 200])]]]
+                       [else ()]]]
+          [?if [not [= $r@exit-code 0]]
+            [then {err: [$cat ('run failed (rc=', [$string $r@exit-code], '): ',
+                               [$head-chars [$string $r@stderr] 300])]}]
+            [else
+              [?let [= $t [$parse-output [$string $r@stdout]]]
+                [?if [$present $t] [then {timing: $t}] [else {none: true}]]]]]]]]]]
+
+[?def run-bench scope=public impure ($name $verbose)
+  [?if [= $name 'V']
+    [then [$run-v]]
+    [else
+      [?let [= $cfg [?else [$map:get BENCH-CMDS $name] ()]]
+        [?if [not [$present $cfg]]
+          [then {none: true}]
+          [else [$run-other $cfg $verbose]]]]]]]
+
+# ── table rendering ──────────────────────────────────────────────────────────
+# Column widths and the single-space gutters are the Python's COL dict.
+
+[?const W-NAME 12] [?const W-TIER 18] [?const W-FFI 16] [?const W-PTR 34]
+[?const W-DEC 28]  [?const W-PARSE 10] [?const W-PX 6]
+[?const W-STREAM 10] [?const W-SX 6]
+
+[?def row scope=public ($name $tier $ffi $ptr $dec $parse $px $stream $sx)
+  [$strings:join ([$rpad $name W-NAME], [$rpad $tier W-TIER], [$rpad $ffi W-FFI],
+                  [$rpad $ptr W-PTR], [$rpad $dec W-DEC], [$lpad $parse W-PARSE],
+                  [$lpad $px W-PX], [$lpad $stream W-STREAM], [$lpad $sx W-SX])
+    ' ']]
+
+[?def header-line scope=public ()
+  [$row 'Language' 'Tier' 'FFI' 'Pointer → bytes' 'Decoder'
+        'parse' 'vs V' 'stream' 'vs V']]
+
+# timing-of: the parse/stream pair for a name, or null/null when the binding
+# did not report.
+[?def timing-of scope=public ($results $name $key)
+  [?let [= $r [?else [$map:get $results $name] ()]]
+    [?if [$present $r] [then [?else [$map:get $r $key] null] ] [else null]]]]
+
+[?def render-table scope=public ($results)
+  [?let [= $hdr [$header-line]]
+        [= $sep [$strings:repeat '─' [$strings:length $hdr]]]
+        [= $vp [$timing-of $results 'V' 'parse']]
+        [= $vs [$timing-of $results 'V' 'stream']]
+        [= $body [?for [in $l LANGS]
+                   [yield
+                     [?let [= $name [$string [?else [$map:get $l 'name'] '']]]
+                           [= $p [$timing-of $results $name 'parse']]
+                           [= $s [$timing-of $results $name 'stream']]
+                       [$row $name
+                             [$string [?else [$map:get $l 'tier'] '']]
+                             [$string [?else [$map:get $l 'ffi'] '']]
+                             [$string [?else [$map:get $l 'ptr'] '']]
+                             [$string [?else [$map:get $l 'decoder'] '']]
+                             [$fmt-ms $p] [$fmt-x [$ratio $p $vp]]
+                             [$fmt-ms $s] [$fmt-x [$ratio $s $vs]]]]]]]
+    [$strings:join ([$strings:join ($sep, $hdr, $sep) '\n'],
+                    [$strings:join $body '\n'],
+                    $sep)
+      '\n']]]
+
+# ── argv ─────────────────────────────────────────────────────────────────────
+# Scanned by hand, exactly as the Python did: positional filters, one boolean
+# flag, and a loud refusal for anything else flag-shaped. $env:argv[0] is the
+# resource, so the program arguments start at index 2.
+
+[?def prog-args scope=public impure ()
+  [?let [= $argv [$env:argv]]
+    [?if [> [$count $argv] 1]
+      [then [?for [in $i [$range 2 [$count $argv]]] [yield [$string [$nth $argv $i]]]]]
+      [else ()]]]]
+
+[?def is-flag scope=public ($a) [$strings:starts-with $a '-']]
+[?def is-verbose-flag scope=public ($a) [or [= $a '--verbose'] [= $a '-v']]]
+
+# ── main ─────────────────────────────────────────────────────────────────────
+
+# `1e9`, not `1000000000.0` — see the fmt-x note: the bare decimal literal
+# would make this a 19-fraction-digit decimal instead of a float.
+[?def elapsed-s scope=public impure ($t0) [/ [- [$time:monotonic-now] $t0] 1e9]]
+
+[?def report-one scope=public impure ($name $verbose)
+  [?let [= $_p [$io:write-string [$env:stdout]
+                 [$cat ('  benchmarking ', [$rpad $name W-NAME], ' ... ')]]]
+        [= $_f [$io:flush [$env:stdout]]]
+        [= $t0 [$time:monotonic-now]]
+        [= $res [$run-bench $name $verbose]]
+        [= $el [$elapsed-s $t0]]
+    [?if [$map:contains $res 'err']
+      [then [?do [$say [$cat ('ERROR (', [$fixed $el 1], 's): ',
+                              [$string [?else [$map:get $res 'err'] '']])]]
+                 ()]]
+      [else [?if [$map:contains $res 'none']
+        [then [?do [$say [$cat ('no output (', [$fixed $el 1], 's)')]] ()]]
+        [else
+          [?let [= $t [?else [$map:get $res 'timing'] {}]]
+                [= $p [?else [$map:get $t 'parse'] 0]]
+                [= $s [?else [$map:get $t 'stream'] 0]]
+                [= $sfx [?if $verbose
+                          [then [$cat ('  (', [$fixed $el 1], 's)')]] [else '']]]
+                [= $_o [$say [$cat ('parse=', [$fixed $p 2], 'ms  stream=',
+                                    [$fixed $s 2], 'ms', $sfx)]]]
+            $t]]]]]]]
+
+[?def selected scope=public ($only $name)
+  [?if [not [$present $only]]
+    [then true]
+    [else [$present [?for [in $o $only]
+                      [where [= [$strings:lower $o] [$strings:lower $name]]]
+                      [yield true]]]]]]
+
+# collect: fold the per-binding results into {NAME: {parse, stream}}, skipping
+# the ones that did not report — `timing-of` then answers null for them, which
+# is exactly the Python's `results.get(name) -> None`.
+[?def collect scope=public impure ($only $verbose $i $acc)
+  [?if [> $i [$count LANGS]]
+    [then $acc]
+    [else
+      [?let [= $name [$string [?else [$map:get [$nth LANGS $i] 'name'] '']]]
+            [= $acc2 [?if [not [$selected $only $name]]
+                       [then $acc]
+                       [else
+                         [?let [= $t [$report-one $name $verbose]]
+                           [?if [$present $t]
+                             [then [$map:put $acc $name $t]]
+                             [else $acc]]]]]]
+        [$collect $only $verbose [+ $i 1] $acc2]]]]]
+
+[?let
+  [= $args [$prog-args]]
+  [= $verbose [$present [?for [in $a $args] [where [$is-verbose-flag $a]] [yield true]]]]
+  [= $unknown [?for [in $a $args]
+                [where [and [$is-flag $a] [not [$is-verbose-flag $a]]]]
+                [yield $a]]]
+  [= $_refuse [?if [$present $unknown]
+    [then ([$cry [$cat ('bench_report.cx: unknown flag(s) ',
+                        [$strings:join $unknown ', '],
+                        ' — filters are positional (e.g. `bench_report.cx python go rust`); ',
+                        'the only flag is --verbose/-v')]],
+           [$env:exit 1])]
+    [else ()]]]
+  [= $only [?for [in $a $args] [where [not [$is-flag $a]]] [yield $a]]]
+
+  [= $fixture [$env:var-or-default 'CX_BENCH_FIXTURE' 'bench_medium.cx']]
+  [= $fixture-path [$cat ('fixtures/bench/', $fixture)]]
+  [= $fixture-size [?fallback [$io:size $fixture-path] [recover-with 0]]]
+  [= $_h1 [$say 'CX Language Binding Report — Implementation × Performance']]
+  [= $_h2 [$say [$cat ('Fixture: ', $fixture, '  (', [$grouped $fixture-size],
+                       ' bytes)  |  n=100, warmup=20')]]]
+  [= $_h3 [$say '']]
+
+  [= $results [$collect $only $verbose 1 {}]]
+
+  [= $_b1 [$say '']]
+  [= $_tb [$say [$render-table $results]]]
+  [= $_b2 [$say '']]
+  [$env:exit 0]]

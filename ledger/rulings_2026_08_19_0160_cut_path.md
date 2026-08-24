@@ -39,6 +39,32 @@ Opus-bulk-impl model policy for this leg). Order:
    mirror exposure of ORIEL stays a SEPARATE owner allowlist decision —
    not part of this session's remit.
 
+### R9.3 SUPERSEDED (owner, 2026-08-21): Opus 5 through release
+
+Owner directive, replacing R9.3's model provision verbatim: **"we'll use
+Opus 5 through release unless there's a good reason not to."** The remaining
+cut path — every item 1–4 above, plus #914 (TI-1) and anything else landing
+before the tag — runs in **Opus 5**. The single-dedicated-session and
+ordering provisions of R9.3 are unaffected; only the model changes.
+
+Recorded because R9.3 was an explicit owner-ruled exception to the
+Opus-bulk-impl policy, so setting it aside needs to be equally explicit and
+equally findable. Provenance for this session, stated plainly: ASP-3 (#909),
+DGF-1 (#912), TA-1 (#911), D913-1 + D913-1a and the EDL-1 gate (#913) all
+landed under **Fable 5**; the TI-1 ruling (#914,
+`ledger/rulings_2026_08_21_table_image.md`) and everything after it are
+**Opus 5** — the switch happened mid-session, which the standing policy
+otherwise forbids, and is on the record here rather than left implicit.
+
+"Unless there's a good reason not to" named one standing carve-out — the
+**vgc / GC-soundness deep-debugging lineage** (#57/#58/#63/#145), Fable-5-only
+on recorded evidence. Owner, same day: **the vgc work is DEFERRED past
+v0.16.0.** So the carve-out is DORMANT for this release, not competing with
+the directive: no vgc item is on the cut path, and **Opus 5 is unconditional
+through the tag**. The Fable-5 evidence for that lineage is not withdrawn — it
+simply has nothing to apply to before v0.16.0, and revives whenever the vgc
+work is scheduled (a leg wanting Fable back asks for it by name, then).
+
 Out of scope for the session: #804 (post-cut), #834 (linux, upstream),
 anything on main.
 

@@ -1,0 +1,124 @@
+# Reference: the CX standard library — v{{VERSION}}
+
+> **GENERATED.** Source: `docs-src/llm/reference-stdlib.md.tmpl` + the module
+> sources and the conformance corpus. The catalogs below are projected from
+> each module's own `[module-doc]`, so a bundled module cannot be missing
+> from this page. Read `primer.md` first.
+
+## Importing
+
+`[?lib 'cx-stdlib/strings']` binds the module under its own name.
+`[?lib 'cx-stdlib/strings' as=str]` renames it. `[?lib 'cx-x/tools' as=tools]`
+imports from the experimental tier, and says so in the import line.
+
+Two tiers:
+
+* **`cx-stdlib/…`** — the frozen standard set. Stable surface.
+* **`cx-x/…`** — experimental. Bundled and conformance-gated, but exempt from
+  the stability promise. If you are writing code meant to last, prefer the
+  standard tier.
+
+A call is `[$module:fn args…]`. The `$` is not optional stylistically — it is
+the assertion that this is a call rather than an element you are building
+(see the anti-patterns in `primer.md`).
+
+{{EXAMPLE:program-lib-004-as-alias block}}
+
+## Standard tier — `cx-stdlib/<name>`
+
+| Module | Scope |
+|---|---|
+{{MODULES:stdlib}}
+
+## Experimental tier — `cx-x/<name>`
+
+| Module | Scope |
+|---|---|
+{{MODULES:x}}
+
+## The packs that need a capability
+
+Pure modules (`strings`, `math`, `map`, `array`, `fp`, `json`, `re`, `path`,
+`format`, `bytes`, `url`, `mime`, …) need no grant. The effectful ones name
+their capability at the point of the effect, so you discover the requirement
+by running rather than by reading:
+
+| Pack | Capability | Grant |
+|---|---|---|
+| `io` (files, dirs) | read / write | `--allow-read`, `--allow-write` |
+| `net`, `http` | net | `--allow-net[=host[:port]]` |
+| `env` (`var`, `vars`) | env | `--allow-env` |
+| `time` (now, clocks) | clock | `--allow-clock` |
+| `random`, `uuid` | random | `--allow-random` |
+| `process` | subprocess | `--allow-subprocess` |
+| `cx` (`[?eval]`) | eval | `--allow-eval` |
+| secret declassification | secret-reveal | `--allow-all` |
+
+`env:argv` and `env:parse-args` are **ungated** — reading your own arguments
+is not an effect.
+
+{{EXAMPLE:env-001-var-cap-denied block}}
+
+## The modules worth knowing first
+
+### `strings` — UTF-8, codepoint-positioned
+
+{{EXAMPLE:strings-004-length-char block}}
+
+Indexing, length, and slicing count codepoints, and case folding follows the
+Unicode tables — so this is not the answer a byte-oriented library gives:
+
+{{EXAMPLE:strings-003-upper-sharp-s block}}
+
+For byte-level work use `bytes`; for patterns use `re`.
+
+### `re` — RE2, and what that excludes
+
+`re` is RE2-backed: linear time, no backtracking, and therefore **no
+lookaround and no backreferences**. Those are refused at compile time, not
+silently mis-executed — which matters when you are porting a PCRE pattern.
+
+{{EXAMPLE:re-003-compile-backreference-unsupported block}}
+
+{{EXAMPLE:re-002-compile-then-matches block}}
+
+### `map` and `array` — absence is a value, not a crash
+
+A missing key reads as empty rather than raising; a strict read is a separate
+call. This is the same absence discipline as the rest of the language.
+
+{{EXAMPLE:map-002-get-absent-is-empty block}}
+
+{{EXAMPLE:array-003-get-out-of-range-refuses block}}
+
+### `fp` — the functional layer
+
+`map`, `filter`, `fold`, `flat-map` over sequences, and the absence-aware
+variants that make a pipeline total rather than partial.
+
+{{EXAMPLE:fp-003-map-list block}}
+
+### `json` — parse and emit
+
+{{EXAMPLE:json-001-parse-int block}}
+
+### `cx` — CX reflecting on CX
+
+`[$cx:parse]`, `[$cx:serialize]`, `[$cx:ast]`, `[$cx:from-format]`. This is
+how tooling written in CX reads CX — including the generator that produced
+this file.
+
+{{EXAMPLE:cx-001-parse-directive-navigable block}}
+
+### `time` — typed instants, refused nonsense
+
+{{EXAMPLE:time-003-date-invalid-component block}}
+
+## Finding the rest
+
+Per-function documentation is co-located with the implementation as
+`[fn-doc]` blocks in `stdlib/<module>.cx`, gated for presence, purity, and
+example-backing by `make guide-check`. The rendered form is the "Standard
+library" section of the guide. Each module's full conformance matrix is
+`conformance/stdlib/<module>.cxd` — the honest answer to "what does this
+function do at the edges".

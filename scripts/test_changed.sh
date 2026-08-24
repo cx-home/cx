@@ -62,6 +62,11 @@ lane_globs() {
     directive-docs-check)          echo 'vcx/* docs-src/* spec/*' ;;
     verify-doc-blocks)             echo 'docs-src/* spec/* vcx/* stdlib/*' ;;
     verify-playground-examples)    echo 'docs-src/* examples/* vcx/*' ;;
+    # docs-check (#938) regenerates the LLM layer from the templates, the
+    # conformance corpus, the spec's directive registry, the stdlib bundle's
+    # [module-doc]s and the binary's own --help — so any of those moving can
+    # move its output. VERSION too: the primer's heading derives from it.
+    docs-check)                    echo 'docs-src/* docs/llm/* scripts/gen_docs/* conformance/* spec/* stdlib/* x/* vcx/* VERSION' ;;
     ring-import-gate)              echo 'vcx/* scripts/ring_import_gate*' ;;
     gates-manifest-gate)           echo 'conformance/* scripts/gates_manifest_gate*' ;;
     ring-tag-gate)                 echo 'conformance/* scripts/*' ;;

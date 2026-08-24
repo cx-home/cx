@@ -392,6 +392,12 @@ generic `application/octet-stream` for binary wire formats.
 | TOML | `application/toml` |
 | CSV | `text/csv` |
 
+`text/cx` is REFUSED as a spelling — CX on the wire is always
+`application/*` (stream-13 ruling L61, extracted here from the
+grammar/lexicon review at its archival): a `text/*` media type invites
+charset and line-ending normalization by intermediaries, and a normalized
+byte stream corrupts a content address.
+
 CSRP (`cxstore-remote-protocol.md`) uses `application/cx-astbin`,
 `application/cx` (the canonical-text alternative), and
 `application/cx-frame-stream` for its request/response bodies and is

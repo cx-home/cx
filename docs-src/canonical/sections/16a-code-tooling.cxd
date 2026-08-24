@@ -25,8 +25,9 @@
          it. Without `--data`, the program's first data root binds
          implicitly; a document-driven program run without any input
          raises the loud unbound-`$doc` error rather than silently
-         matching nothing. The four `examples/` tours run exactly
-         this way (`cx examples/code-tour.cx
+         matching nothing. The four document-driven `examples/`
+         programs (code-tour, cxpath-tour, match-multi, modify-crud)
+         run exactly this way (`cx examples/code-tour.cx
          --data=examples/code-tour.input.cx`)."""]
     [body
       """Unknown flags on this surface are **hard usage errors**
@@ -42,10 +43,10 @@
          (denied effect points raise the catchable capability
          error `CXER0271`):"""]
     [example lang=sh
-      """$ cx report.cx --data=orders.cx       # orders.cx binds as $doc
-         $ cx build_site.cx --allow-read --allow-write
-         $ cx serve.cx --allow-net
-         $ cx pipeline.cx --allow-common       # the common working set"""]
+      """$ cx --data=orders.cx report.cx       # orders.cx binds as $doc
+         $ cx --allow-read --allow-write build_site.cx
+         $ cx --allow-net serve.cx
+         $ cx --allow-common pipeline.cx       # the common working set"""]
     [body
       """The capability set: `--allow-read`, `--allow-write`,
          `--allow-net`, `--allow-env`, `--allow-clock`,
@@ -83,20 +84,23 @@
 
     [child id=lint-catalog n='16a.3.1' title='Rule catalog'
       [body
-        """Five lint checks are currently shipped:"""]
+        """Seven lint checks are currently shipped:"""]
 
       [table
         [tr [th 'id'] [th 'severity'] [th 'name']]
         [tr [td 'CX-L001'] [td 'info'] [td 'comment-style consistency']]
-        [tr [td 'CX-L002'] [td 'info'] [td 'type-annotation form consistency']]
         [tr [td 'CX-L003'] [td 'warn'] [td 'unused anchor']]
         [tr [td 'CX-L004'] [td 'error'] [td 'dangling alias / merge']]
-        [tr [td 'CX-L005'] [td 'warn'] [td 'deprecated v3.3→v3.4 pattern']]]
+        [tr [td 'CX-L005'] [td 'warn'] [td 'deprecated v3.3→v3.4 pattern']]
+        [tr [td 'CX-L006'] [td 'info'] [td 'flatten nested single-binding [?let] staircases']]
+        [tr [td 'CX-L007'] [td 'warn'] [td 'aggregation over a simple field accessor']]
+        [tr [td 'CX-L008'] [td 'warn'] [td 'declared shape flow across [?pipe] stages']]]
 
       [body
         """Each check has a normative ID, a default severity, and a
            documented rationale. Suppression directives and CLI flags accept the ID
-           verbatim."""]]
+           verbatim. `CX-L002` (type-annotation form consistency) was
+           removed; its ID is retired, never reused."""]]
 
     [child id=lint-severity n='16a.3.2' title='Severity levels'
       [body
@@ -122,8 +126,8 @@
       [example lang=cx
         """[# .cxlint.cx — repo-level lint config #]
            [lint
-             [# ignore unused anchors in the legacy templates dir #]
-             [disable check=CX-L003 path='legacy/**']
+             [# don't warn on unused anchors in this repo #]
+             [disable check=CX-L003]
 
              [# v3.3 transition warnings only as info, we'll fix gradually #]
              [severity check=CX-L005 level=info]
@@ -132,9 +136,10 @@
              [severity check=CX-L004 level=warn]]"""]
 
       [body
-        """Path globs follow `.gitignore` syntax. `cx lint --config
-           PATH` overrides auto-discovery. Missing config file is
-           not an error — defaults apply."""]]
+        """A `[disable …]` applies repo-wide — there is no per-path
+           scoping. `cx lint --config=PATH` overrides auto-discovery,
+           and `--no-config` skips config discovery entirely. Missing
+           config file is not an error — defaults apply."""]]
 
     [child id=lint-suppress n='16a.3.4' title='Per-element suppression'
       [body
@@ -187,9 +192,20 @@
          code-diagram FILE` renders a locked sequence-diagram view
          of a program; `cx code-tree FILE` renders the evaluation
          tree. The playground's Diagram toggle uses the same
-         renderers via WASM (see [[playground]])."""]
+         renderers via WASM (see [[playground]]).
+
+         `mermaid` is pure text and needs nothing. The `svg` and
+         `png` formats render through graphviz `dot`, which is a
+         subprocess — so they require the ordinary
+         `--allow-subprocess` grant, exactly like any other effect
+         in CX. Without it the command refuses (`CXER0271`) rather
+         than quietly handing back a diagram you didn't ask for.
+         With the grant but no `dot` installed you get the
+         dot-less envelope: a 1×1 placeholder that still carries
+         the program source, so it still reverse-parses."""]
     [example lang=sh
       """$ cx diagram config.cx --format=mermaid
+         $ cx diagram config.cx --format=svg --allow-subprocess -o config.svg
          $ cx code-diagram pipeline.cx
          $ cx code-tree pipeline.cx"""]]
 
@@ -214,9 +230,10 @@
       [example lang=sh
         """$ cx broken.cx
            error: cx-err:CXER0100: parse: infix attribute comparison
-           `[@active=…]` in a CXPath predicate is retired — write the
-           prefix operator form `[= $_@active …]` (code.md §5.5.2)
-           at line 3:20"""]]
+           `[@active=…]` in a CXPath predicate is retired —
+           predicates are homoiconic CX code; write the prefix
+           operator form `[= $_@active …]` (code.md §5.5.2)
+           at line 2:8"""]]
 
     [child id=diag-explain n='16a.5.2' title='Visualize the program'
       [body
@@ -230,7 +247,7 @@
       [example lang=sh
         """$ cx code-tree pipeline.cx
            $ cx code-diagram workers.cx
-           $ cx --ast pipeline.cx | jq '.items[0]'"""]]
+           $ cx --ast pipeline.cx | jq '.elements[0]'"""]]
 
     [child id=diag-lsp n='16a.5.3' title='LSP-driven debugging'
       [body
@@ -307,25 +324,27 @@
 
   [child id=profiling n='16a.6' title='Profiling and benchmarking'
     [intro
-      """CX ships a standard bench harness for the V core
-         (`vcx/tests/runners/code_*_bench.v`) and per-binding bench
-         scripts that exercise the FFI path. The bench numbers feed
-         into the regression-tracking dashboard and the
-         [`spec/governance.md §6`](../../spec/governance.md) SLA
-         table."""]
+      """CX ships a standard bench harness for the V core (runners
+         under `vcx/tests/runners/`) and per-binding bench scripts
+         that exercise the FFI path. Binding-level performance budgets
+         are governed by the performance-SLA policy in
+         [`spec/03-approved/process/governance.md §6`](../../spec/03-approved/process/governance.md)."""]
 
-    [child id=profile-eval n='16a.6.1' title='Per-directive profiling'
+    [child id=profile-eval n='16a.6.1' title='In-program profiling'
       [body
-        """A pprof-compatible per-directive profiler is
-           **planned**; no profiling flag ships yet. Today the
-           closest tools are the structured error positions, the
-           `cx code-tree` view, and the V-native bench harness
-           below — see [[diag-trace]]."""]]
+        """No profiling CLI flag ships yet — but the in-program
+           profiler does: the bundled `cx-stdlib/prof` pack covers
+           timing reads, named counters, HDR histograms, structured
+           trace events, memory snapshots, and flamegraph emission,
+           callable from any program (timing reads consult the host
+           clock, so they need `--allow-clock`). For source-position
+           debugging see [[diag-trace]]; for structure,
+           `cx code-tree`."""]]
 
     [child id=profile-bench n='16a.6.2' title='Bench harness'
       [body
-        """The bench harness is V-native; runners live at
-           `vcx/tests/runners/code_*_bench.v`. Run individually:"""]
+        """The bench harness is V-native; runners live under
+           `vcx/tests/runners/`. Run individually:"""]
 
       [example lang=sh
         """$ make bench-code-streaming   # streaming evaluator
@@ -333,53 +352,66 @@
            $ make bench-code-http        # http client perf
            $ make bench-code-soak        # long-running soak
            $ make bench-code-cancel      # cancellation responsiveness
-           $ make bench-code-gates       # all gate-tracked benches
+           $ make bench-code-gates       # the three gate-tracked perf benches
 
            $ make bench-streaming        # data-streaming bench
            $ make bench-eval             # general eval cost
-           $ make bench-json             # JSON-shape workload"""]
+           $ make bench-json             # bench-report JSON (report generator, not a workload)"""]
 
       [body
-        """Each bench prints a one-line summary
-           (`MB/s`, ops/sec, p50/p95/p99 latency depending on
-           dimension) plus a JSON sidecar that the regression
-           dashboard consumes."""]]
+        """Each bench prints a **multi-line human summary** (MB/s,
+           ops/sec, or latency percentiles, depending on the
+           dimension). The machine-readable JSON is produced
+           downstream: `make bench-json` runs the streaming bench and
+           parses its stdout into a stable JSON report
+           (`scripts/run_bench_json.cx`), and
+           `make bench-compare BASELINE=a.json CURRENT=b.json`
+           diffs two such reports for regressions.
+           `make bench-code-gates` chains the three gate-tracked
+           benches (pattern-compile, streaming, http)."""]]
 
     [child id=profile-per-binding n='16a.6.3' title='Per-binding bench'
       [body
-        """The per-binding bench shim is `bench_report.py`. It
-           drives every binding through a common harness and
-           prints comparative numbers."""]
+        """The per-binding bench shim is `bench_report.cx`. It drives
+           every binding through a common harness and prints
+           comparative numbers — per binding, the parse and stream
+           medians on the common fixture, then a comparative table.
+           Filters are **positional** binding names; the only flag is
+           `--verbose`/`-v`, and any other flag is a hard error (exit 1)
+           rather than a silent no-op:"""]
 
       [example lang=sh
-        """$ python3 bench_report.py --bindings python,go,rust
-           python  parse 1MB: 92ms   eval count(//x): 12ms
-           go      parse 1MB: 38ms   eval count(//x): 4ms
-           rust    parse 1MB: 31ms   eval count(//x): 3ms"""]
+        """$ cx --allow-read --allow-write --allow-subprocess \
+                --allow-clock --allow-env bench_report.cx python go rust
+           benchmarking python       ... parse=…ms  stream=…ms
+           benchmarking go           ... parse=…ms  stream=…ms
+           benchmarking rust         ... parse=…ms  stream=…ms"""]
 
       [note
-        """The Go shim has a known SIGSEGV at 1 MB+ inputs as of
-           2026-05. The fix is tracked. Python's decoder ceiling
-           (~90 ms at 1 MB, pure-Python floor) is architectural —
-           a C extension is a planned future candidate."""]]
+        """The Go shim's former crash on 1 MB+ inputs is fixed — the
+           FFI call path now locks its goroutine to an OS thread and
+           registers it with the CX runtime. Python's decoder ceiling
+           is architectural (a pure-Python floor); a C extension is a
+           planned future candidate."""]]
 
     [child id=profile-targets n='16a.6.4' title='Regression tracking'
       [body
-        """The bench numbers are tracked against
-           [`spec/governance.md §6`](../../spec/governance.md)
-           SLA targets. Current headline numbers:"""]
-
-      [list
-        [item """**Streaming evaluator** — 340 MB/s on the
-                JSON-shape workload (`bench_streaming_json.v`);
-                300 MB/s target met."""]
-        [item """**`cx diff` 1 MiB / 1% change** — < 50 ms."""]
-        [item """**`cx lint` 1 MiB / all checks** — < 50 ms."""]
-        [item """**`cx hash` 1 MiB** — < 30 ms (canonical-bytes +
-                SHA-256)."""]]
+        """Two tracking planes. The **binding-level budgets** —
+           `loads` and `select` latencies per input size — are
+           normative in
+           [`spec/03-approved/process/governance.md §6.1`](../../spec/03-approved/process/governance.md):
+           regressions beyond the threshold against a recorded
+           baseline fail CI (`make bench-compare`, default threshold
+           30%, `STRICT=1` for 10%). The **V-core streaming gate**
+           lives in
+           `vcx/tests/runners/code_streaming_throughput_bench.v`
+           with a 200 MB/s line — honest status: the gate is not yet
+           green (`[?for]` streaming sits at the ~200 MB/s line;
+           `[?map]` last measured 129.2 MB/s)."""]
 
       [body
-        """CI gates on these numbers via a percentile-aware
-           regression check: a single run > 1.5× the rolling
-           median is flagged; > 2× fails the build."""]]]
+        """`cx diff` (1 MiB, 1% change), `cx lint` (1 MiB, all
+           checks), and `cx hash` (1 MiB) are tracked as unofficial
+           interactive-latency targets; the governance SLA table does
+           not cover them."""]]]
 ]

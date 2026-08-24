@@ -1,6 +1,7 @@
 [# Section 18 — the CX store platform: content addressing, the embedded
-   workflow, git-porcelain and replication, the service tier, CSRP/gRPC
-   transports, security/encryption, the management console. Spec home:
+   workflow, git-porcelain and replication, the service tier, the XSP
+   store profile + gRPC-edge transports, security/encryption, the
+   management console. Spec home:
    the store spec (spec/03-approved/std-lib/store.md); operator docs:
    docs/dev/store-*.md (runtime-verified). Every command and output on
    this page was run against the branch-head binary before it landed
@@ -126,7 +127,7 @@
 [?let [= $s [$store:open 'file:///tmp/notes-store']]
   [$store:put-doc $s [note [text 'durable']]]]"""]
     [example lang=sh
-      """$ cx notes.cx --allow-read --allow-write"""]
+      """$ cx --allow-read --allow-write notes.cx"""]
     [body
       """Three habits worth forming from day one: open read paths
          read-only (`[$store:open-opts URL [map read-only='true']]` —
@@ -195,8 +196,8 @@
          **same** API, wire format, and content addressing move behind
          a purpose-built daemon: `cx store-serve` (also covered from
          the operator side in [[ops-store-daemon]]). It adds the
-         operational layer — auth, RBAC, tenancy, observability, DoS
-         fairness — and no storage smarts. The config is a CX document;
+         operational layer — XSP-AUTH grant-table authority, tenancy,
+         observability, DoS fairness — and no storage smarts. The config is a CX document;
          one daemon mounts many named stores, each mount any embedded
          substrate URL:"""]
     [example lang=cx
@@ -206,7 +207,7 @@
     [example lang=sh
       """$ cx store-serve --config svc.cx --allow-net=127.0.0.1:18971"""]
     [output
-      """cx store-serve: listening on tcp://127.0.0.1:18971 — 1 store(s): docs (mem://docs), 4 workers, auth OPEN — no providers configured, anonymous full access (configure [auth …] for production)"""]
+      """cx store-serve: listening on tcp://127.0.0.1:18971 — 1 store(s): docs (mem://docs), 4 workers, auth OPEN — no [xsp [grants …]] configured, anonymous full access (configure grants for production)"""]
     [body
       """Config validation is **attr-exact**: an unknown attribute is a
          startup error (`CXER1711`), never a silent drop. Liveness and
@@ -232,7 +233,7 @@ ready"""]
       [= $h [$store:put-doc $remote [doc [title 'over the wire']]]]
   [$store:get-doc $remote $h]]"""]
     [output
-      """$ cx wire.cx --allow-net=127.0.0.1:18971
+      """$ cx --allow-net=127.0.0.1:18971 wire.cx
 [doc [title 'over the wire']]"""]
     [body
       """Authority is XSP-AUTH, deny-by-default: a client presents a
@@ -247,7 +248,7 @@ ready"""]
     [body
       """Lifecycle: SIGTERM drains bounded and checkpoints every
          mounted store; SIGHUP hot-reloads the reloadable config
-         (auth, limits, observability, timeouts, TLS contents) with
+         sections (tls, timeouts, limits, observability) with
          validate-then-swap, all-or-nothing (`CXER1712` names any
          restart-required offender and refuses the whole reload).
          Prometheus metrics, optional OpenTelemetry tracing, structured
@@ -292,7 +293,7 @@ ready"""]
     [body
       """Store security is four independent fail-closed layers — host
          capabilities at the effect point ([[capabilities]]),
-         encryption at rest, service-tier RBAC/tenancy, and XAP-layer
+         encryption at rest, service-tier grants/tenancy, and XAP-layer
          authority when a store backs a XAP (see
          [[dist-entitlements]]). The layer this subsection teaches is
          encryption: open a store with an `encrypt-key-id` and every
@@ -308,7 +309,7 @@ ready"""]
       [= $h [$store:put-doc $s [secret-plan [step 'first']]]]
   [$store:get-doc $s $h]]"""]
     [output
-      """$ CX_STORE_KEK_tenant-a=<64 hex chars> cx sealed.cx --allow-read --allow-write --allow-env
+      """$ CX_STORE_KEK_tenant-a=<64 hex chars> cx --allow-read --allow-write --allow-env sealed.cx
 [secret-plan [step 'first']]"""]
     [body
       """Key material never lives in config files — the KEK arrives by
@@ -339,7 +340,7 @@ ready"""]
 [rotation-report objects=5 rewrapped=5 already-current=0 from=tenant-a to=tenant-b]
 cx store-rotate-kek: 5 object(s) now under `tenant-b` (5 re-wrapped) — verify reads, then destroy the old KEK `tenant-a`."""]
     [body
-      """Service-tier RBAC and tenancy sit above this: the tenant
+      """Service-tier grant authority and tenancy sit above this: the tenant
          boundary is **store-per-tenant**, so each tenant owns a
          separate dedup pool — a shared pool would let one tenant probe
          another's content by hash, and the design rejects that
@@ -355,10 +356,10 @@ cx store-rotate-kek: 5 object(s) now under `tenant-b` (5 re-wrapped) — verify 
          (`xap-store-console`) and is never embedded in the daemon. It
          is itself a XAP built from feature packages (the distribution
          system of the next section, eating its own dog food),
-         connecting to daemons over CSRP with role-scoped credentials —
-         so everything it can do is a public, RBAC-gated protocol op,
-         and the console doubles as proof the management API is
-         complete. The free tier covers connect, health, metrics,
+         connecting to daemons over the XSP store profile with a
+         DID-held credential — so everything it can do is a public,
+         grant-gated protocol op, and the console doubles as proof the
+         management API is complete. The free tier covers connect, health, metrics,
          status, browse, config reload, and maintenance (gc). Contract:
          the store management console spec
          (`spec/03-approved/misc/store_management_console.md`);

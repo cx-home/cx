@@ -13,7 +13,12 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TARGETS=()
 for arg in "$@"; do
  if [ -d "$arg" ]; then
- while IFS= read -r f; do TARGETS+=("$f"); done < <(find "$arg" -name "*.md" -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/_archive/*")
+ # .cxd sources carry the same [label](path) links in their prose bodies —
+ # the 2026-08-20 #826 verification found three dead repo paths this gate
+ # structurally could not see because it scanned *.md only. Example blocks
+ # rarely contain ](…) shapes and the path filter below drops non-paths,
+ # so the same extraction applies.
+ while IFS= read -r f; do TARGETS+=("$f"); done < <(find "$arg" \( -name "*.md" -o -name "*.cxd" \) -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/_archive/*")
  elif [ -f "$arg" ]; then
  TARGETS+=("$arg")
  fi
@@ -61,6 +66,11 @@ FAIL_DETAILS=()
 # phantoms respectively.
 for file in "${TARGETS[@]}"; do
  file_dir=$(dirname "$file")
+ # .cxd sources render into docs/guide/*.html — their relative links are
+ # authored for THAT location, so resolve them there, not at the source.
+ case "$file" in
+ *.cxd) file_dir="$ROOT/docs/guide" ;;
+ esac
  while IFS= read -r link; do
  # Strip any #anchor
  target="${link%%#*}"

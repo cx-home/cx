@@ -22,20 +22,33 @@ cd "$ROOT"
 
 PASS=0
 FAIL=0
+ROW=0
+# Per-ROW log files, kept for the whole run. The old single
+# /tmp/release-verify.log was OVERWRITTEN by every subsequent row, so a
+# mid-run failure's full output was destroyed by the rows after it — the
+# `make test` row failed twice across releases with its evidence already
+# clobbered by the time anyone looked (2026-08-22 and 2026-08-23).
+RVLOG_DIR="$(mktemp -d /tmp/release-verify.XXXXXX)"
+echo "release-verify: per-row logs in $RVLOG_DIR"
 section() {
  echo ""
  echo "── $1 ────────────────────────────────────────────────"
 }
 check() {
  local label="$1" cmd="$2"
+ ROW=$((ROW + 1))
+ local slug
+ slug="$(printf '%02d-%s' "$ROW" "$(echo "$label" | tr -cs 'a-zA-Z0-9' '-' | cut -c1-48)")"
+ local rowlog="$RVLOG_DIR/$slug.log"
  printf " %-60s " "$label"
- if eval "$cmd" > /tmp/release-verify.log 2>&1; then
+ if eval "$cmd" > "$rowlog" 2>&1; then
  echo "OK"
  PASS=$((PASS + 1))
  else
  echo "FAIL"
  FAIL=$((FAIL + 1))
- sed 's/^/ /' /tmp/release-verify.log | head -5
+ sed 's/^/ /' "$rowlog" | tail -15
+ echo "   full row log: $rowlog"
  fi
 }
 
@@ -43,7 +56,7 @@ section "Version consistency"
 check "VERSION file = $EXPECTED_VERSION" \
  "test \"\$(cat VERSION)\" = \"$EXPECTED_VERSION\""
 check "manifests + derived surfaces match VERSION" \
- "python3 scripts/check_version_consistency.py"
+ "vcx/target/cx --allow-read --allow-write scripts/check_version_consistency.cx"
 
 section "Working tree state"
 check "git working tree clean" \
@@ -77,9 +90,49 @@ check "make verify-doc-blocks" \
 check "make verify-doc-links" \
  "make -s verify-doc-links"
 
+section "LLM onboarding layer (#938)"
+# THE DRIFT GATE. `make docs-check` regenerates docs/llm/ in memory and fails
+# if either half moved:
+#   (a) any primer example's LIVE output no longer matches the conformance
+#       fixture it is drawn from — an example whose output changed without its
+#       fixture changing is exactly the "stale primer" this row exists to
+#       block, and it is caught by REPLAYING all ~100 cited fixtures, not by
+#       reading them;
+#   (b) the committed bytes differ from a fresh generation (prose, registry
+#       projection, module catalog, or `cx --help` moved).
+# A wrong example in an LLM primer poisons in-context learning, so the cut must
+# not be able to ship one. Fix by running `make docs` and committing the result.
+check "make docs-check (primer example freshness + no drift)" \
+ "make -s docs-check"
+# The `cx primer` door is only useful if the SHIPPED BINARY carries the current
+# text. docs-check proves the FILE is fresh; this proves the EMBED is, by
+# diffing the subcommand's stdout against the file it was embedded from. (The
+# stdout is byte-exact by design precisely so this row can exist.) Catches the
+# `make docs` without a following `make build-vcx`, which no other gate sees.
+check "cx primer == docs/llm/primer.md (embed is fresh)" \
+ "vcx/target/cx primer > /tmp/release-verify-primer.md && diff -q /tmp/release-verify-primer.md docs/llm/primer.md"
+# Presence of the published doors. Negative guards cannot see a REQUIRED file
+# going missing, and the whole value of these is that a fixed path answers.
+check "llms.txt + llms-full.txt + AGENTS.md present and non-empty" \
+ "test -s docs/llm/llms.txt && test -s docs/llm/llms-full.txt && test -s AGENTS.md && test -s CLAUDE.md"
+
+section "Release assets"
+# RULED: PGL-1 (#741) — the R2.2 blocking per-profile install gate runs HERE,
+# pre-tag, instead of first executing inside the cut itself. Proves item 1 of
+# #741; item 2 (installing from the PUBLISHED assets) still needs the cut.
+check "R2.2 per-profile install gate (4 tarballs, extract + probe)" \
+ "make -s release-profile-gate"
+
 section "Capability rubric"
+# The row's target is the readiness rubric FILE. A doc-curation text-replace
+# (365923b7) once rewrote the path literal into the prose phrase "the release
+# criteria" — grep then errored on three nonexistent files and the leading
+# `!` inverted that error into a VACUOUS PASS on every run since. The file
+# must exist (test -f) so a future move fails loud instead of vacuously
+# passing again; the grep pattern matches only a lone-⚠ status cell, not the
+# legend's tier column.
 check "no unresolved \"⚠\" in readiness rubric" \
- "! grep -E '^\\| .* \\| *⚠ \\|' the release criteria"
+ "test -f spec/03-approved/process/readiness-rubric.md && ! grep -E '^\\| .* \\| *⚠ \\|' spec/03-approved/process/readiness-rubric.md"
 
 echo ""
 echo "═══════════════════════════════════════════════════════════════"

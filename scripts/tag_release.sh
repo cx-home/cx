@@ -153,7 +153,7 @@ else
     note "stamping version to $VERSION (VERSION file + manifests via bump_version.sh)"
     scripts/bump_version.sh "$VERSION"
     note "verifying version consistency"
-    python3 scripts/check_version_consistency.py || fail "version inconsistent after bump"
+    vcx/target/cx --allow-read --allow-write scripts/check_version_consistency.cx || fail "version inconsistent after bump"
 fi
 
 # -- Step 3: commit the bump, THEN rebuild (#666) ---------------------

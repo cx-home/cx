@@ -54,7 +54,7 @@
 #
 # Run from the repo root:
 #   MANIFEST=scripts/consolidation/store.files OUT=/tmp/x.v AREA=store \
-#     vcx/target/cx scripts/consolidate_tests.cx --allow-read --allow-write --allow-env
+#     vcx/target/cx --allow-read --allow-write --allow-env scripts/consolidate_tests.cx
 #
 # Output: the umbrella file at OUT, plus one [consolidate ...] stats
 # element on stdout.

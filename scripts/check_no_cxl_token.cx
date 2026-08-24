@@ -1,0 +1,108 @@
+# scripts/check_no_cxl_token.cx — the NO-STALE-VERSION gate: the retired
+# language-name token (spelled C·X·L) must not reappear in the working corpus.
+#
+# CX is one language named just "CX" (spec/core/code.md). The three-letter
+# name was retired terminology; it must not describe the current language
+# anywhere in the doc/example/tooling corpus. This guard fails the suite if
+# the bare retired token reappears.
+#
+# Token-aware, NOT a raw grep (mirrors scripts/check_no_legacy_try.cx): we
+# match the standalone retired word only — these LIVE, CURRENT identifiers
+# are explicitly NOT matched because they are not the retired language name:
+#   - `cxlib`     — the C library / shared-object name (current)
+#   - `cxl:`      — the internal parser/eval error prefix (current)
+#   - the lint-rule code namespace (the retired token + S, e.g. …S005, current)
+#   - the C# namespace in lang/_archived (already excluded)
+# RE2 has no lookaround, so the Python original's
+# (?<![A-Za-z])TOKEN(?![A-Za-z0-9:]) is the equivalent (?m) alternation
+# (^|[^A-Za-z])TOKEN([^A-Za-z0-9:]|$), applied per line.
+#
+# The retired token itself is CONSTRUCTED at runtime ($cxl below) so this
+# gate's own source never carries it — the gate passes its own scan with no
+# self-allowlist entry.
+#
+# Scope: conformance/ + docs-src/ + examples/ + scripts/ + tooling/ +
+# top-level README/ROADMAP/CONTRIBUTING/RELEASE_NOTES markdown. The spec/
+# tree is owned by the NO-LEGACY-SPEC audit (tombstones + retirement prose
+# live there legitimately) and the historical _archive*/_archived/
+# _gate_evidence/CHANGELOG records are excluded — those are immutable
+# historical records, not current-language claims.
+#
+# Allowlist: whole files that legitimately REFERENCE the retired token as
+# history (none required — the corpus is clean).
+#
+# Exit 0 clean; 1 with hits. Run from the repo root:
+#   vcx/target/cx --allow-read --allow-write scripts/check_no_cxl_token.cx
+# (or: make check-no-cxl-token)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/fp'      as=fp]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def matched scope=public ($m) [> [?else $m@start -1] -1]]
+
+[?let
+  # The retired token, constructed so it never appears literally here.
+  [= $cxl [$cat ("CX", "L")]]
+
+  [= $scan-dirs ("conformance", "docs-src", "examples", "scripts", "tooling")]
+  # Top-level files also scanned (current-facing project prose).
+  [= $scan-files ("README.md", "ROADMAP.md", "CONTRIBUTING.md", "RELEASE_NOTES_v0.8.0.md")]
+  [= $exclude-substr ("/_archive/", "/_gate_evidence/", "/_worktree_salvage/",
+                      "/lang/_archived/")]
+  [= $text-exts (".cx", ".cxd", ".cxs", ".md", ".txt", ".py", ".go", ".rs",
+                 ".v", ".ts", ".js", ".json", ".yaml", ".yml", ".toml", ".sh",
+                 ".scm", ".html", ".vim", ".css")]
+
+  # Bare retired word: not preceded by a letter (so `…cxlib` inside a longer
+  # token is safe), not followed by a letter/digit (`cxlib`), `S` (lint
+  # codes), or `:` (the error prefix).
+  [= $cxl-rx [$re:compile [$cat ("(?m)(?:^|[^A-Za-z])", $cxl, "(?:[^A-Za-z0-9:]|$)")]]]
+
+  # Whole files allowed to REFERENCE the retired token (historical records).
+  # Empty — the corpus is clean; add a repo-relative path with a rationale.
+  [= $allow-files ()]
+
+  [= $dir-files
+    [$fp:flat-map $scan-dirs [?fn ($d)
+      [$fp:flat-map $text-exts [?fn ($e)
+        [?for [in $p [$io:glob [$cat ($d, "/**/*", $e)]]]
+          [where [= [$count [?for [in $x $exclude-substr]
+                      [where [$strings:contains [$cat ("/", $p)] $x]]
+                      [yield 1]]] 0]]
+          [where [= [$count [?for [in $af $allow-files]
+                      [where [= $af $p]] [yield 1]]] 0]]
+          [yield $p]]]]]]]
+  [= $top-files
+    [?for [in $p $scan-files] [where [$io:is-file $p]] [yield $p]]]
+  [= $files [$fp:flat-map ($dir-files, $top-files) [?fn ($x) $x]]]
+
+  [= $hits
+    [$fp:flat-map $files [?fn ($f)
+      [?let [= $text [?fallback [$io:read-file $f] [recover-with ""]]]
+        [?if [not [$matched [$re:find $cxl-rx $text]]]
+          [then ()]
+          [else
+            [?let [= $lines [$strings:split-lines $text]]
+              [?for [in $i [$range 1 [$count $lines]]]
+                [= $line $lines[$i]]
+                [where [$matched [$re:find $cxl-rx $line]]]
+                [yield [$cat ($f, ":", [$string $i], ": ", [$strings:trim-end $line])]]]]]]]]]]
+
+  [?if [> [$count $hits] 0]
+    [then
+      [?let
+        [= $_h [$say [$cat ("NO-STALE-VERSION gate FAILED — retired language name `", $cxl, "` found:")]]]
+        [= $_l [?for [in $h $hits] [yield [$say [$cat ("  ", $h)]]]]]
+        [= $_t [$say [$cat ([$string [$count $hits]],
+                            " hit(s). CX is one language named `CX` ",
+                            "(spec/core/code.md). `", $cxl, "` is retired terminology — use `CX`. ",
+                            "Live identifiers cxlib / cxl: / ", $cxl, "S / ", $cxl, "ib are not matched.")]]]
+        [$env:exit 1]]]
+    [else
+      [?let [= $_ok [$say [$cat ("NO-STALE-VERSION gate OK — no retired `", $cxl, "` language name in corpus.")]]]
+        [$env:exit 0]]]]]

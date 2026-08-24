@@ -22,8 +22,8 @@
       """[?def refund-order impure ($order-id $amount)
         [requires cap:sha2-256:1f4b…]     [; the authority artifact it needs ]
         [preconditions [order-exists $order-id] [not-already-refunded $order-id]]
-        [effects [journal-append stream=orders] [net host=payments.example]]
-        [idempotent window=P30D]
+        [effects [write "orders"] [net "payments.example"]]
+        [idempotent [window P30D]]
         [compensates cancel-refund]
         …body…]"""]
 
@@ -31,9 +31,13 @@
       """Two rules make the declaration worth reading. First, `pure`
          plus a non-empty `[effects]` is a **static contradiction** — a
          typed error at definition time, not a runtime surprise. Second,
-         `[effects]` is **checked and enforced, never advisory**: the
-         declared set is verified against the engine's closed effect
-         table, and at runtime it acts as a narrowing — an effect point
+         `[effects]` is **checked and enforced, never advisory**: each
+         item is a `[CAP scope…]` pair whose capability name comes from
+         the closed table in `spec/03-approved/core/security.md` §2
+         (`read`, `write`, `net`, `env`, `clock`, `random`,
+         `subprocess`, `eval`, `secret-reveal`), an unknown name is a
+         fail-closed refusal, and at runtime the declared set acts as a
+         narrowing — an effect point
          outside the declaration is a loud typed error, exactly as if
          the capability had been denied. The house sentence: *effect
          conformance is enforced; type conformance is advisory.*"""]

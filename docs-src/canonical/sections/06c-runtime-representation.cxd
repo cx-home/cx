@@ -161,16 +161,16 @@
       [item """**Parsing is allocation-bound.** The classic tree parse
               allocates per element; huge inputs want the streaming or
               binary paths. Binary AST and schema-driven binary decode
-              parse several times faster than text; chunked columnar
-              tables are faster still and skip row boxing entirely."""]
-      [item """**A parsed document costs a small multiple of its source
-              bytes** in resident memory (headers, interned names,
-              attribute maps) — plan capacity on the multiple, and lean
-              on structural sharing: derived documents cost their spine,
-              not their size."""]
+              skip text lexing entirely; chunked columnar tables also
+              skip row boxing."""]
+      [item """**A parsed document costs more resident memory than its
+              source bytes** (headers, interned names, attribute maps) —
+              measure before planning capacity, and lean on structural
+              sharing: derived documents cost their spine, not their
+              size."""]
       [item """**The canonical emitter pays a normalization pass** over
               the regular emitter — you buy identity with it."""]
-      [item """**Per-call FFI overhead is microseconds** — negligible
+      [item """**FFI overhead is per-call, not per-byte** — negligible
               per document, dominant per tiny call in a hot loop; batch
               at the boundary."""]]
 

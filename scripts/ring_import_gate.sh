@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ring_import_gate.sh — the §3 import contract, enforced grep-level, zero-tolerance.
 #
-# Partition spec (spec/02-working/cx_partition.md §3): rings are pure import
+# Partition spec (spec/03-approved/core/cx_partition.md §3): rings are pure import
 # contracts. This gate lands at I0 BEFORE any code moves, so the seam can never
 # regress silently — a synthetic violation MUST fail the lane.
 #

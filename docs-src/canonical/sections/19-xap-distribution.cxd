@@ -74,7 +74,7 @@
       [= $g [$xap:compose $chart $strikes]]
   ([$count $g//verb], [$xap:resolve $g 'highlight' {}], [$xap:grammar-hash $g])]"""]
     [output
-      """(2, 'chart/highlight', 'f5727e413d19b7b1bc75af362fe525d4f286ec4cfbec3877b677a44d4adc760e')"""]
+      """(2, 'chart/highlight', 'sha2-256:9e0e827745381eda74a7f5ad72174d6f8ab6c384f281dcd0d5d44cd802580d46')"""]
     [note
       """The whole distribution staircase is a **function surface** —
          `[$xap:compose]`, `[$xap:pkg-tree]` / `pkg-seal` / `pkg-sign` /
@@ -117,10 +117,10 @@
          (observe · act · arrange) × `scope` × `consequence` — which is
          what the runtime gates scale on: observe is ungated, act meets
          the authorization check, and consequence scales the gate.
-         Validation is real tooling, run as you author (verified
-         against the live marine feature and schema):"""]
+         Validation is real tooling, run as you author (the notes
+         feature above validates clean against the shipped schema):"""]
     [example lang=sh
-      """$ cx validate features/own-ship/own-ship.feature.cxd --schema=schemas/feature.cxs"""]
+      """$ cx validate notes.feature.cxd --schema=spec/03-approved/xap/xap_schemas/feature.cxs"""]
     [body
       """The behavior half is the **contract module** — a plain CX
          module exporting the conventional surface the deployment host
@@ -180,7 +180,7 @@
       [= $v [$xap:pkg-verify $reg 'geo-utils@0.1.0']]
   ($pubr@alias, $v@status, $v@kind)]"""]
     [output
-      """$ cx publish.cx --allow-random
+      """$ cx --allow-random publish.cx
 ('geo-utils@0.1.0', 'ok', 'library')"""]
     [list
       [item """**pkg-tree** seals the directory as one canonical
@@ -221,19 +221,21 @@
          gate → consent → enable`, fail-closed at every stage, and
          every check is offline-verifiable — a vendored mirror is as
          good as the origin. Discovery and verification against a
-         registry store (this exact program, pointed at the live
-         original external reference registry, was run for this page — status `ok`, kind
-         `feature`, one catalog hit):"""]
+         registry store — this exact program, pointed at the
+         repository's own registry (`registry/store`, a git-hosted
+         `file://` store whose alias table `[$store:list-aliases]`
+         lists `gtin@0.1.0`), was run live for this page:"""]
     [example lang=cx
       """[?lib 'cx-xap' :as xap]
 [?lib 'cx-stdlib/store' :as store]
-[?let [= $reg [$store:open-opts 'file:///path/to/your-project/registry/store'
+[?let [= $reg [$store:open-opts 'file://registry/store'
                                 [map read-only='true']]]
-      [= $v [$xap:pkg-verify $reg 'own-ship@0.1.1']]
-      [= $cat [$xap:pkg-catalog $reg {term: 'nmea'}]]
+      [= $v [$xap:pkg-verify $reg 'gtin@0.1.0']]
+      [= $cat [$xap:pkg-catalog $reg {term: 'gtin'}]]
   ($v@status, $v@kind, [$count $cat//package])]"""]
     [output
-      """('ok', 'feature', 1)"""]
+      """$ cx --allow-read discover.cx
+(ok, library, 1)"""]
     [body
       """Install takes your `[xap …]` deployment document and returns
          it with the package **pinned by hash** and its `requires`
@@ -252,25 +254,25 @@
       [= $done [$xap:pkg-install $xap0 $reg 'geo-utils@0.1.0']]
   [$count $done//library]]"""]
     [output
-      """$ cx install.cx --allow-random
+      """$ cx --allow-random install.cx
 1"""]
     [body
       """Loading pinned library code at runtime is the fourth `[?lib]`
          reference form — `pkg:` — resolved through the registry bound
          by the `CX_REGISTRY` environment variable (a store URL), with
          the full verification chain re-run on **every** load; there is
-         no trust-the-registry mode. Verified against the live marine
-         registry:"""]
+         no trust-the-registry mode. Verified live against the in-repo
+         registry (run from the repository root):"""]
     [; check=none — needs a bound CX_REGISTRY plus read/env grants;
-       with no registry the load fails CXER4889 by design (output of
-       the fail-closed lane pinned in the table below). Verified live
-       2026-07-15 against the original external reference registry: '3.3 m/s'. ]
+       under the grant-free docs-example gate the load fails CXER4889
+       by design (the fail-closed lane pinned in the table below).
+       Verified live 2026-08-20 against registry/store: true. ]
     [example lang=cx check=none
-      """[?lib 'pkg:marine-common@0.2.0' :as mc]
-[$mc:fmt-speed 6.4 'm/s']"""]
+      """[?lib 'pkg:gtin@0.1.0' :as gtin]
+[$gtin:valid '4006381333931']"""]
     [output
-      """$ CX_REGISTRY=file:///path/to/your-project/registry/store cx speed.cx --allow-read --allow-env
-'3.3 m/s'"""]
+      """$ CX_REGISTRY=file://registry/store cx --allow-read --allow-env check_gtin.cx
+true"""]
     [body
       """A `pkg:NAME@VERSION#MANIFEST-HASH` reference pins past the
          alias table entirely. The failure lanes are values, each
@@ -316,7 +318,7 @@
       [= $v [$xap:license-verify $vc 'own-ship' '0.1.1' {now: '2026-07-15T00:00:00Z'}]]
   $v@status]"""]
     [output
-      """$ cx license.cx --allow-random
+      """$ cx --allow-random license.cx
 'ok'"""]
     [body
       """Every pricing shape is an attenuation of the issued
@@ -343,7 +345,7 @@
       [= $v [$xap:license-verify $vc 'weather' '0.1.0' {now: '2026-08-07T00:00:00Z'}]]
   $v@status]"""]
     [output
-      """$ cx grace.cx --allow-random
+      """$ cx --allow-random grace.cx
 'grace'"""]
     [body
       """**Price is a market property, never a package property** — the

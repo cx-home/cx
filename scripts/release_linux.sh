@@ -58,6 +58,22 @@ if grep -q '"credsStore"' "$HOME/.docker/config.json" 2>/dev/null; then
   [ -f "$DOCKER_CONFIG/config.json" ] || printf '{"auths":{"https://index.docker.io/v1/":{}}}\n' > "$DOCKER_CONFIG/config.json"
 fi
 
+# Pre-flight: local=1 below builds V from the VENDORED vc bootstrap tree,
+# which is gitignored and therefore absent in a fresh submodule checkout
+# (the in-container tree has no network identity to pin a fetch to, and the
+# default network refresh path is broken on the copied detached-HEAD trees).
+# Fail here with the remediation instead of 4 minutes into the container.
+if [ ! -f third_party/v/vc/v.c ]; then
+  echo "release_linux.sh: third_party/v/vc/v.c is missing — the vendored V" >&2
+  echo "bootstrap tree is gitignored and this checkout never fetched it." >&2
+  echo "Seed it from a sibling checkout of the fork, e.g.:" >&2
+  echo "  cp -R ../cx-private/third_party/v/vc third_party/v/vc" >&2
+  echo "or fetch it: git clone --depth=1 https://github.com/vlang/vc third_party/v/vc" >&2
+  echo "(a vc revision proven against this fork pin is preferred; latest vc" >&2
+  echo "tracks vlang master and may not bootstrap an older fork)." >&2
+  exit 2
+fi
+
 BUILD_TARGET=$([ "$DEV" = 1 ] && echo build-vcx-dev || echo build-vcx)
 PROFILES_TARGET=$([ "$DEV" = 1 ] && echo build-profiles-dev || echo build-profiles)
 SDE="$(git log -1 --format=%ct)"
@@ -123,17 +139,11 @@ build_one() {
       # release.sh phase 2: every staged tarball must extract the way the
       # installer extracts it and its binary must report the expected profile
       # line, or the cut dies here (this script failing fails release.sh).
-      for prof in platform data embed cli; do
-        case "$prof" in
-          platform) vtar="/out/public/cx-$T.tar.gz" ;;
-          *)        vtar="/out/public/cx-$prof-$T.tar.gz" ;;
-        esac
-        vdir=$(mktemp -d)
-        tar xzf "$vtar" -C "$vdir" || { echo "RELEASE GATE FAILED (R2.2/linux): $vtar does not extract" >&2; exit 1; }
-        [ -x "$vdir/cx" ] || { echo "RELEASE GATE FAILED (R2.2/linux): $vtar carries no executable cx at the tar root" >&2; exit 1; }
-        "$vdir/cx" -v | grep -q "profile  $prof" || { echo "RELEASE GATE FAILED (R2.2/linux): $vtar cx -v does not report profile $prof" >&2; "$vdir/cx" -v >&2 || true; exit 1; }
-        rm -rf "$vdir"
-      done
+      # RULED: PGL-1 (#741) — ONE implementation, shared with release.sh and
+      # with the standalone pre-cut lane. The lean container copy above
+      # includes scripts/, so the file is here at /build; cwd is /build.
+      . scripts/lib/r22_profile_gate.sh
+      r22_profile_gate /out/public "$T" /linux
       echo "-- release gate (R2.2/linux): per-profile install verification PASSED ($T platform/data/embed/cli)"
     '
   ( cd dist/public && shasum -a 256 "$pub" ) || true

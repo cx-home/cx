@@ -73,27 +73,32 @@
         [tr [td 'cx lint FILE'] [td 'Style + correctness warnings']]
         [tr [td 'cx validate FILE --schema=S.cxs'] [td 'Schema validation']]
         [tr [td 'cx table VERB'] [td 'Table API surface (info / dump / load)']]
+        [tr [td 'cx schema VERB'] [td 'Schema verb family — infer a .cxs from a corpus; export to JSON Schema']]
+        [tr [td 'cx tools VERB'] [td 'Agent-tool verb family — project command defs to MCP tool descriptors']]
+        [tr [td 'cx xap init NAME'] [td 'Scaffold a XAP project']]
+        [tr [td 'cx xap check-surface DIR'] [td 'Surface derivation check — every surface against the composed grammar + enabled features']]
         [tr [td 'cx demo'] [td 'Self-contained showcase, no I/O, < 1s']]
         [tr [td 'cx scaffold KIND'] [td 'Typed, commented skeleton on stdout (config / data / doc / log / table)']]
         [tr [td 'cx lock'] [td 'Generate / verify cx.lock from [?lib] directives']]
         [tr [td 'cx lsp'] [td 'Language server on stdio']]
-        [tr [td 'cx diagram FILE'] [td 'Program/data containment diagram (mermaid / svg / png)']]
+        [tr [td 'cx diagram FILE'] [td 'Program/data containment diagram (mermaid / svg / png; svg and png need --allow-subprocess for graphviz)']]
         [tr [td 'cx code-diagram FILE'] [td 'Sequence diagram of a CX program']]
         [tr [td 'cx code-tree FILE'] [td 'Evaluation-tree rendering of a CX program']]
-        [tr [td 'cx store-serve'] [td 'Serve a cx-store (reference store server)']]
-        [tr [td 'cx store-health'] [td 'Store health probe']]
-        [tr [td 'cx store-token'] [td 'Mint store access tokens']]
-        [tr [td 'cx store-rotate-kek'] [td 'Rotate the store key-encryption key']]
+        [tr [td 'cx store-serve'] [td 'Serve a cx-store (platform profile only)']]
+        [tr [td 'cx store-health'] [td 'Store health probe (platform profile only)']]
+        [tr [td 'cx store-rotate-kek'] [td 'Rotate the store key-encryption key (platform profile only)']]
+        [tr [td 'cx fabric-serve'] [td 'Serve a cx-fabric (platform profile only)']]
         [tr [td 'cx eval FILE'] [td 'Alias of the default run action; prefer cx FILE']]
         [tr [td 'cx select PATH FILE'] [td 'CXPath query over a document — matches in canonical CX, one per line']]
         [tr [td 'cx version'] [td 'Version / build info (same output as -v / --version)']]]
 
       [body
         """There is **no** `cx parse` / `cx convert` / `cx modify` /
-           `cx schema` / `cx help` subcommand — parsing and
+           `cx help` subcommand — parsing and
            conversion ride the projection flags below, updates are
            programs you run with `cx FILE`, and schema checking is
-           `cx validate`. Ad-hoc selection has its own verb:
+           `cx validate` (`cx schema` is inference and export, not
+           validation). Ad-hoc selection has its own verb:
            `cx select 'PATH' [FILE]` evaluates one CXPath expression
            against a document (see below)."""]]
 
@@ -136,8 +141,9 @@
            TextMate grammar (`syntaxes/cx.tmLanguage.json`), language
            configuration (brackets, comments), snippets
            (`snippets/cx.json`), and an LSP client that spawns
-           `cx lsp` on demand. Install via the published `.vsix` or
-           `code --install-extension tooling/vscode/cx-language.vsix`."""]
+           `cx lsp` on demand. No prebuilt `.vsix` is committed —
+           build one with `npm run package` in `tooling/vscode/`,
+           then install it with `code --install-extension`."""]
 
       [example lang=sh
         """# Build and install locally
@@ -164,8 +170,10 @@
            [`tooling/lsp/neovim.example.lua`](../../tooling/lsp/neovim.example.lua);
            the install script
            [`tooling/install/install-nvim.sh`](../../tooling/install/install-nvim.sh)
-           drops the config block into `~/.config/nvim/lua/cx.lua`
-           and registers the LSP."""]
+           installs the signed tree-sitter grammar (with a headless
+           load-proof) and writes a lazy.nvim `dir =` spec pointing at
+           the in-repo plugin root — LSP included via native
+           `vim.lsp.config`."""]
 
       [example lang=sh
         """# One-shot install
@@ -244,18 +252,21 @@
       [table
         [tr [th 'method'] [th 'status'] [th 'notes']]
         [tr [td 'textDocument/didOpen / didChange / didClose'] [td 'shipped'] [td 'full document sync']]
-        [tr [td 'textDocument/publishDiagnostics'] [td 'shipped'] [td 'parse + lint + schema + CXLS001-004']]
+        [tr [td 'textDocument/publishDiagnostics'] [td 'shipped'] [td 'parse + lint + schema + CXLS static analysis']]
         [tr [td 'textDocument/hover'] [td 'shipped'] [td 'element, attr, directive, CXPath']]
         [tr [td 'textDocument/completion'] [td 'shipped'] [td 'triggers : / @ $']]
-        [tr [td 'textDocument/semanticTokens/full'] [td 'shipped'] [td '10-token legend']]
+        [tr [td 'textDocument/semanticTokens/full'] [td 'shipped'] [td '12-token legend']]
         [tr [td 'textDocument/formatting'] [td 'shipped'] [td 'lossless fmt']]
         [tr [td 'textDocument/definition'] [td 'shipped'] [td 'cross-include and anchor']]
         [tr [td 'textDocument/references'] [td 'shipped'] [td 'anchor + alias + merge']]
-        [tr [td 'textDocument/codeLens'] [td 'shipped'] [td 'diagram preview, eval result']]
-        [tr [td 'textDocument/codeAction'] [td 'shipped'] [td 'quick-fix for CXLS001-004']]
-        [tr [td 'textDocument/signatureHelp'] [td 'planned'] [td 'for directive arg slots']]
-        [tr [td 'textDocument/inlayHint'] [td 'planned'] [td 'inferred types']]
-        [tr [td 'textDocument/rename'] [td 'planned'] [td 'cross-include rename']]]
+        [tr [td 'textDocument/documentSymbol'] [td 'shipped'] [td 'outline of elements and directives']]
+        [tr [td 'textDocument/foldingRange'] [td 'shipped'] [td 'bracket-structured folding']]
+        [tr [td 'textDocument/selectionRange'] [td 'shipped'] [td 'structural expand-selection']]
+        [tr [td 'textDocument/codeLens'] [td 'shipped'] [td 'diagram preview per top-level directive']]
+        [tr [td 'textDocument/signatureHelp'] [td 'shipped'] [td 'directive arg slots']]
+        [tr [td 'textDocument/inlayHint'] [td 'shipped'] [td 'inferred types']]
+        [tr [td 'textDocument/rename'] [td 'shipped'] [td 'anchor / alias rename']]
+        [tr [td 'textDocument/codeAction'] [td 'advertised, empty'] [td 'capability advertised; the handler returns no actions yet']]]
 
       [body
         """Implementation lives in `vcx/cmd/lsp_features.v`. The
@@ -269,20 +280,26 @@
            prefix:"""]
 
       [list
-        [item """**CXER\\*** — runtime / parse errors from the V core.
-                See [`spec/cx_native_error_codes.md`](../../spec/cx_native_error_codes.md)
-                for the full catalog."""]
-        [item """**CX-L\\*** — lint findings from `cx_lint` (see
+        [item """`CXER` **prefix** — runtime / parse errors from the V core.
+                The namespace registry is
+                [`spec/03-approved/process/governance.md`](../../spec/03-approved/process/governance.md)
+                §9.6; the language-core sub-blocks live in
+                [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md)
+                §9.4."""]
+        [item """`CX-L` **prefix** — lint findings from `cx_lint` (see
                 [[lint]]); same codes the CLI emits."""]
-        [item """**CXLS\\*** — LSP-only static-analysis diagnostics
-                that don't have a CLI surface. Currently reserved:"""]]
+        [item """`CXLS` **prefix** — LSP-only static-analysis diagnostics
+                that don't have a CLI surface. Currently shipped:"""]]
 
       [table
         [tr [th 'code'] [th 'severity'] [th 'trigger']]
         [tr [td 'CXLS001'] [td 'warning'] [td 'unreachable [?match] arm (after [else …] or [case _ …])']]
         [tr [td 'CXLS002'] [td 'hint'] [td '[?match] with no [else …] (silent () fallout)']]
         [tr [td 'CXLS003'] [td 'hint'] [td 'sibling [case …] arms with similar [when …] predicates (consolidation suggestion)']]
-        [tr [td 'CXLS004'] [td 'error'] [td '[?modify] [set-attr] / [delete-attr] on attribute-step path (compile-time mirror of CXER0100)']]]
+        [tr [td 'CXLS004'] [td 'error'] [td '[?modify] [set-attr] / [delete-attr] on attribute-step path (compile-time mirror of CXER0100)']]
+        [tr [td 'CXLS005'] [td '—'] [td 'retired ([par] now owns its width as a bounded worker pool)']]
+        [tr [td 'CXLS006'] [td 'hint'] [td 'unbounded comprehension — a [?for] over a generator with no bounding clause']]
+        [tr [td 'CXLS007'] [td 'hint'] [td 'ambiguous whitespace-separated quoted-string body']]]
 
       [body
         """Codes are stable strings; editor configs may key off them
@@ -323,14 +340,15 @@
            character determines the candidate set:"""]
 
       [list
-        [item """**`:`** — type tags (`:int`, `:string`, `:date`...),
-                directive names (`[?for`, `[?match`...), labeled-slot
-                names inside an active directive."""]
-        [item """**`@`** — attribute names from the schema or the
+        [item """`:` — atom literals, type annotations (`::int`,
+                `::string`, `::date`...), directive names (`[?for`,
+                `[?match`...), labeled-slot names inside an active
+                directive."""]
+        [item """`@` — attribute names from the schema or the
                 live document."""]
-        [item """**`$`** — variable names from `[?let]` bindings in
+        [item """`$` — variable names from `[?let]` bindings in
                 scope."""]
-        [item """**`/`** — CXPath axes + element names + node-kind
+        [item """`/` — CXPath axes + element names + node-kind
                 tests."""]]
 
       [body
@@ -342,46 +360,42 @@
     [child id=lsp-codeactions n=8.3.5 title='Code actions'
       [body
         """Code actions are quick-fixes the editor offers for
-           diagnostics. Currently shipped:"""]
-
-      [list
-        [item """**CXLS001** (unreachable arm) — "remove unreachable
-                arm". Deletes the arm."""]
-        [item """**CXLS002** (no `[else …]`) — "add `[else]` arm".
-                Inserts an empty `[else ()]` clause."""]
-        [item """**CX-L001** (comment style) — "convert `[# #]` to
-                `# line comment`" (and vice versa)."""]
-        [item """**CX-L002** (type-alias style) — "expand to
-                long-form" / "shorten to alias"."""]
-        [item """**CX-L003** (unused anchor) — "remove anchor"."""]
-        [item """**CX-L004** (dangling alias) — "create missing
-                anchor" (with a placeholder body)."""]]
+           diagnostics. The server **advertises** the codeAction
+           capability but the handler currently returns an empty,
+           well-formed list — no quick-fixes ship yet. Quick-fix
+           synthesis is wired later, once canonical fix recipes land
+           for the common parse and lint diagnostics (removing an
+           unreachable `[?match]` arm for CXLS001, inserting an
+           `[else …]` arm for CXLS002, anchor cleanups for the
+           CX-L003 / CX-L004 lint findings)."""]
 
       [body
-        """CXLS003 consolidation auto-fix is planned
-           (recognise-only currently per
-           [`tooling/lsp/diagnostics.md`](../../tooling/lsp/diagnostics.md)
-           §out-of-scope)."""]]
+        """Advertising the capability with an empty result keeps
+           editors from breaking while the recipes land; nothing an
+           editor shows under "quick fix" today comes from the CX
+           server."""]]
 
     [child id=lsp-semantic-tokens n=8.3.6 title='Semantic tokens'
       [body
         """The LSP semanticTokens response is the **canonical
            highlighting source** for editors that consume it.
-           The 10-token legend maps directly to TextMate scopes for
+           The 12-token legend maps directly to TextMate scopes for
            cross-editor consistency:"""]
 
       [table
         [tr [th 'token'] [th 'example']]
-        [tr [td 'namespace'] [td 'module prefixes, schema-qualified names']]
+        [tr [td 'namespace'] [td 'module prefixes (cx:, log:, fn:, …)']]
         [tr [td 'keyword'] [td 'directive names ([?for], [?if], [?match]...)']]
-        [tr [td 'variable'] [td '$ctx, $-bound names from [?let]']]
-        [tr [td 'parameter'] [td 'function-parameter names and pattern $bindings']]
+        [tr [td 'variable'] [td 'bound names ([= $x …], [in $x …])']]
+        [tr [td 'parameter'] [td 'labeled slot names (:caps, :policy, …)']]
         [tr [td 'property'] [td 'attribute names']]
-        [tr [td 'string'] [td 'string literals (single, double, triple quoted)']]
-        [tr [td 'number'] [td 'int, float, hex, sized-type literals']]
-        [tr [td 'comment'] [td '[# block #] and # line comments']]
-        [tr [td 'operator'] [td '= + - * / sigils, CXPath operators']]
-        [tr [td 'decorator'] [td 'type annotations (:int, :date, ...)']]]]
+        [tr [td 'string'] [td 'quoted string values']]
+        [tr [td 'number'] [td 'numeric scalars']]
+        [tr [td 'comment'] [td '# line comments and [; …] blocks']]
+        [tr [td 'operator'] [td '|>, =>, ||, ->, !, to']]
+        [tr [td 'decorator'] [td '#id, &anchor, *merge sigils']]
+        [tr [td 'enumMember'] [td 'atom literals (:paid, :active, …)']]
+        [tr [td 'function'] [td 'element / call head names']]]]
 
     [child id=lsp-debugging n=8.3.7 title='Debugging the server'
       [body
@@ -422,7 +436,7 @@
     [child id=ts-shape n=8.4.1 title='Grammar shape'
       [body
         """The grammar (`grammar.js`) covers everything in
-           [`spec/grammar.ebnf`](../../spec/grammar.ebnf) at the
+           [`spec/03-approved/formal/grammar.ebnf`](../../spec/03-approved/formal/grammar.ebnf) at the
            **structural** level: bracketed elements, attribute key=value
            pairs, scalar literals (string / int / float / bool / date /
            datetime / null), sigil-prefixed attributes (`#id`,
@@ -439,29 +453,31 @@
         """Queries live in `tooling/tree-sitter-cx/queries/`:"""]
 
       [list
-        [item """**`highlights.scm`** — structural scopes only
+        [item """`highlights.scm` — structural scopes only
                 (element-name, attribute-name, string, number,
                 comment, directive-opaque). Per-directive interior
                 highlighting is delegated to LSP semanticTokens."""]
-        [item """**`injections.scm`** — embedded-language injection
+        [item """`injections.scm` — embedded-language injection
                 for fenced code blocks (`[code lang='rust'
                 [| ... |]]`). Recognised injection languages:
                 `python`, `rust`, `go`, `js`, `ts`, `java`, `c`,
                 `cpp`, `csharp`, `ruby`, `swift`, `kotlin`, `sh`,
                 `sql`, `html`, `css`, `json`, `yaml`, `toml`,
-                `xml`, `markdown`."""]
-        [item """**`indents.scm`** — auto-indent rules. CX is
-                bracket-structured; indent inside `[`, dedent at
-                `]`."""]
-        [item """**`locals.scm`** — variable scoping for `[?let]`
-                bindings."""]]]
+                `xml`, `markdown`."""]]
+      [body
+        """These two are the only query files that ship. Indent and
+           locals queries do not exist — auto-indent comes from the
+           editor's bracket handling, and `[?let]` scope intelligence
+           comes from the LSP, not from tree-sitter."""]]
 
     [child id=ts-regen n=8.4.3 title='Regenerating the parser'
       [body
         """The committed `src/parser.c` is generated from
-           `grammar.js` by `tree-sitter generate`. The `make
-           tree-sitter` target rebuilds it; CI gates that the
-           committed `parser.c` matches `grammar.js`."""]
+           `grammar.js` by `tree-sitter generate`. The grammar
+           directory carries its own Makefile;
+           `make -C tooling/tree-sitter-cx install-nvim` builds the
+           parser and links it into the Neovim parser-search
+           path."""]
 
       [example lang=sh
         """$ cd tooling/tree-sitter-cx
@@ -471,8 +487,10 @@
            $ npx tree-sitter parse sample.cx  # smoke-test on a file"""]
 
       [note
-        """`make tree-sitter` from the repo root wraps all of the
-           above and is what the CI lane runs."""]]]
+        """There is no repo-root make target and no CI gate pinning
+           the committed `parser.c` to `grammar.js` — after editing
+           the grammar, regenerate and commit `parser.c`
+           yourself."""]]]
 
   [child id=cookbook n='8.5' title='Cookbook — common recipes'
     [intro
@@ -617,9 +635,9 @@
     [child id=build-cargo n='8.6.2' title='Cargo (Rust build.rs)'
       [body
         """Use `build.rs` to validate `.cxs`/`.cx` pairs at compile
-           time; once the planned schema-codegen tool ships
-           the same step generates Rust types directly
-           from the schema."""]
+           time. (Schema-to-types codegen is planned design work with
+           no CLI surface yet — when it lands, the same step would
+           generate Rust types directly from the schema.)"""]
 
       [example lang=rust
         """// build.rs
@@ -640,13 +658,7 @@
                    panic!(\"config validation failed\");
                }
 
-               // Planned: codegen
-               // Command::new(\"cx\")
-               //     .args([\"schema\", \"codegen\", \"--target\", \"rust\",
-               //            \"config/config.cxs\",
-               //            \"--output\", \"src/config_gen.rs\"])
-               //     .status()
-               //     .unwrap();
+               // Schema-to-types codegen: planned, no CLI surface yet.
            }"""]]
 
     [child id=build-npm n='8.6.3' title='npm scripts'
@@ -713,10 +725,13 @@
                  - uses: actions/checkout@v4
                  - name: Install cx
                    run: |
-                     curl -sSfL https://cx-home.dev/install.sh | sh
+                     curl -sSfL https://cxhome.org/install | sh
                      echo \"$HOME/.cx/bin\" >> $GITHUB_PATH
-                 - name: cx fmt --check
-                   run: find . -name '*.cx' -print0 | xargs -0 cx fmt --check
+                 - name: cx fmt (drift check)
+                   run: |
+                     for f in $(find . -name '*.cx'); do
+                       cx fmt \"$f\" | diff - \"$f\"
+                     done
                  - name: cx lint
                    run: cx lint --fail-on=warn $(find . -name '*.cx')
                  - name: cx validate
@@ -732,19 +747,20 @@
                      done"""]
 
       [body
-        """`cx scaffold github-workflow` emits this file as a
-           starting point."""]]
+        """Copy the snippet as a starting point — the scaffold kinds
+           are data shapes (`config` / `data` / `doc` / `log` /
+           `table`); there is no workflow scaffold."""]]
 
     [child id=build-ci-gitlab n='8.6.6' title='GitLab CI'
       [body
         """Equivalent for GitLab CI:"""]
 
       [example lang=yaml
-        """# .gitlab-ci.yml
+        """# .gitlab-ci.yml — pin the image tag to the release you target
            cx:
-             image: ghcr.io/cx-home/cx:0.8.0
+             image: ghcr.io/cx-home/cx:latest
              script:
-               - find . -name '*.cx' -print0 | xargs -0 cx fmt --check
+               - for f in $(find . -name '*.cx'); do cx fmt "$f" | diff - "$f"; done
                - cx lint --fail-on=warn $(find . -name '*.cx')
                - for f in config/**/*.cx; do cx validate \"$f\" --schema=config/schema.cxs --mode=strict; done
              rules:
@@ -752,8 +768,10 @@
 
     [child id=build-pre-commit n='8.6.7' title='Pre-commit hooks'
       [body
-        """Wire `cx fmt --check` and `cx lint` into the
-           [pre-commit](https://pre-commit.com/) framework."""]
+        """Wire a `cx fmt` drift check and `cx lint` into the
+           [pre-commit](https://pre-commit.com/) framework. There is
+           no `--check` flag on `cx fmt` — diff the formatter output
+           against the file instead."""]
 
       [example lang=yaml
         """# .pre-commit-config.yaml
@@ -761,8 +779,8 @@
              - repo: local
                hooks:
                  - id: cx-fmt
-                   name: cx fmt --check
-                   entry: cx fmt --check
+                   name: cx fmt drift check
+                   entry: bash -c 'for f in \"$@\"; do cx fmt \"$f\" | diff - \"$f\" || exit 1; done' --
                    language: system
                    files: '\\.(cx|cxd|cxs|cxl)$'
                  - id: cx-lint
@@ -777,7 +795,8 @@
                    files: '^config/.*\\.cx$'"""]
 
       [note
-        """`cx scaffold pre-commit` emits the same snippet."""]]]
+        """Copy the snippet directly — there is no pre-commit
+           scaffold kind (`cx scaffold` emits data shapes only)."""]]]
 
   [child id=docgen n='8.7' title='Doc-gen pipeline'
     [intro
@@ -835,7 +854,7 @@
     [child id=docgen-snippets n='8.7.4' title='Example snippets'
       [body
         """Code examples in the doc sources can pull from
-           `conformance/*.txt` fixtures so they can never drift from
+           `conformance/*.cxd` fixtures so they can never drift from
            working code. The `{{EXAMPLE:fixture-id field}}` placeholder
            expands at doc-gen time:"""]
 
@@ -860,31 +879,35 @@
 
     [child id=playground-wasm n='8.8.1' title='WASM distribution'
       [body
-        """`libcx.wasm` is the WASM build of the V core, exporting
-           a **subset** of the C ABI. The exported surface is
-           sufficient for: `cx_parse`, `cx_canon`, `cx_hash`,
-           `cx_eval`, `cx_code_eval`, `cx_code_diagram`,
-           `cx_select`, `cx_lint`, `cx_diff`. The bridge layer
-           lives at `tooling/playground/cxlib.js`."""]
+        """The wasm artifacts are the WASM build of the V core,
+           exporting a **subset** of the C ABI: `cx_to_cx`,
+           `cx_to_cx_compact`, `cx_to_json` / `cx_to_xml` /
+           `cx_to_yaml` / `cx_to_toml`, `cx_to_ast_bin`,
+           `cx_code_eval` (plus `_with_len` and `_streaming`),
+           `cx_code_diagram` (plus `_with_level`),
+           `cx_code_ast_json`, `cx_code_tree`, `cx_canonical`,
+           `cx_hash`, `cx_free`, `cx_features`, and `cx_version`.
+           The bridge layer lives at `scripts/wasm/cxlib.js`."""]
 
       [body
         """ABI capability bits the wasm advertises (per
-           [`spec/abi.md`](../../spec/abi.md) §3):"""]
+           [`spec/03-approved/core/abi.md`](../../spec/03-approved/core/abi.md) §3):"""]
 
       [list
-        [item """**Bit 29** — `_cx_code_diagram` (Mermaid
-                containment diagram render)."""]
-        [item """**Bit 30** — `_cx_code_tree` (interactive tree
+        [item """**Bit 31** — `_cx_code_diagram` (Mermaid
+                diagram render)."""]
+        [item """**Bit 32** — `_cx_code_tree` (interactive tree
                 model for the output pane)."""]
-        [item """All earlier cap bits the runtime would otherwise
-                advertise on native (0-28)."""]]]
+        [item """The earlier cap bits the runtime would otherwise
+                advertise on native, for the symbols the wasm build
+                exports."""]]]
 
     [child id=playground-component n='8.8.2' title='The <cx-diagram> web component'
       [body
-        """`tooling/playground/cx-diagram.js` is a self-contained
+        """`tooling/web/cx-diagram.js` is a self-contained
            web component that renders a CX document as a Mermaid
            containment diagram. Drop it into any page that loads
-           `libcx.wasm`:"""]
+           the wasm build:"""]
 
       [example lang=html
         """<script type=\"module\" src=\"/cxlib.js\"></script>
@@ -908,10 +931,13 @@
         [item """**Tier 1** — browser-only Mermaid render. What the
                 playground uses. No external service. Currently
                 shipped."""]
-        [item """**Tier 2** — HTTP service that shells out to
-                graphviz for richer (DOT-based) renders. Editor /
-                CI integration story. Shipped as
-                `tooling/diagram-svc/`."""]
+        [item """**Tier 2** — an HTTP service that shells out to
+                graphviz for richer (DOT-based) renders. Designed
+                (the editor / CI integration story) but **not
+                shipped** — no service directory exists; the CLI's
+                graphviz hop (`cx diagram --format=svg|png
+                --allow-subprocess`) covers the richer-render need
+                locally."""]
         [item """**Tier 3** — wasm-graphviz inline. Planned
                 follow-up. Eliminates the Tier-2 service hop while
                 keeping the richer-render output quality."""]]
@@ -919,27 +945,32 @@
       [note
         """JSON and XML are **not** valid program sources for the
            diagram — `_cx_code_diagram` accepts CX text only.
-           Containment-only relationships, no FK inference. See
-           [`spec/audits/playground_gate17_design_v1.md`](../../spec/audits/playground_gate17_design_v1.md)
-           for the design rationale."""]]
+           Containment-only relationships, no FK inference. The
+           conformance home for the diagram output is
+           `conformance/code_diagram.cxd`."""]]
 
     [child id=playground-embed n='8.8.4' title='Embedding in a docs site'
       [body
         """The minimum a host page needs:"""]
 
       [list
-        [item """`libcx.wasm` (~ 2.4 MB compressed) served with the
-                right MIME type."""]
-        [item """`cxlib.js` — the host-side bridge (~ 60 KB)."""]
-        [item """Optionally `cx-diagram.js`, `cx-tree.js`, and
-                `cx-editor.js` web components."""]]
+        [item """A wasm build — `libcx-async.js` (single-file
+                Asyncify build, ~36 MB; works under file:// and any
+                static host) or `libcx-pthreads.js` +
+                `libcx-pthreads.wasm` (~30 MB wasm; needs
+                cross-origin isolation for real threads)."""]
+        [item """`cxlib.js` — the host-side bridge (~26 KB), from
+                `scripts/wasm/cxlib.js`."""]
+        [item """Optionally the `cx-diagram.js` web component from
+                `tooling/web/`."""]]
 
       [body
-        """A full playground page (eval + diagram + tree) ships as
-           `tooling/playground/demo.html`. The docs site
-           re-uses these same components, so any concept page that
-           wants an inline interactive surface gets it for free
-           with a one-tag drop-in."""]]]
+        """A demo page for the diagram component ships as
+           `tooling/web/demo.html`; the full playground page (eval +
+           diagram + tree) is generated into the guide from
+           `scripts/gen_guide/playground/`. Any concept page that
+           wants an inline interactive surface reuses the same
+           components."""]]]
 
 
   [# Migrated from docs-src/content/tooling/* and content/reference/cli.cx
@@ -990,10 +1021,10 @@
 
            # Run a program (data + program in one input).
            cat data.cx program.cx | cx
-           cx pipeline.cx --allow-read --allow-write
+           cx --allow-read --allow-write pipeline.cx
 
            # Run a program against a separate input document ($doc).
-           cx program.cx --data=input.cx
+           cx --data=input.cx program.cx
 
            # Include resolution.
            cx --xml --include-root=./conf main.cx     # resolve [?cx include=…]"""]
@@ -1043,21 +1074,23 @@
            tree-sitter generate
            tree-sitter parse example.cx"""]
       [note
-        """Highlight, indent, fold, and locals queries ship
-           alongside the grammar. They drive syntax colours,
-           structural selection, and cursor-jump-to-definition
-           behaviour. Queries are versioned with the grammar;
-           updates flow through editor extensions on each
-           release."""]]
+        """Highlight and injection queries ship alongside the
+           grammar (`queries/highlights.scm` and
+           `queries/injections.scm` — the only two). Indent, fold,
+           and locals intelligence comes from the editor and the
+           LSP, not from tree-sitter queries. Queries are versioned
+           with the grammar; updates flow through editor extensions
+           on each release."""]]
 
     [child id=conformance-fuzz-bench n='8.9.4' title='Conformance, fuzzing, benchmarks'
       [body
-        """The conformance suite at `conformance/*.txt` is the
-           cross-binding contract. Each fixture declares an input
-           and an expected output (`out_cx`, `out_xml`, `out_json`,
-           `out_text`, or `out_err`). Every binding implements a
-           runner that walks the fixture set; a release is gated
-           on byte-identical output across every binding."""]
+        """The conformance suite at `conformance/*.cxd` is the
+           cross-binding contract. Each fixture is a `[case id=…]`
+           block declaring inputs (`[in-cx]`, `[in-code]`, `[call]`)
+           and an expected output (`[out-text]` or `[out-err]`).
+           Every binding implements a runner that walks the fixture
+           set; a release is gated on byte-identical output across
+           every binding."""]
       [example lang=shell
         """# Conformance.
            make test            # all bindings, all suites
@@ -1065,18 +1098,21 @@
            make test-rust       # Rust binding
            make test-python     # Python binding
 
-           # Fuzzers — vcx/tests/fuzz/, structured-random input.
-           make fuzz            # 60-second run of every fuzzer
-           make fuzz-parser     # parser only, runs until interrupted
-           make fuzz-replay     # replay the saved crash corpus
+           # Fuzzer — structured-random input over the parser.
+           # scripts/fuzz_cx.cx, run continuously by
+           # .github/workflows/fuzz.yml; run it locally with:
+           cx --allow-read --allow-write --allow-random --allow-clock \
+              scripts/fuzz_cx.cx
 
-           # Benchmarks — vcx/tests/runners/streaming_bench.v + eval_features_bench.v.
-           make bench           # full bench harness, target/bench.json
-           scripts/run_bench_json.py --include-eval"""]
+           # Benchmarks — vcx/tests/runners/streaming_bench.v.
+           make bench           # full bench harness
+           make bench-json      # the same run as machine-readable JSON"""]
       [note
-        """Streaming throughput target: 340 MB/s on the comparable
-           bench corpus (M2 Pro, libcx `-prod`) — about 17% under
-           the comparable JSON benchmark on the same workload."""]]]
+        """Streaming throughput gate: the release gate requires a
+           ≥200 MB/s floor on the reference corpus. The gate is not
+           green yet — `[?for]` streaming measures around the
+           200 MB/s line and `[?map]` at 129.2 MB/s on the current
+           tree; closing that gap is active work."""]]]
 
   [# Migrated from docs-src/content/{cookbook,showcase,playground}.cx
      during Phase B docs → guide consolidation (2026-05-24). New
@@ -1162,18 +1198,18 @@
            fields override; missing ones inherit."""]]
 
     [child id=recipe-html-safe n='8.10.10' title='HTML-safe templating'
-      [; check=none — [?cx output-target] is approved evaluator-config
-         surface (grammar.ebnf CXDirective attrs); the current binary
-         rejects every [?cx …] directive (#421). ]
-      [example lang=cx check=none
-        """[?cx output-target=html]
-           [h1 //page/@title]
-           [?for [in $u //user] [yield [li $u/@name]]]"""]
       [body
-        """`[?cx output-target=html]` switches the evaluator into
-           context-aware escaping. Substituted values containing
-           `<`, `>`, `&`, or quotes escape correctly with no
-           manual sprintf."""]]
+        """There is **no** `[?cx output-target=html]` escaping mode —
+           the key is **reserved and refused** (the pragma registry is
+           closed; it once passed through inert while reading like an
+           XSS defense). Until context-aware escaping ships, escape at
+           the boundary: `[$strings:escape-html]` for text,
+           `[$html:sanitize]` for untrusted markup, and
+           `[$html:serialize]` for trees built as data — escaping by
+           construction, never string concatenation."""]
+      [example lang=cx
+        """[?lib 'cx-stdlib/strings']
+           [$strings:escape-html '<script>alert(1)</script>']"""]]
 
     [child id=recipe-log-structured n='8.10.11' title='Emit structured log records'
       [example lang=cx
@@ -1251,7 +1287,7 @@
       [body
         """The Source-pane diagram renders the program as a
            Mermaid graph in a sibling pane. The renderer runs
-           entirely in the browser via libcx.wasm — Mermaid text
+           entirely in the browser via the libcx wasm build — Mermaid text
            emitted by `cx_code_diagram`, then rendered to inline
            SVG by Mermaid.js. Zoom, fit-to-pane, and pan controls
            layer on top."""]

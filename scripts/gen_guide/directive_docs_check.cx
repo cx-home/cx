@@ -27,7 +27,7 @@
 #
 # Capabilities: glob / read-file need `read`; the env standard streams +
 # exit are ambient (env.md §7). Run:
-#   vcx/target/cx eval scripts/gen_guide/directive_docs_check.cx --allow-read
+#   vcx/target/cx eval --allow-read scripts/gen_guide/directive_docs_check.cx
 #   (or: make guide-check, once wired)
 
 [?lib 'cx-stdlib/cx']

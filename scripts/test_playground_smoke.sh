@@ -2,8 +2,10 @@
 #
 # Gate 17 helper — playground live-integration smoke test.
 #
-# Boots the static playground via Python's http.server, then issues a
-# headless curl against the served playground.html to confirm:
+# Boots the static playground via scripts/serve_static.cx (pure CX on
+# [?http-service] — RULED: PYE-5, #922; this replaced python3's
+# http.server), then issues a headless curl against the served
+# playground.html to confirm:
 #   - dist/wasm/libcx-async.js, libcx-pthreads.js and cxlib.js are
 #     reachable (HTTP 200)
 #   - playground.html loads without 404s on its asset references
@@ -11,19 +13,29 @@
 #     export symbols (loader-JS grep; full boot needs a real browser)
 #
 # Port: honors PORT=<n> if set (fails loudly if that port is busy);
-# otherwise picks a free ephemeral port automatically.
+# otherwise picks a free port by try-binding candidates — the CX server
+# exits rc 1 fast on a busy port, so the failed boot IS the busy check.
+#
+# Binary: CX_BIN overrides; default is the tree's vcx/target/cx. A
+# missing binary is a loud failure, never a PATH fallback (#929).
 #
 # Full live-integration testing (Mermaid render, interactive tree,
 # bidirectional bridge) is browser-driven and lives in
 # scripts/test_playground_browser.js (Phase 7 follow-up).
 #
-# Exit 0 on pass; 1 on any failure. The http.server is killed on every
-# exit path (pass, fail, signal) — no orphans.
+# Exit 0 on pass; 1 on any failure. The server is killed on every exit
+# path (pass, fail, signal) — no orphans.
 
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PLAYGROUND="$ROOT/dist/playground-preview"
+CX_BIN="${CX_BIN:-$ROOT/vcx/target/cx}"
+
+if [[ ! -x "$CX_BIN" ]]; then
+    echo "Gate 17 FAIL — CX binary not found at $CX_BIN. Run make build-vcx first (or set CX_BIN)."
+    exit 1
+fi
 
 if [[ ! -d "$PLAYGROUND" ]]; then
     echo "Gate 17 FAIL — $PLAYGROUND not built. Run make build-playground first."
@@ -35,67 +47,62 @@ if [[ ! -f "$PLAYGROUND/dist/wasm/libcx-async.js" ]]; then
     exit 1
 fi
 
-port_free() {
-    # SO_REUSEADDR mirrors http.server's allow_reuse_address: lingering
-    # TIME_WAIT sockets from a previous run must not read as "busy".
-    python3 - "$1" <<'PY'
-import socket, sys
-s = socket.socket()
-s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-try:
-    s.bind(("127.0.0.1", int(sys.argv[1])))
-except OSError:
-    sys.exit(1)
-finally:
-    s.close()
-PY
-}
-
-pick_free_port() {
-    python3 - <<'PY'
-import socket
-s = socket.socket()
-s.bind(("127.0.0.1", 0))
-print(s.getsockname()[1])
-s.close()
-PY
-}
-
-if [[ -n "${PORT:-}" ]]; then
-    if ! port_free "$PORT"; then
-        echo "Gate 17 FAIL — port $PORT busy (something is already bound); pass a free PORT=<n> or unset PORT to auto-pick."
-        exit 1
-    fi
-else
-    PORT="$(pick_free_port)"
-fi
-
-# Boot http.server in background. It is a direct child of this shell, so a
-# plain `kill $SERVER_PID` reaches it on every exit path (the previous
-# `kill -- -$PID` addressed a process GROUP the server never led — without
-# setsid that kill silently failed and the server leaked).
-cd "$PLAYGROUND"
-python3 -m http.server "$PORT" --bind 127.0.0.1 >/dev/null 2>&1 &
-SERVER_PID=$!
+SERVER_PID=""
 cleanup() {
-    kill "$SERVER_PID" 2>/dev/null
-    wait "$SERVER_PID" 2>/dev/null
+    [[ -n "$SERVER_PID" ]] && kill "$SERVER_PID" 2>/dev/null
+    [[ -n "$SERVER_PID" ]] && wait "$SERVER_PID" 2>/dev/null
 }
 trap cleanup EXIT
 
-# Try a small number of times — http.server can be slow to bind
-up=0
-for try in 1 2 3 4 5; do
-    if curl -sf -o /dev/null "http://127.0.0.1:$PORT/playground.html"; then up=1; break; fi
-    if ! kill -0 "$SERVER_PID" 2>/dev/null; then
-        echo "Gate 17 FAIL — http.server on port $PORT died at startup (port busy or bind refused)."
+# boot_server PORT — start the CX static server on PORT and wait for
+# readiness. Returns 0 once playground.html answers; 1 if the server
+# process died (bind refused / busy port); 2 on a readiness timeout.
+boot_server() {
+    local port="$1"
+    "$CX_BIN" --allow-read --allow-net --allow-clock \
+        "$ROOT/scripts/serve_static.cx" --port "$port" --root "$PLAYGROUND" \
+        >/dev/null 2>&1 &
+    SERVER_PID=$!
+    for try in 1 2 3 4 5; do
+        if curl -sf -o /dev/null "http://127.0.0.1:$port/playground.html"; then
+            return 0
+        fi
+        if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+            SERVER_PID=""
+            return 1
+        fi
+        sleep 1
+    done
+    return 2
+}
+
+if [[ -n "${PORT:-}" ]]; then
+    boot_server "$PORT"
+    rc=$?
+    if [[ $rc -eq 1 ]]; then
+        echo "Gate 17 FAIL — port $PORT busy (server bind refused); pass a free PORT=<n> or unset PORT to auto-pick."
+        exit 1
+    elif [[ $rc -ne 0 ]]; then
+        echo "Gate 17 FAIL — playground.html not reachable on http://127.0.0.1:$PORT after 5 tries."
         exit 1
     fi
-    sleep 1
-done
-if [[ $up -ne 1 ]]; then
-    echo "Gate 17 FAIL — playground.html not reachable on http://127.0.0.1:$PORT after 5 tries."
-    exit 1
+else
+    booted=0
+    for attempt in 1 2 3 4 5 6 7 8 9 10; do
+        PORT=$(( (RANDOM % 30000) + 20000 ))
+        boot_server "$PORT"
+        rc=$?
+        if [[ $rc -eq 0 ]]; then booted=1; break; fi
+        if [[ $rc -eq 2 ]]; then
+            echo "Gate 17 FAIL — server on port $PORT booted but playground.html not reachable after 5 tries."
+            exit 1
+        fi
+        # rc 1: bind refused (busy candidate) — try the next port.
+    done
+    if [[ $booted -ne 1 ]]; then
+        echo "Gate 17 FAIL — no free port found in 10 candidates (20000-49999)."
+        exit 1
+    fi
 fi
 
 fail() {

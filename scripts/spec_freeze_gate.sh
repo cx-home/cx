@@ -49,6 +49,7 @@ FREEZE_EPOCH=f964c16a
 # where the ruling is recorded; the skip is LOUD (no-silent-skip rider,
 # GATE_REGISTER.md). Full 40-char shas only.
 ADJUDICATED_SHAS="
+0f82c1d36a8a28bddd92442deffb7d94ad692c02 #520 — the DSN-diagnostic fix; the spec-side touch is ONE mechanical version-literal genericization in a 02-working DESIGN LETTER (required by check-version-consistency), no clause or claim changed; ruled under the owner standing autonomy grant 2026-08-20 and recorded LATE per R5.0 in ledger/rulings_2026_08_21_dsn_diagnostic_late_record.md — Class S. NOTE: adjudication authored by the agent that made the miss; flagged for owner review in the cut package.
 c920cd9d18b559183a4bc8ea476e1336eee8ada0 #869 — the ORIEL promotion executing TWO recorded rulings (packaging 2b in ledger/rulings_2026_08_19_787_guide_and_packaging.md; R9.2 in ledger/rulings_2026_08_19_0160_cut_path.md): the spec-side paths are the MOVED demo estate, not spec prose; token omitted from the pushed message — Class S
 72a6ea437e01e9be9ab1d7dad43a35622f195752 #865 — wave rulings RW65.1/RW65.2 recorded in ledger/rulings_2026_08_19_865_wave.md BEFORE the work (owner '1a 2a'); the commit message cited the ruling ids but omitted the RULED: token — Class S
 550f8a1a272ad2e0217fccdb5f0ec44e7e453154 #727-destination-(a) — owner-directed, recorded in the commit message + issue #727; register row: partition_I5_exit_review_packet.md §9 (exit-4a execution record)
@@ -125,12 +126,24 @@ token_recorded() { # $1 = full commit message
       frag=$(strip_unbalanced_parens "$frag")
       [ "${#frag}" -ge 2 ] || continue
       base="${frag%%(*}"
-      if grep -qrF --include='*.md' -- "$frag" ledger/ 2>/dev/null; then
-        return 0
+      # grep rc: 0 found, 1 not-found, >1 ERROR (e.g. failed spawn under
+      # load). An error must not read as not-found — that verdict is a
+      # false SPEC-FREEZE VIOLATION (see check_commit's infra note).
+      grep -qrF --include='*.md' -- "$frag" ledger/ 2>/dev/null
+      gr=$?
+      if [ "$gr" -eq 0 ]; then return 0; fi
+      if [ "$gr" -gt 1 ]; then
+        echo "SPEC-FREEZE-GATE INFRA FAILURE: grep over ledger/ errored (rc $gr) — cannot adjudicate; rerun the gate." >&2
+        exit 3
       fi
-      if [ "$base" != "$frag" ] && [ "${#base}" -ge 2 ] \
-        && grep -qrF --include='*.md' -- "$base" ledger/ 2>/dev/null; then
-        return 0
+      if [ "$base" != "$frag" ] && [ "${#base}" -ge 2 ]; then
+        grep -qrF --include='*.md' -- "$base" ledger/ 2>/dev/null
+        gr=$?
+        if [ "$gr" -eq 0 ]; then return 0; fi
+        if [ "$gr" -gt 1 ]; then
+          echo "SPEC-FREEZE-GATE INFRA FAILURE: grep over ledger/ errored (rc $gr) — cannot adjudicate; rerun the gate." >&2
+          exit 3
+        fi
       fi
     done
   done < <(printf '%s\n' "$1" | grep -E 'RULED:[[:space:]]*[A-Za-z0-9]' || true)
@@ -149,7 +162,26 @@ check_commit() {
   flags=$(git show --format="" --name-only "$sha" | classify)
   if [ "$flags" = "1 1" ]; then
     msg=$(git log -1 --format=%B "$sha")
-    if ! printf '%s\n' "$msg" | grep -qE 'RULED:[[:space:]]*[A-Za-z0-9]'; then
+    # A commit message is NEVER empty (the subject line always exists) — an
+    # empty read is a transient infrastructure failure (measured 2026-08-23:
+    # under release-verify's fully parallel `make test`, this check falsely
+    # flagged 1b4fd26b5, whose message carries TWO RULED: tokens, while the
+    # same gate passed standalone at the same HEAD; the sibling extraction
+    # gate flaked a 27-byte-stderr spawn failure in the same run). Retry
+    # once; a persistent empty read is ITS OWN loud failure, never a
+    # spec-freeze verdict.
+    if [ -z "$msg" ]; then
+      sleep 1
+      msg=$(git log -1 --format=%B "$sha")
+      if [ -z "$msg" ]; then
+        echo "SPEC-FREEZE-GATE INFRA FAILURE: git log returned an empty message for $sha twice — cannot adjudicate; rerun the gate." >&2
+        return 1
+      fi
+    fi
+    # Bash's own regex, no subprocess: a grep that fails to SPAWN under
+    # load is indistinguishable from "token absent" and mints a false
+    # violation.
+    if ! [[ "$msg" =~ RULED:[[:space:]]*[A-Za-z0-9] ]]; then
       echo "SPEC-FREEZE VIOLATION: commit $sha touches normative spec AND implementation with no 'RULED: <id>' token (register R4.1)." >&2
       git show --format="  %h %s" --name-only "$sha" | head -20 >&2
       return 1

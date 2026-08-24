@@ -1,0 +1,381 @@
+# scripts/check_code_fixtures.cx — gate 4: conformance/code.cxd format +
+# spec-coverage checker.
+#
+# CX rewrite of scripts/check_code_fixtures.py (RULED: PYE-5,
+# ledger/rulings_2026_08_22_python_eradication.md; #922). The Python
+# loaded the corpus through cxlib/libcx; this gate reads the SAME
+# document through the shipped reader itself ([$cx:parse]) — the gate
+# now exercises the surface it guards.
+#
+# What it verifies (unchanged contract):
+#   1. Fixture format — unique test ids matching the id-category
+#      registry, required in-cx/in-code sections, exactly one of
+#      out-text / out-err / out-multiset, level ∈ the category set,
+#      id prefix agrees with level.
+#   2. Directive usage — every `[?<name>]` in in-code bodies is in the
+#      spec/core/code.md §4.1 registry, a declared `?test-…` helper, a
+#      retired-directive negative, or the sanctioned unknown.
+#   3. Spec coverage — every §4.1 directive used at least once; every
+#      spec-defined CXER code cited by the corpus, verified covered
+#      cross-suite, or pinned to its filed issue (visible debt).
+#
+# §4.1 registry extraction (PYE design directive, #922 HANDOFF §4): the
+# section is selected from the `cx --from=md` DOCUMENT TREE — the h3
+# heading node and its following siblings up to the next h2/h3 — not by
+# a lookahead regex over the raw bytes (RE2 has no lookaround, and the
+# tree is the honest interface).
+#
+# Exit 0 if all checks pass, 1 otherwise; 2 on a missing input file.
+# JSON report on stdout.
+#
+# Run:  cx --allow-read --allow-write scripts/check_code_fixtures.cx \
+#         [FIXTURES.cxd [SPEC.md]]
+# (or:  make check-code-fixtures)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/array'   as=array]
+[?lib 'cx-stdlib/fp'      as=fp]
+[?lib 'cx-stdlib/json'    as=json]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+# cat-seqs: concatenate a tuple of sequences (sequence literals nest).
+[?def cat-seqs scope=public ($ss) [$fp:flat-map $ss [?fn ($x) $x]]]
+# to-arr: sequence → array (JSON emits arrays, not sequences).
+[?def to-arr scope=public ($s) [$fp:fold $s [] [?fn ($a $x) [$array:append $a $x]]]]
+
+# raw-of: string payload of a section node carrying one [#…#] raw block —
+# serialize, then strip the delimiters (RawText is opaque to [$text],
+# cxdm §L595; the serialization is the defined byte-exact projection).
+[?def raw-of scope=public ($rt)
+  [?let [= $s [$cx:serialize $rt]]
+        [= $i [$strings:find $s "[#"]]
+        [= $j [$strings:rfind $s "#]"]]
+    [?if [or [< $i 0] [< $j 0] [< $j $i]]
+      [then ""]
+      [else [$strings:slice $s [+ $i 2] $j]]]]]
+
+# normalize: the fixture-loader rule — strip ONE leading and ONE
+# trailing newline (the [# ⏎ … ⏎ #] layout newlines).
+[?def normalize scope=public ($raw)
+  [?let [= $a [?if [$starts-with $raw "\n"] [then [$strings:slice $raw 1 [$strings:length $raw]]] [else $raw]]]
+    [?if [$ends-with $a "\n"] [then [$strings:slice $a 0 [- [$strings:length $a] 1]]] [else $a]]]]
+
+[?def snake scope=public ($s) [$strings:replace $s "-" "_"]]
+
+[?const CATEGORIES ('core','resilience','services','concurrency',
+                    'async','visualization')]
+
+[?const HELPERS ('test-seq','test-err-then-ok','test-always-err','test-clock',
+                 'test-concurrent','test-counter','test-cb-open',
+                 'test-rate-limited','test-bulkhead-full',
+                 'test-service-client','test-tls-config','test-port',
+                 'test-single-use-iter','test-current-scope',
+                 'test-closeable','test-close-log')]
+
+# Directives intentionally removed/retired from the surface; they appear
+# ONLY in negative fixtures that assert their rejection.
+[?const REMOVED ('par-map','find','try','chain')]
+
+# Parse/assembly-time processing instructions ([?cx include], code.md §13).
+[?const PARSE-TIME-PI ('cx')]
+
+# Fixtures whose in-code DELIBERATELY spells an unknown directive.
+[?const INTENTIONAL-UNKNOWN ('program-cx-pi-004-unknown-directive-fails-closed')]
+
+# Error codes whose raising surface lives OUTSIDE conformance/code.cxd —
+# re-verified per run by scanning the named file (a rotted mapping fails).
+[?const CROSS-SUITE (
+  [xs code='CXER0120' file='conformance/stdlib/cx.cxd'],
+  [xs code='CXER0273' file='vcx/tests/eval_semantics_umbrella_test.v'])]
+
+# Spec-defined codes NO implementation can raise today — pinned NAMED to
+# their filed issue. EMPTY as of #808 (mechanism kept).
+[?const KNOWN-UNIMPLEMENTED ()]
+
+# The id-category prefix registry — ported from the Python at HEAD
+# (grew all week: program-callstep- @f277e47d, program-map-101..113 @MSS,
+# program-attr-bare-/program-body-bare-/program-computed-step- @#923).
+# One whitespace-separated token per prefix; level= is authoritative.
+[?const PREFIX-MAP (
+  [prefixes level=core [#
+program-for- program-let- program-fn- program-err- program-pipe- program-par-
+program-def- program-const- program-lib- program-modify- program-match-multi-
+program-match-yield- program-cxpath- program-element- program-render-
+program-atom- program-builtin- program-cast- module- pred- program-predicate-
+program-array- program-iterator- program-map- program-reduce- program-math-
+program-num- program-range- program-slice- program-view- program-views-
+program-with- program-order-by- program-string- program-str- program-arith-
+program-logic- program-cmp- program-pfa- program-fizzbuzz- program-sleep-
+program-secret- program-reveal- program-with-error-hook- program-with-caps-
+program-dc- program-gen- program-sap- program-meta- program-stack-
+cmd- eff-trace- ev-budget- ev-pull- ev-select-fair- program-callstep-
+cxast- ev-let- img- ev-park- cxtape-
+program-ascription- program-attr-ascription- program-attr-bare-
+program-body-bare- program-computed-step- program-body-ascription-
+program-bytes-ascription- program-int-ascription- program-float-ascription-
+program-call- program-caps- program-collection-kind-
+program-construction-err- program-cx-pi- program-delivery-
+program-descendant-seq-roundtrip- program-do- program-doc-implicit-
+program-eq- program-field-read- program-if- program-loop-
+program-mapnode-nav- program-match- program-planar- program-purity-
+program-reserved-ns- program-slot-singleton- program-table-
+program-tree-eval-
+#]],
+  [prefixes level=resilience [#
+program-retry- program-timeout- program-cb- program-fallback-
+program-ratelimit- program-bulkhead- program-compose- program-matrix-
+#]],
+  [prefixes level=services [#
+program-svc-
+#]],
+  [prefixes level=concurrency [#
+program-conc- program-stack-
+#]],
+  [prefixes level=async [#
+program-async- program-sleep- ev-async- ev-park-
+#]],
+  [prefixes level=visualization [#
+program-viz-
+#]])]
+
+[?def member scope=public ($seq $x)
+  [> [$count [?for [in $s $seq] [where [= $s $x]] [yield $s]]] 0]]
+
+# ── §4.1 registry from the code.md DOCUMENT TREE ─────────────────────
+# Select the h3 "§4.1 Directive registry" heading node's section (its
+# following siblings up to the next h2/h3) and pull the `[?name]` rows.
+[?def load-registry scope=public impure ($spec-path)
+  [?let [= $doc [$cx:from-format [$io:read-file $spec-path] "md"]]
+        [= $kids [?for [in $k $doc/*] [yield $k]]]
+        [= $n [$count $kids]]
+        [= $starts [?for [in $i [$range 1 $n]]
+          [= $k [$nth $kids $i]]
+          [where [and [= [?else [$name $k] ""] "h3"]
+                      [$starts-with [$text $k] "§4.1 Directive registry"]]]
+          [yield $i]]]
+    [?if [$empty $starts]
+      [then ()]
+      [else
+        [?let [= $start [$first $starts]]
+              [= $ends [?for [in $i [$range [+ $start 1] $n]]
+                [= $k [$nth $kids $i]]
+                [where [or [= [?else [$name $k] ""] "h2"]
+                           [= [?else [$name $k] ""] "h3"]]]
+                [yield $i]]]
+              [= $end [?if [$empty $ends] [then [+ $n 1]] [else [$first $ends]]]]
+              [= $sect [$strings:join
+                [?for [in $i [$range [+ $start 1] [- $end 1]]]
+                  [yield [$cx:serialize [$nth $kids $i]]]] "\n"]]
+              [= $rx [$re:compile "\\|\\s*`\\[\\?([a-z][a-z0-9-]*)\\]`"]]
+          [$distinct [?for [in $m [$re:find-all $rx $sect]]
+            [yield [$re:group $m 1]]]]]]]]]
+
+# load-error-codes: every cx-err:CXER\d{4} in the whole spec.
+[?def load-error-codes scope=public impure ($spec-path)
+  [?let [= $rx [$re:compile "cx-err:(CXER[0-9]{4})"]]
+    [$distinct [?for [in $m [$re:find-all $rx [$io:read-file $spec-path]]]
+      [yield [$re:group $m 1]]]]]]
+
+# parse-meta: "key: value" lines of a [meta [#…#]] block into a map.
+[?def parse-meta scope=public ($body)
+  [$fp:fold [$strings:split-lines $body] {}
+    [?fn ($acc $line)
+      [?let [= $i [$strings:find $line ":"]]
+        [?if [< $i 0] [then $acc]
+          [else [$map:put $acc
+                  [$strings:trim [$strings:slice $line 0 $i]]
+                  [$strings:trim [$strings:slice $line [+ $i 1] [$strings:length $line]]]]]]]]]]
+
+# parse-case: one [case …] element → a map of the checked fields.
+[?def parse-case scope=public ($c)
+  [?let
+    [= $cid [$string [?else $c@id ""]]]
+    [= $title [$strings:join [?for [in $k $c/*]
+        [where [= [?else [$name $k] ""] "title"]]
+        [yield [$raw-of $k]]] ""]]
+    [= $meta [$fp:fold [?for [in $k $c/*]
+        [where [= [?else [$name $k] ""] "meta"]]
+        [yield [$normalize [$raw-of $k]]]] {}
+      [?fn ($acc $b) [$map:merge ($acc, [$parse-meta $b])]]]]
+    [= $sections [$fp:fold [?for [in $k $c/*]
+        [where [not [$member ('title','tags','meta') [?else [$name $k] ""]]]]
+        [yield $k]] {}
+      [?fn ($acc $k)
+        [$map:put $acc [$snake [?else [$name $k] ""]]
+                       [$normalize [$raw-of $k]]]]]]
+    {name: [?if [= $title ""] [then $cid] [else [$concat $cid " " $title]]],
+     level: [$string [?else [$map:get $meta "level"]
+                            [?else $c@level ""]]],
+     sections: $sections}]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $fix-path [?if [>= [$count $argv] 2] [then [$nth $argv 2]] [else "conformance/code.cxd"]]]
+  [= $spec-path [?if [>= [$count $argv] 3] [then [$nth $argv 3]] [else "spec/03-approved/core/code.md"]]]
+  [?if [not [and [$io:is-file $fix-path] [$io:is-file $spec-path]]]
+    [then [?let [= $_e [$cry [$concat "error: fixture or spec file not found: "
+                                       $fix-path ", " $spec-path]]]
+            [$env:exit 2]]]
+    [else
+      [?let
+        [= $registry [$load-registry $spec-path]]
+        [?if [$empty $registry]
+          [then [?let [= $_e [$cry [$concat "error: §4.1 registry not found in " $spec-path]]]
+                  [$env:exit 1]]]
+          [else
+            [?let
+              [= $error-codes [$load-error-codes $spec-path]]
+              [= $suite [$cx:parse [$io:read-file $fix-path]]]
+              [= $fixtures [?for [in $c $suite/*]
+                [where [= [?else [$name $c] ""] "case"]]
+                [yield [$parse-case $c]]]]
+              [= $names [?for [in $f $fixtures] [yield [$map:get $f "name"]]]]
+
+              # duplicates: every non-first occurrence of a name.
+              [= $name-counts [$fp:fold $names {}
+                [?fn ($acc $n) [$map:put $acc $n [+ 1 [?else [$map:get $acc $n] 0]]]]]]
+              [= $duplicate-ids [?for [in $i [$range 1 [$count $names]]]
+                [= $n [$nth $names $i]]
+                [where [> [$map:get $name-counts $n] 1]]
+                [where [not [= [$position $names $n] $i]]]
+                [yield $n]]]
+
+              [= $bad-level [?for [in $f $fixtures]
+                [where [not [$member CATEGORIES [$map:get $f "level"]]]]
+                [yield {id: [$map:get $f "name"], level: [$map:get $f "level"]}]]]
+
+              [= $bad-format [$cat-seqs (
+                [?for [in $f $fixtures] [in $r ('in_cx','in_code')]
+                  [where [not [$map:contains [$map:get $f "sections"] $r]]]
+                  [yield {id: [$map:get $f "name"], missing: $r}]],
+                [?for [in $f $fixtures]
+                  [= $outs [?for [in $k ('out_text','out_err','out_multiset')]
+                    [where [$map:contains [$map:get $f "sections"] $k]]
+                    [yield $k]]]
+                  [where [not [= [$count $outs] 1]]]
+                  [yield {id: [$map:get $f "name"], out_keys: [$to-arr [$sort $outs]]}]])]]
+
+              # id-category prefix registry (level → prefixes).
+              [= $prefix-by-level [$fp:fold PREFIX-MAP {}
+                [?fn ($acc $p) [$map:put $acc [$string $p@level]
+                  [$strings:split-whitespace [$raw-of $p]]]]]]
+              [= $bad-id-category [?for [in $f $fixtures]
+                [= $prefixes [?else [$map:get $prefix-by-level [$map:get $f "level"]] ()]]
+                [where [not [$empty $prefixes]]]
+                [where [$empty [?for [in $p $prefixes]
+                  [where [$starts-with [$map:get $f "name"] $p]] [yield $p]]]]
+                [yield {id: [$map:get $f "name"], level: [$map:get $f "level"]}]]]
+
+              # directive tokens per fixture in-code.
+              [= $dir-rx [$re:compile "\\[\\?([a-z][a-z0-9-]*)"]]
+              [= $tokens [?for [in $f $fixtures]
+                [in $m [$re:find-all $dir-rx [?else [$map:get [$map:get $f "sections"] "in_code"] ""]]]
+                [yield {id: [$map:get $f "name"], directive: [$re:group $m 1]}]]]
+              [= $unknown-directives [?for [in $t $tokens]
+                [= $d [$map:get $t "directive"]]
+                [where [not [$member $registry $d]]]
+                [where [not [$member HELPERS $d]]]
+                [where [not [$member REMOVED $d]]]
+                [where [not [$member PARSE-TIME-PI $d]]]
+                [where [not [$member INTENTIONAL-UNKNOWN [$map:get $t "id"]]]]
+                [yield $t]]]
+              [= $use-counts [$fp:fold $tokens
+                [$fp:fold $registry {} [?fn ($acc $d) [$map:put $acc $d 0]]]
+                [?fn ($acc $t) [?let [= $d [$map:get $t "directive"]]
+                  [?if [$map:contains $acc $d]
+                    [then [$map:put $acc $d [+ 1 [$map:get $acc $d]]]]
+                    [else $acc]]]]]]
+              [= $helper-counts [$fp:fold $tokens
+                [$fp:fold HELPERS {} [?fn ($acc $d) [$map:put $acc $d 0]]]
+                [?fn ($acc $t) [?let [= $d [$map:get $t "directive"]]
+                  [?if [and [$map:contains $acc $d] [not [$member $registry $d]]]
+                    [then [$map:put $acc $d [+ 1 [$map:get $acc $d]]]]
+                    [else $acc]]]]]]
+
+              # error-code citations across out_err + out_text + in_code.
+              [= $code-rx [$re:compile "CXER[0-9]{4}"]]
+              [= $cite-counts [$fp:fold
+                [?for [in $f $fixtures]
+                  [in $sec ('out_err','out_text','in_code')]
+                  [in $m [$re:find-all $code-rx
+                    [?else [$map:get [$map:get $f "sections"] $sec] ""]]]
+                  [yield [$re:group $m 0]]]
+                [$fp:fold $error-codes {} [?fn ($acc $c) [$map:put $acc $c 0]]]
+                [?fn ($acc $c)
+                  [?if [$map:contains $acc $c]
+                    [then [$map:put $acc $c [+ 1 [$map:get $acc $c]]]]
+                    [else $acc]]]]]
+
+              [= $uncovered-directives [$sort [?for [in $d $registry]
+                [where [= [$map:get $use-counts $d] 0]] [yield $d]]]]
+              [= $uncovered-codes [$sort [?for [in $c $error-codes]
+                [where [= [$map:get $cite-counts $c] 0]] [yield $c]]]]
+
+              # cross-suite re-verification.
+              [= $xs-rows [?for [in $x CROSS-SUITE]
+                [= $code [$string $x@code]]
+                [where [$member $uncovered-codes $code]]
+                [= $path [$string $x@file]]
+                [= $hits [?if [$io:is-file $path]
+                  [then [$strings:count [$io:read-file $path] $code]]
+                  [else 0]]]
+                [yield [xsrow code=$code file=$path hits=$hits]]]]
+              [= $cross-verified [$fp:fold [?for [in $r $xs-rows]
+                  [where [> $r@hits 0]] [yield $r]] {}
+                [?fn ($acc $r) [$map:put $acc [$string $r@code]
+                  {file: [$string $r@file], citations: $r@hits}]]]]
+              [= $cross-broken [$fp:fold [?for [in $r $xs-rows]
+                  [where [= $r@hits 0]] [yield $r]] {}
+                [?fn ($acc $r) [$map:put $acc [$string $r@code] [$string $r@file]]]]]
+              [= $enforced-uncovered [?for [in $c $uncovered-codes]
+                [where [not [$map:contains $cross-verified $c]]]
+                [where [not [$member KNOWN-UNIMPLEMENTED $c]]]
+                [yield $c]]]
+
+              [= $by-category [$fp:fold $fixtures {}
+                [?fn ($acc $f) [?let [= $l [?if [= [$map:get $f "level"] ""] [then "?"] [else [$map:get $f "level"]]]]
+                  [$map:put $acc $l [+ 1 [?else [$map:get $acc $l] 0]]]]]]]
+
+              [= $format-pass [and [$empty $duplicate-ids] [$empty $bad-format]
+                                   [and [$empty $bad-level] [$empty $bad-id-category]]]]
+              [= $green [and [and $format-pass [$empty $unknown-directives]]
+                             [and [$empty $enforced-uncovered]
+                                  [= [$map:size $cross-broken] 0]]]]
+
+              [= $report
+                {fixture_file: $fix-path,
+                 spec_file: $spec-path,
+                 total_fixtures: [$count $fixtures],
+                 by_category: $by-category,
+                 format_checks: {
+                   duplicate_ids: [$to-arr $duplicate-ids],
+                   bad_format: [$to-arr $bad-format],
+                   bad_level: [$to-arr $bad-level],
+                   bad_id_category: [$to-arr $bad-id-category],
+                   pass: $format-pass},
+                 directive_use: {
+                   unknown: [$to-arr $unknown-directives],
+                   registry_size: [$count $registry],
+                   registry_covered: [- [$count $registry] [$count $uncovered-directives]],
+                   uncovered: [$to-arr $uncovered-directives],
+                   use_counts: $use-counts,
+                   helper_use_counts: $helper-counts},
+                 error_code_coverage: {
+                   total_codes: [$count $error-codes],
+                   covered: [- [$count $error-codes] [$count $uncovered-codes]],
+                   uncovered: [$to-arr $uncovered-codes],
+                   cross_suite_verified: $cross-verified,
+                   cross_suite_broken: $cross-broken,
+                   known_unimplemented: {},
+                   enforced_uncovered: [$to-arr $enforced-uncovered],
+                   cite_counts: $cite-counts},
+                 green: $green}]
+              [= $_out [$say [$json:emit-with-opts $report {indent: 2}]]]
+              [?if $green [then [$env:exit 0]] [else [$env:exit 1]]]]]]]]]]

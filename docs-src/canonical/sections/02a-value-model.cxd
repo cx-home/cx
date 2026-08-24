@@ -40,14 +40,17 @@
 
     [note
       """A surface that **cannot** honor the invariant for a value class
-         must refuse loudly rather than improvise. Three classes refuse
+         must refuse loudly rather than improvise. Two classes refuse
          today by design: **closures** (they capture an environment no
-         canonical text can carry), **unbounded iterators** (an address
-         that depends on consumption state is not an identity), and
-         **secret-bearing values** (hashing the plaintext would turn
-         every address into a secret-confirmation oracle; hashing the
-         redacted form would give two secrets one address). Refusal is a
-         typed error — never a silent fallback address."""]]
+         canonical text can carry) and **secret-bearing values**
+         (hashing the plaintext would turn every address into a
+         secret-confirmation oracle; hashing the redacted form would
+         give two secrets one address). Refusal is a typed error —
+         never a silent fallback address. **Unbounded iterators** (an
+         address that depends on consumption state is not an identity)
+         are today force-materialized before addressing; the typed
+         refusal for them is approved surface that lands with the next
+         identity revision."""]]
 
   [child id=homoiconicity n=2a.2 title='Code is data — and has the same identity'
     [intro

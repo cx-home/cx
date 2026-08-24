@@ -1,0 +1,138 @@
+# scripts/check_lint_rules.cx — V6, the pre-commit lint rules (v0.8.0 V-row).
+#
+# Checks staged (or all-tracked) .cx files for breaking-rename violations and
+# retired v0.7.x syntax forms that the v0.8.0 parser rejects. Failing the gate
+# at commit time is cheaper than failing it in CI.
+#
+# Rules (each prefixed with a short ID for grep-able output):
+#
+#   L01  .cx file contains CX code eval-directive syntax `[?Name`
+#        → informational warning only. `.cx` is the canonical extension for
+#        both data and code; a directive in a `.cx` file is correct. Retained
+#        as a low-signal heuristic that something with directives is being
+#        touched.
+#   L02  .cx file uses the retired attribute-slot form (a colon-then /
+#        colon-else assignment) → ERROR (the v0.8.0 parser rejects this
+#        shape). The trigger tokens are spelled via $cat below so this
+#        file never flags itself.
+#   L03  .cx file uses the bare cond directive → ERROR.
+#   L04  .cx file declares the retired cxl-version pragma → WARNING; the
+#        canonical pragma is cx-eval-version.
+#
+# Patterns are searched against the file body, unanchored — false positives
+# are possible if these strings appear inside a raw-text block; the lint is a
+# guard, not a semantic parser. L01 discriminates CX processing-instructions
+# (`[?name data text]`) from CX code eval-directives via the fingerprint: an
+# eval-directive has `[` after the name (ArgArray opens), `:` after the name
+# (labeled-form slot), `]` directly after the name (zero-arg), or starts with
+# `?=` (interpolation shorthand).
+#
+# Usage (program args are positional after the FILE, cli.md §3 / PYE-2):
+#   cx --allow-read --allow-write --allow-subprocess --allow-env \
+#      scripts/check_lint_rules.cx            # walk all tracked .cx files
+#   cx … scripts/check_lint_rules.cx --staged # only files staged for commit
+# (or: make check-lint-rules)
+#
+# Exit codes:
+#   0 — no errors (warnings may still print).
+#   1 — at least one ERROR-level rule fired; commit/PR should not land.
+#   2 — harness failure (git enumeration failed).
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/fp'      as=fp]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def matched scope=public ($m) [> [?else $m@start -1] -1]]
+
+[?const ARG_SPEC [argspec
+  [flag name="staged" type=bool]]]
+
+[?let
+  [= $l01-rx [$re:compile "\\[\\?(?:=|[A-Za-z][A-Za-z0-9_\\-]*\\s*(?:\\[|:[a-z]|\\]))"]]
+  [= $l02-rx [$re:compile ":(?:then|else)\\s*="]]
+  [= $l03-rx [$re:compile "\\[\\?cond\\b"]]
+  [= $l04-rx [$re:compile "\\bcxl-version\\s*="]]
+
+  [= $args [$env:parse-args ARG_SPEC]]
+  [= $staged [?else [$env:flag $args "staged"] false]]
+
+  # File enumeration comes from git (the tracked/staged sets, not a raw
+  # glob — an untracked scratch .cx must not fail a commit).
+  [= $git-argv [?if $staged
+    [then ("git", "diff", "--cached", "--name-only", "--diff-filter=ACMR")]
+    [else ("git", "ls-files", "*.cx")]]]
+  [= $r [$process:run $git-argv]]
+
+  [?if [not [= $r@exit-code 0]]
+    [then
+      [?let [= $_e [$cry [$cat ("V6 lint: git enumeration failed (rc=",
+                                [$string $r@exit-code], "): ",
+                                [$strings:trim [$string $r@stderr]])]]]
+        [$env:exit 2]]]
+    [else
+  [?let
+    [= $files
+      [?for [in $p [$strings:split [$string $r@stdout] "\n"]]
+        [where [$strings:ends-with $p ".cx"]]
+        [yield $p]]]
+
+    [?if [= [$count $files] 0]
+      [then
+        [?let [= $_n [$say "V6: no .cx files to check"]]
+          [$env:exit 0]]]
+      [else
+    [?let
+      # One [res e=… w=…] per file; the rule reports print as they are found.
+      [= $results
+        [?for [in $f $files]
+          [where [$io:exists $f]]   # deleted file in staged mode
+          [= $body [?fallback [$io:read-file $f] [recover-with [read-failed]]]]
+          [yield
+            [?match $body
+              [case [read-failed]
+                [?let [= $_e [$cry [$cat ($f, ": cannot read")]]]
+                  [res e=1 w=0]]]
+              [else
+                [?let
+                  [= $w1 [?if [$matched [$re:find $l01-rx $body]]
+                    [then [?let [= $_p [$say [$cat ($f,
+                            ": L01 INFO: contains `[?Name` (eval directive in .cx file — correct)")]]]
+                      1]]
+                    [else 0]]]
+                  [= $e2 [?if [$matched [$re:find $l02-rx $body]]
+                    [then [?let [= $_p [$cry [$cat ($f,
+                            ": L02 ERROR: retired attribute-slot form ",
+                            "`:then", "=…/:else", "=…` — rewrite to the clause-child form ",
+                            "`[?if COND [then …] [else …]]`")]]]
+                      1]]
+                    [else 0]]]
+                  [= $e3 [?if [$matched [$re:find $l03-rx $body]]
+                    [then [?let [= $_p [$cry [$cat ($f,
+                            ": L03 ERROR: bare `[?", "cond …]` directive — ",
+                            "rewrite to `[?match]` with `[case …]`/`[else …]` ",
+                            "clause-children")]]]
+                      1]]
+                    [else 0]]]
+                  [= $w4 [?if [$matched [$re:find $l04-rx $body]]
+                    [then [?let [= $_p [$say [$cat ($f,
+                            ": L04 WARN: `cxl-version", "=` is not recognized; ",
+                            "the canonical pragma is `cx-eval-version=`")]]]
+                      1]]
+                    [else 0]]]
+                  [res e=[+ $e2 $e3] w=[+ $w1 $w4]]]]]]]]
+
+      [= $total-errors   [$fp:fold $results 0 [?fn ($a $x) [+ $a $x@e]]]]
+      [= $total-warnings [$fp:fold $results 0 [?fn ($a $x) [+ $a $x@w]]]]
+      [= $summary [$cat ("V6 lint: ", [$string [$count $files]], " file(s) checked, ",
+                         [$string $total-errors], " error(s), ",
+                         [$string $total-warnings], " warning(s)")]]
+
+      [?if [> $total-errors 0]
+        [then [?let [= $_s [$cry $summary]] [$env:exit 1]]]
+        [else [?let [= $_s [$say $summary]] [$env:exit 0]]]]]]]]]]]
