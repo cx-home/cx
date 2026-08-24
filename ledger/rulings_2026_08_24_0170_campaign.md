@@ -590,3 +590,46 @@ against the matrix, not a point decision.
 
 v0.17.0 now has three named tag blockers: #700 wave 2 (VC-18), Cluster A, and
 Cluster B/C. `scripts/release.sh v0.17.0` is not run while any is open.
+
+---
+
+# AMENDMENT 11 (2026-08-24) — VC-20
+
+**Status:** RULED by the owner — reply verbatim: **"it occurs to me that we
+really need to fix 700 first. we keep burning hours because you didn't get
+that fixed in 16 or at the beginning of 17. that work should likely be done
+in opus 5."** Recorded BEFORE the work per R6.1/R4.2.
+
+## VC-20 — #700 wave 2 goes FIRST, on Opus 5; the clusters follow on Fable 5
+
+This RESEQUENCES VC-19. VC-19 stands on substance — the path/value and
+comment/error clusters are settled spec-first, in v0.17.0, by Fable 5 — but
+its ORDER is wrong and #700 wave 2 precedes it.
+
+**The reason is compounding cost.** The per-file compile floor is ~700 s
+independent of file content, so every verification cycle in this campaign
+cost roughly 25 minutes of wall time. Cluster A alone is a total-matrix
+partition whose conformance grid will need many such cycles. Fixing the floor
+first makes every subsequent cycle — for Clusters A, B and C, and for the
+record pair — cheaper. Doing the clusters first pays the floor on every one
+of their cycles and then fixes it afterwards.
+
+**Model assignment:** #700 wave 2 is bulk implementation, so Opus 5 per the
+standing policy. The clusters remain Fable 5 (identity-critical, spec
+authoring, rulings). Return to Opus 5 after the clusters are solved and
+sound.
+
+**Owner's finding, recorded plainly:** this should have been fixed in v0.16.0
+or at the start of v0.17.0, and was not. The diagnosis was AVAILABLE ON DAY
+ONE of this campaign — the wave-1 brief quoted "96 lanes have compile > 50x
+their own runtime" and "call_result_steps_test.v 309 s compile / 0.46 s run",
+which is the floor stated outright. The brief scoped wave 1 to consolidating
+`vcx/tests/`, and that brief was executed rather than questioned. Wave 1's
+measured 4.51x was real but optimized the FILE COUNT while leaving the floor
+intact. The failure was not the measurement; it was accepting the framing
+that came with it.
+
+**Revised blocker order for v0.17.0** (all three still block the tag):
+  1. #700 wave 2 — Opus 5, FIRST
+  2. Cluster A — path/value matrix — Fable 5
+  3. Cluster B/C — comment fidelity + error surfacing — Fable 5
