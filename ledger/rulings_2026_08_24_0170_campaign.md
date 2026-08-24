@@ -396,3 +396,76 @@ line comment emitted inline swallows the following siblings and the closing
 bracket on re-parse — the emitter newline handling travels with the fix.
 
 The two worktrees stay until the ports land and are verified.
+
+---
+
+# AMENDMENT 8 (2026-08-24) — VC-14..VC-17
+
+**Status:** RULED by the owner — reply verbatim: **"9a 10a 11a 12a"** plus
+**"yes file the others and fix this campaign"** — against four decisions posed
+after the integrated matrix, and the disposition of two findings VC-7
+reported rather than fixed. Recorded BEFORE the work per R6.1/R4.2.
+
+## VC-14 (9a + 10a) — #700's remainder is WAVE 2 on #700, and the lever is ONE TEST BINARY PER MODULE
+
+9a: *"(a) Fold into #700 as wave 2 — the floor IS the root cause #700's own
+body names, and wave 1 attacked the file count rather than the floor."*
+Ruled (a). The remainder stays on #700 rather than becoming new issues.
+
+10a: *"(a) One test binary per module, not per file — it attacks the floor
+directly, 29 platform files become ~1 link instead of 29. (b) -usecache /
+build-module reuse. (c) Keep consolidating."* Ruled (a).
+
+Measured basis, from the integrated matrix at 5841ae6a0:
+
+| lane | files | compile CPU-s | runtime s | ratio |
+|---|---|---|---|---|
+| `vcx/platform` | 29 | 16,028 | 40 | **402:1** |
+| `vcx/tests` (post wave 1) | 57 | 15,154 | 524 | 29:1 |
+
+Per-file compile is a FLOOR of ~700 s independent of content
+(`cxparse_full_corpus_diff_test.v` 692 s compile / 0.4 s run;
+`store_columnar_lineage_test.v` 724 s / 0.4 s). Consolidation reduces how
+many files pay the floor — wave 1's delivered 4.51× — and cannot lower the
+floor itself. (b) was declined on risk: `-usecache` carries this repo's
+silent-miscompilation scar history (#151, #520, #855, #864).
+
+`vcx/platform` was never in wave 1's scope (its brief was `vcx/tests/`) and
+is now the largest lane.
+
+## VC-15 (11a) — the `cx:eval-tree` swallow is FIXED in this campaign
+
+*"(a) Fix it in this campaign — one line, the fix is already written, it is
+the confirmed bounded instance of #955's second mechanism, and it currently
+makes a shipped function lie about its own errors."* Ruled (a).
+
+`vcx/code/eval.v:5161` propagates `!` out of a `?cx.Node` function, so a real
+raised error collapses to `none` and the caller reports `no callable
+"cx:eval-tree"`. VC-6 measured the class and enumerated all nine
+option-returning `*_stdlib_builtin_env` hooks plus every `!`-propagation site
+in eval.v: this is the ONLY site with the defect, so the fix closes mechanism
+2 completely.
+
+## VC-16 (12a) — the `$to-int` spec-prose contradiction is TRUED
+
+*"(a) Authorize the truing; fix both examples to `[cast $v :int]` — it is
+mechanical, matches VC-3's character exactly, and right now the spec teaches
+a call that answers `no callable`."* Ruled (a).
+
+`spec/03-approved/core/code.md` uses `[$to-int $v]` in two examples (~614,
+~3153) while the same file states the `to-int` family "was deliberately not
+adopted". Outside VC-3's named list, hence this named authorization. Scope:
+those two examples only.
+
+## VC-17 ("yes file the others and fix this campaign") — VC-7's two reported findings are FILED **and** FIXED
+
+Both were reported rather than fixed because they sat outside VC-7's scope:
+
+1. `[$cx:parse]` returns only the FIRST top-level node, so a document whose
+   first item is a comment yields the comment and `/*` raises CXER0001 — while
+   the V-side `cx.parse` returns `doc.elements` and sees everything.
+2. The xpath corpus coverage gap VC-7's own re-tagging opened: cases 030–033
+   were the corpus's only reach toward `count` / `string-length` / `contains`,
+   and re-tagging them parity → divergence leaves those three unpinned.
+
+Each gets an issue AND a fix in this campaign.
