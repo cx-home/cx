@@ -105,7 +105,7 @@ build_one() {
         --exclude=vcx/target \
         --exclude=third_party/v/v \
         --exclude=third_party/re2/obj \
-        Makefile VERSION cx.pc.in include vcx stdlib x third_party scripts \
+        Makefile VERSION cx.pc.in include vcx stdlib x docs/llm third_party scripts \
         | tar xf - -C /build
       cd /build
       git config --global --add safe.directory "*"
