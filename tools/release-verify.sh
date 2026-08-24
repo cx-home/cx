@@ -109,8 +109,13 @@ check "make docs-check (primer example freshness + no drift)" \
 # diffing the subcommand's stdout against the file it was embedded from. (The
 # stdout is byte-exact by design precisely so this row can exist.) Catches the
 # `make docs` without a following `make build-vcx`, which no other gate sees.
+# The primer dump goes in the per-run RVLOG_DIR, not a fixed /tmp name:
+# parallel sessions share this checkout, and two concurrent runs racing on one
+# `/tmp/release-verify-primer.md` can make the diff read a half-written or a
+# foreign primer — flipping this row either way (#948, the unfinished half of
+# e47fe55ee, which converted RVLOG_DIR above but not this path).
 check "cx primer == docs/llm/primer.md (embed is fresh)" \
- "vcx/target/cx primer > /tmp/release-verify-primer.md && diff -q /tmp/release-verify-primer.md docs/llm/primer.md"
+ "vcx/target/cx primer > $RVLOG_DIR/primer-embed.md && diff -q $RVLOG_DIR/primer-embed.md docs/llm/primer.md"
 # Presence of the published doors. Negative guards cannot see a REQUIRED file
 # going missing, and the whole value of these is that a fixed path answers.
 check "llms.txt + llms-full.txt + AGENTS.md present and non-empty" \
