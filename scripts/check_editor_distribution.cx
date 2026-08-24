@@ -1,0 +1,114 @@
+# scripts/check_editor_distribution.cx — the editor-distribution release gate
+# (RULED: VC-10, #874).
+#
+# #874's engineering landed 2026-08-20 (c63b1e2f4): the Neovim plugin root, the
+# VS Code publish wiring in scripts/release.sh Phase 7, and the two external
+# registry payloads in tooling/tree-sitter-cx/REGISTRY.md. What did NOT land is
+# any mechanism that makes the remaining obligations impossible to forget — and
+# for four days nothing did, because Phase 7 SKIPS LOUDLY without its tokens and
+# nothing anywhere recorded that two external PRs were owed.
+#
+# A loud skip is not a gate. This is the gate: per release, each external
+# submission in REGISTRY.md's status table must either name the release it was
+# submitted for, or carry an explicit deferral with a reason. Blank fails.
+# Deferral is allowed on purpose — the PRs genuinely cannot be opened before the
+# release publishes the assets they resolve — but it has to be a DECISION
+# someone wrote down, not a default nobody saw.
+#
+# Deliberately NOT asserted here, because it already is elsewhere: the VS Code
+# extension version matches VERSION via scripts/check_version_consistency.cx
+# (tooling/vscode/package.json + package-lock.json rows). Re-asserting it would
+# be a second place to update when it moves.
+#
+# Usage:
+#   cx --allow-read --allow-write scripts/check_editor_distribution.cx
+#   (a tools/release-verify.sh row; NOT in TEST_TARGETS — a pending external PR
+#    is a per-release fact, not a broken tree, and reding `make test` on it
+#    would train everyone to ignore the row)
+#
+# Exit codes:
+#   0 — every submission is either submitted for THIS version or deferred with
+#       a reason.
+#   1 — a submission is blank, or claims both, or names a stale version.
+#   2 — the register or VERSION is unreadable / has no status table.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def say impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+
+[?const REGISTER 'tooling/tree-sitter-cx/REGISTRY.md']
+
+# cell: trim a markdown table cell.
+[?def cell scope=public ($s) [$strings:trim $s]]
+
+# blank-cell: the em-dash placeholder and the empty string both mean "nothing
+# here". Accepting only one spelling would make the table's own convention a
+# trap for whoever edits it next.
+[?def blank-cell scope=public ($s)
+  [?let [= $t [$strings:trim $s]]
+    [?if [= $t ''] [then true] [else [= $t '—']]]]]
+
+# status-rows: the rows of the LAST markdown table in the register — the
+# submission-status table. A row is `| name | submitted-for | deferred |`.
+# Header and separator rows are dropped by requiring a non-empty first cell
+# that is not the literal header word.
+[?def status-rows scope=public ($src)
+  [?for [in $l [$strings:split $src "\n"]]
+    [where [$strings:starts-with [$strings:trim $l] '|']]
+    [where [= [$count [$strings:split $l '|']] 5]]
+    [where [not [$strings:starts-with [$strings:trim $l] '|---']]]
+    [where [not [= [$cell [$nth [$strings:split $l '|'] 2]] 'submission']]]
+    [yield $l]]]
+
+
+# row-problem: '' when a row is accounted for, otherwise the sentence to print.
+# Split out of the comprehension deliberately — the nested [?if] chain this
+# replaces was where the first draft went wrong, and a per-row predicate is also
+# the thing a future reader wants to change.
+[?def row-problem scope=public ($r $ver)
+  [?let [= $f [$strings:split $r '|']]
+        [= $name [$cell [$nth $f 2]]]
+        [= $sub [$cell [$nth $f 3]]]
+        [= $def [$cell [$nth $f 4]]]
+        [= $has-sub [not [$blank-cell $sub]]]
+        [= $has-def [not [$blank-cell $def]]]
+    [?if [and [not $has-sub] [not $has-def]]
+      [then [$cat ('  ', $name, ': BLANK — name the release it was submitted for, or write a deferral reason')]]
+      [else [?if [and $has-sub $has-def]
+        [then [$cat ('  ', $name, ': claims BOTH submitted-for=', $sub, ' and a deferral — pick one')]]
+        [else [?if [and $has-sub [not [= $sub $ver]]]
+          [then [$cat ('  ', $name, ': submitted-for=', $sub, ' but this release is ', $ver,
+                       ' — resubmit for ', $ver, ' or record a deferral')]]
+          [else '']]]]]]]]
+
+[?let
+  [= $ver [$strings:trim [?fallback [$io:read-file 'VERSION']
+            [recover-with ([$cry 'check-editor-distribution: cannot read VERSION'],
+                           [$env:exit 2], '')]]]]
+  [= $src [?fallback [$io:read-file REGISTER]
+            [recover-with ([$cry [$cat ('check-editor-distribution: cannot read ', REGISTER)]],
+                           [$env:exit 2], '')]]]
+  [= $rows [$status-rows $src]]
+  [= $_none [?if [= [$count $rows] 0]
+    [then ([$cry [$cat ('check-editor-distribution: ', REGISTER,
+                        ' has no submission-status table — the obligations it gates')]],
+           [$cry '  are unrecorded, which is the state this gate exists to refuse.'],
+           [$env:exit 2])]
+    [else ()]]]
+  [= $bad [?for [in $r $rows]
+    [where [not [= [$row-problem $r $ver] '']]]
+    [yield [$row-problem $r $ver]]]]
+  [= $_report [?if [= [$count $bad] 0]
+    [then [$say [$cat ('EDITOR-DISTRIBUTION: OK — ', [$string [$count $rows]],
+                       ' submission(s) accounted for at ', $ver,
+                       ' (submitted, or deferred with a reason).')]]]
+    [else ([$cry [$cat ('check-editor-distribution: FAIL — ', [$string [$count $bad]],
+                        ' of ', [$string [$count $rows]],
+                        ' external submission(s) unaccounted for at ', $ver, ':')]],
+           [?for [in $b $bad] [yield [$cry $b]]],
+           [$cry [$cat ('  Edit the submission-status table in ', REGISTER, '.')]])]]]
+  [?if [= [$count $bad] 0] [then [$env:exit 0]] [else [$env:exit 1]]]]

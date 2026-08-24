@@ -139,6 +139,16 @@ section "Capability rubric"
 check "no unresolved \"⚠\" in readiness rubric" \
  "test -f spec/03-approved/process/readiness-rubric.md && ! grep -E '^\\| .* \\| *⚠ \\|' spec/03-approved/process/readiness-rubric.md"
 
+# RULED: VC-10 (#874) — editor distribution is GATED at each release, not
+# skipped loudly. #874's engineering landed 2026-08-20; what had no mechanism
+# was the remainder — two external-repo PRs whose payloads sat prepared and
+# unmentioned for four days because nothing recorded that they were owed. This
+# row makes each release state where they stand: submitted for THIS version, or
+# deferred with a reason. Deferral is legitimate (both PRs resolve assets that
+# only exist once the release publishes) — the gate refuses SILENCE, not delay.
+check "editor distribution: external submissions accounted for" \
+ "vcx/target/cx --allow-read --allow-write scripts/check_editor_distribution.cx"
+
 echo ""
 echo "═══════════════════════════════════════════════════════════════"
 echo " release-verify: $PASS passed, $FAIL failed"
