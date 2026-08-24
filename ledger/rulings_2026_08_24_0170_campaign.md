@@ -11,8 +11,31 @@ campaign. will be done with opus 5 autonomously."*
 
 **Docket as posed and accepted:** #700, #874, #891, #907, #939, #940,
 #943, #944, #945, #946, #947, #948, #949, #950, #951, #953, #954, plus
-anything found en route. Work continues on `release/0.16.0`; the v0.16.1
-tag cuts from it (#666 topology — no new branch).
+anything found en route.
+
+## AMENDMENT (same day, owner ruled "a" on the version question)
+
+The campaign was posed as **v0.16.1**. It is **v0.17.0**, on a new
+`release/0.17` line branch. VC-1..VC-5 below are UNCHANGED — they rule
+#939, #940, the spec authorization, the exemptions, and the autonomy
+boundary, none of which the version touches.
+
+**Owner's question that forced it, verbatim:** *"but then we don't have a
+branch of work done that matches a tag. is that the best long term cx
+process?"* — and the answer that followed: the docket carries three
+genuine features (#874 editor distribution, #891 shared-open protection,
+#907 CATALOGUE replay) plus two behavior changes, so a PATCH version
+would misdescribe it. Ruled: honest semver — MINOR for features
+pre-1.0, PATCH for fixes only.
+
+The branch convention moved with it (owner ruled "a"): a branch tracks a
+minor LINE, named `release/<major>.<minor>` — the line branch is what
+lets a hotfix land after development moves on, and the old
+`release/X.Y.0` spelling read as though the branch were the release.
+`release/0.16.0` renamed to `release/0.16`; `release/0.17` cut from
+662cf1957. `RELEASE_PROCESS.md` had documented a `release/<X.Y.Z>`
+per-patch model the scripts never implemented — that contradiction is
+what surfaced the question, and it is trued in the same change.
 
 ---
 
