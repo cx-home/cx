@@ -55,7 +55,16 @@ NORM="$(printf '%s\n' "$RAW" | sed 's/^_//' | grep -v '^$' | sort -u)"
 SURFACE="$(printf '%s\n' "$NORM" | grep -E '^(cx_|vgc_)' | sort)"
 VENDORED_COUNT="$(printf '%s\n' "$NORM" | grep -cvE '^(cx_|vgc_)')"
 
-CUR="$(mktemp)"; trap 'rm -f "$CUR" "$HDR"' EXIT
+# The EXIT trap names BOTH temp files, but HDR is not assigned until the
+# header cross-check below. Under `set -u` an exit inside that window (a
+# signal, or a failure in the nm extraction above) made the trap body itself
+# error with `HDR: unbound variable` — measured: the trap aborted before
+# `rm`, so CUR leaked and no cleanup ran (#949). Pre-initializing every name
+# the trap touches keeps the trap total regardless of where the exit lands,
+# and stays correct if a third temp file is ever added.
+CUR=""; HDR=""
+trap 'rm -f "$CUR" "$HDR"' EXIT
+CUR="$(mktemp)"
 printf '%s\n' "$SURFACE" > "$CUR"
 
 FAIL=0
