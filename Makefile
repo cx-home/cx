@@ -285,12 +285,21 @@ verify-binding-quickstarts:
 verify-doc-blocks: build-vcx
 	@tools/verify-doc-blocks.sh
 
-# V2 — upstream V patch tracking. Reports status of the vlang/v
-# issues that block cx v0.7.0. Exit non-zero only
-# on a closed-unfixed (upstream-rejected) outcome.
-check-v-upstream: CX_BIN ?= $(CURDIR)/vcx/target/cx
-check-v-upstream: build-vcx
-	@"$(CX_BIN)" --allow-net --allow-write scripts/check_v_upstream_patches.cx
+# V2 — V FORK divergence inventory (RULED: VC-1). CX builds against a
+# permanent fork of the V compiler, so there is no pending-upstream state
+# to track: this gate asserts that every commit third_party/v carries
+# beyond its upstream base has a documented row in the register, and that
+# no register row names a commit the fork has dropped. Red on undocumented
+# divergence, in either direction.
+#
+# It replaced check-v-upstream, which queried the GitHub API for two
+# tracked issues — a network dependency that made it advisory-only (CI ran
+# it under continue-on-error, so it could never fail anything). This one is
+# OFFLINE and deterministic, which is what earns it a place in TEST_TARGETS.
+.PHONY: check-v-fork
+check-v-fork: CX_BIN ?= $(CURDIR)/vcx/target/cx
+check-v-fork: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess scripts/check_v_fork_patches.cx
 
 # V6 — pre-commit lint rules over .cx files. Catches the retired
 # v0.7.x syntax forms the v0.8.0 parser rejects, plus the
@@ -475,7 +484,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test test-python test-vcx test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane
+TEST_TARGETS := abi-c-test check-v-fork test-python test-vcx test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # Runs only the TEST_TARGETS lanes whose declared input globs intersect

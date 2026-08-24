@@ -1,0 +1,230 @@
+# scripts/check_v_fork_patches.cx — the V fork DIVERGENCE gate (RULED: VC-1).
+#
+# CX builds against a PERMANENT fork of the V compiler (cx-home/v). This
+# gate is the inventory of that divergence: it compares the register in
+# scripts/v_fork_register.cxd against the commit set actually carried by
+# third_party/v, and it prints the inventory grouped by family.
+#
+# It replaces scripts/check_v_upstream_patches.cx, which tracked two
+# upstream V issues and failed RC=1 when they closed without merging —
+# treating an unmerged patch as a pending state to be resolved. Per VC-1
+# (ledger/rulings_2026_08_24_0170_campaign.md) the fork is permanent, so
+# there is no pending state: green while the divergence is recorded, red
+# when the fork carries something undocumented. It is also OFFLINE, which
+# is what lets it sit in TEST_TARGETS — the old gate queried the GitHub
+# API and so could only ever be advisory.
+#
+# What makes it red (exit 1):
+#   - a fork commit with no row in the register     (UNDOCUMENTED patch)
+#   - a register row with no matching fork commit   (STALE entry)
+#   - a register row naming an undeclared family
+#   - a family whose reason= is empty               (a row is documented
+#     only if someone wrote down why CX carries it)
+#   - upstream-base is not an ancestor of the submodule HEAD (stale base)
+#   - the submodule gitlink disagrees with the checked-out HEAD
+#   - tracked files modified in the submodule work tree (divergence no
+#     commit records, so the register cannot see it)
+#
+# Usage:
+#   cx --allow-read --allow-write --allow-subprocess scripts/check_v_fork_patches.cx
+#   (or: make check-v-fork)
+#
+# Exit codes:
+#   0 — the register and the fork agree exactly.
+#   1 — they disagree (see above); the register must be updated.
+#   2 — environment fault: git unavailable, submodule absent, register
+#       unreadable or unparseable.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/process' as=process]
+
+[?def say impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def member scope=public ($x $xs)
+  [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+[?const REGISTER 'scripts/v_fork_register.cxd']
+
+# lines: split captured stdout into non-empty lines.
+[?def lines scope=public ($s)
+  [?for [in $l [$strings:split $s "\n"]]
+    [where [not [= [$strings:trim $l] '']]]
+    [yield $l]]]
+
+# short: 10-char sha prefix for human output.
+[?def short scope=public ($sha) [$strings:slice $sha 0 10]]
+
+# subject-for: the commit subject of $sha, read out of the `<sha>\t<subject>`
+# rows git produced. The subject is deliberately NOT stored in the register
+# (it would be a second copy to drift), so the inventory reads it live.
+[?def subject-for scope=public ($sha $rows)
+  [?let [= $hit [?for [in $r $rows]
+                  [where [$strings:starts-with $r $sha]]
+                  [yield [$nth [$strings:split $r "\t"] 2]]]]
+    [?if [= [$count $hit] 0] [then '(NOT IN THE FORK)'] [else [$first $hit]]]]]
+
+# run-git: [$process:run …] over an already-built arg tuple; exit 2 on a
+# non-zero status, because every git call this gate makes is one whose
+# failure means the environment is wrong rather than the tree.
+[?def run-git scope=public impure ($argv $what)
+  [?let [= $r [?fallback [$process:run $argv]
+                [recover-with ([$cry [$cat ('check-v-fork: cannot run git (', $what, ')')]],
+                               [$env:exit 2], null)]]]
+    [?if [not [= [$string $r@exit-code] '0']]
+      [then [?let [= $_f ([$cry [$cat ('check-v-fork: git ', $what, ' failed (exit ',
+                                       [$string $r@exit-code], ')')]],
+                          [$cry [$string $r@stderr]])]
+              [?let [= $_x [$env:exit 2]] '']]]
+      [else [$string $r@stdout]]]]]
+
+[?let
+  # ── the register ──────────────────────────────────────────────────────
+  [= $src [?fallback [$io:read-file REGISTER]
+            [recover-with ([$cry [$cat ('check-v-fork: cannot read ', REGISTER)]],
+                           [$env:exit 2], '')]]]
+  [= $doc [?fallback [$cx:parse $src]
+            [recover-with ([$cry [$cat ('check-v-fork: cannot parse ', REGISTER)]],
+                           [$env:exit 2], null)]]]
+  [= $reg-els [?for [in $e $doc//v-fork-register] [yield $e]]]
+  [= $_root [?if [not [= [$count $reg-els] 1]]
+    [then ([$cry [$cat ('check-v-fork: ', REGISTER,
+                        ' must hold exactly one [v-fork-register] element, found ',
+                        [$string [$count $reg-els]])]],
+           [$env:exit 2])]
+    [else ()]]]
+  [= $reg [$first $reg-els]]
+  [= $sub  [$string $reg@submodule-path]]
+  [= $base [$string $reg@upstream-base]]
+  [= $base-label [$string [?else $reg@upstream-base-label '(unlabeled)']]]
+
+  [= $families [?for [in $f $doc//v-fork-register/family] [yield $f]]]
+  [= $family-ids [?for [in $f $families] [yield [$string $f@id]]]]
+  [= $rows [?for [in $p $doc//v-fork-register/patch] [yield $p]]]
+  [= $reg-shas [?for [in $p $rows] [yield [$string $p@sha]]]]
+
+  # ── register self-consistency ─────────────────────────────────────────
+  # A family with an empty reason= documents nothing: without this check a
+  # patch could be greened by pasting a sha under a silent family, which is
+  # the vacuous-pass hole this gate exists to close.
+  [= $silent [?for [in $f $families]
+    [where [= [$strings:trim [$string [?else $f@reason '']]] '']]
+    [yield [$string $f@id]]]]
+  [= $orphans [?for [in $p $rows]
+    [where [not [$member [$string $p@family] $family-ids]]]
+    [yield [$cat ([$short [$string $p@sha]], ' -> family=', [$string $p@family])]]]]
+  [= $dupes [?for [in $s $reg-shas]
+    [where [> [$count [?for [in $t $reg-shas] [where [= $t $s]] [yield $t]]] 1]]
+    [yield [$short $s]]]]
+
+  # ── the fork as it actually is ────────────────────────────────────────
+  [= $head [$strings:trim [$run-git ('git', '-C', $sub, 'rev-parse', 'HEAD') 'rev-parse']]]
+  [= $gitlink-raw [$run-git ('git', 'ls-tree', 'HEAD', $sub) 'ls-tree']]
+  [= $gitlink [?let [= $fs [$strings:split [$strings:trim $gitlink-raw] "\t"]]
+                    [= $cols [$strings:split [$first $fs] ' ']]
+                 [?if [< [$count $cols] 3] [then ''] [else [$nth $cols 3]]]]]
+  [= $dirty [$lines [$run-git ('git', '-C', $sub, 'status', '--porcelain',
+                               '--untracked-files=no') 'status']]]
+  [= $ancestor [?let [= $r [?fallback [$process:run ('git', '-C', $sub, 'merge-base',
+                                                     '--is-ancestor', $base, 'HEAD')]
+                             [recover-with null]]]
+                 [?if [= $r null] [then false]
+                   [else [= [$string $r@exit-code] '0']]]]]
+
+  # ── verdict ───────────────────────────────────────────────────────────
+  # A stale base makes the commit range meaningless, so it is reported and
+  # exits before the set comparison rather than producing 84 phantom rows.
+  [= $_base-check [?if [not $ancestor]
+    [then ([$cry [$cat ('check-v-fork: FAIL — upstream-base ', [$short $base],
+                        ' is not an ancestor of ', $sub, ' HEAD ', [$short $head], '.')]],
+           [$cry '  The patch series was rebased or the pin moved off it. Update'],
+           [$cry [$cat ('  upstream-base in ', REGISTER, ' and regenerate the patch rows.')]],
+           [$env:exit 1])]
+    [else ()]]]
+
+  [= $fork-rows [$lines [$run-git ('git', '-C', $sub, 'log', '--no-merges', '--reverse',
+                                   '--format=%H%x09%s', [$cat ($base, '..HEAD')]) 'log']]]
+  [= $fork-shas [?for [in $r $fork-rows] [yield [$first [$strings:split $r "\t"]]]]]
+
+  [= $undocumented [?for [in $r $fork-rows]
+    [where [not [$member [$first [$strings:split $r "\t"]] $reg-shas]]]
+    [yield $r]]]
+  [= $stale [?for [in $s $reg-shas]
+    [where [not [$member $s $fork-shas]]]
+    [yield $s]]]
+
+  # ── the inventory (the human-facing half) ─────────────────────────────
+  [= $_head ([$say [$cat ('V fork divergence inventory — ', $sub)]],
+             [$say [$cat ('  upstream base : ', [$short $base], '  ', $base-label)]],
+             [$say [$cat ('  fork HEAD     : ', [$short $head])]],
+             [$say [$cat ('  divergence    : ', [$string [$count $fork-rows]],
+                          ' commits in ', [$string [$count $families]], ' families')]],
+             [$say ''])]
+  [= $_inv [?for [in $f $families]
+    [yield [?let
+      [= $fid [$string $f@id]]
+      [= $mine [?for [in $p $rows] [where [= [$string $p@family] $fid]]
+                 [yield [$string $p@sha]]]]
+      ([$say [$cat ('  [', $fid, ']  ', [$string [$count $mine]], ' commit(s)')]],
+       [?for [in $s $mine]
+         [yield [$say [$cat ('      ', [$short $s], '  ', [$subject-for $s $fork-rows])]]]],
+       [$say ''])]]]]
+
+  # ── failure reporting ─────────────────────────────────────────────────
+  [= $bad [+ [+ [$count $undocumented] [$count $stale]]
+             [+ [+ [$count $silent] [$count $orphans]]
+                [+ [$count $dupes] [+ [$count $dirty]
+                   [?if [= $gitlink $head] [then 0] [else 1]]]]]]]
+  [?if [= $bad 0]
+    [then [?let [= $_ok [$say [$cat ('OK — the register accounts for all ',
+                                     [$string [$count $fork-rows]],
+                                     ' fork commits, and every row is live.')]]]
+            [$env:exit 0]]]
+    [else [?let [= $_r (
+      [$cry ''],
+      [$cry 'check-v-fork: FAIL — the register and the fork disagree.'],
+      [?if [> [$count $undocumented] 0]
+        [then ([$cry [$cat ('  UNDOCUMENTED — ', [$string [$count $undocumented]],
+                            ' fork commit(s) with no row in the register:')]],
+               [?for [in $r $undocumented]
+                 [yield [$cry [$cat ('    ', [$short [$first [$strings:split $r "\t"]]], '  ',
+                                     [$nth [$strings:split $r "\t"] 2])]]]],
+               [$cry [$cat ('    Add [patch sha=<full-sha> family=<id>] rows to ', REGISTER, '.')]])]
+        [else ()]],
+      [?if [> [$count $stale] 0]
+        [then ([$cry [$cat ('  STALE — ', [$string [$count $stale]],
+                            ' register row(s) name a commit the fork does not carry:')]],
+               [?for [in $s $stale] [yield [$cry [$cat ('    ', [$short $s])]]]],
+               [$cry '    The patch was dropped or the series was rewritten; remove the row.'])]
+        [else ()]],
+      [?if [> [$count $silent] 0]
+        [then ([$cry [$cat ('  SILENT FAMILY — ', [$string [$count $silent]],
+                            ' family element(s) carry an empty reason=:')]],
+               [?for [in $f $silent] [yield [$cry [$cat ('    ', $f)]]]],
+               [$cry '    The reason IS the documentation — say why CX carries it permanently.'])]
+        [else ()]],
+      [?if [> [$count $orphans] 0]
+        [then ([$cry [$cat ('  UNDECLARED FAMILY — ', [$string [$count $orphans]],
+                            ' row(s) name a family with no [family] element:')]],
+               [?for [in $o $orphans] [yield [$cry [$cat ('    ', $o)]]]])]
+        [else ()]],
+      [?if [> [$count $dupes] 0]
+        [then ([$cry [$cat ('  DUPLICATE — ', [$string [$count $dupes]],
+                            ' row(s) repeat a sha that is already registered:')]],
+               [?for [in $d $dupes] [yield [$cry [$cat ('    ', $d)]]]])]
+        [else ()]],
+      [?if [> [$count $dirty] 0]
+        [then ([$cry [$cat ('  DIRTY WORK TREE — ', [$string [$count $dirty]],
+                            ' tracked file(s) modified in ', $sub, ':')]],
+               [?for [in $d $dirty] [yield [$cry [$cat ('    ', $d)]]]],
+               [$cry '    Uncommitted fork changes are divergence no commit records.'])]
+        [else ()]],
+      [?if [= $gitlink $head] [then ()]
+        [else ([$cry [$cat ('  PIN DRIFT — the ', $sub, ' gitlink is ', [$short $gitlink],
+                            ' but the checked-out HEAD is ', [$short $head], '.')]],
+               [$cry '    A fresh clone would build a different compiler than this tree does.'])]],
+      [$cry ''])]
+      [$env:exit 1]]]]]

@@ -82,9 +82,8 @@ jobs:
       - name: Run smoke-eval
         run: make smoke-eval
 
-      - name: V upstream patch tracking (V2)
-        run: make check-v-upstream
-        continue-on-error: true
+      - name: V fork divergence inventory (V2)
+        run: make check-v-fork
 
       - name: Pre-commit lint rules (V6)
         run: make check-lint-rules

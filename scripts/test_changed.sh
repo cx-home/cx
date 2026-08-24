@@ -74,6 +74,7 @@ lane_globs() {
     spec-freeze-gate)              echo '*' ;;
     test-extraction-gate)          echo 'vcx/* conformance/* stdlib/* third_party/*' ;;
     abi-gc-gate)                   echo 'vcx/* third_party/*' ;;
+    check-v-fork)                  echo 'third_party/* scripts/v_fork_register.cxd scripts/check_v_fork_patches.cx' ;;
     libcx-abi-gate)                echo 'vcx/* third_party/*' ;;
     test-profile-gate)             echo 'vcx/* conformance/* stdlib/* third_party/*' ;;
     check-code-spec-consistency)   echo 'spec/* vcx/code/*' ;;

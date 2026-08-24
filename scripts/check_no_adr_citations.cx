@@ -140,8 +140,6 @@
                        ".mjs", ".ts", ".h", ".c", ".sh", ".txt", ".toml",
                        ".json", ".ebnf", ".mk", "")]
         [= $allow-relpaths (
-          # citation-processing / provenance tooling — must contain the strings
-          "scripts/check_v_upstream_patches.py",
           # the gate's own Makefile target name + descriptive comments
           "Makefile",
           # the #700 lane-input skip manifest: its rows are `case` arms keyed

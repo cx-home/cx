@@ -5,11 +5,44 @@
 CX builds against a **fork** of the V compiler (`https://github.com/cx-home/v.git`),
 not upstream `vlang/v`. As of the CX-from-V eviction
 (`spec/02-working/evict_cx_from_v_PLAN.md`) the fork carries **only CX-agnostic
-runtime/mem-mgmt patches** ("Bucket-1") that are being upstreamed to `vlang/v`;
-it contains **no CX-specific code**. The goal is for the fork to eventually be
-replaceable by stock upstream V.
+runtime/mem-mgmt patches** ("Bucket-1"); it contains **no CX-specific code**.
 
-### What the fork still carries (Bucket-1, CX-agnostic)
+### Maintenance posture: the fork is PERMANENT
+
+**Do not treat this fork as a staging area for patches on their way upstream.**
+It was framed that way until 2026-08-24 — "the goal is for the fork to
+eventually be replaceable by stock upstream V" — and the framing cost real
+maintenance attention. Two tracked upstream issues (`vlang/v#27178`,
+`vlang/v#27179`) closed without merging, and the gate that watched them went
+red demanding a decision; the audit that followed found upstream 0.5.2 already
+carried both changes by another route, so neither had been fork divergence for
+some time. Nothing was pending. The expectation was the defect.
+
+The posture that replaced it: **CX owns this fork indefinitely.** The largest
+divergence — architecture-E memory management — is not something upstream V has
+or plans, and the fork-safety patches (pinned bootstrap, no phone-home, `v up`
+refusing to rebase) exist *because* the fork is a fork and can never be
+upstreamed at all. Upstreaming an individual CX-agnostic patch is welcome when
+someone wants to do the work, but it is opportunistic, not a roadmap, and no
+gate waits on it.
+
+What replaces the watching: **[`scripts/v_fork_register.cxd`](../scripts/v_fork_register.cxd)**
+is the register of the fork's deliberate divergence — the upstream commit the
+series sits on, one row per fork commit, and the reason each patch *family*
+exists. `make check-v-fork` compares it against the actual commit set in
+`third_party/v` and fails when the two disagree in either direction: a fork
+commit with no row is **undocumented divergence**, a row with no commit is a
+**stale entry**. It is offline and deterministic, and it sits in `TEST_TARGETS`,
+so an undocumented fork patch cannot reach a release.
+
+**When you land a patch on the fork**, move the submodule pin and add its row to
+the register in the same change. If no family fits, write a new one — the
+`reason=` is the documentation, and an empty one fails the gate. Rebasing the
+series onto a newer upstream V changes every SHA and reds the whole register at
+once; that is deliberate, because a rebase is exactly when the inventory has to
+be re-confirmed rather than silently carried.
+
+### What the fork carries (Bucket-1, CX-agnostic)
 
 1. **`-gc e` / vgc memory management** — architecture-E (Perceus RC front line +
    precise STW vgc backstop), the default GC for ordinary C-backend programs;
