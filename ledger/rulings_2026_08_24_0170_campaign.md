@@ -242,3 +242,39 @@ still carries `prio:high`, so a docket sweep reads a stale body, sees a
 high-priority label, and re-parks it. The 2026-08-20 comment on the issue
 was accurate and the sweep did not read it. Reading issue COMMENTS, not
 only bodies, before posing an owner question is the correction.
+
+---
+
+# AMENDMENT 4 (2026-08-24) — VC-10
+
+**Status:** RULED by the owner — reply verbatim: **"5a just make sure this
+is gated with each release"** — against the #874 disposition question posed
+after the VC-9 correction. Recorded BEFORE the work per R6.1/R4.2.
+
+## VC-10 (5a + a gating instruction) — #874 CLOSES; the remainder becomes a RELEASE GATE
+
+The question: *"(a) Close #874; track the remainder as a release-checklist
+item plus one prio:low issue for the two external PRs — the enhancement it
+describes is built. What is left is not an enhancement, it is a publish step
+you trigger and two outbound PRs gated on a release. (b) Keep it open,
+rewrite the body, drop to prio:low. (c) Leave as-is."* Ruled (a), with the
+added instruction that the remainder **is gated with each release**.
+
+So the disposition is three parts:
+
+1. #874 CLOSES. Its engineering scope landed 2026-08-20 at `c63b1e2f4`
+   (see the VC-9 correction above).
+2. The two external-repo submissions (nvim-treesitter parser registry,
+   mason package entry — payloads prepared verbatim in
+   `tooling/tree-sitter-cx/REGISTRY.md`) become their own `prio:low` issue.
+3. **The remainder is GATED AT EACH RELEASE, not tracked as a checklist
+   line.** The owner's instruction is explicit: "just make sure this is
+   gated with each release." A loud skip is NOT a gate — `scripts/release.sh`
+   Phase 7 already skips loudly when `VSCE_PAT`/`OVSX_PAT` are absent, and
+   that is precisely the state that let this obligation go unnoticed for
+   four days. The gate must make skipping a DECISION rather than a default:
+   the release path fails unless the editor-distribution obligations are
+   either satisfied or explicitly acknowledged, with the acknowledgement
+   recorded in the release log.
+
+Commits under this carry a `RULED: VC-10` token (spec-freeze R4.1).
