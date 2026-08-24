@@ -469,3 +469,35 @@ Both were reported rather than fixed because they sat outside VC-7's scope:
    and re-tagging them parity → divergence leaves those three unpinned.
 
 Each gets an issue AND a fix in this campaign.
+
+---
+
+# AMENDMENT 9 (2026-08-24) — VC-18
+
+**Status:** RULED by the owner — reply verbatim: **"700 gets completed in
+0.17.0 but can be after this campaign."** Recorded BEFORE the work per
+R6.1/R4.2.
+
+## VC-18 — #700 wave 2 is IN the v0.17.0 release but OUT of this campaign
+
+The question: *"Should the test-speed restructure happen now, or next
+campaign? (a) Next campaign — it changes how every test binary is built, and
+v0.17.0 already has ~50 commits plus two engine fixes landing. (b) Now."*
+Ruled: neither as posed — **#700 completes in v0.17.0, but may land after
+this campaign.**
+
+Two consequences, both binding:
+
+1. **#700 STAYS OPEN and GATES THE v0.17.0 TAG.** The release is not
+   tag-ready while wave 2 is outstanding. This overrides the ordinary reading
+   of VC-5 ("autonomous to ready-to-tag"): this campaign reaches ready-to-tag
+   for its OWN docket, and the release itself still owes #700 wave 2. Any
+   later session must not run `scripts/release.sh v0.17.0` with #700 open.
+2. **Wave 2 is NOT this campaign's work.** Its scope is recorded on #700
+   (VC-14): `vcx/platform` first (29 files, 16,028 compile CPU-s, 402:1),
+   then `vcx/tests`, by the ruled lever — one test binary per MODULE, not per
+   file.
+
+So this campaign's exit state is: docket complete, record pair green, review
+package prepared, and **one named outstanding release blocker** — #700 wave
+2 — rather than a clean ready-to-tag.
