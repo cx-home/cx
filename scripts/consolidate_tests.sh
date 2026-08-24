@@ -68,6 +68,21 @@ done
 
 umbrella="${lane_dir}/${area}_umbrella_test.v"
 
+# ── pre-flight: the inputs must be COMMITTED ──────────────────────────
+# apply/absorb end in `git rm`, which refuses a file carrying uncommitted
+# changes — and it refuses AFTER the umbrella has compiled and run, i.e.
+# after the only expensive step. Refuse up front instead, naming the
+# files. This runs before absorb strips the live umbrella's header, so a
+# refusal here leaves the tree exactly as it was.
+if [ "$mode" = apply ] || [ "$mode" = absorb ]; then
+  dirty=$(git status --porcelain -- "${pending[@]}" | awk 'NF { print "    " $NF }')
+  if [ -n "$dirty" ]; then
+    echo "consolidate_tests: these inputs have uncommitted changes — commit them first (the merge ends in \`git rm\`, which will not discard unsaved work):"
+    echo "$dirty"
+    exit 2
+  fi
+fi
+
 # ── roster: absorb prepends the live umbrella, the other modes do not ──
 if [ "$mode" = absorb ]; then
   [ -f "$umbrella" ] || { echo "consolidate_tests: absorb needs an existing $umbrella (use 'apply' to create one)"; exit 2; }

@@ -90,6 +90,8 @@ lane_globs() {
     # the oriel surface lane drives spec/03-approved/xap/demos/oriel/
     test-oriel-lane)               echo 'spec/03-approved/xap/demos/* vcx/* stdlib/* x/*' ;;
     tools-export-gate)             echo 'conformance/tools-export/* vcx/* stdlib/*' ;;
+    # the roster rows live in the Makefile and name files under vcx/
+    check-serial-retry-rosters)    echo 'Makefile vcx/*' ;;
     *)                             echo '' ;; # unknown lane → ALWAYS RUN
   esac
 }

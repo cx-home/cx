@@ -484,7 +484,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test check-v-fork test-python test-vcx test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane
+TEST_TARGETS := abi-c-test check-v-fork check-serial-retry-rosters test-python test-vcx test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS lanes whose
@@ -1255,13 +1255,36 @@ RETRY_REASON_CASE = case "$$rel" in \
 	    reason="\#951 supervise note/terminal load-race under -j compile storms; green 25/25 and 80/80 in isolation" ;; \
 	  vcx/tests/net_udp_read_deadline_test.v|vcx/tests/net_dtls_test.v|vcx/tests/net_real_socket_test.v|vcx/tests/a2a_real_test.v) \
 	    reason="real-socket contention: ephemeral-port / deadline race under -j" ;; \
-	  vcx/platform/store_admin_plane_test.v|vcx/platform/store_grpc_live_test.v|vcx/platform/store_grpc_parity_test.v|vcx/platform/store_lazy_load_test.v) \
+	  vcx/platform/store_admin_plane_test.v|vcx/platform/store_grpc_live_test.v|vcx/platform/store_lazy_load_test.v) \
 	    reason="real-socket contention: live store/grpc endpoint under -j (\#648)" ;; \
 	  *) \
 	    reason="NO REASON DECLARED for this lane -- retried anyway; declare it in RETRY_REASON_CASE in the Makefile" ;; \
 	esac
 
-test-vcx-suite: build-vcx-dev
+# A retry roster is matched against the lane paths the suite REPORTS, so a
+# row naming a file that no longer exists matches nothing and silently
+# disables its retry class — the class stops applying and the gate looks
+# unchanged. That is the vacuous-gate failure mode, and here it would
+# disable the mitigation currently absorbing the #951 supervise load-race.
+# Consolidation (#700) deletes lane files by design, so this is now a live
+# hazard rather than a theoretical one: assert every roster row exists,
+# before the suite runs.
+.PHONY: check-serial-retry-rosters
+check-serial-retry-rosters:
+	@missing=""; \
+	for t in $(SUITE_SERIAL_RETRY) $(CODE_SERIAL_RETRY); do \
+	  [ -f "$$t" ] || missing="$$missing $$t"; \
+	done; \
+	if [ -n "$$missing" ]; then \
+	  echo "check-serial-retry-rosters: retry roster names file(s) that do not exist —"; \
+	  echo "  a row matching no lane silently disables its retry class:"; \
+	  for t in $$missing; do echo "    $$t"; done; \
+	  echo "  fix the roster in Makefile (SUITE_SERIAL_RETRY / CODE_SERIAL_RETRY)."; \
+	  exit 1; \
+	fi; \
+	echo "check-serial-retry-rosters OK — every retry-roster row names an existing lane"
+
+test-vcx-suite: build-vcx-dev check-serial-retry-rosters
 	@rm -f $(CX_SKIP_LOG)
 	@log=vcx/target/test-suite-run.log; stf=vcx/target/test-suite-status; \
 	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/tests/ 2>&1; echo $$? > $$stf; } | tee $$log; \
@@ -1313,16 +1336,20 @@ test-vcx-suite: build-vcx-dev
 # retry class, so a live-socket lane flaking under -j parallel load failed the
 # umbrella with no re-run — store_admin_plane_test.v, repeatedly green in
 # isolation, is the proven case).
+#
+# store_grpc_parity_test.v was dropped from this roster 2026-08-24: the file
+# has not existed since abaea9b9b retired the CSRP data plane, so the row
+# matched no lane and was doing nothing. check-serial-retry-rosters (below)
+# is what found it, and is what stops the next one.
 CODE_SERIAL_RETRY := vcx/platform/store_admin_plane_test.v \
                      vcx/platform/store_grpc_live_test.v \
-                     vcx/platform/store_grpc_parity_test.v \
                      vcx/platform/store_lazy_load_test.v
 
 # I3 module split (#651/#516): the in-module tests now live in TWO
 # modules — vcx/code (Ring 1) and vcx/platform (Ring 2, where the
 # store/journal/grpc/service subjects moved). One lane runs both.
 .PHONY: test-vcx-code
-test-vcx-code: build-vcx-dev
+test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	@log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
 	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/code/ vcx/platform/ 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
