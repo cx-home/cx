@@ -9,9 +9,14 @@
 #absorbed vcx/tests/stdlib_xsp_test.v
 #absorbed vcx/tests/vc_roundtrip_test.v
 # ── #700 wave 1, 2026-08-24.
-# NOT listed: stdlib_supervise_test.v — cited by path in approved spec prose
-# (spec/03-approved/std-lib/supervise.md:13 and :359); repointing it is an
-# unauthorized spec edit. It also drives supervise in-process with
-# FIXED-NAME channels (vlane-never / vlane-never2 / vlane-ok2) and sits next
-# to the #951 note-transit family, so it wants its own process anyway.
+# SPEC-CITATION DEBT: spec/03-approved/std-lib/supervise.md:13 and :359 cite
+# stdlib_supervise_test.v by path; not trued here (see diagram.files).
+# ISOLATION: stdlib_supervise_test.v drives supervise in-process with
+# FIXED-NAME channels (vlane-never / vlane-never2 / vlane-ok2). Those names
+# are unique inside this umbrella's process (checked at absorb time), and the
+# file already ran several of them in one process before the merge. If this
+# umbrella ever flakes under -j load, the #951 supervise note-transit family
+# is the first suspect and the mitigation is SUITE_SERIAL_RETRY membership,
+# not un-merging.
 vcx/tests/stdlib_session_guest_test.v
+vcx/tests/stdlib_supervise_test.v
