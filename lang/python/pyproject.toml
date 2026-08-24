@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cxlib"
-version = "0.15.0"
+version = "0.16.0"
 description = "CX format library — parse, stream, and convert CX/XML/JSON/YAML/TOML"
 readme = "cxlib/README.md"
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
 keywords = ["cx", "markup", "xml", "json", "yaml", "toml", "parser"]
 

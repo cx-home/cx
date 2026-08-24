@@ -12,11 +12,11 @@ A git repo containing a CX store **is a complete registry** — consumers reach
 it as `file://` (clone/vendor) or `https://` (raw). Git adds exactly what an
 internal registry wants: publish-by-PR (moving an alias is a reviewed commit),
 history as audit, repo permissions as publish permissions. The live instance
-is `xap-marine/registry/`:
+is a consuming project's `registry/`:
 
 ```
 registry/
-  keys/xap-marine.cxd    # publisher identity (did:key + signing seed;
+  keys/<publisher>.cxd   # publisher identity (did:key + signing seed;
                          # committed by design at stage 1 — repo permission = publish permission)
   store/                 # the file:// CX store: sealed packages, manifests, alias index
   publish.cx  pin.cx  rehost.cx
@@ -77,14 +77,14 @@ The draft `package.cxd` carries only what cannot be derived: `kind`,
 the `exports` contract surface. The grammar summary, the `needs` consent set,
 and `uses` dependencies are **projected from the feature spec at publish and
 re-verified at install** — never restated by hand. The working projection
-program is `xap-marine/registry/publish.cx`; drive it via the make targets:
+program is the consuming project's `registry/publish.cx`; drive it via its make targets:
 
 ```sh
 CX_FEATURE=own-ship make registry-publish     # one feature
 make registry-publish-all                     # every feature in xap.cxd
-CX_PKG_DIR=packages/marine-common CX_PKG_NAME=marine-common \
+CX_PKG_DIR=packages/gtin CX_PKG_NAME=gtin \
   CX_PKG_VERSION=0.2.0 make registry-publish-lib
-make registry-rehost-nmea0183                 # carry a package verbatim from another registry
+make registry-rehost-<name>                   # carry a package verbatim from another registry
 ```
 
 Re-hosting never re-packages: hashes and signatures are unchanged, and a
@@ -104,7 +104,7 @@ retirement section of the distribution spec).
 | Stage | What | Status |
 |---|---|---|
 | 0 monorepo | in-repo dirs, path refs | the floor |
-| 1 internal git registry | sealed+signed packages, publish by PR | **implemented and live** (xap-marine + the cx-private `registry/`) |
+| 1 internal git registry | sealed+signed packages, publish by PR | **implemented and live** (the original external reference instance + the cx-private `registry/`; in-family successor: `reference/shop`) |
 | 2 served registry | the same store served over CSRP (`cx store-serve`); consumers switch the URI scheme | **implemented** (engine-tested wire re-host; `[$xap:pkg-catalog]` works locally and served) |
 | 3 market | the market XAP wraps the registry | see [marketplace](marketplace.md) — model specified; entitlement machinery shipped |
 

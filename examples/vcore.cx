@@ -10,34 +10,43 @@
 [releases 2024-01-15 2025-03-01 2026-04-19]
 
 [; 2. INFERRED-TYPE ARRAY: type inferred from tokens ]
-[data ::[] 1 2.5 3]                     # all numeric → float[] after int/float promotion
-[tags ::[] admin user guest]            # any string token → string[]
+[data::[] 1 2.5 3]                     # all numeric → float[] after int/float promotion
+[tags::[] admin user guest]            # any string token → string[]
 
 [; 3. TYPE ANNOTATIONS: ::int ::float ::bool ::string ::date ::datetime ]
-[count ::int 42]
-[ratio ::float 3.14]
-[active ::bool true]
-[label ::string 90210]
-[launch ::date 2026-04-19]
-[stamp ::datetime 2026-04-19T09:00:00Z]
+[count::int 42]
+[ratio::float 3.14]
+[active::bool true]
+[label::string 90210]
+[launch::date 2026-04-19]
+[stamp::datetime 2026-04-19T09:00:00Z]
 
 [; 4. SIZED NUMERIC TYPES: width is part of the type ]
-[port      ::u16    8080]
-[tiny      ::u8     255]
-[big       ::i64    -9_223_372_036_854_775_000]
-[unsigned  ::u32    4_000_000_000]
-[ratio32   ::f32    3.14]
-[ratio64   ::f64    3.141_592_653_589_793]
+[port::u16      8080]
+[tiny::u8       255]
+[big::i64       -9_223_372_036_854_775_000]
+[unsigned::u32  4_000_000_000]
+[ratio32::f32   3.14]
+[ratio64::f64   3.141_592_653_589_793]
 
 [; 5. ARBITRARY-PRECISION NUMERIC: ::decimal, ::bigint ]
-[balance   ::decimal  1234.56]
-[user_id   ::bigint   1234567890123456789]
-[microcoin ::decimal  0.000_000_01]      # eight zeros after the decimal
+[balance::decimal    1234.56]
+[user_id::bigint     1234567890123456789]
+[microcoin::decimal  0.000_000_01]      # eight zeros after the decimal
+
+[; 5a. TYPED MAP ENTRIES: one meaning per `::` position (MSS, #917) ]
+[prices {book: 19.99::decimal, qty: 3::int}]        # postfix types the VALUE (checked)
+[ages   {alice: ::int 30, bob: ::int 41}]           # type-first spells the same value (MSS-7)
+[ledger {1.10::decimal: credit, 42::bigint: audit}] # glued to the KEY types the key
+[schema {order: ::string, compact: ::bool,          # prefix ALONE declares the field —
+         tags: ::string[]}]                         #   typed, value ABSENT (not null)
+[config {host: 'a.com' port: 8080                   # entries separate by whitespace or
+         note: 'quoted prose'}]                     #   comma; prose values are quoted
 
 [; 6. NUMERIC UNDERSCORES: cosmetic separators in numeric literals ]
-[heap_max  ::u64  16_777_216]            # 16 MiB
-[heap_min  ::u64  4_096]
-[pi_dig    ::f64  3.141_592_653_589_793]
+[heap_max::u64   16_777_216]            # 16 MiB
+[heap_min::u64   4_096]
+[pi_dig::f64     3.141_592_653_589_793]
 
 [; 7. LEADING-ZERO TOKENS STAY STRINGS (leading-zero rule) ]
 [zip       02134]                       # "02134" — not int 2134
@@ -82,6 +91,6 @@
 
 [; 13. LINE COMMENTS: # to end-of-line, anywhere whitespace is allowed ]
 [memory                                  # subsystem block
-  [heap_initial ::u32 1_048_576]          # 1 MiB starting heap
-  [heap_max     ::u32 16_777_216]         # 16 MiB cap
+  [heap_initial::u32 1_048_576]          # 1 MiB starting heap
+  [heap_max::u32     16_777_216]         # 16 MiB cap
 ]

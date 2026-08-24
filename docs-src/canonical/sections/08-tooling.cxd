@@ -5,7 +5,7 @@
    scripts/gen_docs/, vcx/cmd/.
    File extension: .cxd (data-only). #]
 
-[section id=tooling n=8 title='Tooling'
+[section id=tooling group='Start here' n=8 title='Tooling'
 
   [intro
     """The CX toolchain is one binary (`cx`) and a small fleet of editor
@@ -13,10 +13,14 @@
        that backs `libcx` — every binding, every CI gate, and every
        editor talks to the same parser, the same canonicalizer, the same
        evaluator. There is no second implementation to drift against.
-       This section is the working developer reference for that surface:
-       what each subcommand does, how the editor tooling wires up, what
-       the linter checks, what the diff reports, and how you embed CX
-       into existing build systems."""]
+       This section is the getting-started half of that surface: the
+       subcommand catalog, editor integration, the language server, the
+       playground, recipes, and build-system embedding. The verbs
+       themselves live with the ring each serves — the data verbs (fmt,
+       canonical/hash/eq, diff, validate, select, table, projections) in
+       [[data-tooling]], and the code verbs (running programs under
+       grants, lint, diagnostics, diagrams, profiling) in
+       [[code-tooling]]."""]
 
   [child id=cli n=8.1 title='The cx CLI'
     [intro
@@ -25,7 +29,11 @@
          validates, converts, and renders CX documents. Every
          subcommand is a thin shim over the same V core
          (`vcx/cmd/main.v` dispatches on `argv[1]`), so behaviour is
-         identical to what every host-language binding sees."""]
+         identical to what every host-language binding sees. This
+         page carries the catalog and the Start-here verbs
+         (scaffold/demo/lock, the language server); each working verb
+         is documented in its ring — [[data-tooling]] for the Ring-0
+         verbs, [[code-tooling]] for the Ring-1 ones."""]
 
     [body
       """The CLI follows a small handful of conventions. **Running a
@@ -65,188 +73,36 @@
         [tr [td 'cx lint FILE'] [td 'Style + correctness warnings']]
         [tr [td 'cx validate FILE --schema=S.cxs'] [td 'Schema validation']]
         [tr [td 'cx table VERB'] [td 'Table API surface (info / dump / load)']]
+        [tr [td 'cx schema VERB'] [td 'Schema verb family — infer a .cxs from a corpus; export to JSON Schema']]
+        [tr [td 'cx tools VERB'] [td 'Agent-tool verb family — project command defs to MCP tool descriptors']]
+        [tr [td 'cx xap init NAME'] [td 'Scaffold a XAP project']]
+        [tr [td 'cx xap check-surface DIR'] [td 'Surface derivation check — every surface against the composed grammar + enabled features']]
         [tr [td 'cx demo'] [td 'Self-contained showcase, no I/O, < 1s']]
         [tr [td 'cx scaffold KIND'] [td 'Typed, commented skeleton on stdout (config / data / doc / log / table)']]
         [tr [td 'cx lock'] [td 'Generate / verify cx.lock from [?lib] directives']]
         [tr [td 'cx lsp'] [td 'Language server on stdio']]
-        [tr [td 'cx diagram FILE'] [td 'Program/data containment diagram (mermaid / svg / png)']]
+        [tr [td 'cx diagram FILE'] [td 'Program/data containment diagram (mermaid / svg / png; svg and png need --allow-subprocess for graphviz)']]
         [tr [td 'cx code-diagram FILE'] [td 'Sequence diagram of a CX program']]
         [tr [td 'cx code-tree FILE'] [td 'Evaluation-tree rendering of a CX program']]
-        [tr [td 'cx store-serve'] [td 'Serve a cx-store (reference store server)']]
-        [tr [td 'cx store-health'] [td 'Store health probe']]
-        [tr [td 'cx store-token'] [td 'Mint store access tokens']]
-        [tr [td 'cx store-rotate-kek'] [td 'Rotate the store key-encryption key']]
+        [tr [td 'cx store-serve'] [td 'Serve a cx-store (platform profile only)']]
+        [tr [td 'cx store-health'] [td 'Store health probe (platform profile only)']]
+        [tr [td 'cx store-rotate-kek'] [td 'Rotate the store key-encryption key (platform profile only)']]
+        [tr [td 'cx fabric-serve'] [td 'Serve a cx-fabric (platform profile only)']]
         [tr [td 'cx eval FILE'] [td 'Alias of the default run action; prefer cx FILE']]
         [tr [td 'cx select PATH FILE'] [td 'CXPath query over a document — matches in canonical CX, one per line']]
         [tr [td 'cx version'] [td 'Version / build info (same output as -v / --version)']]]
 
       [body
         """There is **no** `cx parse` / `cx convert` / `cx modify` /
-           `cx schema` / `cx help` subcommand — parsing and
+           `cx help` subcommand — parsing and
            conversion ride the projection flags below, updates are
            programs you run with `cx FILE`, and schema checking is
-           `cx validate`. Ad-hoc selection has its own verb:
+           `cx validate` (`cx schema` is inference and export, not
+           validation). Ad-hoc selection has its own verb:
            `cx select 'PATH' [FILE]` evaluates one CXPath expression
            against a document (see below)."""]]
 
-    [child id=cli-projections n=8.1.2 title='Projection and conversion flags'
-      [body
-        """Format projection is a top-level flag surface, not a
-           subcommand. One flag picks the output projection of an
-           input document; `--from` / `--to` drive explicit
-           conversions:"""]
-      [example lang=sh
-        """$ cx --ast config.cx                 # JSON AST
-           $ cx --json config.cx                # JSON projection
-           $ cx --yaml config.cx                # YAML projection
-           $ cx --xml --compact config.cx       # XML, minimised
-           $ cx --from=md --to=cx README.md     # Markdown in, CX out
-           $ cx --from=cx --to=json --lossless order.cx
-           $ echo '[hello world]' | cx --json -  # stdin"""]
-      [list
-        [item """Projection flags: `--ast` `--cx` `--xml` `--json`
-                `--yaml` `--toml` `--md` `--csv` `--tsv` `--psv`,
-                each optionally with `--compact`."""]
-        [item """`--from=cx|xml|json|yaml|toml|md|csv|tsv|psv
-                --to=cx|xml|json|yaml|toml|md|csv|tsv|psv`
-                — explicit conversion; `--lossless` makes XML carry
-                per-value types (`<cx:T>`) for an exact round-trip."""]
-        [item """`--include-root=DIR` — resolve `[?cx include=…]`
-                against DIR before projecting (include resolution is
-                opt-in; without a root the directive is preserved)."""]]]
-
-    [child id=cli-run-caps n=8.1.3 title='Running programs and capability flags'
-      [body
-        """`cx program.cx` evaluates a program. A separate data
-           input rides `--data=INPUT.cx` (or `--data=-` for stdin):
-           the input is loaded via the data reading and bound as
-           `$doc` / `$input` before evaluation, and the caller-supplied
-           input **wins** — the program's own data roots never rebind
-           it. Without `--data`, the program's first data root binds
-           implicitly; a document-driven program run without any input
-           raises the loud unbound-`$doc` error rather than silently
-           matching nothing. The four `examples/` tours run exactly
-           this way (`cx examples/code-tour.cx
-           --data=examples/code-tour.input.cx`)."""]
-      [body
-        """Unknown flags on this surface are **hard usage errors**
-           (exit 2, naming the flag) — including misspelled
-           `--allow-*` grants. Nothing on the run surface is silently
-           ignored."""]
-      [body
-        """Effects are
-           **deny-by-default**: a program that reads files, writes
-           files, touches the network, reads environment variables,
-           spawns subprocesses, or asks for randomness must be
-           granted that capability explicitly on the command line
-           (denied effect points raise the catchable capability
-           error `CXER0271`):"""]
-      [example lang=sh
-        """$ cx report.cx --data=orders.cx       # orders.cx binds as $doc
-           $ cx build_site.cx --allow-read --allow-write
-           $ cx serve.cx --allow-net
-           $ cx pipeline.cx --allow-all          # every capability"""]
-      [body
-        """The capability set: `--allow-read`, `--allow-write`,
-           `--allow-net`, `--allow-env`, `--allow-clock`,
-           `--allow-random`, `--allow-subprocess`, `--allow-eval`,
-           `--allow-secret-reveal`, and the blanket `--allow-all`.
-           See [[security]] for the security model."""]
-      [body
-        """A `cx eval FILE` alias exists for the same action; prefer
-           the plain `cx FILE` spelling — the alias adds nothing."""]]
-
-    [child id=cli-fmt n=8.1.4 title='cx fmt'
-      [body
-        """Pretty-prints in **lossless canonical** form. Comments,
-           anchors, and authorial structure are preserved;
-           whitespace and quoting are normalised. Reads the file
-           argument (or stdin) and writes the formatted document to
-           stdout."""]
-      [example lang=sh
-        """$ cx fmt config.cx                    # formatted, to stdout
-           $ cx fmt config.cx > config.fmt.cx && mv config.fmt.cx config.cx"""]]
-
-    [child id=cli-canon n=8.1.5 title='cx canonical / cx hash / cx eq'
-      [body
-        """`cx canonical` emits the **strict canonical text** per
-           [`spec/canonical.md`](../../spec/canonical.md): comments
-           stripped, attributes sorted, anchors expanded, whitespace
-           collapsed, quoting normalised. Two data-equivalent inputs
-           produce identical output — that is the contract `cx hash`
-           (SHA-256 of those bytes) and `cx eq` (exit 0 iff the
-           strict-canonical forms match, 1 if they differ, 2 on
-           error) build on."""]
-      [example lang=sh
-        """$ cx canonical config.cx | shasum -a 256   # equivalent to cx hash
-           $ cx hash config.cx
-           $ cx eq prod.cx proposed.cx && echo unchanged || echo changed"""]]
-
-    [child id=cli-diff n=8.1.6 title='cx diff'
-      [body
-        """Semantic diff — walks the strict-canonical forms, so
-           presentation-only edits produce no delta. See [[diff]]
-           for the output contract. Flags: `--format=unified|json|summary`
-           (default `unified`), `--no-color`. Exit codes match
-           `diff(1)`: 0 equal, 1 differs, 2 error."""]
-      [example lang=sh
-        """$ cx diff prod.cx proposed.cx
-           $ cx diff --format=json prod.cx proposed.cx
-           $ cx diff prod.cx proposed.cx && echo no-op   # CI gate"""]]
-
-    [child id=cli-lint n=8.1.7 title='cx lint'
-      [body
-        """Style + correctness warnings. See [[lint]] for the rule
-           catalog. Flags: `--format=text|json|summary` (default
-           `text`), `--fail-on=info|warn|error|none` (default
-           `error`), `--disable=ID1,ID2` to suppress checks,
-           `--only=ID` to run one."""]
-      [example lang=sh
-        """$ cx lint config.cx
-           $ cx lint --fail-on=warn --format=json config.cx
-           $ cx lint --only=CX-L004 pipeline.cx"""]]
-
-    [child id=cli-validate n=8.1.8 title='cx validate'
-      [body
-        """Validates a document against a `.cxs` schema
-           ([`spec/schema.md`](../../spec/schema.md)). Flags:
-           `--schema=SCHEMA.cxs` (required),
-           `--fail-on=info|warn|error|none` (default `error`),
-           `--mode=open|strict|closed` (overrides the schema-mode
-           directive), `--apply-defaults` (materialise schema-default
-           attribute values). Exit 0 if no diagnostics at/above the
-           threshold, 1 if any, 2 on I/O or schema failure."""]
-      [example lang=sh
-        """$ cx validate users.cx --schema=users.cxs
-           $ cx validate users.cx --schema=users.cxs --mode=strict --fail-on=warn"""]]
-
-    [child id=cli-table n=8.1.9 title='cx table'
-      [body
-        """The public Table API surface for CXCol / `[table[…]]`
-           payloads: `cx table info FILE` (column/row counts, types,
-           byte size), `cx table dump FILE --to=cx` (round-trip via
-           the Table API), `cx table load FILE --to=cx` (symmetric
-           inverse). Parquet / Arrow output (`--to=parquet|arrow`)
-           defers to the `libcx_arrow` bridge. See [[analytics]]."""]
-      [example lang=sh
-        """$ cx table info data.cxcol
-           $ cx table dump data.cxcol --to=cx | head"""]]
-
-    [child id=cli-diagram n=8.1.10 title='cx diagram / code-diagram / code-tree'
-      [body
-        """Visualization commands. `cx diagram FILE`
-           renders a containment diagram
-           (`--format=mermaid|svg|png`, `-o out.file`); `cx
-           code-diagram FILE` renders a locked sequence-diagram view
-           of a program; `cx code-tree FILE` renders the evaluation
-           tree. The playground's Diagram toggle uses the same
-           renderers via WASM (see [[playground]])."""]
-      [example lang=sh
-        """$ cx diagram config.cx --format=mermaid
-           $ cx code-diagram pipeline.cx
-           $ cx code-tree pipeline.cx"""]]
-
-    [child id=cli-scaffold n=8.1.11 title='cx scaffold / cx demo / cx lock'
+    [child id=cli-scaffold n='8.1.2' title='cx scaffold / cx demo / cx lock'
       [body
         """`cx scaffold KIND` drops a typed, commented skeleton on
            stdout — KIND ∈ `config`, `data`, `doc`, `log`, `table`.
@@ -260,35 +116,14 @@
            $ cx demo
            $ cx lock --check"""]]
 
-    [child id=cli-lsp n=8.1.12 title='cx lsp'
+    [child id=cli-lsp n='8.1.3' title='cx lsp'
       [body
         """Starts the language server on stdio (JSON-RPC 2.0 per
            LSP 3.17). See [[lsp]] for the
            capability surface. Editors spawn it on demand — see
            [[editors]]."""]
       [example lang=sh
-        """$ cx lsp    # editor connects on stdio"""]]
-
-    [child id=cli-select n=8.1.13 title='cx select'
-      [body
-        """CXPath query over one document —
-           `cx select 'PATH' [FILE]` (stdin when FILE is `-` or
-           absent). The document binds as `$doc`; PATH is a single
-           CXPath value expression (`$doc/…`, `/…`, or `//…`,
-           predicates included). Matches print one per line in
-           canonical CX, in document order; attribute-axis matches
-           materialize as `[name value]` fields. Exit 0 with at
-           least one match, 1 on an empty match set (grep-style),
-           2 on error. A pure read — no capability grants accepted
-           or needed. Contract:
-           [`spec/misc/cli.md`](../../spec/03-approved/misc/cli.md) §3.8."""]
-      [example lang=sh
-        """$ cx select '//user[= $_@role admin]' users.cx
-           [user name=Alice role=admin]
-           $ cx select '$doc/user@name' users.cx
-           [name 'Alice']
-           [name 'Bob']
-           $ cat users.cx | cx select '//user' && echo matched"""]]]
+        """$ cx lsp    # editor connects on stdio"""]]]
 
   [child id=editors n=8.2 title='Editor integration'
     [intro
@@ -306,8 +141,9 @@
            TextMate grammar (`syntaxes/cx.tmLanguage.json`), language
            configuration (brackets, comments), snippets
            (`snippets/cx.json`), and an LSP client that spawns
-           `cx lsp` on demand. Install via the published `.vsix` or
-           `code --install-extension tooling/vscode/cx-language.vsix`."""]
+           `cx lsp` on demand. No prebuilt `.vsix` is committed —
+           build one with `npm run package` in `tooling/vscode/`,
+           then install it with `code --install-extension`."""]
 
       [example lang=sh
         """# Build and install locally
@@ -334,8 +170,10 @@
            [`tooling/lsp/neovim.example.lua`](../../tooling/lsp/neovim.example.lua);
            the install script
            [`tooling/install/install-nvim.sh`](../../tooling/install/install-nvim.sh)
-           drops the config block into `~/.config/nvim/lua/cx.lua`
-           and registers the LSP."""]
+           installs the signed tree-sitter grammar (with a headless
+           load-proof) and writes a lazy.nvim `dir =` spec pointing at
+           the in-repo plugin root — LSP included via native
+           `vim.lsp.config`."""]
 
       [example lang=sh
         """# One-shot install
@@ -414,18 +252,21 @@
       [table
         [tr [th 'method'] [th 'status'] [th 'notes']]
         [tr [td 'textDocument/didOpen / didChange / didClose'] [td 'shipped'] [td 'full document sync']]
-        [tr [td 'textDocument/publishDiagnostics'] [td 'shipped'] [td 'parse + lint + schema + CXLS001-004']]
+        [tr [td 'textDocument/publishDiagnostics'] [td 'shipped'] [td 'parse + lint + schema + CXLS static analysis']]
         [tr [td 'textDocument/hover'] [td 'shipped'] [td 'element, attr, directive, CXPath']]
         [tr [td 'textDocument/completion'] [td 'shipped'] [td 'triggers : / @ $']]
-        [tr [td 'textDocument/semanticTokens/full'] [td 'shipped'] [td '10-token legend']]
+        [tr [td 'textDocument/semanticTokens/full'] [td 'shipped'] [td '12-token legend']]
         [tr [td 'textDocument/formatting'] [td 'shipped'] [td 'lossless fmt']]
         [tr [td 'textDocument/definition'] [td 'shipped'] [td 'cross-include and anchor']]
         [tr [td 'textDocument/references'] [td 'shipped'] [td 'anchor + alias + merge']]
-        [tr [td 'textDocument/codeLens'] [td 'shipped'] [td 'diagram preview, eval result']]
-        [tr [td 'textDocument/codeAction'] [td 'shipped'] [td 'quick-fix for CXLS001-004']]
-        [tr [td 'textDocument/signatureHelp'] [td 'planned'] [td 'for directive arg slots']]
-        [tr [td 'textDocument/inlayHint'] [td 'planned'] [td 'inferred types']]
-        [tr [td 'textDocument/rename'] [td 'planned'] [td 'cross-include rename']]]
+        [tr [td 'textDocument/documentSymbol'] [td 'shipped'] [td 'outline of elements and directives']]
+        [tr [td 'textDocument/foldingRange'] [td 'shipped'] [td 'bracket-structured folding']]
+        [tr [td 'textDocument/selectionRange'] [td 'shipped'] [td 'structural expand-selection']]
+        [tr [td 'textDocument/codeLens'] [td 'shipped'] [td 'diagram preview per top-level directive']]
+        [tr [td 'textDocument/signatureHelp'] [td 'shipped'] [td 'directive arg slots']]
+        [tr [td 'textDocument/inlayHint'] [td 'shipped'] [td 'inferred types']]
+        [tr [td 'textDocument/rename'] [td 'shipped'] [td 'anchor / alias rename']]
+        [tr [td 'textDocument/codeAction'] [td 'advertised, empty'] [td 'capability advertised; the handler returns no actions yet']]]
 
       [body
         """Implementation lives in `vcx/cmd/lsp_features.v`. The
@@ -439,20 +280,26 @@
            prefix:"""]
 
       [list
-        [item """**CXER\\*** — runtime / parse errors from the V core.
-                See [`spec/cx_native_error_codes.md`](../../spec/cx_native_error_codes.md)
-                for the full catalog."""]
-        [item """**CX-L\\*** — lint findings from `cx_lint` (see
+        [item """`CXER` **prefix** — runtime / parse errors from the V core.
+                The namespace registry is
+                [`spec/03-approved/process/governance.md`](../../spec/03-approved/process/governance.md)
+                §9.6; the language-core sub-blocks live in
+                [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md)
+                §9.4."""]
+        [item """`CX-L` **prefix** — lint findings from `cx_lint` (see
                 [[lint]]); same codes the CLI emits."""]
-        [item """**CXLS\\*** — LSP-only static-analysis diagnostics
-                that don't have a CLI surface. Currently reserved:"""]]
+        [item """`CXLS` **prefix** — LSP-only static-analysis diagnostics
+                that don't have a CLI surface. Currently shipped:"""]]
 
       [table
         [tr [th 'code'] [th 'severity'] [th 'trigger']]
         [tr [td 'CXLS001'] [td 'warning'] [td 'unreachable [?match] arm (after [else …] or [case _ …])']]
         [tr [td 'CXLS002'] [td 'hint'] [td '[?match] with no [else …] (silent () fallout)']]
         [tr [td 'CXLS003'] [td 'hint'] [td 'sibling [case …] arms with similar [when …] predicates (consolidation suggestion)']]
-        [tr [td 'CXLS004'] [td 'error'] [td '[?modify] [set-attr] / [delete-attr] on attribute-step path (compile-time mirror of CXER0100)']]]
+        [tr [td 'CXLS004'] [td 'error'] [td '[?modify] [set-attr] / [delete-attr] on attribute-step path (compile-time mirror of CXER0100)']]
+        [tr [td 'CXLS005'] [td '—'] [td 'retired ([par] now owns its width as a bounded worker pool)']]
+        [tr [td 'CXLS006'] [td 'hint'] [td 'unbounded comprehension — a [?for] over a generator with no bounding clause']]
+        [tr [td 'CXLS007'] [td 'hint'] [td 'ambiguous whitespace-separated quoted-string body']]]
 
       [body
         """Codes are stable strings; editor configs may key off them
@@ -493,14 +340,15 @@
            character determines the candidate set:"""]
 
       [list
-        [item """**`:`** — type tags (`:int`, `:string`, `:date`...),
-                directive names (`[?for`, `[?match`...), labeled-slot
-                names inside an active directive."""]
-        [item """**`@`** — attribute names from the schema or the
+        [item """`:` — atom literals, type annotations (`::int`,
+                `::string`, `::date`...), directive names (`[?for`,
+                `[?match`...), labeled-slot names inside an active
+                directive."""]
+        [item """`@` — attribute names from the schema or the
                 live document."""]
-        [item """**`$`** — variable names from `[?let]` bindings in
+        [item """`$` — variable names from `[?let]` bindings in
                 scope."""]
-        [item """**`/`** — CXPath axes + element names + node-kind
+        [item """`/` — CXPath axes + element names + node-kind
                 tests."""]]
 
       [body
@@ -512,46 +360,42 @@
     [child id=lsp-codeactions n=8.3.5 title='Code actions'
       [body
         """Code actions are quick-fixes the editor offers for
-           diagnostics. Currently shipped:"""]
-
-      [list
-        [item """**CXLS001** (unreachable arm) — "remove unreachable
-                arm". Deletes the arm."""]
-        [item """**CXLS002** (no `[else …]`) — "add `[else]` arm".
-                Inserts an empty `[else ()]` clause."""]
-        [item """**CX-L001** (comment style) — "convert `[# #]` to
-                `# line comment`" (and vice versa)."""]
-        [item """**CX-L002** (type-alias style) — "expand to
-                long-form" / "shorten to alias"."""]
-        [item """**CX-L003** (unused anchor) — "remove anchor"."""]
-        [item """**CX-L004** (dangling alias) — "create missing
-                anchor" (with a placeholder body)."""]]
+           diagnostics. The server **advertises** the codeAction
+           capability but the handler currently returns an empty,
+           well-formed list — no quick-fixes ship yet. Quick-fix
+           synthesis is wired later, once canonical fix recipes land
+           for the common parse and lint diagnostics (removing an
+           unreachable `[?match]` arm for CXLS001, inserting an
+           `[else …]` arm for CXLS002, anchor cleanups for the
+           CX-L003 / CX-L004 lint findings)."""]
 
       [body
-        """CXLS003 consolidation auto-fix is planned
-           (recognise-only currently per
-           [`tooling/lsp/diagnostics.md`](../../tooling/lsp/diagnostics.md)
-           §out-of-scope)."""]]
+        """Advertising the capability with an empty result keeps
+           editors from breaking while the recipes land; nothing an
+           editor shows under "quick fix" today comes from the CX
+           server."""]]
 
     [child id=lsp-semantic-tokens n=8.3.6 title='Semantic tokens'
       [body
         """The LSP semanticTokens response is the **canonical
            highlighting source** for editors that consume it.
-           The 10-token legend maps directly to TextMate scopes for
+           The 12-token legend maps directly to TextMate scopes for
            cross-editor consistency:"""]
 
       [table
         [tr [th 'token'] [th 'example']]
-        [tr [td 'namespace'] [td 'module prefixes, schema-qualified names']]
+        [tr [td 'namespace'] [td 'module prefixes (cx:, log:, fn:, …)']]
         [tr [td 'keyword'] [td 'directive names ([?for], [?if], [?match]...)']]
-        [tr [td 'variable'] [td '$ctx, $-bound names from [?let]']]
-        [tr [td 'parameter'] [td 'function-parameter names and pattern $bindings']]
+        [tr [td 'variable'] [td 'bound names ([= $x …], [in $x …])']]
+        [tr [td 'parameter'] [td 'labeled slot names (:caps, :policy, …)']]
         [tr [td 'property'] [td 'attribute names']]
-        [tr [td 'string'] [td 'string literals (single, double, triple quoted)']]
-        [tr [td 'number'] [td 'int, float, hex, sized-type literals']]
-        [tr [td 'comment'] [td '[# block #] and # line comments']]
-        [tr [td 'operator'] [td '= + - * / sigils, CXPath operators']]
-        [tr [td 'decorator'] [td 'type annotations (:int, :date, ...)']]]]
+        [tr [td 'string'] [td 'quoted string values']]
+        [tr [td 'number'] [td 'numeric scalars']]
+        [tr [td 'comment'] [td '# line comments and [; …] blocks']]
+        [tr [td 'operator'] [td '|>, =>, ||, ->, !, to']]
+        [tr [td 'decorator'] [td '#id, &anchor, *merge sigils']]
+        [tr [td 'enumMember'] [td 'atom literals (:paid, :active, …)']]
+        [tr [td 'function'] [td 'element / call head names']]]]
 
     [child id=lsp-debugging n=8.3.7 title='Debugging the server'
       [body
@@ -592,7 +436,7 @@
     [child id=ts-shape n=8.4.1 title='Grammar shape'
       [body
         """The grammar (`grammar.js`) covers everything in
-           [`spec/grammar.ebnf`](../../spec/grammar.ebnf) at the
+           [`spec/03-approved/formal/grammar.ebnf`](../../spec/03-approved/formal/grammar.ebnf) at the
            **structural** level: bracketed elements, attribute key=value
            pairs, scalar literals (string / int / float / bool / date /
            datetime / null), sigil-prefixed attributes (`#id`,
@@ -609,29 +453,31 @@
         """Queries live in `tooling/tree-sitter-cx/queries/`:"""]
 
       [list
-        [item """**`highlights.scm`** — structural scopes only
+        [item """`highlights.scm` — structural scopes only
                 (element-name, attribute-name, string, number,
                 comment, directive-opaque). Per-directive interior
                 highlighting is delegated to LSP semanticTokens."""]
-        [item """**`injections.scm`** — embedded-language injection
+        [item """`injections.scm` — embedded-language injection
                 for fenced code blocks (`[code lang='rust'
                 [| ... |]]`). Recognised injection languages:
                 `python`, `rust`, `go`, `js`, `ts`, `java`, `c`,
                 `cpp`, `csharp`, `ruby`, `swift`, `kotlin`, `sh`,
                 `sql`, `html`, `css`, `json`, `yaml`, `toml`,
-                `xml`, `markdown`."""]
-        [item """**`indents.scm`** — auto-indent rules. CX is
-                bracket-structured; indent inside `[`, dedent at
-                `]`."""]
-        [item """**`locals.scm`** — variable scoping for `[?let]`
-                bindings."""]]]
+                `xml`, `markdown`."""]]
+      [body
+        """These two are the only query files that ship. Indent and
+           locals queries do not exist — auto-indent comes from the
+           editor's bracket handling, and `[?let]` scope intelligence
+           comes from the LSP, not from tree-sitter."""]]
 
     [child id=ts-regen n=8.4.3 title='Regenerating the parser'
       [body
         """The committed `src/parser.c` is generated from
-           `grammar.js` by `tree-sitter generate`. The `make
-           tree-sitter` target rebuilds it; CI gates that the
-           committed `parser.c` matches `grammar.js`."""]
+           `grammar.js` by `tree-sitter generate`. The grammar
+           directory carries its own Makefile;
+           `make -C tooling/tree-sitter-cx install-nvim` builds the
+           parser and links it into the Neovim parser-search
+           path."""]
 
       [example lang=sh
         """$ cd tooling/tree-sitter-cx
@@ -641,258 +487,18 @@
            $ npx tree-sitter parse sample.cx  # smoke-test on a file"""]
 
       [note
-        """`make tree-sitter` from the repo root wraps all of the
-           above and is what the CI lane runs."""]]]
+        """There is no repo-root make target and no CI gate pinning
+           the committed `parser.c` to `grammar.js` — after editing
+           the grammar, regenerate and commit `parser.c`
+           yourself."""]]]
 
-  [child id=lint n=8.5 title='Lint rules'
-    [intro
-      """`cx lint` warns about issues a formatter can't or shouldn't
-         fix automatically. Lint and fmt are
-         distinct: `cx fmt` *applies* safe transformations; `cx lint`
-         *warns* about issues that need human judgement to fix. The
-         two never overlap — if a check has a safe auto-fix, it
-         belongs to `cx fmt`."""]
-
-    [child id=lint-catalog n=8.5.1 title='Rule catalog'
-      [body
-        """Five lint checks are currently shipped:"""]
-
-      [table
-        [tr [th 'id'] [th 'severity'] [th 'name']]
-        [tr [td 'CX-L001'] [td 'info'] [td 'comment-style consistency']]
-        [tr [td 'CX-L002'] [td 'info'] [td 'type-annotation form consistency']]
-        [tr [td 'CX-L003'] [td 'warn'] [td 'unused anchor']]
-        [tr [td 'CX-L004'] [td 'error'] [td 'dangling alias / merge']]
-        [tr [td 'CX-L005'] [td 'warn'] [td 'deprecated v3.3→v3.4 pattern']]]
-
-      [body
-        """Each check has a normative ID, a default severity, and a
-           documented rationale. Suppression directives and CLI flags accept the ID
-           verbatim."""]]
-
-    [child id=lint-severity n=8.5.2 title='Severity levels'
-      [body
-        """Three severity levels, normative names:"""]
-
-      [list
-        [item """**`info`** — stylistic drift. Doesn't affect
-                correctness. Doesn't fail CI by default."""]
-        [item """**`warn`** — likely-bug. The code parses, but the
-                result probably isn't what was intended. Fails CI
-                with `--fail-on=warn`."""]
-        [item """**`error`** — almost-certainly-bug. Document
-                semantics are wrong. Fails CI by default
-                (`--fail-on=error`)."""]]]
-
-    [child id=lint-config n=8.5.3 title='Configuration via .cxlint.cx'
-      [body
-        """Per-project lint config lives in `.cxlint.cx` at the repo
-           root (or any ancestor directory of the linted file). The
-           config file is CX-formatted — same parser, same schema,
-           dogfooded all the way down."""]
-
-      [example lang=cx
-        """[# .cxlint.cx — repo-level lint config #]
-           [lint
-             [# ignore unused anchors in the legacy templates dir #]
-             [disable check=CX-L003 path='legacy/**']
-
-             [# v3.3 transition warnings only as info, we'll fix gradually #]
-             [severity check=CX-L005 level=info]
-
-             [# treat dangling-alias as warn (not error) in this repo #]
-             [severity check=CX-L004 level=warn]]"""]
-
-      [body
-        """Path globs follow `.gitignore` syntax. `cx lint --config
-           PATH` overrides auto-discovery. Missing config file is
-           not an error — defaults apply."""]]
-
-    [child id=lint-suppress n=8.5.4 title='Per-element suppression'
-      [body
-        """For one-off suppressions inside a document, use the
-           `[?cx lint-disable=...]` / `[?cx lint-enable=...]`
-           directives. Scope is the enclosing element and its
-           descendants."""]
-
-      [example lang=cx
-        """[?cx lint-disable=CX-L003]
-           [defaults &base host=localhost]   [# no L003 warning #]
-           [?cx lint-enable=CX-L003]
-
-           [# lint-disable=all suppresses every check #]
-           [?cx lint-disable=all]
-           [legacy-block ...]"""]
-
-      [note
-        """Comma-separated lists accepted:
-           `lint-disable=CX-L003,CX-L005`. `lint-disable=all` is the
-           catch-all."""]]
-
-    [child id=lint-cxls n=8.5.5 title='LSP-only diagnostic codes (CXLS\\*)'
-      [body
-        """The CXLS\\* codes ([[lsp-diagnostics]]) are surfaced only
-           through the LSP and have no corresponding `cx lint`
-           check. They live in the LSP because they need
-           document-wide static analysis (cross-arm reachability,
-           focus-path type-check) and aren't general-enough to be
-           CLI default behaviour. Suppression inside a document
-           uses `[?cx lint-disable=CXLS001]` (same syntax as the
-           CX-L\\* codes); CLI suppression is moot since `cx lint`
-           doesn't emit them."""]]
-
-    [child id=lint-custom n=8.5.6 title='Custom rule plugins (planned)'
-      [body
-        """A plugin model for user-defined checks is planned
-           (previously rejected; the question is reopened in
-           [`ROADMAP.md`](../../ROADMAP.md) "Later"). Currently,
-           extending the check set means contributing a check to
-           `vcx/cx/lint.v` upstream. Schema-violation checks are a
-           separate path — they layer in automatically as the schema
-           language gains rules."""]]]
-
-  [child id=diff n=8.6 title='Diff semantics'
-    [intro
-      """`cx diff` produces a **semantic** diff — tree-structured,
-         canonical-byte-aware, formatting-blind. Two
-         data-equivalent inputs diff to nothing, even if they differ
-         at the text level. This is what makes `cx diff` usable as a
-         CI gate: it reports semantic deltas, not formatting noise."""]
-
-    [child id=diff-scope n=8.6.1 title='What cx diff reports (and ignores)'
-      [body
-        """`cx diff` reports differences in the strict canonical form
-           ([`spec/canonical.md §1.2`](../../spec/canonical.md)).
-           Specifically it **reports**:"""]
-
-      [list
-        [item """Element added / removed (by canonical path)."""]
-        [item """Element renamed (different canonical name at the
-                same path)."""]
-        [item """Attribute added / removed / value-changed (by
-                canonical name)."""]
-        [item """Body content changed (atomic-value or text-content
-                differences)."""]
-        [item """Type annotation changed (e.g., `:int` vs `:u32` —
-                the annotation IS part of the data)."""]
-        [item """Element order changed *when order is
-                data-significant* (per
-                [`spec/canonical.md §2.1`](../../spec/canonical.md))."""]]
-
-      [body
-        """And **ignores**:"""]
-
-      [list
-        [item """Comments (`# line` and `[# block #]`)."""]
-        [item """Attribute order on the same element."""]
-        [item """Anchor / alias / merge details — expanded to the
-                resolved form before diff."""]
-        [item """Whitespace, indentation, line breaks."""]
-        [item """Numeric formatting (`1_000_000` vs `1000000`)."""]
-        [item """Quoting style (`'foo'` vs `"foo"`)."""]
-        [item """Element-name aliases that resolve to the same
-                canonical name."""]]]
-
-    [child id=diff-output n=8.6.2 title='Output formats'
-      [body
-        """Three output modes via `--format`:"""]
-
-      [list
-        [item """**`unified`** (default) — element-rooted hunks,
-                `-` / `+` / ` ` prefixes. Human-readable."""]
-        [item """**`json`** — structured array of change records.
-                Suitable for CI gates and editor integrations."""]
-        [item """**`summary`** — one-line counts. Useful for shell
-                prompts and PR bots."""]]
-
-      [example lang=sh
-        """$ cx diff prod.cx proposed.cx
-           --- prod.cx
-           +++ proposed.cx
-           @@ /config/database @@
-            host='primary.db'
-           -port=5432
-           +port=5433
-            replica='secondary.db'"""]
-
-      [example lang=json
-        """[
-             {
-               \"kind\": \"attribute-changed\",
-               \"path\": \"/config/database/@port\",
-               \"before\": {\"name\": \"port\", \"value\": 5432, \"type\": \"int\"},
-               \"after\":  {\"name\": \"port\", \"value\": 5433, \"type\": \"int\"}
-             }
-           ]"""]]
-
-    [child id=diff-json n=8.6.3 title='JSON change-record shape'
-      [body
-        """Each record has a stable shape:"""]
-
-      [list
-        [item """`kind` — one of `element-added`, `element-removed`,
-                `element-renamed`, `attribute-added`,
-                `attribute-removed`, `attribute-changed`,
-                `body-changed`, `type-changed`, `order-changed`."""]
-        [item """`path` — CXPath expression locating the change. The
-                same expression drops straight into a CX program
-                (`[?for [in $x PATH] …]`)."""]
-        [item """`before` / `after` — relevant value for the kind.
-                Absent when the side has no value (e.g.
-                `element-added` has no `before`). The field is
-                **omitted**, not `null` — per
-                [`spec/policies.md §2.6`](../../spec/policies.md)'s
-                four-way null/empty/missing distinction this is
-                *missing*."""]]]
-
-    [child id=diff-git n=8.6.4 title='Git integration'
-      [body
-        """`cx diff` plugs into `git diff` via the standard custom-
-           diff-driver mechanism. Add this to `.gitattributes`:"""]
-
-      [example lang=text
-        """*.cx    diff=cx
-           *.cxd   diff=cx
-           *.cxs   diff=cx
-           *.cxcol diff=cx-binary"""]
-
-      [example lang=sh
-        """# One-time per repo
-           git config diff.cx.command 'cx diff'
-           git config diff.cx-binary.command 'cx diff --binary'
-
-           # Or scaffold it
-           cx scaffold gitattributes >> .gitattributes"""]
-
-      [body
-        """With this in place, `git diff path/to/config.cx` and
-           `git show HEAD path/to/config.cx` use the semantic diff
-           automatically. PR review UIs that respect `.gitattributes`
-           (GitHub, GitLab, Gerrit) pick it up too."""]]
-
-    [child id=diff-exit-codes n=8.6.5 title='Exit codes'
-      [body
-        """Match `diff(1)`:"""]
-
-      [list
-        [item """**`0`** — inputs are data-equivalent (no
-                differences)."""]
-        [item """**`1`** — inputs differ (at least one semantic
-                delta)."""]
-        [item """**`2`** — error (parse failure, file not found,
-                invalid arguments)."""]]
-
-      [example lang=sh
-        """# Use directly as a CI gate
-           cx diff prod.cx proposed.cx && echo no-change || review-changes"""]]]
-
-  [child id=cookbook n=8.7 title='Cookbook — common recipes'
+  [child id=cookbook n='8.5' title='Cookbook — common recipes'
     [intro
       """Worked examples of CLI compositions that show up repeatedly
          in real use. Pair-and-match — the CX CLI is designed to
          compose along the standard Unix pipe."""]
 
-    [child id=recipe-convert n=8.7.1 title='Filter JSON, project to YAML'
+    [child id=recipe-convert n='8.5.1' title='Filter JSON, project to YAML'
       [body
         """Read JSON, query / filter / transform via a CX program,
            project the result to YAML."""]
@@ -908,7 +514,7 @@
            its data (`cat data.cx program.cx | cx`) evaluates the
            program against the preceding document."""]]
 
-    [child id=recipe-validate n=8.7.2 title='Validate config before deploy'
+    [child id=recipe-validate n='8.5.2' title='Validate config before deploy'
       [body
         """Strict-profile validation, JSON output for the CI
            summary."""]
@@ -917,7 +523,7 @@
         """$ cx validate config.cx --schema=config.cxs --mode=strict --fail-on=warn \\
              && deploy.sh"""]]
 
-    [child id=recipe-diff n=8.7.3 title='Semantic diff between two YAML files'
+    [child id=recipe-diff n='8.5.3' title='Semantic diff between two YAML files'
       [body
         """Cross-format diff: read YAML on both sides, diff the
            canonical CX form."""]
@@ -926,7 +532,7 @@
         """$ cx diff a.yaml b.yaml --format summary
            3 attributes changed, 1 element added"""]]
 
-    [child id=recipe-hash n=8.7.4 title='Content hash as cache key'
+    [child id=recipe-hash n='8.5.4' title='Content hash as cache key'
       [body
         """Use the canonical-bytes hash as a cache key in a build
            pipeline. The hash is stable across formatting changes —
@@ -938,7 +544,7 @@
            $ test -f cache/$KEY.bin || compile config.cx > cache/$KEY.bin
            $ cp cache/$KEY.bin out.bin"""]]
 
-    [child id=recipe-csv-parquet n=8.7.5 title='Convert CSV to Parquet via CX'
+    [child id=recipe-csv-parquet n='8.5.5' title='Convert CSV to Parquet via CX'
       [body
         """Inspect and round-trip a columnar payload through the
            Table API; Parquet / Arrow output rides the
@@ -949,7 +555,7 @@
            $ cx table dump data.cxcol --to=cx | head
            [# --to=parquet|arrow defers to the libcx_arrow bridge (Phase C) #]"""]]
 
-    [child id=recipe-lint-tree n=8.7.6 title='Lint a whole tree before commit'
+    [child id=recipe-lint-tree n='8.5.6' title='Lint a whole tree before commit'
       [body
         """Recursive lint pre-commit, with shared config."""]
 
@@ -957,7 +563,7 @@
         """$ find . -name '*.cx' -print0 \\
              | xargs -0 cx lint --format=summary --fail-on=warn"""]]
 
-    [child id=recipe-docs n=8.7.7 title='Render the canonical guide'
+    [child id=recipe-docs n='8.5.7' title='Render the canonical guide'
       [body
         """Build the canonical guide (this document) from sources.
            See [[docgen]] for the pipeline."""]
@@ -972,7 +578,7 @@
            $ make docs-publish
            # copy staging → docs/"""]]
 
-    [child id=recipe-ast-bin n=8.7.8 title='Inspect the AST'
+    [child id=recipe-ast-bin n='8.5.8' title='Inspect the AST'
       [body
         """Read the JSON AST — useful when debugging how the parser
            shaped a document."""]
@@ -980,7 +586,7 @@
       [example lang=sh
         """$ cx --ast doc.cx | jq '.name, (.items | length)'"""]]
 
-    [child id=recipe-roundtrip n=8.7.9 title='Round-trip through every projection'
+    [child id=recipe-roundtrip n='8.5.9' title='Round-trip through every projection'
       [body
         """Assert that a projection round-trip is data-lossless.
            `--lossless` XML carries per-value types, so the
@@ -993,119 +599,7 @@
              | cx --from=xml --to=cx - > back.cx
            $ cx eq doc.cx back.cx && echo lossless"""]]]
 
-  [child id=diagnostics n=8.8 title='Diagnostics and debugging'
-    [intro
-      """When a CX program isn't doing what you expect, work the
-         ladder: read the error value (every failure is a
-         position-carrying `[err …]`), lint the file, visualize the
-         program (`cx code-tree` / `cx code-diagram`), reach for the
-         LSP if you want to drive from the editor, and capture a
-         fixture (`conformance/code.cxd`) when you need a
-         reproducible bug report."""]
-
-    [child id=diag-trace n=8.8.1 title='Errors carry positions'
-      [body
-        """Every parse or evaluation failure is a structured error
-           with a source position and a stable code — read it
-           first. A raised error that reaches the top level prints
-           as an `[err code=… message=…]` value; the message names
-           the offending line:column and, for retired syntax, the
-           current replacement form."""]
-      [example lang=sh
-        """$ cx broken.cx
-           error: cx-err:CXER0100: parse: infix attribute comparison
-           `[@active=…]` in a CXPath predicate is retired — write the
-           prefix operator form `[= $_@active …]` (code.md §5.5.2)
-           at line 3:20"""]]
-
-    [child id=diag-explain n=8.8.2 title='Visualize the program'
-      [body
-        """`cx code-tree FILE` renders the evaluation tree of a
-           program — which directives nest where, what each binds.
-           `cx code-diagram FILE` renders the locked
-           sequence-diagram view (concurrency, channels, service
-           interactions). `cx --ast FILE` shows the parsed shape
-           when you suspect the parser saw something different from
-           what you meant."""]
-      [example lang=sh
-        """$ cx code-tree pipeline.cx
-           $ cx code-diagram workers.cx
-           $ cx --ast pipeline.cx | jq '.items[0]'"""]]
-
-    [child id=diag-lsp n=8.8.3 title='LSP-driven debugging'
-      [body
-        """The LSP surfaces diagnostics live in the editor —
-           parse errors, lint findings, and hover documentation
-           over directives and paths. See [[lsp]] for the shipped
-           capability set."""]]
-
-    [child id=diag-repl n=8.8.4 title='Interactive REPL'
-      [body
-        """An interactive REPL is **planned**. Until it ships, the
-           equivalent is stdin evaluation with a quick shell
-           wrapper — append each expression to the context document
-           and pipe through `cx`:"""]
-
-      [example lang=sh
-        """# Poor man's REPL
-           while read -r line; do
-             printf '%s\\n%s\\n' \"$(cat ctx.cx)\" \"$line\" | cx
-           done"""]]
-
-    [child id=diag-repro n=8.8.5 title='Reproducing a bug as a conformance fixture'
-      [body
-        """When you find behaviour that differs from the spec or
-           from another binding, the fastest way to land a fix is
-           to drop a minimal repro into the conformance corpus.
-           Fixtures under `conformance/*.cxd` are the normative
-           contract — every binding runs them in CI."""]
-
-      [body
-        """Fixtures are CX documents — one `[case …]` element per
-           repro, with the input document, the program, and the
-           expected output as children:"""]
-
-      [example lang=cx check=none
-        """[case id=my-bug-id level=core
-             [tags predicate my-area]
-             [in-cx [#
-           [doc [item id=1] [item id=2]]
-           #]]
-             [in-code [#
-           [?for [in $i //item[= $_@id 1]] [yield $i]]
-           #]]
-             [out-text [#
-           [item id=1]
-           #]]]"""]
-      [; check=none — fixture-format excerpt: the raw spans hold
-         fixture payloads, not a runnable program. ]
-
-      [body
-        """Drop the case into the corpus file that matches your
-           area (e.g. `conformance/code.cxd` for evaluator bugs,
-           `conformance/core.cxd` for data-layer bugs,
-           `conformance/lint.cxd` for linter bugs), run
-           `make test-vcx-suite`, watch it fail. Then fix the V
-           core to make it pass."""]]
-
-    [child id=diag-bug-report n=8.8.6 title='Filing a bug report'
-      [body
-        """A good bug report has four pieces:"""]
-
-      [list
-        [item """`cx --version` output (build + commit line)."""]
-        [item """A minimal reproducer — ideally a `conformance/*.cxd`
-                case — that triggers the bad behaviour."""]
-        [item """Expected output (what you think should happen)."""]
-        [item """Actual output (what does happen)."""]]
-
-      [body
-        """For LSP / editor bugs, also include the
-           `cx lsp --verbose 2>...` log around the failing request
-           and the editor's LSP trace setting (most editors expose
-           "LSP: Toggle Trace" or similar)."""]]]
-
-  [child id=build-integration n=8.9 title='Build-system integration'
+  [child id=build-integration n='8.6' title='Build-system integration'
     [intro
       """`cx` is built to slot into the build system you already
          have. The CLI returns conventional exit codes, reads/writes
@@ -1113,7 +607,7 @@
          properties that let it compose with `make`, `cargo`, `npm`,
          `bazel`, and CI systems without surprises."""]
 
-    [child id=build-make n=8.9.1 title='Make'
+    [child id=build-make n='8.6.1' title='Make'
       [body
         """A typical pattern: per-`.cxs` schema validation rule,
            gated `cx lint` lane, generated outputs as first-class
@@ -1138,12 +632,12 @@
            .PHONY: check
            check: lint validate"""]]
 
-    [child id=build-cargo n=8.9.2 title='Cargo (Rust build.rs)'
+    [child id=build-cargo n='8.6.2' title='Cargo (Rust build.rs)'
       [body
         """Use `build.rs` to validate `.cxs`/`.cx` pairs at compile
-           time; once the planned schema-codegen tool ships
-           the same step generates Rust types directly
-           from the schema."""]
+           time. (Schema-to-types codegen is planned design work with
+           no CLI surface yet — when it lands, the same step would
+           generate Rust types directly from the schema.)"""]
 
       [example lang=rust
         """// build.rs
@@ -1164,16 +658,10 @@
                    panic!(\"config validation failed\");
                }
 
-               // Planned: codegen
-               // Command::new(\"cx\")
-               //     .args([\"schema\", \"codegen\", \"--target\", \"rust\",
-               //            \"config/config.cxs\",
-               //            \"--output\", \"src/config_gen.rs\"])
-               //     .status()
-               //     .unwrap();
+               // Schema-to-types codegen: planned, no CLI surface yet.
            }"""]]
 
-    [child id=build-npm n=8.9.3 title='npm scripts'
+    [child id=build-npm n='8.6.3' title='npm scripts'
       [body
         """Wire `cx validate` and `cx lint` into `package.json`
            lifecycle scripts."""]
@@ -1188,7 +676,7 @@
              }
            }"""]]
 
-    [child id=build-bazel n=8.9.4 title='Bazel'
+    [child id=build-bazel n='8.6.4' title='Bazel'
       [body
         """A custom rule wrapping `cx validate` for hermetic builds.
            Sketch (treats validation as a generated stamp file):"""]
@@ -1219,7 +707,7 @@
                },
            )"""]]
 
-    [child id=build-ci-github n=8.9.5 title='GitHub Actions'
+    [child id=build-ci-github n='8.6.5' title='GitHub Actions'
       [body
         """Lint + validate as a PR gate. Reusable workflow that
            installs `cx` from the release artefacts, runs the
@@ -1237,10 +725,13 @@
                  - uses: actions/checkout@v4
                  - name: Install cx
                    run: |
-                     curl -sSfL https://cx-home.dev/install.sh | sh
+                     curl -sSfL https://cxhome.org/install | sh
                      echo \"$HOME/.cx/bin\" >> $GITHUB_PATH
-                 - name: cx fmt --check
-                   run: find . -name '*.cx' -print0 | xargs -0 cx fmt --check
+                 - name: cx fmt (drift check)
+                   run: |
+                     for f in $(find . -name '*.cx'); do
+                       cx fmt \"$f\" | diff - \"$f\"
+                     done
                  - name: cx lint
                    run: cx lint --fail-on=warn $(find . -name '*.cx')
                  - name: cx validate
@@ -1256,28 +747,31 @@
                      done"""]
 
       [body
-        """`cx scaffold github-workflow` emits this file as a
-           starting point."""]]
+        """Copy the snippet as a starting point — the scaffold kinds
+           are data shapes (`config` / `data` / `doc` / `log` /
+           `table`); there is no workflow scaffold."""]]
 
-    [child id=build-ci-gitlab n=8.9.6 title='GitLab CI'
+    [child id=build-ci-gitlab n='8.6.6' title='GitLab CI'
       [body
         """Equivalent for GitLab CI:"""]
 
       [example lang=yaml
-        """# .gitlab-ci.yml
+        """# .gitlab-ci.yml — pin the image tag to the release you target
            cx:
-             image: ghcr.io/cx-home/cx:0.8.0
+             image: ghcr.io/cx-home/cx:latest
              script:
-               - find . -name '*.cx' -print0 | xargs -0 cx fmt --check
+               - for f in $(find . -name '*.cx'); do cx fmt "$f" | diff - "$f"; done
                - cx lint --fail-on=warn $(find . -name '*.cx')
                - for f in config/**/*.cx; do cx validate \"$f\" --schema=config/schema.cxs --mode=strict; done
              rules:
                - if: $CI_PIPELINE_SOURCE == 'merge_request_event'"""]]
 
-    [child id=build-pre-commit n=8.9.7 title='Pre-commit hooks'
+    [child id=build-pre-commit n='8.6.7' title='Pre-commit hooks'
       [body
-        """Wire `cx fmt --check` and `cx lint` into the
-           [pre-commit](https://pre-commit.com/) framework."""]
+        """Wire a `cx fmt` drift check and `cx lint` into the
+           [pre-commit](https://pre-commit.com/) framework. There is
+           no `--check` flag on `cx fmt` — diff the formatter output
+           against the file instead."""]
 
       [example lang=yaml
         """# .pre-commit-config.yaml
@@ -1285,8 +779,8 @@
              - repo: local
                hooks:
                  - id: cx-fmt
-                   name: cx fmt --check
-                   entry: cx fmt --check
+                   name: cx fmt drift check
+                   entry: bash -c 'for f in \"$@\"; do cx fmt \"$f\" | diff - \"$f\" || exit 1; done' --
                    language: system
                    files: '\\.(cx|cxd|cxs|cxl)$'
                  - id: cx-lint
@@ -1301,9 +795,10 @@
                    files: '^config/.*\\.cx$'"""]
 
       [note
-        """`cx scaffold pre-commit` emits the same snippet."""]]]
+        """Copy the snippet directly — there is no pre-commit
+           scaffold kind (`cx scaffold` emits data shapes only)."""]]]
 
-  [child id=docgen n=8.10 title='Doc-gen pipeline'
+  [child id=docgen n='8.7' title='Doc-gen pipeline'
     [intro
       """The documentation site (and this canonical guide) is built
          from `.cxd`/`.cx` sources under `docs-src/` by a Make-driven
@@ -1311,7 +806,7 @@
          dogfood — the inputs are CX, the templates are CX, the
          outputs are HTML rendered by running the generator with `cx`."""]
 
-    [child id=docgen-make n=8.10.1 title='Make targets'
+    [child id=docgen-make n='8.7.1' title='Make targets'
       [body
         """The top-level Makefile splices `-include
            scripts/gen_docs/docs.mk` to bring the doc targets into
@@ -1326,7 +821,7 @@
         [tr [td 'make docs-check'] [td 'broken-link + missing-anchor verification']]
         [tr [td 'make docs-all'] [td 'docs + docs-check']]]]
 
-    [child id=docgen-staging n=8.10.2 title='Staging vs live'
+    [child id=docgen-staging n='8.7.2' title='Staging vs live'
       [body
         """`make docs` writes to `_docs_staging/` (in `.gitignore`).
            The live tree at `docs/` is touched only by `make
@@ -1335,7 +830,7 @@
            dirty the working tree on incidental builds — only an
            explicit publish step lands changes."""]]
 
-    [child id=docgen-canonical-guide n=8.10.3 title='The canonical guide'
+    [child id=docgen-canonical-guide n='8.7.3' title='The canonical guide'
       [body
         """This document — the canonical CX guide — is built by
            `make docs-canonical-guide` from sources under
@@ -1356,10 +851,10 @@
         """Broken links fail the build. `make docs-check` runs the
            verifier without the render — useful for fast iteration."""]]
 
-    [child id=docgen-snippets n=8.10.4 title='Example snippets'
+    [child id=docgen-snippets n='8.7.4' title='Example snippets'
       [body
         """Code examples in the doc sources can pull from
-           `conformance/*.txt` fixtures so they can never drift from
+           `conformance/*.cxd` fixtures so they can never drift from
            working code. The `{{EXAMPLE:fixture-id field}}` placeholder
            expands at doc-gen time:"""]
 
@@ -1375,40 +870,44 @@
            `scripts/gen_docs/helpers/example_expand.cx` for the
            expander logic."""]]]
 
-  [child id=playground n=8.11 title='Playground'
+  [child id=playground n='8.8' title='Playground'
     [intro
       """The CX playground is a browser-embeddable interactive
          evaluator. It runs the same `libcx` core as the CLI,
          compiled to WebAssembly.
          No server round-trip — everything runs in the browser."""]
 
-    [child id=playground-wasm n=8.11.1 title='WASM distribution'
+    [child id=playground-wasm n='8.8.1' title='WASM distribution'
       [body
-        """`libcx.wasm` is the WASM build of the V core, exporting
-           a **subset** of the C ABI. The exported surface is
-           sufficient for: `cx_parse`, `cx_canon`, `cx_hash`,
-           `cx_eval`, `cx_code_eval`, `cx_code_diagram`,
-           `cx_select`, `cx_lint`, `cx_diff`. The bridge layer
-           lives at `tooling/playground/cxlib.js`."""]
+        """The wasm artifacts are the WASM build of the V core,
+           exporting a **subset** of the C ABI: `cx_to_cx`,
+           `cx_to_cx_compact`, `cx_to_json` / `cx_to_xml` /
+           `cx_to_yaml` / `cx_to_toml`, `cx_to_ast_bin`,
+           `cx_code_eval` (plus `_with_len` and `_streaming`),
+           `cx_code_diagram` (plus `_with_level`),
+           `cx_code_ast_json`, `cx_code_tree`, `cx_canonical`,
+           `cx_hash`, `cx_free`, `cx_features`, and `cx_version`.
+           The bridge layer lives at `scripts/wasm/cxlib.js`."""]
 
       [body
         """ABI capability bits the wasm advertises (per
-           [`spec/abi.md`](../../spec/abi.md) §3):"""]
+           [`spec/03-approved/core/abi.md`](../../spec/03-approved/core/abi.md) §3):"""]
 
       [list
-        [item """**Bit 29** — `_cx_code_diagram` (Mermaid
-                containment diagram render)."""]
-        [item """**Bit 30** — `_cx_code_tree` (interactive tree
+        [item """**Bit 31** — `_cx_code_diagram` (Mermaid
+                diagram render)."""]
+        [item """**Bit 32** — `_cx_code_tree` (interactive tree
                 model for the output pane)."""]
-        [item """All earlier cap bits the runtime would otherwise
-                advertise on native (0-28)."""]]]
+        [item """The earlier cap bits the runtime would otherwise
+                advertise on native, for the symbols the wasm build
+                exports."""]]]
 
-    [child id=playground-component n=8.11.2 title='The <cx-diagram> web component'
+    [child id=playground-component n='8.8.2' title='The <cx-diagram> web component'
       [body
-        """`tooling/playground/cx-diagram.js` is a self-contained
+        """`tooling/web/cx-diagram.js` is a self-contained
            web component that renders a CX document as a Mermaid
            containment diagram. Drop it into any page that loads
-           `libcx.wasm`:"""]
+           the wasm build:"""]
 
       [example lang=html
         """<script type=\"module\" src=\"/cxlib.js\"></script>
@@ -1424,7 +923,7 @@
            tree node in the output pane highlights the source
            span, and vice versa."""]]
 
-    [child id=playground-tier n=8.11.3 title='Render tiers'
+    [child id=playground-tier n='8.8.3' title='Render tiers'
       [body
         """Three tiers per the gate-17 design:"""]
 
@@ -1432,10 +931,13 @@
         [item """**Tier 1** — browser-only Mermaid render. What the
                 playground uses. No external service. Currently
                 shipped."""]
-        [item """**Tier 2** — HTTP service that shells out to
-                graphviz for richer (DOT-based) renders. Editor /
-                CI integration story. Shipped as
-                `tooling/diagram-svc/`."""]
+        [item """**Tier 2** — an HTTP service that shells out to
+                graphviz for richer (DOT-based) renders. Designed
+                (the editor / CI integration story) but **not
+                shipped** — no service directory exists; the CLI's
+                graphviz hop (`cx diagram --format=svg|png
+                --allow-subprocess`) covers the richer-render need
+                locally."""]
         [item """**Tier 3** — wasm-graphviz inline. Planned
                 follow-up. Eliminates the Tier-2 service hop while
                 keeping the richer-render output quality."""]]
@@ -1443,112 +945,40 @@
       [note
         """JSON and XML are **not** valid program sources for the
            diagram — `_cx_code_diagram` accepts CX text only.
-           Containment-only relationships, no FK inference. See
-           [`spec/audits/playground_gate17_design_v1.md`](../../spec/audits/playground_gate17_design_v1.md)
-           for the design rationale."""]]
+           Containment-only relationships, no FK inference. The
+           conformance home for the diagram output is
+           `conformance/code_diagram.cxd`."""]]
 
-    [child id=playground-embed n=8.11.4 title='Embedding in a docs site'
+    [child id=playground-embed n='8.8.4' title='Embedding in a docs site'
       [body
         """The minimum a host page needs:"""]
 
       [list
-        [item """`libcx.wasm` (~ 2.4 MB compressed) served with the
-                right MIME type."""]
-        [item """`cxlib.js` — the host-side bridge (~ 60 KB)."""]
-        [item """Optionally `cx-diagram.js`, `cx-tree.js`, and
-                `cx-editor.js` web components."""]]
+        [item """A wasm build — `libcx-async.js` (single-file
+                Asyncify build, ~36 MB; works under file:// and any
+                static host) or `libcx-pthreads.js` +
+                `libcx-pthreads.wasm` (~30 MB wasm; needs
+                cross-origin isolation for real threads)."""]
+        [item """`cxlib.js` — the host-side bridge (~26 KB), from
+                `scripts/wasm/cxlib.js`."""]
+        [item """Optionally the `cx-diagram.js` web component from
+                `tooling/web/`."""]]
 
       [body
-        """A full playground page (eval + diagram + tree) ships as
-           `tooling/playground/demo.html`. The docs site
-           re-uses these same components, so any concept page that
-           wants an inline interactive surface gets it for free
-           with a one-tag drop-in."""]]]
+        """A demo page for the diagram component ships as
+           `tooling/web/demo.html`; the full playground page (eval +
+           diagram + tree) is generated into the guide from
+           `scripts/gen_guide/playground/`. Any concept page that
+           wants an inline interactive surface reuses the same
+           components."""]]]
 
-  [child id=profiling n=8.12 title='Profiling and benchmarking'
-    [intro
-      """CX ships a standard bench harness for the V core
-         (`vcx/tests/runners/code_*_bench.v`) and per-binding bench
-         scripts that exercise the FFI path. The bench numbers feed
-         into the regression-tracking dashboard and the
-         [`spec/governance.md §6`](../../spec/governance.md) SLA
-         table."""]
-
-    [child id=profile-eval n=8.12.1 title='Per-directive profiling'
-      [body
-        """A pprof-compatible per-directive profiler is
-           **planned**; no profiling flag ships yet. Today the
-           closest tools are the structured error positions, the
-           `cx code-tree` view, and the V-native bench harness
-           below — see [[diag-trace]]."""]]
-
-    [child id=profile-bench n=8.12.2 title='Bench harness'
-      [body
-        """The bench harness is V-native; runners live at
-           `vcx/tests/runners/code_*_bench.v`. Run individually:"""]
-
-      [example lang=sh
-        """$ make bench-code-streaming   # streaming evaluator
-           $ make bench-code-pattern-compile   # pattern compile cost
-           $ make bench-code-http        # http client perf
-           $ make bench-code-soak        # long-running soak
-           $ make bench-code-cancel      # cancellation responsiveness
-           $ make bench-code-gates       # all gate-tracked benches
-
-           $ make bench-streaming        # data-streaming bench
-           $ make bench-eval             # general eval cost
-           $ make bench-json             # JSON-shape workload"""]
-
-      [body
-        """Each bench prints a one-line summary
-           (`MB/s`, ops/sec, p50/p95/p99 latency depending on
-           dimension) plus a JSON sidecar that the regression
-           dashboard consumes."""]]
-
-    [child id=profile-per-binding n=8.12.3 title='Per-binding bench'
-      [body
-        """The per-binding bench shim is `bench_report.py`. It
-           drives every binding through a common harness and
-           prints comparative numbers."""]
-
-      [example lang=sh
-        """$ python3 bench_report.py --bindings python,go,rust
-           python  parse 1MB: 92ms   eval count(//x): 12ms
-           go      parse 1MB: 38ms   eval count(//x): 4ms
-           rust    parse 1MB: 31ms   eval count(//x): 3ms"""]
-
-      [note
-        """The Go shim has a known SIGSEGV at 1 MB+ inputs as of
-           2026-05. The fix is tracked. Python's decoder ceiling
-           (~90 ms at 1 MB, pure-Python floor) is architectural —
-           a C extension is a planned future candidate."""]]
-
-    [child id=profile-targets n=8.12.4 title='Regression tracking'
-      [body
-        """The bench numbers are tracked against
-           [`spec/governance.md §6`](../../spec/governance.md)
-           SLA targets. Current headline numbers:"""]
-
-      [list
-        [item """**Streaming evaluator** — 340 MB/s on the
-                JSON-shape workload (`bench_streaming_json.v`);
-                300 MB/s target met."""]
-        [item """**`cx diff` 1 MiB / 1% change** — < 50 ms."""]
-        [item """**`cx lint` 1 MiB / all checks** — < 50 ms."""]
-        [item """**`cx hash` 1 MiB** — < 30 ms (canonical-bytes +
-                SHA-256)."""]]
-
-      [body
-        """CI gates on these numbers via a percentile-aware
-           regression check: a single run > 1.5× the rolling
-           median is flagged; > 2× fails the build."""]]]
 
   [# Migrated from docs-src/content/tooling/* and content/reference/cli.cx
      during Phase B docs → guide consolidation (2026-05-24). Compact
      quick-references for the CLI, editor install scripts, the
      tree-sitter grammar, and the conformance/fuzz/bench harnesses. #]
 
-  [child id=tooling-quickref n=8.13 title='Tooling quick references'
+  [child id=tooling-quickref n='8.9' title='Tooling quick references'
     [intro
       """Compact reference snippets for the CLI subcommand surface,
          the editor installer scripts, the tree-sitter grammar
@@ -1557,7 +987,7 @@
          normative depth; this section is the at-a-glance
          summary."""]
 
-    [child id=cli-quickref n=8.13.1 title='CLI quick reference'
+    [child id=cli-quickref n='8.9.1' title='CLI quick reference'
       [body
         """Every subcommand reads from a file or `-` (stdin) and
            writes to stdout unless `--output FILE` is passed.
@@ -1591,10 +1021,10 @@
 
            # Run a program (data + program in one input).
            cat data.cx program.cx | cx
-           cx pipeline.cx --allow-read --allow-write
+           cx --allow-read --allow-write pipeline.cx
 
            # Run a program against a separate input document ($doc).
-           cx program.cx --data=input.cx
+           cx --data=input.cx program.cx
 
            # Include resolution.
            cx --xml --include-root=./conf main.cx     # resolve [?cx include=…]"""]
@@ -1605,7 +1035,7 @@
            returned not-equal; `2` = I/O failure, schema load
            failure, or unrecoverable parse error."""]]
 
-    [child id=editor-installers n=8.13.2 title='Editor installer scripts'
+    [child id=editor-installers n='8.9.2' title='Editor installer scripts'
       [body
         """The `tooling/install/` directory ships one shell script
            per editor. Each script writes the editor config,
@@ -1631,7 +1061,7 @@
            the `cx` binary; register `.cx` / `.cxd` / `.cxs` as
            file types."""]]
 
-    [child id=tree-sitter-workflow n=8.13.3 title='Tree-sitter grammar workflow'
+    [child id=tree-sitter-workflow n='8.9.3' title='Tree-sitter grammar workflow'
       [body
         """The tree-sitter grammar lives at
            `tooling/tree-sitter-cx`. It is the source of syntax
@@ -1644,21 +1074,23 @@
            tree-sitter generate
            tree-sitter parse example.cx"""]
       [note
-        """Highlight, indent, fold, and locals queries ship
-           alongside the grammar. They drive syntax colours,
-           structural selection, and cursor-jump-to-definition
-           behaviour. Queries are versioned with the grammar;
-           updates flow through editor extensions on each
-           release."""]]
+        """Highlight and injection queries ship alongside the
+           grammar (`queries/highlights.scm` and
+           `queries/injections.scm` — the only two). Indent, fold,
+           and locals intelligence comes from the editor and the
+           LSP, not from tree-sitter queries. Queries are versioned
+           with the grammar; updates flow through editor extensions
+           on each release."""]]
 
-    [child id=conformance-fuzz-bench n=8.13.4 title='Conformance, fuzzing, benchmarks'
+    [child id=conformance-fuzz-bench n='8.9.4' title='Conformance, fuzzing, benchmarks'
       [body
-        """The conformance suite at `conformance/*.txt` is the
-           cross-binding contract. Each fixture declares an input
-           and an expected output (`out_cx`, `out_xml`, `out_json`,
-           `out_text`, or `out_err`). Every binding implements a
-           runner that walks the fixture set; a release is gated
-           on byte-identical output across every binding."""]
+        """The conformance suite at `conformance/*.cxd` is the
+           cross-binding contract. Each fixture is a `[case id=…]`
+           block declaring inputs (`[in-cx]`, `[in-code]`, `[call]`)
+           and an expected output (`[out-text]` or `[out-err]`).
+           Every binding implements a runner that walks the fixture
+           set; a release is gated on byte-identical output across
+           every binding."""]
       [example lang=shell
         """# Conformance.
            make test            # all bindings, all suites
@@ -1666,32 +1098,35 @@
            make test-rust       # Rust binding
            make test-python     # Python binding
 
-           # Fuzzers — vcx/tests/fuzz/, structured-random input.
-           make fuzz            # 60-second run of every fuzzer
-           make fuzz-parser     # parser only, runs until interrupted
-           make fuzz-replay     # replay the saved crash corpus
+           # Fuzzer — structured-random input over the parser.
+           # scripts/fuzz_cx.cx, run continuously by
+           # .github/workflows/fuzz.yml; run it locally with:
+           cx --allow-read --allow-write --allow-random --allow-clock \
+              scripts/fuzz_cx.cx
 
-           # Benchmarks — vcx/tests/runners/streaming_bench.v + eval_features_bench.v.
-           make bench           # full bench harness, target/bench.json
-           scripts/run_bench_json.py --include-eval"""]
+           # Benchmarks — vcx/tests/runners/streaming_bench.v.
+           make bench           # full bench harness
+           make bench-json      # the same run as machine-readable JSON"""]
       [note
-        """Streaming throughput target: 340 MB/s on the comparable
-           bench corpus (M2 Pro, libcx `-prod`) — about 17% under
-           the comparable JSON benchmark on the same workload."""]]]
+        """Streaming throughput gate: the release gate requires a
+           ≥200 MB/s floor on the reference corpus. The gate is not
+           green yet — `[?for]` streaming measures around the
+           200 MB/s line and `[?map]` at 129.2 MB/s on the current
+           tree; closing that gap is active work."""]]]
 
   [# Migrated from docs-src/content/{cookbook,showcase,playground}.cx
      during Phase B docs → guide consolidation (2026-05-24). New
      §8.7 cookbook recipes (13 from content/cookbook + 3 from
      content/showcase) and a playground deep-dive (§8.11 fold). #]
 
-  [child id=cookbook-extras n=8.14 title='Cookbook — additional recipes'
+  [child id=cookbook-extras n='8.10' title='Cookbook — additional recipes'
     [intro
       """Recipes carried forward from the pre-Phase-B docs
          cookbook + showcase. The §8.7 children above (recipes
          §8.7.1-§8.7.9) cover the most common nine; this section
          adds 13 more focused recipes."""]
 
-    [child id=recipe-extract n=8.14.1 title='Extract a single value'
+    [child id=recipe-extract n='8.10.1' title='Extract a single value'
       [example lang=shell """echo '//server/@host' | cat config.cx - | cx"""]
       [body
         """Appending a query to its data and running the result
@@ -1699,7 +1134,7 @@
            document. The CXPath finds the `host` attribute of any
            `server` element at any depth."""]]
 
-    [child id=recipe-filter n=8.14.2 title='Filter records by attribute'
+    [child id=recipe-filter n='8.10.2' title='Filter records by attribute'
       [body
         """A one-line program filters by predicate — the CXPath
            predicate `//user[= $_@role 'admin']` selects only
@@ -1708,10 +1143,10 @@
         """echo \"[?for [in \$u //user[= \$_@role 'admin']] [yield \$u]]\" \\
              | cat users.cx - | cx"""]]
 
-    [child id=recipe-count n=8.14.3 title='Count records'
+    [child id=recipe-count n='8.10.3' title='Count records'
       [example lang=shell """echo '[$count //order]' | cat orders.cx - | cx"""]]
 
-    [child id=recipe-generate-config n=8.14.4 title='Generate a config from a template'
+    [child id=recipe-generate-config n='8.10.4' title='Generate a config from a template'
       [example lang=cx
         """[env host='db.example.com' port=5432 env='prod']
            [?let [= $env [$first //env]]
@@ -1723,13 +1158,13 @@
         """cat env.prod.cx server.tpl.cx | cx | tail -1 > server.cx
            cx --toml server.cx > server.toml"""]]
 
-    [child id=recipe-write-stream n=8.14.5 title='Write a stream'
+    [child id=recipe-write-stream n='8.10.5' title='Write a stream'
       [example lang=python
         """with cx.stream_writer(open("out.cx", "wb")) as w:
                for record in fetch_records():
                    w.write(record)"""]]
 
-    [child id=recipe-compose-include n=8.14.6 title='Compose a document from files'
+    [child id=recipe-compose-include n='8.10.6' title='Compose a document from files'
       [; check=none — [?cx include] is approved surface (code.md §13); the
          current binary rejects every [?cx …] directive, tracked as engine
          regression #421. Re-enable the check when #421 lands. ]
@@ -1740,7 +1175,7 @@
              log-level=info]"""]
       [example lang=shell """cx --cx --include-root=./conf server.cx > resolved.cx"""]]
 
-    [child id=recipe-render-template n=8.14.7 title='Render a template with includes'
+    [child id=recipe-render-template n='8.10.7' title='Render a template with includes'
       [; check=none — [?cx include] is approved surface (code.md §13); the
          current binary rejects every [?cx …] directive (#421). ]
       [example lang=cx check=none
@@ -1750,10 +1185,10 @@
              [?cx include=partials/footer.cx]]"""]
       [example lang=shell """cx --cx --include-root=./templates page.cx"""]]
 
-    [child id=recipe-read-parquet n=8.14.8 title='Read a Parquet file into CX'
+    [child id=recipe-read-parquet n='8.10.8' title='Read a Parquet file into CX'
       [example lang=shell """cx table load orders.parquet --to=cx > orders.cx"""]]
 
-    [child id=recipe-anchor-merge n=8.14.9 title='Share defaults across records'
+    [child id=recipe-anchor-merge n='8.10.9' title='Share defaults across records'
       [example lang=cx
         """[defaults &shared timeout=30 retries=3]
            [server *shared name=api]
@@ -1762,21 +1197,21 @@
         """`&` declares an anchor; `*` merges from it. Local
            fields override; missing ones inherit."""]]
 
-    [child id=recipe-html-safe n=8.14.10 title='HTML-safe templating'
-      [; check=none — [?cx output-target] is approved evaluator-config
-         surface (grammar.ebnf CXDirective attrs); the current binary
-         rejects every [?cx …] directive (#421). ]
-      [example lang=cx check=none
-        """[?cx output-target=html]
-           [h1 //page/@title]
-           [?for [in $u //user] [yield [li $u/@name]]]"""]
+    [child id=recipe-html-safe n='8.10.10' title='HTML-safe templating'
       [body
-        """`[?cx output-target=html]` switches the evaluator into
-           context-aware escaping. Substituted values containing
-           `<`, `>`, `&`, or quotes escape correctly with no
-           manual sprintf."""]]
+        """There is **no** `[?cx output-target=html]` escaping mode —
+           the key is **reserved and refused** (the pragma registry is
+           closed; it once passed through inert while reading like an
+           XSS defense). Until context-aware escaping ships, escape at
+           the boundary: `[$strings:escape-html]` for text,
+           `[$html:sanitize]` for untrusted markup, and
+           `[$html:serialize]` for trees built as data — escaping by
+           construction, never string concatenation."""]
+      [example lang=cx
+        """[?lib 'cx-stdlib/strings']
+           [$strings:escape-html '<script>alert(1)</script>']"""]]
 
-    [child id=recipe-log-structured n=8.14.11 title='Emit structured log records'
+    [child id=recipe-log-structured n='8.10.11' title='Emit structured log records'
       [example lang=cx
         """[?lib 'cx-stdlib/log']
            [$log:info 'sale' fields={pizza: 'Margherita', price: 12}]
@@ -1787,7 +1222,7 @@
            level is one of `trace` / `debug` / `info` / `warn` /
            `error`."""]]
 
-    [child id=recipe-logfmt-parser n=8.14.12 title='Logfmt parser in CX code'
+    [child id=recipe-logfmt-parser n='8.10.12' title='Logfmt parser in CX code'
       [body
         """Take a logfmt-style line of key=value records and
            split it into structured CX."""]
@@ -1800,7 +1235,7 @@
                  [?let [= $pair [$strings:split $kv '=']]
                    [pair name=[$nth $pair 1] value=[$nth $pair 2]]]]]]]"""]]
 
-    [child id=recipe-build-system n=8.14.13 title='Build system in CX'
+    [child id=recipe-build-system n='8.10.13' title='Build system in CX'
       [body
         """Targets, depends, run — declared in CX, evaluated by
            a thirty-line CX code driver."""]
@@ -1824,13 +1259,13 @@
                   [else ()]])]]]
            [$build 'all']"""]]]
 
-  [child id=playground-detail n=8.15 title='Playground — visualize, offline, highlight'
+  [child id=playground-detail n='8.11' title='Playground — visualize, offline, highlight'
     [intro
       """Deep-dive on the in-browser playground UI. Section §8.11 above frames the WASM / web
          component / tier story; this section is the operator
          reference for the Tree / Graph / Source-diagram bridge."""]
 
-    [child id=pg-how n=8.15.1 title='How it works'
+    [child id=pg-how n='8.11.1' title='How it works'
       [body
         """The playground runs entirely in the browser. Pick a
            starter example from the dropdown, edit it in the
@@ -1842,7 +1277,7 @@
            and nine program snippets covering the
            directive surface."""]]
 
-    [child id=pg-visualize n=8.15.2 title='Visualize'
+    [child id=pg-visualize n='8.11.2' title='Visualize'
       [body
         """The Source pane carries a Diagram toggle in its
            header; the Output pane carries a Tree | Graph view
@@ -1852,7 +1287,7 @@
       [body
         """The Source-pane diagram renders the program as a
            Mermaid graph in a sibling pane. The renderer runs
-           entirely in the browser via libcx.wasm — Mermaid text
+           entirely in the browser via the libcx wasm build — Mermaid text
            emitted by `cx_code_diagram`, then rendered to inline
            SVG by Mermaid.js. Zoom, fit-to-pane, and pan controls
            layer on top."""]
@@ -1887,7 +1322,7 @@
            re-render on Run only — no live debounce — to keep
            the playground predictable."""]]
 
-    [child id=pg-offline n=8.15.3 title='Offline use'
+    [child id=pg-offline n='8.11.3' title='Offline use'
       [body
         """The browser playground is a static page. Clone the
            repo, render the guide with `make guide`, and serve
@@ -1897,7 +1332,7 @@
            bundle, and the CSS all live under
            `scripts/gen_guide/playground/`."""]]
 
-    [child id=pg-highlight n=8.15.4 title='Syntax highlighting'
+    [child id=pg-highlight n='8.11.4' title='Syntax highlighting'
       [body
         """Every code block on the guide is syntax-highlighted by
            a small in-house JS module at

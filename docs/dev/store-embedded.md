@@ -47,8 +47,11 @@ Arrow build.
   applied client-side — and stores the result as a **new** doc; originals
   are immutable. "Latest of X" lives in the alias/branch layer, never in the
   content store.
-- `put-def`/`get-def` content-address CX *code* by Tier-2 identity —
-  alpha-equivalent definitions share one key (the code-identity spec).
+- `put-blob`/`get-blob` store OPAQUE documents — CX code, images, plain
+  text — under the hash of their **raw bytes**, byte-exact on the way back
+  (F1' identity-rule split; code never passes through data canonicalization).
+  The "same function?" relation is the pure `[$cx:computation-id]` claim
+  (`computes-as:<algo>:<hex>`), an index — never a storage key.
 
 ## Durable substrates
 

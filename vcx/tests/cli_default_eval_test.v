@@ -49,7 +49,7 @@ fn test_bare_data_file_is_identity() {
 fn test_default_xml_renders_result() {
 	f := tmp_file('addxml', '[+ 1 2]\n')
 	defer { os.rm(f) or {} }
-	r := os.execute('${cx_bin()} ${f} --xml')
+	r := os.execute('${cx_bin()} --xml ${f}')
 	assert r.exit_code == 0, 'expected exit 0, got ${r.exit_code}: ${r.output}'
 	// The evaluated result is the int 3, rendered as XML — NOT the program
 	// source `[+ 1 2]` round-tripped through XML.
@@ -62,7 +62,7 @@ fn test_default_xml_renders_result() {
 fn test_default_json_renders_result() {
 	f := tmp_file('addjson', '[+ 10 20]\n')
 	defer { os.rm(f) or {} }
-	r := os.execute('${cx_bin()} ${f} --json')
+	r := os.execute('${cx_bin()} --json ${f}')
 	assert r.exit_code == 0, 'expected exit 0, got ${r.exit_code}: ${r.output}'
 	assert r.output.contains('30'), 'expected result 30 in json, got: ${r.output}'
 }
@@ -125,10 +125,11 @@ fn test_bare_e_inline_expression() {
 }
 
 fn test_bare_e_with_render_target() {
-	// flags compose with -e in either order
-	r := os.execute("${cx_bin()} -e '[+ 1 2]' --json")
+	// PYE-2: flags bind BEFORE the resource — after `-e EXPR` every token is
+	// a program argument, so the render flag goes first.
+	r := os.execute("${cx_bin()} --json -e '[+ 1 2]'")
 	assert r.exit_code == 0, 'exit 0 expected: ${r.output}'
-	assert r.output.contains('3'), '-e with --json should render the result: ${r.output}'
+	assert r.output.contains('3'), '--json with -e should render the result: ${r.output}'
 }
 
 fn test_bare_e_missing_arg_errors() {

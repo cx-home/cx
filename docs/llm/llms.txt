@@ -1,0 +1,21 @@
+# CX 0.16.0
+
+> CX is a homoiconic data-and-code language: one bracketed element syntax for documents, queries, programs and its own AST. It post-dates every model's training data, so this layer is the context an assistant needs to write it correctly.
+
+Generated from the CX conformance corpus at the v0.16.0 cut by scripts/gen_docs/primer_build.cx. Every code example in every file below is a conformance fixture whose output was re-recorded from the v0.16.0 binary.
+
+## Start here
+
+- [CX primer for LLM assistants](https://cxhome.org/llm/primer.md): The one file to load before writing CX. The surface taught through runnable examples, a ring decision table, the core idioms, and the anti-patterns that Lisp/Clojure/shell priors produce — each with its real diagnostic.
+
+## Reference
+
+- [Reference: the CX data language](https://cxhome.org/llm/reference-data-language.md): Elements, attributes, scalars and their auto-typing, collections, raw text, tables, identity anchors, and the format conversions the data reading offers.
+- [Reference: the CX code language](https://cxhome.org/llm/reference-code-language.md): The directive surface — binding, control flow, comprehensions, pattern matching, definitions, pipes, CXPath — and how errors propagate as values.
+- [Reference: the standard library](https://cxhome.org/llm/reference-stdlib.md): The bundled module catalog, the [?lib] import form, and the capability each effectful pack requires.
+- [Reference: the cx command line](https://cxhome.org/llm/reference-cli.md): The run surface, the convert surface, the subcommand catalog, and the capability grant flags — including the flag-placement rule that silently denies capabilities when broken.
+- [Reference: the platform and ecosystem rings](https://cxhome.org/llm/reference-platform.md): Ring 2 (store, journal, HTTP, XAP host) and Ring 3 (agent interop, feature distribution, language bindings) — what is reachable and how.
+
+## Optional
+
+- [Everything above, concatenated](https://cxhome.org/llms-full.txt): one fetch, the whole layer.

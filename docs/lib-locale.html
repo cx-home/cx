@@ -5,15 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>locale — CX Guide</title>
 <link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <aside class="sidebar">
   <a class="brand" href="index.html" aria-label="CX — home">
-    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
   </a>
   <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
   <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
   <a class="brand-sub" href="about.html">About →</a>
   <div class="side-search">
     <input id="side-search-input" type="search"
@@ -21,444 +25,487 @@
            autocomplete="off" spellcheck="false" data-prefix="" />
     <ul id="side-search-results" class="side-search-results" hidden></ul>
   </div>
-  <section><h4>Guide</h4><ul>
+  <section><h4>Start here</h4><ul>
     <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
     <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
     <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
     <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
     <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
     <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
-    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
-    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
-    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
-    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
-    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
-    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
-    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
-    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
     <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
-    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
-    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
-    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
-  </ul></section>
-  <section><h4>Reference</h4><ul>
-    <li><a href="directives.html">Directives</a></li>
-    <li><a href="syntax.html">Core syntax</a></li>
-  </ul></section>
-  <section><h4>Standard library</h4><ul>
-    <li><a href="libraries.html">Overview</a></li>
-    <li><a href="lib-authz.html">authz</a></li>
-    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
     <li><a href="lib-bytes.html">bytes</a></li>
     <li><a href="lib-crypto.html">crypto</a></li>
     <li><a href="lib-csv.html">csv</a></li>
-    <li><a href="lib-did.html">did</a></li>
-    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
     <li><a href="lib-env.html">env</a></li>
-    <li><a href="lib-fabric.html">fabric</a></li>
     <li><a href="lib-format.html">format</a></li>
     <li><a href="lib-fp.html">fp</a></li>
     <li><a href="lib-ft.html">ft</a></li>
     <li><a href="lib-geo.html">geo</a></li>
     <li><a href="lib-hash.html">hash</a></li>
     <li><a href="lib-html.html">html</a></li>
-    <li><a href="lib-http.html">http</a></li>
     <li><a href="lib-i18n.html">i18n</a></li>
     <li><a href="lib-io.html">io</a></li>
-    <li><a href="lib-journal.html">journal</a></li>
     <li><a href="lib-json.html">json</a></li>
     <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
     <li><a href="lib-jsonschema.html">jsonschema</a></li>
     <li><a class="active" href="lib-locale.html">locale</a></li>
     <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
     <li><a href="lib-math.html">math</a></li>
     <li><a href="lib-mime.html">mime</a></li>
-    <li><a href="lib-net.html">net</a></li>
     <li><a href="lib-path.html">path</a></li>
     <li><a href="lib-process.html">process</a></li>
     <li><a href="lib-prof.html">prof</a></li>
     <li><a href="lib-random.html">random</a></li>
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
-    <li><a href="lib-session.html">session</a></li>
     <li><a href="lib-similar.html">similar</a></li>
-    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
     <li><a href="lib-test.html">test</a></li>
     <li><a href="lib-time.html">time</a></li>
     <li><a href="lib-url.html">url</a></li>
     <li><a href="lib-uuid.html">uuid</a></li>
     <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-vc.html">vc</a></li>
     <li><a href="lib-xap.html">xap</a></li>
     <li><a href="lib-xsp.html">xsp</a></li>
-  </ul></section>
-  <section><h4>XAP</h4><ul>
     <li><a href="xap.html">Overview</a></li>
     <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
     <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
     <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
     <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
   </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
 </aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">locale</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
 <main>
-<section id="lib-locale">
-  <h1>locale</h1>
-  <p class="lede">The primitives layer of CX's internationalization surface. Provides locale-aware string collation (Unicode Collation Algorithm with per-locale tailorings), number, date, time, and currency formatting, BCP 47 locale introspection, and locale-aware case mapping such as Turkish dotted-i and German sharp-s. Ships a CLDR-subset offline catalog as a zero-dependency fallback. Message catalogs, translation, and ICU MessageFormat live in the sibling module cx-stdlib/i18n, which depends one-way on this one; RTL bidi operations are deferred.</p>
-  
-    <section id="fn-locale-collate" class="fn">
-      <h3>locale:collate</h3>
-      <p class="fn-sig"><code>[$locale:collate]  -> int</code>  —  Compare two strings in a locale's sort order, returning -1, 0, or 1.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/locale']
+<section id="lib-locale"><h1>locale</h1><p class="lede">The primitives layer of CX's internationalization surface. Provides locale-aware string collation (Unicode Collation Algorithm with per-locale tailorings), number, date, time, and currency formatting, BCP 47 locale introspection, and locale-aware case mapping such as Turkish dotted-i and German sharp-s. Ships a CLDR-subset offline catalog as a zero-dependency fallback. Message catalogs, translation, and ICU MessageFormat live in the sibling module cx-stdlib/i18n, which depends one-way on this one; RTL bidi operations are deferred.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
+           reader who takes an x/ surface for a frozen one has been misled by
+           the page, not by their own inattention. ]]>
+  <section id="fn-locale-collate" class="fn">
+    <h3>locale:collate</h3>
+    <p class="fn-sig"><code>[$locale:collate]  -> int</code>  —  Compare two strings in a locale's sort order, returning -1, 0, or 1.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/locale']
 [$locale:collate "a" "b" "en-US"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>-1</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-collate-with-opts" class="fn">
-      <h3>locale:collate-with-opts</h3>
-      <p class="fn-sig"><code>[$locale:collate-with-opts]  -> int</code>  —  Compare two strings with collation options (strength, case-first, numeric, ignore-punctuation).</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/locale']
+        </pre>
+        <pre class="sample-output">
+          <code>-1</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-collate-with-opts" class="fn">
+    <h3>locale:collate-with-opts</h3>
+    <p class="fn-sig"><code>[$locale:collate-with-opts]  -> int</code>  —  Compare two strings with collation options (strength, case-first, numeric, ignore-punctuation).</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/locale']
 [$locale:collate-with-opts "ä" "a" {locale: "de-DE", strength: "primary"}]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>0</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-collate-key" class="fn">
-      <h3>locale:collate-key</h3>
-      <p class="fn-sig"><code>[$locale:collate-key]  -> bytes</code>  —  Produce a persistable UCA sort key whose byte order matches collate's ordering.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/locale']
+        </pre>
+        <pre class="sample-output">
+          <code>0</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-collate-key" class="fn">
+    <h3>locale:collate-key</h3>
+    <p class="fn-sig"><code>[$locale:collate-key]  -> bytes</code>  —  Produce a persistable UCA sort key whose byte order matches collate's ordering.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/locale']
 [$locale:collate-key "abc" "@@bad-tag@@"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER3501</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-format-number" class="fn">
-      <h3>locale:format-number</h3>
-      <p class="fn-sig"><code>[$locale:format-number]  -> string</code>  —  Format a number per a locale's grouping and decimal conventions.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/locale']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER3501</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-format-number" class="fn">
+    <h3>locale:format-number</h3>
+    <p class="fn-sig"><code>[$locale:format-number]  -> string</code>  —  Format a number per a locale's grouping and decimal conventions.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/locale']
 [$locale:format-number 1234567.89 "en-US"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'1,234,567.89'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-format-number-with-opts" class="fn">
-      <h3>locale:format-number-with-opts</h3>
-      <p class="fn-sig"><code>[$locale:format-number-with-opts]  -> string</code>  —  Format a number with options for fraction digits, grouping, and notation.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/locale']
+        </pre>
+        <pre class="sample-output">
+          <code>'1,234,567.89'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-format-number-with-opts" class="fn">
+    <h3>locale:format-number-with-opts</h3>
+    <p class="fn-sig"><code>[$locale:format-number-with-opts]  -> string</code>  —  Format a number with options for fraction digits, grouping, and notation.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/locale']
 [$locale:format-number-with-opts 1234567 {locale: "en-US", notation: "compact"}]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'1.2M'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-parse-number-locale" class="fn">
-      <h3>locale:parse-number-locale</h3>
-      <p class="fn-sig"><code>[$locale:parse-number-locale]  -> number</code>  —  Parse a number from a string written in a locale's conventions.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/locale']
+        </pre>
+        <pre class="sample-output">
+          <code>'1.2M'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-parse-number-locale" class="fn">
+    <h3>locale:parse-number-locale</h3>
+    <p class="fn-sig"><code>[$locale:parse-number-locale]  -> number</code>  —  Parse a number from a string written in a locale's conventions.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/locale']
 [$locale:parse-number-locale "1,234,567.89" "en-US"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>1234567.89</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-format-date" class="fn">
-      <h3>locale:format-date</h3>
-      <p class="fn-sig"><code>[$locale:format-date]  -> string</code>  —  Format a date for a locale using an ICU/LDML pattern.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/time']
+        </pre>
+        <pre class="sample-output">
+          <code>1234567.89</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-format-date" class="fn">
+    <h3>locale:format-date</h3>
+    <p class="fn-sig"><code>[$locale:format-date]  -> string</code>  —  Format a date for a locale using an ICU/LDML pattern.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/time']
 [?lib 'cx-stdlib/locale']
 [$locale:format-date [$time:parse-date "2026-05-26"] "fr-FR" "EEEE d MMMM yyyy"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'mardi 26 mai 2026'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-format-datetime" class="fn">
-      <h3>locale:format-datetime</h3>
-      <p class="fn-sig"><code>[$locale:format-datetime]  -> string</code>  —  Format a datetime for a locale using an ICU/LDML pattern.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/time']
+        </pre>
+        <pre class="sample-output">
+          <code>'mardi 26 mai 2026'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-format-datetime" class="fn">
+    <h3>locale:format-datetime</h3>
+    <p class="fn-sig"><code>[$locale:format-datetime]  -> string</code>  —  Format a datetime for a locale using an ICU/LDML pattern.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/time']
 [?lib 'cx-stdlib/locale']
 [$locale:format-datetime [$time:parse-datetime "2026-05-26T14:30:00Z"] "en-US" "yyyy-MM-dd HH:mm:ss"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'2026-05-26 14:30:00'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-format-date-style" class="fn">
-      <h3>locale:format-date-style</h3>
-      <p class="fn-sig"><code>[$locale:format-date-style]  -> string</code>  —  Format a date in a locale's conventional short, medium, long, or full style.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/time']
+        </pre>
+        <pre class="sample-output">
+          <code>'2026-05-26 14:30:00'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-format-date-style" class="fn">
+    <h3>locale:format-date-style</h3>
+    <p class="fn-sig"><code>[$locale:format-date-style]  -> string</code>  —  Format a date in a locale's conventional short, medium, long, or full style.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/time']
 [?lib 'cx-stdlib/locale']
 [$locale:format-date-style [$time:parse-date "2026-05-26"] "en-US" :full]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'Tuesday, May 26, 2026'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-parse-date-locale" class="fn">
-      <h3>locale:parse-date-locale</h3>
-      <p class="fn-sig"><code>[$locale:parse-date-locale]  -> date</code>  —  Parse a date from a string for a locale using an ICU/LDML pattern.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/locale']
+        </pre>
+        <pre class="sample-output">
+          <code>'Tuesday, May 26, 2026'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-parse-date-locale" class="fn">
+    <h3>locale:parse-date-locale</h3>
+    <p class="fn-sig"><code>[$locale:parse-date-locale]  -> date</code>  —  Parse a date from a string for a locale using an ICU/LDML pattern.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/locale']
 [$locale:parse-date-locale "2026-05-26" "en-US" "yyyy-MM-dd"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'2026-05-26'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-format-currency" class="fn">
-      <h3>locale:format-currency</h3>
-      <p class="fn-sig"><code>[$locale:format-currency]  -> string</code>  —  Format an amount as a currency for a locale, honoring ISO 4217 minor units.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/locale']
+        </pre>
+        <pre class="sample-output">
+          <code>'2026-05-26'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-format-currency" class="fn">
+    <h3>locale:format-currency</h3>
+    <p class="fn-sig"><code>[$locale:format-currency]  -> string</code>  —  Format an amount as a currency for a locale, honoring ISO 4217 minor units.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/locale']
 [$locale:format-currency 1234.56 "USD" "en-US"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'$1,234.56'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-currency-symbol" class="fn">
-      <h3>locale:currency-symbol</h3>
-      <p class="fn-sig"><code>[$locale:currency-symbol]  -> string</code>  —  Return the symbol for a currency as written in a locale.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/locale']
+        </pre>
+        <pre class="sample-output">
+          <code>'$1,234.56'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-currency-symbol" class="fn">
+    <h3>locale:currency-symbol</h3>
+    <p class="fn-sig"><code>[$locale:currency-symbol]  -> string</code>  —  Return the symbol for a currency as written in a locale.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/locale']
 [$locale:currency-symbol "USD" "en-US"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'$'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-list-locales" class="fn">
-      <h3>locale:list-locales</h3>
-      <p class="fn-sig"><code>[$locale:list-locales]  -> [sequence string]</code>  —  List the locale tags the module has data for.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/locale']
+        </pre>
+        <pre class="sample-output">
+          <code>'$'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-list-locales" class="fn">
+    <h3>locale:list-locales</h3>
+    <p class="fn-sig"><code>[$locale:list-locales]  -> [sequence string]</code>  —  List the locale tags the module has data for.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/locale']
 [$locale:is-supported [$first [$locale:list-locales]]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>true</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-is-supported" class="fn">
-      <h3>locale:is-supported</h3>
-      <p class="fn-sig"><code>[$locale:is-supported]  -> bool</code>  —  Report whether a locale tag resolves to available data at any fallback level.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/locale']
+        </pre>
+        <pre class="sample-output">
+          <code>true</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-is-supported" class="fn">
+    <h3>locale:is-supported</h3>
+    <p class="fn-sig"><code>[$locale:is-supported]  -> bool</code>  —  Report whether a locale tag resolves to available data at any fallback level.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/locale']
 [$locale:is-supported [$first [$locale:list-locales]]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>true</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-default-locale" class="fn">
-      <h3>locale:default-locale</h3>
-      <p class="fn-sig"><code>[$locale:default-locale]  -> string</code>  —  Return the system's default locale from the environment.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/locale']
+        </pre>
+        <pre class="sample-output">
+          <code>true</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-default-locale" class="fn">
+    <h3>locale:default-locale</h3>
+    <p class="fn-sig"><code>[$locale:default-locale]  -> string</code>  —  Return the system's default locale from the environment.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/locale']
 [$locale:is-supported [$locale:default-locale]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>true</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-locale-name" class="fn">
-      <h3>locale:locale-name</h3>
-      <p class="fn-sig"><code>[$locale:locale-name]  -> string</code>  —  Render a locale's display name in a requested display locale.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/locale']
+        </pre>
+        <pre class="sample-output">
+          <code>true</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-locale-name" class="fn">
+    <h3>locale:locale-name</h3>
+    <p class="fn-sig"><code>[$locale:locale-name]  -> string</code>  —  Render a locale's display name in a requested display locale.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/locale']
 [$locale:locale-name "de-DE" "en-US"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'German (Germany)'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-language-of" class="fn">
-      <h3>locale:language-of</h3>
-      <p class="fn-sig"><code>[$locale:language-of]  -> string</code>  —  Extract the language subtag from a locale tag.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/locale']
+        </pre>
+        <pre class="sample-output">
+          <code>'German (Germany)'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-language-of" class="fn">
+    <h3>locale:language-of</h3>
+    <p class="fn-sig"><code>[$locale:language-of]  -> string</code>  —  Extract the language subtag from a locale tag.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/locale']
 [$locale:language-of "zh-Hans-CN"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'zh'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-country-of" class="fn">
-      <h3>locale:country-of</h3>
-      <p class="fn-sig"><code>[$locale:country-of]  -> string</code>  —  Extract the region/country subtag from a locale tag.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/locale']
+        </pre>
+        <pre class="sample-output">
+          <code>'zh'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-country-of" class="fn">
+    <h3>locale:country-of</h3>
+    <p class="fn-sig"><code>[$locale:country-of]  -> string</code>  —  Extract the region/country subtag from a locale tag.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/locale']
 [$locale:country-of "en-US"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'US'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-script-of" class="fn">
-      <h3>locale:script-of</h3>
-      <p class="fn-sig"><code>[$locale:script-of]  -> string</code>  —  Extract the script subtag from a locale tag.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/locale']
+        </pre>
+        <pre class="sample-output">
+          <code>'US'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-script-of" class="fn">
+    <h3>locale:script-of</h3>
+    <p class="fn-sig"><code>[$locale:script-of]  -> string</code>  —  Extract the script subtag from a locale tag.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/locale']
 [$locale:script-of "zh-Hans-CN"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'Hans'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-text-direction" class="fn">
-      <h3>locale:text-direction</h3>
-      <p class="fn-sig"><code>[$locale:text-direction]  -> atom</code>  —  Return a locale's writing direction as :ltr or :rtl.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/locale']
+        </pre>
+        <pre class="sample-output">
+          <code>'Hans'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-text-direction" class="fn">
+    <h3>locale:text-direction</h3>
+    <p class="fn-sig"><code>[$locale:text-direction]  -> atom</code>  —  Return a locale's writing direction as :ltr or :rtl.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/locale']
 [$locale:text-direction "en-US"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>:ltr</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-upper-locale" class="fn">
-      <h3>locale:upper-locale</h3>
-      <p class="fn-sig"><code>[$locale:upper-locale]  -> string</code>  —  Uppercase a string under a locale's case rules.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/locale']
+        </pre>
+        <pre class="sample-output">
+          <code>:ltr</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-upper-locale" class="fn">
+    <h3>locale:upper-locale</h3>
+    <p class="fn-sig"><code>[$locale:upper-locale]  -> string</code>  —  Uppercase a string under a locale's case rules.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/locale']
 [$locale:upper-locale "i" "tr-TR"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'İ'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-lower-locale" class="fn">
-      <h3>locale:lower-locale</h3>
-      <p class="fn-sig"><code>[$locale:lower-locale]  -> string</code>  —  Lowercase a string under a locale's case rules.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/locale']
+        </pre>
+        <pre class="sample-output">
+          <code>'İ'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-lower-locale" class="fn">
+    <h3>locale:lower-locale</h3>
+    <p class="fn-sig"><code>[$locale:lower-locale]  -> string</code>  —  Lowercase a string under a locale's case rules.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/locale']
 [$locale:lower-locale "I" "tr-TR"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'ı'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-locale-title-locale" class="fn">
-      <h3>locale:title-locale</h3>
-      <p class="fn-sig"><code>[$locale:title-locale]  -> string</code>  —  Title-case each word of a string under a locale's case rules.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/locale']
+        </pre>
+        <pre class="sample-output">
+          <code>'ı'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-locale-title-locale" class="fn">
+    <h3>locale:title-locale</h3>
+    <p class="fn-sig"><code>[$locale:title-locale]  -> string</code>  —  Title-case each word of a string under a locale's case rules.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/locale']
 [$locale:title-locale "hello world" "en-US"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'Hello World'</code>
-          </pre>
-        </div>
-      
-    </section>
-  
+        </pre>
+        <pre class="sample-output">
+          <code>'Hello World'</code>
+        </pre>
+      </div>
+    
+  </section>
 </section>
 </main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>locale</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
 <script src="highlight/highlight.js" defer></script>
 <script src="search-index.js" defer></script>
 <script src="search/search.js" defer></script>

@@ -1,16 +1,18 @@
-[# Section 10 — migration: v0.7.x → v0.8.0, cross-format intake,
-   retired surfaces. #]
+[# Section 10 — migration: the v0.8.0 reshape (the canonical breaking
+   migration), cross-format intake, retired surfaces. #]
 
-[section id=migration n=10 title='Migration'
+[section id=migration group='Reference' n=10 title='Migration'
 
-  [child id=from-v07x n=10.1 title='From v0.7.x to v0.8.0'
+  [child id=from-v07x n=10.1 title='The v0.8.0 reshape (the historical big break)'
     [intro
-      """v0.8.0 is the first stable tag after v0.7.5 (v0.7.6 was skipped
-         intentionally — see backlog decision `d-2026-05-22-04`). v0.8.0
-         is the pre-release API/format-stability boundary; there are no
-         external users yet, so the renames below were applied directly
-         across the codebase rather than shipped as user-facing tooling.
-         This section is the reference for the shape of the changes."""]
+      """v0.8.0 is the pre-release API/format-stability boundary and
+         remains the one breaking migration in CX's history: releases
+         since have been additive under that stability boundary, so
+         migrating to the current release means crossing the v0.8.0
+         reshape and nothing else. There were no external users at the
+         time, so the renames below were applied directly across the
+         codebase rather than shipped as user-facing tooling. This
+         section is the reference for the shape of the changes."""]
 
     [body
       """**Rename: programs → code.** Every internal `programs`
@@ -23,7 +25,7 @@
       [tr [td 'cx_program_eval'] [td 'cx_code_eval']]
       [tr [td 'vcx/programs/'] [td 'vcx/code/']]
       [tr [td 'spec/programs.md'] [td 'spec/code.md']]
-      [tr [td 'conformance/programs.txt'] [td 'conformance/code.txt']]
+      [tr [td 'conformance/programs.txt'] [td 'conformance/code.cxd (today’s CX-native suite)']]
       [tr [td '_cx_program_diagram (wasm)'] [td '_cx_code_diagram (wasm)']]
       [tr [td '--- in_cxl (fixture marker)'] [td '--- in_code (fixture marker)']]]
 
@@ -43,8 +45,9 @@
       """**CXPath is now a value kind.** A path expression like `//user`
          parses to a `cx.PathNode` value, evaluates to a sequence, and
          round-trips canonically as the terse form. The retired v0.7.0
-         CXPath subset is replaced by XPath 3.1 alignment — see
-         [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md)."""]
+         CXPath subset is replaced by XPath 3.1 alignment — see the
+         path-expression sections of
+         [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md)."""]
 
     [body
       """**Multi-arm `[?match]`.** `[?match]` now supports N arms
@@ -78,7 +81,7 @@
 
     [body
       """**Two-layer bindings.** See
-         [`spec/bindings.md`](../../spec/bindings.md). Layer 1 is the
+         [`spec/03-approved/misc/bindings.md`](../../spec/03-approved/misc/bindings.md). Layer 1 is the
          canonical 16-method surface, identical across V/Python/Go/Rust.
          Layer 2 is opt-in host idiom packs (`cxlib.idioms` in Python,
          `cxlib/idioms` in Go, `cxlib::idioms` in Rust). v0.7.x had a
@@ -105,8 +108,8 @@
   [child id=from-xml n=10.2 title='From XML'
     [intro
       """XML is the closest projection to CX — same element / attribute /
-         body shape. Migration is one-shot: `cx convert input.xml --to
-         cx --out input.cx`."""]
+         body shape. Migration is one-shot:
+         `cx --from=xml --to=cx input.xml > input.cx`."""]
 
     [list
       [item """**DOCTYPE / DTD** — drop. Use a CX schema (`.cxs`)
@@ -114,13 +117,13 @@
       [item """**Namespaces** — `xmlns:*` declarations become CX
               attributes on the root element; namespace-qualified
               element names use the same `prefix:name` form. See
-              [`spec/namespaces.md`](../../spec/namespaces.md)."""]
+              [[namespaces]]."""]
       [item """**CDATA** — projects to triple-quoted strings."""]
       [item """**Processing instructions** — preserved as `[?pi …]`
               elements; their bodies are opaque text."""]
       [item """**XPath queries** — port to CXPath. The selection core
-              is identical (see
-              [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md));
+              is identical (see the path-expression sections of
+              [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md));
               you drop XPath's `for`/`let`/`if`/`function` constructs
               in favor of the CX directives."""]
       [item """**XSLT / XQuery transforms** — port to CX code. There
@@ -130,7 +133,7 @@
   [child id=from-json-yaml n=10.3 title='From JSON / YAML / TOML'
     [intro
       """These are projection formats. Migration is again one-shot:
-         `cx convert input.json --to cx --out input.cx`."""]
+         `cx --from=json --to=cx input.json > input.cx`."""]
 
     [body
       """The projection rules are deterministic and reversible (see
@@ -184,7 +187,7 @@
          pre-publish documentation generator at
          `scripts/gen_guide/` rendering `docs-src/canonical/` into
          the multi-page guide at `docs/guide/` — eat-our-own-dog-food
-         via `cx eval` on every section. See [[docgen]] for the
+         by running `cx` on every section. See [[docgen]] for the
          pipeline and [`make guide`] for the
          entry point."""]]
 
@@ -198,7 +201,7 @@
       [body
         """Issues live in the project tracker. Every report should
            include: minimal CX reproducer (one file), `cx --version`
-           output, error code (e.g. CXER0103) + message, expected vs
+           output, error code (e.g. CXER0100) + message, expected vs
            observed behaviour, and the workaround you used if any.
            For parse / canon / hash bugs, a 5-line CX snippet is
            usually enough; for evaluator bugs include the directive
@@ -206,14 +209,16 @@
 
     [child id=add-fixture n=10.5.2 title='Adding a conformance fixture'
       [body
-        """The conformance suite is `conformance/*.txt` files in
-           per-feature buckets (code.txt for directives, data_bin.txt
-           for binary wire, etc.). Each fixture has a `=== test: id`
-           header + `--- in_cx` / `--- call` / `--- out_text` (or
-           `out_err`) blocks. To add one:"""]
+        """The conformance suite is `conformance/*.cxd` files in
+           per-feature buckets (code.cxd for directives, data_bin.cxd
+           for binary wire, etc.) — CX-native suites of
+           `[case id=…]` blocks with `[in-cx]` / `[in-code]` /
+           `[call]` inputs and an `[out-text]` (or `[out-err]`)
+           expectation. (The older `=== test:` / `--- in_cx` text
+           form is legacy.) To add one:"""]
       [list
-        [item """Identify the right file (`code.txt` for code-language
-                features; `binding_api.txt` for Layer-1 parity)."""]
+        [item """Identify the right file (`code.cxd` for code-language
+                features; `binding_api.cxd` for Layer-1 parity)."""]
         [item """Add the fixture block following existing format."""]
         [item """Run the runner (`devbox run -- make test-vcx` for V
                 conformance; `make test-binding-api-parity` for Layer-1
@@ -232,14 +237,11 @@
                 file under `spec/`, with was-vs-is tables, context,
                 the specific decisions, alternatives considered, and
                 conformance gates."""]
-        [item """**Register** any new backlog item in
-                `docs-src/canonical/backlog.cxd` with `:status
-                draft`."""]
         [item """**Review window** — submit for owner + community
                 review. Iterate the tables until reviewers can scan
                 the design in 2-3 minutes."""]
-        [item """**Ratify** — flip status to `accepted` in
-                `backlog.cxd`."""]
+        [item """**Ratify** — the reviewed edit graduates into
+                `spec/03-approved/`."""]
         [item """**Implement** — landing PRs cite the ratified spec
                 change. Its conformance gates block the next
                 release."""]]
@@ -254,7 +256,7 @@
            Tier-1 set (V / Python / Go / Rust):"""]
       [list
         [item """Implement the 16-method Layer-1 surface
-                (spec/bindings.md §2.1) — case-adjusted for host
+                (spec/03-approved/misc/bindings.md §2.1) — case-adjusted for host
                 conventions but otherwise identical."""]
         [item """FFI extern declarations against the C ABI symbols in
                 `include/cx.h`. Match the version's cap bits."""]
@@ -263,7 +265,7 @@
                 use a per-thread guard pattern)."""]
         [item """Add a quickstart in `docs-src/canonical/sections/07-bindings.cxd`."""]
         [item """Wire conformance — your binding must pass
-                `conformance/binding_api.txt` byte-identically (gate
+                `conformance/binding_api.cxd` byte-identically (gate
                 28.6). The runner pattern lives at
                 `lang/python/conformance_code.py` /
                 `lang/go/cxlib/conformance_code_test.go` —
@@ -282,9 +284,12 @@
         [item """**Reduce the repro.** Get to the smallest input that
                 triggers the failure (one CX file, ideally < 20
                 lines)."""]
-        [item """**Capture diagnostic output.** `cx eval --trace`
-                shows per-directive timing + span emission;
-                `cx eval --explain` shows the AST + dispatch path."""]
+        [item """**Capture diagnostic output.** `cx code-tree repro.cx`
+                shows the parsed program tree with source spans;
+                `cx --ast repro.cx` dumps the full AST as JSON; and
+                `cx code-diagram repro.cx --level=min|compact|full`
+                renders the program's structure at increasing
+                detail."""]
         [item """**Bisect** if the bug appeared between versions —
                 `git bisect run sh -c 'cx repro.cx; test $? = 0'`."""]
         [item """**Check the conformance suite** — does a similar
@@ -294,14 +299,5 @@
       [body
         """For V-side debugging: the impl lives at `vcx/code/*.v`
            (post-rename, was `vcx/programs/`). Build with `devbox run
-           -- make -C vcx build`; run unit tests with `make test-vcx`."""]]
-
-    [child id=memory-update n=10.5.6 title='Updating the project memory'
-      [body
-        """The project memory (`memory/` directory in this repo's
-           CLAUDE.md context) tracks long-running state across
-           sessions: design decisions, deferred work, known issues,
-           perf state. When you land a decision or surface a new
-           issue, update the relevant memory file. The convention is
-           in CLAUDE.md and the `memory/MEMORY.md` index."""]]]
+           -- make -C vcx build`; run unit tests with `make test-vcx`."""]]]
 ]

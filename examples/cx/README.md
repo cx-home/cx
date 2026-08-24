@@ -20,7 +20,7 @@ cx greet.cx
 cx users.cx
 ```
 
-The tour run line `cx ../code-tour.cx --data=../code-tour.input.cx`
+The tour run line `cx --data=../code-tour.input.cx ../code-tour.cx`
 binds the input document as `$doc` (the
 [#415](https://github.com/cx-home/cx-private/issues/415) fix), so the
 document-driven sections render against the sample data.

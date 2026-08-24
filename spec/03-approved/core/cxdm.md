@@ -98,13 +98,17 @@ expressions cannot match against them.
 
 ### 2.3 Scalar
 
-Nine atomic kinds:
+Eleven atomic kinds (nine pre-I1; `decimal` and `bigint` were PROMOTED
+from storage-precision refinements to full semantic kinds at the I1
+identity epoch — stream 11, #683):
 
 | Type        | Storage              | Example source |
 |---|---|---|
 | `bool`      | true / false         | `[active true]` |
 | `int`       | 64-bit signed        | `[port 8080]` |
-| `float`     | IEEE 754 double      | `[ratio 1.5]` |
+| `float`     | IEEE 754 double      | `[ratio 1.5e0]` (exponent-always since I1) |
+| `decimal`   | exact base-10 fixed-point, scale-preserving | `[price 19.99]`, `{score: 3.14::decimal}` |
+| `bigint`    | arbitrary-precision base-10 integer | `[n 9223372036854775808]` |
 | `string`    | UTF-8 byte sequence  | `[name "auth"]` |
 | `date`      | ISO 8601 date        | `[born 1980-01-01]` |
 | `datetime`  | ISO 8601 instant     | `[at 2026-05-10T12:00Z]` |
@@ -137,16 +141,27 @@ attached payload, and is not a valid map key.
 
 Scalars are immutable; equality is structural.
 
+**`decimal` and `bigint` are SEMANTIC KINDS (I1, stream 11).** A
+`decimal` is an exact base-10 fixed-point value with SCALE-PRESERVING
+identity (`1.10` ≢ `1.1` as canonical bytes; `=` compares
+mathematically); a `bigint` is an arbitrary-precision base-10 integer.
+Bare fixed-point fractions autotype as DECIMAL (the 2b ruling); floats
+spell exponent-always (`1.5e0`), so the kinds are lexically
+self-describing. Equality/ordering across the exact family
+int/bigint/decimal is mathematical; decimal↔float stays unbridged
+(`[cast]` is the only bridge); decimal/bigint vs string is always
+false. Wire: data-bin tags `0x18` (bigint) / `0x28` (decimal),
+length-prefixed base-10 images, narrowing-within-kind.
+
 **Storage-precision refinements.** The grammar accepts additional
-type names that encode to the nine semantic kinds with explicit
-storage precision: `decimal` and `bigint` (encode as `int` /
-`float`), `i8`..`i64` and `u8`..`u64` (encode as `int`),
+type names that encode to the eleven semantic kinds with explicit
+storage precision: `i8`..`i64` and `u8`..`u64` (encode as `int`),
 `f16` / `f32` / `f64` (encode as `float`), `duration` (encode as
 `int` — signed nanosecond count), and `instant` (encode as
 `datetime` — ISO 8601 instant; nanosecond precision is admitted
 by the canonical ISO 8601 form). These are surface-layer storage
 hints, not new semantic kinds — equality, EBV, and coercion rules
-in this document operate on the nine kinds. See
+in this document operate on the eleven kinds. See
 [`grammar.ebnf` [26a]](../formal/grammar.ebnf) for the complete TypeName set.
 
 ### 2.4 Attributes
@@ -161,6 +176,26 @@ and child elements. A scalar field is an attribute; a structured
 field (element / sequence / map) is a child element. The glued
 double-colon `name::T` is the type annotation form; a single `:` in
 data-element body is an atom literal (§2.3).
+
+**Reserved attribute vocabulary — valid time (stream 8).** The attribute
+names **`valid-from`** and **`valid-to`** are normatively reserved across
+CX payload vocabularies for **valid-time** semantics — the half-open
+`[from, to)` validity window of the fact the element records, with an
+open end expressed as the *absent* attribute (never `null`). The
+reservation is **naming, not a kind**: the carriers are ordinary `date`/
+`datetime` scalar attributes, and attributes remain strictly scalar.
+Normative semantics: [`journal.md`](../std-lib/journal.md) §2.9 /
+[`bitemporal.md`](../core/bitemporal.md) (ruling L115).
+
+**Reserved attribute vocabulary — declared payload schema (stream 21).**
+The attribute name **`schema`** is normatively reserved across CX payload
+vocabularies for the element's **declared schema identity** — a content
+address (the E2 identity of the declaration form), never a version
+string. The same rule shape as valid time: naming, not a kind; the
+carrier is an ordinary string scalar; recognition is read-side only.
+Normative semantics: [`journal.md`](../std-lib/journal.md) §2.10 /
+[`schema_event_evolution.md`](../core/schema_event_evolution.md)
+(ruling L146).
 
 ### 2.5 Array
 
@@ -253,7 +288,7 @@ by whether they are statically finite:
   whole thing (`count`, `reverse`).
 - The **open / functional** forms — `[$range lo *]`, `[$iterate f seed]`,
   `[$unfold f seed]` — are **lazy Iterators**. `[$range lo *]` and `[$iterate]`
-  are statically-known-infinite (must be bounded by `[take]`/`[takewhile]`/a
+  are statically-known-infinite (must be bounded by `[take]`/`[take-while]`/a
   `[?for]` terminator before forcing). `[$unfold]` MAY terminate (its `f`
   returns `()`), so it is force-realizable to a finite Sequence — its **kind is
   Iterator**, the realised value is a Sequence (a host force budget backstops a
@@ -295,7 +330,7 @@ in-scope binding; the first colon delimits prefix from local part.
 | Prefix  | URI                                          | Notes |
 |---|---|---|
 | `xml`   | `http://www.w3.org/XML/1998/namespace`       | Always resolves. |
-| `cx`    | `https://cxhome.org/ns/cx`                   | Cannot be redeclared. |
+| `cx`    | `tag:cxhome.org,2026:ns/cx`                   | Cannot be redeclared. |
 | `xmlns` | declaration syntax only                      | Never resolves as a name prefix. |
 
 ### 3.5 Resolution
@@ -333,6 +368,14 @@ URI for cross-document hash equality.
 CX provides a syntactic ID/IDREF mechanism for stable cross-element
 references, distinct from anchors/aliases (intra-document merge) and
 from CXPath (positional).
+
+> **Terminology.** This section's "identity" is DOCUMENT identity —
+> intra-document naming, authored data. It is one of four distinct
+> senses the corpus uses ("content address", `cx:equal`, §5.2
+> set-equality are the others); the disambiguating glossary is the
+> semantic value model contract's terminology section (E4, I5
+> stream 1). An unqualified "identity" in a spec means the content
+> address, never this section's ID/IDREF.
 
 ### 4.1 ID declaration
 
@@ -628,6 +671,19 @@ The following raise an evaluation error:
 is a type error — `concat` operates on Sequence values, not Arrays
 (per §2.1).
 
+**Read vs. construct (RULED ARR-1, 2026-08-20, ratifying the shipped
+#529 rule).** The container distinction binds **constructors**, never
+**readers**. Cardinality and access builtins — `count`, `length`,
+`empty`, `exists`, `first`, `last`, `nth` — destructure ANY collection
+kind (Sequence, Array, Iterator) and answer over its items:
+`count([1,2,3])` is `3`, exactly as `count((1,2,3))` is. Orderedness is
+a property of the value, not a property the reader must unwrap first;
+the alternative (readers refusing Arrays) had produced the silent wrong
+answer of counting a collection as one scalar. Constructors and
+combiners (`concat` above) keep the strict container typing: building a
+Sequence out of Arrays would erase the distinction §2.1 exists to
+carry.
+
 ---
 
 ## §11. Data-parse error codes (`E` prefix)
@@ -645,7 +701,8 @@ is always the `E<nnn>` number. The mapping is append-only.
 | E_RESERVED_NS_PREFIX | `cx-err:E210` | Namespace | An authored QName resolving to the reserved `cx:` URI (ANY local name, carrier or not) or an `xml:` URI name outside {space, lang, base, id} — the `cx:`/`xml:` namespaces are reserved for the serializer and may not be authored in CX source (§3.1; `grammar.ebnf` GR-RESERVED-PREFIX) |
 | E_ATTR_NODE_VALUED | `cx-err:E211` | Attribute | An attribute value opening with `[` / `{` / `(` (other than the `[#…#]` raw-string) — attributes are scalar-only (D2); a `[…]` node may not be an attribute value |
 | E_UNBOUND_NS_PREFIX | `cx-err:E212` | Namespace | A QName `p:local` whose prefix `p` is neither in scope (no enclosing `xmlns:p`) nor reserved (§3.1). **Reserved — `grammar.ebnf` defines it; parser enforcement pending.** |
-| E_RESERVED_NS_REBIND | `cx-err:E213` | Namespace | `xmlns`/`xmlns:p` used as an element head, rebinding the reserved `xml:`/`cx:` prefixes, or a non-default `xmlns:p=""` undeclaration (§3.1; XML Namespaces 1.0). **Reserved — `grammar.ebnf` defines it; parser enforcement pending.** |
+| E_RESERVED_NS_REBIND | `cx-err:E213` | Namespace | Binding any prefix (or the default namespace) to the reserved CX namespace URI — in ANY spelling that ever denoted it (the tag URI + both reserved legacy https aliases) — or re-binding the reserved `cx` prefix to anything else. ONE carve-out: `xmlns:cx="tag:cxhome.org,2026:ns/cx"` restates the built-in binding the XML C14N image mandates on its root — accepted, and strict canonical strips it (§3.1; enforced by RESOLVED URI at every parse entry since I1, #704) |
+| E_DUPLICATE_ATTR | `cx-err:E214` | Attribute | Two attributes with the same name (including duplicate `xmlns`/`xmlns:p` declarations) on one element — a parse error, never a silent last-wins (I1 stream 12, W-19/L24) |
 | E_INCLUDE_ABSOLUTE_PATH | `cx-err:E901` | Include | Absolute or UNC path supplied to `[?cx include=…]` |
 | E_INCLUDE_PATH_ESCAPES_ROOT | `cx-err:E902` | Include | Resolved include path escapes the include root (lexical or post-symlink) |
 | E_INCLUDE_URL_REJECTED | `cx-err:E903` | Include | URL-scheme include path (`://`, `file:`, `http:`, etc.) |
@@ -731,6 +788,17 @@ A secret renders as the redaction marker `'‹redacted›'` (never the value) at
 ### 12.5 Decisions and scope
 - **Redaction marker** is the string `'‹redacted›'` (not a typed `[redacted]`
   node), for format-portability across CX / JSON / XML / YAML / TOML.
+- **Secret redaction vs erasure tombstones** — the redaction marker withholds
+  a live value's bytes at an **output** boundary: the value survives in memory
+  and at rest, and the marker is a plain string for format portability. At-rest
+  erasure (crypto-shredding — `std-lib/store.md`, `std-lib/journal.md`) is a
+  different job with a different answer: a lawfully destroyed payload reads as
+  a **typed `[erased …]` element on the value channel**, carrying its
+  attribution (`at=`, `authority=`, `actor=`, `shred-request=`). The two never
+  substitute — a secret is never spelled `[erased]`, and a tombstone is never
+  the `'‹redacted›'` string: one marks withheld output of a value that still
+  exists, the other records the attributed destruction of a value that no
+  longer does.
 - **Taint propagation** is **best-effort** (§12.3) — conservative single-step
   derivation, not a full information-flow type system.
 - **Tape policy** is **redact** (`misc/debug.md` §6a): tapes stay shareable; the

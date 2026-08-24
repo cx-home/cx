@@ -1,9 +1,50 @@
 module main
 
 import cx
+import fixtures
 import code
+import platform as _
 import os
 import math
+
+// thrown_matches_out_err reports whether a THROWN (V-error) eval/parse
+// failure legitimately satisfies an `out-err` fixture. Register R3.12 / audit
+// F-19: the historical #404–#407 false-green class let a thrown error pass ANY
+// out-err case unchecked — so a case expecting cx-err:CXER0100 passed even if
+// the thrown error was something else entirely. This pins the SPECIFIC code:
+// when the fixture names a CXER token, the thrown message MUST carry it; with
+// no CXER token, the whole expected string must appear. Empty out-err never
+// matches a throw (a non-error case must not throw).
+fn thrown_matches_out_err(msg string, out_err string) bool {
+	oe := out_err.trim_space()
+	if oe == '' {
+		return false
+	}
+	idx := oe.index('CXER') or { return msg.contains(oe) }
+	mut code_tok := 'CXER'
+	mut i := idx + 4
+	for i < oe.len && oe[i] >= `0` && oe[i] <= `9` {
+		code_tok += oe[i].ascii_str()
+		i++
+	}
+	return msg.contains(code_tok)
+}
+
+// R3.12: the discriminator that closes the false-green — a thrown error only
+// satisfies an out-err case when its message carries the expected CXER code.
+fn test_r312_thrown_error_must_match_out_err() {
+	// match: the thrown message carries the expected code
+	assert thrown_matches_out_err('eval: no arm matched cx-err:CXER0100 at …', 'cx-err:CXER0100')
+	// MISMATCH: a different thrown code must NOT pass a CXER0100 case
+	assert !thrown_matches_out_err('boom cx-err:CXER0271 caps', 'cx-err:CXER0100')
+	// a throw with no code text must not pass a coded case
+	assert !thrown_matches_out_err('generic panic, no code', 'cx-err:CXER0100')
+	// no-CXER fixture: fall back to whole-string containment
+	assert thrown_matches_out_err('some boundary text here', 'boundary text')
+	assert !thrown_matches_out_err('unrelated', 'boundary text')
+	// empty expectation never matches a throw
+	assert !thrown_matches_out_err('anything', '')
+}
 
 // ── End-to-end fixture-evaluation test ───────────────────────────────────────
 //
@@ -12,16 +53,17 @@ import math
 // whitelist: a fixture that is spec-inconsistent or depends on an
 // unimplemented feature / absent module FAILS the gate until fixed.
 //
-// Comparison is shape-based: the actual result is rendered to a
-// canonical text form via render_value, then compared to the
-// fixture's out_text / out_multiset / out_err (whitespace-normalised).
+// Comparison is shape-based: the actual result is rendered via
+// code.render_canonical — the ONE §11.1a EV-RESULT-IMAGE owner
+// (stream 22 W1) — then compared to the fixture's out_text /
+// out_multiset / out_err (whitespace-normalised).
 
 fn fixture_path_eval() string {
 	return os.real_path(os.join_path(os.dir(@FILE), '..', '..', 'conformance', 'code.cxd'))
 }
 
 // Fixture code reads repo files by repo-root-relative path (xap-dist's
-// registry/store, packages/nmea0183/…, market/*.feature.cxd), so the repo
+// registry/store, packages/gtin/…, market/*.feature.cxd), so the repo
 // root is pinned as the process CWD once for the whole file — the same
 // [?lib]-resolution contract test_package_fixtures states. Without this the
 // eight path-consuming xap-dist cases fail from any other invoking CWD (#377).
@@ -36,36 +78,42 @@ struct ParsedFixture {
 	in_code      string
 	out_text     string
 	out_multiset string // comma-separated multiset matcher for :par-unordered fixtures
+	out_effects  string // ordered effect-point trace (stream 22 W1 — capability:resource per line)
+	has_out_effects bool // section DECLARED (an empty declared trace asserts zero admissions)
 	out_err      string
 	gate         string   // per-case gate toggle: enforced|advisory|pending|skip ('' = unset)
-	grant        string   // Effort B least-privilege grant: space-separated capability list ('' = host default)
+	grant        string   // Effort B least-privilege grant: space-separated capability list ('none' = EMPTY set, PYE-3; '' = host default)
+	argv         string   // program argv to install before eval (#926 PYE-2): space-separated, argv[0] included ('' = none)
 	tol          f64      // relative float tolerance for out_text match (0 = exact)
 	level        string   // family label: core|resilience|async|visualization|…
 	tags         []string // case tags (e.g. 'strict-mode' enables --strict typing)
 }
 
-// CX-native: read code.cxd via cx.load_fixtures (replaces the inline
+// CX-native: read code.cxd via fixtures.load_fixtures (replaces the inline
 // '=== test:' scanner + extract_section + strip_format_fences). The
 // doc-example template and fence handling are done by the converter; the
 // section-body clamp the old extract_section applied is baked into the .cxd.
 fn parse_all_fixtures() []ParsedFixture {
 	mut out := []ParsedFixture{}
-	for c in cx.load_fixtures(fixture_path_eval()) {
+	for c in fixtures.load_fixtures(fixture_path_eval()) {
 		out << parsed_from(c)
 	}
 	return out
 }
 
-fn parsed_from(c cx.FixtureCase) ParsedFixture {
+fn parsed_from(c fixtures.FixtureCase) ParsedFixture {
 	return ParsedFixture{
 		id:           c.name
 		in_cx:        clamp_section(c.sections['in_cx'])
 		in_code:      clamp_section(c.sections['in_code'])
 		out_text:     clamp_section(c.sections['out_text'])
 		out_multiset: clamp_section(c.sections['out_multiset'])
+		out_effects:  clamp_section(c.sections['out_effects'])
+		has_out_effects: 'out_effects' in c.sections
 		out_err:      clamp_section(c.sections['out_err'])
 		gate:         c.gate
 		grant:        c.grant
+		argv:         c.argv
 		tol:          c.tol
 		level:        c.level
 		tags:         c.tags
@@ -105,344 +153,11 @@ fn clamp_section(s string) string {
 	return s[..end].trim_right(' \t\n')
 }
 
-// render_value renders a cx.Node to a compact textual form for
-// shape comparison against fixture out_text.
-const slot_prefix = '__cx_slot:'
-
-fn render_value(n cx.Node) string {
-	match n {
-		cx.TextNode {
-			return n.value
-		}
-		cx.ScalarNode {
-			v := n.value
-			match v {
-				string {
-					// Atom scalars render with leading `:`.
-					if n.data_type == cx.ScalarType.atom_type {
-						return ':${v}'
-					}
-					// Date/datetime-TYPED scalars render bare — the value
-					// IS the canonical §2.6 literal and re-parses to the
-					// same type. (A string-TYPED value that merely looks
-					// like a date must quote — handled by cx_autotypes
-					// below.)
-					if n.data_type == cx.ScalarType.date_type
-						|| n.data_type == cx.ScalarType.datetime_type {
-						return v
-					}
-					// Duration literals are stored as strings tagged
-					// via the source-text suffix — render bare when
-					// the value looks like NN<suffix>.
-					if looks_like_duration(v) {
-						return v
-					}
-					return quote_if_needed(v)
-				}
-				i64 {
-					return v.str()
-				}
-				f64 {
-					return v.str()
-				}
-				bool {
-					return v.str()
-				}
-				cx.NullValue {
-					return 'null'
-				}
-			}
-		}
-		cx.Element {
-			// Top-level program output (name=''): newline-separated.
-			if n.name == '' {
-				mut lines := []string{}
-				for it in n.items {
-					lines << render_value(it)
-				}
-				return lines.join('\n')
-			}
-			// Explicit sequence literal: paren-separated form `(a, b, c)`.
-			if n.name == '__cx_seq__' {
-				mut parts := []string{}
-				for it in n.items {
-					parts << render_seq_item_value(it)
-				}
-				return '(${parts.join(', ')})'
-			}
-			// Array literal: bracketed form `[a, b, c]`.
-			if n.name == '__cx_arr__' {
-				mut parts := []string{}
-				for it in n.items {
-					parts << render_seq_item_value(it)
-				}
-				return '[${parts.join(', ')}]'
-			}
-			// Map literal: `{k: v, k: v}`. The
-			// `__cx_map__` marker carries entries as Element items with
-			// name=key, items=[value]. Matches eval_map's representation
-			// and `:yield-map` accumulation.
-			if n.name == '__cx_map__' {
-				mut parts := []string{}
-				for it in n.items {
-					if it is cx.Element {
-						val_str := if it.items.len > 0 {
-							render_seq_item_value(it.items[0])
-						} else {
-							''
-						}
-						parts << '${it.name}: ${val_str}'
-					}
-				}
-				return '{${parts.join(', ')}}'
-			}
-			mut s := '[${n.name}'
-			for a in n.attrs {
-				// CX-native attribute form `name=value` matches fixture
-				// out_text shape ([figure id=f1]). Quoted strings use
-				// bare form when single-word, quoted otherwise.
-				s += ' ${a.name}='
-				av := a.value
-				match av {
-					string {
-						if looks_like_duration(av) {
-							s += av
-						} else {
-							s += quote_if_needed(av)
-						}
-					}
-					i64 {
-						s += av.str()
-					}
-					f64 {
-						s += av.str()
-					}
-					bool {
-						s += av.str()
-					}
-					cx.NullValue {
-						s += 'null'
-					}
-				}
-			}
-			for it in n.items {
-				if it is cx.Element && it.name.starts_with(slot_prefix) {
-					label := it.name[slot_prefix.len..]
-					body := if it.items.len > 0 {
-						render_body_value(it.items[0])
-					} else {
-						''
-					}
-					s += ' :${label} ${body}'
-				} else {
-					s += ' ' + render_body_value(it)
-				}
-			}
-			s += ']'
-			return s
-		}
-		cx.SequenceNode {
-			return cx.cx_emit_sequence_inline(n, true)
-		}
-		cx.ArrayNode {
-			return cx.cx_emit_array_inline(n, true)
-		}
-		cx.MapNode {
-			return cx.cx_emit_map_inline(n, true)
-		}
-		cx.IteratorNode {
-			// materialize the iterator's memo at the
-			// host (test renderer) boundary. Force-pull via
-			// iterate_pub() so combinator-produced iterators
-			// (W3c) materialise correctly, and render
-			// each item through `render_value` recursively so nested
-			// sequence / array / map markers (from `[?zip]` /
-			// `[?enumerate]` / `[?chunks]` / `[?partition]`) emit
-			// in their canonical paren / bracket / brace forms.
-			items := code.iterate_pub(n)
-			mut parts := []string{cap: items.len}
-			for it in items {
-				parts << render_value(it)
-			}
-			return '(${parts.join(', ')})'
-		}
-		else {
-			return '<${n}>'
-		}
-	}
-}
-
-// render_seq_item_value renders one item of a rendered collection literal.
-// Mirrors the production renderer's `render_seq_item` (vcx/code/render.v,
-// #438): the bare `name==''` multi-value/absence wrapper renders in item
-// position per cxdm §2 — a singleton wrapper IS its item; the empty and
-// multi-item shapes render as a paren sequence (`()` / `(a, b)`), never as
-// the top-level newline-joined (empty-string) form, so an empty item
-// between commas has one spelling and the emitted text re-parses.
-fn render_seq_item_value(n cx.Node) string {
-	if n is cx.Element && n.name == '' {
-		if n.items.len == 1 {
-			return render_seq_item_value(n.items[0])
-		}
-		mut parts := []string{}
-		for it in n.items {
-			parts << render_seq_item_value(it)
-		}
-		return '(${parts.join(', ')})'
-	}
-	return render_value(n)
-}
-
-// render_body_value renders a child node of an Element body. Mirrors
-// the production renderer's `render_body_item` (vcx/code/render.v):
-// bare TextNodes in body position render with quote wrappers so the
-// fixture-comparison shape matches the `cx eval` output. Without this
-// the test harness diverged from production rendering — TextNodes
-// (produced by `cx.parse` of `in_cx`) lost their quote shape on the
-// way through `[?modify]`-style transforms (task #43, 2026-05-23).
-// Quote-style picker mirrors `choose_render_quote` in render.v:
-// prefer `"`; fall back to `'` when the value contains `"`; degrade
-// to triple-quoted forms when both collide.
-fn render_body_value(n cx.Node) string {
-	if n is cx.TextNode {
-		if n.value.trim_space() == '' {
-			return n.value
-		}
-		return quote_if_needed(n.value)
-	}
-	// A `name==''` sequence wrapper (the multi-value shape produced by a
-	// nested `[?for]` comprehension) is the "top-level program output"
-	// shape; at top level it renders newline-joined, but inside a named
-	// element's body the newline form is non-round-trippable. In body
-	// position it serialises as a paren sequence `(a, b, c)` — the
-	// canonical sequence-value form (program-conc-018).
-	if n is cx.Element && n.name == '' {
-		mut parts := []string{cap: n.items.len}
-		for it in n.items {
-			parts << render_value(it)
-		}
-		return '(${parts.join(', ')})'
-	}
-	return render_value(n)
-}
-
-fn choose_test_quote(s string) string {
-	// Single-quote preferred per spec/canonical.md §651 (mirrors
-	// render.v::choose_render_quote).
-	has_double := s.contains('"')
-	has_single := s.contains("'")
-	if !has_single { return "'${s}'" }
-	if !has_double { return '"${s}"' }
-	if !s.contains("'''") { return "'''${s}'''" }
-	if !s.contains('"""') { return '"""${s}"""' }
-	return "'${s}'"
-}
-
-fn needs_quotes(s string) bool {
-	if s.len == 0 { return true }
-	// Leading sigil would re-parse as ref/anchor/merge/id/atom
-	// (`@id`, `&a`, `*m`, `#i`, `:t`) — mirrors emitter_cx.v.
-	c0 := s[0]
-	if c0 == `@` || c0 == `&` || c0 == `*` || c0 == `#` || c0 == `:` {
-		return true
-	}
-	for c in s {
-		// BareChar-excluded set per canonical.md §2.3: whitespace,
-		// `[`, `]`, `=`, `'`, `"`. (Comma is NOT excluded — the shipped
-		// emitter renders comma-bearing scalars bare, e.g. a close-order
-		// log `inner,outer`; sequence-item ambiguity is a known
-		// round-trip nuance, not a quoting trigger.)
-		if c == ` ` || c == `\t` || c == `\n` || c == `[` || c == `]` || c == `=` || c == `'`
-			|| c == `"` {
-			return true
-		}
-	}
-	return false
-}
-
-// looks_like_temporal reports whether a bare string would re-parse as a
-// date (`YYYY-MM-DD`) or datetime (`YYYY-MM-DDT…`) literal — the two
-// auto-typing temporal forms in canonical.md §2.3 / grammar [23][24].
-// UUIDs (8-4-4-4-12) and version strings fail the YYYY-MM- prefix test.
-fn looks_like_temporal(s string) bool {
-	if s.len < 10 { return false }
-	for k in [0, 1, 2, 3, 5, 6, 8, 9] {
-		if !(s[k] >= `0` && s[k] <= `9`) { return false }
-	}
-	if s[4] != `-` || s[7] != `-` { return false }
-	if s.len == 10 { return true } // date
-	return s[10] == `T` // datetime
-}
-
-// cx_autotypes reports whether a bare string would re-parse as a
-// non-string scalar (int / float / bool / null / hex) — mirrors
-// emitter_cx.v::cx_would_autotype. Such values MUST stay quoted so the
-// string kind survives a round-trip (the string "7" is '7', not int 7).
-fn cx_autotypes(s string) bool {
-	if s.len == 0 { return false }
-	if s == 'true' || s == 'false' || s == 'null' { return true }
-	if s.starts_with('0x') || s.starts_with('0X') { return true }
-	if looks_like_temporal(s) { return true }
-	mut i := 0
-	if s[0] == `-` {
-		if s.len == 1 { return false }
-		i = 1
-	}
-	mut all_digit := true
-	for j in i .. s.len {
-		c := s[j]
-		if !(c >= `0` && c <= `9`) {
-			all_digit = false
-			break
-		}
-	}
-	if all_digit { return true }
-	if s.contains('.') {
-		mut seen_dot := false
-		mut ok := true
-		for j in i .. s.len {
-			c := s[j]
-			if c == `.` {
-				if seen_dot {
-					ok = false
-					break
-				}
-				seen_dot = true
-			} else if !(c >= `0` && c <= `9`) {
-				ok = false
-				break
-			}
-		}
-		if ok && seen_dot { return true }
-	}
-	return false
-}
-
-// quote_if_needed applies the §2.3 idiomatic rule (bare > single > double):
-// bare when BareChar-eligible AND non-auto-typing; quoted otherwise.
-fn quote_if_needed(s string) string {
-	if needs_quotes(s) || cx_autotypes(s) { return choose_test_quote(s) }
-	return s
-}
-
-fn looks_like_duration(s string) bool {
-	for suf in ['us', 'ms', 's', 'm', 'h'] {
-		if s.ends_with(suf) {
-			prefix := s[..s.len - suf.len]
-			if prefix.len == 0 { continue
-			 }
-			mut all_digit := true
-			for c in prefix {
-				if !(c >= `0` && c <= `9`) {
-					all_digit = false
-					break
-				}
-			}
-			if all_digit { return true }
-		}
-	}
-	return false
-}
+// (The former harness-local render_value/quote helper family is
+// RETIRED — stream 22 W1: the §11.1a EV-RESULT-IMAGE has ONE owner,
+// code.render_canonical (vcx/code/render.v), and both grading paths
+// call it directly. A second mirror renderer here was the
+// reference-impl-becomes-spec trap in miniature.)
 
 // quote_only_diff reports whether `got` and `exp` differ ONLY by string-
 // quoting (the render_value→render_canonical convention shift): strip every
@@ -459,7 +174,7 @@ fn quote_only_diff(got string, exp string) bool {
 }
 
 // bless_emit appends a re-derived expected-output record for the offline
-// rewriter (scripts/apply_blesses.py). Marker-delimited to survive multi-line
+// rewriter (scripts/apply_blesses.cx). Marker-delimited to survive multi-line
 // values without JSON escaping.
 fn bless_emit(file string, id string, new_text string) {
 	mut fh := os.open_append('/tmp/cx_blesses.txt') or { return }
@@ -469,6 +184,15 @@ fn bless_emit(file string, id string, new_text string) {
 
 fn test_all_code_fixtures_evaluate() {
 	bless := os.getenv('CX_BLESS') == '1'
+	// I1 epoch re-bless: DISARMED in normal builds (register R3.9) — the
+	// epoch is closed; adopting every enforced out-text mismatch now takes
+	// an explicit `-d cx_epoch_bless` compile AND CX_BLESS=epoch.
+	mut epoch := false
+	$if cx_epoch_bless ? {
+		epoch = os.getenv('CX_BLESS') == 'epoch'
+	} $else {
+		assert os.getenv('CX_BLESS') != 'epoch', 'CX_BLESS=epoch REFUSED: the I1 epoch is closed; a re-bless build requires explicit -d cx_epoch_bless (register R3.9)'
+	}
 	// Runs EVERY fixture in conformance/code.txt end-to-end (parse -> eval
 	// -> render) against the fixture's OWN declared output (out_err /
 	// out_multiset / out_text). NO whitelist and NO test-side overrides:
@@ -508,6 +232,10 @@ fn test_all_code_fixtures_evaluate() {
 		// end of the loop by this id->advisory map (mirrors the stdlib runner).
 		adv_ids[f.id] = f.gate == 'advisory'
 		mut env := code.new_env()
+		// #701: fixture module sources register EXPLICITLY per-env — the
+		// production constructor no longer seeds them (they shadowed user
+		// files; pin = module_loader_shadowing_test.v).
+		code.register_conformance_test_modules(mut env.state.module_table)
 		// A `strict-mode`-tagged fixture runs under --strict type
 		// validation (§12.7: CXER0206/0207). Default fixtures erase
 		// `::T` / `[returns T]` annotations.
@@ -526,26 +254,64 @@ fn test_all_code_fixtures_evaluate() {
 				}
 			}
 		}
-		// Capability-set injection (security.md §3): code.cxd is core
-		// language (no effect points), so grant in full; a CXER0271-
-		// expecting case (none today) would run empty.
-		if f.out_err.contains('CXER0271') {
+		// Capability-set injection (security.md §3, Effort A/B). An
+		// explicit per-fixture `grant=` is the Effort B least-privilege
+		// set (the stream-6 command fixtures need it: cmd-002 proves the
+		// [effects] NARROWING denies a capability the host DID grant —
+		// running it under the empty set would be a false green for the
+		// wrong denial). Otherwise: CXER0271-expecting cases run empty,
+		// behavior cases run under the full grant.
+		if f.grant == 'none' {
+			// PYE-3 (#926): a BEHAVIOR case pinned to the EMPTY set — proves
+			// the exercised surface is ungated (argv/parse-args).
+			code.caps_set_empty()
+		} else if f.grant != '' {
+			code.caps_set_list(f.grant.split_any(' \t,').filter(it != '')) or {
+				assert false, 'fixture grant= refused (#713 loud unknown-cap): ${err.msg()}'
+			}
+		} else if f.out_err.contains('CXER0271') {
 			code.caps_set_empty()
 		} else {
 			code.caps_set_all()
 		}
+		// Program argv (#926, PYE-2): install the fixture-declared vector
+		// (argv[0] included) before eval; clear back to the host fallback
+		// otherwise so a prior case's vector never leaks.
+		code.set_program_argv(f.argv.split_any(' \t').filter(it != ''))
 		prog := cx.parse_program(f.in_code) or {
-			if f.out_err != '' { continue
-			 } // legitimately expects a parse-time error
+			if f.out_err != '' {
+				if !thrown_matches_out_err(err.msg(), f.out_err) {
+					failures << '${f.id}: parse threw "${err.msg()}" but expected ${f.out_err} (R3.12)'
+				}
+				continue
+			}
 			failures << '${f.id}: parse: ${err}'
 			continue
 		}
-		result := code.eval(prog.body, mut env) or {
-			if f.out_err != '' { continue
-			 } // legitimately expects an eval-time error
+		mut result := code.eval(prog.body, mut env) or {
+			if f.out_err != '' {
+				if !thrown_matches_out_err(err.msg(), f.out_err) {
+					failures << '${f.id}: eval threw "${err.msg()}" but expected ${f.out_err} (R3.12)'
+				}
+							// out-effects grades on the THROWN path too (stream 14, the
+			// audit note): effects admitted BEFORE the throw are part of
+			// the witness — skipping the trace here read as covered when
+			// it never graded.
+			if f.has_out_effects {
+				got_trace2 := code.effects_trace_snapshot().join('\n')
+				exp_trace2 := f.out_effects.trim_space()
+				if got_trace2 != exp_trace2 {
+					failures << '${f.id}: effect-trace mismatch (thrown path)\n  got:      ${got_trace2}\n  expected: ${exp_trace2}'
+				}
+			}
+			
+			continue
+			}
 			failures << '${f.id}: eval: ${err}'
 			continue
 		}
+		// EV-PULL: the runner IS a result boundary — force with env alive.
+		result = code.force_lazy_result(result, mut env)
 		// Serialization boundary: a function value reaching the program
 		// result is not data-serialisable — CXER0291 (§8.6), mirroring
 		// code.render()'s guard.
@@ -571,11 +337,24 @@ fn test_all_code_fixtures_evaluate() {
 		} else {
 			exp := f.out_text.trim_space()
 			if !same_shape(rendered, exp) {
-				if bless && quote_only_diff(rendered, exp) {
+				if (bless && quote_only_diff(rendered, exp)) || epoch {
 					bless_emit('code.cxd', f.id, rendered)
 				} else {
 					failures << '${f.id}: shape mismatch\n  got:      ${rendered}\n  expected: ${exp}'
 				}
+			}
+		}
+		// out-effects: the ordered admitted-effect-point trace (stream
+		// 22 W1) — graded IN ADDITION to the value channel; the trace
+		// is exact (order AND count), one `capability:resource` line
+		// per admitted effect point.
+		if f.has_out_effects {
+			// A DECLARED-but-empty section asserts ZERO admissions —
+			// the undeclared-effect-never-exercised witness shape.
+			got_trace := code.effects_trace_snapshot().join('\n')
+			exp_trace := f.out_effects.trim_space()
+			if got_trace != exp_trace {
+				failures << '${f.id}: effect-trace mismatch\n  got:      ${got_trace}\n  expected: ${exp_trace}'
 			}
 		}
 	}
@@ -607,7 +386,7 @@ fn test_all_code_fixtures_evaluate() {
 		eprintln('${pending.len} fixture(s) gate=pending (tracked, not enforced): ${pending.join(', ')}')
 	}
 	assert ran > 0, 'no fixtures ran'
-	if !bless {
+	if !bless && !epoch {
 		assert enforced.len == 0
 	}
 }
@@ -620,7 +399,7 @@ fn parse_fixtures_in(path string) []ParsedFixture {
 		return []
 	}
 	mut out := []ParsedFixture{}
-	for c in cx.load_fixtures(path) {
+	for c in fixtures.load_fixtures(path) {
 		out << parsed_from(c)
 	}
 	return out
@@ -634,31 +413,46 @@ fn parse_fixtures_in(path string) []ParsedFixture {
 // without touching a shared whitelist. Runs clean (ran == 0) before the
 // stdlib/ directory or any module file exists, so it is safe to land
 // ahead of the modules.
-// load_gate_policy reads conformance/gates.cxd and returns a module->gate map
-// for the given suite. Toggle: 'enforced' failures block the gate; 'advisory'
-// failures are reported but do NOT block (spec-first frontier / unimplemented).
-// An absent module yields '' which the caller treats as enforced
-// (deny-by-default, mirroring the capability grant model).
-fn load_gate_policy(suite string) map[string]string {
+// load_gate_policy reads conformance/gates.cxd and returns the module->gate
+// map for the given suite PLUS the suite's default= tier (falling back to the
+// [gate-policy] default=). Toggle: 'enforced' failures block the gate;
+// 'advisory' failures are reported but do NOT block (spec-first frontier /
+// unimplemented). Resolution order (the manifest's own header, #721):
+//   per-case gate= > per-module entry > per-suite default > enforced
+// A fixture that resolves to '' at every tier is enforced (deny-by-default,
+// mirroring the capability grant model).
+fn load_gate_policy(suite string) (map[string]string, string) {
 	mut m := map[string]string{}
+	mut suite_default := ''
+	mut policy_default := ''
 	path := os.real_path(os.join_path(os.dir(@FILE), '..', '..', 'conformance', 'gates.cxd'))
-	src := os.read_file(path) or { return m }
-	doc := cx.parse(src) or { return m }
+	src := os.read_file(path) or { return m, suite_default }
+	doc := cx.parse(src) or { return m, suite_default }
 	for node in doc.elements {
 		if node is cx.Element {
 			if node.name == 'gate-policy' {
+				for a in node.attrs {
+					if a.name == 'default' {
+						policy_default = cx.scalar_value_str_public(a.value)
+					}
+				}
 				for s in node.items {
 					if s is cx.Element {
 						if s.name == 'suite' {
 							mut sname := ''
+							mut sdefault := ''
 							for a in s.attrs {
 								if a.name == 'name' {
 									sname = cx.scalar_value_str_public(a.value)
+								}
+								if a.name == 'default' {
+									sdefault = cx.scalar_value_str_public(a.value)
 								}
 							}
 							if sname != suite {
 								continue
 							}
+							suite_default = sdefault
 							for md in s.items {
 								if md is cx.Element {
 									if md.name == 'module' {
@@ -684,11 +478,23 @@ fn load_gate_policy(suite string) map[string]string {
 			}
 		}
 	}
-	return m
+	if suite_default == '' {
+		suite_default = policy_default
+	}
+	return m, suite_default
 }
 
 fn test_stdlib_module_fixtures() {
 	bless := os.getenv('CX_BLESS') == '1'
+	// I1 epoch re-bless: DISARMED in normal builds (register R3.9) — the
+	// epoch is closed; adopting every enforced out-text mismatch now takes
+	// an explicit `-d cx_epoch_bless` compile AND CX_BLESS=epoch.
+	mut epoch := false
+	$if cx_epoch_bless ? {
+		epoch = os.getenv('CX_BLESS') == 'epoch'
+	} $else {
+		assert os.getenv('CX_BLESS') != 'epoch', 'CX_BLESS=epoch REFUSED: the I1 epoch is closed; a re-bless build requires explicit -d cx_epoch_bless (register R3.9)'
+	}
 	dir := os.join_path(os.dir(fixture_path_eval()), 'stdlib')
 	entries := os.ls(dir) or { return }
 	mut files := []string{}
@@ -700,19 +506,30 @@ fn test_stdlib_module_fixtures() {
 	files.sort()
 	mut ran := 0
 	mut failures := []string{}
-	module_gate := load_gate_policy('stdlib')
+	module_gate, suite_default := load_gate_policy('stdlib')
 	mut adv_ids := map[string]bool{}
 	for fname in files {
-		fixtures := parse_fixtures_in(os.join_path(dir, fname))
-		for f in fixtures {
-			// effective gate: per-case overrides module policy overrides enforced.
-			eff_gate := if f.gate != '' { f.gate } else { module_gate[fname.all_before('.cxd')] }
+		cases := parse_fixtures_in(os.join_path(dir, fname))
+		for f in cases {
+			// effective gate: per-case > per-module > per-suite default (>
+			// enforced when every tier is '').
+			mut eff_gate := if f.gate != '' { f.gate } else { module_gate[fname.all_before('.cxd')] }
+			if eff_gate == '' {
+				eff_gate = suite_default
+			}
 			if eff_gate == 'skip' || eff_gate == 'pending' {
 				continue // excluded from the gate (not run)
 			}
 			ran++
 			adv_ids['${fname}/${f.id}'] = eff_gate == 'advisory'
 			mut env := code.new_env()
+			// strict-tag parity (stream 14, the audit note): the stdlib and
+			// package lanes honor 'strict-mode' exactly as the code.cxd lane
+			// does — a tagged fixture must never silently run un-strict.
+			if 'strict-mode' in f.tags {
+				env.state.strict = true
+			}
+			code.register_conformance_test_modules(mut env.state.module_table) // #701
 			if f.in_cx != '' && f.in_cx != '[empty]' {
 				if doc := cx.parse(f.in_cx) {
 					for i in 0 .. doc.elements.len {
@@ -731,28 +548,45 @@ fn test_stdlib_module_fixtures() {
 			// point denies; every other (behavior) case runs under a full
 			// grant so real effects proceed. No fixture edits — the host
 			// chooses the set, exactly as a CLI `--allow-*` / embedding would.
-			if f.grant != '' {
+			if f.grant == 'none' {
+				// PYE-3 (#926): behavior case pinned to the EMPTY set —
+				// proves the exercised surface is ungated (argv/parse-args).
+				code.caps_set_empty()
+			} else if f.grant != '' {
 				// Effort B: explicit per-fixture least-privilege grant.
-				code.caps_set_list(f.grant.split_any(' \t,').filter(it != ''))
+				code.caps_set_list(f.grant.split_any(' \t,').filter(it != '')) or {
+					assert false, 'fixture [grant …] refused (#713 loud unknown-cap): ${err.msg()}'
+				}
 			} else if f.out_err.contains('CXER0271') {
 				code.caps_set_empty()
 			} else {
 				code.caps_set_all()
 			}
+			// Program argv (#926, PYE-2): fixture-declared vector, argv[0]
+			// included; cleared otherwise so no cross-case leak.
+			code.set_program_argv(f.argv.split_any(' \t').filter(it != ''))
 			prog := cx.parse_program(f.in_code) or {
 				if f.out_err != '' {
+					if !thrown_matches_out_err(err.msg(), f.out_err) {
+						failures << '${fname}/${f.id}: parse threw "${err.msg()}" but expected ${f.out_err} (R3.12)'
+					}
 					continue
 				}
 				failures << '${fname}/${f.id}: parse: ${err}'
 				continue
 			}
-			result := code.eval(prog.body, mut env) or {
+			mut result := code.eval(prog.body, mut env) or {
 				if f.out_err != '' {
+					if !thrown_matches_out_err(err.msg(), f.out_err) {
+						failures << '${fname}/${f.id}: eval threw "${err.msg()}" but expected ${f.out_err} (R3.12)'
+					}
 					continue
 				}
 				failures << '${fname}/${f.id}: eval: ${err}'
 				continue
 			}
+			// EV-PULL: force at the runner's result boundary.
+			result = code.force_lazy_result(result, mut env)
 			if f.out_err != '' {
 				// Expected an err: accept a V-error (handled above) or an
 				// err-value whose render carries the expected CXER code.
@@ -777,7 +611,7 @@ fn test_stdlib_module_fixtures() {
 						failures << '${fname}/${f.id}: tol mismatch (tol=${f.tol})\n  got:      ${rendered}\n  expected: ${expected}'
 					}
 				} else if !same_shape(rendered, expected) {
-					if bless && quote_only_diff(rendered, expected) {
+					if (bless && quote_only_diff(rendered, expected)) || (epoch && eff_gate != 'advisory') {
 						bless_emit(fname, f.id, rendered)
 					} else {
 						failures << '${fname}/${f.id}: mismatch\n  got:      ${rendered}\n  expected: ${expected}'
@@ -807,7 +641,7 @@ fn test_stdlib_module_fixtures() {
 			println('  ${fl}')
 		}
 	}
-	if !bless {
+	if !bless && !epoch {
 		assert enforced.len == 0
 	}
 }
@@ -836,26 +670,41 @@ fn test_package_fixtures() {
 	files.sort()
 	mut ran := 0
 	mut failures := []string{}
-	module_gate := load_gate_policy('packages')
+	module_gate, suite_default := load_gate_policy('packages')
 	mut adv_ids := map[string]bool{}
 	for path in files {
 		pkg := os.base(os.dir(path))
-		fixtures := parse_fixtures_in(path)
-		for f in fixtures {
-			eff_gate := if f.gate != '' { f.gate } else { module_gate[pkg] }
+		cases := parse_fixtures_in(path)
+		for f in cases {
+			mut eff_gate := if f.gate != '' { f.gate } else { module_gate[pkg] }
+			if eff_gate == '' {
+				eff_gate = suite_default
+			}
 			if eff_gate == 'skip' || eff_gate == 'pending' {
 				continue
 			}
 			ran++
 			adv_ids['${pkg}/${f.id}'] = eff_gate == 'advisory'
 			mut env := code.new_env()
-			if f.grant != '' {
-				code.caps_set_list(f.grant.split_any(' \t,').filter(it != ''))
+			// strict-tag parity (stream 14, the audit note): the stdlib and
+			// package lanes honor 'strict-mode' exactly as the code.cxd lane
+			// does — a tagged fixture must never silently run un-strict.
+			if 'strict-mode' in f.tags {
+				env.state.strict = true
+			}
+			code.register_conformance_test_modules(mut env.state.module_table) // #701
+			if f.grant == 'none' {
+				code.caps_set_empty() // PYE-3: ungated-surface behavior pin
+			} else if f.grant != '' {
+				code.caps_set_list(f.grant.split_any(' \t,').filter(it != '')) or {
+					assert false, 'fixture [grant …] refused (#713 loud unknown-cap): ${err.msg()}'
+				}
 			} else if f.out_err.contains('CXER0271') {
 				code.caps_set_empty()
 			} else {
 				code.caps_set_all()
 			}
+			code.set_program_argv(f.argv.split_any(' \t').filter(it != '')) // PYE-2
 			prog := cx.parse_program(f.in_code) or {
 				// a parse failure is NEVER an expected outcome for a package
 				// fixture — even err cases must parse (the xap-compose M0
@@ -865,6 +714,9 @@ fn test_package_fixtures() {
 			}
 			result := code.eval(prog.body, mut env) or {
 				if f.out_err != '' {
+					if !thrown_matches_out_err(err.msg(), f.out_err) {
+						failures << '${pkg}/${f.id}: eval threw "${err.msg()}" but expected ${f.out_err} (R3.12)'
+					}
 					continue
 				}
 				failures << '${pkg}/${f.id}: eval: ${err}'
@@ -918,8 +770,10 @@ fn same_shape(a string, b string) bool {
 }
 
 // same_multiset compares two render outputs as multisets
-// D11 — used for :par-unordered fixtures where worker completion order
-// is non-deterministic but membership IS contracted. Parses both sides
+// D11 — used for fixtures where emission order is genuinely
+// non-deterministic but membership IS contracted (the [?test-concurrent]
+// scaffold class; [par] output is SOURCE order always since L105 and no
+// longer needs this comparator). Parses both sides
 // by stripping outer `()` parens + splitting on `,` (handling the CX
 // sequence-literal render shape `(a, b, c)`), trims items, sorts both
 // sides, compares element-by-element. Asserts that the multiset of

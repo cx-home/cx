@@ -1,6 +1,6 @@
 # Store management console — a XAP that manages cx store deployments
 
-**Status:** 02-working (owner decisions locked 2026-07-06: free/paid line =
+**Status:** APPROVED (G3 granted 2026-07-07, see §status history below; status line trued 2026-08-20 at the SPR-1 reshape — the file already lived in 03-approved). Owner decisions locked 2026-07-06: free/paid line =
 single-daemon-free/estate-paid; token bootstrap = CLI helper + console flow,
 one stanza format; delivery surface = served-web XAP; repo =
 `cx-home/xap-store-console`, private; claim→role convention accepted).
@@ -10,6 +10,13 @@ Companion issue: cx-private#249.
 spec (`xap_feature_distribution_market.md`), the service-tier Phase-2 spec
 (`cxstore_service_tier_phase2.md`), and the CSRP protocol spec
 (`cxstore-remote-protocol.md`).
+**Wire-transition note (stream 4, #676):** CSRP retires at the parity gate —
+the console's wire becomes the **XSP store profile** (store.md §6.4), its
+credentials become XSP-AUTH principals + VC-compiled capabilities, and every
+CSRP op named in this spec maps verb-for-verb onto profile ops (the
+admin-plane names are unchanged). Read this document's CSRP references
+through that mapping; the console migrates with the other consumers before
+the CSRP data plane is removed.
 **Delivers:** a separate project — one XAP whose features (free + paid) manage
 `cx store-serve` deployments. This spec is the project's contract; the
 implementation repo is bootstrapped from it.
@@ -232,9 +239,10 @@ both emit the SAME stanza shape — one documented recipe:
 
 ### §6.1. Surface (owner-locked 2026-07-06: served-web XAP)
 
-The console XAP serves a web client — the `xap-marine-htmx-web-client`
-pattern: server-rendered CX → hypermedia, the client's control vocabulary
-projected from the composed grammar. One deliverable reaches every operator
+The console XAP serves a web client — the served-web HTMX pattern proven by
+the original external reference instance's web client: server-rendered CX →
+hypermedia, the client's control vocabulary projected from the composed
+grammar. One deliverable reaches every operator
 with a browser (including on-daemon-host via SSH tunnel), it reuses the only
 client-materializer pattern that exists and is battle-tested today (marine
 stage-1), and the OIDC authorization-code + PKCE redirect (§4.3) needs an
@@ -308,5 +316,6 @@ versionable, journal-referenced); `store-fleet` verbs operate over it.
   entitlement VCs, commerce.
 - `cxstore_service_tier_phase2.md` + `cxstore-remote-protocol.md`: the wire
   contract, RBAC/tenant model, `admin-ops` advert, reload semantics.
-- Marine stage-1 conversion (xap-marine#29 / web-client#6): the conventions
-  and the served-web materializer pattern §6.1(a) reuses.
+- The external reference instance's stage-1 conversion (tracked on that
+  project's own tracker): the conventions and the served-web materializer
+  pattern §6.1(a) reuses.

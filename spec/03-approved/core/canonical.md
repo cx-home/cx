@@ -103,6 +103,16 @@ Content-addressed identity is two-tier; both tiers are first-class.
 
 Attribute order is **never** a normalization axis in either tier (§2.1).
 
+**Address purity (the #82 closure precedent, made normative here at the
+2026-08-20 SPR-4 retirement of the set-identity sketch):** an address is a
+pure function of canonical bytes. No schema, profile, or policy input may
+participate in identity — reproducing an address MUST never require knowing
+which policy was in force at hash-time. Any semantic-equality notion beyond
+canonical bytes (set-equality of sequences, alpha-equivalence beyond the
+Tier-2 code namespace, …) may exist only as a DERIVED, rebuildable index
+whose normalization profile is explicit stored data — never as an input to
+the address.
+
 ---
 
 ## 2 — Text CX canonical (lossless)
@@ -145,11 +155,11 @@ when they avoid escaping a `'`. Triple-quoting is reserved for multiline values.
 
 | Aspect | Rule |
 |---|---|
-| Bare strings | Used when value is BareChar-eligible (no whitespace, `[`, `]`, `=`, `'`, `"`) AND does not match an auto-typing literal — the lexicon's full auto-typing set: number (including underscore-grouped and over-i64 bigint forms), bool, null, date, datetime, duration, period, atom, hex. A string whose bare image would re-parse as any typed scalar quotes, in every position (element body, attribute value, collection item, map value). |
+| Bare strings | Used when value is BareChar-eligible (no whitespace, `[`, `]`, `=`, `'`, `"`) AND does not match an auto-typing literal — the lexicon's full auto-typing set: number (including underscore-grouped and over-i64 bigint forms), bool, null, date, datetime, duration, period, atom, hex. A string whose bare image would re-parse as any typed scalar quotes, in every position (element body, attribute value, collection item, map value). A BODY string whose image LEADS with a structural sigil — `+` `-` `*` `@` `#` `$` — always quotes (`$` since I1 row 9: a bare delimited `$name` is the variable HOLE, so the STRING "$name" spells `'$name'` — different bytes, different address). In **collection-ITEM position** (a `(…)` item, a `{k: v}` value) the bare set is narrower and is defined ONCE by [`code.md`](code.md) §11.1a **R6** (RULED: 831-1a′): the image must re-read as the same string in BOTH readings, so a single interior space, `.`, or `:` quotes there even though a BODY text run keeps them bare. The data emitter and the program result renderer share that one implementation. |
 | Single-quoted | `'...'` — the default form when quoting is required (value contains whitespace/special chars, or matches an auto-typing literal). |
 | Double-quoted | `"..."` — used when the value contains a `'` but no `"`, so the apostrophe need not be escaped (e.g. `"can't"`). A value that is only a `'` is `"'"`. |
 | Both `'` and `"` | Single-quoted with `\'` escape (the `"` needs no escape inside `'...'`) — the disambiguating tiebreak. |
-| Triple-quoted | `'''...'''` — ONLY for values containing literal newlines OR consecutive whitespace. The parser also accepts `"""..."""` (lookahead-on-close §2.10.1); canonicalization rewrites it to `'''...'''`. NOT used merely to avoid an apostrophe escape — that case is double-quoted. |
+| Triple-quoted | INPUT spelling only (I1 stream 12, L17/W-2): canonical NEVER emits a triple-quoted form — multiline and control-bearing content escapes per §2.4 inside the ordinary quoted forms. The parser accepts `'''…'''` / `"""…"""` (lookahead-on-close §2.10.1) and the raw `r'''…'''` prefix (lexicon [L31a], data mode included since I1 L58). |
 | Empty string | `''`. |
 
 ### 2.4 Escape sequences
@@ -234,7 +244,7 @@ more xmlns declarations:
 | xmlns declaration ordering | Default-namespace declaration (`xmlns=...`) first when present, then `xmlns:prefix=...` declarations in lexicographic order by prefix. |
 | Non-xmlns attribute ordering | Source insertion order; emitted after the sorted xmlns block. (Local override of §2.1 scoped to namespace declarations only.) |
 | Prefixed element / attribute names | Rewritten at usage sites to the lex-smallest non-empty in-scope prefix mapping to the resolved URI. The xmlns declaration mapping the URI is preserved verbatim. |
-| Reserved `xml:` / `cx:` prefixes | Always in scope; never appear as xmlns declarations on emit. |
+| Reserved `xml:` / `cx:` prefixes | Always in scope; never appear as xmlns declarations on emit. An authored `xmlns:cx="tag:cxhome.org,2026:ns/cx"` (the C14N carrier declaration an XML image mandates on its root) is accepted at parse and STRIPPED here — the declared and undeclared spellings of one document share one address. Every other binding of the CX URI (any spelling, incl. the reserved legacy https aliases) was rejected at parse (E213, stream 15 #704). |
 | Default-namespace key (empty prefix) | Never wins the canonical-prefix ranking — would corrupt attribute namespacing per XML Namespaces 1.0 §6.2. |
 
 The implementation runs as a post-pass in `cx_text_canonical`
@@ -388,11 +398,27 @@ nested (do not flatten).
 | Runtime ordering | Insertion order (preserved by parsers and evaluators per CXDM v1.1) |
 | Canonical-form ordering | **Lexicographic Unicode order** of the canonical-key serialization |
 | Key serialization for sort | Per §2.5 (numbers) / §2.6 (bool/date) / §2.4 (strings) — atomic-scalar canonical form |
-| Mixed-type keys | Per type-tag tie-break: `bool` < `bytes` < `date` < `datetime` < `float` < `int` < `string` (lexicographic order of type-tag name); within each tag, canonical-value order |
+| Mixed-type keys | Per type-tag tie-break: `bigint` < `bool` < `bytes` < `date` < `datetime` < `decimal` < `float` < `int` < `null` < `string` (lexicographic order of type-tag name); within each tag, canonical-value order |
+| Key identity | The pair **(kind, image)** — `{'7': v}` (string) and `{7: v}` (int) are two DISTINCT keys, and each renders to a spelling that re-parses as its own kind |
 | Duplicate keys | Parse error W014 (per grammar [56g]); not produced by canonicalizer |
 
+**Key identity is the pair, and the canonical form must show it** (RULED:
+777-1a). A renderer that emits only the key's IMAGE collapses distinct keys
+into one spelling: `{'7': 'a', 7: 'b'}` rendered `{7: 'a', 7: 'b'}`, which
+this section's own duplicate-key rule then refuses with W014 — canonical
+output the canonicalizer rejects. So a `string` key whose image would
+**auto-type** (`'true'`, `'7'`, `'2026-08-16'`) is QUOTED, and a key whose
+kind would not follow from its bare image carries its ascription
+(`{1::bigint: v}`, keeping #776's `{1:}` ≠ `{1::bigint:}` ≠ `{1.0:}` true
+across the round trip and not only in the AST).
+
 Bare-name keys (`{name: 'a'}`) sort as their equivalent string keys
-(`{'name': 'a'}` — `name` is a string §D4).
+(`{'name': 'a'}` — `name` is a string §D4). The tie-break enumerates the
+**ten admissible key kinds** — every CXDM scalar kind except `atom`, which
+is not a valid map key ([`cxdm.md`](cxdm.md) §2.3). `decimal` and `bigint`
+join it as full semantic kinds at the I1 epoch (stream 11, #683); they were
+already ordered this way by the rule itself, which is the tag NAME's order,
+not a hand-kept list.
 
 This canonical map-key ordering is **normative for content-addressed
 identity**: a content-addressed store hashes a map's entries in this order, so
@@ -802,6 +828,14 @@ Implementations must satisfy:
 - `parse(canonicalize(x))` produces the same Resolved AST as `parse(x)`.
 - `loads(canonicalize(x)) == loads(x)` (data binding is preserved).
 - `hash(x) == hash(y)` if and only if `canonicalize(x) == canonicalize(y)`.
+
+**Closure over quote results (E1/L78, I5 stream 1):** the properties
+above hold over LOWERED QUOTE RESULTS — `cx:serialize` of a `[?quote]`
+value is authorable canonical CX (variable holes spell `$x`, code.md
+§6.4.3.2), so `parse ∘ canonicalize` closes over it and
+`quote → serialize → hash` yields a real Tier-1 address. The
+`cx:`-namespaced quote image is an emitter-internal XML projection,
+never parse input (E210 stays intact).
 
 These properties are tested in conformance.
 

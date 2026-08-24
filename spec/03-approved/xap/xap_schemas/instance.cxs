@@ -1,0 +1,66 @@
+[schema of=instance mode=open]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Archetype instance-binding schema (DRAFT — #866, composition spec §4.3).
+#
+# One `*.instance.cxd` = one `[instance …]` document: the tenant-owned
+# refinement that derives a feature from an immutable, content-addressed
+# ARCHETYPE. `of=` pins the exact base (Tier-1 address of the archetype
+# document — a mismatch refuses, CXER4879); `name=` names the instance.
+#
+# The refinement contract is deliberately the WHOLE vocabulary: rename
+# presentation / add / tighten / select. Repurposing an inherited name and
+# loosening an inherited rule/type/signature REFUSE at instantiation
+# (CXER4877/CXER4878); removal cannot be spelled at all. Which binding is
+# in force resolves cascade-style at deployment (P0-14 nearest-wins).
+# ─────────────────────────────────────────────────────────────────────────────
+
+[instance
+ [attr name::string [req]]           # the instance's own feature name
+ [attr of::string   [req]]           # 'sha2-256:<hex>' — the archetype pin
+ [attr version::string [opt]]
+ [elem summary [card "0..1"]]
+ [elem rename  [card "0..*"]]
+ [elem add     [card "0..*"]]
+ [elem tighten [card "0..*"]]
+ [elem select  [card "0..1"]]]
+[type summary::string]
+
+# ── RENAME presentation — meaning-in-context is the tenant's. Exactly one
+# target axis (noun= | field= | verb=); field= is 'noun/field'. Only
+# presentation attributes may be supplied; names of record have no slot. ──
+[rename
+ [attr noun::string    [opt]]
+ [attr field::string   [opt]]
+ [attr verb::string    [opt]]
+ [attr label::string   [opt]]
+ [attr doc::string     [opt]]
+ [attr summary::string [opt]]]
+
+# ── ADD — new fields on existing nouns, new verbs, new rules. An added name
+# colliding with an inherited one is the repurpose refusal. The payload
+# shapes are feature.cxs's own (field/verb/rule), unchanged. ──
+[add
+ [attr on::string [opt]]             # for [field]: the archetype noun it extends
+ [elem field [card "0..1"]]
+ [elem verb  [card "0..1"]]
+ [elem rule  [card "0..1"]]]
+
+# ── TIGHTEN — a named verb's effect signature may only move UP the rank
+# lattice (composition spec §6 ranks). A widening on any axis refuses. ──
+[tighten
+ [attr verb::string        [req]]
+ [attr effect::string      [opt] [enum observe act arrange]]
+ [attr scope::string       [opt] [enum shared local]]
+ [attr consequence::string [opt] [enum none reversible irreversible]]]
+
+# ── SELECT — the W16-b subsetting vocabulary, carried onto the effective
+# document as [selection …] for the surface gate. Selected names must exist. ──
+[select
+ [elem offer       [card "0..*"]]
+ [elem not-offered [card "0..*"]]]
+[offer
+ [attr verb::string [req]]]
+[not-offered
+ [attr verb::string [req]]
+ [attr why::string  [req]]]

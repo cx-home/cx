@@ -105,11 +105,15 @@ crypto (hash, sign/verify, JWT)                                  spec/std-lib/cr
 | Surface | Home | Role |
 |---|---|---|
 | **`cx-stdlib/authz` module** (this spec) | `[?lib 'cx-stdlib/authz']` | the **programmatic** trust model — functions returning `[delegation]` / `[permit]` / `[deny]` / `[explanation]` **values** |
-| **the bus PEP** ([`xap.md`](xap.md) §22.3) | the `bus` module / the `xap` cascade | the **single enforcement point** — calls `[$authz:check …]` before committing every intent; never re-implements the decision |
+| **the bus PEP** ([`xap.md`](xap.md) §22.3) | the `bus` module / the `xap` cascade | the **single enforcement point** for intents — calls `[$authz:check …]` before committing every intent; never re-implements the decision |
+| **the store query PEP** ([`store.md`](store.md) §6.2, stream-2 ruling L99) | `[$store:query]` with a quoted planar comprehension | **authorize-before-execute over the extracted slice set**: the comprehension's source refs are extracted statically (the §6.5.1 purity theorem makes the extracted set EXACTLY the query's read set), and when the caller supplies an `authz` handle the PEP calls `check` once per slice — `[authz-request [actor …] [capability read] [slice ‹path›] [tenant …]]` — **before execution**; any `[deny]` refuses `CXER4700` carrying the deny, and nothing runs. Same engine, second call site; the decision is still computed only here |
 
-The bus is the *only* place the decision is enforced ([`xap.md`](xap.md) §22.3,
-§22.10.3); this module is the *only* place the decision is **computed**. One
-function to test; every intent passes through it.
+The bus is the *only* place the decision is enforced for **intents**
+([`xap.md`](xap.md) §22.3, §22.10.3); the store query PEP is its read-side
+sibling for **quoted planar queries** (L99 — same `check`, applied to the
+extracted slice set before execution). This module remains the *only*
+place the decision is **computed**. One function to test; every intent —
+and every authorized planar read — passes through it.
 
 Out of scope (and where it lives instead):
 
@@ -206,6 +210,27 @@ Both are the **same `[delegation]` tag**; `[mode :guardian]` + `[gate …]` +
 is the ordinary delegation view. Field validity is checked by `delegate` /
 `grant-guardian` (§3.2/§3.3) — a guardian shape passed to `delegate`, or a
 `[gate …]` on a non-guardian delegation, → `cx-err:CXER4711 E_AUTHZ_ARG_INVALID`.
+
+**`[bounds …]` — the quantitative budget child (stream 6, L112; landed at I5
+stream-4 W4).** A delegation MAY carry
+`[bounds [rate N :per DUR] [count N] [spend AMOUNT::decimal :currency :CUR :per DUR]]`
+— the budget axis of the commands/effects spec §4, verbatim: `rate` is a token
+bucket, `count` is monotone (no replenishment; refunds never credit back),
+`spend` windows are UTC-Z calendar-aligned. Bounds ride the grant value, so
+attenuation, revocation, journaling, `explain`, and T1/T2 signing come for
+free. A sub-delegation with NO `[bounds]` **shares the issuer's meter** (a
+pool never multiplies authority); a sub-delegation naming its own bounds must
+name a **⊆ budget** per conjunct (§4.2). Meter exhaustion at the PEP is the
+value `[deny [reason :budget-exhausted] [retry-after DUR]]`
+**`[propose-only]` — the propose-mode attenuation flag (stream 6,
+L113).** A delegation MAY carry the bare child `[propose-only]`: it can
+then ground PROPOSALS but never a commit (§3.10; `CXER4715` at commit).
+Inheritance down `[attenuates …]` is narrowing-only — a child of a
+propose-only parent is propose-only.
+
+(`cx-err:CXER4713`, §8) — `retry-after` present only where the meter
+replenishes (`rate`); denial names the failing conjunct (D-C1: spatial scope
+and quantitative bound are independent conjuncts).
 
 **The `[gate …]` predicate grammar — two predicate types only (§10.5).** A gate is
 a boolean combinator (`all` / `any` / `not`) over leaves of exactly two types:
@@ -490,6 +515,22 @@ clock), `require-tier` (`:t0`/`:t1`/`:t2`; default per the capability/grant),
 `with-context` (a state snapshot for gate `state`-predicate evaluation; default the
 journal-folded live slice), `raise-on-deny` (`authorize` only).
 
+**The bitemporal coherence rule (stream 8, bitemporal.md L121).** The decision
+value records **both temporal coordinates for audit**: `as-of=` (the valid-time
+decision instant, when supplied — `as-of` is this module's shipped spelling;
+new surfaces elsewhere use `valid-at`, [`journal.md`](journal.md) §3.8) and the
+**context snapshot's transaction-time position** — when `with-context` is a
+journal `[snapshot]`, the decision carries `at-seq=` (single form) or the
+`[at-head-set …]` member list (the §3.7 set form). The **bitemporal
+authorization query** — *"what would we have decided at position P, for
+instant T"* — is thereby specifiable: fold-to-position (or verify a snapshot at
+it), pass it as `with-context` with the instant as `as-of`. Both `[permit]` and
+`[deny]` stamp. A context that makes **no TX claim** (a bare folded state)
+stamps nothing — an incoherent pair (a gate's state predicate evaluated against
+a context folded after facts the caller meant to exclude) is **constructible
+only explicitly**, and its missing coordinate is *visible on the decision*.
+Decisions without these opts are byte-identical to the pre-rule shape.
+
 ### §3.5. The incapacity-predicate library + gate well-formedness (the trusted surface)
 
 ```
@@ -573,6 +614,102 @@ regression-gated.
 All three are **pure** and **deterministic** — identical inputs → identical output
 — which is the property the §10.10.4 regression gate relies on.
 
+### §3.8. Budgets — meter-as-fold + the commit-point debit (stream 6, L112)
+
+```
+[?def meters scope=public impure [returns element] ($store::element $opts::map {}) ...]
+[?def debit  scope=public impure [returns element] ($store::element $id::string $opts::map {}) ...]
+```
+
+Both need the **journal-bound (durable) tier** (§5 note): an unbound store
+has no debit log / no commit point → `CXER4710`.
+
+- **A debit is a §2.6 authority-transition event**: `[authz-debited
+  id=<granting delegation> count=N (spend=AMT currency=CUR)?]` on the
+  same named `authz` stream — the journal's per-stream group-commit lock
+  IS the "stream's commit lock" (linearizable for free; budgets are
+  scoped to a single stream at v1 — a cross-stream meter has no
+  serialization point). The event records the **granting** delegation;
+  the fold attributes usage up the `[attenuates …]` chain to every
+  bounds-bearing ancestor (a shared pool depletes for its whole subtree).
+- **`meters`** folds the stream's debit events over the live delegation
+  set into exactly the `{meters: [meters [meter id=… tokens=…
+  count-used=… spend-used=…]…]}` snapshot the pure PEP reads (§2.2) —
+  the caller **folds-then-checks**; `check` stays pure. Per conjunct:
+  `rate` = token-bucket replay over event timestamps (capacity `N`,
+  refill `N` per `DUR`, final refill to `now`); `count` = monotone sum;
+  `spend` = the sum inside the **current UTC-Z window** — windows are
+  **epoch-aligned in UTC** (`floor(now/per)·per`; the deterministic
+  reading of "calendar-aligned", never tenant-local midnight). Only
+  declared conjunct axes are emitted. `opts.now` pins the fold instant
+  (the controllable-clock posture); default = the newest debit's
+  timestamp (data-derived — no ambient clock read). The time coordinate
+  is the journal entry `ts` (deterministic UTC-Z synthesis; a debit may
+  pin it via `opts.at`, which becomes the entry's clock).
+- **`debit`** is the commit-point primitive: it validates (known id;
+  `count ≥ 1`; `spend > 0` — **refunds never credit back**, budgets
+  meter authority exercised, violations are `CXER4711`; the currency
+  must match the declared `:currency`), **re-folds headroom at the
+  debit's effective instant** (the two-times enforcement: the PEP
+  decided on a snapshot, live facts re-check at commit) — exhausted →
+  the same `CXER4713`-as-data value shape, `[deny [code …] [reason
+  :budget-exhausted] [conjunct :rate|:count|:spend] ([retry-after N])?
+  [delegation <meter-owner>]]`, with **no event written** (`retry-after`
+  only for `rate`, the §8 rule; commit-side spend headroom is strict:
+  `spent + pending ≤ limit`) — then appends the event and returns a
+  `[debited [delegation …] [count …] ([spend …] [currency …])?]`
+  receipt.
+- The PEP meter reading carries all three axes (`tokens`, `count-used`,
+  `spend-used`), so a supplied snapshot can deny naming **any** failing
+  conjunct (D-C1). Reservation (a sub-delegation carrying a reserved
+  allocation drawn from the parent meter) is the named additive
+  extension whose semantics bind to the escrow rules — it lands with
+  that substrate.
+
+### §3.10. Propose-mode disposition — `approve` / `commit` / `resolve-cap` (stream 6, L113/L114)
+
+```
+[?def approve     scope=public impure [returns element] ($store::element $proposal::element $opts::map {}) ...]
+[?def commit      scope=public impure [returns element] ($store::element $proposal::element $approval::element $command::function $opts::map {}) ...]
+[?def resolve-cap scope=public impure [returns element] ($store::element $ref::string $opts::map {}) ...]
+```
+
+The ENGINE constructs proposals (`cx:propose`, `modules/cx.md`) — the
+boundary decides the mode; authz **disposes**:
+
+- **`approve`** mints the Lane-2 claim `[approval [subject hash=<Tier-1
+  of the proposal>] [by …] [tier :tN] [signature …]]` — the approval
+  binds the proposal's **ADDRESS** (approval-by-name-or-args is
+  normatively forbidden: forgeable; a re-lowering with a different
+  address is a different proposal). The suite slot is mandatory
+  (`opts.signature`); verification follows the §2.7 tier posture (T1
+  single-signature, T2 M-of-N quorum).
+- **`commit`** verifies **fail-closed, in order**: the presented
+  proposal re-hashes to the approval's subject (`CXER4714` — tampering
+  moves the address); the approval verifies per its tier (`CXER4714`);
+  no `[propose-only]` link grounds the presented basis (`opts.basis`;
+  `CXER4715`); every `[requires 'cap:…']` clause re-resolves fail-closed
+  (`CXER4716`); the presented command's def-text Tier-1 address equals
+  the proposal's trust key (commit runs the EXACT approved version —
+  the stream-18 L139 rule; `CXER4714`); the preconditions re-evaluate
+  over the proposal's args — recorded TRUE at propose, any now-false is
+  the **divergence refusal** (`CXER4714`, the two-times enforcement
+  table). Then it EXECUTES the body through the ordinary invoke path
+  (effects narrowing + idempotent dedup ride along), applies an
+  `opts.debit` under the stream's commit lock (§3.8), and journals the
+  `[command-committed proposal=…]` transition with actor + authority
+  basis (§2.6). Needs the journal-bound (durable) tier — there is no
+  commit point without the trust log.
+- **`resolve-cap`** resolves a `cap:sha2-256:<hex>` reference
+  (governance §12.3 — the authority-artifact domain separator) against
+  the **live registry view**: the artifact must exist in the tenant,
+  be un-revoked, and be un-expired at the resolution instant; anything
+  else is the fail-closed `CXER4716` — a trust input that cannot be
+  proven live is refused loudly, never a silent absence.
+- **`[propose-only]`** (§2.2 child) is the grant-side attenuation flag:
+  a delegation carrying it can ground proposals but NEVER a commit;
+  inheritance down the `[attenuates …]` chain is narrowing-only.
+
 ---
 
 ## §4. Semantics & guarantees (soundness) — the §14 invariants, restated as module guarantees
@@ -594,6 +731,17 @@ E_AUTHZ_ESCALATION` ([`xap.md`](xap.md) §22.2, §21.5). Envelope composition is
 **intersection only** (§3.6) — it can never expand authority. Grants are
 **time-bounded + revocable → self-pruning** (default-deny object-capability,
 [`xap.md`](xap.md) §22.10.2), which kills RBAC role-explosion at the root.
+
+**Four ⊆-checked axes at issue time (W4 pin).** Attenuation is strict on ALL
+of: **capabilities** (set ⊆), **slice** (`over` cover), **window** (a child
+`until` must be at-or-before its parent's; a child with NO `until` under a
+windowed parent inherits the parent's — it cannot outlive it), and
+**bounds** (per-conjunct: a child `rate`/`count`/`spend` must not exceed the
+parent's; absent child bounds = the shared meter, §2.2). Any violation is
+`CXER4703` at `delegate` time. (The window axis was historically enforced at
+decision time only — the identity model's chain rule §5.2 has always stated
+the issue-time ⊆; the divergence closed when bounds landed as the fourth
+axis.)
 
 ### §4.3. N-CONTROL-2 — ultimate Accountable is always a principal
 A guardian action, though Agent-Responsible, keeps the **grantor Accountable**
@@ -661,18 +809,28 @@ produced (§2.5).
 
 ## §5. Capability integration (`caps` — the DISTINCT system, §security.md)
 
-> **Implementation tier (this revision).** The authority store is an
-> **in-process, per-program** trust-state registry (minted by `store`, reset at
-> program start — the same posture as the `cx-stdlib/session` registry), NOT yet
-> a durable `journal`/`store`-backed backend. Two consequences are scoped to a
-> later revision: (1) trust state does **not survive process restart** (a
-> persisted-grant-then-reopen path is deferred); (2) the persisting/live-read
-> verbs (`store`/`delegate`/`revoke`/`grant-guardian`/`verify-tier`) do **not
-> yet** route through the `store` `caps`-capability, so `CXER0271`/`CXER4710`
-> on a denied/faulted backend are declared but not raised here. The decision
-> logic below (attenuation, time-bounding, revocation, gate well-formedness,
-> the PEP) is fully implemented over the in-process snapshot; only the *durable
-> backing* and its `caps`-gating are deferred. This is not claimed implemented.
+> **Implementation tier (durable as of stream 6 W3 — #713 item 4, the L112
+> prerequisite).** The authority store has TWO tiers, selected by `store`
+> `opts.journal` (§3.1): **unbound**, the in-process per-program registry
+> (reset at program start — the `cx-stdlib/session` posture; the test/demo
+> tier); **bound**, the durable tier — the persisting verbs
+> (`delegate`/`revoke`/`grant-guardian`) append the §2.6 attributed
+> transition events (`[authz-issued <delegation>]`, `[authz-revoked id=…]`,
+> one event per affected id on a cascade) to the journal's named `authz`
+> stream **journal-first, fail-closed**: the event lands BEFORE the
+> in-process mutation, and an append fault is `CXER4710
+> E_AUTHZ_STORE_FAULT` with the mutation NOT applied (live trust state
+> never runs ahead of its log). Reopening a store on the same journal
+> **replays** the stream to rebuild trust state — the
+> persisted-grant-then-reopen path: with a durable journal backend
+> (`file://`, remote), **trust state survives process restart**. Replay
+> applies events without re-running issue-time validation (the log is the
+> authority; validation ran at issue) and skips other tenants' events on a
+> shared journal (§4.6 hard partition). Capability gating is the journal
+> backend's own (scheme-derived `read`/`write`/`net` at its effect
+> points — the restatement below, now transitively real); a denied backend
+> surfaces `CXER0271` from the append, wrapped as the `CXER4710` fault
+> cause.
 
 > **Restating the boxed note in capability terms.** authz **introduces no new
 > `caps`-capability** and gates **no machine effect** of its own. Its only effects
@@ -805,7 +963,7 @@ each a **deliberate impossibility of the model**, not an open cell.
 `CXER4700–CXER4799` is proposed for `cx-stdlib/authz` in the governance registry
 ([`governance.md`](../process/governance.md) §9.6), the next free **century block**
 above `cx-stdlib/http`'s `CXER4525–4543` (and clear of `net`'s 4500-band). This
-revision uses `CXER4700–4712`; the rest of the century is reserved for authz. All
+revision uses `CXER4700–4713`; the rest of the century is reserved for authz. All
 values use `cx-err:` notation; symbolic↔wire is 1:1 (governance invariant).
 **`CXER4700 E_AUTHZ_UNAUTHORIZED` is the CXER-UNAUTHORIZED-equivalent** — the
 canonical authority-denied code ([`xap.md`](xap.md) §22.3 "`[err [code
@@ -829,6 +987,10 @@ canonical authority-denied code ([`xap.md`](xap.md) §22.3 "`[err [code
 | `cx-err:CXER4710` | `E_AUTHZ_STORE_FAULT` | the trust-state backend (journal/store) faulted on a persisting/live-read verb (distinct from the `caps` denial `CXER0271`, §5) |
 | `cx-err:CXER4711` | `E_AUTHZ_ARG_INVALID` | malformed/mis-shaped artifact: guardian shape to `delegate` (or ordinary shape to `grant-guardian`), `[gate …]` on a non-guardian delegation, cross-tenant `delegate`, or a `check` request missing required fields (§2.2, §3.2, §4.6) |
 | `cx-err:CXER4712` | `E_AUTHZ_HANDLE_CLOSED` | an op on a closed authority `store` handle |
+| `cx-err:CXER4713` | `E_AUTHZ_BUDGET_EXHAUSTED` | a `[bounds …]` meter (§2.2) is exhausted: carried as data in `[deny [reason :budget-exhausted] [retry-after DUR]]` (`retry-after` only where the meter replenishes — `rate`); **raised** only under `authorize raise-on-deny=true`. Denial names the failing conjunct (D-C1) |
+| `cx-err:CXER4714` | `E_AUTHZ_PROPOSAL_INVALID` | a `commit` verification failed fail-closed (§3.10): the proposal does not re-hash to the approval's subject (tamper/re-lowering), the approval's tier signature fails, the presented command does not match the approved def-text Tier-1 address (L139), or a precondition diverged from its propose-time result |
+| `cx-err:CXER4715` | `E_AUTHZ_PROPOSE_ONLY` | the commit basis chain carries `[propose-only]` (§3.10) — a propose-only delegation can ground a proposal but never a commit |
+| `cx-err:CXER4716` | `E_AUTHZ_CAP_UNRESOLVED` | a `cap:` authority-artifact reference does not resolve to a LIVE artifact (absent / revoked / expired) — fail-closed, L114 (§3.10) |
 
 **Shared/core codes authz surfaces (not in its band):** `cx-err:CXER0271`
 (`caps` effect-denial on the `store` backend, §5); `cx-err:CXER0260` (cancellation,

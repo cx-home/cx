@@ -29,10 +29,13 @@ cx validate features/own-ship/own-ship.feature.cxd --schema=schemas/feature.cxs
 cx validate xap.cxd --schema=schemas/xap.cxs
 ```
 
-Schemas today live as local copies in the project (`xap-marine/schemas/`,
-drafts canonical in `spec/02-working/xap_schemas/`); shipping them in the
-toolchain plus a `cx xap init` scaffolder is **specified, not yet implemented**
-(the authoring process spec, open/next section).
+Schemas today live as local copies in the consuming project (its `schemas/` dir,
+drafts canonical in `spec/03-approved/xap/xap_schemas/`); shipping them
+physically in the toolchain is **still open** (the authoring process spec,
+open/next section). The scaffolder is wired: `cx xap init NAME [--client]`
+emits a composing project, and `--client` adds a sibling client that RUNS as
+generated — generic table views derived from the surface's `shows`
+declarations, a floor to replace with your own views (RULED: ATC-2).
 
 ## Composition — one grammar, gated
 
@@ -75,11 +78,11 @@ the standard surface (`GET /grammar`, `/features`, `/surface/<f>`,
 server code**. Deployment-specific pieces (extra routes, ingest workers, sim
 cadence) register as adapters via OPTS — they never fork the host. See the
 deployment-host section of the feature distribution & market spec; the live
-consumer is `xap-marine/serve-xap.cx`.
+consumer is `reference/shop-web-client/serve.cx`.
 
 ```sh
-cd xap-marine
-make run     # the XAP on :9001, foreground (UDP NMEA ingest by default)
+cd <your-xap-project>
+make run     # the XAP on :9001, foreground (its ingest adapter by default)
 make dev     # XAP + web client + browser; Ctrl-C stops both
 make check   # the drift gate — specs ⇄ impl, fails on drift
 ```
@@ -110,7 +113,7 @@ Two distinct layers, both deny-by-default:
 
 - **Host capabilities** (the security spec): `cx` grants `read`/`write`/`net`/
   `env`/… per invocation; an ungranted effect raises `CXER0271` naming the
-  exact flag to add. The marine Makefile shows least-privilege grants per
+  exact flag to add. The reference-app Makefile shows least-privilege grants per
   target.
 - **XAP authority** (the trust-model part of the XAP spec): authority
   originates only from principals; every intent passes the one PEP; grants
@@ -126,7 +129,7 @@ client death. Authoritative state is the journal fold, never the session.
 See the session & load-balancing section of the XAP architecture working
 notes and the session module spec. The multi-tenant gateway/worker topology
 is design-frozen, **implementation incremental** — what runs today is the
-single in-process runtime the marine helm uses.
+single in-process runtime a long-lived deployment uses.
 
 ## Next
 

@@ -77,6 +77,32 @@ Block content with pipes and a nested element
         (block_text)
         (element
           (tag_name)
-          (text)
           (word))
         (block_text)))))
+
+================================================================================
+Epoch lexemes: tagged addresses, genesis sentinel, hole, operator-head element
+================================================================================
+
+[entry payload=sha2-256:1c28ab1f00aa55ee prev-hash=genesis: [+ $x 2]]
+
+--------------------------------------------------------------------------------
+
+(document
+  (element
+    (tag_name)
+    (text)
+    (attribute
+      (attr_name)
+      (attr_value
+        (tagged_address)))
+    (text)
+    (attribute
+      (attr_name)
+      (attr_value
+        (tagged_address)))
+    (operator
+      (operator_head)
+      (program_binding)
+      (text)
+      (number))))

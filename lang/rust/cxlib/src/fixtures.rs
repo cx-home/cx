@@ -1,5 +1,5 @@
 //! CX-native conformance fixture loader — Rust mirror of
-//! `vcx/cx/fixture_loader.v` (and the Python / Go loaders).
+//! `vcx/fixtures/fixture_loader.v` (and the Python / Go loaders).
 //!
 //! The canonical fixture format is the CX document (`conformance/*.cxd`,
 //! schema `conformance/fixtures.cxs`). This loader reads a suite via the CX

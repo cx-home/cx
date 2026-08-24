@@ -3,7 +3,7 @@
    Cross-links use [[anchor]] form; the template renderer (Phase 6.12)
    resolves them at emit time. #]
 
-[section id=intro n=1 title='Introduction'
+[section id=intro group='Start here' n=1 title='Introduction'
 
   [child id=hello n=1.1 title='Hello, CX'
     [intro
@@ -63,12 +63,15 @@
          lexer, AST, tree-sitter grammar, LSP — is shared end-to-end."""]
 
     [body
-      """**2. Every projection round-trips.** CX has a canonical surface
+      """**2. Projections round-trip.** CX has a canonical surface
          (the bracket form) and projections for JSON, YAML, TOML, XML, and
-         Markdown. Every projection is lossless in the round-trip sense:
-         CX → JSON → CX produces byte-identical canonical bytes. The
+         Markdown. JSON, YAML, TOML, and XML are lossless in the
+         round-trip sense under the `--lossless` flag: CX → JSON → CX
+         produces byte-identical canonical bytes. The default JSON
+         projection is idiomatic and lossy for mixed content; Markdown
+         (and CSV) are lossy by design. The
          normative round-trip rules live in [[surfaces]] and in
-         [`spec/canonical.md`](../../spec/canonical.md)."""]
+         [`spec/03-approved/core/canonical.md`](../../spec/03-approved/core/canonical.md)."""]
 
     [body
       """**3. Pure-functional updates.** There is no in-place mutation in CX.
@@ -89,8 +92,9 @@
       """**5. One selector vocabulary everywhere.** CXPath is **the**
          way to point at things — for reading (`select_all`), for iteration
          (`[?for]`), for type-tests in `[?match]`, and for update focus in
-         `[?modify]`. It aligns with XPath 3.1 (see
-         [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md)) so that
+         `[?modify]`. It aligns with XPath 3.1 (see the CXPath sections
+         of [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md)
+         and the conformance corpus `conformance/xpath_31_parity.cxd`) so that
          developers coming from the XML ecosystem feel at home, with
          deliberate divergences to keep it safe and CX-shaped."""]
 
@@ -112,7 +116,7 @@
          to features: every feature must apply uniformly across its natural
          domain or carry a written, justified exception — enforced by the
          UNIFORM review gate in
-         [`spec/process/spec-authoring-guide.md`](../../spec/process/spec-authoring-guide.md)
+         [`spec/03-approved/process/spec-authoring-guide.md`](../../spec/03-approved/process/spec-authoring-guide.md)
          §3, not merely aspired to."""]
 
     [body
@@ -160,7 +164,8 @@
     [body
       """The flow is data → surfaces → identity → analytics → code →
          bindings → tooling → concepts → migration. Each section calls
-         out the normative spec documents under `spec/*.md` rather than
+         out the normative spec documents — approved specs live under
+         `spec/03-approved/` — rather than
          restating them; if you need the formal grammar, error matrix,
          or wire-format details, the guide points you there. Front-matter
          ([[quickstart]]) and back-matter ([[glossary]] / [[faq]] /
@@ -180,31 +185,35 @@
               :table data shape, CXCol format, Arrow zero-copy bridge,
               Parquet read/write, ecosystem integrations (DuckDB /
               Polars / pandas / DataFusion / Spark)."""]
-      [item """[[code]] — the CX code language: the 40 directives, CXPath,
+      [item """[[code]] — the CX code language: the directive registry, CXPath,
               patterns, bindings, the six core constructs, builtins,
               errors-as-values, services / workers / async, resilience."""]
       [item """[[bindings]] — the C ABI, Layer 1 canonical method set,
               Layer 2 host idiom packs, and per-language quickstarts for
               V, Python, Go, and Rust."""]
       [item """[[tooling]] — LSP, tree-sitter, VS Code, Neovim, Helix,
-              `make docs`, the playground."""]
-      [item """[[concepts]] — pure-functional updates, structural sharing,
-              capability bits, error-code namespace, ABI versioning,
-              governance."""]
+              `make guide`, the playground."""]
+      [item """[[value-model]], [[computation-identity]],
+              [[commands-effects]], [[runtime-representation]] — the
+              concept arcs: identity, determinism, effects, structural
+              sharing, and how values are represented at runtime."""]
       [item """[[migration]] — upgrade guide: renames, retired surfaces,
-              the automated migration script, the archived binding set."""]]
+              the `cx fmt --migrate-predicates` / `--collapse-lets`
+              rewriters, the archived binding set."""]]
 
     [body
-      """**Conventions used throughout.** Code blocks marked `:lang cx` are
-         literal CX (data or code; the same shape). Code blocks marked
-         `:lang python`, `:lang go`, `:lang rust`, `:lang v` are host-language
+      """**Conventions used throughout.** Code blocks tagged `cx` are
+         literal CX (data or code; the same shape). Code blocks tagged
+         `python`, `go`, `rust`, or `v` are host-language
          binding code. Cross-references to other sections use `[[anchor]]`.
          References to spec documents use ordinary markdown links."""]
 
     [note
       """The normative grammar lives in
-         [`spec/grammar.ebnf`](../../spec/grammar.ebnf); the directive
-         registry (39 entries) is in [`spec/code.md`](../../spec/code.md)
-         §4.1; the C ABI surface is in
-         [`spec/abi.md`](../../spec/abi.md). This guide is curated learning
+         [`spec/03-approved/formal/grammar.ebnf`](../../spec/03-approved/formal/grammar.ebnf);
+         the directive registry is in
+         [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md);
+         the C ABI surface is in
+         [`spec/03-approved/core/abi.md`](../../spec/03-approved/core/abi.md).
+         This guide is curated learning
          + reference path, not a replacement for those documents."""]]]

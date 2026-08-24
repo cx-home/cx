@@ -163,14 +163,14 @@ const cx_abi_version_str = '2.0'
 // 25 C ABI symbols `cx_events_writer_*`, Phase 7.74g; CX format
 // implemented end-to-end, xml/json/yaml/toml/md emits return W009
 // "format not yet implemented" pending follow-up phases).
-// Not yet implemented: bit 23 (Arrow C-Data interop — separate
-// `libcx_arrow`).
+// Bit 23 (Arrow C-Data interop): build-composed — the separate
+// `libcx_arrow` carries its own cx_arrow_features symbol; this
+// library's mask sets 23 only when built with the arrow files lane
+// (-d cx_arrow_files) compiled in (#802).
 //
-// Bitmask = bits 0..22 set (0x7fffff) | bit 24 (0x1000000)
-// | bit 25 (0x2000000) | bit 26 (0x4000000) | bit 27 (0x8000000)
-// | bit 28 (0x10000000) | bit 29 (0x20000000) | bit 30 (0x40000000)
-// | bit 31 (0x80000000) | bit 32 (0x100000000) | bit 33 (0x200000000)
-// = 0x3df7fffff. Bit 27 is the streaming-write API
+// Bitmask (base, #802 audit executed): bits 0..22 set (0x7fffff)
+// | bits 24..38 set except 23 | bit 39 CLEAR (debugging: unshipped)
+// | bit 40 | bit 41 = 0x37fff7fffff. Bit 27 is the streaming-write API
 // (`cx_events_writer_*` / spec/streaming.md §6 /
 // spec/abi.md §2.15) — 25 C ABI symbols, wired in Phase 7.74g.
 // Bit 28 is the CX code evaluator (`cx_code_eval*` /
@@ -212,7 +212,28 @@ const cx_abi_version_str = '2.0'
 // this session (vcx/code/parser.v parse_atom_literal + vcx/cx/ast.v
 // ScalarType.atom_type); Tier-1 binding catchup tracked in
 // spec/misc/parity-matrix.md.
-const cx_features_str = '0x3df7fffff'
+// Bit 41 (I5-s17 W6, abi.md §1.5): the I5 runtime-representation
+// engine — EV-PULL demand-driven iterators (code.md §6.7/§14.4) +
+// the full data-bin §3.10.3 columnar type lattice. Both halves
+// shipped this stream (W1 + W3), so the bit is set.
+// #802 (gate-truth batch #805): the 23-40 audit executed. SET —
+// bit 29 (collection literals: full round-trip incl. ast_bin v6,
+// enforced suites), 34 ([?def] end-to-end incl. --strict, stream 16),
+// 35 ([?lib] module loading + cx.lock + cx-stdlib), 36 (ast_bin v8
+// PathNode/MatchNode/ModifyNode — the three-kinds-jointly promise
+// completed s17 W6), 37 (IteratorNode 0x16 wire), 38 (capability
+// security: deny-by-default + CXER0271 + [?with-caps]), 40 (ast_bin
+// v9 table record 0x17). STAYS CLEAR — bit 39 (debugging: the
+// misc/debug.md surface does not ship; the mask never claims it),
+// bit 23 in the BASE mask (Arrow C-Data is a build-composed surface:
+// libcx_arrow carries its own cx_arrow_features symbol; a libcx
+// built with the arrow files lane compiled in composes it at
+// comptime below). The mask-agreement gate
+// (vcx/tests/feature_mask_agreement_test.v) probes every auditable
+// bit BOTH directions so this surface cannot silently rot again.
+const cx_features_str = '0x37fff7fffff'
+// The arrow-composed variant: identical plus bit 23 (0x800000).
+const cx_features_str_arrow = '0x37fffffffff'
 
 @[export: 'cx_version']
 pub fn cx_version() &char {
@@ -229,10 +250,26 @@ pub fn cx_abi_version() &char {
 // cx_features returns the capability bitmask as a NUL-terminated
 // lowercase hex string per spec/abi.md §3. Bindings parse this on
 // load and either degrade gracefully or refuse to load when a
-// required capability is absent.
+// required capability is absent. Bit 23 (Arrow C-Data) composes at
+// comptime: set only when the arrow files lane is compiled into
+// this library (#802 — a static const cannot carry a build-flag
+// surface).
 @[export: 'cx_features']
 pub fn cx_features() &char {
+	$if cx_arrow_files ? {
+		return c_string(cx_features_str_arrow)
+	}
 	return c_string(cx_features_str)
+}
+
+// cx_features_mask_pub exposes the CURRENT build's mask string to
+// in-process consumers (the mask-agreement gate) — the same value
+// cx_features hands bindings.
+pub fn cx_features_mask_pub() string {
+	$if cx_arrow_files ? {
+		return cx_features_str_arrow
+	}
+	return cx_features_str
 }
 
 // ── CX input ──────────────────────────────────────────────────────────────────
@@ -775,7 +812,7 @@ pub fn cx_ast_bin_to_toml(input &char, err_out &&char) &char {
 pub fn cx_to_data_bin(input &char, err_out &&char) &char {
 	src := unsafe { cstring_to_vstring(input) }
 	doc := parse(src) or { return c_err(err.msg(), err_out) }
-	bytes := emit_data_bin(doc)
+	bytes := emit_data_bin(doc) or { return c_err(err.msg(), err_out) }
 	return framed_bytes_to_heap(bytes)
 }
 
@@ -802,7 +839,7 @@ pub fn cx_to_data_bin_with_include_root(input &char, include_root &char, err_out
 		unsafe { cstring_to_vstring(include_root) }
 	}
 	doc := parse_with_include_root(src, root_str) or { return c_err(err.msg(), err_out) }
-	bytes := emit_data_bin(doc)
+	bytes := emit_data_bin(doc) or { return c_err(err.msg(), err_out) }
 	return framed_bytes_to_heap(bytes)
 }
 
@@ -824,7 +861,8 @@ pub fn cx_from_data_bin(input &char, err_out &&char) &char {
 // `.cxs` schema text and emits CXCol framed bytes with the schema
 // reference embedded (content-hash form by default; the optional
 // `ref_form` argument selects 0 = content-hash / 1 = inline schema /
-// 2 = content-hash + name hint per §3.13.1). The dumper takes the
+// 2 = content-hash + name hint / 3 = varint multihash per §3.13.1).
+// The dumper takes the
 // framed bytes plus a schema hint and returns canonical CX text.
 // Capability bit 24 (`0x1000000`) signals support; bindings query
 // `cx_features` and refuse to call these symbols when unset.
@@ -833,6 +871,7 @@ fn schema_ref_form_from_int(form i32) SchemaRefForm {
 	return match form {
 		1 { SchemaRefForm.inline_schema }
 		2 { SchemaRefForm.hash_with_name }
+		3 { SchemaRefForm.multihash }
 		else { SchemaRefForm.hash_only }
 	}
 }
@@ -1048,7 +1087,7 @@ fn framed_input_to_bytes_with_len(input &char, total_len usize) ![]u8 {
 pub fn cx_xml_to_data_bin(input &char, err_out &&char) &char {
 	src := unsafe { cstring_to_vstring(input) }
 	doc := parse_xml(src) or { return c_err(err.msg(), err_out) }
-	bytes := emit_data_bin(doc)
+	bytes := emit_data_bin(doc) or { return c_err(err.msg(), err_out) }
 	return framed_bytes_to_heap(bytes)
 }
 
@@ -1056,7 +1095,7 @@ pub fn cx_xml_to_data_bin(input &char, err_out &&char) &char {
 pub fn cx_json_to_data_bin(input &char, err_out &&char) &char {
 	src := unsafe { cstring_to_vstring(input) }
 	doc := parse_to_doc('json', src) or { return c_err(err.msg(), err_out) }
-	bytes := emit_data_bin(doc)
+	bytes := emit_data_bin(doc) or { return c_err(err.msg(), err_out) }
 	return framed_bytes_to_heap(bytes)
 }
 
@@ -1064,7 +1103,7 @@ pub fn cx_json_to_data_bin(input &char, err_out &&char) &char {
 pub fn cx_yaml_to_data_bin(input &char, err_out &&char) &char {
 	src := unsafe { cstring_to_vstring(input) }
 	doc := parse_yaml(src) or { return c_err(err.msg(), err_out) }
-	bytes := emit_data_bin(doc)
+	bytes := emit_data_bin(doc) or { return c_err(err.msg(), err_out) }
 	return framed_bytes_to_heap(bytes)
 }
 
@@ -1072,7 +1111,7 @@ pub fn cx_yaml_to_data_bin(input &char, err_out &&char) &char {
 pub fn cx_toml_to_data_bin(input &char, err_out &&char) &char {
 	src := unsafe { cstring_to_vstring(input) }
 	doc := parse_toml(src) or { return c_err(err.msg(), err_out) }
-	bytes := emit_data_bin(doc)
+	bytes := emit_data_bin(doc) or { return c_err(err.msg(), err_out) }
 	return framed_bytes_to_heap(bytes)
 }
 
@@ -1169,7 +1208,8 @@ pub fn cx_csv_to_data_bin(input &char, err_out &&char) &char {
 	mut opts := default_parse_options()
 	opts.delimiter = `,`
 	doc := parse_delimited(src, opts) or { return c_err(err.msg(), err_out) }
-	return framed_bytes_to_heap(emit_data_bin(doc))
+	bytes := emit_data_bin(doc) or { return c_err(err.msg(), err_out) }
+	return framed_bytes_to_heap(bytes)
 }
 
 @[export: 'cx_tsv_to_data_bin']
@@ -1178,7 +1218,8 @@ pub fn cx_tsv_to_data_bin(input &char, err_out &&char) &char {
 	mut opts := default_parse_options()
 	opts.delimiter = u8(`\t`)
 	doc := parse_delimited(src, opts) or { return c_err(err.msg(), err_out) }
-	return framed_bytes_to_heap(emit_data_bin(doc))
+	bytes := emit_data_bin(doc) or { return c_err(err.msg(), err_out) }
+	return framed_bytes_to_heap(bytes)
 }
 
 @[export: 'cx_psv_to_data_bin']
@@ -1187,7 +1228,8 @@ pub fn cx_psv_to_data_bin(input &char, err_out &&char) &char {
 	mut opts := default_parse_options()
 	opts.delimiter = `|`
 	doc := parse_delimited(src, opts) or { return c_err(err.msg(), err_out) }
-	return framed_bytes_to_heap(emit_data_bin(doc))
+	bytes := emit_data_bin(doc) or { return c_err(err.msg(), err_out) }
+	return framed_bytes_to_heap(bytes)
 }
 
 @[export: 'cx_data_bin_to_csv']

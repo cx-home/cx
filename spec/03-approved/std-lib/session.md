@@ -66,17 +66,21 @@ is: **`http` (transport) + `crypto` (token verify) → `session` (this spec) →
 
 | Surface | Home | Role |
 |---|---|---|
-| **`cx-stdlib/session` module** (this spec) | `[?lib 'cx-stdlib/session']` | establishes & resolves the `(principal, tenant)` session; the attach paths (Bearer §2.2, cookie §2.8, `attach-did` / `attach-xsp` §2.10) + **CSRF** defense (§2.9); the mirrored-attach lifecycle + attach selectors (§2.10) |
+| **`cx-stdlib/session` module** (this spec) | `[?lib 'cx-stdlib/session']` | establishes & resolves the `(principal, tenant)` session; the attach paths (Bearer §2.2, cookie §2.8, `attach-did` / `attach-xsp` §2.10, `attach-guest` §2.11) + **CSRF** defense (§2.9); the mirrored-attach lifecycle + attach selectors (§2.10) |
 | `[$crypto:jwt-verify …]` | [`crypto.md`](crypto.md) §3.10 | verifies the token; emits a claim-set |
 | `[$authz:check …]` | [`authz.md`](authz.md) | reads the session's principal/tenant; decides intents |
 
 **One session model, several attach paths (amended at the identity-model G3,
-2026-07-18 — the original v1 decision said "two attach transports").** A
+2026-07-18 — the original v1 decision said "two attach transports"; amended
+again 2026-08-20, GA-1/#857 — the anonymous floor gains its transport).** A
 `(principal, tenant)` session is established by one of three verifications —
 a **verified IdP token** (§2.2), a **verified DID proof** (`attach-did`,
 [`did.md`](did.md) §7), or a **completed XSP-AUTH handshake** (`attach-xsp`,
-[identity model](../xap/xap_identity_model.md) §4) — and the *transport* that
-carries the proof-of-session on subsequent requests is client-shaped:
+[identity model](../xap/xap_identity_model.md) §4) — **or, where the
+deployment's attach policy admits it, by no verification at all** at the
+deployment's **anonymous floor** (`attach-guest`, §2.11 — the identity
+model's §4.7 principal, on the plain-HTTP/cookie transport). The *transport*
+that carries the proof-of-session on subsequent requests is client-shaped:
 
 - **Bearer** (§2.2) — for **agents, channels, and service clients** that hold a token
   and send it in `Authorization: Bearer …` on every request. No ambient credential, so
@@ -91,6 +95,12 @@ carries the proof-of-session on subsequent requests is client-shaped:
   session binds to the handshake-proven channel, and subsequent requests carry
   **per-request proofs** derived from the handshake keys ([identity model](../xap/xap_identity_model.md)
   §4.8). No ambient credential; no CSRF surface.
+- **Guest** (§2.11) — for **browser visitors before login**, at the deployment's
+  **anonymous floor** ([identity model](../xap/xap_identity_model.md) §4.7). Rides
+  the **same cookie adapter** as the cookie transport above (same posture, same
+  CSRF requirement — the guest's only credential is the ambient cookie), and the
+  session id **remints on the login transition** (§2.11). Refused entirely where
+  the policy admits no floor — the production default (`CXER4812`).
 
 All paths converge on the **same** `[session]` model (§2.1) and the **same**
 `(principal, tenant)` binding — they are doors into one session, and a human's
@@ -136,7 +146,9 @@ One impure handle kind wraps the server-held session state:
 ```
 
 The per-client **`via`** marker records the attach transport (`bearer` §2.2 / `cookie`
-§2.8) — it is what keys the CSRF exemption (N-SESSION-7), never a client-supplied flag.
+§2.8 / `did`/`xsp` §2.10 / `guest` §2.11) — it is what keys the CSRF exemption
+(N-SESSION-7; `guest` classifies as cookie-shaped and is never exempt), never a
+client-supplied flag.
 The `[csrf-token …]` is server-held session state (§2.9); it is **not** the same as the
 opaque session id (the cookie value) and is never `HttpOnly` (the front-end must read it
 to echo it back).
@@ -276,6 +288,12 @@ An **established session whose token validity window later lapses** transitions 
 E_SESSION_INVALID`. Expiry is evaluated against the verified claim `exp` at attach
 and re-checked lazily on each `of`/accessor (no background sweeper is required;
 §4.3).
+
+**Valid-time note (stream 8, bitemporal.md L115).** The token's `nbf`/`exp`
+claims are a **valid-time window** — a per-module instance of the reserved
+half-open vocabulary ([`journal.md`](journal.md) §2.9): `nbf` from-inclusive,
+`exp` to-exclusive, evaluated against a decision instant. The JWT spellings are
+the IdP's and keep their shipped names; the concept is the same.
 
 ### §2.7. Mirrored attach — many clients, one session, survives client death (the tmux model)
 
@@ -479,6 +497,71 @@ subject-bound, tenant-guarded, clamped by every envelope, consumed by the
 unchanged `authz` PEP as ordinary delegation records. Session stores no
 credential; it stores the compiled records' provenance.
 
+### §2.11. Guest attach — the anonymous floor (GA-1; closes #857)
+
+Every transport above requires a proof. The [identity
+model](../xap/xap_identity_model.md) §4.7 already names the principal you get
+when you prove **nothing**: the deployment's **anonymous floor** — and any
+public web surface has state before it has a login (a basket, a saved search,
+a partially-filled form). That state belongs to a *session* (authority
+compiles per session, N-IDENT-4), so the floor gets a session-establishing
+act on the plain-HTTP transport:
+
+```
+[?def attach-guest scope=public impure [returns element] ($req::element $cfg::map) ...]
+```
+
+`$cfg` carries the floor principal (`anonymous-floor`) and the `tenant`
+(§3.1). **The presence of `anonymous-floor` in the cfg IS the deployment's
+policy admission** — mirroring `attach-xsp`'s existing cfg key and §4.7's
+"the attach policy either refuses or maps the channel to the floor".
+`attach-guest` mints the **same `[session]` value** (§2.1) through the **same
+cookie adapter** (§2.8: same `HttpOnly; Secure; SameSite` posture and
+`CXER4810`/`CXER4811` refusals, same opaque id, same per-session CSRF
+synchronizer §2.9, same `attached | detached | expired` states), registered
+in the session registry so `of`/`from-cookie`/`by-id` resolve it like any
+other. The minted `[session]` carries `guest="true"` and its client records
+`via=guest`; for the ambient-credential classification (CSRF gating
+N-SESSION-7, `rotate`) **`guest` is cookie-shaped** — a guest session is
+never CSRF-exempt.
+
+> **N-SESSION-8 (the guest floor — three normative properties, from identity
+> model §4.7).**
+> 1. **Remint on privilege transition.** An anonymous session that logs in
+>    does **not** keep its pre-login id: a proven attach
+>    (`attach`/`attach-cookie`) over a request whose cookie names a live
+>    guest session **invalidates the guest session server-side** and
+>    establishes the proven session under a **freshly minted id** (the
+>    §2.8.4 fixation machinery applied at the anonymous→proven seam).
+>    Fail-closed ordering: the guest session is retired only **after** the
+>    new proof verifies — a failed login leaves the guest session (and the
+>    pre-login state it anchors) intact.
+> 2. **The floor is a real `(principal, tenant)` and the PEP gates it like
+>    any other** — there is no anonymous *commit* by default; the floor
+>    principal's grants define the entire anonymous attack surface (identity
+>    model §10 item 12: keep them observe-only).
+> 3. **Refusal is the common case.** Where the deployment's policy admits no
+>    anonymous floor — the production default per §4.7 — `attach-guest`
+>    refuses **cleanly** with the typed `cx-err:CXER4812
+>    E_SESSION_ANONYMOUS_REFUSED`, naming the policy (the session-band
+>    analogue of `CXER-XSP-AUTH-ANONYMOUS-REFUSED`).
+
+**Per-visitor independence.** Guest sessions never mirror: N visitors share
+the one floor `(principal, tenant)` but **never one session**. A guest attach
+always mints an independent session and never becomes the floor subject's
+default (mirror) session — the §2.7 mirrored-attach model applies to *proven*
+subjects, where the subject *is* the client's identity.
+
+**Idempotence and no-downgrade (GA-1a).** `attach-guest` over a request whose
+cookie names a live guest session for the same `(floor, tenant)` returns that
+session (resolve, not a second mint — the visitor's state survives a
+re-attach). Over a live **proven** session cookie it refuses (`CXER4805`
+semantics — the binding is immutable and never downgrades to anonymous).
+
+A surface that mints its own visitor cookie beside this transport is in
+violation of the one-session-model rule (#787 P0-76) — `attach-guest` exists
+precisely so no parallel visitor-cookie model is ever needed.
+
 ## §3. Public function surface
 
 Signature notation matches [`cx-stdlib/io`](../std-lib/io.md) and
@@ -512,6 +595,8 @@ request) with these keys:
 | `csrf-cookie-name` | `"cx-csrf"` | the **non-`HttpOnly`** companion cookie carrying the CSRF token for the front-end to echo (§2.9) |
 | `csrf-header` | `"X-CSRF-Token"` | the request header `csrf-verify` reads the submitted token from (§2.9) |
 | `allow-cross-site-cookie` | `false` | explicit opt permitting `SameSite=None` (third-party embedding); otherwise `SameSite=None` → `CXER4811` (§2.8.3) |
+| `anonymous-floor` | — (unset) | **`attach-guest` only** (§2.11): the deployment's anonymous-floor principal id (identity model §4.7); its **presence is the policy admission** — unset means the policy refuses guests (`CXER4812`). Same key `attach-xsp` reads for an anonymous peer (§2.10) |
+| `tenant` | — (required for `attach-guest`/`attach-did`) | the tenant the proofless/DID session binds to — the floor is a real `(principal, tenant)` (§2.11); missing → `CXER4802` |
 
 ### §3.2. Lifecycle — attach / detach (impure)
 
@@ -519,6 +604,7 @@ request) with these keys:
 [?def attach        scope=public impure [returns element] ($req::element $cfg::map) ...]
 [?def attach-token  scope=public impure [returns element] ($token::string $cfg::map $client::map {}) ...]
 [?def attach-cookie scope=public impure [returns element] ($req::element $cfg::map) ...]
+[?def attach-guest  scope=public impure [returns element] ($req::element $cfg::map) ...]
 [?def detach        scope=public impure [returns null]    ($session::element) ...]
 [?def detach-client scope=public impure [returns element] ($session::element $client-id::string) ...]
 [?def touch         scope=public impure [returns element] ($session::element $client-id::string) ...]
@@ -549,6 +635,16 @@ request) with these keys:
   write (the `HttpOnly; Secure; SameSite` session cookie + the readable CSRF companion
   cookie). Refuses an insecure cookie context → `CXER4810`; refuses unsafe flags →
   `CXER4811` (§2.8.3). TLS precondition is `attach`'s (§2.4 → `CXER4806`).
+- **`attach-guest $req $cfg`** — the **anonymous-floor** path (§2.11, GA-1). No
+  proof to verify: the policy gate runs first (`anonymous-floor` unset →
+  `CXER4812`, the production-default refusal), then the same cookie-side
+  refusals as `attach-cookie` (non-TLS → `CXER4810`; unsafe flags →
+  `CXER4811`), then mints an **independent** per-visitor `[session]` at the
+  floor `(principal, tenant)` with the CSRF synchronizer, returning it
+  **paired with the same `Set-Cookie` directives**. Idempotent over the live
+  guest cookie; refuses over a live proven cookie (`CXER4805` — no
+  downgrade). The pre-login id is retired by the next proven attach
+  (N-SESSION-8 property 1).
 - **`detach $session`** — tears the **whole** session down: removes all clients,
   sets `state="detached"` (terminal), releases server-held state, **emits a clearing
   `Set-Cookie` for any cookie-transport client** (§2.8.4 secure invalidation), emits the
@@ -830,11 +926,12 @@ hands it to the PEP.
 | Attach transport | session cookie issued | CSRF token issued | `csrf-verify` on state-changing intent |
 |---|:--:|:--:|:--:|
 | **cookie** (`attach-cookie`, browser §2.8) | ✅ (`HttpOnly; Secure; SameSite=Lax`) | ✅ (synchronizer, §2.9) | ✅ required (`CXER4808`/`CXER4809` on miss/mismatch) |
+| **guest** (`attach-guest`, anonymous floor §2.11) | ✅ (same adapter, same posture) | ✅ (synchronizer, §2.9) | ✅ required (cookie-shaped, N-SESSION-8 — never exempt) |
 | **Bearer** (`attach`/`attach-token`, agent §2.2) | — ¹⁰ | — ¹⁰ | ✅ no-op pass ¹¹ (CSRF-exempt, N-SESSION-7) |
 
 | Cookie issuance context | TLS + safe flags | non-TLS | `HttpOnly` off / `SameSite=None` (no opt) |
 |---|:--:|:--:|:--:|
-| `attach-cookie` / `set-cookie` | ✅ | ❌ ¹² `CXER4810` | ❌ ¹³ `CXER4811` |
+| `attach-cookie` / `attach-guest` / `set-cookie` | ✅ | ❌ ¹² `CXER4810` | ❌ ¹³ `CXER4811` |
 
 Footnotes: **1** non-TLS attach → `CXER4806` (§2.4); only `allow-insecure=true`
 dev-mode bypasses, never the app-role default — pinned by a negative fixture.
@@ -892,9 +989,10 @@ the core `CXER0260`, not a session code** (§4.5); **capability denial is the co
 | `cx-err:CXER4809` | `E_SESSION_CSRF_MISMATCH` | the submitted CSRF token does not match the session-stored synchronizer token (constant-time compare, §2.9) |
 | `cx-err:CXER4810` | `E_SESSION_COOKIE_INSECURE_CONTEXT` | issuing the session cookie over a **non-TLS** request (so `Secure` cannot be honored) without `allow-insecure=true` (§2.8.3, the cookie-side of the §2.4 TLS bright line) |
 | `cx-err:CXER4811` | `E_SESSION_COOKIE_UNSAFE_FLAGS` | a cookie config that would drop `HttpOnly`, or set `SameSite=None` without the explicit `allow-cross-site-cookie` opt (§2.8.3) — refusing a script-readable / ambiently-cross-site session credential |
+| `cx-err:CXER4812` | `E_SESSION_ANONYMOUS_REFUSED` | `attach-guest` where the deployment's attach policy admits **no anonymous floor** — no `anonymous-floor` principal configured, the production default (§2.11, identity model §4.7); the typed refusal names the policy |
 
 `CXER4800` is **reserved** as the band's `E_SESSION_*` anchor (unused this revision,
-held for a future generic session fault). `CXER4812–CXER4849` are **unallocated**
+held for a future generic session fault). `CXER4813–CXER4849` are **unallocated**
 (reserved for the band; e.g. a future step-up / re-authentication flow, §13).
 
 **Shared/core codes session surfaces (not in its band):** `cx-err:CXER0271`
@@ -1057,8 +1155,9 @@ privilege change, so a step-up flow would (a) drive an IdP re-auth (the IdP's jo
 (b) re-`attach`/`attach-cookie` with the elevated token, and (c) `rotate`. What v1 does
 **not** do is *orchestrate* the IdP step-up handshake or carry an `acr`/`amr` policy
 gate — that is the integration's / a future revision's concern, reserving
-`CXER4812–CXER4849` (§8). v1 ships the **session-fixation** half (rotate-on-elevation)
-without the IdP-flow half.
+`CXER4813–CXER4849` (§8; `CXER4812` was allocated to `attach-guest`'s
+anonymous-refused, §2.11/GA-1). v1 ships the **session-fixation** half
+(rotate-on-elevation) without the IdP-flow half.
 
 ---
 

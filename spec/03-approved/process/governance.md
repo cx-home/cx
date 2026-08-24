@@ -323,8 +323,15 @@ a future cycle.
 Declared in `core/grammar.ebnf` header and in `[?cx version=X.Y]`
 directives:
 
-- **Major** (`X+1.0`): incompatible grammar changes (requires migration
-  tooling).
+- **Major** (`X+1.0`): incompatible grammar changes. **Source** migration
+  is tooling-assisted sweeps over the corpus (the shipped fmt-sweep lane —
+  closed template set, loud residue, output oracle, fail-closed per file,
+  never regex); **data** never migrates destructively — values, events,
+  and stored docs evolve **additively** per
+  [`schema_event_evolution.md`](../core/schema_event_evolution.md)
+  (stream 21: identity is schema-independent; upcasters are read-side;
+  migration is always additive — nothing a grammar major does can strand
+  recorded history).
 - **Minor** (`X.Y+1`): additive grammar changes (backward-compatible).
 - **Patch** (`X.Y.Z+1`): clarifications without grammar changes.
 
@@ -389,19 +396,21 @@ and is not duplicated here.
 
 | Range | Owner module / subsystem | Spec file |
 |---|---|---|
-| `CXER0001` | Generic-core panic (`CX_PANIC`, runtime `!`) | `spec/core/code.md` §9.2 / §9.4 |
+| `CXER0001–CXER0009` | Generic-core panic + core-internal failures (0001 = `CX_PANIC`, runtime `!`; 0003 = RE2 shim internal failure/OOM, shipped `vcx/cx/regex_re2.v`; rest reserved) | `spec/core/code.md` §9.2 / §9.4 |
 | `CXER0100–CXER0299` | CX language core (directive errors) | `spec/core/code.md` §9.4 |
-| `CXER1100–CXER1132` | `cx-stdlib/store` (sparse: 1100, 1101, 1110, 1120, 1121, 1130, 1131, 1132) | `spec/std-lib/store.md` §5 |
-| `CXER1200–CXER1204` | `cx-stdlib/ft` (full-text) | `spec/std-lib/ft.md` |
+| `CXERLEX-*` (named suffix, non-numeric) | Lexical-layer rejects defined by the formal token grammar. Shipped: `CXERLEX-CODEPOINT` (a `\u`/`\U` escape or `&#…;` char-ref decoding to a surrogate or > U+10FFFF — lexicon [L32] / grammar [67]); `CXERLEX-RANGE` (sized `iN`/`uN` ascribed value out of range — grammar [55] / lexicon [L25d]). Registered at I1 stream 13; the sub-namespace is append-only and owned by the formal files (invariants 1–4 apply to the suffix names) | `spec/03-approved/formal/lexicon.ebnf` |
+| `CXER1100–CXER1149` | `cx-stdlib/store` (sparse: 1100, 1101, 1110, 1113–1119, 1120, 1121, 1130–1132, 1140–1145) — the last three of the 1113 run = the stream-5 computation-cache admission refusals; the last two of the 1140 run = `E_STORE_SUBJECT_UNSUPPORTED` + `E_STORE_SHREDDED`, the erasure/compliance store surface shipped at I5 stream 20; the band's remaining tail stays reserved for that surface | `spec/std-lib/store.md` §13 |
+| `CXER1200–CXER1205` | `cx-stdlib/ft` (full-text) | `spec/std-lib/ft.md` |
 | `CXER1300–CXER1306` | `cx-stdlib/email` | `spec/std-lib/email.md` |
 | `CXER1400–CXER1403` | `cx-stdlib/url` | `spec/std-lib/url.md` |
 | `CXER1500, 1502–1504` | `cx-stdlib/csv` (1501 reserved) | `spec/std-lib/csv.md` §5 |
 | `CXER1600–CXER1605` | `cx-stdlib/validate` | `spec/std-lib/validate.md` §6 |
-| `CXER1700–CXER1708` | CXStore Remote Protocol (CSRP) — `E_CSRP_*` only; distinct from `CXER11xx` `E_STORE_*` | `spec/misc/cxstore-remote-protocol.md` §3 |
+| `CXER1610–CXER1619` | `cx-stdlib/jsonschema` (1610 shipped; rest reserved) | `spec/std-lib/jsonschema.md` |
+| `CXER1700–CXER1712` | CXStore Remote Protocol (CSRP) — `E_CSRP_*`. **RESERVED (retired, never reused) as of stream-4 S3 (2026-08-08, #676): the CSRP data plane is deleted; the store wire is the XSP store profile (`CXER50xx`) with the gRPC edge. The op contracts these codes named carried forward to the profile; the codes themselves are not reissued.** `CXER1704` was already a TOMBSTONE (I1 row 15 / audit M21): ref-conflict unifies on `CXER1114 E_STORE_REF_CONFLICT`. Historical: `spec/misc/cxstore-remote-protocol.md` (retired) | — |
 | `CXER1720` | CSRP integrity mismatch (`E_CSRP_INTEGRITY_MISMATCH`) | `spec/misc/cxstore-remote-protocol.md` |
 | `CXER1721` | CSRP not found (`E_CSRP_NOT_FOUND`) | `spec/misc/cxstore-remote-protocol.md` |
 | `CXER1800–CXER1801` | `cx-stdlib/uuid` | `spec/std-lib/uuid.md` |
-| `CXER1900–CXER1905` | `cx-stdlib/random` | `spec/std-lib/random.md` |
+| `CXER1900–CXER1906` | `cx-stdlib/random` | `spec/std-lib/random.md` |
 | `CXER2000–CXER2005` | `cx-stdlib/hash` | `spec/std-lib/hash.md` |
 | `CXER2100–CXER2103` | `cx-stdlib/prof` | `spec/std-lib/prof.md` |
 | `CXER2200–CXER2203` | `cx-stdlib/test` | `spec/std-lib/test.md` |
@@ -416,7 +425,8 @@ and is not duplicated here.
 | `CXER3100–CXER3106` | `cx-stdlib/json` | `spec/std-lib/json.md` |
 | `CXER3200–CXER3203` | `cx-stdlib/re` | `spec/std-lib/re.md` |
 | `CXER3300–CXER3349` | `cx-stdlib/time` (3300–3305 core; 3320–3349 recurrence rules, 3306–3319 reserved) | `spec/std-lib/time.md` |
-| `CXER3400–CXER3411` | `cx-stdlib/io` | `spec/std-lib/io.md` |
+| `CXER3400–CXER3412` | `cx-stdlib/io` | `spec/std-lib/io.md` |
+| `CXER3450–CXER3459` | `cx-stdlib/term` (3450–3451 shipped; rest reserved) | `spec/std-lib/term.md` |
 | `CXER3500–CXER3504` | `cx-stdlib/locale` | `spec/std-lib/locale.md` |
 | `CXER3600–CXER3605` | `cx-stdlib/geo` | `spec/std-lib/geo.md` |
 | `CXER3700–CXER3719` | `cx-stdlib/crypto` (3700–3707 core primitives, 3702 reserved; 3708–3719 JWT/JWKS verify) | `spec/std-lib/crypto.md` |
@@ -429,11 +439,21 @@ and is not duplicated here.
 | `CXER4400–CXER4409` | `cx-stdlib/fp` (functor/monad protocol; `CXER4400 E_NO_INSTANCE`) | `spec/std-lib/fp.md` |
 | `CXER4500–CXER4524` | `cx-stdlib/net` (L4 networking — `E_NET_*`; allocated above fp's 4400-band) | `spec/03-approved/std-lib/net.md` |
 | `CXER4525–CXER4589` | `cx-stdlib/http` (L7 HTTP/1.1 client + server — `E_HTTP_*`; allocated above net's 4500-band; 4544–4589 SSE/streaming) | `spec/03-approved/std-lib/http.md` |
-| `CXER4600–CXER4649` | `cx-stdlib/journal` (append-only hash-chained event log + fold→state — `E_JOURNAL_*`) | `spec/03-approved/std-lib/journal.md` |
+| `CXER4600–CXER4649` | `cx-stdlib/journal` (append-only hash-chained event log + fold→state — `E_JOURNAL_*`; sub-partitioned 2026-08-05, amended at I5 stream-20 exit: 4617 `E_JOURNAL_RESUME_GAP` (U1 delivery) and 4618 `E_JOURNAL_TEMPORAL_INVALID` (stream 8) shipped post-sub-partition ahead of the erasure reservation, which now runs 4619–4639 — 4619 `E_ERASURE_NONCE_REQUIRED` / 4620 `E_ERASURE_HOLD_INVALID` / 4621 `E_ERASURE_HELD` / 4622 `E_ERASURE_RECORD_RESERVED` shipped I5 stream 20, 4623–4639 remain reserved for that surface; 4640 `E_JOURNAL_FOLD_ID_MISMATCH` shipped I5 stream 21, 4641–4649 remain reserved for schema/event evolution). **`CXER4604` is a TOMBSTONE (I1 row 15 / audit M21): retired in favor of `CXER1114 E_STORE_REF_CONFLICT` — every optimistic-concurrency conflict unifies on the one ref-conflict code (the CSRP `CXER1704` retired with it); neither is ever reassigned** | `spec/03-approved/std-lib/journal.md` |
 | `CXER4650–CXER4699` | `cx-stdlib/bus` (in-process pub/sub, ordered dispatch — `E_BUS_*`) | `spec/03-approved/std-lib/bus.md` |
 | `CXER4700–CXER4799` | `cx-stdlib/authz` (authorization / trust model — `E_AUTHZ_*`) | `spec/03-approved/std-lib/authz.md` |
 | `CXER4800–CXER4849` | `cx-stdlib/session` (`(principal, tenant)` sessions — `E_SESSION_*`) | `spec/03-approved/std-lib/session.md` |
+| `CXER4850–CXER4889` | `cx-xap` subsystem (`E_XAP_*`: xap host/runtime + compose surface 4850–4879; xap-dist 4880–4889). Registered 2026-08-05 — xap.md §8's original 4850–4949 proposal is amended in place: 4890–4949 yielded (see the similar island and fabric rows below; audit C5) | `spec/03-approved/xap/xap.md` §8 |
+| `CXER4890–CXER4899` | `cx-xap` distribution — the package schema-evolution seam (`E_XAP_PKG_SCHEMA_REINTERPRETS` 4890, `E_XAP_PKG_COVERAGE_GAP` 4891; RULED: SEA-1, `ledger/rulings_2026_08_20_schema_evolution_automation.md`; 4892–4899 reserved for this seam). Registered 2026-08-20 (RULED: UOM-1 rider r3 — the codes shipped with SEA-1 without their registry row; this re-occupies the head of the 4890–4949 gap yielded 2026-08-05, below the similar island at 4900) | `spec/03-approved/xap/xap_feature_distribution_market.md` §9 error table |
+| `CXER4900–CXER4901` | `cx-stdlib/similar` (island: shipped inside the pre-amendment xap proposal; regularized by the 2026-08-05 xap.md §8 yield — the 4900/4901 collision that triggered audit C5) | `spec/std-lib/similar.md` §7 |
+| `CXER4920–CXER4949` | `cx-stdlib/fabric` (`E_FABRIC_*`) | `spec/std-lib/fabric.md` |
+| `CXER4950–CXER4969` | cross-stream coordination — the saga/escrow vocabulary (campaign stream 10, #682, `E_COORD_*`; the first two codes shipped with the W1 [requires-at] implementation — the stale-pin refusal at the admission read, and the unevaluated-pin fail-closed refusal on direct invocation of a pinned command; the band's remaining tail stays reserved for the coordination surface. Registered 2026-08-12 before first use per this file's invariant) | `spec/_archived/cross_stream_coordination.md` §2/§5 |
 | `CXER4970–CXER4989` | `cx-stdlib/sched` (scheduled events & timers — `E_SCHED_*`) | `spec/03-approved/std-lib/sched.md` |
+| `CXER4990–CXER4999` | `cx-core/consistency` (campaign stream 7, #679 — the declare-and-verify guarantee vocabulary, `E_CONSISTENCY_*`: the unsatisfiable-declaration primary + the uncoverable-pin companion; the remainder of the band reserved for this vocabulary. Registered 2026-08-11; the sweep's original proposal inside the XAP band was corrected to this verified-free band at the S3 recording — L125) | `spec/03-approved/core/consistency_vocabulary.md` §5 (normative landing: `spec/03-approved/std-lib/journal.md` §4.4 first; store/fabric/xsp rows follow with their stream-7 waves) |
+| `CXER5000–CXER5049` | XSP generic layer + store profile (campaign stream 4, L166; per-code rows LANDED with the W3 implementation per #717 — sub-block 5000–5009 = the generic frame/session layer, the numeric cutover of the retired symbolic `CXER-XSP-*` spellings; 5010–5021 = the store profile (5019–5021 landed with the W4 feed/authority implementation), 5022–5049 reserved for the W5 rows; the CSRP `17xx` band is marked Reserved/retired at CSRP retirement, never reused) | `spec/03-approved/xap/xsp_store_profile.md` §4.2 |
+| `CXER5050–CXER5069` | store/journal sync — distributed store (campaign stream 9, #681, `E_SYNC_*`; the first three codes shipped with the W1 stream-ingestion implementation — the divergent-stream refusal, the invalid-chain refusal, the reserved-target refusal; the fourth with the W2 reconciliation engine — the enforcing reconcile's diverged raise, carrying every `[conflict]` value; the band's remaining tail stays reserved for the sync surface. Registered 2026-08-12 before first use per this file's invariant) | `spec/03-approved/std-lib/distributed_store.md` §8 |
+| `CXER5070–CXER5089` | `cx-stdlib/live` — live modes / incremental evaluation (campaign stream 3, #675; relocated 2026-08-05 from the colliding 4902–4919 proposal — audit C5, band pre-registered per invariant "added here before being used"). Per-code rows live in the pack spec §9: 5070–5078 assigned; 5070–5078 ALL SHIPPED: 5070–5073 with the W1 `changes-since` implementation, 5074–5075 with the W2 `observe` implementation, 5076 with the W3 `materialize` implementation, 5077–5078 with the W4 adapter contract (#717 same-change discipline); 5079–5089 reserved. Reused, never duplicated: `CXER0120`/`CXER4700`/`CXER1114` | `spec/03-approved/std-lib/live.md` §9 (band claimed at `spec/_archived/live_modes.md` §2) |
+| `CXER5090–CXER5109` | `cx-stdlib/supervise` — restart policies over monitored workers (`E_SUP_*`; issue #765, RULED: SUP-1 — registered 2026-08-20 with the graduation + implementation, next free block above live's `5070–5089`, band-scan confirmed). 5090 `E_SUP_ARG_INVALID` (malformed policy/child spec), 5091 `E_SUP_DUPLICATE_CHILD`, 5092 `E_SUP_UNKNOWN_CHILD` (RESERVED — v1 has no verb that requires a child: `stop-child` of an unknown name returns `false`, a value), 5093 `E_SUP_CLOSED` (ops on a stopped supervisor; `status` stays readable), 5094 `E_SUP_RESTART_INTENSITY` (the give-up terminal on the loop worker — the escalation carrier, observed by parents in the `CXER0220` panic's cause chain), 5095 `E_SUP_NO_SCHED` (issue #895, RULED: SPF-1 — `start` refuses AT COMPOSITION in a build with the `sched` local-effect pack excluded, naming the pack and what it is needed for: backoff delays, the intensity window and per-child attempt-reset. Argument validation runs FIRST and is profile-independent, so `5090`/`5091` remain the answer to a malformed policy or spec in every build); 5096–5109 reserved. Reused, never re-coded: a child's own `[err]` (any code) rides `[child-exited]` as `err-code=`; cancellation is `CXER0260`/`CXER0221`; a child's capability denial is `CXER0271` at the child's own effect point; the events-laggard gap is the channel contract's `CXER0218` | `spec/03-approved/std-lib/supervise.md` §8 |
 
 **Invariants:**
 
@@ -463,6 +483,39 @@ A change to any spec under `spec/` requires:
 - A PR that updates the spec text.
 - Conformance fixture updates if behavior changes.
 - Reviewer approval from at least one maintainer not authoring the PR.
+
+**The clean-room clause (stream 22, L74).** A change that pins or
+alters EVALUATION-observable behavior additionally requires:
+
+- the rule lands IN THE REGISTER (code.md §14.4) with a stable
+  `EV-…` id — never as prose outside it;
+- a witness that FAILS UNDER THE OPPOSITE CHOICE (a discriminator
+  pair — a fixture both readings pass pins nothing);
+- numeric limits ship WITH FLOORS, never bare numbers (the EV-BUDGET
+  pattern: "implementations MUST accept ≥ N" — a bare limit is an
+  implementation detail, a floor is a contract).
+
+### 10.1a Implementability grades (stream 22, L71 — normative)
+
+Every spec area carries a clean-room implementability grade; grade-D
+areas are IMPLEMENTATION BLOCKERS for their areas (behavior-affecting;
+the corpus cannot police them until pinned). Grades move only by spec
+work (D→A via pin + witness), recorded here:
+
+| Area | Grade | Basis |
+|---|---|---|
+| code.md §9.1.2 / §9.2 / §10.5.7 / §12.5 | A | clean-room implementable as written |
+| code.md §14 evaluation core + EV register | A | stream 22 (pins + discriminator pairs; was D across §6.1/§8.5/§8.6/§6.4.1/§6.7/§10.5.1/§10.5.3) |
+| code.md §6.7 iterators — EV-PULL engine conformance | D | pinned rule; engine lands with the runtime-representation stream (#710) — blocker for iterator-engine work until then |
+| code.md §6.5.1 | C→A | the effect table moved to security.md §2.1 (stream 6; EV-EFFECT-SET) |
+| code.md §11.4 gate protocols | C→B | partitioned reference-lane vs conformance-bar (L75) |
+| security.md §4 | C | scope text still impl-anchored; move with the next security amendment |
+| fp.md, jsonschema.md | A | de-anchored at I2 (#707) |
+| conformance front door | A | #707 items 1–7 + the out-effects channel (stream 22 W1) |
+
+Grades A (clean-room implementable) / B (implementable with corpus) /
+C (impl-anchored — must move) / D (trap — specify or fixture before
+implementation).
 
 ### 10.2 Grammar changes
 
@@ -530,7 +583,7 @@ and `[?<Name>]` with `Name` outside the closed set raises
 `[?with-open]`, `[?with-scope]`, `[?str]`.
 
 **Iterator combinators.** `[?filter]`, `[?take]`, `[?drop]`,
-`[?zip]`, `[?enumerate]`, `[?chunks]`, `[?concat]`, `[?chain]`,
+`[?zip]`, `[?enumerate]`, `[?chunks]`, `[?concat]`,
 `[?cycle]`, `[?scan]`, `[?flatten]`, `[?partition]`, `[?group-by]`,
 `[?to-sequence]`, `[?to-array]`, `[?to-map]`, `[?view]`, `[?views]`.
 
@@ -573,11 +626,46 @@ the same PR per §10.1.
 |---|---|
 | `.cx` | CX document |
 | `.cxs` | CX schema |
-| `.cxbin` | CXCol binary wire format (formerly `.cxcol`) |
+| `.cxbin` | CXCol binary wire format (formerly `.cxcol`; `.cxcol` is a deprecated alias, recognized read-only) |
+| `.cxd` | Conformance fixture suite (the corpus format) |
+| `.cxpack` | Registry pack bundle |
+| `.cxlint` | Lint configuration |
+| `.cxpath` | CXPath query file |
+
+The former draft tokens `.cxsh`, `.cxl`, `.cxlib`, and `.cxdv` are
+DELETED — never shipped, not reserved (stream 13 ruling 61; the phantom
+`.cxsh` reference is removed from grammar.ebnf in the same change).
+
+**Reserved filenames** (exact-name reservations, not extensions):
+
+| Filename | Description |
+|---|---|
+| `cx.lock` | Package lockfile |
+| `cx.pkg` | Package manifest |
 
 Reservation means the CX project's CLIs, LSP, editors, and registry
 metadata recognize the extension as CX-related. Third-party tooling
 SHOULD NOT claim these extensions for unrelated purposes.
+
+### 12.3 Reserved reference prefixes
+
+Tagged reference prefixes are **domain separators for trust inputs**: a
+prefixed address names WHAT KIND of artifact a hash addresses, so an
+address minted in one trust domain can never be replayed into another
+(the `code:` precedent). This registry is the single source of truth;
+a new prefix adds a row here before first use. The prefixes are
+append-only and never reassigned.
+
+| Prefix | Addresses | Owner spec |
+|---|---|---|
+| `code:` | Tier-1 tagged content addresses of CX code / definition text (`code:sha2-256:<hex>`) | `spec/core/code-identity.md` |
+| `computes-as:` | Tier-2 semantic fn-identity claims (`computes-as:<algo>:<hex>`) — dispatch-only, never an address; never a trust input | `spec/core/code-identity.md` |
+| `cap:` | any **authority-artifact** value — `[capability …]`, `[delegation …]`, the C4 grant-set document (`cap:sha2-256:<hex>`); resolution is FAIL-CLOSED against the live authority registry (commands and effects, stream 6 — L114) | `spec/std-lib/authz.md` |
+
+(`cx-err:` is a wire-code namespace, not a reference prefix — governed
+at §9.6. The retired `cap:resource` grant-scope spelling collided with
+the `cap:` prefix and was renamed to `cap=resource` — #713/L114; the
+prefix is the one meaning.)
 
 ---
 

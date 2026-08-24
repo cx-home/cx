@@ -10,14 +10,15 @@ OptStr:   u8(0|1) + str if 1
 Attr:     str:name  str:value  str:inferred_type
 """
 from __future__ import annotations
+import decimal
 import struct
 import ctypes
 from typing import Any, Optional
 from . import cx as _cx
 from .ast import (Atom, Attr, Document, Element, Text, Scalar, Comment, RawText,
                   EntityRef, Alias, PI, XMLDecl, CXDirective, BlockContent,
-                  Interpolation, EvalDirective, IteratorNode, ITER_REDUCE,
-                  SequenceNode, ArrayNode, MapNode, MapEntry)
+                  Interpolation, EvalDirective, HoleNode, IteratorNode,
+                  ITER_REDUCE, SequenceNode, ArrayNode, MapNode, MapEntry)
 from .stream import StreamEvent, Attr as SAttr
 
 
@@ -26,8 +27,15 @@ from .stream import StreamEvent, Attr as SAttr
 def _coerce(type_str: str, value_str: str) -> Any:
     if type_str == 'int':
         return int(value_str)
+    if type_str == 'bigint':
+        # I1 (L48): host mapping — Python bigint = int (arbitrary precision).
+        return int(value_str)
     if type_str == 'float':
         return float(value_str)
+    if type_str == 'decimal':
+        # I1 (L48): host mapping — Python decimal = decimal.Decimal.
+        # The wire image is fixed-point base-10; Decimal preserves scale.
+        return decimal.Decimal(value_str)
     if type_str == 'bool':
         return value_str == 'true'
     if type_str == 'null':
@@ -193,8 +201,16 @@ def _read_node(b: _Buf, version: int):
         args_count = b.u16()
         args = [_read_node(b, version) for _ in range(args_count)]
         return IteratorNode(kind, args, single_use=single_use)
-    # 0xFF = unknown/DTD skip — no payload
-    return Text('')
+    if tid == 0x18:
+        # I1 row 9 (L78) — authorable variable hole `$name`.
+        # Additive tag: str:name, no version gate (mirrors vcx binary.v).
+        return HoleNode(b.str_())
+    if tid == 0xFF:
+        # 0xFF = unknown/DTD skip — no payload.
+        return Text('')
+    # Any other tag has an unknown payload; skipping it silently would
+    # desynchronize the reader. Fail loud instead.
+    raise ValueError(f'ast_bin: unknown node tag 0x{tid:02x}')
 
 
 def decode_ast(raw: bytes):
@@ -366,6 +382,11 @@ def _scalar_value_str(dt: str, v: Any) -> str:
     if isinstance(v, Atom):
         # Defensive: caller may have passed Atom with a non-atom dt.
         return v.name
+    if dt == 'decimal' or isinstance(v, decimal.Decimal):
+        # Fixed-point base-10 image only — str(Decimal('1E+2')) would
+        # emit exponent notation, which is not a legal decimal image.
+        d = v if isinstance(v, decimal.Decimal) else decimal.Decimal(str(v))
+        return format(d, 'f')
     if dt == 'string':
         return v if isinstance(v, str) else str(v)
     return str(v)
@@ -484,6 +505,10 @@ def _enc_node(out: bytearray, n: Any) -> None:
         out += _PCK_H.pack(len(n.source_args))
         for arg in n.source_args:
             _enc_node(out, arg)
+    elif isinstance(n, HoleNode):
+        # I1 row 9 (L78) — additive tag 0x18: str:name.
+        out.append(0x18)
+        _enc_str(out, n.name)
     else:
         # DTD / unknown node — emit 0xFF skip marker. Bindings don't
         # round-trip these; the C ABI's ast_bin_to_<format> ignores them.

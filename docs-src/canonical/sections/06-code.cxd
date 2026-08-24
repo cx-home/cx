@@ -1,11 +1,11 @@
 [# Section 6 — the CX code language.
    Authored / expanded 2026-05-22.
-   Anchored in spec/code.md (post-rename from programs.md), spec/cxpath_alignment.md,
-   spec/cxdm.md §4.6 (EBV).
+   Anchored in spec/03-approved/core/code.md (§5.5 CXPath),
+   spec/03-approved/core/cxdm.md §4.6 (EBV).
    Largest section in the guide. Cross-links use [[anchor]] form.
    File extension .cxd — data-only source. #]
 
-[section id=code n=6 title='The code language'
+[section id=code group='Ring 1 — Code' n=6 title='The code language'
 
   [child id=overview n=6.1 title='The CX code language'
     [intro
@@ -23,11 +23,12 @@
          [?for [in $u //user] [yield $u@email]]"""]
 
     [body
-      """The evaluator is `cx_code_eval(doc, code, target_format)` at the
-         C ABI level; every binding's Layer-1 `Doc.eval(code)` wraps it
-         (see [[bindings]]). The full normative spec is
-         [`spec/code.md`](../../spec/code.md). This section is the
-         working developer guide."""]
+      """The evaluator is `cx_code_eval(input, program, output_target,
+         err_out)` at the C ABI level; every binding's Layer-1
+         `Doc.eval(code)` wraps it (see [[bindings]]). The full
+         normative spec is
+         [`spec/core/code.md`](../../spec/03-approved/core/code.md).
+         This section is the working developer guide."""]
 
     [body
       """Code can do five things: **select** (CXPath, see [[cxpath]]),
@@ -43,7 +44,7 @@
          exactly the way you pattern-match on `[user ...]`. You can
          transform code with `[?modify]`. You can hash it, project it
          to JSON, ship it across a wire, and evaluate it on the other
-         end. The render rules in [`spec/code.md`](../../spec/code.md)
+         end. The render rules in [`spec/core/code.md`](../../spec/03-approved/core/code.md)
          §10.1 turn any well-formed program into a sequence diagram
          deterministically — because the program is just a tree."""]
 
@@ -57,13 +58,13 @@
 
   [child id=directives n=6.2 title='Directive registry'
     [intro
-      """There are currently **forty normative directives** — including
-         `[?modify]`.
+      """There are currently **eighty normative directives**.
          Adding or removing any directive requires a governance change per
-         [`spec/governance.md`](../../spec/governance.md) §10. The
+         [`spec/process/governance.md`](../../spec/03-approved/process/governance.md). The
          authoritative registry lives in
-         [`spec/code.md`](../../spec/code.md) §4.1; this subsection is
-         the at-a-glance grouping."""]
+         [`spec/core/code.md`](../../spec/03-approved/core/code.md) §4.1; this
+         subsection is an at-a-glance grouping of the directives this
+         guide teaches — see the registry for the complete set."""]
 
     [body
       """**Core constructs (11).** Built into the evaluator;
@@ -80,8 +81,8 @@
       [tr [td '[?if]'] [td 'Boolean branch with EBV condition (see [[if]] + [[ebv]])']]
       [tr [td '[?else]'] [td 'Value-or-default coalesce — recover on [err] or absence (getOrElse; see [[errors]])']]
       [tr [td '[?pipe]'] [td 'Pipeline — canonical form of the `|` operator (see [[pipe]])']]
-      [tr [td '[?map]'] [td 'Map a closure over a sequence (sequential by default; par=true enables parallel evaluation, ordered=true preserves source order)']]
-      [tr [td '[?reduce]'] [td 'Fold a sequence to a single value via a binary closure starting from [init …] (sequential left-fold by default; par=true requires associativity)']]]
+      [tr [td '[?map]'] [td 'Map a closure over a sequence (sequential by default; the bareword [par] clause enables parallel evaluation and always preserves source order; [ordered] is a tombstoned no-op)']]
+      [tr [td '[?reduce]'] [td 'Fold a sequence to a single value via a binary closure starting from [init …] (sequential left-fold by default; [par] requires associativity)']]]
 
     [body
       """**Resilience (6).** Wrap an inner expression with a
@@ -103,26 +104,27 @@
 
     [table
       [tr [th 'directive'] [th 'purpose']]
-      [tr [td '[?service]'] [td 'Declare an HTTP service with resource handlers; returns a handle']]
-      [tr [td '[?service-handle]'] [td 'Look up an existing service by :name']]
+      [tr [td '[?http-service]'] [td 'Declare an HTTP service with resource handlers; returns a handle']]
+      [tr [td '[?service-handle]'] [td 'Look up an existing service by name=']]
       [tr [td '[?http-client]'] [td 'Construct an HTTP client (optionally wrapped in resilience)']]]
 
     [body
-      """**Concurrency (10).** Workers + channels + selection. See
-         [[workers]]:"""]
+      """**Concurrency (11).** Workers + channels + subscriptions +
+         selection. See [[workers]]:"""]
 
     [table
       [tr [th 'directive'] [th 'purpose']]
       [tr [td '[?worker]'] [td 'Spawn a worker; concurrent with siblings in the enclosing scope']]
-      [tr [td '[?worker-handle]'] [td 'Look up an existing worker by :name']]
-      [tr [td '[?channel]'] [td 'Create a FIFO channel with :buffer of given size']]
+      [tr [td '[?worker-handle]'] [td 'Look up an existing worker by name=']]
+      [tr [td '[?channel]'] [td 'Create a FIFO channel — [?channel name=… buffer=N]; buffer=0 is rendezvous']]
+      [tr [td '[?subscribe]'] [td 'Attach a subscription to a retained channel — resume from a position within the retained window']]
+      [tr [td '[?monitor]'] [td 'Subscribe to a worker lifecycle-event stream (spawned / cancelled / panicked / done)']]
       [tr [td '[?send]'] [td 'Blocking send to a channel; returns [ok] or CHANNEL_CLOSED']]
-      [tr [td '[?try-send]'] [td 'Send with :timeout — SEND_TIMEOUT if buffer stays full']]
+      [tr [td '[?try-send]'] [td 'Send with timeout= — SEND_TIMEOUT if buffer stays full']]
       [tr [td '[?receive]'] [td 'Blocking receive — returns next value or CHANNEL_CLOSED']]
-      [tr [td '[?try-receive]'] [td 'Receive with :timeout — RECV_TIMEOUT if empty']]
+      [tr [td '[?try-receive]'] [td 'Receive with timeout= — RECV_TIMEOUT if empty']]
       [tr [td '[?close]'] [td 'Close a channel; second close raises CHANNEL_ALREADY_CLOSED']]
-      [tr [td '[?select]'] [td 'Multi-way receive — first ready case wins (uniform-random on ties)']]
-      [tr [td '[?stop]'] [td 'Initiate graceful shutdown on a service or worker handle']]]
+      [tr [td '[?select]'] [td 'Multi-way receive — first ready case wins (uniform-random on ties)']]]
 
     [body
       """**Async (8).** Futures + barriers + cancellation. See
@@ -140,9 +142,10 @@
       [tr [td '[?sleep]'] [td 'Cancellable sleep for DURATION']]]
 
     [body
-      """**Lifecycle (2 shared).** `[?stop]` (above) and
-         `[?wait-for]` — block until a service or worker terminates,
-         returning its terminal value or `[err]`."""]
+      """**Lifecycle (2).** `[?stop]` — initiate graceful shutdown on a
+         service or worker handle — and `[?wait-for]` — block until a
+         service or worker terminates, returning its terminal value or
+         `[err]`."""]
 
     [note
       """**Retired in v0.8.0.** `[?find]` is no longer a directive. Use [; version-literal-ok ]
@@ -159,7 +162,7 @@
          yet. V (the native reference) carries the spec-conformant
          implementation; Tier-2 bindings (Python, Go, Rust)
          follow per the parity matrix in
-         [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md). Where
+         [`spec/misc/parity-matrix.md`](../../spec/03-approved/misc/parity-matrix.md). Where
          a feature is spec'd-but-not-shipped this guide says so
          explicitly."""]]
 
@@ -167,7 +170,7 @@
     [intro
       """CXPath is the single selector vocabulary across reading,
          iteration, dispatch, and update. It aligns with XPath 3.1
-         (see [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md))
+         (see [`spec/core/code.md`](../../spec/03-approved/core/code.md) §5.5)
          with deliberate divergences kept minimal. **Path is a value
          kind**, not parser sugar — paths compile, cache, round-trip
          through every projection, and visualize as themselves."""]
@@ -223,17 +226,16 @@
            //user[= $_@role 'admin']                  [# only-if-admin filter  #]
            //user/attribute::email                    [# == //user/@email      #]"""]
       [body
-        """Axis-qualified steps apply to document-anchored paths.
-           From a **binding**, the child / descendant / attribute
-           steps work directly (`$u/name`, `$u//item`, `$u@email`);
-           axis-qualified steps on a binding (`$u/ancestor::…`) are
-           not yet supported — anchor the path at the document and
-           filter instead. See [[bindings]]."""]]
+        """The same step vocabulary applies from a **binding**
+           (grammar [135a]): `$u/name` (child), `$u//item`
+           (descendant), `$u@email` (attribute), `$u/..` (parent),
+           and `$m.key` (map-key access on a map-valued binding).
+           See [[bindings]]."""]]
 
     [child id=cxpath-predicates n=6.3.2 title='Predicates — positional, attribute, function, composite'
       [body
         """A predicate is `[...]` after a step. The predicate body is
-           **prefix CX code over the context node `$_`** — plus a
+           **prefix CX code over the context node** `$_` — plus a
            small set of atomic shorthands. The admitted shapes:"""]
       [list
         [item """**Positional** — `INT` selects the Nth match
@@ -306,10 +308,10 @@
            vocabulary. The leading `//` form is anchored at the
            **document root**, regardless of context; `$u//x` is
            anchored at `$u`. Use `//x` to escape upward when you
-           already have a binding. Axis-qualified steps
-           (`ancestor::` etc.) are document-path syntax and are not
-           yet supported on a binding; map-key access on a map-valued
-           binding uses `[$map:get $m 'key']`."""]]
+           already have a binding. Parent and map-key steps ride the
+           same surface (grammar [135a]): `$u/..` steps to the
+           parent, and `$m.key` reads a key from a map-valued
+           binding."""]]
 
     [child id=cxpath-context n=6.3.5 title='Where CXPath values are accepted'
       [body
@@ -337,14 +339,13 @@
         """**Status note.** CXPath value-kind at non-`[?for]`
            positions is production-ready in V; full Tier-2 binding parity is
            tracked in
-           [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md)
-           gate 26.4."""]]
+           [`spec/misc/parity-matrix.md`](../../spec/03-approved/misc/parity-matrix.md)."""]]
 
     [child id=cxpath-divergences n=6.3.6 title='Deliberate divergences from XPath 3.1'
       [body
         """CXPath is a working subset of XPath 3.1 + deliberate
-           changes. The full alignment table is in
-           [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md);
+           changes. The normative treatment is
+           [`spec/core/code.md`](../../spec/03-approved/core/code.md) §5.5;
            the headline differences:"""]
       [list
         [item """**One comparison family** (`= != < <= > >=`) —
@@ -360,7 +361,7 @@
                 verbatim (`//x[1]` is the first), but CX explicitly
                 rejects `[0]` (raises `CXER0100`); XPath silently
                 yields the empty sequence."""]
-        [item """**No general-purpose `for` / `let` inside paths** —
+        [item """**No general-purpose** `for` / `let` **inside paths** —
                 CX moves binding into the `[?for]` / `[?let]`
                 directive surface; predicates take expressions but
                 not binding clauses. Use the surrounding directive."""]
@@ -371,10 +372,11 @@
                 are the reserved predicate bindings `$_position` /
                 `$_last`."""]]
       [note
-        """The full XPath 3.1 alignment table — what is adopted, what
-           is deliberately not, what is on the XPath 4.0 watch list —
-           is in
-           [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md)."""]]]
+        """The normative CXPath treatment — semantics, the desugar
+           table, and predicate evaluation — is
+           [`spec/core/code.md`](../../spec/03-approved/core/code.md) §5.5;
+           the XPath 3.1 parity corpus is
+           [`conformance/xpath_31_parity.cxd`](../../conformance/xpath_31_parity.cxd)."""]]]
 
   [child id=patterns n=6.4 title='Patterns and matching'
     [intro
@@ -383,7 +385,7 @@
          (`:TypeName`), scalar literals, and CXPath values. Patterns
          appear in `[?for]`'s first generator, in `[?match]` arms,
          and in destructuring `[?let]`. The full pattern grammar is
-         in [`spec/code.md`](../../spec/code.md) §5."""]
+         in [`spec/core/code.md`](../../spec/03-approved/core/code.md) §5."""]
 
     [child id=pattern-element-shape n=6.4.1 title='Element-shape patterns'
       [body
@@ -404,7 +406,7 @@
            structured body binds the element. A pattern
            `[NAME @attr… $x]` **with** attribute predicates always
            binds `$x` to the matched element. The rationale is in
-           [`spec/code.md`](../../spec/code.md) §5.2 rule 5: when
+           [`spec/core/code.md`](../../spec/03-approved/core/code.md) §5.2 rule 5: when
            you name attributes you are filtering "what kind of
            element", so the bind value is the element; when you
            don't, the bind value is the inner content."""]]
@@ -425,9 +427,9 @@
       [body
         """Integers, floats, strings, bools, dates, datetimes, and
            `null` are all matchable as scalar literals. Float
-           equality follows the EBV rules — `nan` is **never** equal
-           to `nan` (per IEEE-754). Use `is-nan($x)` to test for NaN
-           explicitly."""]]
+           equality follows IEEE-754 — `nan` is **never** equal
+           to `nan`. Test for NaN explicitly with
+           `[?lib 'cx-stdlib/math']` and `[$math:is-nan $x]`."""]]
 
     [child id=pattern-cxpath n=6.4.3 title='CXPath patterns'
       [body
@@ -456,14 +458,14 @@
       [body
         """Three wildcard forms:"""]
       [list
-        [item """**`*` — any single element.** `[* $x]` matches any
+        [item """`*` — **any single element.** `[* $x]` matches any
                 element and binds it. `[section * $body]` matches
                 any section and binds the body wildcard slot."""]
-        [item """**`**` — recursive descent.** `[**]` matches any
+        [item """`**` — **recursive descent.** `[**]` matches any
                 element at this position or deeper. Wrapping an
                 inner pattern — `[** [user $u]]` — matches a `user`
                 anywhere in the body and binds it."""]
-        [item """**`_` — anything, no bind.** `_` matches any value
+        [item """`_` — **anything, no bind.** `_` matches any value
                 (including non-elements) without binding it. The
                 idiomatic catch-all in `[?match]`."""]]
       [example lang=cx
@@ -587,16 +589,19 @@
            [# Parallel evaluation                                        #]
            [?for [in $r //request] [par] [yield [got [$text $r]]]]
 
-           [# Streaming over large input                                 #]
-           [?for [in $row //logs/row] [stream] [yield [$text $row]]]"""]
+           [# Lazy evaluation over large input                           #]
+           [?for [in $row //logs/row] [lazy] [yield [$text $row]]]"""]
       [body
-        """`[par]` and `[stream]` are evaluation-modifier clauses —
+        """`[par]` and `[lazy]` are evaluation-modifier clauses —
            same surface, different scheduler. `[par]` distributes
-           iterations across worker threads (add `[ordered]` to
-           preserve source order). `[stream]` couples the generator
-           to a streaming input source so that the iteration runs in
-           bounded memory regardless of input size. Full semantics in
-           [`spec/code.md`](../../spec/code.md) §7."""]
+           iterations across a bounded worker pool (`min(4, ncpu)`
+           workers by default; `[par N]` caps it at N) and **always
+           reassembles results in source order** — the retired
+           `[ordered]` clause survives as a tombstoned no-op. `[lazy]`
+           couples the generator to a streaming input source so that
+           the iteration runs in bounded memory regardless of input
+           size. Full semantics in
+           [`spec/core/code.md`](../../spec/03-approved/core/code.md) §7."""]
       [body
         """**Multiple `[where …]` clauses** AND together; **multiple
            `[yield …]` clauses** concatenate (per the sequence-flat
@@ -648,21 +653,21 @@
       [body
         """**Arm semantics:**"""]
       [list
-        [item """**`[case PAT R]` — match against pattern `PAT`.**
+        [item """`[case PAT R]` — **match against pattern PAT.**
                 Arms evaluate top-to-bottom; the first one whose
                 pattern matches "wins". Later arms are not tried,
                 even if they would also have matched."""]
-        [item """**`[when PRED R]` — match iff predicate truthy.**
+        [item """`[when PRED R]` — **match iff predicate truthy.**
                 No pattern; the predicate is evaluated with the
                 scrutinee in scope as `$_` (and any earlier `[case
                 …]` bindings still in scope only if the same arm)."""]
-        [item """**`[else R]` — catch-all, always last.** Equivalent
+        [item """`[else R]` — **catch-all, always last.** Equivalent
                 to `[case _ R]`. Multiple `[else …]` clauses raise
                 `CXER0100`."""]
-        [item """**`[case PAT [where PRED] R]` — guard on a case
+        [item """`[case PAT [where PRED] R]` — **guard on a case
                 arm.** The pattern must match AND the predicate
                 must be truthy."""]
-        [item """**No implicit EBV in `[case …]`.** `[case …]` tests
+        [item """**No implicit EBV in** `[case …]`. `[case …]` tests
                 pattern equality / structural match; it does not
                 apply EBV. `[when …]` uses EBV."""]]
 
@@ -678,7 +683,7 @@
         """**Status.** Multi-arm `[?match]` is fully spec'd.
            V's evaluator carries the production-ready
            implementation; Tier-2 binding parity is per
-           [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md)."""]]
+           [`spec/misc/parity-matrix.md`](../../spec/03-approved/misc/parity-matrix.md)."""]]
 
     [child id=if n=6.6.3 title='[?if] — boolean branch (with EBV)'
       [body
@@ -708,9 +713,9 @@
       [child id=ebv n=6.6.3.1 title='EBV — the Effective Boolean Value rule'
         [body
           """The EBV rule, applied in order (per
-             [`spec/cxdm.md`](../../spec/cxdm.md) §4.6):"""]
+             [`spec/core/cxdm.md`](../../spec/03-approved/core/cxdm.md) §4.6):"""]
         [list
-          [item """**Empty sequence `()`** → false."""]
+          [item """**Empty sequence** `()` → false."""]
           [item """**Single Scalar** of kind `bool` → that bool's
                   value."""]
           [item """**Single Scalar** of kind `string` →
@@ -831,8 +836,8 @@
            does not copy the whole tree. Only the spine from root
            to each matched node is copied; unchanged branches are
            shared with the original (immutable persistent data
-           structure). For a 10 MB document with one matched node,
-           the new heap cost is < 1 KB per matched node — and the
+           structure). The new allocation is O(depth × matches) —
+           the spine, not the document size — and the
            original `$doc` value is still valid for read or hash."""]
 
       [body
@@ -856,8 +861,7 @@
         """**Status.** `[?modify]` is fully spec'd.
            The V evaluator carries the production-ready
            implementation. Tier-2 binding parity is tracked in
-           [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md)
-           gate 30."""]]
+           [`spec/misc/parity-matrix.md`](../../spec/03-approved/misc/parity-matrix.md)."""]]
 
     [child id=pipe n=6.6.6 title='Pipelines and composition'
       [body
@@ -905,7 +909,7 @@
            [?fn ($us) [?for [in $u $us] [yield [decorated name=$u@name]]]]
            [$count]]"""]
       [body
-        """**`[tap f]` — observe without diverting (§8.9.2).** A
+        """`[tap f]` — **observe without diverting** (§8.9.2). A
            `[tap f]` stage applies `f` to the current value for its
            **side effect**; the value passes through unchanged and
            `f`'s return is discarded. Inside a stage, `_` names the
@@ -928,8 +932,8 @@
          layer. They are pure-functional, total over their
          declared input types, and stable across bindings.
          Full normative table in
-         [`spec/code.md`](../../spec/code.md) §6.5; the
-         subsections below organize the ~80 names by category."""]
+         [`spec/core/code.md`](../../spec/03-approved/core/code.md) §6.5; the
+         subsections below organize the ~47 names by category."""]
 
     [body
       """**Invocation.** Every call uses the
@@ -955,6 +959,7 @@
         [tr [td 'count(seq) / length(seq)'] [td '1'] [td 'Integer count; scalar input yields 1']]
         [tr [td 'empty(seq)'] [td '1'] [td 'Boolean — true iff count(seq) == 0']]
         [tr [td 'exists(seq)'] [td '1'] [td 'Boolean — true iff count(seq) > 0; opposite of empty']]
+        [tr [td 'present(value)'] [td '1'] [td 'Boolean — true iff value is present; false only for absence (the empty sequence / empty node-set). The canonical "did this step match anything" test — unlike exists, it never looks inside: a childless element, an empty string, and null are all present']]
         [tr [td 'first(seq)'] [td '1'] [td 'First item; scalar passes through; XQuery fn:head parity']]
         [tr [td 'last(seq)'] [td '1'] [td 'Last item; scalar passes through']]
         [tr [td 'head(seq)'] [td '1'] [td 'Synonym for first']]
@@ -1037,12 +1042,13 @@
       [body
         """Type coercion is the single explicit `cast` operator —
            `[cast '42' :int]`, `[cast 3 :float]`, `[cast 42
-           :string]` — there is no `to-int` / `to-float` family.
-           CX floats are **finite-only**: `NaN` and `±Inf` never
-           arise (an operation that would produce one raises
-           `CXER0101`), so there is nothing to test with an
-           `is-nan`. Exponentiation is `[$math:pow]` in
-           `cx-stdlib/math`."""]
+           :string]` — there is no `to-int` / `to-float` family; a
+           failed cast is `CXER0290` (E_CAST_FAILED). CX floats are
+           IEEE-754: `NaN` and `±Inf` exist and follow IEEE-754
+           semantics — test for NaN with `[$math:is-nan]` from
+           `cx-stdlib/math`. `CXER0101` (E_ARITH_DIVIDE_ZERO) is
+           division or modulo by zero, specifically. Exponentiation
+           is `[$math:pow]` in `cx-stdlib/math`."""]
       [example lang=cx
         """[orders [order amount=10] [order amount=32]]
            ([$sum [?for [in $o //order] [yield $o@amount]]],
@@ -1109,17 +1115,17 @@
          element with kind `[err :code "cx-err:CXERnnnn" …]`. It
          can be passed around, pattern-matched, transformed, and
          recovered from. Full error registry in
-         [`spec/code.md`](../../spec/code.md) §9.5."""]
+         [`spec/core/code.md`](../../spec/03-approved/core/code.md) §9.5."""]
 
     [body
       """**Propagation operators.** Two postfix operators thread
          errors through expressions:"""]
     [list
-      [item """**`f($x)?`** — call `f`; if it errored, propagate
+      [item """`f($x)?` — call `f`; if it errored, propagate
               the error unchanged through the surrounding
               directive (which catches it). This is the "early
               return" form."""]
-      [item """**`f($x)!`** — call `f`; if it errored, raise
+      [item """`f($x)!` — call `f`; if it errored, raise
               immediately as a host exception (cross the
               CX/binding boundary). Use sparingly — it converts
               the error from a value to a runtime trap."""]]
@@ -1146,22 +1152,45 @@
          lighter sugar; `[?fallback PRIMARY [recover-with …]]` (§10.2.4)
          binds `$err` in the recovery."""]
 
+    [body
+      """**Why not exceptions.** Exceptions contaminate every signature
+         with an invisible \"may throw\" that no tool can see, and force
+         every caller to either catch or be transparent. In CX the
+         error is in the value, the propagation discipline is in the
+         operators (`?` and `!`), and the handling is in `[?match]` —
+         all three visible in the source. The cost of an error path is
+         the cost of one value: no stack scan, no unwind tables. And
+         because an error is just a value, it crosses every boundary
+         values cross — pipelines, `[?await]`, worker channels — without
+         a parallel control-flow mechanism: a worker that errors sends
+         the `[err]` through its result channel and terminates
+         cleanly."""]
+
     [child id=error-registry n=6.8.1 title='Error code registry (CXER0100–0299)'
       [body
         """The CXER0100–0299 range is reserved for code-language
            errors. Errors are organized into subsystems by tens
            digits. The complete normative map is in
-           [`spec/code.md`](../../spec/code.md) §9.5 — this
+           [`spec/core/code.md`](../../spec/03-approved/core/code.md) §9.5 — this
            subsection is the developer-facing summary."""]
 
       [body
-        """**Pattern / parse — CXER010x:**"""]
+        """**Parse / arithmetic / application — CXER010x:**"""]
       [table
         [tr [th 'code'] [th 'symbolic'] [th 'meaning'] [th 'recovery']]
         [tr [td 'CXER0100'] [td 'PARSE_ERROR'] [td 'Pattern syntax invalid; directive name not in registry; arity mismatch'] [td 'Fix source — this is author error, not runtime']]
-        [tr [td 'CXER0101'] [td 'ANCHOR_ERROR'] [td 'Duplicate &anchor; cyclic *merge; unresolved *name'] [td 'Author error — flagged at parse time']]
-        [tr [td 'CXER0102'] [td 'DUPLICATE_KEY'] [td 'Map literal with duplicate key'] [td 'Author error']]
-        [tr [td 'CXER0103'] [td 'TYPE_ERROR'] [td 'Value-comparison on multi-valued operand; sized-overflow; type-coerce failure'] [td '[?match] [case [err code="CXER0103"] …]; explicit coercion via to-int/to-float']]]
+        [tr [td 'CXER0101'] [td 'E_ARITH_DIVIDE_ZERO'] [td 'Division or modulo by zero — [$div] / [$mod] / [$idiv] and the / and % operator heads'] [td 'Guard the divisor, or [?match] [case [err code="cx-err:CXER0101"] …]']]
+        [tr [td 'CXER0102'] [td 'E_PARTIAL_APP'] [td 'Invalid partial application — a _ hole in a rest position, or a partial applied with more arguments than held positions'] [td 'Author error — fix the call shape']]
+        [tr [td 'CXER0103'] [td 'MULTI_VALUED_PREDICATE'] [td 'Value-comparison or predicate with a multi-valued operand'] [td 'Filter the sequence and compare single values ([$exists //x[= $_ V]])']]]
+      [body
+        """Nearby classes that are **not** CXER010x: anchor / merge
+           errors are data-language `E` codes
+           ([`spec/core/cxdm.md`](../../spec/03-approved/core/cxdm.md) §11);
+           a sized-integer literal out of range is the lex-time
+           `CXERLEX-RANGE` refusal; a failed `cast` is `CXER0290`
+           (E_CAST_FAILED), recovered by matching on the code or
+           spelling a representable value — coercion is always the
+           explicit `[cast V :int]` form."""]
 
       [body
         """**Resilience — CXER014x / CXER015x:**"""]
@@ -1203,22 +1232,21 @@
         [tr [td 'CXER0203'] [td 'CHANNEL_ALREADY_CLOSED'] [td 'Second [?close] on same channel'] [td 'Idempotent close idiom — [?else [?close $ch] ()]']]
         [tr [td 'CXER0220'] [td 'WORKER_PANIC'] [td 'Worker body raised unhandled err'] [td 'Inspect cause= attribute; restart worker or supervisor pattern']]
         [tr [td 'CXER0221'] [td 'WORKER_CANCELLED'] [td 'Worker terminated via [?cancel]'] [td 'Expected on graceful shutdown; clean up resources']]
-        [tr [td 'CXER0222'] [td 'WORKER_NOT_FOUND'] [td '[?worker-handle] lookup miss'] [td 'Use [?worker-handle :name N :optional true] or check exists']]]
+        [tr [td 'CXER0222'] [td 'WORKER_NOT_FOUND'] [td '[?worker-handle name=N] lookup miss'] [td 'Recover with [?match] on the err code, or [?else] a default']]]
 
       [body
         """**Async — CXER024x / CXER026x:**"""]
       [table
         [tr [th 'code'] [th 'symbolic'] [th 'meaning'] [th 'recovery']]
         [tr [td 'CXER0240'] [td 'AWAIT_ALL_FAILED'] [td '[?await-all] saw ≥ 1 non-done future'] [td 'Inspect :causes slot — sequence of [err …] per failed future']]
-        [tr [td 'CXER0241'] [td 'AWAIT_TIMEOUT'] [td '[?await $f :timeout] deadline expired (future itself still running)'] [td 'Tune :timeout; abandon or [?cancel $f]']]
+        [tr [td 'CXER0241'] [td 'AWAIT_TIMEOUT'] [td '[?await $f timeout=DURATION] deadline expired (future itself still running)'] [td 'Tune timeout=; abandon or [?cancel $f]']]
         [tr [td 'CXER0260'] [td 'CANCELLED'] [td 'Operation observed cooperative cancellation'] [td 'Expected; clean up; do not retry']]]
 
       [body
         """**Visualization — CXER028x:**"""]
       [table
         [tr [th 'code'] [th 'symbolic'] [th 'meaning'] [th 'recovery']]
-        [tr [td 'CXER0280'] [td 'RENDER_FAILED'] [td 'Sequence-diagram renderer could not produce output'] [td 'Check directive shape; report renderer version + program']]
-        [tr [td 'CXER0281'] [td 'UNRENDERABLE_DIRECTIVE'] [td 'Directive shape outside §10.1.2 locked render rules'] [td 'Adjust source; renderer is conservative on purpose']]]
+        [tr [td 'CXER0281'] [td 'UNRENDERABLE_DIRECTIVE'] [td 'Directive shape outside §10.1.2 locked render rules — the sole live renderer code (CXER0280 is retired to reserved)'] [td 'Adjust source; renderer is conservative on purpose']]]
 
       [body
         """The CXER0000–0099 range is reserved for data-language
@@ -1233,7 +1261,7 @@
          every channel send, every worker call, every async
          await sees only immutable values, so there is no
          shared-mutable-state hazard. Spec:
-         [`spec/code.md`](../../spec/code.md) §10.3–§10.5."""]
+         [`spec/core/code.md`](../../spec/03-approved/core/code.md) §10.3–§10.5."""]
 
     [child id=services n=6.9.1 title='Services and clients'
       [body
@@ -1340,8 +1368,8 @@
                         [yield [$process [?receive from=$ch]]]]]])]"""]
 
       [body
-        """**Channel semantics.** `[?channel :buffer N]` has
-           a bounded FIFO buffer. `:buffer 0` is synchronous
+        """**Channel semantics.** `[?channel name=… buffer=N]` has
+           a bounded FIFO buffer. `buffer=0` is synchronous
            (rendezvous — send blocks until receive). FIFO
            ordering is preserved per producer-consumer pair;
            with multiple producers, per-producer FIFO is
@@ -1398,8 +1426,8 @@
         """**Shape.** `[?select]` clauses are clause-children:
            `[case [from CH $msg] HANDLER]` for a receive and
            `[case [timeout DURATION] HANDLER]` for a deadline. The
-           spec/core/code.md §10.4.7 registry holds the
-           authoritative shape. The v0.7.x `:case [:from CH $msg H]` [; version-literal-ok ]
+           [`spec/core/code.md`](../../spec/03-approved/core/code.md)
+           §10.4.7 registry holds the authoritative shape. The v0.7.x `:case [:from CH $msg H]` [; version-literal-ok ]
            colon-slot form is retired — there is no dual-accept."""]]
 
     [child id=async n=6.9.3 title='Async, await, and cancellation'
@@ -1411,7 +1439,7 @@
         """[?let [= $f1 [?async [+ 1 1]]]
               [= $f2 [?async [* 2 2]]]
               [= $f3 [?async [$upper 'go']]]
-           [?await-all $f1 $f2 $f3]]"""]
+           [?await-all ($f1, $f2, $f3)]]"""]
 
       [body
         """**Future state machine.** Futures progress through
@@ -1483,8 +1511,7 @@
         """**Status.** Async/await is stable in V.
            Tier-2 binding parity (Python `asyncio`, Go
            `chan`, Rust `tokio`) ships per
-           [`spec/v0_8_0_status.md`](../../spec/v0_8_0_status.md)
-           gate 28."""]]]
+           [`spec/misc/parity-matrix.md`](../../spec/03-approved/misc/parity-matrix.md)."""]]]
 
   [child id=resilience n=6.10 title='Resilience directives'
     [intro
@@ -1492,7 +1519,7 @@
          expression with a failure-handling policy. They are
          not new control-flow primitives — they are normal CX
          code with cleanly-named policies. Spec:
-         [`spec/code.md`](../../spec/code.md) §10.2."""]
+         [`spec/core/code.md`](../../spec/03-approved/core/code.md) §10.2."""]
 
     [body
       """**Common error shape.** Every resilience directive
@@ -1591,7 +1618,7 @@
              [?pipe $client [$get _ '/users/42']]
              [recover-with [$load-from-cache 42]]]"""]
       [note
-        """**`$err` in `[recover-with …]`.** Inside the recovery
+        """`$err` **in the recovery scope.** Inside the recovery
            scope, `$err` is bound to the primary's `[err …]` value, so
            recovery can introspect the failure (e.g. `[recover-with
            [response status=500 reason=$err/@message]]`). The
@@ -1658,7 +1685,7 @@
            default state is keyed by lexical source-text
            position — every evaluation of the same source
            node (including iterated under `[?for]` or
-           `[?map par=true]`) shares state. Pass `name=STR`
+           `[?map … [par]]`) shares state. Pass `name=STR`
            to key by name instead, enabling cross-position
            sharing (one rate-limit budget enforced by
            callers in different modules)."""]]]
@@ -1736,21 +1763,23 @@
              $s [2:$_last:2]]`), and a new **`Iterator` value
              kind** in CXDM §2 alongside Sequence / Array / Map.
              Comprehensions become lazy by default; named iterators
-             (`[?def`]) memoize on first walk so re-use is safe."""]
+             (`[?def]`) memoize on first walk so re-use is safe."""]
 
         [body
-          """Eight worked examples (§W1–§W8) each have a paired
+          """Four worked examples (§W1–§W4) each have a paired
              conformance fixture
              `program-slice-wN-*` in
-             [`conformance/code.txt`](../../conformance/code.txt);
+             [`conformance/code.cxd`](../../conformance/code.cxd);
              until the implementation lands the fixtures are
              `out_err: cx-err:CXER0100` (parse-deferred), then flip
              to `out_text` in a single commit per fixture. The
              reconciliation test
              `program-cxpath-fncall-slice-composition`
-             verifies grammar disambiguation against the B15
-             closure (`spec/cxpath.md` §2.2) — bare-fn-call, path
-             predicate, and slice postfix coexist."""]
+             verifies grammar disambiguation against the fused
+             predicate-body closure
+             ([`spec/formal/grammar.ebnf`](../../spec/03-approved/formal/grammar.ebnf)
+             [159b]) — bare-fn-call, path predicate, and slice
+             postfix coexist."""]
 
         [; check=none — future surface (§W1-§W8): slice postfix, open
            ranges with [take …], and [yield-map] are parse-deferred until
@@ -1772,8 +1801,11 @@
              **not** an `Iterator` — it is a *description of a
              selection*. Evaluation materialises it to a `sequence`
              (eager, the kind currently in use). The `sequence`
-             flows into Iterator combinators on opt-in via `[?for]`
-             or the explicit `[?to-iterator]` directive. There is no
+             flows into Iterator combinators on opt-in via `[?for]`;
+             walking an Iterator back to a concrete collection is the
+             registered force-materializer family `[?to-sequence]` /
+             `[?to-array]` / `[?to-map]` (a `[?to-iterator]`
+             directive is planned but not registered). There is no
              `iterator → path` direction — paths describe; iterators
              walk."""]]]]
 
@@ -1784,12 +1816,11 @@
   [child id=cxpath-quickref n=6.12 title='CXPath reference — quick form'
     [intro
       """At-a-glance CXPath reference. The normative grammar lives
-         in [`spec/grammar.ebnf`](../../spec/grammar.ebnf)
-         productions [130]-[135] (path / predicate base) and
-         [159]-[160] (general PredicateExpr + `:bind` step
-         modifier). XPath 3.1 alignment and divergences are
-         tabulated in
-         [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md).
+         in [`spec/formal/grammar.ebnf`](../../spec/03-approved/formal/grammar.ebnf)
+         productions [130]/[131]/[135] (path steps / binding paths) and
+         [159]/[160a] (general PredicateExpr + the `(bind $name)`
+         step annotation). XPath 3.1 alignment and divergences are
+         in [`spec/core/code.md`](../../spec/03-approved/core/code.md) §5.5.
          CXPath is a first-class value kind;
          general predicates with `$_` / `$_position` / `$_last`."""]
 
@@ -1829,16 +1860,16 @@
     [child id=cxpath-four-forms n=6.12.2 title='Four leading forms'
       [body
         """Every CXPath has one of four leading-token forms.
-           - **`//` descendant** — `//user` —
+           - `//` **descendant** — `//user` —
              `descendant-or-self::node()/child::user`; the most
              common shape.
-           - **`/` absolute** — `/root/item` — child of the
+           - `/` **absolute** — `/root/item` — child of the
              document root; rare in well-shaped data.
            - **relative** — `user/email` — applied against the
              current evaluation context.
-           - **`$name/` binding** — `$u/email` — rooted at a
+           - `$name/` **binding** — `$u/email` — rooted at a
              previously-bound value (per `[?for]` / `[?let]` /
-             `:bind`)."""]]
+             `(bind $name)`)."""]]
 
     [child id=cxpath-axes n=6.12.3 title='Twelve axes'
       [body
@@ -1902,9 +1933,9 @@
                  [where [and [= $m@role 'lead'] [>= [$count $t/member] 3]]]
              [yield $m/name]]"""]
       [note
-        """The grammar reserves a `:bind` path-step modifier
-           (grammar.ebnf [159]-[160]) for naming a step's focus
-           inline; the nested-generator form above is the
+        """The grammar reserves a `(bind $name)` path-step
+           annotation (grammar.ebnf [160a]) for naming a step's
+           focus inline; the nested-generator form above is the
            conformance-exercised idiom."""]]
 
     [child id=cxpath-binding-surface n=6.12.6 title='In the host bindings'
@@ -1924,27 +1955,32 @@
          description then optionally another unit separator and a
          value. Bindings preserve this shape so `[?match]` can match
          on code rather than on text. The catalog below
-         covers the current ranges; the full normative table lives
-         in [`spec/errors.md`](../../spec/errors.md)."""]
+         covers the current ranges; the normative registry is
+         [`spec/core/code.md`](../../spec/03-approved/core/code.md)
+         §9.4/§9.5, with the governance rules for code allocation in
+         [`spec/process/governance.md`](../../spec/03-approved/process/governance.md)
+         §9.6."""]
 
-    [child id=errors-security n=6.13.1 title='CXER001x — security caps'
+    [child id=errors-security n=6.13.1 title='Capability and runtime caps'
       [body
-        """- `CXER0010` — function call depth exceeded.
-           - `CXER0011` — collection size cap reached
-             (`sequence_len`, `map_entries`, `capture_size`).
-           - `CXER0014` — eval-time include attempted without
-             `--include-root`."""]]
+        """- `CXER0271` — capability denied at an effect point.
+             Capabilities are deny-by-default; the param-less eval
+             entry points run with the **empty capability set** —
+             "pure-only" is the empty set, not a pragma.
+           - `CXER0272` — `E_STACK_EXHAUSTED`: the evaluator's
+             native-stack exhaustion guard."""]]
 
-    [child id=errors-eval-gates n=6.13.2 title='CXER004x — evaluator gates'
+    [child id=errors-eval-gates n=6.13.2 title='Purity and eval gates'
       [body
-        """- `CXER0040` — purity gate: `SideEffect` /
-             `ReadOnly` filter raised under `[?cx pure-only]`.
-           - `CXER0041` — module gate: `on_declaration` module
-             called without `use-module`.
-           - `CXER0042` — eval gate: `cx:eval` invoked without
-             `[?cx allow-eval]`.
-           - `CXER0043` — eval depth gate: `cx:eval` recursion
-             exceeded `max-eval-depth`."""]]
+        """- `CXER0230` — purity gate: an impure callee where
+             purity is required (e.g. inside a CXPath predicate)
+             is rejected at parse / module-load.
+           - `CXER0233` — a `pure` def reaching `[?eval]` /
+             `cx:eval-tree` (tree-eval is `impure`, like `cx:eval`).
+           - `CXER4113` — lib-widen gate: `[?lib]` inside an eval
+             tree may not widen the capability set.
+           - `CXER4114` — eval depth gate: `cx:eval` / `[?eval]`
+             recursion exceeded the shared depth budget."""]]
 
     [child id=errors-include n=6.13.3 title='E9xx — include resolver'
       [body

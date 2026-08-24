@@ -354,3 +354,55 @@ func TestEventWriterFD(t *testing.T) {
 		t.Fatalf("unexpected fd output: %q", s)
 	}
 }
+
+// I1 L48 events-lane parity: decimal and bigint joined the known-scalar
+// sets at the identity epoch (vcx/cx/events_writer.v). The Go writer
+// passes data types through to the V validator — this pins that a
+// decimal scalar, a bigint scalar, and decimal/bigint attributes are
+// ACCEPTED and their images survive to the emitted document.
+func TestEventWriterDecimalBigintScalars(t *testing.T) {
+	w, err := NewEventWriter("cx")
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	if err := w.StartDoc(); err != nil {
+		t.Fatalf("start_doc: %v", err)
+	}
+	attrs := []EventAttr{
+		{Name: "scale", Value: "1.10", DataType: "decimal"},
+		{Name: "serial", Value: "99999999999999999999999", DataType: "bigint"},
+	}
+	if err := w.StartElement("price", attrs); err != nil {
+		t.Fatalf("start_element: %v", err)
+	}
+	if err := w.Scalar("2.50", "decimal"); err != nil {
+		t.Fatalf("decimal scalar rejected (events lane must know the kind): %v", err)
+	}
+	if err := w.EndElement("price"); err != nil {
+		t.Fatalf("end_element: %v", err)
+	}
+	if err := w.StartElement("count", nil); err != nil {
+		t.Fatalf("start_element 2: %v", err)
+	}
+	if err := w.Scalar("42", "bigint"); err != nil {
+		t.Fatalf("bigint scalar rejected (events lane must know the kind): %v", err)
+	}
+	if err := w.EndElement("count"); err != nil {
+		t.Fatalf("end_element 2: %v", err)
+	}
+	if err := w.EndDoc(); err != nil {
+		t.Fatalf("end_doc: %v", err)
+	}
+	out, err := w.CloseGetBytes()
+	if err != nil {
+		t.Fatalf("close: %v", err)
+	}
+	s := string(out)
+	// Scale preserved verbatim ("1.10" / "2.50" keep their trailing zeros)
+	// and the over-i64 bigint image intact.
+	for _, want := range []string{"1.10", "2.50", "99999999999999999999999", "42"} {
+		if !strings.Contains(s, want) {
+			t.Fatalf("emitted document lost image %q: %q", want, s)
+		}
+	}
+}

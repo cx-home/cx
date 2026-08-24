@@ -1,0 +1,179 @@
+[schema of=feature mode=open]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# XAP feature-spec schema (DRAFT).
+#
+# One `*.feature.cxd` = one `[feature …]` document capturing a feature's
+# REQUIREMENTS → GRAMMAR (verbs · nouns · rules) + the FRAMES/KEYS it registers onto,
+# its per-verb GOVERNANCE defaults, and its swappable data SOURCE.
+#
+# Derived from the first real instance (own-ship). Mode is `open`: families add
+# tags freely; tighten to `strict` once the vocabulary settles. Destined to ship
+# with the cx toolchain (referenced, not copied, per the authoring process).
+# ─────────────────────────────────────────────────────────────────────────────
+
+[feature
+ [attr name::string [req]]
+ [attr version::string [opt]]
+ [attr kind::string [default base] [enum base composite]]   # composite = built by joining other features
+ [elem summary    [card "0..1"]]
+ [elem uses       [card "0..1"]]   # composite features: the features they join over
+ [elem frames     [card "0..1"]]
+ [elem keys       [card "0..1"]]
+ [elem nouns      [card "1..1"]]
+ [elem verbs      [card "1..1"]]
+ [elem rules      [card "0..1"]]
+ [elem governance [card "0..1"]]
+ [elem requirements [card "1..1"]]
+ [elem source     [card "0..1"]]
+ [elem simulation [card "0..1"]]]   # the feature's built-in mock-data generator (dev/demo)
+
+[type summary::string]
+
+# ── simulation — a feature "knows how to present reasonable mock data" at a
+# controllable cadence, with feature-specific knobs. Lives WITH the feature
+# (N-CLIENT-2 keeps rendering out of the XAP, but the data generator is the
+# feature's own concern). The client builds its simulation-settings panel from
+# this; runtime control is via set-sim / set-sim-rate / set-sim-param intents. ──
+[simulation
+ [attr default-interval-ms::int [opt]]   # default refresh cadence (the client's hx-trigger)
+ [attr enabled::string          [opt]]   # default on/off
+ [attr doc::string              [opt]]
+ [elem param [card "0..*"]]]
+[param
+ [attr name::string    [req]]
+ [attr type::string    [opt]]
+ [attr default::string [opt]]
+ [attr min::string     [opt]]
+ [attr max::string     [opt]]
+ [attr doc::string     [opt]]]
+
+# ── uses — cross-feature references (composite features) ──
+[uses [attr features::string [req]]]   # space-separated names of the features this one composes
+
+# ── frames & keys — the shared rulers this feature joins over ──
+[frames [elem use [card "0..*"]]]
+[use
+ [attr frame::string [req] [enum geo time value]]   # frame family
+ [attr via::string   [opt]]]   # the noun-field carrying the coordinate (base features set it;
+                               # composites join over the frame across their used features)
+
+[keys [elem key [card "0..*"]]]
+[key
+ [attr name::string [req]]
+ [attr via::string  [req]]]
+
+# ── nouns — the read-model ──
+[nouns [elem noun [card "1..*"]]]
+[noun
+ [attr name::string    [req]]
+ [attr singular::bool  [opt]]
+ [attr derived::bool   [opt]]   # true = computed by a join over used features, not sourced
+ [elem summary [card "0..1"]]
+ [elem field   [card "1..*"]]
+ [elem from    [card "0..1"]]]  # how a derived noun is computed (the join)
+[field
+ [attr name::string [req]]
+ [attr type::string [req]]    # a scalar type, or a SIBLING NOUN's name (sub-noun typing —
+                              # a §4.4 noun↔noun edge; the declared-relationship shape)
+ [attr repeats::bool [opt]]   # sub-noun typing: this field holds MANY of that noun
+ [attr label::string [opt]]
+ [attr doc::string  [opt]]]
+[type from::string]
+
+# ── verbs — intents with their effect signature. A composite's DERIVED verb
+# declares the constituent verbs it invokes ([constituents <qualified> …]) —
+# the signature floor derives from them and they are the N-COMPOSE-2 grant set
+# (xap_grammar_composition.md §6). A declared signature may strengthen but
+# never weaken the derived floor. ──
+[verbs [elem verb [card "1..*"]]]
+[verb
+ [attr name::string        [req]]
+ [attr effect::string      [req] [enum observe act arrange]]
+ [attr scope::string       [default local] [enum shared local]]
+ [attr consequence::string [default none]  [enum none reversible irreversible]]
+ [elem intent       [card "1..1"]]
+ [elem reads        [card "0..*"]]
+ [elem writes       [card "0..*"]]
+ [elem constituents [card "0..1"]]   # derived verbs: space-separated qualified verbs invoked
+ [elem summary      [card "0..1"]]]
+[type intent::any]
+[type reads::string]
+[type writes::string]
+[type constituents::string]
+
+# ── rules — domain validity, mandates, constraints. A rule opts into the
+# compose-time static checks (W4, xap_grammar_composition.md §4) by declaring
+# structured targets alongside its prose statement: verb=/when= for
+# mandate/exclusion coverage, after= for ordering, requires= for dependency.
+# Prose-only rules are runtime-class (the envelope validator). ──
+[rules [elem rule [card "0..*"]]]
+[rule
+ [attr name::string     [req]]
+ [attr kind::string     [req] [enum validity mandate exclusion ordering cardinality dependency]]
+ [attr guardian::bool   [opt]]
+ [attr verb::string     [opt]]   # covered qualified verb (mandate/exclusion/ordering)
+ [attr when::string     [opt]]   # condition tag (mandate/exclusion)
+ [attr after::string    [opt]]   # ordering: this rule's verb runs after this qualified verb
+ [attr requires::string [opt]]   # dependency target (qualified verb/noun/feature)
+ [attr nouns::string    [opt]]   # validity: the nouns the rule spans (space-separated, §4.4 —
+                                 # the floor/ceiling edge declaration; existence-checked when declared)
+ [elem statement [card "1..1"]]]
+[type statement::string]
+
+# ── governance — per-verb grant defaults (finer than the feature) ──
+[governance [elem grant [card "0..*"]]]
+[grant
+ [attr verb::string     [req]]
+ [attr to::string       [req]]
+ [attr dial-min::string [opt]]]
+
+# ── requirements — a FIRST-CLASS part of the feature spec (the source of the
+# grammar). Three orthogonal axes: kind (functional: as/want/so | quality |
+# domain: statement), level (RFC-2119 obligation), status (authored lifecycle).
+# implemented/verified are DERIVED from traces + acceptance, never hand-tagged.
+# Every requirement traces to a verb or rule and carries acceptance criteria
+# (which become the conformance fixtures). ──
+[requirements [elem requirement [card "1..*"]]]
+[requirement
+ [attr kind::string   [req] [enum functional quality domain]]
+ [attr level::string  [default must] [enum must must-not should should-not may]]
+ [attr status::string [default proposed] [enum proposed accepted deferred rejected obsolete]]
+ [attr as::string     [opt]]    # role — functional / user-story form only
+ [attr traces::string [opt]]    # space-separated verb/rule names
+ [elem want       [card "0..1"]]   # functional (user-story): the goal
+ [elem so         [card "0..1"]]   # functional: the benefit
+ [elem statement  [card "0..1"]]   # quality / domain: the assertion
+ [elem acceptance [card "0..*"]]]  # testable condition(s) -> conformance
+[type want::string]
+[type so::string]
+[type acceptance::string]
+
+# ── source — the layered, swappable adapter stack behind the nouns ──
+# Additive by design: data may arrive through one or more GATEWAYS (transport/protocol —
+# vendor-a, vendor-b, wire-protocol, api, sim …; `kind` is deliberately NOT enum'd, so a new
+# gateway plugs in with zero schema change), and each noun-field (READING) may be fed by a
+# prioritised set of SENSORS with failover. The simple single-source `adapter` form is
+# retained for features that don't need the stack — old and new forms coexist (future-proof).
+[source
+ [attr maps-to::string [opt]]
+ [elem gateway [card "0..*"]]
+ [elem reading [card "0..*"]]
+ [elem adapter [card "0..*"]]]
+[gateway
+ [attr name::string  [req]]
+ [attr kind::string  [req]]    # transport/protocol — open, no enum (future-proof)
+ [attr priority::int [opt]]    # lower = preferred; gateways may be redundant
+ [attr doc::string   [opt]]]
+[reading
+ [attr field::string    [req]]    # the noun-field this feeds
+ [attr failover::string [opt]]    # on-stale | on-fail | none
+ [elem sensor [card "1..*"]]]
+[sensor
+ [attr name::string  [req]]
+ [attr priority::int [opt]]    # lower = preferred
+ [attr via::string   [opt]]    # the gateway this sensor's data arrives through
+ [attr doc::string   [opt]]]
+[adapter
+ [attr name::string [req]]
+ [attr doc::string  [opt]]]

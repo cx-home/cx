@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Schema and its evolution — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Start here</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a class="active" href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
+    <li><a href="lib-jsonschema.html">jsonschema</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-vc.html">vc</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+    <li><a href="lib-xsp.html">xsp</a></li>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+</aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Schema and its evolution</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
+<main>
+<section id="schema-evolution">
+  <h1>Schema and its evolution</h1>
+  
+    <section id="se-frame">
+      <h2>Schemas change; addresses do not</h2>
+      
+        <p>A schema is a CX document (authored in the same syntax it
+         validates — see the schema material in <a class="xref" href="data-language.html">data</a>), so a schema
+         has a content address like any other value. This section is
+         about what happens when the schema <i>changes</i>: how CX decides
+         whether the change is compatible, how two revisions are linked,
+         and why evolution never rewrites anything.</p>
+        <p>The headline rule, and the answer to every migration-anxiety
+         question: <b>identity is schema-independent, and nothing is ever
+         overwritten.</b> A value's address is computed from its canonical
+         bytes — the schema in force does not participate — so evolving
+         a schema never perturbs a single stored address. Migration is
+         therefore always <i>additive</i>: new documents beside old ones, new
+         readings of old events, never an in-place rewrite. (What that
+         looks like operationally — upcasting journals, migrating stored
+         documents — is Ring 2's half: <a class="xref" href="event-evolution.html">event-evolution</a>.)</p>
+      
+    </section>
+    <section id="se-compat">
+      <h2>Compatibility you can compute</h2>
+      
+        <p>Whether schema v2 accepts everything schema v1 accepted is not
+         a matter of judgment — it is a <b>decidable, pure predicate</b>
+         over the two declaration forms, and for every document valid
+         under v1, validation under v2 yields <i>valid</i> or a <i>named
+         diagnostic</i> — never a silently different meaning. The predicate
+         ships as <code>cx schema compat OLD.cxs NEW.cxs</code>: it classifies
+         every field-level change, <b>derives the translator</b> for the
+         mechanically-derivable classes (a lineage claim carrying the
+         rewrite rules as data — <a class="xref" href="#se-lineage">se-lineage</a>), and <b>refuses</b> a
+         change that genuinely reinterprets data, with a prompt naming
+         the missing rule per change. Renames are declared
+         (<code>--rename TYPE/OLD=NEW</code>), never guessed — a removed field
+         plus an added same-shaped field is indistinguishable from a
+         rename, and a guessed rename would silently move data.</p>
+        <p>The changes that are <b>safe within a schema line</b>:</p>
+        <ul>
+          
+            <li><b>Add a field with a default</b> — old documents validate;
+              the default materializes at validation time.</li>
+            <li><b>Add an optional attribute</b> — old writers do not
+              produce it; old readers do not require it.</li>
+            <li><b>Add a new element type</b> — existing documents never
+              reference it.</li>
+            <li><b>Widen a constraint</b> — loosening a length bound or
+              widening an enum keeps every previously-valid document
+              valid.</li>
+          
+        </ul>
+        <p>The changes that are <b>breaking</b>:</p>
+        <ul>
+          
+            <li><b>Renaming or removing a field</b> — breaks every reader
+              or consumer that names it.</li>
+            <li><b>Tightening a constraint</b> — narrowing an enum,
+              lowering a bound, or making an optional field required
+              turns existing-valid documents into errors.</li>
+            <li><b>Changing a type</b> — a string field becoming an int is
+              a different value model, a hard break.</li>
+            <li><b>Adding a required field — even in open mode.</b> Open
+              mode waives <i>undeclared</i> content, not declared
+              requirements; a new <code>[req]</code> is a new obligation on every
+              existing document, and the predicate says so.</li>
+          
+        </ul>
+        <p class="note">One subtlety for tool authors: a compatibility verdict is
+         computed on the form a consumer actually validates against.
+         A schema exported to JSON Schema is a lossy projection, so
+         \"additive in CX\" does not automatically mean \"additive in
+         the export\" — the verdict for exported consumers is computed
+         on the exported form.</p>
+      
+    </section>
+    <section id="se-lineage">
+      <h2>Schema identity and lineage</h2>
+      
+        <p>A type's identity is <code>(element name, schema content-hash)</code> —
+         see <a class="xref" href="value-model.html">value-model</a>. It follows that <code>Order</code> under v1 and
+         <code>Order</code> under v2 are <b>different type identities that happen to
+         share a name</b>. Nothing intrinsic links them, because nothing
+         intrinsic could without perturbing identity.</p>
+        <p>The link is an explicit, detached <b>lineage claim</b>: a Lane-2
+         value naming the <code>from</code> schema address, the <code>to</code> schema
+         address, the relation (<code>:additive</code>, <code>:narrowing</code>, <code>:split</code>,
+         <code>:merge</code>), and — when one exists — the upcaster that carries
+         old data forward. For the derivable classes, <code>cx schema
+         compat</code> emits the claim with the rewrite rules <b>as data</b>
+         (<code>[derived …]</code>), and the journal applies them natively and
+         losslessly — a derived claim IS a usable upcaster chain.
+         Lineage claims form a graph, and the graph
+         must admit a <b>unique path</b> between any two endpoints; an
+         ambiguous graph is rejected fail-closed at load, because two
+         different upgrade paths for the same pair is two different
+         meanings for the same data.</p>
+        <p>One rule keeps the whole scheme honest: a schema document that
+         <b>anchors</b> a type identity (feeds a type-binding claim, a pair
+         exchange, or any address-bound adoption) declares exactly one
+         type. Multi-type schema documents remain legal for validation —
+         but they cannot anchor identity, so editing one type in a
+         shared file can never silently move another type's identity.</p>
+      
+    </section>
+    <section id="se-when">
+      <h2>What to do when, in one table</h2>
+      
+        <table>
+          <thead>
+            
+              <tr>
+                <th>You want to…</th>
+                <th>Do this</th>
+                <th>Where it is covered</th>
+              </tr>
+            
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>add a field, widen an enum</td>
+                <td><code>cx schema compat</code> confirms it is additive and derives the lineage claim; publish deploys it silently</td>
+                <td>this section</td>
+              </tr>
+              <tr>
+                <td>ship a breaking change</td>
+                <td>publish v2 as a new type identity + an authored lineage claim with an upcaster — the publish gate stops you until the claim exists</td>
+                <td>this section + <a class="xref" href="event-evolution.html">event-evolution</a></td>
+              </tr>
+              <tr>
+                <td>reread old journal events under v2</td>
+                <td>upcast at read time — journals are never rewritten</td>
+                <td><a class="xref" href="event-evolution.html">event-evolution</a></td>
+              </tr>
+              <tr>
+                <td>migrate stored documents</td>
+                <td>batch-migrate: new docs + ref advances; old docs stay addressable</td>
+                <td><a class="xref" href="event-evolution.html">event-evolution</a></td>
+              </tr>
+              <tr>
+                <td>assert a type at a trust boundary</td>
+                <td>exchange the (name, hash) pair; validate fail-closed</td>
+                <td><a class="xref" href="value-model.html">value-model</a></td>
+              </tr>
+            
+          </tbody>
+        </table>
+        <p>The division of labor between the halves: Ring 0 owns the
+         <i>vocabulary</i> — what compatible means, what a lineage claim is,
+         why addresses never move. Ring 2 owns the <i>machinery</i> — folds
+         that upcast, snapshots that remember which fold produced them,
+         and the honest failure when an entry no upcaster covers appears
+         mid-replay.</p>
+      
+    </section>
+  
+</section>
+</main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>Schema and its evolution</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

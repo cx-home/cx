@@ -54,14 +54,18 @@ data grammar; no new lexer or parser support is required. The root
 element is `cx.lock` and its single attribute is the schema
 version. The body is a `modules` element containing one or more
 `module` entries, optionally followed by a `transitive-graph`
-element encoding the cross-module dependency edges.
+element encoding the cross-module dependency edges and a `schemas`
+element carrying module-level schema pins (§6.1). A lockfile with
+zero `[module]` entries is legal when `[schemas]` pins exist.
 
 ```
 [cx.lock version=1
   [modules
     [module ...]+]
   [transitive-graph
-    [edge ...]*]]
+    [edge ...]*]
+  [schemas
+    [schema ...]*]]
 ```
 
 ### §3.1 Schema versioning
@@ -246,6 +250,27 @@ in the same lockfile.
 
 A lockfile MAY omit `[transitive-graph]` entirely; the loader
 behaviour is identical with or without it.
+
+### §6.1 `[schemas]` — module-level schema pins (stream 16 W4)
+
+The optional `[schemas]` element carries `[schema name="…"
+hash="…"]` pins: a module-level NAME → schema content-hash binding
+(the hex SHA-256 of the schema's strict-canonical text — the E2
+identity; schema.md §13.1). Names are hints, hashes are identity —
+exactly the `sri` posture applied to schemas.
+
+- **Authored state.** Pins are written by `cx lock --pin-schema
+  NAME=FILE.cxs` (repeatable; re-pinning a name replaces its hash)
+  and CARRY FORWARD verbatim on regeneration — they are not
+  derivable from source scanning.
+- **Consumption.** `validate-against` (validate.md §3.2) resolves a
+  name through in-process bindings FIRST, then these pins; content
+  then resolves through the in-process registry and
+  `CX_SCHEMA_STORE`, fail-closed (schema.md §13.3). Under
+  `--strict`, pinned ELEMENT-NAME type annotations enforce by schema
+  validation (code.md §12.7.6).
+- Both attributes are mandatory; a malformed pin is a lockfile parse
+  error.
 
 ## §7. Worked example — full lockfile
 

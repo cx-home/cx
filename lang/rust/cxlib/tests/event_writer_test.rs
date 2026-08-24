@@ -66,6 +66,26 @@ fn cx_attrs_emitted() {
 }
 
 #[test]
+fn cx_decimal_bigint_scalars_flow_through() {
+    // I1 L48: decimal / bigint are first-class kinds; the events lane
+    // (vcx/cx/events_writer.v is_known_scalar_type) accepts them as
+    // data_type strings and the images pass through scale-intact.
+    let _g = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let mut w = EventWriter::new("cx").expect("open cx writer");
+    w.start_doc().unwrap();
+    w.start_element("price", &[]).unwrap();
+    w.scalar("1.10", "decimal").unwrap();
+    w.end_element("price").unwrap();
+    w.start_element("n", &[]).unwrap();
+    w.scalar("99999999999999999999999", "bigint").unwrap();
+    w.end_element("n").unwrap();
+    w.end_doc().unwrap();
+    let s = String::from_utf8(w.close_get_bytes().unwrap()).unwrap();
+    assert!(s.contains("1.10"), "decimal image (scale intact) missing in {s:?}");
+    assert!(s.contains("99999999999999999999999"), "bigint image missing in {s:?}");
+}
+
+#[test]
 fn xml_minimal_round_trip() {
     let _g = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let mut w = EventWriter::new("xml").unwrap();

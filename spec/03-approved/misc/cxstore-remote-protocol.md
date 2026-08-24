@@ -1,6 +1,26 @@
-# CXStore Remote Protocol (CSRP)
+# CXStore Remote Protocol (CSRP) — RETIRED (historical)
 
-**Status:** Current
+**Status:** RETIRED (2026-08-08, stream-4 S3). This document is a
+**historical record** of the removed CSRP data plane; it is no longer
+normative. The stream-4 ruling (#676, the #651/#516 partition campaign;
+the §13 CSRP-fold decision) retired CSRP: its routers, binary codec,
+client arms, HTTP data-plane, and the `cx-store+http|+https` scheme
+tokens are **deleted** (the tokens now refuse at open). The `17xx` error
+band is Reserved (retired, never reused).
+
+**The live wire** is the **XSP store profile** — THE CX-to-CX store wire
+([`std-lib/store.md §6.4`](../std-lib/store.md); the store profile spec) —
+with the **gRPC edge adapter** ([`cxstore-grpc.md`](cxstore-grpc.md)) as
+the integration transport for gRPC-speaking systems, both authenticated
+per-call by XSP-AUTH. The daemon's HTTP surface is now bootstrap-only
+(health/ready/metrics/capabilities). The op contracts, error identity,
+and hash invariance below carried forward to the profile verbatim (that
+was the parity obligation); the transport framing they describe is gone.
+The V wire tests named in §7 (`store_csrp_*`, `store_keepalive_test.v`,
+`store_discovery_test.v`, `store_grpc_parity_test.v`, `store_authz*`) were
+removed with the plane; the surviving coverage lives in the profile +
+gRPC-edge suites (`store_xsp_*`, `store_grpc_*`, `store_grpc_call_auth_test.v`).
+The body is preserved unedited below for historical reference.
 
 Wire protocol for the Service tier of `cx-stdlib/store`. Companions:
 [`spec/std-lib/store.md`](../std-lib/store.md) (client-side Store API),
@@ -29,7 +49,9 @@ CSRP is the **Service tier's protocol** in the embedded/service taxonomy:
 - **Service tier** — server-process processing; network protocol (CSRP).
   Specified here.
 
-The protocol is permanent. Operational features (RBAC, observability) layer on
+The protocol is TRANSITIONAL (see the retirement banner above — the
+"permanent" claim this paragraph once made contradicted the CSRP-fold
+ruling and is struck). Operational features (RBAC, observability) layer on
 top without changing it. An optional gRPC transport offers the same operation set
 at normative parity — specified by [`cxstore-grpc.md`](cxstore-grpc.md).
 
@@ -72,7 +94,7 @@ Media types (negotiation tokens):
 | Media type | Body |
 |---|---|
 | `application/cx-astbin` | a single ast_bin document (default request encoding; `/get` happy-path response; result documents when cxbin is negotiated) |
-| `text/cx` | the cxd-text alternative for the same bodies (negotiated via `Content-Type` on requests, `Accept` on responses) |
+| `application/cx` | the canonical-text alternative for the same bodies (negotiated via `Content-Type` on requests, `Accept` on responses). The former `text/cx` token is RETIRED (stream 13 ruling 61): `text/*` invites charset/line-ending normalization by intermediaries, which corrupts content addresses. |
 | `application/cx-frame-stream` | a framed streaming response (§3.2 frame format; used by `/query`, `/iter`, and streaming `/list`) |
 
 **Every operation parameter rides in the request body.** CSRP defines
@@ -146,10 +168,22 @@ Capability discovery has two forms:
   tenant-scoped facts); when auth is not enforced it is open like the
   server-level form.
 
+Both forms carry **`[config-generation N]`** (stream 7 F3, #714 item 3):
+the advert **binds the daemon's config-reload generation** — the same
+counter `config-reload` (§3.13) answers. The daemon computes the advert
+live per request, so the server can never serve a stale one; the binding
+rule is for **clients**: a cached advert (capability profile, and any
+guarantee advert that rides it) is valid only for the generation it was
+fetched under — **a cached advert across `config-reload` is a cached
+lie** ([`consistency_vocabulary.md`](../core/consistency_vocabulary.md)
+§3), and a consumer that observes a different generation MUST re-fetch
+before relying on any advertised fact.
+
 ```cx
 [capabilities
   [csrp-version "1.0"]
   [server-impl "cx-stdlib-store-ref" version="0.8.0"]
+  [config-generation 0]
   [backend-tier "embedded"]
   [backend-name "file"]
   [encodings [supported "cxbin" "cxd"] [default "cxbin"]]
@@ -206,14 +240,25 @@ Response: streaming binary. Frame format:
 ```
 
 Frame kinds:
-- `0x01` — **doc-pair**: `[u8 hash[32]][u32 ast_bin_len][ast_bin_bytes]`
-- `0x02` — **match**: `[u8 hash[32]][u32 ast_bin_len][ast_bin_bytes]`
+- `0x01` — **doc-pair**: `[u16 hash_algo_code BE][u8 digest[32]][u32 ast_bin_len][ast_bin_bytes]`
+- `0x02` — **match**: `[u16 hash_algo_code BE][u8 digest[32]][u32 ast_bin_len][ast_bin_bytes]`
 - `0x03` — **error**: `[u32 code_len][code_bytes][u32 msg_len][msg_bytes]` (terminal)
 - `0x04` — **end**: `[u32 total_count]` (terminal success)
 - `0x05` — **aggregate-result**: `[u32 ast_bin_len][ast_bin_bytes]` (terminal success; single scalar)
 
 Streaming continues until an error frame (`0x03`) or a terminal success
 frame (`0x04` end or `0x05` aggregate-result) is received.
+
+`hash_algo_code` is the multicodec code of the algorithm naming the
+32-byte digest slot (`sha2-256` = `0x0012`), drawn from THE ONE hash
+registry — the same convention as the `.cxpack` entry's `hash_code`
+field. Writers derive it from the store key's tagged address
+(`sha2-256:<hex>`); readers FAIL CLOSED on an unregistered or
+registered-but-unimplemented code (`cx-err:CXER0131`) and reconstruct
+the tagged address `<registry-name>:<hex>` from the code — a bare
+untagged hex never crosses this boundary in either direction. All 1.0
+registry algorithms have 32-byte digests; a non-32-byte digest
+requires a frame-format revision.
 
 #### Push-down aggregates
 
@@ -347,7 +392,7 @@ authenticated-but-not-admin → `403 CXER1703`.
 report their own observables and never fabricate object-graph numbers.
 This is the structured management surface — `/metrics` (Prometheus
 exposition text, `metrics` permission) is for scrapers, not consoles.
-No request parameters; the response is a `text/cx` body.
+No request parameters; the response is an `application/cx` body.
 
 ### 3.11 `POST /cx-store/v1/<store-name>/gc` *(admin)*
 
@@ -471,7 +516,7 @@ same arm as a local `set-alias`:
 ```
 [aliases-set [a name="users" hash="<store-key>"]]                → 200 [aliases-set-result set="1"]
 [aliases-set [a name="head" hash="<k2>" expect="<k1>"]]          → 200 (CAS advance)
-[aliases-set [a name="head" hash="<k1>" expect=""]]              → 409 CXER1704 (exists)
+[aliases-set [a name="head" hash="<k1>" expect=""]]              → 409 CXER1114 (exists)
 ```
 
 - Every target `hash` must already be present on the daemon (a data doc or
@@ -483,7 +528,7 @@ same arm as a local `set-alias`:
   `expect` (`expect=""` ⇒ the alias must not exist yet). Semantics mirror
   `refs-set` (#218): **validate-then-apply, all-or-nothing** across the
   records of one request, under the store's op lock; a mismatch is
-  `409 CXER1704` and nothing is applied. This is the conflict-safe pointer
+  `409 CXER1114` and nothing is applied. This is the conflict-safe pointer
   advance a remote journal head rides. Records without `expect` keep
   last-writer-wins (the local single-writer contract of §6.2).
 - A read-only mount refuses with `400` carrying the local read-only code,
@@ -512,7 +557,7 @@ the rest.
 | 404 | `CXER1710` | `E_CSRP_STORE_NOT_FOUND` | Unknown, malformed, or ambiguous `<store-name>` (§3; wire alias of std-lib `CXER1121` at store granularity) |
 | 400 | `CXER1711` | `E_SVC_CONFIG_INVALID` | `config-reload` candidate failed parse/validation — running config untouched (§3.13; also the daemon's startup fast-fail diagnostic, service-tier §2.2) |
 | 400 | `CXER1712` | `E_SVC_CONFIG_RESTART_REQUIRED` | `config-reload` candidate changes restart-required attrs (named in the message) — nothing applied (§3.13) |
-| 409 | `CXER1704` | `E_CSRP_CONCURRENT_MODIFY` | Modify conflict |
+| 409 | `CXER1114` | `E_STORE_REF_CONFLICT` | Modify conflict |
 | 413 | `CXER1705` | `E_CSRP_PAYLOAD_TOO_LARGE` | Request exceeded `max-request-bytes` |
 | 422 | `CXER1720` | `E_CSRP_INTEGRITY_MISMATCH` | `/get` corruption detected (distinct wire code from `CXER1120 E_STORE_INTEGRITY_MISMATCH` in std-lib/store.md; CSRP carries its own symbolic name to preserve the 1:1 symbolic↔wire invariant) |
 | 429 | `CXER1706` | `E_CSRP_RATE_LIMITED` | The client is over its allowance — per-principal **rate or concurrency**, or the pre-auth admission cap. `Retry-After` set. (RFC 6585: 429 = too many requests; concurrency over-quota is the client's load, so 429, not 503.) |

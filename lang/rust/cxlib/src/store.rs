@@ -1,15 +1,22 @@
-//! Ergonomic CSRP client for the cx-store service tier (#105).
+//! Ergonomic client for the cx-store service tier.
 //!
-//! [`StoreClient`] is a thin façade over the audited `cx-store://` client in the
-//! CX core: each method builds a one-shot CX program and evaluates it through the
+//! [`StoreClient`] is a thin façade over the audited store client in the CX
+//! core: each method builds a one-shot CX program and evaluates it through the
 //! capability-aware ABI ([`crate::eval_code_caps`]) with only `net` granted
-//! (scoped to the server host). The CSRP wire protocol is **not** re-implemented
-//! here — the core is the single source of protocol truth, so hashes and CXER
-//! error codes match every other binding by construction (spec §6.1).
+//! (scoped to the server host). No wire protocol is re-implemented here — the
+//! core is the single source of protocol truth, so hashes and CXER error codes
+//! match every other binding by construction.
+//!
+//! The wire is the XSP store profile — THE CX-to-CX store wire (store.md
+//! §6.4): `cx-store://host:port/name/` (TLS) or `cx-store+xsp://host:port/name/`
+//! (cleartext dev). Client identity is XSP-AUTH: pass `did` + `seed_env` (the
+//! name of an environment variable holding the 32-byte Ed25519 seed hex — the
+//! seed itself never rides a URL or a literal). Anonymous under a floor-policy
+//! daemon needs neither.
 //!
 //! ```no_run
 //! use cxlib::store::StoreClient;
-//! let c = StoreClient::new("cx-store+http://127.0.0.1:7800/mydocs/", None).unwrap();
+//! let c = StoreClient::new("cx-store+xsp://127.0.0.1:7800/mydocs/", None).unwrap();
 //! let h = c.put_doc_text("[note [body \"hi\"]]").unwrap();
 //! assert!(c.exists(&h).unwrap());
 //! ```
@@ -37,28 +44,33 @@ impl std::fmt::Display for CxError {
 impl std::error::Error for CxError {}
 
 /// A connection-less client for one `cx-store://` URL. The remote backend is
-/// stateless per request (each op is one HTTP exchange carrying the URL +
-/// bearer), so a `StoreClient` holds no socket and is cheap to reuse. The bearer
-/// token is carried only inside the open-URL and is never logged.
+/// stateless per op (each op evaluates a one-shot program; the core client
+/// dials the profile session lazily per op), so a `StoreClient` holds no
+/// socket and is cheap to reuse. Identity maps onto the core's open-opts
+/// `xsp-did` / `xsp-seed-env` — the seed stays in the process environment,
+/// named but never read here.
 pub struct StoreClient {
     url: String,
-    token: Option<String>,
+    identity: Option<(String, String)>, // (did, seed_env)
     caps: String,
 }
 
 impl StoreClient {
-    /// Construct a client for a `cx-store://` / `cx-store+http(s)://` URL.
-    pub fn new(url: &str, token: Option<&str>) -> Result<Self, String> {
-        if !(url.starts_with("cx-store://")
-            || url.starts_with("cx-store+http://")
-            || url.starts_with("cx-store+https://"))
-        {
-            return Err(format!("StoreClient url must be a cx-store:// URL, got: {url}"));
+    /// Construct an anonymous client for a `cx-store://` (TLS) or
+    /// `cx-store+xsp://` (cleartext dev) URL — the XSP store profile, THE
+    /// store wire. `identity` is `Some((did, seed_env))` to present an
+    /// XSP-AUTH identity: the client's did:key plus the NAME of the
+    /// environment variable holding its 32-byte Ed25519 seed hex.
+    pub fn new(url: &str, identity: Option<(&str, &str)>) -> Result<Self, String> {
+        if !(url.starts_with("cx-store://") || url.starts_with("cx-store+xsp://")) {
+            return Err(format!(
+                "StoreClient url must be a cx-store:// (TLS) or cx-store+xsp:// (cleartext dev) URL — the XSP store profile is THE store wire; got: {url}"
+            ));
         }
         Ok(StoreClient {
             url: url.to_owned(),
-            token: token.map(|t| t.to_owned()),
-            caps: format!("net:{}", host_port(url)),
+            identity: identity.map(|(d, e)| (d.to_owned(), e.to_owned())),
+            caps: format!("net={}", host_port(url)?),
         })
     }
 
@@ -106,7 +118,14 @@ impl StoreClient {
     /// a silent empty result.
     pub fn query(&self, cxpath: &str) -> Result<Vec<String>, CxError> {
         let out = self.run(&format!("[$store:query $c \"{}\"]", cx_escape(cxpath)), "cx")?;
-        Ok(find_marked_hashes(&out, "[result hash="))
+        // L97 flat relation: one [result doc= source= MATCH] tuple per MATCH —
+        // dedup to the documented per-document hash list (first-appearance
+        // order preserved).
+        let mut seen = std::collections::HashSet::new();
+        Ok(find_marked_hashes(&out, "[result doc=")
+            .into_iter()
+            .filter(|h| seen.insert(h.clone()))
+            .collect())
     }
 
     /// Server-side iteration (§6.1): enumerate every document through the
@@ -118,21 +137,17 @@ impl StoreClient {
         Ok(find_marked_hashes(&out, "[entry hash="))
     }
 
-    fn open_url(&self) -> String {
-        match &self.token {
-            None => self.url.clone(),
-            Some(tok) => {
-                let i = self.url.find("://").map(|p| p + 3).unwrap_or(0);
-                format!("{}{}@{}", &self.url[..i], tok, &self.url[i..])
-            }
-        }
-    }
-
     fn run(&self, op_expr: &str, output_target: &str) -> Result<String, CxError> {
+        let open = match &self.identity {
+            None => format!("[$store:open \"{}\"]", self.url),
+            Some((did, seed_env)) => format!(
+                "[$store:open-opts \"{}\" [map xsp-did=\"{}\" xsp-seed-env=\"{}\"]]",
+                self.url, did, seed_env
+            ),
+        };
         let prog = format!(
-            "[?lib 'cx-stdlib/store' :as store]\n[?let [= $c [$store:open \"{}\"]] {}]",
-            self.open_url(),
-            op_expr
+            "[?lib 'cx-stdlib/store' :as store]\n[?let [= $c {}] {}]",
+            open, op_expr
         );
         // an ABI-level failure is also a cx-err string → map it onto CxError.
         let out = eval_code_caps("", &prog, &self.caps, output_target).map_err(|e| to_cx_error(&e))?;
@@ -156,34 +171,37 @@ fn unwrap_scalar(s: &str) -> String {
     s.to_owned()
 }
 
-fn host_port(url: &str) -> String {
+fn host_port(url: &str) -> Result<String, String> {
     let rest = &url[url.find("://").map(|p| p + 3).unwrap_or(0)..];
-    let mut authority = rest.split('/').next().unwrap_or("");
-    if let Some(at) = authority.find('@') {
-        authority = &authority[at + 1..];
-    }
+    let authority = rest.split('/').next().unwrap_or("");
     if authority.contains(':') {
-        return authority.to_owned();
+        return Ok(authority.to_owned());
     }
-    let default = if url.starts_with("cx-store+http://") { "80" } else { "443" };
-    format!("{authority}:{default}")
+    // the profile needs the explicit [xsp] listener address; demand it here so
+    // the net grant is always exact.
+    Err(format!(
+        "StoreClient url needs an explicit host:port (the [xsp] listener address), got: {url}"
+    ))
 }
 
-/// Extract all 64-hex content hashes from a rendered list value.
+/// I1 identity epoch: content addresses are TAGGED — `sha2-256:<64hex>`.
+/// Bare 64-hex addresses no longer exist on the protocol (cutover, no
+/// dual-accept); extractors return the full tagged form.
+const ADDR_TAG: &str = "sha2-256:";
+
+/// Extract all tagged content addresses from a rendered list value.
 fn find_hashes(s: &str) -> Vec<String> {
     let bytes = s.as_bytes();
     let mut out = Vec::new();
-    let mut i = 0usize;
-    while i + 64 <= bytes.len() {
-        if is_hex(bytes[i]) {
-            let run_end = (i..bytes.len()).find(|&j| !is_hex(bytes[j])).unwrap_or(bytes.len());
-            if run_end - i == 64 {
-                out.push(s[i..run_end].to_owned());
-            }
-            i = run_end;
-        } else {
-            i += 1;
+    let mut from = 0usize;
+    while let Some(rel) = s[from..].find(ADDR_TAG) {
+        let start = from + rel;
+        let i = start + ADDR_TAG.len();
+        let run_end = (i..bytes.len()).find(|&j| !is_hex(bytes[j])).unwrap_or(bytes.len());
+        if run_end - i == 64 {
+            out.push(s[start..run_end].to_owned());
         }
+        from = i;
     }
     out
 }
@@ -199,9 +217,10 @@ fn to_cx_error(err_text: &str) -> CxError {
     CxError { code, message }
 }
 
-/// Collect the 64-hex content hash following each `marker` (`[result hash=` /
-/// `[entry hash=`) in a rendered query / iter value. The hash may be bareword or
-/// quoted; a single leading quote is skipped before the 64-hex run.
+/// Collect the tagged content address (`sha2-256:<64hex>`, I1) following
+/// each `marker` (`[result doc=` — the L97 flat-relation tuple — / `[entry
+/// hash=`) in a rendered query / iter value. The address may be bareword or
+/// quoted; a single leading quote is skipped before the tagged run.
 fn find_marked_hashes(s: &str, marker: &str) -> Vec<String> {
     let mut out = Vec::new();
     let mut from = 0usize;
@@ -211,9 +230,13 @@ fn find_marked_hashes(s: &str, marker: &str) -> Vec<String> {
         if i < bytes.len() && (bytes[i] == b'\'' || bytes[i] == b'"') {
             i += 1;
         }
-        let run_end = (i..bytes.len()).find(|&j| !is_hex(bytes[j])).unwrap_or(bytes.len());
-        if run_end - i == 64 {
-            out.push(s[i..run_end].to_owned());
+        if s[i..].starts_with(ADDR_TAG) {
+            let start = i;
+            let j = i + ADDR_TAG.len();
+            let run_end = (j..bytes.len()).find(|&k| !is_hex(bytes[k])).unwrap_or(bytes.len());
+            if run_end - j == 64 {
+                out.push(s[start..run_end].to_owned());
+            }
         }
         from = i.max(from + rel + marker.len());
     }

@@ -8,7 +8,7 @@
 # Algorithmic helpers (render, infer, coerce, base64) are named procedures, §HELPERS.
 # Tokens: lexicon.ebnf. Structure: grammar.ebnf.
 # [P1-6 fix] WITNESS XML CONVENTION (so the witnesses are WELL-FORMED namespaced XML): every witness's
-# XML is understood to carry, on its outermost element, the bindings xmlns:cx="https://cxhome.org/ns/cx"
+# XML is understood to carry, on its outermost element, the bindings xmlns:cx="tag:cxhome.org,2026:ns/cx"
 # and (implicitly, always-bound) the xml namespace — elided in the rows for brevity. A conforming
 # emitter MUST declare xmlns:cx on the document root; the bijection is over the namespaced Infoset
 # WITH that binding present. (Without it, `<cx:int>` is an unbound prefix and not well-formed — the
@@ -19,7 +19,7 @@
 # canonicalizes (§canon, idempotent). The inverse cx is defined over a SYNTAX-PRESERVING XML model
 # (NOT the bare Infoset — see [P1-INFOSET] below; external oracle) so the two directions cannot share a
 # private wrong inverse. Carrier recognition is
-# BY RESOLVED URI https://cxhome.org/ns/cx, not the literal `cx:` prefix (grammar §namespace).
+# BY RESOLVED URI tag:cxhome.org,2026:ns/cx, not the literal `cx:` prefix (grammar §namespace).
 # [P1-INFOSET fix] The anchor is a SYNTAX-PRESERVING XML model, NOT the bare XML Infoset: a plain
 # Infoset normalizes away exactly the boundaries some node kinds need — CDATA-section boundaries
 # (M-RAW), entity-reference SPELLING (M-ENTITYREF preserves `&name;` unexpanded), and the DTD internal
@@ -178,9 +178,11 @@
 
 [M-PI]  A processing instruction round-trips verbatim; xml/cx targets are PIs too (at the parse layer).
   RULE     PI ::= '[?' PITarget (WS PIData)? ']' ; PIData ::= (Char - ']')*  (interior ']' ends the PI —
-           see RESIDUAL). PITarget = any Name ∉ the EvalName set, INCLUDING 'cx' — at the PARSE layer
-           these image as ordinary PIs; XMLDecl/CXDirective SEMANTICS (version/include/schema) are an
-           eval/conversion concern, not a parse rule.
+           see RESIDUAL). PITarget = any Name ∉ the [127e] ProgramDirName registry (grammar [127e];
+           code.md §4.1 — the former EvalName set was DELETED with grammar [59a]), INCLUDING 'cx' — at
+           the PARSE layer these image as ordinary PIs; XMLDecl/CXDirective SEMANTICS (version/include/
+           schema) are an eval/conversion concern, not a parse rule. (This rule WINS on XMLDecl — I1
+           stream 13: grammar [33] is deleted; `[?xml …]` is a PI in both files.)
            xml(PI{t,d}) ⇒ d = "" ? '<?'t'?>'                                # empty data: no spurious space
                         : (t ≠ 'xml' AND d has no '?>') ? '<?'t' 'd'?>'
                                                         : '<cx:pi cx:target="'t'">'escape(d)'</cx:pi>'

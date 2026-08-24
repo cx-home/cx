@@ -97,9 +97,22 @@ fn test_attr_bool() {
 }
 
 #[test]
-fn test_attr_float() {
+fn test_attr_decimal() {
+    // I1 (L48): a bare decimal-point literal is the DECIMAL kind, not
+    // float. The AST lane carries the base-10 image verbatim with
+    // dataType "decimal".
     let doc = parse(&fx("api_config.cx")).unwrap();
     let srv = doc.at("config/server").unwrap();
+    assert_eq!(srv.attr("ratio").unwrap(), &Value::String("1.5".to_string()));
+    let ratio_attr = srv.attrs.iter().find(|a| a.name == "ratio").unwrap();
+    assert_eq!(ratio_attr.data_type.as_deref(), Some("decimal"));
+}
+
+#[test]
+fn test_attr_float_explicit() {
+    // The float kind still coerces to f64 when declared explicitly.
+    let doc = parse("[server ratio::float=1.5]").unwrap();
+    let srv = doc.at("server").unwrap();
     let ratio = srv.attr("ratio").unwrap().as_f64().unwrap();
     assert!((ratio - 1.5).abs() < 1e-9);
 }
@@ -484,7 +497,10 @@ fn test_to_cx_round_trip_after_mutation() {
 
 #[test]
 fn test_loads_returns_value() {
-    let data = loads(&fx("api_config.cx")).unwrap();
+    // Decimal-free source: the serde_json loads surface applies.
+    // (api_config.cx now carries a decimal attr — see
+    // test_loads_decimal_fails_loud_typed_path_carries_it.)
+    let data = loads("[config [server host=localhost port=8080 debug=false]]").unwrap();
     assert!(data.is_object());
     assert_eq!(data["config"]["server"]["host"], "localhost");
     assert_eq!(data["config"]["server"]["port"].as_i64().unwrap(), 8080);
@@ -492,8 +508,38 @@ fn test_loads_returns_value() {
 
 #[test]
 fn test_loads_bool_types() {
-    let data = loads(&fx("api_config.cx")).unwrap();
+    let data = loads("[config [server host=localhost port=8080 debug=false]]").unwrap();
     assert_eq!(data["config"]["server"]["debug"], Value::Bool(false));
+}
+
+#[test]
+fn test_loads_decimal_fails_loud_typed_path_carries_it() {
+    // I1 (L48): api_config.cx's ratio=1.5 is the DECIMAL kind.
+    // serde_json::Value has no carrier for it, so loads fails loudly
+    // (kind never erased) and points at the typed CXCol surface, which
+    // carries the full tree.
+    use cxlib::data_bin::{decode_payload_value, to_data_bin};
+    use cxlib::CxValue;
+
+    let err = loads(&fx("api_config.cx")).unwrap_err();
+    assert!(err.contains("decode_payload_value"), "got: {err}");
+
+    fn get<'a>(v: &'a CxValue, key: &str) -> Option<&'a CxValue> {
+        match v {
+            CxValue::Map(pairs) => pairs.iter().find(|(k, _)| k == key).map(|(_, v)| v),
+            _ => None,
+        }
+    }
+    let payload = to_data_bin(&fx("api_config.cx")).unwrap();
+    let tree = decode_payload_value(&payload).unwrap();
+    let server = get(&tree, "config").and_then(|c| get(c, "server")).expect("config/server");
+    assert_eq!(get(server, "host"), Some(&CxValue::String("localhost".to_string())));
+    assert_eq!(get(server, "port"), Some(&CxValue::Int(8080)));
+    assert_eq!(get(server, "debug"), Some(&CxValue::Bool(false)));
+    match get(server, "ratio").expect("ratio present") {
+        CxValue::Decimal(d) => assert_eq!(d.to_plain_string(), "1.5"),
+        other => panic!("expected CxValue::Decimal, got {other:?}"),
+    }
 }
 
 #[test]

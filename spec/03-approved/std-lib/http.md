@@ -287,7 +287,7 @@ An optional read that may be absent is typed `[returns element]` and yields the
 ```
 
 A trailing `$opts::map {}` is a **defaulted positional parameter** —
-`grammar.ebnf [153b] PositionalParam ::= '$' Name TypeAnnot? (S Default)?`, i.e. the
+`grammar.ebnf [153b] PositionalParam ::= '$' Name TypeAnnotation? (S Default)?`, i.e. the
 default is a **bare, space-separated VALUE after the type** (`$opts::map {}`),
 **not** `$opts::map = {}` (the `=` form is a *named* param `$opts={}::map`, [153c]).
 So the caller MAY omit it; `[$http:client]` ≡ `[$http:client {}]`. The same trailing
@@ -512,6 +512,17 @@ top (§6).
 > stream; use `serve`+`sse-subscribe`/`sse-publish` for concurrent live feeds.
 > (A timeout/non-blocking std-stream read — the sibling gap for an interactive
 > client — is `cx-stdlib/io` #29.)
+
+> **Delivery classification (RULED: U1.8a).** `sse-subscribe`/`sse-publish` is
+> an HTTP **egress carriage** of topic-selected fan-out — a transport, not a
+> general delivery mechanism ([`delivery.md`](../core/delivery.md) §3);
+> the XAP render coalescer at this edge is a `retention=latest` read
+> (delivery.md §6). This surface MUST NOT grow general pub/sub semantics
+> (pattern languages, replay, cursors) — any such need argues with the
+> delivery concept spec first. The client-side `sse-connect` handle satisfies
+> the delivery.md §4 subscription contract, so the general
+> `[?receive]`/`[?select]` (code.md §10.4) accept it; `sse-events` remains the
+> module spelling.
 
 > **Implementation tier (this revision).** The **live held-open socket transport
 > is implemented** on the L4 `net` layer (built on the real `accept-iter` /
@@ -1187,3 +1198,120 @@ this draft** (G3) — the table above is for the graduation PR.
 5. **Directive refactor timing — DECIDED (a).** Re-point `[?http-service]`/
    `[?http-client]` onto this module *in the graduation PR* (no dual HTTP stack);
    the largest cross-cutting change, tracked in §11. (Spec: §6, §8 façade, §11.)
+
+## §13. TLS and HTTP/2 on the serve path (H2-1 — approved surface; implementation landed)
+
+**Status:** surface APPROVED (ruling H2-1, 2026-08-20, owner "a" on the
+#875 letter); implementation LANDED 2026-08-20 (#875 — the TLS+ALPN
+listener and h2 connection driver in
+`vcx/platform/http_h2_serve_notd_wasm32_emcc.v`, wired under both serve
+surfaces; gate lane `vcx/tests/http_h2_serve_test.v`). The h2
+protocol-error discipline is wire-level (GOAWAY/RST_STREAM with RFC 7540
+codes); no CX-visible error value surfaces from those paths, so no §8
+CXER band allocation has been made — the §9.6 registration happens
+if/when a protocol error becomes CX-visible (implementation record:
+ledger/rulings_2026_08_20_h2_surface.md).
+
+**Why this exists.** The liveness contract (`xap/ux.md` P0-44) holds one
+SSE feed per page and pages never poll — which structurally wants a
+multiplexing transport: HTTP/1.1's six-connections-per-host browser cap
+turns a handful of open tabs into pool starvation (the #872 class; the
+kernel visibility policy is the mitigation, this is the fix). The
+platform already carries a tested RFC-7540 server codec (frame layer,
+HPACK, connection/stream state — built for the store's gRPC edge); this
+surface REUSES that codec as transport plumbing only. No gRPC semantics
+exist anywhere on this path (gRPC remains an external-adapter surface,
+owner doctrine 2026-08-20).
+
+### §13.1 The listener surface
+
+- `[?http-service]` / `[$http:serve]` config admits a **`[tls cert=PATH
+  key=PATH]`** child (the same shape the store service config uses).
+  With `[tls]` present the listener performs a TLS server handshake
+  (mbedtls, the net-layer stack) and offers **ALPN `("h2",
+  "http/1.1")`**; the negotiated protocol selects the connection's
+  framing.
+- **No `[tls]` → cleartext HTTP/1.1 only, exactly today's path.** There
+  is no h2c upgrade: browsers do not speak cleartext h2, and a second
+  cleartext framing would be surface without a consumer.
+- ALPN `http/1.1` (or a client offering no ALPN) over TLS → the existing
+  h1 path over the TLS transport, unchanged semantics.
+
+### §13.2 h2 framing ↔ the exchange model
+
+- Each h2 stream materializes exactly one `[exchange]` — the handler
+  contract, capability posture, and response surface (§3) are unchanged
+  and transport-blind. HEADERS carries the request line + headers; DATA
+  carries the body; the response is HEADERS + DATA. Trailers are not
+  offered.
+- **PUSH_PROMISE is never sent** (deprecated in every browser; a push
+  surface would be dead weight with an attack profile).
+- Protocol errors follow RFC 7540's GOAWAY/RST_STREAM discipline via the
+  existing codec; their CXER codes allocate from the §8 band at
+  implementation time (registered in governance §9.6 before use, per the
+  registry rule).
+
+### §13.3 SSE over h2
+
+- A promoted `[sse-stream]` (§3.6) lowers its event writes to DATA
+  frames on the held-open stream. The §3.6 concurrent-stream bound
+  counts streams regardless of transport.
+- **Backpressure is per-stream flow control** (WINDOW_UPDATE): a slow
+  consumer stalls its own stream, never the connection — this replaces
+  §3.6's OS-write-blocking backpressure rule for h2 streams and is the
+  one genuinely new semantic on this path.
+- One connection carries every page's feed: the six-per-host cap stops
+  applying, which is the acceptance criterion — an ORIEL-shaped surface
+  holding 10+ tabs against one origin navigates instantly with every
+  feed multiplexed (#875).
+
+---
+
+## §14. Serving execution model — reactors do I/O, a bounded executor pool runs handlers
+
+*(Graduated 2026-08-20 from the xap_architecture working notes §11 (ruling
+SPR-5) — design-accepted 2026-07-08, shipped and field-proven via #275 →
+PRs #278/#279. This section is the normative statement of the shipped model;
+`vcx/tests/http_slow_handler_isolation_test.v` is its gate.)*
+
+### §14.1 The defect class this model removes
+
+A request handler is arbitrary cx code: it may sleep, dial upstreams, or call
+a model whose generation takes minutes. Running handler evaluation ON the
+reactor threads means every blocking handler parks a reactor; at the default
+min(4, cores) fan-out, four slow upstream calls freeze the entire HTTP plane —
+health checks and SSE pushes included, so supervised deployments get
+wedge-killed. The client whole-request timeout (§4.5) bounds each park at the
+request budget; it cannot remove the class.
+
+### §14.2 The model (normative)
+
+- **Reactors own sockets, never evaluation**: accept, read, parse, disconnect
+  reaping, and held-fd (SSE) bookkeeping. A parsed request is COPIED off the
+  reactor's read buffer and enqueued; the reactor returns to its poll loop
+  immediately.
+- **A bounded executor pool owns evaluation**: K executor threads (env knob,
+  like the reactor count) dequeue jobs, run the per-request dispatch (the same
+  per-request env + ProgramState-lock discipline that makes multi-reactor eval
+  sound), and write the response to the fd directly (fd writes are
+  cross-thread-safe, backpressure-correct, SIGPIPE-immune). SSE promotion
+  subscribes from the executor — the subscribe path is atomic under the
+  registry lock.
+- **Overflow is answered, never queued unboundedly**: when the job queue is
+  full the REACTOR answers 503 inline (no evaluation — a constant response).
+  The serve plane stays responsive under any handler behavior by construction;
+  load shedding is explicit and observable; a wedge is impossible.
+- **Fd lifecycle under concurrent dispatch**: a job holds its fd (the SSE
+  held-fd mechanism) for the dispatch duration. A peer disconnect mid-dispatch
+  DEFERS the socket close to the executor (the loop deregisters the fd but the
+  fd number stays allocated), so a late response write can never land on a
+  recycled fd. Pipelined requests on one fd queue per-fd and run in order —
+  one in-flight dispatch per connection.
+
+### §14.3 What this deliberately is not
+
+- Not an async/coroutine surface for `$http:` calls inside handlers — that
+  would change evaluator semantics; the executor pool contains blocking as an
+  operational property instead.
+- Not unbounded thread-per-request — the pool is fixed and the queue bounded;
+  saturation degrades loudly (503) rather than by stealth (latency collapse).

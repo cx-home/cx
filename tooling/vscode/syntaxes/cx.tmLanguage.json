@@ -5350,7 +5350,7 @@
       },
       "name": "meta.eval-directive.cx",
       "patterns": [
-        { "name": "keyword.control.eval-directive.cx", "match": "\\b(with-open|with-scope|with-error-hook|with-caps|modify|match|for-array|for-map|for|let|loop|do|fn|def|lib|const|if|else|pipe|map|reduce|filter|take|drop|zip|enumerate|chunks|concat|chain|cycle|scan|flatten|partition|group-by|to-sequence|to-array|to-map|views|view|str|element|attr|entry|name|unquote|quote|splice|eval|meta|retry|timeout|circuit-breaker|fallback|rate-limit|bulkhead|http-service|service-handle|http-client|worker-handle|worker|channel|send|receive|try-send|try-receive|close|select|stop|wait-for|async|await-all|await-any|await-race|await|cancel|check-cancel|sleep|secret|reveal)(?=[\\s\\]])" },
+        { "name": "keyword.control.eval-directive.cx", "match": "\\b(with-open|with-scope|with-error-hook|with-caps|modify|match|for-array|for-map|for|let|loop|do|fn|def|lib|const|if|else|pipe|map|reduce|filter|take|drop|zip|enumerate|chunks|concat|cycle|scan|flatten|partition|group-by|to-sequence|to-array|to-map|views|view|str|element|attr|entry|name|unquote|quote|splice|eval|meta|retry|timeout|circuit-breaker|fallback|rate-limit|bulkhead|http-service|service-handle|http-client|worker-handle|worker|channel|send|receive|try-send|try-receive|close|select|stop|wait-for|async|await-all|await-any|await-race|await|cancel|check-cancel|sleep|secret|reveal)(?=[\\s\\]])" },
         { "include": "#clause-child" },
         { "include": "#let-clause" },
         { "name": "keyword.other.modifier.cx", "comment": "Bare modifier barewords: pure / impure on [?def] (code.md §12.2), lazy on [?const] (§12.3), in-memory on [?lib] (§12.1), asc / desc on [order-by] (§7).", "match": "\\b(pure|impure|lazy|in-memory|asc|desc)(?=[\\s\\]])" },
@@ -5372,8 +5372,8 @@
       ]
     },
     "clause-child": {
-      "comment": "Generic [head …] clause-child inside a directive body. Heads per the per-directive registries in code.md §4.1: [?for] clauses (§7 — in / where / yield / yield-array / yield-map / order-by / group-by / limit / take / drop / takewhile / dropwhile / par / stream / ordered / fail-fast), [?if] branches (§8.4 — then / else), [?def] type clauses (§12.2 — returns / throws), [?lib] selective refer (§12.1 — only), [?pipe] taps (§8.9 — tap), [?with-error-hook] clauses (§9.6 — observe / enrich / report / format / sink), [?with-caps] denies (security.md §3 — deny). Longest names first so e.g. `yield-map` is not tokenised as `yield`.",
-      "begin": "(\\[)(yield-array|yield-map|takewhile|dropwhile|order-by|group-by|fail-fast|in|where|yield|limit|take|drop|par|stream|ordered|then|else|returns|throws|only|tap|observe|enrich|report|format|sink|deny)(?=[\\s\\]])",
+      "comment": "Generic [head …] clause-child inside a directive body. Heads per the per-directive registries in code.md §4.1: [?for] clauses (§7 — in / where / yield / yield-array / yield-map / order-by / group-by / limit / take / drop / take-while / drop-while / par / lazy / ordered / fail-fast), [?if] branches (§8.4 — then / else), [?def] type clauses (§12.2 — returns / throws), [?lib] selective refer (§12.1 — only), [?pipe] taps (§8.9 — tap), [?with-error-hook] clauses (§9.6 — observe / enrich / report / format / sink), [?with-caps] denies (security.md §3 — deny). Longest names first so e.g. `yield-map` is not tokenised as `yield`.",
+      "begin": "(\\[)(yield-array|yield-map|take-while|drop-while|order-by|group-by|fail-fast|in|where|yield|limit|take|drop|par|lazy|ordered|then|else|returns|throws|only|tap|observe|enrich|report|format|sink|deny)(?=[\\s\\]])",
       "end": "\\]",
       "beginCaptures": {
         "1": { "name": "punctuation.section.brackets.cx" },
@@ -5527,6 +5527,8 @@
       "name": "meta.element.cx",
       "patterns": [
         { "comment": "Element head, with the optional head-position `#id` declaration glued to it. ID scope is head-position ONLY: the parser lexes a whitespace-preceded `#` ANYWHERE ELSE as a line comment (lexicon [L2]) — `[user [name Alice] #u1 x]` swallows `#u1 x…` to end of line — so a body-position `#name` must color as the comment it is (#comment below), never as an ID.", "match": "(?<=\\[)([A-Za-z][A-Za-z0-9_:-]*)(?:(\\s+)(#[A-Za-z_][A-Za-z0-9_-]*))?", "captures": { "1": { "name": "entity.name.tag.cx" }, "3": { "name": "constant.cxpath.id.cx" } } },
+        { "comment": "Operator-named element head (I1 row 8 / grammar.ebnf [50a]): a single DELIMITED operator char `+ - * / = < >` heads a data element (`[+ $x 2]`). Glued spellings keep their old routes (`[-1, 2]` array, `[*name]` alias), which the delimiter lookahead preserves. Scoped like the program operator heads so themes color the two lanes consistently.", "match": "(?<=\\[)([+*/=<>-])(?=\\s|\\])", "name": "keyword.operator.head.cx" },
+        { "comment": "Authorable variable hole `$name` (I1 row 9 / grammar.ebnf [L25b]): a bare DELIMITED simple-name binding in a DATA position is a hole — the quoted tree's data image. `.`/`:` continuations stay text, so the match stops at the simple name.", "match": "(?<![\\w$@.])\\$[A-Za-z_][A-Za-z0-9_-]*(?![\\w:.-])", "name": "variable.other.hole.cx" },
         { "name": "constant.cxpath.anchor.cx", "match": "&[A-Za-z_][A-Za-z0-9_-]*" },
         { "name": "constant.cxpath.merge.cx", "match": "\\*[A-Za-z_][A-Za-z0-9_-]*" },
         { "include": "#type-annotation" },
@@ -5548,6 +5550,7 @@
     "scalar": {
       "comment": "Scalar literals per lexicon.ebnf §3/§4/§6, longest-token-first (datetime before date before numbers) so `2024-01-15` is ONE date token, not int 2024. Numbers ([L20]): optional leading +/- sign, `_` digit separators, hex `0x…`, floats with leading/trailing dot (`.5` / `1.`) and bare exponent (`1e5`); NO leading-zero integers (`042` is Text) and NO 0o/0b (they never existed — both verified Text against the live binary). Durations ([L27]: ns/us/ms/s/m/h/d/w terms) and periods ([L28]: mo/y) are distinct literal types. Datetime ([L24]): fractional seconds and the zone are OPTIONAL, `Z` is uppercase-only, an offset requires the colon.",
       "patterns": [
+        { "comment": "Self-describing tagged address (I1 stream 19, L31/L32): `<algo>:<hex>` with the algo from THE ONE registry (hash_registry.v — sha2-256 required; sha2-384/sha2-512/blake3 optional), the Tier-2 `code:` composition outermost, and the algo-neutral journal `genesis:` sentinel (L38). Bare hex is REJECTED at parse (CXER0130), so only the tagged spelling exists to color. Matched FIRST so the hex run never fragments into number tokens.", "name": "constant.other.address.cx", "match": "(?<![\\w.-])(?:code:)?(?:sha2-256|sha2-384|sha2-512|blake3):[0-9a-f]{8,}\\b|(?<![\\w.-])genesis:(?![\\w-])" },
         { "name": "constant.other.datetime.cx", "match": "(?<![0-9A-Za-z_.+-])[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})?(?![0-9A-Za-z_.:-])" },
         { "name": "constant.other.date.cx", "match": "(?<![0-9A-Za-z_.+-])[0-9]{4}-[0-9]{2}-[0-9]{2}(?![0-9A-Za-z_.:-])" },
         { "name": "constant.other.duration.cx", "match": "(?<![0-9A-Za-z_.+-])[+-]?((0|[1-9](_?[0-9])*)(ns|us|ms|s|m|h|d|w))+(?![0-9A-Za-z_.:-])" },

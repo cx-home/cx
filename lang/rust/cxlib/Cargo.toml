@@ -1,6 +1,6 @@
 [package]
 name = "cxlib"
-version = "0.15.0"
+version = "0.16.0"
 edition = "2021"
 description = "CX format library — thin wrapper around libcx"
 
@@ -12,6 +12,14 @@ strip = true         # strip symbols from the binary
 
 [dependencies]
 serde_json = "1"
+# I1 L48 (identity epoch): decimal and bigint are first-class semantic
+# kinds with their own data-bin wire tags (0x28 / 0x18). Host mapping is
+# normative per spec/03-approved/misc/type-mapping.md — decimal =
+# bigdecimal::BigDecimal (arbitrary precision; NOT rust_decimal, whose
+# 96-bit form cannot represent the wire image), bigint =
+# num_bigint::BigInt.
+bigdecimal = "0.4"
+num-bigint = "0.4"
 # Apache Arrow C-Data interop — opt-in via `--features arrow` so the default
 # build stays light. Mirrors Python's `pip install cxlib[arrow]` and Go's
 # `-tags arrow` patterns. Pulls in `libcx_arrow` at link time (see build.rs).

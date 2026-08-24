@@ -1,0 +1,257 @@
+[# Section 5a — data tooling: the CLI verbs that need only Ring 0. Split
+   out of the monolithic Tooling section per the #826 ruling (CLI verbs
+   go to the ring each serves). Content carried verbatim from the
+   verified 08-tooling children; only numbering and the frame are new. #]
+
+[section id=data-tooling group='Ring 0 — Data' n='5a' title='Data tooling'
+
+  [intro
+    """Every verb on this page runs against documents and needs nothing
+       above Ring 0: no evaluator, no capabilities, no server. They are
+       the daily drivers of the data-format adopter — convert, format,
+       canonicalize, hash, compare, validate, query, and diff — and
+       each is exit-code-honest so it slots straight into CI. The verbs
+       that execute programs live with Ring 1 ([[code-tooling]]); the
+       full subcommand catalog is in [[tooling]]."""]
+
+  [child id=cli-projections n='5a.1' title='Projection and conversion flags'
+    [body
+      """Format projection is a top-level flag surface, not a
+         subcommand. One flag picks the output projection of an
+         input document; `--from` / `--to` drive explicit
+         conversions:"""]
+    [example lang=sh
+      """$ cx --ast config.cx                 # JSON AST
+         $ cx --json config.cx                # JSON projection
+         $ cx --yaml config.cx                # YAML projection
+         $ cx --xml --compact config.cx       # XML, minimised
+         $ cx --from=md --to=cx README.md     # Markdown in, CX out
+         $ cx --from=cx --to=json --lossless order.cx
+         $ echo '[hello world]' | cx --json -  # stdin"""]
+    [list
+      [item """Projection flags: `--ast` `--cx` `--xml` `--json`
+              `--yaml` `--toml` `--md` `--csv` `--tsv` `--psv`,
+              each optionally with `--compact`."""]
+      [item """`--from=cx|xml|json|yaml|toml|md|csv|tsv|psv
+              --to=cx|xml|json|yaml|toml|md|csv|tsv|psv`
+              — explicit conversion; `--lossless` makes XML carry
+              per-value types (`<cx:T>`) for an exact round-trip."""]
+      [item """`--include-root=DIR` — resolve `[?cx include=…]`
+              against DIR before projecting (include resolution is
+              opt-in; without a root the directive is preserved)."""]]]
+
+  [child id=cli-fmt n='5a.2' title='cx fmt'
+    [body
+      """Pretty-prints in **lossless canonical** form. Comments,
+         anchors, and authorial structure are preserved;
+         whitespace and quoting are normalised. Reads the file
+         argument (or stdin) and writes the formatted document to
+         stdout."""]
+    [example lang=sh
+      """$ cx fmt config.cx                    # formatted, to stdout
+         $ cx fmt config.cx > config.fmt.cx && mv config.fmt.cx config.cx"""]]
+
+  [child id=cli-canon n='5a.3' title='cx canonical / cx hash / cx eq'
+    [body
+      """`cx canonical` emits the **strict canonical text** per
+         [`spec/core/canonical.md`](../../spec/03-approved/core/canonical.md): comments
+         stripped, attributes sorted, anchors expanded, whitespace
+         collapsed, quoting normalised. Two data-equivalent inputs
+         produce identical output — that is the contract `cx hash`
+         (SHA-256 of those bytes) and `cx eq` (exit 0 iff the
+         strict-canonical forms match, 1 if they differ, 2 on
+         error) build on."""]
+    [example lang=sh
+      """$ cx canonical config.cx | shasum -a 256   # equivalent to cx hash
+         $ cx hash config.cx
+         $ cx eq prod.cx proposed.cx && echo unchanged || echo changed"""]]
+
+  [child id=cli-validate n='5a.4' title='cx validate'
+    [body
+      """Validates a document against a `.cxs` schema
+         ([`spec/core/schema.md`](../../spec/03-approved/core/schema.md)). Flags:
+         `--schema=SCHEMA.cxs` (required),
+         `--fail-on=info|warn|error|none` (default `error`),
+         `--mode=open|strict|closed` (overrides the schema-mode
+         directive), `--apply-defaults` (materialise schema-default
+         attribute values). Exit 0 if no diagnostics at/above the
+         threshold, 1 if any, 2 on I/O or schema failure."""]
+    [example lang=sh
+      """$ cx validate users.cx --schema=users.cxs
+         $ cx validate users.cx --schema=users.cxs --mode=strict --fail-on=warn"""]]
+
+  [child id=cli-select n='5a.5' title='cx select'
+    [body
+      """CXPath query over one document —
+         `cx select 'PATH' [FILE]` (stdin when FILE is `-` or
+         absent). The document binds as `$doc`; PATH is a single
+         CXPath value expression (`$doc/…`, `/…`, or `//…`,
+         predicates included). Matches print one per line in
+         canonical CX, in document order; attribute-axis matches
+         materialize as `[name value]` fields. Exit 0 with at
+         least one match, 1 on an empty match set (grep-style),
+         2 on error. A pure read — no capability grants accepted
+         or needed. Contract:
+         [`spec/misc/cli.md`](../../spec/03-approved/misc/cli.md) §3.8."""]
+    [example lang=sh
+      """$ cx select '//user[= $_@role admin]' users.cx
+         [user name=Alice role=admin]
+         $ cx select '$doc/user@name' users.cx
+         [name 'Alice']
+         [name 'Bob']
+         $ cat users.cx | cx select '//user' && echo matched"""]]
+  [child id=cli-table n='5a.6' title='cx table'
+    [body
+      """The public Table API surface for CXCol / `[table[…]]`
+         payloads: `cx table info FILE` (column/row counts, types,
+         byte size), `cx table dump FILE --to=cx` (round-trip via
+         the Table API), `cx table load FILE --to=cx` (symmetric
+         inverse). Parquet / Arrow output (`--to=parquet|arrow`)
+         defers to the `libcx_arrow` bridge. See [[analytics]]."""]
+    [example lang=sh
+      """$ cx table info data.cxbin
+         $ cx table dump data.cxbin --to=cx | head"""]]
+
+  [child id=cli-diff n='5a.7' title='cx diff'
+    [body
+      """Semantic diff — walks the strict-canonical forms, so
+         presentation-only edits produce no delta. See [[diff]]
+         for the output contract. Flags: `--format=unified|json|summary`
+         (default `unified`), `--no-color`. Exit codes match
+         `diff(1)`: 0 equal, 1 differs, 2 error."""]
+    [example lang=sh
+      """$ cx diff prod.cx proposed.cx
+         $ cx diff --format=json prod.cx proposed.cx
+         $ cx diff prod.cx proposed.cx && echo no-op   # CI gate"""]]
+
+  [child id=diff n='5a.8' title='Diff semantics'
+    [intro
+      """`cx diff` produces a **semantic** diff — tree-structured,
+         canonical-byte-aware, formatting-blind. Two
+         data-equivalent inputs diff to nothing, even if they differ
+         at the text level. This is what makes `cx diff` usable as a
+         CI gate: it reports semantic deltas, not formatting noise."""]
+
+    [child id=diff-scope n='5a.8.1' title='What cx diff reports (and ignores)'
+      [body
+        """`cx diff` reports differences in the strict canonical form
+           ([`spec/core/canonical.md §1.2`](../../spec/03-approved/core/canonical.md)).
+           Specifically it **reports**:"""]
+
+      [list
+        [item """Element added / removed (by canonical path)."""]
+        [item """Element renamed (different canonical name at the
+                same path)."""]
+        [item """Attribute added / removed / value-changed (by
+                canonical name)."""]
+        [item """Body content changed (atomic-value or text-content
+                differences)."""]
+        [item """Type annotation changed (e.g., `:int` vs `:u32` —
+                the annotation IS part of the data)."""]
+        [item """Element order changed *when order is
+                data-significant* (per
+                [`spec/core/canonical.md §2.1`](../../spec/03-approved/core/canonical.md))."""]]
+
+      [body
+        """And **ignores**:"""]
+
+      [list
+        [item """Comments (`# line` and `[# block #]`)."""]
+        [item """Attribute order on the same element."""]
+        [item """Anchor / alias / merge details — expanded to the
+                resolved form before diff."""]
+        [item """Whitespace, indentation, line breaks."""]
+        [item """Numeric formatting (`1_000_000` vs `1000000`)."""]
+        [item """Quoting style (`'foo'` vs `"foo"`)."""]
+        [item """Element-name aliases that resolve to the same
+                canonical name."""]]]
+
+    [child id=diff-output n='5a.8.2' title='Output formats'
+      [body
+        """Three output modes via `--format`:"""]
+
+      [list
+        [item """`unified` (default) — element-rooted hunks,
+                `-` / `+` / ` ` prefixes. Human-readable."""]
+        [item """`json` — structured array of change records.
+                Suitable for CI gates and editor integrations."""]
+        [item """`summary` — one-line counts. Useful for shell
+                prompts and PR bots."""]]
+
+      [example lang=sh
+        """$ cx diff prod.cx proposed.cx
+           --- prod.cx
+           +++ proposed.cx
+           @@ /config/database @@
+            host='primary.db'
+           -port=5432
+           +port=5433
+            replica='secondary.db'"""]
+
+      [example lang=json
+        """[
+             {
+               \"kind\": \"attribute-changed\",
+               \"path\": \"/config/database/@port\",
+               \"before\": {\"name\": \"port\", \"value\": 5432, \"type\": \"int\"},
+               \"after\":  {\"name\": \"port\", \"value\": 5433, \"type\": \"int\"}
+             }
+           ]"""]]
+
+    [child id=diff-json n='5a.8.3' title='JSON change-record shape'
+      [body
+        """Each record has a stable shape:"""]
+
+      [list
+        [item """`kind` — one of `element-added`, `element-removed`,
+                `element-renamed`, `attribute-added`,
+                `attribute-removed`, `attribute-changed`,
+                `body-changed`, `type-changed`, `order-changed`."""]
+        [item """`path` — CXPath expression locating the change. The
+                same expression drops straight into a CX program
+                (`[?for [in $x PATH] …]`)."""]
+        [item """`before` / `after` — relevant value for the kind.
+                Absent when the side has no value (e.g.
+                `element-added` has no `before`). The field is
+                **omitted**, not `null` — per the four-way
+                null/empty/missing distinction of
+                [`spec/core/code.md §8.13`](../../spec/03-approved/core/code.md)
+                this is *missing*."""]]]
+
+    [child id=diff-git n='5a.8.4' title='Git integration'
+      [body
+        """`cx diff` plugs into `git diff` via the standard custom-
+           diff-driver mechanism. Add this to `.gitattributes`:"""]
+
+      [example lang=text
+        """*.cx    diff=cx
+           *.cxd   diff=cx
+           *.cxs   diff=cx"""]
+
+      [example lang=sh
+        """# One-time per repo
+           git config diff.cx.command 'cx diff'"""]
+
+      [body
+        """With this in place, `git diff path/to/config.cx` and
+           `git show HEAD path/to/config.cx` use the semantic diff
+           automatically. PR review UIs that respect `.gitattributes`
+           (GitHub, GitLab, Gerrit) pick it up too."""]]
+
+    [child id=diff-exit-codes n='5a.8.5' title='Exit codes'
+      [body
+        """Match `diff(1)`:"""]
+
+      [list
+        [item """`0` — inputs are data-equivalent (no
+                differences)."""]
+        [item """`1` — inputs differ (at least one semantic
+                delta)."""]
+        [item """`2` — error (parse failure, file not found,
+                invalid arguments)."""]]
+
+      [example lang=sh
+        """# Use directly as a CI gate
+           cx diff prod.cx proposed.cx && echo no-change || review-changes"""]]]
+
+]

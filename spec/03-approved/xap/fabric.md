@@ -46,7 +46,15 @@ the boundary that matters most.
 ## 2 — The full cx story (the shape with NATS/JetStream removed)
 
 The stack is layered so each enterprise expectation has exactly one home.
-fabric is the delivery layer; it invents nothing below itself.
+fabric is the delivery layer; it invents nothing below itself. The delivery
+concept fabric layers over — streams, their axes, the subscription contract —
+is named once in [`delivery.md`](../core/delivery.md) (RULED:
+U1.1a–U1.15a); fabric is its delivery LAYER (groups, offsets, serving,
+adapters) and its durable plane is the journal point served (§6). This names
+the floor "invents nothing below itself" already stands on. The U1.1a
+respell applies here: the transient plane's keys are **transient streams**
+(formerly "transient channels"); the served-wire envelopes — including the
+`[channel-value …]` push frame — are unchanged (no wire motion).
 
 | Enterprise expectation | cx layer | Where specified |
 |---|---|---|
@@ -75,7 +83,7 @@ For any adopter explaining the migration:
 | JetStream stream / Kafka topic | **journal stream** — plus hash-chain verifiability and attribution the broker versions lack |
 | JetStream durable consumer / Kafka consumer group | fabric **consumer group** with store-hosted offsets (§9) |
 | JetStream ephemeral/push consumer | fabric subscription (push over XSP) (§11) |
-| NATS request-reply | XSP `request`/`reply` frames over a fabric channel (§12.1 call conventions) |
+| NATS request-reply | XSP `request`/`reply` frames over a fabric transient stream (§12.1 call conventions) |
 | JetStream KV / ObjectStore | **store** — content-addressed, which the broker bolt-ons are not |
 | NATS nkeys/JWT auth, Kafka ACLs | **DID proof-of-control** (mutual, channel-bound) + `observe`/`publish`/`consume` capability grants (§11) |
 | Kafka partitions / NATS clustering | per-stream sequencing today (§10); clustering **staged** — #521 (§18) |
@@ -99,7 +107,7 @@ staged item**:
 | Pattern (EIP) | cx realization | Status |
 |---|---|---|
 | Canonical Data Model | CX canonical form — the substrate itself | shipped (core) |
-| Message Channel | durable stream (journal) / transient channel | fabric v1 |
+| Message Channel | durable stream (journal) / transient stream | fabric v1 |
 | Publish–Subscribe Channel | `subscribe` on either plane, fan-out | fabric v1 |
 | Point-to-Point / Competing Consumers | consumer group — one consumer per event per group | fabric v1 |
 | Durable Subscriber | group offset persisted in store (§9) | fabric v1 |
@@ -111,7 +119,7 @@ staged item**:
 | Guaranteed Delivery | journal commit precedes delivery; at-least-once redelivery from offsets | fabric v1 |
 | Idempotent Receiver | deterministic folds (N-CORE-1) — the platform posture for duplicates | shipped |
 | Transactional Client | commit *is* the journal append; offset-commit-after-process | fabric v1 |
-| Request–Reply | XSP `request`/`reply` frames over a fabric channel — call conventions §12.1 | **v1** (#544) |
+| Request–Reply | XSP `request`/`reply` frames over a fabric transient stream — call conventions §12.1 | **v1** (#544) |
 | Correlation Id / Return Address | XSP `stream-id` + frame/event attrs | v1 |
 | Message Expiration | transient = latest-wins by construction; durable = journal retention policy | v1 / journal |
 | Claim Check | payload in store, content address in the event — content addressing makes this trivial | shipped (convention) |
@@ -152,7 +160,7 @@ promoted or demoted between them.
 | Plane | Semantics | Rides on |
 |---|---|---|
 | **durable** | committed events: ordered (per stream), attributed, hash-chained, replayable; consumer groups + offsets; **at-least-once** | `journal` (which rides `store`) |
-| **transient** | ephemeral events: latest-wins per channel, fan-out-now to live subscribers; no history, no replay, no ack; **best-effort** | in-memory channels (the generalization of xap's Tier-2 coord pattern — §12) |
+| **transient** | ephemeral events: latest-wins per stream, fan-out-now to live subscribers; no history, no replay, no ack; **best-effort** | in-memory streams (the generalization of xap's Tier-2 coord pattern — §12) |
 
 The durable plane is **not a second log**: a durable fabric stream *is* a
 journal stream. fabric adds delivery (push over XSP instead of poll), group
@@ -175,6 +183,32 @@ in-process and across the platform:
 Glob + predicate are the only wildcard/structural mechanisms; no regex.
 fabric adds **no** pattern forms of its own; any future extension lands in
 `bus.md` §2.2 first and fabric inherits it.
+
+**Consistency declarations — the per-subscription floor (stream 7,
+[`consistency_vocabulary.md`](../core/consistency_vocabulary.md)).**
+`subscribe`/`observe` opts accept a `consistency` key (one atom or a
+`(…, …)` sequence of atoms from the closed vocabulary), checked **once, at
+subscribe time**, against the plane the subscription actually rides:
+
+- a **durable** subscription reads a journal stream and advertises
+  `:prefix-consistent`, `:at-seq-pinned` (`from=` is the pin),
+  `:monotonic-reads` (the cursor is forward-only), and `:gapless` — under a
+  declared `:gapless` floor an explicit `from=` below the stream's retained
+  floor refuses `cx-err:CXER4991 E_CONSISTENCY_PIN_UNCOVERABLE` instead of
+  the silent clamp-to-seam replay (the resume-guard half of #714 item 2);
+- `:at-least-once` is the **group** plane's delivery class only
+  (redelivery-until-ack, §9.1/§19.3): an observe or ungrouped subscription
+  is a cursor replay with **no** redelivery contract and refuses it loudly
+  (`CXER4990`, the advert carried) — the plane discriminator, never a
+  silent promotion (§6);
+- the transient plane advertises **no** consistency tokens (latest-wins by
+  construction, §12); a declared floor on a transient subscription refuses.
+
+The declared floor is echoed on the `[fabric-sub …]` element
+(`consistency=` — inspection answers values); undeclared subscriptions are
+byte-identical to today. Unknown tokens are typed errors; `:exactly-once`
+keeps its standing teaching refusal naming `[idempotent]` (§16 states the
+posture; the refusal names the answer).
 
 ## 8 — Bus is untouched (hard constraint)
 
@@ -282,7 +316,11 @@ ride `event` frames; subscriptions and group management ride
 larger than xap coordination, and its duty cycle is the demand signal for
 the xsp.md §5 session-layer items (reconnect-resume, backpressure, heartbeat
 — adopted via #560, with per-stream-priority multiplexing still deferred) —
-fabric adopts rather than inventing parallel mechanisms.
+fabric adopts rather than inventing parallel mechanisms. This section is
+also the **profile template** (xsp.md §6): verbs as payload vocabulary over
+request/reply/event + credit + resume is the shape the stream-4 STORE
+profile generalizes — fabric's vocabulary is part of the XAP profile in
+that registry.
 
 **Identity is the graduated identity model**
 ([`xap_identity_model.md`](xap_identity_model.md)):
@@ -290,14 +328,16 @@ XSP-AUTH mutual proof of control at attach (N-IDENT-1/2), per-request proofs
 on the live channel, anonymous floor for observe-only postures where the
 deployment allows it.
 
-**Capability model** — three independently grantable actions per
-stream/channel scope, deny-by-default:
+**Capability model** — four independently grantable actions,
+deny-by-default (`observe`/`publish`/`consume` per stream scope on either
+plane; `rotate` mount-wide):
 
 | Action | Grants |
 |---|---|
 | `observe` | read-only inspection: subscribe without consumption side effects (no offset writes) — the monitoring/dashboard/wire-tap grant |
-| `publish` | emit onto a stream/channel |
+| `publish` | emit onto a stream (either plane) |
 | `consume` | group membership + offset commit on a durable stream |
+| `rotate` | mount rotation on the served tier (§13.1, #640): seal the tenant mount's streams and swap onto a fresh hot store — the operator/retention grant; no other action implies it |
 
 `observe` exists precisely so inspection surfaces never need `consume`; a
 grant of one action never implies another. Tenant partition is structural
@@ -305,11 +345,23 @@ grant of one action never implies another. Tenant partition is structural
 
 ## 12 — Transient plane & the xap coord migration (owner decision #518-4)
 
-The transient plane **generalizes** xap's Tier-2 coordination channel:
-named channels (`coord/<feature>/<tenant>`-style keys generalize to
-`<scope>/<name>`), **latest-wins** per channel, fan-out-now to live XSP
+The transient plane **generalizes** xap's Tier-2 coordination stream:
+named transient streams (`coord/<feature>/<tenant>`-style keys generalize to
+`<scope>/<name>`), **latest-wins** per stream, fan-out-now to live XSP
 subscribers, non-journaled, out-of-audit, off the PEP-gated cascade —
 authorized once at wiring time (observe/publish grants), not per message.
+
+**Windowed transient subscriptions count their drops (stream 7 F7, #714
+item 6).** A transient subscription MAY declare a credit window
+(`[subscribe channel=… window=W]`, xsp.md §5.2 — at zero credits the
+server MUST stop pushing). A transient value has no log to catch up from,
+so a credit-paused push is an **inherent drop** — drop-oldest stays
+inherent, but its **magnitude stops being invisible**: the server counts
+per-subscription misses and the cumulative count rides every subsequent
+delivery frame (`[channel-value channel=… dropped=N [V]]`). An undeclared
+(window-less) transient subscription keeps the unbounded fan-out-now
+contract byte-identically; a slow undeclared consumer's wedged connection
+still closes loudly rather than dropping silently.
 
 **xap migrates onto it.** `[$xap:coord-publish]` / `[$xap:coord-read]` were
 a single-slot in-memory map on the xap runtime (`rt.coord`) — an
@@ -317,29 +369,29 @@ implementation shortcut of what `xap.md` §19.1 already specifies ("carried
 over `cx-stdlib/bus` as a topic distinct from the enforcement bus").
 **Landed (P2, issue #531):** the coord verbs ride the fabric transient plane
 — a lazily-opened per-runtime embedded fabric over a `mem://` journal,
-channel keys tenant-first per §19.4 — with **observable behavior unchanged**
+stream keys tenant-first per §19.4 — with **observable behavior unchanged**
 (latest-wins read, empty-if-unpublished, never in `[$xap:state]`, the same
 wiring-time authority posture), and `rt.coord` is retired. One
-transient-channel mechanism on the platform, not two.
+transient-stream mechanism on the platform, not two.
 
 ### 12.1 — Request–reply call conventions (#544; the §3 NATS request-reply slot)
 
 Request–reply is a **call**, not truth: it rides the transient plane —
 never journaled, never replayed, no offsets, no ack — on ordinary
-`<tenant>/<scope>/<name>` channel keys, over the native XSP
+`<tenant>/<scope>/<name>` stream keys, over the native XSP
 `request`/`reply` frame types (§11), which is exactly what those frame
 types exist for.
 
-- `[$fabric:respond $f CHANNEL FN]` → `[fabric-responder …]` registers an
-  **arity-1 callable** answering the channel. Registration is
-  **sticky-exclusive per channel** (the §19.3 posture, not a queue-group —
+- `[$fabric:respond $f TSTREAM FN]` → `[fabric-responder …]` registers an
+  **arity-1 callable** answering the stream. Registration is
+  **sticky-exclusive per stream** (the §19.3 posture, not a queue-group —
   competing responders arrive with demand): a second respond while the
   holder lives refuses with `CXER4933 E_FABRIC_RESPONDER`; the served tier
-  frees the channel on the holder's connection death. The callable **never
-  travels** — it stays in the registering process; only the channel
+  frees the stream on the holder's connection death. The callable **never
+  travels** — it stays in the registering process; only the stream
   registration crosses the wire.
-- `[$fabric:request $f CHANNEL VALUE {deadline: MS}]` → the reply value — a
-  **blocking, deadline-bounded call** (default 10 000 ms). A channel with no
+- `[$fabric:request $f TSTREAM VALUE {deadline: MS}]` → the reply value — a
+  **blocking, deadline-bounded call** (default 10 000 ms). A stream with no
   live responder refuses immediately with
   `CXER4932 E_FABRIC_NO_RESPONDER`; an expired deadline is
   `CXER4934 E_FABRIC_REQUEST_TIMEOUT`; a responder whose callable returns an
@@ -363,7 +415,7 @@ types exist for.
   (`[limits request-timeout-ms=…]`, default 30 000) and **never blocks the
   sequencer on a responder**; a responder's death fails its pending calls
   loudly (`CXER4932`), never silently. Grants (§11): `request` needs
-  `publish` on the channel, `respond` needs `consume`.
+  `publish` on the stream, `respond` needs `consume`.
 - **Deliberately not in v1** (recorded, not rejected): the envelope +
   explicit-reply primitive (`receive` request envelopes, reply by handle —
   caller-controlled concurrency) can layer *under* the callable convention
@@ -377,7 +429,7 @@ fabric follows the **embedded → served** gradient exactly as store does
 (`store` → `store-serve`):
 
 - **Embedded**: a process opens fabric in-proc; durable streams via its own
-  journal/store handles; transient channels process-local. No daemon, no
+  journal/store handles; transient streams process-local. No daemon, no
   network — the degenerate but fully working form.
 - **Served**: a `fabric-serve` daemon (single-node, §10) mounts named
   fabrics, accepts XSP attaches, sequences durable publishes, fans out
@@ -425,7 +477,7 @@ atomic** (grant, every event shape, and the attribution vocabulary check
 before the first append — a refusal appends nothing, and the client
 isolates a poison event by retrying as pipelined singles); an append-time
 FAULT mid-batch replies the fault err extended with `landed=`/`first=` so
-the client folds exactly what the stream holds; `expect-prev-seq` does not
+the client folds exactly what the stream holds; `expect-pos` does not
 compose with a batch (single-append optimistic concurrency — use
 `publish`); `subscribe`/`observe` → `[fabric-sub id …]`
 (subscribe additionally carries the §9.1 policy attrs
@@ -444,7 +496,7 @@ refreshes the liveness window.
 
 **Attribution is server-constructed**: actor = the channel's session
 principal, authority = `fabric:publish`. The client attribution vocabulary is
-closed — `expect-prev-seq` forwards (optimistic concurrency is legitimately
+closed — `expect-pos` forwards (optimistic concurrency is legitimately
 the caller's); a claimed actor equal to the session principal is tolerated,
 a different one refuses with the principal-mismatch error (the identity
 model's demotion rule); any other key refuses loudly rather than being
@@ -524,7 +576,7 @@ only itself.
 
 An **adapter is an ordinary fabric client at the edge** — a process holding
 `publish`/`consume` grants that translates a foreign protocol onto fabric
-streams and channels. **No core seam exists or is needed**: adapters use the
+streams (both planes). **No core seam exists or is needed**: adapters use the
 same surface as any consumer, which is why they can arrive incrementally
 without destabilizing the core. Written in cx (dogfood rule), deployed like
 any edge service.
@@ -532,8 +584,18 @@ any edge service.
 - **Ingress value**: foreign events become **canonical CX at the boundary**
   — everything inward is canonical-form, capability-gated, hash-chain
   verifiable. The adapter is where the enterprise's mess stops.
+- **The guarantee ladder** (live modes L134; the pack spec `live.md` §8):
+  an adapter stream DECLARES its delivery rung — `:complete-ordered` /
+  `:coalesced-rescan` / `:snapshot-diff`, a closed vocabulary — at the
+  stream-7 handle floor (journal open/attach `declare=`), and every live
+  subscription over the stream reports it (weakest-of-set for mixed
+  sources); a consumer requiring a stronger rung refuses at wiring time.
+  Stream exclusivity (adapter-is-only-client) is enforced at append.
+  The `cx-stdlib/live` pack ships the v1 floor (`adapt-poll` /
+  `adapt-watch` / `ingest` / `lower`); the planned foreign-protocol
+  adapters below ride the same contract.
 - **Planned adapters** (order set by demand, §18): **NATS bridge** (the
-  legacy-migration path — subjects ↔ streams/channels), **HTTP/SSE webhook**
+  legacy-migration path — subjects ↔ streams (both planes)), **HTTP/SSE webhook**
   (the universal adapter: webhook-in → publish; subscription → SSE/webhook
   push), **Kafka bridge** (topic/partition ↔ stream; offset mapping),
   **MQTT** (IoT ingress), **AMQP 1.0** (legacy enterprise ESB seams).
@@ -549,20 +611,24 @@ any edge service.
 [$fabric:publish  $f STREAM EVENT]  -> [receipt seq=N]          ; durable
 [$fabric:subscribe $f STREAM PAT opts{group=…, from=…,
                    max-deliveries=…, dlq=…}]    -> subscription  ; §9.1 policy
-[$fabric:receive  $sub opts{max=…, deadline=…}] -> [events …]   ; batched pull
 [$fabric:ack      $sub SEQ]         -> null   ; cumulative commit through SEQ
-[$fabric:emit     $f CHANNEL VALUE] -> null                     ; transient
-[$fabric:read     $f CHANNEL]       -> latest value | [empty]   ; transient
-[$fabric:observe  $f STREAM|CHANNEL PAT] -> subscription        ; no offsets
-[$fabric:respond  $f CHANNEL FN]    -> [fabric-responder …]     ; §12.1
-[$fabric:request  $f CHANNEL VALUE opts{deadline=…}] -> reply value
+[$fabric:emit     $f TSTREAM VALUE] -> null                     ; transient
+[$fabric:read     $f TSTREAM]       -> latest value | [empty]   ; transient
+[$fabric:observe  $f STREAM|TSTREAM PAT] -> subscription        ; no offsets
+[$fabric:respond  $f TSTREAM FN]    -> [fabric-responder …]     ; §12.1
+[$fabric:request  $f TSTREAM VALUE opts{deadline=…}] -> reply value
 [$fabric:serve    $resp opts{deadline=…, max=…}] -> int         ; responder pump
 [$fabric:close    $f]               -> null
 ```
 
-Pull (`receive`) is the primitive on both tiers; the served tier
-additionally pushes `event` frames on the attached XSP channel under the
-bounded pending window (§19.1–.2). Exact signatures firm up in P0.
+Pull is the primitive on both tiers; the served tier additionally pushes
+`event` frames on the attached XSP channel under the bounded pending window
+(§19.1–.2). **The consumption spelling is the core verb (RULED: U1.12a —
+cutover, no dual accept):** `[?receive from=$sub max=… deadline=…]` is the
+batched pull (code.md §10.4.3), `[?select]` composes subscriptions with
+channels and timers (§10.4.7), and the former `[$fabric:receive]` module verb
+is RETIRED. The subscription's push/pending-window mechanics (§19.2) are
+untouched — only the wait's spelling moved.
 
 ## 16 — What fabric is NOT
 
@@ -628,14 +694,16 @@ the scoping record):**
 ## 19 — Design decisions (made by design at the 02-working promotion, owner 2026-07-20; field evidence refines, never blocks)
 
 1. **Receive loop: pull is the primitive; push callbacks are the served
-   tier's delivery.** v1 ships `[$fabric:receive $sub opts{max=…,
-   deadline=…}]` — a blocking, batched pull (deterministic, trivially
-   testable, wraps into any worker-pool shape). The served tier's XSP push
-   *is* the event-driven form (frames arrive on the attached channel); a
-   local callback-registration convenience can layer over either later
-   without a contract change. downstream worker-pool findings refine batch
-   sizing and defaults, not the shape.
-2. **Backpressure (xsp.md §5.2 — adopted, #560):** transient channels
+   tier's delivery.** v1 shipped a blocking, batched pull (deterministic,
+   trivially testable, wraps into any worker-pool shape) — originally the
+   module verb `[$fabric:receive $sub opts{max=…, deadline=…}]`, since cut
+   over (RULED: U1.12a) to the core spelling
+   `[?receive from=$sub max=… deadline=…]` with identical semantics. The
+   served tier's XSP push *is* the event-driven form (frames arrive on the
+   attached channel); a local callback-registration convenience can layer
+   over either later without a contract change. downstream worker-pool
+   findings refine batch sizing and defaults, not the shape.
+2. **Backpressure (xsp.md §5.2 — adopted, #560):** transient streams
    are latest-wins by construction — a slow subscriber simply observes
    fewer intermediate values (drop-oldest is inherent, not a policy);
    durable subscriptions get a **bounded pending window** (default:
@@ -655,7 +723,7 @@ the scoping record):**
    (heartbeat-or-deadline, served tier) loses the assignment; the successor
    resumes from the last committed offset — the redelivery window is
    exactly the uncommitted tail, no separate visibility-timeout machinery.
-4. **Transient-channel scoping: `<tenant>/<scope>/<name>`.** Tenant is the
+4. **Transient-stream scoping: `<tenant>/<scope>/<name>`.** Tenant is the
    leading, structural segment (mirroring journal §4.1 — a partition, not a
    filter); `<scope>/<name>` generalizes xap's `coord/<feature>` shape.
 5. **Offset commit is cumulative.** `[$fabric:ack $sub SEQ]` commits
@@ -707,7 +775,7 @@ the scoping record):**
 
 | Phase | Ships | Depends on |
 |---|---|---|
-| **P0 — embedded core** | `cx-fabric` bundled package (registration beside cx-xap); both planes in-proc: durable publish/subscribe/receive/ack over journal+store (offsets per §9, cumulative ack per §19.5), transient emit/read over `<tenant>/<scope>/<name>` channels (§19.4); `observe`/`publish`/`consume` capability guards; `conformance/stdlib/fabric.cxd` (offline lanes: pattern vocabulary, plane separation, offset arithmetic, denial lanes) | nothing new — journal/store/bus/authz as shipped |
+| **P0 — embedded core** | `cx-fabric` bundled package (registration beside cx-xap); both planes in-proc: durable publish/subscribe/receive/ack over journal+store (offsets per §9, cumulative ack per §19.5), transient emit/read over `<tenant>/<scope>/<name>` streams (§19.4); `observe`/`publish`/`consume` capability guards; `conformance/stdlib/fabric.cxd` (offline lanes: pattern vocabulary, plane separation, offset arithmetic, denial lanes) | nothing new — journal/store/bus/authz as shipped |
 | **P1 — served tier** | `fabric-serve` subcommand (§19.6): XSP attach via XSP-AUTH, single-sequencer publish, push delivery + bounded pending window (§19.2), group assignment/failover (§19.3); live-channel V engine tests (delivery, redelivery-after-crash, denial) | P0; store-serve plumbing; xsp/xsp-auth as shipped |
 | **P2 — xap coord migration** | `[$xap:coord-publish/read]` re-wired onto the transient plane, `rt.coord` retired, observable behavior unchanged (existing coord tests stay green as the regression gate) | P0 |
 | **P3 — first adapter** | HTTP/SSE webhook adapter (§19.7) as an edge cx program + its conformance/engine lanes | P1 |

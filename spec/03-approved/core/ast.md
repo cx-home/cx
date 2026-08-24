@@ -31,9 +31,30 @@ they return, and provide a resolver if they return Parse AST.
 - `[?cx include=file.cx]` nodes are replaced with the parsed content of that file
 - `[*name]` alias nodes are replaced with a deep copy of the anchored element
 - `merge` references are resolved (anchor attrs/items merged, local attrs override)
-- Used for: XML emission, validation, code generation, data binding
+- Used for: XML emission, validation, code generation, data binding —
+  and, per ruling ANC-1 (2026-08-20), **the evaluator/CXPath and every
+  lossy projection (JSON / YAML / TOML / MD / CSV)**. The Resolved AST is
+  the SEMANTIC reading: strict canonical already computes the document's
+  address over the resolved form, so query and identity must agree on it.
+  The lossless lanes (`cx fmt`, `--lossless`, CX round-trip) preserve
+  authored anchors/merges as presentation.
 
-When emitting XML, the emitter MUST work from the Resolved AST.
+XML sits on the LOSSLESS side (ANC-1a, resolving this file's historical
+conflict with conversions.md in favor of the bijection): default XML
+emission is CX's carry twin — authored anchors/aliases/merges travel as
+`cx:anchor=` / `<cx:alias>` / `cx:merge=` markers (conversions.md) so the
+XML re-reads to the same CX. *Semantic XML* (the §"Semantic XML" flavor
+below) is XML emitted from the Resolved AST; bindings that hand XML to a
+consumer with no CX reader SHOULD emit that flavor.
+
+> **Implementation status (ANC-1, landed 2026-08-20 / #877):** the shipped
+> engine resolves at the document seams — `$doc` binding, every lossy text
+> projection via the codec registry (`json` / `yaml` / `toml` / `md`
+> without `--lossless`) and the delimited lanes (`csv` / `tsv` / `psv`) —
+> reusing strict canonical's resolver, so query, projection, and identity
+> agree on one resolved form. Default CX output, the XML carry, and
+> `--lossless` preserve the authored sharing. Gate:
+> `vcx/tests/resolved_projection_test.v`.
 
 ---
 
@@ -941,7 +962,7 @@ IGNORE sections preserve their `subset` for round-trip fidelity.
 
 ## cx: Namespace
 
-Namespace URI: `https://cxhome.org/ns/cx`
+Namespace URI: `tag:cxhome.org,2026:ns/cx`
 Reserved prefix: `cx` — documents may not use `ns:cx` as a namespace alias.
 
 CX AST fields map to XML `cx:` attributes. Two XML output modes exist (see below):
@@ -1039,13 +1060,22 @@ pattern-scoped fields (erased in expression position):
  "args": [/* ProgramExpr */],
  "fallible": false, // '?' suffix
  "must_succeed": false // '!' suffix
+ "path": [/* ProgramPathStep, optional — RULED CRS-1 */]
 }
 ```
 
 CX: `[$upper $x]` (grammar [125] — head-dispatch element form).
 
 Function or filter invocation. `fallible` and `must_succeed` are
-mutually exclusive; both `false` is the default total form. Built-in
+mutually exclusive; both `false` is the default total form.
+
+The optional `path` field (RULED CRS-1, 2026-08-20) mirrors
+`ProgramBinding.path`: a byte-adjacent run of grammar [135a]
+BindingSteps after the closing `]` (`[$first $h]@v`,
+`[$nth $xs $i]/*`) applies to the call **result** — semantically
+identical to binding the result and stepping the binding
+(`code.md` §6.2). Empty/absent for step-less calls; the qualified
+head-dispatch form (`[prefix/fn …]`) carries the same field. Built-in
 function names are listed in [`code.md` §4.1](code.md); user
 functions appear via `[?fn …]` or `[?def …]` and resolve through the
 lexical scope per [`code.md` §8](code.md).
@@ -1091,11 +1121,19 @@ the literal tokens `"*"` / `"**"` rendered as `{"type": "ProgramWildcard",
  "args": [
  {"kind": "positional", "value": /* ProgramExpr */},
  {"kind": "clause-child", "name": "yield", "value": /* ProgramExpr */}
- ]
+ ],
+ "path": [/* ProgramPathStep, optional — RULED PS-1 */]
 }
 ```
 
 CX: `[?<name> <args> [clause-child ...] ...]` (grammar [127])
+
+The optional `path` field (RULED PS-1, 2026-08-20, #886) mirrors
+`ProgramCall.path`: a byte-adjacent run of grammar [135a] BindingSteps
+after the directive's closing `]` (`[?let …]/name`, `[?if …]@attr`)
+applies to the directive **result** — semantically identical to
+binding the result and stepping the binding (`code.md` §6.2). Empty
+or absent for step-less directives.
 
 The universal directive AST shape. `name` is one of the directive
 names listed in [`code.md` §4.1](code.md). `args` is the ordered list
@@ -1118,7 +1156,8 @@ argument order per [`canonical.md`](canonical.md).
  {"kind": "order-by", "expr": /* ProgramExpr */, "direction": "asc"|"desc"},
  {"kind": "group-by", "expr": /* ProgramExpr */}
  ],
- "yield": /* ProgramExpr */
+ "yield": /* ProgramExpr */,
+ "path": [/* ProgramPathStep, optional — RULED PS-1, as on ProgramDirective */]
 }
 ```
 
@@ -1167,6 +1206,16 @@ disjoint from `string_lit` despite both fields carrying UTF-8 — the
 discriminator is the kind tag, and equality/identity compare the kind
 tag before the payload (per [`cxdm.md` §5.1](cxdm.md)).
 
+`ProgramLiteral` (and the first-class slice literal node) also carries
+the optional `path` field (RULED PS-1, 2026-08-20, #886) when a
+program-position literal's closing bracket is followed by a
+byte-adjacent [135a] step run — element literals and operator forms
+(`[user [b 1]]/b`, `[+ 1 2]/x`), arrays (`[1, 2]/x`), sequences
+(`(1, 2)/x`), maps (`{a: 1}.a`). The steps apply to the literal's
+**value**, identical to binding it and stepping the binding
+(`code.md` §6.2). The parser attaches it only at program-position
+value sites — never in pattern mode, never in data documents.
+
 ### LibNode
 
 ```json
@@ -1208,28 +1257,41 @@ it `null` and lets `cx.lock` own the version mapping.
  "type": "DefNode",
  "name": "format-msg",
  "scope": "public"|"private",
+ "purity": "pure"|"impure",
  "returns": /* TypeExprNode */ | null,
  "throws": /* TypeExprNode */ | null,
  "params": [
  {"kind": "positional", "name": "url",
- "type": /* TypeExprNode */ | null},
+ "type": /* TypeExprNode */ | null,
+ "default": /* ProgramExpr */ | null},
  {"kind": "named", "name": "timeout",
  "type": /* TypeExprNode */ | null,
  "default": /* ProgramExpr */ | null},
  {"kind": "rest", "name": "extra-headers",
  "type": /* TypeExprNode */ | null}
  ],
- "body": /* ProgramExpr */
+ "body": /* ProgramExpr */,
+ "effects": [{"cap": "write", "scopes": ["…"]}],
+ "requires": ["cap:…"],
+ "preconditions": [/* ProgramExpr */],
+ "idempotent": true,
+ "idempotent_window": "PT5M",
+ "compensates": "release-order",
+ "requires_at": {"stream": "…", "seq": 0, "hash": "…"}
 }
 ```
 
-CX: `[?def NAME MODIFIER* (params) body]` (grammar [152], normative
+CX: `[?def NAME MODIFIER* CLAUSE* (params) body]` (grammar [152] with
+the command clauses [152d]–[152h], normative
 [`code.md` §12.2](code.md))
 
 Module-level named function with no closure capture. `name` is
 unique per module — re-declaration raises `cx-err:CXER0205`.
 `scope` defaults to `"private"`; only `"public"` exports the
-definition to importers. `returns` / `throws` carry the optional
+definition to importers. `purity` is always emitted; an unannotated
+def with a non-empty `[effects]` clause is impure by implication
+(declaring effects IS declaring impurity — the parser resolves the
+default). `returns` / `throws` carry the optional
 `[returns T]` / `[throws T]` clause-children. The `throws` slot is
 reserved by [`code.md` §12.2.5](code.md): its surface syntax parses
 and the AST carries the clause, but its runtime checking semantics
@@ -1237,9 +1299,25 @@ are deferred to a future revision and consumers MUST treat the
 field as informational.
 
 `params` is the ordered parameter list. Each entry's `kind`
-discriminates positional / named-with-default / rest. At most one
+discriminates positional / named / rest. At most one
 `rest` entry; always last. `type` is the optional per-parameter
-annotation (null if bare).
+annotation (null if bare). `default` may ride a positional or a
+named entry (a positional with a trailing default literal is legal
+`[?def]` surface); its ABSENCE marks the parameter required.
+
+**Command clauses ([152d]–[152h], `code.md` §12.2.7).** All are
+omitted when absent, with one deliberate exception: `effects` is
+emitted on clause PRESENCE — `[effects]` with zero items projects as
+an **empty array**, because clause presence (not item count) is the
+command discriminator. `effects` items carry the declared capability
+(`cap`) and optional `scopes`. `requires` / `preconditions` are the
+declared capability references and predicate sources; `idempotent`
+(+ optional `idempotent_window`), `compensates`, and `requires_at`
+mirror their clauses. Every command clause is OUTSIDE the Tier-2
+computes-as hash (the S0 exclusion, `code-identity.md`); the AST
+projection carries them because trust-side consumers (the agent-tool
+projection, approval binding) read them from the Tier-1 definition
+text.
 
 The body is a single `ProgramExpr`. Function bodies evaluate
 lazily — at each call site, not at module load.
@@ -1356,10 +1434,19 @@ step list with no leading slash.
 |---|---|
 | `"Name"` | Element or attribute with that exact name |
 | `"*"` | Any element node |
-| `"node"` | Any node (element, text, PI, comment) |
-| `"text"` | Text nodes only |
+| `"node"` | Any node (element, text, scalar, PI, comment, directive) |
+| `"text"` | Character-data nodes only — both Text and ScalarNode |
 | `"element"` | Element nodes only |
 | `"attribute"` | Attribute nodes only |
+
+`text()` selects **both** character-data node kinds. `cxdm.md` §2.2 keeps
+Text and ScalarNode as distinct Node kinds, but which of them a body
+lands in is decided by auto-typing, not by the author: `[port eight]`
+holds a Text and `[port 8080]` a ScalarNode from the same authorial act.
+A node test that separated them would make a query's result set depend on
+whether a value happened to auto-type, so `text()` names the CHARACTER
+DATA and takes both. `attribute()` is non-empty on the attribute axis
+alone — no other axis carries attribute nodes (XPath 3.1 §3.3.2).
 
 **Predicates** — each entry in `predicates` is an arbitrary `ProgramExpr`
 evaluated with the current step's matched node as the context item (grammar
@@ -1724,6 +1811,7 @@ only AST shape.
 | DoctypeDecl | Core | [!DOCTYPE ...] | <!DOCTYPE ...> |
 | Element | Core | [name ...] | <name>...</name> |
 | Alias | Extended | [*name] | <cx:alias name="name"/> |
+| Hole | Extended | $name | <cx:var name="name"/> |
 | Text | Core | word or 'phrase' | text node |
 | Text | Extended | '''multiline''' | text node |
 | Scalar | Extended | 30 true 2026-04-19 | text node (+ cx:type opt.) |

@@ -1,0 +1,170 @@
+# tooling/lsp/tests/probe.cx — probe `cx lsp` for diagnostics / hover /
+# completion on a source file via LSP stdio (#922 / PYE-5: probe.py
+# retires; this is its CX successor, JSON-RPC over child-process pipes).
+#
+#   cx --allow-read --allow-write --allow-subprocess tooling/lsp/tests/probe.cx \
+#     CXBIN OP FILE [LINE COL]
+#
+#   OP: diag        — print the published diagnostics for FILE (JSON array)
+#       hover       — print the hover result at LINE COL (0-based)
+#       completion  — print the completion result at LINE COL (0-based)
+#
+# One behavioral improvement over the Python: instead of sleeping 0.5s
+# and hoping every response arrived, the reader is protocol-driven — all
+# requests are written up front (shutdown last, id 99) and frames are
+# read until the shutdown response arrives; the server processes its
+# stdin sequentially, so everything published before shutdown is
+# collected deterministically.
+#
+# All defs are strictly define-before-use.
+
+[?lib 'cx-stdlib/io']
+[?lib 'cx-stdlib/env']
+[?lib 'cx-stdlib/process']
+[?lib 'cx-stdlib/strings']
+[?lib 'cx-stdlib/json']
+[?lib 'cx-stdlib/jsonrpc']
+[?lib 'cx-stdlib/array']
+[?lib 'cx-stdlib/bytes']
+[?lib 'cx-stdlib/fp']
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def die scope=public impure ($msg)
+  [?let [= $w [$cry $msg]] [$env:exit 2]]]
+[?def seq-flat scope=public ($xs) [$fp:flat-map $xs [?fn ($x) $x]]]
+
+# ── LSP framing ───────────────────────────────────────────────────────
+
+[?def frame scope=public ($payload)
+  [?let [= $body [$json:emit $payload]]
+    [$cat ('Content-Length: ', [$string [$strings:length-bytes $body]],
+           '\r\n\r\n', $body)]]]
+
+[?def send scope=public impure ($sin $payload)
+  [$io:write-string $sin [$frame $payload]]]
+
+# read-headers: consume header lines up to the blank separator; return
+# the Content-Length seen (or -1 on EOF / no header within fuel).
+[?def read-headers scope=public impure ($h $len $fuel)
+  [?if [= $fuel 0] [then -1]
+    [else [?let [= $line [$io:read-line $h]]
+      [?if [= $line '']
+        [then $len]
+        [else [?if [$strings:starts-with $line 'Content-Length:']
+          [then [$read-headers $h
+                  [?else [$strings:to-int [$strings:trim
+                    [$strings:slice $line 15 [$strings:length $line]]]] -1]
+                  [- $fuel 1]]]
+          [else [$read-headers $h $len [- $fuel 1]]]]]]]]]]
+
+# read-exact: read exactly $need bytes (short reads accumulate; EOF stops).
+[?def read-exact scope=public impure ($h $need $acc)
+  [?if [<= $need 0] [then $acc]
+    [else [?let [= $chunk [$io:read-bytes $h $need]]
+      [?let [= $got [$bytes:length $chunk]]
+        [?if [= $got 0] [then $acc]
+          [else [$read-exact $h [- $need $got] [$bytes:concat ($acc, $chunk)]]]]]]]]]
+
+# read-message: one framed JSON-RPC message as a map; () on EOF/garbage.
+[?def read-message scope=public impure ($h)
+  [?let [= $len [$read-headers $h -1 100]]
+    [?if [< $len 1] [then ()]
+      [else [?let
+        [= $body [$read-exact $h $len [$bytes:from-string-utf8 '']]]
+        [?if [< [$bytes:length $body] $len] [then ()]
+          [else [?match [$json:parse [$bytes:to-string-utf8 $body]]
+            [case [err $e] ()]
+            [else [$json:parse [$bytes:to-string-utf8 $body]]]]]]]]]]]
+
+# read-until-id: collect messages until one carries $want as its id.
+[?def read-until-id scope=public impure ($h $want $acc $fuel)
+  [?if [= $fuel 0] [then $acc]
+    [else [?let [= $m [$read-message $h]]
+      [?if [$empty $m] [then $acc]
+        [else [?let [= $acc2 [$seq-flat ($acc, $m)]]
+          [?if [= [?else $m.id -1] $want]
+            [then $acc2]
+            [else [$read-until-id $h $want $acc2 [- $fuel 1]]]]]]]]]]]
+
+# ── one LSP session ───────────────────────────────────────────────────
+# Spawns `CXBIN lsp`, opens FILE, sends the extra requests, shuts down
+# (id 99) and returns every message received up to the shutdown response.
+
+[?def lsp-session scope=public impure ($cxbin $path $extras)
+  [?let
+    [= $text [?match [$io:read-file $path]
+        [case [err $e] [$die [$cat ('probe: cannot read ', $path, ': ', $e@message)]]]
+        [else [$io:read-file $path]]]]
+    [= $h [$process:spawn ($cxbin, 'lsp')]]
+    [= $sin [$process:stdin $h]]
+    [= $sout [$process:stdout $h]]
+    [= $uri [$cat ('file://', $path)]]
+    [= $w1 [$send $sin [$jsonrpc:request 1 'initialize'
+        {processId: null, rootUri: null, capabilities: {}}]]]
+    [= $w2 [$send $sin [$jsonrpc:notification 'initialized' {}]]]
+    [= $w3 [$send $sin [$jsonrpc:notification 'textDocument/didOpen'
+        {textDocument: {uri: $uri, languageId: 'cx', version: 1, text: $text}}]]]
+    [= $w4 [?for [in $x $extras] [yield [$send $sin $x]]]]
+    [= $w5 [$send $sin [$jsonrpc:request 99 'shutdown' {}]]]
+    [= $w6 [$io:flush $sin]]
+    [= $msgs [$read-until-id $sout 99 () 200]]
+    [= $w7 [$send $sin [$jsonrpc:notification 'exit' {}]]]
+    [= $w8 [$io:flush $sin]]
+    [= $rc [$process:wait-timeout $h 3000]]
+    [= $k [?if [$empty $rc] [then [$process:kill $h]] [else ()]]]
+    [= $c [$process:close $h]]
+    $msgs]]
+
+# result-of: the .result of the message with the given id; () if none.
+[?def result-of scope=public ($msgs $id)
+  [$seq-flat [?for [in $m $msgs]
+    [where [= [?else $m.id -1] $id]]
+    [yield [?else $m.result ()]]]]]
+
+# emit-result: pretty JSON of the FIRST collected result, 'null' when
+# the slot is empty (Python parity: json.dumps(None) prints null).
+[?def emit-result scope=public impure ($r)
+  [?if [$empty $r]
+    [then [$say 'null']]
+    [else [$say [$json:emit-with-opts $r[1] {indent: 2}]]]]]
+
+# ── main ──────────────────────────────────────────────────────────────
+
+[?let
+  [= $argv [$env:argv]]
+  [= $usage [?if [< [$count $argv] 4]
+      [then [$die 'usage: probe.cx CXBIN diag|hover|completion FILE [LINE COL]']]
+      [else ()]]]
+  [= $cxbin $argv[2]]
+  [= $op $argv[3]]
+  [= $path $argv[4]]
+  [= $done
+    [?if [= $op 'diag']
+      [then [?let
+        [= $msgs [$lsp-session $cxbin $path ()]]
+        [= $diag-arrays [?for [in $m $msgs]
+            [where [= [?else $m.method ''] 'textDocument/publishDiagnostics']]
+            [yield [?else $m.params.diagnostics []]]]]
+        [= $all [?if [$empty $diag-arrays] [then []]
+            [else [$array:join $diag-arrays]]]]
+        [$say [$json:emit-with-opts $all {indent: 2}]]]]
+      [else [?if [or [= $op 'hover'] [= $op 'completion']]
+        [then [?let
+          [= $usage2 [?if [< [$count $argv] 6]
+              [then [$die [$cat ('usage: probe.cx CXBIN ', $op, ' FILE LINE COL')]]]
+              [else ()]]]
+          [= $line [?else [$strings:to-int $argv[5]] -1]]
+          [= $col [?else [$strings:to-int $argv[6]] -1]]
+          [= $rid [?if [= $op 'hover'] [then 50] [else 60]]]
+          [= $method [?if [= $op 'hover']
+              [then 'textDocument/hover'] [else 'textDocument/completion']]]
+          [= $uri [$cat ('file://', $path)]]
+          [= $msgs [$lsp-session $cxbin $path
+              ([$jsonrpc:request $rid $method
+                 {textDocument: {uri: $uri},
+                  position: {line: $line, character: $col}}],)]]
+          [$emit-result [$result-of $msgs $rid]]]]
+        [else [$die [$cat ('probe: unknown op "', $op, '" (diag|hover|completion)')]]]]]]]
+  [?if false [then '']]]

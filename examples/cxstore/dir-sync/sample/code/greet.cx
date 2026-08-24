@@ -1,1 +1,1 @@
-[?def greet ($name) [str-format "hello, {}" $name]]
+[?def greet ($name) [str-format 'hello, {}' $name]]

@@ -42,7 +42,7 @@ cx --version                       # → prints the cx version
 | Editor | Config |
 | --- | --- |
 | VS Code | [`lsp/vscode.example.json`](lsp/vscode.example.json) |
-| Neovim | [`neovim/cx.lua`](neovim/cx.lua) (lspconfig) or [`lsp/neovim.example.lua`](lsp/neovim.example.lua) (vanilla `vim.lsp.start`) |
+| Neovim | [`neovim/`](neovim/) — a plugin root: lazy.nvim `{ dir = ".../cx/tooling/neovim" }` or `rtp:append` + `require("cx").setup()` (native vim.lsp.config, no nvim-lspconfig needed); [`lsp/neovim.example.lua`](lsp/neovim.example.lua) stays the vanilla `vim.lsp.start` sketch |
 | Helix | [`lsp/helix.example.toml`](lsp/helix.example.toml) |
 
 All three just run `cx lsp` and let the binary do the work. See
@@ -60,7 +60,7 @@ instructions.
 Cover the full subcommand list from the `vcx/cmd/main.v` dispatch table
 (`fmt`, `canonical`, `hash`, `eq`, `diff`, `lint`, `validate`, `table`,
 `demo`, `scaffold`, `eval`, `diagram`, `code-diagram`, `code-tree`,
-`lock`, `store-serve`, `store-health`, `store-token`,
+`lock`, `store-serve`, `store-health`,
 `store-rotate-kek`, `lsp`), per-subcommand flags (including the
 `--allow-*` capability grants), the top-level conversion flags, and
 file-extension completion for `.cx` / `.cxd` / `.cxs` plus the

@@ -19,11 +19,49 @@ own name.
 Names are aliases, so the **name is excluded from identity** —
 `[?def foo ($x) [+ $x 1]]` and `[?def bar ($y) [+ $y 1]]` share a Tier-2 hash.
 
+**Layering (E1/L79, I5 stream 1):** Tier-2's alpha-normalization never
+redefines expression identity. E1 (the Tier-1 address of a quoted
+tree's canonical text, code.md §6.4.3.1) stays name-sensitive by
+design; Tier-2 (definitions, here) and the plan address (planar
+comprehensions, code.md §7.9) are ADDITIONAL identity tiers computed
+above it. New normalized identities, if ever wanted, arrive as further
+additional tiers — the layering is open upward, closed against
+redefinition.
+
 ## 2 — `N(def)`: the normalization
 
-`N` produces a canonical text rendering of an alpha-normalized copy of the
+`N` produces a NAMED-TOKEN STREAM over an alpha-normalized walk of the
 definition's AST, then takes its SHA-256. `Tier-2 hash = SHA-256(N(def))`,
-lowercase hex, 256-bit (matching the store hash width).
+composed as the tagged address `code:sha2-256:<lowercase hex>` (I1 stream
+19: the `code:` namespace discriminator outermost, then the algorithm
+name).
+
+**The stream is clean-room reproducible from this text alone (I1 row 13,
+L28 / W-22):** every variable-length field is length-prefixed
+(`<len>:<bytes>`, injective over AST structure), and every node/clause
+KIND is emitted as its NAMED token (the enum variant name — e.g.
+`takewhile`, `child`, `sequence`) — NEVER a numeric ordinal, so no
+implementation detail (enum ordering) can move addresses. The stream
+opens `def:<arity>` followed by the signature fields below, then `|`,
+then the body walk.
+
+**Participating signature fields (L28 / audit C2 — CLOSED list,
+EXCLUDED-by-default):** two defs that cannot be called interchangeably
+must not share an address, so the following JOIN the hash, per-param in
+declaration order: the named-param NAME (`n<len>:<name>` — the shipped
+named spelling is the `=`-default form; POSITIONAL names stay
+alpha-normalized), the rest-kind flag (`*`), and the default VALUE
+(`=` + the value walked through the SAME pipeline as body tokens —
+canonicalized, never raw source). `returns-type` joins as its
+STRICT-CANONICAL SOURCE TEXT BYTES (`R<len>:<bytes>` — trimmed, internal
+whitespace runs collapsed to one space; the one deliberate source-text
+exception, so a `TypeExpr` parser repair is identity-neutral). `purity`
+and `scope` stay OUT (deployment metadata, not meaning). **Every other
+clause child or signature field — `[throws]`, `[effects]`,
+`[requires]`, `[preconditions]`, `[idempotent]`, `[compensates]`, and
+any future clause — is OUTSIDE Tier-2, permanently for this epoch**
+(two defs differing only in an excluded clause share an address; the
+store-code-010 invariant pins it).
 
 1. **Comments / formatting are structurally excluded.** The program AST carries no
    comment node and no layout; parsing discards both. Comment/format insensitivity
@@ -58,7 +96,10 @@ lowercase hex, 256-bit (matching the store hash width).
    order (by their name-independent normalized bodies), with intra-cycle references
    rewritten to a positional `@scc<k>` token, and take one SHA-256 over the
    concatenation. Every member shares that one component hash as its dependency
-   contribution; a member's own Tier-2 hash is `SHA-256(component-hash ‖ position)`.
+   contribution; a member's own Tier-2 hash is
+   `SHA-256(component-hash '#' position)` — **the separator is the single
+   byte `#` (0x23)**, the shipped byte, pinned normatively at I1 (L28 /
+   W-24; this text previously wrote `‖`, which is not a byte).
    An acyclic definition is the degenerate component of size 1.
 
 ## 3 — Surface & storage

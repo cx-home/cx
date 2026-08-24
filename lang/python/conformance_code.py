@@ -344,7 +344,7 @@ SUPPORTED_FIXTURES = (
 # ── Fixture loader (CX-native) ──────────────────────────────────────────────
 #
 # Reads conformance/code.cxd via cxlib.load_fixtures (the Python mirror of
-# vcx/cx/fixture_loader.v), replacing the bespoke `=== test:` / `--- key`
+# vcx/fixtures/fixture_loader.v), replacing the bespoke `=== test:` / `--- key`
 # scanner + strip_format_fences. The doc-example fence handling is baked into
 # the .cxd by the converter; the eval-specific section-end clamp (formerly
 # extract_section's terminator detection) lives HERE in the consumer, exactly

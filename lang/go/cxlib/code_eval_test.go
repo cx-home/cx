@@ -10,6 +10,7 @@ package cxlib
 import (
 	"errors"
 	"fmt"
+	"os/exec"
 	"strings"
 	"testing"
 )
@@ -90,16 +91,42 @@ func TestEvalCodeUnknownTargetRejected(t *testing.T) {
 	}
 }
 
-func TestEvalCodeSvgTargetReturnsDiagram(t *testing.T) {
-	// Phase 4.1 landed the diagram renderer — svg / mermaid / png
-	// now return embedded-source diagrams. html remains
-	// Phase-4-gated.
-	out, err := EvalCode("", "[?for [user $u] [yield $u]]", "svg")
-	if err != nil {
-		t.Fatalf("expected svg success after Phase 4: %v", err)
+func TestEvalCodeSvgTargetRefusesWithoutTheSubprocessGrant(t *testing.T) {
+	// RULED: DSC-1c (#890) — svg/png shell out to graphviz `dot`, so they
+	// CHARGE for it: under the pure-only default they refuse loudly rather
+	// than substituting the dot-less envelope. RULED: SPF-2 (#897) — this
+	// holds on the ABI path too, not only in `cx diagram`. This test pinned
+	// the PRE-SPF-2 bypass (svg success under an empty cap set) until the
+	// v0.16.0 cut; it mirrors lang/python's pair now.
+	_, err := EvalCode("", "[?for [user $u] [yield $u]]", "svg")
+	if err == nil {
+		t.Fatal("expected the ungranted svg target to refuse (SPF-2)")
 	}
-	if !strings.Contains(out, "cx:source") {
-		t.Fatalf("expected cx:source metadata in svg output, got: %q", out)
+	msg := err.Error()
+	for _, want := range []string{"CXER0271", "subprocess", "--allow-subprocess"} {
+		if !strings.Contains(msg, want) {
+			t.Fatalf("expected %q in the refusal, got: %v", want, err)
+		}
+	}
+}
+
+func TestEvalCodeSvgTargetRendersWhenSubprocessIsGranted(t *testing.T) {
+	// The other half of DSC-1c: GRANTED, the same call returns a real
+	// graphviz SVG carrying the embedded source (via the capability-aware
+	// entry point). Skipped when graphviz `dot` is not on PATH.
+	if _, lookErr := exec.LookPath("dot"); lookErr != nil {
+		t.Skip("graphviz `dot` not on PATH — the granted svg path needs the real renderer")
+	}
+	out, err := EvalCodeCaps("", "[?for [user $u] [yield $u]]", "subprocess", "svg")
+	if err != nil {
+		t.Fatalf("expected granted svg success: %v", err)
+	}
+	if !strings.Contains(out, "<svg") || !strings.Contains(out, "cx:source") {
+		t.Fatalf("expected an svg carrying cx:source, got: %q", out)
+	}
+	// DSC-1a: the carrier sits INSIDE the root element.
+	if strings.Index(out, "<cx:source") < strings.Index(out, "<svg") {
+		t.Fatalf("cx:source must sit inside the svg root, got: %q", out)
 	}
 }
 

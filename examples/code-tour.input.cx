@@ -1,7 +1,7 @@
 [# Sample document for code-tour.cx — feeds the document-driven
    sections (pattern-generator, multi-arm match, CXPath axes,
    predicates). Run:
-     cx examples/code-tour.cx --data=examples/code-tour.input.cx #]
+     cx --data=examples/code-tour.input.cx examples/code-tour.cx #]
 
 [db
   [user id=1 name='ada' email='ada@alpha.io' active=true verified=true]

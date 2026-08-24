@@ -1,10 +1,17 @@
+[; client.cx — open a REMOTE store over THE store wire (the XSP store
+   profile) and drive the surface exactly as if it were local: put-doc →
+   get-doc → list-docs → query //title. Remoting is a URL change, not an
+   API change — the same [$store:…] verbs work against mem:// and
+   cx-store+xsp:// alike. ]
 [?lib 'cx-stdlib/store' :as store]
 [?let
-  [= $c   [$store:open "cx-store+http://127.0.0.1:18901/teststore/"]]
+  [; LOOPBACK DEV SHORTCUT — cleartext. Production opens "cx-store://…" over
+     TLS; never use +xsp off 127.0.0.1. See README "Going to production". ]
+  [= $c   [$store:open "cx-store+xsp://127.0.0.1:18901/teststore/"]]
   [= $doc [note id="n1"
             [title "Greetings there"]
-            [body "hello-from-other-runtime"]
-            [tags [tag "demo"] [tag "csrp"]]]]
+            [body "hello-over-the-store-wire"]
+            [tags [tag "demo"] [tag "xsp"]]]]
   [= $h   [$store:put-doc $c $doc]]
   [= $got [$store:get-doc $c $h]]
   [= $n   [$count [$store:list-docs $c]]]

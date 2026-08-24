@@ -22,11 +22,15 @@ _cx() {
     'eq:Compare two files at canonical-equality'
     'diff:Semantic diff between two CX files'
     'lint:Lint a CX file'
+    'schema:Schema verb family — infer an open-mode .cxs from a corpus'
+    'tools:Agent-tool verb family — project command defs to MCP tool descriptors'
     'validate:Validate against a schema'
     'table:Table operations (info/dump/load)'
     'demo:Run the cx demo'
+    'xap:XAP project tooling — cx xap init NAME scaffolds one'
     'scaffold:Scaffold a typed CX skeleton (config/data/doc/log/table)'
     'eval:Evaluate a CX program'
+    'primer:Print the LLM onboarding primer for this binary'
     'version:Version / build info (same as -v / --version)'
     'select:CXPath query over a document (matches in canonical CX)'
     'diagram:Render a CX program as a diagram (mermaid / svg / png)'
@@ -35,7 +39,6 @@ _cx() {
     'lock:Manage the dependency lockfile (--check / --update)'
     'store-serve:Run the CSRP store-service daemon'
     'store-health:Readiness probe against a running store service'
-    'store-token:Mint a store-service auth token'
     'store-rotate-kek:Rotate the store key-encryption key'
     'fabric-serve:Run the fabric event-stream daemon'
     'lsp:Run the cx Language Server over stdio (JSON-RPC 2.0)'
@@ -119,6 +122,27 @@ _cx() {
         '--apply-defaults[apply schema defaults to the document]' \
         '*:file:_files -g "*.(cx|cxd)"'
       ;;
+    schema)
+      if (( CURRENT == 3 )); then
+        _values 'verb' 'infer[synthesize an open-mode .cxs schema from a corpus]'
+        return 0
+      fi
+      _arguments \
+        '--sample=[bound the corpus to the first N documents]:count:' \
+        '--output=[write the schema to a file]:file:_files' \
+        '*:file:_files'
+      return 0
+      ;;
+    tools)
+      if (( CURRENT == 3 )); then
+        _values 'verb' 'export[project a module'"'"'s command defs to the MCP tools/list array (offline registration)]'
+        return 0
+      fi
+      _arguments \
+        '--output=[write the tools array to a file]:file:_files' \
+        '*:file:_files -g "*.cx"'
+      return 0
+      ;;
     table)
       if (( CURRENT == 3 )); then
         _values 'verb' 'info[show column count/row count]' \
@@ -163,6 +187,7 @@ _cx() {
       _arguments \
         '--format=[diagram format]:format:(mermaid svg png)' \
         '-o[output file (recommended for svg/png)]:file:_files' \
+        '--allow-subprocess[grant the subprocess capability (required by svg/png)]' \
         '*:program:_files -g "*.cx"'
       ;;
     code-diagram)
@@ -197,12 +222,6 @@ _cx() {
         '--config=[fabric service config]:file:_files -g "*.cx"' \
         '--exit-on-stdin-eof[drain gracefully when stdin reaches EOF (spawner tether)]' \
         "${allow_flags[@]}"
-      ;;
-    store-token)
-      _arguments \
-        '--id=[token principal name]:name:' \
-        '--roles=[roles (e.g. admin)]:roles:' \
-        '--tenant=[tenant scope (e.g. "*")]:tenant:'
       ;;
     store-rotate-kek)
       _arguments \

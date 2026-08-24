@@ -124,8 +124,8 @@ module.exports = grammar({
     //
     // Clauses are CLAUSE-CHILD elements: generators `[in $x SRC]` / `[in SRC]` /
     // `[in PATTERN SRC]`, filter `[where E]`, let `[= $x E]`, `[order-by E asc]`,
-    // `[group-by E]`, `[limit E]`, `[take E]`, `[drop E]`, `[takewhile E]`,
-    // `[dropwhile E]`, bare flags `[par]` / `[stream]` / `[ordered]` /
+    // `[group-by E]`, `[limit E]`, `[take E]`, `[drop E]`, `[take-while E]`,
+    // `[drop-while E]`, bare flags `[par]` / `[lazy]` / `[ordered]` /
     // `[fail-fast]`, and the terminal `[yield E]` / `[yield-array E]` /
     // `[yield-map K V]`.
     for_directive: ($) =>
@@ -145,14 +145,14 @@ module.exports = grammar({
       ),
     // All for-comp clause heads (except [yield…], which is the terminal). The
     // bare-flag forms ([par] etc.) carry no body. Longest-match within the
-    // single alternation token settles e.g. `take`/`takewhile`.
+    // single alternation token settles e.g. `take`/`take-while`.
     _for_clause_open: (_) =>
       token(prec(5, seq(
         "[",
         choice(
           "in", "where", "=", "order-by", "group-by",
-          "limit", "takewhile", "take", "dropwhile", "drop",
-          "par", "stream", "ordered", "fail-fast"
+          "limit", "take-while", "take", "drop-while", "drop",
+          "par", "lazy", "ordered", "fail-fast"
         ),
         /[ \t\r\n\]]/
       ))),
@@ -615,10 +615,11 @@ module.exports = grammar({
     // module members `[$prefix:local …]` (the `:local` is glued into the head).
     // Args are ordinary inline nodes (scalars, strings, `$name` bindings, nested
     // calls/elements/directives). Symbolic operator heads (`[+ …]`, `[= …]`,
-    // `[* …]`, …) are NOT modelled here: `*` collides with the
-    // `[*` alias structural opener and `=`/`/`/`<`/`>` collide
-    // with attribute/path tokens — operator-head coloring is the LSP's job
-    // (semanticTokens), consistent with this grammar's best-effort discipline.
+    // `[* …]`, …) are NOT modelled here — they parse via the `operator` rule
+    // below, whose delimited-head token is exactly I1 row 8's data-lane
+    // operator-named-element surface too (one coloring for both readings);
+    // finer-grained distinctions stay the LSP's job (semanticTokens),
+    // consistent with this grammar's best-effort discipline.
     // The open token GLUES `[$` to the head Name (+ optional `:local` module
     // suffix), mirroring the structured-directive opens (`[?match`, …). A shared
     // bare `[` would not reliably dispatch to call vs element under GLR, so the
@@ -861,7 +862,8 @@ module.exports = grammar({
     attr_value: ($) =>
       choice(
         $.call, $.operator, $.element, $.program_binding,
-        $.quoted_string, $.unquoted_value, $.boolean, $.null_value, $.number
+        $.quoted_string, $.tagged_address, $.unquoted_value, $.boolean,
+        $.null_value, $.number
       ),
 
     // Atomic single token: the whole "…" / '…' lexes as one unit so an
@@ -881,6 +883,23 @@ module.exports = grammar({
     // expression forms above (call / operator / element) rather than being
     // swallowed as a bareword.
     unquoted_value: (_) => /[^\s\[\]"']+/,
+
+    // ── Tagged address  <algo>:<hex> / genesis:  (I1 stream 19, L31/L32/L38) ──
+    // Self-describing content address: the algo names are THE ONE registry's
+    // (vcx/cx/hash_registry.v — sha2-256 required; sha2-384/sha2-512/blake3
+    // optional), `code:` composes the Tier-2 namespace outermost, and
+    // `genesis:` is the journal's algo-neutral chain sentinel. Bare hex no
+    // longer exists as an address spelling (CXER0130), so only the tagged
+    // form needs a token. prec(3) + maximal munch beat `word`/`unquoted_value`
+    // so the run never fragments; the hex run is ≥8 chars to keep short
+    // `name:value` prose in the word lane.
+    tagged_address: (_) =>
+      token(prec(3, choice(
+        seq(optional("code:"),
+            choice("sha2-256", "sha2-384", "sha2-512", "blake3"),
+            ":", /[0-9a-f]{8}[0-9a-f]*/),
+        "genesis:"
+      ))),
 
     // ── Element sub-tokens ────────────────────────────────────────────────────
     tag_name: (_) => /[a-zA-Z_][a-zA-Z0-9._-]*/,
@@ -917,6 +936,7 @@ module.exports = grammar({
         $.quoted_string,
         $.program_binding,
         $.atom_literal,
+        $.tagged_address,
         $.number,
         $.boolean,
         $.null_value,

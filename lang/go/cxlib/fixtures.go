@@ -1,7 +1,7 @@
 package cxlib
 
 // CX-native conformance fixture loader — Go mirror of
-// vcx/cx/fixture_loader.v (and lang/python/cxlib/fixtures.py).
+// vcx/fixtures/fixture_loader.v (and lang/python/cxlib/fixtures.py).
 //
 // The canonical fixture format is the CX document (conformance/*.cxd, schema
 // conformance/fixtures.cxs). This loader reads a suite via the CX parser

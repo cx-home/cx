@@ -3,9 +3,12 @@
 **Status:** **03-approved** (graduated by owner ruling 2026-07-22; sub-areas
 had landed via owner-merged PRs with the as-built state recorded in
 Appendices E/F — the umbrella graduation completes that record).
-**Coordinates:** #105 (Phase 2), under #75. Builds on the **permanent** CSRP protocol
+**Coordinates:** #105 (Phase 2), under #75. Built on the CSRP protocol
 ([`spec/03-approved/misc/cxstore-remote-protocol.md`](cxstore-remote-protocol.md),
-#78 — landed) and the Phase-1 embedded engine (PR #102/#104). Phase 3 (multi-node
+#78 — landed; **retiring** per the stream-4 ruling — the "permanent" label this
+line once carried is struck, and the daemon's wire becomes the XSP store
+profile at the parity gate) and the Phase-1 embedded engine (PR #102/#104).
+Phase 3 (multi-node
 distributed) is **demand-gated** and out of scope here ([`plan.md`](../../../docs-src/canonical/cxstore/plan.md) §Phases).
 
 > Spec-first draft. Sub-areas landed implementation via owner-merged PRs
@@ -161,9 +164,16 @@ validate-then-swap, fail-closed — a failed reload NEVER degrades the running d
 
 ## 3 — Authentication & authorization
 
-CSRP defines the **permanent** transport-level auth: `Authorization: Bearer <token>`,
+CSRP defines the transitional transport-level auth: `Authorization: Bearer <token>`,
 `401 → CXER1702`, and a `capabilities` advert (`[auth [bearer …] [mtls …] [anonymous …]]`).
-Phase 2 layers a **structured authZ model** on top — the protocol is unchanged.
+Phase 2 layered a **structured authZ model** on top. **Retirement note
+(stream 4):** this whole section's stack — the four credential providers,
+role bundles, tenant string-lists, and the Bearer base — RETIRES with the
+CSRP data plane; attach becomes XSP-AUTH (mutual, channel-bound,
+transcript-signed) and authority becomes VC-compiled capability values — ONE
+authority model (store profile §6). The bootstrap HTTP surface keeps only
+`health`/`ready`/`/metrics`/`capabilities`, whose advert drops
+`[auth [bearer …]]`.
 
 ### 3.1 Identities & tokens
 A **principal** is derived from a validated credential. All providers share one interface
@@ -247,7 +257,9 @@ field is threaded now so Phase 3 is an extension, not a retrofit.
 
 ## 5 — gRPC alongside CSRP (in Phase 2 — owner decision 2b)
 
-- CSRP (HTTP/1.1 + CX bodies) remains the **canonical, permanent** interface. gRPC ships in
+- CSRP (HTTP/1.1 + CX bodies) was the canonical interface when this shipped;
+  the stream-4 ruling makes the **XSP store profile** canonical and retires
+  CSRP at the parity gate (the "permanent" claim is struck). gRPC ships in
   Phase 2 as an **opt-in second listener** (enabled in config, §2.2) offering the **same
   operation set** — **parity is normative: no gRPC-only ops, identical semantics + error
   codes**. The `.proto` mirrors the CSRP endpoints 1:1; messages carry the same Layer-1
@@ -282,7 +294,9 @@ V code, so byte-identical hashes + identical CXER codes are automatic).
   (`[?let [= $c [$store:open "cx-store+http://host/store/"]] [$store:<op> $c …]]`)
   and evaluates it via the **capability-aware** entry point
   (`cx_code_eval_caps`), granting `net` **scoped to the configured `host:port`**
-  via the `net:host:port` spec form and nothing else (deny-by-default for
+  via the `net=host:port` spec form (the one scope spelling — L114/#713; the
+  former `net:host:port` colon form is retired, colliding with the `cap:`
+  address prefix) and nothing else (deny-by-default for
   read/write/process/etc.). The scope is enforced (least-privilege — only the
   server host is dialable) and a literal-IP / `localhost` scope overrides the
   §4.5 private-range deny, so a loopback dev/test server is reachable without
@@ -297,7 +311,7 @@ V code, so byte-identical hashes + identical CXER codes are automatic).
   to the binding's native error type (`CxError{code,message}` and peers).
 - **Prereq:** bindings that today expose only the non-caps `cx_code_eval` gain a
   caps-aware wrapper (`eval_code_caps` / equivalent) — additive, no change to the
-  existing entry points. The core `caps_apply_spec` now honours `net:host:port`
+  existing entry points. The core `caps_apply_spec` now honours `net=host:port`
   host scoping (previously dropped to bare `net`), so the grant is genuinely
   least-privilege for every caps-aware caller.
 - **Parity test:** each binding drives put → get → exists → list → delete →

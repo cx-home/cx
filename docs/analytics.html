@@ -5,15 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Analytics, columnar formats, and bridges — CX Guide</title>
 <link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <aside class="sidebar">
   <a class="brand" href="index.html" aria-label="CX — home">
-    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
   </a>
   <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
   <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
   <a class="brand-sub" href="about.html">About →</a>
   <div class="side-search">
     <input id="side-search-input" type="search"
@@ -21,88 +25,126 @@
            autocomplete="off" spellcheck="false" data-prefix="" />
     <ul id="side-search-results" class="side-search-results" hidden></ul>
   </div>
-  <section><h4>Guide</h4><ul>
+  <section><h4>Start here</h4><ul>
     <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
     <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
     <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
     <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
     <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
     <li><a class="active" href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
-    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
-    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
-    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
-    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
-    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
-    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
-    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
-    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
     <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
-    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
-    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
-    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
-  </ul></section>
-  <section><h4>Reference</h4><ul>
-    <li><a href="directives.html">Directives</a></li>
-    <li><a href="syntax.html">Core syntax</a></li>
-  </ul></section>
-  <section><h4>Standard library</h4><ul>
-    <li><a href="libraries.html">Overview</a></li>
-    <li><a href="lib-authz.html">authz</a></li>
-    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
     <li><a href="lib-bytes.html">bytes</a></li>
     <li><a href="lib-crypto.html">crypto</a></li>
     <li><a href="lib-csv.html">csv</a></li>
-    <li><a href="lib-did.html">did</a></li>
-    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
     <li><a href="lib-env.html">env</a></li>
-    <li><a href="lib-fabric.html">fabric</a></li>
     <li><a href="lib-format.html">format</a></li>
     <li><a href="lib-fp.html">fp</a></li>
     <li><a href="lib-ft.html">ft</a></li>
     <li><a href="lib-geo.html">geo</a></li>
     <li><a href="lib-hash.html">hash</a></li>
     <li><a href="lib-html.html">html</a></li>
-    <li><a href="lib-http.html">http</a></li>
     <li><a href="lib-i18n.html">i18n</a></li>
     <li><a href="lib-io.html">io</a></li>
-    <li><a href="lib-journal.html">journal</a></li>
     <li><a href="lib-json.html">json</a></li>
     <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
     <li><a href="lib-jsonschema.html">jsonschema</a></li>
     <li><a href="lib-locale.html">locale</a></li>
     <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
     <li><a href="lib-math.html">math</a></li>
     <li><a href="lib-mime.html">mime</a></li>
-    <li><a href="lib-net.html">net</a></li>
     <li><a href="lib-path.html">path</a></li>
     <li><a href="lib-process.html">process</a></li>
     <li><a href="lib-prof.html">prof</a></li>
     <li><a href="lib-random.html">random</a></li>
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
-    <li><a href="lib-session.html">session</a></li>
     <li><a href="lib-similar.html">similar</a></li>
-    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
     <li><a href="lib-test.html">test</a></li>
     <li><a href="lib-time.html">time</a></li>
     <li><a href="lib-url.html">url</a></li>
     <li><a href="lib-uuid.html">uuid</a></li>
     <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-vc.html">vc</a></li>
     <li><a href="lib-xap.html">xap</a></li>
     <li><a href="lib-xsp.html">xsp</a></li>
-  </ul></section>
-  <section><h4>XAP</h4><ul>
     <li><a href="xap.html">Overview</a></li>
     <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
     <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
     <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
     <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
   </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
 </aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Analytics, columnar formats, and bridges</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
 <main>
 <section id="analytics">
   <h1>Analytics, columnar formats, and bridges</h1>
@@ -117,163 +159,167 @@
          streams over a multi-gigabyte file in bounded memory. The lane has
          three load-bearing pieces, and this section is about how they
          compose.</p>
-        <p>The three pieces are: a **logical data shape** (the `:table` type
-         tag, with typed columns and nullable cells); a **physical wire
-         format** (CXCol, the column-oriented streaming binary form,
-         tag `0x63` in [`spec/core/data-bin.md`](../../spec/core/data-bin.md) §3.11);
-         and **bridges to the broader ecosystem** (Apache Arrow C Data
+        <p>The three pieces are: a <b>logical data shape</b> (the <code>[table[…]]</code>
+         block, with typed columns and nullable cells); a <b>physical wire
+         format</b> (CXCol, the column-oriented streaming binary form,
+         tag <code>0x63</code> in <a href="../../spec/03-approved/core/data-bin.md"><code>spec/core/data-bin.md</code></a> §3.11);
+         and <b>bridges to the broader ecosystem</b> (Apache Arrow C Data
          Interface for zero-copy interop, Apache Parquet for cross-tool
          storage).</p>
         <ul>
           
-            <li>**Logical**: `[orders :table :columns (...) (...) ...]` — see
-              <a class="xref" href="#table-shape">table-shape</a>. Authored in CX text, parses into the same
-              AST as any other CX element, validates against `.cxs`
+            <li><b>Logical</b>: <code>[orders [table[id::int customer::string]] …]</code>
+              — see <a class="xref" href="#table-shape">table-shape</a>. Authored in CX text, parses into the
+              same AST as any other CX element, validates against <code>.cxs</code>
               schemas, hashes via SHA-256 over canonical bytes.</li>
-            <li>**Physical**: CXCol — the column-oriented streaming
+            <li><b>Physical</b>: CXCol — the column-oriented streaming
               binary form. Row-group chunked, optionally zstd-compressed
               per chunk, optionally schema-driven for tag-density.
               See <a class="xref" href="#cxcol">cxcol</a>.</li>
-            <li>**Bridges**: Arrow C Data Interface (zero-copy in-process
+            <li><b>Bridges</b>: Arrow C Data Interface (zero-copy in-process
               handoff) and Parquet (cross-ecosystem storage). See
               <a class="xref" href="#arrow-bridge">arrow-bridge</a> and <a class="xref" href="#parquet-bridge">parquet-bridge</a>.</li>
-            <li>**Streaming**: the CX streaming evaluator (see
-              [`spec/streaming.md`](../../spec/streaming.md)) emits
-              `StartTable` / `RowGroup` / `EndTable` events over CXCol
-              data, so directives like `[?for]` and `[?modify]` can
+            <li><b>Streaming</b>: the CX streaming evaluator (see
+              <a href="../../spec/03-approved/core/streaming.md"><code>spec/core/streaming.md</code></a>) emits
+              <code>StartTable</code> / <code>RowGroup</code> / <code>EndTable</code> events over CXCol
+              data, so directives like <code>[?for]</code> and <code>[?modify]</code> can
               operate on tables that don't fit in memory.</li>
-            <li>**Identity**: CXCol files have a stable SHA-256 over their
+            <li><b>Identity</b>: CXCol files have a stable SHA-256 over their
               canonical (uncompressed) bytes. Compression level does not
               change the hash. Chunk boundaries do — see
               <a class="xref" href="#cxcol-identity">cxcol-identity</a> for the rule.</li>
           
         </ul>
         <p>The rest of this section walks each piece. The normative spec
-         documents are [`spec/core/data-bin.md`](../../spec/core/data-bin.md)
+         documents are <a href="../../spec/03-approved/core/data-bin.md"><code>spec/core/data-bin.md</code></a>
          §3.10-3.13 (wire format) and
-         [`spec/misc/table-api.md`](../../spec/misc/table-api.md)
+         <a href="../../spec/03-approved/misc/table-api.md"><code>spec/misc/table-api.md</code></a>
          (host binding API). This guide is the working developer
          summary.</p>
-        <p class="note">**Naming.** `CXCol` is the column-oriented streaming format
-         name. The `CXDB` / `CXDatabase` namespace is reserved for a
+        <p class="note"><b>Naming.</b> <code>CXCol</code> is the column-oriented streaming format
+         name. The <code>CXDB</code> / <code>CXDatabase</code> namespace is reserved for a
          future query-engine product and does not refer to the file
-         format. Throughout this guide,
-         CXCol is the format; `.cxcol` is the file extension; the
-         `cxcol_*` prefix appears on host-binding identifiers.</p>
+         format. Throughout this guide, CXCol is the format; <code>.cxbin</code> is
+         the file extension (<code>.cxcol</code> is a deprecated alias, recognized
+         read-only — <a href="../../spec/03-approved/process/governance.md"><code>spec/process/governance.md</code></a>
+         §12.2); the <code>cx_table_*</code> prefix appears on the C ABI streaming
+         identifiers (<a href="../../spec/03-approved/core/abi.md"><code>spec/core/abi.md</code></a> §2.10).</p>
       
     </section>
     <section id="table-shape">
-      <h2>The :table data shape</h2>
+      <h2>The [table[…]] data shape</h2>
       
-        <p>The `:table` type tag declares a typed columnar table at the
-         logical CX layer. It is a CX element like any other — same
-         brackets, same parse rules, same canonical-bytes contract — but
-         the parser recognizes the `:table` body shape and produces a
-         `Table` value rather than a generic element.</p>
+        <p>The <code>[table[…]]</code> clause-child opener declares a typed columnar
+         table at the logical CX layer. It is a CX element like any
+         other — same brackets, same parse rules, same canonical-bytes
+         contract — but the parser recognizes the glued <code>[table[</code> opener
+         (grammar [29]) and produces a <code>Table</code> value rather than a
+         generic element. The element's own name is the table's name.</p>
         <pre>
-          <code class="language-cx">[orders :table
-           :columns (id :int, customer :string, amount :float, ts :datetime)
-           (1, 'Ada',   42.50,  2026-05-22T10:00:00Z)
-           (2, 'Grace', 17.25,  2026-05-22T10:15:00Z)
-           (3, 'Linus', 99.00,  2026-05-22T11:30:00Z)]</code>
+          <code class="language-cx">[orders [table[id::int customer::string amount::float ts::datetime]]
+           1 Ada   42.50 2026-05-22T10:00:00Z
+           2 Grace 17.25 2026-05-22T10:15:00Z
+           3 Linus 99.00 2026-05-22T11:30:00Z]</code>
         </pre>
-        <p>The `:columns` attribute carries the column spec: a parenthesized
-         sequence of `name :type` pairs. The body is a sequence of row
-         tuples, each tuple matching the column count. Tuple values must
-         match the declared column types (or be `null` for nullable
-         columns); cell-type mismatches are a parse error
-         (`E_TABLE_CELL_TYPE`).</p>
+        <p>The <code>[table[…]]</code> clause carries the column spec: whitespace-
+         separated <code>name::type</code> entries, where an entry without a type
+         (<code>[table[a b c]]</code>) declares a string column. The body is a flat
+         run of whitespace-separated cells, partitioned into rows by the
+         column count (grammar [29c] — each row supplies exactly one
+         cell per column). A cell that cannot carry the declared column
+         type refuses loudly rather than coercing — the encode-refusal
+         rule of <a href="../../spec/03-approved/core/data-bin.md"><code>spec/core/data-bin.md</code></a>
+         §3.10.3 (never wrap, never widen, never approximate).</p>
         <p>Supported column types match the CX scalar type system:
-         `:int` / `:i8..:i64` / `:u8..:u64` (sized integers), `:float` /
-         `:f32` / `:f64` / `:f16` (floats), `:bool`, `:string`,
-         `:bytes`, `:date`, `:datetime`, `:decimal(precision, scale)`,
-         `:bigint`, plus collection columns (`arr[T]`, `map[K, V]`,
-         `seq[T]`). The full type catalog with byte
-         encodings is in [`spec/core/data-bin.md`](../../spec/core/data-bin.md)
-         §3.10 + [`spec/misc/type-mapping.md`](../../spec/misc/type-mapping.md).</p>
+         <code>int</code> and the sized integers (<code>i8</code>–<code>i64</code>, <code>u8</code>–<code>u64</code>),
+         <code>bigint</code>, <code>float</code> and the reduced widths (<code>f32</code>, <code>f16</code>),
+         <code>decimal</code>, <code>bool</code>, <code>string</code>, <code>bytes</code>, <code>date</code>, and <code>datetime</code>.
+         The full type catalog with byte encodings is in
+         <a href="../../spec/03-approved/core/data-bin.md"><code>spec/core/data-bin.md</code></a>
+         §3.10.3 + <a href="../../spec/03-approved/misc/type-mapping.md"><code>spec/misc/type-mapping.md</code></a>.</p>
         <section id="nullable">
-          <h3>Nullable columns</h3>
+          <h3>Null cells</h3>
           
-            <p>Nullable columns are declared by wrapping the type in
-           `nullable`. A null cell is written as the literal `null`.</p>
+            <p>Any column can carry null cells. A null cell is written as
+           the literal <code>null</code> — a bare token in cell position; empty
+           cells are not allowed in the wire form.</p>
             <pre>
-              <code class="language-cx">[customers :table
-             :columns (id :int,
-                       name :string,
-                       phone (nullable :string))
-             (1, 'Ada',   '555-1212')
-             (2, 'Grace', null)
-             (3, 'Linus', '555-9999')]</code>
+              <code class="language-cx">[customers [table[id::int name::string phone::string]]
+             1 Ada   '555-1212'
+             2 Grace null
+             3 Linus '555-9999']</code>
             </pre>
-            <p>Nullable wire encoding is the def/rep-level pattern from
-           [`spec/core/data-bin.md`](../../spec/core/data-bin.md) §3.10.5; the host
-           binding's `Table.cell(r, c)` returns the host's null sentinel
-           (`None` in Python, `nil` in Go, `Option::None` in Rust).</p>
+            <p>On the wire, a column with null cells uses the nullable
+           wrapper of <a href="../../spec/03-approved/core/data-bin.md"><code>spec/core/data-bin.md</code></a>
+           §3.10.5: type code <code>0x80</code>, then the inner type code, then a
+           null bitmap of <code>ceil(rows/8)</code> bytes (bit set = null), then
+           the packed payload of the non-null cells only. The host
+           binding's <code>Table.cell(r, c)</code> returns the host's null sentinel
+           (<code>None</code> in Python, <code>nil</code> in Go, <code>Option::None</code> in Rust).</p>
           
         </section>
         <section id="dict-encoding">
           <h3>Dictionary encoding</h3>
           
-            <p>Tables are dictionary-encoded by default for `:string`
-           columns with low cardinality. The encoder builds a per-chunk
-           dictionary of distinct values; the column buffer stores
-           dictionary indices instead of raw strings. Decoders rebuild
-           the strings transparently; the host-binding API never
+            <p>Dictionary encoding is an <b>opt-in container form</b> — tag
+           <code>0x62</code> in <a href="../../spec/03-approved/core/data-bin.md"><code>spec/core/data-bin.md</code></a>
+           §3.10.2. Each column's payload starts with a marker: plain
+           (the §3.10.3 layout) or dictionary-encoded (distinct values
+           in insertion order, then one varint index per row). Decoders
+           rebuild the values transparently; the host-binding API never
            exposes the indices.</p>
-            <p>Dictionary encoding is automatic, not a user-visible flag.
-           The threshold (≥ 4× compression vs. raw on the chunk) lives
-           in [`spec/core/data-bin.md`](../../spec/core/data-bin.md) §3.10.4. CXPath
-           `=` and `[?match]` value comparison operate on the decoded
-           string, so user code is dictionary-agnostic.</p>
+            <p>Canonical writers emit the plain <code>0x60</code> form. A writer that
+           opts into <code>0x62</code> uses a dictionary for a column only when the
+           dictionary actually saves bytes — the canonical constraint of
+           §3.10.2, evaluated per column — so categorical data (status,
+           region, type) dictionary-encodes and high-cardinality data
+           stays plain. CXPath <code>=</code> and <code>[?match]</code> value comparison
+           operate on the decoded value, so user code is
+           dictionary-agnostic.</p>
           
         </section>
         <section id="table-validate">
           <h3>Schema validation</h3>
           
-            <p>Tables validate against `.cxs` schemas the same way ordinary
-           elements do. A schema describes the column spec; the validator
-           enforces row-count, type-conformance, and nullability per
-           cell. See [[data#schema]] for the schema language and
-           [`spec/schema.md`](../../spec/schema.md) §6 for table-specific
-           rules.</p>
-            <pre>
-              <code class="language-cx">[# orders.cxs — schema describing the orders table shape #]
-           [schema
-             [table :name orders
-               [column :name id       :type int    :required true]
-               [column :name customer :type string :required true]
-               [column :name amount   :type float  :required true]
-               [column :name ts       :type datetime]]]</code>
-            </pre>
+            <p>Tables validate against <code>.cxs</code> schemas the same way ordinary
+           elements do — the table block is an element, and the schema
+           language of <a href="../../spec/03-approved/core/schema.md"><code>spec/core/schema.md</code></a>
+           applies to it as to any other element. See [[data#schema]]
+           for the schema language. At the binary layer, a CXCol file
+           can carry a schema reference that names its schema by
+           content hash (see <a class="xref" href="#cxcol-schema-driven">cxcol-schema-driven</a>).</p>
           
         </section>
         <section id="table-api">
           <h3>The Table host-binding API</h3>
           
-            <p>Bindings expose a `Table` value type when `loads` encounters a
-           `:table` block. Methods match across bindings up to host-idiom
+            <p>Bindings expose a <code>Table</code> value type for <code>[table[…]]</code>
+           blocks. Methods match across bindings up to host-idiom
            differences; the canonical surface is documented in
-           [`spec/misc/table-api.md`](../../spec/misc/table-api.md).</p>
+           <a href="../../spec/03-approved/misc/table-api.md"><code>spec/misc/table-api.md</code></a>.</p>
             <pre>
               <code class="language-python">import cxlib
-           doc = cxlib.loads(open('orders.cx').read())
-           t   = doc['orders']                     # Table instance
+           t = cxlib.Table.from_cx(open('orders.cx').read())
 
            print(t.cols)         # ['id', 'customer', 'amount', 'ts']
+           print(t.types)        # ['int', 'string', 'float', 'datetime']
            print(t.row_count)    # 3
-           print(t.row(0))       # OrderedDict([('id', 1), ('customer', 'Ada'), ...])
-           print(t.column('amount'))  # [42.50, 17.25, 99.00]
+           print(t.row(0))       # {'id': 1, 'customer': 'Ada', ...}
+           print(t.column('amount'))  # [42.5, 17.25, 99.0]
 
            # Slicing / projection
-           sub = t.head(2).select(['customer', 'amount'])
+           sub = t.head(2).select_cols(['customer', 'amount'])
            print(sub.to_cx())</code>
             </pre>
-            <p>The 17-member canonical surface (`cols` / `types` / `row` /
-           `column` / `cell` / `slice` / `head` / `tail` / `select` /
-           iteration + adapters) is described in
-           [`spec/misc/table-api.md`](../../spec/misc/table-api.md) §3. The same
-           shape exists in V, Go, Rust, and TypeScript with the naming
-           conventions of each host.</p>
+            <p>The canonical surface
+           (<a href="../../spec/03-approved/misc/table-api.md"><code>spec/misc/table-api.md</code></a> §3)
+           is: the <code>cols</code> / <code>types</code> / <code>row_count</code> / <code>col_count</code>
+           properties; the <code>row</code> / <code>column</code> / <code>col_at</code> / <code>cell</code> /
+           <code>cell_by_name</code> accessors; the <code>slice</code> / <code>head</code> / <code>tail</code> /
+           <code>select_cols</code> projections; row iteration; and the <code>to_cx</code> /
+           <code>to_csv</code> / <code>to_json</code> / <code>to_data_bin</code> / <code>to_dict_list</code>
+           conversions. The same shape exists in V, Python, Go, and
+           Rust with the naming conventions of each host.</p>
           
         </section>
       
@@ -283,10 +329,10 @@
       
         <p>CXCol is the physical wire form for tabular data: column-oriented,
          row-group-chunked, content-addressable, and streamable in bounded
-         memory. The data-bin tag is `0x63`; the file extension is
-         `.cxcol`. The normative byte-level layout is in
-         [`spec/core/data-bin.md`](../../spec/core/data-bin.md) §3.11.</p>
-        <p>The format is a single sequential pass: header, schema preamble,
+         memory. The data-bin tag is <code>0x63</code>; the file extension is
+         <code>.cxbin</code>. The normative byte-level layout is in
+         <a href="../../spec/03-approved/core/data-bin.md"><code>spec/core/data-bin.md</code></a> §3.11.</p>
+        <p>The format is a single sequential pass: header, column spec,
          then a stream of row groups, then a terminator. Writers emit one
          row group at a time and can produce a billion-row table in
          memory bounded by the largest row group. Readers pull row groups
@@ -298,52 +344,54 @@
             <p>A CXCol stream is:</p>
             <ul>
               
-                <li>**12-byte header.** Magic `CXDB`, format version,
-                capability bits, header flags. Header flag bit 0 reserved;
-                header flag bit 1 signals schema-driven mode (see
-                <a class="xref" href="#cxcol-schema-driven">cxcol-schema-driven</a>).</li>
-                <li>**Schema preamble.** The column spec: count, then one
-                `(name, type_tag, nullable_flag)` triple per column.
-                Encoded once at the head — every row group in the file
-                conforms to this schema.</li>
-                <li>**Row-group sequence.** Each group is
-                `uvarint(body_byte_len) &lt;body-tag&gt; &lt;body&gt;`. `body-tag`
-                `0x01` = plain (uncompressed column buffers); `0x90` =
-                compressed with codec id (`0x01` = zstd v1).</li>
-                <li>**Per-chunk manifest** (inside each group). Row count,
-                optional per-column min/max/null-count statistics. The
-                statistics are not yet used by libcx itself but are
-                reserved space the Parquet bridge populates on emit.</li>
-                <li>**Terminator.** A single `0x00` byte (zero-length
+                <li><b>12-byte header.</b> Magic <code>CXCol</code> (5 bytes,
+                <code>0x43 0x58 0x43 0x6F 0x6C</code>), version byte (<code>0x01</code>),
+                flags byte, <code>max_depth</code> (uint32 LE), reserved byte.
+                Flag bit 0 is endianness (1 = little-endian); flag
+                bit 1 signals schema-driven mode (see
+                <a class="xref" href="#cxcol-schema-driven">cxcol-schema-driven</a>); bits 2–7 are reserved and
+                must be zero.</li>
+                <li><b>Column spec.</b> The chunked-table tag <code>0x63</code>, then
+                <code>uvarint(col_count)</code>, then one col-spec per column —
+                the column name as a tagged string plus its type code
+                (the §3.10.1 shape). Declared once at the head — every
+                row group in the file conforms to this spec.</li>
+                <li><b>Row-group sequence.</b> Each group is
+                <code>uvarint(body_byte_len) &lt;body-tag&gt; &lt;body&gt;</code>. <code>body-tag</code>
+                <code>0x01</code> = plain (<code>uvarint(row_count)</code> then column-major
+                buffers); <code>0x90</code> = the zstd page-compression wrapper
+                (§3.12), whose decompressed bytes form the same plain
+                body.</li>
+                <li><b>Terminator.</b> A single <code>0x00</code> byte (a zero-length
                 row group) closes the stream.</li>
               
             </ul>
             <p>The 2²⁰ (1,048,576) rows per group is the canonical chunk
-           size — `cx canonical` enforces it on a CXCol input, and writers
-           targeting cross-system hash invariance should use it.
-           Different chunk sizes produce valid CXCol files but with
-           different SHA-256 hashes.</p>
+           size — <code>cx canonical</code> and <code>cx hash</code> re-chunk a CXCol input
+           to it, and writers targeting cross-system hash invariance
+           should use it. Different chunk sizes produce valid CXCol
+           files but with different SHA-256 hashes.</p>
           
         </section>
         <section id="cxcol-identity">
           <h3>Content-addressable identity</h3>
           
-            <p>A CXCol file's SHA-256 hash is computed over its **canonical
-           uncompressed bytes** — the bytes you would see if every
-           `0x90` page-compression wrapper were unwrapped to its `0x01`
+            <p>A CXCol file's SHA-256 hash is computed over its <b>canonical
+           uncompressed bytes</b> — the bytes you would see if every
+           <code>0x90</code> page-compression wrapper were unwrapped to its <code>0x01</code>
            plain form. Compression is a transport / storage choice;
            identity is a content choice; the format keeps them
            orthogonal.</p>
             <ul>
               
-                <li>**Same data + same chunking + same schema → same hash**,
+                <li><b>Same data + same chunking + same schema → same hash</b>,
                 regardless of zstd level or whether compression was
                 applied at all.</li>
-                <li>**Different chunk size → different hash.** Chunk
+                <li><b>Different chunk size → different hash.</b> Chunk
                 boundaries are part of the canonical form. The
                 2²⁰-rows-per-group convention is the cross-writer
                 interoperability rule.</li>
-                <li>**Hash composes with <a class="xref" href="identity.html#hash">hash</a>.** The same SHA-256
+                <li><b>Hash composes with <a class="xref" href="identity.html#hash">hash</a>.</b> The same SHA-256
                 primitive that hashes a CX document hashes a CXCol file —
                 tooling pipelines (caching, dedup, signing,
                 content-addressable storage) treat both uniformly.</li>
@@ -351,64 +399,49 @@
             </ul>
             <pre>
               <code class="language-python">import cxlib
-           # Two CXCol writers, same source data, different compression
-           cxlib.write_cxcol('a.cxcol', table, compress='zstd:3')
-           cxlib.write_cxcol('b.cxcol', table, compress='zstd:9')
-
-           # Files differ on disk:
-           open('a.cxcol', 'rb').read() == open('b.cxcol', 'rb').read()  # False
-
-           # But canonical hashes are identical:
-           cxlib.cxcol_hash('a.cxcol') == cxlib.cxcol_hash('b.cxcol')    # True</code>
+           # Framed CXCol chunked-table bytes: [u32 LE size][CXCol payload]
+           framed = cxlib.to_data_bin_chunked(open('orders.cx').read())
+           # The payload's identity is the SHA-256 of its canonical
+           # (uncompressed) bytes: a 0x90-compressed row group unwraps
+           # to its 0x01 plain form before hashing, so the compression
+           # level never moves the hash.</code>
             </pre>
           
         </section>
         <section id="cxcol-streaming-api">
           <h3>Streaming reader / writer</h3>
           
-            <p>Bindings expose a handle-based streaming API mirroring the
-           C ABI in
-           [`spec/core/data-bin.md`](../../spec/core/data-bin.md) §3.11.6
-           (10 symbols under capability bit 21). The Python / Go / Rust /
-           V shapes follow each host's resource-management idiom.</p>
+            <p>The streaming surface is the C ABI reader / writer family in
+           <a href="../../spec/03-approved/core/abi.md"><code>spec/core/abi.md</code></a> §2.10
+           (capability bit 21): <code>cx_table_reader_open</code> /
+           <code>cx_table_reader_open_fd</code> / <code>cx_table_reader_schema</code> /
+           <code>cx_table_reader_next</code> / <code>cx_table_reader_close</code>, and
+           <code>cx_table_writer_open</code> / <code>cx_table_writer_open_fd</code> /
+           <code>cx_table_writer_emit_row_group</code> /
+           <code>cx_table_writer_close_get_bytes</code> / <code>cx_table_writer_close</code>.
+           The Python binding wraps the family as <code>cxlib.TableReader</code> /
+           <code>cxlib.TableWriter</code>.</p>
             <pre>
               <code class="language-python">import cxlib
 
+           framed = cxlib.to_data_bin_chunked(open('big.cx').read())
+
            # Reader — pulls one row group at a time
-           with cxlib.cxcol_reader('big.cxcol') as r:
-               print(r.schema)            # column spec
-               for group in r:            # iterator of row-groups
-                   process(group)         # group is a Table
+           with cxlib.TableReader(framed) as r:
+               spec = r.schema()          # col-spec payload bytes
+               for group in r:            # row-group payloads, one at a time
+                   process(group)
 
            # Writer — pushes one row group at a time
-           with cxlib.cxcol_writer('out.cxcol', schema=cols) as w:
-               for chunk in source_of_chunks():
-                   w.emit(chunk)          # bounded memory per chunk</code>
+           with cxlib.TableWriter(spec) as w:
+               for group in source_of_groups():
+                   w.emit(group)          # bounded memory per group
+               framed_out = w.close_get_bytes()</code>
             </pre>
-            <pre>
-              <code class="language-go">package main
-
-           import "cxlib"
-
-           func main() {
-               r, _ := cxlib.CxcolReaderOpen("big.cxcol")
-               defer r.Close()
-               for {
-                   g, err := r.Next()
-                   if err == cxlib.EOF { break }
-                   process(g)
-               }
-           }</code>
-            </pre>
-            <pre>
-              <code class="language-rust">use cxlib::cxcol::Reader;
-
-           let mut r = Reader::open("big.cxcol")?;
-           while let Some(group) = r.next()? {
-               process(group);
-           }
-           // r dropped → reader closed via Drop</code>
-            </pre>
+            <p>Go and Rust reach the same reader / writer handles through
+           the shared C ABI directly — the §2.10 symbol family is the
+           contract; a packaged native wrapper in those bindings has
+           not shipped yet.</p>
             <p>Memory budget is one row group in flight per stage in the
            pipeline. A reader chained into a CXPath filter chained into a
            Parquet writer holds three row groups at once, total —
@@ -421,15 +454,18 @@
           
             <p>When the writer knows both sides of the wire have access to
            the schema, header flag bit 1 enables schema-driven mode: per-
-           value type tags are omitted for columns the schema declares;
+           value type tags are omitted for values the schema declares;
            reader and writer walk the schema in lockstep with the data.
            Wire density approaches Parquet's typed encoding.</p>
-            <p>Schema-driven mode is opt-in (`cxlib.write_cxcol(...,
-           schema_driven=True)`); having a schema in scope does not
-           silently promote the encoder. The schema reference forms
-           (`0x10` content-hash, `0x11` inline, `0x12` content-hash +
-           name hint) are documented in
-           [`spec/core/data-bin.md`](../../spec/core/data-bin.md) §3.13.</p>
+            <p>Schema-driven mode is opt-in — <code>cx_to_data_bin
+           --schema-driven</code> at the ABI, <code>cxlib.to_data_bin_schema_driven(…)</code>
+           in Python; having a schema in scope does not silently promote
+           the encoder. The schema reference forms (<code>0x10</code> content-hash,
+           <code>0x11</code> inline, <code>0x12</code> content-hash + name hint, <code>0x13</code>
+           self-describing multihash) are documented in
+           <a href="../../spec/03-approved/core/data-bin.md"><code>spec/core/data-bin.md</code></a> §3.13.1;
+           the <code>cx table</code> subcommand resolves <code>--schema-from=</code> arguments
+           to a content hash before emit.</p>
             <p class="note">Schema-driven mode requires the reader to retrieve the schema
            by its content hash. Local lookup is the default; the
            callback-shaped content-store ABI is a planned
@@ -441,94 +477,88 @@
     <section id="arrow-bridge">
       <h2>Arrow bridge — zero-copy interop</h2>
       
-        <p>CXCol bridges to Apache Arrow via the Arrow **C Data Interface**
+        <p>CXCol bridges to Apache Arrow via the Arrow <b>C Data Interface</b>
          — a struct-based ABI that lets two libraries share columnar
-         buffers without copying them. The CX side is `libcx_arrow`, a
+         buffers without copying them. The CX side is <code>libcx_arrow</code>, a
          separate dynamic library that depends on libcx + the Arrow
          C-Data ABI. Core libcx is Arrow-free; capability bit 23
          advertises Arrow when libcx_arrow is loaded.</p>
-        <p>The bridge exports four C ABI symbols:
-         `cx_arrow_export_open` / `cx_arrow_export_open_fd` for
-         CXCol → Arrow, and `cx_arrow_import_to_data_bin` /
-         `cx_arrow_import_to_data_bin_fd` for Arrow → CXCol. Bindings
-         wrap them as `to_arrow()` / `from_arrow()` on the Table value
-         type.</p>
+        <p>The bridge exports four C ABI symbols
+         (<a href="../../spec/03-approved/core/abi.md"><code>spec/core/abi.md</code></a> §2.11):
+         <code>cx_arrow_export_open</code> / <code>cx_arrow_export_open_fd</code> for
+         CXCol → Arrow, and <code>cx_arrow_import_to_data_bin</code> /
+         <code>cx_arrow_import_to_data_bin_fd</code> for Arrow → CXCol. The Python
+         binding wraps them as <code>cxlib.arrow.export</code> (framed CXCol bytes
+         in, <code>pyarrow.RecordBatchReader</code> out) and
+         <code>cxlib.arrow.import_to_data_bin</code> (the inverse).</p>
         <section id="arrow-zero-copy">
           <h3>Zero-copy handoff</h3>
           
-            <p>The Arrow C Data Interface uses two structs: `ArrowSchema`
-           (column types + names) and `ArrowArray` (per-batch buffers,
+            <p>The Arrow C Data Interface uses two structs: <code>ArrowSchema</code>
+           (column types + names) and <code>ArrowArray</code> (per-batch buffers,
            including null bitmap, offsets, and values). CX populates
            these structs to point at its own column buffers; consumers
            (DuckDB, Polars, PyArrow, etc.) read from the same memory
            pages CX wrote.</p>
             <p>Ownership crosses the boundary explicitly. The exporter
-           populates an `ArrowArrayStream` with a `release` callback;
-           the consumer calls `release` when done. CX's release callback
+           populates an <code>ArrowArrayStream</code> with a <code>release</code> callback;
+           the consumer calls <code>release</code> when done. CX's release callback
            frees the underlying CXCol buffers. There is no GC interplay
            — bindings hold the Arrow stream as an opaque handle until
            they're done with it.</p>
             <pre>
-              <code class="language-python">import cxlib, pyarrow as pa
+              <code class="language-python">import cxlib
+           import cxlib.arrow as cxa
 
-           # Load CXCol — buffers held by libcx_arrow
-           t = cxlib.read_cxcol('orders.cxcol')
+           framed = cxlib.to_data_bin_chunked(open('orders.cx').read())
 
-           # Zero-copy export to Arrow: no buffer copy, just pointer handoff
-           reader = t.to_arrow_stream()          # ArrowArrayStream
-           pa_table = pa.Table.from_batches(reader)
+           # Zero-copy export: pointer handoff over the C Data Interface
+           reader = cxa.export(framed)       # pyarrow.RecordBatchReader
+           pa_table = reader.read_all()      # pyarrow.Table
 
-           # pa_table now references the same memory as t.
-           # Don't free t (or call cxlib release) until pa_table is done.</code>
+           # Symmetric inverse: Arrow → framed CXCol bytes
+           framed_again = cxa.import_to_data_bin(pa_table)</code>
             </pre>
-            <pre>
-              <code class="language-rust">use cxlib::cxcol;
-           use arrow::record_batch::RecordBatchReader;
-
-           let t = cxcol::read("orders.cxcol")?;
-           let mut reader: Box<dyn RecordBatchReader> = t.into_arrow_stream()?;
-           while let Some(batch) = reader.next() {
-               let batch = batch?;
-               // batch.column(0) points at the same memory as t's first column
-               process(batch);
-           }</code>
-            </pre>
+            <p>Go and Rust use the same four symbols through the C ABI with
+           each host's Arrow FFI layer (<code>arrow-go</code>, the <code>arrow</code> crate's
+           <code>ffi_stream</code> module) — the per-binding Arrow libraries are
+           tabulated in <a href="../../spec/03-approved/core/abi.md"><code>spec/core/abi.md</code></a>
+           §2.11.</p>
           
         </section>
         <section id="arrow-type-mapping">
           <h3>Type mapping</h3>
           
-            <p>The CX ↔ Arrow type map is normative. The
-           high-level summary:</p>
+            <p>The CX ↔ Arrow type map is normative
+           (<a href="../../spec/03-approved/misc/type-mapping.md"><code>spec/misc/type-mapping.md</code></a>).
+           The high-level summary:</p>
             <ul>
               
-                <li>`:int` / `:i64` ↔ `Int64`; `:i32` ↔ `Int32`; sized
-                variants (`:i8..:u64`) map to corresponding Arrow
+                <li><code>int</code> / <code>i64</code> ↔ <code>Int64</code>; <code>i32</code> ↔ <code>Int32</code>; sized
+                variants (<code>i8</code>–<code>u64</code>) map to corresponding Arrow
                 sized integer types.</li>
-                <li>`:float` / `:f64` ↔ `Float64`; `:f32` ↔ `Float32`;
-                `:f16` ↔ `Float16` (Arrow ≥ 1.0).</li>
-                <li>`:bool` ↔ `Boolean` (bit-packed in Arrow).</li>
-                <li>`:string` ↔ `Utf8` (or `LargeUtf8` for columns whose
+                <li><code>float</code> / <code>f64</code> ↔ <code>Float64</code>; <code>f32</code> ↔ <code>Float32</code>;
+                <code>f16</code> ↔ <code>Float16</code>.</li>
+                <li><code>bool</code> ↔ <code>Boolean</code> (bit-packed in Arrow).</li>
+                <li><code>string</code> ↔ <code>Utf8</code> (or <code>LargeUtf8</code> for columns whose
                 total byte length exceeds 2 GB).</li>
-                <li>`:bytes` ↔ `Binary` (or `LargeBinary` similarly).</li>
-                <li>`:date` ↔ `Date32` (days since 1970-01-01,
+                <li><code>bytes</code> ↔ <code>Binary</code> (or <code>LargeBinary</code> similarly).</li>
+                <li><code>date</code> ↔ <code>Date32</code> (days since 1970-01-01,
                 proleptic Gregorian).</li>
-                <li>`:datetime` ↔ `Timestamp(Nanoseconds, UTC)`; offsets
-                round-trip via the `tz` field when present.</li>
-                <li>`:decimal(p, s)` ↔ `Decimal128` (p ≤ 38) or `Decimal256`
-                (p ≤ 76).</li>
-                <li>`arr[T]` ↔ `List&lt;T&gt;`; `map[K, V]` ↔ `Map&lt;K, V&gt;`;
-                `seq[T]` ↔ `List&lt;T&gt;` (sequence flatten per CXDM §1.2).</li>
-                <li>`nullable T` → Arrow's standard nullable variant
+                <li><code>datetime</code> ↔ <code>Timestamp(Nanoseconds, UTC)</code> (Arrow
+                format string <code>tsn:UTC</code>).</li>
+                <li><code>decimal</code> ↔ <code>Decimal128</code> / <code>Decimal256</code> by coefficient
+                width.</li>
+                <li>Nullable columns → Arrow's standard nullable variant
                 (validity bitmap).</li>
               
             </ul>
-            <p>Current column-type coverage in `libcx_arrow` is 9 of
-           10 types (int / i8 / i16 / i32 / float / bool / string / date /
-           bytes). `:datetime`, `:decimal`, and dictionary / extension
-           columns remain deferred to a future libcx_arrow expansion;
-           the wire surface accepts them but the C-Data bridge errors
-           with `arrow-014-unsupported-type-deferred-error`.</p>
+            <p>Current column-type coverage in <code>libcx_arrow</code> is <b>all ten
+           column types</b> — int / i8 / i16 / i32 / float / bool /
+           string / date / bytes / datetime (the last as
+           <code>timestamp[ns, UTC]</code>). Deferred: <code>decimal</code> and
+           dictionary-encoded columns — each surfaces a clear
+           <code>not yet supported</code> error rather than a lossy fallback.</p>
           
         </section>
         <section id="arrow-ipc">
@@ -540,17 +570,20 @@
            batches + EOF), distinct from the C Data Interface
            (in-memory structs).</p>
             <pre>
-              <code class="language-python">import cxlib, pyarrow as pa
+              <code class="language-python">import cxlib
+           import cxlib.arrow as cxa
 
-           # Emit Arrow IPC stream — bytes you can write to a file or socket
-           with open('orders.arrow', 'wb') as f:
-               for batch in cxlib.read_cxcol('orders.cxcol').to_arrow_ipc():
-                   f.write(batch)</code>
+           framed = cxlib.to_data_bin_chunked(open('orders.cx').read())
+
+           ipc = cxa.to_ipc(framed)              # Arrow IPC stream bytes
+           cxa.write_ipc_file(framed, 'orders.arrow')
+
+           framed_back = cxa.from_ipc(ipc)       # inverse
+           framed_back2 = cxa.read_ipc_file('orders.arrow')</code>
             </pre>
-            <p>The `cx table dump --to=arrow` CLI subcommand
-           (`spec/cx_table_cli.md`) writes the IPC stream form by
-           default; `--arrow-format=file` opts into the file-format
-           variant.</p>
+            <p>The <code>cx table dump FILE --to=arrow [--output=FILE]</code> CLI
+           subcommand (<a href="../../spec/03-approved/misc/cli.md"><code>spec/misc/cli.md</code></a>)
+           writes the IPC stream form.</p>
           
         </section>
         <section id="arrow-flight">
@@ -560,11 +593,11 @@
            process record batches. It is the natural next layer above
            the IPC stream — a Flight server publishes batches by
            descriptor; a Flight client subscribes. CX integration is
-           **planned**: no Flight surface ships currently; the
+           <b>planned</b>: no Flight surface ships currently; the
            tooling-layer story will be specified when it lands.</p>
             <p class="note">For cross-process CXCol transport currently, use Arrow IPC
            over your existing transport (HTTP, pipe, socket). The
-           `[?http-client]` directive can carry Arrow IPC streams as
+           <code>[?http-client]</code> directive can carry Arrow IPC streams as
            binary bodies.</p>
           
         </section>
@@ -574,185 +607,503 @@
       <h2>Parquet bridge</h2>
       
         <p>CXCol bridges to Apache Parquet via Arrow: CXCol → Arrow stream
-         → Parquet file. Core libcx has **no direct Parquet C++
-         dependency** — adding one would couple every binding to a
-         heavyweight build-time toolchain. The Parquet adapter is a
-         binding-specific library (PyArrow for Python, arrow-rs for
-         Rust, parquet-go for Go, etc.) chained off the Arrow
-         bridge.</p>
+         → Parquet file. Core libcx has <b>no direct Parquet C++
+         dependency</b> — adding one would couple every binding to a
+         heavyweight build-time toolchain. The Parquet adapter lives at
+         the binding layer, chained off the Arrow bridge; the Python
+         binding ships the reference composition (<code>cxlib.parquet</code>, on
+         <code>pyarrow.parquet</code>).</p>
         <section id="parquet-write">
           <h3>Writing Parquet</h3>
           
-            <p>`Table.write_parquet(path, ...)` walks CXCol → Arrow record
-           batches → Parquet writer. The Parquet writer is the host
-           binding's choice; the CXCol side just provides the Arrow
-           stream.</p>
+            <p><code>cxlib.parquet.write_table(cx_data_bin, path, …)</code> walks
+           framed CXCol bytes → Arrow record batches → the PyArrow
+           Parquet writer. The Parquet writer is the host binding's
+           choice; the CXCol side just provides the Arrow stream.</p>
             <pre>
               <code class="language-python">import cxlib
+           import cxlib.parquet as cxpq
 
-           t = cxlib.read_cxcol('orders.cxcol')
-           t.write_parquet(
+           framed = cxlib.to_data_bin_chunked(open('orders.cx').read())
+           cxpq.write_table(
+               framed,
                'orders.parquet',
                compression='snappy',     # Parquet ecosystem default
                row_group_size=1_048_576, # match CXCol canonical chunk
-               use_dictionary=True,      # dictionary encoding (per-col)
-               write_statistics=True,    # min/max/null per row-group
            )</code>
             </pre>
             <p>Defaults are the Parquet-ecosystem defaults (Snappy, not
            zstd) — output is meant to be consumed by Parquet readers
-           that assume Snappy. Zstd is CX's default for CXCol's `0x90`
+           that assume Snappy. Zstd is CX's default for CXCol's <code>0x90</code>
            page compression; the two formats use their own ecosystem
            defaults to minimize friction with the consumers of
            each.</p>
-            <pre>
-              <code class="language-rust">use cxlib::cxcol;
-           use parquet::file::writer::*;
-           use parquet::basic::Compression;
-
-           let t = cxcol::read("orders.cxcol")?;
-           let mut writer = SerializedFileWriter::new(
-               std::fs::File::create("orders.parquet")?,
-               t.arrow_schema()?,
-               Compression::SNAPPY.into(),
-           )?;
-           for batch in t.into_arrow_stream()? {
-               writer.write(&batch?)?;
-           }
-           writer.close()?;</code>
-            </pre>
+            <p><a href="../../spec/03-approved/misc/table-api.md"><code>spec/misc/table-api.md</code></a> §3
+           declares the per-binding adapter slots (Rust via <code>arrow-rs</code> +
+           the <code>parquet</code> crate, Go via <code>arrow-go</code>); those bindings reach
+           Parquet through the Arrow C ABI today — the packaged one-call
+           adapters have not shipped outside Python.</p>
           
         </section>
         <section id="parquet-read">
           <h3>Reading Parquet</h3>
           
-            <p>`read_parquet(path, ...)` is the symmetric inverse. The
-           Parquet reader produces Arrow record batches; CX wraps them
-           as a streaming Table.</p>
+            <p><code>cxlib.parquet.read_table(path)</code> is the symmetric inverse:
+           the PyArrow Parquet reader produces Arrow record batches, and
+           the bridge imports them as framed CXCol chunked-table
+           bytes — ready for <code>cxlib.from_data_bin</code> or a streaming
+           <code>cxlib.TableReader</code> pass.</p>
             <pre>
               <code class="language-python">import cxlib
+           import cxlib.parquet as cxpq
 
-           # Whole-file read
-           t = cxlib.read_parquet('orders.parquet')
-           print(t.row_count)
+           framed = cxpq.read_table('orders.parquet')
 
-           # Streaming read with projection and predicate
-           for chunk in cxlib.read_parquet_chunks(
-                   'orders.parquet',
-                   columns=['id', 'amount'],     # only read these columns
-                   filter='amount > 100'):        # predicate pushdown via stats
-               process(chunk)</code>
+           # Whole-value view
+           print(cxlib.from_data_bin(framed))
+
+           # Streaming view — one row group at a time
+           with cxlib.TableReader(framed) as r:
+               for group in r:
+                   process(group)</code>
             </pre>
-            <p>Predicate pushdown uses per-row-group min/max statistics
-           emitted by the Parquet writer. A predicate like `amount &gt; 100`
-           against a row group whose `max(amount) = 50` skips the
-           group's data pages entirely. Column projection only reads the
-           requested column chunks. Together, selective queries on wide
-           tables can reduce I/O by 10× or more — see
-           <a class="xref" href="#performance">performance</a>.</p>
-            <p class="note">Predicate pushdown depends on the Parquet writer having
-           emitted statistics. The CX writer (5.5.1) does so by default
-           (`write_statistics=True`). Files produced by other writers
-           may not have statistics — the reader still works, but
-           degrades to a full scan.</p>
+            <p>Column projection and predicate pushdown are the <b>host
+           Parquet reader's</b> work, done before the batches reach CX:
+           a Parquet reader given per-row-group statistics skips the
+           groups a predicate rules out, so I/O saved is proportional
+           to the row groups skipped. Files without statistics still
+           read correctly — the reader degrades to a full scan.</p>
           
         </section>
-      
-    </section>
-    <section id="parquet-types">
-      <h2>CX ↔ Parquet type mapping</h2>
-      
-        <p>The mapping is normative. Most types round-trip
-           cleanly through Arrow; a small
-           number of CX types have lossy edges that `--strict` mode
-           rejects rather than silently coerces.</p>
-        <ul>
+        <section id="parquet-types">
+          <h3>CX ↔ Parquet type mapping</h3>
           
-            <li>`:int` / `:i64` → `INT64`.</li>
-            <li>`:i32` → `INT32`; `:i16` / `:i8` → `INT32` with
-                `INT(N, true)` logical type; unsigned similarly.</li>
-            <li>`:f64` / `:float` → `DOUBLE`; `:f32` → `FLOAT`;
-                `:f16` → `FIXED_LEN_BYTE_ARRAY(2)` / `FLOAT16`
+            <p>The mapping is normative. Most types round-trip cleanly
+           through Arrow; a small number of CX types have lossy edges,
+           and the bridge reports them loudly rather than silently
+           coercing.</p>
+            <ul>
+              
+                <li><code>int</code> / <code>i64</code> → <code>INT64</code>.</li>
+                <li><code>i32</code> → <code>INT32</code>; <code>i16</code> / <code>i8</code> → <code>INT32</code> with
+                <code>INT(N, true)</code> logical type; unsigned similarly.</li>
+                <li><code>f64</code> / <code>float</code> → <code>DOUBLE</code>; <code>f32</code> → <code>FLOAT</code>;
+                <code>f16</code> → <code>FIXED_LEN_BYTE_ARRAY(2)</code> / <code>FLOAT16</code>
                 (the latter is non-standard pre-Parquet 1.13).</li>
-            <li>`:bool` → `BOOLEAN`.</li>
-            <li>`:string` → `BYTE_ARRAY` with `STRING` logical type
+                <li><code>bool</code> → <code>BOOLEAN</code>.</li>
+                <li><code>string</code> → <code>BYTE_ARRAY</code> with <code>STRING</code> logical type
                 (UTF-8).</li>
-            <li>`:bytes` → `BYTE_ARRAY`.</li>
-            <li>`:date` → `INT32` with `DATE` logical type.</li>
-            <li>`:datetime` (UTC) → `INT64` with
-                `TIMESTAMP(NANOS, isAdjustedToUTC=true)`.</li>
-            <li>`:decimal(p, s)` → `DECIMAL(p, s)` (Parquet caps at
+                <li><code>bytes</code> → <code>BYTE_ARRAY</code>.</li>
+                <li><code>date</code> → <code>INT32</code> with <code>DATE</code> logical type.</li>
+                <li><code>datetime</code> (UTC) → <code>INT64</code> with
+                <code>TIMESTAMP(NANOS, isAdjustedToUTC=true)</code>.</li>
+                <li><code>decimal</code> → <code>DECIMAL(p, s)</code> (Parquet caps at
                 256-bit precision).</li>
-            <li>`:bigint` → `Decimal256(38, 0)` with diagnostic;
-                `--strict` rejects.</li>
-            <li>`arr[T]` → `LIST&lt;T-projection&gt;`.</li>
-            <li>`map[K, V]` → `MAP&lt;K, V&gt;` (string-keyed).</li>
-            <li>`seq[T]` → `LIST&lt;T-projection&gt;` after sequence flatten;
-                `--strict` rejects (re-import produces `arr[T]`, not
-                `seq[T]`).</li>
-            <li>`nullable T` → `OPTIONAL` repetition.</li>
+                <li>Nullable columns → <code>OPTIONAL</code> repetition.</li>
+              
+            </ul>
+            <p>Types outside the bridge's current coverage (see
+           <a class="xref" href="#arrow-type-mapping">arrow-type-mapping</a>) refuse with a clear error at the
+           Arrow boundary rather than degrading — the same
+           loud-never-lossy posture as the wire format itself.</p>
           
-        </ul>
-      
-    </section>
-    <section id="parquet-roundtrip">
-      <h2>Round-trip identity</h2>
-      
-        <p>CX → Parquet → CX is not in general byte-identical. Parquet
+        </section>
+        <section id="parquet-roundtrip">
+          <h3>Round-trip identity</h3>
+          
+            <p>CX → Parquet → CX is not in general byte-identical. Parquet
            is a presentation-layer format: footer offsets shift,
            row-group sizes are writer-dependent, encoding choices
            (dictionary thresholds, page sizes, compression codec) are
            per-writer. Many byte-level Parquet files encode the same
            logical data. CXCol fills this niche precisely — it is the
            hashable origin; Parquet is the bridge.</p>
-        <p>**Logical** round-trip is normative: a CX table emitted as
-           Parquet and re-imported via `cx table load` produces the
-           same `:table` block with the same column names, types, row
-           count, and cell values (modulo the documented lossy edges in
-           5.5.3). The `cx_eq` primitive operates on the logical level
-           and reports equality after round-trip.</p>
-        <pre>
-          <code class="language-python">import cxlib
-           t1 = cxlib.loads(open('orders.cx').read())['orders']
-           t1.write_parquet('orders.parquet')
-           t2 = cxlib.read_parquet('orders.parquet')
-           assert t1 == t2     # logical equality holds
-           assert t1.to_cxcol_bytes() == t2.to_cxcol_bytes()
-                               # canonical CXCol bytes match too</code>
-        </pre>
+            <p><b>Logical</b> round-trip is normative: a CX table emitted as
+           Parquet and re-imported produces the same <code>[table[…]]</code> block
+           with the same column names, types, row count, and cell
+           values (modulo the documented lossy edges in 5.5.3).</p>
+            <pre>
+              <code class="language-python">import cxlib
+           import cxlib.parquet as cxpq
+
+           framed = cxlib.to_data_bin_chunked(open('orders.cx').read())
+           cxpq.write_table(framed, 'orders.parquet')
+           framed2 = cxpq.read_table('orders.parquet')
+
+           # Logical equality holds across the round-trip
+           assert cxlib.from_data_bin(framed) == cxlib.from_data_bin(framed2)</code>
+            </pre>
+          
+        </section>
+        <section id="parquet-metadata">
+          <h3>Schema identity across the bridge</h3>
+          
+            <p>Parquet output carries the data, not the CX schema
+           reference. CX schema identity lives at the CXCol layer: a
+           schema-driven file names its schema by content hash (the
+           §3.13.1 reference forms), and the <code>cx table</code> subcommand
+           resolves <code>--schema-from=</code> arguments to a content hash before
+           emit (<a href="../../spec/03-approved/core/data-bin.md"><code>spec/core/data-bin.md</code></a>
+           §3.13.1). A Parquet round-trip re-enters CX as a
+           self-describing table; re-attach the schema by validating or
+           re-encoding schema-driven against the same schema hash.</p>
+          
+        </section>
       
     </section>
-    <section id="parquet-metadata">
-      <h2>Metadata preservation</h2>
+    <section id="streaming">
+      <h2>Streaming evaluator over columnar data</h2>
       
-        <p>Parquet's `KeyValueMetadata` is a list of UTF-8 key-value
-           pairs at the file footer. CXCol metadata slots — column
-           comments, table-level annotations, the original schema
-           content-hash — map to entries with the `cx_*` prefix
-           (`cx_schema_hash`, `cx_schema_inline`, `cx_column_doc.&lt;name&gt;`).
-           Readers that don't recognize the prefix ignore it; CX
-           readers re-attach the metadata on import.</p>
+        <p>The CX streaming evaluator
+         (<a href="../../spec/03-approved/core/streaming.md"><code>spec/core/streaming.md</code></a>)
+         operates over CXCol chunks one at a time. The normative
+         throughput gate is <b>≥ 200 MB/s sustained per streaming
+         shape</b> (<a href="../../spec/03-approved/core/code.md"><code>spec/core/code.md</code></a>
+         §11.4.4, gate 15). The gate is not green at this release:
+         <code>[?for]</code> measures ~200 MB/s and <code>[?map]</code> 129.2 MB/s; closing
+         the <code>[?map]</code> gap is tracked for the next cycle.</p>
+        <p>The streaming evaluator emits three table-specific events when
+         it encounters a CXCol input: <b>StartTable</b> (column spec),
+         <b>RowGroup</b> (one chunk's data), <b>EndTable</b> (close).
+         Directives that consume the stream see one row group at a time
+         and never materialize the full table.</p>
+        <p>Today the consumer surface for CXCol streams is the CLI and
+         the Table API (<code>cx table info</code> / <code>dump</code> / <code>load</code>, and the
+         host-language bindings' table methods):</p>
         <pre>
-          <code class="language-python">import cxlib
-
-           t = cxlib.read_cxcol('orders.cxcol')
-           # Strict-schema mode embeds the CXCol schema as Parquet KV metadata
-           t.write_parquet('orders.parquet', strict_schema=True)
-
-           # Re-import preserves schema identity
-           t2 = cxlib.read_parquet('orders.parquet')
-           assert t.schema_hash() == t2.schema_hash()</code>
+          <code class="language-shell">cx table info big.cxbin          [# column spec, row count, size #]
+         cx table dump big.cxbin --to=cx  [# stream to CX text            #]</code>
         </pre>
-        <p class="note">Default writer mode does NOT embed the schema hash — Parquet
-           consumers in other ecosystems wouldn't know what to do with
-           it, and adding unrecognized metadata is a friction point.
-           Use `--strict-schema` (CLI) / `strict_schema=True` (binding)
-           when round-trip integrity matters.</p>
+        <p>The design direction (not yet shipped as CX-code surface): any
+         directive that takes a CXPath iterator participates in a CXCol
+         stream. <code>[?for]</code> / <code>[?modify]</code> /
+         <code>[?map]</code> / <code>[?reduce]</code> (see <a class="xref" href="code.html">code</a>) all participate.
+         Bounded memory is preserved end-to-end: a pipeline of N stages
+         holds N row groups in flight, not N × row-count.</p>
+        <section id="streaming-events">
+          <h3>Streaming events</h3>
+          
+            <p>The event vocabulary
+           (<a href="../../spec/03-approved/core/streaming.md"><code>spec/core/streaming.md</code></a>)
+           extends the standard <code>StartElement</code> / <code>Scalar</code> / <code>EndElement</code>
+           events with three table-specific variants.</p>
+            <ul>
+              
+                <li><b>StartTable</b> — fields: <code>name</code> (string),
+                <code>col_spec</code> (binary blob; the column schema in ast_bin
+                form). Emitted in place of the <code>StartElement</code> that
+                would otherwise wrap a <code>[table[…]]</code> body.</li>
+                <li><b>RowGroup</b> — fields: <code>row_count</code> (u32), <code>payload</code>
+                (binary blob; one row group's column buffers). One
+                event per row group, in source order.</li>
+                <li><b>EndTable</b> — fields: <code>name</code> (string). Closes the
+                sequence in place of the corresponding <code>EndElement</code>.</li>
+              
+            </ul>
+            <p>A non-chunked <code>0x60</code> (whole-table) input emits the existing
+           <code>StartElement</code> / per-cell-<code>Scalar</code> / <code>EndElement</code> sequence
+           unchanged. Only <code>0x63</code> chunked-CXCol inputs produce the new
+           events. Streaming consumers that don't care about the
+           distinction can flatten via a helper that re-emits each
+           <code>RowGroup</code> as a sequence of <code>StartElement</code> / row /
+           <code>EndElement</code> triples.</p>
+          
+        </section>
+        <section id="streaming-perf">
+          <h3>Performance posture</h3>
+          
+            <p>The gate protocol is fixed by
+           <a href="../../spec/03-approved/core/code.md"><code>spec/core/code.md</code></a>
+           §11.4.4: every measured streaming shape must sustain a mean
+           ≥ 200 MB/s with no single trial below 80% of the mean, and
+           must demonstrably stream (more than one output chunk, the
+           implementation's own streaming predicate reporting true).
+           Re-run with <code>make bench-code-streaming</code>.</p>
+            <p class="note">Current status, honestly stated: the gate is <b>not green</b> —
+           <code>[?for]</code> measures ~200 MB/s and <code>[?map]</code> 129.2 MB/s.
+           Closing the <code>[?map]</code> gap is tracked for the next cycle.
+           On the write side, the ABI streaming writer compresses a row
+           group only when its body exceeds 64 KiB and compression
+           beats 0.85 of the original size
+           (<a href="../../spec/03-approved/core/abi.md"><code>spec/core/abi.md</code></a> §2.10).</p>
+          
+        </section>
+      
+    </section>
+    <section id="integrations">
+      <h2>Ecosystem integrations</h2>
+      
+        <p>The Arrow C Data Interface is the integration layer the
+         analytical ecosystem standardized on. Once CX exposes Arrow,
+         the rest of the stack lights up — DuckDB, Polars, DataFusion,
+         pandas, Spark via Parquet — most with zero-copy handoff in
+         process, the rest with one copy at the boundary.</p>
+        <section id="duckdb">
+          <h3>DuckDB</h3>
+          
+            <p>DuckDB consumes Arrow tables registered on a connection —
+           zero-copy from CXCol's column buffers into DuckDB's
+           vectorized executor via the C Data Interface.</p>
+            <pre>
+              <code class="language-python">import cxlib, duckdb
+           import cxlib.arrow as cxa
+
+           framed = cxlib.to_data_bin_chunked(open('orders.cx').read())
+           orders = cxa.export(framed).read_all()   # pyarrow.Table
+           con = duckdb.connect()
+
+           # Register the Arrow table — zero-copy via the C Data Interface
+           con.register('orders', orders)
+
+           result = con.execute('''
+               SELECT customer, SUM(amount) AS total
+               FROM orders
+               GROUP BY customer
+               ORDER BY total DESC
+           ''').fetchall()</code>
+            </pre>
+            <p>DuckDB's executor reads directly from CX's column buffers
+           during the scan. The result set is materialized into
+           DuckDB's own memory; <code>cxa.import_to_data_bin(con.execute(…)
+           .arrow())</code> brings a result back as framed CXCol bytes — the
+           symmetric inverse.</p>
+          
+        </section>
+        <section id="polars">
+          <h3>Polars</h3>
+          
+            <p>Polars is Arrow-native at the buffer level. CX → Polars in
+           Python goes through the same export call — zero-copy for the
+           underlying buffers.</p>
+            <pre>
+              <code class="language-python">import cxlib, polars as pl
+           import cxlib.arrow as cxa
+
+           framed = cxlib.to_data_bin_chunked(open('orders.cx').read())
+           df = pl.from_arrow(cxa.export(framed).read_all())
+
+           # Polars query
+           result = df.lazy().filter(pl.col('amount') > 100).collect()</code>
+            </pre>
+            <p>In Rust, the same handoff runs over the C ABI — the
+           <code>cx_arrow_export_open</code> stream feeds the <code>arrow</code> crate's
+           <code>ffi_stream</code> reader, and Polars consumes the record batches
+           from there. A packaged Rust convenience wrapper has not
+           shipped.</p>
+          
+        </section>
+        <section id="pandas">
+          <h3>pandas</h3>
+          
+            <p>pandas is <b>not</b> zero-copy at the buffer level — its column
+           model uses NumPy arrays with type-system mismatches against
+           Arrow (no nullable integers, no first-class strings without
+           StringDtype). CX → pandas is one Arrow round-trip plus one
+           pandas conversion; expect one full data copy at the
+           boundary.</p>
+            <pre>
+              <code class="language-python">import cxlib
+           import cxlib.arrow as cxa
+
+           framed = cxlib.to_data_bin_chunked(open('orders.cx').read())
+
+           # PyArrow → pandas; one copy at the pandas boundary
+           df = cxa.export(framed).read_all().to_pandas()</code>
+            </pre>
+            <p><a href="../../spec/03-approved/misc/table-api.md"><code>spec/misc/table-api.md</code></a> §3
+           declares a <code>to_pandas()</code> adapter slot on the Table type; the
+           Python binding has not implemented it yet — the explicit
+           Arrow route above is the shipped path.</p>
+            <p class="note">For DataFrame-style work where zero-copy matters, prefer
+           Polars over pandas. pandas remains supported because the
+           Python data-science ecosystem assumes it, but the
+           cross-boundary cost is real on large tables.</p>
+          
+        </section>
+        <section id="datafusion">
+          <h3>DataFusion (planned)</h3>
+          
+            <p>Apache DataFusion is a Rust query engine over Arrow. Its
+           <code>TableProvider</code> trait accepts arbitrary Arrow record-batch
+           sources, so CXCol is a natural fit: register a <code>.cxbin</code> file
+           as a DataFusion table, run SQL or DataFrame queries against
+           it with the same zero-copy guarantees as Polars.</p>
+            <p>Status: <b>planned</b> — no packaged CX-side convenience layer
+           ships. Adopters who need DataFusion today wire it manually:
+           <code>cx_arrow_export_open</code> over the C ABI into the <code>arrow</code>
+           crate's <code>ffi_stream</code> reader, and the resulting record
+           batches into a DataFusion <code>MemTable</code>. The path works; it
+           just lacks the convenience layer.</p>
+          
+        </section>
+        <section id="spark">
+          <h3>Spark and cluster compute</h3>
+          
+            <p>Spark reads / writes Parquet natively. CXCol's Parquet bridge
+           (see <a class="xref" href="#parquet-bridge">parquet-bridge</a>) is the integration path — emit
+           <code>.parquet</code> from CX, point Spark at the directory, run
+           PySpark / Spark SQL. For zero-copy in cluster contexts,
+           Arrow Flight is the long-term path; status is
+           <b>planned</b> per <a class="xref" href="#arrow-flight">arrow-flight</a>.</p>
+            <pre>
+              <code class="language-python">import cxlib
+           import cxlib.parquet as cxpq
+           from pyspark.sql import SparkSession
+
+           # CX table → Parquet (one-time conversion)
+           framed = cxlib.to_data_bin_chunked(open('orders.cx').read())
+           cxpq.write_table(framed, 'orders.parquet')
+
+           # Spark reads the Parquet directly
+           spark = SparkSession.builder.getOrCreate()
+           df = spark.read.parquet('orders.parquet')
+           df.groupBy('customer').sum('amount').show()</code>
+            </pre>
+            <p>The Parquet bridge is one-way at this layer — Spark's writes
+           come back through <code>cx table load output.parquet --to=cx</code>.
+           For round-trip workflows, keep the CXCol file as the
+           canonical origin and treat Spark's outputs as derived
+           artifacts.</p>
+          
+        </section>
+      
+    </section>
+    <section id="performance">
+      <h2>Performance characteristics</h2>
+      
+        <p>The analytics lane's perf budgets and where they're measured.
+         The spec fixes the gates; the bench targets re-measure them —
+         numbers live where they are re-run, not in prose that goes
+         stale.</p>
+        <ul>
+          
+            <li><b>Streaming throughput.</b> Spec gate: mean ≥ 200 MB/s
+              per streaming shape, no trial below 80% of the mean
+              (<a href="../../spec/03-approved/core/code.md"><code>spec/core/code.md</code></a>
+              §11.4.4, gate 15; bench: <code>make bench-code-streaming</code>).
+              Current status: not green — <code>[?for]</code> ~200 MB/s, <code>[?map]</code>
+              129.2 MB/s measured; tracked for the next cycle.</li>
+            <li><b>Parquet write (default Snappy, 2²⁰ row-group).</b>
+              Measured via PyArrow's writer on the CXCol → Arrow → Parquet
+              path; throughput is dominated by the Parquet codec, not
+              the CXCol bridge. Adopters should profile against their
+              chosen Parquet writer; no normative CX-side gate.</li>
+            <li><b>Arrow zero-copy handoff.</b> O(metadata) per batch —
+              the schema and per-column buffer pointers are populated,
+              no buffer is copied. Time per export is independent
+              of row count and proportional to column count.</li>
+            <li><b>Predicate pushdown reduction.</b> When the Parquet
+              writer emitted per-row-group statistics, the host Parquet
+              reader skips the row groups a predicate rules out — I/O
+              saved is proportional to the groups skipped. Files
+              without statistics degrade to a full scan.</li>
+            <li><b>Memory budget per stream stage.</b> One row group in
+              flight. The streaming evaluator
+              (<a href="../../spec/03-approved/core/streaming.md"><code>spec/core/streaming.md</code></a>)
+              is bounded by <code>max(row_group_byte_size)</code> regardless of
+              table size.</li>
+          
+        </ul>
+        <p class="note">The 200 MB/s gate is for the <b>streaming evaluator</b>, not the
+         raw CXCol reader — the reader has no evaluator pipeline in
+         front of it, but its throughput is not separately gated or
+         published. Per-binding adapter throughput varies by host —
+         pandas is the slowest because of the boundary copy.</p>
+      
+    </section>
+    <section id="cxcol-vs-others">
+      <h2>When to use CXCol vs Parquet vs Arrow vs JSON</h2>
+      
+        <p>Pick by use case. The four formats overlap in the analytics
+         lane but each has a niche the others fill badly.</p>
+        <ul>
+          
+            <li><b>CXCol</b> — use when CX content-addressable identity
+              matters (caching, dedup, signing, provenance) or when
+              you want streaming with the CX type system end to end.
+              Single-writer, sequential-decode, hashable. Single-file
+              format; not designed for query (use the Arrow bridge into
+              DuckDB / Polars / DataFusion for that).</li>
+            <li><b>Parquet</b> — use for cross-ecosystem interop (Spark,
+              BigQuery, Snowflake, Trino, Athena, all the Hadoop-
+              lineage tools). Carries the data, not CX's schema
+              identity or metadata (see <a class="xref" href="#parquet-metadata">parquet-metadata</a>).
+              Not hashable in the byte-stable sense — different writers
+              produce different bytes for the same logical data.</li>
+            <li><b>Arrow IPC stream</b> — use for in-process or LAN-local
+              zero-copy between CX and another Arrow-native consumer
+              (DuckDB, Polars, DataFusion, pandas via PyArrow). No
+              compression by default (Arrow is layout-oriented, not
+              compression-oriented); not designed for long-term
+              storage.</li>
+            <li><b>JSON / JSONL</b> — use for ad-hoc human-readable interop
+              or when the consumer truly is JSON-shaped. Lossy on type
+              metadata (no distinction between int and float kinds,
+              date-times become strings, dictionary encoding gone). The
+              CX → JSON projection (see [[surfaces#json]]) handles the
+              shape conversion; for tabular data specifically, JSONL
+              (one row per line) is the conventional wire form.</li>
+          
+        </ul>
+        <p>The decision tree, compressed:</p>
+        <ul>
+          
+            <li>Need a hashable, content-addressable origin? → <b>CXCol</b>.</li>
+            <li>Sharing with Spark / Snowflake / BigQuery / other
+              non-Arrow-native tools? → <b>Parquet</b>.</li>
+            <li>In-process handoff to DuckDB / Polars / DataFusion /
+              pandas? → <b>Arrow</b> (with CXCol as the origin).</li>
+            <li>Debugging, ad-hoc inspection, or a JSON-shaped consumer? →
+              <b>JSON / JSONL</b>.</li>
+          
+        </ul>
+        <p>In practice the layering is: <b>CXCol as canonical origin →
+         Arrow as the in-process bridge → Parquet for cross-ecosystem
+         export</b>. JSON is the human-readable view. The same logical
+         table can move through all four; identity stays at CXCol.</p>
+      
+    </section>
+    <section id="see-also">
+      <h2>See also</h2>
+      
+        <ul>
+          
+            <li><a class="xref" href="identity.html">identity</a> — canonical bytes + SHA-256. CXCol identity
+              rests on the same SHA-256 primitive over canonical bytes;
+              the rule extends naturally to chunked tables and
+              schema-driven encoding.</li>
+            <li><a class="xref" href="surfaces.html">surfaces</a> — the JSON / YAML / TOML / XML / Markdown
+              projections. CXCol is the analytical surface; the others
+              are the interchange surfaces.</li>
+            <li><a class="xref" href="bindings.html">bindings</a> — Layer 1 / Layer 2 host idioms for reading
+              and writing CXCol in V / Python / Go / Rust. The Table
+              API and the streaming reader / writer live there.</li>
+            <li>[[code#streaming]] — the directive-level streaming view:
+              <code>[?for]</code> / <code>[?modify]</code> over CXCol inputs in bounded
+              memory.</li>
+            <li><a href="../../spec/03-approved/misc/table-api.md"><code>spec/misc/table-api.md</code></a> — the
+              typed columnar Table API ratified across the four
+              bindings.</li>
+            <li><a href="../../spec/03-approved/core/data-bin.md"><code>spec/core/data-bin.md</code></a> §3.10-3.13 —
+              chunked-table wire format, page-compression wrapper,
+              schema-driven mode.</li>
+            <li><a href="../../spec/03-approved/core/streaming.md"><code>spec/core/streaming.md</code></a> — streaming
+              evaluator design and the StartTable / RowGroup / EndTable
+              event vocabulary.</li>
+          
+        </ul>
       
     </section>
   
 </section>
 </main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>Analytics, columnar formats, and bridges</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
 <script src="highlight/highlight.js" defer></script>
 <script src="search-index.js" defer></script>
 <script src="search/search.js" defer></script>

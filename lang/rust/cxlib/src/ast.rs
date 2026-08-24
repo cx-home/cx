@@ -67,8 +67,10 @@ pub enum Node {
     PI { target: String, data: Option<String> },
     XMLDecl { version: String, encoding: Option<String>, standalone: Option<String> },
     /// `[?cx ...]` — directives may carry an `&anchor` and nested
-    /// elements; used by the standalone-fragment form
-    /// `[?cx frag &name [body :TYPE :flags]]` (spec/schema.md §8).
+    /// elements; added for the standalone-fragment form
+    /// `[?cx frag &name [body :TYPE :flags]]` (retired at I5 stream 1 —
+    /// legacy texts still parse; schema load rejects them,
+    /// spec/schema.md §8).
     CXDirective {
         attrs:  Vec<Attr>,
         anchor: Option<String>,
@@ -571,11 +573,11 @@ fn doc_from_value(v: &Value) -> Document {
 //
 // Reserved prefixes:
 //   - `xml`   → http://www.w3.org/XML/1998/namespace
-//   - `cx`    → https://cx-home.org/ns/cx
+//   - `cx`    → tag:cxhome.org,2026:ns/cx
 //   - `xmlns` → declaration-only; never resolves as a name prefix
 
 pub const XML_NAMESPACE_URI: &str = "http://www.w3.org/XML/1998/namespace";
-pub const CX_NAMESPACE_URI:  &str = "https://cx-home.org/ns/cx";
+pub const CX_NAMESPACE_URI:  &str = "tag:cxhome.org,2026:ns/cx";
 
 fn split_ns_prefix(name: &str) -> (&str, &str) {
     match name.find(':') {
@@ -770,6 +772,11 @@ pub fn parse_toml(toml_str: &str) -> Result<Document, String> {
 /// serde_json::Value — no JSON-string detour. Type fidelity preserved
 /// (int stays Number(i64), not coerced to f64). Closes audit finding
 /// CB-3.
+///
+/// I1 L48: documents carrying `decimal` / `bigint` values fail loudly
+/// here — serde_json::Value has no carrier for those kinds and the
+/// kind is never erased. Decode the payload with
+/// `data_bin::decode_payload_value` (`CxValue`) to receive them.
 pub fn loads(cx_str: &str) -> Result<Value, String> {
     let payload = crate::data_bin::to_data_bin(cx_str)?;
     crate::data_bin::decode_payload(&payload)
@@ -961,6 +968,16 @@ fn emit_scalar_value(data_type: &str, value: &Value) -> String {
         }
         return format!(":{}", value);
     }
+    // I1 L48: decimal/bigint are semantic kinds whose base-10 image emits
+    // BARE (never quoted — quoting would flip the kind to string; the bare
+    // fixed-point spelling IS the decimal, per the 2b autotype flip).
+    if data_type == "decimal" || data_type == "bigint" {
+        return match value {
+            Value::String(s) => s.clone(),
+            Value::Number(n) => n.to_string(),
+            _ => value.to_string(),
+        };
+    }
     match value {
         Value::Null => "null".to_string(),
         Value::Bool(b) => if *b { "true".to_string() } else { "false".to_string() },
@@ -1013,6 +1030,17 @@ fn emit_attr(a: &Attr) -> String {
             format!("{}={}", a.name, if b { "true" } else { "false" })
         }
         Some("null") => format!("{}=null", a.name),
+        // I1 L48: decimal/bigint attr images emit BARE — quoting would
+        // re-type them as strings (annotation-iff-retyping keeps the bare
+        // spelling canonical for both kinds).
+        Some("decimal") | Some("bigint") => {
+            let n = match &a.value {
+                Value::Number(n) => n.to_string(),
+                Value::String(s) => s.clone(),
+                _ => a.value.to_string(),
+            };
+            format!("{}={}", a.name, n)
+        }
         Some("atom") => {
             // atom attribute renders as `name=:NAME` (no quoting).
             // The wire-level value is a serde_json::String with the unprefixed

@@ -2,7 +2,31 @@ module main
 
 import os
 import cx
+import fixtures
 import runtime
+
+// ── I1 epoch re-bless (CX_BLESS=epoch) ───────────────────────────────────────
+// Under CX_BLESS=epoch an EXPECTATION mismatch (never out_err / out_hash_eq —
+// those flip semantically with their manifest rows and were re-pinned by hand)
+// emits a section-aware record to /tmp/cx_epoch_blesses.txt for the offline V
+// applier (apply_epoch_blesses.v) instead of failing. The ledger's red-class
+// table is the audit checklist for the resulting fixture diff.
+fn ebless(id string, section string, got string) bool {
+	// I1 was the ONLY sanctioned epoch (closed 2026-08-06). The bulk re-bless
+	// lane is DISARMED in normal builds (remediation register R3.9): it takes
+	// an explicit `-d cx_epoch_bless` compile AND the env var — CX_BLESS=epoch
+	// alone must never convert a mismatch into a bless record again.
+	$if !cx_epoch_bless ? {
+		return false
+	}
+	if os.getenv('CX_BLESS') != 'epoch' {
+		return false
+	}
+	mut fh := os.open_append('/tmp/cx_epoch_blesses.txt') or { return false }
+	fh.write_string('<<<EBLESS id=${id} section=${section}>>>\n${got}\n<<<ENDEBLESS>>>\n') or {}
+	fh.close()
+	return true
+}
 
 struct Test {
 mut:
@@ -10,6 +34,7 @@ mut:
 	level    string
 	tags     []string
 	pending  string
+	gate     string // per-case gate= attr: enforced|advisory|pending|skip ('' = enforced)
 	chunk_at int = 1 << 20  // strict-canonical default
 	sections map[string]string
 }
@@ -26,18 +51,19 @@ fn strip_blank_edges(s string) string {
 }
 
 // parse_suite loads a .cxd conformance suite via the CX-native loader
-// (cx.load_fixtures), replacing the bespoke `=== test:` / `--- key` scanner.
+// (fixtures.load_fixtures), replacing the bespoke `=== test:` / `--- key` scanner.
 // level/tags come from the case attr / [tags] element; pending + chunk_at come
 // from the [meta] block. The runner keys into t.sections[name] by presence
 // exactly as before.
 fn parse_suite(path string) []Test {
 	mut tests := []Test{}
-	for c in cx.load_fixtures(path) {
+	for c in fixtures.load_fixtures(path) {
 		mut t := Test{
 			name:     c.name
 			level:    c.level
 			tags:     c.tags
 			pending:  c.meta['pending'] or { '' }
+			gate:     c.gate
 			sections: map[string]string{}
 		}
 		if 'chunk_at' in c.meta {
@@ -73,6 +99,52 @@ fn run_test(t Test) []string {
 			return failures
 		}
 		failures << 'decode: expected error containing "${expected_err}", but decode succeeded'
+		return failures
+	}
+
+	// ── POSITIVE decode vectors (§9 pair family; stream 17 W7) ───────────────
+	// `[in-data-bin-hex …]` + `[out-cx …]` with NO expected error: the
+	// hex payload (CXCol header onward, frame added here) decodes and
+	// renders the pinned CX text — the DECODER's clean-room witness for
+	// the §3.10.2/§3.10.3/§3.10.5/§3.10.6 column forms, independent of
+	// the encoder.
+	if 'in_data_bin_hex' in t.sections && 'expected_decode_error' !in t.sections
+		&& 'schema_cxs' !in t.sections && 'in_cx' !in t.sections && 'out_cx' in t.sections {
+		hex := normalize_hex_text(t.sections['in_data_bin_hex'] or { '' })
+		bytes := framed_bytes_from_hex(hex)
+		doc := cx.parse_data_bin(bytes) or {
+			failures << 'decode vector: decode error: ${err}'
+			return failures
+		}
+		got := cx.emit_cx(doc)
+		expected := t.sections['out_cx'] or { '' }
+		if got.trim_space() != expected.trim_space() {
+			failures << 'decode vector out_cx mismatch\n  expected:\n${expected}\n  got:\n${got}'
+		}
+		return failures
+	}
+
+	// ── Tier-1 identity-hash PAIR cases (corpus audit G1, Q3 form; C8/I0) ─────
+	// `[in-a …]` + `[in-b …]` + `[out-hash-eq [# true|false #]]`: assert the
+	// two documents' Tier-1 content hashes (SHA-256 over strict-canonical
+	// text bytes) are equal / distinct. This is the pair-property form the
+	// single-input corpus could not express (code-identity.md §4) — the
+	// extraction-gate corpus pins hash EQUALITY semantics with it, not just
+	// digest values.
+	if 'in_a' in t.sections && 'in_b' in t.sections && 'out_hash_eq' in t.sections {
+		ha := cx.cx_text_hash(t.sections['in_a'] or { '' }) or {
+			failures << 'out_hash_eq: in-a hash error: ${err}'
+			return failures
+		}
+		hb := cx.cx_text_hash(t.sections['in_b'] or { '' }) or {
+			failures << 'out_hash_eq: in-b hash error: ${err}'
+			return failures
+		}
+		expected_eq := (t.sections['out_hash_eq'] or { '' }).trim_space()
+		got_eq := if ha == hb { 'true' } else { 'false' }
+		if expected_eq != got_eq {
+			failures << 'out_hash_eq mismatch: expected ${expected_eq}, got ${got_eq}\n  hash(in-a): ${ha}\n  hash(in-b): ${hb}'
+		}
 		return failures
 	}
 
@@ -238,6 +310,11 @@ fn run_test(t Test) []string {
 		t.sections['in_psv'] or { '' }, 'psv'
 	} else if 'in_yaml' in t.sections {
 		t.sections['in_yaml'] or { '' }, 'yaml'
+	} else if 'in_toml' in t.sections {
+		// G7 (corpus audit, pre-I2): the TOML IMPORT lane. The surface
+		// shipped (parser_toml.v, `--from=toml`) with emit-only fixtures;
+		// nothing exercised import through the corpus.
+		t.sections['in_toml'] or { '' }, 'toml'
 	} else {
 		return failures
 	}
@@ -278,6 +355,11 @@ fn run_test(t Test) []string {
 			parse_err = err.msg()
 			cx.ParseResult{}
 		}
+	} else if parse_fmt == 'toml' {
+		cx.parse_toml_cx(input_src) or {
+			parse_err = err.msg()
+			cx.ParseResult{}
+		}
 	} else {
 		cx.parse_cx(input_src) or {
 			parse_err = err.msg()
@@ -310,7 +392,7 @@ fn run_test(t Test) []string {
 			cx.emit_ast_json(doc)
 		}
 		if !json_equal(expected_ast, got_json) {
-			failures << 'out_ast mismatch\n  expected: ${expected_ast}\n  got:      ${got_json}'
+			if !ebless(t.name, 'out-ast', got_json) { failures << 'out_ast mismatch\n  expected: ${expected_ast}\n  got:      ${got_json}' }
 		}
 	}
 
@@ -325,7 +407,7 @@ fn run_test(t Test) []string {
 			cx.emit_xml(doc)
 		}
 		if expected_xml.trim_space() != got_xml.trim_space() {
-			failures << 'out_xml mismatch\n  expected:\n${expected_xml}\n  got:\n${got_xml}'
+			if !ebless(t.name, 'out-xml', got_xml) { failures << 'out_xml mismatch\n  expected:\n${expected_xml}\n  got:\n${got_xml}' }
 		}
 	}
 
@@ -340,7 +422,7 @@ fn run_test(t Test) []string {
 			cx.emit_semantic_json(doc)
 		}
 		if !json_equal(expected_json, got_json) {
-			failures << 'out_json mismatch\n  expected: ${expected_json}\n  got:      ${got_json}'
+			if !ebless(t.name, 'out-json', got_json) { failures << 'out_json mismatch\n  expected: ${expected_json}\n  got:      ${got_json}' }
 		}
 	}
 
@@ -355,7 +437,7 @@ fn run_test(t Test) []string {
 			cx.emit_semantic_json_lossless(doc)
 		}
 		if !json_equal(expected_json, got_json) {
-			failures << 'out_json_lossless mismatch\n  expected: ${expected_json}\n  got:      ${got_json}'
+			if !ebless(t.name, 'out-json-lossless', got_json) { failures << 'out_json_lossless mismatch\n  expected: ${expected_json}\n  got:      ${got_json}' }
 		}
 	}
 
@@ -370,7 +452,7 @@ fn run_test(t Test) []string {
 			cx.emit_yaml_lossless(doc)
 		}
 		if expected_yaml.trim_space() != got_yaml.trim_space() {
-			failures << 'out_yaml_lossless mismatch\n  expected:\n${expected_yaml}\n  got:\n${got_yaml}'
+			if !ebless(t.name, 'out-yaml-lossless', got_yaml) { failures << 'out_yaml_lossless mismatch\n  expected:\n${expected_yaml}\n  got:\n${got_yaml}' }
 		}
 	}
 
@@ -385,7 +467,7 @@ fn run_test(t Test) []string {
 			cx.emit_yaml(doc)
 		}
 		if expected_yaml.trim_space() != got_yaml.trim_space() {
-			failures << 'out_yaml mismatch\n  expected:\n${expected_yaml}\n  got:\n${got_yaml}'
+			if !ebless(t.name, 'out-yaml', got_yaml) { failures << 'out_yaml mismatch\n  expected:\n${expected_yaml}\n  got:\n${got_yaml}' }
 		}
 	}
 
@@ -400,7 +482,7 @@ fn run_test(t Test) []string {
 			cx.emit_toml(doc)
 		}
 		if expected_toml.trim_space() != got_toml.trim_space() {
-			failures << 'out_toml mismatch\n  expected:\n${expected_toml}\n  got:\n${got_toml}'
+			if !ebless(t.name, 'out-toml', got_toml) { failures << 'out_toml mismatch\n  expected:\n${expected_toml}\n  got:\n${got_toml}' }
 		}
 	}
 
@@ -415,7 +497,7 @@ fn run_test(t Test) []string {
 			cx.emit_cx(doc)
 		}
 		if expected_cx.trim_space() != got_cx.trim_space() {
-			failures << 'out_cx mismatch\n  expected:\n${expected_cx}\n  got:\n${got_cx}'
+			if !ebless(t.name, 'out-cx', got_cx) { failures << 'out_cx mismatch\n  expected:\n${expected_cx}\n  got:\n${got_cx}' }
 		}
 	}
 
@@ -430,7 +512,23 @@ fn run_test(t Test) []string {
 			''
 		}
 		if got_canon.len > 0 && expected_canon.trim_space() != got_canon.trim_space() {
-			failures << 'out_canonical mismatch\n  expected:\n${expected_canon}\n  got:\n${got_canon}'
+			if !ebless(t.name, 'out-canonical', got_canon) { failures << 'out_canonical mismatch\n  expected:\n${expected_canon}\n  got:\n${got_canon}' }
+		}
+	}
+
+	// ── out_hash (corpus audit G1; C8/I0) ────────────────────────────────────
+	// Tier-1 content hash: lowercase hex SHA-256 over the strict-canonical
+	// text bytes (cx_text_hash — the digest the §7 byte-for-byte extraction
+	// gate names). The blessed value pins TODAY's canonical bytes so the I1
+	// identity epoch's one re-bless covers this family (fixture-before-fix).
+	if 'out_hash' in t.sections {
+		expected_hash := (t.sections['out_hash'] or { '' }).trim_space()
+		got_hash := cx.cx_text_hash(input_src) or {
+			failures << 'out_hash error: ${err}'
+			''
+		}
+		if got_hash.len > 0 && expected_hash != got_hash {
+			if !ebless(t.name, 'out-hash', got_hash) { failures << 'out_hash mismatch\n  expected: ${expected_hash}\n  got:      ${got_hash}' }
 		}
 	}
 
@@ -460,6 +558,31 @@ fn run_test(t Test) []string {
 					failures << 'assert_ast_bin_roundtrip: doc ${i} not identity\n  before:\n${want}\n  after:\n${got}'
 				}
 			}
+		}
+	}
+
+	// ── out_ast_bin_hex (corpus audit G4; C8/I0) ─────────────────────────────
+	// Golden ast-bin bytes: compares emit_ast_bin's payload (the 4-byte
+	// [u32 LE size] framing prefix stripped, same convention as
+	// out_data_bin_hex) against the fixture's expected hex, and asserts
+	// determinism (two emits, byte-identical). This makes the Ring-0
+	// binary-AST codec a cross-binding gate instead of V-tests-only.
+	if 'out_ast_bin_hex' in t.sections {
+		expected_hex := normalize_hex_text(t.sections['out_ast_bin_hex'] or { '' })
+		doc := if result.is_multi {
+			docs := result.multi or { [] }
+			if docs.len > 0 { docs[0] } else { cx.Document{} }
+		} else {
+			result.single or { cx.Document{} }
+		}
+		got1 := cx.emit_ast_bin(doc)
+		got2 := cx.emit_ast_bin(doc)
+		if got1 != got2 {
+			failures << 'out_ast_bin_hex: emit_ast_bin is not deterministic (two emits differ)'
+		}
+		got_hex := bytes_to_hex(got1[4..]) // strip framing prefix
+		if expected_hex != got_hex {
+			if !ebless(t.name, 'out-ast-bin-hex', got_hex) { failures << 'out_ast_bin_hex mismatch\n  expected: ${expected_hex}\n  got:      ${got_hex}' }
 		}
 	}
 
@@ -511,7 +634,10 @@ fn run_test(t Test) []string {
 			} else {
 				result.single or { cx.Document{} }
 			}
-			plain := cx.emit_data_bin(doc)
+			plain := cx.emit_data_bin(doc) or {
+				failures << 'assert_chunked_distinct: plain emit error: ${err}'
+				return failures
+			}
 			opts := cx.ChunkedEmitOptions{ chunk_size: t.chunk_at, compress: .never }
 			chunked := cx.emit_data_bin_chunked(doc, opts) or {
 				failures << 'assert_chunked_distinct: chunked emit error: ${err}'
@@ -632,7 +758,109 @@ fn run_test(t Test) []string {
 		}
 		got_hex := bytes_to_hex(got[4..]) // strip framing prefix
 		if expected_hex != got_hex {
-			failures << 'out_data_bin_hex mismatch\n  expected: ${expected_hex}\n  got:      ${got_hex}'
+			if !ebless(t.name, 'out-data-bin-hex', got_hex) { failures << 'out_data_bin_hex mismatch\n  expected: ${expected_hex}\n  got:      ${got_hex}' }
+		}
+	}
+
+	// ── out_data_bin_plain_hex (§9 pair family; stream 17 W7) ────────────────
+	// The PLAIN-lane byte pin: emit_data_bin bytes (frame stripped)
+	// against the fixture's expected hex — e.g. the 0x62 dictionary
+	// form with an ::atom column (the engagement witness: the dict
+	// encoder cannot go quietly dead while this pin holds).
+	if 'out_data_bin_plain_hex' in t.sections {
+		expected_hex := normalize_hex_text(t.sections['out_data_bin_plain_hex'] or { '' })
+		doc := if result.is_multi {
+			docs := result.multi or { [] }
+			if docs.len > 0 { docs[0] } else { cx.Document{} }
+		} else {
+			result.single or { cx.Document{} }
+		}
+		got := cx.emit_data_bin(doc) or {
+			failures << 'out_data_bin_plain_hex error: ${err}'
+			return failures
+		}
+		got_hex := bytes_to_hex(got[4..])
+		if expected_hex != got_hex {
+			if !ebless(t.name, 'out-data-bin-plain-hex', got_hex) { failures << 'out_data_bin_plain_hex mismatch\n  expected: ${expected_hex}\n  got:      ${got_hex}' }
+		}
+	}
+
+	// ── repr-pair (§9 L92; stream 17 W7): representation transparency ────────
+	// `[repr-pair …]` runs the case's out-cx / out-json / out-hash
+	// expectations against each WIRE lane's round-trip in addition to
+	// the direct lanes above: the same table as (b) 0x60 data-bin and
+	// (c) 0x63 chunked must render/project/hash IDENTICALLY. Lane (d)
+	// Arrow rides data_bin_arrow_run.v over the same sections (its
+	// build links libcx_arrow). Section value: '1' = both wire lanes;
+	// 'plain' = 0x60 only (e.g. collection-cell tables — the strict
+	// chunked lane refuses those BY DESIGN). The chunked lane also
+	// witnesses `from_chunked` NEVER-SERIALIZED: re-encoding the
+	// chunked-decoded doc on the plain lane is byte-identical to the
+	// direct plain encode (provenance is not a value property).
+	if 'repr_pair' in t.sections {
+		lane_spec := (t.sections['repr_pair'] or { '' }).trim_space()
+		run_chunked := lane_spec == '1' || lane_spec.contains('chunked')
+		doc := if result.is_multi {
+			docs := result.multi or { [] }
+			if docs.len > 0 { docs[0] } else { cx.Document{} }
+		} else {
+			result.single or { cx.Document{} }
+		}
+		expected_cx := t.sections['out_cx'] or { '' }
+		if expected_cx.trim_space() == '' {
+			failures << 'repr_pair: requires an [out-cx] section (the shared truth all lanes render)'
+			return failures
+		}
+		plain_bytes := cx.emit_data_bin(doc) or {
+			failures << 'repr_pair: 0x60 emit error: ${err}'
+			return failures
+		}
+		mut lanes := [['0x60', 'plain']]
+		mut lane_bytes := [plain_bytes]
+		if run_chunked {
+			opts := cx.ChunkedEmitOptions{ chunk_size: t.chunk_at, compress: .never }
+			cbytes := cx.emit_data_bin_chunked(doc, opts) or {
+				failures << 'repr_pair: 0x63 emit error: ${err}'
+				return failures
+			}
+			lanes << ['0x63', 'chunked']
+			lane_bytes << cbytes
+		}
+		for i, lane in lanes {
+			decoded := cx.parse_data_bin(lane_bytes[i]) or {
+				failures << 'repr_pair ${lane[0]}: decode error: ${err}'
+				continue
+			}
+			got_cx := cx.emit_cx(decoded)
+			if got_cx.trim_space() != expected_cx.trim_space() {
+				failures << 'repr_pair ${lane[0]}: out_cx mismatch\n  expected:\n${expected_cx}\n  got:\n${got_cx}'
+			}
+			if 'out_json' in t.sections {
+				expected_json := t.sections['out_json'] or { '' }
+				got_json := cx.emit_semantic_json(decoded)
+				if !json_equal(expected_json, got_json) {
+					failures << 'repr_pair ${lane[0]}: out_json mismatch\n  expected: ${expected_json}\n  got:      ${got_json}'
+				}
+			}
+			if 'out_hash' in t.sections {
+				expected_hash := (t.sections['out_hash'] or { '' }).trim_space()
+				got_hash := cx.cx_text_hash(got_cx) or {
+					failures << 'repr_pair ${lane[0]}: hash error: ${err}'
+					continue
+				}
+				if got_hash != expected_hash {
+					failures << 'repr_pair ${lane[0]}: out_hash mismatch\n  expected: ${expected_hash}\n  got:      ${got_hash}'
+				}
+			}
+			if lane[1] == 'chunked' {
+				reenc := cx.emit_data_bin(decoded) or {
+					failures << 'repr_pair from_chunked witness: re-encode error: ${err}'
+					continue
+				}
+				if reenc != plain_bytes {
+					failures << 'repr_pair from_chunked witness: plain re-encode after chunked decode is NOT byte-identical to the direct plain encode (provenance leaked or lanes disagree)'
+				}
+			}
 		}
 	}
 
@@ -647,7 +875,7 @@ fn run_test(t Test) []string {
 			cx.emit_md(doc)
 		}
 		if expected_md.trim_space() != got_md.trim_space() {
-			failures << 'out_md mismatch\n  expected:\n${expected_md}\n  got:\n${got_md}'
+			if !ebless(t.name, 'out-md', got_md) { failures << 'out_md mismatch\n  expected:\n${expected_md}\n  got:\n${got_md}' }
 		}
 	}
 
@@ -662,10 +890,10 @@ fn run_test(t Test) []string {
 	//                             encoded bytes have CXCol header flag bit
 	//                             1 set
 	//   sd_ref_form             — selects the schema-ref form: "hash" /
-	//                             "inline" / "hash_with_name". Default
-	//                             "hash".
+	//                             "inline" / "hash_with_name" /
+	//                             "multihash". Default "hash".
 	//   sd_assert_ref_tag       — expected first byte of the schema ref
-	//                             ("0x10" / "0x11" / "0x12")
+	//                             ("0x10" / "0x11" / "0x12" / "0x13")
 	//   sd_expected_emit_error  — expected substring of the encode error
 	//                             (skips round-trip if the encoder must
 	//                             reject — e.g., closed-mode rejection)
@@ -703,6 +931,7 @@ fn run_test(t Test) []string {
 		ref_form := match (t.sections['sd_ref_form'] or { 'hash' }).trim_space() {
 			'inline'         { cx.SchemaRefForm.inline_schema }
 			'hash_with_name' { cx.SchemaRefForm.hash_with_name }
+			'multihash'      { cx.SchemaRefForm.multihash }
 			else             { cx.SchemaRefForm.hash_only }
 		}
 		name_hint := (t.sections['sd_name_hint'] or { '' }).trim_space()
@@ -1215,6 +1444,7 @@ fn run_suite(path string) bool {
 	mut pass := 0
 	mut fail := 0
 	mut skip := 0
+	mut advisory_red := 0
 
 	for t in tests {
 		if t.pending != '' {
@@ -1222,24 +1452,55 @@ fn run_suite(path string) bool {
 			println('SKIP ${t.name} (pending: ${t.pending})')
 			continue
 		}
+		if t.gate == 'skip' || t.gate == 'pending' {
+			skip++
+			println('SKIP ${t.name} (gate=${t.gate})')
+			continue
+		}
 		failures := run_test(t)
 		if failures.len == 0 {
 			pass++
 			println('PASS ${t.name}')
+		} else if t.gate == 'advisory' {
+			// The gates.cxd model: an advisory case is the spec-first
+			// frontier — its failures are RUN and REPORTED but do NOT
+			// block the gate. Promotion to enforced is the
+			// gate-progression control.
+			advisory_red++
+			println('ADVISORY-RED ${t.name}')
+			for f in failures { println('     ${f}') }
 		} else {
 			fail++
 			println('FAIL ${t.name}')
 			for f in failures { println('     ${f}') }
 		}
 	}
-	println('${path}: ${pass} passed, ${fail} failed, ${skip} skipped')
+	adv := if advisory_red > 0 { ', ${advisory_red} advisory-red' } else { '' }
+	println('${path}: ${pass} passed, ${fail} failed, ${skip} skipped${adv}')
 	return fail == 0
 }
 
 fn main() {
+	// R3.9 fail-loud: on a disarmed build (no -d cx_epoch_bless), asking for
+	// the epoch re-bless is an ERROR, never a silently-ignored env var.
+	$if !cx_epoch_bless ? {
+		if os.getenv('CX_BLESS') == 'epoch' {
+			eprintln('CX_BLESS=epoch REFUSED: the I1 epoch is closed; a re-bless build requires explicit -d cx_epoch_bless (remediation register R3.9)')
+			exit(1)
+		}
+	}
 	args := os.args[1..]
 
-	// Default: run all suites
+	// Default: run ALL suites in ONE process (the #795 batch,
+	// 2026-08-15: the previous 8-file subset left the transparency /
+	// chunked / compression / schema-driven / atoms / delimited /
+	// yaml / conversions / table / diff / lint / include / lockfile /
+	// streaming-write suites OUTSIDE every union target — the
+	// unwired-gate class; and fanning the per-suite make targets into
+	// the parallel union OOM-killed the box with 27 concurrent `v run`
+	// compiles. One compile, one process, every suite. The Arrow lane
+	// stays its own target/runner (needs libcx_arrow at build time);
+	// fmt stays its own target (a different runner).
 	suites := if args.len > 0 {
 		args
 	} else {
@@ -1249,6 +1510,25 @@ fn main() {
 			'../conformance/xml.cxd',
 			'../conformance/md.cxd',
 			'../conformance/namespaces.cxd',
+			'../conformance/identity_hash.cxd',
+			'../conformance/ast_bin.cxd',
+			'../conformance/operator_heads.cxd',
+			'../conformance/identity.cxd',
+			'../conformance/table.cxd',
+			'../conformance/table_transparency.cxd',
+			'../conformance/atoms.cxd',
+			'../conformance/delimited.cxd',
+			'../conformance/yaml.cxd',
+			'../conformance/conversions.cxd',
+			'../conformance/data_bin_chunked.cxd',
+			'../conformance/data_bin_compression.cxd',
+			'../conformance/data_bin_schema_driven.cxd',
+			'../conformance/schema_validate.cxd',
+			'../conformance/diff.cxd',
+			'../conformance/lint.cxd',
+			'../conformance/include.cxd',
+			'../conformance/streaming_write.cxd',
+			'../conformance/lockfile.cxd',
 		]
 	}
 

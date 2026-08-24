@@ -37,7 +37,7 @@ Both share the principle that **failure is an inspectable value, not a thrown er
 - `pattern` is an **unanchored search** (JSON Schema §6.3.3) — it matches if the regex matches **any** substring (RE2 partial match), not a full match. An uncompilable pattern is treated as non-matching rather than raising.
 - **Unsupported keywords are ignored** — a permissive superset is still schema-valid. Nothing is stubbed; every *supported* keyword is enforced.
 
-Both runtime map shapes are accepted as the schema **and** the value: a `{…}` literal (a `MapNode`) and a `[$json:parse]` object (an `__cx_map__` element).
+Both runtime map shapes are accepted as the schema **and** the value: a `{…}` map literal and the map value produced by `[$json:parse]` — the CXDM map kind in either provenance; no distinction between them is observable here.
 
 ### §2.2. Validation result
 

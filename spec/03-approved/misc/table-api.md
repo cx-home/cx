@@ -34,8 +34,15 @@ encoding per [`core/data-bin.md §3.10–§3.11`](../core/data-bin.md).
 - **Immutability.** `Table` instances are immutable values, like
   `Document`. Construction returns a new `Table`; modification
   returns a new `Table`.
-- **Column-oriented memory.** Column-major internal layout; row maps
-  are constructed on demand for iteration.
+- **Representation transparency** (AMENDED, stream 17 L91/L86 — the
+  former "Column-oriented memory. Column-major internal layout" claim
+  was false of the shipped row-major boxed representation and a
+  normative internal-layout claim cannot stand): observable semantics —
+  results, canonical bytes, addresses, error codes — MUST be identical
+  whichever internal layout executes; the layout itself is
+  quality-of-implementation (`runtime_representation.md` §2). Row maps
+  are constructed on demand for iteration either way; a column-major
+  in-core layout is the I5 engine work, not a spec guarantee.
 - **Adapter ecosystem.** Bindings with a natural data-frame target
   (Python → pandas/polars, Rust → polars, Go → arrow-go) expose
   adapters as opt-in methods.
@@ -329,21 +336,31 @@ CX. CI runs it only where Arrow is present.
 
 ### 8.1 Memory
 
-`Table` storage is column-oriented internally. For a 1M-row × 4-column
-typed table:
-
-- Naive list-of-dicts: ~150 MB.
-- `cxlib.Table`: ~32 MB (4 typed columns × 8 bytes/value × 1M).
-- 4-5× compactness; ~10× when columns include bit-packed bools or
-  dict-encoded categoricals.
+(AMENDED, stream 17 W6 — L91/L86: the former "column-oriented
+internally / ~32 MB" claim was false of the shipped bindings, whose
+`Table` holds row-major boxed cells — e.g. the Python binding's
+`rows: list[list[Any]]` — and a normative internal-layout claim
+cannot stand.) In-memory `Table` layout is quality-of-implementation
+(`runtime_representation.md` §2): a binding MAY store columns
+(typed, compact) or rows (boxed); observable semantics MUST be
+identical either way. What IS guaranteed compact is the **wire**: the
+CXCol §3.10.3 typed column payloads carry no per-cell tags, bools
+bit-pack (§3.10.4), repetitive/atom columns dictionary-encode
+(§3.10.2) — so a 1M-row × 4-column numeric table rides as ~32 MB of
+column bytes regardless of how either endpoint's `Table` stores it in
+memory.
 
 ### 8.2 Latency
 
 Per [`core/abi.md §4`](../core/abi.md), `cx_to_data_bin` for a 100 MB
-tabular input completes in under 3 seconds. `Table` materialization
-in the host adds typically <50% overhead over the raw data_bin time,
-since the binary format is column-major and each column can be
-copied or aliased with one allocation.
+tabular input completes in under 3 seconds. `Table` materialization in
+the host adds typically <50% overhead over the raw data_bin time. The
+binary format is column-major with typed payloads (data-bin §3.10.3):
+fixed-width numeric columns are contiguous and can be bulk-copied (or
+aliased) per column; variable-length columns (string / bytes / decimal
+/ bigint / atom), bit-packed bool, dictionary (§3.10.2) and nullable
+(§3.10.5) payloads decode per cell — "one allocation per column" holds
+for the fixed-width lanes only.
 
 ### 8.3 Iteration cost
 

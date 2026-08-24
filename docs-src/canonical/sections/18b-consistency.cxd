@@ -1,0 +1,122 @@
+[# Section 18b — consistency, in the words we use: the declarable,
+   checkable guarantee vocabulary. Teaching surface for
+   spec/03-approved/core/consistency_vocabulary.md. Authored 2026-08-19
+   for #826 acceptance 3. #]
+
+[section id=consistency group='Ring 2 — Platform' n='18b' title='Consistency, in the words we use'
+
+  [child id=cons-idea n=18b.1 title='Declare what you need; the platform satisfies or refuses'
+    [intro
+      """Most systems document their consistency in prose and degrade it
+         in silence. CX inverts both halves: a program **declares** the
+         guarantee a read or a session needs, in a closed vocabulary,
+         and the platform either **satisfies the declaration or refuses
+         loudly** — never approximates, never silently downgrades. An
+         unknown token is a typed error, not an ignored option."""]
+
+    [body
+      """The enemy this design names is the *silent-wrong-answer class*:
+         a read that used to be fresh quietly served from a stale
+         cache, a resumed subscription that skipped entries nobody
+         noticed, a replica answering as if it were the primary. Every
+         one of those becomes either a declared-and-satisfied guarantee
+         or a visible refusal naming the token and the surface that
+         could not honor it."""]]
+
+  [child id=cons-vocabulary n=18b.2 title='The vocabulary'
+    [intro
+      """The tokens are a closed set. Each names one checkable property;
+         the table says what satisfies it and what refuses it."""]
+
+    [table
+      [tr [th 'Token'] [th 'Guarantee'] [th 'Satisfied by / refused by']]
+      [tr [td '`:prefix-consistent`'] [td 'a committed per-stream prefix, never torn']
+          [td 'any single-stream journal read / cross-stream compositions and surfaces that cannot prove it']]
+      [tr [td '`:at-seq-pinned`'] [td 'this exact transaction position']
+          [td 'replay, fold, and snapshot pins / a pin pruned past snapshot coverage']]
+      [tr [td '`:at-head-set`'] [td 'a signed multi-stream cut — one position per stream']
+          [td 'the snapshot substrate / it is a READ coordinate, never a commit primitive']]
+      [tr [td '`:linearizable-ref`'] [td 'ref advances on this handle are compare-and-set only']
+          [td 'expectation-carrying writes / makes expectation-less writes and force-moves errors on the declaring handle']]
+      [tr [td '`:read-your-writes`'] [td 'this handle sees its own writes']
+          [td 'a single handle on one daemon / caching layers and replicas']]
+      [tr [td '`:monotonic-reads`'] [td 'no rewind on resume']
+          [td 'checkable server-side against the cursor']]
+      [tr [td '`:gapless`'] [td 'no skip on resume (distinct from monotonic)']
+          [td 'refused when retention pruned past the resume point']]
+      [tr [td '`:at-least-once`'] [td 'delivery class'] [td 'the durable plane']]]
+
+    [note
+      """Deliberately **absent**: `snapshot-isolation`, `causal`, and
+         `eventual` are not in the set at all — admitting them as
+         refusals would imply roadmap, and admitting them as accepted
+         would be a lie. And `valid-at` is not a consistency token: it
+         is the valid-time query parameter ([[bitemporal]]), and the two
+         axes must not fuse."""]]
+
+  [child id=cons-refusals n=18b.3 title='Two refusals that teach'
+    [body
+      """Two tokens exist so their refusals can point somewhere better:"""]
+    [list
+      [item """`:exactly-once` — **permanently refused**: no
+              distributed substrate delivers it, and pretending is how
+              double-charges happen. The refusal names the real answer:
+              at-least-once delivery composed with declared idempotency
+              at the effect boundary ([[commands-effects]])."""]
+      [item """`:serializable` — **refused with a pointer**: the
+              substrate offers no cross-stream commit coordination, and
+              this vocabulary will not imply one. The refusal names the
+              coordination design as the place where that either arrives
+              or is rejected on principle."""]]
+    [body
+      """This is the vocabulary's quiet thesis: **a guarantee you refuse
+         loudly is worth more than a guarantee you fake.** The refusal
+         is documentation, delivered at the moment of need, naming the
+         supported alternative."""]]
+
+  [child id=cons-lattice n=18b.4 title='A lattice, not a ladder'
+    [intro
+      """Incumbent intuition wants \"consistency levels\" on a dial from
+         weak to strong. This vocabulary is **independent conjuncts**:
+         `prefix-consistent` and `read-your-writes` are incomparable —
+         neither implies the other — and a declaration is a set, not a
+         level. A refusal names the failing token and the failing
+         stage, so widening a declaration tells you exactly what you
+         just asked for that the surface cannot give."""]
+
+    [body
+      """The composition rules that follow from per-stream reality:
+         `prefix-consistent` holds **per source** — a multi-stream read
+         gets per-source prefixes and NO cross-source cut unless it
+         declares `:at-head-set`, which supplies a signed cut of named
+         positions. And a head-set is a **read** coordinate: committing
+         across streams is coordination, a different problem owned by a
+         different design — this vocabulary refuses to blur that
+         line."""]]
+
+  [child id=cons-attach n=18b.5 title='Where declarations attach'
+    [body
+      """Exactly two attachment points:"""]
+    [list
+      [item """**The handle floor** — store open options, journal
+              open/attach, fabric subscribe, session establishment. The
+              declaration is checked ONCE at declaration time against
+              the surface's advertised guarantee set and refused at
+              open; the advertisement is bound to the configuration
+              generation, so a config reload cannot leave a cached
+              advertisement lying about the new reality."""]
+      [item """**Per-read pins** — `at-seq`, a head-set, or a cursor on
+              the read options."""]]
+    [body
+      """Deliberately NOT an attachment point: definitions. A
+         consistency need is a property of the *handle a value arrives
+         through at runtime*, not of a function — a def-level clause
+         would be either advisory (the house contradiction) or a
+         disguised runtime check. Replicas get an honest profile from
+         the same vocabulary: a replica can declare
+         `:prefix-consistent` (the hash chain makes prefixes checkable),
+         `:at-seq-pinned` up to its synced head, and
+         `:monotonic-reads` — and must refuse `:read-your-writes` and
+         `:linearizable-ref`, advertising its signed head-set and lag
+         through status instead of pretending to be the primary."""]]
+]

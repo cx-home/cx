@@ -1,0 +1,103 @@
+[schema of=package mode=open]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Feature-package manifest schema (DRAFT).
+#
+# One `package.cxd` = one `[package …]` sealing a feature directory (the
+# authoring-process layers + impl + fixtures + assets) as a distributable,
+# content-addressed, publisher-signed artifact. The manifest sits BESIDE the
+# hashed content tree (git tag-object pattern): it names the Tier-1 hash of
+# what it seals. The grammar summary and needs block are PROJECTED from the
+# feature spec at publish and re-verified at install — never hand-maintained.
+# Spec: spec/03-approved/xap/xap_feature_distribution_market.md. Open mode; destined to
+# ship with the cx toolchain alongside feature/xap/surface/grammar.cxs.
+# ─────────────────────────────────────────────────────────────────────────────
+
+[package
+ [attr name::string    [req]]
+ [attr version::string [req]]    # semver; released (name, version) is immutable at a market
+ [attr hash::string    [req]]    # Tier-1 subtree root hash of the sealed content
+ [attr kind::string    [default feature] [enum feature library client]]   # §1.1 — determines the install gate
+ [elem summary       [card "0..1"]]
+ [elem publisher     [card "1..1"]]
+ [elem grammar       [card "0..1"]]   # kind=feature (REQUIRED then): projected exported-grammar summary (the listing)
+ [elem exports       [card "0..1"]]   # kind=library (REQUIRED then) AND kind=feature whose tree carries a
+                                      # <name>.cx code entry (§1.2 runtime contract — REQUIRED exactly then):
+                                      # projected module/def surface + Tier-2 identities
+ [elem dependencies  [card "0..1"]]   # kind=feature composites: the uses set (GRAMMAR plane)
+ [elem requires      [card "0..1"]]   # any kind: library packages the impl needs (CODE plane, §1.1)
+ [elem compatibility [card "0..1"]]
+ [elem needs         [card "0..1"]]   # kind=feature (REQUIRED then): the capability manifest — install-time
+                                      # consent set, covering the WHOLE code closure (N-DIST-2).
+                                      # kind=library: MUST be absent — libraries hold no authority.
+ [elem license-terms [card "0..1"]]
+ [elem signature     [card "1..1"]]]
+[type summary::string]
+
+# ── exports — a library's listing: its module/def surface, projected from the
+# code at publish (like a feature's grammar from its spec), verified at install ──
+[exports [elem def [card "1..*"]]]
+[def
+ [attr name::string     [req]]    # qualified def name (module/def)
+ [attr identity::string [opt]]    # Tier-2 code identity (dedup/equivalence; never trust)
+ [attr doc::string      [opt]]]
+
+# ── requires — the code plane: hash-resolved into the reproducible closure ──
+[requires [elem require [card "1..*"]]]
+[require
+ [attr library::string   [req]]    # the required library package name
+ [attr versions::string  [opt]]    # version range; omitted = any
+ [attr publisher::string [opt]]]   # pin to a publisher DID (supply-chain narrowing)
+
+# ── publisher — a DID ──
+[publisher
+ [attr did::string  [req]]
+ [attr name::string [opt]]    # display only; trust rests on the DID
+ [attr url::string  [opt]]]
+
+# ── grammar — the exported surface, projected from *.feature.cxd ──
+[grammar
+ [elem verb  [card "1..*"]]
+ [elem noun  [card "1..*"]]
+ [elem frame [card "0..*"]]
+ [elem key   [card "0..*"]]]
+[verb
+ [attr name::string        [req]]
+ [attr effect::string      [req] [enum observe act arrange]]
+ [attr consequence::string [req] [enum none reversible irreversible]]]
+[noun  [attr name::string [req]]]
+[frame [attr family::string [req] [enum geo time value]] [attr via::string [req]]]
+[key   [attr name::string [req]] [attr type::string [req]] [attr via::string [req]]]
+
+# ── dependencies — composite features' uses set ──
+[dependencies [elem dependency [card "1..*"]]]
+[dependency
+ [attr feature::string  [req]]
+ [attr versions::string [opt]]    # version range; omitted = any
+ [attr publisher::string [opt]]]  # pin to a publisher DID (supply-chain narrowing)
+
+# ── compatibility — validation floor ──
+[compatibility
+ [attr xap-spec::string  [opt]]   # XAP spec revision the layers validate against
+ [attr toolchain::string [opt]]]  # minimum cx toolchain
+
+# ── needs — every grant the feature requires; runtime may not exceed this ──
+[needs
+ [attr consequence-ceiling::string [default none] [enum none reversible irreversible]]
+ [elem reads      [card "0..*"]]   # cross-feature read-model reads (Tier 1)
+ [elem subscribes [card "0..*"]]   # coordination channels (Tier 2)
+ [elem gateways   [card "0..*"]]]  # transports/adapters it opens
+[reads      [attr noun::string [req]] [attr doc::string [opt]]]      # qualified noun
+[subscribes [attr channel::string [req]] [attr doc::string [opt]]]
+[gateways   [attr kind::string [req]] [attr doc::string [opt]]]
+
+# ── license-terms — the terms entitlement VCs are issued under ──
+[license-terms
+ [attr ref::string [req]]     # reference (store URI / SPDX id / market terms id)
+ [attr doc::string [opt]]]
+
+# ── signature — detached, over the Tier-1 hash, by a publisher-DID key ──
+[signature
+ [attr alg::string   [req] [enum ed25519]]
+ [attr key::string   [req]]    # key id within the publisher DID document
+ [attr value::string [req]]]   # the signature bytes (encoded)

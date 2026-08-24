@@ -1,13 +1,20 @@
 package cxlib
 
-// store.go — ergonomic CSRP client for the cx-store service tier (#105).
+// store.go — ergonomic client for the cx-store service tier.
 //
-// StoreClient is a thin façade over the audited cx-store:// client in the CX
-// core: each method builds a one-shot CX program and evaluates it through the
+// StoreClient is a thin façade over the audited store client in the CX core:
+// each method builds a one-shot CX program and evaluates it through the
 // capability-aware ABI (EvalCodeCaps) with only `net` granted (scoped to the
-// server host). The CSRP wire protocol is NOT re-implemented here — the core is
-// the single source of protocol truth, so hashes and CXER error codes match
-// every other binding by construction (spec §6.1).
+// server host). No wire protocol is re-implemented here — the core is the
+// single source of protocol truth, so hashes and CXER error codes match every
+// other binding by construction.
+//
+// The wire is the XSP store profile — THE CX-to-CX store wire (store.md §6.4):
+// cx-store://host:port/name/ (TLS) or cx-store+xsp://host:port/name/
+// (cleartext dev). Client identity is XSP-AUTH: pass did + seedEnv (the name
+// of an environment variable holding the 32-byte Ed25519 seed hex — the seed
+// itself never rides a URL or a literal). Anonymous under a floor-policy
+// daemon needs neither.
 
 import (
 	"fmt"
@@ -16,34 +23,53 @@ import (
 )
 
 var (
-	storeHashRe    = regexp.MustCompile(`[0-9a-f]{64}`)
+	// I1 identity epoch: content addresses are TAGGED (`sha2-256:<64hex>`) —
+	// the tag is part of the address, never stripped.
+	storeHashRe    = regexp.MustCompile(`sha2-256:[0-9a-f]{64}`)
 	storeErrCodeRe = regexp.MustCompile(`code="?([A-Za-z0-9:\-]+)"?`)
 	storeErrMsgRe  = regexp.MustCompile(`message=(?:"([^"]*)"|'([^']*)')`)
-	// the content hash on each query `[result hash=H …]` / iter `[entry hash=H …]`
-	// (bareword or quoted) — the matching / enumerated document's address.
-	storeResultHashRe = regexp.MustCompile(`\[result hash='?([0-9a-f]{64})'?`)
-	storeEntryHashRe  = regexp.MustCompile(`\[entry hash='?([0-9a-f]{64})'?`)
+	// the content address on each query tuple `[result doc=H source=…]` (the L97
+	// flat relation — one tuple per MATCH, so Query dedups to per-doc hashes) /
+	// iter `[entry hash=H …]` (bareword or quoted).
+	storeResultHashRe = regexp.MustCompile(`\[result doc='?(sha2-256:[0-9a-f]{64})'?`)
+	storeEntryHashRe  = regexp.MustCompile(`\[entry hash='?(sha2-256:[0-9a-f]{64})'?`)
 )
 
-// StoreClient is a connection-less client for one cx-store:// URL. The remote
-// backend is stateless per request (each op is one HTTP exchange carrying the
-// URL + bearer), so a StoreClient holds no socket and is safe to reuse. The
-// bearer token is carried only inside the open-URL and is never logged.
+// StoreClient is a connection-less client for one store-profile URL. Each op
+// evaluates a one-shot program (open → op); the core client dials the profile
+// session lazily per op, so a StoreClient holds no socket and is safe to
+// reuse. Identity (did + seedEnv) maps onto the core's open-opts xsp-did /
+// xsp-seed-env — the seed stays in the process environment, named but never
+// read here.
 type StoreClient struct {
-	url   string
-	token string
-	caps  string
+	url     string
+	did     string
+	seedEnv string
+	caps    string
 }
 
-// NewStoreClient constructs a client for a cx-store:// / cx-store+http(s):// URL.
-// `token`, if non-empty, is the Bearer credential.
-func NewStoreClient(url, token string) (*StoreClient, error) {
+// NewStoreClient constructs an anonymous client for a cx-store:// (TLS) or
+// cx-store+xsp:// (cleartext dev) URL — the XSP store profile, THE store wire.
+func NewStoreClient(url string) (*StoreClient, error) {
+	return NewStoreClientWithIdentity(url, "", "")
+}
+
+// NewStoreClientWithIdentity constructs a client presenting an XSP-AUTH
+// identity: `did` is the client's did:key, `seedEnv` names the environment
+// variable holding its 32-byte Ed25519 seed hex.
+func NewStoreClientWithIdentity(url, did, seedEnv string) (*StoreClient, error) {
 	if !strings.HasPrefix(url, "cx-store://") &&
-		!strings.HasPrefix(url, "cx-store+http://") &&
-		!strings.HasPrefix(url, "cx-store+https://") {
-		return nil, fmt.Errorf("StoreClient url must be a cx-store:// URL, got: %s", url)
+		!strings.HasPrefix(url, "cx-store+xsp://") {
+		return nil, fmt.Errorf("StoreClient url must be a cx-store:// (TLS) or cx-store+xsp:// (cleartext dev) URL — the XSP store profile is THE store wire; got: %s", url)
 	}
-	return &StoreClient{url: url, token: token, caps: "net:" + storeHostPort(url)}, nil
+	if (did == "") != (seedEnv == "") {
+		return nil, fmt.Errorf("client identity needs BOTH did and seedEnv (got one)")
+	}
+	hp, err := storeHostPort(url)
+	if err != nil {
+		return nil, err
+	}
+	return &StoreClient{url: url, did: did, seedEnv: seedEnv, caps: "net=" + hp}, nil
 }
 
 // PutDocText stores a document's canonical text and returns its content hash.
@@ -107,7 +133,9 @@ func (c *StoreClient) Query(cxpath string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return storeSubmatchHashes(storeResultHashRe, out), nil
+	// L97 flat relation: one tuple per MATCH — dedup to the documented
+	// per-document hash list (first-appearance order preserved).
+	return storeUniqueHashes(storeSubmatchHashes(storeResultHashRe, out)), nil
 }
 
 // IterDocs enumerates every document via the daemon's server-side iter op
@@ -132,19 +160,29 @@ func storeSubmatchHashes(re *regexp.Regexp, out string) []string {
 	return hashes
 }
 
-// ── internals ───────────────────────────────────────────────────────────────
-
-func (c *StoreClient) openURL() string {
-	if c.token == "" {
-		return c.url
+// storeUniqueHashes dedups while preserving first-appearance order.
+func storeUniqueHashes(in []string) []string {
+	seen := make(map[string]bool, len(in))
+	out := make([]string, 0, len(in))
+	for _, h := range in {
+		if !seen[h] {
+			seen[h] = true
+			out = append(out, h)
+		}
 	}
-	i := strings.Index(c.url, "://") + 3
-	return c.url[:i] + c.token + "@" + c.url[i:]
+	return out
 }
 
+// ── internals ───────────────────────────────────────────────────────────────
+
 func (c *StoreClient) run(opExpr, outputTarget string) (string, error) {
+	open := fmt.Sprintf(`[$store:open "%s"]`, c.url)
+	if c.did != "" {
+		open = fmt.Sprintf(`[$store:open-opts "%s" [map xsp-did="%s" xsp-seed-env="%s"]]`,
+			c.url, c.did, c.seedEnv)
+	}
 	prog := "[?lib 'cx-stdlib/store' :as store]\n" +
-		fmt.Sprintf(`[?let [= $c [$store:open "%s"]] %s]`, c.openURL(), opExpr)
+		fmt.Sprintf(`[?let [= $c %s] %s]`, open, opExpr)
 	out, err := EvalCodeCaps("", prog, c.caps, outputTarget)
 	if err != nil {
 		return "", err
@@ -167,22 +205,18 @@ func storeUnwrap(s string) string {
 	return s
 }
 
-func storeHostPort(url string) string {
+func storeHostPort(url string) (string, error) {
 	rest := url[strings.Index(url, "://")+3:]
 	authority := rest
 	if i := strings.Index(authority, "/"); i >= 0 {
 		authority = authority[:i]
 	}
-	if i := strings.Index(authority, "@"); i >= 0 {
-		authority = authority[i+1:]
+	if !strings.Contains(authority, ":") {
+		// the profile needs the explicit [xsp] listener address; demand it here
+		// so the net grant is always exact.
+		return "", fmt.Errorf("StoreClient url needs an explicit host:port (the [xsp] listener address), got: %s", url)
 	}
-	if strings.Contains(authority, ":") {
-		return authority
-	}
-	if strings.HasPrefix(url, "cx-store+http://") {
-		return authority + ":80"
-	}
-	return authority + ":443"
+	return authority, nil
 }
 
 func storeToCxError(errText string) *CxError {

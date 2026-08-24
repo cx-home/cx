@@ -190,6 +190,18 @@ the backend reports which path it took (no silent full-scan masquerading as
 pushdown). This reuses the CSRP/`store-query` pushdown plumbing already shipped
 (#119) — columnar is a new *executor* under the same query verb, not a new verb.
 
+*(Timing note — I5 stream 17 W4, ruled L91/#710 item 2.)* The shipped executor
+reads **only** the projected column + `__cx_key` (a projected decode that
+cursor-skips every other column payload) and answers final-step predicates from
+columns whenever the answer provably equals the row scan's (the Q6 exactness
+envelope): for promoted columns the candidate shape is promotion-invariant, so
+one evaluation of the row scan's own predicate engine decides every row —
+that verdict-once form *is* the vectorized evaluation for the shipped predicate
+grammar, which tests names/attributes/position and never cell values. Min/max
+row-group pruning and per-cell vectorized comparison therefore have **no live
+predicate form to consume them yet**; they activate when the predicate grammar
+grows a value-comparison form, extending over the already-projected buffers.
+
 ---
 
 ## 7 — Capabilities & read/write
@@ -311,14 +323,35 @@ Q1–Q5 are implemented; nothing in this note is deferred.
   sub-record in every doc that has it. CX leaf kinds: numbers are `ScalarNode`,
   strings/atoms are `TextNode` (both are scalar leaves). The **sound rule**: a name
   observed in more than one shape (scalar vs record), or ever complex
-  (deeper-nested / attributed / mixed), is not promoted — so a column null ⟺ the
-  path is absent, keeping predicate pushdown exact. Type union: `int`+`float` →
-  `float`, otherwise → `string`. Columns are sorted for a reproducible file.
-- **Q6 — query pushdown.** `store_columnar_query` lowers a `//field` (depth-1) or
-  `//parent/child` (depth-2 → the flattened `parent.child` column) projection to a
-  column-only scan over the durable file/object; a deeper path, a predicate, or a
-  non-promoted name returns `none` → the caller materializes rows from `__cx_doc`.
-  Returning some/none is the honest pushdown report.
+  (deeper-nested / attributed / mixed), **or duplicated** — the same top-level name
+  twice in one doc, or the same sub-name twice in one record (ruled 2026-08-10,
+  #767: a column holds ONE cell, so duplicates cannot round-trip) — is not
+  promoted; a column null ⟺ the path is absent, keeping predicate pushdown exact.
+  Type union: `int`+`float` → `float`, otherwise → `string`; **decimal scalars
+  project as `float` columns** (ruled 2026-08-10, #766 — the projection is
+  redundant by design, `__cx_doc` stays the exact reconstruction source, and
+  `float` is the Parquet/DuckDB interop type). Each column carries a derived
+  **exactness bit**: exact iff every observed cell's re-synthesis reproduces the
+  stored leaf byte-for-byte — no type widening ever occurred and no coerced
+  source (decimal→float, temporal→string, …) contributed. Columns are sorted for
+  a reproducible file.
+- **Q6 — query pushdown (exactness-gated; ruled 2026-08-10, #767 + #768).** The
+  pushdown answers a query from columns **exactly when its answer provably equals
+  the row scan's** — never a fast wrong answer. Projectable class: the
+  DESCENDANT forms `//field` (depth-1 column) and `//parent/child` (the flattened
+  `parent.child` column) — absolute/relative paths row-materialize (under
+  document-node anchoring, `/x` addresses the per-doc ROOT, whose name varies by
+  doc — not a column). Preconditions, all derived in the schema pass (which
+  already parses every live doc): **occurs-only-top-level** — the first segment's
+  name is never a doc's root name and never occurs deeper than depth 1 anywhere
+  in the corpus (else a descendant query could match nodes no column carries);
+  the answering **column is exactness-marked** (Q2); the name is promoted at all.
+  Any failed precondition, a deeper path, or a predicate returns `none` → the
+  caller materializes rows from `__cx_doc`. Returning some/none is the honest
+  pushdown report. The pushdown emits the same **flat provenance-bearing
+  relation** as the row executor ([`store.md`](../std-lib/store.md) §12, stream-2
+  ruling L97) — one `[result doc= source= …]` tuple per match; shape AND answer
+  parity between the two executors is pinned by the #711 probe fixtures.
 - **Q3 — declared `?schema=`.** `?schema=<path>` (or `[opts schema=…]`) loads a
   `cx-stdlib/validate` `[schema …]` shape at open; every put to a columnar store
   with a declared schema is validated via `cx.validate` and a non-conforming doc is

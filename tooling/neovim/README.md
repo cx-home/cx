@@ -53,21 +53,33 @@ Re-run after any grammar change.
 
 ## 2 — Install the Neovim plugin
 
-`tooling/neovim/` is **not** consumable as a plugin-manager plugin root
-(there is no `lua/` module layout or `plugin/` directory to point
-lazy.nvim / packer at the repo). Install by copying the files to the
-paths below:
+`tooling/neovim/` IS a plugin root (`lua/` module + `plugin/` +
+the standard ftdetect/ftplugin/indent/syntax rtp dirs), so point your
+plugin manager straight at it — no file copying. The LSP registers
+through Neovim 0.11's native `vim.lsp.config`, so there is no
+nvim-lspconfig dependency.
 
-**lazy.nvim / LazyVim** — copy the plugin spec into your plugins
-directory (it returns a lazy.nvim spec table):
-```sh
-cp tooling/neovim/cx.lua ~/.config/nvim/lua/plugins/cx.lua
+**lazy.nvim / LazyVim** — one spec entry naming your cx checkout:
+```lua
+-- ~/.config/nvim/lua/plugins/cx.lua
+return {
+  { dir = '/path/to/cx/tooling/neovim' },
+}
 ```
 
 **Plain init.lua:**
 ```lua
-dofile('/path/to/cx-repo/tooling/neovim/cx.lua')
+vim.opt.rtp:append('/path/to/cx/tooling/neovim')
+require('cx').setup()
 ```
+
+Custom keymaps / binary path: set `vim.g.cx_no_auto_setup = true` and
+call `require('cx').setup({ cx_bin = …, on_attach = … })` yourself
+(`require('cx').on_attach` is exported for extension).
+
+(The old copy-`cx.lua`-into-your-config flow is retired; a previously
+copied file keeps working but no longer receives updates — switch to
+the `dir =` spec.)
 
 ---
 

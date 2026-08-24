@@ -5,8 +5,11 @@
 // Bridges CXCol chunked-tables to Arrow ArrowArrayStream via libcx_arrow
 // (spec/abi.md §2.11, capability bit 0x800000). The bridge
 // handles all 9 v0.6.0 column types (int, i8, i16, i32, float, bool,
-// string, date, bytes); datetime / decimal / dictionary columns are
-// deferred and surface the V core's deferred-type error.
+// string, date, bytes); datetime / decimal / bigint / dictionary columns
+// are deferred and surface the V core's deferred-type error. Decimal and
+// bigint COLUMNS stay declared-unsupported through the M23 advisory
+// window (pre-I5 column lattice) — do not add Arrow decimal support here
+// until I5 lands.
 //
 // Gated behind the `arrow` build tag so the default `go build` does not
 // require libcx_arrow or the Apache Arrow Go module:

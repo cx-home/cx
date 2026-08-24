@@ -77,8 +77,16 @@ Command-line arguments are parsed once at process start; subsequent calls return
 [?def usage       scope=public pure   [returns string]            ($spec::element) ...]
 ```
 
-- `argv()[0]` is the executable path.
-- `parse-args(spec)` returns `[args [flags ...] [positional [sequence ...]] [unparsed [sequence ...]]]`.
+- `argv()` is the **program's** argument vector, in the `sys.argv`
+  shape `[resource, ...program-args]` (RULED: PYE-2, #926): `argv()[0]`
+  names the **resource being run** — the program file path (shebang
+  included), or the conventional placeholder `-e` (inline program) /
+  `stdin` (stdin-fed program) — and `argv()[1..]` are exactly the
+  arguments given after the resource at the invocation site
+  ([`misc/cli.md`](../misc/cli.md) §3.7, the positional rule). cx's own
+  flags are never visible here. A program's view of its arguments is
+  **independent of how it was launched**.
+- `parse-args(spec)` parses `argv()` and returns `[args [flags ...] [positional [sequence ...]] [unparsed [sequence ...]]]`.
 - `usage(spec)` returns a human-readable usage string. Programs typically call this on `--help` or parse failure.
 
 ### §3.3. Process metadata
@@ -141,7 +149,7 @@ Under `conformance/stdlib/env.cxd`:
 - `var-int("PORT", 8080)` returns 8080 when unset; with `PORT=abc` raises `CXER2504` (no fall-back).
 - `var-bool` accepts all of `true/false/1/0/yes/no/on/off` (case-insensitive); `BOOL=maybe` raises `CXER2504`.
 - `var-required` on missing var raises `CXER2500`.
-- `argv()[0]` matches `executable-path`. This identity holds under **native execution only** — when the program is the process image. Under an embedded or script-eval runner (e.g. evaluating a `.cx` source), `argv()[0]` is the script path rather than the `cx` executable, so the literal equality does not hold; a conformance harness asserts it only when launching the program as a native process.
+- `argv()` is the launcher-installed `[resource, ...program-args]` vector (§3.2, RULED: PYE-2): `cx tool.cx a b`, `./tool.cx a b` (shebang), `cx -e 'P' a b`, and a stdin-fed program all present the same shape, with `argv()[0]` naming the resource (`tool.cx` / `-e` / `stdin`). `argv()[0]` never equals `executable-path` under the `cx` launcher — the pre-PYE-2 identity claim is retired. In an embedded host that installs no program argv, `argv()` falls back to the host process's raw args.
 - `parse-args` handles `--verbose`, `-v`, `--limit=10`, `-n 10`, declared positionals, extras into `remaining`, post-`--` positionals, unknown-flag → `CXER2501` unless `allow-unknown=true`.
 - `os-name` / `os-arch` return non-empty strings consistent with the build target.
 
@@ -151,11 +159,20 @@ Effectful functions in `cx-stdlib/env` run under deny-by-default capabilities ([
 
 Environment-variable reads require `env`; `hostname` and `username` are host/identity disclosure in the same spirit and also require `env`. `cwd` and `executable-path` disclose filesystem layout and require `read`. The ambient process basics (standard streams, process identity, argument vector, CPU count, and process exit) require no capability: they are intrinsic to the running process and are never gated.
 
+**Program arguments are ungated by design** (RULED: PYE-3, #926):
+`argv` and `parse-args` read the caller-supplied program argument
+vector — the caller already exercised the authority by typing the
+arguments at the invocation site, exactly as the program `FILE` path is
+supplied without a grant. Deny-by-default gates **ambient** authority;
+program args are not ambient. `var` and the other environment reads
+stay behind `env` precisely because the environment *is* ambient
+process state.
+
 | Capability | Functions |
 |---|---|
 | `env` | `var`, `var-bool`, `var-float`, `var-int`, `var-or-default`, `var-required`, `vars`, `has-var`, `hostname`, `username` |
 | `read` | `cwd`, `executable-path` |
-| (none) | `stdin`, `stdout`, `stderr`, `pid`, `ppid`, `argv`, `cpu-count`, `exit`, `abort` |
+| (none) | `stdin`, `stdout`, `stderr`, `pid`, `ppid`, `argv`, `parse-args`, `cpu-count`, `exit`, `abort` |
 
 ## §8. Cross-references
 

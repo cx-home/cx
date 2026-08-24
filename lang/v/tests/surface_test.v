@@ -101,14 +101,14 @@ fn test_doc_bytes_returns_canonical() {
 
 // ── Doc method 3: hash() ─────────────────────────────────────────────────────
 
-fn test_doc_hash_is_sha256_hex() {
+fn test_doc_hash_is_tagged_sha2_256() {
 	d := native.parse_doc(sample_users) or { panic(err) }
 	h := d.hash() or {
 		assert false, 'hash failed: ${err.msg()}'
 		return
 	}
-	// SHA-256 hex is 64 chars; ABI spec/abi.md §2.6.
-	assert h.len == 64, 'expected 64-char hex, got ${h.len}: ${h}'
+	// I1 tagged address: `sha2-256:` + 64 hex chars = 73 (stream 19, L31/L32).
+	assert h.starts_with('sha2-256:') && h.len == 73, 'expected tagged sha2-256 address, got ${h.len}: ${h}'
 }
 
 fn test_doc_hash_stable_across_parses() {

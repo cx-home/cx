@@ -20,6 +20,9 @@ pub use atom::{Atom, is_atom, atom_name};
 // #197: the structured CX error type, flat at the crate root for parity with the
 // Python/Go bindings' CxError.
 pub use store::{CxError, StoreClient};
+// I1 L48: full-fidelity CXCol value tree — carries the decimal / bigint
+// semantic kinds that serde_json::Value cannot represent.
+pub use data_bin::CxValue;
 
 #[cfg(feature = "arrow")]
 pub mod arrow;
@@ -717,7 +720,8 @@ pub fn eval_code(input: &str, program: &str, output_target: &str) -> Result<Stri
 
 /// Evaluate a CX program under an explicit capability grant (deny-by-default:
 /// "" = pure-only, "all"/"*" = full, else a comma/space list such as "net" or
-/// "net:host:443" — host-scoped). The grant applies only to this call. Wraps the
+/// "net=host:443" — host-scoped; an unknown capability name is a typed CXER0274
+/// error, #713). The grant applies only to this call. Wraps the
 /// capability-aware `cx_code_eval_caps` ABI symbol (capability bit 38).
 pub fn eval_code_caps(input: &str, program: &str, caps: &str, output_target: &str) -> Result<String, String> {
     ensure_thread();

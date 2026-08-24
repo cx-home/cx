@@ -29,15 +29,12 @@ pub interface Queryable {
 	query(ix &SecondaryIndex, cxpath string) []string
 }
 
-// Transactional — a backend with a real, per-backend transaction (begin/
-// commit/rollback). Cross-backend atomicity is saga/compensating, not 2PC
-// (architecture.md §3); this trait is the single-backend ACID building block.
-pub interface Transactional {
-mut:
-	begin() !
-	commit() !
-	rollback() !
-}
+// The former `Transactional` trait (begin/commit/rollback) is REMOVED
+// (stream 7 L127, #714): no backend ever implemented it and nothing
+// consumed it — a dead seam advertising transactionality the spec corpus
+// never granted. Single-backend transactionality re-enters, if ever, as a
+// declarable consistency token (consistency_vocabulary.md) when a spec'd
+// backend actually advertises it.
 
 // Capability negotiation helpers (degrade-with-visibility, never silently):
 // callers test these to discover what a backend supports.
@@ -49,6 +46,3 @@ pub fn is_queryable(b StorageBackend) bool {
 	return b is Queryable
 }
 
-pub fn is_transactional(b StorageBackend) bool {
-	return b is Transactional
-}

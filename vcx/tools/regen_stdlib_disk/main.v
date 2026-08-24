@@ -1,6 +1,7 @@
 module main
 
 import code
+import platform as _
 import os
 
 // regen_stdlib_disk — rewrites the human-inspection on-disk

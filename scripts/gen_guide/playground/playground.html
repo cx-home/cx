@@ -5,12 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CX Playground</title>
 <link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="playground/playground.css">
 </head>
 <body class="cxp-body">
 <header class="cxp-toolbar">
   <a class="cxp-brand" href="index.html" title="CX Guide">
-    <img src="assets/cx-logo.svg" alt="CX" width="22" height="22">
+    <svg viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
     <span>Playground</span>
   </a>
   <input id="cxp-search" class="cxp-search" type="search"
@@ -64,15 +67,18 @@
   <section class="cxp-pane cxp-viz-pane">
     <div class="cxp-pane-head">
       <span>VIEW</span>
-      <button id="cxp-viz-src-toggle" class="cxp-mini-btn cxp-viz-src-toggle"
-              type="button" data-vizsrc="source"
-              title="Toggle which content the view pane visualizes">Source</button>
-      <span class="cxp-tabs cxp-detail-group" role="tablist"
-            title="Adjust how much detail nodes show (attributes, scalar bodies)">
-        <button class="cxp-detail-tab" data-detail="min"     type="button">Min</button>
-        <button class="cxp-detail-tab is-active" data-detail="compact" type="button">Compact</button>
-        <button class="cxp-detail-tab" data-detail="full"    type="button">Full</button>
+      <span class="cxp-tabs cxp-subject-group" role="tablist"
+            title="Choose the subject: the program you wrote, the value it produced, or both">
+        <button class="cxp-subject-tab is-active" data-subject="source" type="button">Source</button>
+        <button class="cxp-subject-tab"           data-subject="output" type="button">Output</button>
+        <button class="cxp-subject-tab"           data-subject="all"    type="button">All</button>
       </span>
+      <select id="cxp-detail-select" class="cxp-detail-select"
+              title="Adjust how much detail nodes show (attributes, scalar bodies, values)">
+        <option value="min">Detail: min</option>
+        <option value="compact" selected>Detail: compact</option>
+        <option value="full">Detail: full</option>
+      </select>
       <span class="cxp-tabs" role="tablist">
         <button class="cxp-viz-tab is-active" data-viz="tree"  type="button">Tree</button>
         <button class="cxp-viz-tab"           data-viz="graph" type="button">Graph</button>

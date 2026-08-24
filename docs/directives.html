@@ -5,15 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Directive reference — CX Guide</title>
 <link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <aside class="sidebar">
   <a class="brand" href="index.html" aria-label="CX — home">
-    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
   </a>
   <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
   <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
   <a class="brand-sub" href="about.html">About →</a>
   <div class="side-search">
     <input id="side-search-input" type="search"
@@ -21,88 +25,126 @@
            autocomplete="off" spellcheck="false" data-prefix="" />
     <ul id="side-search-results" class="side-search-results" hidden></ul>
   </div>
-  <section><h4>Guide</h4><ul>
+  <section><h4>Start here</h4><ul>
     <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
     <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
     <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
     <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
     <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
     <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
-    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
-    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
-    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
-    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
-    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
-    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
-    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
-    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
     <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
-    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
-    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
-    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
-  </ul></section>
-  <section><h4>Reference</h4><ul>
-    <li><a class="active" href="directives.html">Directives</a></li>
-    <li><a href="syntax.html">Core syntax</a></li>
-  </ul></section>
-  <section><h4>Standard library</h4><ul>
-    <li><a href="libraries.html">Overview</a></li>
-    <li><a href="lib-authz.html">authz</a></li>
-    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
     <li><a href="lib-bytes.html">bytes</a></li>
     <li><a href="lib-crypto.html">crypto</a></li>
     <li><a href="lib-csv.html">csv</a></li>
-    <li><a href="lib-did.html">did</a></li>
-    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
     <li><a href="lib-env.html">env</a></li>
-    <li><a href="lib-fabric.html">fabric</a></li>
     <li><a href="lib-format.html">format</a></li>
     <li><a href="lib-fp.html">fp</a></li>
     <li><a href="lib-ft.html">ft</a></li>
     <li><a href="lib-geo.html">geo</a></li>
     <li><a href="lib-hash.html">hash</a></li>
     <li><a href="lib-html.html">html</a></li>
-    <li><a href="lib-http.html">http</a></li>
     <li><a href="lib-i18n.html">i18n</a></li>
     <li><a href="lib-io.html">io</a></li>
-    <li><a href="lib-journal.html">journal</a></li>
     <li><a href="lib-json.html">json</a></li>
     <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
     <li><a href="lib-jsonschema.html">jsonschema</a></li>
     <li><a href="lib-locale.html">locale</a></li>
     <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
     <li><a href="lib-math.html">math</a></li>
     <li><a href="lib-mime.html">mime</a></li>
-    <li><a href="lib-net.html">net</a></li>
     <li><a href="lib-path.html">path</a></li>
     <li><a href="lib-process.html">process</a></li>
     <li><a href="lib-prof.html">prof</a></li>
     <li><a href="lib-random.html">random</a></li>
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
-    <li><a href="lib-session.html">session</a></li>
     <li><a href="lib-similar.html">similar</a></li>
-    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
     <li><a href="lib-test.html">test</a></li>
     <li><a href="lib-time.html">time</a></li>
     <li><a href="lib-url.html">url</a></li>
     <li><a href="lib-uuid.html">uuid</a></li>
     <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-vc.html">vc</a></li>
     <li><a href="lib-xap.html">xap</a></li>
     <li><a href="lib-xsp.html">xsp</a></li>
-  </ul></section>
-  <section><h4>XAP</h4><ul>
     <li><a href="xap.html">Overview</a></li>
     <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
     <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
     <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
     <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
   </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a class="active" href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
 </aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Directive reference</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
 <main>
 <section id="directives">
   <h1>Directive reference</h1>
@@ -112,7 +154,7 @@
       <h3>
         <code>?match</code>
       </h3>
-      <p class="fn-sig"><code>[?match VALUE [case PAT BODY]… [else …]] -> result</code>  —  Structural pattern dispatch: test a value against ordered [case] arms (literal, wildcard `_`, type guard, binding pattern, [when] guard) and evaluate the first match; single-arm and multi-arm forms.</p>
+      <p class="fn-sig"><code>[?match VALUE [case PAT BODY]… [else …]] -> result</code>  —  Structural pattern dispatch: test a value against ordered [case] arms (literal, wildcard <code>_</code>, type guard, binding pattern, [when] guard) and evaluate the first match; single-arm and multi-arm forms.</p>
       <p class="note">Core — pattern dispatch (single-arm + multi-arm)  ·  §5.2, §8.2</p>
       
         <div class="example">
@@ -180,7 +222,7 @@
       <h3>
         <code>?str</code>
       </h3>
-      <p class="fn-sig"><code>[?str "TEMPLATE"] -> string</code>  —  Compile-time string interpolation: expand `{expr}` holes in a template; `{{` / `}}` are literal braces.</p>
+      <p class="fn-sig"><code>[?str "TEMPLATE"] -> string</code>  —  Compile-time string interpolation: expand <code>{expr}</code> holes in a template; <code>{{</code> / <code>}}</code> are literal braces.</p>
       <p class="note">Core — compile-time string interpolation  ·  §8.12</p>
       
         <div class="example">
@@ -197,7 +239,7 @@
       <h3>
         <code>?element</code>
       </h3>
-      <p class="fn-sig"><code>[?element NAME-EXPR CHILD…] -> element | ()</code>  —  Computed-name element construction: build an element whose name is computed at runtime; an empty `()` name yields absence.</p>
+      <p class="fn-sig"><code>[?element NAME-EXPR CHILD…] -> element | ()</code>  —  Computed-name element construction: build an element whose name is computed at runtime; an empty <code>()</code> name yields absence.</p>
       <p class="note">Core — computed-name element construction  ·  §6.4.2</p>
       
         <div class="example">
@@ -214,7 +256,7 @@
       <h3>
         <code>?attr</code>
       </h3>
-      <p class="fn-sig"><code>[?attr NAME-EXPR VALUE-EXPR] (attr position) -> attribute | omitted</code>  —  Computed-name attribute, valid only in attribute position; an empty `()` name omits the attribute.</p>
+      <p class="fn-sig"><code>[?attr NAME-EXPR VALUE-EXPR] (attr position) -> attribute | omitted</code>  —  Computed-name attribute, valid only in attribute position; an empty <code>()</code> name omits the attribute.</p>
       <p class="note">Core — computed-name attribute (attr position only)  ·  §6.4.2</p>
       
         <div class="example">
@@ -231,8 +273,8 @@
       <h3>
         <code>?entry</code>
       </h3>
-      <p class="fn-sig"><code>{[?entry KEY-EXPR VALUE-EXPR]} -> map entry</code>  —  Computed-key map entry, valid only inside a `{…}` map literal.</p>
-      <p class="note">Core — computed-key map entry (inside `{…}` only)  ·  §6.4.2</p>
+      <p class="fn-sig"><code>{[?entry KEY-EXPR VALUE-EXPR]} -> map entry</code>  —  Computed-key map entry, valid only inside a <code>{…}</code> map literal.</p>
+      <p class="note">Core — computed-key map entry (inside <code>{…}</code> only)  ·  §6.4.2</p>
       
         <div class="example">
           <pre>
@@ -249,7 +291,7 @@
         <code>?name</code>
       </h3>
       <p class="fn-sig"><code>[rename [?name NAME-EXPR]] / [set-attr [?name …] …]</code>  —  Shared computed-name sub-form used inside [rename] and [set-attr] actions to supply a runtime-computed name.</p>
-      <p class="note">Core — shared name sub-form (`set-attr`/`rename`)  ·  §6.4.2</p>
+      <p class="note">Core — shared name sub-form (<code>set-attr</code>/<code>rename</code>)  ·  §6.4.2</p>
       
         <div class="example">
           <pre>
@@ -265,7 +307,7 @@
       <h3>
         <code>?quote</code>
       </h3>
-      <p class="fn-sig"><code>[?quote FORM] -> inert tree</code>  —  Quasiquote: produce FORM as inert data (eager, two-color hygiene); bare `$x` becomes `[cx:var 'x']` rather than dereferencing.</p>
+      <p class="fn-sig"><code>[?quote FORM] -> inert tree</code>  —  Quasiquote: produce FORM as inert data (eager, two-color hygiene); bare <code>$x</code> stays an inert hole <code>$x</code> rather than dereferencing.</p>
       <p class="note">Core — quasiquote (eager; two-color hygiene)  ·  §6.4.3</p>
       
         <div class="example">
@@ -273,7 +315,7 @@
             <code class="language-cx">[?quote [a $x]]</code>
           </pre>
           <pre class="sample-output">
-            <code>[a [cx:var 'x']]</code>
+            <code>[a $x]</code>
           </pre>
         </div>
       
@@ -282,7 +324,7 @@
       <h3>
         <code>?unquote</code>
       </h3>
-      <p class="fn-sig"><code>[?quote […[?unquote EXPR]…]] -> spliced value</code>  —  Quasiquote hole: evaluate EXPR and graft its single value into the surrounding quoted tree; `()` removes the hole.</p>
+      <p class="fn-sig"><code>[?quote […[?unquote EXPR]…]] -> spliced value</code>  —  Quasiquote hole: evaluate EXPR and graft its single value into the surrounding quoted tree; <code>()</code> removes the hole.</p>
       <p class="note">Core — quasiquote hole (single value)  ·  §6.4.3</p>
       
         <div class="example">
@@ -299,7 +341,7 @@
       <h3>
         <code>?splice</code>
       </h3>
-      <p class="fn-sig"><code>[?quote […[?splice EXPR]…]] -> grafted sequence</code>  —  Quasiquote hole: evaluate EXPR and graft its sequence elements in place; `()` grafts nothing.</p>
+      <p class="fn-sig"><code>[?quote […[?splice EXPR]…]] -> grafted sequence</code>  —  Quasiquote hole: evaluate EXPR and graft its sequence elements in place; <code>()</code> grafts nothing.</p>
       <p class="note">Core — quasiquote hole (sequence graft)  ·  §6.4.3</p>
       
         <div class="example">
@@ -316,8 +358,8 @@
       <h3>
         <code>?eval</code>
       </h3>
-      <p class="fn-sig"><code>[?eval TREE [context {…}] [opts {…}]] -> value</code>  —  Tree-eval: evaluate a CX tree as a program in the `cx:eval` sandbox; requires the `eval` capability.</p>
-      <p class="note">Core — tree-eval (reuses `cx:eval` sandbox)  ·  §6.4.4</p>
+      <p class="fn-sig"><code>[?eval TREE [context {…}] [opts {…}]] -> value</code>  —  Tree-eval: evaluate a CX tree as a program in the <code>cx:eval</code> sandbox; requires the <code>eval</code> capability.</p>
+      <p class="note">Core — tree-eval (reuses <code>cx:eval</code> sandbox)  ·  §6.4.4</p>
       
         <div class="example">
           <pre>
@@ -333,7 +375,7 @@
       <h3>
         <code>?for</code>
       </h3>
-      <p class="fn-sig"><code>[?for [in $x SRC] [where …]? CLAUSE… [yield EXPR]] -> sequence</code>  —  For-comprehension over a Sequence outer (D15): generators, [where] filters, [order-by]/[group-by]/[limit], and [yield]; produces a flat Sequence. [where] takes a PREFIX predicate — `[where [= $x/@attr value]]` — which is the reliable form everywhere (also inside `not(…)` and as a node-set predicate `//u[@attr=value]`); a bare infix comparison `[where $x/@attr=value]` is a parse error that points back at the prefix form.</p>
+      <p class="fn-sig"><code>[?for [in $x SRC] [where …]? CLAUSE… [yield EXPR]] -> sequence</code>  —  For-comprehension over a Sequence outer (D15): generators, [where] filters, [order-by]/[group-by]/[limit], and [yield]; produces a flat Sequence. [where] takes a PREFIX predicate — <code>[where [= $x/@attr value]]</code> — which is the reliable form everywhere (also inside <code>not(…)</code> and as a node-set predicate <code>//u[@attr=value]</code>); a bare infix comparison <code>[where $x/@attr=value]</code> is a parse error that points back at the prefix form.</p>
       <p class="note">Core — for-comprehension (Sequence outer; D15)  ·  §7</p>
       
         <div class="example">
@@ -422,7 +464,7 @@
       <h3>
         <code>?def</code>
       </h3>
-      <p class="fn-sig"><code>[?def NAME [scope=…] [pure|impure]? (PARAMS) BODY]</code>  —  Module-level function definition; `scope=public` exports it, purity is declared, and the name is called as `[$NAME …]`.</p>
+      <p class="fn-sig"><code>[?def NAME [scope=…] [pure|impure]? (PARAMS) BODY]</code>  —  Module-level function definition; <code>scope=public</code> exports it, purity is declared, and the name is called as <code>[$NAME …]</code>.</p>
       <p class="note">Module — module-level function  ·  §12.2</p>
       
         <div class="example">
@@ -440,7 +482,7 @@
       <h3>
         <code>?lib</code>
       </h3>
-      <p class="fn-sig"><code>[?lib 'cx-stdlib/MODULE' [as=ALIAS]?]</code>  —  Module import: bind a module (bundled or local) so its public functions are callable as `[$module:fn …]`.</p>
+      <p class="fn-sig"><code>[?lib 'cx-stdlib/MODULE' [as=ALIAS]?]</code>  —  Module import: bind a module (bundled or local) so its public functions are callable as <code>[$module:fn …]</code>.</p>
       <p class="note">Module — module import  ·  §12.1</p>
       
         <div class="example">
@@ -530,8 +572,8 @@ B</code>
       <h3>
         <code>?else</code>
       </h3>
-      <p class="fn-sig"><code>[?else EXPR DEFAULT] -> value-or-default</code>  —  Value-or-default coalesce (getOrElse): yield EXPR unless it is an error or absence `()`, in which case yield DEFAULT.</p>
-      <p class="note">Core — value-or-default coalesce (`getOrElse`; on err + absence)  ·  §8.13</p>
+      <p class="fn-sig"><code>[?else EXPR DEFAULT] -> value-or-default</code>  —  Value-or-default coalesce (getOrElse): yield EXPR unless it is an error or absence <code>()</code>, in which case yield DEFAULT.</p>
+      <p class="note">Core — value-or-default coalesce (<code>getOrElse</code>; on err + absence)  ·  §8.13</p>
       
         <div class="example">
           <pre>
@@ -547,8 +589,8 @@ B</code>
       <h3>
         <code>?pipe</code>
       </h3>
-      <p class="fn-sig"><code>[?pipe VALUE STAGE…] -> result</code>  —  Pipeline (prefix-only): thread a value through bare stages left to right; absence short-circuits, `[tap]` observes without altering flow.</p>
-      <p class="note">Core — pipeline (prefix-only; bare stages; `[tap]`)  ·  §6.4, §8.9</p>
+      <p class="fn-sig"><code>[?pipe VALUE STAGE…] -> result</code>  —  Pipeline (prefix-only): thread a value through bare stages left to right; absence short-circuits, <code>[tap]</code> observes without altering flow.</p>
+      <p class="note">Core — pipeline (prefix-only; bare stages; <code>[tap]</code>)  ·  §6.4, §8.9</p>
       
         <div class="example">
           <pre>
@@ -564,8 +606,8 @@ B</code>
       <h3>
         <code>?map</code>
       </h3>
-      <p class="fn-sig"><code>[?map SRC [using FN] [par]? [ordered]?] -> sequence</code>  —  Map: apply a function over a source, lazily by default; `[par]` runs in parallel and `[ordered]` preserves source order.</p>
-      <p class="note">Core — map (sequential or `[par]`)  ·  §8</p>
+      <p class="fn-sig"><code>[?map SRC [using FN] [par]? [ordered]?] -> sequence</code>  —  Map: apply a function over a source, lazily by default; <code>[par]</code> runs in parallel and <code>[ordered]</code> preserves source order.</p>
+      <p class="note">Core — map (sequential or <code>[par]</code>)  ·  §8</p>
       
         <div class="example">
           <pre>
@@ -582,7 +624,7 @@ B</code>
         <code>?reduce</code>
       </h3>
       <p class="fn-sig"><code>[?reduce SRC [using FN] [init V]] -> value</code>  —  Reduce / left fold: combine the elements of a source with an accumulator function and an initial value.</p>
-      <p class="note">Core — reduce / fold (sequential or `[par]`)  ·  §8</p>
+      <p class="note">Core — reduce / fold (sequential or <code>[par]</code>)  ·  §8</p>
       
         <div class="example">
           <pre>
@@ -616,7 +658,7 @@ B</code>
         <code>?take</code>
       </h3>
       <p class="fn-sig"><code>[?take N SRC] -> iterator</code>  —  Iterator combinator: the first N elements of a source.</p>
-      <p class="note">Iterator stdlib — prefix of `count` items  ·  §8</p>
+      <p class="note">Iterator stdlib — prefix of <code>count</code> items  ·  §8</p>
       
         <div class="example">
           <pre>
@@ -633,7 +675,7 @@ B</code>
         <code>?drop</code>
       </h3>
       <p class="fn-sig"><code>[?drop N SRC] -> iterator</code>  —  Iterator combinator: the source with its first N elements skipped.</p>
-      <p class="note">Iterator stdlib — suffix after `count` items  ·  §8</p>
+      <p class="note">Iterator stdlib — suffix after <code>count</code> items  ·  §8</p>
       
         <div class="example">
           <pre>
@@ -657,7 +699,7 @@ B</code>
             <code class="language-cx">[?zip (1, 2, 3) ("a", "b", "c")]</code>
           </pre>
           <pre class="sample-output">
-            <code>((1, 'a'), (2, 'b'), (3, 'c'))</code>
+            <code>((1, a), (2, b), (3, c))</code>
           </pre>
         </div>
       
@@ -667,14 +709,14 @@ B</code>
         <code>?enumerate</code>
       </h3>
       <p class="fn-sig"><code>[?enumerate SRC] -> iterator of (i, item)</code>  —  Iterator combinator: pair each element with its zero-based index.</p>
-      <p class="note">Iterator stdlib — emit `(i, item)` pairs  ·  §8</p>
+      <p class="note">Iterator stdlib — emit <code>(i, item)</code> pairs  ·  §8</p>
       
         <div class="example">
           <pre>
             <code class="language-cx">[?enumerate ("a", "b", "c")]</code>
           </pre>
           <pre class="sample-output">
-            <code>((0, 'a'), (1, 'b'), (2, 'c'))</code>
+            <code>((0, a), (1, b), (2, c))</code>
           </pre>
         </div>
       
@@ -684,7 +726,7 @@ B</code>
         <code>?chunks</code>
       </h3>
       <p class="fn-sig"><code>[?chunks N SRC] -> iterator of groups</code>  —  Iterator combinator: group consecutive elements into runs of N (the final group may be short).</p>
-      <p class="note">Iterator stdlib — group by `count`  ·  §8</p>
+      <p class="note">Iterator stdlib — group by <code>count</code>  ·  §8</p>
       
         <div class="example">
           <pre>
@@ -713,28 +755,11 @@ B</code>
         </div>
       
     </section>
-    <section id="dir-chain" class="fn">
-      <h3>
-        <code>?chain</code>
-      </h3>
-      <p class="fn-sig"><code>[?chain SRC…] -> iterator</code>  —  Iterator combinator: alias of [?concat] — concatenate sources end to end.</p>
-      <p class="note">Iterator stdlib — alias of `[?concat]`  ·  §8</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?chain (1, 2) (3, 4) (5, 6)]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>(1, 2, 3, 4, 5, 6)</code>
-          </pre>
-        </div>
-      
-    </section>
     <section id="dir-cycle" class="fn">
       <h3>
         <code>?cycle</code>
       </h3>
-      <p class="fn-sig"><code>[?cycle SRC max=N] -> iterator</code>  —  Iterator combinator: repeat a source cyclically, bounded by `max`.</p>
+      <p class="fn-sig"><code>[?cycle SRC max=N] -> iterator</code>  —  Iterator combinator: repeat a source cyclically, bounded by <code>max</code>.</p>
       <p class="note">Iterator stdlib — bounded repeat  ·  §8</p>
       
         <div class="example">
@@ -870,7 +895,7 @@ B</code>
       <h3>
         <code>?view</code>
       </h3>
-      <p class="fn-sig"><code>[?view EXPR] -> view</code>  —  View opt-in: request a zero-copy slice view over a single expression (e.g. `$xs[a:b]`).</p>
+      <p class="fn-sig"><code>[?view EXPR] -> view</code>  —  View opt-in: request a zero-copy slice view over a single expression (e.g. <code>$xs[a:b]</code>).</p>
       <p class="note">View opt-in — zero-copy slice intent on one expr  ·  §8</p>
       
         <div class="example">
@@ -904,7 +929,7 @@ B</code>
       <h3>
         <code>?retry</code>
       </h3>
-      <p class="fn-sig"><code>[?retry max=N [delay=…] [backoff=…] BODY] -> result</code>  —  Resilience: re-run BODY up to `max` attempts on failure, with optional delay/backoff/jitter.</p>
+      <p class="fn-sig"><code>[?retry max=N [delay=…] [backoff=…] BODY] -> result</code>  —  Resilience: re-run BODY up to <code>max</code> attempts on failure, with optional delay/backoff/jitter.</p>
       <p class="note">Resilience  ·  §10.2</p>
       
         <div class="example">
@@ -921,7 +946,7 @@ B</code>
       <h3>
         <code>?timeout</code>
       </h3>
-      <p class="fn-sig"><code>[?timeout DURATION BODY] -> result</code>  —  Resilience: bound BODY by a duration; on elapse yields a timeout error (CXER0141). Enforced against LOGICAL time — `[?sleep DUR mock]` advances the clock and trips it; a real wall-clock-blocking body is NOT interrupted (real-time cancellation requires the production scheduler).</p>
+      <p class="fn-sig"><code>[?timeout DURATION BODY] -> result</code>  —  Resilience: bound BODY by a duration; on elapse yields a timeout error (CXER0141). Enforced against LOGICAL time — <code>[?sleep DUR mock]</code> advances the clock and trips it; a real wall-clock-blocking body is NOT interrupted (real-time cancellation requires the production scheduler).</p>
       <p class="note">Resilience  ·  §10.2</p>
       
         <div class="example">
@@ -955,7 +980,7 @@ B</code>
       <h3>
         <code>?fallback</code>
       </h3>
-      <p class="fn-sig"><code>[?fallback PRIMARY [recover-with ALT]] -> result</code>  —  Resilience: evaluate PRIMARY and, on failure, recover with the [recover-with] branch (which can bind `$err`).</p>
+      <p class="fn-sig"><code>[?fallback PRIMARY [recover-with ALT]] -> result</code>  —  Resilience: evaluate PRIMARY and, on failure, recover with the [recover-with] branch (which can bind <code>$err</code>).</p>
       <p class="note">Resilience  ·  §10.2</p>
       
         <div class="example">
@@ -972,7 +997,7 @@ B</code>
       <h3>
         <code>?rate-limit</code>
       </h3>
-      <p class="fn-sig"><code>[?rate-limit max=N per=DURATION [name=…] BODY] -> result</code>  —  Resilience: admit at most `max` evaluations per window; over-limit calls yield a rate-limit error.</p>
+      <p class="fn-sig"><code>[?rate-limit max=N per=DURATION [name=…] BODY] -> result</code>  —  Resilience: admit at most <code>max</code> evaluations per window; over-limit calls yield a rate-limit error.</p>
       <p class="note">Resilience  ·  §10.2</p>
       
         <div class="example">
@@ -992,7 +1017,7 @@ B</code>
       <h3>
         <code>?bulkhead</code>
       </h3>
-      <p class="fn-sig"><code>[?bulkhead max-concurrent=N queue=Q BODY] -> result</code>  —  Resilience (EXPERIMENTAL): cap concurrent executions at `max-concurrent`; saturation yields CXER0152. Immediate-reject works, but the bounded `queue`/backpressure engages ONLY under the cooperative scheduler (`[?test-concurrent]`) and the slot cap is not reliably enforced under real thread contention. Not the `[par]` bounding mechanism (#94 — `[par N]` owns width); for production load-shedding prefer `[?rate-limit]` or a buffered `[?channel]`.</p>
+      <p class="fn-sig"><code>[?bulkhead max-concurrent=N queue=Q BODY] -> result</code>  —  Resilience (EXPERIMENTAL): cap concurrent executions at <code>max-concurrent</code>; saturation yields CXER0152. Immediate-reject works, but the bounded <code>queue</code>/backpressure engages ONLY under the cooperative scheduler (<code>[?test-concurrent]</code>) and the slot cap is not reliably enforced under real thread contention. Not the <code>[par]</code> bounding mechanism (#94 — <code>[par N]</code> owns width); for production load-shedding prefer <code>[?rate-limit]</code> or a buffered <code>[?channel]</code>.</p>
       <p class="note">Resilience  ·  §10.2</p>
       
         <div class="example">
@@ -1093,6 +1118,22 @@ B</code>
         </div>
       
     </section>
+    <section id="dir-subscribe" class="fn">
+      <h3>
+        <code>?subscribe</code>
+      </h3>
+      <p class="fn-sig"><code>[?subscribe from=CH from-pos=INT] -> subscription</code>  —  Concurrency (SPEC'D, not yet shipped — #762): subscribe to a <code>sharing=independent</code> channel and receive a per-consumer cursor (the delivery contract, delivery.md); <code>from-pos=</code> resumes within the retained window, a cursor below the window refuses loudly with CXER0205 (STREAM_GAP), and a group channel refuses with CXER0204. No runnable example until #762 lands.</p>
+      <p class="note">Concurrency  ·  §10.4</p>
+      
+    </section>
+    <section id="dir-monitor" class="fn">
+      <h3>
+        <code>?monitor</code>
+      </h3>
+      <p class="fn-sig"><code>[?monitor $h] -> subscription</code>  —  Concurrency (SPEC'D, not yet shipped — #762): subscribe to a worker handle's ordered lifecycle events (<code>[spawned]</code>, <code>[cancelled]</code>, <code>[panicked]</code>, <code>[done]</code>); a terminal event is always last, monitoring an already-terminated worker delivers its terminal event immediately (race-free supervision), and monitor subscriptions compose with <code>[?select]</code>. No runnable example until #762 lands.</p>
+      <p class="note">Concurrency  ·  §10.4</p>
+      
+    </section>
     <section id="dir-channel" class="fn">
       <h3>
         <code>?channel</code>
@@ -1187,10 +1228,10 @@ B</code>
       
         <div class="example">
           <pre>
-            <code class="language-cx">[?let [= $ch [?channel name="c4" buffer=2]] [= $_ [?send "a" to=$ch]] [= $_ [?close $ch]] [= $first [?receive from=$ch]] [= $second [?receive from=$ch]] ([r1 $first], [r2 $second])]</code>
+            <code class="language-cx">[?let [= $ch [?channel name="c4" buffer=2]] [= $_ [?send "a" to=$ch]] [= $_ [?close $ch]] [= $first [?receive from=$ch]] [= $second [?receive from=$ch]] ($first, $second)]</code>
           </pre>
           <pre class="sample-output">
-            <code>([r1 'a'], [r2 [err code=cx-err:CXER0200 message='channel closed']])</code>
+            <code>(a, [err code=cx-err:CXER0200 message='channel closed'])</code>
           </pre>
         </div>
       
@@ -1327,10 +1368,10 @@ B</code>
       
         <div class="example">
           <pre>
-            <code class="language-cx">[?let [= $fast [?async fast]] [= $slow [?async [?let [= $_ [?sleep 10s mock]] slow]]] [= $winner [?await-race ($fast, $slow)]] [= $slow-state [?await $slow]] [pair [winner $winner] [slow-state $slow-state]]]</code>
+            <code class="language-cx">[?let [= $fast [?async fast]] [= $slow [?async [?let [= $_ [?sleep 10s mock]] slow]]] [= $winner [?await-race ($fast, $slow)]] [= $slow-state [?await $slow]] ($winner, $slow-state)]</code>
           </pre>
           <pre class="sample-output">
-            <code>[pair [winner 'fast'] [slow-state [err code=cx-err:CXER0260 message='operation cancelled']]]</code>
+            <code>(fast, [err code=cx-err:CXER0260 message='operation cancelled'])</code>
           </pre>
         </div>
       
@@ -1377,7 +1418,7 @@ B</code>
       <h3>
         <code>?sleep</code>
       </h3>
-      <p class="fn-sig"><code>[?sleep DURATION [mock]?] -> [ok]</code>  —  Async: pause for a duration; the `mock` flag uses the deterministic mock clock.</p>
+      <p class="fn-sig"><code>[?sleep DURATION [mock]?] -> [ok]</code>  —  Async: pause for a duration; the <code>mock</code> flag uses the deterministic mock clock.</p>
       <p class="note">Async  ·  §10.5</p>
       
         <div class="example">
@@ -1412,7 +1453,7 @@ B</code>
         <code>?with-caps</code>
       </h3>
       <p class="fn-sig"><code>[?with-caps [deny CAP]… BODY] -> result</code>  —  Core: narrow capabilities for the dynamic extent of BODY (deny-only); BODY runs with the reduced authority.</p>
-      <p class="note">Core — capability narrowing (deny-only)  ·  `security.md` §3</p>
+      <p class="note">Core — capability narrowing (deny-only)  ·  <code>security.md</code> §3</p>
       
         <div class="example">
           <pre>
@@ -1435,8 +1476,8 @@ B</code>
       <h3>
         <code>?secret</code>
       </h3>
-      <p class="fn-sig"><code>[?secret VALUE] -> secret</code>  —  Core: mark a value as secret so it renders redacted (`‹redacted›`) at boundaries.</p>
-      <p class="note">Core — mark a value secret (redacted at boundaries)  ·  `cxdm.md` §12</p>
+      <p class="fn-sig"><code>[?secret VALUE] -> secret</code>  —  Core: mark a value as secret so it renders redacted (<code>‹redacted›</code>) at boundaries.</p>
+      <p class="note">Core — mark a value secret (redacted at boundaries)  ·  <code>cxdm.md</code> §12</p>
       
         <div class="example">
           <pre>
@@ -1452,8 +1493,8 @@ B</code>
       <h3>
         <code>?reveal</code>
       </h3>
-      <p class="fn-sig"><code>[?reveal SECRET] -> cleartext</code>  —  Core: declassify a secret to its cleartext; gated by the `secret-reveal` capability.</p>
-      <p class="note">Core — declassify a secret (gated by `secret-reveal`)  ·  `cxdm.md` §12</p>
+      <p class="fn-sig"><code>[?reveal SECRET] -> cleartext</code>  —  Core: declassify a secret to its cleartext; gated by the <code>secret-reveal</code> capability.</p>
+      <p class="note">Core — declassify a secret (gated by <code>secret-reveal</code>)  ·  <code>cxdm.md</code> §12</p>
       
         <div class="example">
           <pre>
@@ -1469,7 +1510,7 @@ B</code>
       <h3>
         <code>?meta</code>
       </h3>
-      <p class="fn-sig"><code>[?meta {KEY: VALUE…} FORM] -> FORM</code>  —  Core: attach an inert metadata map to the value of FORM; the value is unchanged and only `meta-of` and the XML serializer observe the map.</p>
+      <p class="fn-sig"><code>[?meta {KEY: VALUE…} FORM] -> FORM</code>  —  Core: attach an inert metadata map to the value of FORM; the value is unchanged and only <code>meta-of</code> and the XML serializer observe the map.</p>
       <p class="note">Core — inert metadata annotation on a value  ·  §4.2</p>
       
         <div class="example">
@@ -1485,6 +1526,13 @@ B</code>
   
 </section>
 </main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>Directive reference</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
 <script src="highlight/highlight.js" defer></script>
 <script src="search-index.js" defer></script>
 <script src="search/search.js" defer></script>

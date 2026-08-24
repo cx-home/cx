@@ -2,15 +2,15 @@
    Demonstrates the namespace bearer pattern: xmlns: as an
    inherited attribute scoped to the declaring element and descendants. ]
 
-[chapter id=getting-started lang=en xmlns=https://cxhome.org/ns/doc xmlns:dc=http://purl.org/dc/elements/1.1/
+[chapter id=getting-started lang=en xmlns=tag:cxhome.org,2026:ns/doc xmlns:dc=http://purl.org/dc/elements/1.1/
   [title Getting Started with CX]
   [meta
     [; prefixed names resolve to the http://purl.org/dc URI at parse time ]
     [dc:author Erik Paulson]
     [dc:date 2026-04-20]
     [dc:identifier urn:cx:chapter:getting-started]
-    [version ::string 1.0]                # forced :string so 1.0 stays "1.0", not float 1
-    [keywords ::string[] cx format tutorial getting-started]
+    [version::string 1.0]                # forced :string so 1.0 stays "1.0", not float 1
+    [keywords::string[] cx format tutorial getting-started]
   ]
 
   [abstract

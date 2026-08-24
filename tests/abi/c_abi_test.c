@@ -345,7 +345,7 @@ static void test_arrow_null_inputs(void) {
 
 static const char SAMPLE_VALIDATE_DOC[] = "[server host='localhost' port=8080]";
 static const char SAMPLE_VALIDATE_SCHEMA[] =
-    "[?cx schema-of server]\n"
+    "[schema of=server]\n"
     "[server\n"
     "  [body elem]\n"
     "  [attr host::string [req]]\n"
@@ -355,7 +355,7 @@ static const char SAMPLE_VALIDATE_SCHEMA[] =
 static const char SAMPLE_VALIDATE_BAD_DOC[] = "[server port=8080]"; /* missing host */
 
 static const char SAMPLE_VALIDATE_RE2_SCHEMA[] =
-    "[?cx schema-of x]\n"
+    "[schema of=x]\n"
     "[x\n"
     "  [body elem]\n"
     "  [attr name::string [pattern '\\w+']]\n"

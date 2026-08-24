@@ -336,7 +336,7 @@
                 },
                 {
                   "type": "STRING",
-                  "value": "takewhile"
+                  "value": "take-while"
                 },
                 {
                   "type": "STRING",
@@ -344,7 +344,7 @@
                 },
                 {
                   "type": "STRING",
-                  "value": "dropwhile"
+                  "value": "drop-while"
                 },
                 {
                   "type": "STRING",
@@ -356,7 +356,7 @@
                 },
                 {
                   "type": "STRING",
-                  "value": "stream"
+                  "value": "lazy"
                 },
                 {
                   "type": "STRING",
@@ -2953,6 +2953,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "tagged_address"
+        },
+        {
+          "type": "SYMBOL",
           "name": "unquoted_value"
         },
         {
@@ -3014,6 +3018,68 @@
     "unquoted_value": {
       "type": "PATTERN",
       "value": "[^\\s\\[\\]\"']+"
+    },
+    "tagged_address": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 3,
+        "content": {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "STRING",
+                      "value": "code:"
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "STRING",
+                      "value": "sha2-256"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "sha2-384"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "sha2-512"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": "blake3"
+                    }
+                  ]
+                },
+                {
+                  "type": "STRING",
+                  "value": ":"
+                },
+                {
+                  "type": "PATTERN",
+                  "value": "[0-9a-f]{8}[0-9a-f]*"
+                }
+              ]
+            },
+            {
+              "type": "STRING",
+              "value": "genesis:"
+            }
+          ]
+        }
+      }
     },
     "tag_name": {
       "type": "PATTERN",
@@ -3129,6 +3195,10 @@
         {
           "type": "SYMBOL",
           "name": "atom_literal"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "tagged_address"
         },
         {
           "type": "SYMBOL",

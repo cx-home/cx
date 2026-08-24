@@ -30,7 +30,7 @@ Content-addressed put/get/has/list keyed by store hash. Every backend implements
 | `Queryable` | index-aware CXPath name-step query planning | ✅ #87 |
 | `FullText` | stored inverted index + search | ✅ #86 (code layer) |
 | `Compactable` | reachability GC + retention compaction | ✅ #81 |
-| `Transactional` | a real per-backend transaction (§3) | backend-specific |
+| ~~`Transactional`~~ | AMENDED (stream 7 L127, #714): no spec'd backend advertises a transaction trait today, and the spec corpus carries no isolation vocabulary — the claim is superseded by the consistency vocabulary (`consistency_vocabulary.md`). Single-backend transactionality re-enters, if ever, as a declarable consistency token when a spec'd backend actually advertises it. | — |
 | `Columnar` | columnar analytical scan (§6) | plugin |
 
 **Negotiation.** Callers test capabilities (`is_indexed`, `is_queryable`, …) and choose a path. A request needing an absent capability **degrades with a visible signal or errors clearly** — it never silently produces a flattened/partial result. This promotes the existing coarse `[$store:capabilities]` / CSRP read/write/list flags to typed traits.
@@ -56,7 +56,7 @@ A transaction context spans **multiple backends + other state-changing ops**. It
 
 **Resolved (open question 3): saga/compensating + per-backend ACID; no cross-backend 2PC.** True heterogeneous-backend 2PC ACID is not generally possible, so it is **not** offered. Instead:
 
-- **Single-backend ACID** where the backend supports it — advertised via the `Transactional` capability (the native engine's ref-log CAS gives linearizable single-ref commit; SQL engines give real local transactions).
+- **Single-backend transactionality** — AMENDED (stream 7 L127, #714): the former "single-backend ACID via the `Transactional` capability" claim is superseded by the consistency vocabulary; no spec'd backend advertises it today, and the spec inventory records isolation vocabulary appearing nowhere. What IS true and spec'd: the native engine's ref-log CAS gives linearizable single-ref commit (`expect=` conditional writes). A transactionality advert re-enters, if ever, as a declarable consistency token.
 - **Cross-backend unit-of-work** = a **saga**: an ordered set of per-backend steps with registered **compensating actions**; on failure, completed steps are compensated in reverse. Visibility over partial completion is explicit (no silent half-commit).
 - The native engine's content-addressed writes are **idempotent** (same content → same hash), which makes retries and compensation safe by construction.
 

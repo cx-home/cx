@@ -4,9 +4,9 @@
 [; Point $store:open at any writable backend (file:// / remote         ]
 [; cx-store(+grpc)://).                                                            ]
 [;                                                                                 ]
-[; BOTH data and code are ingested (#128-A):                                       ]
+[; BOTH data and code are ingested (F1' identity-rule split):                      ]
 [;   .cxd DATA  -> put-doc-text  (content hash; subtree-dedup on cxpack)           ]
-[;   .cx  CODE  -> put-def       (Tier-2 code identity; alpha-variants dedup)      ]
+[;   .cx  CODE  -> put-blob      (OPAQUE document: raw-byte identity, BYTE-EXACT)    ]
 [?lib 'cx-stdlib/io' :as io]
 [?lib 'cx-stdlib/store' :as store]
 [?let
@@ -22,6 +22,6 @@
           [else
             [?if [and $e@is-file [$str-ends-with $e@path ".cx"]]
               [then
-                [?let [= $h [$store:put-def $c [$io:read-file $e@path]]]
+                [?let [= $h [$store:put-blob $c [$io:read-file $e@path]]]
                   [stored kind=code path=$e@path hash=$h
                     [aliased [$store:set-alias $c $e@path $h]]]]]]]]]]]]

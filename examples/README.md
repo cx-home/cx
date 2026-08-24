@@ -26,10 +26,10 @@ build flags, no scaffolding. Two kinds of file live here:
 | [`embedding_test.cx`](embedding_test.cx) | Foreign-syntax code blocks via `[# … #]` raw text | `cx examples/embedding_test.cx` | passing |
 | [`vcore.cx`](vcore.cx) | Core-grammar showcase, one canonical sample per feature | `cx examples/vcore.cx` | passing |
 | [`cx-tour.cx`](cx-tour.cx) | FORMAT tour — every structural feature in one document | `cx examples/cx-tour.cx` | passing |
-| [`code-tour.cx`](code-tour.cx) | CODE tour — every core directive | `cx examples/code-tour.cx --data=examples/code-tour.input.cx` | passing |
-| [`cxpath-tour.cx`](cxpath-tour.cx) | CXPath tour — every axis and predicate kind | `cx examples/cxpath-tour.cx --data=examples/cxpath-tour.input.cx` | passing |
-| [`match-multi.cx`](match-multi.cx) | Multi-arm `[?match]` — case/when/else, patterns, wildcard | `cx examples/match-multi.cx --data=examples/match-multi.input.cx` | passing |
-| [`modify-crud.cx`](modify-crud.cx) | Pure-functional CRUD via `[?modify]` | `cx examples/modify-crud.cx --data=examples/modify-crud.input.cx` | passing |
+| [`code-tour.cx`](code-tour.cx) | CODE tour — every core directive | `cx --data=examples/code-tour.input.cx examples/code-tour.cx` | passing |
+| [`cxpath-tour.cx`](cxpath-tour.cx) | CXPath tour — every axis and predicate kind | `cx --data=examples/cxpath-tour.input.cx examples/cxpath-tour.cx` | passing |
+| [`match-multi.cx`](match-multi.cx) | Multi-arm `[?match]` — case/when/else, patterns, wildcard | `cx --data=examples/match-multi.input.cx examples/match-multi.cx` | passing |
+| [`modify-crud.cx`](modify-crud.cx) | Pure-functional CRUD via `[?modify]` | `cx --data=examples/modify-crud.input.cx examples/modify-crud.cx` | passing |
 | [`validate/`](validate/) | `.cxs` schema + `cx validate` — pass and fail runs with exact diagnostics | see [`validate/README.md`](validate/README.md) | passing |
 | [`comparisons/`](comparisons/) | CX vs JSON/YAML/CSV side-by-side, per-lane trade-offs | see [`comparisons/README.md`](comparisons/README.md) | passing |
 | [`cx/`](cx/) | Two tiny data fixtures (`greet.cx`, `users.cx`) | `cx examples/cx/users.cx` | passing |
@@ -40,7 +40,7 @@ build flags, no scaffolding. Two kinds of file live here:
 
 The four tours ship a `*.input.cx` companion (`code-tour`, `cxpath-tour`,
 `match-multi`, `modify-crud`). The documented
-`cx TOUR.cx --data=TOUR.input.cx` run line binds the companion as
+`cx --data=TOUR.input.cx TOUR.cx` run line binds the companion as
 `$doc` / `$input` (the [#415](https://github.com/cx-home/cx-private/issues/415)
 decision: the run surface takes `--data=`, and unknown flags are hard
 errors instead of silent no-ops). The tours are document-driven —

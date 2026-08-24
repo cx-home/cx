@@ -1,0 +1,116 @@
+# Reference: the CX data language — v{{VERSION}}
+
+> **GENERATED.** Source: `docs-src/llm/reference-data-language.md.tmpl` + the
+> conformance corpus. Every output was re-recorded from the `cx` v{{VERSION}}
+> binary. Read `primer.md` first.
+
+This is Ring 0: the reading, the canonical form, and the conversions. No
+evaluator exists in this ring, so nothing here can execute.
+
+## Elements
+
+A document is a sequence of elements. An element is `[name …]` with optional
+attributes and children; children may be elements, text, or collections.
+
+{{EXAMPLE:005-element-attrs-text block}}
+
+Attribute order is not significant to equality; the canonical form fixes one
+order so that hashing and diffing are stable.
+
+## Scalars and auto-typing
+
+Bare tokens are typed on read. `true`/`false` are booleans, integer and
+float literals are numbers, `null` is the explicit null, and anything else
+is an atom. Quoting suppresses all of it and gives you a string.
+
+{{EXAMPLE:028-bool-scalar-autotype block}}
+
+A value that must survive as text — a version number, an id with dots, a URL
+— has to be quoted, and the canonical form keeps the quotes:
+
+{{EXAMPLE:831-collection-item-string-stays-program-readable block}}
+
+## Text, mixed content, and raw text
+
+Text children and element children can interleave.
+
+{{EXAMPLE:007-mixed-content block}}
+
+Raw text is written `[# … #]` and is **opaque**: no entity expansion, no
+escaping, no reinterpretation. It is how CX carries a payload in another
+language — SQL, a shell script, a regex, prose with brackets in it — without
+the reader touching a byte. `[$text]` cannot see inside a raw block; the
+serialization is its defined byte-exact projection, which is why tooling that
+needs the payload (including the generator that produced this page) reads it
+by serializing and stripping the delimiters. The corresponding fixture is
+`012-rawtext` in `conformance/core.cxd`; it cannot be *shown* here, because a
+raw block containing raw-block delimiters is exactly the case that defeats
+that extraction — and this layer refuses to print a fixture it cannot
+reproduce byte-exactly.
+
+## Namespaces
+
+A `ns:name` head or attribute is namespaced. Namespaces are part of identity:
+two documents differing only in prefix binding are not equal.
+
+{{EXAMPLE:018-namespaces block}}
+
+## Anchors and references (identity)
+
+`@name` declares an anchor; a reference resolves to the anchored node.
+Forward references resolve — the document is not read strictly top-to-bottom
+for identity purposes.
+
+{{EXAMPLE:id-004-forward-reference-resolves block}}
+
+## Tables
+
+`[table[…]]` is the columnar block: typed columns, rows as records. It is a
+first-class data form, not a convention over elements, which is what lets
+`cx table` project it to Parquet/Arrow without guessing.
+
+{{EXAMPLE:tab-001-typed-columns block}}
+
+## Conversions
+
+The data reading round-trips to and from XML, JSON, YAML, TOML, CSV/TSV/PSV
+and Markdown. `--lossless` adds the markers that make the round trip
+byte-identical rather than merely equivalent.
+
+```console
+cx --from=json --to=cx in.json
+cx --from=cx --to=xml doc.cx
+cx --from=cx --to=json --lossless doc.cx    # re-imports byte-identically
+cx --xml doc.cx                             # projection shorthand
+```
+
+The XML lane is the one to check your mental model against, because the two
+models are close but not identical:
+
+{{EXAMPLE:003-element-attrs block}}
+
+## Canonical form, equality, hashing, diffing
+
+Ring 0's whole value proposition is that these four agree:
+
+```console
+cx canonical doc.cx      # strict canonical text (presentation stripped)
+cx fmt doc.cx            # lossless format (comments and anchors preserved)
+cx hash doc.cx           # SHA-256 of the strict-canonical bytes
+cx eq a.cx b.cx          # exit 0 iff canonical(a) == canonical(b)
+cx diff a.cx b.cx        # semantic diff over the canonical forms
+```
+
+`cx fmt` and `cx canonical` are different tools on purpose: `fmt` is what you
+run on source, `canonical` is what identity is defined over.
+
+## Schemas
+
+`.cxs` files describe documents; `cx validate` checks one against a schema,
+`cx schema infer` derives a schema from a corpus, and `cx schema export`
+projects it to JSON Schema.
+
+```console
+cx validate doc.cx --schema=shape.cxs
+cx schema infer corpus/*.cx
+```

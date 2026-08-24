@@ -322,6 +322,39 @@ _lib.cx_code_eval_streaming.argtypes = [
     ctypes.POINTER(ctypes.c_char_p),  # err_out
 ]
 
+_lib.cx_code_eval_streamable.restype  = ctypes.c_int
+_lib.cx_code_eval_streamable.argtypes = [
+    ctypes.c_char_p, ctypes.c_size_t, # program, program_len
+    ctypes.c_char_p,                  # output_target
+]
+
+
+def eval_code_streamable(program: str, output_target: str = "") -> bool:
+    """Report whether `eval_code_streaming` will actually deliver this
+    (program, output_target) INCREMENTALLY, without evaluating anything.
+
+    Streaming engages only for a top-level `[?for …]` comprehension (or
+    a `[?map]` directive) rendered to the `text` / `cx` targets, and
+    only when the comprehension carries no `order-by` / `group-by` —
+    those must see the whole result set before emitting, so they can
+    never stream.
+
+    For every other shape `eval_code_streaming` silently falls back to
+    one-shot evaluation: output is still byte-identical, but the WHOLE
+    result is materialised in memory and delivered as a single chunk.
+    Chunk count cannot tell you this apart (a small streamed result is
+    also one chunk), so ask here first when the input is large enough
+    for the difference to matter.
+
+    Returns False for a program that does not parse — the streaming
+    call would surface that parse error on the one-shot path.
+    """
+    prog_b = program.encode()
+    return bool(_lib.cx_code_eval_streamable(
+        prog_b, len(prog_b),
+        output_target.encode() if output_target else None,
+    ))
+
 
 def eval_code(input_cx: str, program: str, output_target: str = "") -> str:
     """Evaluate a CX program against an optional CX input document.
@@ -358,9 +391,10 @@ def eval_code_caps(input_cx: str, program: str, caps: str,
 
     `caps` is a deny-by-default grant spec (security.md): '' ⇒ pure-only
     (the spec default), 'all'/'*' ⇒ full grant, otherwise a comma/space
-    separated list such as 'net', 'read,write', or the forward-compatible
-    resource form 'net:host:443' (the ABI currently enforces the bare
-    capability; per-resource scoping is a tracked follow-up). The grant is
+    separated list such as 'net', 'read,write', or the scoped form
+    'net=host:443' (the one scope spelling — L114; `net` is enforced
+    host-scoped, other per-resource scopes are a tracked follow-up). An
+    unknown capability name is a typed CXER0274 error (#713). The grant is
     reset to empty after the call, so it never leaks into a later evaluation.
 
     Used by the CSRP client wrappers (cxlib.store) to run the cx-store://
@@ -600,7 +634,9 @@ def canonical(cx_str: str) -> str:
     return _call(_lib.cx_canonical, cx_str)
 
 def hash(cx_str: str) -> str:
-    """SHA-256 hex (64 lowercase hex chars) of the strict canonical bytes."""
+    """Tagged content address of the strict canonical bytes — I1 identity
+    epoch form `sha2-256:<64 lowercase hex chars>` (the tag is part of the
+    address)."""
     return _call(_lib.cx_hash, cx_str)
 
 # cx_eq has a 2-input signature; use the dedicated DllImport entry.

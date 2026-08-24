@@ -317,6 +317,7 @@ same fabric-subscribe → receive → emit pump with per-app offset/ack
 semantics. `sources` moves that pump into the runtime:
 
 ```cx
+# verify-skip — illustrative fragment: `…` marks caller-supplied values
 [$xap:run {tenant: "acme"
            sources: [{fabric: "xsp://127.0.0.1:8447", stream: "evidence",
                       group: "xap-worker", verb: :evidence,
@@ -422,7 +423,13 @@ loaded snapshot. Impure because it reads the live state; the result is a
   `opts.actor` / `opts.authority` name the emitter + grant basis (default: the
   `opts.session`'s principal); `opts.dry-run=true` runs the cascade against
   `[$journal:replay]` **without committing** (the §22.10/§20 dry-run — deterministic
-  over log + policy stack), returning the would-be event(s) for preview.
+  over log + policy stack). **The dry-run result IS a proposal value**
+  (commands and effects, stream 6 — L113: propose mode is `emit dry-run`
+  generalized; there is no second preview machinery): the would-be
+  event(s) ride inside a `[proposal …]`-shaped, Tier-1-addressable
+  value, so a boundary can hold it for out-of-band approval and a
+  later commit binds the exact previewed address (`modules/cx.md`
+  `cx:propose`; approval/commit verbs in `std-lib/authz.md` §3.9).
 - **`after`** schedules `$intent` to be emitted after `$dur` via the http timer
   enhancement (§0); returns a cancelable timer handle. Used for incapacity
   windows (`no-ack-within "10m"`) + lifecycle (§25.1). A
@@ -682,7 +689,7 @@ value** (§2.4) — not a directive, not opaque code:
 
 ```cx
 [$xap:component order-card
-  {props: {order: ::ref  compact: ::bool}               # typed inputs (slice-in)
+  {props: {order: ::string  compact: ::bool}            # typed inputs (slice-in)
    bind: "/orders[= @/id $props/order]"                 # CXPath state-slice it reads
    emits: ([do :open $_], [do :cancel $_])              # the controls it offers (intent-vocabulary-out)
    view: [?fn ($o) [panel [heading $o/title]]]          # pure projection (view-tree-out)
@@ -696,7 +703,12 @@ value** (§2.4) — not a directive, not opaque code:
   *is* a capability set** (§17/§18.1/§22), so agent-operating a
   panel = holding delegated capabilities for its controls.
 - **`view`** — the **pure** projection from slice to view tree (medium-agnostic,
-  §2.5).
+  §2.5). The view-tree NODE VOCABULARY the serializers carry is
+  `panel` / `heading` / `list` / `control` / `text` / `table`
+  (`[table [head [cell …]…] [row [cell …]…]…]`, added RULED: ATC-2
+  2026-08-20 — every medium's serializer carries all six; the
+  `application/cx` leg carries `table` as data for agent parity).
+  Additions are individual rulings.
 - **`working-panel`** — `:none` for a plain **view** (the thin 95 %), or a
   `[kind …]` for an interactive **working panel** (the 5 %, §18) declaring one of the v1 kinds (`data-grid`, `board`, `canvas/graph`,
   `chart-with-brushing`, `inline-editor`) with its `(read-model,
@@ -785,7 +797,15 @@ under restored caps.
 
 Footnotes: **1** a surface is medium-agnostic (§13.2) — HTML/CX
 are two renderers; speech/haptic/physical media materialize the *same* view tree
-(Appendix C). **2** the working panel's `(read-model, control-vocabulary)` is the
+(Appendix C). **Materializer status (#320, stated here so the claim cannot be
+read as shipped):** web and terminal are the LIVE materialization paths. A
+surface may DECLARE audio/haptic/physical media today and the declaration is
+carried, validated and projected as data — but no runtime materializer for
+those media exists yet, so declaring one produces no device output. The seam
+(surface-media → device mapping, adapter plug-in point, capability gating for
+device access) is reserved, not implemented; medium-agnosticism is a property
+of the view tree, which is why adding a materializer later changes no surface
+document. **2** the working panel's `(read-model, control-vocabulary)` is the
 agent's view — the agent operates it via `[do …]` data, never pixels (§18.1). **3** the resolver interface is impl-pluggable (§20); the LLM leg is the
 real-use, **empirically-unproven** prediction-accuracy gate (§20, §26) — supported by interface, gated by evidence. **4** semi-/full-auto is a
 scoped attenuating delegation clamped to the envelope (§21, authz). **5** the dial
@@ -805,15 +825,27 @@ WebSocket/CRDT, the dial/guardian split) are justified above and pinned by
 negative/skip fixtures — each a **documented limit of this revision**, not an open
 cell.
 
-## §8. Error codes — `CXER4850–CXER4949` band (proposed allocation)
+## §8. Error codes — `CXER4850–CXER4889` band (registered allocation)
 
-`CXER4850–CXER4949` is the **proposed allocation** for `cx-xap` in the
-governance registry ([`governance.md`](../process/governance.md) §9.6) — the next
-free block above `cx-stdlib/http`'s `CXER4525–4543` (the `4544–4849` gap is left
-unallocated for net/http growth + the bus/journal/authz/session siblings, which
-claim their own bands at their graduations). This revision uses
-`CXER4850–CXER4863`. All values use `cx-err:` notation; symbolic↔wire is 1:1
-(governance invariant). **Cancellation is the core `CXER0260`, not an xap code**
+`CXER4850–CXER4889` is the **registered allocation** for the `cx-xap`
+subsystem in the governance registry
+([`governance.md`](../process/governance.md) §9.6): `4850–4879` for the
+xap host/runtime (incl. the compose surface), `4880–4889` for xap-dist.
+
+**Amendment (2026-08-05, adversarial-audit finding C5).** The original
+§8 text *proposed* `CXER4850–CXER4949` but the proposal was never
+registered, and two sibling modules shipped codes inside it
+(`similar`'s `CXER4900–4901`; `fabric`'s `CXER4920+`). This revision
+amends the allocation in place: `cx-xap` keeps `4850–4889` (shipped
+codes reach `4873` and `4889`), and **yields `4890–4949`** — of which
+`4900–4901` is registered to `similar` (island) and `4920–4949` to
+`fabric`; `4890–4899`, `4902–4919`, and `4937–4949` return to the
+unallocated pool, allocatable only via a new §9.6 row. No shipped code
+moves; this records reality and closes the two-owners-in-one-range
+defect.
+
+All values use `cx-err:` notation; symbolic↔wire is 1:1 (governance
+invariant). **Cancellation is the core `CXER0260`, not an xap code**
 (§6).
 
 | Code | Symbol | Raised when |
@@ -928,10 +960,29 @@ cap) → `CXER0271` exercised through http/io/process.
 - [ ] **Empirical resolver-accuracy gate** (§20, §26) — the
       one **on-real-use** gate before graduation: the resolver's *prediction
       accuracy* over time. On-paper completeness is not sufficient.
-- [ ] **Governance registry** ([`governance.md`](../process/governance.md) §9.6):
-      register `CXER4850–CXER4949 | cx-xap | spec/03-approved/xap/xap.md` under a **`cx-xap`
-      subsystem** entry (not under `cx-stdlib`); re-run the band scan (confirm no
-      overlap with http's `CXER4525–4543`).
+      **Evidence ledger (gate stays OPEN):**
+      - *2026-08-03 (#669):* external deployment evidence was submitted and
+        reviewed on the tracker. It demonstrates a judgment layer scoring
+        methodology (held-out seeding, hidden-latent recovery rather than
+        generator fit, a mechanical learning-the-generator guard, and
+        unresolved-cases-only accuracy as the headline) — a workable §26
+        harness *shape*. It does **not** evidence resolver-*interface*
+        accuracy: the producing deployment ranks outside the §3.6 resolver
+        hook, and no real-use `[resolution-response …]` data flows, so the
+        §20.1 ramp's real-use leg remains unevidenced. Earlier informal
+        accuracy figures circulated on the tracker (#535 era) are superseded
+        and must not be cited. External data, code, harnesses, and corpora
+        are **not** reproduced or imported in-tree — cx carries no
+        downstream dependencies; any fixture that closes this gate will be
+        cx-authored. The submission itself remains on the tracker.
+- [x] **Governance registry** ([`governance.md`](../process/governance.md) §9.6):
+      DONE 2026-08-05 (audit C5 repair) — registered as
+      `CXER4850–CXER4889 | cx-xap subsystem | spec/03-approved/xap/xap.md §8`
+      (not under `cx-stdlib`); the original `–4949` proposal was amended in
+      place (see §8's amendment note: 4890–4949 yielded; similar island
+      4900–4901 + fabric 4920–4949 registered). Band scan re-run via
+      `scripts/cxer_registry_report.sh` — no overlap with http's
+      `CXER4525–4589`.
 - [ ] **Package registration (see §12) — NOT a stdlib count bump.** `cx-xap` is its
       **own bundled package**, parallel to `cx-stdlib`: add the `bundled:<version>`
       lockfile shape + `[?lib 'cx-xap']` resolution, and add `'cx-xap'` to the
@@ -1154,7 +1205,7 @@ a view materialized in audio). **`medium` is never aliased to "channel"** —
 
 - **Medium** — whatever materializes a surface and carries interaction: a screen,
   yes, but equally **speech, haptics, a physical button set, a gesture, stepping
-  through a door, ambient light, a car dashboard, a boat's tiller.**
+  through a door, ambient light, a car dashboard, a machine's physical controls.**
 - **Materialize** (v.) — to render a surface *into* a medium. *The same surface
   materializes as a screen layout for you, as speech for someone else, as a lit
   doorway in a building.*
@@ -1173,8 +1224,8 @@ Consequences, all already load-bearing elsewhere in this spec:
   materialize existing surfaces — **never as new paradigms**. This is the
   operational meaning of the terminal-paradigm claim (Appendix A.2): the paradigm
   is defined *above* the rendering layer.
-- A worked, fully non-screen example is in **Appendix C** (a blind sailor sailing
-  a boat with XAP, told entirely in this lexicon).
+- A worked, fully non-screen example is in **Appendix C** (a blind operator
+  running a field machine with XAP, told entirely in this lexicon).
 
 ---
 
@@ -1198,7 +1249,7 @@ stories — and most XAP state does:
 | Replay / determinism | rebuild + alternate projections from intents | §4.3, §14.3 |
 | Dry-run / agent-preview | speculative fold without committing | §3.4 (`opts.dry-run`), §21.1 |
 | Intent-level audit / `why-allowed` | who/what/why per change, not just *what* | §4.5, §22 |
-| Per-stream conflict (`expect-prev-seq`) | first-commit-wins, no lost update | §4.1, §14.2 |
+| Per-stream conflict (`expect-pos`) | first-commit-wins, no lost update | §4.1, §14.2 |
 
 For such a stream the **snapshot is an anchor**: a read loads the latest snapshot
 and folds **only the tail** appended since it — never from genesis (§14.2). A
@@ -1284,8 +1335,12 @@ A single intent that spans streams (the rare cross-aggregate case) is **explicit
 choreography**: it commits in its home stream and emits follow-on intents into the
 others, each re-entering *that* stream's cascade — there is **no implicit
 cross-stream transaction** (the journal offers per-stream atomicity only,
-§2.1.1). Conflict *on one stream* resolves by §4.1 over the journal's per-stream
-`expect-prev-seq` (first-commits-wins; the second is a rejection event with a
+§2.1.1). The multi-aggregate FLOW vocabulary composing such intents — saga
+records (`journal saga-run`), `[compensates]` pairings, `[requires-at]`
+admission pins, escrow allocations — is the stream-10 coordination spec
+([`cross_stream_coordination.md`](../../_archived/cross_stream_coordination.md);
+shipped at I5). Conflict *on one stream* resolves by §4.1 over the journal's per-stream
+`expect-pos` (first-commits-wins; the second is a rejection event with a
 flowing `[err]`). Cross-XAP coordination (§22.6.1 federation) is this same rule one
 tier up.
 
@@ -1309,7 +1364,7 @@ extends the §10 conformance posture (hermetic, in-process, `cx-test://`) with a
 model is trusted**, and pinned as a standing regression once it is.
 
 **Two layers, no overlap (N-IMPL-1).** The *journal-layer* properties — per-stream
-order/chain/genesis, disjoint-stream parallel append, `expect-prev-seq` conflict,
+order/chain/genesis, disjoint-stream parallel append, `expect-pos` conflict,
 order-independent composition, per-stream `verify`, snapshot anchoring — are the
 **journal's** fixtures ([`journal.md`](../std-lib/journal.md) §10); xap does not
 re-test journal internals. The properties below are the **xap-cascade layer** built on
@@ -1510,8 +1565,10 @@ it, and keep it contained.
 **This §16.1 separation is part of the standard XAP + surface spec template.**
 Every authored XAP declares its surface as data (the surface layer, §13.2 /
 authoring-process); every web client is authored as a *separate* HTMX client app
-with its own spec. (See the marine reference: `xap-marine` is the XAP;
-`xap-marine-htmx-web-client` is its separate HTMX client.)
+with its own spec. (The original external reference instance followed exactly
+this shape — the XAP and its HTMX client as separate repos; it has since
+evolved into an independent project; the in-family reference application
+that succeeds it is `reference/shop/`.)
 
 ---
 
@@ -1529,7 +1586,7 @@ directive:
 
 ```cx
 [$xap:component order-card
-  [props {order ::ref  compact ::bool}]              # typed inputs
+  [props {order: ::string  compact: ::bool}]         # typed inputs
   [bind /orders[= @/id $props/order]]             # CXPath state-slice it reads
   [emits [[do :open $_] [do :cancel $_]]]            # the controls it offers
   [view [?def [$o] …view-tree…]]                     # pure projection
@@ -1727,7 +1784,7 @@ read-model dependency and **opens** the Tier-2 subscription (after the §22.6.1
 authorization); dismissing it (or revoking the capability) tears both down. The
 augmented feature is unaffected — augmentation is one-directional and additive
 (composition over modification). *(Resolves #25; companion working notes:
-`spec/02-working/xap_feature_augmentation.md`.)*
+`spec/_archived/xap_feature_augmentation.md`.)*
 
 ---
 
@@ -2813,52 +2870,56 @@ multi-tenant scoping all held.
 
 ---
 
-## Appendix C — A fully non-screen worked example: a blind sailor (non-normative)
+## Appendix C — A fully non-screen worked example: a blind field-machine operator (non-normative)
 
 This trace exists to **stress-test the lexicon** against a medium with no screen,
 no pointer, real-time stakes, and a physical body in the loop. It is told using
-*only* the terms of §13.1 — and not one of them assumes a display.
+*only* the terms of §13.1 — and not one of them assumes a display. (Rewritten
+2026-08-05 in CX-generic field-work terms under the domain-vocabulary
+sanitization ruling; every lexicon term exercised is unchanged.)
 
-The sailor is the **principal**. Their **agent** (the **Radar**) reads
-**context** — wind, heading, depth, GPS, AIS traffic, the race marks — and
-**composes a surface** for sailing. There is no screen; the surface
-**materializes** (§13.2) through the sailor's **medium**: spatial audio, speech,
-and haptics, plus the boat's own hardware.
+The operator is the **principal**. Their **agent** (the **Radar**) reads
+**context** — engine load, heading, ground speed, GPS, nearby machines, the
+field boundaries — and **composes a surface** for the work. There is no screen;
+the surface **materializes** (§13.2) through the operator's **medium**: spatial
+audio, speech, and haptics, plus the machine's own hardware.
 
-- **Views** (parts that *present*): a *wind view* materializes as a steady tone —
-  pitch = angle, volume = strength — sitting in the **periphery** (§20); a *traffic
-  view* materializes as spatialized pings (a vessel off the port bow pings from
-  the left); a *course view* speaks on **summon**: "two miles to the mark, bearing
-  040."
-- **Working panels** (parts you *work in*, each with its own loop): a *trim panel*
-  — as the sailor hauls the sheet it feeds back continuous tone/haptics on sail
-  trim, reacting in real time; a *helm panel* — a tone centred when on course,
-  sliding as they fall off. (The interactive 5 % of §18, materialized as sound and
-  touch rather than a grid.)
+- **Views** (parts that *present*): a *load view* materializes as a steady tone —
+  pitch = load, volume = trend — sitting in the **periphery** (§20); a *traffic
+  view* materializes as spatialized pings (a machine off the left quarter pings
+  from the left); a *route view* speaks on **summon**: "two rows to the headland,
+  bearing 040."
+- **Working panels** (parts you *work in*, each with its own loop): a *feed-rate
+  panel* — as the operator works the lever it feeds back continuous tone/haptics
+  on intake load, reacting in real time; a *steering panel* — a tone centred when
+  on the row, sliding as they drift off. (The interactive 5 % of §18,
+  materialized as sound and touch rather than a grid.)
 - **Controls** (parts you *act through*; each fires an **intent**): the physical
-  **tiller** and **winches** *are* controls — turning the tiller fires `[do
-  :steer …]`; spoken controls too — "tack now" → `[do :tack]`, "reef" → `[do
-  :reef]`. The medium's trigger differs (a hand, a word); the **intent is
-  identical** — and it is the same intent the **agent** emits as data, so when the
-  sailor turns **the dial** up on trim in a squall, the agent emits the very same
-  trim intents itself. **Agent-parity, with no screen anywhere** (§15, §13.2).
-- **The dial / delegation** (§21, §22): calm water → the dial is low (the sailor
-  does everything; the agent only presents views). A tricky passage → the sailor
-  turns the dial up *on trim only* — a scoped **delegation** lets the agent
-  auto-trim while the sailor keeps the helm.
-- **Guardian + the bright line** (§21.2, §22.4–§22.8): the boom knocks the sailor
-  down — no response. A pre-authorized **guardian grant** whose gate ANDs an
-  **incapacity predicate** (`operator-incapacitated`, attested by heel/heading
+  **wheel** and **levers** *are* controls — turning the wheel fires `[do
+  :steer …]`; spoken controls too — "turn now" → `[do :turn]`, "throttle back" →
+  `[do :throttle-down]`. The medium's trigger differs (a hand, a word); the
+  **intent is identical** — and it is the same intent the **agent** emits as
+  data, so when the operator turns **the dial** up on feed-rate in a sudden
+  downpour, the agent emits the very same feed-rate intents itself.
+  **Agent-parity, with no screen anywhere** (§15, §13.2).
+- **The dial / delegation** (§21, §22): easy ground → the dial is low (the
+  operator does everything; the agent only presents views). A tricky stretch →
+  the operator turns the dial up *on feed-rate only* — a scoped **delegation**
+  lets the agent auto-regulate intake while the operator keeps the wheel.
+- **Guardian + the bright line** (§21.2, §22.4–§22.8): a jolt knocks the operator
+  out — no response. A pre-authorized **guardian grant** whose gate ANDs an
+  **incapacity predicate** (`operator-incapacitated`, attested by seat/heading
   sensors, plus `no-ack-within`) with a harm **state** predicate fires: the agent
-  takes **minimal** protective action — heaves-to, depowers, holds off the rocks,
-  radios for help — *only* because it was pre-authorized and *only* on genuine
-  incapacity. The instant the sailor grabs the tiller, the predicate is
-  **false-by-presence** (§22.8 invariant 4) and control returns, with a **handoff
-  brief** (§21.1) materialized as speech: "you were down 90 seconds; I hove-to,
-  holding 200 m off the rocks, engine ready — resume?" Had the sailor instead
-  *said* "leave the sails up, I've got it," the agent is **structurally barred**
-  from depowering — **refusal blocks; only incapacity enables** (N-CONTROL-1).
-- **Log** (§22.6): afterward, "what happened while I was down?" is one query over
+  takes **minimal** protective action — disengages the intake, slows to a stop,
+  holds clear of the ditch, radios for help — *only* because it was
+  pre-authorized and *only* on genuine incapacity. The instant the operator
+  grabs the wheel, the predicate is **false-by-presence** (§22.8 invariant 4)
+  and control returns, with a **handoff brief** (§21.1) materialized as speech:
+  "you were out 90 seconds; I stopped the machine, holding 20 m off the ditch,
+  engine idling — resume?" Had the operator instead *said* "keep the intake
+  running, I've got it," the agent is **structurally barred** from disengaging —
+  **refusal blocks; only incapacity enables** (N-CONTROL-1).
+- **Log** (§22.6): afterward, "what happened while I was out?" is one query over
   the hash-chained **log**.
 
 **Verdict:** every term earned its keep with no display in sight — **surface,
@@ -2905,7 +2966,7 @@ lexicon is medium-agnostic, not screen-bound.
   | Tier | Demo | Job | Built as |
   |---|---|---|---|
   | **0** | **client ladder D1→D4** (CLI → +TUI → +web → +agent) | quick start + the impl order | in-repo `examples/`, scaffolded by `cx xap init` |
-  | **1** | **boat / NMEA showcase** | assess — "worth building" | *its own project* — **deferred** |
+  | **1** | **vehicle-telemetry showcase** | assess — "worth building" | *its own project* — **deferred** |
   | **2** | **enterprise showcase** (scenario-composed SaaS) | depth — trust / guardian / multi-capability | §T2 below |
 
 - **Build order = the ladder.** D1 needs **only the pure constructors**
@@ -3030,20 +3091,20 @@ resolver / agent hook (§20, scripted for the demo) + `authz` delegation (the di
 > promote the `guestbook` list to a **working panel** (the 5 %, §18) without
 > touching the thin parts; **federate** a second XAP into one experience
 > (§22.6.1); raise the dial toward **guardian** (§22.4) within the bright line.
-> That trajectory is what Tier 1 (the boat) makes visceral.
+> That trajectory is what Tier 1 (the vehicle-telemetry showcase) makes visceral.
 
 ---
 
-### Tier 1 — boat / NMEA showcase  *(deferred — its own project)*
+### Tier 1 — vehicle-telemetry showcase  *(delivered as its own external project, since evolved independent; succeeded here by the in-family reference app `reference/shop/`)*
 
-The flagship "now I get it" demo: a XAP bound to one or more **simulated NMEA
-buses** (provided), surfacing boat **views** (instruments) + **controls**
-(heading / waypoint / trim) + a chart **working panel**, with the **agent**
+The flagship "now I get it" demo: a XAP bound to one or more **simulated
+telemetry buses** (provided), surfacing instrument **views** + **controls**
+(heading / route / feed-rate) + a map **working panel**, with the **agent**
 making recommendations and composing context-specific views — and the
-guardian/bright-line beat from Appendix C (incapacitation → heave-to). It
-is built as **its own project** (decision 3a) and doubles as the canonical
+guardian/bright-line beat from Appendix C (incapacitation → controlled stop).
+It is built as **its own project** (decision 3a) and doubles as the canonical
 `cx xap init … from <git>` template. **Deferred** per current focus on Tier 0;
-NMEA variant (2000 vs 0183) to be confirmed when it's picked up. Full spec will
+the wire-protocol variant to be confirmed when it's picked up. Full spec will
 live with that project.
 
 ---
@@ -3051,7 +3112,7 @@ live with that project.
 ### Tier 2 — Enterprise showcase (scenario-composed SaaS)
 
 The depth demo: trust, guardian, and multi-capability mechanics on an abstract
-B2B surface. Kept (decision 2b) alongside the boat; the matching *on-paper*
+B2B surface. Kept (decision 2b) alongside the Tier-1 showcase; the matching *on-paper*
 trust/guardian trace is Appendix B.
 
 ---

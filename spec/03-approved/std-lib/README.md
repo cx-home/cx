@@ -32,7 +32,7 @@ Loading semantics are defined by [`spec/core/code.md`](../core/code.md) §12.1.
 
 ## §3. Module index
 
-The stdlib enumerates **37 sub-packages** in four informative tiers; **5 post-initial additions** (`did`, `vc`, `xsp`, `jsonrpc`, `jsonschema` — §3.2) bring the current frozen surface to **42**. A separate **`x/` experimental tier** (§3.3) sits alongside the frozen surface — in-tree and gated, but **exempt** from the frozen-stability promise. Tier is not addressable in the resolver; `[?lib]` always names `cx-stdlib/<name>` (frozen) or `cx-x/<name>` (experimental).
+The stdlib enumerates **37 sub-packages** in four informative tiers; **11 post-initial additions** (`similar`, `did`, `vc`, `xsp`, `jsonrpc`, `jsonschema`, `live`, `supervise`, `diagram`, `map`, `array` — §3.2) bring the current frozen surface to **48**. A separate **`x/` experimental tier** (§3.3) sits alongside the frozen surface — in-tree and gated, but **exempt** from the frozen-stability promise. Tier is not addressable in the resolver; `[?lib]` always names `cx-stdlib/<name>` (frozen) or `cx-x/<name>` (experimental).
 
 ### Tier A — Value-shape & encoding
 
@@ -40,6 +40,8 @@ The stdlib enumerates **37 sub-packages** in four informative tiers; **5 post-in
 |---|---|---|
 | `strings` | String inspection, search, transform | [strings.md](strings.md) |
 | `math` | Numeric utilities, statistical helpers | [math.md](math.md) |
+| `map` | Map operations — get/put/keys/size/contains/entry/merge/remove/for-each (XPath 3.1 §17.1, key identity = (kind, image)) | [map.md](map.md) |
+| `array` | Array operations — read/construct/traverse incl. filter/for-each/folds/sort (XPath 3.1 §17.3, 1-based, refuse-on-out-of-range) | [array.md](array.md) |
 | `bytes` | Byte-level ops, hex/base64, struct pack/unpack, compression | [bytes.md](bytes.md) |
 | `time` | Date / datetime / duration; mockable time sources | [time.md](time.md) |
 | `re` | RE2-backed regex | [re.md](re.md) |
@@ -98,6 +100,9 @@ The in-review web/coordination stack, graduated together: an L7 server atop `net
 | `vc` | Verifiable credentials — issue / verify / present / revoke a portable, signed, attenuating §22.2 delegation (R9 authority) | [vc.md](vc.md) |
 | `jsonrpc` | JSON-RPC 2.0 message model — build / classify / validate (the wire under MCP + LSP) | [jsonrpc.md](jsonrpc.md) |
 | `xsp` | XAP Stream Protocol — frame codec (length-prefixed binary frames) | [../xap/xsp.md](../xap/xsp.md) |
+| `live` | Live modes over the one planar comprehension — `changes-since` / `observe` / `materialize` (∂ sets, head-set cursors, maintained folds) | [live.md](live.md) |
+| `supervise` | Restart policies over monitored workers — strategies, intensity, backoff; supervision trees by composition | [supervise.md](supervise.md) |
+| `diagram` | BOTH diagram renderers in pure CX — the `code.md` §10.1.2 reference renderer (Mermaid / DOT / SVG / PNG + embedded-source extraction) and the playground's auto-detecting CFG/ERD/SEQ emitter — over two sealed rule tables, plus `of-source`, which renders CX source text in one call (RULED #758 DR-1…DR-11, #889 DRW3-1) | [diagram.md](diagram.md) |
 
 ### §3.1. Anti-duplication principle
 
@@ -109,11 +114,16 @@ A proposed sub-package does **not** belong in stdlib if it (1) controls evaluati
 
 The 37-module Tier A–D set is the **frozen surface**. Adding a new sub-package post-initial release requires the same gating discipline that applies to the directive registry. Removing a sub-package is breaking at the binary's major-version boundary.
 
-**Post-initial additions.** Five sub-packages have been added under this discipline, bringing the frozen surface to **42**:
+**Post-initial additions.** Eleven sub-packages have been added under this discipline, bringing the frozen surface to **48**:
 
+- `similar` (Tier A, issue #108) — graded similarity and approximate matching, the core `~` operator's backing; sibling to `ft` (shared tokenization). (Rode into the Tier A table at landing; recorded here so the §3 counts stay derivable.)
 - `did`, `vc` (Tier D, issue #26) — concrete foundational libraries realizing the DID/VC authority-basis transport that [xap.md](../xap/xap.md) R9 framed and §28.3 D5 deferred. They add **no new trust primitive** (the PEP / N-TRUST-1 are unchanged); they make decentralized identity (`did`) + delegation (`vc`) real alongside the existing `crypto`/`session`/`authz`.
 - `xsp` (Tier D, issue #31) — the XAP Stream Protocol frame codec ([../xap/xsp.md](../xap/xsp.md)).
 - `jsonrpc`, `jsonschema` (issue #6 S1/S7) — the **agentic substrate**: the JSON-RPC 2.0 message model (the wire under MCP + LSP) and JSON Schema 2020-12 validation (MCP tool `inputSchema`s). They add no new core; they are pure message-model / validation libraries the agentic shims in the `x/` tier (§3.3) compose.
+- `live` (Tier D, campaign stream 3 / #675; the row is the `live_modes.md` L129-authorized surgery) — the live modes over the one planar comprehension: `changes-since` / `observe` / `materialize` as MODES of the same quoted `[?for]`, with head-set cursors and the `planar_delta` ∂ vocabulary. Pack spec: [`spec/03-approved/std-lib/live.md`](../std-lib/live.md) (G3 graduation rides the stream-3 exit review); catalog entry: [live.md](live.md).
+- `supervise` (Tier D, issue #765; RULED: SUP-1, graduated + implemented 2026-08-20) — restart policies over monitored workers: strategies (`:one-for-one`/`:one-for-all`/`:rest-for-one`), per-supervisor restart intensity, per-child exponential backoff, dynamic children, an observable event stream; supervision trees by composition (a give-up escalates as `CXER5094` to the parent's monitor). Pure CX over `[?worker]`/`[?monitor]`/fan-out channels/`sched` — no new primitive, no capability. Spec: [supervise.md](supervise.md).
+- `map`, `array` (Tier A, issue #925; RULED: PYE-1, implemented 2026-08-23) — the XPath 3.1 §17 operation families over CXDM maps and arrays, closing the registered-but-sourceless gap PYE-1 named (26 names in the parser table with no module behind them). Map key identity everywhere is the (kind, image) pair (cxdm §2.6); array positions are 1-based with loud out-of-range refusals; the traversal functions take first-class fn values. Computed member access `$m.$k` (the same ruling's PYE-1a/1b computed steps) is the language-level read `map:get` mirrors. Specs: [map.md](map.md), [array.md](array.md).
+- `diagram` (Tier D, issues #758 + #889; RULED: DR-1…DR-11 and DRW3-1, ported 2026-08-20/21) — BOTH diagram renderers, in pure CX: the [`code.md`](../core/code.md) §10.1.2 reference renderer (Mermaid emission, DOT/SVG/PNG vector output, embedded-source extraction for all three formats) and the playground's auto-detecting CFG/ERD/SEQ emitter, each over a sealed rule table with a bidirectional completeness gate. Makes §10.1.1's own sentence — "the renderer is itself a CX program" — true; the one effect left is the `dot` invocation under `subprocess`. `of-source` renders CX SOURCE TEXT in one call (the CLI routes through it), so the module is callable from a CX program and not only by engine injection. Spec: [diagram.md](diagram.md).
 
 ### §3.3. The `x/` experimental tier
 
@@ -129,6 +139,17 @@ Current `x/` modules:
 | `cx-x/mcp-server` | MCP **server** helpers — cap-gated tools (a tool's effects are gated by CX capabilities) | [../x/README.md](../x/README.md) |
 | `cx-x/a2a` | A2A (Agent-to-Agent) protocol client | [../x/README.md](../x/README.md) |
 | `cx-x/a2a-xap` | A2A over the xap substrate — tasks→`journal`, messages→`bus`, auth→`did`+`vc` | [../x/README.md](../x/README.md) |
+| `cx-x/tools` | The **agent-tool projection** — command defs → tool descriptors, so a XAP's own commands are callable as tools | [../x/README.md](../x/README.md) |
+| `cx-x/term` | Native raw-mode terminal input — the keyboard half of a painted surface | [../x/README.md](../x/README.md) |
+| `cx-x/adjudicate` | Out-of-band agent adjudicator for the similar-review band | [../x/README.md](../x/README.md) |
+| `cx-x/ux` | The **semantic core of the UX projection** — the view vocabulary, the render context, and the layout engine the studio's commands go through | [../xap/ux.md](../xap/ux.md) |
+| `cx-x/ux-web` | The **web face** — semantic tree → HTML/htmx, one stylesheet, the arranged grid, the edit-mode selection stamps | [../xap/ux.md](../xap/ux.md) |
+| `cx-x/ux-tui` | The **terminal face** — the same semantic tree, painted in a real shell | [../xap/ux.md](../xap/ux.md) |
+
+This table is the tier's enumeration and must match `bundled_x_names()`; it
+listed six of the twelve bundled modules until 2026-08-21 (XD-1b). The six
+absent ones were bundled, gated and in-tree the whole time — a spec table that
+is a strict subset of what ships misleads exactly the reader who consults it.
 
 A module graduates from `x/` to the frozen surface only once its protocol is stable, by the same gating discipline as any frozen addition.
 

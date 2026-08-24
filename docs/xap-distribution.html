@@ -5,15 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>XAP feature distribution — CX Guide</title>
 <link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <aside class="sidebar">
   <a class="brand" href="index.html" aria-label="CX — home">
-    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
   </a>
   <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
   <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
   <a class="brand-sub" href="about.html">About →</a>
   <div class="side-search">
     <input id="side-search-input" type="search"
@@ -21,94 +25,132 @@
            autocomplete="off" spellcheck="false" data-prefix="" />
     <ul id="side-search-results" class="side-search-results" hidden></ul>
   </div>
-  <section><h4>Guide</h4><ul>
+  <section><h4>Start here</h4><ul>
     <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
     <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
     <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
     <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
     <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
     <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
-    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
-    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
-    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
-    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
-    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
-    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
-    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
-    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
     <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
-    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
-    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
-    <li><a class="active" href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
-  </ul></section>
-  <section><h4>Reference</h4><ul>
-    <li><a href="directives.html">Directives</a></li>
-    <li><a href="syntax.html">Core syntax</a></li>
-  </ul></section>
-  <section><h4>Standard library</h4><ul>
-    <li><a href="libraries.html">Overview</a></li>
-    <li><a href="lib-authz.html">authz</a></li>
-    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
     <li><a href="lib-bytes.html">bytes</a></li>
     <li><a href="lib-crypto.html">crypto</a></li>
     <li><a href="lib-csv.html">csv</a></li>
-    <li><a href="lib-did.html">did</a></li>
-    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
     <li><a href="lib-env.html">env</a></li>
-    <li><a href="lib-fabric.html">fabric</a></li>
     <li><a href="lib-format.html">format</a></li>
     <li><a href="lib-fp.html">fp</a></li>
     <li><a href="lib-ft.html">ft</a></li>
     <li><a href="lib-geo.html">geo</a></li>
     <li><a href="lib-hash.html">hash</a></li>
     <li><a href="lib-html.html">html</a></li>
-    <li><a href="lib-http.html">http</a></li>
     <li><a href="lib-i18n.html">i18n</a></li>
     <li><a href="lib-io.html">io</a></li>
-    <li><a href="lib-journal.html">journal</a></li>
     <li><a href="lib-json.html">json</a></li>
     <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
     <li><a href="lib-jsonschema.html">jsonschema</a></li>
     <li><a href="lib-locale.html">locale</a></li>
     <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
     <li><a href="lib-math.html">math</a></li>
     <li><a href="lib-mime.html">mime</a></li>
-    <li><a href="lib-net.html">net</a></li>
     <li><a href="lib-path.html">path</a></li>
     <li><a href="lib-process.html">process</a></li>
     <li><a href="lib-prof.html">prof</a></li>
     <li><a href="lib-random.html">random</a></li>
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
-    <li><a href="lib-session.html">session</a></li>
     <li><a href="lib-similar.html">similar</a></li>
-    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
     <li><a href="lib-test.html">test</a></li>
     <li><a href="lib-time.html">time</a></li>
     <li><a href="lib-url.html">url</a></li>
     <li><a href="lib-uuid.html">uuid</a></li>
     <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-vc.html">vc</a></li>
     <li><a href="lib-xap.html">xap</a></li>
     <li><a href="lib-xsp.html">xsp</a></li>
-  </ul></section>
-  <section><h4>XAP</h4><ul>
     <li><a href="xap.html">Overview</a></li>
     <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
     <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
     <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
     <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
   </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a class="active" href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
 </aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">XAP feature distribution</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
 <main>
 <section id="xap-distribution">
   <h1>XAP feature distribution</h1>
   
     <p>The headline of the 0.13 release is that XAP features became a
-       **distribution unit**: sealed, signed, published, discovered,
+       <b>distribution unit</b>: sealed, signed, published, discovered,
        verified, installed, and entitled — end to end, on machinery the
        platform already had. Distribution introduces no archive format,
        no transport, and no trust primitive of its own: a package is a
@@ -116,23 +158,24 @@
        registry is a store, a version is an alias, and trust is the
        Tier-1 content hash plus a publisher-DID signature. The
        normative model is the feature distribution &amp; market spec
-       (`spec/03-approved/xap/xap_feature_distribution_market.md`); the
-       task-oriented developer set is `docs/dev/` (`features-authoring`,
-       `features-consuming`, `registry-setup`, `registry-consuming`,
-       `marketplace`, `client-and-views`). This section walks the
-       staircase and is explicit about which steps are shipped and
-       which are specified-but-not-yet-built.</p>
+       (<code>spec/03-approved/xap/xap_feature_distribution_market.md</code>); the
+       task-oriented developer set is <code>docs/dev/</code> (<code>features-authoring</code>,
+       <code>features-consuming</code>, <code>registry-setup</code>, <code>registry-consuming</code>,
+       <code>marketplace</code>, <code>client-and-views</code> — and <code>oriel-guide</code>, the
+       worked end-to-end reference surface built the declarative way).
+       This section walks the staircase and is explicit about which
+       steps are shipped and which are specified-but-not-yet-built.</p>
     <section id="dist-what">
       <h2>The unit — what a feature is</h2>
       
-        <p>A **feature** is the XAP composition unit and the platform's
+        <p>A <b>feature</b> is the XAP composition unit and the platform's
          commercial unit — the thing you author, version, sell, and
          install. It is a grammar (verbs, nouns, rules — compiled from
          requirements) plus the implementation module that travels with
-         it; behavior ships **inside the package**, never in the
+         it; behavior ships <b>inside the package</b>, never in the
          serving process. Not everything is a feature, though — the
          sealing and signing machinery is content-agnostic, and the
-         package `kind` decides only which gate runs at install:</p>
+         package <code>kind</code> decides only which gate runs at install:</p>
         <table>
           <thead>
             
@@ -163,12 +206,12 @@
             
           </tbody>
         </table>
-        <p>Two dependency planes, never blurred: on the **grammar plane**
-         a feature `uses` a feature (composition — changes what a
-         principal can *say*); on the **code plane** any package
-         `requires` a library (implementation, hash-pinned — changes
-         what the code *calls*). A library never `uses` a feature, and
-         by invariant N-DIST-2 a library carries **no authority**: it
+        <p>Two dependency planes, never blurred: on the <b>grammar plane</b>
+         a feature <code>uses</code> a feature (composition — changes what a
+         principal can <i>say</i>); on the <b>code plane</b> any package
+         <code>requires</code> a library (implementation, hash-pinned — changes
+         what the code <i>calls</i>). A library never <code>uses</code> a feature, and
+         by invariant N-DIST-2 a library carries <b>no authority</b>: it
          executes under the requiring feature's grants and can neither
          hold nor request capabilities of its own. Enabled features
          compose into one grammar with conflicts caught as values at
@@ -193,15 +236,15 @@
   ([$count $g//verb], [$xap:resolve $g 'highlight' {}], [$xap:grammar-hash $g])]</code>
         </pre>
         <pre class="sample-output">
-          <code>(2, 'chart/highlight', 'f5727e413d19b7b1bc75af362fe525d4f286ec4cfbec3877b677a44d4adc760e')</code>
+          <code>(2, 'chart/highlight', 'sha2-256:9e0e827745381eda74a7f5ad72174d6f8ab6c384f281dcd0d5d44cd802580d46')</code>
         </pre>
-        <p class="note">The whole distribution staircase is a **function surface** —
-         `[$xap:compose]`, `[$xap:pkg-tree]` / `pkg-seal` / `pkg-sign` /
-         `pkg-publish` / `pkg-fetch` / `pkg-verify` / `pkg-install` /
-         `pkg-requires-closure` / `pkg-catalog`, and
-         `[$xap:license-issue]` / `license-verify` — all shipped in the
-         bundled `cx-xap` module (no install). A `cx pkg` CLI verb
-         family (e.g. `cx pkg graph`) is named in the spec but not in
+        <p class="note">The whole distribution staircase is a <b>function surface</b> —
+         <code>[$xap:compose]</code>, <code>[$xap:pkg-tree]</code> / <code>pkg-seal</code> / <code>pkg-sign</code> /
+         <code>pkg-publish</code> / <code>pkg-fetch</code> / <code>pkg-verify</code> / <code>pkg-install</code> /
+         <code>pkg-requires-closure</code> / <code>pkg-catalog</code>, and
+         <code>[$xap:license-issue]</code> / <code>license-verify</code> — all shipped in the
+         bundled <code>cx-xap</code> module (no install). A <code>cx pkg</code> CLI verb
+         family (e.g. <code>cx pkg graph</code>) is named in the spec but not in
          the shipped binary yet; drive the staircase from CX programs
          today.</p>
       
@@ -209,11 +252,11 @@
     <section id="dist-authoring">
       <h2>Authoring — spec plus contract module</h2>
       
-        <p>A feature is authored as a `*.feature.cxd` document validated
+        <p>A feature is authored as a <code>*.feature.cxd</code> document validated
          by a schema — requirements are the source, the grammar is the
          compiled output, and a requirement's acceptance criteria are
          its conformance fixtures. The skeleton (the full-size real
-         reference is `xap-marine/features/own-ship/`):</p>
+         reference is the <code>reference/shop</code> app's base feature package):</p>
         <pre>
           <code class="language-cx">[feature name=notes version='0.1.0'
   [summary 'A shared notebook']
@@ -228,21 +271,21 @@
     [requirement kind=functional as=member traces=add-note
       [want 'to jot a note'] [so 'the crew sees it']]]]</code>
         </pre>
-        <p>Every verb carries an **effect signature** — `effect`
-         (observe · act · arrange) × `scope` × `consequence` — which is
+        <p>Every verb carries an <b>effect signature</b> — <code>effect</code>
+         (observe · act · arrange) × <code>scope</code> × <code>consequence</code> — which is
          what the runtime gates scale on: observe is ungated, act meets
          the authorization check, and consequence scales the gate.
-         Validation is real tooling, run as you author (verified
-         against the live marine feature and schema):</p>
+         Validation is real tooling, run as you author (the notes
+         feature above validates clean against the shipped schema):</p>
         <pre>
-          <code class="language-sh">$ cx validate features/own-ship/own-ship.feature.cxd --schema=schemas/feature.cxs</code>
+          <code class="language-sh">$ cx validate notes.feature.cxd --schema=spec/03-approved/xap/xap_schemas/feature.cxs</code>
         </pre>
-        <p>The behavior half is the **contract module** — a plain CX
+        <p>The behavior half is the <b>contract module</b> — a plain CX
          module exporting the conventional surface the deployment host
-         calls: `readout` (always; serves the feature's surface data),
-         `apply` (iff the grammar has a non-observe verb; called after
+         calls: <code>readout</code> (always; serves the feature's surface data),
+         <code>apply</code> (iff the grammar has a non-observe verb; called after
          the policy check admits the intent), and optionally
-         `simulate`. A minimal complete module:</p>
+         <code>simulate</code>. A minimal complete module:</p>
         <pre>
           <code class="language-cx">[?def readout scope=public impure ($store $t)
   [readout title='Notes' [kv k='count' v='0']]]
@@ -251,15 +294,15 @@
     [then $verb]
     [else [refused reason='no apply for this verb']]]]</code>
         </pre>
-        <p>`apply` may refuse on domain policy by returning
-         `[refused reason=…]` — the policy layer admitted the *verb*,
-         the feature refused the *values*; two layers, both visible.
-         `scope=public` is what a module exports, and the package
-         manifest's `exports` block must list exactly that contract
+        <p><code>apply</code> may refuse on domain policy by returning
+         <code>[refused reason=…]</code> — the policy layer admitted the <i>verb</i>,
+         the feature refused the <i>values</i>; two layers, both visible.
+         <code>scope=public</code> is what a module exports, and the package
+         manifest's <code>exports</code> block must list exactly that contract
          surface — projected from the code at publish and re-verified
          at install, both ways. Authoring depth (frames and keys for
          cross-feature joins, the swappable source-gateway stack,
-         composite features) is `docs/dev/features-authoring.md`.</p>
+         composite features) is <code>docs/dev/features-authoring.md</code>.</p>
       
     </section>
     <section id="dist-registry">
@@ -267,10 +310,10 @@
       
         <p>A registry is just a CX store holding sealed packages,
          manifests, and an alias index — so a git repository containing
-         a `file://` store **is a complete registry**, with
+         a <code>file://</code> store <b>is a complete registry</b>, with
          publish-by-PR, history as audit, and repo permissions as
          publish permissions. The publish pipeline is
-         `author → validate → seal → sign → publish`, and the whole
+         <code>author → validate → seal → sign → publish</code>, and the whole
          publisher side runs against any store:</p>
         <pre>
           <code class="language-cx">[?lib 'cx-xap' :as xap]
@@ -293,35 +336,35 @@
   ($pubr@alias, $v@status, $v@kind)]</code>
         </pre>
         <pre class="sample-output">
-          <code>$ cx publish.cx --allow-random
+          <code>$ cx --allow-random publish.cx
 ('geo-utils@0.1.0', 'ok', 'library')</code>
         </pre>
         <ul>
           
-            <li>**pkg-tree** seals the directory as one canonical
+            <li><b>pkg-tree</b> seals the directory as one canonical
               content document — entries sorted by path, byte-stable, so
-              its store hash *is* the package's Tier-1 identity
+              its store hash <i>is</i> the package's Tier-1 identity
               (traversal and duplicate paths are rejected,
-              `CXER4880`).</li>
-            <li>**pkg-seal** validates the manifest draft kind-aware (a
-              `needs` block on a library is rejected — libraries carry
+              <code>CXER4880</code>).</li>
+            <li><b>pkg-seal</b> validates the manifest draft kind-aware (a
+              <code>needs</code> block on a library is rejected — libraries carry
               no authority) and stores the manifest beside the tree.</li>
-            <li>**pkg-sign** fills the detached ed25519 signature over
+            <li><b>pkg-sign</b> fills the detached ed25519 signature over
               the Tier-1 hash. Signing is possession; verification is
               trust — the key-to-DID binding is checked at verify
               time.</li>
-            <li>**pkg-publish** points the `name@version` alias at the
-              manifest. **Released aliases are immutable**: re-pointing
-              raises `CXER4887`; re-publishing the identical hash is
+            <li><b>pkg-publish</b> points the <code>name@version</code> alias at the
+              manifest. <b>Released aliases are immutable</b>: re-pointing
+              raises <code>CXER4887</code>; re-publishing the identical hash is
               idempotent.</li>
-            <li>**pkg-verify** re-runs the full fail-closed chain
+            <li><b>pkg-verify</b> re-runs the full fail-closed chain
               (re-hash, signature, required credentials); nothing stages
               on failure.</li>
           
         </ul>
         <p>Sign from day one, even internally — it costs nothing, and it
-         makes every later growth stage a **re-host, never a
-         re-package**: the live instance is `xap-marine/registry/`
+         makes every later growth stage a <b>re-host, never a
+         re-package</b>: the live instance was the original external reference registry
          (stage 1, sealed+signed packages in a git repo), the same
          store served over the store daemon is stage 2 (consumers
          switch the URI scheme, nothing else), and the market of the
@@ -329,34 +372,36 @@
          change across stages, and a re-hosted package keeps its
          original publisher's signature — trust is per-package, never
          per-registry. Manifest projection, key management, and the
-         make-target workflow are `docs/dev/registry-setup.md`.</p>
+         make-target workflow are <code>docs/dev/registry-setup.md</code>.</p>
       
     </section>
     <section id="dist-consuming">
       <h2>Consuming — verify, install, pin</h2>
       
-        <p>The consumer pipeline is `discover → acquire → verify →
-         gate → consent → enable`, fail-closed at every stage, and
+        <p>The consumer pipeline is <code>discover → acquire → verify →
+         gate → consent → enable</code>, fail-closed at every stage, and
          every check is offline-verifiable — a vendored mirror is as
          good as the origin. Discovery and verification against a
-         registry store (this exact program, pointed at the live
-         xap-marine registry, was run for this page — status `ok`, kind
-         `feature`, one catalog hit):</p>
+         registry store — this exact program, pointed at the
+         repository's own registry (<code>registry/store</code>, a git-hosted
+         <code>file://</code> store whose alias table <code>[$store:list-aliases]</code>
+         lists <code>gtin@0.1.0</code>), was run live for this page:</p>
         <pre>
           <code class="language-cx">[?lib 'cx-xap' :as xap]
 [?lib 'cx-stdlib/store' :as store]
-[?let [= $reg [$store:open-opts 'file:///path/to/xap-marine/registry/store'
+[?let [= $reg [$store:open-opts 'file://registry/store'
                                 [map read-only='true']]]
-      [= $v [$xap:pkg-verify $reg 'own-ship@0.1.1']]
-      [= $cat [$xap:pkg-catalog $reg {term: 'nmea'}]]
+      [= $v [$xap:pkg-verify $reg 'gtin@0.1.0']]
+      [= $cat [$xap:pkg-catalog $reg {term: 'gtin'}]]
   ($v@status, $v@kind, [$count $cat//package])]</code>
         </pre>
         <pre class="sample-output">
-          <code>('ok', 'feature', 1)</code>
+          <code>$ cx --allow-read discover.cx
+(ok, library, 1)</code>
         </pre>
-        <p>Install takes your `[xap …]` deployment document and returns
-         it with the package **pinned by hash** and its `requires`
-         closure resolved beneath it — the deployment doc *is* the
+        <p>Install takes your <code>[xap …]</code> deployment document and returns
+         it with the package <b>pinned by hash</b> and its <code>requires</code>
+         closure resolved beneath it — the deployment doc <i>is</i> the
          lockfile, spanning both dependency planes. In one in-memory
          program (publish a library, then install it into an empty
          deployment):</p>
@@ -369,24 +414,24 @@
   [$count $done//library]]</code>
         </pre>
         <pre class="sample-output">
-          <code>$ cx install.cx --allow-random
+          <code>$ cx --allow-random install.cx
 1</code>
         </pre>
-        <p>Loading pinned library code at runtime is the fourth `[?lib]`
-         reference form — `pkg:` — resolved through the registry bound
-         by the `CX_REGISTRY` environment variable (a store URL), with
-         the full verification chain re-run on **every** load; there is
-         no trust-the-registry mode. Verified against the live marine
-         registry:</p>
+        <p>Loading pinned library code at runtime is the fourth <code>[?lib]</code>
+         reference form — <code>pkg:</code> — resolved through the registry bound
+         by the <code>CX_REGISTRY</code> environment variable (a store URL), with
+         the full verification chain re-run on <b>every</b> load; there is
+         no trust-the-registry mode. Verified live against the in-repo
+         registry (run from the repository root):</p>
         <pre>
-          <code class="language-cx">[?lib 'pkg:marine-common@0.2.0' :as mc]
-[$mc:fmt-speed 6.4 'm/s']</code>
+          <code class="language-cx">[?lib 'pkg:gtin@0.1.0' :as gtin]
+[$gtin:valid '4006381333931']</code>
         </pre>
         <pre class="sample-output">
-          <code>$ CX_REGISTRY=file:///path/to/xap-marine/registry/store cx speed.cx --allow-read --allow-env
-'3.3 m/s'</code>
+          <code>$ CX_REGISTRY=file://registry/store cx --allow-read --allow-env check_gtin.cx
+true</code>
         </pre>
-        <p>A `pkg:NAME@VERSION#MANIFEST-HASH` reference pins past the
+        <p>A <code>pkg:NAME@VERSION#MANIFEST-HASH</code> reference pins past the
          alias table entirely. The failure lanes are values, each
          naming its cause:</p>
         <table>
@@ -419,28 +464,28 @@
             
           </tbody>
         </table>
-        <p>Version discipline: a version is an **alias — a name for a
-         hash**; the hash is the truth. An update is a new hash and an
+        <p>Version discipline: a version is an <b>alias — a name for a
+         hash</b>; the hash is the truth. An update is a new hash and an
          explicit re-pin; a rollback is re-pinning the previous hash.
          Vendoring is first-class for offline installs: clone the
          registry store locally and verification proceeds identically
          with no network. Distinct from all of this, the older
-         `cx lock` mechanism pins `https://` module fetches in a
-         `cx.lock` file (the lockfile spec,
-         `spec/03-approved/core/lockfile.md`) — verified live:
-         `cx lock` writes bundled modules as `resolved="bundled:…"`
-         entries and `cx lock --check` exits 1 on drift, printing
-         expected vs actual; SRI integrity for `https://` entries is
+         <code>cx lock</code> mechanism pins <code>https://</code> module fetches in a
+         <code>cx.lock</code> file (the lockfile spec,
+         <code>spec/03-approved/core/lockfile.md</code>) — verified live:
+         <code>cx lock</code> writes bundled modules as <code>resolved="bundled:…"</code>
+         entries and <code>cx lock --check</code> exits 1 on drift, printing
+         expected vs actual; SRI integrity for <code>https://</code> entries is
          recorded resolved-only today (the binary says so in a
-         warning), so treat `pkg:` + the pinned deployment doc as the
-         XAP-era system and `cx.lock` as the module-fetch pin.</p>
+         warning), so treat <code>pkg:</code> + the pinned deployment doc as the
+         XAP-era system and <code>cx.lock</code> as the module-fetch pin.</p>
       
     </section>
     <section id="dist-entitlements">
       <h2>Entitlements and identity</h2>
       
         <p>Commercial models ride the trust machinery rather than adding
-         a DRM subsystem: **a license is a verifiable credential** — an
+         a DRM subsystem: <b>a license is a verifiable credential</b> — an
          attenuating delegation from the publisher to a principal — and
          the entitlement check is an ordinary policy check. Issue and
          verify, offline:</p>
@@ -456,7 +501,7 @@
   $v@status]</code>
         </pre>
         <pre class="sample-output">
-          <code>$ cx license.cx --allow-random
+          <code>$ cx --allow-random license.cx
 'ok'</code>
         </pre>
         <p>Every pricing shape is an attenuation of the issued
@@ -484,29 +529,29 @@
   $v@status]</code>
         </pre>
         <pre class="sample-output">
-          <code>$ cx grace.cx --allow-random
+          <code>$ cx --allow-random grace.cx
 'grace'</code>
         </pre>
-        <p>**Price is a market property, never a package property** — the
+        <p><b>Price is a market property, never a package property</b> — the
          manifest carries license-terms only, so the same signed
          artifact can be paid in one market and free in another.
-         `pkg-install` takes the entitlement as an option, verified
+         <code>pkg-install</code> takes the entitlement as an option, verified
          fail-closed as part of the trust chain, and a consuming XAP
-         can set `require-entitlement` as its install policy. Identity
+         can set <code>require-entitlement</code> as its install policy. Identity
          underneath is DID-first end to end: publishers sign as DIDs,
          principals hold DIDs, delegations are VCs — and since the
          host-auth work landed, a deployment document can carry a
-         `[host-auth]` block so the deployment host itself
+         <code>[host-auth]</code> block so the deployment host itself
          authenticates attaching clients with the XSP mutual-auth
          handshake and per-request proofs (the XAP identity model spec,
-         `spec/03-approved/xap/xap_identity_model.md`, and the trust-model
+         <code>spec/03-approved/xap/xap_identity_model.md</code>, and the trust-model
          part of the XAP spec).</p>
       
     </section>
     <section id="dist-market">
       <h2>The marketplace — today versus specified</h2>
       
-        <p>The market model: there is **no central market**. A market is
+        <p>The market model: there is <b>no central market</b>. A market is
          itself a XAP whose features are catalog, entitlement, and
          distribution; N markets compose into one discovery surface
          exactly as N XAPs compose into one experience. Honest status
@@ -528,7 +573,7 @@
               </tr>
               <tr>
                 <td>stage-1 git registry, stage-2 served registry, catalog/discovery</td>
-                <td>implemented — live in xap-marine</td>
+                <td>implemented — proven by the original external reference instance; the in-family successor is reference/shop</td>
               </tr>
               <tr>
                 <td>entitlement machinery: license-issue/verify, all pricing shapes, install policy</td>
@@ -556,22 +601,29 @@
         <p>What that means in practice today: you can run a complete,
          trustworthy distribution system for one trust domain — publish
          sealed, signed packages to a git registry, serve it over the
-         store daemon, discover with `pkg-catalog`, install by pin, and
+         store daemon, discover with <code>pkg-catalog</code>, install by pin, and
          gate installs on entitlement credentials in any pricing shape
          (for example an internal paid tier). What you cannot do yet:
          point a customer at a hosted market, take a card payment, or
          run the yank/refund attestation flows — all specified in the
          feature distribution &amp; market spec, staged behind its market
          and commerce phases. Revocation, when it lands, is
-         **attestations published at the market, never remote
-         reach-in**: a running XAP is untouched; its composer surfaces
+         <b>attestations published at the market, never remote
+         reach-in</b>: a running XAP is untouched; its composer surfaces
          the warning. The full today-versus-specified detail is
-         `docs/dev/marketplace.md`.</p>
+         <code>docs/dev/marketplace.md</code>.</p>
       
     </section>
   
 </section>
 </main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>XAP feature distribution</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
 <script src="highlight/highlight.js" defer></script>
 <script src="search-index.js" defer></script>
 <script src="search/search.js" defer></script>

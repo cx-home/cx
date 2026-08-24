@@ -185,7 +185,12 @@ fn cxcol_type_name_from_arrow_format(fmt string) !string {
 		'i'           { 'i32' }
 		'g'           { 'float' }
 		'b'           { 'bool' }
-		'u'           { 'string' }
+		// '' (the elided default), not 'string': the CX render of an
+		// undeclared string column is bare, and Arrow cannot carry the
+		// declared-spelling distinction (#807 annotation minimality) —
+		// reconstructing 'string' forced a ::string annotation onto
+		// every bare column round-tripped through Arrow.
+		'u'           { '' }
 		'tdD'         { 'date' }
 		'tsn:UTC'     { 'datetime' }
 		'z'           { 'bytes' }
@@ -251,6 +256,10 @@ mut:
 	col_codes   []u8
 	col_names   []string
 	col_formats []string
+	// The table's element name, carried on the root ArrowSchema name
+	// so a named table survives the Arrow round trip (§9 lane-d
+	// render parity — stream 17 W7).
+	table_name  string
 	last_err    string
 }
 
@@ -265,6 +274,12 @@ mut:
 	// Per-column auxiliary buffers. String: i32 offsets buffer.
 	// Numeric/bool: empty.
 	col_aux_bufs  [][]u8
+	// Per-column Arrow validity bitmaps (stream 17 W3c): empty = all
+	// valid (buffers[0] = NULL); non-empty = LSB-first, bit SET =
+	// valid (Arrow's convention — the INVERSE of §3.10.5's bit-set =
+	// null).
+	col_validity  [][]u8
+	col_null_counts []i64
 	// Format string per column (kept for release-time bookkeeping).
 	col_formats   []string
 }
@@ -344,12 +359,26 @@ fn export_populate_stream_fd(stream_out voidptr, fd int) ! {
 
 fn export_populate_stream_with_reader(stream_out voidptr, r &cx.CxTableReader) ! {
 	cols := r.cols_snapshot()
+	wire_codes := r.codes_snapshot()
 	mut codes := []u8{cap: cols.len}
 	mut names := []string{cap: cols.len}
 	mut formats := []string{cap: cols.len}
-	for c in cols {
+	mut any_nullable := false
+	for i, c in cols {
+		// The WIRE code is authoritative for payload layout (stream 17
+		// W3c): an 0x80 col-spec means every group payload is the
+		// §3.10.5 wrapper; the inner type is resolved by peeking the
+		// first group below (Arrow needs formats at schema time).
+		wcode := if i < wire_codes.len { wire_codes[i] } else { cxcol_code_for_type_name(c.type_name) }
+		if wcode == cxcol_col_nullable {
+			any_nullable = true
+			codes << wcode
+			names << c.name
+			formats << '' // resolved by the peek
+			continue
+		}
 		f := arrow_format_for_cxcol_type(c.type_name)!
-		codes << cxcol_code_for_type_name(c.type_name)
+		codes << wcode
 		names << c.name
 		formats << f
 	}
@@ -358,6 +387,23 @@ fn export_populate_stream_with_reader(stream_out voidptr, r &cx.CxTableReader) !
 		col_codes:   codes
 		col_names:   names
 		col_formats: formats
+		table_name:  r.table_name_snapshot()
+	}
+	if any_nullable {
+		// Peek the FIRST row group: each 0x80 column's payload begins
+		// with its inner code — enough to fix the Arrow formats before
+		// the schema is emitted. The peeked framed body is cached for
+		// the first get_next.
+		body := r.peek_first_row_group_framed()!
+		if body.len >= 4 {
+			plain := body[4..body.len]
+			inners := cx.cxcol_nullable_inner_codes_pub(plain, state.col_codes)!
+			for i, code in state.col_codes {
+				if code == cxcol_col_nullable {
+					state.col_formats[i] = arrow_format_for_cxcol_type(cx.column_type_name_from_code_pub(inners[i]))!
+				}
+			}
+		}
 	}
 	tok := registry_register_export(state)
 	mut s := unsafe { &C.ArrowArrayStream(stream_out) }
@@ -387,6 +433,10 @@ const cxcol_tag_decimal128 = u8(0x40)  // 16 bytes/cell
 const cxcol_tag_timestamp  = u8(0x41)  // 8 bytes/cell (i64) — unit + tz in type_name
 const cxcol_tag_fsb        = u8(0x42)  // fixed-size-binary, N bytes/cell from type_name[N]
 const cxcol_tag_true     = u8(0x02)
+// §3.10.3 bit-packed bool column code (stream 17 W3).
+const cxcol_col_bool     = u8(0x01)
+// §3.10.5 nullable wrapper column code (stream 17 W3c).
+const cxcol_col_nullable = u8(0x80)
 
 fn cxcol_code_for_type_name(type_name string) u8 {
 	if type_name.starts_with('decimal128')       { return cxcol_tag_decimal128 }
@@ -398,7 +448,7 @@ fn cxcol_code_for_type_name(type_name string) u8 {
 		'i16'             { cxcol_tag_int16 }
 		'i32'             { cxcol_tag_int32 }
 		'float', 'f64'    { cxcol_tag_float64 }
-		'bool'            { cxcol_tag_true }
+		'bool'            { cxcol_col_bool }
 		'string', '', 's', 'dict-utf8' { cxcol_tag_string }
 		'date', 'd'       { cxcol_tag_date }
 		'datetime'        { cxcol_tag_datetime }
@@ -426,7 +476,7 @@ fn arrow_export_get_schema(stream &C.ArrowArrayStream, out &C.ArrowSchema) int {
 	mut state := registry_lookup_export(tok) or {
 		return 1
 	}
-	populate_schema_struct(out, state.col_names, state.col_formats) or {
+	populate_schema_struct(out, state.table_name, state.col_names, state.col_formats, state.col_codes) or {
 		state.last_err = err.msg()
 		return 1
 	}
@@ -489,11 +539,16 @@ fn arrow_export_release_stream(stream &C.ArrowArrayStream) {
 
 // ── Schema population ────────────────────────────────────────────────
 
-fn populate_schema_struct(out &C.ArrowSchema, col_names []string, col_formats []string) ! {
+// arrow_flag_nullable is the C-ABI ARROW_FLAG_NULLABLE bit.
+const arrow_flag_nullable = i64(2)
+
+fn populate_schema_struct(out &C.ArrowSchema, table_name string, col_names []string, col_formats []string, col_codes []u8) ! {
 	// Top-level struct schema: format = "+s", one child per column.
+	// The root name carries the table's element name (ArrowSchema.name
+	// is exactly this seam) so named tables round-trip lane (d).
 	mut o := unsafe { out }
 	o.format       = c_string('+s')
-	o.name         = c_string('')
+	o.name         = c_string(table_name)
 	o.metadata     = unsafe { nil }
 	o.flags        = 0
 	o.n_children   = i64(col_names.len)
@@ -509,7 +564,13 @@ fn populate_schema_struct(out &C.ArrowSchema, col_names []string, col_formats []
 		cs.format       = c_string(col_formats[i])
 		cs.name         = c_string(col_names[i])
 		cs.metadata     = unsafe { nil }
-		cs.flags        = 0
+		// §3.10.5 columns declare NULLABLE (stream 17 W3c) — Parquet
+		// and consumers refuse nulls in non-nullable columns.
+		cs.flags        = if i < col_codes.len && col_codes[i] == cxcol_col_nullable {
+			arrow_flag_nullable
+		} else {
+			i64(0)
+		}
 		cs.n_children   = 0
 		cs.children     = unsafe { nil }
 		cs.dictionary   = unsafe { nil }
@@ -561,8 +622,46 @@ fn decode_row_group_into_arrow(plain []u8, col_codes []u8, col_formats []string)
 		col_aux_bufs:  [][]u8{cap: col_codes.len}
 		col_formats:   col_formats.clone()
 	}
-	for i, code in col_codes {
+	for i, code_raw in col_codes {
 		fmt := col_formats[i]
+		mut code := code_raw
+		mut validity := []u8{}
+		mut null_count := i64(0)
+		mut nullable_body := []u8{}
+		if code_raw == cxcol_col_nullable {
+			// §3.10.5: inner code + null bitmap + PACKED non-nulls.
+			// Expand to Arrow layout: full-length data buffer (null
+			// slots zero-filled) + a validity bitmap (bit set = VALID
+			// — inverted from the CXCol null bitmap).
+			code = br.take_pub(1)![0]
+			cx_bitmap := br.take_pub((row_count + 7) / 8)!
+			validity = []u8{len: (row_count + 7) / 8}
+			mut n_nonnull := 0
+			for ri in 0 .. row_count {
+				if (cx_bitmap[ri / 8] >> (ri % 8)) & 1 == 0 {
+					validity[ri / 8] |= u8(1) << (ri % 8)
+					n_nonnull++
+				} else {
+					null_count++
+				}
+			}
+			nullable_body = arrow_expand_nullable(mut br, code, cx_bitmap, row_count, n_nonnull)!
+		}
+		la.col_validity << validity
+		la.col_null_counts << null_count
+		if nullable_body.len > 0 || (code_raw == cxcol_col_nullable && row_count > 0) {
+			// The expanded buffers were built above; route by format.
+			if fmt == 'u' {
+				// string: nullable_body = offsets ‖ values, split by marker
+				noff := (row_count + 1) * 4
+				la.col_aux_bufs << nullable_body[..noff].clone()
+				la.col_main_bufs << nullable_body[noff..].clone()
+			} else {
+				la.col_main_bufs << nullable_body.clone()
+				la.col_aux_bufs << []u8{}
+			}
+			continue
+		}
 		match fmt {
 			'l' {
 				if code != cxcol_tag_int64 {
@@ -605,18 +704,14 @@ fn decode_row_group_into_arrow(plain []u8, col_codes []u8, col_formats []string)
 				la.col_aux_bufs << []u8{}
 			}
 			'b' {
-				if code != cxcol_tag_true {
+				if code != cxcol_col_bool {
 					return error('arrow: format/code mismatch for col ${i} (expected bool)')
 				}
-				raw := br.take_pub(row_count)!
+				// §3.10.4 (stream 17 W3): the CXCol bool payload is
+				// bit-packed LSB-first — Arrow's native layout; copy.
 				packed_len := (row_count + 7) / 8
-				mut packed := []u8{len: packed_len}
-				for r in 0 .. row_count {
-					if raw[r] != 0 {
-						packed[r / 8] |= u8(1) << u32(r % 8)
-					}
-				}
-				la.col_main_bufs << packed
+				packed := br.take_pub(packed_len)!
+				la.col_main_bufs << packed.clone()
 				la.col_aux_bufs << []u8{}
 			}
 			'tdD' {
@@ -756,7 +851,7 @@ fn populate_array_struct(out &C.ArrowArray, la &LiveArrayBuffers, la_tok u64) ! 
 
 fn populate_child_array(mut ca C.ArrowArray, la &LiveArrayBuffers, col_idx int) ! {
 	ca.length     = i64(la.row_count)
-	ca.null_count = 0
+	ca.null_count = if col_idx < la.col_null_counts.len { la.col_null_counts[col_idx] } else { i64(0) }
 	ca.offset     = 0
 	ca.n_children = 0
 	ca.children   = unsafe { nil }
@@ -765,12 +860,21 @@ fn populate_child_array(mut ca C.ArrowArray, la &LiveArrayBuffers, col_idx int) 
 	ca.private_data = unsafe { nil }
 	main_buf := la.col_main_bufs[col_idx]
 	aux_buf  := la.col_aux_bufs[col_idx]
+	// REAL validity bitmaps (stream 17 W3c): non-empty = allocate and
+	// hand Arrow the bitmap (bit set = valid); empty = NULL (all valid).
+	validity := if col_idx < la.col_validity.len { la.col_validity[col_idx] } else { []u8{} }
+	mut validity_ptr := unsafe { nil }
+	if validity.len > 0 {
+		vb := unsafe { malloc(validity.len) }
+		unsafe { vmemcpy(vb, validity.data, validity.len) }
+		validity_ptr = vb
+	}
 	ptr_size := int(sizeof(voidptr))
 	if aux_buf.len > 0 {
-		// String: 3 buffers (validity NULL, offsets, values).
+		// String: 3 buffers (validity, offsets, values).
 		ca.n_buffers = 3
 		bufs_arr := unsafe { malloc(ptr_size * 3) }
-		unsafe { (&voidptr(bufs_arr))[0] = nil }
+		unsafe { (&voidptr(bufs_arr))[0] = validity_ptr }
 		offsets_buf := unsafe { malloc(aux_buf.len) }
 		unsafe { vmemcpy(offsets_buf, aux_buf.data, aux_buf.len) }
 		unsafe { (&voidptr(bufs_arr))[1] = offsets_buf }
@@ -782,10 +886,10 @@ fn populate_child_array(mut ca C.ArrowArray, la &LiveArrayBuffers, col_idx int) 
 		unsafe { (&voidptr(bufs_arr))[2] = vals_buf }
 		ca.buffers = unsafe { &voidptr(bufs_arr) }
 	} else {
-		// Numeric or bool: 2 buffers (validity NULL, data).
+		// Numeric or bool: 2 buffers (validity, data).
 		ca.n_buffers = 2
 		bufs_arr := unsafe { malloc(ptr_size * 2) }
-		unsafe { (&voidptr(bufs_arr))[0] = nil }
+		unsafe { (&voidptr(bufs_arr))[0] = validity_ptr }
 		alloc_n := if main_buf.len > 0 { main_buf.len } else { 1 }
 		data_buf := unsafe { malloc(alloc_n) }
 		if main_buf.len > 0 {
@@ -875,9 +979,9 @@ fn alloc_zero_arrow_stream() &C.ArrowArrayStream {
 }
 
 fn import_drain_to_bytes(stream_in voidptr) ![]u8 {
-	cols, col_formats := import_read_schema(stream_in)!
-	col_spec_payload := cx.col_spec_to_ast_bin_pub(cols)
-	mut writer := cx.new_table_writer_bytes(col_spec_payload)!
+	cols, col_formats, col_nullable, table_name := import_read_schema(stream_in)!
+	col_spec_payload := cx.col_spec_to_ast_bin_nullable_pub(cols, col_nullable)
+	mut writer := cx.new_table_writer_bytes_named(col_spec_payload, table_name)!
 	for {
 		arr := alloc_zero_arrow_array()
 		eos := import_pull_next(stream_in, arr)!
@@ -885,7 +989,7 @@ fn import_drain_to_bytes(stream_in voidptr) ![]u8 {
 			unsafe { free(voidptr(arr)) }
 			break
 		}
-		body := encode_arrow_array_as_row_group(arr, cols, col_formats)!
+		body := encode_arrow_array_as_row_group(arr, cols, col_formats, col_nullable)!
 		writer.emit_row_group_payload(body)!
 		if arr.release != unsafe { nil } {
 			arr.release(arr)
@@ -898,9 +1002,9 @@ fn import_drain_to_bytes(stream_in voidptr) ![]u8 {
 }
 
 fn import_drain_to_fd(stream_in voidptr, fd_out int) ! {
-	cols, col_formats := import_read_schema(stream_in)!
-	col_spec_payload := cx.col_spec_to_ast_bin_pub(cols)
-	mut writer := cx.new_table_writer_fd(col_spec_payload, fd_out)!
+	cols, col_formats, col_nullable, table_name := import_read_schema(stream_in)!
+	col_spec_payload := cx.col_spec_to_ast_bin_nullable_pub(cols, col_nullable)
+	mut writer := cx.new_table_writer_fd_named(col_spec_payload, fd_out, table_name)!
 	for {
 		arr := alloc_zero_arrow_array()
 		eos := import_pull_next(stream_in, arr)!
@@ -908,7 +1012,7 @@ fn import_drain_to_fd(stream_in voidptr, fd_out int) ! {
 			unsafe { free(voidptr(arr)) }
 			break
 		}
-		body := encode_arrow_array_as_row_group(arr, cols, col_formats)!
+		body := encode_arrow_array_as_row_group(arr, cols, col_formats, col_nullable)!
 		writer.emit_row_group_payload(body)!
 		if arr.release != unsafe { nil } {
 			arr.release(arr)
@@ -919,7 +1023,7 @@ fn import_drain_to_fd(stream_in voidptr, fd_out int) ! {
 	import_release_stream(stream_in)
 }
 
-fn import_read_schema(stream_in voidptr) !([]cx.TableColumn, []string) {
+fn import_read_schema(stream_in voidptr) !([]cx.TableColumn, []string, []bool, string) {
 	mut s := unsafe { &C.ArrowArrayStream(stream_in) }
 	if s.get_schema == unsafe { nil } {
 		return error('arrow: stream get_schema is null')
@@ -929,6 +1033,14 @@ fn import_read_schema(stream_in voidptr) !([]cx.TableColumn, []string) {
 	if rc != 0 {
 		unsafe { free(voidptr(sch)) }
 		return error('arrow: get_schema returned ${rc}')
+	}
+	// The root schema name carries the table's element name when the
+	// producer set it (our exporter does; foreign producers usually
+	// leave it empty → bare-0x63 output, unchanged behavior).
+	table_name := if sch.name != unsafe { nil } {
+		unsafe { cstring_to_vstring(sch.name) }
+	} else {
+		''
 	}
 	root_format := unsafe { cstring_to_vstring(sch.format) }
 	if root_format != '+s' {
@@ -944,6 +1056,7 @@ fn import_read_schema(stream_in voidptr) !([]cx.TableColumn, []string) {
 	}
 	mut cols := []cx.TableColumn{cap: n}
 	mut formats := []string{cap: n}
+	mut nullable := []bool{cap: n}
 	for i in 0 .. n {
 		child_ptr := unsafe { (&voidptr(sch.children))[i] }
 		child := unsafe { &C.ArrowSchema(child_ptr) }
@@ -956,10 +1069,13 @@ fn import_read_schema(stream_in voidptr) !([]cx.TableColumn, []string) {
 		}
 		cols << cx.TableColumn{ name: name, type_name: type_name }
 		formats << fmt
+		// ARROW_FLAG_NULLABLE (stream 17 W3c) — a nullable Arrow
+		// column becomes a §3.10.5 (0x80) CXCol column.
+		nullable << (child.flags & arrow_flag_nullable) != 0
 	}
 	if sch.release != unsafe { nil } { sch.release(sch) }
 	unsafe { free(voidptr(sch)) }
-	return cols, formats
+	return cols, formats, nullable, table_name
 }
 
 fn import_pull_next(stream_in voidptr, arr &C.ArrowArray) !bool {
@@ -985,7 +1101,7 @@ fn import_release_stream(stream_in voidptr) {
 }
 
 fn encode_arrow_array_as_row_group(arr &C.ArrowArray, cols []cx.TableColumn,
-	col_formats []string) ![]u8 {
+	col_formats []string, col_nullable []bool) ![]u8 {
 	row_count := int(arr.length)
 	if int(arr.n_children) != cols.len {
 		return error('arrow: array n_children=${arr.n_children} != schema cols=${cols.len}')
@@ -996,9 +1112,113 @@ fn encode_arrow_array_as_row_group(arr &C.ArrowArray, cols []cx.TableColumn,
 		fmt := col_formats[i]
 		child_ptr := unsafe { (&voidptr(arr.children))[i] }
 		child := unsafe { &C.ArrowArray(child_ptr) }
+		if i < col_nullable.len && col_nullable[i] {
+			// §3.10.5 (stream 17 W3c): the 0x80-headed column's group
+			// payload = inner code + CX null bitmap (INVERTED Arrow
+			// validity) + PACKED non-null cells.
+			write_nullable_column_from_arrow(mut body, child, fmt, cols[i].type_name, row_count)!
+			continue
+		}
 		write_column_from_arrow(mut body, child, fmt, row_count)!
 	}
 	return body
+}
+
+// write_nullable_column_from_arrow emits one §3.10.5 column payload
+// from an Arrow child that may carry a validity bitmap (a NULL
+// validity buffer = all valid; the wrapper still emits, matching the
+// 0x80 header).
+fn write_nullable_column_from_arrow(mut body []u8, child &C.ArrowArray, fmt string, type_name string, row_count int) ! {
+	inner := cxcol_code_for_type_name(type_name)
+	body << inner
+	validity_ptr := unsafe { (&voidptr(child.buffers))[0] }
+	vlen := (row_count + 7) / 8
+	mut valid := []u8{len: vlen, init: u8(0xFF)}
+	if validity_ptr != unsafe { nil } {
+		unsafe { vmemcpy(valid.data, validity_ptr, vlen) }
+	}
+	mut cx_bitmap := []u8{len: vlen}
+	mut n_nonnull := 0
+	for ri in 0 .. row_count {
+		if (valid[ri / 8] >> (ri % 8)) & 1 == 1 {
+			n_nonnull++
+		} else {
+			cx_bitmap[ri / 8] |= u8(1) << (ri % 8)
+		}
+	}
+	body << cx_bitmap
+	match fmt {
+		'l', 'g' {
+			data_ptr := unsafe { (&voidptr(child.buffers))[1] }
+			if data_ptr == unsafe { nil } {
+				return error('arrow: nullable ${fmt} column has NULL data buffer')
+			}
+			mut raw := []u8{len: row_count * 8}
+			unsafe { vmemcpy(raw.data, data_ptr, row_count * 8) }
+			for ri in 0 .. row_count {
+				if (valid[ri / 8] >> (ri % 8)) & 1 == 1 {
+					body << raw[ri * 8 .. ri * 8 + 8]
+				}
+			}
+		}
+		'i' {
+			data_ptr := unsafe { (&voidptr(child.buffers))[1] }
+			if data_ptr == unsafe { nil } {
+				return error('arrow: nullable int32 column has NULL data buffer')
+			}
+			mut raw := []u8{len: row_count * 4}
+			unsafe { vmemcpy(raw.data, data_ptr, row_count * 4) }
+			for ri in 0 .. row_count {
+				if (valid[ri / 8] >> (ri % 8)) & 1 == 1 {
+					body << raw[ri * 4 .. ri * 4 + 4]
+				}
+			}
+		}
+		'b' {
+			data_ptr := unsafe { (&voidptr(child.buffers))[1] }
+			if data_ptr == unsafe { nil } {
+				return error('arrow: nullable bool column has NULL data buffer')
+			}
+			mut raw := []u8{len: vlen}
+			unsafe { vmemcpy(raw.data, data_ptr, vlen) }
+			mut packed := []u8{len: (n_nonnull + 7) / 8}
+			mut vi := 0
+			for ri in 0 .. row_count {
+				if (valid[ri / 8] >> (ri % 8)) & 1 == 1 {
+					if (raw[ri / 8] >> (ri % 8)) & 1 == 1 {
+						packed[vi / 8] |= u8(1) << (vi % 8)
+					}
+					vi++
+				}
+			}
+			body << packed
+		}
+		'u' {
+			offsets_ptr := unsafe { (&voidptr(child.buffers))[1] }
+			values_ptr := unsafe { (&voidptr(child.buffers))[2] }
+			if offsets_ptr == unsafe { nil } {
+				return error('arrow: nullable string column has NULL offsets buffer')
+			}
+			mut offs := []u8{len: (row_count + 1) * 4}
+			unsafe { vmemcpy(offs.data, offsets_ptr, (row_count + 1) * 4) }
+			for ri in 0 .. row_count {
+				if (valid[ri / 8] >> (ri % 8)) & 1 == 1 {
+					start := read_u32_le(offs, ri * 4)
+					end := read_u32_le(offs, (ri + 1) * 4)
+					ln := int(end - start)
+					cx.encode_uvarint_pub(mut body, u64(ln))
+					if ln > 0 {
+						mut val := []u8{len: ln}
+						unsafe { vmemcpy(val.data, voidptr(usize(values_ptr) + usize(start)), ln) }
+						body << val
+					}
+				}
+			}
+		}
+		else {
+			return error('arrow: nullable format ${fmt} not bridgeable')
+		}
+	}
 }
 
 fn write_column_from_arrow(mut body []u8, child &C.ArrowArray, fmt string, row_count int) ! {
@@ -1023,13 +1243,11 @@ fn write_column_from_arrow(mut body []u8, child &C.ArrowArray, fmt string, row_c
 			if data_ptr == unsafe { nil } {
 				return error('arrow: bool column has NULL data buffer')
 			}
+			// §3.10.4 (stream 17 W3): bit-packed both sides — copy.
 			packed_len := (row_count + 7) / 8
 			mut packed := []u8{len: packed_len}
 			unsafe { vmemcpy(packed.data, data_ptr, packed_len) }
-			for r in 0 .. row_count {
-				bit := (packed[r / 8] >> u32(r % 8)) & 1
-				body << bit
-			}
+			body << packed
 		}
 		'tdD' {
 			data_ptr := unsafe { (&voidptr(child.buffers))[1] }
@@ -1127,4 +1345,113 @@ fn copy_fixed_width_data(mut body []u8, child &C.ArrowArray, row_count int, byte
 fn read_u32_le(buf []u8, off int) u32 {
 	return u32(buf[off]) | (u32(buf[off + 1]) << 8)
 		| (u32(buf[off + 2]) << 16) | (u32(buf[off + 3]) << 24)
+}
+
+// arrow_expand_nullable reads the PACKED §3.10.5 non-null payload and
+// expands it to full-row-count Arrow layout (null slots zero-filled).
+// Fixed-width inners return the data buffer; strings return
+// offsets ‖ values ((row_count+1)*4 offset bytes first). (Stream 17
+// W3c.)
+fn arrow_expand_nullable(mut br cx.PubBinReader, inner u8, cx_bitmap []u8, row_count int, n_nonnull int) ![]u8 {
+	is_null := fn [cx_bitmap] (ri int) bool {
+		return (cx_bitmap[ri / 8] >> (ri % 8)) & 1 == 1
+	}
+	match inner {
+		cxcol_tag_int64, cxcol_tag_float64 {
+			packed := br.take_pub(n_nonnull * 8)!
+			mut out := []u8{len: row_count * 8}
+			mut vi := 0
+			for ri in 0 .. row_count {
+				if !is_null(ri) {
+					for b in 0 .. 8 {
+						out[ri * 8 + b] = packed[vi * 8 + b]
+					}
+					vi++
+				}
+			}
+			return out
+		}
+		cxcol_tag_int32 {
+			packed := br.take_pub(n_nonnull * 4)!
+			mut out := []u8{len: row_count * 4}
+			mut vi := 0
+			for ri in 0 .. row_count {
+				if !is_null(ri) {
+					for b in 0 .. 4 {
+						out[ri * 4 + b] = packed[vi * 4 + b]
+					}
+					vi++
+				}
+			}
+			return out
+		}
+		cxcol_tag_int16 {
+			packed := br.take_pub(n_nonnull * 2)!
+			mut out := []u8{len: row_count * 2}
+			mut vi := 0
+			for ri in 0 .. row_count {
+				if !is_null(ri) {
+					out[ri * 2] = packed[vi * 2]
+					out[ri * 2 + 1] = packed[vi * 2 + 1]
+					vi++
+				}
+			}
+			return out
+		}
+		cxcol_tag_int8 {
+			packed := br.take_pub(n_nonnull)!
+			mut out := []u8{len: row_count}
+			mut vi := 0
+			for ri in 0 .. row_count {
+				if !is_null(ri) {
+					out[ri] = packed[vi]
+					vi++
+				}
+			}
+			return out
+		}
+		cxcol_col_bool {
+			packed := br.take_pub((n_nonnull + 7) / 8)!
+			mut out := []u8{len: (row_count + 7) / 8}
+			mut vi := 0
+			for ri in 0 .. row_count {
+				if !is_null(ri) {
+					if (packed[vi / 8] >> (vi % 8)) & 1 == 1 {
+						out[ri / 8] |= u8(1) << (ri % 8)
+					}
+					vi++
+				}
+			}
+			return out
+		}
+		cxcol_tag_string {
+			// length-prefixed non-null strings → Arrow offsets+values
+			mut vals := []u8{}
+			mut lens := []int{len: row_count}
+			for ri in 0 .. row_count {
+				if !is_null(ri) {
+					ln := int(br.read_uvarint_pub()!)
+					bs := br.take_pub(ln)!
+					vals << bs
+					lens[ri] = ln
+				}
+			}
+			mut out := []u8{cap: (row_count + 1) * 4 + vals.len}
+			mut off := u32(0)
+			for ri in 0 .. row_count + 1 {
+				out << u8(off & 0xFF)
+				out << u8((off >> 8) & 0xFF)
+				out << u8((off >> 16) & 0xFF)
+				out << u8((off >> 24) & 0xFF)
+				if ri < row_count {
+					off += u32(lens[ri])
+				}
+			}
+			out << vals
+			return out
+		}
+		else {
+			return error('arrow: nullable inner code 0x${inner:02x} not bridgeable')
+		}
+	}
 }

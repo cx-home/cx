@@ -13,6 +13,7 @@ to avoid shadowing the standard-library `select` module.
 
 from __future__ import annotations
 
+import decimal
 import json
 from typing import Any, Iterator, Optional
 
@@ -333,6 +334,10 @@ def _format_cx_cell(v: Any) -> str:
         return "null"
     if isinstance(v, bool):
         return "true" if v else "false"
+    if isinstance(v, decimal.Decimal):
+        # Fixed-point base-10 image, scale preserved (I1 row 16 — cells
+        # ride the image); str(Decimal) may emit exponent notation.
+        return format(v, 'f')
     if isinstance(v, (int, float)):
         return str(v)
     if isinstance(v, list):
@@ -372,7 +377,7 @@ def _format_csv_cell(v: Any, delim: str) -> str:
         return '"' + json_str.replace('"', '""') + '"'
     if isinstance(v, bool):
         return "true" if v else "false"
-    s = str(v)
+    s = format(v, 'f') if isinstance(v, decimal.Decimal) else str(v)
     if delim in s or '"' in s or "\n" in s or "\r" in s:
         return '"' + s.replace('"', '""') + '"'
     return s

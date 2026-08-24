@@ -69,8 +69,8 @@
 
 [directive-doc name='?quote' category="Core — quasiquote (eager; two-color hygiene)" spec="§6.4.3"
   [sig """[?quote FORM] -> inert tree"""]
-  [summary """Quasiquote: produce FORM as inert data (eager, two-color hygiene); bare `$x` becomes `[cx:var 'x']` rather than dereferencing."""]
-  [example [code """[?quote [a $x]]"""] [expect """[a [cx:var 'x']]"""]]
+  [summary """Quasiquote: produce FORM as inert data (eager, two-color hygiene); bare `$x` stays an inert hole `$x` rather than dereferencing."""]
+  [example [code """[?quote [a $x]]"""] [expect """[a $x]"""]]
 ]
 
 [directive-doc name='?unquote' category="Core — quasiquote hole (single value)" spec="§6.4.3"
@@ -212,13 +212,13 @@ B"""] [expect """50"""]]
 [directive-doc name='?zip' category="Iterator stdlib — per-position tuples" spec="§8"
   [sig """[?zip SRC-A SRC-B…] -> iterator of tuples"""]
   [summary """Iterator combinator: per-position tuples across two or more sources, stopping at the shortest."""]
-  [example [code """[?zip (1, 2, 3) ("a", "b", "c")]"""] [expect """((1, 'a'), (2, 'b'), (3, 'c'))"""]]
+  [example [code """[?zip (1, 2, 3) ("a", "b", "c")]"""] [expect """((1, a), (2, b), (3, c))"""]]
 ]
 
 [directive-doc name='?enumerate' category="Iterator stdlib — emit `(i, item)` pairs" spec="§8"
   [sig """[?enumerate SRC] -> iterator of (i, item)"""]
   [summary """Iterator combinator: pair each element with its zero-based index."""]
-  [example [code """[?enumerate ("a", "b", "c")]"""] [expect """((0, 'a'), (1, 'b'), (2, 'c'))"""]]
+  [example [code """[?enumerate ("a", "b", "c")]"""] [expect """((0, a), (1, b), (2, c))"""]]
 ]
 
 [directive-doc name='?chunks' category="Iterator stdlib — group by `count`" spec="§8"
@@ -231,12 +231,6 @@ B"""] [expect """50"""]]
   [sig """[?concat SRC…] -> iterator"""]
   [summary """Iterator combinator: flatten one level across the given sources, concatenating them in order."""]
   [example [code """[?concat (1, 2) (3, 4)]"""] [expect """(1, 2, 3, 4)"""]]
-]
-
-[directive-doc name='?chain' category="Iterator stdlib — alias of `[?concat]`" spec="§8"
-  [sig """[?chain SRC…] -> iterator"""]
-  [summary """Iterator combinator: alias of [?concat] — concatenate sources end to end."""]
-  [example [code """[?chain (1, 2) (3, 4) (5, 6)]"""] [expect """(1, 2, 3, 4, 5, 6)"""]]
 ]
 
 [directive-doc name='?cycle' category="Iterator stdlib — bounded repeat" spec="§8"
@@ -371,6 +365,14 @@ B"""] [expect """50"""]]
   [example [code """[?let [= $_ [?worker name="w4" [body lookupable]]] [= $h [?worker-handle name="w4"]] [?wait-for worker=$h]]"""] [expect """lookupable"""]]
 ]
 
+[directive-doc name='?subscribe' category="Concurrency" spec="§10.4"
+  [sig """[?subscribe from=CH from-pos=INT] -> subscription"""]
+  [summary """Concurrency (SPEC'D, not yet shipped — #762): subscribe to a `sharing=independent` channel and receive a per-consumer cursor (the delivery contract, delivery.md); `from-pos=` resumes within the retained window, a cursor below the window refuses loudly with CXER0205 (STREAM_GAP), and a group channel refuses with CXER0204. No runnable example until #762 lands."""]]
+
+[directive-doc name='?monitor' category="Concurrency" spec="§10.4"
+  [sig """[?monitor $h] -> subscription"""]
+  [summary """Concurrency (SPEC'D, not yet shipped — #762): subscribe to a worker handle's ordered lifecycle events (`[spawned]`, `[cancelled]`, `[panicked]`, `[done]`); a terminal event is always last, monitoring an already-terminated worker delivers its terminal event immediately (race-free supervision), and monitor subscriptions compose with `[?select]`. No runnable example until #762 lands."""]]
+
 [directive-doc name='?channel' category="Concurrency" spec="§10.4"
   [sig """[?channel name=NAME buffer=N] -> channel"""]
   [summary """Concurrency: create a named channel with a bounded buffer."""]
@@ -404,7 +406,7 @@ B"""] [expect """50"""]]
 [directive-doc name='?close' category="Concurrency" spec="§10.4"
   [sig """[?close CHANNEL] -> ()"""]
   [summary """Concurrency: close a channel; drained receives on a closed channel yield a channel-closed error."""]
-  [example [code """[?let [= $ch [?channel name="c4" buffer=2]] [= $_ [?send "a" to=$ch]] [= $_ [?close $ch]] [= $first [?receive from=$ch]] [= $second [?receive from=$ch]] ([r1 $first], [r2 $second])]"""] [expect """([r1 'a'], [r2 [err code=cx-err:CXER0200 message='channel closed']])"""]]
+  [example [code """[?let [= $ch [?channel name="c4" buffer=2]] [= $_ [?send "a" to=$ch]] [= $_ [?close $ch]] [= $first [?receive from=$ch]] [= $second [?receive from=$ch]] ($first, $second)]"""] [expect """(a, [err code=cx-err:CXER0200 message='channel closed'])"""]]
 ]
 
 [directive-doc name='?select' category="Concurrency" spec="§10.4"
@@ -456,7 +458,7 @@ B"""] [expect """50"""]]
 [directive-doc name='?await-race' category="Async" spec="§10.5"
   [sig """[?await-race (F…)] -> value"""]
   [summary """Async: yield the first future to settle and cancel the losers."""]
-  [example [code """[?let [= $fast [?async fast]] [= $slow [?async [?let [= $_ [?sleep 10s mock]] slow]]] [= $winner [?await-race ($fast, $slow)]] [= $slow-state [?await $slow]] [pair [winner $winner] [slow-state $slow-state]]]"""] [expect """[pair [winner 'fast'] [slow-state [err code=cx-err:CXER0260 message='operation cancelled']]]"""]]
+  [example [code """[?let [= $fast [?async fast]] [= $slow [?async [?let [= $_ [?sleep 10s mock]] slow]]] [= $winner [?await-race ($fast, $slow)]] [= $slow-state [?await $slow]] ($winner, $slow-state)]"""] [expect """(fast, [err code=cx-err:CXER0260 message='operation cancelled'])"""]]
 ]
 
 [directive-doc name='?cancel' category="Async" spec="§10.5"

@@ -2,35 +2,39 @@
    Source top-left, Output bottom-left, View (Tree/Graph) right column. */
 
 :root {
-  /* Dark base palette — One Dark-ish */
-  --bg-app:       #1e2127;
-  --bg-pane:      #1c1f24;
-  --bg-head:      #21252b;
-  --bg-toolbar:   #181a1f;
-  --bg-input:     #1e2127;
-  --bg-hover:     #2c313a;
-  --border:       #181a1f;
-  --border-soft:  #3a3f4b;
-  --text:         #c8ccd4;
-  --text-dim:     #6b7280;
-  --text-strong:  #e5e9f0;
-  --accent:       #61afef;
-  --accent-hover: #82c0ff;
-  --ok:           #98c379;
-  --err:          #e06c75;
-  --pending:      #d19a66;
+  /* Warm-ink palette — the guide's drawing-office family (ruled
+     2026-08-20): the playground is the instrument bench behind the
+     paper sheets, so its dark surfaces are warm ink, its accent the
+     drafting vermilion, and its annotations IBM Plex Mono. */
+  --bg-app:       #1d1a11;
+  --bg-pane:      #211e15;
+  --bg-head:      #262214;
+  --bg-toolbar:   #17150d;
+  --bg-input:     #1d1a11;
+  --bg-hover:     #322d1d;
+  --border:       #12100a;
+  --border-soft:  #453e28;
+  --text:         #d8d2c0;
+  --text-dim:     #8a8371;
+  --text-strong:  #efe9d8;
+  --accent:       #d9744a;
+  --accent-hover: #e89a6e;
+  --ok:           #a9cc9e;
+  --err:          #e8927c;
+  --pending:      #e3b76a;
 
-  /* Syntax palette (used by highlight.js + tree view) */
-  --syn-keyword:  #c678dd;   /* directives [?...] */
-  --syn-string:   #98c379;
-  --syn-number:   #d19a66;
-  --syn-comment:  #5c6370;
-  --syn-name:     #e5c07b;   /* element names */
-  --syn-attr:     #56b6c2;   /* attribute keys */
-  --syn-binding:  #e06c75;   /* $name */
-  --syn-punct:    #abb2bf;
+  /* Syntax palette (used by highlight.js + tree view) — matches the
+     guide's warm highlight tones in style.css. */
+  --syn-keyword:  #e8a9c0;   /* directives [?...] */
+  --syn-string:   #e3b76a;
+  --syn-number:   #dd9046;
+  --syn-comment:  #837b64;
+  --syn-name:     #9ecbe0;   /* element names */
+  --syn-attr:     #a9cc9e;   /* attribute keys */
+  --syn-binding:  #e8927c;   /* $name */
+  --syn-punct:    #c9c2ad;
 
-  --code-font:    ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+  --code-font:    'IBM Plex Mono', ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
 }
 
 * { box-sizing: border-box; }
@@ -39,7 +43,7 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'IBM Plex Mono', ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   font-size: 14px;
   color: var(--text);
   background: var(--bg-app);
@@ -73,7 +77,13 @@ html, body {
   border-right: 1px solid var(--border-soft);
   margin-right: 6px;
 }
-.cxp-brand img { display: block; filter: brightness(1.1); }
+.cxp-brand svg { display: block; width: 22px; height: 22px; color: var(--text-strong); }
+.cxp-brand:hover svg { color: var(--accent-hover); }
+.cxp-brand span {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 12px;
+}
 .cxp-spacer { flex: 1; }
 .cxp-pick-label {
   color: var(--text-dim);
@@ -117,7 +127,7 @@ html, body {
 .cxp-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .cxp-btn-primary {
   background: var(--accent);
-  color: #0e1116;
+  color: #17150d;
   border-color: var(--accent);
   font-weight: 600;
 }
@@ -135,15 +145,10 @@ html, body {
   font-size: 11px;
   letter-spacing: -0.02em;
 }
-.cxp-viz-src-toggle {
-  margin-left: 12px;
-  min-width: 64px;
-  text-align: center;
-}
-.cxp-viz-src-toggle::before {
-  content: '⇄  ';
-  opacity: 0.6;
-}
+/* Subject toggle — names what the View pane is showing (the program,
+   the value it produced, or both). Before this the subject was implicit
+   and the pane could not say which of the two you were looking at. */
+.cxp-subject-group { margin-left: 6px; }
 .cxp-detail-group { margin-right: auto; margin-left: 6px; }
 .cxp-detail-tab {
   padding: 3px 10px;
@@ -249,6 +254,8 @@ body.cxp-resizing.is-row { cursor: row-resize; }
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  row-gap: 5px;
+  flex-wrap: wrap;
   padding: 6px 12px;
   background: var(--bg-head);
   border-bottom: 1px solid var(--border);
@@ -317,7 +324,7 @@ body.cxp-resizing.is-row { cursor: row-resize; }
   letter-spacing: 0;
   font-weight: 500;
 }
-.cxp-tab, .cxp-viz-tab {
+.cxp-tab, .cxp-viz-tab, .cxp-subject-tab {
   padding: 3px 10px;
   font-size: 11px;
   font-weight: 600;
@@ -330,11 +337,12 @@ body.cxp-resizing.is-row { cursor: row-resize; }
   text-transform: uppercase;
 }
 .cxp-tab + .cxp-tab,
-.cxp-viz-tab + .cxp-viz-tab { border-left: none; }
-.cxp-tab:first-child, .cxp-viz-tab:first-child { border-radius: 3px 0 0 3px; }
-.cxp-tab:last-child,  .cxp-viz-tab:last-child  { border-radius: 0 3px 3px 0; }
-.cxp-tab:hover, .cxp-viz-tab:hover { color: var(--text); background: var(--bg-hover); }
-.cxp-tab.is-active, .cxp-viz-tab.is-active {
+.cxp-viz-tab + .cxp-viz-tab,
+.cxp-subject-tab + .cxp-subject-tab { border-left: none; }
+.cxp-tab:first-child, .cxp-viz-tab:first-child, .cxp-subject-tab:first-child { border-radius: 3px 0 0 3px; }
+.cxp-tab:last-child,  .cxp-viz-tab:last-child,  .cxp-subject-tab:last-child  { border-radius: 0 3px 3px 0; }
+.cxp-tab:hover, .cxp-viz-tab:hover, .cxp-subject-tab:hover { color: var(--text); background: var(--bg-hover); }
+.cxp-tab.is-active, .cxp-viz-tab.is-active, .cxp-subject-tab.is-active {
   background: var(--accent);
   border-color: var(--accent);
   color: #0e1116;
@@ -412,6 +420,39 @@ body.cxp-resizing.is-row { cursor: row-resize; }
   background: var(--bg-input);
 }
 .cxp-viz-content.is-active { display: block; }
+
+/* Subject sections inside the View pane. In `all` mode the program and
+   the value it produced are STACKED, not side by side: the pane is the
+   right-hand column (a third of the viewport by default), so splitting
+   it again would leave each half too narrow for an indented tree or a
+   Mermaid diagram. Stacking also matches the reading order — the
+   program above the value it evaluated to. */
+.cxp-viz-part + .cxp-viz-part {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-soft);
+}
+.cxp-viz-part-head {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+  user-select: none;
+}
+.cxp-viz-part-head .cxp-viz-part-note {
+  color: var(--text-dim);
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: 0;
+  text-transform: none;
+  margin-left: 6px;
+}
+/* Graph blocks carry their own padding: the canvas is edge-to-edge so
+   the zoom toolbar can pin to its corner. */
+#cxp-viz-graph .cxp-viz-part + .cxp-viz-part { margin-top: 18px; }
+
 .cxp-viz-placeholder {
   color: var(--text-dim);
   font-style: italic;
@@ -508,7 +549,7 @@ body.cxp-resizing.is-row { cursor: row-resize; }
 .cxp-status a { color: var(--accent); text-decoration: none; }
 .cxp-status a:hover { text-decoration: underline; }
 .cxp-status.is-ok { color: var(--ok); }
-.cxp-status.is-error { color: var(--err); background: #2b1d1f; border-top-color: #5c2a2e; }
+.cxp-status.is-error { color: var(--err); background: #2b1d14; border-top-color: #5c3a2a; }
 .cxp-status.is-pending { color: var(--pending); }
 
 /* ── Syntax highlighting — class names from scripts/gen_guide/highlight/highlight.js ── */
@@ -539,4 +580,17 @@ body.cxp-resizing.is-row { cursor: row-resize; }
   .cxp-toolbar { flex-wrap: wrap; gap: 6px; }
   #cxp-pick { min-width: 200px; flex: 1; }
   .cxp-brand span { display: none; }
+}
+
+/* the detail dropdown (replaces the three-tab detail group) */
+.cxp-detail-select {
+  background: var(--cxp-bg-raise, #2a2620);
+  color: var(--cxp-fg, #e8e0d0);
+  border: 1px solid var(--cxp-border, #4a443a);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.35rem;
 }

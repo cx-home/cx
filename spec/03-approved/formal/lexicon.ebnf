@@ -93,6 +93,14 @@
 #  `--`/leading-`-`/trailing-`-` are not special; the number rule [L20] decides
 #  whether a leading `-` is a sign.
 [L11] QName      ::= Ident (':' Ident)?                /* [7a] prefix:local — parser-folded */
+[L11a] Prefix    ::= Ident                             /* [7b] — the pre-':' part of a QName */
+[L11b] LocalName ::= Ident                             /* [7c] — the post-':' part of a QName */
+[L12]  NCName    ::= Ident
+#  [L11a]/[L11b]/[L12] complete the grammar [7b]/[7c] "MOVED to lexicon §2"
+#  pointer (the names were promised here but undefined — I1 stream 13). An
+#  Ident is colon-free BY CONSTRUCTION (`:` is not a NameChar, above), so the
+#  XML-heritage NCName ("no-colon name", used by grammar [160a]/[162] and the
+#  binary formats) is exactly Ident; the name is kept for cross-spec citations.
 #  The SINGLE colon `:` folds into a QName (PROGRAM mode lexes it as its own
 #  token; DATA mode scans it in-name, §4.3); QName/atom/type-guard/
 #  map-entry are distinguished by the parser via context (§3.5, §3.6). `:` never
@@ -186,8 +194,12 @@
 #  in-CX surgical edits ([?str] / io:edit-file). Escapes are still not processed
 #  (raw triple is verbatim, like [L31]). The `r` is a raw-string prefix ONLY
 #  immediately before a triple quote; a bare `r`, or `r` before a single quote /
-#  name char, is an ordinary Name [L10a]. (Recognised in PROGRAM string position;
-#  data-reader support is a planned consistency follow-up.)
+#  name char, is an ordinary Name [L10a]. LEGAL IN DATA MODE TOO (I1 stream 13,
+#  L58 — one token grammar, this lexicon's stated purpose): every value position
+#  that admits a triple-quoted string admits the raw form (doc scalar, element
+#  body, attribute value, collection/slot item, table cell). Canonical NEVER
+#  re-emits the triquote spelling (canonical.md §2.3 / L15+L17), so raw triple
+#  is an INPUT spelling only.
 [L32] EscapeSeq    ::= '\\' ( "'" | '"' | '\\' | 'n' | 'r' | 't'
                             | 'u' HexDigit{4}
                             | 'U' HexDigit{8} )                  /* [11]/§3.7 */
@@ -205,7 +217,17 @@
 #  Unicode scalar (the §0 valid-UTF-8 mandate + the CX⇄XML bijection forbid it).
 
 # ─── 6. Atom literal ─────────────────────────────────────────────────────────────
-[L40] Atom ::= ':' Ident ('.' Ident)*                  /* [122b], §3.6 */
+[L40] Atom ::= ':' Ident ('.' Ident)* ('.' '*')?       /* [122b], §3.6 */
+#  TERMINAL `.*` GLOB SEGMENT (NORMATIVE — I1 stream 13 G-8; implemented since
+#  #397, spec'd nowhere until now): a single final `.*` segment is admitted in
+#  the atom token (`:order.*`, `:billing.invoice.*`) and spells a PREFIX-GLOB
+#  PATTERN over the dotted topic namespace (bus.md §2.2 topic matching; the
+#  fabric wire pattern forms reuse it). The `*` is legal ONLY as the entire
+#  terminal segment, byte-adjacent to its dot (`:a.*b`, `:a.*.b`, `:*` are not
+#  atoms); at the atom level it is OPAQUE — `:a.*` is an ordinary interned
+#  name, equal only to itself; pattern meaning is assigned by consumers.
+#  This production is the SOLE charset home for atoms (stream 12 L22 unified):
+#  segments are [L10] Idents — grammar [122b] AtomLiteral defers here.
 #  DOTTED SEGMENTS (#397, owner ruling 2026-07-13): a single interior '.'
 #  joins ident segments into one hierarchical atom name (`:order.placed`,
 #  `:billing.invoice.paid`) — the event-bus topic-namespace shape (bus.md
@@ -240,7 +262,13 @@
 #  is unambiguous; a single `:` is NEVER a type annotation — glued single `:`
 #  is the NAMESPACE qualifier (`items:string` = element `string` in namespace
 #  `items`, a QName [L11] — NOT a type). A parser that rejects `[port::u16 8080]`
-#  is wrong.
+#  is wrong. GLUED is enforced (RULED: TA-1 #911): the SPACED form
+#  `[port ::u16 8080]` is a loud parse error in the DATA reader too, its
+#  message naming the one-character fix — the data reader used to accept and
+#  silently normalize a spelling the program reader refuses outright (a
+#  whitespace skip in the element-meta loop, never a decision; the reader
+#  asymmetry behind #910). One spelling: spec, both readers, and the emitter
+#  say the same thing.
 #     ::T    explicit scalar type  (overrides §9 auto-typing)
 #     ::T[]  explicit typed array  (overrides §9; items are T)
 #     ::[]   inferred-type array   (element type inferred from items)
@@ -254,10 +282,27 @@
                 | '='      /* attr pair / let-bind */
                 | '/'      /* child path step      */
                 | '.'      /* map-key path step    */
-                | '*'      /* element wildcard     */
+                | '*'      /* element wildcard; merge-ref `*Name` [61];
+                              rest marker `*$name` [153e]/[140f] */
                 | '**'     /* any-depth wildcard   */
                 | '?'      /* error-propagate postfix (§9.2) */
                 | '!'      /* panic postfix          (§9.2) */
+                | '&'      /* anchor def `&Name` [60]; entity ref `&Name;` [66] */
+                | '#'      /* id decl `#Name` [51a] (element-meta position);
+                              line comment opener elsewhere [L2] */
+                | '%'      /* parameter-entity ref `%Name;` [68] — decls only */
+                | ':'      /* the four lone-`:` roles per §2 [L11] note */
+                | '::'     /* type-annotation glue [L50] */
+                | '_'      /* partial-application hole (lone, call-arg
+                              position only) [125b] */
+#  COMPLETED against the real token set (I1 stream 13, L58 — the table had 9
+#  of the surface's sigils). `~` is NOT a sigil: it is an operator HEAD
+#  ([125g], graded similarity), listed in the operator registry, not here.
+#  TOMBSTONE `|`: the pipe is NOT a token of the language — infix pipeline
+#  `a | b` is RETIRED (grammar [128]; a parse error), and `|` bytes otherwise
+#  occur only INSIDE the `[|` / `|]` BlockContent delimiters ([28]) or as
+#  literal string/prose content. Never a sigil, never an operator; the
+#  spelling is not reused.
 [L63] DirectiveOpen ::= '[?' Ident                     /* `[?match` `[?def` … §4.1 */
 #  The directive / clause-head / reserved-attr / reserved-bareword vocabulary
 #  is the closed registry in code.md §4.1 — NOT duplicated here. The lexer
@@ -289,6 +334,13 @@
 #  the rule below governs each contiguous run of LEAF tokens. Auto-type a token
 #  via the SCALAR priority [L25a].
 #
+#  PRODUCTION STATUS (NORMATIVE — I1 stream 13, the clean-room bar): [L25a],
+#  [L25b], [L25c], and [L25d] are NORMATIVE PRODUCTIONS of this lexicon —
+#  decision procedures with the same binding force as the `::=` rules. Other
+#  formal files cite them by ID (grammar [55]/[55a]/[29e], parser-rules)
+#  exactly as they cite token productions; a clean-room implementation is
+#  built from this text alone, prose form notwithstanding.
+#
 #  [L25a] ── ONE bare token, no comma → SCALAR, auto-typed (first match wins):
 #       1. HexInt   2. Integer  → int        5. 'null'           → null
 #       3. Float            → float           6. DateTimeLiteral  → datetime
@@ -298,12 +350,42 @@
 #
 #  [L25b] ── TWO+ tokens, NO comma → DISCRETE ITEMS or PROSE (never an array).
 #       A BAREWORD = an unquoted token that is NOT a typed-scalar literal, an
-#       atom (`:name`), or a quoted string (a plain word or QName, e.g. `Alice`,
-#       `a:b`). It is the prose signal:
+#       atom (`:name`), a quoted string, or a VARIABLE HOLE (a plain word or
+#       QName, e.g. `Alice`, `a:b`). It is the prose signal:
 #       • NO bareword (every token self-delimits — typed scalar / atom / quoted
-#         string) → each token is its OWN child, auto-typed via [L25a]. The body
-#         is MIXED CONTENT (discrete children), NOT an array and with NO element
-#         data_type. NO promotion (int + float stay int, float).
+#         string / hole) → each token is its OWN child, auto-typed via [L25a].
+#         The body is MIXED CONTENT (discrete children), NOT an array and with
+#         NO element data_type. NO promotion (int + float stay int, float).
+#       • VARIABLE HOLE (I1 row 9, E1 L78): a bare DELIMITED `$name` token —
+#         `$` + NameStart + simple NameChars, NO `.`/`:` continuation, ending
+#         at whitespace / `]` / `,` / `)` / `}` — is the authorable hole, a
+#         STRUCTURAL node (like an alias reference; NOT a 12th scalar kind).
+#         Canonical spelling `$name`; the STRING "$name" spells '$name' (a
+#         $-leading body string ALWAYS quotes — see the canonical needs-quote
+#         sigil set), so `[total $x]` and `[total '$x']` carry different
+#         canonical bytes and different Tier-1 addresses (the C4 collision
+#         MUST). `[?quote]` results lower bare bindings to this form, which is
+#         how quoted trees acquire addresses; `$x.y`/`$x:y` spellings stay
+#         text.
+#       • STRUCTURE TOKENS (RULED: ASP-3 #909, extending ASP-2 #903 into the
+#         element body): a `(…)` sequence literal or a map-shaped `{…}` that is
+#         ws-delimited on BOTH sides is a discrete token here too, so a
+#         comma-less body mixing them with the classes above yields discrete
+#         children:
+#             `[k 1 (2, 3)]`               → children 1 (int), (2, 3)
+#                                            (before ASP-3: prose lane, the int
+#                                             restringified to the STRING '1 ')
+#             `[k {a: 1} {b: 2}]`          → two map children
+#             `[list false (a, b) (c, d)]` → bool + two sequences (the ux-016
+#                                            engine-output shape re-reads — the
+#                                            #704 self-re-parse class, closed)
+#         A GLUED span (`(1, 2)[0]`) is NOT a token — the run keeps its
+#         historical mixed reading ("glued runs are one item", as in slots);
+#         a single structure token stays under [L25a]/prose; any bareword
+#         still makes the whole body prose. Unlike the HEADLESS position
+#         ([L83]-2a), there is NO name-shaped first-token guard: an element
+#         body has no element reading to protect, so `[list false (a, b)]`
+#         reads the bool discretely.
 #             `[ports 80 443]`              → int children 80, 443   (NOT int[])
 #             `[xs 1 2.0 3]`                → children 1, 2.0, 3
 #             `[flags true false]`          → bool children
@@ -366,7 +448,7 @@
 #             `[items::string 1, 2, 3]` → string "1, 2, 3"   (commas literal)
 #             `[n::int 1 2 3]`          → CXER0290 (body is not one int)
 #         A hex token (`0x…`) under `::decimal` / `::bigint` is a coercion
-#         error (cx-err:CXER0109) in BOTH readings — decimal and bigint are
+#         error (cx-err:CXER0290) in BOTH readings — decimal and bigint are
 #         base-10 value types; hex there is a mistake, never stored verbatim
 #         (#466 ruling; `::bytes` is the verbatim home for hex payloads).
 #       • `::T[]` (ARRAY type) → the body is an ARRAY of T; items split on
@@ -406,9 +488,12 @@
 #  [55a]+[55c], the ast.md node-valued branch, the ast-bin.md node_flag wire
 #  encoding, and the conversions.md `<cx:attr>` row; reconciled code.md §940
 #  (non-scalar construction → CXER0100, not stringify).
-[L70] BareValue ::= ( Char - (S | '[' | ']' | '=' | "'" | '"') )+   /* [12] */
+[L70] BareValue ::= BareChar+                                       /* [12] */
+[L70a] BareChar ::= Char - (S | '[' | ']' | '=' | "'" | '"')        /* [12a] */
 #  BareValue stops at whitespace and  [ ] = ' "  — but allows / : # ? @ ! ~ +
 #  (and ',') for URLs and paths. The comma is literal here (attributes only).
+#  ([L70a] completes the grammar [12a] "MOVED to lexicon §10" pointer — the
+#  BareChar name was promised here but undefined; grammar [54a]/[30b] cite it.)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  11. COLLECTION LITERALS & THE `[` DISAMBIGUATION  (sole home; from [56]-[56g])
@@ -416,6 +501,10 @@
 #  Three primitive collection forms, by bracket. Trailing comma always
 #  allowed; canonical emit drops it (canonical.md §D14).
 #
+[L79] CollectionLiteral ::= SequenceLiteral | ArrayLiteral | MapLiteral  /* [56] */
+#   The umbrella production grammar [3]/[53]/[122a] reference; the grammar's
+#   [56] pointer names this section its sole home, so the production lives
+#   here (it was previously implied but undefined — I1 stream 13).
 [L80] SequenceLiteral ::= '(' S? ItemList? S? ')'      /* [56a] */
 #   FLATTENS nested sequences (CXDM §1 sequence-flat):
 #       (1, (2, 3))  →  (1, 2, 3)        4-item example: ((a,b), c) → (a,b,c)
@@ -438,9 +527,17 @@
 #  ── [L83] THE `[` DISAMBIGUATION (element vs array literal). This is the SOLE
 #     canonical home; grammar [50.D] is a summary that MUST agree. Decided by the
 #     FIRST token after `[`. Identical in BodyItem / Node position.
+#     PRODUCTION STATUS (NORMATIVE — I1 stream 13, the clean-room bar): [L83]
+#     is a NORMATIVE PRODUCTION of this lexicon — a decision procedure with
+#     the same binding force as the `::=` rules, citable by ID like any token
+#     production.
 #       0. STRUCTURAL OPENERS bind FIRST (not subject to this rule): `[?`
 #          directive, `[!` decl/doctype, `[#` raw text, `[;` comment, `[|` block,
-#          `[$` call (program mode), `[*` alias, `[&` ref/anchor. CX has NO Markdown sigils —
+#          `[$` call (program mode), `[*` alias. (The former `[&` "ref/anchor"
+#          entry was a PHANTOM opener — no production admits `[` glued to `&`;
+#          anchors are ElementMeta `&Name` [60], entity refs are body-position
+#          `&Name;` [66]. Removed here and in the grammar preamble — I1
+#          stream 13 G-5.) CX has NO Markdown sigils —
 #          `>`, `~`, `^`, the backtick, and `#` are ordinary content/operators,
 #          never element-head openers.
 #       1. `[]`  → empty Array.   (`[]` is never an element — an element needs
@@ -452,6 +549,29 @@
 #               ['a', 'b']      → string array ["a", "b"]
 #               [[1,2], [3,4]]  → nested array (preserved, NOT flattened)
 #               ['x y']         → 1-item array ["x y"]
+#       2a. HEADLESS DISCRETE-VALUE ARRAY (@CHOICE-1 G-ARRAY-1; extended by
+#          RULED: ASP-2 #903): a COMMA-LESS bracket whose 2+ ws-delimited
+#          tokens are ALL discrete values — typed scalars, quoted strings,
+#          `$name` holes, `[…]` nodes, `(…)` sequence literals, map-shaped
+#          `{…}` — is an ARRAY of those values (the node-kind twin of the
+#          §9 [L25b] element typed list; before ASP-2 the `(`/`{` tokens
+#          fell to the comma path and glued). A structure span counts only
+#          when ws-delimited on BOTH sides (glued `(1, 2)[0]` keeps its
+#          one-item mixed reading); a name-shaped first token (`true`)
+#          keeps the Element reading; any bareword keeps the body prose.
+#               [1 2 3]         → int array [1, 2, 3]  (≡ [1, 2, 3])
+#               [1 (2, 3)]      → [1, (2, 3)]   (int + sequence, TWO items)
+#               [{a: 1} {b: 2}] → [{a: 1}, {b: 2}]
+#               [true (2, 3)]   → element `true` (name head wins)
+#               [(1, 2) three]  → refuses (bareword ⇒ no discrete array)
+#          WITHIN ONE SLOT of a comma-separated [L84]/[L85] list, whitespace
+#          never separates: a sequence/map literal ws-adjacent to any other
+#          slot content REFUSES (CXER0100, message names the fix — add the
+#          comma or quote the prose); GLUED runs stay one mixed-content item
+#          (CXPath kind tests `$c/node()` and call shapes depend on this).
+#               [1, (2, 3)]            → int + sequence (comma form)
+#               [x, In stock: [?=@x], y] → slot 2 is ONE mixed-content item
+#               [1, weight (kg, lbs)]  → refuses — quote: 'weight (kg, lbs)'
 #       3. first token IS a Name  → ELEMENT; that Name is the head, and the
 #          body follows the BODY VALUE rule §9 (no comma → scalar/prose; comma
 #          → typed array body):
@@ -472,10 +592,61 @@
 #       only an UNQUOTED leading bareword is reserved as an element head.
 #
 [L84] ItemList     ::= BodyItem (S? ',' S? BodyItem)* (S? ',')?   /* [56d] */
-[L85] MapEntryList ::= MapEntry (S? ',' S? MapEntry)* (S? ',')?   /* [56e] */
-[L86] MapEntry     ::= MapKey S? ':' S? BodyItem | ComputedEntry  /* [56f] */
-[L87] MapKey       ::= Name | QuotedText | Scalar                 /* [56g] */
-#   Bare-Name key == quoted-string key. `null` is NOT a valid key (→ W014).
+[L85] MapEntryList ::= MapEntry (((S? ',' S?) | S) MapEntry)* (S? ',')?  /* [56e] */
+#  RULED: MSS-2 (#917, 2026-08-22): entries separate by comma OR by
+#  whitespace/newline — the array precedent (`[1 2 3]` ≡ `[1, 2, 3]`, §9
+#  [L25b]) extended to maps, ratifying the shipped form (`{tenant: "acme"
+#  journal: $j}`). Unambiguous because a MapValue is one complete
+#  expression-shaped item (MSS-1, below) — the next token after a complete
+#  value can only be `,`, `}`, or the next entry's key.
+[L86] MapEntry     ::= MapKey S? ':' S? MapValue
+                     | MapKey S? ':' S? TypeAnnotation   /* declaration (MSS-4) */
+                     | ComputedEntry                     /* [56f] */
+#  RULED: MSS-1 + MSS-4 (#917, 2026-08-22). A map VALUE is ONE discrete
+#  expression-shaped item, in BOTH readings:
+#    MapValue ::= MapLiteral | ArrayLiteral (via `[` [L83]) | SequenceLiteral
+#               | QuotedText | TripleQuoted | RawTriple | EntityRef
+#               | BindingHole | Scalar (bare token: auto-typed or postfix-
+#                 ascribed `v::T`, checked) | Bareword
+#  Free prose is NOT a map value — quote it (`{note: 'two words'}`). A bare
+#  value token carrying `:` that does not auto-type (datetime, atom) or
+#  ascribe REFUSES with quote guidance; a bare token carrying `::` either
+#  ascribes (valid tag + conforming payload) or REFUSES (CXER0107/CXER0290)
+#  — never silent text (MSS-3). This is what makes a missing separator a
+#  loud error instead of an invisible prose absorption (#917's mangle class).
+#
+#  DECLARATION (MSS-4): a prefix TypeAnnotation as the SOLE value declares
+#  the field — kind T, value ABSENT (never null; check-null-absence-
+#  conflation). `{a: ::int}` declares; `{a: 5::int}` supplies a typed value;
+#  `{1.10::decimal: x}` types the KEY.
+#  RULED: MSS-7 (2026-08-22, owner "1a"): the prefix WITH one scalar value
+#  token is a TYPED VALUE — `{age: ::int 30}` — coercion-checked through
+#  the same core as the postfix form, in every collection VALUE slot (map
+#  value; array/sequence item: `[1, ::int 30]`). The prefix family is one
+#  rule: `::T` in a value slot types the value when a value follows and
+#  declares the field when none does. A prefixed-value tag draws from the
+#  SCALAR tag set only (a kind-only tag with a value refuses — kinds
+#  declare, they do not coerce); canonical form is unchanged
+#  (annotation-iff-retyping: `::int 30` emits `30`, `::decimal 2` emits
+#  `2::decimal`); declarations stay map-entry-only. The
+#  declaration vocabulary is grammar [157] KindName (+ optional `[]`), the
+#  same set bind patterns [140g] test — a declaration is a kind CONSTRAINT,
+#  not a coercion. Value reads of a declared entry are ABSENT (#584
+#  presence semantics); lossy projections REFUSE a declaration (no
+#  absent-field image); cx text, round-trip XML (cx:decl-kind), ast_bin
+#  v10, and the --lossless sidecar modes (cx:decl) carry it.
+[L87] MapKey       ::= Ident | QuotedText | Scalar                /* [56g] */
+#   Bare-Ident key == quoted-string key. `null` is NOT a valid key (→ W014).
+#   Scalar here is the FULL scalar set (bool, date, datetime, numbers, …), and
+#   it binds the PROGRAM reading exactly as it binds the data one — the two
+#   readings share this production, so there is no "program map key" subset
+#   (RULED: 777-1a; the program parser previously admitted only
+#   Ident/QuotedText/number, which did not refuse a bool- or date-keyed
+#   literal but silently routed the whole map to the data reading instead).
+#   A key's IDENTITY is the pair (kind, image): `{'7':}` and `{7:}` are two
+#   keys, while a bare Ident and its quoted spelling are one (both `string`).
+#   (The former `Name` spelling here was the grammar's pre-[L10] token name;
+#   the lexicon-internal name is Ident. Scalar is grammar [27].)
 #   ComputedEntry = `[?entry KEY-EXPR VAL]` (code.md §6.4.2), maps only.
 #
 #  ⚠ COLON ROLE #4.  The MapEntry `key : value` separator is the FOURTH use of a

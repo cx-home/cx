@@ -75,10 +75,12 @@ func TestV08_DocHash(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Doc.Hash: %v", err)
 	}
-	if len(h) != 64 {
-		t.Fatalf("expected 64-char SHA-256 hex, got %d chars: %q", len(h), h)
+	// I1: identity is a TAGGED address — `sha2-256:` + 64 lowercase hex.
+	const addrTag = "sha2-256:"
+	if !strings.HasPrefix(h, addrTag) || len(h) != len(addrTag)+64 {
+		t.Fatalf("expected tagged %s address + 64 hex, got %d chars: %q", addrTag, len(h), h)
 	}
-	for _, c := range h {
+	for _, c := range h[len(addrTag):] {
 		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
 			t.Fatalf("non-lowercase-hex char in hash: %q", h)
 		}

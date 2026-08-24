@@ -170,6 +170,15 @@ keys are strings, so a CX Map with non-string keys (int / float / bool
 non-string keys — and import re-types those entry keys. The same
 object rides the YAML lossless lane (one envelope, two renderings).
 
+**Declaration-only entries (`cx:decl`, lossless mode — RULED: MSS-4,
+#917).** A declaration-only entry `{k: ::T}` has no lossy JSON/YAML
+image (absent is not null), so lossy mode REFUSES a document carrying
+one. In lossless mode the entry keeps its object slot as JSON `null`
+(order preserved) and a reserved `cx:decl` sidecar — serialized-key →
+kind-name — marks exactly the declared entries; import restores them as
+declarations, never as null values. The sidecar is the twin of
+`cx:key-type` and rides both lossless renderings.
+
 **`#485` ruling — typed collection values and the CX text lane.** The
 lossless carrier lanes (XML `<cx:T>` / JSON sidecar + per-item carrier
 / YAML tags) are the designated round-trip spelling for `decimal` /
@@ -351,7 +360,7 @@ original CX document.
 | CX feature | XML encoding |
 |------------|--------------|
 | Element anchor (`&name`) | `cx:anchor="name"` attribute |
-| Element merge (`*name`) | `cx:merge="name"` attribute |
+| Element merge (`*name`) | `cx:merge="name"` attribute — **lossless-presentation carry only** (ruling ANC-1: the semantic reading is the Resolved AST, ast.md §Parse-vs-Resolved; this carry serves round-trip fidelity, never meaning) |
 | Element type annotation (`::type`) | `cx:type="type"` attribute |
 | Attribute type annotations (`name::type=…`) | `cx:attr-types="name=type …"` attribute (sidecar) |
 | Value annotation (`[?meta {…} FORM]`, code.md §4.2) | `<cx:meta><cx:map>…</cx:map>INNER</cx:meta>` element |
@@ -435,6 +444,7 @@ CXDM container Items emit as `cx:`-namespaced wrapper elements
 |---|---|
 | Array `[a, b, c]` | `<cx:arr><cx:item>a</cx:item><cx:item>b</cx:item>…</cx:arr>` |
 | Map `{k: v, k2: v2}` | `<cx:map><cx:entry cx:key="k">v</cx:entry><cx:entry cx:key="k2">v2</cx:entry>…</cx:map>` |
+| Declaration-only entry `{k: ::T}` (RULED: MSS-4, #917) | `<cx:entry cx:key="k" cx:decl-kind="T"/>` — declared kind carried as an attribute, NO value content (the value is ABSENT, never null). Carrying lanes: `cx`, `xml`, ast_bin v10, and the `--lossless` sidecar modes (`cx:decl`, §2.2); every LOSSY target REFUSES a document holding one (no absent-field image). |
 | Sequence (top-level) | items emitted in order with no wrapping |
 | Sequence-as-Item (inside Array / Map) | `<cx:seq><cx:item>a</cx:item>…</cx:seq>` at the item position |
 | Empty Array `[]` | `<cx:arr/>` |
@@ -739,7 +749,9 @@ A multi-document stream produces a JSON array, one object per document.
  `&amp;` → `&`, `&lt;` → `<`, `&gt;` → `>`, `&apos;` → `'`, `&quot;` → `"`;
  unrecognised entity refs emitted as `&name;`)
 - Type annotations on elements (dropped; value type is inferred in the output)
-- Anchors, merges, aliases (dropped)
+- Anchors, merges, aliases (resolved — ANC-1: aliases expand to their referent
+ and merge hosts inherit before emit, so the CONTENT is preserved; what is
+ lost is the authored sharing structure)
 - BlockContent structure (content inlined)
 - Attribute type information (int and float both become JSON numbers; a consumer
  cannot distinguish `int` from `float` without the source)
@@ -972,8 +984,9 @@ regardless of insertion order — same rule as JSON; see §2.2.)
 - Comments (dropped)
 - Processing instructions (dropped)
 - Entity refs (resolved)
-- Anchors and merges (YAML has its own anchor/alias mechanism; CX anchors are dropped,
- not converted to YAML anchors)
+- Anchors and merges (YAML has its own anchor/alias mechanism; CX anchors are
+ resolved before emit per ANC-1 — the content is preserved in expanded form —
+ never converted to YAML anchors)
 - Type annotations (YAML auto-infers from value; collection-literal
  Array element-type annotation per §0.2 is informational and not
  encoded in YAML output)
@@ -1096,7 +1109,8 @@ The conversion is **lossy**.
 - Comments (TOML has comments but CX comments are not mapped)
 - Processing instructions (dropped)
 - Entity refs (resolved)
-- Anchors, merges, aliases (dropped)
+- Anchors, merges, aliases (resolved per ANC-1 — content preserved in
+ expanded form; the authored sharing structure is what is lost)
 - Text body content without attrs (no equivalent in TOML key-value model)
 - Mixed content (text + elements) (text dropped when children present)
 - BlockContent (dropped)
@@ -1380,6 +1394,16 @@ and child elements.
 | TOML comments | Dropped |
 
 TOML inline arrays emit as Array Items; TOML inline tables emit as Map Items.
+
+**Strict parse.** TOML → CX is a strict reader: malformed input raises
+`cx-err:CXER0100 PARSE_ERROR` rather than producing a best-effort tree.
+The refused classes are an unterminated inline array or inline table, a
+line that is neither a comment, a table header, nor a `key = value` pair,
+an unterminated table header, an unterminated quoted string, a missing
+`=` in a key-value pair, and a duplicate key within one table. A
+data-ingestion surface never guesses at input it cannot read — the same
+rule §4's JSON lane states and the XML and YAML lanes follow.
+
 ---
 
 ### 6.2 — TOML → XML, JSON, YAML
@@ -1533,6 +1557,17 @@ The first row is parsed as the header. Subsequent rows are data. The
 result is a CX `Document` containing one `:table`-shaped Element
 named `table` (override via the binding-side `table_name` parse
 option). Auto-typing (D5) infers per-column types where it can.
+
+**The ingest auto-typing split (stream 16, L67 — deliberate).** This
+CONVERSION LANE (whole-document import: `cx --from=csv`, the
+`cx_from_*` C ABI) auto-types with column narrowing as specified here
+— a documented inference step, caller-schema precedence, and
+quoted-fields-stay-strings. The **csv stdlib module**
+(spec/std-lib/csv.md — the programmatic parsing primitive) makes the
+OPPOSITE default: it never auto-types without a schema, so
+leading-zero IDs and ZIP codes stay exact. Different jobs, different
+defaults; both are normative, and neither may silently adopt the
+other's default.
 
 **Quote-style accept-set (D4).** Each field may be:
 

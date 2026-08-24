@@ -1,5 +1,5 @@
 """CX-native conformance fixture loader — Python mirror of
-vcx/cx/fixture_loader.v.
+vcx/fixtures/fixture_loader.v.
 
 The canonical fixture format is the CX document (``conformance/*.cxd``, schema
 ``conformance/fixtures.cxs``). This loader reads a suite via the CX parser

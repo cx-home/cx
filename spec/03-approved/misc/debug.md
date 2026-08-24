@@ -138,6 +138,20 @@ feeds recorded results) → reverse-step is inherently effect-safe.
 exact failing run locally — across machines/versions. Tapes are portable,
 diffable, and double as deterministic flaky-test repro for conformance.
 
+**Tapes and computation identity (normative — stream 5, ruling L107;
+`computation_identity.md`).** A debug tape is the **dual** of a computation
+identity: the identity guarantees determinism a priori (pure-only), the tape
+*manufactures* it a posteriori by recording every nondeterministic boundary.
+The extension is **composition, not a new axis**: a witnessed impure
+computation identifies as `hash(fn, inputs ∪ {tape}, env, caps)` — the tape
+is an ordinary Tier-1-addressed **input** (it is already a versioned CX
+document, so it has a plain content address like any value). The tape's
+recorded host environment (`[seed clock=… rng=… env=[…]]`) is **DATA — an
+input, never an identity axis**: the computation record's `env` component
+stays the minimal additive triple (runtime, builtin-set id, schema dialect),
+and host facts ride inside the tape value where they are content, not
+identity structure. The two mechanisms are complementary by construction.
+
 ## §7 Decisions (user rulings 2026-05-30)
 - **(G1) Transport priority → DAP adapter first**, CX-native protocol second.
 - **(G2) Record-replay → v1 = record + forward replay** (§6a); full time-travel

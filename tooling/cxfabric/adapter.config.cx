@@ -1,6 +1,6 @@
 [; Sample cx-fabric webhook-adapter config (spec/02-working/fabric.md
    §14/§19.7; see webhook-adapter.cx beside this file).
-   Run: cx webhook-adapter.cx --data=adapter.config.cx \
+   Run: cx --data=adapter.config.cx webhook-adapter.cx \
           --allow-net=… --allow-env ;]
 [webhook-adapter
   [; the upstream fabric daemon; did+seed-env = this adapter's identity

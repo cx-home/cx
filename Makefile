@@ -72,7 +72,7 @@ conform: build
 ## guide        Render docs/guide/ from docs-src/canonical/ (playground wasm
 ##              ships pre-built under docs/guide/playground/).
 guide: build
-	$(CURDIR)/vcx/target/cx scripts/gen_guide/guide_build.cx --allow-read --allow-write
+	$(CURDIR)/vcx/target/cx --allow-read --allow-write scripts/gen_guide/guide_build.cx
 	@echo "guide: rendered docs/guide/"
 
 ## guide-clean  Remove the rendered guide.

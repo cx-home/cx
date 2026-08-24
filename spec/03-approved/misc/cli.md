@@ -25,12 +25,16 @@ dispatch.
 ## 1 — Global invocation
 
 ```
-cx FILE.cx [RUN FLAGS]          # run a CX resource (the default action, §3.7)
-cx - [RUN FLAGS]                # run a program from stdin (a pipe into bare
-                                # `cx` with no FILE also evaluates stdin)
-cx -e 'PROGRAM' [RUN FLAGS]     # run an inline program (also --expression)
-cx --from=FMT [CONVERT FLAGS]   # convert a data document (the data reading)
-cx SUBCOMMAND [ARGS]            # one of the subcommands in §2
+cx [RUN FLAGS] FILE.cx [ARGS...]      # run a CX resource (the default action,
+                                      # §3.7); ARGS are the PROGRAM's argv
+cx [RUN FLAGS] - [ARGS...]            # run a program from stdin (a pipe into
+                                      # bare `cx` with no FILE also evaluates
+                                      # stdin)
+cx [RUN FLAGS] -e 'PROGRAM' [ARGS...] # run an inline program (also
+                                      # --expression)
+cx --from=FMT [CONVERT FLAGS] [FILE]  # convert a data document (the data
+                                      # reading)
+cx SUBCOMMAND [ARGS]                  # one of the subcommands in §2
 ```
 
 The bare surface (no subcommand token) has two readings, selected by
@@ -40,9 +44,18 @@ structural projection, `--compact`, or `--lossless` selects it). A
 bare `cx` with no input and a TTY on stdin prints usage and exits
 non-zero.
 
-Unknown flags anywhere on the bare surface are a **hard usage error**
-(exit 2) naming the flag — never a silent no-op (§3.7). Subcommands
-likewise reject argv they do not understand with exit 2.
+**Flags bind before the resource** (RULED: PYE-2, #926 — the
+interpreter convention: python/node/ruby). On the run surface, flag
+parsing stops at the program resource (the `FILE` positional, `-e
+'PROGRAM'`, or `-`); everything after it is the **program's** argument
+vector, delivered verbatim through `$env:argv`
+([`std-lib/env.md`](../std-lib/env.md) §3.2). There is no `--`
+separator and no passthrough flag; a cx flag written after the
+resource is a program argument, not a cx flag.
+
+Unknown flags before the resource on the bare surface are a **hard
+usage error** (exit 2) naming the flag — never a silent no-op (§3.7).
+Subcommands likewise reject argv they do not understand with exit 2.
 
 ### 1.1 Global options
 
@@ -72,7 +85,7 @@ consults belong to specific subsystems:
 
 | Variable | Effect |
 |---|---|
-| `CX_WORKER_THREADS` | Worker-pool sizing for the concurrency directives ([`core/code.md`](../core/code.md) §10.4). |
+| `CX_WORKER_THREADS` | Worker-pool sizing for the concurrency directives ([`core/code.md`](../core/code.md) §10.4). Sizing only — no value of this variable may change spawn semantics (`code.md` rule EV-ASYNC-SPAWN: eager spawn, fire-and-forget completion guaranteed). The historical `=0` reading that selected a lazy evaluate-on-await substrate is non-conforming; its reconciliation in the reference implementation is tracked (#707) for the stream-implementation phase. |
 | `CX_STORE_KEK_<ID>` | Key-encryption keys for `cx store-rotate-kek` (§2.6). |
 | `CX_ARROW_LIB` | Path to `libcx_arrow` for `cx table` Parquet / Arrow I/O. |
 
@@ -134,8 +147,8 @@ cx --ast|--cx|--xml|--json|--yaml|--toml|--md|--csv|--tsv|--psv|--cxcol [FILE]
 
 | Surface | Effect |
 |---|---|
-| `cx FILE.cx [--data=INPUT] [FLAGS]` | The **default action** (the run surface, §3.7): parse and evaluate the resource per [`core/code.md`](../core/code.md) §1.3. A pure-data document evaluates to itself. |
-| `cx eval PROGRAM.cx [--data=INPUT] [FLAGS]` | Documented alias of the default action (prefer the plain `cx FILE.cx` spelling). Adds the inline forms `-e 'PROGRAM'` / `-d 'INPUT'` and `--target=FMT`. |
+| `cx [--data=INPUT] [FLAGS] FILE.cx [ARGS...]` | The **default action** (the run surface, §3.7): parse and evaluate the resource per [`core/code.md`](../core/code.md) §1.3. A pure-data document evaluates to itself. `ARGS` are the program's argv (§3.7). |
+| `cx eval [--data=INPUT] [FLAGS] PROGRAM.cx [ARGS...]` | Documented alias of the default action (prefer the plain `cx FILE.cx` spelling). Adds the inline forms `-e 'PROGRAM'` / `-d 'INPUT'` and `--target=FMT`. Same positional rule as the run surface. |
 | `cx select 'PATH' [FILE]` | CXPath query over a document; matches print in canonical CX (§3.8). |
 
 The debug surface (`cx dap`, `cx debug attach`, `cx debug replay`) is
@@ -152,7 +165,7 @@ program evaluator and inherits its semantics (§3.8).
 
 | Subcommand | Effect |
 |---|---|
-| `cx diagram PROGRAM.cx [--format=mermaid\|svg\|png] [-o OUT]` | Render a CX program as a diagram; every format embeds the source bytes, so the diagram reverse-parses to the same AST. |
+| `cx diagram PROGRAM.cx [--format=mermaid\|svg\|png] [-o OUT] [--allow-subprocess]` | Render a CX program as a diagram; every format embeds the source bytes, so the diagram reverse-parses to the same AST. `svg`/`png` render through graphviz `dot` and therefore REQUIRE the `subprocess` grant (`--allow-common` / `--allow-all` also carry it); without it the command refuses with `CXER0271` naming the flag, never substituting the dot-less envelope. With the grant but no `dot` on PATH the dot-less envelope is emitted, and still reverse-parses. `mermaid` needs no capability. |
 | `cx code-diagram [FILE\|-] [--level=min\|compact\|full]` | Mermaid emitter: flowchart for code sources, erDiagram for data sources. |
 | `cx code-tree [FILE\|-]` | Tree View JSON rendering of a CX source. |
 | `cx demo` | Self-contained showcase (no file I/O, no network, < 1 s). |
@@ -251,13 +264,43 @@ exit semantics need more than the registry tables in §2.
 
 ### 3.7 The run surface (bare `cx`)
 
-The **default action**: `cx FILE.cx` (or `cx -`, `cx -e 'PROGRAM'`, or
-a pipe into bare `cx`) selects the **program reading** of
+The **default action**: `cx [FLAGS] FILE.cx [ARGS...]` (or `cx [FLAGS]
+- [ARGS...]`, `cx [FLAGS] -e 'PROGRAM' [ARGS...]`, or a pipe into bare
+`cx`) selects the **program reading** of
 [`core/code.md`](../core/code.md) §1.3 — parse and evaluate. A
 pure-data resource evaluates to itself, and the §1.3 data-reading
 fallback (with its program-intent guards) applies. `cx eval` is the
 documented alias of this action.
 
+- **The positional rule** (RULED: PYE-2, #926): cx's own flags bind
+  **before** the program resource; flag parsing stops at the resource
+  token (the first bare positional, `-e 'PROGRAM'`, or `-`), and
+  **everything after it is the program's argument vector** — delivered
+  verbatim, uninterpreted, through `$env:argv`
+  ([`std-lib/env.md`](../std-lib/env.md) §3.2) as
+  `[resource, ...program-args]` (the `sys.argv` shape). There is no
+  `--` separator and no passthrough flag. This is the interpreter
+  convention (`python -O script.py --verbose`, node, ruby, perl), and
+  it is the only grammar under which `cx tool.cx a b` and the shebang
+  spelling `./tool.cx a b` behave identically — the kernel hands cx
+  exactly `tool.cx a b` either way. The **convert** surface has no
+  program to receive trailing arguments, so arguments after the input
+  `FILE` there are a usage error (exit 2) — never silently swallowed
+  (the #415 rule).
+- **argv[0] names the resource being run**: the `FILE` path as given
+  for file programs (shebang included); the conventional placeholder
+  `-e` for an inline program; `stdin` for a stdin-fed program (both
+  explicit `-` and the pipe fall-through). **Invariant: a program's
+  view of its arguments is independent of how it was launched** — the
+  same program sees the same `[resource, ...args]` shape under
+  `cx FILE`, shebang, `-e`, and stdin.
+- **Reading program args takes no capability grant** (RULED: PYE-3,
+  #926): `$env:argv` and `$env:parse-args` over the program args are
+  ungated — the caller already exercised the authority by typing them
+  at the invocation site, exactly as the `FILE` path itself is
+  supplied without a grant. Environment reads (`$env:var` and
+  friends) remain behind `--allow-env`: those are ambient process
+  state, the distinction the capability model exists to draw.
 - **Separate data input — `--data=FILE|-`.** The caller MAY supply a
   data document alongside the program. The input is loaded via the
   **data reading** (respecting `--include-root` when given) and bound
@@ -278,15 +321,17 @@ documented alias of this action.
   stdout in canonical CX by default; `--xml` / `--json` / `--yaml` /
   `--csv` / `--tsv` render the RESULT in that format (they do not
   reroute to the convert surface).
-- **Unknown flags are hard errors.** Any flag the run surface does not
-  recognise — including a misspelled `--allow-*` grant — exits 2 with
-  a diagnostic naming the flag and pointing at `cx --help`. A flag
-  that requires a value (`--data`, `--from`, `--to`,
-  `--include-root`) given without one is the same usage error. The
-  pre-#415 behaviour (silently ignoring unknown flags, exit 0) was a
-  defect; nothing on the surface may swallow argv.
-- Extra positional arguments (a second FILE, or a FILE alongside
-  `-e` / `-`) are usage errors (exit 2).
+- **Unknown flags before the resource are hard errors.** Any
+  pre-resource flag the run surface does not recognise — including a
+  misspelled `--allow-*` grant — exits 2 with a diagnostic naming the
+  flag and pointing at `cx --help`. A flag that requires a value
+  (`--data`, `--from`, `--to`, `--include-root`) given without one is
+  the same usage error. The pre-#415 behaviour (silently ignoring
+  unknown flags, exit 0) was a defect; nothing on the surface may
+  swallow argv. After the resource, nothing is a cx flag: every
+  token — flag-shaped or not — is a program argument (the positional
+  rule above), so the pre-PYE-2 `unexpected extra argument` refusal is
+  gone.
 - **Capabilities** (deny-by-default,
   [`core/security.md`](../core/security.md)): `--allow-read`,
   `--allow-write`, `--allow-net[=HOST[:PORT]]`, `--allow-env`,
@@ -301,6 +346,43 @@ documented alias of this action.
   in the `--data` input) before evaluation.
 - Runtime errors map to exit 1; the wire code (`CXERnnnn`) is reported
   on stderr.
+
+#### 3.7.1 A top-level `err` result exits 1
+
+A program whose **result** is an `err` has **failed**, and the run
+surface exits **1**. The rendered `err` still goes to **stdout** — it is
+the program's answer, and this rule changes no output bytes, only the
+status.
+
+Without this, a program that refused was indistinguishable from one that
+succeeded: CX has no `exit` and no `raise` directive, so declining is
+expressed by *returning* an `err`, and returning it exited 0. A `make`
+target, a CI step, or a supervisor watching a long-running program read
+that as success.
+
+**The discriminator is POSITION, not value** — the same rule as
+[`core/code.md`](../core/code.md) §6.4.1, and it is what keeps
+`err`-shaped *documents* expressible:
+
+- A **source-literal** `[err …]` written as the program's **own
+  top-level form** is DATA. It renders and exits **0**, exactly as a
+  literal `[err …]` stays data in element child position.
+- **Every other route** to an `err` result is a failure and exits 1 — a
+  call, a directive, a binding read, a computed-name construction
+  (`[?element 'err' …]`), or an `err` that propagated from any depth.
+
+For a **multi-form** program, ANY top-level form that fails this way
+fails the program: a document that refuses halfway has refused. Forms
+are classified against their own source spelling, so a literal `err`
+form and a computed one may sit in the same document with only the
+computed one failing.
+
+An `err` nested inside a surviving structure (`[wrapper [err …]]`) is
+not a top-level result and does not affect the status.
+
+This is the run surface only. `cx eq`, `cx diff`, `cx lint` and
+`cx validate` keep their own exit contracts (§3.4-§3.6), and an
+engine-**raised** error already exits 1 on stderr (above), unchanged.
 
 ### 3.8 `cx select`
 
@@ -353,7 +435,7 @@ The table below summarises the meaningful exits per surface. Code `2`
 
 | Surface | 0 | 1 |
 |---|---|---|
-| run surface (bare `cx` / `cx eval`) | program ok | parse / runtime / I-O error |
+| run surface (bare `cx` / `cx eval`) | program ok | parse / runtime / I-O error, **or a top-level `err` result** (§3.7.1) |
 | convert surface (`--from` / projections) | converted | parse / convert error |
 | `cx fmt` | formatted | parse error |
 | `cx canonical` | canonical | parse error |

@@ -1,5 +1,5 @@
 """Regression tests for the CX-native Python fixture loader
-(cxlib.load_fixtures) — the Python mirror of vcx/cx/fixture_loader.v.
+(cxlib.load_fixtures) — the Python mirror of vcx/fixtures/fixture_loader.v.
 
 Includes a parser canary (inline, file-free bootstrap guard, mirroring the
 V-side test_loader_parser_canary) plus a parity smoke over code.cxd (case

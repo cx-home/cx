@@ -71,8 +71,8 @@ Readers MUST verify `magic`, `version`, and `header_crc32` before trusting any o
 | 0 | 4 | `entry_length` | u32. Total entry size in bytes, including this 4-byte prefix |
 | 4 | 1 | `entry_kind` | u8. See enum below |
 | 5 | 1 | `entry_flags` | u8. See bits below |
-| 6 | 2 | `reserved` | zero in v1 |
-| 8 | 32 | `doc_hash` | SHA-256 of the canonical ast_bin payload |
+| 6 | 2 | `hash_code` | u16. Multicodec code of the algorithm naming `doc_hash` (sha2-256 = `0x0012`; I1 crypto-agility §4 — was `reserved`/zero pre-I1). Readers MUST fail closed on any code they do not implement; all 1.0 algorithms are 32-byte, and a non-32-byte digest requires a pack v3 |
+| 8 | 32 | `doc_hash` | Digest of the canonical ast_bin payload under the `hash_code` algorithm (sha2-256 in every shipped pack) |
 | 40 | 4 | `payload_length` | u32 |
 | 44 | `payload_length` | `payload` | ast_bin bytes |
 | 44 + `payload_length` | 0 or 4 | `payload_crc32` | optional CRC32C of payload; present iff `entry_flags` bit 0 set |

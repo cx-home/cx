@@ -1,7 +1,10 @@
 module main
 
 import code
+import platform as _
 import cx
+import fixtures
+import hash.fnv1a
 import os
 
 // cxparse_full_corpus_diff_test — Phase 0 of the cxparse unification
@@ -74,12 +77,22 @@ fn test_full_corpus_data_differential() {
 	mut both_reject := 0
 	mut multi := 0
 	mut diverge := []DiffRow{}
+	// PROTO_CANON_OUT=<path>: dump a per-input canonical-hash row for every
+	// corpus input (suite, name, fnv1a64 of each reader's canonical render).
+	// The bucket counts below pin only CATEGORY membership, so a change that
+	// moves a render WITHIN a bucket is invisible to this gate; diffing two
+	// dumps (baseline at the base commit vs the change) is the measurement
+	// protocol that turned "predicted zero" into "measured zero" for ASP-2
+	// (#903) and D910-1 (#910). Written to a FILE because V's test runner
+	// swallows println on OK. Dormant unless the env var is set.
+	canon_out := os.getenv('PROTO_CANON_OUT')
+	mut canon_rows := []string{}
 	for f in files {
 		if !f.ends_with('.cxd') {
 			continue
 		}
 		path := os.join_path(conformance_dir(), f)
-		for c in cx.load_fixtures(path) {
+		for c in fixtures.load_fixtures(path) {
 			src := c.sections['in_cx'].trim_space()
 			if src == '' || src == '[ignored]' || src == '[empty]' {
 				continue
@@ -87,6 +100,9 @@ fn test_full_corpus_data_differential() {
 			total++
 			a := diff_cx_canon(src)
 			b := diff_code_canon(src)
+			if canon_out != '' {
+				canon_rows << '${f}\t${c.name}\t${fnv1a.sum64_string(a):016x}\t${fnv1a.sum64_string(b):016x}'
+			}
 			if a == 'MULTI' {
 				multi++
 				continue
@@ -114,6 +130,11 @@ fn test_full_corpus_data_differential() {
 					code:  b
 				}
 			}
+		}
+	}
+	if canon_out != '' {
+		os.write_file(canon_out, canon_rows.join('\n') + '\n') or {
+			assert false, 'cannot write PROTO_CANON_OUT dump: ${err}'
 		}
 	}
 	mut r := []string{}
@@ -447,7 +468,7 @@ fn test_full_corpus_data_differential() {
 	//     (#473 fixed the data side; the program renderer's key rule is
 	//     the residual).
 	// #466 ATTR-VALUE SEMANTICS (2026-07-15): two owner rulings landed.
-	// (1) hex under ::decimal/::bigint REJECTS (CXER0109) in both
+	// (1) hex under ::decimal/::bigint REJECTS (CXER0290) in both
 	// engines — extended.cxd 016g/016h (`[e n::decimal=0x2a]` /
 	// `[e n::bigint=0x2a]`) move agree → both_reject (agree −2,
 	// both_reject +2). (2) code.md §6.4.1 wins over the retired
@@ -474,14 +495,283 @@ fn test_full_corpus_data_differential() {
 	// #646 movement (total 680→684): the four module-scope-through-frames
 	// regression fixtures each carry a trivial `[doc]` in-cx row, all
 	// parsing+rendering identically in both engines: agree +4.
+	// #516/#651 pre-I1 pin batch movement (total 684→706): the pin batch
+	// (parts 1–3: operator-head family + quote-hole/E210 pins, Tier-2 pair
+	// family, data-bin wire goldens) added 22 in-cx rows — agree +12
+	// (plain data pins), cx_only +7 (data-only surfaces the program reading
+	// rejects), both_reject +3 (deliberate error-pin rows). diverge stays
+	// 18 — no new engine divergence, corpus growth only.
+	// I1 row-3 binary slots movement (total 706→707): the sd-010 multihash
+	// schema-ref case carries one in-cx row parsing identically in both
+	// engines: agree +1. diverge stays 18 — corpus growth only.
+	// I1 row-4 part 2 movement (total 707→713): the L58 r'''-in-data-mode
+	// family (ext 050-054) parses identically in both engines (agree +5 —
+	// the raw-triple reader is the ONE shared scanner) and the [2a]
+	// mid-line `---` bare-text witness (ext 055) is a data-only document
+	// the program reading rejects (cx_only +1). diverge stays 18 — corpus
+	// growth only.
+	// I1 row-5 movement (total 713→720): the stream-15 reserved-namespace
+	// family (ns-017..023). The five E213 negatives reject in BOTH engines
+	// (both_reject +5 — cx_check_reserved_ns_attrs is the one shared rule;
+	// the program literal lane enforces it via eval_construction_attrs).
+	// The two positives carry prefixed child names (`p:x`/`z:item`), which
+	// the program reading has always rejected: cx_only +2. diverge holds
+	// 18 — corpus growth only.
+	// I1 row-8 movement (total 720→723): the operator-head lexer fix.
+	// oph-006/007 (`[* $x 2]` / `[> $x 2]`) now PARSE in the data lane —
+	// both_reject −2 → cx_only +2 (the program reading still rejects the
+	// unbound $x). New guard rows: oph-008 `[-1, 2]` agrees (+1);
+	// oph-009 (alias doc) is data-only (+1 cx_only); oph-010 `[+]` is the
+	// FIRST corpus row where BOTH readings accept an operator-headed
+	// input — the data reading yields the element `[+]`, the program
+	// reading EVALUATES the operator to an arity-err VALUE: diverge +1,
+	// the ruled data/program mode fork for operator elements
+	// (homoiconicity working as specified), joining the 18 documented
+	// forks.
+	// Post-I1 movement (723→725): binding_api.cxd gained the L48
+	// promoted-kinds parity rows 111/112 — one shared in-cx doc
+	// (`[order price=19.99 qty=…]`, decimal + bigint attrs) both
+	// readings accept identically: agree +2, corpus growth only.
+	// I2 movement (725→729): lockfile.cxd landed (corpus audit G10 —
+	// the Ring-0 lockfile document surface, 4 in-cx cases). A
+	// `[cx.lock …]` document is data-only — the program reading does
+	// not claim it — so all four land in cx_only: corpus growth only,
+	// no divergence change.
+	// I3 movement (729→741): fmt.cxd landed (corpus audit G6 — the
+	// formatting.md fixture family, 12 in-cx cases). +8 agree (plain
+	// single-element data docs both readings accept identically);
+	// +1 diverge (fmt-010-program-let-faithful — a `[?let …]` form:
+	// the ruled data/program mode fork, same class as the operator-
+	// head fork above); +2 multi (comment-sibling / multi-form docs);
+	// +1 both_reject (fmt-012's deliberately unclosed input — the
+	// fail-closed lane). Corpus growth only, no parsing regression.
+	// #772 movement (741→742): program-cxpath-pred-attr-type-test landed
+	// (the type-test predicate ground truth) — +1 agree (its in-cx doc is
+	// a plain data document, identical under both readings; the typed
+	// attr `age::int=5` is the D3 ascription both readers share). Corpus
+	// growth only, no divergence change.
+	// #703 movement (742→744): sv-062/sv-063 landed (exact [range] bounds
+	// on decimal/bigint — item E's discriminator pair) — +2 agree (both
+	// in-cx docs are plain data documents, identical under both readings).
+	// Corpus growth only, no divergence change.
+	// #673 movement (744→748): sv-064…sv-067 landed (I5 stream 1 W2 —
+	// the retired-schema-pragma + header-edge negatives) — +4 agree
+	// (each case's in-cx target is the plain data document
+	// `[server host=x]`, identical under both readings). Corpus growth
+	// only, no divergence change.
+	// Stream-6 W2+W5+W6 (#678): +11 (cmd-001..012 command clauses), +6
+	// (cmd-013..018 idempotency), +4 (cmd-019..022 propose) in-cx
+	// inputs, all in the agree class — corpus growth only, no divergence
+	// change (748/583 → 759/594 → 765/600 → 769/604).
+	// Stream-21 W5 (#693/#716 item 4): +3 (sv-059a..c semver dialect
+	// acceptance — each in-cx target is the plain `[book id=x]`), all in
+	// the agree class — corpus growth only, no divergence change
+	// (769/604 → 772/607).
+	// Stream-16 W2 movement (772/607 → 779/612, diverge 20→22): +7 in-cx
+	// rows from the sv-068..074 validator-completion fixtures. The +2
+	// diverge = the PRE-EXISTING quoted-string-in-collection rendering
+	// class (cxparse renders ('a', 2) bare / ((a, 2)) while the code
+	// parser keeps quotes) exercised by sv-071/sv-073's body collections —
+	// corpus growth exposing a known class, no new divergence mechanism,
+	// no existing row moved category. Reviewed deliberately per this
+	// test's contract.
+	// Stream-17 W7 movement (779/612 → 795/628): +16 in-cx rows from the
+	// §9 pair family (table_transparency.cxd) — ALL SIXTEEN in the agree
+	// class; every divergence bucket unchanged. Corpus growth only,
+	// reviewed deliberately per this test's contract.
+	// Stream-18 W6 movement (795/628 → 797/630): +2 in-cx [doc] rows from
+	// the cmd-023/024 args-record family (code.cxd) — BOTH in the agree
+	// class; every divergence bucket unchanged. Corpus growth only,
+	// reviewed deliberately per this test's contract.
+	// Stream-14 W6 movement (797/630 → 801/634): +4 in-cx data rows from
+	// the s22-witness/tape families (code.cxd — the [ignored]/[doc]
+	// inputs of ev-async-006 / ev-park-001 and companions) — ALL FOUR in
+	// the agree class; every divergence bucket unchanged. Corpus growth
+	// only, reviewed deliberately per this test's contract.
+	// #704 movement (801/1 → 802/2): +1 in-cx row from ns-024, the E210
+	// authored-`cx:`-name negative that pinned the previously unfixtured
+	// half of the reserved-URI pair. It lands in code_only — the bucket
+	// this census expects to stay ~0 — and that is NOT noise: `[doc [cx:x
+	// 1]]` is refused by the DATA reader and ACCEPTED by the program
+	// reader, so the census is reporting a real asymmetry, not a fixture
+	// artifact. Probed live: a program can construct and emit `[cx:x 1]`,
+	// and the emitted document then fails its own re-parse (E210) — the
+	// same "output fails its own re-parse" class #704 was filed for,
+	// reached through the program lane instead of an xmlns binding.
+	// FILED as #820 (the program-side refusal needs its own error-code
+	// ruling: E210 is documented as a DATA-layer code). The row stays and
+	// the bucket moves DELIBERATELY: it is this census earning its keep.
+	// Every other bucket unchanged.
+	// #809 movement (802/634/91 → 813/644/92): +11 in-cx rows from the
+	// [131b] kind-test families — 10 in code.cxd
+	// (program-cxpath-kindtest-001..010; kindtest-011's `[ignored]` input
+	// is skipped by the filter above) and 1 in fmt.cxd (fmt-013). Fully
+	// accounted, and each bucket for a reason:
+	//   agree +10 — the three distinct code.cxd docs
+	//     (`[doc [a first] …]` ×7, `[users [user id=1 role=admin] …]` ×2,
+	//     `[doc [port 8080] …]` ×1) are plain data documents that both
+	//     readings accept and render identically.
+	//   cx_only +1 — fmt-013's in-cx is a PROGRAM
+	//     (`[?for [in $c //c] [yield (…)]]`), because fmt fixtures format
+	//     programs. The data reading takes it as prose; the program
+	//     reading parses it and then REJECTS at eval (CXER0001: a rooted
+	//     `//c` needs $doc, which a bare corpus row does not bind). That
+	//     is the ruled data/program mode fork this census already
+	//     catalogues — same class as fmt-010-program-let-faithful, the
+	//     precedent from the I3 fmt.cxd landing above. Probed live in
+	//     both readings before re-baselining.
+	// No existing row changed category: diverge / code_only / multi /
+	// both_reject are all untouched, which is the thing that would have
+	// signalled a real parsing regression from the kind-test work.
+	// #736 movement (813/92/28 → 815/93/29): +2 in-cx rows from the
+	// body-position alias fmt pins (fmt-014, fmt-015). Each row's bucket
+	// was classified DIRECTLY (the same diff_cx_canon / diff_code_canon
+	// pair this test uses, run on the two inputs), not inferred:
+	//   multi +1 — fmt-014's input is `[a &n 1]` + `[b [*n]]`, TWO
+	//     top-level elements, and the anchor has to be a sibling because
+	//     the fmt runner's §1 purity check runs STRICT canonical, which
+	//     refuses a dangling alias (§2.8). Two documents → MULTI by this
+	//     census's own rule, before either reading is compared.
+	//   cx_only +1 — fmt-015 (`[x [a &n 1] [b [*n] [*n]]]`): the data
+	//     reading takes `[*n]` as an alias reference; the program reading
+	//     takes it as the operator `*` with one operand and refuses on
+	//     arity. That is the homoiconic data/program fork for
+	//     operator-shaped heads this census already catalogues (the
+	//     oph-006/007 rows above are the same mechanism), not a
+	//     regression from the alias emit fix.
+	// agree / diverge / code_only / both_reject all unchanged.
+	// #824 movement (815/644 → 818/647): +3 in-cx rows from the
+	// head-position attribute-axis fixtures (program-cxpath-attr-head-001,
+	// -002, -003 in code.cxd). All three carry the SAME `[users [user id=1
+	// role=admin] [user id=2]]` document — this census counts per CASE, not
+	// per distinct input — and it is a plain data document both readings
+	// accept and render identically. Classified DIRECTLY with the census's
+	// own reader pair, not inferred: agree. Every other bucket unchanged.
+	// #820 movement (code_only 2 → 1, both_reject 25 → 26; TOTAL
+	// UNCHANGED): this is a CONVERGENCE, and it closes the loop this
+	// census opened. ns-024 (`[doc [cx:x 1]]`) landed in code_only when
+	// #704's fixture arrived — "code accepts; cx rejects", the bucket this
+	// census expects to stay ~0 — and that anomaly is what surfaced #820:
+	// the `cx:` reservation was enforced in the DATA reader only, so a
+	// program could construct and emit a document the data reader then
+	// refused to read back. With the program reader enforcing the SAME
+	// reservation through the SAME authority (RULED: 820-1a), both
+	// readings now refuse the row and it moves to both_reject. Verified
+	// directly on the input with the census's own reader pair, not
+	// inferred. Total is unchanged because the three new
+	// program-reserved-ns fixtures carry `[ignored]`, which this census
+	// skips. code_only is down to its last row.
+	// #825 movement (818/22 → 820/24): +2 in-cx rows from the comment
+	// round-trip pins (fmt-016 block comment in an inline body, fmt-017 line
+	// comment forcing the multiline lane), and BOTH land in diverge.
+	//
+	// That is corpus growth exposing a KNOWN class, not a new divergence
+	// mechanism: comments are DATA-reading nodes that the program reading
+	// discards as trivia (the program AST carries no comment node at all),
+	// so a comment-bearing input renders differently under the two readings
+	// by construction. core.cxd 011 / 042 / 043 / 044 / 045 / 046 / 047 and
+	// lint.cxd 040 are already in this bucket for exactly the same reason,
+	// with the identical `<unknown sum type value>` signature — that string
+	// is the PROGRAM renderer meeting a CommentNode inside this harness's
+	// comparison substrate; it is not reachable from any CLI surface
+	// (verified: --to=cx/json/xml, `cx FILE`, and `cx canonical` all render
+	// the comment or strip it correctly).
+	//
+	// The reason these two rows are NEW is that the emitter used to DROP the
+	// comment, so the data side rendered `[a 'text']` and matched the
+	// program side by accident. Fixing the loss made an existing fork
+	// visible. No pre-existing row changed category; agree / cx_only /
+	// code_only / multi / both_reject are all unchanged.
+	// #829 movement (820/24 → 821/25): +1 in-cx row, fmt-018, joining the
+	// same comment-retention diverge class the #825 note above describes —
+	// comments are DATA nodes the program reading discards as trivia, so any
+	// comment-bearing input renders differently under the two readings by
+	// construction. No pre-existing row changed category.
+	// #831 movement (821/647 → 823/649): +2 in-cx rows, the 831-* core.cxd
+	// cases, and BOTH land in `agree`. That is the point of 831-1a′ rather
+	// than a side effect of it: the collection-item bare rule now admits only
+	// images both readings read the same way, so a case built out of exactly
+	// the shapes that used to fork (`'a b'`, `'a.b'`, `https://…`) converges.
+	// `diverge` is unchanged at 25 — no pre-existing row changed category.
+	// #829 movement (823/25 → 824/26): +1 in-cx row, fmt-019, joining the
+	// SAME comment-retention diverge class the #825/#829 notes above
+	// describe — a comment is a DATA node the program reading discards as
+	// trivia, so any comment-bearing input renders differently under the two
+	// readings BY CONSTRUCTION. `agree` is unchanged; no pre-existing row
+	// changed category.
+	// #829-remainder movement (824/26 -> 826/28): +2 in-cx rows, fmt-020 and
+	// fmt-021 (the ELEMENT-META zone shapes), joining the SAME
+	// comment-retention diverge class as fmt-018/fmt-019 above and for the
+	// same structural reason — a comment is a DATA node the program reading
+	// discards as trivia. `agree` is unchanged; no pre-existing row changed
+	// category. The two core.cxd goldens this landing re-blessed (042/044)
+	// are `out-cx` changes on rows that were ALREADY in their buckets, so
+	// they move no counts.
+	// 2026-08-20 (CXP-1 + #878): +1 total = the new xml.cxd 026 separator
+	// fixture, which lands in the KNOWN ws-attachment diverge class (the
+	// data reading keeps 'Cheese ' with its boundary space, the code
+	// reading trims — same class as core 007-mixed-content); and the
+	// flipped program-cx-pi bogus fixture moves agree -> both_reject
+	// (both parsers refuse the unknown pragma key now).
+	// 2026-08-21 (RULED: ASP-2, #903): +1 total, +1 cx_only = the new
+	// code.cxd program-array-042-discrete-token-array fixture — its in-cx
+	// doc carries comma-less discrete-value arrays, which the DATA reader
+	// now accepts (two items, types intact) and the PROGRAM reader
+	// deliberately declines (there a bracket is an array only with a
+	// top-level comma — the reader difference grammar.ebnf [56b] records).
+	// The movement is the NEW FIXTURE, not parser drift: the ASP-2 parser
+	// change itself moved ZERO of the 827 pre-existing rows (bucket counts
+	// AND per-input canonical hashes of both readers, measured against a
+	// baseline run at a8152a52 before this fixture was added).
+	// 2026-08-21 (RULED: ASP-3, #909): +1 total, +1 cx_only = the new
+	// code.cxd program-array-043-element-body-discrete-children fixture —
+	// element bodies of ws-delimited discrete values (now including `(…)`/
+	// map-shaped `{…}` structure tokens) read as discrete children in the
+	// DATA reader. The row is cx_only, like its ASP-2 sibling 042: the doc
+	// also carries the GUARD shapes (bare `(kg, lbs)` prose parens, the
+	// glued `(1, 2)[0]` span), which the bare PROGRAM reader declines —
+	// the D910-1 data-only-idiom class; the CLI reaches such docs through
+	// eval_code's guarded data fallback, not through this reader. The
+	// ASP-3 parser change itself moved ZERO of the 828 pre-existing rows
+	// (bucket counts AND the per-input canonical-hash dump this test now
+	// emits under PROTO_CANON_OUT, diffed against a baseline run at
+	// a61b73d7 before this fixture was added).
+	// 2026-08-23 (#933/#934 wave): +2 total, +2 agree = the new extended.cxd
+	// fixtures 016e (bytes MAP KEY `{0x2a::bytes: on}`) and 016f (bytes
+	// collection ITEM `(0x2a::bytes, ok)`), pinning the ::bytes ascription
+	// carriage in canonical form. Both rows AGREE: the program reader's
+	// expression-position ascription moved to the shared CHECKED core
+	// (coerce_scalar_strict — it had refused hex-under-::bytes, the #457
+	// shipped carrier, and fell to UNCHECKED coercion for bool/date/etc.),
+	// and the program item renderer carries the bytes ascription like
+	// decimal/bigint. The parser/emitter changes themselves moved ZERO of
+	// the 829 pre-existing rows (bucket counts AND the PROTO_CANON_OUT
+	// per-input hash dump, diffed against a baseline run at 6ce6adac
+	// before these fixtures were added).
+	// 2026-08-23 (#923, RULED: BC-1): agree 650→652, cx_only 95→93 — the
+	// program lexer's attr-value micro-mode reads a glued `name=RUN` as ONE
+	// bare run auto-typed by the data core, so the two rows the program
+	// reader used to REFUSE on run-internal bytes now parse and AGREE
+	// (program-modify-009 `email=a@x.com`, md 012 `src=photo.png`); the
+	// MULTI row 024-attlist-decl's code-lane hash moved for the same reason
+	// (`src=logo.png`, within-bucket). Every other pre-existing row's hash
+	// is unchanged (PROTO_CANON_OUT diff vs the #933-wave dump: exactly
+	// those three rows).
+	// 2026-08-23 (#934): +2 total = the new extended.cxd refusal fixtures
+	// 016j/016k (a quoted value + glued `::` in array/sequence slots refuses
+	// per MSS-3 item 5 — the DATA reader used to silently split it into a
+	// nested two-item sequence). 016k both-reject; 016j is code_only because
+	// the PROGRAM reading of `['x'::int]` is its own deliberate surface (a
+	// slice literal), not a slot ascription. The parser change itself moved
+	// ZERO pre-existing rows (PROTO_CANON_OUT dumps byte-identical).
 	baseline := {
-		'total':       684
-		'agree':       547
-		'diverge':     18
-		'cx_only':     74
-		'code_only':   1
-		'multi':       26
-		'both_reject': 18
+		'total':       833
+		'agree':       652
+		'diverge':     29
+		'cx_only':     93
+		'code_only':   2
+		'multi':       29
+		'both_reject': 28
 	}
 	got := {
 		'total':       total

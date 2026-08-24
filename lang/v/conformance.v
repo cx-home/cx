@@ -3,6 +3,7 @@ module main
 import os
 import native as cxlib
 import cx
+import fixtures
 
 const repo_root = os.join_path(os.dir(@FILE), '..', '..')
 
@@ -28,12 +29,12 @@ fn strip_blank_edges(s string) string {
 	return lines.join('\n')
 }
 
-// parse_suite loads a .cxd conformance suite via cx.load_fixtures (the shared
+// parse_suite loads a .cxd conformance suite via fixtures.load_fixtures (the shared
 // CX-native loader), replacing the bespoke `=== test:` / `--- key` scanner.
 // The runner keys into t.sections[name] by presence exactly as before.
 fn parse_suite(path string) []Test {
 	mut tests := []Test{}
-	for c in cx.load_fixtures(path) {
+	for c in fixtures.load_fixtures(path) {
 		mut secs := map[string]string{}
 		for k, v in c.sections {
 			secs[k] = strip_blank_edges(v)

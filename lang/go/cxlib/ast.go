@@ -4,9 +4,12 @@ package cxlib
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/cockroachdb/apd/v3"
 )
 
 // ── Node interface ────────────────────────────────────────────────────────────
@@ -101,8 +104,9 @@ type XMLDeclNode struct {
 func (n *XMLDeclNode) cxNode() {}
 
 // CXDirectiveNode is `[?cx ...]`. v0.6.0 — directives may carry an
-// `&anchor` and/or nested elements. Currently used by the standalone
-// fragment form `[?cx frag &name [body :TYPE :flags]]` (spec
+// `&anchor` and/or nested elements. Added for the standalone fragment
+// form `[?cx frag &name [body :TYPE :flags]]` (retired at I5 stream 1 —
+// legacy texts still parse; schema load rejects them, spec
 // schema.md §8). ast_bin format version 4 carries them; v1-3 decoders
 // see attrs-only and leave Anchor/Items as nil/empty.
 type CXDirectiveNode struct {
@@ -126,6 +130,15 @@ func (n *DoctypeDeclNode) cxNode() {}
 type BlockContentNode struct{ Items []Node }
 
 func (n *BlockContentNode) cxNode() {}
+
+// HoleNode is the authorable variable hole — bare `$name` on the CX
+// surface (I1 row 9, L78). Rides ast_bin as additive tag 0x18
+// (str:name). Inert at the binding layer; the program evaluator fills
+// holes at quote-lowering time. The STRING "$name" spells '$name'
+// (quoting keeps $-leading images quoted), so the two never collide.
+type HoleNode struct{ Name string }
+
+func (n *HoleNode) cxNode() {}
 
 // InterpolationNode is `[?=EXPR]`. EXPR is parsed as
 // cxpath at evaluation time. ast_bin tag 0x0D.
@@ -833,12 +846,12 @@ func docFromMap(m map[string]json.RawMessage) (*Document, error) {
 //
 // Reserved prefixes:
 //   - `xml`   → http://www.w3.org/XML/1998/namespace
-//   - `cx`    → https://cx-home.org/ns/cx
+//   - `cx`    → tag:cxhome.org,2026:ns/cx
 //   - `xmlns` → declaration-only; never resolves as a name prefix
 
 const (
 	XMLNamespaceURI = "http://www.w3.org/XML/1998/namespace"
-	CXNamespaceURI  = "https://cx-home.org/ns/cx"
+	CXNamespaceURI  = "tag:cxhome.org,2026:ns/cx"
 )
 
 func splitNsPrefix(name string) (string, string) {
@@ -1263,6 +1276,13 @@ func emitScalar(s *ScalarNode) string {
 		// Defensive: caller passed AtomValue with empty/unset DataType.
 		// Still emit canonical `:name`.
 		return ":" + v.Name
+	case *big.Int:
+		// I1 L48: bigint image — base-10 integer string.
+		return v.Text(10)
+	case *apd.Decimal:
+		// I1 L48: decimal image — fixed-point base-10, scale preserved
+		// (never exponent form; %v on apd may print scientific).
+		return v.Text('f')
 	default:
 		return fmt.Sprintf("%v", v)
 	}
@@ -1308,6 +1328,17 @@ func emitAttr(a Attr) string {
 		return fmt.Sprintf("%s=%v", a.Name, a.Value)
 	case "null":
 		return a.Name + "=null"
+	case "decimal", "bigint":
+		// I1 stream 11 (L45 + ruling 2b): annotation-iff-retyping — the
+		// bare image drops the annotation exactly when it re-types the
+		// same kind on its own (a fixed-point fraction IS a decimal; an
+		// over-i64 integer auto-promotes to bigint per L20). Integral
+		// decimals and ≤ i64 bigints keep the glued `name::T=` form.
+		img := kindImageStr(a.Value)
+		if bareImageRetypesSame(a.DataType, img) {
+			return a.Name + "=" + img
+		}
+		return a.Name + "::" + a.DataType + "=" + img
 	case "atom":
 		// atom attribute renders as `name=:NAME` (no quoting).
 		// Accept either the typed AtomValue (post-decode) or a raw string
@@ -1330,6 +1361,40 @@ func emitAttr(a Attr) string {
 	}
 }
 
+// kindImageStr renders a decimal / bigint attr or scalar value to its
+// canonical base-10 image (I1 L48): fixed-point for decimal (scale
+// preserved, never exponent form), plain integer digits for bigint.
+// String values (a caller-constructed image) pass through verbatim.
+func kindImageStr(v any) string {
+	switch x := v.(type) {
+	case *apd.Decimal:
+		return x.Text('f')
+	case *big.Int:
+		return x.Text(10)
+	case string:
+		return x
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
+// bareImageRetypesSame reports whether a decimal / bigint image would
+// re-type to the SAME kind when emitted bare (I1 ruling 2b:
+// annotation-iff-retyping). A fixed-point fraction IS a decimal; an
+// over-i64 integer image auto-promotes to bigint (L20). Integral
+// decimals and ≤ i64 bigints re-type differently and need the glued
+// `::T` annotation.
+func bareImageRetypesSame(dataType, img string) bool {
+	switch dataType {
+	case "decimal":
+		return strings.Contains(img, ".")
+	case "bigint":
+		_, err := strconv.ParseInt(img, 10, 64)
+		return err != nil // out of i64 range → bare image IS a bigint
+	}
+	return false
+}
+
 func emitInline(node Node) string {
 	switch n := node.(type) {
 	case *TextNode:
@@ -1341,6 +1406,9 @@ func emitInline(node Node) string {
 		return emitScalar(n)
 	case *EntityRefNode:
 		return "&" + n.Name + ";"
+	case *HoleNode:
+		// I1 row 9 (L78) — bare `$name`, inline like entity refs.
+		return "$" + n.Name
 	case *RawTextNode:
 		return "[#" + n.Value + "#]"
 	case *Element:
@@ -1373,7 +1441,7 @@ func emitElement(e *Element, depth int) string {
 		switch item.(type) {
 		case *Element:
 			hasChildElems = true
-		case *TextNode, *ScalarNode, *EntityRefNode, *RawTextNode:
+		case *TextNode, *ScalarNode, *EntityRefNode, *RawTextNode, *HoleNode:
 			hasText = true
 		}
 	}
@@ -1444,6 +1512,10 @@ func emitNode(node Node, depth int) string {
 		return ind + "[#" + n.Value + "#]\n"
 	case *EntityRefNode:
 		return "&" + n.Name + ";"
+	case *HoleNode:
+		// Bare `$name` — matches the V CX emitter (no indent/newline,
+		// holes are inline body items like entity refs).
+		return "$" + n.Name
 	case *AliasNode:
 		return ind + "[*" + n.Name + "]\n"
 	case *BlockContentNode:

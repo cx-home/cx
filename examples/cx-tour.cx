@@ -24,8 +24,8 @@
   ]
 
   [; 3. Collection-literal attribute values ]
-  [tags ::string[] cx markup format tutorial]
-  [scores ::float[] 1.0 2.5 3.14]
+  [tags::string[] cx markup format tutorial]
+  [scores::float[] 1.0 2.5 3.14]
 
   [; 4. ID declarations and references. Hash-prefix declares; at-prefix
      refers. The LSP resolves cross-document via goto-definition. ]

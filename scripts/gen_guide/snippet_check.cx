@@ -62,7 +62,13 @@
         [= $r [$process:run ($cxbin, $tmp)]]
         [= $out [$cat ($r@stdout, ' ', $r@stderr)]]
         [= $clean [$strings:replace $out 'cx-err:CXER0271' '']]
-        [= $ok [and [= $r@exit-code 0] [< [$strings:find $clean 'cx-err:'] 0]]]
+        [; R5.13: a top-level err exits 1, so a denial-only snippet now
+           exits nonzero — still a PASS per this gate's contract (the
+           denial is environmental). Nonzero exit is OK iff the output
+           carries a CXER0271 denial; any OTHER cx-err still fails. ]
+        [= $denial [not [< [$strings:find $out 'cx-err:CXER0271'] 0]]]
+        [= $ok [and [< [$strings:find $clean 'cx-err:'] 0]
+                    [?if [= $r@exit-code 0] [then true] [else $denial]]]]
     [?if $ok [then ()]
       [else [fail file=$file head=[$first-line $code]
               [detail [$strings:trim $out]]]]]]]

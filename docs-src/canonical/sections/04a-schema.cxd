@@ -1,0 +1,130 @@
+[# Section 4a — schema and its evolution: the Ring-0 half of
+   spec/03-approved/core/schema_event_evolution.md (compatibility as a
+   computable predicate, lineage, the always-additive headline). The
+   Ring-2 half (upcasting journals, fold identity, migration) is section
+   18c. Absorbs the schema-compatibility half of the old ABI-stability
+   concept page (was 9.8). Authored 2026-08-19 for #826 acceptance 3. #]
+
+[section id=schema-evolution group='Ring 0 — Data' n='4a' title='Schema and its evolution'
+
+  [child id=se-frame n=4a.1 title='Schemas change; addresses do not'
+    [intro
+      """A schema is a CX document (authored in the same syntax it
+         validates — see the schema material in [[data]]), so a schema
+         has a content address like any other value. This section is
+         about what happens when the schema *changes*: how CX decides
+         whether the change is compatible, how two revisions are linked,
+         and why evolution never rewrites anything."""]
+
+    [body
+      """The headline rule, and the answer to every migration-anxiety
+         question: **identity is schema-independent, and nothing is ever
+         overwritten.** A value's address is computed from its canonical
+         bytes — the schema in force does not participate — so evolving
+         a schema never perturbs a single stored address. Migration is
+         therefore always *additive*: new documents beside old ones, new
+         readings of old events, never an in-place rewrite. (What that
+         looks like operationally — upcasting journals, migrating stored
+         documents — is Ring 2's half: [[event-evolution]].)"""]]
+
+  [child id=se-compat n=4a.2 title='Compatibility you can compute'
+    [intro
+      """Whether schema v2 accepts everything schema v1 accepted is not
+         a matter of judgment — it is a **decidable, pure predicate**
+         over the two declaration forms, and for every document valid
+         under v1, validation under v2 yields *valid* or a *named
+         diagnostic* — never a silently different meaning. The predicate
+         ships as `cx schema compat OLD.cxs NEW.cxs`: it classifies
+         every field-level change, **derives the translator** for the
+         mechanically-derivable classes (a lineage claim carrying the
+         rewrite rules as data — [[se-lineage]]), and **refuses** a
+         change that genuinely reinterprets data, with a prompt naming
+         the missing rule per change. Renames are declared
+         (`--rename TYPE/OLD=NEW`), never guessed — a removed field
+         plus an added same-shaped field is indistinguishable from a
+         rename, and a guessed rename would silently move data."""]
+
+    [body
+      """The changes that are **safe within a schema line**:"""]
+    [list
+      [item """**Add a field with a default** — old documents validate;
+              the default materializes at validation time."""]
+      [item """**Add an optional attribute** — old writers do not
+              produce it; old readers do not require it."""]
+      [item """**Add a new element type** — existing documents never
+              reference it."""]
+      [item """**Widen a constraint** — loosening a length bound or
+              widening an enum keeps every previously-valid document
+              valid."""]]
+
+    [body
+      """The changes that are **breaking**:"""]
+    [list
+      [item """**Renaming or removing a field** — breaks every reader
+              or consumer that names it."""]
+      [item """**Tightening a constraint** — narrowing an enum,
+              lowering a bound, or making an optional field required
+              turns existing-valid documents into errors."""]
+      [item """**Changing a type** — a string field becoming an int is
+              a different value model, a hard break."""]
+      [item """**Adding a required field — even in open mode.** Open
+              mode waives *undeclared* content, not declared
+              requirements; a new `[req]` is a new obligation on every
+              existing document, and the predicate says so."""]]
+
+    [note
+      """One subtlety for tool authors: a compatibility verdict is
+         computed on the form a consumer actually validates against.
+         A schema exported to JSON Schema is a lossy projection, so
+         \"additive in CX\" does not automatically mean \"additive in
+         the export\" — the verdict for exported consumers is computed
+         on the exported form."""]]
+
+  [child id=se-lineage n=4a.3 title='Schema identity and lineage'
+    [intro
+      """A type's identity is `(element name, schema content-hash)` —
+         see [[value-model]]. It follows that `Order` under v1 and
+         `Order` under v2 are **different type identities that happen to
+         share a name**. Nothing intrinsic links them, because nothing
+         intrinsic could without perturbing identity."""]
+
+    [body
+      """The link is an explicit, detached **lineage claim**: a Lane-2
+         value naming the `from` schema address, the `to` schema
+         address, the relation (`:additive`, `:narrowing`, `:split`,
+         `:merge`), and — when one exists — the upcaster that carries
+         old data forward. For the derivable classes, `cx schema
+         compat` emits the claim with the rewrite rules **as data**
+         (`[derived …]`), and the journal applies them natively and
+         losslessly — a derived claim IS a usable upcaster chain.
+         Lineage claims form a graph, and the graph
+         must admit a **unique path** between any two endpoints; an
+         ambiguous graph is rejected fail-closed at load, because two
+         different upgrade paths for the same pair is two different
+         meanings for the same data."""]
+
+    [body
+      """One rule keeps the whole scheme honest: a schema document that
+         **anchors** a type identity (feeds a type-binding claim, a pair
+         exchange, or any address-bound adoption) declares exactly one
+         type. Multi-type schema documents remain legal for validation —
+         but they cannot anchor identity, so editing one type in a
+         shared file can never silently move another type's identity."""]]
+
+  [child id=se-when n=4a.4 title='What to do when, in one table'
+    [table
+      [tr [th 'You want to…'] [th 'Do this'] [th 'Where it is covered']]
+      [tr [td 'add a field, widen an enum'] [td '`cx schema compat` confirms it is additive and derives the lineage claim; publish deploys it silently'] [td 'this section']]
+      [tr [td 'ship a breaking change'] [td 'publish v2 as a new type identity + an authored lineage claim with an upcaster — the publish gate stops you until the claim exists'] [td 'this section + [[event-evolution]]']]
+      [tr [td 'reread old journal events under v2'] [td 'upcast at read time — journals are never rewritten'] [td '[[event-evolution]]']]
+      [tr [td 'migrate stored documents'] [td 'batch-migrate: new docs + ref advances; old docs stay addressable'] [td '[[event-evolution]]']]
+      [tr [td 'assert a type at a trust boundary'] [td 'exchange the (name, hash) pair; validate fail-closed'] [td '[[value-model]]']]]
+
+    [body
+      """The division of labor between the halves: Ring 0 owns the
+         *vocabulary* — what compatible means, what a lineage claim is,
+         why addresses never move. Ring 2 owns the *machinery* — folds
+         that upcast, snapshots that remember which fold produced them,
+         and the honest failure when an entry no upcaster covers appears
+         mid-replay."""]]
+]

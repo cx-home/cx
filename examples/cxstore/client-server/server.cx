@@ -1,7 +1,0 @@
-[?lib 'cx-stdlib/http' :as http]
-[?lib 'cx-stdlib/store' :as store]
-[?let
-  [= $local [$store:open "mem://"]]
-  [= $srv   [$http:listen "tcp://127.0.0.1:18901" {}]]
-  [?for [in $ex [$http:accept-iter $srv]]
-    [yield [$store:csrp-handle $ex $local]]]]

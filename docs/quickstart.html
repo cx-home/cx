@@ -5,15 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Quickstart — first 5 minutes with CX — CX Guide</title>
 <link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <aside class="sidebar">
   <a class="brand" href="index.html" aria-label="CX — home">
-    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
   </a>
   <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
   <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
   <a class="brand-sub" href="about.html">About →</a>
   <div class="side-search">
     <input id="side-search-input" type="search"
@@ -21,88 +25,126 @@
            autocomplete="off" spellcheck="false" data-prefix="" />
     <ul id="side-search-results" class="side-search-results" hidden></ul>
   </div>
-  <section><h4>Guide</h4><ul>
+  <section><h4>Start here</h4><ul>
     <li><a class="active" href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
     <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
     <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
     <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
     <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
     <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
-    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
-    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
-    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
-    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
-    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
-    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
-    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
-    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
     <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
-    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
-    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
-    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
-  </ul></section>
-  <section><h4>Reference</h4><ul>
-    <li><a href="directives.html">Directives</a></li>
-    <li><a href="syntax.html">Core syntax</a></li>
-  </ul></section>
-  <section><h4>Standard library</h4><ul>
-    <li><a href="libraries.html">Overview</a></li>
-    <li><a href="lib-authz.html">authz</a></li>
-    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
     <li><a href="lib-bytes.html">bytes</a></li>
     <li><a href="lib-crypto.html">crypto</a></li>
     <li><a href="lib-csv.html">csv</a></li>
-    <li><a href="lib-did.html">did</a></li>
-    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
     <li><a href="lib-env.html">env</a></li>
-    <li><a href="lib-fabric.html">fabric</a></li>
     <li><a href="lib-format.html">format</a></li>
     <li><a href="lib-fp.html">fp</a></li>
     <li><a href="lib-ft.html">ft</a></li>
     <li><a href="lib-geo.html">geo</a></li>
     <li><a href="lib-hash.html">hash</a></li>
     <li><a href="lib-html.html">html</a></li>
-    <li><a href="lib-http.html">http</a></li>
     <li><a href="lib-i18n.html">i18n</a></li>
     <li><a href="lib-io.html">io</a></li>
-    <li><a href="lib-journal.html">journal</a></li>
     <li><a href="lib-json.html">json</a></li>
     <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
     <li><a href="lib-jsonschema.html">jsonschema</a></li>
     <li><a href="lib-locale.html">locale</a></li>
     <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
     <li><a href="lib-math.html">math</a></li>
     <li><a href="lib-mime.html">mime</a></li>
-    <li><a href="lib-net.html">net</a></li>
     <li><a href="lib-path.html">path</a></li>
     <li><a href="lib-process.html">process</a></li>
     <li><a href="lib-prof.html">prof</a></li>
     <li><a href="lib-random.html">random</a></li>
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
-    <li><a href="lib-session.html">session</a></li>
     <li><a href="lib-similar.html">similar</a></li>
-    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
     <li><a href="lib-test.html">test</a></li>
     <li><a href="lib-time.html">time</a></li>
     <li><a href="lib-url.html">url</a></li>
     <li><a href="lib-uuid.html">uuid</a></li>
     <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-vc.html">vc</a></li>
     <li><a href="lib-xap.html">xap</a></li>
     <li><a href="lib-xsp.html">xsp</a></li>
-  </ul></section>
-  <section><h4>XAP</h4><ul>
     <li><a href="xap.html">Overview</a></li>
     <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
     <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
     <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
     <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
   </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
 </aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Quickstart — first 5 minutes with CX</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
 <main>
 <section id="quickstart">
   <h1>Quickstart — first 5 minutes with CX</h1>
@@ -115,26 +157,37 @@
     <section id="install">
       <h2>Install</h2>
       
-        <p>CX ships as a single statically-linked binary `cx` plus a
-         shared library `libcx` for host-language bindings. Today the
-         supported install path is a build from source:</p>
-        <p>**Build from source.** The reference build uses devbox to pin
-         the V toolchain and Python version. From a fresh clone of the
-         repository:</p>
+        <p>CX ships as a single self-contained binary <code>cx</code> plus a
+         shared library <code>libcx</code> for host-language bindings. On macOS
+         (Apple Silicon) the primary install path is the release
+         installer:</p>
         <pre>
-          <code class="language-shell">git clone https://github.com/cx-home/cx
-         cd cx
-         devbox run -- make build
-         devbox run -- make install   [# installs to ~/.local/bin     #]
+          <code class="language-shell">curl -sSL https://cxhome.org/install | sh
          cx --version</code>
         </pre>
-        <p>**Packaged installs** — a Homebrew tap, prebuilt release
-         tarballs, and a Docker image — are planned but not published
-         yet; distribution is being decided in the tracker. Until then,
-         every platform builds from source (per-platform notes in
-         §0.10).</p>
-        <p class="note">If `cx --version` prints a version line, you are ready.
-         If you see `command not found`, your `PATH` does not include
+        <p>The installer resolves the latest release and installs the
+         <code>platform</code> profile by default; leaner compositions install
+         with <code>CX_PROFILE=data</code>, <code>CX_PROFILE=embed</code>, or
+         <code>CX_PROFILE=cli</code>. Every profile tarball is linked from the
+         guide's downloads page. Prebuilt tarballs currently cover
+         macOS (Apple Silicon) only; a Homebrew tap and a Docker
+         image are not published.</p>
+        <p><b>Build from source</b> — the alternative everywhere, and the
+         only path on Linux and Windows. devbox pins the host
+         toolchains (Python, Rust); the V toolchain comes from the
+         vendored fork at <code>third_party/v</code>, a git submodule, so clone
+         with <code>--recursive</code>:</p>
+        <pre>
+          <code class="language-shell">git clone --recursive https://github.com/cx-home/cx
+         cd cx
+         devbox run -- make build-vcx
+         devbox run -- make install-cli   [# → /usr/local/bin/cx; PREFIX= overrides #]
+         cx --version</code>
+        </pre>
+        <p>Per-platform notes — loader paths, editor wiring, the
+         WebAssembly bundle — are in §0.10.</p>
+        <p class="note">If <code>cx --version</code> prints a version line, you are ready.
+         If you see <code>command not found</code>, your <code>PATH</code> does not include
          the install location — see <a class="xref" href="faq.html">faq</a> for recovery steps.</p>
       
     </section>
@@ -142,36 +195,39 @@
       <h2>Hello, CX</h2>
       
         <p>Every interactive CX session starts the same way: pipe a CX
-         literal into the `cx` binary and see what comes out.</p>
+         literal into the <code>cx</code> binary and see what comes out.</p>
         <pre>
           <code class="language-shell">echo '[hello greeting="world"]' | cx</code>
         </pre>
         <p>The output is the same shape you typed:</p>
         <pre>
-          <code class="language-cx">[hello greeting='world']</code>
+          <code class="language-cx">[hello greeting=world]</code>
         </pre>
-        <p>Three things to notice. **First**, the value evaluated to
+        <p>Three things to notice. <b>First</b>, the value evaluated to
          itself — data and code share one syntax, and a bare data
-         element is its own value (see <a class="xref" href="concepts.html#homoiconicity">homoiconicity</a>). **Second**,
-         the canonical form normalises double quotes to single
-         quotes; attribute order is preserved at parse time but
-         re-sorted lexicographically for hashing (see <a class="xref" href="identity.html#canonical">canonical</a>).
-         **Third**, no closing tag duplication — every CX element is a
+         element is its own value (see <a class="xref" href="value-model.html#homoiconicity">homoiconicity</a>). <b>Second</b>,
+         the double quotes are gone — canonical output drops quotes
+         entirely when a token is bare-safe, and attribute order is
+         preserved as written; attributes are never re-sorted, not
+         even for hashing (see <a class="xref" href="identity.html#canonical">canonical</a>).
+         <b>Third</b>, no closing tag duplication — every CX element is a
          single bracketed form. That is the whole syntax.</p>
-        <p>Try a tiny program too. The `[?for]` directive iterates and
-         yields:</p>
+        <p>Try a tiny program too. The <code>[?for]</code> directive iterates and
+         yields, one line per yielded item:</p>
         <pre>
           <code class="language-shell">echo '[?for [in $x (1, 2, 3)] [yield [n $x]]]' | cx</code>
         </pre>
         <pre>
-          <code class="language-cx">([n 1], [n 2], [n 3])</code>
+          <code class="language-cx">[n 1]
+         [n 2]
+         [n 3]</code>
         </pre>
       
     </section>
     <section id="first-file">
       <h2>Your first file</h2>
       
-        <p>Real CX work lives in files. Create `users.cx` with three
+        <p>Real CX work lives in files. Create <code>users.cx</code> with three
          users:</p>
         <pre>
           <code class="language-cx">[users
@@ -179,17 +235,17 @@
            [user id=2 email='grace@example.com'  active=false]
            [user id=3 email='linus@example.com'  active=true]]</code>
         </pre>
-        <p>**Parse it** (round-trips through the canonicalizer; useful
+        <p><b>Parse it</b> (round-trips through the canonicalizer; useful
          as a syntax check):</p>
         <pre>
-          <code class="language-shell">cx fmt users.cx              [# pretty-print, lossless       #]
-         cx canonical users.cx        [# strict canonical bytes        #]</code>
+          <code class="language-shell">cx fmt users.cx              [# lossless canonical — one line, double quotes, comments kept #]
+         cx canonical users.cx        [# strict canonical bytes — indented, quotes dropped where bare-safe #]</code>
         </pre>
-        <p>**Hash it** — the SHA-256 of the strict canonical bytes is
+        <p><b>Hash it</b> — the SHA-256 of the strict canonical bytes is
          the document's identity (see <a class="xref" href="identity.html#hash">hash</a>):</p>
         <pre>
           <code class="language-shell">cx hash users.cx
-         [# → 7f3a9b...c4e2  (64 hex chars)                            #]</code>
+         [# → sha2-256:3ace03ec...7a13c9e6  (tagged; 64 hex chars)     #]</code>
         </pre>
         <p>The hash is stable across machines, OS versions, and
          bindings. Two documents with the same hash are
@@ -200,8 +256,10 @@
       <h2>Convert JSON ↔ CX</h2>
       
         <p>CX speaks JSON (and YAML, TOML, XML, Markdown) as
-         projections — every projection round-trips. Start from
-         JSON:</p>
+         projections. JSON, YAML, TOML, and XML round-trip losslessly
+         under the <code>--lossless</code> flag; the default JSON projection is
+         idiomatic and can drop CX-only detail such as mixed content;
+         Markdown and CSV are lossy by design. Start from JSON:</p>
         <pre>
           <code class="language-shell">cat > users.json <<'EOF'
          {"users":[
@@ -209,19 +267,21 @@
            {"id":2,"email":"grace@example.com","active":false}
          ]}
          EOF
-         cx convert --to cx users.json > users.cx</code>
+         cx --from=json --to=cx users.json > users.cx</code>
         </pre>
-        <p>`users.cx` now contains the CX projection of that JSON.
+        <p><code>users.cx</code> now contains the CX projection of that JSON.
          Convert back and verify the round-trip:</p>
         <pre>
-          <code class="language-shell">cx convert --to json users.cx > users.roundtrip.json
+          <code class="language-shell">cx --from=cx --to=json users.cx > users.roundtrip.json
          diff <(jq -S . users.json) <(jq -S . users.roundtrip.json)
          [# → no output: byte-identical after canonicalization        #]</code>
         </pre>
-        <p>The hash is also stable through the round-trip — the CX form
-         of a JSON document and the round-tripped JSON form share the
-         same content hash, because hashing is computed on canonical
-         bytes (see <a class="xref" href="identity.html#canon-cross-format">canon-cross-format</a>).</p>
+        <p>The document's identity is also stable through a lossless
+         projection round-trip — <code>cx hash users.cx</code> equals
+         <code>cx --from=json --to=cx users.json | cx hash</code> — because
+         hashing is computed on canonical bytes (see
+         <a class="xref" href="identity.html#canon-cross-format">canon-cross-format</a>). The lossy lanes (default JSON for
+         mixed content, Markdown, CSV) are the named exceptions.</p>
       
     </section>
     <section id="first-selection">
@@ -232,19 +292,20 @@
          simplest query asks: "which users are active?"</p>
         <p>A CX program is just another document, so the quickest CLI
          query appends one to your data and runs the result — the
-         program's `//` paths resolve against the document that
+         program's <code>//</code> paths resolve against the document that
          precedes it:</p>
         <pre>
           <code class="language-shell">echo '[?for [in $u //user[= $_@active true]] [yield $u@email]]' \
            | cat users.cx - | cx</code>
         </pre>
-        <p>Read the predicate as: "from anywhere in the document (`//`),
-         find a `user` element whose `@active` attribute equals `true`,
-         then take its `@email` attribute." Predicates are ordinary
-         prefix CX code over the context node `$_` — `[= $_@active
-         true]`. If you have written XPath, the alignment is
-         deliberate — see
-         [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md)
+        <p>Read the predicate as: "from anywhere in the document (<code>//</code>),
+         find a <code>user</code> element whose <code>@active</code> attribute equals <code>true</code>,
+         then take its <code>@email</code> attribute." Predicates are ordinary
+         prefix CX code over the context node <code>$_</code> — <code>[= $_@active
+         true]</code>. If you have written XPath, the alignment is
+         deliberate — see the CXPath sections of
+         <a href="../../spec/03-approved/core/code.md"><code>spec/03-approved/core/code.md</code></a>
+         and the conformance corpus <code>conformance/xpath_31_parity.cxd</code>
          for what carries over and what does not.</p>
         <p>The same path drives iteration in a program:</p>
         <pre>
@@ -259,29 +320,29 @@
     <section id="first-validation">
       <h2>Validate with a schema</h2>
       
-        <p>A CX schema (`.cxs`) is a CX document that describes the
+        <p>A CX schema (<code>.cxs</code>) is a CX document that describes the
          allowed shape of another CX document. Write
-         `users.cxs`:</p>
+         <code>users.cxs</code>:</p>
         <pre>
-          <code class="language-cx">[schema target='users'
-         [element name='users' mode=strict
-           [child name='user' min=1 max='*'
-             [attr name='id'     type=int  required=true]
-             [attr name='email'  type=str  required=true]
-             [attr name='active' type=bool required=true]]]]</code>
+          <code class="language-cx">[schema of=users mode=strict]
+         [users [elem user [card "1..*"]]]
+         [user
+           [attr id::int [req]]
+           [attr email::string [req]]
+           [attr active::bool [req]]]</code>
         </pre>
         <p>Run the validator:</p>
         <pre>
-          <code class="language-shell">cx validate --schema users.cxs users.cx
-         [# → users.cx: ok (3 user elements validated)                 #]</code>
+          <code class="language-shell">cx validate users.cx --schema=users.cxs
+         [# → prints nothing; exit code 0                              #]</code>
         </pre>
-        <p>Break it on purpose to see a diagnostic. Remove `active`
+        <p>Break it on purpose to see a diagnostic. Remove <code>active</code>
          from one user and re-run:</p>
         <pre>
-          <code class="language-shell">cx validate --schema users.cxs users.cx
-         [# → users.cx:2:3 CXER0301: missing required attribute 'active'  #]</code>
+          <code class="language-shell">cx validate users.cx --schema=users.cxs
+         [# → users.cx:2:4: error: S002: missing required attribute 'active' on <user>  #]</code>
         </pre>
-        <p>Schema modes are `open` / `strict` / `closed` — strict
+        <p>Schema modes are <code>open</code> / <code>strict</code> / <code>closed</code> — strict
          rejects unknown attributes, closed also rejects unknown
          child elements. See <a class="xref" href="data-language.html#schema">schema</a> for the full constraint
          vocabulary.</p>
@@ -294,46 +355,62 @@
          reference), Python, Go, and Rust. The Layer-1 method set is
          identical across all four (see <a class="xref" href="bindings.html#layer-1">layer-1</a>). One install,
          one shape:</p>
-        <p>**Python:**</p>
+        <p><b>Python:</b></p>
         <pre>
-          <code class="language-shell">pip install cxlib</code>
+          <code class="language-shell">pip install cxlib   [# when published — pre-publish: pip install -e lang/python/ #]</code>
         </pre>
         <pre>
           <code class="language-python">import cxlib
 
-         doc = cxlib.parse_file('users.cx')
-         print(doc.hash())                       [# stable SHA-256    #]
-         actives = doc.eval('//user[= $_@active true]/@email')
-         for email in actives:
-             print(email)</code>
+         with open('users.cx', 'rb') as f:
+             doc = cxlib.Doc.parse(f.read())
+         print(doc.hash())                       [# tagged sha2-256:… #]
+         for user in doc.select_all('//user[= $_@active true]'):
+             print(user.attr('email'))</code>
         </pre>
-        <p>**V** (native — `cxlib` is `import cx`):</p>
+        <p><b>V</b> (native — imports the V core directly):</p>
         <pre>
-          <code class="language-v">import cx
-         doc := cx.parse_file('users.cx') or { panic(err) }
-         println(doc.hash())
-         println(doc.eval('//user[= $_@active true]/@email'))</code>
+          <code class="language-v">import os
+         import native as cx
+
+         doc := cx.parse_doc(os.read_file('users.cx')!)!
+         println(doc.hash()!)
+         for user in doc.select_all('//user[= $_@active true]')! {
+             println(user.attr('email') or { continue })
+         }</code>
         </pre>
-        <p>**Go:**</p>
+        <p><b>Go:</b></p>
         <pre>
-          <code class="language-go">import "github.com/cx-home/cx-go"
-         doc, _ := cx.ParseFile("users.cx")
-         fmt.Println(doc.Hash())
-         res, _ := doc.Eval("//user[= $_@active true]/@email")
-         fmt.Println(res)</code>
+          <code class="language-go">import "github.com/cx-home/cx/lang/go/cxlib"
+
+         src, _ := os.ReadFile("users.cx")
+         doc, _ := cxlib.ParseDoc(src)
+         h, _ := doc.Hash()
+         fmt.Println(h)
+         users, _ := doc.SelectAll("//user[= $_@active true]")
+         for _, u := range users {
+             fmt.Println(u.Attr("email"))
+         }</code>
         </pre>
-        <p>**Rust:**</p>
+        <p><b>Rust:</b></p>
         <pre>
-          <code class="language-rust">use cxlib::Doc;
-         let doc = Doc::parse_file("users.cx")?;
-         println!("{}", doc.hash());
-         let res = doc.eval("//user[= $_@active true]/@email")?;
-         println!("{}", res);</code>
+          <code class="language-rust">use cxlib::code::Doc;
+
+         let doc = Doc::parse(&std::fs::read("users.cx")?)?;
+         println!("{}", doc.hash()?);
+         for user in doc.select_all("//user[= $_@active true]")? {
+             println!("{}", user.attr("email").unwrap());
+         }</code>
         </pre>
-        <p class="note">All four bindings call into the same compiled `libcx`; hash
-         values, eval results, and canonical bytes are bit-identical
-         across them. That is enforced by gate 28.6 in
-         [`spec/governance.md`](../../spec/governance.md).</p>
+        <p class="note">The identity-critical operations — hashing,
+         canonicalization, program eval — are one implementation (the
+         V core that <code>libcx</code> is compiled from), so their results are
+         bit-identical across bindings. Parsing and several emitters
+         are implemented natively per binding and held to parity by
+         the conformance corpus: the Layer-1 parity gate in
+         <a href="../../spec/03-approved/misc/bindings.md"><code>spec/03-approved/misc/bindings.md</code></a>,
+         tracked per binding in
+         <a href="../../spec/03-approved/misc/parity-matrix.md"><code>spec/03-approved/misc/parity-matrix.md</code></a>.</p>
       
     </section>
     <section id="next-steps">
@@ -344,35 +421,36 @@
          host language. From here, follow your interest:</p>
         <ul>
           
-            <li>**Learn the data language end-to-end.** <a class="xref" href="intro.html">intro</a>
+            <li><b>Learn the data language end-to-end.</b> <a class="xref" href="intro.html">intro</a>
               walks the design philosophy; <a class="xref" href="data-language.html">data</a> is the
               full reference for scalars, collections, sigils, and
               mixed content.</li>
-            <li>**Learn the code language.** <a class="xref" href="code.html">code</a> covers the 40
-              directives, CXPath in depth, patterns, builtins,
+            <li><b>Learn the code language.</b> <a class="xref" href="code.html">code</a> covers the
+              directive registry, CXPath in depth, patterns, builtins,
               services / workers / async, and resilience.</li>
-            <li>**Wire a binding into a real project.** <a class="xref" href="bindings.html">bindings</a>
+            <li><b>Wire a binding into a real project.</b> <a class="xref" href="bindings.html">bindings</a>
               has per-language quickstarts and the Layer-1 / Layer-2
               method set.</li>
-            <li>**Pick a tooling integration.** <a class="xref" href="tooling.html">tooling</a> covers
+            <li><b>Pick a tooling integration.</b> <a class="xref" href="tooling.html">tooling</a> covers
               the LSP, tree-sitter grammar, VS Code, Neovim, Helix,
-              `cx lint`, `cx diff`, and the playground.</li>
-            <li>**Migrate an existing codebase.** <a class="xref" href="migration.html">migration</a>
+              <code>cx lint</code>, <code>cx diff</code>, and the playground.</li>
+            <li><b>Migrate an existing codebase.</b> <a class="xref" href="migration.html">migration</a>
               covers prior-version migration and intake from
               JSON / YAML / TOML / XML.</li>
-            <li>**Compare against alternatives.** <a class="xref" href="comparison.html">comparison</a>
+            <li><b>Compare against alternatives.</b> <a class="xref" href="comparison.html">comparison</a>
               is the side-by-side against JSON, YAML, TOML, XML,
               Protobuf, MessagePack, Pkl, Dhall, Parquet, and
               Arrow — including where CX is the wrong choice.</li>
-            <li>**Look up a term.** <a class="xref" href="glossary.html">glossary</a> defines every
+            <li><b>Look up a term.</b> <a class="xref" href="glossary.html">glossary</a> defines every
               CX-specific term used in this guide; <a class="xref" href="faq.html">faq</a> covers
               the first-week-of-CX questions.</li>
           
         </ul>
         <p class="note">The community lives at https://github.com/cx-home/cx — file
-         bugs, browse RFCs, and read the spec under `spec/*.md`. The
-         guide ships an in-browser playground (`make guide` renders it
-         to `docs/guide/playground.html`) that runs CX with no
+         bugs and read the spec: approved documents live under
+         <code>spec/03-approved/</code>, in-flight work under <code>spec/02-working/</code>.
+         The guide ships an in-browser playground (<code>make guide</code> renders
+         it to <code>docs/guide/playground.html</code>) that runs CX with no
          install.</p>
       
     </section>
@@ -380,15 +458,18 @@
       <h2>Install — per-platform detail</h2>
       
         <p>Per-platform install instructions. Section §0.1 covers the
-         brew / docker / source paths at a glance; this section
+         installer and source paths at a glance; this section
          carries the full per-platform breakdown including loader
          path and editor wiring.</p>
         <section id="install-status">
           <h3>Release status</h3>
           
-            <p>Every platform currently builds from source with
-           `devbox run -- make build`; prebuilt binaries, a Homebrew
-           tap, and a Docker image are planned but not published yet.
+            <p>Every release publishes prebuilt macOS (Apple Silicon)
+           tarballs — one per profile (<code>platform</code>, <code>cli</code>, <code>embed</code>,
+           <code>data</code>) — plus the installer one-liner
+           <code>curl -sSL https://cxhome.org/install | sh</code>. Linux and
+           Windows have no prebuilts and build from source; a
+           Homebrew tap and a Docker image are not published.
            Production users should pin to a release tag.</p>
           
         </section>
@@ -396,30 +477,31 @@
           <h3>macOS</h3>
           
             <pre>
-              <code class="language-shell">git clone https://github.com/cx-home/cx && cd cx
-           devbox run -- make build && devbox run -- make install</code>
+              <code class="language-shell">curl -sSL https://cxhome.org/install | sh</code>
             </pre>
-            <p>Builds native on Apple Silicon and Intel. A Homebrew tap is
-           planned but not published yet.</p>
+            <p>Installs the prebuilt Apple Silicon <code>platform</code> profile;
+           <code>CX_PROFILE=data|embed|cli</code> selects a leaner one. Source
+           builds work on Apple Silicon and Intel
+           (<code>devbox run -- make build-vcx &amp;&amp; devbox run -- make install-cli</code>).
+           A Homebrew tap is not published.</p>
           
         </section>
         <section id="install-linux">
           <h3>Linux</h3>
           
-            <p>Build from source with `devbox run -- make build`; the
-           result is a static binary that runs on any glibc-based
-           distro. A prebuilt Linux tarball on the GitHub Releases
-           page is planned but not published yet.</p>
+            <p>Build from source; the result is a static binary that
+           runs on any glibc-based distro. No prebuilt Linux tarball
+           is published.</p>
             <pre>
-              <code class="language-shell">git clone https://github.com/cx-home/cx && cd cx
-           devbox run -- make build && devbox run -- make install</code>
+              <code class="language-shell">git clone --recursive https://github.com/cx-home/cx && cd cx
+           devbox run -- make build-vcx && devbox run -- make install-cli</code>
             </pre>
           
         </section>
         <section id="install-windows">
           <h3>Windows</h3>
           
-            <p>A static `cx.exe` is planned per release on
+            <p>A static <code>cx.exe</code> is planned per release on
            github.com/cx-home/cx/releases, but is not published yet
            (the V toolchain's Windows support is still on the
            roadmap — see <a class="xref" href="faq.html">faq</a>); build from source in the
@@ -430,11 +512,11 @@
         <section id="install-wasm">
           <h3>WebAssembly bundle</h3>
           
-            <p>The `libcx-wasm` bundle powers the live evaluator in
+            <p>The <code>libcx-wasm</code> bundle powers the live evaluator in
            the playground; it exports the
-           `_cx_code_eval` family plus `_cx_code_diagram` and
-           `_cx_code_tree`. The bundle ships
-           alongside the `cx` binary on release tags.</p>
+           <code>_cx_code_eval</code> family plus <code>_cx_code_diagram</code> and
+           <code>_cx_code_tree</code>. The bundle ships
+           alongside the <code>cx</code> binary on release tags.</p>
           
         </section>
         <section id="install-source">
@@ -446,8 +528,8 @@
            devbox run -- make build-vcx
            devbox run -- make test</code>
             </pre>
-            <p>The build chain expects V on PATH or the `cx-home` V
-           fork at `third_party/v`; the Makefile auto-detects
+            <p>The build chain expects V on PATH or the <code>cx-home</code> V
+           fork at <code>third_party/v</code>; the Makefile auto-detects
            either. Check out the latest release tag to build
            a specific release.</p>
           
@@ -460,9 +542,11 @@
            cx --json - <<< "[hello world]" </code>
             </pre>
             <p class="note">A successful run prints the version and a JSON document
-           on stdout. If either fails, the build needs `libcx` on
-           the loader path (`LD_LIBRARY_PATH` on Linux,
-           `DYLD_LIBRARY_PATH` on macOS).</p>
+           on stdout. The <code>cx</code> binary is self-contained — it does not
+           link <code>libcx</code>. If a host-language <i>binding</i> cannot find
+           <code>libcx</code>, point it at the library with <code>LIBCX_PATH</code> (full
+           path to the library file) or <code>LIBCX_LIB_DIR</code> (its
+           directory).</p>
           
         </section>
       
@@ -473,12 +557,11 @@
         <p>This walkthrough walks CX from the smallest piece to the
          fullest expression in twenty linked chapters. Each
          chapter introduces one shape, shows it in context, and
-         ends with two or three exercises you can run with `cx
-         --ast` or `cx --json`. Pace yourself. Assumed background:
+         ends with two or three exercises you can run with <code>cx
+         --ast</code> or <code>cx --json</code>. Pace yourself. Assumed background:
          familiarity with at least one of JSON, YAML, TOML, or XML
          — CX assumes you know what an object, array, scalar, and
-         attribute are. Designer pre-approved as front-matter
-         (decision recorded in `_migration_plan.md`).</p>
+         attribute are.</p>
         <section id="tut-1">
           <h3>Why CX looks the way it does</h3>
           
@@ -504,36 +587,36 @@
             <pre>
               <code class="language-cx">[p Hello, World]</code>
             </pre>
-            <p class="note">**Exercises.** Save as `hello.cx` and run `cx --ast
-           hello.cx`. Add a child element and re-run. Then run `cx
-           --json` on the same file.</p>
+            <p class="note"><b>Exercises.</b> Save as <code>hello.cx</code> and run <code>cx --ast
+           hello.cx</code>. Add a child element and re-run. Then run <code>cx
+           --json</code> on the same file.</p>
           
         </section>
         <section id="tut-3">
           <h3>Attributes</h3>
           
             <p>Attributes are name=value pairs after the element name.
-           Bare values auto-type: `8080` becomes int, `3.14`
-           becomes float, `true` becomes bool, `2026-01-01`
+           Bare values auto-type: <code>8080</code> becomes int, <code>3.14</code>
+           becomes float, <code>true</code> becomes bool, <code>2026-01-01</code>
            becomes date. Leading-zero tokens stay strings —
-           `02134` stays the string `02134` — to avoid the YAML
+           <code>02134</code> stays the string <code>02134</code> — to avoid the YAML
            Norway problem.</p>
             <pre>
               <code class="language-cx">[server host=api.example.com port=8080 ssl=true]</code>
             </pre>
-            <p class="note">**Exercises.** Add three more attributes and check what type cx assigns each. Quote a value containing a space and inspect the AST.</p>
+            <p class="note"><b>Exercises.</b> Add three more attributes and check what type cx assigns each. Quote a value containing a space and inspect the AST.</p>
           
         </section>
         <section id="tut-4">
           <h3>Types</h3>
           
-            <p>CX auto-types most values; for the rest, a glued `::T`
+            <p>CX auto-types most values; for the rest, a glued <code>::T</code>
            ascription pins the value or body type. Sized variants
            carry range constraints that validate at parse time.</p>
             <pre>
               <code class="language-cx">[port::u16 8080]</code>
             </pre>
-            <p class="note">**Exercises.** Try setting the `::u16` value to `70000` and observe the error. Compare `[n 12]` vs `[n::decimal 12]` in `cx --ast`.</p>
+            <p class="note"><b>Exercises.</b> Try setting the <code>::u16</code> value to <code>70000</code> and observe the error. Compare <code>[n 12]</code> vs <code>[n::decimal 12]</code> in <code>cx --ast</code>.</p>
           
         </section>
         <section id="tut-5">
@@ -546,29 +629,33 @@
             <pre>
               <code class="language-cx">[para Try the [b Margherita] — our [em best seller], hand-tossed daily.]</code>
             </pre>
-            <p class="note">Triple-quoted bodies preserve multi-line content verbatim. **Exercises.** Write an article with `h1`, `p`, `em`, `a` children; convert with `cx --md`.</p>
+            <p class="note">Triple-quoted bodies preserve multi-line content verbatim. <b>Exercises.</b> Write an article with <code>h1</code>, <code>p</code>, <code>em</code>, <code>a</code> children; convert with <code>cx --md</code>.</p>
           
         </section>
         <section id="tut-6">
           <h3>Comments</h3>
           
-            <p>Hash line comments live outside element bodies.
-           Bracket-semicolon block comments live inside elements and
-           can span lines.</p>
+            <p>Two comment forms, both valid at document level and inside
+           element bodies. <code>#</code> starts a line comment; <code>[; … ]</code> is a
+           block comment that can span lines.</p>
             <pre>
-              <code class="language-cx">[shop port=8080 [menu [pizza name=Margherita]]]</code>
+              <code class="language-cx"># top pick this week
+         [shop port=8080
+           [; the menu is trimmed for the tutorial ]
+           [menu [pizza name=Margherita]]]</code>
             </pre>
-            <p class="note">**Exercises.** Check what `cx fmt` preserves and what `cx canonical` drops.</p>
+            <p class="note"><b>Exercises.</b> Check what <code>cx fmt</code> preserves and what <code>cx canonical</code> drops.</p>
           
         </section>
         <section id="tut-7">
           <h3>Sigils</h3>
           
             <p>Five sigils give CX structural reach beyond name and
-           attribute. `@` is an attribute prefix in path
-           expressions and a reference in body position. `&amp;`
-           declares an anchor; `*` merges from an anchor; `#`
-           declares an id; `:` pins a data type.</p>
+           attribute. <code>@</code> is an attribute prefix in path
+           expressions; in body position it appears only inside the
+           <code>[ref @id]</code> reference form. <code>&amp;</code>
+           declares an anchor; <code>*</code> merges from an anchor; <code>#</code>
+           declares an id; <code>:</code> pins a data type.</p>
             <pre>
               <code class="language-cx">[defaults &shared timeout=30 retries=3]
            [server *shared name=api]</code>
@@ -592,13 +679,15 @@
         <section id="tut-9">
           <h3>Typed tables</h3>
           
-            <p>A `[table[…]]` block declares column names and types.
-           Each non-blank line below is a row; cells parse against
-           the declared column types. Round-trips to CSV with
-           types preserved via the header row. In the binary
-           ast-bin form, rows are stored column-major and run 5
-           to 10 times smaller than equivalent element-per-row
-           encoding.</p>
+            <p>A <code>[table[…]]</code> block declares column names and types.
+           The cells that follow partition into rows by the declared
+           column count — newlines are ordinary whitespace, so one
+           row per line is a readability convention, not a rule.
+           Cells parse against the declared column types, and the
+           table round-trips to CSV with types preserved via the
+           header row. In the binary ast-bin form, the table record
+           stores rows row-major; the column-major layout is the
+           separate CXCol format (see <a class="xref" href="analytics.html">analytics</a>).</p>
             <pre>
               <code class="language-cx">[orders [table[item::string qty::u32 paid::bool when::date]]
              Margherita 2 true  2026-05-09
@@ -612,16 +701,20 @@
             <p>A single CX file can hold multiple top-level documents
            separated by three dashes on a line by themselves.
            Same separator as YAML; each side parses as an
-           independent document, and `cx --json` emits the file as
+           independent document, and <code>cx --json</code> emits the file as
            an array of documents.</p>
           
         </section>
         <section id="tut-11">
           <h3>Six surface dialects</h3>
           
-            <p>The same tree parses and emits as CX, XML, JSON, YAML,
-           TOML, or Markdown. Each dialect captures the subset of
-           the data model it can represent.</p>
+            <p>The same tree parses and emits as any of six document
+           dialects — CX, XML, JSON, YAML, TOML, or Markdown. Each
+           dialect captures the subset of the data model it can
+           represent. Beyond the six, the delimited surfaces
+           (CSV / TSV / PSV) and the columnar binary surface (CXCol)
+           convert through the same codec layer — see
+           <a class="xref" href="analytics.html">analytics</a>.</p>
             <pre>
               <code class="language-shell">cx --yaml pizza.cx</code>
             </pre>
@@ -631,12 +724,12 @@
           <h3>CX code — directives inside data</h3>
           
             <p>CX code is CX that does things. A directive is an
-           element whose name starts with `?`. Directives parse
+           element whose name starts with <code>?</code>. Directives parse
            as regular CX and evaluate against the surrounding
-           tree when `cx` runs the document.</p>
+           tree when <code>cx</code> runs the document.</p>
             <pre>
               <code class="language-cx">[page title='Menu — New Haven']
-         [h1 //page/@title]</code>
+         [?let [= $t //page/@title] [h1 [$string $t]]]</code>
             </pre>
           
         </section>
@@ -644,8 +737,8 @@
           <h3>Path expressions (CXPath)</h3>
           
             <p>CXPath is the query language inside CX code. Paths
-           separated by `/`; predicates in `[…]` are prefix CX code
-           over the context node `$_`; axes navigate by
+           separated by <code>/</code>; predicates in <code>[…]</code> are prefix CX code
+           over the context node <code>$_</code>; axes navigate by
            relationship.</p>
             <pre>
               <code class="language-cx">[menu [pizza name=Margherita price=12]
@@ -657,7 +750,7 @@
         <section id="tut-14">
           <h3>Let and for</h3>
           
-            <p>`[?let]` binds a name once and reuses it. `[?for]`
+            <p><code>[?let]</code> binds a name once and reuses it. <code>[?for]</code>
            iterates a path expression result.</p>
             <pre>
               <code class="language-cx">[?let [= $tax 0.22] [= $price 12] [* $price [+ 1 $tax]]]</code>
@@ -668,7 +761,7 @@
           <h3>Filters</h3>
           
             <p>Filter functions transform values. Compose them with
-           `[?pipe]` — bare stages, threaded left to right — or nest
+           <code>[?pipe]</code> — bare stages, threaded left to right — or nest
            them.</p>
             <pre>
               <code class="language-cx">[?lib 'cx-stdlib/strings']
@@ -679,16 +772,23 @@
         <section id="tut-16">
           <h3>Multi-branch conditional</h3>
           
-            <p>The multi-branch `[?if]` shape avoids the else-if
-           ladder. Each branch is a condition-value pair; the
-           wildcard branch is the catch-all.</p>
+            <p><code>[?if]</code> is strictly two-branch — a condition, a <code>[then]</code>,
+           an <code>[else]</code>. Multi-way dispatch on a value is <code>[?match]</code>:
+           <code>[case]</code> arms carry a literal or pattern plus a result,
+           tried in order, and <code>[else]</code> is the catch-all.</p>
+            <pre>
+              <code class="language-cx">[?let [= $size 'medium']
+             [?match $size
+               [case 'small' 9] [case 'medium' 12] [case 'large' 15]
+               [else 0]]]</code>
+            </pre>
           
         </section>
         <section id="tut-17">
           <h3>Named templates</h3>
           
-            <p>`[?def]` defines a reusable fragment; call it like any
-           other function — `[$line …]` — with positional args.</p>
+            <p><code>[?def]</code> defines a reusable fragment; call it like any
+           other function — <code>[$line …]</code> — with positional args.</p>
             <pre>
               <code class="language-cx">[?def line ($item) [tr [td $item/@name] [td $item/@qty]]]</code>
             </pre>
@@ -697,12 +797,21 @@
         <section id="tut-18">
           <h3>Includes</h3>
           
-            <p>Two include forms share one resolver. The parse-time
-           form expands files before the document reaches
-           downstream tools; the eval-time form expands files
-           while a CX program runs.</p>
+            <p><code>[?cx include=PATH]</code> splices another file's children into
+           the parent document at parse time. Resolution is opt-in:
+           without an include root the directive is preserved
+           untouched; with <code>--include-root</code> every include resolves
+           during the parse. Paths are relative-only and bounded by
+           the root — no absolute paths, no URLs, no escaping the
+           root — and include depth defaults to 8. Errors are the
+           data-parse codes <code>cx-err:E901</code>–<code>E911</code>.</p>
             <pre>
-              <code class="language-shell">cx --xml --include-root=./conf config.cx</code>
+              <code class="language-cx">[users
+             [?cx include=lib/admins.cx]
+             [user name=carol]]</code>
+            </pre>
+            <pre>
+              <code class="language-shell">cx --xml --include-root=. config.cx</code>
             </pre>
           
         </section>
@@ -710,8 +819,9 @@
           <h3>Identity</h3>
           
             <p>Every CX document has a canonical form: presentation
-           stripped, attribute order normalised, anchors
-           renumbered. `cx hash` returns the SHA-256 of those
+           stripped, attribute order preserved as written, anchors
+           resolved and erased (the merge is materialized).
+           <code>cx hash</code> returns the SHA-256 of those
            canonical bytes. Two documents with the same data
            have the same hash, in any dialect.</p>
             <pre>
@@ -733,6 +843,13 @@
   
 </section>
 </main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>Quickstart — first 5 minutes with CX</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
 <script src="highlight/highlight.js" defer></script>
 <script src="search-index.js" defer></script>
 <script src="search/search.js" defer></script>

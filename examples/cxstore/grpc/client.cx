@@ -1,5 +1,7 @@
 [?lib 'cx-stdlib/store' :as store]
 [?let
+  [; LOOPBACK DEV SHORTCUT — cleartext h2c. Production opens
+     "cx-store+grpcs://…" against a TLS daemon; never use +grpc off 127.0.0.1. ]
   [= $c   [$store:open "cx-store+grpc://127.0.0.1:18911/docs/"]]
   [= $doc [note id="n1"
             [title "Greetings over gRPC"]

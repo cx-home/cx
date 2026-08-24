@@ -111,3 +111,16 @@
 # ^^^^^^ keyword.control.eval-directive.cx
 #               ^ punctuation.section.brackets.cx
 #                ^^^ keyword.control.modify.cx
+
+[+ $x 2]
+#^ keyword.operator.head.cx
+#  ^^ variable.other.hole.cx
+
+[total $x]
+#      ^^ variable.other.hole.cx
+
+[doc payload=sha2-256:1c28ab1f00aa]
+#            ^^^^^^^^^^^^^^^^^^^^^ constant.other.address.cx
+
+[entry prev-hash=genesis:]
+#                ^^^^^^^^ constant.other.address.cx

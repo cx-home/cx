@@ -1,0 +1,92 @@
+# Reference: the `cx` command line — v{{VERSION}}
+
+> **GENERATED.** Source: `docs-src/llm/reference-cli.md.tmpl`. The help text
+> below is the v{{VERSION}} binary's own `--help`, captured at generation
+> time — not a transcription. Read `primer.md` first.
+
+## The one rule
+
+```
+cx [cx-flags] FILE [program-args...]
+```
+
+Flags bind **before** the resource. Everything after the resource is the
+program's `argv`. This is the interpreter convention (and shebang-identical),
+and getting it backwards does not produce a usage error — it produces a
+program that silently never got its capability:
+
+{{PAIR:ap-flags-after-file-wrong ap-flags-after-file-right}}
+
+An inline one-liner uses `-e`, and `cx eval` — a legacy alias of the default
+action — still takes a **file**:
+
+{{PAIR:ap-cx-eval-inline-wrong ap-cx-eval-inline-right}}
+
+## Reading program arguments
+
+`env:argv` is ungated (reading your own arguments is not an effect) and
+`argv[0]` is the file. `env:parse-args` takes a declarative flag spec.
+
+{{EXAMPLE:ap-flags-after-file-right block}}
+
+## `cx --help`
+
+{{CXHELP}}
+
+## The verbs you will actually reach for
+
+| Command | Use it for |
+|---|---|
+| `cx FILE.cx` | run a program, or print a document's canonical form |
+| `cx -e 'PROG'` | a one-liner |
+| `cx fmt FILE` | lossless format (keeps comments and anchors) |
+| `cx canonical FILE` | strict canonical text — what identity is defined over |
+| `cx hash FILE` | SHA-256 of the strict-canonical bytes |
+| `cx eq A B` / `cx diff A B` | semantic equality / semantic diff |
+| `cx lint FILE` | style and correctness findings |
+| `cx validate FILE --schema=S.cxs` | schema check |
+| `cx select 'PATH' FILE` | one CXPath query, no program |
+| `cx --from=json --to=cx f.json` | the convert surface |
+| `cx code-diagram FILE` | Mermaid of a program (or `--view=effects` for its capability graph) |
+| `cx primer` | this documentation set's primer, for the installed binary |
+| `cx demo` | a self-contained showcase, no I/O, under a second |
+
+## Capability grants
+
+```
+--allow-read --allow-write --allow-net[=host[:port]] --allow-env
+--allow-clock --allow-random --allow-subprocess --allow-eval
+--allow-secret-reveal
+--allow-common     # all of the above EXCEPT secret-reveal
+--allow-all        # including secret-reveal (declassifies secrets)
+```
+
+Deny-by-default, and a denial names the flag that would have allowed it:
+
+{{EXAMPLE:io-004-write-file-cap-denied block}}
+
+Grant the narrowest thing that works. `--allow-net` takes a scope; the others
+are all-or-nothing, which is a reason to prefer `--allow-read` over
+`--allow-common` in anything automated.
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | success |
+| 1 | the program produced an error value, or a check found findings |
+| 2 | usage error — an unknown flag, a missing file, a bad invocation |
+
+Unknown flags are hard errors. Nothing is ignored, which is why a typo'd
+grant fails loudly *before* the file but silently *after* it.
+
+## Scripting `cx` from CX
+
+Tooling in this repo is written in CX and run with `cx <file>` — never
+`cx eval`, and never a shell wrapper where CX would do. The pattern:
+
+```console
+cx --allow-read --allow-write --allow-subprocess --allow-env script.cx --flag value
+```
+
+Flags for `cx` first, the script, then the script's own arguments.

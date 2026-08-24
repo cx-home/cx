@@ -11,8 +11,8 @@ market spec.
 
 Requirements are the source; the grammar is the compiled output. **A
 requirement's acceptance criteria are the conformance fixtures** — TDD falls
-out. The real reference is `xap-marine/features/own-ship/own-ship.feature.cxd`;
-its anatomy:
+out. The real reference is `reference/shop`'s base
+feature spec; its anatomy:
 
 ```cx
 [feature name=own-ship version=0.1.1
@@ -98,9 +98,10 @@ Minimal complete module (verified end-to-end):
   `exports` block; the install gate verifies the listing against the code
   both ways (see [registry setup](registry-setup.md)).
 
-The full-size real example is `xap-marine/features/own-ship/own-ship.cx` —
-live NMEA readout with simulator fallback, unit-preference and control-slot
-`apply`, shared helpers from the `marine-common` library over the code plane.
+The full-size real example is `reference/shop`'s base
+feature impl —
+live telemetry readout with simulator fallback, unit-preference and control-slot
+`apply`, shared helpers from a common library over the code plane.
 
 ## 3. Exports and scope
 
@@ -116,8 +117,8 @@ A composite feature is **just a feature** that `uses` others and declares
 derived nouns (a `[from …]` join over shared frames/keys). Composition is
 closed under feature; the composite packages, publishes, and installs like a
 base feature, with its `uses` set as grammar-plane dependencies. Reference:
-`xap-marine/features/collision-cpa` (joins own-ship + traffic over geo + time
-into derived `cpa` nouns) and `features/nav`.
+`reference/shop`'s composite delayed-shipment feature (joins its two
+base features over geo + time into derived alert nouns).
 
 Authority note: a composite's cross-feature reads are exactly what the
 `needs` block's `reads` consent is for — see [marketplace](marketplace.md)

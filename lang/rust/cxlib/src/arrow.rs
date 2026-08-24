@@ -3,8 +3,13 @@
 //! Bridges CXCol chunked-tables to the Arrow C-Data ABI via libcx_arrow
 //! (spec/abi.md §2.11, capability bit 0x800000). The bridge
 //! handles all 9 v0.6.0 column types (int, i8, i16, i32, float, bool,
-//! string, date, bytes); datetime / decimal / dictionary columns are
-//! deferred and surface the V core's deferred-type error.
+//! string, date, bytes); datetime / dictionary columns are deferred and
+//! surface the V core's deferred-type error. decimal / bigint columns
+//! (first-class kinds since I1 L48) are DECLARED unsupported on the
+//! Arrow bridge until I5 (M23 advisory window) — they surface the V
+//! core's clear not-yet-supported error; the native CXCol codec
+//! (`cxlib::data_bin`, `CxValue::Decimal` / `CxValue::BigInt`) carries
+//! them with full fidelity in the meantime.
 //!
 //! Gated behind the `arrow` Cargo feature so the default `cargo build`
 //! does not require libcx_arrow or the `arrow` crate:

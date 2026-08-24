@@ -286,7 +286,8 @@ class Doc:
 
     # Method 3 — Doc.hash() -> string
     def hash(self) -> str:
-        """SHA-256 hex of the strict-canonical bytes (spec/abi.md §2.6)."""
+        """Tagged content address (`sha2-256:<64hex>`, I1 identity epoch)
+        of the strict-canonical bytes (spec/abi.md §2.6)."""
         return _cx.hash(self._doc.to_cx())
 
     # Method 4 — Doc.equals(other) -> bool

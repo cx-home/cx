@@ -31,6 +31,7 @@ diagnostic without effect.
 """
 from __future__ import annotations
 import ctypes
+import decimal
 import struct
 from typing import Iterable, Optional, Tuple, Union
 
@@ -67,14 +68,18 @@ AttrTuple = Tuple[str, object, Optional[str]]      # (name, value, data_type)
 
 _KNOWN_TYPES = {'int', 'i8', 'i16', 'i32', 'i64',
                 'u8', 'u16', 'u32', 'u64',
-                'float', 'f32', 'f64', 'decimal', 'f16',
+                'float', 'f32', 'f64', 'decimal', 'bigint', 'f16',
                 'bool', 'null', 'string', 's',
                 'date', 'datetime', 'bytes'}
 
 
 def _infer_type(v: object) -> str:
     if isinstance(v, bool):     return 'bool'
-    if isinstance(v, int):      return 'int'
+    if isinstance(v, int):
+        # L20 auto-promotion: beyond i64 the kind is bigint, never an error.
+        return 'int' if -(2**63) <= v <= (2**63) - 1 else 'bigint'
+    if isinstance(v, decimal.Decimal):
+        return 'decimal'
     if isinstance(v, float):    return 'float'
     if v is None:               return 'null'
     return 'string'
@@ -83,6 +88,10 @@ def _infer_type(v: object) -> str:
 def _attr_value_str(typ: str, v: object) -> str:
     if v is None:                                 return 'null'
     if isinstance(v, bool):                       return 'true' if v else 'false'
+    if isinstance(v, decimal.Decimal):
+        # Decimal images are fixed-point base-10 (scale preserved);
+        # str(Decimal('1E+5')) would emit exponent notation.
+        return format(v, 'f')
     if isinstance(v, (int, float)):               return str(v)
     return str(v)
 

@@ -41,7 +41,7 @@
      values containing double quotes are not escaped in v1.
 
    Run (deny-by-default capabilities):
-     cx nats-bridge.cx --data=nats-bridge.config.cx \
+     cx --data=nats-bridge.config.cx nats-bridge.cx \
         --allow-net=<daemon> --allow-net=<nats-server> --allow-env ]
 
 [?lib 'cx-fabric' :as fabric]
@@ -185,7 +185,7 @@
    attributed envelope (provenance parity with the webhook push lanes). ]
 [?def pump-out scope=public impure ($sock $f $inbox $outbox)
   [?for [in $lane $outbox//lane]
-    [yield [?let [= $entries [$fabric:receive [$first $lane/fabric-sub] {max: 16, deadline: 200}]]
+    [yield [?let [= $entries [?receive from=[$first $lane/fabric-sub] max=16 deadline=200]]
       [?if [> [$count $entries] 0]
         [then [?let
           [= $subj [$concat '' $lane@subject]]

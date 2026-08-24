@@ -8,7 +8,10 @@ for input to libcx.cx_from_data_bin.
 This module replaces the JSON-string detour previously used by ast.loads
 and ast.dumps (audit finding CB-3). Python types are produced/consumed
 directly:
-    int   <-> CXCol int8/int16/int32/int64
+    int   <-> CXCol int8/int16/int32/int64 (bigint 0x18 beyond i64;
+              an in-i64 bigint on the wire still decodes to int)
+    decimal.Decimal <-> CXCol decimal (0x28; fixed-point base-10 image,
+              scale preserved — "1.10" stays Decimal('1.10'))
     float <-> CXCol float64
     bool  <-> CXCol false/true
     None  <-> CXCol null
@@ -25,6 +28,7 @@ per row).
 """
 from __future__ import annotations
 import datetime
+import decimal
 import struct
 from typing import Any
 
@@ -138,6 +142,15 @@ class _Reader:
             if tag == _TAG_UINT16:  return self._u16()
             if tag == _TAG_UINT32:  return self._u32()
             if tag == _TAG_UINT64:  return struct.unpack('<Q', self._take(8))[0]
+            if tag == _TAG_BIGINT:
+                # I1 row 16 (L48): base-10 integer image, same length-prefixed
+                # payload shape as string. Narrowing-within-kind means an
+                # in-i64 value may still ride 0x18; host type is int either way.
+                return int(self._string())
+            if tag == _TAG_DECIMAL:
+                # Fixed-point base-10 image; Decimal preserves scale natively
+                # ("1.10" -> Decimal('1.10'), trailing zero kept).
+                return decimal.Decimal(self._string())
             if tag == _TAG_FLOAT64: return _UNP_F64.unpack(self._take(8))[0]
             if tag == _TAG_STRING:  return self._string()
             if tag == _TAG_BYTES:
@@ -191,19 +204,109 @@ class _Reader:
             return []
         col_count = self._uvarint()
         cols = []
+        codes = []
         for _ in range(col_count):
             key_tag = self._u8()
             if key_tag != _TAG_STRING:
                 raise RuntimeError(f"cxcol: table column name must be string; got 0x{key_tag:02x}")
             name = self._string()
-            self._u8()  # column type code (informational; we use per-cell tags)
+            code = self._u8()  # §3.10.3 column type code (payload contract)
+            if code == 0x82:  # §3.10.1 declared-name annotation (#807(c))
+                ann_tag = self._u8()
+                if ann_tag != _TAG_STRING:
+                    raise RuntimeError(f"cxcol: declared-name annotation must carry a string; got 0x{ann_tag:02x}")
+                self._string()  # declared spelling — a CX-render concern; codes drive payloads here
+                code = self._u8()
+                if code == 0x82:
+                    raise RuntimeError("cxcol: duplicate declared-name annotation in col-spec")
+            codes.append(code)
             cols.append(name)
         row_count = self._uvarint()
         rows: list[dict[str, Any]] = [dict() for _ in range(row_count)]
         for col_idx in range(col_count):
+            cells = self._column_payload(codes[col_idx], row_count)
             for row_idx in range(row_count):
-                rows[row_idx][cols[col_idx]] = self._value()
+                rows[row_idx][cols[col_idx]] = cells[row_idx]
         return rows
+
+    # ── §3.10.3 typed column payloads (stream 17 W3 — the lattice
+    # rise: per-column TYPED payloads, no per-cell tags; 0x80 nullable
+    # bitmap wrapper; 0x81 mixed per-row tagged; 0x01 bit-packed bool).
+    def _column_payload(self, code: int, row_count: int) -> list:
+        if code == 0x00:  # all-null
+            return [None] * row_count
+        if code == 0x81:  # mixed — per-row tagged values
+            return [self._value() for _ in range(row_count)]
+        if code == 0x80:  # nullable wrapper
+            inner = self._u8()
+            bitmap = self._take((row_count + 7) // 8)
+            nulls = [(bitmap[i // 8] >> (i % 8)) & 1 == 1 for i in range(row_count)]
+            nonnull = self._typed_cells(inner, row_count - sum(nulls))
+            out, vi = [], 0
+            for i in range(row_count):
+                if nulls[i]:
+                    out.append(None)
+                else:
+                    out.append(nonnull[vi])
+                    vi += 1
+            return out
+        return self._typed_cells(code, row_count)
+
+    def _typed_cells(self, code: int, n: int) -> list:
+        if code == 0x01:  # bool, bit-packed LSB-first (§3.10.4)
+            bits = self._take((n + 7) // 8)
+            return [((bits[i // 8] >> (i % 8)) & 1) == 1 for i in range(n)]
+        if code in (0x10, 0x14):  # i8 / u8
+            raw = self._take(n)
+            return [b - 256 if code == 0x10 and b > 127 else b for b in raw]
+        if code in (0x11, 0x15):  # i16 / u16
+            raw = self._take(2 * n)
+            fmt = '<h' if code == 0x11 else '<H'
+            return [struct.unpack_from(fmt, raw, 2 * i)[0] for i in range(n)]
+        if code in (0x12, 0x16):  # i32 / u32
+            raw = self._take(4 * n)
+            fmt = '<i' if code == 0x12 else '<I'
+            return [struct.unpack_from(fmt, raw, 4 * i)[0] for i in range(n)]
+        if code in (0x13, 0x17):  # i64 / u64
+            raw = self._take(8 * n)
+            fmt = '<q' if code == 0x13 else '<Q'
+            return [struct.unpack_from(fmt, raw, 8 * i)[0] for i in range(n)]
+        if code == 0x20:  # f64
+            raw = self._take(8 * n)
+            return [struct.unpack_from('<d', raw, 8 * i)[0] for i in range(n)]
+        if code == 0x21:  # f32
+            raw = self._take(4 * n)
+            return [struct.unpack_from('<f', raw, 4 * i)[0] for i in range(n)]
+        if code == 0x22:  # f16
+            raw = self._take(2 * n)
+            return [struct.unpack_from('<e', raw, 2 * i)[0] for i in range(n)]
+        if code in (0x18, 0x28, 0x30, 0x33, 0x70):  # bigint/decimal/string/bytes/atom — length-prefixed
+            out = []
+            for _ in range(n):
+                ln = self._uvarint()
+                out.append(self._take(ln).decode('utf-8'))
+            return out
+        if code == 0x31:  # date — 4 bytes y16/m/d (matches the scalar arm's type)
+            out = []
+            for _ in range(n):
+                b = self._take(4)
+                y = struct.unpack_from('<h', b, 0)[0]
+                out.append(datetime.date(y, b[2], b[3]))
+            return out
+        if code == 0x32:  # datetime — 12 bytes (ns i64 + offset i16 + reserved)
+            out = []
+            for _ in range(n):
+                b = self._take(12)
+                ns = struct.unpack_from('<q', b, 0)[0]
+                # #807(d): offset_minutes rides the transport — surface
+                # the local tz so the render round-trips.
+                off = struct.unpack_from('<h', b, 8)[0]
+                tz = datetime.timezone.utc if off == 0 else datetime.timezone(datetime.timedelta(minutes=off))
+                secs, rem = divmod(ns, 1_000_000_000)
+                dt = datetime.datetime.fromtimestamp(secs, tz=datetime.timezone.utc).astimezone(tz)
+                out.append(dt.replace(microsecond=rem // 1000))
+            return out
+        raise RuntimeError(f"cxcol: unknown column type code 0x{code:02x}")
 
 
 def decode(framed: bytes, max_depth: int = _DEFAULT_MAX_DEPTH) -> Any:
@@ -254,6 +357,12 @@ class _Writer:
 
     def _string(self, s: str):
         self._u8(_TAG_STRING)
+        self._string_payload(s)
+
+    def _string_payload(self, s: str):
+        # Length-prefixed byte payload WITHOUT a leading tag — the caller
+        # has already written its kind tag (0x30 / 0x28 / 0x18). Mirrors
+        # vcx encode_string_payload.
         encoded = s.encode('utf-8')
         self._uvarint(len(encoded))
         self._buf += encoded
@@ -265,6 +374,17 @@ class _Writer:
             self._u8(_TAG_TRUE); return
         if v is False:
             self._u8(_TAG_FALSE); return
+        if isinstance(v, decimal.Decimal):
+            # Wire image is FIXED-POINT base-10 only — exponent notation is
+            # not a legal wire image. format(..., 'f') renders fixed-point
+            # while preserving scale (Decimal('1.10') -> '1.10').
+            if not v.is_finite():
+                raise RuntimeError(
+                    f"cxcol: decimal must be finite; got {v!r} (NaN/Infinity "
+                    "have no wire image)")
+            self._u8(_TAG_DECIMAL)
+            self._string_payload(format(v, 'f'))
+            return
         if isinstance(v, int):
             self._int_canonical(v); return
         if isinstance(v, float):
@@ -320,7 +440,10 @@ class _Writer:
             self._u8(_TAG_INT32); self._buf += _UNP_I32.pack(v); return
         if -(2**63) <= v <= (2**63) - 1:
             self._u8(_TAG_INT64); self._buf += _UNP_I64.pack(v); return
-        raise RuntimeError(f"cxcol: integer {v} exceeds i64 range; bigint not yet supported in Python encoder")
+        # L20 auto-promotion: an int beyond i64 rides the wire as bigint
+        # (0x18) — base-10 integer image, never an encode error.
+        self._u8(_TAG_BIGINT)
+        self._string_payload(str(v))
 
 
 def encode(value: Any) -> bytes:

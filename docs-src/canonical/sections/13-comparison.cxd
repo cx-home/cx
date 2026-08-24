@@ -6,7 +6,7 @@
    tooling familiarity — and concrete where it wins. Cross-links use
    [[anchor]] form. File extension .cxd — data-only source. #]
 
-[section id=comparison n=13 title='Comparison to alternatives'
+[section id=comparison group='Reference' n=13 title='Comparison to alternatives'
 
   [intro
     """CX is one of many serialization / config / wire formats. This
@@ -71,15 +71,15 @@
       [tr [th 'dimension'] [th 'json'] [th 'cx']]
       [tr [td 'Schema'] [td 'JSON Schema (separate spec)'] [td '.cxs — same syntax as data (see [[schema]])']]
       [tr [td 'Identity / hash'] [td 'No canonical form; hash drifts on key reorder'] [td 'SHA-256 of canonical bytes; stable across platforms (see [[hash]])']]
-      [tr [td 'Comments'] [td 'None (in the standard); JSON5 / JSONC are extensions'] [td '[# … #] preserved by cx fmt, stripped by cx canonical']]
+      [tr [td 'Comments'] [td 'None (in the standard); JSON5 / JSONC are extensions'] [td '[; … ] blocks + # line comments, preserved by cx fmt, stripped by cx canonical']]
       [tr [td 'Trailing commas'] [td 'Forbidden'] [td 'Not applicable — bracket form, no commas in attribute list']]
-      [tr [td 'Number precision'] [td 'Underspecified; JS doubles by default'] [td 'Sized type tags (:i64, :u32, :f32) (see [[sized-types]])']]
+      [tr [td 'Number precision'] [td 'Underspecified; JS doubles by default'] [td 'Sized type annotations (::i64, ::u32, ::f32) (see [[sized-types]])']]
       [tr [td 'Multi-line strings'] [td 'Escaped only'] [td 'Triple-quoted, whitespace-preserving (see [[strings]])']]
       [tr [td 'Date / datetime'] [td 'String only'] [td 'First-class :date / :datetime scalar (see [[dates]])']]
       [tr [td 'Bytes'] [td 'Base64 in a string'] [td 'First-class :bytes scalar (see [[bytes]])']]
       [tr [td 'Tooling ecosystem'] [td 'Vast — every language, every editor, every CDN'] [td 'Tier-1 bindings V/Python/Go/Rust; LSP + tree-sitter + VS Code; growing']]
       [tr [td 'Wire size'] [td 'Baseline'] [td 'Comparable text form; data-bin / CXCol smaller']]
-      [tr [td 'Parse speed'] [td 'Highly optimized parsers everywhere'] [td 'Reference parser ~600 MB/s on the gate-15 workload']]
+      [tr [td 'Parse speed'] [td 'Highly optimized parsers everywhere'] [td 'Fast reference parser; the release gate holds streaming to a >=200 MB/s floor (not yet green)']]
       [tr [td 'Learning curve'] [td 'Trivial'] [td 'Bracket-and-sigil form; ~one hour for the data subset']]]
 
     [body
@@ -111,7 +111,7 @@
       [tr [td 'Norway problem'] [td 'no parses as false in YAML 1.1'] [td 'Only true/false are bools; no /yes is a string']]
       [tr [td 'Schema'] [td 'JSON Schema (separate)'] [td '.cxs (same syntax)']]
       [tr [td 'Identity / hash'] [td 'No canonical form'] [td 'SHA-256 of canonical bytes (see [[hash]])']]
-      [tr [td 'Comments'] [td '# line comments only'] [td '[# … #] nest, span lines, preserved by cx fmt']]
+      [tr [td 'Comments'] [td '# line comments only'] [td '[; … ] blocks (span lines) + # line comments, preserved by cx fmt']]
       [tr [td 'Tooling'] [td 'Kubernetes, GitLab CI, Ansible'] [td 'Growing — LSP + tree-sitter + VS Code; analytical pipelines']]
       [tr [td 'Round-trip'] [td 'Lossy in many YAML 1.1 → 1.2 cases'] [td 'Lossless by spec (see [[roundtrip]])']]]
 
@@ -143,7 +143,7 @@
       [tr [td 'Tooling'] [td 'Cargo, pip, Poetry — narrow but deep'] [td 'LSP + tree-sitter; broader workloads than configs alone']]
       [tr [td 'Round-trip'] [td 'Lossy — comment placement and key order'] [td 'Lossless']]
       [tr [td 'Mixed content'] [td 'Not supported'] [td 'Native (prose form, see [[prose]])']]
-      [tr [td 'Date / datetime'] [td 'Native :datetime'] [td 'Native :date / :datetime / :time']]]
+      [tr [td 'Date / datetime'] [td 'Native datetime'] [td 'Native ::date / ::datetime (plus duration and instant kinds)']]]
 
     [body
       """**When to pick TOML.** Your config is flat — language
@@ -205,7 +205,7 @@
       [tr [td 'Schema requirement'] [td 'Required — wire is unparseable without .proto'] [td 'Optional — value is self-describing']]
       [tr [td 'Wire size'] [td 'Typically smallest of any format here'] [td 'Comparable text size; data-bin closer to protobuf']]
       [tr [td 'Throughput'] [td 'Very high — compiled (de)serializers'] [td 'High but text-shaped; data-bin closes the gap']]
-      [tr [td 'Schema evolution'] [td 'Tag-numbered fields — strong forward/backward compat'] [td 'Schema modes (open/strict/closed); attribute order is data-only']]
+      [tr [td 'Schema evolution'] [td 'Tag-numbered fields — strong forward/backward compat'] [td 'Identity is schema-independent (content-addressed values never re-key); migration is always additive — new representations join, history stays replayable']]
       [tr [td 'Tooling'] [td 'protoc + every major language'] [td 'Tier-1 V/Python/Go/Rust; growing']]
       [tr [td 'Human readability'] [td 'None — binary opaque'] [td 'Text-first; binary is an optimization']]
       [tr [td 'Identity / hash'] [td 'Wire bytes — stable iff schema is fixed'] [td 'Canonical bytes — stable regardless of schema']]]
@@ -234,7 +234,7 @@
       [tr [td 'Wire format'] [td 'Binary, schemaless'] [td 'Text (CX) or binary (data-bin)']]
       [tr [td 'Schema'] [td 'None'] [td '.cxs (optional)']]
       [tr [td 'Wire size'] [td 'Smaller than JSON; comparable to data-bin'] [td 'data-bin similar; CXCol smaller for tabular']]
-      [tr [td 'Type richness'] [td 'Scalars + map + array; ext-type extension'] [td 'Eight scalar kinds, elements with attributes, mixed content, namespaces']]
+      [tr [td 'Type richness'] [td 'Scalars + map + array; ext-type extension'] [td 'Eleven atomic kinds, elements with attributes, mixed content, namespaces']]
       [tr [td 'Identity / hash'] [td 'Wire bytes — stable iff serializer is deterministic'] [td 'Canonical bytes — stable by construction']]
       [tr [td 'Tooling'] [td 'Wide language coverage'] [td 'Tier-1 V/Python/Go/Rust']]]
 
@@ -265,7 +265,7 @@
       [tr [td 'Computation'] [td 'Lambdas, comprehensions, methods'] [td 'Directives — [?for], [?match], [?modify], [?let]']]
       [tr [td 'Output formats'] [td 'JSON / YAML / Plist / Properties + custom renderers'] [td 'CX / JSON / YAML / TOML / XML / Markdown / CSV / JSONL']]
       [tr [td 'Identity / hash'] [td 'Not built-in'] [td 'SHA-256 of canonical bytes']]
-      [tr [td 'Module system'] [td 'Imports, packages, semantic versioning'] [td '[?cx include] — capability-gated path resolution']]
+      [tr [td 'Module system'] [td 'Imports, packages, semantic versioning'] [td '[?lib] / [?def] / [?const] with cx.lock SRI integrity']]
       [tr [td 'Tooling'] [td 'LSP, IntelliJ plugin, CLI — solid'] [td 'LSP + tree-sitter + VS Code — comparable']]
       [tr [td 'Ecosystem'] [td 'Apple-backed; growing community'] [td 'Open-source; growing community']]]
 
@@ -293,7 +293,7 @@
       [tr [td 'Computation'] [td 'λ-calculus — total, no recursion without bound'] [td 'Directives — [?for] / [?match] / [?modify]; bounded by resilience directives']]
       [tr [td 'Surface'] [td 'Haskell-flavoured ML syntax'] [td 'Bracket form']]
       [tr [td 'Output formats'] [td 'JSON / YAML / Text'] [td 'CX / JSON / YAML / TOML / XML / Markdown / CSV / JSONL']]
-      [tr [td 'Imports'] [td 'Content-addressed by hash — same idea as CX'] [td '[?cx include] with capability gating']]
+      [tr [td 'Imports'] [td 'Content-addressed by hash — same idea as CX'] [td '[?lib] modules pinned by cx.lock SRI hashes']]
       [tr [td 'Identity / hash'] [td 'Standard form hash for imports'] [td 'Canonical bytes + SHA-256 for any value']]
       [tr [td 'Learning curve'] [td 'Steep — ML / Haskell familiarity helps'] [td 'Moderate — bracket form is unfamiliar but small']]
       [tr [td 'Tooling'] [td 'LSP, type-aware; narrow'] [td 'LSP + tree-sitter + VS Code']]]
@@ -328,7 +328,7 @@
       [tr [td 'Bridge'] [td '—'] [td 'CX ↔ Parquet bridge via Arrow (see [[parquet-bridge]])']]
       [tr [td 'Identity / hash'] [td 'File hash — sensitive to write order'] [td 'Canonical bytes of the logical value']]
       [tr [td 'Streaming'] [td 'Row-group oriented'] [td 'Native streaming evaluator (see [[streaming]])']]
-      [tr [td 'Write speed'] [td '~150 MB/s on the reference benchmark'] [td 'Faster — no compression overhead by default']]]
+      [tr [td 'Write speed'] [td 'Pays for compression + conversion on write'] [td 'No compression overhead by default (no maintained benchmark numbers to quote)']]]
 
     [body
       """**When to pick Parquet.** Your data is large, tabular,
@@ -421,22 +421,21 @@
          and XML. The per-format children (§13.2-§13.11) carry
          the depth; this matrix is the spreadsheet view."""]
 
-    [body
-      """| Feature | CX | JSON | YAML | TOML | XML |
-         |---|---|---|---|---|---|
-         | Syntax weight | brackets, no closing tags | curly braces + brackets | indent-significant | tables + key=val | open + close tags |
-         | Strong types | ✅ int / float / bool / null / sized / decimal / bigint / date / datetime / bytes / atom | ❌ number only | partial (auto-detect) | ✅ int / float / bool / datetime | partial (xs:type) |
-         | Comments | ✅ block and line | ❌ | ✅ # … | ✅ # … | ✅ |
-         | Mixed content | ✅ first-class | ❌ | ❌ | ❌ | ✅ first-class |
-         | Multiple top-level docs | ✅ no wrapper required | ❌ requires array | ✅ via --- separator | ❌ single document | partial |
-         | Attribute / element distinction | ✅ explicit | ❌ flat keys | ❌ flat keys | ❌ flat keys | ✅ explicit |
-         | Type fidelity through round-trip | ✅ via CXCol | ❌ int↔float coerced | partial | ✅ preserved | partial |
-         | Tabular data efficiency | ✅ `:table` block, columnar binary | ❌ verbose array-of-objects | ❌ verbose | partial (array of tables) | ❌ verbose |
-         | Streaming parser | ✅ pull-based handle API | partial | ❌ usually whole-file | ❌ | ✅ SAX |
-         | Built-in query language | ✅ CXPath value kind, all 12 XPath 3.1 axes | ❌ third-party (jq) | ❌ third-party (yq) | ❌ | ✅ XPath 1.0 / XQuery |
-         | Pure-functional transform | ✅ `[?modify]` focus + 11 actions, structural sharing | ❌ | ❌ | ❌ | partial (XSLT) |
-         | Pattern-match dispatch | ✅ `[?match]` heterogeneous arms | ❌ | ❌ | ❌ | ❌ |
-         | Module system | ✅ `[?def]` / `[?lib]` / cx.lock SRI | ❌ | ❌ | ❌ | partial (XInclude) |"""]]
+    [table
+      [tr [th 'Feature'] [th 'CX'] [th 'JSON'] [th 'YAML'] [th 'TOML'] [th 'XML']]
+      [tr [td 'Syntax weight'] [td 'brackets, no closing tags'] [td 'curly braces + brackets'] [td 'indent-significant'] [td 'tables + key=val'] [td 'open + close tags']]
+      [tr [td 'Strong types'] [td '✅ int / float / bool / null / sized / decimal / bigint / date / datetime / bytes / atom'] [td '❌ number only'] [td 'partial (auto-detect)'] [td '✅ int / float / bool / datetime'] [td 'partial (xs:type)']]
+      [tr [td 'Comments'] [td '✅ block and line'] [td '❌'] [td '✅ # …'] [td '✅ # …'] [td '✅']]
+      [tr [td 'Mixed content'] [td '✅ first-class'] [td '❌'] [td '❌'] [td '❌'] [td '✅ first-class']]
+      [tr [td 'Multiple top-level docs'] [td '✅ no wrapper required'] [td '❌ requires array'] [td '✅ via --- separator'] [td '❌ single document'] [td 'partial']]
+      [tr [td 'Attribute / element distinction'] [td '✅ explicit'] [td '❌ flat keys'] [td '❌ flat keys'] [td '❌ flat keys'] [td '✅ explicit']]
+      [tr [td 'Type fidelity through round-trip'] [td '✅ via --lossless'] [td '❌ int↔float coerced'] [td 'partial'] [td '✅ preserved'] [td 'partial']]
+      [tr [td 'Tabular data efficiency'] [td '✅ ' [code ':table'] ' block, columnar binary'] [td '❌ verbose array-of-objects'] [td '❌ verbose'] [td 'partial (array of tables)'] [td '❌ verbose']]
+      [tr [td 'Streaming parser'] [td '✅ pull-based handle API'] [td 'partial'] [td '❌ usually whole-file'] [td '❌'] [td '✅ SAX']]
+      [tr [td 'Built-in query language'] [td "✅ CXPath value kind, 12 axes (XPath 3.1's 13 minus the deprecated namespace axis)"] [td '❌ third-party (jq)'] [td '❌ third-party (yq)'] [td '❌'] [td '✅ XPath 1.0 / XQuery']]
+      [tr [td 'Pure-functional transform'] [td '✅ ' [code '[?modify]'] ' focus + 11 actions, structural sharing'] [td '❌'] [td '❌'] [td '❌'] [td 'partial (XSLT)']]
+      [tr [td 'Pattern-match dispatch'] [td '✅ ' [code '[?match]'] ' heterogeneous arms'] [td '❌'] [td '❌'] [td '❌'] [td '❌']]
+      [tr [td 'Module system'] [td '✅ ' [code '[?def]'] ' / ' [code '[?lib]'] ' / cx.lock SRI'] [td '❌'] [td '❌'] [td '❌'] [td 'partial (XInclude)']]]]
 
   [child id=cmp-loss-matrix n=13.14 title='Conversion-loss matrix'
     [intro
@@ -448,11 +447,11 @@
 
     [table
       [tr [th 'CX → format → CX'] [th 'Lossless?'] [th 'What is preserved'] [th 'What is normalised or lost']]
-      [tr [td 'CX → JSON → CX'] [td 'data ✅ / presentation 📋'] [td 'Element shape, attributes, types via CXCol, values, nesting'] [td 'Comments dropped; element vs attribute distinction collapses to keys']]
+      [tr [td 'CX → JSON → CX'] [td 'data ✅ / presentation 📋'] [td 'Element shape, attributes, types via --lossless, values, nesting'] [td 'Comments dropped; element vs attribute distinction collapses to keys']]
       [tr [td 'CX → YAML → CX'] [td 'data ✅ / presentation 📋'] [td 'Element shape, types via ' [code '!!tags'] ', multiline strings'] [td 'Comments dropped by most parsers; flow-vs-block style normalised']]
       [tr [td 'CX → TOML → CX'] [td 'data ✅ / presentation 📋'] [td 'Element shape via table headers, strong types'] [td 'Comments dropped; section ordering normalised; deep nesting flattened']]
       [tr [td 'CX → XML → CX'] [td 'data ✅ / presentation 📋'] [td 'Element shape, attributes, mixed content, namespaces, PIs'] [td 'Whitespace normalised per ' [code 'xml:space'] '; entity references resolved']]
-      [tr [td 'CX → CXCol → CX'] [td 'bytes ✅'] [td 'Everything byte-for-byte'] [td 'Nothing — CXCol is the strict-canonical form']]
+      [tr [td 'CX → CXCol → CX'] [td 'data ✅'] [td 'Values with full type fidelity — CXCol is the columnar binary export'] [td 'Presentation (comments, whitespace); the strict-canonical text form is cx canonical, not CXCol']]
       [tr [td 'CX → CSV → CX'] [td 'data partial'] [td [code ':table'] ' block columns and rows'] [td 'Non-table data not encodable; cell subtyping collapses']]]
 
     [note
@@ -465,11 +464,125 @@
       [code 'cx hash'] ' because the hash operates on strict-canonical '
       'bytes, where presentation is stripped.']]
 
+  [child id=cmp-performance n='13.14a' title='Where CX is fast — measured'
+    [intro
+      """CX's performance culture is **gates, not brags**: every number
+         below names its runner, was measured on the reference dev
+         machine (Apple Silicon, `-prod` build, 2026-08-20), and is
+         re-measured each release. Claims without a measurement do not
+         ship in these docs."""]
+
+    [child id=perf-http n='13.14a.1' title='HTTP serving — the headline'
+      [body
+        """A CX HTTP service runs deep in compiled-server territory:
+           **~122,000 requests/second** measured against the static
+           guide server (`wrk -t8 -c128`, containerized, the B18
+           allocation-work findings), with ~135k req/s on the
+           uncontainerized reference run. That is two orders of
+           magnitude past a typical scripting-language app server and
+           in the league of Go/Rust HTTP frameworks — from `[?http-service]`
+           declarations, not hand-tuned handler code. (Multi-core
+           scaling is the honestly-stated frontier: see the README
+           status note.)"""]]
+
+    [child id=perf-surfaces n='13.14a.2' title='Server-rendered surfaces'
+      [body
+        """The reference storefront (1,004 products, live derived
+           state, zero view code) renders a full department page in
+           **~7 ms** server-side and full category pages over the
+           whole catalog in **~0.13 s**. Declarative surfaces are not
+           the slow path: the tree-walk evaluator is compiled native,
+           and per-node dispatch cost is independent of program
+           size."""]]
+
+    [child id=perf-streaming n='13.14a.3' title='Streaming evaluation'
+      [body
+        """The lazy-record streaming path evaluates `[?for]` over
+           streamed documents at **~200 MB/s** (the release gate's
+           five-trial protocol) with bounded memory regardless of
+           input size — it never materializes the whole tree, so a
+           multi-gigabyte input streams at full speed in constant
+           residency. `[?map]` measures **129 MB/s** against the same
+           200 MB/s floor the gate holds every shape to. Streaming is
+           the high-throughput lane for text-form bulk data."""]]
+
+    [child id=perf-xsp n='13.14a.3b' title='XSP — the binary wire, small-and-frequent to bulk'
+      [body
+        """XSP is CX's binary frame and session layer, and it is built
+           for both ends of the shape spectrum. **Small and frequent:**
+           a frame costs 17 bytes of header plus the principal, a u64
+           stream-id multiplexes every exchange over **one
+           connection** (requests, replies, events, and cancels
+           interleave without head-of-line blocking between streams),
+           and credit-based flow control keeps a slow consumer from
+           stalling anyone else. Measured on the reference bench:
+           durable publish commits at **p50 2.5 ms** flat with respect
+           to journal size, embedded ingest folds **~1,100 events/s**,
+           and a checkpointed boot replays 500 entries in **28 ms**.
+           **Large and bulk:** payloads ride CX data-bin — the binary
+           form, no text re-parse on either end — and columnar CXCol
+           pages with zstd compression under the store profile, where
+           result streams and live ∂-updates flow as credit-governed
+           event frames. One frame format serves both shapes across
+           TCP, TLS, Unix sockets, and WebSocket unchanged."""]]
+
+    [child id=perf-parse n='13.14a.4' title='Parsing — honest numbers'
+      [body
+        """The buffered parser runs **35–42 MB/s** (median across the
+           fixture sizes; the lexer alone runs 84–104 MB/s) — and
+           every one of those bytes buys far more than a JSON byte
+           does: type ascriptions, sized numerics, anchors and merges,
+           mixed content, comments, and whole typed tables come out of
+           the same single pass, with identity-bearing canonical bytes
+           one step away. That is very fast for a grammar this rich —
+           one parse replaces the parse-then-validate-then-decode
+           tower other stacks bolt together. Parse cost is **linear in
+           input bytes and gated to stay that way** (the amplification
+           gate runs on every full test), so throughput is a constant,
+           not a cliff. For raw bulk, the binary lanes below and the
+           streaming path above are the fast path by design."""]]
+
+    [child id=perf-bindings n='13.14a.5' title='One engine, thin bindings'
+      [body
+        """Identity operations (hash, canonical, eval) route through
+           the one compiled `libcx` from every binding, so they are
+           bit-identical AND uniformly fast: the V-native path parses
+           the 35 KB bench fixture in **~1.0 ms**, Rust lands within
+           **1.6×** of that through its hand-written FFI layer.
+           There is no interpreter tax between your host language and
+           the engine."""]]]
+
   [child id=cmp-when-cx n=13.15 title='When CX wins'
     [body
-      [b 'CX is the right pick'] ' for typed configuration, mixed '
-      'content alongside structured data, lossless conversion across '
-      'formats, cases where you need a stable canonical form for '
-      'hashing or signing, and any pipeline where the query/transform '
-      'layer (' [code 'CXPath'] ' + ' [code '[?match]'] ' + '
-      [code '[?modify]'] ') should live in the same syntax as the data.']]]
+      """Every alternative on this page does one layer. **CX wins when
+         the layers are the problem.** A real system is data plus a
+         schema plus a query language plus a transform layer plus
+         config plus a wire format plus, increasingly, an agent
+         interface — and the incumbent answer is seven tools with six
+         impedance boundaries between them: JSON with JSON Schema
+         bolted on, jq for queries, a template engine for transforms,
+         YAML for config, protobuf for the wire, and a hand-written
+         tool layer for the agents."""]
+    [body
+      """CX is **one surface for the whole stack**. The same bracket
+         form is the document, the schema that validates it, the query
+         that selects from it, the transform that rewrites it, the
+         config that deploys it, and the program that serves it —
+         `[?match]` and `[?modify]` operate on the same values `cx
+         hash` addresses. Identity is **machine-checked, not
+         promised**: strict canonical bytes give every value one
+         SHA-256 address on every platform and every binding, which is
+         what makes caching, dedup, signing, and content-addressed
+         storage boring instead of bespoke. Adoption is **ring-scoped**:
+         take the data format alone (it cannot execute anything), and
+         nothing above it can reach down and make it heavier. The
+         runtime is **compiled native** — the numbers above, from one
+         binary with no interpreter tax. And the same definitions that
+         serve humans serve **agents at parity**: the tools face and
+         the ux projection derive from the identical `[?def]`s, so an
+         agent interface is something you already have, not something
+         you build."""]
+    [body
+      """Pick a specialist when one layer IS the whole problem — this
+         page names those cases honestly. Pick CX when you would
+         otherwise be gluing the specialists together."""]]]

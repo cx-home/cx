@@ -137,7 +137,8 @@ fn sap_o1_pattern_grammar_captures_and_type_tests() {
         "text",
     )
     .unwrap();
-    assert_eq!(cap, "{got: 'rate-limited'}");
+    // 831-1a': collection strings render bare-when-safe (code.md §11.1a R6).
+    assert_eq!(cap, "{got: rate-limited}");
     let tt = eval_code(
         "",
         "[?let [= $r 42] [?match $r [case $n::int {int: $n}] [else [other]]]]",

@@ -12,14 +12,15 @@ rules in this document.
 
 **File naming**: schemas use the `.cxs` extension by convention.
 The validator does not require the extension; any CX document
-that begins with `[?cx schema-of <name>]` is treated as a schema.
+whose **first top-level element** is `[schema …]` carrying an
+`of` attribute is treated as a schema.
 
 **Validator entry points**:
 
 - `cx validate <doc.cx> --schema=<schema.cxs>` — CLI subcommand.
  Flags: `--fail-on=info|warn|error|none` (default `error`,
  matches `cx lint`); `--mode=open|strict|closed` overrides the
- schema-mode directive; `--apply-defaults` inserts `[default …]`
+ header's `mode` attribute; `--apply-defaults` inserts `[default …]`
  attribute values into the validated output.
 - `cx_validate(doc_bytes, schema_bytes, err_out)` — C ABI symbol;
  `cx_validate_apply_defaults` for the defaults-applying variant.
@@ -36,37 +37,64 @@ that begins with `[?cx schema-of <name>]` is treated as a schema.
 
 ## 2 — Schema document structure
 
-A schema document begins with at least one directive identifying
-it as a schema:
+A schema document begins with a **header element** identifying it
+as a schema:
 
 ```cx
-[?cx schema-of book ]
+[schema of=book]
 ```
 
-The argument to `schema-of` is the name of the **root element** of
+The header MUST be the **first top-level element** of the document.
+The `of` attribute is required and names the **root element** of
 the target document. A schema may declare exactly one root.
 
-After the directive, the schema body is a sequence of **type
+After the header, the schema body is a sequence of **type
 declarations** — top-level elements whose names match elements
 that appear in the target document. The element name in the schema
 is the type name being defined.
 
-Optional companion directives at the top:
+Optional header attributes:
 
-- `[?cx schema-name '<title>']` — human-readable schema name used
- in diagnostics.
-- `[?cx schema-mode open]`, `[?cx schema-mode strict]`, or
- `[?cx schema-mode closed]` — see §9. **Default is `open`**.
-- `[?cx schema-version <semver>]` — optional; declares the
- schema-dialect version the schema document targets; an
- unknown/unsupported declared version is rejected with `S020`.
- Example: `[?cx schema-version 0.8]`.
+- `name='<title>'` — human-readable schema name used in
+ diagnostics.
+- `mode=open`, `mode=strict`, or `mode=closed` — see §9.
+ **Default is `open`**.
+- `version='<semver>'` — optional; declares the schema-dialect
+ version the schema document targets; an unknown/unsupported
+ declared version is rejected with `S020`. The dialect identity
+ is **major.minor** — a dialect patch is clarification-only
+ (governance §9.1), so `0.8`, `0.8.0`, and `0.8.N` all target
+ dialect `0.8`; a non-semver declaration is `S020` (stream 21,
+ #716 item 4 — the pre-I5 check was hard string equality).
+ Example: `[schema of=book version='0.8']`.
+
+The header is ordinary document **body data**: every header
+attribute rides in the schema's canonical text and therefore in
+its content-hash (§13.1) — two schemas differing only in `mode`
+are two schemas with two identities. (The pre-I5 spelling was a
+set of `[?cx schema-of/-name/-mode/-version]` directives; strict
+canonical strips `[?cx …]` directives, so those spellings leaked
+content OUT of the hashed bytes — the identity hole the I1 ledger
+entry-25 ruling closed by moving the header into body data. The
+directive spellings are retired and rejected at schema load.)
+
+**Schema revisions are distinct identities** — an `Order` v2 is a
+different content address sharing an element name, and nothing links
+the two intrinsically. The link is the **Lane-2
+`[schema-lineage [from <address>] [to <address>] [relation …]
+[upcaster …]]` claim**
+([`schema_event_evolution.md`](../core/schema_event_evolution.md),
+ruling L149): a plain value, never a field on either schema. The
+lineage graph must admit a **unique path** between any two endpoints —
+ambiguity is rejected fail-closed at load
+([`journal.md`](../std-lib/journal.md) §3.9, `lineage-path`). Evolution
+never perturbs an address: **migration is always additive** — new
+representations join; history stays replayable.
 
 ### Example schema
 
 ```cx
-[?cx schema-of book]
-[?cx schema-name 'Book schema v1']
+[schema of=book name='Book schema v1']
 
 [book
  [attr id::string [req]]
@@ -113,6 +141,11 @@ children of a type declaration** in a schema document:
 The reservation applies **only** within a schema document, only at
 the position "direct child of a type declaration." Target documents
 may use these names freely as user data.
+
+The name `schema` is additionally reserved at exactly one position:
+the **first top-level element** of a schema document is the header
+(§2 above). A type declaration named `schema` is legal at any later
+top-level position.
 
 ---
 
@@ -187,6 +220,16 @@ Shape vocabulary (the `T` in `name::T`):
 
 Composite types nest recursively: `[list [list float]]`,
 `[map string [list u32]]`, `[or int [list int]]`, etc.
+
+**Spelling (normative, stream 16 W2):** the bracket-prefix forms
+above are THE composite spelling — the pre-I5 glued forms
+(`arr[T]` / `seq[T]` / `map[K, V]` and the `:T[]` body desugar) are
+RETIRED with no dual-accept. In `[body …]` declarations the
+composite may spell either as the annotation (`[body [list u16]]`
+read as a type-shaped ELEMENT child) or via `::`-ascription on the
+declaration; `[ref Name]` works ONLY in annotation position (the
+element spelling collides with the reserved `[ref @id]`
+body-position identity reference, cxdm.md §4.2).
 
 **Examples:**
 
@@ -351,7 +394,7 @@ validator treats anchored sub-bodies inside type declarations as
 reusable fragments.
 
 ```cx
-[?cx schema-of database]
+[schema of=database]
 
 [server-config &server-config
  [attr host::string [req]]
@@ -375,28 +418,32 @@ declarations into each referencing type.
 A fragment may not be self-referential; cycles are detected at
 schema-load time (`S016` cyclic fragment).
 
-The `&fragment-name` anchor may be declared on a top-level type
-declaration (as in the `server-config` example above) or as a
-standalone fragment under `[?cx frag <body>]`:
+The `&fragment-name` anchor is declared on a top-level type
+declaration (as in the `server-config` example above). A
+fragment-only helper is simply an anchored top-level declaration
+that no target element happens to match:
 
 ```cx
-[?cx frag &port-range
- [type body::u16 [range 1 65535]]]
+[port-range &port-range
+ [body i32 [range 1 65535]]]
 
 [server
  [attr port *port-range [req]]]
 ```
 
-The standalone `[?cx frag …]` directive form and the top-level
-anchored-type form have identical semantics; the choice between them
-is stylistic.
+(A standalone `[?cx frag &name …]` directive form existed pre-I5;
+it is retired and rejected at schema load — a fragment is schema
+CONTENT, and content-bearing `[?cx …]` directives are stripped by
+strict canonical, so the directive spelling leaked the fragment out
+of the schema's hashed bytes. The anchored-type form above was
+already spec'd as semantically identical.)
 
 ---
 
 ## 9 — Schema modes: open / strict / closed
 
-CX schemas support three modes, selectable via
-`[?cx schema-mode <mode>]`:
+CX schemas support three modes, selectable via the header's
+`mode` attribute (`[schema of=… mode=<mode>]`):
 
 | mode | undeclared elements / attributes | typical use |
 | ---- | -------------------------------- | ----------- |
@@ -434,7 +481,7 @@ For each target document under a schema:
  type-declaration map (name → declaration). Errors here (`S009`,
  `S016`) produce a single diagnostic and abort.
 2. **Root match**: target document's root element name must equal
- the schema's `[?cx schema-of <name>]` argument. Mismatch:
+ the schema header's `of` attribute. Mismatch:
  `S017`. (Mismatch with the document is fatal — no further
  validation.)
 3. **Tree walk**: depth-first, in document order. At each element:
@@ -524,8 +571,10 @@ The `cx validate` CLI exits as follows (matching `cx lint`'s
 
 Exit 2 is reserved for usage / I/O / schema-load failure. The CLI
 also surfaces the `--mode=open|strict|closed` flag, which overrides
-the schema's `[?cx schema-mode ...]` directive at validate time
-(useful for "lint a published open-mode schema strictly").
+the schema header's `mode` attribute at validate time
+(useful for "lint a published open-mode schema strictly"). The
+override changes THIS validation run only — it never reinterprets
+the schema document, whose identity carries the authored mode.
 
 ### 10.4 What validation does not do
 
@@ -605,11 +654,13 @@ for parse errors per `policies.md §10`).
 | `S014` | duplicate attribute declaration on same type |
 | `S015` | child-element order violation (`:order='strict'`) |
 | `S016` | cyclic fragment reference detected at schema-load |
-| `S017` | root-element name mismatch — document root does not match schema's `schema-of` |
+| `S017` | root-element name mismatch — document root does not match the schema header's `of` |
 | `S018` | length violation — string/bytes byte length outside `:len` |
 | `S019` | required content missing — element has no body but content `[req]` |
 | `S020` | schema-version mismatch — schema declares an unsupported version |
 | `S023` | body-ref required but absent — an element whose declared type is a `ref` body (`[type X::ref]`) carries text or other content instead of the `[ref @Name]` body-position reference |
+| `S024` | container/tuple/record type declared in ATTRIBUTE position — attributes are strictly scalar (`cxdm.md` §2.4); shapes live on body / `[type]` positions (stream 16) |
+| `S025` | `[ref Name]` names an unknown type — references resolve fail-closed, never a silent pass (stream 16) |
 
 Codes `S021`–`S022` are reserved/unused; `S023` sits in this
 reserved span. Codes `S101+` reserved for future extensions.
@@ -651,14 +702,26 @@ CXCol binary in one of three forms, per
 | form | wire tag | notes |
 | ---- | -------- | ----- |
 | **Inline** | `0x11` (binary), or `[?cx schema-inline ...]` followed by inline `.cxs` (text) | schema travels with the data; no external lookup needed |
-| **External by content-hash** | `0x10` (binary) — 32-byte SHA-256 of the schema's CXCol strict-canonical encoding | format-stable, location-independent identifier; consumers resolve via a content-addressable store |
+| **External by content-hash** | `0x10` (binary) — the 32-byte schema content-hash (below) | format-stable, location-independent identifier; consumers resolve via a content-addressable store |
 | **External by content-hash with name hint** | `0x12` (binary) — hash + UTF-8 name string | same as above, plus a hint (typically the schema's source filename) for human-readable diagnostics and tooling lookup; readers MUST verify the looked-up schema's hash matches the embedded hash |
+| **External by multihash** | `0x13` (binary) — `uvarint(multicodec) ‖ uvarint(len) ‖ digest` | the same content-hash, self-describing (crypto-agility L34); decoders fail closed on unregistered codes |
 
-The schema's content-hash is computed as
-`SHA-256(cx_to_data_bin(parse(schema_text), strict_canonical))` — the
-hash is over the schema's CXCol strict-canonical encoding, NOT over
-the raw `.cxs` source bytes. This makes the hash invariant under
-comment edits, whitespace changes, and source-format reorganization.
+The schema's content-hash is the **SHA-256 of the schema's strict
+CANONICAL TEXT bytes** — a schema's identity IS its Tier-1 document
+identity, one primitive (I1, E2/L82; the former CXCol-encoding basis
+and its #724 framing ambiguity are superseded). The hash is invariant
+under comment edits, whitespace changes, and source reorganization
+(canonical text normalizes them all).
+
+**Mode-in-identity (I1 ledger entry 25 — RESOLVED, I5 stream 1):**
+the schema header (§2) is ordinary body data, so `of` / `mode` /
+`name` / `version` all ride in the canonical text and therefore in
+the content-hash — two schemas differing only in mode are two
+schemas with two identities, as E2 requires ("schema-mode rides in
+the hash as document bytes and is never a separate policy input").
+The pre-I5 directive spellings leaked these values out of the
+hashed bytes (strict canonical strips `[?cx …]` directives); they
+are retired and rejected at schema load.
 
 Path / URL references (`[?cx schema=path/to/x.cxs]`,
 `[?cx schema=https://...]`) are **tooling-layer** features. The
@@ -694,12 +757,47 @@ content-hash; consumers point libcx at the registry via
 `CX_SCHEMA_STORE` (or per-call API parameter) and resolve schemas
 on-the-fly during decode.
 
+### 13.3 — The runtime registry: names are hints, hashes are identity
+
+The runtime named-schema surface (stream 16 W4, L63) generalizes the
+`0x12` rule to every resolution hop. `register-schema` (validate.md
+§3.2) binds a LOCAL NAME to the schema's content-hash and retains the
+schema text; `validate-against` resolves **name → hash → content**,
+fail-closed at every hop: an unknown name, an unpinned hash, or store
+content that fails hash self-verification all raise `CXER1600` — a
+poisoned store never resolves. Resolution order: in-process bindings,
+then the module's `cx.lock` `[schemas]` pins (lockfile.md). Content
+order: the in-process registry, then `CX_SCHEMA_STORE` — a
+content-addressed directory (`<hex[0..2]>/<hex>.cxs`) whose reads
+recompute the canonical-bytes hash over what was read
+(formatting-invariant) and whose writes are cache-writes
+(silent-degrade; the binding is the act). The stored/registered
+CONTENT is the VERBATIM text; canonical bytes are the HASH BASIS
+only (#791 — canonical data emission is not a schema-semantics-
+preserving carrier for `::T`-annotated tokens). Rebinding a name is
+allowed (a hint-binding, not an identity); module-level pins ride
+`cx.lock` (`cx lock --pin-schema NAME=FILE.cxs`), the stream-19
+address posture.
+
+`infer` and `export` shipped with stream 16 (§16, §14); `compat`
+shipped under RULED: SEA-1 (§16.5); the §13.2
+`embed|extract|bundle|unbundle` transformations remain spec-only.
+
 ---
 
 ## 14 — Conversion behavior
 
 Schemas describe CX documents. They do not directly describe
-JSON, YAML, TOML, XML, or delimited equivalents.
+JSON, YAML, TOML, XML, or delimited equivalents. The ONE projection
+exception is `cx schema export --to=json-schema` (stream 16 W6,
+shape_inference.md §9): a Ring-0 conversion emitting JSON Schema
+2020-12 that describes the document's LOSSLESS JSON projection (the
+conversions.md §2.2.1 `\$tag` envelope) — element types become
+`\$defs` objects, `[card]` becomes `contains`/`minContains`/
+`maxContains`, and type-bearing child kinds ride their
+`{"cx:T": …}` carriers. Deterministic and byte-stable per schema
+identity; golden-pinned. XSD export follows #288's
+mapping-table-with-declared-non-goals.
 
 - **CX → XML**: schema validation (if invoked) runs on the CX
  side. The XML output is whatever the existing CX → XML
@@ -751,7 +849,7 @@ under `vcx/tests/conformance/schema/` covering at least:
 14. **Unknown element open mode** — accepted, no diagnostic.
 15. **Schema not found** — `S009` / `S010`.
 16. **Schema malformed** — `S009`.
-17. **Root mismatch** — doc root differs from `schema-of`; `S017`.
+17. **Root mismatch** — doc root differs from the header's `of`; `S017`.
 18. **Child order strict** — `S015` for out-of-order.
 19. **Fragment reuse** — `*alias` resolves correctly across
  multiple referencing positions.
@@ -765,6 +863,158 @@ Additional fixtures cover the cross-cutting cases: schema with
 namespaces (per ), schema with ID/IDREF (per ),
 schema validating documents that include other documents
 (`[?cx include=...]`).
+
+---
+
+## 16 — Schema inference (`cx schema infer`)
+
+Corpus shape synthesis (stream 16 W3, shape_inference.md §8 — L68
+normative): `cx schema infer FILE...` reads a corpus of documents
+(every document's top-level elements must share ONE name — that name
+becomes `of=`; mixed roots refuse loudly) and emits a deterministic
+open-mode `.cxs`. Ring 0 — no evaluator; the verb ships in both the
+monolith and the `data` profile.
+
+**The join lattice (normative):** identical→identical; `int ⊔ float
+→ float` (the one collapsing join — §10.4's validator already admits
+int where float is declared); `decimal` joins only `decimal` (the
+no-mixing rule); anything else → a sorted `[or …]` — inference NEVER
+widens to string. Containers join ITEM-WISE (`[list int] ⊔ [list
+float]` → `[list float]`, never textual union members). Observed
+attr absence → `[opt]`; observed child counts → `[card "M..N"]`
+(absence and late first-sight floor the minimum to 0); a body absent
+in some occurrences → `[opt]`; mixed-content bodies are left untyped
+(open mode covers them).
+
+**Determinism contract:** the same corpus yields byte-identical
+output (attrs / elems / types / or-members all name-sorted, the root
+type first, the CLI sorts its file list, no timestamps) — an
+inferred schema's content-hash is therefore a stable E2 identity.
+
+**Mode and sampling:** emitted schemas are always `mode=open` (they
+describe what was seen). Sampling is full-corpus by default;
+`--sample=N` bounds it to the first N documents and records
+`sample="N/TOTAL"` in the header (identity-bearing, but
+corpus-determined — the determinism contract holds).
+
+**Correctness property (fixture-pinned):**
+`validate(docs, infer(docs))` → zero diagnostics, for every corpus
+in the fixture family.
+
+---
+
+## 16.5 — Schema compatibility (`cx schema compat`) — RULED: SEA-1
+
+The L149 compatibility predicate
+([`schema_event_evolution.md`](schema_event_evolution.md) §5 — "a
+decidable Ring-0 pure predicate … surfaced as `cx schema compat`"),
+shipped. Ring 0 — no evaluator; the verb ships in both the monolith
+and the `data` profile.
+
+```
+cx schema compat [--rename=TYPE/OLD=NEW]... [--allow-remove=TYPE/FIELD]...
+                 [--output=FILE] OLD.cxs NEW.cxs
+```
+
+Both operands parse as schemas (§2); their identities are their
+content addresses (§13.1, spelled `sha2-256:<hex>`). The verb
+classifies **every field-level change** between the two declaration
+forms into the closed class set below, derives the **translator**
+(an *upcaster document*, below) for the mechanically-derivable
+classes, and **refuses** — with a specific prompt naming the missing
+rule per change — for the reinterpreting classes. The acceptance
+sentence this implements: *an author is stopped ONLY when the change
+genuinely reinterprets data; additive changes deploy silently.*
+
+### 16.5.1 — The change classes (normative)
+
+| class | detected when | verdict |
+| ----- | ------------- | ------- |
+| `:additive-optional` | new `[opt]` attribute; new child element with min-cardinality 0; new type declaration | derivable — identity (old documents/events already valid) |
+| `:additive-default` | new attribute carrying `[default V]` | derivable — the upcaster materializes `V` on old data |
+| `:default-changed` | an existing `[default]`'s value changed | derivable — the upcaster materializes the **old** default explicitly on old data lacking the field (old meaning preserved; the new default binds new data only) |
+| `:rename` | **declared** via `--rename TYPE/OLD=NEW` — never guessed (SEA-1a: a removed field plus an added same-shaped field is mechanically indistinguishable from a rename, and a guessed rename silently moves data) | derivable — key rename, value bytes unchanged |
+| `:widen` | a constraint loosened: enum superset, `[range]`/`[len]` superset, cardinality widened, `[req]`→`[opt]`, a type widened along §16's join lattice (`int → float`; member added to `[or …]`), `[pattern]` removed, mode loosened (`closed`→`strict`→`open`) | derivable — identity |
+| `:narrow` | a constraint tightened: `[req]` added (**breaking even in open mode** — open waives undeclared content, not declared requirements, L149), enum subset, `[range]`/`[len]` shrunk, cardinality narrowed, `[or]` member removed, `[pattern]` added **or changed** (regex containment is not mechanically provable — treated as tightening), mode tightened | **REFUSED** — the prompt names the field and the rule needed (a mapping for now-out-of-domain values) |
+| `:remove` | attribute / child element / type declaration removed | **REFUSED** by default (dropping a field loses data — SEA-1c); the explicit `--allow-remove TYPE/FIELD` acknowledgment derives the dropping translator (a field-level drop is payload rewriting, never a shred — journal.md §3.9's never-shred rule binds the whole `[event]` payload) |
+| `:reinterpret` | a declared type changed outside the join lattice; the root `of` changed; a body kind changed | **REFUSED** — no acknowledgment path; the author supplies a hand-written upcaster via an authored lineage claim |
+
+A rename **candidate** (exactly one removed and one added attribute
+of identical declared shape within one type) that was *not* declared
+refuses under `:remove` + the additive class of the added field, and
+the refusal prompt **names the candidate pair** and the `--rename`
+declaration that would derive it.
+
+### 16.5.2 — The derived translator (the upcaster document)
+
+On a derivable verdict, `--output=FILE` writes one CX document: the
+**Lane-2 lineage claim itself, carrying the derived rules as data**
+(RULED: SEA-1g — `[?modify]`, the one lossless in-language element
+surgery, is classified impure by code.md §6.5.0, so a *generated pure
+def* cannot spell a lossless rewrite; the rules therefore ride the
+claim and the journal seam applies them natively):
+
+```cx
+[schema-lineage
+  [from '<old-address>']
+  [to '<new-address>']
+  [relation :additive]
+  [upcaster <derived-name>]
+  [derived root=<root>
+    [set-default attr=<name> value='<literal>' vtype=<type>]*
+    [rename-attr from=<old> to=<new>]*
+    [drop-attr attr=<name>]*
+    [rename-elem from=<old> to=<new>]*
+    [drop-elem elem=<name>]*]]
+```
+
+The rule vocabulary is **closed** (exactly the five forms above —
+each mechanically implied by a derivable class); every derivable
+class is an additive evolution, so the derived relation is always
+`:additive` (narrowing/split/merge claims are authored, never
+derived). The claim composes directly as a journal §3.9 chain —
+`{upcast: <claim>}` or the `lineage-path`-ordered claim sequence
+(journal.md §3.9, the derived-chain form).
+
+Derivation semantics (SEA-1b, normative — enforced by the seam's
+native applier):
+
+- The rules rewrite **exactly** the entries whose payload declares
+  `schema=` equal to the **old** address: per-field surgery on the
+  authored payload — undeclared/open-mode content rides through
+  untouched (**lossless by construction**; a derived translator never
+  enumerates-and-rebuilds) — then `schema=` restamps to the new
+  address.
+- Entries declaring the **new** address pass through unchanged.
+- Entries declaring an address **unknown to the chain** refuse (the
+  seam's loud `CXER4641`) — stale vocabulary never silently passes.
+- Entries declaring **no** schema pass through — there is no claim to
+  translate.
+
+**Determinism:** the same schema pair plus the same declarations
+yields a byte-identical translator document — the translator is
+content-addressable, and the claim's content address is the chain's
+trust identity exactly per journal.md §3.9's derived-chain form.
+
+### 16.5.3 — Report, refusals, exit codes
+
+The report (stdout) is a `[schema-compat from=<addr> to=<addr>
+verdict=derivable|identical|refused]` element carrying one
+`[change class=… type=… field=…]` child per classified change and,
+on refusal, one `[missing-rule class=… type=… field=… prompt='…']`
+child per reinterpreting change — the prompt is specific (it names
+the field, the old and new declarations, and the rule that would
+admit the change). Nothing is derived on a refused verdict.
+
+Exit codes: `0` — derivable (or the two schemas are identical);
+`1` — refused (missing rules named); `2` — usage / parse / load
+failure (matches §10.3.1's convention).
+
+Publish-time and install-time consumers of this verdict are the
+distribution spec's
+([`xap_feature_distribution_market.md`](../xap/xap_feature_distribution_market.md)
+§6.1): lineage derivation at `pkg-publish`, coverage enforcement at
+`pkg-install`.
 
 ---
 

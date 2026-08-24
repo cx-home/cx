@@ -17,7 +17,7 @@ experience.
 | Piece | Status |
 |---|---|
 | Packaging, signing, publish, verify, install, `pkg:` loading, deployment host | **Implemented** (see [registry setup](registry-setup.md) / [consuming](registry-consuming.md)) |
-| Stage-1 git registry, stage-2 served registry, catalog/discovery | **Implemented** — live in xap-marine and the cx-private `registry/` |
+| Stage-1 git registry, stage-2 served registry, catalog/discovery | **Implemented** — proven by the original external reference instance (in-family successor: `reference/shop`) and the cx-private `registry` |
 | Entitlement machinery — `[$xap:license-issue]` / `[$xap:license-verify]`, all pricing shapes, install-policy enforcement | **Implemented** (engine + conformance; verified below) |
 | The market **as a running product** — hosted catalog XAP, publisher onboarding, storefront | **Specified, not yet implemented** — the market-as-a-XAP grammar is spec'd and conformance-exercised as data; no deployed market service exists |
 | The `commerce` feature + **payment-rail adapters** (card, invoicing/PO, app-store, crypto), refunds/chargebacks → revocation VCs | **Specified, not yet implemented** (phase P3 of the spec's staged implementation) |

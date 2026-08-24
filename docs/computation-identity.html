@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Computation identity — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Start here</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a class="active" href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
+    <li><a href="lib-jsonschema.html">jsonschema</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-vc.html">vc</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+    <li><a href="lib-xsp.html">xsp</a></li>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+</aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Computation identity</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
+<main>
+<section id="computation-identity">
+  <h1>Computation identity</h1>
+  
+    <section id="ci-idea">
+      <h2>Naming a computation, not just a value</h2>
+      
+        <p>Ring 0 gives every <b>value</b> an address. Ring 1 extends the
+         same move to <b>computations</b>: a pure function applied to known
+         inputs in a known environment is itself a value — a record —
+         and that record's content address names the computation. Same
+         function, same inputs, same environment: same address,
+         everywhere, forever.</p>
+        <p>The record has four slots, and each earns its place:</p>
+        <table>
+          <thead>
+            
+              <tr>
+                <th>Slot</th>
+                <th>What it carries</th>
+                <th>Why it is in the hash</th>
+              </tr>
+            
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td><code>fn</code></td>
+                <td>the definition — its code-equivalence key for cache sharing, plus the content address of the exact source text for trust</td>
+                <td>a different definition is a different computation</td>
+              </tr>
+              <tr>
+                <td><code>inputs</code></td>
+                <td>the content address of every argument</td>
+                <td>reformatting an input does not move it; changing a field does</td>
+              </tr>
+              <tr>
+                <td><code>env</code></td>
+                <td>runtime version, builtin-set identity, schema dialect</td>
+                <td>a runtime patch can fix a determinism bug — and a fix must invalidate</td>
+              </tr>
+              <tr>
+                <td><code>caps</code></td>
+                <td>the capability set in canonical form</td>
+                <td>recorded for completeness — for a pure computation it provably cannot change the result</td>
+              </tr>
+            
+          </tbody>
+        </table>
+        <p>What this buys: a node that holds neither the source nor the
+         inputs can serve a cached result by address, and the requester
+         can re-derive the address to verify what it was handed. A
+         reformatted input is a cache <b>hit</b> (same address); a runtime
+         upgrade is a cache <b>miss</b> (new address, cold cache, never a
+         wrong answer). The environment slot is deliberately minimal and
+         only ever grows additively — when a field is added, every
+         address changes exactly once, and the old cache goes cold
+         rather than stale.</p>
+        <p class="note">The cache is <b>pure-only and fail-loud</b>: constructing a
+         computation record for an impure function is a typed error, and
+         results live in an ordinary store namespace — an explicit
+         lookup, not an invisible memoization layer. Budget exhaustion
+         and non-termination are never cached. Impure work can still be
+         made replayable by recording its nondeterministic boundary
+         reads onto a <b>tape</b> and treating the tape as one more
+         addressed input — determinism manufactured after the fact,
+         with the same identity machinery.</p>
+      
+    </section>
+    <section id="determinism">
+      <h2>Determinism and reproducibility</h2>
+      
+        <p>Computation identity only works because CX evaluation is
+         deterministic where it claims to be. The same input produces
+         byte-identical output across machines, operating systems,
+         architectures, and bindings — the foundation under
+         content-addressing, reproducible builds, cross-binding parity
+         tests, and audit trails.</p>
+        <ul>
+          
+            <li><b>Canonical form is the substrate.</b> Attribute order,
+              whitespace, quoting, and numeric formatting are pinned by
+              the canonical rules (see <a class="xref" href="identity.html">identity</a>), so equality and
+              hashing never depend on who serialized the value.</li>
+            <li><b>Float formatting is CX's own.</b> Canonical float output
+              uses a self-contained shortest-round-trip algorithm, not
+              the host <code>printf</code> — libc differences (musl, glibc, Apple)
+              cannot leak into canonical bytes.</li>
+            <li><b>Arithmetic is IEEE-754 strict.</b> Round-to-nearest-even,
+              no fast-math, bit-identical exact arithmetic across
+              platforms. Transcendentals (<code>sin</code>, <code>log</code>, …) use the host
+              libm and are documented as platform-dependent — keep them
+              out of anything whose address you rely on.</li>
+            <li><b>No locale leaks.</b> Pure builtins are locale-free by
+              rule: case mapping is Unicode default casing, never the
+              host locale. A locale-sensitive pure builtin is treated as
+              a conformance bug, not a platform quirk.</li>
+          
+        </ul>
+        <p>What is deliberately <b>not</b> deterministic, and flagged as
+         such: effectful builtins that read the world (<code>now</code>, <code>random</code>,
+         <code>uuid</code> — each behind its capability, see <a class="xref" href="capabilities.html">capabilities</a>);
+         wall-clock timeout behavior under <code>[?timeout]</code>; and the
+         <i>timing</i> of parallel execution (though never its result — next
+         subsection).</p>
+      
+    </section>
+    <section id="ci-theorem">
+      <h2>pure means deterministic — including under [par]</h2>
+      
+        <p>CX's purity checker classifies every definition, and the
+         guarantee is normative: <b>a pure computation is deterministic</b>
+         — same inputs, same environment, same result, regardless of
+         capability set, thread count, or evaluation order. This is the
+         theorem that makes a computation address meaningful at all.</p>
+        <p>The clause that historically breaks this promise in other
+         systems is parallelism, so CX pins it explicitly: <code>[par]</code>
+         <b>reassembles results in source order, always.</b> A parallel
+         <code>[?for]</code>, <code>[?map]</code>, or <code>[?reduce]</code> may <i>execute</i> iterations in
+         any order across any number of threads, but the value it
+         returns is the value the sequential evaluation returns — element
+         for element, float-accumulation order included. There is no
+         unordered mode. (An older <code>[ordered]</code> clause survives
+         grammatically as a documented no-op: order is no longer
+         optional, so there is nothing left for it to request.)</p>
+        <pre>
+          <code class="language-cx">[?map (1, 2, 3, 4) [using [?fn ($x) [* $x $x]]] [par]]</code>
+        </pre>
+        <pre class="sample-output">
+          <code>(1, 4, 9, 16)</code>
+        </pre>
+      
+    </section>
+    <section id="parallelism">
+      <h2>Parallelism by construction</h2>
+      
+        <p>Because every value is immutable and every error is a value,
+         parallelism costs almost nothing to adopt. <code>[par]</code> on <code>[?for]</code>,
+         <code>[?map]</code>, and <code>[?reduce]</code> splits pure work across a bounded
+         worker pool; there is no user-level lock primitive because
+         there is no shared mutable state to protect.</p>
+        <pre>
+          <code class="language-cx">[# Comprehension over matches: ]
+         [?for [in $r //request] [par] [yield [got [$text $r]]]]
+
+         [# Associative parallel fold: ]
+         [?reduce (1, 2, 3) [using [?fn ($a $b) [+ $a $b]]] [init 0] [par]]</code>
+        </pre>
+        <p><b>Why it is safe.</b> No CX expression can mutate a value another
+         thread is reading — <code>[?modify]</code> returns a new tree, and
+         derived values share structure with their origins by pointer
+         (see <a class="xref" href="runtime-representation.html">runtime-representation</a>), so handing a large document
+         to N workers is handing N pointers. Purity is the
+         parallelization license: the evaluator parallelizes bodies the
+         checker proves pure, and the source-order reassembly rule
+         (above) guarantees the result is indistinguishable from
+         sequential evaluation.</p>
+        <p><b>When <code>[par]</code> does not help.</b> Tiny bodies lose to dispatch
+         overhead — for a trivial body over a small input, the cost of
+         distributing the work can exceed the work itself, so
+         sequential evaluation wins. An erroring iteration
+         cancels its in-flight siblings cooperatively: iterations
+         observe cancellation at safepoints (between CXPath steps and
+         directive invocations), so a long CPU-bound body without
+         natural safepoints runs to completion — the same hazard as
+         every cooperative-cancellation system. Error values from
+         iterations propagate like any other value; see the error
+         material in <a class="xref" href="code.html">code</a>.</p>
+      
+    </section>
+  
+</section>
+</main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>Computation identity</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

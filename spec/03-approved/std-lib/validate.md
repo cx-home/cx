@@ -120,18 +120,38 @@ Validate `$value` against the inline `$schema`. Returns `[ok $value]` on success
 ### §3.2. Validate against named schema
 
 ```
-[?def validate-against scope=public pure [returns element] ($value::any $schema-ref::string) ...]
+[?def register-schema  scope=public [returns string]  ($name::string $schema::any) ...]
+[?def validate-against scope=public [returns element] ($value::any $schema-ref::string) ...]
 ```
 
-Validate against a schema registered under `$schema-ref`. Raises `CXER1600 E_VALIDATE_SCHEMA_NOT_FOUND` if unregistered.
+**Registration (stream 16 W4, L63 — the re-rule):** names are HINTS,
+hashes are IDENTITY. `register-schema` binds the local `$name` to the
+schema's content-hash (SHA-256 over strict-canonical text — the E2
+identity), retains the schema text, and returns the hash hex (the
+registration receipt). `$schema` is a `[schema …]` element value or a
+string of schema text (either language — this module's inline
+vocabulary or a `.cxs` document). Rebinding a name is allowed — a
+hint-binding, not an identity; the last binding wins. When
+`CX_SCHEMA_STORE` is set, registration also persists the verbatim
+text to the content-addressed store (a cache-write; silent-degrade).
 
-> **Operability deferred.** This signature is **specified but
-> not currently operable**: there is no Current way to populate the
-> named-schema registry. Schema registration (`register-schema` and the
-> `[?schema-register]` directive) is deferred to a future
-> amendment (§7). Until that ships, `validate-against` always raises
-> `CXER1600` because the registry is unpopulable. Use the Current,
-> fully-operable `validate-shape` (§3.1) with an inline schema instead.
+**Resolution:** `validate-against` resolves **name → hash →
+content**, fail-closed at every hop: in-process bindings, then the
+module's `cx.lock` `[schemas]` pins; content from the in-process
+registry, then `CX_SCHEMA_STORE` (reads self-verify — content whose
+hash does not match never resolves). Any failing hop raises
+`CXER1600 E_VALIDATE_SCHEMA_NOT_FOUND` naming the hop. The resolved
+content's OWN root selects the engine: a `[schema …]` root without
+`of=` validates via §3.1's record path (custom validators included);
+an `of=`-bearing root is a `spec/core/schema.md` document schema —
+diagnostics map onto the same `[ok …]` / `[invalid [violation …]]`
+result vocabulary (§3.3 inspection works on both).
+
+**Purity:** both verbs are IMPURE by construction — registration
+writes the process registry and resolution reads a rebindable
+binding; a `pure` marker would make the read cacheable (computation
+identity), which is unsound. (The pre-W4 `pure` spelling is
+superseded.)
 
 ### §3.3. Result inspection
 
@@ -307,7 +327,7 @@ For "any integral number, including `3.0`", use `type="number"` plus a `validate
 
 | Code | Mnemonic | Raised by |
 |---|---|---|
-| `CXER1600` | `E_VALIDATE_SCHEMA_NOT_FOUND` | `validate-against` with unregistered `$schema-ref` |
+| `CXER1600` | `E_VALIDATE_SCHEMA_NOT_FOUND` | `validate-against` — any failing resolution hop: unknown name, unpinned hash, or store content failing hash self-verification (fail-closed; the hop is named in the message) |
 | `CXER1601` | `E_VALIDATE_TYPE_UNKNOWN` | Schema declares a `type=` not in §4.5 |
 | `CXER1602` | `E_VALIDATE_PATTERN_INVALID` | Schema declares a `pattern=` that doesn't compile under RE2 |
 | `CXER1603` | `E_VALIDATE_SCHEMA_MALFORMED` | Schema structure invalid (bad shape, impure `validate-with=`, `[extends …]` cycle, retired `enum=`/`schema=`/`extends=` attr spelling) |
@@ -329,7 +349,7 @@ Under `conformance/stdlib/validate.cxd`:
 - **Nested schema**: violations bubble up with extended paths.
 - **Retired attr spellings**: a collection-valued `enum=[…]` → `CXER0100` at construction; scalar-carried `enum=` / `schema=` / `extends=` → `CXER1603` with a migration hint.
 - **Multi-violation**: value with two distinct violations produces both.
-- **Named schema**: `register-schema` + `validate-against`; unregistered name → `CXER1600`.
+- **Named schema**: `register-schema` + `validate-against` round-trip ([ok]/[invalid]/rebind-last-wins/.cxs-content dispatch — validate-041..045); unregistered name → `CXER1600` (validate-032); lock-pin + store resolution and the poisoned-store fail-closed negative ride the V harness (stream 16 W4).
 - **Composition helpers**: `errors-of` / `violation-paths` / `violation-messages` projections.
 - **CXPath `path=`**: feeding `path=` to `select` returns the offending value; `[?modify]` repairs it. Nested paths (`/address/zip`).
 - **Type widening (§4.5.1)**: `type="float"` accepts int; `type="int"` rejects `3.0`; `type="number"` + `validate-with=` integral-check accepts `3` and `3.0`, rejects `3.7`.
@@ -339,8 +359,21 @@ Under `conformance/stdlib/validate.cxd`:
 
 ## §7. Open follow-ups
 
-- **Declarative `returns=SchemaRef` on `[?def]`** — integrates with the type checker; future amendment to the function-definition surface.
-- **Schema-as-data registration directive `[?schema-register]`** — `validate-against` resolves through a named-schema registry; the registration directive specified in a future amendment.
+- ~~**Declarative `returns=SchemaRef` on `[?def]`**~~ — DISCHARGED
+  (stream 16, L63): `SchemaRef` ≡ the E2 type identity `(element
+  name, schema content-hash)`. `[returns Order]`, in a scope where
+  `Order`'s schema is pinned (§3.2 registration / `cx.lock`
+  `[schemas]`), IS `returns=SchemaRef` — the CLAUSE spelling stands,
+  this attribute spelling is retired, zero new grammar
+  (grammar.ebnf [152b] note). Enforcement under `--strict`
+  (code.md §12.7.6).
+- ~~**Schema-as-data registration `[?schema-register]`**~~ —
+  DISCHARGED (stream 16 W4): registration ships as the
+  `register-schema` VERB (§3.2). The deferred DIRECTIVE spelling is
+  retired-before-birth: the §4.1 directive registry is
+  one-form-per-act (the `chain`-alias retirement precedent) and
+  registration is a stdlib act, not a language form — the verb is
+  THE spelling.
 - **Schema composition — intersection / union** — single-inheritance `[extends …]` ships currently; intersection / union deferred. Record-level `validate-with=` covers many use cases.
 - **Convergence with `spec/core/schema.md`** — opportunistic; not a blocker.
 - **Per-language error message localization** — current messages are English; future `format-violations` with `locale=` localizes.

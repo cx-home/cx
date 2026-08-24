@@ -73,7 +73,8 @@ Given a value `x`, `[$fp:map x f]` selects its instance in this **fixed order**:
 
 1. a **registered head-tag instance** for `x`'s head (a user-defined instance, or
    the built-in `result` over `[ok]` / `[err]`) → that instance;
-2. else `x` is a **sequence** (`__cx_seq__`) → the `sequence` instance;
+2. else `x` is a **sequence value** (the CXDM sequence kind, whatever its
+   host representation) → the `sequence` instance;
 3. else `x` is a **bare scalar** → the singleton `Some(x)` under the `sequence`
    instance (a bare scalar is a singleton sequence, `code.md` V3 / XPath
    atomization);

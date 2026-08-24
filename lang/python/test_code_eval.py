@@ -14,8 +14,14 @@ length-bearing variants so non-NUL-terminated input flows through
 unchanged).
 """
 
+import shutil
 import unittest
 import cxlib
+
+# The shared diagram subject — one program rendered at three targets so
+# the capability-free target, the ungranted refusal and the granted
+# render are all asserted over the same input.
+DIAGRAM_PROG = '[?for [user $u] [yield $u]]'
 
 
 class TestEvalCodeOneShot(unittest.TestCase):
@@ -55,12 +61,45 @@ class TestEvalCodeOneShot(unittest.TestCase):
         self.assertIn('CXER0100', msg)
         self.assertIn('protobuf', msg)
 
-    def test_svg_target_returns_diagram(self):
-        # Phase 4.1 landed the diagram renderer — svg / mermaid / png
-        # now return embedded-source diagrams instead of CXER0001.
-        # html remains Phase-4-gated (no canonical mapping defined yet).
-        out = cxlib.eval_code('', '[?for [user $u] [yield $u]]', 'svg')
+    def test_mermaid_target_returns_diagram(self):
+        # The capability-FREE diagram target. mermaid needs no graphviz
+        # and so no `subprocess` grant, which makes it the one that can
+        # carry a positive "returns a diagram" assertion under the
+        # pure-only default (RULED: DSC-1c / SPF-2).
+        out = cxlib.eval_code('', DIAGRAM_PROG, 'mermaid')
+        self.assertIn('flowchart', out)
+        # The embed-source round trip: mermaid carries the program in a
+        # leading `%%cx:<base64>%%` marker comment.
+        self.assertTrue(out.startswith('%%cx:'))
+
+    def test_svg_target_refuses_without_the_subprocess_grant(self):
+        # RULED: DSC-1c (#890) — svg/png shell out to graphviz `dot`, so
+        # they CHARGE for it: under the pure-only default they refuse
+        # loudly rather than substituting the dot-less envelope ("the
+        # denial is NOT the envelope"). RULED: SPF-2 (#897) — this holds
+        # on the ABI path too, not only in `cx diagram`; the arm reached
+        # by eval_code was silently answering with the envelope.
+        with self.assertRaises(RuntimeError) as ctx:
+            cxlib.eval_code('', DIAGRAM_PROG, 'svg')
+        msg = str(ctx.exception)
+        self.assertIn('CXER0271', msg)
+        self.assertIn('subprocess', msg)
+        self.assertIn('--allow-subprocess', msg)
+
+    @unittest.skipUnless(shutil.which('dot'),
+                         'graphviz `dot` not on PATH — the granted svg path '
+                         'needs the real renderer')
+    def test_svg_target_renders_when_subprocess_is_granted(self):
+        # The other half of DSC-1c: GRANTED, the same call returns a real
+        # graphviz SVG carrying the embedded source. Routed through the
+        # capability-aware entry point (cxlib.eval_code_caps), whose grant
+        # is reset after the call.
+        out = cxlib.eval_code_caps('', DIAGRAM_PROG, 'subprocess', 'svg')
+        self.assertIn('<svg', out)
         self.assertIn('cx:source', out)
+        # DSC-1a: the carrier sits INSIDE the root element, so the
+        # document is well-formed — it never precedes `<svg`.
+        self.assertGreater(out.index('<cx:source'), out.index('<svg'))
 
     def test_html_target_still_phase4_gated(self):
         with self.assertRaises(RuntimeError) as ctx:

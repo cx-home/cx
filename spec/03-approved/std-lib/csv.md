@@ -85,6 +85,15 @@ Built-in dialects via `[$csv:dialects-builtin]`:
 
 CSV is never auto-typed — leading-zero IDs, ZIP codes, and ambiguous dates make inference a footgun.
 
+**The ingest auto-typing split (stream 16, L67 — deliberate).** This
+module's no-auto-typing default is one half of a deliberate boundary:
+the **conversion lane** (whole-document import — `cx --from=csv`, the
+`cx_from_*` C ABI; spec/core/conversions.md §8.2) DOES auto-type with
+column narrowing, as a documented inference step with caller-schema
+precedence and quoted-fields-stay-strings. A programmatic parsing
+primitive must never guess; a whole-document importer must be useful
+without ceremony. Different jobs, different defaults; both normative.
+
 The `[returns [sequence any]]` clause covers both cases since the element shape depends on `header`.
 
 **Lenient mode.** A dialect `[on-error "collect"]` (default `"raise"`) returns a `[csv-result …]` element instead of raising:

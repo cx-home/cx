@@ -5,15 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>i18n — CX Guide</title>
 <link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <aside class="sidebar">
   <a class="brand" href="index.html" aria-label="CX — home">
-    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
   </a>
   <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
   <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
   <a class="brand-sub" href="about.html">About →</a>
   <div class="side-search">
     <input id="side-search-input" type="search"
@@ -21,261 +25,304 @@
            autocomplete="off" spellcheck="false" data-prefix="" />
     <ul id="side-search-results" class="side-search-results" hidden></ul>
   </div>
-  <section><h4>Guide</h4><ul>
+  <section><h4>Start here</h4><ul>
     <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
     <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
     <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
     <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
     <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
     <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
-    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
-    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
-    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
-    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
-    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
-    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
-    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
-    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
     <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
-    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
-    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
-    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
-  </ul></section>
-  <section><h4>Reference</h4><ul>
-    <li><a href="directives.html">Directives</a></li>
-    <li><a href="syntax.html">Core syntax</a></li>
-  </ul></section>
-  <section><h4>Standard library</h4><ul>
-    <li><a href="libraries.html">Overview</a></li>
-    <li><a href="lib-authz.html">authz</a></li>
-    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
     <li><a href="lib-bytes.html">bytes</a></li>
     <li><a href="lib-crypto.html">crypto</a></li>
     <li><a href="lib-csv.html">csv</a></li>
-    <li><a href="lib-did.html">did</a></li>
-    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
     <li><a href="lib-env.html">env</a></li>
-    <li><a href="lib-fabric.html">fabric</a></li>
     <li><a href="lib-format.html">format</a></li>
     <li><a href="lib-fp.html">fp</a></li>
     <li><a href="lib-ft.html">ft</a></li>
     <li><a href="lib-geo.html">geo</a></li>
     <li><a href="lib-hash.html">hash</a></li>
     <li><a href="lib-html.html">html</a></li>
-    <li><a href="lib-http.html">http</a></li>
     <li><a class="active" href="lib-i18n.html">i18n</a></li>
     <li><a href="lib-io.html">io</a></li>
-    <li><a href="lib-journal.html">journal</a></li>
     <li><a href="lib-json.html">json</a></li>
     <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
     <li><a href="lib-jsonschema.html">jsonschema</a></li>
     <li><a href="lib-locale.html">locale</a></li>
     <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
     <li><a href="lib-math.html">math</a></li>
     <li><a href="lib-mime.html">mime</a></li>
-    <li><a href="lib-net.html">net</a></li>
     <li><a href="lib-path.html">path</a></li>
     <li><a href="lib-process.html">process</a></li>
     <li><a href="lib-prof.html">prof</a></li>
     <li><a href="lib-random.html">random</a></li>
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
-    <li><a href="lib-session.html">session</a></li>
     <li><a href="lib-similar.html">similar</a></li>
-    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
     <li><a href="lib-test.html">test</a></li>
     <li><a href="lib-time.html">time</a></li>
     <li><a href="lib-url.html">url</a></li>
     <li><a href="lib-uuid.html">uuid</a></li>
     <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-vc.html">vc</a></li>
     <li><a href="lib-xap.html">xap</a></li>
     <li><a href="lib-xsp.html">xsp</a></li>
-  </ul></section>
-  <section><h4>XAP</h4><ul>
     <li><a href="xap.html">Overview</a></li>
     <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
     <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
     <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
     <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
   </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
 </aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">i18n</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
 <main>
-<section id="lib-i18n">
-  <h1>i18n</h1>
-  <p class="lede">The message and translation layer of CX's internationalization surface. Build, merge, and inspect message catalogs that map a key to per-locale ICU MessageFormat strings; resolve a key for a target locale through a fallback chain; and evaluate MessageFormat templates with interpolation, CLDR plurals, select, selectordinal, nested forms, and typed args. A locale's CLDR plural category for a number is also exposed. Depends one-way on cx-stdlib/locale for all number, date, and currency formatting; locale arguments are BCP 47 tags.</p>
-  
-    <section id="fn-i18n-catalog-from-map" class="fn">
-      <h3>i18n:catalog-from-map</h3>
-      <p class="fn-sig"><code>[$i18n:catalog-from-map]  -> element</code>  —  Build a catalog element from a map of key to per-locale MessageFormat strings.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/i18n']
+<section id="lib-i18n"><h1>i18n</h1><p class="lede">The message and translation layer of CX's internationalization surface. Build, merge, and inspect message catalogs that map a key to per-locale ICU MessageFormat strings; resolve a key for a target locale through a fallback chain; and evaluate MessageFormat templates with interpolation, CLDR plurals, select, selectordinal, nested forms, and typed args. A locale's CLDR plural category for a number is also exposed. Depends one-way on cx-stdlib/locale for all number, date, and currency formatting; locale arguments are BCP 47 tags.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
+           reader who takes an x/ surface for a frozen one has been misled by
+           the page, not by their own inattention. ]]>
+  <section id="fn-i18n-catalog-from-map" class="fn">
+    <h3>i18n:catalog-from-map</h3>
+    <p class="fn-sig"><code>[$i18n:catalog-from-map]  -> element</code>  —  Build a catalog element from a map of key to per-locale MessageFormat strings.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:catalog-locales [$i18n:catalog-from-map {"greeting": {"en": "Hello, {name}!", "fr": "Bonjour, {name} !"}}]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>('en', 'fr')</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-i18n-load-catalog" class="fn">
-      <h3>i18n:load-catalog</h3>
-      <p class="fn-sig"><code>[$i18n:load-catalog]  -> element</code>  —  Read a catalog from its on-disk CX-document form; requires the read capability.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/i18n']
+        </pre>
+        <pre class="sample-output">
+          <code>(en, fr)</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-i18n-load-catalog" class="fn">
+    <h3>i18n:load-catalog</h3>
+    <p class="fn-sig"><code>[$i18n:load-catalog]  -> element</code>  —  Read a catalog from its on-disk CX-document form; requires the read capability.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:load-catalog "conformance/data/i18n/messages.cx"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-i18n-catalog-merge" class="fn">
-      <h3>i18n:catalog-merge</h3>
-      <p class="fn-sig"><code>[$i18n:catalog-merge]  -> element</code>  —  Merge catalogs left-to-right, last-writer-wins.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/i18n']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-i18n-catalog-merge" class="fn">
+    <h3>i18n:catalog-merge</h3>
+    <p class="fn-sig"><code>[$i18n:catalog-merge]  -> element</code>  —  Merge catalogs left-to-right, last-writer-wins.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:message [$i18n:catalog-merge [$i18n:catalog-from-map {"k": {"en": "A"}}] [$i18n:catalog-from-map {"k": {"en": "B"}}]] "k" "en" {}]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>B</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-i18n-catalog-merge-seq" class="fn">
-      <h3>i18n:catalog-merge-seq</h3>
-      <p class="fn-sig"><code>[$i18n:catalog-merge-seq]  -> element</code>  —  Merge a runtime-assembled sequence of catalogs, last-writer-wins.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/i18n']
+        </pre>
+        <pre class="sample-output">
+          <code>B</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-i18n-catalog-merge-seq" class="fn">
+    <h3>i18n:catalog-merge-seq</h3>
+    <p class="fn-sig"><code>[$i18n:catalog-merge-seq]  -> element</code>  —  Merge a runtime-assembled sequence of catalogs, last-writer-wins.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:message [$i18n:catalog-merge-seq ([$i18n:catalog-from-map {"k": {"en": "A"}}], [$i18n:catalog-from-map {"k": {"en": "B"}}])] "k" "en" {}]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>B</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-i18n-catalog-locales" class="fn">
-      <h3>i18n:catalog-locales</h3>
-      <p class="fn-sig"><code>[$i18n:catalog-locales]  -> [sequence string]</code>  —  List the distinct locales present across a catalog's entries.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/i18n']
+        </pre>
+        <pre class="sample-output">
+          <code>B</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-i18n-catalog-locales" class="fn">
+    <h3>i18n:catalog-locales</h3>
+    <p class="fn-sig"><code>[$i18n:catalog-locales]  -> [sequence string]</code>  —  List the distinct locales present across a catalog's entries.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:catalog-locales [$i18n:catalog-from-map {"greeting": {"en": "Hello, {name}!", "fr": "Bonjour, {name} !"}}]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>('en', 'fr')</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-i18n-catalog-keys" class="fn">
-      <h3>i18n:catalog-keys</h3>
-      <p class="fn-sig"><code>[$i18n:catalog-keys]  -> [sequence string]</code>  —  List the message keys defined in a catalog.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/i18n']
+        </pre>
+        <pre class="sample-output">
+          <code>(en, fr)</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-i18n-catalog-keys" class="fn">
+    <h3>i18n:catalog-keys</h3>
+    <p class="fn-sig"><code>[$i18n:catalog-keys]  -> [sequence string]</code>  —  List the message keys defined in a catalog.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:catalog-keys [$i18n:catalog-from-map {"greeting": {"en": "Hello, {name}!"}, "farewell": {"en": "Bye, {name}!"}}]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>('greeting', 'farewell')</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-i18n-message" class="fn">
-      <h3>i18n:message</h3>
-      <p class="fn-sig"><code>[$i18n:message]  -> string</code>  —  Resolve a key for a locale through the fallback chain and evaluate it against args; raises on an unknown key.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/i18n']
+        </pre>
+        <pre class="sample-output">
+          <code>(greeting, farewell)</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-i18n-message" class="fn">
+    <h3>i18n:message</h3>
+    <p class="fn-sig"><code>[$i18n:message]  -> string</code>  —  Resolve a key for a locale through the fallback chain and evaluate it against args; raises on an unknown key.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:message [$i18n:catalog-from-map {"default": "en", "greeting": {"en": "Hello, {name}!"}}] "greeting" "de" {"name": "Ada"}]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>Hello, Ada!</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-i18n-message-or" class="fn">
-      <h3>i18n:message-or</h3>
-      <p class="fn-sig"><code>[$i18n:message-or]  -> string</code>  —  Like message, but evaluate the fallback string instead of raising on an unknown key.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/i18n']
+        </pre>
+        <pre class="sample-output">
+          <code>Hello, Ada!</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-i18n-message-or" class="fn">
+    <h3>i18n:message-or</h3>
+    <p class="fn-sig"><code>[$i18n:message-or]  -> string</code>  —  Like message, but evaluate the fallback string instead of raising on an unknown key.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:message-or [$i18n:catalog-from-map {"greeting": {"en": "Hi"}}] "missing.key" "en" {"name": "Ada"} "Hello, {name}!"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>Hello, Ada!</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-i18n-format-message" class="fn">
-      <h3>i18n:format-message</h3>
-      <p class="fn-sig"><code>[$i18n:format-message]  -> string</code>  —  Evaluate a MessageFormat string against args for a locale, with no catalog.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/i18n']
+        </pre>
+        <pre class="sample-output">
+          <code>Hello, Ada!</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-i18n-format-message" class="fn">
+    <h3>i18n:format-message</h3>
+    <p class="fn-sig"><code>[$i18n:format-message]  -> string</code>  —  Evaluate a MessageFormat string against args for a locale, with no catalog.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:format-message "{count, plural, =0 {no items} one {# item} other {# items}}" "en" {"count": 0}]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>no items</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-i18n-plural-category" class="fn">
-      <h3>i18n:plural-category</h3>
-      <p class="fn-sig"><code>[$i18n:plural-category]  -> atom</code>  —  Return the CLDR cardinal plural category for a number in a locale.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/i18n']
+        </pre>
+        <pre class="sample-output">
+          <code>no items</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-i18n-plural-category" class="fn">
+    <h3>i18n:plural-category</h3>
+    <p class="fn-sig"><code>[$i18n:plural-category]  -> atom</code>  —  Return the CLDR cardinal plural category for a number in a locale.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:plural-category 1 "en"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>:one</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-i18n-plural-category-ordinal" class="fn">
-      <h3>i18n:plural-category-ordinal</h3>
-      <p class="fn-sig"><code>[$i18n:plural-category-ordinal]  -> atom</code>  —  Return the CLDR ordinal plural category for a number in a locale.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/i18n']
+        </pre>
+        <pre class="sample-output">
+          <code>:one</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-i18n-plural-category-ordinal" class="fn">
+    <h3>i18n:plural-category-ordinal</h3>
+    <p class="fn-sig"><code>[$i18n:plural-category-ordinal]  -> atom</code>  —  Return the CLDR ordinal plural category for a number in a locale.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:plural-category-ordinal 1 "en"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>:one</code>
-          </pre>
-        </div>
-      
-    </section>
-  
+        </pre>
+        <pre class="sample-output">
+          <code>:one</code>
+        </pre>
+      </div>
+    
+  </section>
 </section>
 </main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>i18n</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
 <script src="highlight/highlight.js" defer></script>
 <script src="search-index.js" defer></script>
 <script src="search/search.js" defer></script>

@@ -5,7 +5,7 @@
 use cxlib::validate::{validate, validate_apply_defaults, Severity};
 
 const BOOK_SCHEMA: &str = r#"
-[?cx schema-of book]
+[schema of=book]
 
 [book
   [body :elem]
@@ -73,7 +73,7 @@ fn apply_defaults_writes_modified_doc() {
     // i32-default-from-string coercion path (which is the
     // S011 territory tested by sv-039).
     let schema = r#"
-[?cx schema-of server]
+[schema of=server]
 
 [server
   [attr host::string [default 'localhost']]

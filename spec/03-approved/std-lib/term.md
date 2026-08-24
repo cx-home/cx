@@ -14,7 +14,10 @@ terminal input on the program's own controlling tty (fd 0). These natives are pa
 the frozen binary's dispatch chain and are stable; the **`cx-x/term` module wrapper**
 (`[?lib 'cx-x/term']`, sources in repo-root `x/term.cx`) remains `x/`-tier
 experimental per [README.md](README.md) D3 — its *surface* may still evolve, riding
-on these primitives, until it graduates to `cx-stdlib/term`.
+on these primitives, until it graduates to `cx-stdlib/term`. That module surface has
+its own normative reference, `x/term.md`, which covers the verb table, the raw-mode
+lifecycle, and `select`'s readiness contract (including its TLS limit); this document
+stays the reference for the primitives themselves.
 
 POSIX only. The termios / winsize / poll machinery lives in the `cx_term.c` shim;
 the VT/ANSI key decoder is pure and unit-testable without a tty.
@@ -85,7 +88,12 @@ becoming readable, or a timer — over one `poll(2)`. `OPTS` is a map:
 
 - `keys` (bool, default false) — include stdin keystrokes;
 - `sources` — a sequence of fd-bearing handles (`[socket fd=N]`, an exchange,
-  an SSE stream handle — anything carrying an `fd=` attribute);
+  an SSE stream handle — anything carrying an `fd=` attribute), or a
+  `[file handle=N …]` process-stream handle that wraps a raw fd (a spawned
+  child's stdin/stdout/stderr, or a pty master). The two handle shapes are
+  unified here (DP4 (h)): a harness selects on its child's pty exactly like
+  a shell selects on a socket. A `[file …]` handle backed by a buffered
+  os-level file is not a selectable source and is skipped;
 - `timeout` — a duration; absent means block indefinitely.
 
 Returns `[key …]` for a keystroke, `[ready index=N <handle>]` for a readable

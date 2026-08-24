@@ -7,6 +7,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/cockroachdb/apd/v3"
 )
 
 // ── fixture loader ────────────────────────────────────────────────────────────
@@ -140,16 +142,20 @@ func TestAttrBool(t *testing.T) {
 	}
 }
 
-func TestAttrFloat(t *testing.T) {
+func TestAttrDecimal(t *testing.T) {
+	// I1 stream 11: a bare fixed-point attr image (`ratio=1.5`) types as
+	// DECIMAL — a first-class semantic kind mapped to an exact base-10
+	// host type (*apd.Decimal), never float64 (L48; the kind is never
+	// erased and binary float is the wrong carrier).
 	doc, _ := Parse(fx(t, "api_config.cx"))
 	srv := doc.At("config/server")
 	ratio := srv.Attr("ratio")
-	f, ok := ratio.(float64)
+	d, ok := ratio.(*apd.Decimal)
 	if !ok {
-		t.Fatalf("expected float64 ratio, got %T=%v", ratio, ratio)
+		t.Fatalf("expected *apd.Decimal ratio, got %T=%v", ratio, ratio)
 	}
-	if math.Abs(f-1.5) > 1e-9 {
-		t.Fatalf("expected ratio 1.5, got %v", f)
+	if got := d.Text('f'); got != "1.5" {
+		t.Fatalf("expected ratio image 1.5, got %q", got)
 	}
 }
 

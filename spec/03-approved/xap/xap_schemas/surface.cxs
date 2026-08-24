@@ -1,0 +1,61 @@
+[schema of=surface mode=open]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Surface-spec schema (DRAFT).
+#
+# One `*.surface.cxd` = one `[surface …]` for a XAP. It is DERIVED from the xap +
+# feature specs: it BINDS already-declared verbs/views to MEDIA and lays them out —
+# it does NOT redeclare intents. A surface MATERIALIZES across a COMBINATION of
+# media at once (screen + audio + haptic …), per panel, per principal.
+# Open mode; destined to ship with the cx toolchain.
+# ─────────────────────────────────────────────────────────────────────────────
+
+[surface
+ [attr name::string    [req]]
+ [attr xap::string     [req]]   # the XAP this surface belongs to
+ [attr version::string [opt]]
+ [elem summary  [card "0..1"]]
+ [elem media    [card "1..1"]]
+ [elem panels   [card "1..1"]]
+ [elem controls [card "0..1"]]
+ [elem clients  [card "0..1"]]]
+[type summary::string]
+
+# ── media — what this surface may materialize across (a combination) ──
+[media [elem medium [card "1..*"]]]
+[medium
+ [attr name::string  [req]]
+ [attr kind::string  [req]]    # visual | speech | tactile | … (open, no enum)
+ [attr primary::bool [opt]]]
+
+# ── panels — placed feature instances; layout + per-medium materialization ──
+[panels [elem panel [card "1..*"]]]
+[panel
+ [attr name::string    [req]]
+ [attr feature::string [req]]   # the feature this panel instances (cross-ref to a *.feature.cxd)
+ [attr kind::string    [opt] [enum view working-panel alert]]
+ [elem layout      [card "0..1"]]
+ [elem materialize [card "1..*"]]   # per-medium binding — the distribution across media
+ [elem shows       [card "0..1"]]]  # space-separated noun-fields surfaced (from the feature's nouns)
+[layout
+ [attr region::string [opt]]
+ [attr mode::string   [opt] [enum separate tabbed stacked overlaid]]]
+[materialize
+ [attr on::string       [req]]   # the medium name
+ [attr as::string       [opt]]   # how it's triggered/shown there: tap | button | say | tone | form | highlight | …
+ [attr trigger::string  [opt]]   # summon | threat | always | …
+ [attr emphasis::string [opt]]
+ [attr priority::string [opt] [enum peripheral foreground]]]
+[type shows::string]
+
+# ── controls — already-declared intents bound to per-medium triggers (NOT redeclared) ──
+[controls [elem control [card "0..*"]]]
+[control
+ [attr intent::string [req]]   # names a verb's intent declared in a feature spec
+ [elem materialize [card "1..*"]]]
+
+# ── clients — who attaches; human + agent share one surface (agent-parity) ──
+[clients [elem client [card "0..*"]]]
+[client
+ [attr kind::string   [req] [enum human agent channel]]
+ [attr attach::string [opt] [enum mirrored independent]]]

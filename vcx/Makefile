@@ -54,7 +54,13 @@ CONFORMANCE_DIFF := ../conformance/diff.cxd
 CONFORMANCE_LINT := ../conformance/lint.cxd
 CONFORMANCE_NS       := ../conformance/namespaces.cxd
 CONFORMANCE_TABLE    := ../conformance/table.cxd
+CONFORMANCE_TABLE_TRANSPARENCY := ../conformance/table_transparency.cxd
 CONFORMANCE_IDENTITY := ../conformance/identity.cxd
+# corpus audit G1/G4 (C8/I0): Tier-1 hash + binary-AST codec families.
+CONFORMANCE_IDENTITY_HASH := ../conformance/identity_hash.cxd
+CONFORMANCE_AST_BIN       := ../conformance/ast_bin.cxd
+# I1 manifest row 8 (audit C4): pre-I1 operator-head pins.
+CONFORMANCE_OPERATOR_HEADS := ../conformance/operator_heads.cxd
 # v0.8.0: atom scalar kind.
 CONFORMANCE_ATOMS    := ../conformance/atoms.cxd
 CONFORMANCE_DELIMITED := ../conformance/delimited.cxd
@@ -69,8 +75,16 @@ CONFORMANCE_SCHEMA_VALIDATE   := ../conformance/schema_validate.cxd
 # existed but was never wired into `conform`, so the gate stayed silently
 # green while the CLI's program reading regressed on [?cx …].
 CONFORMANCE_INCLUDE  := ../conformance/include.cxd
+# G12 (corpus audit, pre-I2): the streaming-write family gets a V lane — the
+# reference implementation was untested against its own 17 fixtures (incl.
+# the W001–W013 negative contract); only the FFI harnesses drove them.
+CONFORMANCE_STREAMING_WRITE := ../conformance/streaming_write.cxd
+# G10 (corpus audit, pre-I2): the lockfile Ring-0 document surface.
+CONFORMANCE_LOCKFILE := ../conformance/lockfile.cxd
+# fmt.cxd — the G6 formatting suite (I3); runner tests/runners/fmt/.
+CONFORMANCE_FMT := ../conformance/fmt.cxd
 
-.PHONY: all build build-dev check-prod lib lib-dev lib-arrow lib-arrow-dev arrow-shim lib-arrow-files lib-arrow-files-dev re2-shim cli cli-dev conform conform-core conform-ext conform-xml conform-md conform-diff conform-lint conform-ns conform-ns-cxpath conform-table conform-identity conform-atoms conform-delimited conform-yaml conform-conversions conform-data-bin-chunked conform-data-bin-compress conform-data-bin-schema conform-data-bin-arrow conform-schema-validate conform-include clean
+.PHONY: all build build-dev check-prod lib lib-dev lib-arrow lib-arrow-dev arrow-shim lib-arrow-files lib-arrow-files-dev re2-shim cli cli-dev conform conform-streaming-write conform-lockfile conform-core conform-ext conform-xml conform-md conform-diff conform-lint conform-ns conform-table conform-table-transparency conform-identity conform-identity-hash conform-ast-bin conform-operator-heads conform-atoms conform-delimited conform-yaml conform-conversions conform-data-bin-chunked conform-data-bin-compress conform-data-bin-schema conform-data-bin-arrow conform-schema-validate conform-include conform-fmt clean
 
 # ── Targets ───────────────────────────────────────────────────────────────────
 
@@ -153,14 +167,60 @@ VQUIET ?= -n -w
 # constrained targets); the wasm path (scripts/wasm/) never passes this
 # variable, so wasm stays engine-free. `cx -v` reports the compiled-in set.
 CX_ENGINES ?= -d cx_db_sqlite -d cx_db_redis
-# Build target = vcx/code/. The code module imports cx, so every
-# cx_* export from vcx/cx/cabi.v ships in the same libcx — plus the
-# v0.8.0 cx_code_eval* family exported from vcx/code/cabi.v
-# (Phase 3.11). Building from vcx/cx/ in isolation would leave the
+
+# ── §4 profile gates (I4, #651/#516) ─────────────────────────────────────────
+# CX_PROFILE_PLATFORM compiles the Ring-2 platform verb surface + the
+# platform module import into cmd/ (`*_d_cx_platform.v`): the DEFAULT cx is
+# the platform profile — today's shipped shape, unchanged. A cmd/ build
+# WITHOUT it is the cli profile (no Ring-2 code in the artifact).
+# CX_PACKS_OFF is the embed profile's exclusion set: the nine Ring-1
+# local-effect packs (spec §4's seven + the http-client pack + sched by
+# dependency closure), each behind a `_notd_cx_no_pack_*` file gate in
+# vcx/code. Default builds pass NO exclusion flags, so every existing lane
+# keeps the full Ring-1 composition; only the embed targets pass this set.
+CX_PROFILE_PLATFORM := -d cx_platform
+CX_PACKS_OFF := -d cx_no_pack_io -d cx_no_pack_env -d cx_no_pack_process \
+	-d cx_no_pack_time -d cx_no_pack_random -d cx_no_pack_log \
+	-d cx_no_pack_term -d cx_no_pack_http_client -d cx_no_pack_sched
+# Build target = vcx/platform/ (I3 module split, #651/#516). The platform
+# module imports code, which imports cx — so every
+# cx_* export from vcx/cx/cabi.v ships in the same libcx, plus the
+# v0.8.0 cx_code_eval* family exported from vcx/code/cabi.v and the
+# iowatch C-callback exports riding in vcx/platform (N4) — libcx keeps
+# the FULL 0-2 surface during I3 (the ABI gate pins all 713 symbols).
+# Building from vcx/cx/ in isolation would leave the
 # code-eval family out of the shared library.
+# BUILD_INPUT_DIRS — everything whose bytes reach the shipped artifacts:
+# V sources (all module dirs incl. transport/deps), the $embed_file()
+# estates (../stdlib, ../x, ../docs/llm), VERSION (feeds CX_VERSION), this
+# Makefile, and the V compiler binary itself. Used by the up-to-date
+# guards below; a path missed here is a STALE-BINARY hazard, so prefer
+# over-inclusion.
+BUILD_INPUT_DIRS := cmd cmd_data code cx platform transport deps testenv v.mod Makefile ../stdlib ../x ../docs/llm ../VERSION $(V)
+
+# Up-to-date guard (#902's race, root-fixed): every target here is .PHONY,
+# so each recursive `$(MAKE) build-vcx` RELINKED the shipped cx/libcx
+# unconditionally (the cx_build_date define changes per invocation) — while
+# a parallel `make -j12 test` lane was exec'ing/dlopening it. Measured
+# fallout on the v0.16.0 cut: 'Exec format error' in the extraction gate
+# (twice), and cli_run_surface reading rc-0/empty-output from a mid-relink
+# binary (once) — all green on quiet re-runs. The guard skips the relink
+# iff the artifact exists, the define IDENTITY (everything except the
+# build date) is unchanged, and no input is newer than the artifact.
+# A real source/define/compiler change still rebuilds — checked by find
+# -newer over BUILD_INPUT_DIRS, the same mechanism real file targets use.
+define UPTODATE_GUARD
+	if [ -e "$(1)" ] && [ -f "$(1).buildid" ] && [ "$$(cat '$(1).buildid')" = "$(2)" ] \
+	   && [ -z "$$(find $(BUILD_INPUT_DIRS) -newer '$(1)' -print -quit 2>/dev/null)" ]; then \
+		echo "$(notdir $(1)): up to date (identity + inputs unchanged; relink skipped)"; \
+	else \
+		$(3) && printf '%s' "$(2)" > '$(1).buildid'; \
+	fi
+endef
+
+LIB_BUILD_ID := $(V)|$(PROD_FLAGS)|$(CX_GC)|$(CX_ENGINES)|$(CX_DFLAGS)|$(PROD_CFLAGS)|lib
 lib: re2-shim $(TARGET)
-	$(V) $(VQUIET) $(PROD_FLAGS) $(CX_GC) $(CX_ENGINES) $(CX_DFLAGS) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB) code/
-	$(STRIP) $(LIB)
+	@$(call UPTODATE_GUARD,$(LIB),$(LIB_BUILD_ID),$(V) $(VQUIET) $(PROD_FLAGS) $(CX_GC) $(CX_ENGINES) $(CX_DFLAGS) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB) platform/ && $(STRIP) $(LIB))
 
 # Unoptimised build for local development (faster compile, debuggable).
 # `-cc cc` (clang): tcc on macOS cannot compile the patched builtin's C11 atomics
@@ -173,8 +233,62 @@ lib: re2-shim $(TARGET)
 # Works on the shipped-shape targets too (#520):
 #   make -C vcx build CX_DFLAGS='-d cx_db_pg'
 CX_DFLAGS ?=
+# #902 — the dev library gets its OWN path. It used to write $(LIB), the same
+# file the -prod `lib` recipe writes, so under `make test -j` one recipe could
+# be writing (or stripping) the dylib while another lane dlopened it — and,
+# worse, WHICH build the lanes tested was decided by which recipe finished
+# last. Nothing links this artifact (cli-dev compiles cmd/ directly); it exists
+# only so a dev build leaves a loadable library behind, so giving it a distinct
+# name costs nothing and makes the collision impossible by construction.
+LIB_DEV := $(TARGET)/$(basename $(LIB_NAME))-dev$(suffix $(LIB_NAME))
+
 lib-dev: re2-shim $(TARGET)
-	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_DFLAGS) -shared -o $(LIB) code/
+	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_DFLAGS) -shared -o $(LIB_DEV) platform/
+
+# ── Ring-0 artifacts (I2, partition spec §5): libcx-core + data-profile cx ──
+# libcx-core builds ONLY vcx/cx/ — the Ring-0 strict sink — so the shared
+# library carries the cx_* C ABI family (cabi.v) and nothing above it: no
+# evaluator, no cx_code_* exports, no DB engines, no protocol stack. The
+# monolith libcx (built from code/) is UNCHANGED and keeps shipping — the
+# strangler rule; the I2 extraction gate proves the two byte-identical over
+# the Ring-0 corpus. No CX_ENGINES here: those are code-module `$if` gates
+# with no Ring-0 references. re2 rides in via vcx/cx/regex_re2.v #flags
+# (schema §7.1 makes RE2 normative — a Ring-0 dependency by spec).
+ifeq ($(UNAME_S), Darwin)
+  LIB_CORE_NAME := libcx-core.dylib
+else
+  LIB_CORE_NAME := libcx-core.so
+endif
+LIB_CORE := $(TARGET)/$(LIB_CORE_NAME)
+
+.PHONY: lib-core lib-core-dev cli-data cli-data-dev build-data build-data-dev
+lib-core: re2-shim $(TARGET)
+	$(V) $(VQUIET) $(PROD_FLAGS) $(CX_GC) $(CX_DFLAGS) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB_CORE) cx/
+	$(STRIP) $(LIB_CORE)
+
+lib-core-dev: re2-shim $(TARGET)
+	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_DFLAGS) -shared -o $(LIB_CORE) cx/
+
+# data-profile cx (partition spec §4): one binary NAME (cx), profile-decided
+# verb set — parse/emit/convert/canonical/hash/eq/diff/validate (+ version),
+# NO run/eval verb. Built from cmd_data/ which imports only cx + the shared
+# Ring-0 verb layer cli/, so cannot-execute is a property of the artifact.
+# Lands under target/profiles/data/ so the basename stays `cx` without
+# clobbering the monolith CLI; the I4 profile/installer wiring picks the
+# install path.
+CLI_DATA := $(TARGET)/profiles/data/cx
+
+cli-data: re2-shim $(TARGET)
+	mkdir -p $(TARGET)/profiles/data
+	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_DFLAGS) $(VERSION_DEFINES) -cflags "$(PROD_CFLAGS)" -o $(CLI_DATA) cmd_data/
+	$(STRIP) $(CLI_DATA)
+
+cli-data-dev: re2-shim $(TARGET)
+	mkdir -p $(TARGET)/profiles/data
+	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_DFLAGS) $(VERSION_DEFINES) -o $(CLI_DATA) cmd_data/
+
+build-data: lib-core cli-data
+build-data-dev: lib-core-dev cli-data-dev
 
 # -prod strictness gate (#338): run the V *checker* with the same -prod flags
 # `lib` compiles with. -prod enables strict map-index checks (`or {}` required
@@ -185,7 +299,7 @@ lib-dev: re2-shim $(TARGET)
 # empty when third_party/v is absent (the documented fallback keeps *builds*
 # working); the checker needs no patched runtime, so the gate must still bite.
 check-prod:
-	$(V) $(VQUIET) -prod $(CX_GC) $(CX_ENGINES) $(CX_DFLAGS) -check -shared code/
+	$(V) $(VQUIET) -prod $(CX_GC) $(CX_ENGINES) $(CX_DFLAGS) -check -shared platform/
 
 # Optional Apache Arrow C-Data interop library (libcx_arrow per
 # spec/abi.md §2.11). Separate from libcx; bindings dlopen
@@ -256,23 +370,109 @@ lib-arrow-files-dev: arrow-shim $(TARGET)
 # the build commit (distinguishes dev builds); CX_VFORK is the third_party/v
 # gitlink; CX_GC_NAME is the active collector. Each value is a single shell token.
 CX_VERSION    := $(shell cat $(CURDIR)/../VERSION 2>/dev/null || echo 0.0.0-dev)
-CX_COMMIT     := $(shell git -C $(CURDIR)/.. rev-parse --short HEAD 2>/dev/null || echo unknown)
-CX_VFORK      := $(shell git -C $(CURDIR)/../third_party/v rev-parse --short HEAD 2>/dev/null || echo unknown)
+# -dirty suffix (#666): a stamp naming a commit that does not reproduce the
+# artifact is unfalsifiable — rev-parse is silent about uncommitted changes,
+# so a binary built from an edited tree claimed the clean commit. Any tracked
+# modification (the submodule gitlink counts in the parent's porcelain) marks
+# the stamp. Downstream pins (BOM record == checkout) depend on this.
+CX_DIRTY      := $(shell test -n "$$(git -C $(CURDIR)/.. status --porcelain --untracked-files=no 2>/dev/null)" && echo -dirty)
+CX_COMMIT     := $(addsuffix $(CX_DIRTY),$(shell git -C $(CURDIR)/.. rev-parse --short HEAD 2>/dev/null || echo unknown))
+CX_VFORK_DIRTY := $(shell test -n "$$(git -C $(CURDIR)/../third_party/v status --porcelain --untracked-files=no 2>/dev/null)" && echo -dirty)
+CX_VFORK      := $(addsuffix $(CX_VFORK_DIRTY),$(shell git -C $(CURDIR)/../third_party/v rev-parse --short HEAD 2>/dev/null || echo unknown))
 CX_BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 CX_GC_NAME    := $(lastword $(CX_GC))
 VERSION_DEFINES := -d cx_version=$(CX_VERSION) -d cx_commit=$(CX_COMMIT) -d cx_build_date=$(CX_BUILD_DATE) -d cx_gc=$(CX_GC_NAME) -d cx_vfork=$(CX_VFORK)
 
+CLI_BUILD_ID := $(V)|$(CX_GC)|$(CX_PROFILE_PLATFORM)|$(CX_ENGINES)|$(CX_DFLAGS)|$(PROD_CFLAGS)|$(CX_VERSION)|$(CX_COMMIT)|$(CX_GC_NAME)|$(CX_VFORK)|cli
 cli: re2-shim $(TARGET)
-	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_DFLAGS) $(VERSION_DEFINES) -cflags "$(PROD_CFLAGS)" -o $(CLI) cmd/
-	$(STRIP) $(CLI)
+	@$(call UPTODATE_GUARD,$(CLI),$(CLI_BUILD_ID),$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_PROFILE_PLATFORM) $(CX_ENGINES) $(CX_DFLAGS) $(VERSION_DEFINES) -cflags "$(PROD_CFLAGS)" -o $(CLI) cmd/ && $(STRIP) $(CLI))
 
 # CLI binary — unoptimised dev build (faster compile, debuggable, unstripped)
 cli-dev: re2-shim $(TARGET)
-	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_ENGINES) $(VERSION_DEFINES) $(CX_DFLAGS) -o $(CLI) cmd/
+	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_PROFILE_PLATFORM) $(CX_ENGINES) $(VERSION_DEFINES) $(CX_DFLAGS) -o $(CLI) cmd/
+
+# ── §4 profile binaries + embed library (I4, #651/#516) ──────────────────────
+# One binary NAME (cx), profile-decided surface, each under
+# target/profiles/<name>/ (the I2 cli-data precedent). The cli profile =
+# cmd/ without the platform gate (Rings 0–1, all local-effect packs + http
+# client; daemon verb words refuse by name). The embed profile additionally
+# passes CX_PACKS_OFF, so the evaluator carries no local-effect packs — and
+# ships with the embed-shape libcx: the spec §5 Rings-0–1 library artifact
+# (built over code/, same declared cx_*/cx_code_* ABI families; the DEFAULT
+# libcx keeps the full 0–2 surface until I5 stream 4 — ledger R1).
+CLI_CLI   := $(TARGET)/profiles/cli/cx
+CLI_EMBED := $(TARGET)/profiles/embed/cx
+LIB_EMBED := $(TARGET)/profiles/embed/$(LIB_NAME)
+
+.PHONY: cli-cli cli-cli-dev cli-embed cli-embed-dev lib-embed lib-embed-dev \
+	build-profiles build-profiles-dev
+
+cli-cli: re2-shim $(TARGET)
+	mkdir -p $(TARGET)/profiles/cli
+	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_DFLAGS) $(VERSION_DEFINES) -cflags "$(PROD_CFLAGS)" -o $(CLI_CLI) cmd/
+	$(STRIP) $(CLI_CLI)
+
+cli-cli-dev: re2-shim $(TARGET)
+	mkdir -p $(TARGET)/profiles/cli
+	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_DFLAGS) $(VERSION_DEFINES) -o $(CLI_CLI) cmd/
+
+cli-embed: re2-shim $(TARGET)
+	mkdir -p $(TARGET)/profiles/embed
+	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_PACKS_OFF) $(CX_DFLAGS) $(VERSION_DEFINES) -cflags "$(PROD_CFLAGS)" -o $(CLI_EMBED) cmd/
+	$(STRIP) $(CLI_EMBED)
+
+cli-embed-dev: re2-shim $(TARGET)
+	mkdir -p $(TARGET)/profiles/embed
+	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_PACKS_OFF) $(CX_DFLAGS) $(VERSION_DEFINES) -o $(CLI_EMBED) cmd/
+
+lib-embed: re2-shim $(TARGET)
+	mkdir -p $(TARGET)/profiles/embed
+	$(V) $(VQUIET) $(PROD_FLAGS) $(CX_GC) $(CX_PACKS_OFF) $(CX_DFLAGS) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB_EMBED) code/
+	$(STRIP) $(LIB_EMBED)
+
+lib-embed-dev: re2-shim $(TARGET)
+	mkdir -p $(TARGET)/profiles/embed
+	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_PACKS_OFF) $(CX_DFLAGS) -shared -o $(LIB_EMBED) code/
+
+# The full §4 matrix: data (I2) + embed + cli profiles; the platform profile
+# is the default `build` (target/cx + target/libcx.*).
+build-profiles: build-data cli-embed lib-embed cli-cli
+build-profiles-dev: build-data-dev cli-embed-dev lib-embed-dev cli-cli-dev
+
+# ── I4 profile corpus gate (spec §4/§7 exit clause) ──────────────────────────
+# Runs tests/runners/profile_gate/profile_gate.v at BOTH profile engine
+# compositions: bare = cli (Rings 0–1, all packs — every ring≤1 eval fixture
+# must grade identically to the platform battery, proving the ring tags
+# against the artifact frontier); CX_PACKS_OFF = embed (pack suites +
+# `packs=`-tagged cases out, per-pack + ring-2 refusal probes in). Each run
+# also probes the profile BINARY (profile line, daemon verb-word refusals,
+# pure eval) — the data profile's corpus clause is the I2 extraction gate.
+.PHONY: test-profile-gate
+# Built with explicit -o into target/ (NOT `v run`): `v run` leaves the
+# compiled executable next to the source, where an interrupted run strands
+# it for the text-scanning gates to trip over (R3.11 wave-run finding).
+test-profile-gate: build-profiles-dev
+	$(V) $(VQUIET) -cc cc $(CX_GC) -o target/profile_gate_cli tests/runners/profile_gate/ && target/profile_gate_cli --bin=target/profiles/cli/cx
+	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_PACKS_OFF) -o target/profile_gate_embed tests/runners/profile_gate/ && target/profile_gate_embed --bin=target/profiles/embed/cx
 
 # ── Conformance ───────────────────────────────────────────────────────────────
 
-conform: conform-core conform-ext conform-xml conform-md conform-ns conform-ns-cxpath conform-table conform-identity conform-atoms conform-delimited conform-yaml conform-conversions conform-data-bin-chunked conform-data-bin-compress conform-data-bin-schema conform-data-bin-arrow conform-schema-validate conform-diff conform-lint conform-include
+conform: conform-core conform-ext conform-xml conform-md conform-ns conform-table conform-table-transparency conform-identity conform-identity-hash conform-ast-bin conform-operator-heads conform-atoms conform-delimited conform-yaml conform-conversions conform-data-bin-chunked conform-data-bin-compress conform-data-bin-schema conform-data-bin-arrow conform-schema-validate conform-diff conform-lint conform-include conform-streaming-write conform-lockfile conform-fmt
+
+# fmt.cxd (G6, I3): byte-pinned `cx fmt` output + the formatting.md §1
+# purity invariant + §7 idempotence, enforced mechanically per case by
+# the runner (see tests/runners/fmt/fmt_conform.v).
+conform-fmt:
+	@echo "── fmt.cxd ───────────────────────────────────────────────────────────"
+	$(V) run tests/runners/fmt/fmt_conform.v $(CONFORMANCE_FMT)
+
+conform-lockfile:
+	@echo "── lockfile.cxd ──────────────────────────────────────────────────────"
+	$(V) run tests/runners/conformance/conformance_run.v $(CONFORMANCE_LOCKFILE)
+
+conform-streaming-write:
+	@echo "── streaming_write.cxd ───────────────────────────────────────────────"
+	$(V) run tests/runners/streaming_write/streaming_write_run.v $(CONFORMANCE_STREAMING_WRITE)
 
 conform-include:
 	@echo "── include.cxd ───────────────────────────────────────────────────────"
@@ -298,17 +498,36 @@ conform-ns:
 	@echo "── namespaces.txt ────────────────────────────────────────────────────"
 	$(V) run tests/runners/conformance/conformance_run.v $(CONFORMANCE_NS)
 
-conform-ns-cxpath:
-	@echo "── cxpath conformance (v08_cxpath_*_test.v) ──────────────────────────"
-	$(V) -cc cc test tests/cxpath_dispatcher_test.v tests/cxpath_forward_test.v tests/cxpath_reverse_test.v tests/cxpath_misc_test.v
+# (conform-ns-cxpath RETIRED at the #795 batch, 2026-08-15: its three test
+# files were consolidated by #700 and then deliberately deleted with the
+# placeholder CxNode axis engine at the #805 retirement sweep (b78a3b4c);
+# the live cxpath coverage is the code.cxd eval corpus + the #809 kind-test
+# work. The target had been failing silently-unrun since then — found when
+# the full `conform` aggregate was wired into test-vcx.)
 
 conform-table:
 	@echo "── table.txt ─────────────────────────────────────────────────────────"
 	$(V) run tests/runners/conformance/conformance_run.v $(CONFORMANCE_TABLE)
 
+conform-table-transparency:
+	@echo "── table_transparency.cxd (§9 pair family, lanes a/b/c) ──────────────"
+	$(V) run tests/runners/conformance/conformance_run.v $(CONFORMANCE_TABLE_TRANSPARENCY)
+
 conform-identity:
 	@echo "── identity.txt ──────────────────────────────────────────────────────"
 	$(V) run tests/runners/conformance/conformance_run.v $(CONFORMANCE_IDENTITY)
+
+conform-identity-hash:
+	@echo "── identity_hash.cxd ─────────────────────────────────────────────────"
+	$(V) run tests/runners/conformance/conformance_run.v $(CONFORMANCE_IDENTITY_HASH)
+
+conform-ast-bin:
+	@echo "── ast_bin.cxd ───────────────────────────────────────────────────────"
+	$(V) run tests/runners/conformance/conformance_run.v $(CONFORMANCE_AST_BIN)
+
+conform-operator-heads:
+	@echo "── operator_heads.cxd ────────────────────────────────────────────────"
+	$(V) run tests/runners/conformance/conformance_run.v $(CONFORMANCE_OPERATOR_HEADS)
 
 # v0.8.0: atom scalar kind suite.
 conform-atoms:
@@ -347,8 +566,8 @@ conform-data-bin-schema:
 	$(V) run tests/runners/conformance/conformance_run.v $(CONFORMANCE_DATA_BIN_SCHEMA)
 
 conform-data-bin-arrow:
-	@echo "── data_bin_arrow.txt ────────────────────────────────────────────────"
-	$(V) -enable-globals run tests/runners/conformance/data_bin_arrow_run.v $(CONFORMANCE_DATA_BIN_ARROW)
+	@echo "── data_bin_arrow.txt (+ §9 pair-family lane d) ──────────────────────"
+	$(V) -enable-globals run tests/runners/conformance/data_bin_arrow_run.v $(CONFORMANCE_DATA_BIN_ARROW) $(CONFORMANCE_TABLE_TRANSPARENCY)
 
 conform-schema-validate:
 	@echo "── schema_validate.txt ───────────────────────────────────────────────"

@@ -1,0 +1,112 @@
+[schema of=xap mode=open]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# XAP-spec schema (DRAFT).
+#
+# One `*.xap.cxd` = one `[xap …]` document: it ENABLES features into a runtime,
+# names the PRINCIPALS/roles + the agent, declares the DEPLOYMENT/packaging model
+# (in-process CX packages by default — see the composition model §11.2), the
+# SURFACING policy (Radar/context), and XAP-level GOVERNANCE defaults (who drives).
+# Per-verb governance lives in the feature specs; this is the wiring layer above them.
+# Open mode; destined to ship with the cx toolchain.
+# ─────────────────────────────────────────────────────────────────────────────
+
+[xap
+ [attr name::string [req]]
+ [attr version::string [opt]]
+ [elem summary    [card "0..1"]]
+ [elem features   [card "1..1"]]
+ [elem principals [card "0..1"]]
+ [elem deployment [card "0..1"]]
+ [elem surfacing  [card "0..1"]]
+ [elem governance [card "0..1"]]
+ [elem requirements [card "0..1"]]]
+[type summary::string]
+
+# ── XAP-level requirements — cross-cutting requirements that belong to the XAP,
+# not a single feature (surface/media, agent-parity, journaling, per-verb
+# authority). Same shape as feature requirements: kind (functional: as/want/so |
+# quality | domain: statement), level (RFC-2119), status (authored lifecycle),
+# acceptance criteria. ──
+[requirements [elem requirement [card "1..*"]]]
+[requirement
+ [attr kind::string   [req] [enum functional quality domain]]
+ [attr level::string  [default must] [enum must must-not should should-not may]]
+ [attr status::string [default proposed] [enum proposed accepted deferred rejected obsolete]]
+ [attr as::string     [opt]]
+ [attr traces::string [opt]]
+ [elem want       [card "0..1"]]
+ [elem so         [card "0..1"]]
+ [elem statement  [card "0..1"]]
+ [elem acceptance [card "0..*"]]]
+[type want::string]
+[type so::string]
+[type statement::string]
+[type acceptance::string]
+
+# ── features enabled (in-process CX packages; cross-file refs to *.feature.cxd).
+# Distributed features are PINNED by Tier-1 content hash (reproducible closure —
+# distribution spec §6/§7); local-path features may omit the pin. ──
+[features [elem feature [card "1..*"]]]
+[feature
+ [attr name::string    [req]]
+ [attr package::string [opt]]   # path/package ref to the feature (in-process CX package)
+ [attr hash::string    [opt]]   # Tier-1 pin of the installed feature package (distribution)
+ [attr version::string [opt]]   # informative; the hash is the truth
+ [attr status::string  [default ready] [enum ready planned deprecated]]]
+
+# ── principals, roles, the agent, and the deriver ──
+# A deriver is a principal (composition spec §4.2, R8.1/R8.2 + wave ruling
+# RW65.2): an accountable journal actor (`actor: deriver:<name>`) bound as the
+# sole producer of one derived=true noun. produces= is the qualified
+# '<feature>/<noun>'; package= the component implementing it.
+[principals
+ [elem role    [card "0..*"]]
+ [elem agent   [card "0..*"]]
+ [elem deriver [card "0..*"]]]
+[role
+ [attr name::string      [req]]
+ [attr authority::string [opt]]
+ [attr features::string  [opt]]   # space-separated feature set this role may surface ("*" = all)
+ [attr doc::string       [opt]]]
+[agent
+ [attr name::string [req]]
+ [attr doc::string  [opt]]]
+[deriver
+ [attr name::string     [req]]
+ [attr produces::string [req]]   # qualified '<feature>/<noun>', derived=true in the composed grammar
+ [attr package::string  [opt]]   # path/package ref to the implementing component
+ [attr doc::string      [opt]]]
+
+# ── deployment / packaging (in-process default; federation = the escape hatch).
+# `remote` entries name the CX stores feature packages are acquired from
+# (ordered; the store's named-remotes model — distribution spec §4). NOT `source`:
+# that name is taken twice already (a feature's adapter stack in feature.cxs; the
+# XAP-level shared data providers in real instances). ──
+[deployment
+ [attr model::string [req] [enum in-process federated hybrid]]
+ [attr role::string  [opt] [enum tooling app]]
+ [attr doc::string   [opt]]
+ [elem remote [card "0..*"]]]
+[remote
+ [attr name::string     [req]]
+ [attr uri::string      [req]]    # cx-store:// (CSRP) or any passive store substrate
+ [attr priority::int    [opt]]]   # lower = preferred
+
+# ── surfacing policy (Radar / context) ──
+[surfacing
+ [attr default::string        [opt] [enum peripheral foreground]]
+ [attr context-inputs::string [opt]]   # space-separated context signals the Radar reads
+ [attr doc::string            [opt]]]
+
+# ── XAP-level governance defaults — who drives (per-verb grants live in features) ──
+[governance
+ [elem authority     [card "0..*"]]
+ [elem agent-default [card "0..*"]]]
+[authority
+ [attr role::string [req]]
+ [attr doc::string  [opt]]]
+[agent-default
+ [attr name::string [req]]
+ [attr dial::string [opt]]   # floor | manual | turn-by-turn | semi-auto | full-auto | guardian (open, no enum)
+ [attr doc::string  [opt]]]

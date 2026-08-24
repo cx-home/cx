@@ -2,7 +2,7 @@
 [; (cxstore #128-B). Where ingest.cx is a one-shot load, this blocks on a REAL OS   ]
 [; filesystem watch (inotify on Linux, FSEvents on macOS — not polling) and         ]
 [; re-ingests each file the instant it changes, so the store never drifts from the  ]
-[; tree. Same extension routing as ingest.cx (.cx -> put-def, else -> put-doc-text).]
+[; tree. Same extension routing as ingest.cx (.cx -> put-blob, else -> put-doc-text).]
 [;                                                                                  ]
 [; The watch contract this recipe relies on (io.md §3.10):                          ]
 [;   - watch-next BLOCKS until the next change and returns                          ]
@@ -28,7 +28,7 @@
    identical content re-puts to the same hash (a no-op) and rewrites the alias. ]
 [?def ingest-file impure ($c $abs $rel)
   [?if [$str-ends-with $abs ".cx"]
-    [then [$store:set-alias $c $rel [$store:put-def $c [$io:read-file $abs]]]]
+    [then [$store:set-alias $c $rel [$store:put-blob $c [$io:read-file $abs]]]]
     [else [$store:set-alias $c $rel [$store:put-doc-text $c [$io:read-file $abs]]]]]]
 
 [; reingest-all walks the whole tree and ingests every file — the initial load AND

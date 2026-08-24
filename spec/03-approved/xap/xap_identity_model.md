@@ -175,15 +175,15 @@ graduation, §10):
 
 ```cx
 [did-document
-  [id "did:web:helm.example.com"]
+  [id "did:web:xap.example.com"]
   [verification-method
-    [vm [id "did:web:helm.example.com#key-1"] [type Ed25519VerificationKey2020]
-        [controller "did:web:helm.example.com"] [public-key-multibase "z6Mk…"]]]
-  [authentication  "did:web:helm.example.com#key-1"]
-  [assertion-method "did:web:helm.example.com#key-1"]
+    [vm [id "did:web:xap.example.com#key-1"] [type Ed25519VerificationKey2020]
+        [controller "did:web:xap.example.com"] [public-key-multibase "z6Mk…"]]]
+  [authentication  "did:web:xap.example.com#key-1"]
+  [assertion-method "did:web:xap.example.com#key-1"]
   [service
-    [svc [id "did:web:helm.example.com#xsp"] [type XAPStreamEndpoint]
-         [endpoint "https://helm.example.com/xsp"]]]]
+    [svc [id "did:web:xap.example.com#xsp"] [type XAPStreamEndpoint]
+         [endpoint "https://xap.example.com/xsp"]]]]
 ```
 
 - **`type=XAPStreamEndpoint`**, one entry per offered transport binding. The
@@ -220,8 +220,8 @@ Resolution is `did.md`'s, by reference — restated here only where the identity
 model adds a rule:
 
 1. **`did:key` / `did:peer:0`** — offline synthesis from the identifier
-   (`did.md` §2.1/§4). Pure, no I/O, cache-irrelevant. This is the marine /
-   at-sea / air-gapped path: **two `did:key` peers achieve full mutual
+   (`did.md` §2.1/§4). Pure, no I/O, cache-irrelevant. This is the disconnected /
+   field / air-gapped path: **two `did:key` peers achieve full mutual
    authentication (§4) with zero network beyond their own channel.**
 2. **`did:web`** — HTTPS GET per `did.md` §5 (TLS required, `id` must match,
    net-gated on the domain, SSRF guard applies). The **`trust-domains`**
@@ -277,7 +277,7 @@ ephemerals breaks the signatures. Properties delivered:
 | mutual proof of control | each side signs the transcript with its DID's `authentication` key (§4.4) |
 | freshness / anti-replay | both nonces and both ephemerals are fresh per handshake; every signature covers both (§8.1) |
 | channel binding | the transcript covers the dialed endpoint and the transport's binding value (§4.6); the derived keys bind all post-handshake traffic on non-connection transports (§4.8) |
-| downgrade protection | offered + selected versions/parameters are inside the signed transcript (§8.3) |
+| downgrade protection | offered + selected versions/parameters AND profile/feature token sets are inside the signed transcript (§4.4a, §8.3) |
 | forward secrecy | ephemeral X25519; static keys only sign (§4.5) |
 | anonymous-initiator support | the initiator MAY omit its DID and signature; everything else holds (§4.7) |
 | reflection / role-confusion proofing | role labels inside every signed payload (§4.4) |
@@ -313,16 +313,22 @@ initiator                                              responder
 # M1 — hello (initiator → responder)
 [xsp-auth phase=hello
   [versions 1]                       # offered protocol versions, descending
+  [offer-profiles "store xap"]       # offered profile + semantic-feature token
+  [offer-features "credit peer resume store-delta store-feed"]
+                                     # sets (§4.4a; xsp.md §5.0 surface 1) —
+                                     # space-separated, SORTED, may be empty
   [initiator "did:key:z6Mk…"]        # ABSENT when anonymous (§4.7)
   [nonce  <bytes 32>]                # n_i — fresh, [$random:crypto-bytes]
   [eph    <bytes 32>]                # e_i — fresh X25519 public key
-  [endpoint "https://helm.example.com/xsp"]]  # the URL/address the initiator dialed
+  [endpoint "https://xap.example.com/xsp"]]  # the URL/address the initiator dialed
                                      # (empty string on in-process/unix channels)
 
 # M2 — challenge (responder → initiator)
 [xsp-auth phase=challenge
   [version 1]                        # selected version
-  [responder "did:web:helm.example.com"]
+  [offer-profiles "store xap"]       # the responder's token sets (§4.4a)
+  [offer-features "credit resume store-feed"]
+  [responder "did:web:xap.example.com"]
   [nonce  <bytes 32>]                # n_r
   [eph    <bytes 32>]                # e_r
   [cb     <bytes>]                   # channel-binding value (§4.6; empty allowed)
@@ -340,6 +346,8 @@ initiator                                              responder
 # M4 — confirm (responder → initiator)
 [xsp-auth phase=confirm
   [tag <bytes 32>]                   # tag_r = key confirmation (§4.5)
+  [confirmed-profiles "store xap"]   # the selected sets — MUST equal the
+  [confirmed-features "credit resume store-feed"]  # §4.4a intersection
   [session id="s-…" client="c-…"     # the session.md attach result (§4.9)
     [principal "did:key:z6Mk…"] [tenant "acme"]]]
 ```
@@ -373,9 +381,44 @@ signer's role:
 
 What the coverage buys, item by item: both **nonces** and both **ephemerals**
 (freshness + self-binding), the **version** offer and selection (downgrade,
-§8.3), both **DIDs** (identity misbinding), the **role labels** (reflection —
+§8.3), the **profile/feature offers** on both sides (vocabulary downgrade,
+§4.4a), both **DIDs** (identity misbinding), the **role labels** (reflection —
 a message signed as responder can never verify as initiator), the dialed
 **endpoint** and the **cb** value (channel binding, §4.6/§8.4).
+
+### §4.4a. Vocabulary negotiation (stream 4, L164 — transcript-covered)
+
+M1 and M2 each carry `[offer-profiles …]` and `[offer-features …]`; M4
+carries `[confirmed-profiles …]` and `[confirmed-features …]`. Each is a
+**single-scalar** field holding a space-separated, lexicographically
+**sorted, duplicate-free** token set (the empty string is the empty set).
+All four are REQUIRED from the `/3/` label generation; a message missing
+one, or carrying a non-canonical set, is `CXER-XSP-AUTH-STATE`. Two
+normative reasons for exactly that shape:
+
+- **Single-scalar, not a nested element.** Handshake fields atomize to
+  attributes across the data-bin frame round trip (§4.3); a nested carrier
+  would pin child order and move the signed bytes between the fresh
+  child-form message and the decoded attr-form one — the two sides would
+  sign different transcripts. Every other handshake field already obeys
+  this rule; these follow it.
+- **Canonical set form.** The transcript signs BYTES, so two spellings of
+  one set would be two distinct signed values — an aliasing surface.
+  Builders normalize (sort + dedup); validators refuse non-canonical input.
+
+The **selected set is not negotiated — it is COMPUTED**: the per-field
+intersection of M1's and M2's offers. M4 STATES that
+intersection, and the initiator MUST verify it equals the value it computes
+from its own M1 and the received M2; a mismatch is `CXER-XSP-AUTH-STATE` and
+the handshake aborts. Because both offer sets live inside the signed
+transcript (§4.4) and the selection is a pure function of them, stripping or
+injecting a token anywhere breaks a signature or the M4 check — the
+downgrade-protection property extends from versions/suites to vocabulary,
+closing #718's downgrade-strip hole. Semantic tokens (anything that changes
+what a peer may say: `credit`, `resume`, `publish-batch`, `store-feed`,
+`store-delta`, `peer`, profile names) MUST be offered here; operational
+limits stay on the post-attach advert (xsp.md §5.0 surface 2), which
+restates the confirmed set and MUST NOT extend it.
 
 Verification: the peer's signing key is the Ed25519 key referenced by
 `authentication` in its resolved DID document (§2.1; `did:key` offline via
@@ -389,12 +432,22 @@ handshake aborts and nothing attaches (fail-closed — no partial state, §8.6).
 ```
 ss    = [$crypto:x25519-shared-secret e_i_priv e_r_pub]      # 32 bytes, both sides
 prk   = [$crypto:hkdf-extract (n_i ‖ n_r) ss]
-k_tag_i   = hkdf-expand(prk, "xsp-auth/1/confirm/initiator", 32)
-k_tag_r   = hkdf-expand(prk, "xsp-auth/1/confirm/responder", 32)
-k_proof_i = hkdf-expand(prk, "xsp-auth/1/proof/initiator",  32)   # §4.8 request proofs
-k_proof_r = hkdf-expand(prk, "xsp-auth/1/proof/responder",  32)
-chan-id   = hkdf-expand(prk, "xsp-auth/1/channel-id",       16)   # §4.8 non-connection locator
+k_tag_i   = hkdf-expand(prk, "xsp-auth/3/confirm/initiator", 32)
+k_tag_r   = hkdf-expand(prk, "xsp-auth/3/confirm/responder", 32)
+k_proof_i = hkdf-expand(prk, "xsp-auth/3/proof/initiator",  32)   # §4.8 request proofs
+k_proof_r = hkdf-expand(prk, "xsp-auth/3/proof/responder",  32)
+chan-id   = hkdf-expand(prk, "xsp-auth/3/channel-id",       16)   # §4.8 non-connection locator
 ```
+
+**Label lineage** — the label generation is the version handle for WHAT THE
+TRANSCRIPT COVERS, independent of the `[versions]` protocol field: `/1/` =
+the original coverage; `/2/` = the I1 crypto-agility cut (the explicit
+signature-suite carriage — #684 row 3, L35/L36); `/3/` = the stream-4
+vocabulary-negotiation carriage (§4.4a's offer/confirmed fields). A
+transcript from one generation MUST NOT verify against another: the keyed
+tags diverge by construction, and message-shape validation rejects a
+missing or unexpected `[offers]` loudly (`CXER-XSP-AUTH-STATE`), so
+cross-generation replay fails closed on both sides.
 
 - `tag_i = [$crypto:hmac-sha256 k_tag_i bytes-of T]`,
   `tag_r = [$crypto:hmac-sha256 k_tag_r bytes-of T]` (T = §4.4 transcript).
@@ -584,16 +637,16 @@ rule 2 (per-request proofs) into the host, keyed off one block of deployment
   [identity did="did:key:z6Mk…" seed-env="CX_XAP_HOST_SEED"]
   [policy mode="mutual"]                 # or mode="floor" floor="dev" role="guest"
   [principals
-    [principal did="did:key:z6Mk…" role="helm"]]
+    [principal did="did:key:z6Mk…" role="operator"]]
   [public [route "/"] [route "/static/"]]]
 ```
 
 The block is named `[host-auth]`, **not** `[auth]`: a deployment may already
 carry an `[auth]` element for its own login/credential configuration (the
-xap-marine deployment does — username/password-case, KDF), a distinct concern
+reference-instance deployment does — username/password-case, KDF), a distinct concern
 from this channel handshake. Squatting on `[auth]` would silently break the
 absent-⇒-today's-behavior invariant for every such deployment (it did, at
-first — the marine live-boot caught it). `[host-auth]` names what it is: the
+first — the reference-instance live-boot caught it). `[host-auth]` names what it is: the
 host's channel-authentication policy.
 
 - **Absent ⇒ today's behavior, byte-for-byte** — the `xap.md` §22.1 localhost
@@ -670,7 +723,7 @@ never overridden by an adapter's claim. The journal therefore attributes every
 act to the authenticated DID (or the `floor:` principal), at per-DID
 granularity.
 
-**The initiator side.** A CX-native client (the xap-marine web client is one:
+**The initiator side.** A CX-native client (the reference-instance web client is one:
 a CX process serving the htmx browser UI and relaying its intents) runs the §4.11
 calculus directly — `auth-hello`/`auth-prove`/`auth-finish` + `auth-proof` per
 request — and sets the three headers on every relayed request. The
@@ -890,9 +943,13 @@ Fixtures: §9.21.
 2. **MITM / relay.** The AKE is self-binding (§4.2): pure relays learn nothing
    and substitution breaks signatures. `cb` (§4.6) additionally pins the outer
    TLS channel where one exists.
-3. **Downgrade.** Version offer + selection are signed (§4.4); unknown extra
-   message children are rejected (§4.3) — parameter sneaking has no unsigned
-   channel to ride.
+3. **Downgrade.** Version offer + selection are signed (§4.4), and — from
+   the `/3/` label generation — so are the profile/feature offer sets, with
+   the selection computed as their intersection and re-verified against
+   M4's confirmed set (§4.4a): stripping a `store-feed`/`store-delta`-class
+   token breaks a signature or the M4 check, never silently narrows the
+   vocabulary. Unknown extra message children are rejected (§4.3) —
+   parameter sneaking has no unsigned channel to ride.
 4. **Unknown-key-share / identity misbinding.** Both DIDs, both role labels,
    and the dialed endpoint are inside both signatures — a responder reached
    through a hostile redirect sees an endpoint it does not serve and aborts
@@ -929,7 +986,7 @@ Fixtures: §9.21.
     against the verifier's clock; deployments SHOULD allow bounded skew
     (policy, default ≤ 5 min) and MUST NOT let skew tolerance exceed the
     shortest credential lifetime they issue. The handshake itself needs no
-    clock (nonces give freshness) — the offline/marine path stays clock-free.
+    clock (nonces give freshness) — the offline/disconnected path stays clock-free.
 12. **Anonymous floor.** The §4.7 floor principal is a real principal; its
     grants define the entire anonymous attack surface. Deployments MUST keep
     the floor observe-only outside localhost dev trust (§22.1).
@@ -963,7 +1020,7 @@ prose — the failure lanes name their exact `CXER-…` code.
 
 **§3 — resolution & discovery**
 6. Offline mutual: two `did:key` peers complete the full §4 handshake with the
-   net capability withheld (zero network, the marine lane).
+   net capability withheld (zero network, the disconnected lane).
 7. `trust-domains`: a responder resolving an initiator `did:web` outside its
    honor-list refuses the handshake fail-closed.
 
@@ -1033,7 +1090,7 @@ prose — the failure lanes name their exact `CXER-…` code.
 |---|---|---|---|
 | **P0 — handshake calculus** | `$xsp:auth-*` pure surface (§4.11): message build/parse, transcript, signatures, key schedule, verification; fixtures §9.8–§9.15 as pure lanes (recorded frames, injected randomness) | `crypto`/`did`/`xsp` (all shipped) | **✅ shipped** — `vcx/code/stdlib_xsp_auth.v`, `stdlib/xsp.cx` (`auth-hello/challenge/prove/confirm/finish/transcript/keys/verify`); `conformance/stdlib/xsp-auth.cxd` 001–024 (021–024 added with P4) |
 | **P1 — session integration + connection transports** | `[$session:attach-xsp]` (third attach transport), stream-0 discipline, §4.8 rule 1 enforcement at the frame reader, anonymous-floor policy knob; fixtures §9.2, §9.13–§9.14, §9.16 mirror-regression lane | P0; `session` (shipped); TCP/TLS binding (`xsp.md` §4 — buildable now) | **✅ shipped** — `session:attach-xsp` + `xsp:auth-frame-check` (§4.8 rule 1); `conformance/stdlib/session.cxd` 045–049 |
-| **P2 — web binding proofs** | §4.8 rule 2 (`XSP-Channel`/`-Counter`/`-Proof` headers) on the SSE+POST binding; web-client attach flow | P1; `xsp.md` §4.1 (shipped) | **✅ shipped** — calculus (`xsp:auth-proof`/`auth-proof-verify`, fixtures §9.15–§9.16) + the `[$xap:host]` binding per §4.12 (issue #394): `[host-auth]` deployment block, `POST /attach` M1–M4 → `session:attach-xsp`, per-request proof verification incl. the SSE subscription GET, proven actor; web-client attach + header emission in the xap-marine client |
+| **P2 — web binding proofs** | §4.8 rule 2 (`XSP-Channel`/`-Counter`/`-Proof` headers) on the SSE+POST binding; web-client attach flow | P1; `xsp.md` §4.1 (shipped) | **✅ shipped** — calculus (`xsp:auth-proof`/`auth-proof-verify`, fixtures §9.15–§9.16) + the `[$xap:host]` binding per §4.12 (issue #394): `[host-auth]` deployment block, `POST /attach` M1–M4 → `session:attach-xsp`, per-request proof verification incl. the SSE subscription GET, proven actor; web-client attach + header emission in the reference-instance web client |
 | **P3 — presentation & compilation** | §5 end-to-end at the PEP: presentation on the control stream, chain verification, per-session authority records, time-of-use checks, `why-allowed` provenance | P1; `vc`/`authz` (shipped) | **✅ shipped** — `session:present-vc` (subject-binding + verify + tenant guard → delegation for the unchanged PEP); `conformance/stdlib/session.cxd` 050–054. §5.2 VC *chain* verification (link walk, strict attenuation) is **spec-staged, not yet implemented** — `present-vc` handles a single VC |
 | **P4 — lifecycle & multiplicity surface** | §4.9/#24 `session.md` amendments (`name`, selector, `list`/`by-name`, delegated mirror), §6.3 in-band rotate, §6.4 compromise flow, `did:peer:0` (`did.md` amendment), `XAPStreamEndpoint` in `did.md` §4 | P1–P3 | **✅ shipped** — #24 multiplicity (selector + `list`/`by-name`, lanes 048/055/056); `did:peer-create` + generalized offline resolution; `xsp:auth-rotate`/`auth-rotate-verify` (§6.3, lanes 022/023); §6.4 = operator procedure over `vc:revoke` + document replacement (no new primitive). **Spec-staged, not yet implemented** (the same staging `did:peer` had): delegated mirror (`observe-session`, §4.9), `XAPStreamEndpoint` discovery (§2.3), `max-session-age` (§6.3) |
 

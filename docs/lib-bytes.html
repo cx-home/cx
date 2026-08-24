@@ -5,15 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>bytes — CX Guide</title>
 <link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <aside class="sidebar">
   <a class="brand" href="index.html" aria-label="CX — home">
-    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
   </a>
   <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
   <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
   <a class="brand-sub" href="about.html">About →</a>
   <div class="side-search">
     <input id="side-search-input" type="search"
@@ -21,646 +25,689 @@
            autocomplete="off" spellcheck="false" data-prefix="" />
     <ul id="side-search-results" class="side-search-results" hidden></ul>
   </div>
-  <section><h4>Guide</h4><ul>
+  <section><h4>Start here</h4><ul>
     <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
     <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
     <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
     <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
     <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
     <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
-    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
-    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
-    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
-    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
-    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
-    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
-    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
-    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
     <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
-    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
-    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
-    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
-  </ul></section>
-  <section><h4>Reference</h4><ul>
-    <li><a href="directives.html">Directives</a></li>
-    <li><a href="syntax.html">Core syntax</a></li>
-  </ul></section>
-  <section><h4>Standard library</h4><ul>
-    <li><a href="libraries.html">Overview</a></li>
-    <li><a href="lib-authz.html">authz</a></li>
-    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
     <li><a class="active" href="lib-bytes.html">bytes</a></li>
     <li><a href="lib-crypto.html">crypto</a></li>
     <li><a href="lib-csv.html">csv</a></li>
-    <li><a href="lib-did.html">did</a></li>
-    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
     <li><a href="lib-env.html">env</a></li>
-    <li><a href="lib-fabric.html">fabric</a></li>
     <li><a href="lib-format.html">format</a></li>
     <li><a href="lib-fp.html">fp</a></li>
     <li><a href="lib-ft.html">ft</a></li>
     <li><a href="lib-geo.html">geo</a></li>
     <li><a href="lib-hash.html">hash</a></li>
     <li><a href="lib-html.html">html</a></li>
-    <li><a href="lib-http.html">http</a></li>
     <li><a href="lib-i18n.html">i18n</a></li>
     <li><a href="lib-io.html">io</a></li>
-    <li><a href="lib-journal.html">journal</a></li>
     <li><a href="lib-json.html">json</a></li>
     <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
     <li><a href="lib-jsonschema.html">jsonschema</a></li>
     <li><a href="lib-locale.html">locale</a></li>
     <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
     <li><a href="lib-math.html">math</a></li>
     <li><a href="lib-mime.html">mime</a></li>
-    <li><a href="lib-net.html">net</a></li>
     <li><a href="lib-path.html">path</a></li>
     <li><a href="lib-process.html">process</a></li>
     <li><a href="lib-prof.html">prof</a></li>
     <li><a href="lib-random.html">random</a></li>
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
-    <li><a href="lib-session.html">session</a></li>
     <li><a href="lib-similar.html">similar</a></li>
-    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
     <li><a href="lib-test.html">test</a></li>
     <li><a href="lib-time.html">time</a></li>
     <li><a href="lib-url.html">url</a></li>
     <li><a href="lib-uuid.html">uuid</a></li>
     <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-vc.html">vc</a></li>
     <li><a href="lib-xap.html">xap</a></li>
     <li><a href="lib-xsp.html">xsp</a></li>
-  </ul></section>
-  <section><h4>XAP</h4><ul>
     <li><a href="xap.html">Overview</a></li>
     <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
     <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
     <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
     <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
   </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
 </aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">bytes</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
 <main>
-<section id="lib-bytes">
-  <h1>bytes</h1>
-  <p class="lede">Byte-level operations on the CX bytes scalar kind. Covers inspection and slicing, search, hex/base64/base32 encoding, gzip and zstd compression, fixed-width binary pack and unpack, and UTF-8/Latin-1 string conversion. All operations are pure with no I/O, and every result is a new immutable bytes value. For file and stream I/O see cx-stdlib/io.</p>
-  
-    <section id="fn-bytes-length" class="fn">
-      <h3>bytes:length</h3>
-      <p class="fn-sig"><code>[$bytes:length]  -> int</code>  —  Return the number of bytes in a bytes value.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+<section id="lib-bytes"><h1>bytes</h1><p class="lede">Byte-level operations on the CX bytes scalar kind. Covers inspection and slicing, search, hex/base64/base32 encoding, gzip and zstd compression, fixed-width binary pack and unpack, and UTF-8/Latin-1 string conversion. All operations are pure with no I/O, and every result is a new immutable bytes value. For file and stream I/O see cx-stdlib/io.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
+           reader who takes an x/ surface for a frozen one has been misled by
+           the page, not by their own inattention. ]]>
+  <section id="fn-bytes-length" class="fn">
+    <h3>bytes:length</h3>
+    <p class="fn-sig"><code>[$bytes:length]  -> int</code>  —  Return the number of bytes in a bytes value.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:length [$bytes:from-hex "deadbeef"]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>4</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-at" class="fn">
-      <h3>bytes:at</h3>
-      <p class="fn-sig"><code>[$bytes:at]  -> int</code>  —  Return the byte value 0-255 at an index; raises if out of bounds.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>4</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-at" class="fn">
+    <h3>bytes:at</h3>
+    <p class="fn-sig"><code>[$bytes:at]  -> int</code>  —  Return the byte value 0-255 at an index; raises if out of bounds.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:at [$bytes:from-string-utf8 "ABC"] 0]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>65</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-is-empty" class="fn">
-      <h3>bytes:is-empty</h3>
-      <p class="fn-sig"><code>[$bytes:is-empty]  -> bool</code>  —  Report whether a bytes value has zero length.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>65</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-is-empty" class="fn">
+    <h3>bytes:is-empty</h3>
+    <p class="fn-sig"><code>[$bytes:is-empty]  -> bool</code>  —  Report whether a bytes value has zero length.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:is-empty [$bytes:from-hex ""]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>true</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-equals" class="fn">
-      <h3>bytes:equals</h3>
-      <p class="fn-sig"><code>[$bytes:equals]  -> bool</code>  —  Report whether two bytes values are byte-for-byte equal.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>true</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-equals" class="fn">
+    <h3>bytes:equals</h3>
+    <p class="fn-sig"><code>[$bytes:equals]  -> bool</code>  —  Report whether two bytes values are byte-for-byte equal.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:equals [$bytes:from-hex "00ff"] [$bytes:from-hex "00ff"]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>true</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-constant-time-equals" class="fn">
-      <h3>bytes:constant-time-equals</h3>
-      <p class="fn-sig"><code>[$bytes:constant-time-equals]  -> bool</code>  —  Compare two bytes values for equality in constant time, resistant to timing attacks.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>true</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-constant-time-equals" class="fn">
+    <h3>bytes:constant-time-equals</h3>
+    <p class="fn-sig"><code>[$bytes:constant-time-equals]  -> bool</code>  —  Compare two bytes values for equality in constant time, resistant to timing attacks.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:constant-time-equals [$bytes:from-hex "abcd"] [$bytes:from-hex "abcd"]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>true</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-slice" class="fn">
-      <h3>bytes:slice</h3>
-      <p class="fn-sig"><code>[$bytes:slice]  -> bytes</code>  —  Extract a half-open byte range; bounds clamp and negative indices count from the end.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>true</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-slice" class="fn">
+    <h3>bytes:slice</h3>
+    <p class="fn-sig"><code>[$bytes:slice]  -> bytes</code>  —  Extract a half-open byte range; bounds clamp and negative indices count from the end.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-hex [$bytes:slice [$bytes:from-hex "00112233"] 1 3]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'1122'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-head" class="fn">
-      <h3>bytes:head</h3>
-      <p class="fn-sig"><code>[$bytes:head]  -> bytes</code>  —  Return the first n bytes.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>'1122'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-head" class="fn">
+    <h3>bytes:head</h3>
+    <p class="fn-sig"><code>[$bytes:head]  -> bytes</code>  —  Return the first n bytes.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-hex [$bytes:head [$bytes:from-hex "00112233"] 2]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'0011'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-tail" class="fn">
-      <h3>bytes:tail</h3>
-      <p class="fn-sig"><code>[$bytes:tail]  -> bytes</code>  —  Return the last n bytes.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>'0011'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-tail" class="fn">
+    <h3>bytes:tail</h3>
+    <p class="fn-sig"><code>[$bytes:tail]  -> bytes</code>  —  Return the last n bytes.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-hex [$bytes:tail [$bytes:from-hex "00112233"] 2]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'2233'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-concat" class="fn">
-      <h3>bytes:concat</h3>
-      <p class="fn-sig"><code>[$bytes:concat]  -> bytes</code>  —  Concatenate a sequence of bytes values into one; raises if the result exceeds the length ceiling.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>'2233'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-concat" class="fn">
+    <h3>bytes:concat</h3>
+    <p class="fn-sig"><code>[$bytes:concat]  -> bytes</code>  —  Concatenate a sequence of bytes values into one; raises if the result exceeds the length ceiling.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-hex [$bytes:concat ([$bytes:from-hex "0011"], [$bytes:from-hex "2233"])]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'00112233'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-repeat" class="fn">
-      <h3>bytes:repeat</h3>
-      <p class="fn-sig"><code>[$bytes:repeat]  -> bytes</code>  —  Concatenate n copies of a bytes value; raises if the result exceeds the length ceiling.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>'00112233'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-repeat" class="fn">
+    <h3>bytes:repeat</h3>
+    <p class="fn-sig"><code>[$bytes:repeat]  -> bytes</code>  —  Concatenate n copies of a bytes value; raises if the result exceeds the length ceiling.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-hex [$bytes:repeat [$bytes:from-hex "ab"] 3]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'ababab'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-find" class="fn">
-      <h3>bytes:find</h3>
-      <p class="fn-sig"><code>[$bytes:find]  -> int</code>  —  Return the index of the first occurrence of a needle in the haystack, or -1 if absent.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>'ababab'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-find" class="fn">
+    <h3>bytes:find</h3>
+    <p class="fn-sig"><code>[$bytes:find]  -> int</code>  —  Return the index of the first occurrence of a needle in the haystack, or -1 if absent.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:find [$bytes:from-string-utf8 "hello world"] [$bytes:from-string-utf8 "hello"]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>0</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-contains" class="fn">
-      <h3>bytes:contains</h3>
-      <p class="fn-sig"><code>[$bytes:contains]  -> bool</code>  —  Report whether the haystack contains the needle.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>0</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-contains" class="fn">
+    <h3>bytes:contains</h3>
+    <p class="fn-sig"><code>[$bytes:contains]  -> bool</code>  —  Report whether the haystack contains the needle.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:contains [$bytes:from-string-utf8 "hello world"] [$bytes:from-string-utf8 "o w"]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>true</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-starts-with" class="fn">
-      <h3>bytes:starts-with</h3>
-      <p class="fn-sig"><code>[$bytes:starts-with]  -> bool</code>  —  Report whether a bytes value begins with the given prefix.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>true</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-starts-with" class="fn">
+    <h3>bytes:starts-with</h3>
+    <p class="fn-sig"><code>[$bytes:starts-with]  -> bool</code>  —  Report whether a bytes value begins with the given prefix.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:starts-with [$bytes:from-string-utf8 "hello"] [$bytes:from-string-utf8 "he"]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>true</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-ends-with" class="fn">
-      <h3>bytes:ends-with</h3>
-      <p class="fn-sig"><code>[$bytes:ends-with]  -> bool</code>  —  Report whether a bytes value ends with the given suffix.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>true</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-ends-with" class="fn">
+    <h3>bytes:ends-with</h3>
+    <p class="fn-sig"><code>[$bytes:ends-with]  -> bool</code>  —  Report whether a bytes value ends with the given suffix.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:ends-with [$bytes:from-string-utf8 "hello"] [$bytes:from-string-utf8 "lo"]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>true</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-split" class="fn">
-      <h3>bytes:split</h3>
-      <p class="fn-sig"><code>[$bytes:split]  -> [sequence bytes]</code>  —  Split a bytes value on each occurrence of a separator.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>true</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-split" class="fn">
+    <h3>bytes:split</h3>
+    <p class="fn-sig"><code>[$bytes:split]  -> [sequence bytes]</code>  —  Split a bytes value on each occurrence of a separator.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-string-utf8 [$nth [$bytes:split [$bytes:from-string-utf8 "a,b,c"] [$bytes:from-string-utf8 ","]] 3]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'c'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-to-hex" class="fn">
-      <h3>bytes:to-hex</h3>
-      <p class="fn-sig"><code>[$bytes:to-hex]  -> string</code>  —  Encode bytes as a lowercase hexadecimal string.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>'c'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-to-hex" class="fn">
+    <h3>bytes:to-hex</h3>
+    <p class="fn-sig"><code>[$bytes:to-hex]  -> string</code>  —  Encode bytes as a lowercase hexadecimal string.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-hex [$bytes:from-hex "deadbeef"]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'deadbeef'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-from-hex" class="fn">
-      <h3>bytes:from-hex</h3>
-      <p class="fn-sig"><code>[$bytes:from-hex]  -> bytes</code>  —  Decode a hexadecimal string (either case) to bytes; raises on non-hex input.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>'deadbeef'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-from-hex" class="fn">
+    <h3>bytes:from-hex</h3>
+    <p class="fn-sig"><code>[$bytes:from-hex]  -> bytes</code>  —  Decode a hexadecimal string (either case) to bytes; raises on non-hex input.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-hex [$bytes:from-hex "deadbeef"]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'deadbeef'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-to-hex-upper" class="fn">
-      <h3>bytes:to-hex-upper</h3>
-      <p class="fn-sig"><code>[$bytes:to-hex-upper]  -> string</code>  —  Encode bytes as an uppercase hexadecimal string.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>'deadbeef'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-to-hex-upper" class="fn">
+    <h3>bytes:to-hex-upper</h3>
+    <p class="fn-sig"><code>[$bytes:to-hex-upper]  -> string</code>  —  Encode bytes as an uppercase hexadecimal string.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-hex-upper [$bytes:from-hex "deadbeef"]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'DEADBEEF'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-to-base64" class="fn">
-      <h3>bytes:to-base64</h3>
-      <p class="fn-sig"><code>[$bytes:to-base64]  -> string</code>  —  Encode bytes as standard padded RFC 4648 base64.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>'DEADBEEF'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-to-base64" class="fn">
+    <h3>bytes:to-base64</h3>
+    <p class="fn-sig"><code>[$bytes:to-base64]  -> string</code>  —  Encode bytes as standard padded RFC 4648 base64.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-string-utf8 [$bytes:from-base64 [$bytes:to-base64 [$bytes:from-string-utf8 "hello"]]]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'hello'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-to-base64-url" class="fn">
-      <h3>bytes:to-base64-url</h3>
-      <p class="fn-sig"><code>[$bytes:to-base64-url]  -> string</code>  —  Encode bytes as URL-safe unpadded RFC 4648 base64.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>'hello'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-to-base64-url" class="fn">
+    <h3>bytes:to-base64-url</h3>
+    <p class="fn-sig"><code>[$bytes:to-base64-url]  -> string</code>  —  Encode bytes as URL-safe unpadded RFC 4648 base64.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-base64-url [$bytes:from-string-utf8 "hi"]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'aGk'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-from-base64" class="fn">
-      <h3>bytes:from-base64</h3>
-      <p class="fn-sig"><code>[$bytes:from-base64]  -> bytes</code>  —  Decode a standard base64 string to bytes, tolerating padded or unpadded input; raises on malformed input.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>'aGk'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-from-base64" class="fn">
+    <h3>bytes:from-base64</h3>
+    <p class="fn-sig"><code>[$bytes:from-base64]  -> bytes</code>  —  Decode a standard base64 string to bytes, tolerating padded or unpadded input; raises on malformed input.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-string-utf8 [$bytes:from-base64 [$bytes:to-base64 [$bytes:from-string-utf8 "hello"]]]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'hello'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-from-base64-url" class="fn">
-      <h3>bytes:from-base64-url</h3>
-      <p class="fn-sig"><code>[$bytes:from-base64-url]  -> bytes</code>  —  Decode a URL-safe base64 string to bytes, tolerating padded or unpadded input; raises on malformed input.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>'hello'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-from-base64-url" class="fn">
+    <h3>bytes:from-base64-url</h3>
+    <p class="fn-sig"><code>[$bytes:from-base64-url]  -> bytes</code>  —  Decode a URL-safe base64 string to bytes, tolerating padded or unpadded input; raises on malformed input.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-string-utf8 [$bytes:from-base64-url [$bytes:to-base64-url [$bytes:from-string-utf8 "hello"]]]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'hello'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-to-base32" class="fn">
-      <h3>bytes:to-base32</h3>
-      <p class="fn-sig"><code>[$bytes:to-base32]  -> string</code>  —  Encode bytes as uppercase padded RFC 4648 base32.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>'hello'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-to-base32" class="fn">
+    <h3>bytes:to-base32</h3>
+    <p class="fn-sig"><code>[$bytes:to-base32]  -> string</code>  —  Encode bytes as uppercase padded RFC 4648 base32.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-string-utf8 [$bytes:from-base32 [$bytes:to-base32 [$bytes:from-string-utf8 "hello"]]]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'hello'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-from-base32" class="fn">
-      <h3>bytes:from-base32</h3>
-      <p class="fn-sig"><code>[$bytes:from-base32]  -> bytes</code>  —  Decode an RFC 4648 base32 string to bytes.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>'hello'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-from-base32" class="fn">
+    <h3>bytes:from-base32</h3>
+    <p class="fn-sig"><code>[$bytes:from-base32]  -> bytes</code>  —  Decode an RFC 4648 base32 string to bytes.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-string-utf8 [$bytes:from-base32 [$bytes:to-base32 [$bytes:from-string-utf8 "hello"]]]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'hello'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-to-base58" class="fn">
-      <h3>bytes:to-base58</h3>
-      <p class="fn-sig"><code>[$bytes:to-base58]  -> string</code>  —  Encode bytes as a base58btc string (Bitcoin alphabet), the multibase 'z' payload used for did:key.</p>
-      
-    </section>
-    <section id="fn-bytes-from-base58" class="fn">
-      <h3>bytes:from-base58</h3>
-      <p class="fn-sig"><code>[$bytes:from-base58]  -> bytes</code>  —  Decode a base58btc string (Bitcoin alphabet) to bytes; raises on characters outside the alphabet.</p>
-      
-    </section>
-    <section id="fn-bytes-gzip-compress" class="fn">
-      <h3>bytes:gzip-compress</h3>
-      <p class="fn-sig"><code>[$bytes:gzip-compress]  -> bytes</code>  —  Compress bytes into a gzip frame (RFC 1952, default level 6).</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>'hello'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-to-base58" class="fn">
+    <h3>bytes:to-base58</h3>
+    <p class="fn-sig"><code>[$bytes:to-base58]  -> string</code>  —  Encode bytes as a base58btc string (Bitcoin alphabet), the multibase 'z' payload used for did:key.</p>
+    
+  </section>
+  <section id="fn-bytes-from-base58" class="fn">
+    <h3>bytes:from-base58</h3>
+    <p class="fn-sig"><code>[$bytes:from-base58]  -> bytes</code>  —  Decode a base58btc string (Bitcoin alphabet) to bytes; raises on characters outside the alphabet.</p>
+    
+  </section>
+  <section id="fn-bytes-gzip-compress" class="fn">
+    <h3>bytes:gzip-compress</h3>
+    <p class="fn-sig"><code>[$bytes:gzip-compress]  -> bytes</code>  —  Compress bytes into a gzip frame (RFC 1952, default level 6).</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:length [$bytes:gzip-decompress [$bytes:gzip-compress [$bytes:from-hex ""]]]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>0</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-gzip-decompress" class="fn">
-      <h3>bytes:gzip-decompress</h3>
-      <p class="fn-sig"><code>[$bytes:gzip-decompress]  -> bytes</code>  —  Decompress a gzip frame back to bytes; raises on malformed input.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>0</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-gzip-decompress" class="fn">
+    <h3>bytes:gzip-decompress</h3>
+    <p class="fn-sig"><code>[$bytes:gzip-decompress]  -> bytes</code>  —  Decompress a gzip frame back to bytes; raises on malformed input.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:length [$bytes:gzip-decompress [$bytes:gzip-compress [$bytes:from-hex ""]]]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>0</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-zstd-compress" class="fn">
-      <h3>bytes:zstd-compress</h3>
-      <p class="fn-sig"><code>[$bytes:zstd-compress]  -> bytes</code>  —  Compress bytes with zstd (RFC 8478, default level 3).</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>0</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-zstd-compress" class="fn">
+    <h3>bytes:zstd-compress</h3>
+    <p class="fn-sig"><code>[$bytes:zstd-compress]  -> bytes</code>  —  Compress bytes with zstd (RFC 8478, default level 3).</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-string-utf8 [$bytes:zstd-decompress [$bytes:zstd-compress [$bytes:from-string-utf8 "hello world"]]]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'hello world'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-zstd-decompress" class="fn">
-      <h3>bytes:zstd-decompress</h3>
-      <p class="fn-sig"><code>[$bytes:zstd-decompress]  -> bytes</code>  —  Decompress zstd-compressed bytes; raises on malformed input.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>'hello world'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-zstd-decompress" class="fn">
+    <h3>bytes:zstd-decompress</h3>
+    <p class="fn-sig"><code>[$bytes:zstd-decompress]  -> bytes</code>  —  Decompress zstd-compressed bytes; raises on malformed input.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-string-utf8 [$bytes:zstd-decompress [$bytes:zstd-compress [$bytes:from-string-utf8 "hello world"]]]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'hello world'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-zstd-compress-with-level" class="fn">
-      <h3>bytes:zstd-compress-with-level</h3>
-      <p class="fn-sig"><code>[$bytes:zstd-compress-with-level]  -> bytes</code>  —  Compress bytes with zstd at an explicit level from 1 to 22.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>'hello world'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-zstd-compress-with-level" class="fn">
+    <h3>bytes:zstd-compress-with-level</h3>
+    <p class="fn-sig"><code>[$bytes:zstd-compress-with-level]  -> bytes</code>  —  Compress bytes with zstd at an explicit level from 1 to 22.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-string-utf8 [$bytes:zstd-decompress [$bytes:zstd-compress-with-level [$bytes:from-string-utf8 "hello world"] 22]]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'hello world'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-pack" class="fn">
-      <h3>bytes:pack</h3>
-      <p class="fn-sig"><code>[$bytes:pack]  -> bytes</code>  —  Pack values into bytes per a struct-style format string.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>'hello world'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-pack" class="fn">
+    <h3>bytes:pack</h3>
+    <p class="fn-sig"><code>[$bytes:pack]  -> bytes</code>  —  Pack values into bytes per a struct-style format string.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$nth [$bytes:unpack "<I" [$bytes:pack "<I" (1234)]] 1]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>1234</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-unpack" class="fn">
-      <h3>bytes:unpack</h3>
-      <p class="fn-sig"><code>[$bytes:unpack]  -> [sequence any]</code>  —  Unpack bytes into a sequence of values per a struct-style format string.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>1234</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-unpack" class="fn">
+    <h3>bytes:unpack</h3>
+    <p class="fn-sig"><code>[$bytes:unpack]  -> [sequence any]</code>  —  Unpack bytes into a sequence of values per a struct-style format string.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$nth [$bytes:unpack "<I" [$bytes:pack "<I" (1234)]] 1]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>1234</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-from-string-utf8" class="fn">
-      <h3>bytes:from-string-utf8</h3>
-      <p class="fn-sig"><code>[$bytes:from-string-utf8]  -> bytes</code>  —  Encode a string to its UTF-8 byte representation.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>1234</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-from-string-utf8" class="fn">
+    <h3>bytes:from-string-utf8</h3>
+    <p class="fn-sig"><code>[$bytes:from-string-utf8]  -> bytes</code>  —  Encode a string to its UTF-8 byte representation.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-hex [$bytes:from-string-utf8 "abc"]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'616263'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-to-string-utf8" class="fn">
-      <h3>bytes:to-string-utf8</h3>
-      <p class="fn-sig"><code>[$bytes:to-string-utf8]  -> string</code>  —  Decode bytes as a UTF-8 string; raises on invalid UTF-8.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>'616263'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-to-string-utf8" class="fn">
+    <h3>bytes:to-string-utf8</h3>
+    <p class="fn-sig"><code>[$bytes:to-string-utf8]  -> string</code>  —  Decode bytes as a UTF-8 string; raises on invalid UTF-8.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-string-utf8 [$nth [$bytes:split [$bytes:from-string-utf8 "a,b,c"] [$bytes:from-string-utf8 ","]] 3]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'c'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-to-string-utf8-lossy" class="fn">
-      <h3>bytes:to-string-utf8-lossy</h3>
-      <p class="fn-sig"><code>[$bytes:to-string-utf8-lossy]  -> string</code>  —  Decode bytes as UTF-8, replacing each invalid run with U+FFFD; never raises.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>'c'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-to-string-utf8-lossy" class="fn">
+    <h3>bytes:to-string-utf8-lossy</h3>
+    <p class="fn-sig"><code>[$bytes:to-string-utf8-lossy]  -> string</code>  —  Decode bytes as UTF-8, replacing each invalid run with U+FFFD; never raises.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:length [$bytes:from-string-utf8 [$bytes:to-string-utf8-lossy [$bytes:from-hex "ff"]]]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>3</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-from-string-latin1" class="fn">
-      <h3>bytes:from-string-latin1</h3>
-      <p class="fn-sig"><code>[$bytes:from-string-latin1]  -> bytes</code>  —  Encode a string to Latin-1 bytes for byte-clean round-trips.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>3</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-from-string-latin1" class="fn">
+    <h3>bytes:from-string-latin1</h3>
+    <p class="fn-sig"><code>[$bytes:from-string-latin1]  -> bytes</code>  —  Encode a string to Latin-1 bytes for byte-clean round-trips.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-hex [$bytes:from-string-latin1 [$bytes:to-string-latin1 [$bytes:from-hex "00ff80"]]]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'00ff80'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-bytes-to-string-latin1" class="fn">
-      <h3>bytes:to-string-latin1</h3>
-      <p class="fn-sig"><code>[$bytes:to-string-latin1]  -> string</code>  —  Decode bytes as Latin-1, preserving every byte.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/bytes']
+        </pre>
+        <pre class="sample-output">
+          <code>'00ff80'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-bytes-to-string-latin1" class="fn">
+    <h3>bytes:to-string-latin1</h3>
+    <p class="fn-sig"><code>[$bytes:to-string-latin1]  -> string</code>  —  Decode bytes as Latin-1, preserving every byte.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [$bytes:to-hex [$bytes:from-string-latin1 [$bytes:to-string-latin1 [$bytes:from-hex "00ff80"]]]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'00ff80'</code>
-          </pre>
-        </div>
-      
-    </section>
-  
+        </pre>
+        <pre class="sample-output">
+          <code>'00ff80'</code>
+        </pre>
+      </div>
+    
+  </section>
 </section>
 </main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>bytes</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
 <script src="highlight/highlight.js" defer></script>
 <script src="search-index.js" defer></script>
 <script src="search/search.js" defer></script>

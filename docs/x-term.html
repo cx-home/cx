@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>term — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Start here</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
+    <li><a href="lib-jsonschema.html">jsonschema</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-vc.html">vc</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+    <li><a href="lib-xsp.html">xsp</a></li>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a class="active" href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+</aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">term</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
+<main>
+<section id="x-term"><h1>term</h1><p class="lede">Native raw-mode terminal input for interactive TUIs (EXPERIMENTAL x/
+   tier, #30). raw-mode/cooked-mode save+restore the tty's termios on fd 0;
+   read-event returns the next decoded VT/ANSI key (<code>[key name=… mods=(…)]</code>),
+   resize, or <code>[timeout]</code>; size reports the window dimensions. The substrate for
+   a lazygit-class XAP terminal surface — a peer renderer to web/agent, not a
+   wrapped TUI framework. POSIX; gated on the <code>read</code> capability; a non-tty raises
+   cx-err:CXER3450.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
+           reader who takes an x/ surface for a frozen one has been misled by
+           the page, not by their own inattention. ]]><p class="note">Experimental x/ tier — imported as cx-x/term. Bundled and gated in-tree like any other module, but EXEMPT from the frozen-surface stability promise (std-lib README, decision D3): a semver-breaking change is allowed here while the surface settles, and the frozen-surface canary never counts it. Pin behaviour you depend on with your own fixtures.</p>
+  <section id="fn-term-is-tty" class="fn">
+    <h3>term:is-tty</h3>
+    <p class="fn-sig"><code>[$term:is-tty]  -> bool</code>  —  Report whether stdin (fd 0) is a terminal. False under a pipe / headless run — guard interactive paths with it. Requires no capability.</p>
+    
+  </section>
+  <section id="fn-term-raw-mode" class="fn">
+    <h3>term:raw-mode</h3>
+    <p class="fn-sig"><code>[$term:raw-mode]  -> null</code>  —  Switch the tty (fd 0) to raw mode (cfmakeraw: no line buffering, no echo, byte-at-a-time) and save the prior termios so cooked-mode restores it. Raises cx-err:CXER3450 on a non-tty. Needs the <code>read</code> capability.</p>
+    
+  </section>
+  <section id="fn-term-cooked-mode" class="fn">
+    <h3>term:cooked-mode</h3>
+    <p class="fn-sig"><code>[$term:cooked-mode]  -> null</code>  —  Restore the tty's saved (pre-raw) termios. A no-op if raw-mode was never entered. Pair with raw-mode (ideally via a scope guard) so the terminal is always restored. Needs the <code>read</code> capability.</p>
+    
+  </section>
+  <section id="fn-term-size" class="fn">
+    <h3>term:size</h3>
+    <p class="fn-sig"><code>[$term:size]  -> element</code>  —  Report the terminal window size as <code>[size rows=R cols=C]</code> (TIOCGWINSZ). Raises cx-err:CXER3450 on a non-tty. Needs the <code>read</code> capability.</p>
+    
+  </section>
+  <section id="fn-term-read-event" class="fn">
+    <h3>term:read-event</h3>
+    <p class="fn-sig"><code>[$term:read-event]  timeout=INT-MS -> element</code>  —  Read and decode the next terminal event from raw stdin: <code>[key name=NAME mods=(:ctrl :alt :shift)]</code> for a keystroke (arrows, fn-keys, ctrl/alt-chords, printable), or <code>[timeout]</code> when a <code>timeout=MS</code> bound expires first (#861, R7.1 — the wrapper forwards the primitive's optional duration; the default -1 blocks). For waiting on keystrokes AND live sources together, <code>[$term:select {keys: true timeout: MS}]</code> remains the primitive. Requires raw-mode. Needs the <code>read</code> capability.</p>
+    
+  </section>
+  <section id="fn-term-select" class="fn">
+    <h3>term:select</h3>
+    <p class="fn-sig"><code>[$term:select]  {keys: bool sources: (handle …) timeout: int-ms} -> element</code>  —  Wait for the FIRST ready of keystrokes (keys: true → raw stdin), any source handle's fd becoming readable (sources: a sequence of [socket]/[exchange]/SSE-stream handles), or the timer (timeout: milliseconds; omit/-1 to block). Returns the decoded <code>[key …]</code> for a keystroke, <code>[ready index=N <handle>]</code> when source N is readable (read it via its own module, e.g. http:sse-events — term stays decoupled from each source's framing), or <code>[timeout]</code>. The one primitive that unifies live-stream and interactive input in a single loop. Requires raw-mode for keystrokes. Needs the <code>read</code> capability.</p>
+    
+  </section>
+</section>
+</main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>term</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

@@ -101,7 +101,7 @@ conformance-tested; v1 web binding is SSE + POST. Doc:
   notes). Plus SIGPIPE immunity on the serve path and the whole-request
   client timeout (`CXER4534`, the http module spec).
 - **Deployment process model**: port-as-mutex, fail-fast collisions, no
-  bespoke supervision (same notes; realized in xap-marine's Makefile/tools).
+  bespoke supervision (same notes; realized in the original external reference instance's Makefile/tools).
 - **Memory**: the per-`[?let]`/`[?for]` env-clone storm fixed (loaded p99
   692→61 ms in the field case); vgc adaptive pacing; terminal heap
   exhaustion dies loudly instead of SIGSEGV; store file:// open/persist

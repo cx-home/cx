@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ux — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Start here</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
+    <li><a href="lib-jsonschema.html">jsonschema</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-vc.html">vc</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+    <li><a href="lib-xsp.html">xsp</a></li>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a class="active" href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+</aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">ux</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
+<main>
+<section id="x-ux"><h1>ux</h1><p class="lede">The SEMANTIC CORE of the UX projection (EXPERIMENTAL x/ tier;
+   #787): the vocabulary, the fragment addressing, the validation, the three
+   projections (command→form, query→table, feature-grammar→form/columns), the
+   hint claims, the patch algebra a live feed lowers onto, and the surface
+   document's routing correspondence. It contains NO RENDERER and imports no
+   markup library: <code>cx-x/ux-web</code> lowers a semantic tree to HTML/htmx and
+   <code>cx-x/ux-tui</code> lowers the same tree to a terminal, and neither is
+   privileged. Renderer-private intent — swap modes, out-of-band targets, SSE
+   endpoints — is refused on semantic elements and lives instead in the render
+   context document a renderer reads for itself; a region declares a LOGICAL
+   feed name and an action declares the element path it AFFECTS. Fragment
+   identity is exactly (route, feature instance, element path) — theme,
+   locale, actor and data are content, never identity — and <code>content-of</code> is
+   the normal form on which two renderings are asserted to agree.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
+           reader who takes an x/ surface for a frozen one has been misled by
+           the page, not by their own inattention. ]]><p class="note">Experimental x/ tier — imported as cx-x/ux. Bundled and gated in-tree like any other module, but EXEMPT from the frozen-surface stability promise (std-lib README, decision D3): a semver-breaking change is allowed here while the surface settles, and the frozen-surface canary never counts it. Pin behaviour you depend on with your own fixtures.</p>
+  <section id="fn-ux-frag" class="fn">
+    <h3>ux:frag</h3>
+    <p class="fn-sig"><code>[$ux:frag]  ($route::string $feature::string $path::string) -> element</code>  —  Build a fragment address from its three identity inputs; its strict canonical bytes are the identity.</p>
+    
+  </section>
+  <section id="fn-ux-frag-address" class="fn">
+    <h3>ux:frag-address</h3>
+    <p class="fn-sig"><code>[$ux:frag-address]  ($f::element) -> string</code>  —  The Tier-1 content address of a fragment address, tagged sha2-256:<hex> like every other address in the suite.</p>
+    
+  </section>
+  <section id="fn-ux-frag-id" class="fn">
+    <h3>ux:frag-id</h3>
+    <p class="fn-sig"><code>[$ux:frag-id]  ($f::element) -> string</code>  —  The short selector-safe spelling of an address: cx- plus the first 16 hex chars of its sha2-256 — a derived rendering, never a second identity.</p>
+    
+  </section>
+  <section id="fn-ux-frag-id-of" class="fn">
+    <h3>ux:frag-id-of</h3>
+    <p class="fn-sig"><code>[$ux:frag-id-of]  ($repr::string) -> string</code>  —  The DOM id derived from an already-computed canonical form — byte-identical to frag-id, and half the canonicalization, which measurement showed dominates rendering.</p>
+    
+  </section>
+  <section id="fn-ux-frag-repr" class="fn">
+    <h3>ux:frag-repr</h3>
+    <p class="fn-sig"><code>[$ux:frag-repr]  ($f::element) -> string</code>  —  The full readable canonical form, so goldens stay diffable and clients can recover the address.</p>
+    
+  </section>
+  <section id="fn-ux-path-step" class="fn">
+    <h3>ux:path-step</h3>
+    <p class="fn-sig"><code>[$ux:path-step]  ($base::string $step::string) -> string</code>  —  Append one step to an element path.</p>
+    
+  </section>
+  <section id="fn-ux-row-step" class="fn">
+    <h3>ux:row-step</h3>
+    <p class="fn-sig"><code>[$ux:row-step]  ($base::string $key::any) -> string | ()</code>  —  A collection row's path step, keyed by the declared row key; absence in yields absence out, because positional row identity is never minted.</p>
+    
+  </section>
+  <section id="fn-ux-vocabulary" class="fn">
+    <h3>ux:vocabulary</h3>
+    <p class="fn-sig"><code>[$ux:vocabulary]  () -> [sequence string]</code>  —  The semantic element set the projection emits — surface-neutral, assuming no hover, pointer, CSS-shaped layout, or renderer transport.</p>
+    
+  </section>
+  <section id="fn-ux-in-vocabulary" class="fn">
+    <h3>ux:in-vocabulary</h3>
+    <p class="fn-sig"><code>[$ux:in-vocabulary]  ($n::string) -> bool</code>  —  Is an element name a member of the semantic vocabulary?</p>
+    
+  </section>
+  <section id="fn-ux-tones" class="fn">
+    <h3>ux:tones</h3>
+    <p class="fn-sig"><code>[$ux:tones]  () -> [sequence string]</code>  —  The closed tone set for a badge — semantic meanings, never colors; each renderer decides what a tone looks like.</p>
+    
+  </section>
+  <section id="fn-ux-valid-tone" class="fn">
+    <h3>ux:valid-tone</h3>
+    <p class="fn-sig"><code>[$ux:valid-tone]  ($t::string) -> bool</code>  —  Is a tone name a member of the closed tone set?</p>
+    
+  </section>
+  <section id="fn-ux-renderer-private-attrs" class="fn">
+    <h3>ux:renderer-private-attrs</h3>
+    <p class="fn-sig"><code>[$ux:renderer-private-attrs]  () -> [sequence string]</code>  —  The attribute names a semantic element may NOT carry — each one a renderer's private concept; a tree carrying one is a tree only that renderer can honor.</p>
+    
+  </section>
+  <section id="fn-ux-feed-binding" class="fn">
+    <h3>ux:feed-binding</h3>
+    <p class="fn-sig"><code>[$ux:feed-binding]  ($rctx::any $name::string) -> element | ()</code>  —  The render context's binding for one logical feed name: its endpoint and event. Shared by every renderer, because both are clients of the same surface.</p>
+    
+  </section>
+  <section id="fn-ux-swap-mode" class="fn">
+    <h3>ux:swap-mode</h3>
+    <p class="fn-sig"><code>[$ux:swap-mode]  ($rctx::any $affects::string) -> string</code>  —  The swap mode declared for one affects= path, else the context default, else outerHTML. A renderer with no notion of swap modes never calls it.</p>
+    
+  </section>
+  <section id="fn-ux-binding-refusals" class="fn">
+    <h3>ux:binding-refusals</h3>
+    <p class="fn-sig"><code>[$ux:binding-refusals]  ($el::any $rctx::any) -> [sequence element]</code>  —  Refuse a live= naming a feed the render context does not bind — a region that silently is not live passes every server-side gate and then never updates.</p>
+    
+  </section>
+  <section id="fn-ux-refusals-of" class="fn">
+    <h3>ux:refusals-of</h3>
+    <p class="fn-sig"><code>[$ux:refusals-of]  ($el::any) -> [sequence element]</code>  —  Every refusal in one semantic subtree, collected before any lowering — the SHARED gate, so a tree one renderer accepts and another rejects cannot exist.</p>
+    
+  </section>
+  <section id="fn-ux-joined" class="fn">
+    <h3>ux:joined</h3>
+    <p class="fn-sig"><code>[$ux:joined]  ($a::any $b::any) -> [sequence element]</code>  —  Read two refusal sequences back as one flat node-set.</p>
+    
+  </section>
+  <section id="fn-ux-seq-child" class="fn">
+    <h3>ux:seq-child</h3>
+    <p class="fn-sig"><code>[$ux:seq-child]  ($el::any) -> bool</code>  —  Is this child a SEQUENCE rather than an element? A [?for] in an element body yields one sequence-valued child, and every tree walk must see through it.</p>
+    
+  </section>
+  <section id="fn-ux-descend" class="fn">
+    <h3>ux:descend</h3>
+    <p class="fn-sig"><code>[$ux:descend]  ($el::any $ctx::map) -> map</code>  —  The fragment context an element's children see: a placed element contributes its author-assigned id as the element-path step, and the render context rides along untouched.</p>
+    
+  </section>
+  <section id="fn-ux-ctx-at" class="fn">
+    <h3>ux:ctx-at</h3>
+    <p class="fn-sig"><code>[$ux:ctx-at]  ($ctx::map $path::string) -> map</code>  —  The same fragment context at a different element path.</p>
+    
+  </section>
+  <section id="fn-ux-ctx-frag" class="fn">
+    <h3>ux:ctx-frag</h3>
+    <p class="fn-sig"><code>[$ux:ctx-frag]  ($ctx::map) -> element</code>  —  The fragment address a context currently denotes.</p>
+    
+  </section>
+  <section id="fn-ux-affects-frag" class="fn">
+    <h3>ux:affects-frag</h3>
+    <p class="fn-sig"><code>[$ux:affects-frag]  ($el::any $ctx::map) -> element | ()</code>  —  The fragment an action or form declares that it updates — DERIVED, so a renderer's target cannot drift from the identity it minted for the target.</p>
+    
+  </section>
+  <section id="fn-ux-str-or" class="fn">
+    <h3>ux:str-or</h3>
+    <p class="fn-sig"><code>[$ux:str-or]  ($v::any $dflt::string) -> string</code>  —  An absent attribute's default — NOT ?else over [$string], which never fires because the empty string exists.</p>
+    
+  </section>
+  <section id="fn-ux-label-of" class="fn">
+    <h3>ux:label-of</h3>
+    <p class="fn-sig"><code>[$ux:label-of]  ($el::any) -> string</code>  —  An element's display label: its label= attribute when present, else its text.</p>
+    
+  </section>
+  <section id="fn-ux-label-of-name" class="fn">
+    <h3>ux:label-of-name</h3>
+    <p class="fn-sig"><code>[$ux:label-of-name]  ($n::string) -> string</code>  —  Derive a human label from a param or verb name — the ruled degradation when no documentation supplies one.</p>
+    
+  </section>
+  <section id="fn-ux-level-of" class="fn">
+    <h3>ux:level-of</h3>
+    <p class="fn-sig"><code>[$ux:level-of]  ($el::any) -> string</code>  —  A heading's level as a literal name, defaulting to 2 — read as a string because a cast would RAISE on level=abc and escape the refusal contract.</p>
+    
+  </section>
+  <section id="fn-ux-child-elements" class="fn">
+    <h3>ux:child-elements</h3>
+    <p class="fn-sig"><code>[$ux:child-elements]  ($el::any $n::string) -> [sequence element]</code>  —  The child ELEMENTS named n. NOT $el/n: a named child step is a field read and ATOMIZES to the child's value on a single match, so [$first $el/n] returns a string for a one-member collection and an element for a two-member one — a difference every two-row fixture hides.</p>
+    
+  </section>
+  <section id="fn-ux-absent" class="fn">
+    <h3>ux:absent</h3>
+    <p class="fn-sig"><code>[$ux:absent]  ($x::any) -> bool</code>  —  Is this absence rather than an element? NOT [not [$exists x]]: $exists is false for a single element taken with [$first]/[$nth] as well as for absence, so it cannot tell found-one from found-none — the most load-bearing distinction a tree walk makes. [$count] can.</p>
+    
+  </section>
+  <section id="fn-ux-first-child" class="fn">
+    <h3>ux:first-child</h3>
+    <p class="fn-sig"><code>[$ux:first-child]  ($el::any $n::string) -> element | ()</code>  —  The first child element named n, or absence. NOT for a PARSED DOCUMENT: [$cx:parse] returns a document node the child axis does not traverse, even though [$count] reports 1 — read those with the descendant axis.</p>
+    
+  </section>
+  <section id="fn-ux-has-str" class="fn">
+    <h3>ux:has-str</h3>
+    <p class="fn-sig"><code>[$ux:has-str]  ($seq::any $s::string) -> bool</code>  —  Membership of a string in a sequence of stringables.</p>
+    
+  </section>
+  <section id="fn-ux-has-address" class="fn">
+    <h3>ux:has-address</h3>
+    <p class="fn-sig"><code>[$ux:has-address]  ($el::any) -> bool</code>  —  Does this element own a distinct fragment address? A property of the semantic tree, not of a renderer, so both renderers mint from one answer.</p>
+    
+  </section>
+  <section id="fn-ux-child-ctx" class="fn">
+    <h3>ux:child-ctx</h3>
+    <p class="fn-sig"><code>[$ux:child-ctx]  ($el::any $ctx::map) -> map</code>  —  THE one definition of how an element path grows: a region re-roots feature and path, a form steps by its verb, a keyed row by its key, a placed element by its author-assigned id, and structure leaves the path alone.</p>
+    
+  </section>
+  <section id="fn-ux-address-pairs" class="fn">
+    <h3>ux:address-pairs</h3>
+    <p class="fn-sig"><code>[$ux:address-pairs]  ($el::any $ctx::map) -> [sequence element]</code>  —  Every (DOM id, readable address) pair a semantic tree will mint — taken from the semantic tree, so the check runs once and is shared rather than re-walking each renderer's larger output.</p>
+    
+  </section>
+  <section id="fn-ux-address-collisions" class="fn">
+    <h3>ux:address-collisions</h3>
+    <p class="fn-sig"><code>[$ux:address-collisions]  ($el::any $ctx::map) -> [sequence element]</code>  —  Refuse a duplicate DOM id — a hash-truncation collision or a reused address — never silently disambiguate. Detection is three counts and O(n log n); the pairwise scan that names the offenders runs only when a count disagrees, which is a path that refuses the render anyway.</p>
+    
+  </section>
+  <section id="fn-ux-dangling-affects" class="fn">
+    <h3>ux:dangling-affects</h3>
+    <p class="fn-sig"><code>[$ux:dangling-affects]  ($el::any $ctx::map) -> [sequence element]</code>  —  Refuse an affects= naming a path no element in the same tree mints. Without it a swap targets an id that does not exist and the page silently does not update — which looks like a caching problem and is the worst symptom an addressing mistake can have.</p>
+    
+  </section>
+  <section id="fn-ux-content-of" class="fn">
+    <h3>ux:content-of</h3>
+    <p class="fn-sig"><code>[$ux:content-of]  ($el::any) -> element</code>  —  The COMMON CONTENT NORMAL FORM: content and structure with presentation stripped. Each renderer supplies a readback from its own output to this form, and the fixtures assert all three canonical-equal.</p>
+    
+  </section>
+  <section id="fn-ux-content-repr" class="fn">
+    <h3>ux:content-repr</h3>
+    <p class="fn-sig"><code>[$ux:content-repr]  ($el::any) -> string</code>  —  The canonical bytes of the content normal form — what two renderings must agree on.</p>
+    
+  </section>
+  <section id="fn-ux-form" class="fn">
+    <h3>ux:form</h3>
+    <p class="fn-sig"><code>[$ux:form]  ($source::string $verb::string $opts::map) -> element | [err …]</code>  —  Project a command def onto a semantic form — fields from the param list, required from the non-defaulted positionals, labels degrading to name-derived; derived at render time, never from a materialized manifest.</p>
+    
+  </section>
+  <section id="fn-ux-form-error" class="fn">
+    <h3>ux:form-error</h3>
+    <p class="fn-sig"><code>[$ux:form-error]  ($message::string) -> element</code>  —  Render a command refusal as a form error, carrying the refusal's own message verbatim — the UX layer never restates a rule.</p>
+    
+  </section>
+  <section id="fn-ux-feature-form" class="fn">
+    <h3>ux:feature-form</h3>
+    <p class="fn-sig"><code>[$ux:feature-form]  ($feature::any $verb::string $opts::map) -> element | [err …]</code>  —  Project an ACT verb of an XAP FEATURE DOCUMENT onto a semantic form — fields from the verb's own declared intent parameters when the grammar states them, falling back to the noun the verb writes when it does not. The reference estate defines commands as feature grammar, not as [?def]s, so this is the subject the third face must project there.</p>
+    
+  </section>
+  <section id="fn-ux-feature-noun" class="fn">
+    <h3>ux:feature-noun</h3>
+    <p class="fn-sig"><code>[$ux:feature-noun]  ($feature::any $noun::string) -> [sequence element]</code>  —  The noun a feature declares under that name — public so a surface can project one more instance of a repeating group without re-deriving the grammar.</p>
+    
+  </section>
+  <section id="fn-ux-feature-columns" class="fn">
+    <h3>ux:feature-columns</h3>
+    <p class="fn-sig"><code>[$ux:feature-columns]  ($feature::any $noun::string) -> [sequence [sequence string]]</code>  —  A noun's field names as column names, in the domain author's declaration order. Nests ONE level — a [?for] in an element body yields one sequence-valued child — so an absent noun reads as absence, not as an empty name.</p>
+    
+  </section>
+  <section id="fn-ux-schema-address" class="fn">
+    <h3>ux:schema-address</h3>
+    <p class="fn-sig"><code>[$ux:schema-address]  ($schema::any) -> string</code>  —  The E2 content address of a DECLARED schema — byte-identical to what register-schema binds. Takes a SCHEMA, never a value: an address inferred from one sample carries that sample's cardinality and cannot serve as a claim key.</p>
+    
+  </section>
+  <section id="fn-ux-claim-key" class="fn">
+    <h3>ux:claim-key</h3>
+    <p class="fn-sig"><code>[$ux:claim-key]  ($addr::string $path::string) -> string</code>  —  The composite claim-key spelling: the tagged schema address immediately followed by the CXPath — a derived spelling of the pair, never a third identity.</p>
+    
+  </section>
+  <section id="fn-ux-hint-for" class="fn">
+    <h3>ux:hint-for</h3>
+    <p class="fn-sig"><code>[$ux:hint-for]  ($hints::any $addr::string $path::string $type::string) -> string | ()</code>  —  Resolve one hint type for a keyed node, longest matching path first; absence is a normal answer and the default projection applies.</p>
+    
+  </section>
+  <section id="fn-ux-table" class="fn">
+    <h3>ux:table</h3>
+    <p class="fn-sig"><code>[$ux:table]  ($rows::any $opts::map) -> element</code>  —  Project a query result onto a semantic table — columns derived from the row schema, rows keyed only by a DECLARED key, nested collections rendered as nested tables, and the row container addressed so a live patch has somewhere to land.</p>
+    
+  </section>
+  <section id="fn-ux-rows-container-step" class="fn">
+    <h3>ux:rows-container-step</h3>
+    <p class="fn-sig"><code>[$ux:rows-container-step]  () -> string</code>  —  The element-path step a projected table's row container takes — the address a live patch appends into.</p>
+    
+  </section>
+  <section id="fn-ux-rows-container-path" class="fn">
+    <h3>ux:rows-container-path</h3>
+    <p class="fn-sig"><code>[$ux:rows-container-path]  ($table-path::string) -> string</code>  —  The row container's element path for a table placed at the given path.</p>
+    
+  </section>
+  <section id="fn-ux-row-columns" class="fn">
+    <h3>ux:row-columns</h3>
+    <p class="fn-sig"><code>[$ux:row-columns]  ($schema::any $rowname::string) -> [sequence string]</code>  —  A row type's scalar attribute names in schema order — a column exists because a value does.</p>
+    
+  </section>
+  <section id="fn-ux-key-for" class="fn">
+    <h3>ux:key-for</h3>
+    <p class="fn-sig"><code>[$ux:key-for]  ($opts::map $rowname::string) -> string | ()</code>  —  The DECLARED key attribute for one row type, or absence — never guessed from an attribute named id.</p>
+    
+  </section>
+  <section id="fn-ux-cell-text" class="fn">
+    <h3>ux:cell-text</h3>
+    <p class="fn-sig"><code>[$ux:cell-text]  ($r::any $attr::string) -> string</code>  —  One attribute's value as text through the canonical scalar printer, so a decimal renders at the precision it was stored at.</p>
+    
+  </section>
+  <section id="fn-ux-feed-ops" class="fn">
+    <h3>ux:feed-ops</h3>
+    <p class="fn-sig"><code>[$ux:feed-ops]  ($frames::any $rows::any $ctx::map $opts::map) -> [sequence element]</code>  —  Lower a live-modes ∂ script onto the SEMANTIC PATCH ALGEBRA — insert / update / remove / repaint over a keyed collection addressed by element path, never by a renderer's swap syntax. retract carries only a position, so the current row list recovers its key, and an unkeyed collection collapses every frame to a repaint.</p>
+    
+  </section>
+  <section id="fn-ux-feed" class="fn">
+    <h3>ux:feed</h3>
+    <p class="fn-sig"><code>[$ux:feed]  ($feature::string $path::string $name::string $body::any) -> element</code>  —  The live region: it names a LOGICAL FEED, and the endpoint and event live in the render context — so one declaration reaches a browser and a terminal without either transport being spelled in the tree.</p>
+    
+  </section>
+  <section id="fn-ux-routes-of" class="fn">
+    <h3>ux:routes-of</h3>
+    <p class="fn-sig"><code>[$ux:routes-of]  ($surface::element) -> [sequence element]</code>  —  A surface document's route table as data: path, feature, instance name, and template per route.</p>
+    
+  </section>
+  <section id="fn-ux-duplicate-instances" class="fn">
+    <h3>ux:duplicate-instances</h3>
+    <p class="fn-sig"><code>[$ux:duplicate-instances]  ($surface::element) -> [sequence element]</code>  —  Refuse composing the same feature instance twice on one route — no silent ordinals, because the instance name is a fragment-identity input.</p>
+    
+  </section>
+  <section id="fn-ux-fragment-paths" class="fn">
+    <h3>ux:fragment-paths</h3>
+    <p class="fn-sig"><code>[$ux:fragment-paths]  ($surface::element) -> [sequence string]</code>  —  The fragment endpoints a surface's routes declare — kept INSIDE the route/resource correspondence check rather than exempted from it, because an unrouted fragment endpoint is as much a page outside the composition as an unrouted page.</p>
+    
+  </section>
+  <section id="fn-ux-service-refusals" class="fn">
+    <h3>ux:service-refusals</h3>
+    <p class="fn-sig"><code>[$ux:service-refusals]  ($surface::element $served::any) -> [sequence element]</code>  —  Refuse any drift between a surface document's routes and the resource paths its [?http-service] registers, in both directions.</p>
+    
+  </section>
+  <section id="fn-ux-surface-verb-refusals" class="fn">
+    <h3>ux:surface-verb-refusals</h3>
+    <p class="fn-sig"><code>[$ux:surface-verb-refusals]  ($surface::element $features::any) -> [sequence element]</code>  —  The static half of verb coverage at compose time (W16-b): every act verb the composed features declare is offered by some route or declared not-offered with a why — a why-less declaration does not account for its verb.</p>
+    
+  </section>
+  <section id="fn-ux-check-surface" class="fn">
+    <h3>ux:check-surface</h3>
+    <p class="fn-sig"><code>[$ux:check-surface]  ($surface::element $served::any $features::any) -> true | [err …]</code>  —  The compose-time gate over a surface document, its service's resource table, and the feature documents it composes (verb accounting is part of composing at all — W16-b).</p>
+    
+  </section>
+  <section id="fn-ux-currency-symbol" class="fn">
+    <h3>ux:currency-symbol</h3>
+    <p class="fn-sig"><code>[$ux:currency-symbol]  ($c::string) -> string</code>  —  The display symbol for an ISO currency code (USD/EUR/GBP/JPY); an unknown code falls back to the code itself plus a space, never an error.</p>
+    
+  </section>
+  <section id="fn-ux-group-digits" class="fn">
+    <h3>ux:group-digits</h3>
+    <p class="fn-sig"><code>[$ux:group-digits]  ($d::string) -> string</code>  —  Insert thousands separators into a digit string, right to left ('1234567' -> '1,234,567').</p>
+    
+  </section>
+  <section id="fn-ux-money-text" class="fn">
+    <h3>ux:money-text</h3>
+    <p class="fn-sig"><code>[$ux:money-text]  ($v::string $cur::string) -> string</code>  —  Render a decimal carrier and its currency as display text (sign, symbol, grouped integer part, two-place fraction) — never routed through a float.</p>
+    
+  </section>
+  <section id="fn-ux-rating-fifths" class="fn">
+    <h3>ux:rating-fifths</h3>
+    <p class="fn-sig"><code>[$ux:rating-fifths]  ($v::string) -> int</code>  —  A 0..5 rating carrier as a whole number of filled marks, rounding half-up and clamping to 5.</p>
+    
+  </section>
+  <section id="fn-ux-rating-text" class="fn">
+    <h3>ux:rating-text</h3>
+    <p class="fn-sig"><code>[$ux:rating-text]  ($v::string) -> string</code>  —  The marks AND the number, always together (P0-66): filled/empty stars followed by the numeric value, shared by every renderer.</p>
+    
+  </section>
+  <section id="fn-ux-formatted" class="fn">
+    <h3>ux:formatted</h3>
+    <p class="fn-sig"><code>[$ux:formatted]  ($el::any $raw::string) -> string</code>  —  The ONE place a format= hint turns a carrier into display text — money and rating dispatch here; anything else passes through raw.</p>
+    
+  </section>
+  <section id="fn-ux-allowed-attrs" class="fn">
+    <h3>ux:allowed-attrs</h3>
+    <p class="fn-sig"><code>[$ux:allowed-attrs]  ($n::string) -> sequence</code>  —  The closed attribute list for one vocabulary member — the authority the attribute-closure gate checks against; an unknown member yields the empty sequence.</p>
+    
+  </section>
+  <section id="fn-ux-own-attr-names" class="fn">
+    <h3>ux:own-attr-names</h3>
+    <p class="fn-sig"><code>[$ux:own-attr-names]  ($el::any) -> sequence</code>  —  The element's OWN attribute names, enumerated through a fixed-depth rooted carrier scan (the binding surface has no attribute wildcard).</p>
+    
+  </section>
+  <section id="fn-ux-act-verbs" class="fn">
+    <h3>ux:act-verbs</h3>
+    <p class="fn-sig"><code>[$ux:act-verbs]  ($feature::any) -> sequence</code>  —  The feature's invokable verbs — every [verb] whose effect is 'act', by the P0-17 discriminator.</p>
+    
+  </section>
+  <section id="fn-ux-control-verbs" class="fn">
+    <h3>ux:control-verbs</h3>
+    <p class="fn-sig"><code>[$ux:control-verbs]  ($el::any) -> sequence</code>  —  Every verb a semantic tree offers as a control (action, form, or verb-carrying quantity), distinct — twenty cards offering one verb are one affordance.</p>
+    
+  </section>
+  <section id="fn-ux-verbs-uncovered" class="fn">
+    <h3>ux:verbs-uncovered</h3>
+    <p class="fn-sig"><code>[$ux:verbs-uncovered]  ($offers::any $el::any) -> sequence</code>  —  The verbs a route declares it offers that its rendered tree does not offer as a control — each as a ux-verb-uncovered refusal.</p>
+    
+  </section>
+  <section id="fn-ux-verbs-unaccounted" class="fn">
+    <h3>ux:verbs-unaccounted</h3>
+    <p class="fn-sig"><code>[$ux:verbs-unaccounted]  ($feature::any $offered::any $not-offered::any) -> sequence</code>  —  Surface-level completeness: every act verb the feature declares that no route offers and no [not-offered] accounts for — the missing-affordance class equivalence cannot see (L5).</p>
+    
+  </section>
+  <section id="fn-ux-found" class="fn">
+    <h3>ux:found</h3>
+    <p class="fn-sig"><code>[$ux:found]  ($x::any) -> bool</code>  —  True iff the value is present — delegates to [$present] (#854); the retired exists-or-named workaround's public name, kept for its callers.</p>
+    
+  </section>
+  <section id="fn-ux-collisions-with" class="fn">
+    <h3>ux:collisions-with</h3>
+    <p class="fn-sig"><code>[$ux:collisions-with]  ($pairs::any) -> sequence</code>  —  Address-collision refusals over a precomputed address-pair set — empty when every pair and every id is distinct.</p>
+    
+  </section>
+  <section id="fn-ux-err-refusals" class="fn">
+    <h3>ux:err-refusals</h3>
+    <p class="fn-sig"><code>[$ux:err-refusals]  ($el::any) -> sequence</code>  —  Every [err …] spliced into a semantic tree, surfaced as a ux-err-in-tree refusal — an err embedded in a document has already lost the property that makes it a refusal.</p>
+    
+  </section>
+  <section id="fn-ux-dangling-affects-with" class="fn">
+    <h3>ux:dangling-affects-with</h3>
+    <p class="fn-sig"><code>[$ux:dangling-affects-with]  ($el::any $ctx::map $pairs::any) -> sequence</code>  —  Every affects= naming a path neither the tree mints nor (for a fragment) the render context declares — the silently-lands-nowhere class, refused.</p>
+    
+  </section>
+  <section id="fn-ux-declared-containers" class="fn">
+    <h3>ux:declared-containers</h3>
+    <p class="fn-sig"><code>[$ux:declared-containers]  ($rctx::any) -> sequence</code>  —  The container paths a render context declares ([swap]/[fragment] entries) — what a fragment's affects= is allowed to aim at.</p>
+    
+  </section>
+  <section id="fn-ux-committed" class="fn">
+    <h3>ux:committed</h3>
+    <p class="fn-sig"><code>[$ux:committed]  ($message::string) -> element</code>  —  A success notice for a committed intent — the caller's message in a tone=ok notice; the other half of form-error, owed by the same reasoning.</p>
+    
+  </section>
+  <section id="fn-ux-entered" class="fn">
+    <h3>ux:entered</h3>
+    <p class="fn-sig"><code>[$ux:entered]  ($opts::map $name::string $dflt::string) -> string</code>  —  The value the operator already typed for one control (from opts.values), or the default — what keeps a refused form from losing its input.</p>
+    
+  </section>
+  <section id="fn-ux-field-error" class="fn">
+    <h3>ux:field-error</h3>
+    <p class="fn-sig"><code>[$ux:field-error]  ($opts::map $name::string) -> string</code>  —  The refusal message that belongs to ONE control (from opts.errors), or the empty string — the message renders next to its field, not in a banner.</p>
+    
+  </section>
+  <section id="fn-ux-reference-select" class="fn">
+    <h3>ux:reference-select</h3>
+    <p class="fn-sig"><code>[$ux:reference-select]  ($f::any $noun::string $opts::map) -> element</code>  —  A reference field as a required ux:select over the referenced noun's rows; a missing option set yields an empty select (an empty catalogue is a legitimate state).</p>
+    
+  </section>
+  <section id="fn-ux-options-for" class="fn">
+    <h3>ux:options-for</h3>
+    <p class="fn-sig"><code>[$ux:options-for]  ($opts::map $noun::string) -> sequence</code>  —  The caller's option set for one noun ([options for=… [option value=… label=…]…]) as ux:option elements; absent set yields the empty sequence.</p>
+    
+  </section>
+  <section id="fn-ux-repeating-group" class="fn">
+    <h3>ux:repeating-group</h3>
+    <p class="fn-sig"><code>[$ux:repeating-group]  ($f::any $ref::any $feature::any $opts::map) -> element</code>  —  The nested WRITE case: a repeat=true ux:group over the referenced noun's fields, one rendered instance per surviving wire index.</p>
+    
+  </section>
+  <section id="fn-ux-instance-indices" class="fn">
+    <h3>ux:instance-indices</h3>
+    <p class="fn-sig"><code>[$ux:instance-indices]  ($opts::map $group::string) -> sequence</code>  —  WHICH group instances to re-render, by their own wire index (gaps preserved — indices are identity, so removing lines.0 must not renumber lines.1); an unentered form mints index 0.</p>
+    
+  </section>
+  <section id="fn-ux-index-part" class="fn">
+    <h3>ux:index-part</h3>
+    <p class="fn-sig"><code>[$ux:index-part]  ($s::string $n::int) -> string</code>  —  The index segment of a grouped wire name ('lines.2.sku' at the group prefix length -> '2'); too-short names yield '0'.</p>
+    
+  </section>
+  <section id="fn-ux-group-instance" class="fn">
+    <h3>ux:group-instance</h3>
+    <p class="fn-sig"><code>[$ux:group-instance]  ($f::any $ref::any $feature::any $opts::map $i::int) -> element</code>  —  One instance of a repeated noun as a ux:card of controls named <group>.<i>.<field> — the index keeps two instances from collapsing on the flat form wire.</p>
+    
+  </section>
+  <section id="fn-ux-intent-params" class="fn">
+    <h3>ux:intent-params</h3>
+    <p class="fn-sig"><code>[$ux:intent-params]  ($v::any) -> sequence</code>  —  The parameter names a verb's [intent [do …]] grammar declares — the verb's real signature; empty when the verb has not declared one (the noun remains the fallback).</p>
+    
+  </section>
+  <section id="fn-ux-feature-card" class="fn">
+    <h3>ux:feature-card</h3>
+    <p class="fn-sig"><code>[$ux:feature-card]  ($feature::any $spec::any $row::any $opts::map) -> element</code>  —  One row as a ux:card, driven by a route-level [card …] spec: media, title, subtitle, the shows= fields that carry values (empty ones drop), and the buy action.</p>
+    
+  </section>
+  <section id="fn-ux-row-attr" class="fn">
+    <h3>ux:row-attr</h3>
+    <p class="fn-sig"><code>[$ux:row-attr]  ($row::any $name::string) -> string</code>  —  One attribute of a row as a string, or '' when absent or unnamed — the total accessor card projection is built on.</p>
+    
+  </section>
+  <section id="fn-ux-noun-field-view" class="fn">
+    <h3>ux:noun-field-view</h3>
+    <p class="fn-sig"><code>[$ux:noun-field-view]  ($ns::any $fname::string $row::any $opts::map) -> element</code>  —  ONE declared field as a labelled ux:field — label from the declaration (or derived from the name), format from the hint claim keyed by (noun address, path), which is why money is money everywhere.</p>
+    
+  </section>
+  <section id="fn-ux-feature-fields" class="fn">
+    <h3>ux:feature-fields</h3>
+    <p class="fn-sig"><code>[$ux:feature-fields]  ($feature::any $noun::string $row::any $skip::any $opts::map) -> sequence</code>  —  Every declared field of a noun projected as labelled values, minus the skip list and the value-less — the detail page's specification block, driven by the noun so a new attribute gains a row here and nowhere else.</p>
+    
+  </section>
+  <section id="fn-ux-format-for" class="fn">
+    <h3>ux:format-for</h3>
+    <p class="fn-sig"><code>[$ux:format-for]  ($hints::any $addr::string $col::string) -> any</code>  —  The format= hint claim for one column, keyed by (schema content-address, /column path) — absent when no claim speaks for it.</p>
+    
+  </section>
+  <section id="fn-ux-layout-find" class="fn">
+    <h3>ux:layout-find</h3>
+    <p class="fn-sig"><code>[$ux:layout-find]  ($layout::any $id::string) -> element | ()</code>  —  The [placed …] element carrying this surface-doc id, anywhere in the layout document, or absence — ids are unique per document (P0-16).</p>
+    
+  </section>
+  <section id="fn-ux-layout-ids" class="fn">
+    <h3>ux:layout-ids</h3>
+    <p class="fn-sig"><code>[$ux:layout-ids]  ($layout::any) -> [sequence string]</code>  —  Every placed id in the layout document, document order.</p>
+    
+  </section>
+  <section id="fn-ux-layout-parent-id" class="fn">
+    <h3>ux:layout-parent-id</h3>
+    <p class="fn-sig"><code>[$ux:layout-parent-id]  ($layout::any $id::string) -> string</code>  —  The id of the placed element holding this one; '' means it sits at the layout root.</p>
+    
+  </section>
+  <section id="fn-ux-layout-successor" class="fn">
+    <h3>ux:layout-successor</h3>
+    <p class="fn-sig"><code>[$ux:layout-successor]  ($layout::any $id::string) -> string</code>  —  The id of the placed sibling FOLLOWING this one, or '' when it is last — what makes the inverse-pair table (P0-108) computable: put-it-back is insert-before-what-followed.</p>
+    
+  </section>
+  <section id="fn-ux-layout-hint" class="fn">
+    <h3>ux:layout-hint</h3>
+    <p class="fn-sig"><code>[$ux:layout-hint]  ($layout::any $id::string $hint::string) -> string</code>  —  The SURFACE-LEVEL value of one hint on one placed element, or '' when it carries none and the inherited resolution applies (P0-107) — also the prior value the set-hint inverse restores.</p>
+    
+  </section>
+  <section id="fn-ux-component-known" class="fn">
+    <h3>ux:component-known</h3>
+    <p class="fn-sig"><code>[$ux:component-known]  ($components::any $name::string) -> bool</code>  —  Is a component name in the resolved registry? Placeable is a cascade-resolvable component name, never raw markup (P0-105).</p>
+    
+  </section>
+  <section id="fn-ux-component-container" class="fn">
+    <h3>ux:component-container</h3>
+    <p class="fn-sig"><code>[$ux:component-container]  ($components::any $name::string) -> bool</code>  —  Is a component declared container=true — allowed to hold placed children (a wrap target, a place/move parent)?</p>
+    
+  </section>
+  <section id="fn-ux-layout-refusals" class="fn">
+    <h3>ux:layout-refusals</h3>
+    <p class="fn-sig"><code>[$ux:layout-refusals]  ($layout::any $cmd::any $components::any) -> [sequence element]</code>  —  Every refusal one layout command earns against the FULL document: address-miss (P0-28), id-collision (P0-16/P0-105), unknown or non-container component, cycle and incoherent position (P0-29), unknown command.</p>
+    
+  </section>
+  <section id="fn-ux-layout-apply" class="fn">
+    <h3>ux:layout-apply</h3>
+    <p class="fn-sig"><code>[$ux:layout-apply]  ($layout::any $cmd::any $components::any) -> element | [err …]</code>  —  Apply ONE layout command against the full document (P0-29) — pure structural surgery touching only what the command addresses (P0-26); the amended document, or one [err] naming every refusal. The caller journals, stamps and publishes.</p>
+    
+  </section>
+  <section id="fn-ux-layout-apply-batch" class="fn">
+    <h3>ux:layout-apply-batch</h3>
+    <p class="fn-sig"><code>[$ux:layout-apply-batch]  ($layout::any $cmds::any $components::any) -> element | [err …]</code>  —  A P0-27 batch, atomic: all-or-nothing, one journal entry at the boundary; the first refusal refuses the batch whole.</p>
+    
+  </section>
+  <section id="fn-ux-layout-param" class="fn">
+    <h3>ux:layout-param</h3>
+    <p class="fn-sig"><code>[$ux:layout-param]  ($layout::any $id::string $param::string) -> string</code>  —  The value of one content param on one placed element, or '' when it carries none and the registry default applies (P0-111) — the prior the set-param inverse restores.</p>
+    
+  </section>
+  <section id="fn-ux-component-params" class="fn">
+    <h3>ux:component-params</h3>
+    <p class="fn-sig"><code>[$ux:component-params]  ($components::any $name::string) -> [sequence element]</code>  —  One registry entry's [param name= default= carrier=] declarations — the component's editable content surface (P0-113).</p>
+    
+  </section>
+  <section id="fn-ux-component-variants" class="fn">
+    <h3>ux:component-variants</h3>
+    <p class="fn-sig"><code>[$ux:component-variants]  ($components::any $name::string) -> [sequence element]</code>  —  One registry entry's [variant name= options=] axes — closed option sets written as ordinary surface-level hints (P0-107/P0-113).</p>
+    
+  </section>
+  <section id="fn-ux-component-accepts" class="fn">
+    <h3>ux:component-accepts</h3>
+    <p class="fn-sig"><code>[$ux:component-accepts]  ($components::any $name::string) -> [sequence string]</code>  —  The component names a container may hold (P0-113); absent accepts= means anything, and a place or move of an unaccepted child refuses with ux-layout-not-accepted — the rule that stops an editor's reasonable guess from producing an invalid tree.</p>
+    
+  </section>
+  <section id="fn-ux-component-fixed" class="fn">
+    <h3>ux:component-fixed</h3>
+    <p class="fn-sig"><code>[$ux:component-fixed]  ($components::any $name::string) -> bool</code>  —  Is a component declared fixed — restylable but never moved, removed or wrapped (load-bearing chrome, e.g. an affects= target)?</p>
+    
+  </section>
+  <section id="fn-ux-layout-inverse" class="fn">
+    <h3>ux:layout-inverse</h3>
+    <p class="fn-sig"><code>[$ux:layout-inverse]  ($layout::any $cmd::any) -> [sequence element]</code>  —  The P0-108 inverse-pair table, computed against the PRE-state: move↔move-back, set-hint↔set-hint-prior, place↔remove, remove↔the reconstructing place batch, wrap↔(move the child back THEN remove the empty wrapper) as one P0-27 batch.</p>
+    
+  </section>
+  <section id="fn-ux-op-replace" class="fn">
+    <h3>ux:op-replace</h3>
+    <p class="fn-sig"><code>[$ux:op-replace]  ($path::string $el::any) -> element</code>  —  A replace operation over an addressed element path (the P0-44 algebra reaching non-row elements, P0-83) — each renderer lowers it for itself: the browser swaps out-of-band, a terminal re-reads.</p>
+    
+  </section>
+</section>
+</main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>ux</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

@@ -15,11 +15,15 @@ complete -c cx -f -n '__fish_use_subcommand' -a hash -d 'SHA-256 of canonical by
 complete -c cx -f -n '__fish_use_subcommand' -a eq -d 'Compare two files'
 complete -c cx -f -n '__fish_use_subcommand' -a diff -d 'Semantic diff'
 complete -c cx -f -n '__fish_use_subcommand' -a lint -d 'Lint a CX file'
+complete -c cx -f -n '__fish_use_subcommand' -a schema -d 'Schema verb family — infer an open-mode .cxs from a corpus'
+complete -c cx -f -n '__fish_use_subcommand' -a tools -d 'Agent-tool verb family — project command defs to MCP tool descriptors'
 complete -c cx -f -n '__fish_use_subcommand' -a validate -d 'Validate against schema'
 complete -c cx -f -n '__fish_use_subcommand' -a table -d 'Table operations'
 complete -c cx -f -n '__fish_use_subcommand' -a demo -d 'Run the cx demo'
+complete -c cx -f -n '__fish_use_subcommand' -a xap -d 'XAP project tooling — cx xap init NAME scaffolds one'
 complete -c cx -f -n '__fish_use_subcommand' -a scaffold -d 'Scaffold a typed CX skeleton'
 complete -c cx -f -n '__fish_use_subcommand' -a eval -d 'Evaluate a CX program'
+complete -c cx -f -n '__fish_use_subcommand' -a primer -d 'Print the LLM onboarding primer for this binary'
 complete -c cx -f -n '__fish_use_subcommand' -a version -d 'Version / build info (same as -v/--version)'
 complete -c cx -f -n '__fish_use_subcommand' -a select -d 'CXPath query over a document'
 complete -c cx -f -n '__fish_use_subcommand' -a diagram -d 'Render a CX program as a diagram'
@@ -28,7 +32,6 @@ complete -c cx -f -n '__fish_use_subcommand' -a code-tree -d 'Render program AST
 complete -c cx -f -n '__fish_use_subcommand' -a lock -d 'Manage the dependency lockfile'
 complete -c cx -f -n '__fish_use_subcommand' -a store-serve -d 'Run the CSRP store-service daemon'
 complete -c cx -f -n '__fish_use_subcommand' -a store-health -d 'Readiness probe for the store service'
-complete -c cx -f -n '__fish_use_subcommand' -a store-token -d 'Mint a store-service auth token'
 complete -c cx -f -n '__fish_use_subcommand' -a store-rotate-kek -d 'Rotate the store key-encryption key'
 complete -c cx -f -n '__fish_use_subcommand' -a fabric-serve -d 'Run the fabric event-stream daemon'
 complete -c cx -f -n '__fish_use_subcommand' -a lsp -d 'Run cx Language Server over stdio'
@@ -92,6 +95,13 @@ complete -c cx -n '__fish_seen_subcommand_from validate' -l fail-on -a 'info war
 complete -c cx -n '__fish_seen_subcommand_from validate' -l mode -a 'open strict closed' -d 'schema mode override'
 complete -c cx -n '__fish_seen_subcommand_from validate' -l apply-defaults -d 'apply schema defaults'
 
+# schema verbs + flags
+complete -c cx -f -n '__fish_seen_subcommand_from schema' -a 'infer'
+complete -c cx -f -n '__fish_seen_subcommand_from tools' -a 'export'
+complete -c cx -n '__fish_seen_subcommand_from tools' -l output -d 'write the tools array to a file'
+complete -c cx -n '__fish_seen_subcommand_from schema' -l sample -d 'bound the corpus to the first N documents'
+complete -c cx -n '__fish_seen_subcommand_from schema' -l output -d 'write the schema to a file'
+
 # table verbs + flags
 complete -c cx -f -n '__fish_seen_subcommand_from table' -a 'info dump load'
 complete -c cx -f -n '__fish_seen_subcommand_from table' -l to -a 'cx parquet arrow' -d 'output format'
@@ -112,9 +122,11 @@ complete -c cx -f -n '__fish_seen_subcommand_from eval' -s d -l data-text -r -d 
 # (typed, not completed), the optional second positional is the document.
 complete -c cx -n '__fish_seen_subcommand_from select' -F
 
-# diagram flags (vcx/cmd/diagram.v: --format=mermaid|svg|png + -o)
+# diagram flags (vcx/cmd/diagram.v: --format=mermaid|svg|png + -o
+# + --allow-subprocess, which svg/png require)
 complete -c cx -f -n '__fish_seen_subcommand_from diagram' -l format -a 'mermaid svg png' -d 'diagram format'
 complete -c cx -n '__fish_seen_subcommand_from diagram' -s o -r -d 'output file (recommended for svg/png)'
+complete -c cx -f -n '__fish_seen_subcommand_from diagram' -l allow-subprocess -d 'grant the subprocess capability (required by svg/png)'
 
 # code-diagram flags
 complete -c cx -f -n '__fish_seen_subcommand_from code-diagram' -l level -a 'min compact full' -d 'detail level'
@@ -135,10 +147,6 @@ complete -c cx -f -n '__fish_seen_subcommand_from fabric-serve' -l exit-on-stdin
 # store-health flags
 complete -c cx -f -n '__fish_seen_subcommand_from store-health' -l url -r -d 'ready-probe URL'
 
-# store-token flags
-complete -c cx -f -n '__fish_seen_subcommand_from store-token' -l id -r -d 'token principal name'
-complete -c cx -f -n '__fish_seen_subcommand_from store-token' -l roles -r -d 'roles (e.g. admin)'
-complete -c cx -f -n '__fish_seen_subcommand_from store-token' -l tenant -r -d 'tenant scope (e.g. "*")'
 
 # store-rotate-kek flags
 complete -c cx -f -n '__fish_seen_subcommand_from store-rotate-kek' -l url -r -d 'store URL'

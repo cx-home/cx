@@ -44,6 +44,9 @@ module native
 
 import cx
 import code
+// platform: Ring-2 packs (#651/#516 I3) — imported for its init(), which
+// registers the ring-2 dispatchers; the native binding is a full-engine surface.
+import platform as _
 
 // ── Layer-1 free functions: cx_code_* ────────────────────────────────────────
 

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ux-web — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Start here</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
+    <li><a href="lib-jsonschema.html">jsonschema</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-vc.html">vc</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+    <li><a href="lib-xsp.html">xsp</a></li>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a class="active" href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+</aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">ux-web</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
+<main>
+<section id="x-ux-web"><h1>ux-web</h1><p class="lede">The WEB RENDERER of the UX projection (EXPERIMENTAL x/ tier;
+   #787): one of two peers over <code>cx-x/ux</code>'s semantic vocabulary, not the
+   privileged one. It lowers a semantic tree to HTML/htmx, is the SOLE author
+   of htmx attributes — restricted to a pinned, fixture-enforced subset with
+   <code>hx-on</code> excluded permanently, which is what keeps the kernel replaceable
+   and strict CSP possible — and derives every one of them from a semantic
+   declaration plus the render context, so no htmx spelling appears in a
+   semantic tree. Escaping is structural: fragments compose as CXDM trees and
+   serialize once through the html pack, so there is no interpolation surface.
+   It also owns the token theme's compilation to a generated stylesheet, the
+   page shell and its strict CSP, the vendored kernel's SRI manifest, the
+   out-of-band lowering of the core's semantic patch operations, and the
+   readback from its own output to the common content normal form on which the
+   two renderings are asserted to agree.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
+           reader who takes an x/ surface for a frozen one has been misled by
+           the page, not by their own inattention. ]]><p class="note">Experimental x/ tier — imported as cx-x/ux-web. Bundled and gated in-tree like any other module, but EXEMPT from the frozen-surface stability promise (std-lib README, decision D3): a semver-breaking change is allowed here while the surface settles, and the frozen-surface canary never counts it. Pin behaviour you depend on with your own fixtures.</p>
+  <section id="fn-ux-web-htmx-subset" class="fn">
+    <h3>ux-web:htmx-subset</h3>
+    <p class="fn-sig"><code>[$ux-web:htmx-subset]  () -> [sequence string]</code>  —  The pinned, normative htmx attribute set the emitter may author; additions are individual rulings and hx-on is excluded permanently.</p>
+    
+  </section>
+  <section id="fn-ux-web-htmx-allowed" class="fn">
+    <h3>ux-web:htmx-allowed</h3>
+    <p class="fn-sig"><code>[$ux-web:htmx-allowed]  ($attr::string) -> bool</code>  —  Is one attribute name on the pinned htmx subset?</p>
+    
+  </section>
+  <section id="fn-ux-web-lower" class="fn">
+    <h3>ux-web:lower</h3>
+    <p class="fn-sig"><code>[$ux-web:lower]  ($el::any $c0::map) -> any</code>  —  Lower a semantic tree to its HTML element tree — the rendering, before serialization.</p>
+    
+  </section>
+  <section id="fn-ux-web-render" class="fn">
+    <h3>ux-web:render</h3>
+    <p class="fn-sig"><code>[$ux-web:render]  ($el::any $ctx::map) -> string | [err …]</code>  —  Project one semantic tree to HTML text, or refuse with one [err …] naming every violation — never a partial render. Runs the SHARED semantic gate first, so a tree this renderer accepts and the terminal renderer rejects cannot exist.</p>
+    
+  </section>
+  <section id="fn-ux-web-render-fragment" class="fn">
+    <h3>ux-web:render-fragment</h3>
+    <p class="fn-sig"><code>[$ux-web:render-fragment]  ($el::any $f::element $rctx::any) -> string | [err …]</code>  —  Project one semantic tree addressed by an explicit fragment address — the swap-target form the intent round trip returns.</p>
+    
+  </section>
+  <section id="fn-ux-web-lower-ops" class="fn">
+    <h3>ux-web:lower-ops</h3>
+    <p class="fn-sig"><code>[$ux-web:lower-ops]  ($ops::any $ctx::map) -> any</code>  —  Lower the core's semantic patch operations to out-of-band HTML — the ONLY place hx-swap-oob is authored, with every container id derived from the op's element path by the same frag-id that minted it.</p>
+    
+  </section>
+  <section id="fn-ux-web-render-rows" class="fn">
+    <h3>ux-web:render-rows</h3>
+    <p class="fn-sig"><code>[$ux-web:render-rows]  ($rows-el::any $ctx::map) -> string | [err …]</code>  —  A row container's contents as bytes — what an innerHTML swap at the collection expects, and the one parse context in which a <tr> payload survives.</p>
+    
+  </section>
+  <section id="fn-ux-web-render-ops" class="fn">
+    <h3>ux-web:render-ops</h3>
+    <p class="fn-sig"><code>[$ux-web:render-ops]  ($ops::any $ctx::map) -> string | [err …]</code>  —  The serialized out-of-band payload one ∂ script becomes — through the same subset and CSP scans as a page, so a live update cannot skip the invariants.</p>
+    
+  </section>
+  <section id="fn-ux-web-unbound-filter-refusals" class="fn">
+    <h3>ux-web:unbound-filter-refusals</h3>
+    <p class="fn-sig"><code>[$ux-web:unbound-filter-refusals]  ($el::any $rctx::any) -> [sequence element]</code>  —  Refuse a filter whose affected collection has no fragment endpoint bound — a control that renders and does nothing passes every server-side gate.</p>
+    
+  </section>
+  <section id="fn-ux-web-input-kind-of" class="fn">
+    <h3>ux-web:input-kind-of</h3>
+    <p class="fn-sig"><code>[$ux-web:input-kind-of]  ($kind::string) -> string</code>  —  Map a declared CX kind to its HTML control type; decimal and bigint stay text because they ride string carriers and a number input would corrupt them. Renderer-private — the terminal renderer maps the same kinds to its own editors.</p>
+    
+  </section>
+  <section id="fn-ux-web-off-subset-attrs" class="fn">
+    <h3>ux-web:off-subset-attrs</h3>
+    <p class="fn-sig"><code>[$ux-web:off-subset-attrs]  ($html::string) -> [sequence element]</code>  —  Scan serialized emitter output and refuse every hx-*/sse-* attribute that is not on the pinned subset.</p>
+    
+  </section>
+  <section id="fn-ux-web-csp-violations" class="fn">
+    <h3>ux-web:csp-violations</h3>
+    <p class="fn-sig"><code>[$ux-web:csp-violations]  ($html::string) -> [sequence element]</code>  —  Scan serialized emitter output for the strict-CSP invariants: no inline style=, no inline script, no event-handler attribute.</p>
+    
+  </section>
+  <section id="fn-ux-web-content-of-html" class="fn">
+    <h3>ux-web:content-of-html</h3>
+    <p class="fn-sig"><code>[$ux-web:content-of-html]  ($h::any) -> element</code>  —  Read the lowered HTML tree back to the common content normal form — the WEB side of the equivalence assertion, taken from the tree this renderer actually serializes.</p>
+    
+  </section>
+  <section id="fn-ux-web-content-repr-html" class="fn">
+    <h3>ux-web:content-repr-html</h3>
+    <p class="fn-sig"><code>[$ux-web:content-repr-html]  ($el::any $ctx::map) -> string</code>  —  The canonical bytes the web rendering contributes to the equivalence assertion.</p>
+    
+  </section>
+  <section id="fn-ux-web-token-value-safe" class="fn">
+    <h3>ux-web:token-value-safe</h3>
+    <p class="fn-sig"><code>[$ux-web:token-value-safe]  ($v::string) -> bool</code>  —  Is a theme token value safe to place in a generated stylesheet — the CSS analogue of the emitter's escaping invariant?</p>
+    
+  </section>
+  <section id="fn-ux-web-theme-refusals" class="fn">
+    <h3>ux-web:theme-refusals</h3>
+    <p class="fn-sig"><code>[$ux-web:theme-refusals]  ($theme::element) -> [sequence element]</code>  —  Every unsafe token value in one theme document.</p>
+    
+  </section>
+  <section id="fn-ux-web-theme-css" class="fn">
+    <h3>ux-web:theme-css</h3>
+    <p class="fn-sig"><code>[$ux-web:theme-css]  ($theme::element) -> string | [err …]</code>  —  Compile a token theme document to the generated stylesheet — custom properties plus the component rule table; an unsafe token refuses the whole sheet.</p>
+    
+  </section>
+  <section id="fn-ux-web-component-rules" class="fn">
+    <h3>ux-web:component-rules</h3>
+    <p class="fn-sig"><code>[$ux-web:component-rules]  () -> [sequence element]</code>  —  The pack-owned .ux-* rule table as structured data; every declaration references a theme token, so no color, size, or font is hard-coded.</p>
+    
+  </section>
+  <section id="fn-ux-web-join-str" class="fn">
+    <h3>ux-web:join-str</h3>
+    <p class="fn-sig"><code>[$ux-web:join-str]  ($parts::any) -> string</code>  —  Concatenate a sequence of strings as a pure, total fold.</p>
+    
+  </section>
+  <section id="fn-ux-web-csp-header" class="fn">
+    <h3>ux-web:csp-header</h3>
+    <p class="fn-sig"><code>[$ux-web:csp-header]  ($assets::any) -> string</code>  —  The strict Content-Security-Policy value, pinning each vendored script by the SRI digest of the bytes actually served.</p>
+    
+  </section>
+  <section id="fn-ux-web-page-html" class="fn">
+    <h3>ux-web:page-html</h3>
+    <p class="fn-sig"><code>[$ux-web:page-html]  ($title::string $assets::any $el::any $ctx::map) -> string | [err …]</code>  —  The served bytes for one route: doctype, token stylesheet, hash-pinned kernel, and the lowered body — refused whole on any violation.</p>
+    
+  </section>
+  <section id="fn-ux-web-asset-manifest" class="fn">
+    <h3>ux-web:asset-manifest</h3>
+    <p class="fn-sig"><code>[$ux-web:asset-manifest]  ($dir::string $names::any) -> [sequence element] | [err …]</code>  —  Read the vendored kernel's bytes and derive each asset's SRI digest, so script-src and integrity= can never drift from what is served; a missing asset refuses.</p>
+    
+  </section>
+  <section id="fn-ux-web-font-value-safe" class="fn">
+    <h3>ux-web:font-value-safe</h3>
+    <p class="fn-sig"><code>[$ux-web:font-value-safe]  ($v::string) -> bool</code>  —  The token-value-safe allowlist widened by exactly one character: '+' — a unicode-range is written U+0000-00FF and there is no other way to spell it; admitted here and nowhere else.</p>
+    
+  </section>
+  <section id="fn-ux-web-theme-vars" class="fn">
+    <h3>ux-web:theme-vars</h3>
+    <p class="fn-sig"><code>[$ux-web:theme-vars]  ($theme::element) -> string</code>  —  The theme's tokens as CSS custom properties: shared tokens and the default palette on :root, each non-default palette re-stated under its prefers-color-scheme condition (P0-104).</p>
+    
+  </section>
+</section>
+</main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>ux-web</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

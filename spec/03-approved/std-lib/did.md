@@ -136,6 +136,12 @@ nothing today.
 - **TLS required**; net capability is gated on the domain (the existing `net`/`http` capability surface — §4.5 SSRF guard applies).
 - `opts` may carry `timeout`, `http-client`, and a `trust-domains` allow-list (the [§22.10](../xap/xap.md) honor-list of domains a tenant accepts — a D5 open decision surfaced here).
 - The fetched document MUST declare `id == <the DID>` or resolution fails (`CXER-DID-DOC-MISMATCH`).
+- Failing to REACH the document is a different failure and carries a different
+  code (#740): a non-2xx status or no response is `CXER-DID-RESOLVE-FAILED`,
+  and a fetch that fails with its own typed err — a denied `net` capability
+  (`CXER0271`), a transport error — propagates that err unchanged, because it
+  already names the thing to fix. `CXER-DID-DOC-MISMATCH` is reserved for a
+  document that WAS fetched and disagrees with its own DID.
 - **Caching (resolve-once, verify-many):** a resolver MAY TTL-cache a resolved
   `did:web` document (keyed by DID), so repeated `verify-control` / key lookups
   for the same DID need not re-fetch within the TTL. The cache is an
@@ -182,7 +188,8 @@ Attach handshake (realized — [`session/attach-did`](session.md)):
 | `CXER-DID-MALFORMED` | not a `did:<method>:<id>` string |
 | `CXER-DID-METHOD-UNSUPPORTED` | method is not `key`, `web`, or `peer` numalgo-0 (identity-model G3; was "`key` or `web`" in v1) |
 | `CXER-DID-NOT-SELF-DESCRIBING` | `document`/`verify-control`/`key-of` called on a method that needs network resolution (e.g. `did:web`) — use `resolve` |
-| `CXER-DID-DOC-MISMATCH` | resolved `did:web` document `id` ≠ the requested DID |
+| `CXER-DID-DOC-MISMATCH` | resolved `did:web` document `id` ≠ the requested DID — the document WAS fetched and is wrong about itself |
+| `CXER-DID-RESOLVE-FAILED` | the `did:web` document could not be fetched at all: a non-2xx status, or no response. A failure carrying its own typed err — a capability denial (`CXER0271`), a transport error — propagates THAT err unchanged instead, since it already names what to fix |
 | `CXER-DID-KEY-UNSUPPORTED` | key type is not Ed25519 (v1) |
 
 ## §9. Cross-references

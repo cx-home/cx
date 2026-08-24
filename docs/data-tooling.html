@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data tooling — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Start here</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a class="active" href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
+    <li><a href="lib-jsonschema.html">jsonschema</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-vc.html">vc</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+    <li><a href="lib-xsp.html">xsp</a></li>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+</aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Data tooling</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
+<main>
+<section id="data-tooling">
+  <h1>Data tooling</h1>
+  
+    <p>Every verb on this page runs against documents and needs nothing
+       above Ring 0: no evaluator, no capabilities, no server. They are
+       the daily drivers of the data-format adopter — convert, format,
+       canonicalize, hash, compare, validate, query, and diff — and
+       each is exit-code-honest so it slots straight into CI. The verbs
+       that execute programs live with Ring 1 (<a class="xref" href="code-tooling.html">code-tooling</a>); the
+       full subcommand catalog is in <a class="xref" href="tooling.html">tooling</a>.</p>
+    <section id="cli-projections">
+      <h2>Projection and conversion flags</h2>
+      
+        <p>Format projection is a top-level flag surface, not a
+         subcommand. One flag picks the output projection of an
+         input document; <code>--from</code> / <code>--to</code> drive explicit
+         conversions:</p>
+        <pre>
+          <code class="language-sh">$ cx --ast config.cx                 # JSON AST
+         $ cx --json config.cx                # JSON projection
+         $ cx --yaml config.cx                # YAML projection
+         $ cx --xml --compact config.cx       # XML, minimised
+         $ cx --from=md --to=cx README.md     # Markdown in, CX out
+         $ cx --from=cx --to=json --lossless order.cx
+         $ echo '[hello world]' | cx --json -  # stdin</code>
+        </pre>
+        <ul>
+          
+            <li>Projection flags: <code>--ast</code> <code>--cx</code> <code>--xml</code> <code>--json</code>
+              <code>--yaml</code> <code>--toml</code> <code>--md</code> <code>--csv</code> <code>--tsv</code> <code>--psv</code>,
+              each optionally with <code>--compact</code>.</li>
+            <li><code>--from=cx|xml|json|yaml|toml|md|csv|tsv|psv
+              --to=cx|xml|json|yaml|toml|md|csv|tsv|psv</code>
+              — explicit conversion; <code>--lossless</code> makes XML carry
+              per-value types (<code>&lt;cx:T&gt;</code>) for an exact round-trip.</li>
+            <li><code>--include-root=DIR</code> — resolve <code>[?cx include=…]</code>
+              against DIR before projecting (include resolution is
+              opt-in; without a root the directive is preserved).</li>
+          
+        </ul>
+      
+    </section>
+    <section id="cli-fmt">
+      <h2>cx fmt</h2>
+      
+        <p>Pretty-prints in <b>lossless canonical</b> form. Comments,
+         anchors, and authorial structure are preserved;
+         whitespace and quoting are normalised. Reads the file
+         argument (or stdin) and writes the formatted document to
+         stdout.</p>
+        <pre>
+          <code class="language-sh">$ cx fmt config.cx                    # formatted, to stdout
+         $ cx fmt config.cx > config.fmt.cx && mv config.fmt.cx config.cx</code>
+        </pre>
+      
+    </section>
+    <section id="cli-canon">
+      <h2>cx canonical / cx hash / cx eq</h2>
+      
+        <p><code>cx canonical</code> emits the <b>strict canonical text</b> per
+         <a href="../../spec/03-approved/core/canonical.md"><code>spec/core/canonical.md</code></a>: comments
+         stripped, attributes sorted, anchors expanded, whitespace
+         collapsed, quoting normalised. Two data-equivalent inputs
+         produce identical output — that is the contract <code>cx hash</code>
+         (SHA-256 of those bytes) and <code>cx eq</code> (exit 0 iff the
+         strict-canonical forms match, 1 if they differ, 2 on
+         error) build on.</p>
+        <pre>
+          <code class="language-sh">$ cx canonical config.cx | shasum -a 256   # equivalent to cx hash
+         $ cx hash config.cx
+         $ cx eq prod.cx proposed.cx && echo unchanged || echo changed</code>
+        </pre>
+      
+    </section>
+    <section id="cli-validate">
+      <h2>cx validate</h2>
+      
+        <p>Validates a document against a <code>.cxs</code> schema
+         (<a href="../../spec/03-approved/core/schema.md"><code>spec/core/schema.md</code></a>). Flags:
+         <code>--schema=SCHEMA.cxs</code> (required),
+         <code>--fail-on=info|warn|error|none</code> (default <code>error</code>),
+         <code>--mode=open|strict|closed</code> (overrides the schema-mode
+         directive), <code>--apply-defaults</code> (materialise schema-default
+         attribute values). Exit 0 if no diagnostics at/above the
+         threshold, 1 if any, 2 on I/O or schema failure.</p>
+        <pre>
+          <code class="language-sh">$ cx validate users.cx --schema=users.cxs
+         $ cx validate users.cx --schema=users.cxs --mode=strict --fail-on=warn</code>
+        </pre>
+      
+    </section>
+    <section id="cli-select">
+      <h2>cx select</h2>
+      
+        <p>CXPath query over one document —
+         <code>cx select 'PATH' [FILE]</code> (stdin when FILE is <code>-</code> or
+         absent). The document binds as <code>$doc</code>; PATH is a single
+         CXPath value expression (<code>$doc/…</code>, <code>/…</code>, or <code>//…</code>,
+         predicates included). Matches print one per line in
+         canonical CX, in document order; attribute-axis matches
+         materialize as <code>[name value]</code> fields. Exit 0 with at
+         least one match, 1 on an empty match set (grep-style),
+         2 on error. A pure read — no capability grants accepted
+         or needed. Contract:
+         <a href="../../spec/03-approved/misc/cli.md"><code>spec/misc/cli.md</code></a> §3.8.</p>
+        <pre>
+          <code class="language-sh">$ cx select '//user[= $_@role admin]' users.cx
+         [user name=Alice role=admin]
+         $ cx select '$doc/user@name' users.cx
+         [name 'Alice']
+         [name 'Bob']
+         $ cat users.cx | cx select '//user' && echo matched</code>
+        </pre>
+      
+    </section>
+    <section id="cli-table">
+      <h2>cx table</h2>
+      
+        <p>The public Table API surface for CXCol / <code>[table[…]]</code>
+         payloads: <code>cx table info FILE</code> (column/row counts, types,
+         byte size), <code>cx table dump FILE --to=cx</code> (round-trip via
+         the Table API), <code>cx table load FILE --to=cx</code> (symmetric
+         inverse). Parquet / Arrow output (<code>--to=parquet|arrow</code>)
+         defers to the <code>libcx_arrow</code> bridge. See <a class="xref" href="analytics.html">analytics</a>.</p>
+        <pre>
+          <code class="language-sh">$ cx table info data.cxbin
+         $ cx table dump data.cxbin --to=cx | head</code>
+        </pre>
+      
+    </section>
+    <section id="cli-diff">
+      <h2>cx diff</h2>
+      
+        <p>Semantic diff — walks the strict-canonical forms, so
+         presentation-only edits produce no delta. See <a class="xref" href="#diff">diff</a>
+         for the output contract. Flags: <code>--format=unified|json|summary</code>
+         (default <code>unified</code>), <code>--no-color</code>. Exit codes match
+         <code>diff(1)</code>: 0 equal, 1 differs, 2 error.</p>
+        <pre>
+          <code class="language-sh">$ cx diff prod.cx proposed.cx
+         $ cx diff --format=json prod.cx proposed.cx
+         $ cx diff prod.cx proposed.cx && echo no-op   # CI gate</code>
+        </pre>
+      
+    </section>
+    <section id="diff">
+      <h2>Diff semantics</h2>
+      
+        <p><code>cx diff</code> produces a <b>semantic</b> diff — tree-structured,
+         canonical-byte-aware, formatting-blind. Two
+         data-equivalent inputs diff to nothing, even if they differ
+         at the text level. This is what makes <code>cx diff</code> usable as a
+         CI gate: it reports semantic deltas, not formatting noise.</p>
+        <section id="diff-scope">
+          <h3>What cx diff reports (and ignores)</h3>
+          
+            <p><code>cx diff</code> reports differences in the strict canonical form
+           (<a href="../../spec/03-approved/core/canonical.md"><code>spec/core/canonical.md §1.2</code></a>).
+           Specifically it <b>reports</b>:</p>
+            <ul>
+              
+                <li>Element added / removed (by canonical path).</li>
+                <li>Element renamed (different canonical name at the
+                same path).</li>
+                <li>Attribute added / removed / value-changed (by
+                canonical name).</li>
+                <li>Body content changed (atomic-value or text-content
+                differences).</li>
+                <li>Type annotation changed (e.g., <code>:int</code> vs <code>:u32</code> —
+                the annotation IS part of the data).</li>
+                <li>Element order changed <i>when order is
+                data-significant</i> (per
+                <a href="../../spec/03-approved/core/canonical.md"><code>spec/core/canonical.md §2.1</code></a>).</li>
+              
+            </ul>
+            <p>And <b>ignores</b>:</p>
+            <ul>
+              
+                <li>Comments (<code># line</code> and <code>[# block #]</code>).</li>
+                <li>Attribute order on the same element.</li>
+                <li>Anchor / alias / merge details — expanded to the
+                resolved form before diff.</li>
+                <li>Whitespace, indentation, line breaks.</li>
+                <li>Numeric formatting (<code>1_000_000</code> vs <code>1000000</code>).</li>
+                <li>Quoting style (<code>'foo'</code> vs <code>"foo"</code>).</li>
+                <li>Element-name aliases that resolve to the same
+                canonical name.</li>
+              
+            </ul>
+          
+        </section>
+        <section id="diff-output">
+          <h3>Output formats</h3>
+          
+            <p>Three output modes via <code>--format</code>:</p>
+            <ul>
+              
+                <li><code>unified</code> (default) — element-rooted hunks,
+                <code>-</code> / <code>+</code> / <code> </code> prefixes. Human-readable.</li>
+                <li><code>json</code> — structured array of change records.
+                Suitable for CI gates and editor integrations.</li>
+                <li><code>summary</code> — one-line counts. Useful for shell
+                prompts and PR bots.</li>
+              
+            </ul>
+            <pre>
+              <code class="language-sh">$ cx diff prod.cx proposed.cx
+           --- prod.cx
+           +++ proposed.cx
+           @@ /config/database @@
+            host='primary.db'
+           -port=5432
+           +port=5433
+            replica='secondary.db'</code>
+            </pre>
+            <pre>
+              <code class="language-json">[
+             {
+               \"kind\": \"attribute-changed\",
+               \"path\": \"/config/database/@port\",
+               \"before\": {\"name\": \"port\", \"value\": 5432, \"type\": \"int\"},
+               \"after\":  {\"name\": \"port\", \"value\": 5433, \"type\": \"int\"}
+             }
+           ]</code>
+            </pre>
+          
+        </section>
+        <section id="diff-json">
+          <h3>JSON change-record shape</h3>
+          
+            <p>Each record has a stable shape:</p>
+            <ul>
+              
+                <li><code>kind</code> — one of <code>element-added</code>, <code>element-removed</code>,
+                <code>element-renamed</code>, <code>attribute-added</code>,
+                <code>attribute-removed</code>, <code>attribute-changed</code>,
+                <code>body-changed</code>, <code>type-changed</code>, <code>order-changed</code>.</li>
+                <li><code>path</code> — CXPath expression locating the change. The
+                same expression drops straight into a CX program
+                (<code>[?for [in $x PATH] …]</code>).</li>
+                <li><code>before</code> / <code>after</code> — relevant value for the kind.
+                Absent when the side has no value (e.g.
+                <code>element-added</code> has no <code>before</code>). The field is
+                <b>omitted</b>, not <code>null</code> — per the four-way
+                null/empty/missing distinction of
+                <a href="../../spec/03-approved/core/code.md"><code>spec/core/code.md §8.13</code></a>
+                this is <i>missing</i>.</li>
+              
+            </ul>
+          
+        </section>
+        <section id="diff-git">
+          <h3>Git integration</h3>
+          
+            <p><code>cx diff</code> plugs into <code>git diff</code> via the standard custom-
+           diff-driver mechanism. Add this to <code>.gitattributes</code>:</p>
+            <pre>
+              <code class="language-text">*.cx    diff=cx
+           *.cxd   diff=cx
+           *.cxs   diff=cx</code>
+            </pre>
+            <pre>
+              <code class="language-sh"># One-time per repo
+           git config diff.cx.command 'cx diff'</code>
+            </pre>
+            <p>With this in place, <code>git diff path/to/config.cx</code> and
+           <code>git show HEAD path/to/config.cx</code> use the semantic diff
+           automatically. PR review UIs that respect <code>.gitattributes</code>
+           (GitHub, GitLab, Gerrit) pick it up too.</p>
+          
+        </section>
+        <section id="diff-exit-codes">
+          <h3>Exit codes</h3>
+          
+            <p>Match <code>diff(1)</code>:</p>
+            <ul>
+              
+                <li><code>0</code> — inputs are data-equivalent (no
+                differences).</li>
+                <li><code>1</code> — inputs differ (at least one semantic
+                delta).</li>
+                <li><code>2</code> — error (parse failure, file not found,
+                invalid arguments).</li>
+              
+            </ul>
+            <pre>
+              <code class="language-sh"># Use directly as a CI gate
+           cx diff prod.cx proposed.cx && echo no-change || review-changes</code>
+            </pre>
+          
+        </section>
+      
+    </section>
+  
+</section>
+</main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>Data tooling</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

@@ -9,11 +9,21 @@
 //! Replaces the JSON-string detour previously used by ast::loads / dumps
 //! (audit finding CB-3). Type fidelity preserved: int stays i64,
 //! float stays f64, bool stays bool, etc.
+//!
+//! I1 L48 (identity epoch): `decimal` and `bigint` are first-class
+//! semantic kinds with their own wire tags (0x28 / 0x18). serde_json's
+//! `Value` has no carrier for them, so the native codec decodes into
+//! [`CxValue`] (full fidelity — see `decode_payload_value` /
+//! `encode_value`); the JSON-facing `decode_payload` / `encode` pair is
+//! a projection of it and fails loudly instead of erasing either kind.
 
+use bigdecimal::BigDecimal;
+use num_bigint::BigInt;
 use serde_json::{Map, Number, Value};
 use std::os::raw::c_char;
 use std::ffi::CString;
 use std::ptr;
+use std::str::FromStr;
 
 // Tag bytes — see spec/core/data-bin.md §3.2.
 const TAG_NULL: u8         = 0x00;
@@ -23,7 +33,11 @@ const TAG_INT8: u8         = 0x10;
 const TAG_INT16: u8        = 0x11;
 const TAG_INT32: u8        = 0x12;
 const TAG_INT64: u8        = 0x13;
+// I1 L48: in-i64 bigint still encodes 0x18 (narrowing-within-kind — a
+// kind is never erased). Matches V's `tag_bigint` in vcx/cx/data_bin.v.
+const TAG_BIGINT: u8       = 0x18;
 const TAG_FLOAT64: u8      = 0x20;
+const TAG_DECIMAL: u8      = 0x28;
 const TAG_STRING: u8       = 0x30;
 const TAG_DATE: u8         = 0x31;
 const TAG_DATETIME: u8     = 0x32;
@@ -83,6 +97,131 @@ extern "C" {
 // Type alias for the (input, err_out) → buffer C ABI signature shared
 // by all loaders / dumpers.
 type CxBinFn = unsafe extern "C" fn(*const c_char, *mut *mut c_char) -> *mut c_char;
+
+// ── Native value tree (I1 L48) ───────────────────────────────────────────────
+
+/// Full-fidelity CXCol value tree.
+///
+/// The I1 identity epoch promoted `decimal` and `bigint` to first-class
+/// semantic kinds (spec/03-approved/misc/type-mapping.md §2):
+/// `decimal` maps to `bigdecimal::BigDecimal`, `bigint` to
+/// `num_bigint::BigInt`. `serde_json::Value` cannot carry either, so
+/// the native codec works on `CxValue` and the JSON-facing
+/// `decode_payload` / `encode` pair is a lossless-or-error projection.
+#[derive(Debug, Clone, PartialEq)]
+pub enum CxValue {
+    Null,
+    Bool(bool),
+    /// `int` kind. Encodes with canonical narrowing across the int-tag
+    /// family (0x10/0x11/0x12/0x13) — never 0x18.
+    Int(i64),
+    Float(f64),
+    /// `bigint` kind — base-10 integer image under tag 0x18. A bigint
+    /// that fits i64 STILL rides 0x18 (narrowing-within-kind: the kind
+    /// is never erased).
+    BigInt(BigInt),
+    /// `decimal` kind — FIXED-POINT base-10 image under tag 0x28.
+    /// Scale (trailing zeros) is preserved: "1.10" stays "1.10".
+    /// Exponent form is NOT a legal wire image.
+    Decimal(BigDecimal),
+    String(String),
+    Array(Vec<CxValue>),
+    /// Insertion-ordered map (mirrors V's `DataPairs`).
+    Map(Vec<(String, CxValue)>),
+}
+
+impl CxValue {
+    /// Project into a `serde_json::Value`. Fails loudly on `BigInt` /
+    /// `Decimal` — JSON has no carrier for those kinds and the kind is
+    /// never erased (I1 L48); use [`decode_payload_value`] to receive
+    /// them natively.
+    pub fn into_json(self) -> Result<Value, String> {
+        match self {
+            CxValue::Null => Ok(Value::Null),
+            CxValue::Bool(b) => Ok(Value::Bool(b)),
+            CxValue::Int(i) => Ok(Value::Number(Number::from(i))),
+            CxValue::Float(f) => Number::from_f64(f)
+                .map(Value::Number)
+                .ok_or_else(|| "cxcol: NaN/Inf rejected".to_owned()),
+            CxValue::BigInt(_) => Err(
+                "cxcol: bigint value has no serde_json::Value carrier; \
+                 use decode_payload_value (CxValue::BigInt) — the kind is \
+                 never erased (I1 L48)".to_owned()),
+            CxValue::Decimal(_) => Err(
+                "cxcol: decimal value has no serde_json::Value carrier; \
+                 use decode_payload_value (CxValue::Decimal) — the kind is \
+                 never erased (I1 L48)".to_owned()),
+            CxValue::String(s) => Ok(Value::String(s)),
+            CxValue::Array(items) => {
+                let mut out = Vec::with_capacity(items.len());
+                for item in items {
+                    out.push(item.into_json()?);
+                }
+                Ok(Value::Array(out))
+            }
+            CxValue::Map(pairs) => {
+                let mut out = Map::with_capacity(pairs.len());
+                for (k, v) in pairs {
+                    out.insert(k, v.into_json()?);
+                }
+                Ok(Value::Object(out))
+            }
+        }
+    }
+}
+
+impl From<&Value> for CxValue {
+    fn from(v: &Value) -> CxValue {
+        match v {
+            Value::Null => CxValue::Null,
+            Value::Bool(b) => CxValue::Bool(*b),
+            Value::Number(n) => {
+                if let Some(i) = n.as_i64() {
+                    CxValue::Int(i)
+                } else if let Some(u) = n.as_u64() {
+                    // u64 above i64::MAX: a native integer outside the
+                    // i64 range dumps with the bigint encoding per
+                    // spec/03-approved/misc/type-mapping.md §5 (matches
+                    // V's cx_to_data_bin auto-promotion, L20).
+                    CxValue::BigInt(BigInt::from(u))
+                } else {
+                    // serde_json Numbers are i64 / u64 / f64; this arm
+                    // is the finite-f64 remainder.
+                    CxValue::Float(n.as_f64().unwrap_or(0.0))
+                }
+            }
+            Value::String(s) => CxValue::String(s.clone()),
+            Value::Array(arr) => CxValue::Array(arr.iter().map(CxValue::from).collect()),
+            Value::Object(map) => CxValue::Map(
+                map.iter().map(|(k, v)| (k.clone(), CxValue::from(v))).collect()),
+        }
+    }
+}
+
+// Wire-image validation (I1 L48). Both kinds carry a base-10 image in
+// the same length-prefixed payload the string tag uses. `decimal` is
+// FIXED-POINT only — optional '-', digits, optional '.' + digits;
+// exponent form is not a legal wire image. `bigint` is the integer
+// subset (no fraction).
+fn check_base10_image(s: &str, kind: &str, allow_fraction: bool) -> Result<(), String> {
+    let body = s.strip_prefix('-').unwrap_or(s);
+    let (int_part, frac_part) = match body.split_once('.') {
+        Some((i, f)) if allow_fraction => (i, Some(f)),
+        Some(_) => {
+            return Err(format!(
+                "cxcol: {} wire image {:?} must be a base-10 integer", kind, s));
+        }
+        None => (body, None),
+    };
+    let all_digits = |p: &str| !p.is_empty() && p.bytes().all(|b| b.is_ascii_digit());
+    let ok = all_digits(int_part) && frac_part.map_or(true, all_digits);
+    if !ok {
+        return Err(format!(
+            "cxcol: {} wire image {:?} is not a fixed-point base-10 image \
+             (exponent form is not a legal wire image)", kind, s));
+    }
+    Ok(())
+}
 
 // ── Public entry points ──────────────────────────────────────────────────────
 
@@ -329,7 +468,22 @@ pub fn data_bin_to_psv(framed: &[u8]) -> Result<String, String> {
 /// Decode a CXCol v1 PAYLOAD (12-byte header + value section) into a
 /// serde_json::Value with full type fidelity (int stays Number(i64),
 /// not coerced to f64 like the JSON detour did).
+///
+/// I1 L48: payloads carrying `decimal` (0x28) or `bigint` (0x18)
+/// values fail loudly here — JSON has no carrier for those kinds and
+/// the kind is never erased. Use [`decode_payload_value`] to receive
+/// them as `CxValue::Decimal` / `CxValue::BigInt`.
 pub fn decode_payload(payload: &[u8]) -> Result<Value, String> {
+    decode_payload_value(payload)?.into_json()
+}
+
+/// Decode a CXCol v1 PAYLOAD (12-byte header + value section) into the
+/// full-fidelity [`CxValue`] tree. This is the native decoder;
+/// `decode_payload` is its JSON projection. `decimal` (0x28) decodes
+/// to `CxValue::Decimal` with scale preserved ("1.10" stays "1.10");
+/// `bigint` (0x18) decodes to `CxValue::BigInt` even when the value
+/// fits i64 — the kind is never erased (I1 L48).
+pub fn decode_payload_value(payload: &[u8]) -> Result<CxValue, String> {
     if payload.len() < 12 {
         return Err("cxcol: payload too short for 12-byte header".to_owned());
     }
@@ -355,7 +509,21 @@ pub fn decode_payload(payload: &[u8]) -> Result<Value, String> {
 }
 
 /// Encode a serde_json::Value as a framed CXCol v1 buffer.
+///
+/// A Number above i64::MAX encodes with the bigint tag (0x18) per
+/// spec/03-approved/misc/type-mapping.md §5 (native integer outside
+/// the i64 range dumps as the bigint encoding, matching V core).
 pub fn encode(value: &Value) -> Result<Vec<u8>, String> {
+    encode_value(&CxValue::from(value))
+}
+
+/// Encode a [`CxValue`] as a framed CXCol v1 buffer. This is the
+/// native encoder; `encode` is its JSON entry point. `CxValue::BigInt`
+/// always rides tag 0x18 — even when the value fits i64 — and
+/// `CxValue::Decimal` rides 0x28 with a fixed-point base-10 image
+/// (never exponent notation). Plain `CxValue::Int` stays on the
+/// int-tag family (0x10..0x13, canonical narrowing).
+pub fn encode_value(value: &CxValue) -> Result<Vec<u8>, String> {
     let mut w = Writer::new();
     // Header — 5 magic + 1 ver + 1 flags + 4 max_depth + 1 reserved = 12.
     w.buf.extend_from_slice(CXCOL_MAGIC);
@@ -435,59 +603,80 @@ impl<'a> Reader<'a> {
         String::from_utf8(bs.to_vec()).map_err(|e| e.to_string())
     }
 
-    fn value(&mut self) -> Result<Value, String> {
+    fn value(&mut self) -> Result<CxValue, String> {
         self.depth += 1;
         if self.depth > self.max_depth {
             return Err(format!("cxcol: recursion depth exceeds limit ({})", self.max_depth));
         }
         let tag = self.u8()?;
         let result = match tag {
-            TAG_NULL => Ok(Value::Null),
-            TAG_FALSE => Ok(Value::Bool(false)),
-            TAG_TRUE => Ok(Value::Bool(true)),
+            TAG_NULL => Ok(CxValue::Null),
+            TAG_FALSE => Ok(CxValue::Bool(false)),
+            TAG_TRUE => Ok(CxValue::Bool(true)),
             TAG_INT8 => {
                 let bs = self.take(1)?;
-                Ok(Value::Number(Number::from(bs[0] as i8 as i64)))
+                Ok(CxValue::Int(bs[0] as i8 as i64))
             }
             TAG_INT16 => {
                 let bs = self.take(2)?;
-                Ok(Value::Number(Number::from(i16::from_le_bytes([bs[0], bs[1]]) as i64)))
+                Ok(CxValue::Int(i16::from_le_bytes([bs[0], bs[1]]) as i64))
             }
             TAG_INT32 => {
                 let bs = self.take(4)?;
-                Ok(Value::Number(Number::from(i32::from_le_bytes([bs[0], bs[1], bs[2], bs[3]]) as i64)))
+                Ok(CxValue::Int(i32::from_le_bytes([bs[0], bs[1], bs[2], bs[3]]) as i64))
             }
             TAG_INT64 => {
                 let bs = self.take(8)?;
-                Ok(Value::Number(Number::from(i64::from_le_bytes([
+                Ok(CxValue::Int(i64::from_le_bytes([
                     bs[0], bs[1], bs[2], bs[3], bs[4], bs[5], bs[6], bs[7],
-                ]))))
+                ])))
+            }
+            TAG_BIGINT => {
+                // I1 L48: base-10 integer image; an in-i64 value still
+                // arrives on 0x18 and stays a BigInt — kind preserved.
+                let image = self.string_payload()?;
+                check_base10_image(&image, "bigint", false)?;
+                BigInt::from_str(&image)
+                    .map(CxValue::BigInt)
+                    .map_err(|e| format!("cxcol: bad bigint image {:?}: {}", image, e))
             }
             TAG_FLOAT64 => {
                 let bs = self.take(8)?;
                 let bits = u64::from_le_bytes([bs[0], bs[1], bs[2], bs[3], bs[4], bs[5], bs[6], bs[7]]);
                 let v = f64::from_bits(bits);
-                Number::from_f64(v).map(Value::Number).ok_or_else(|| "cxcol: NaN/Inf rejected".to_owned())
+                if !v.is_finite() {
+                    return Err("cxcol: NaN/Inf rejected".to_owned());
+                }
+                Ok(CxValue::Float(v))
             }
-            TAG_STRING => Ok(Value::String(self.string_payload()?)),
+            TAG_DECIMAL => {
+                // I1 L48: fixed-point base-10 image; BigDecimal
+                // preserves the scale ("1.10" stays "1.10").
+                let image = self.string_payload()?;
+                check_base10_image(&image, "decimal", true)?;
+                BigDecimal::from_str(&image)
+                    .map(CxValue::Decimal)
+                    .map_err(|e| format!("cxcol: bad decimal image {:?}: {}", image, e))
+            }
+            TAG_STRING => Ok(CxValue::String(self.string_payload()?)),
             TAG_BYTES => {
                 let n = self.uvarint()? as usize;
                 let bs = self.take(n)?;
                 // Map :bytes to a base64-ish array of ints? For simplicity
                 // we surface the raw bytes as a string of one-byte chars.
                 // Future: surface as a tagged variant or Vec<u8>.
-                Ok(Value::String(bs.iter().map(|b| *b as char).collect()))
+                Ok(CxValue::String(bs.iter().map(|b| *b as char).collect()))
             }
             TAG_DATE => {
                 let bs = self.take(4)?;
                 let year = i16::from_le_bytes([bs[0], bs[1]]);
-                Ok(Value::String(format!("{:04}-{:02}-{:02}", year, bs[2], bs[3])))
+                Ok(CxValue::String(format!("{:04}-{:02}-{:02}", year, bs[2], bs[3])))
             }
             TAG_DATETIME => {
                 self.take(10)?; // placeholder
                 let src_len = self.u16()? as usize;
                 let bs = self.take(src_len)?;
-                Ok(Value::String(String::from_utf8(bs.to_vec()).map_err(|e| e.to_string())?))
+                Ok(CxValue::String(String::from_utf8(bs.to_vec()).map_err(|e| e.to_string())?))
             }
             TAG_ARRAY => {
                 let count = self.uvarint()? as usize;
@@ -498,15 +687,15 @@ impl<'a> Reader<'a> {
                 for _ in 0..count {
                     out.push(self.value()?);
                 }
-                Ok(Value::Array(out))
+                Ok(CxValue::Array(out))
             }
-            TAG_ARRAY_EMPTY => Ok(Value::Array(vec![])),
+            TAG_ARRAY_EMPTY => Ok(CxValue::Array(vec![])),
             TAG_MAP => {
                 let count = self.uvarint()? as usize;
                 if count == 0 {
                     return Err("cxcol: map tag 0x50 with count=0; use 0x51 for empty".to_owned());
                 }
-                let mut out = Map::with_capacity(count);
+                let mut out = Vec::with_capacity(count);
                 for _ in 0..count {
                     let key_tag = self.u8()?;
                     if key_tag != TAG_STRING {
@@ -514,11 +703,11 @@ impl<'a> Reader<'a> {
                     }
                     let key = self.string_payload()?;
                     let val = self.value()?;
-                    out.insert(key, val);
+                    out.push((key, val));
                 }
-                Ok(Value::Object(out))
+                Ok(CxValue::Map(out))
             }
-            TAG_MAP_EMPTY => Ok(Value::Object(Map::new())),
+            TAG_MAP_EMPTY => Ok(CxValue::Map(Vec::new())),
             TAG_TABLE | TAG_TABLE_EMPTY => self.table_payload(tag),
             other => Err(format!("cxcol: unknown tag 0x{:02x} at offset {}", other, self.pos - 1)),
         };
@@ -526,35 +715,256 @@ impl<'a> Reader<'a> {
         result
     }
 
-    fn table_payload(&mut self, tag: u8) -> Result<Value, String> {
+    fn table_payload(&mut self, tag: u8) -> Result<CxValue, String> {
         if tag == TAG_TABLE_EMPTY {
-            return Ok(Value::Array(vec![]));
+            return Ok(CxValue::Array(vec![]));
         }
         let col_count = self.uvarint()? as usize;
         let mut cols = Vec::with_capacity(col_count);
+        let mut codes = Vec::with_capacity(col_count);
         for _ in 0..col_count {
             let key_tag = self.u8()?;
             if key_tag != TAG_STRING {
                 return Err(format!("cxcol: table column name must be string; got 0x{:02x}", key_tag));
             }
             let name = self.string_payload()?;
-            self.u8()?; // column type code
+            let mut code = self.u8()?; // §3.10.3 column type code (payload contract)
+            if code == 0x82 {
+                // §3.10.1 declared-name annotation (#807(c)) — the
+                // declared spelling is a CX-render concern; codes drive
+                // payloads here, so consume it and read the real code.
+                let ann_tag = self.u8()?;
+                if ann_tag != TAG_STRING {
+                    return Err(format!("cxcol: declared-name annotation must carry a string; got 0x{:02x}", ann_tag));
+                }
+                let _ = self.string_payload()?;
+                code = self.u8()?;
+                if code == 0x82 {
+                    return Err("cxcol: duplicate declared-name annotation in col-spec".to_string());
+                }
+            }
+            codes.push(code);
             cols.push(name);
         }
         let row_count = self.uvarint()? as usize;
-        let mut rows: Vec<Value> = (0..row_count)
-            .map(|_| Value::Object(Map::with_capacity(col_count)))
+        let mut rows: Vec<Vec<(String, CxValue)>> = (0..row_count)
+            .map(|_| Vec::with_capacity(col_count))
             .collect();
         for col_idx in 0..col_count {
-            for row in rows.iter_mut().take(row_count) {
-                let val = self.value()?;
-                if let Value::Object(ref mut m) = row {
-                    m.insert(cols[col_idx].clone(), val);
-                }
+            let cells = self.column_payload(codes[col_idx], row_count)?;
+            for (row, cell) in rows.iter_mut().zip(cells.into_iter()) {
+                row.push((cols[col_idx].clone(), cell));
             }
         }
-        Ok(Value::Array(rows))
+        Ok(CxValue::Array(rows.into_iter().map(CxValue::Map).collect()))
     }
+
+    // §3.10.3 typed column payloads (stream 17 W3 — the lattice rise:
+    // per-column TYPED payloads, no per-cell tags; 0x80 nullable bitmap
+    // wrapper; 0x81 mixed per-row tagged; 0x01 bit-packed bool).
+    fn column_payload(&mut self, code: u8, row_count: usize) -> Result<Vec<CxValue>, String> {
+        match code {
+            0x00 => Ok(vec![CxValue::Null; row_count]),
+            0x81 => (0..row_count).map(|_| self.value()).collect(),
+            0x80 => {
+                let inner = self.u8()?;
+                let bitmap = self.take(row_count.div_ceil(8))?.to_vec();
+                let nulls: Vec<bool> = (0..row_count)
+                    .map(|i| (bitmap[i / 8] >> (i % 8)) & 1 == 1)
+                    .collect();
+                let n_nonnull = nulls.iter().filter(|n| !**n).count();
+                let mut nonnull = self.typed_cells(inner, n_nonnull)?.into_iter();
+                Ok(nulls
+                    .into_iter()
+                    .map(|is_null| {
+                        if is_null {
+                            CxValue::Null
+                        } else {
+                            nonnull.next().unwrap_or(CxValue::Null)
+                        }
+                    })
+                    .collect())
+            }
+            _ => self.typed_cells(code, row_count),
+        }
+    }
+
+    fn typed_cells(&mut self, code: u8, n: usize) -> Result<Vec<CxValue>, String> {
+        let mut out = Vec::with_capacity(n);
+        match code {
+            0x01 => {
+                // bool, bit-packed LSB-first (§3.10.4)
+                let bits = self.take(n.div_ceil(8))?.to_vec();
+                for i in 0..n {
+                    out.push(CxValue::Bool((bits[i / 8] >> (i % 8)) & 1 == 1));
+                }
+            }
+            0x10 => {
+                let raw = self.take(n)?.to_vec();
+                for b in raw {
+                    out.push(CxValue::Int(b as i8 as i64));
+                }
+            }
+            0x14 => {
+                let raw = self.take(n)?.to_vec();
+                for b in raw {
+                    out.push(CxValue::Int(b as i64));
+                }
+            }
+            0x11 | 0x15 => {
+                let raw = self.take(2 * n)?.to_vec();
+                for i in 0..n {
+                    let v = u16::from_le_bytes([raw[2 * i], raw[2 * i + 1]]);
+                    out.push(CxValue::Int(if code == 0x11 { v as i16 as i64 } else { v as i64 }));
+                }
+            }
+            0x12 | 0x16 => {
+                let raw = self.take(4 * n)?.to_vec();
+                for i in 0..n {
+                    let v = u32::from_le_bytes([raw[4 * i], raw[4 * i + 1], raw[4 * i + 2], raw[4 * i + 3]]);
+                    out.push(CxValue::Int(if code == 0x12 { v as i32 as i64 } else { v as i64 }));
+                }
+            }
+            0x13 | 0x17 => {
+                let raw = self.take(8 * n)?.to_vec();
+                for i in 0..n {
+                    let mut b = [0u8; 8];
+                    b.copy_from_slice(&raw[8 * i..8 * i + 8]);
+                    out.push(CxValue::Int(i64::from_le_bytes(b)));
+                }
+            }
+            0x20 => {
+                let raw = self.take(8 * n)?.to_vec();
+                for i in 0..n {
+                    let mut b = [0u8; 8];
+                    b.copy_from_slice(&raw[8 * i..8 * i + 8]);
+                    out.push(CxValue::Float(f64::from_le_bytes(b)));
+                }
+            }
+            0x21 => {
+                let raw = self.take(4 * n)?.to_vec();
+                for i in 0..n {
+                    let mut b = [0u8; 4];
+                    b.copy_from_slice(&raw[4 * i..4 * i + 4]);
+                    out.push(CxValue::Float(f32::from_le_bytes(b) as f64));
+                }
+            }
+            0x22 => {
+                let raw = self.take(2 * n)?.to_vec();
+                for i in 0..n {
+                    let bits = u16::from_le_bytes([raw[2 * i], raw[2 * i + 1]]);
+                    out.push(CxValue::Float(f16_bits_to_f64(bits)));
+                }
+            }
+            0x18 => {
+                for _ in 0..n {
+                    let s = self.string_payload()?;
+                    out.push(CxValue::BigInt(s.parse().map_err(|e| format!("cxcol: bigint image: {e}"))?));
+                }
+            }
+            0x28 => {
+                for _ in 0..n {
+                    let s = self.string_payload()?;
+                    out.push(CxValue::Decimal(s.parse().map_err(|e| format!("cxcol: decimal image: {e}"))?));
+                }
+            }
+            0x30 | 0x33 | 0x70 => {
+                for _ in 0..n {
+                    out.push(CxValue::String(self.string_payload()?));
+                }
+            }
+            0x31 => {
+                for _ in 0..n {
+                    let bs = self.take(4)?.to_vec();
+                    let year = i16::from_le_bytes([bs[0], bs[1]]);
+                    out.push(CxValue::String(format!("{:04}-{:02}-{:02}", year, bs[2], bs[3])));
+                }
+            }
+            0x32 => {
+                for _ in 0..n {
+                    let bs = self.take(12)?.to_vec();
+                    let mut nb = [0u8; 8];
+                    nb.copy_from_slice(&bs[0..8]);
+                    let ns = i64::from_le_bytes(nb);
+                    // #807(d): offset_minutes rides the transport —
+                    // render the local form (Z at offset 0).
+                    let off = i16::from_le_bytes([bs[8], bs[9]]);
+                    out.push(CxValue::String(format_datetime_ns_offset(ns, off)));
+                }
+            }
+            _ => return Err(format!("cxcol: unknown column type code 0x{:02x}", code)),
+        }
+        Ok(out)
+    }
+}
+
+// IEEE-754 binary16 → f64 (the decoder twin of the V-side converter).
+fn f16_bits_to_f64(h: u16) -> f64 {
+    let sign = ((h & 0x8000) as u32) << 16;
+    let exp = ((h >> 10) & 0x1F) as i32;
+    let mant = (h & 0x3FF) as u32;
+    let bits: u32 = if exp == 0 {
+        if mant == 0 {
+            sign
+        } else {
+            let mut e = -1i32;
+            let mut m = mant;
+            while (m & 0x400) == 0 {
+                m <<= 1;
+                e -= 1;
+            }
+            m &= 0x3FF;
+            sign | (((127 - 15 + e + 1) as u32) << 23) | (m << 13)
+        }
+    } else if exp == 31 {
+        sign | 0x7F80_0000 | (mant << 13)
+    } else {
+        sign | (((exp - 15 + 127) as u32) << 23) | (mant << 13)
+    };
+    f32::from_bits(bits) as f64
+}
+
+// Render unix-nanos as the strict-canonical UTC ISO-8601 image.
+fn format_datetime_ns_utc(ns: i64) -> String {
+    format_datetime_ns_offset(ns, 0)
+}
+
+// #807(d): the local render for an offset-bearing wire datetime —
+// unix_nanos is UTC; the suffix is 'Z' at offset 0, ±hh:mm otherwise.
+fn format_datetime_ns_offset(ns: i64, off_min: i16) -> String {
+    let local_ns = ns + i64::from(off_min) * 60 * 1_000_000_000;
+    let secs = local_ns.div_euclid(1_000_000_000);
+    let rem = local_ns.rem_euclid(1_000_000_000);
+    let days = secs.div_euclid(86_400);
+    let tod = secs.rem_euclid(86_400);
+    let (y, m, d) = civil_from_days(days);
+    let (hh, mm, ss) = (tod / 3600, (tod % 3600) / 60, tod % 60);
+    let suffix = if off_min == 0 {
+        "Z".to_string()
+    } else {
+        let sign = if off_min < 0 { '-' } else { '+' };
+        let ab = off_min.unsigned_abs();
+        format!("{sign}{:02}:{:02}", ab / 60, ab % 60)
+    };
+    if rem == 0 {
+        format!("{y:04}-{m:02}-{d:02}T{hh:02}:{mm:02}:{ss:02}{suffix}")
+    } else {
+        format!("{y:04}-{m:02}-{d:02}T{hh:02}:{mm:02}:{ss:02}.{rem:09}{suffix}")
+    }
+}
+
+// Howard Hinnant's days→civil algorithm.
+fn civil_from_days(z: i64) -> (i64, u32, u32) {
+    let z = z + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = (z - era * 146_097) as u64;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146_096) / 365;
+    let y = yoe as i64 + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;
+    (if m <= 2 { y + 1 } else { y }, m, d)
 }
 
 // ── Writer ───────────────────────────────────────────────────────────────────
@@ -582,33 +992,46 @@ impl Writer {
     }
     fn string_value(&mut self, s: &str) {
         self.u8(TAG_STRING);
+        self.string_payload(s);
+    }
+
+    // Length-prefixed byte payload WITHOUT a leading tag — shared by
+    // the string value form and the decimal / bigint image forms
+    // (mirrors V's encode_string_payload).
+    fn string_payload(&mut self, s: &str) {
         self.uvarint(s.len() as u64);
         self.buf.extend_from_slice(s.as_bytes());
     }
 
-    fn value(&mut self, v: &Value) -> Result<(), String> {
+    fn value(&mut self, v: &CxValue) -> Result<(), String> {
         match v {
-            Value::Null => self.u8(TAG_NULL),
-            Value::Bool(true) => self.u8(TAG_TRUE),
-            Value::Bool(false) => self.u8(TAG_FALSE),
-            Value::Number(n) => {
-                if let Some(i) = n.as_i64() {
-                    self.int_canonical(i);
-                } else if let Some(u) = n.as_u64() {
-                    if u <= i64::MAX as u64 {
-                        self.int_canonical(u as i64);
-                    } else {
-                        return Err(format!("cxcol: u64 {} exceeds i64 range", u));
-                    }
-                } else if let Some(f) = n.as_f64() {
-                    self.u8(TAG_FLOAT64);
-                    self.f64(f);
-                } else {
-                    return Err("cxcol: unsupported Number variant".to_owned());
+            CxValue::Null => self.u8(TAG_NULL),
+            CxValue::Bool(true) => self.u8(TAG_TRUE),
+            CxValue::Bool(false) => self.u8(TAG_FALSE),
+            CxValue::Int(i) => self.int_canonical(*i),
+            CxValue::Float(f) => {
+                // NaN / Inf rejection per spec/policies.md §1.1, §1.2.
+                if !f.is_finite() {
+                    return Err("cxcol: NaN/Inf rejected".to_owned());
                 }
+                self.u8(TAG_FLOAT64);
+                self.f64(*f);
             }
-            Value::String(s) => self.string_value(s),
-            Value::Array(arr) => {
+            CxValue::BigInt(b) => {
+                // I1 L48: always 0x18 — an in-i64 bigint keeps its
+                // kind (narrowing-within-kind never crosses kinds).
+                self.u8(TAG_BIGINT);
+                self.string_payload(&b.to_string());
+            }
+            CxValue::Decimal(d) => {
+                // I1 L48: fixed-point base-10 image only — never
+                // exponent notation (to_plain_string, not Display,
+                // which may emit scientific form at extreme scales).
+                self.u8(TAG_DECIMAL);
+                self.string_payload(&d.to_plain_string());
+            }
+            CxValue::String(s) => self.string_value(s),
+            CxValue::Array(arr) => {
                 if arr.is_empty() {
                     self.u8(TAG_ARRAY_EMPTY);
                 } else {
@@ -619,13 +1042,13 @@ impl Writer {
                     }
                 }
             }
-            Value::Object(map) => {
-                if map.is_empty() {
+            CxValue::Map(pairs) => {
+                if pairs.is_empty() {
                     self.u8(TAG_MAP_EMPTY);
                 } else {
                     self.u8(TAG_MAP);
-                    self.uvarint(map.len() as u64);
-                    for (k, vv) in map {
+                    self.uvarint(pairs.len() as u64);
+                    for (k, vv) in pairs {
                         self.string_value(k);
                         self.value(vv)?;
                     }

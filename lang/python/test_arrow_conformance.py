@@ -48,7 +48,7 @@ except Exception as e:  # pragma: no cover — surface load failures
 # ── Fixture loader (CX-native) ─────────────────────────────────────────
 #
 # Reads conformance/data_bin_arrow.cxd via cxlib.load_fixtures (the Python
-# mirror of vcx/cx/fixture_loader.v), replacing the bespoke `=== test:` /
+# mirror of vcx/fixtures/fixture_loader.v), replacing the bespoke `=== test:` /
 # `--- section` scanner. The consumer reads `fixture['name']` (the case id)
 # and `fixture['sections'][...]` (legacy snake keys: in_cx, expect_values,
 # arrow_children_formats, expected_export_error) exactly as before.

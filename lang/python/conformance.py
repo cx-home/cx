@@ -16,7 +16,7 @@ MULTIDOC_SEP = '\n---\n'
 # ── suite loader (CX-native) ──────────────────────────────────────────────────
 #
 # Reads conformance/*.cxd via cxlib.load_fixtures (the Python mirror of
-# vcx/cx/fixture_loader.v), replacing the bespoke `=== test:` / `--- key`
+# vcx/fixtures/fixture_loader.v), replacing the bespoke `=== test:` / `--- key`
 # scanner. The runner keys into `t['sections'][name]` by presence exactly as
 # before. The loader returns byte-exact section bodies (one leading/trailing
 # newline stripped); _strip_blank_edges reproduces the former flush()

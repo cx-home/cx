@@ -5,15 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Glossary — CX Guide</title>
 <link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <aside class="sidebar">
   <a class="brand" href="index.html" aria-label="CX — home">
-    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
   </a>
   <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
   <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
   <a class="brand-sub" href="about.html">About →</a>
   <div class="side-search">
     <input id="side-search-input" type="search"
@@ -21,88 +25,126 @@
            autocomplete="off" spellcheck="false" data-prefix="" />
     <ul id="side-search-results" class="side-search-results" hidden></ul>
   </div>
-  <section><h4>Guide</h4><ul>
+  <section><h4>Start here</h4><ul>
     <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
     <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
     <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
     <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
     <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
     <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
-    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
-    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
-    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
-    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
-    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
-    <li><a class="active" href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
-    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
-    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
     <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
-    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
-    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
-    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
-  </ul></section>
-  <section><h4>Reference</h4><ul>
-    <li><a href="directives.html">Directives</a></li>
-    <li><a href="syntax.html">Core syntax</a></li>
-  </ul></section>
-  <section><h4>Standard library</h4><ul>
-    <li><a href="libraries.html">Overview</a></li>
-    <li><a href="lib-authz.html">authz</a></li>
-    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
     <li><a href="lib-bytes.html">bytes</a></li>
     <li><a href="lib-crypto.html">crypto</a></li>
     <li><a href="lib-csv.html">csv</a></li>
-    <li><a href="lib-did.html">did</a></li>
-    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
     <li><a href="lib-env.html">env</a></li>
-    <li><a href="lib-fabric.html">fabric</a></li>
     <li><a href="lib-format.html">format</a></li>
     <li><a href="lib-fp.html">fp</a></li>
     <li><a href="lib-ft.html">ft</a></li>
     <li><a href="lib-geo.html">geo</a></li>
     <li><a href="lib-hash.html">hash</a></li>
     <li><a href="lib-html.html">html</a></li>
-    <li><a href="lib-http.html">http</a></li>
     <li><a href="lib-i18n.html">i18n</a></li>
     <li><a href="lib-io.html">io</a></li>
-    <li><a href="lib-journal.html">journal</a></li>
     <li><a href="lib-json.html">json</a></li>
     <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
     <li><a href="lib-jsonschema.html">jsonschema</a></li>
     <li><a href="lib-locale.html">locale</a></li>
     <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
     <li><a href="lib-math.html">math</a></li>
     <li><a href="lib-mime.html">mime</a></li>
-    <li><a href="lib-net.html">net</a></li>
     <li><a href="lib-path.html">path</a></li>
     <li><a href="lib-process.html">process</a></li>
     <li><a href="lib-prof.html">prof</a></li>
     <li><a href="lib-random.html">random</a></li>
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
-    <li><a href="lib-session.html">session</a></li>
     <li><a href="lib-similar.html">similar</a></li>
-    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
     <li><a href="lib-test.html">test</a></li>
     <li><a href="lib-time.html">time</a></li>
     <li><a href="lib-url.html">url</a></li>
     <li><a href="lib-uuid.html">uuid</a></li>
     <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-vc.html">vc</a></li>
     <li><a href="lib-xap.html">xap</a></li>
     <li><a href="lib-xsp.html">xsp</a></li>
-  </ul></section>
-  <section><h4>XAP</h4><ul>
     <li><a href="xap.html">Overview</a></li>
     <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
     <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
     <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
     <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
   </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a class="active" href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
 </aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Glossary</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
 <main>
 <section id="glossary">
   <h1>Glossary</h1>
@@ -115,10 +157,10 @@
     <section id="g-anchor-sigil">
       <h2>anchor sigil (&)</h2>
       
-        <p>The `&amp;name` form on an element declares a named anchor. The
-         anchor can be referenced later via the merge sigil `*name` to
+        <p>The <code>&amp;name</code> form on an element declares a named anchor. The
+         anchor can be referenced later via the merge sigil <code>*name</code> to
          splice the anchored content. Declaring two anchors with the
-         same name in one document raises `CXER0101`. See <a class="xref" href="data-language.html#anchor">anchor</a>.</p>
+         same name in one document raises <code>CXER0101</code>. See <a class="xref" href="data-language.html#anchor">anchor</a>.</p>
       
     </section>
     <section id="g-array">
@@ -132,7 +174,7 @@
     <section id="g-array-literal">
       <h2>array literal</h2>
       
-        <p>Written `[a, b, c]` with commas inside square brackets — note
+        <p>Written <code>[a, b, c]</code> with commas inside square brackets — note
          that a CX element shares the bracket but has no leading comma
          after the element name. See <a class="xref" href="data-language.html#arr">arr</a>.</p>
       
@@ -150,24 +192,24 @@
     <section id="g-attribute">
       <h2>attribute</h2>
       
-        <p>A `name=value` pair in an element header. The key is an
+        <p>A <code>name=value</code> pair in an element header. The key is an
          identifier; the value is a bare scalar, quoted string,
-         numeric literal, boolean, date, or `null`. Multiple
+         numeric literal, boolean, date, or <code>null</code>. Multiple
          attributes are space-separated. See <a class="xref" href="data-language.html#attributes">attributes</a>.</p>
       
     </section>
     <section id="g-bcp47">
       <h2>BCP 47 tag</h2>
       
-        <p>A language identifier per IETF BCP 47 (e.g. `en-US`,
-         `zh-Hant-TW`). Used as the value of the reserved
-         `cx:lang` attribute. See <a class="xref" href="data-language.html#locale">locale</a>.</p>
+        <p>A language identifier per IETF BCP 47 (e.g. <code>en-US</code>,
+         <code>zh-Hant-TW</code>). Used as the value of the reserved
+         <code>cx:lang</code> attribute. See <a class="xref" href="data-language.html#locale">locale</a>.</p>
       
     </section>
     <section id="g-binding">
       <h2>binding (Layer 1, Layer 2)</h2>
       
-        <p>A host-language wrapper around the compiled `libcx`. Layer 1
+        <p>A host-language wrapper around the compiled <code>libcx</code>. Layer 1
          is the 16 canonical methods every binding must implement
          identically; Layer 2 is host-idiomatic syntactic sugar that
          varies per language. Currently ships V, Python, Go, and Rust.
@@ -177,7 +219,7 @@
     <section id="g-body">
       <h2>body</h2>
       
-        <p>Everything between the attribute list and the closing `]` of
+        <p>Everything between the attribute list and the closing <code>]</code> of
          an element. Can be empty, a single scalar, mixed content, or
          a sequence of nested elements. See <a class="xref" href="data-language.html#bodies">bodies</a>.</p>
       
@@ -185,8 +227,8 @@
     <section id="g-bool">
       <h2>boolean</h2>
       
-        <p>The `true` / `false` scalar kind. Bare `true` and `false`
-         are reserved tokens; booleans are ordinary `name=value`
+        <p>The <code>true</code> / <code>false</code> scalar kind. Bare <code>true</code> and <code>false</code>
+         are reserved tokens; booleans are ordinary <code>name=value</code>
          attributes — there is no shorthand sigil form. See
          <a class="xref" href="data-language.html#booleans">booleans</a> and <a class="xref" href="data-language.html#bool">bool</a>.</p>
       
@@ -195,7 +237,8 @@
       <h2>bytes</h2>
       
         <p>A scalar kind holding raw binary data. Written as a
-         length-prefixed base64 literal: `:bytes 'SGVsbG8='`. See
+         base64 literal under the <code>::bytes</code> annotation:
+         <code>[data::bytes "SGVsbG8="]</code> (no length prefix). See
          <a class="xref" href="data-language.html#bytes">bytes</a> and <a class="xref" href="surfaces.html#bytes-wire">bytes-wire</a>.</p>
       
     </section>
@@ -204,7 +247,7 @@
       
         <p>The unique byte sequence that represents a CX document after
          the canonicalization rules in
-         [`spec/canonical.md`](../../spec/canonical.md) are applied.
+         <a href="../../spec/03-approved/core/canonical.md"><code>spec/03-approved/core/canonical.md</code></a> are applied.
          The SHA-256 of the canonical bytes is the document's
          identity. See <a class="xref" href="identity.html#canonical">canonical</a>.</p>
       
@@ -212,9 +255,9 @@
     <section id="g-capability-bit">
       <h2>capability bit</h2>
       
-        <p>A bit in the value returned by `cx_features()` that signals
-         whether the loaded `libcx` supports a particular optional
-         feature (Parquet bridge, diagram render, etc.). Bindings
+        <p>A bit in the value returned by <code>cx_features()</code> that signals
+         whether the loaded <code>libcx</code> supports a particular optional
+         feature (Arrow C-Data bridge, diagram render, etc.). Bindings
          check before calling new entry points. See
          <a class="xref" href="identity.html#ast-bin-capabilities">ast-bin-capabilities</a>.</p>
       
@@ -232,7 +275,7 @@
       <h2>code language</h2>
       
         <p>The directive-based subset of CX. A code element is one whose
-         name starts with `?` (e.g. `[?for]`). The evaluator
+         name starts with <code>?</code> (e.g. <code>[?for]</code>). The evaluator
          dispatches on the directive name. Every other shape is data.
          See <a class="xref" href="code.html">code</a>.</p>
       
@@ -240,15 +283,18 @@
     <section id="g-comment">
       <h2>comment</h2>
       
-        <p>`[# … #]` — nests, spans lines, allowed anywhere whitespace
-         is allowed. Preserved by lossless canonical, stripped by
-         strict canonical. See <a class="xref" href="data-language.html#comments">comments</a>.</p>
+        <p>Two forms: <code>[; … ]</code> block comments (span lines, allowed
+         anywhere whitespace is allowed) and <code>#</code> line comments (to
+         end-of-line). Preserved by lossless canonical, stripped by
+         strict canonical. <code>[# … #]</code> is NOT a comment — it is the
+         raw-text form, whose content is preserved verbatim. See
+         <a class="xref" href="data-language.html#comments">comments</a>.</p>
       
     </section>
     <section id="g-container-item">
       <h2>container Item</h2>
       
-        <p>In the CXDM model (`spec/cxdm.md` §2), an Item is either an
+        <p>In the CXDM model (<code>spec/03-approved/core/cxdm.md</code> §2), an Item is either an
          atom (one scalar) or a container (an element, array, or
          map). Sequences are flat — they are not containers. See
          <a class="xref" href="data-language.html#container-atom">container-atom</a>.</p>
@@ -276,7 +322,7 @@
       
         <p>The C ABI entry point a host-spawned thread calls before any
          other libcx call, to register itself with the GC. Paired
-         with `cx_thread_unregister` at thread exit. Bindings
+         with <code>cx_thread_unregister</code> at thread exit. Bindings
          auto-call from their Layer-1 wrappers. See
          <a class="xref" href="identity.html#ffi-thread-register">ffi-thread-register</a>.</p>
       
@@ -287,15 +333,16 @@
         <p>CX's column-oriented streaming format. Pronounced "see-ex-col."
          Optimised for analytic scans; the same value model as native
          CX, projected column-wise. The canonical export target for
-         the `:table` data shape. See <a class="xref" href="analytics.html#cxcol">cxcol</a>.</p>
+         the <code>:table</code> data shape. See <a class="xref" href="analytics.html#cxcol">cxcol</a>.</p>
       
     </section>
     <section id="g-cxdm">
       <h2>CXDM</h2>
       
         <p>CX Data Model — the abstract value model formalised in
-         [`spec/cxdm.md`](../../spec/cxdm.md). Defines the eight
-         scalar kinds, container kinds, sequence-flatness, equality,
+         <a href="../../spec/03-approved/core/cxdm.md"><code>spec/03-approved/core/cxdm.md</code></a>.
+         Defines the eleven
+         atomic kinds, container kinds, sequence-flatness, equality,
          and the effective boolean value. The basis for every
          binding's value mapping.</p>
       
@@ -304,10 +351,11 @@
       <h2>CXPath</h2>
       
         <p>The universal selector vocabulary. Same syntax for reading
-         (`select_all`), iteration (`[?for]`), pattern matching
-         (`[?match]`), and update focus (`[?modify]`). XPath 3.1
-         aligned with deliberate divergences (see
-         [`spec/cxpath_alignment.md`](../../spec/cxpath_alignment.md))
+         (<code>select_all</code>), iteration (<code>[?for]</code>), pattern matching
+         (<code>[?match]</code>), and update focus (<code>[?modify]</code>). XPath 3.1
+         aligned with deliberate divergences (see the path-expression
+         sections of
+         <a href="../../spec/03-approved/core/code.md"><code>spec/03-approved/core/code.md</code></a>)
          and a value-kind. See <a class="xref" href="code.html#cxpath">cxpath</a>.</p>
       
     </section>
@@ -323,22 +371,22 @@
       <h2>data language</h2>
       
         <p>The non-directive subset of CX. Any element whose name does
-         not start with `?`. Round-trips through every projection
+         not start with <code>?</code>. Round-trips through every projection
          (JSON / YAML / TOML / XML / Markdown). See <a class="xref" href="data-language.html">data</a>.</p>
       
     </section>
     <section id="g-date">
       <h2>date</h2>
       
-        <p>The `:date` scalar kind. ISO 8601 calendar date with no time
-         component: `2026-05-22`. See <a class="xref" href="data-language.html#dates">dates</a>.</p>
+        <p>The <code>::date</code> scalar kind. ISO 8601 calendar date with no time
+         component: <code>2026-05-22</code>. See <a class="xref" href="data-language.html#dates">dates</a>.</p>
       
     </section>
     <section id="g-datetime">
       <h2>datetime</h2>
       
-        <p>The `:datetime` scalar kind. ISO 8601 timestamp with
-         timezone offset: `2026-05-22T14:30:00Z`. Resolution is
+        <p>The <code>::datetime</code> scalar kind. ISO 8601 timestamp with
+         timezone offset: <code>2026-05-22T14:30:00Z</code>. Resolution is
          nanoseconds; leap seconds are not represented. See
          <a class="xref" href="data-language.html#datetime-detail">datetime-detail</a>.</p>
       
@@ -346,7 +394,7 @@
     <section id="g-default-ns">
       <h2>default namespace</h2>
       
-        <p>A namespace declared with `xmlns='…'` (no prefix). Applies
+        <p>A namespace declared with <code>xmlns='…'</code> (no prefix). Applies
          to unprefixed element names within its scope. See
          <a class="xref" href="data-language.html#ns-default">ns-default</a>.</p>
       
@@ -363,10 +411,12 @@
     <section id="g-directive">
       <h2>directive</h2>
       
-        <p>An element whose name starts with `?` (e.g. `[?for]`,
-         `[?match]`, `[?modify]`). Interpreted by the evaluator
-         rather than carried as data. Currently 40 normative
-         directives. See <a class="xref" href="code.html#directives">directives</a>.</p>
+        <p>An element whose name starts with <code>?</code> (e.g. <code>[?for]</code>,
+         <code>[?match]</code>, <code>[?modify]</code>). Interpreted by the evaluator
+         rather than carried as data. Around eighty normative
+         directives — the closed registry in
+         <a href="../../spec/03-approved/core/code.md"><code>spec/03-approved/core/code.md</code></a>
+         §4.1. See <a class="xref" href="code.html#directives">directives</a>.</p>
       
     </section>
     <section id="g-doctype">
@@ -390,9 +440,9 @@
     <section id="g-ebv">
       <h2>effective boolean value (EBV)</h2>
       
-        <p>The truthiness coercion rule applied by `[?if]` and `[where …]`
-         guards. Defined in [`spec/cxdm.md`](../../spec/cxdm.md)
-         §4.6. Empty sequence / `false` / `0` / `''` / `null` are
+        <p>The truthiness coercion rule applied by <code>[?if]</code> and <code>[where …]</code>
+         guards. Defined in <a href="../../spec/03-approved/core/cxdm.md"><code>spec/03-approved/core/cxdm.md</code></a>
+         §4.6. Empty sequence / <code>false</code> / <code>0</code> / <code>''</code> / <code>null</code> are
          false; everything else is true. See <a class="xref" href="code.html#if">if</a>.</p>
       
     </section>
@@ -400,25 +450,25 @@
       <h2>element</h2>
       
         <p>The basic CX data structure: a name, zero or more
-         attributes, and a body. Written `[name attrs… body…]`.
+         attributes, and a body. Written <code>[name attrs… body…]</code>.
          Every bracketed form is an element. See <a class="xref" href="data-language.html#elements">elements</a>.</p>
       
     </section>
     <section id="g-element-name">
       <h2>element name</h2>
       
-        <p>The first token inside `[`. An identifier (or, rarely, a
-         quoted string). Names beginning with `?` are directives.
+        <p>The first token inside <code>[</code>. An identifier (or, rarely, a
+         quoted string). Names beginning with <code>?</code> are directives.
          See <a class="xref" href="data-language.html#names">names</a>.</p>
       
     </section>
     <section id="g-entity-reference">
       <h2>entity reference</h2>
       
-        <p>An `&amp;name;` token in prose / XML projection that expands to
+        <p>An <code>&amp;name;</code> token in prose / XML projection that expands to
          a registered character or string entity. CX recognises the
-         XML five (`&amp;lt;`, `&amp;gt;`, `&amp;amp;`, `&amp;apos;`, `&amp;quot;`) plus
-         `&amp;#NNNN;` numeric character references. See <a class="xref" href="data-language.html#entity-refs">entity-refs</a>.</p>
+         XML five (<code>&amp;lt;</code>, <code>&amp;gt;</code>, <code>&amp;amp;</code>, <code>&amp;apos;</code>, <code>&amp;quot;</code>) plus
+         <code>&amp;#NNNN;</code> numeric character references. See <a class="xref" href="data-language.html#entity-refs">entity-refs</a>.</p>
       
     </section>
     <section id="g-equality">
@@ -433,7 +483,7 @@
     <section id="g-eval">
       <h2>eval</h2>
       
-        <p>The C ABI entry point `cx_code_eval(doc, code, target_format)`.
+        <p>The C ABI entry point <code>cx_code_eval(doc, code, target_format)</code>.
          Evaluates a CX code expression against a document, returning
          a value in the requested format. See <a class="xref" href="analytics.html#overview">overview</a> and
          <a class="xref" href="bindings.html#c-abi">c-abi</a>.</p>
@@ -450,8 +500,8 @@
     <section id="g-file-extension">
       <h2>file extension</h2>
       
-        <p>`.cx` for general CX documents; `.cxs` for schemas; `.cxd`
-         for data-only source (no directive bodies); `.cxcol` for
+        <p><code>.cx</code> for general CX documents; <code>.cxs</code> for schemas; <code>.cxd</code>
+         for data-only source (no directive bodies); <code>.cxcol</code> for
          CXCol columnar exports. The parser is the same for all
          four; the extension drives tooling defaults. See
          <a class="xref" href="data-language.html#encoding">encoding</a>.</p>
@@ -460,15 +510,15 @@
     <section id="g-float">
       <h2>float</h2>
       
-        <p>The `:float` scalar kind. IEEE-754 double-precision by
-         default; `:f32` and `:f64` are sized variants. See
+        <p>The <code>::float</code> scalar kind. IEEE-754 double-precision by
+         default; <code>::f32</code> and <code>::f64</code> are sized variants. See
          <a class="xref" href="data-language.html#numbers">numbers</a> and <a class="xref" href="data-language.html#sized-types">sized-types</a>.</p>
       
     </section>
     <section id="g-fn">
       <h2>fn</h2>
       
-        <p>`[?fn]` — an anonymous function literal. A list of
+        <p><code>[?fn]</code> — an anonymous function literal. A list of
          positional/labeled bindings followed by an expression
          body. See <a class="xref" href="bindings.html">bindings</a> in §6 and <a class="xref" href="code.html#directives">directives</a>.</p>
       
@@ -476,7 +526,7 @@
     <section id="g-focus">
       <h2>focus</h2>
       
-        <p>In `[?modify]`, the set of nodes selected by a CXPath
+        <p>In <code>[?modify]</code>, the set of nodes selected by a CXPath
          expression at which an action is applied. Each focus node
          is updated independently; the result is a new document. See
          <a class="xref" href="code.html#modify">modify</a>.</p>
@@ -485,7 +535,7 @@
     <section id="g-for">
       <h2>for</h2>
       
-        <p>`[?for]` — iteration / comprehension. Binds a variable to
+        <p><code>[?for]</code> — iteration / comprehension. Binds a variable to
          each item in a CXPath, pattern, or sequence, and yields a
          value per iteration. See <a class="xref" href="code.html#for">for</a>.</p>
       
@@ -504,14 +554,14 @@
       
         <p>A language is homoiconic when its programs and its data use
          the same syntactic shape. CX is homoiconic by design — a
-         directive `[?for]` parses and prints with the same rules as
-         a data element `[user]`. See <a class="xref" href="concepts.html#homoiconicity">homoiconicity</a>.</p>
+         directive <code>[?for]</code> parses and prints with the same rules as
+         a data element <code>[user]</code>. See <a class="xref" href="value-model.html#homoiconicity">homoiconicity</a>.</p>
       
     </section>
     <section id="g-id-sigil">
       <h2>id sigil (#)</h2>
       
-        <p>The `#name` attribute shortcut for `id='name'`. Declares a
+        <p>The <code>#name</code> attribute shortcut for <code>id='name'</code>. Declares a
          document-unique anchor for IDREF resolution. See <a class="xref" href="data-language.html#id">id</a>
          and <a class="xref" href="identity.html#id-anchors">id-anchors</a>.</p>
       
@@ -519,19 +569,21 @@
     <section id="g-idref">
       <h2>IDREF</h2>
       
-        <p>An attribute value that references another element's `id`
-         attribute. Resolved on demand via `cx_idref_resolve`;
-         cycles are detected and surfaced as `CXER0501`. See
+        <p>An attribute value that references another element's <code>id</code>
+         attribute. Resolved on demand via <code>cx_resolve_ref</code> (with
+         <code>cx_id_lookup</code> as the id-declaration finder). See
          <a class="xref" href="identity.html#idref-resolution">idref-resolution</a>.</p>
       
     </section>
     <section id="g-include">
       <h2>include</h2>
       
-        <p>The `[?cx include path='…']` directive resolves and inlines
-         another CX document. Capability-gated by default —
-         `--profile untrusted` disables filesystem includes. See
-         <a class="xref" href="data-language.html#includes">includes</a>.</p>
+        <p>The <code>[?cx include=…]</code> directive resolves and inlines
+         another CX document. Include resolution rides the
+         deny-by-default capability model: it needs the <code>read</code> grant
+         (<code>--allow-read</code>) plus an explicit <code>--include-root</code>; with no
+         grants the evaluation is pure-only and includes stay
+         unresolved. See <a class="xref" href="data-language.html#includes">includes</a>.</p>
       
     </section>
     <section id="g-instance">
@@ -545,9 +597,9 @@
     <section id="g-int">
       <h2>int</h2>
       
-        <p>The `:int` scalar kind. 64-bit signed integer by default;
-         `:i8`/`:i16`/`:i32`/`:i64` and unsigned variants are sized
-         tags. See <a class="xref" href="data-language.html#numbers">numbers</a> and <a class="xref" href="data-language.html#sized-types">sized-types</a>.</p>
+        <p>The <code>::int</code> scalar kind. 64-bit signed integer by default;
+         <code>::i8</code>/<code>::i16</code>/<code>::i32</code>/<code>::i64</code> and unsigned variants are
+         sized annotations. See <a class="xref" href="data-language.html#numbers">numbers</a> and <a class="xref" href="data-language.html#sized-types">sized-types</a>.</p>
       
     </section>
     <section id="g-jsonl">
@@ -556,13 +608,13 @@
         <p>A streaming JSON format with one value per line. CX
          projects to JSONL when the root is a sequence; the
          projection guarantees one CX top-level item per output
-         line. See <a class="xref" href="surfaces.html#jsonl">jsonl</a>.</p>
+         line. See <span class="xref-unresolved">[[jsonl]]</span>.</p>
       
     </section>
     <section id="g-lossless-canonical">
       <h2>lossless canonical</h2>
       
-        <p>The form produced by `cx fmt`: pretty-printed, preserves
+        <p>The form produced by <code>cx fmt</code>: pretty-printed, preserves
          comments and attribute order, but normalises quote choice
          and whitespace. Distinct from strict canonical, which
          strips comments and re-sorts attributes. See
@@ -582,7 +634,7 @@
       <h2>manifest</h2>
       
         <p>The table of contents for the canonical guide, at
-         `docs-src/canonical/manifest.cxd`. Lists every section
+         <code>docs-src/canonical/manifest.cxd</code>. Lists every section
          file and its child anchors; renumbering is automatic from
          depth. See <a class="xref" href="intro.html#reading">reading</a>.</p>
       
@@ -591,7 +643,7 @@
       <h2>map</h2>
       
         <p>An unordered key-value container with unique string keys.
-         Written `{k: v, k2: v2}`. Distinct from an element with
+         Written <code>{k: v, k2: v2}</code>. Distinct from an element with
          attributes (an element is positional, named, and
          attributed; a map is just key-value). See <a class="xref" href="data-language.html#map">map</a>.</p>
       
@@ -599,7 +651,7 @@
     <section id="g-map-literal">
       <h2>map literal</h2>
       
-        <p>The `{k: v, k2: v2}` form. Keys are strings or identifiers;
+        <p>The <code>{k: v, k2: v2}</code> form. Keys are strings or identifiers;
          values are any CX value. Map equality ignores entry order.
          See <a class="xref" href="data-language.html#map">map</a>.</p>
       
@@ -607,33 +659,33 @@
     <section id="g-match">
       <h2>match</h2>
       
-        <p>`[?match]` — pattern dispatch. Single-arm form is an
-         assertion that raises `CXER0100` on miss; multi-arm form
-         selects the first matching `[case …]` clause.
+        <p><code>[?match]</code> — pattern dispatch. Single-arm form is an
+         assertion that raises <code>CXER0100</code> on miss; multi-arm form
+         selects the first matching <code>[case …]</code> clause.
          See <a class="xref" href="code.html#match">match</a>.</p>
       
     </section>
     <section id="g-merge-sigil">
       <h2>merge sigil (*)</h2>
       
-        <p>The `*name` form on an attribute or element body splices
+        <p>The <code>*name</code> form on an attribute or element body splices
          the content of the named anchor. The complement of the
-         anchor sigil `&amp;name`. See <a class="xref" href="data-language.html#merge">merge</a>.</p>
+         anchor sigil <code>&amp;name</code>. See <a class="xref" href="data-language.html#merge">merge</a>.</p>
       
     </section>
     <section id="g-modify">
       <h2>modify</h2>
       
-        <p>`[?modify]` — pure-functional update. Takes a document, a
-         CXPath focus, and an action clause (`[set …]` / `[delete]`
+        <p><code>[?modify]</code> — pure-functional update. Takes a document, a
+         CXPath focus, and an action clause (<code>[set …]</code> / <code>[delete]</code>
          / …); returns a new document. See <a class="xref" href="code.html#modify">modify</a>.</p>
       
     </section>
     <section id="g-multi-arm-match">
       <h2>multi-arm match</h2>
       
-        <p>The N-arm form of `[?match]` with `[case …]` / `[when …]` /
-         `[else …]` arms and optional `[where …]` guards.
+        <p>The N-arm form of <code>[?match]</code> with <code>[case …]</code> / <code>[when …]</code> /
+         <code>[else …]</code> arms and optional <code>[where …]</code> guards.
          See <a class="xref" href="code.html#match">match</a>.</p>
       
     </section>
@@ -641,16 +693,16 @@
       <h2>namespace</h2>
       
         <p>An XML-aligned grouping mechanism that scopes element and
-         attribute names with a URI. Declared by `xmlns:prefix='uri'`
-         (or `xmlns='uri'` for a default). See <a class="xref" href="data-language.html#namespaces">namespaces</a>.</p>
+         attribute names with a URI. Declared by <code>xmlns:prefix='uri'</code>
+         (or <code>xmlns='uri'</code> for a default). See <a class="xref" href="data-language.html#namespaces">namespaces</a>.</p>
       
     </section>
     <section id="g-ns-prefix">
       <h2>namespace prefix</h2>
       
         <p>The short string used to refer to a namespace in element /
-         attribute names (e.g. `svg:rect`, where `svg` is the prefix
-         and `rect` is the local name). See <a class="xref" href="data-language.html#ns-prefix-decl">ns-prefix-decl</a>.</p>
+         attribute names (e.g. <code>svg:rect</code>, where <code>svg</code> is the prefix
+         and <code>rect</code> is the local name). See <a class="xref" href="data-language.html#ns-prefix-decl">ns-prefix-decl</a>.</p>
       
     </section>
     <section id="g-node">
@@ -681,10 +733,10 @@
     <section id="g-parallel">
       <h2>parallel</h2>
       
-        <p>The CX concurrency posture — `[?map par=true]` and
-         `[?reduce par=true]` (and `[?for ... par=true]`) distribute
+        <p>The CX concurrency posture — a <code>[par]</code> clause on
+         <code>[?map]</code> / <code>[?reduce]</code> / <code>[?for]</code> distributes
          work across bounded worker pools; immutability makes the
-         result deterministic. See <a class="xref" href="concepts.html#parallelism">parallelism</a>.</p>
+         result deterministic. See <a class="xref" href="computation-identity.html#parallelism">parallelism</a>.</p>
       
     </section>
     <section id="g-parquet">
@@ -699,8 +751,9 @@
     <section id="g-parquet-bridge">
       <h2>parquet bridge</h2>
       
-        <p>The libcx subsystem that reads and writes Apache Parquet
-         files via Arrow. Capability bit 12. See
+        <p>The Rust-binding bridge that reads and writes Apache
+         Parquet files over the Arrow C-Data interop (capability
+         bit 23 — Arrow; there is no separate Parquet bit). See
          <a class="xref" href="analytics.html#parquet-bridge">parquet-bridge</a>.</p>
       
     </section>
@@ -708,15 +761,15 @@
       <h2>pattern</h2>
       
         <p>A CX value with embedded binding variables (e.g.
-         `[user id=$i]`) that matches a target value structurally
-         and binds the variables on success. Used by `[?match]`,
-         `[?for]`, and `[?modify]`. See <a class="xref" href="code.html#patterns">patterns</a>.</p>
+         <code>[user id=$i]</code>) that matches a target value structurally
+         and binds the variables on success. Used by <code>[?match]</code>,
+         <code>[?for]</code>, and <code>[?modify]</code>. See <a class="xref" href="code.html#patterns">patterns</a>.</p>
       
     </section>
     <section id="g-pattern-generator">
       <h2>pattern generator</h2>
       
-        <p>A pattern used at the source of a `[?for]` to enumerate
+        <p>A pattern used at the source of a <code>[?for]</code> to enumerate
          matching positions in a document. Equivalent to a CXPath
          that yields the same node set. See <a class="xref" href="code.html#patterns">patterns</a>.</p>
       
@@ -724,16 +777,16 @@
     <section id="g-pipe">
       <h2>pipe (|)</h2>
       
-        <p>The `|` operator threads the value on its left into the
-         expression on its right, bound to `$1`. Canonical form
-         desugars to `[?pipe …]`. See <a class="xref" href="code.html#pipe">pipe</a>.</p>
+        <p>The <code>|</code> operator threads the value on its left into the
+         expression on its right, bound to <code>$1</code>. Canonical form
+         desugars to <code>[?pipe …]</code>. See <a class="xref" href="code.html#pipe">pipe</a>.</p>
       
     </section>
     <section id="g-pi">
       <h2>processing instruction (PI)</h2>
       
         <p>An XML-only directive carried as a node (e.g.
-         `&lt;?xml-stylesheet …?&gt;`). CX preserves PIs through the XML
+         <code>&lt;?xml-stylesheet …?&gt;</code>). CX preserves PIs through the XML
          projection. See <a class="xref" href="surfaces.html#xml-pi">xml-pi</a>.</p>
       
     </section>
@@ -758,50 +811,51 @@
       <h2>pure-functional update</h2>
       
         <p>An update that returns a new value without mutating the
-         input. CX's `[?modify]` is pure-functional; unchanged
+         input. CX's <code>[?modify]</code> is pure-functional; unchanged
          branches are shared with the input via the standard
-         persistent-tree technique. See <a class="xref" href="concepts.html#pure-updates">pure-updates</a>.</p>
+         persistent-tree technique. See <a class="xref" href="runtime-representation.html#pure-updates">pure-updates</a>.</p>
       
     </section>
     <section id="g-quotes">
       <h2>quotes (single / double / triple)</h2>
       
-        <p>Three string forms: single-quoted `'…'` (escapes
-         supported), double-quoted `"…"` (same), and triple-quoted
-         `'''…'''` or `…"""`<cx:seq><cx:item>multiline</cx:item><cx:item>whitespace-preserving</cx:item><cx:item>no escape needed for the other quote characters</cx:item></cx:seq>. See <cx:arr><cx:item><strings/></cx:item></cx:arr>."""</p>
+        <p>Three string forms: single-quoted <code>'…'</code> (escapes
+         supported), double-quoted <code>"…"</code> (same), and triple-quoted
+         <code>'''…'''</code> or <code>…"""</code><cx:seq><cx:item>multiline</cx:item><cx:item>whitespace-preserving</cx:item><cx:item>no escape needed for the other quote characters</cx:item></cx:seq>. See <cx:arr><cx:item><strings/></cx:item></cx:arr>."""</p>
       
     </section>
     <section id="g-regex">
       <h2>regex</h2>
       
         <p>The regular-expression dialect used by CX builtins. CX
-         ships an RE2-equivalent engine; the dialect is documented
-         in [`spec/regex.md`](../../spec/regex.md). See
-         <a class="xref" href="code.html#string-builtins">string-builtins</a>.</p>
+         ships an RE2-backed engine; the string builtins that take
+         patterns are specified in
+         <a href="../../spec/03-approved/core/code.md"><code>spec/03-approved/core/code.md</code></a>.
+         See <a class="xref" href="code.html#string-builtins">string-builtins</a>.</p>
       
     </section>
     <section id="g-reserved-token">
       <h2>reserved token</h2>
       
         <p>An identifier the parser refuses to accept as an element
-         or attribute name: `true`, `false`, `null`, and the
+         or attribute name: <code>true</code>, <code>false</code>, <code>null</code>, and the
          directive head tokens. See <a class="xref" href="data-language.html#reserved-tokens">reserved-tokens</a>.</p>
       
     </section>
     <section id="g-resilience-directive">
       <h2>resilience directive</h2>
       
-        <p>One of the six failure-handling wrappers (`[?retry]`,
-         `[?timeout]`, `[?circuit-breaker]`, `[?fallback]`,
-         `[?rate-limit]`, `[?bulkhead]`). See <a class="xref" href="code.html#resilience">resilience</a>.</p>
+        <p>One of the six failure-handling wrappers (<code>[?retry]</code>,
+         <code>[?timeout]</code>, <code>[?circuit-breaker]</code>, <code>[?fallback]</code>,
+         <code>[?rate-limit]</code>, <code>[?bulkhead]</code>). See <a class="xref" href="code.html#resilience">resilience</a>.</p>
       
     </section>
     <section id="g-schema">
       <h2>schema</h2>
       
-        <p>A CX document (`.cxs`) describing the allowed shape of
+        <p>A CX document (<code>.cxs</code>) describing the allowed shape of
          another CX document. The schema language is documented
-         in [`spec/schema.md`](../../spec/schema.md). See
+         in <a href="../../spec/03-approved/core/schema.md"><code>spec/03-approved/core/schema.md</code></a>. See
          <a class="xref" href="data-language.html#schema">schema</a>.</p>
       
     </section>
@@ -809,7 +863,7 @@
       <h2>scope</h2>
       
         <p>The lexical region in which a binding is visible.
-         `[?let]` introduces a scope; namespace prefix
+         <code>[?let]</code> introduces a scope; namespace prefix
          declarations have a scope; anchors are document-scoped.
          See <a class="xref" href="code.html#let">let</a> and <a class="xref" href="data-language.html#namespaces">namespaces</a>.</p>
       
@@ -817,7 +871,7 @@
     <section id="g-sequence">
       <h2>sequence</h2>
       
-        <p>A flat, ordered collection of values. Written `(a, b, c)`.
+        <p>A flat, ordered collection of values. Written <code>(a, b, c)</code>.
          Distinct from an array — a sequence is not a container;
          nesting a sequence inside a sequence flattens. See
          <a class="xref" href="data-language.html#seq">seq</a> and <a class="xref" href="data-language.html#seq-flat">seq-flat</a>.</p>
@@ -826,15 +880,15 @@
     <section id="g-sequence-flat">
       <h2>sequence-flat principle</h2>
       
-        <p>CX sequences never nest. `(1, (2, 3), 4)` is identical to
-         `(1, 2, 3, 4)`. Arrays and maps preserve nesting; sequences
+        <p>CX sequences never nest. <code>(1, (2, 3), 4)</code> is identical to
+         <code>(1, 2, 3, 4)</code>. Arrays and maps preserve nesting; sequences
          do not. See <a class="xref" href="data-language.html#seq-flat">seq-flat</a>.</p>
       
     </section>
     <section id="g-sequence-literal">
       <h2>sequence literal</h2>
       
-        <p>The `(a, b, c)` form. Identical to an evaluator-returned
+        <p>The <code>(a, b, c)</code> form. Identical to an evaluator-returned
          sequence. See <a class="xref" href="data-language.html#seq">seq</a>.</p>
       
     </section>
@@ -842,9 +896,9 @@
       <h2>sigil</h2>
       
         <p>A leading punctuation character that prefixes an
-         identifier and changes its interpretation: `&amp;` (anchor),
-         `*` (merge), `#` (id), `:` (type tag),
-         `$` (binding variable), `?` (directive). See <a class="xref" href="data-language.html#sigils">sigils</a>.</p>
+         identifier and changes its interpretation: <code>&amp;</code> (anchor),
+         <code>*</code> (merge), <code>#</code> (id), <code>:</code> (atom), <code>::</code> (type annotation),
+         <code>$</code> (binding variable), <code>?</code> (directive). See <a class="xref" href="data-language.html#sigils">sigils</a>.</p>
       
     </section>
     <section id="g-signed-canonical">
@@ -858,8 +912,9 @@
     <section id="g-sized-type-tag">
       <h2>sized type tag</h2>
       
-        <p>An explicit numeric type prefix: `:i8`, `:i16`, `:i32`,
-         `:i64`, `:u8`, `:u16`, `:u32`, `:u64`, `:f32`, `:f64`.
+        <p>An explicit numeric type annotation: <code>::i8</code>, <code>::i16</code>,
+         <code>::i32</code>, <code>::i64</code>, <code>::u8</code>, <code>::u16</code>, <code>::u32</code>, <code>::u64</code>,
+         <code>::f32</code>, <code>::f64</code>.
          Required when the host binding needs a specific width.
          See <a class="xref" href="data-language.html#sized-types">sized-types</a>.</p>
       
@@ -868,16 +923,16 @@
       <h2>slot (positional, labeled)</h2>
       
         <p>A position inside a directive's argument list. Positional
-         slots come first; labeled slots use the `:label value`
-         form (per `spec/grammar.ebnf [127e]`). Slot syntax is
+         slots come first; labeled slots use the <code>:label value</code>
+         form (per <code>spec/03-approved/formal/grammar.ebnf [127e]</code>). Slot syntax is
          exclusive to directives — on data elements use
-         `name=value` attributes. See <a class="xref" href="code.html#directives">directives</a>.</p>
+         <code>name=value</code> attributes. See <a class="xref" href="code.html#directives">directives</a>.</p>
       
     </section>
     <section id="g-strict-canonical">
       <h2>strict canonical</h2>
       
-        <p>The form produced by `cx canonical` — strips comments,
+        <p>The form produced by <code>cx canonical</code> — strips comments,
          re-sorts attributes lexicographically, normalises quote
          choice, normalises whitespace, NFC-normalises identifiers
          and strings. Hash input. See <a class="xref" href="identity.html#canon-lossless-strict">canon-lossless-strict</a>.</p>
@@ -896,9 +951,9 @@
     <section id="g-structural-sharing">
       <h2>structural sharing</h2>
       
-        <p>The persistent-tree technique that lets `[?modify]`
+        <p>The persistent-tree technique that lets <code>[?modify]</code>
          return a new document in O(log n) by reusing the
-         unchanged branches of the input. See <a class="xref" href="concepts.html#pure-updates">pure-updates</a>.</p>
+         unchanged branches of the input. See <a class="xref" href="runtime-representation.html#pure-updates">pure-updates</a>.</p>
       
     </section>
     <section id="g-table-shape">
@@ -921,8 +976,8 @@
     <section id="g-threading-register">
       <h2>threading register</h2>
       
-        <p>The combined operation of `cx_thread_register` (on
-         thread start) and `cx_thread_unregister` (on thread
+        <p>The combined operation of <code>cx_thread_register</code> (on
+         thread start) and <code>cx_thread_unregister</code> (on thread
          exit), required for host-spawned threads that call libcx
          directly. Bindings auto-wrap. See <a class="xref" href="identity.html#ffi-thread-register">ffi-thread-register</a>.</p>
       
@@ -930,10 +985,10 @@
     <section id="g-time">
       <h2>time</h2>
       
-        <p>The wall-clock-time-of-day scalar kind. Not a separate
-         scalar in CXDM — represented as a datetime with the
-         epoch-1970 date placeholder when carried at the wire
-         level. See <a class="xref" href="data-language.html#datetime-detail">datetime-detail</a>.</p>
+        <p>There is no time-of-day scalar kind in CX. Time
+         quantities are carried by <code>duration</code> (an integer count of
+         nanoseconds) and <code>instant</code> (encoded as a UTC datetime on
+         the wire). See <a class="xref" href="data-language.html#datetime-detail">datetime-detail</a>.</p>
       
     </section>
     <section id="g-timezone">
@@ -947,9 +1002,10 @@
     <section id="g-type-tag">
       <h2>type tag</h2>
       
-        <p>An explicit `:name` prefix on a scalar that forces a
-         specific kind: `:int`, `:str`, `:date`, `:bytes`, `:u32`,
-         etc. See <a class="xref" href="data-language.html#bodies">bodies</a> and <a class="xref" href="data-language.html#sized-types">sized-types</a>.</p>
+        <p>An explicit <code>::name</code> annotation on a scalar that forces a
+         specific kind: <code>::int</code>, <code>::string</code>, <code>::date</code>, <code>::bytes</code>,
+         <code>::u32</code>, etc. A single-colon <code>:name</code> is not a type — it is
+         an atom literal. See <a class="xref" href="data-language.html#bodies">bodies</a> and <a class="xref" href="data-language.html#sized-types">sized-types</a>.</p>
       
     </section>
     <section id="g-utf8">
@@ -971,9 +1027,9 @@
     <section id="g-value-comparison">
       <h2>value comparison</h2>
       
-        <p>The CXPath comparison operators (`=`, `&lt;`, `&lt;=`, etc.)
+        <p>The CXPath comparison operators (<code>=</code>, <code>&lt;</code>, <code>&lt;=</code>, etc.)
          applied to scalar values. Numerically aware
-         (`@n=42` matches both int and float 42); string
+         (<code>@n=42</code> matches both int and float 42); string
          comparison is codepoint-wise. See <a class="xref" href="code.html#cxpath">cxpath</a>.</p>
       
     </section>
@@ -982,14 +1038,14 @@
       
         <p>The WebAssembly build of libcx used by the playground
          and any browser-hosted CX tooling. Exposes a subset of
-         the C ABI plus `_cx_code_diagram` and friends. Two
-         artifacts: `libcx-async.js` (Asyncify, no
+         the C ABI plus <code>_cx_code_diagram</code> and friends. Two
+         artifacts: <code>libcx-async.js</code> (Asyncify, no
          pthreads — works under file:// and any HTTP host),
-         `libcx-pthreads.{js,wasm}` (real OS threads via
+         <code>libcx-pthreads.{js,wasm}</code> (real OS threads via
          SharedArrayBuffer — requires HTTP with COOP/COEP
          headers). The playground auto-selects based on
-         `crossOriginIsolated`. See <a class="xref" href="#g-playground">g-playground</a> and
-         <a class="xref" href="concepts.html#wasm-story">wasm-story</a>.</p>
+         <code>crossOriginIsolated</code>. See <a class="xref" href="#g-playground">g-playground</a> and
+         <a class="xref" href="bindings.html#wasm-story">wasm-story</a>.</p>
       
     </section>
     <section id="g-playground">
@@ -998,19 +1054,19 @@
         <p>A constrained demonstration surface for CX inside the
          browser, not the performance target. Three delivery
          modes: GitHub Pages static (HTTPS), local clone file://
-         (double-click `playground.html`), and `make guide-http`
+         (double-click <code>playground.html</code>), and <code>make guide-http</code>
          (V veb server with cross-origin isolation enabled). Only
-         the third mode runs `par=true` examples on real OS threads;
+         the third mode runs <code>[par]</code> examples on real OS threads;
          the first two run sequentially under the same surface.
          Production CX (CLI, language bindings, libcx as shared
          library) has no browser-environment overhead. See
-         <a class="xref" href="concepts.html#wasm-story">wasm-story</a> for the full framing.</p>
+         <a class="xref" href="bindings.html#wasm-story">wasm-story</a> for the full framing.</p>
       
     </section>
     <section id="g-whitespace-preservation">
       <h2>whitespace preservation</h2>
       
-        <p>The `xml:space='preserve'` attribute scopes the
+        <p>The <code>xml:space='preserve'</code> attribute scopes the
          preservation of internal runs of whitespace inside an
          element body. The default is collapse. See
          <a class="xref" href="data-language.html#xml-space">xml-space</a>.</p>
@@ -1020,22 +1076,29 @@
       <h2>xml:space</h2>
       
         <p>The reserved attribute that controls whitespace
-         collapsing in an element body. Values `default` and
-         `preserve`. See <a class="xref" href="data-language.html#xml-space">xml-space</a>.</p>
+         collapsing in an element body. Values <code>default</code> and
+         <code>preserve</code>. See <a class="xref" href="data-language.html#xml-space">xml-space</a>.</p>
       
     </section>
     <section id="g-xmlns">
       <h2>xmlns</h2>
       
         <p>The reserved attribute family that declares namespace
-         prefix bindings: `xmlns:svg='http://www.w3.org/2000/svg'`
-         binds `svg` for the element's scope. See
+         prefix bindings: <code>xmlns:svg='http://www.w3.org/2000/svg'</code>
+         binds <code>svg</code> for the element's scope. See
          <a class="xref" href="data-language.html#namespaces">namespaces</a>.</p>
       
     </section>
   
 </section>
 </main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>Glossary</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
 <script src="highlight/highlight.js" defer></script>
 <script src="search-index.js" defer></script>
 <script src="search/search.js" defer></script>

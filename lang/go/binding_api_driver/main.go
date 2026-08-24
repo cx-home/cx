@@ -1,7 +1,7 @@
 // Binding-API parity driver — Go.
 //
 // Reads one JSON fixture object on stdin (see
-// scripts/compile_binding_api_fixtures.py) and executes it through the
+// scripts/compile_binding_api_fixtures.cx) and executes it through the
 // Layer-1 surface in lang/go/cxlib.
 //
 // Output protocol matches lang/python/cmd/binding_api_driver.py.

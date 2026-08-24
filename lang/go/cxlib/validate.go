@@ -171,7 +171,7 @@ func formatCode(prefix byte, numeric uint32) string {
 }
 
 // Validate parses doc + schema as CX text, runs the validator, and
-// returns a ValidationReport. Schema-load errors (missing schema-of,
+// returns a ValidationReport. Schema-load errors (missing [schema of=...] header,
 // unknown anchor, etc.) surface as a single error-severity Diagnostic,
 // not as a Go error. Returns a Go error only on malformed CX input.
 func Validate(doc, schema string) (*ValidationReport, error) {

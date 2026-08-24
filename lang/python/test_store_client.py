@@ -1,10 +1,13 @@
-"""Phase 2 (#105) — Python CSRP client parity (cxlib.StoreClient).
+"""Python store-client parity (cxlib.StoreClient) over THE store wire.
 
 BEHAVIORAL test: spawns a real `cx store-serve` daemon over loopback (a mem://
-store, auth open) and drives the full Layer-1 CRUD surface through
-cxlib.StoreClient — proving the ergonomic wrapper drives the audited cx-store://
-core client end-to-end (put → get → exists → list → delete → exists), the same
-round trip vcx/tests/store_csrp_test.v exercises from a CX program.
+store served over the XSP store profile, floor policy) and drives the full
+Layer-1 CRUD surface through cxlib.StoreClient — proving the ergonomic wrapper
+drives the audited store client in the CX CORE end-to-end (put → get → exists →
+list → query → iter → delete → exists). No wire protocol is re-implemented in
+Python; the façade generates CX programs and evaluates them through the
+capability-aware ABI. Stream-4 S3 retired the CSRP transport — the wire here is
+cx-store+xsp:// and authority is XSP-AUTH (grants deny lane included).
 
 No Docker; the daemon is granted only loopback net. Skips cleanly when the cx
 binary is absent (run `make build-vcx` first).
@@ -24,6 +27,12 @@ from cxlib.code import CxError
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 _CX_BIN = os.path.join(_REPO_ROOT, "vcx", "target", "cx")
 
+# RFC 8032 TEST-vector identities (throwaway — never real keys).
+_HOST_DID = "did:key:z6MkiaMbhXHNA4eJVCCj8dbzKzTgYDKf6crKgHVHid1F1WCT"
+_HOST_SEED_HEX = "4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb"
+_CLIENT_DID = "did:key:z6MktwupdmLXVVqTzCw4i46r4uGyosGXRnR3XjN4Zq7oMMsw"  # RFC 8032 TEST 1
+_CLIENT_SEED_HEX = "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60"
+
 
 def _free_port() -> int:
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -34,67 +43,49 @@ def _free_port() -> int:
 
 
 class StoreClientTest(unittest.TestCase):
-    def _spawn(self, store_url: str):
+    def _spawn(self, store_url: str, grants: str = "") -> int:
+        """Spawn `cx store-serve` with the [xsp] profile listener; return its
+        xsp port. `grants` is an optional [grants …] block (deny-by-default
+        authority when present; floor/open posture when absent)."""
         if not os.path.isfile(_CX_BIN):
             self.skipTest("cx binary not found at %s — run `make build-vcx`" % _CX_BIN)
-        port = _free_port()
+        bport = _free_port()
+        xport = _free_port()
         config = (
             '[cxstore-service\n'
             '  [bind addr="127.0.0.1:%d"]\n'
             '  [stores\n'
-            '    [store name="teststore" url="%s"]]]\n' % (port, store_url)
+            '    [store name="teststore" url="%s"]]\n'
+            '  [xsp enabled=true addr="127.0.0.1:%d"\n'
+            '    [identity did="%s" seed-env="CX_PY_STORE_TEST_SEED"]\n'
+            '    [policy mode=floor floor="guest"]%s]]\n'
+            % (bport, store_url, xport, _HOST_DID, grants)
         )
         cfg = tempfile.NamedTemporaryFile(
             mode="w", suffix=".cx", prefix="cx_store_cfg_", delete=False
         )
         cfg.write(config)
         cfg.close()
+        env = dict(os.environ)
+        env["CX_PY_STORE_TEST_SEED"] = _HOST_SEED_HEX
+        env["CX_PY_STORE_CLIENT_SEED"] = _CLIENT_SEED_HEX
         proc = subprocess.Popen(
-            [_CX_BIN, "store-serve", "--config", cfg.name,
-             "--allow-net=127.0.0.1:%d" % port],
+            [_CX_BIN, "store-serve", "--config", cfg.name, "--allow-env",
+             "--allow-net=127.0.0.1:%d" % bport,
+             "--allow-net=127.0.0.1:%d" % xport],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            env=env,
         )
         self.addCleanup(self._kill, proc, cfg.name)
-        client = StoreClient("cx-store+http://127.0.0.1:%d/teststore/" % port)
-        self._wait_ready(client, proc)
-        return client
+        # the binding process needs the client seed visible under the name the
+        # identity opts pass (read by the CORE, never by python).
+        os.environ["CX_PY_STORE_CLIENT_SEED"] = _CLIENT_SEED_HEX
+        probe = StoreClient("cx-store+xsp://127.0.0.1:%d/teststore/" % xport)
+        self._wait_ready(probe, proc)
+        return xport
 
-    def _spawn_auth(self, store_url: str, good_token: str):
-        """Spawn an auth-ENFORCING daemon (one static bearer token → reader+writer)
-        and return (port). Used by the wrong-token parity case (§6.1)."""
-        import hashlib
-        if not os.path.isfile(_CX_BIN):
-            self.skipTest("cx binary not found at %s — run `make build-vcx`" % _CX_BIN)
-        port = _free_port()
-        secret_hash = hashlib.sha256(good_token.encode()).hexdigest()
-        config = (
-            '[cxstore-service\n'
-            '  [bind addr="127.0.0.1:%d"]\n'
-            '  [auth\n'
-            '    [static\n'
-            '      [token id="t1" secret-hash="sha256:%s" roles="reader writer" tenant="teststore"]]]\n'
-            '  [stores\n'
-            '    [store name="teststore" url="%s"]]]\n' % (port, secret_hash, store_url)
-        )
-        cfg = tempfile.NamedTemporaryFile(
-            mode="w", suffix=".cx", prefix="cx_store_authcfg_", delete=False
-        )
-        cfg.write(config)
-        cfg.close()
-        proc = subprocess.Popen(
-            [_CX_BIN, "store-serve", "--config", cfg.name,
-             "--allow-net=127.0.0.1:%d" % port],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-        self.addCleanup(self._kill, proc, cfg.name)
-        # a client with the RIGHT token confirms the daemon is up + auth works.
-        good = StoreClient("cx-store+http://127.0.0.1:%d/teststore/" % port, token=good_token)
-        self._wait_ready(good, proc)
-        return port
-
-    def _wait_ready(self, client: StoreClient, proc, timeout_s: float = 6.0) -> None:
+    def _wait_ready(self, client: StoreClient, proc, timeout_s: float = 8.0) -> None:
         deadline = time.time() + timeout_s
         last = None
         while time.time() < deadline:
@@ -122,10 +113,16 @@ class StoreClientTest(unittest.TestCase):
             pass
 
     def test_full_round_trip(self):
-        c = self._spawn("mem://py-client-test")
+        xport = self._spawn("mem://py-client-test")
+        c = StoreClient("cx-store+xsp://127.0.0.1:%d/teststore/" % xport)
         doc = '[note [body "py-client-roundtrip"]]'
         h = c.put_doc_text(doc)
-        self.assertTrue(h and len(h) == 64, "put returns 64-hex hash, got %r" % h)
+        # I1 identity epoch: content addresses are TAGGED — sha2-256:<64hex>.
+        import re
+        self.assertTrue(
+            h and re.fullmatch(r"sha2-256:[0-9a-f]{64}", h),
+            "put returns tagged sha2-256:<64hex> address, got %r" % h,
+        )
 
         got = c.get_doc_text(h)
         self.assertIn("py-client-roundtrip", got, "doc body must round-trip: %r" % got)
@@ -145,30 +142,63 @@ class StoreClientTest(unittest.TestCase):
         self.assertIs(c.exists(h), False, "exists false after delete")
 
     def test_missing_hash_raises(self):
-        c = self._spawn("mem://py-client-missing")
+        xport = self._spawn("mem://py-client-missing")
+        c = StoreClient("cx-store+xsp://127.0.0.1:%d/teststore/" % xport)
         with self.assertRaises(CxError):
-            c.get_doc_text("0" * 64)
+            c.get_doc_text("sha2-256:" + "0" * 64)
 
-    def test_wrong_token_auth_error(self):
-        """§6.1 parity: a wrong bearer token → an auth CxError, not a silent
-        success. Proves the binding surfaces the CSRP auth failure structurally."""
-        port = self._spawn_auth("mem://py-auth", "s3cr3t-good")
-        bad = StoreClient(
-            "cx-store+http://127.0.0.1:%d/teststore/" % port, token="wrong-token"
-        )
-        with self.assertRaises(CxError) as ctx:
-            bad.list_docs()
-        # 401 (unauthenticated) maps to the store auth-failed code in the client.
-        self.assertIn(
-            ctx.exception.code,
-            ("cx-err:CXER1131", "cx-err:CXER1702"),
-            "wrong token must raise an auth error, got %r" % ctx.exception.code,
-        )
+    def test_retired_scheme_rejected(self):
+        """Stream-4 S3: the CSRP scheme tokens are retired — the façade refuses
+        them up front with the pointer to the live wire."""
+        with self.assertRaises(ValueError):
+            StoreClient("cx-store+http://127.0.0.1:1/teststore/")
 
-    # NOTE: the former test_grpc_enabled_fails_fast was removed — the temporary
-    # fail-fast guard it checked is gone now that the gRPC listener is
-    # implemented. gRPC serving is covered by the V tests
-    # (store_grpc_live_test.v / store_grpc_e2e_test.v / store_grpc_parity_test.v).
+    def test_grants_deny_anonymous_and_admit_granted_identity(self):
+        """XSP-AUTH parity: with [grants …] configured the daemon is
+        deny-by-default — an anonymous client is refused (mutual policy), and
+        the granted DID (identity via open-opts did/seed-env) round-trips."""
+        grants = (
+            '\n    [grants [grant did="%s" caps="read write delete"]]' % _CLIENT_DID
+        )
+        # mutual policy: no floor — anonymous cannot even attach.
+        if not os.path.isfile(_CX_BIN):
+            self.skipTest("cx binary not found")
+        bport = _free_port()
+        xport = _free_port()
+        config = (
+            '[cxstore-service\n'
+            '  [bind addr="127.0.0.1:%d"]\n'
+            '  [stores [store name="teststore" url="mem://py-authz"]]\n'
+            '  [xsp enabled=true addr="127.0.0.1:%d"\n'
+            '    [identity did="%s" seed-env="CX_PY_STORE_TEST_SEED"]%s]]\n'
+            % (bport, xport, _HOST_DID, grants)
+        )
+        cfg = tempfile.NamedTemporaryFile(
+            mode="w", suffix=".cx", prefix="cx_store_authz_", delete=False
+        )
+        cfg.write(config)
+        cfg.close()
+        env = dict(os.environ)
+        env["CX_PY_STORE_TEST_SEED"] = _HOST_SEED_HEX
+        proc = subprocess.Popen(
+            [_CX_BIN, "store-serve", "--config", cfg.name, "--allow-env",
+             "--allow-net=127.0.0.1:%d" % bport,
+             "--allow-net=127.0.0.1:%d" % xport],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env,
+        )
+        self.addCleanup(self._kill, proc, cfg.name)
+        os.environ["CX_PY_STORE_CLIENT_SEED"] = _CLIENT_SEED_HEX
+        good = StoreClient(
+            "cx-store+xsp://127.0.0.1:%d/teststore/" % xport,
+            did=_CLIENT_DID, seed_env="CX_PY_STORE_CLIENT_SEED",
+        )
+        self._wait_ready(good, proc)
+        h = good.put_doc_text('[note [body "authz-ok"]]')
+        self.assertIn("authz-ok", good.get_doc_text(h))
+        # anonymous against the mutual daemon: refused, surfaced as CxError.
+        anon = StoreClient("cx-store+xsp://127.0.0.1:%d/teststore/" % xport)
+        with self.assertRaises(CxError):
+            anon.list_docs()
 
 
 if __name__ == "__main__":

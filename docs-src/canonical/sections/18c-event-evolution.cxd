@@ -1,0 +1,148 @@
+[# Section 18c — event evolution: the Ring-2 half of
+   spec/03-approved/core/schema_event_evolution.md — upcasting journals,
+   fold identity, snapshot discipline, and stored-document migration.
+   The Ring-0 half (compatibility, lineage) is section 4a. Authored
+   2026-08-19 for #826 acceptance 3. #]
+
+[section id=event-evolution group='Ring 2 — Platform' n='18c' title='Event evolution'
+
+  [child id=ee-frame n=18c.1 title='Old events, new vocabulary'
+    [intro
+      """A journal outlives every schema that ever described its
+         payloads. Version 1 order events keep existing after the
+         `Order` type moves to v2 — the substrate is append-only, and
+         batch-rewriting history is excluded by design (and pinned by a
+         negative fixture). So the platform question is never \"how do
+         we upgrade the data\" — it is **\"how do we read yesterday's
+         events in today's vocabulary.\"**"""]
+
+    [body
+      """The two halves of the answer, by storage shape: **journals
+         migrate on read** — always, because appends are forever — and
+         **stores migrate in batch** — new documents plus ref advances,
+         non-destructive by construction, because the old document
+         remains addressable at its old address for as long as anything
+         cites it. The Ring-0 vocabulary underneath (what compatible
+         means, how two schema revisions are linked) is
+         [[schema-evolution]]; this section is the machinery."""]]
+
+  [child id=ee-upcasters n=18c.2 title='Upcasters at the pre-fold seam'
+    [intro
+      """An **upcaster** is a pure entry-to-entry projection composed
+         *before* the fold — the same seam the bitemporal projection
+         uses ([[bitemporal]]; upcast first, then the valid-time
+         projection). The fold contract itself never changes; the fold
+         simply sees entries that already speak the current
+         vocabulary."""]
+
+    [list
+      [item """**Version tags are payload vocabulary, never envelope.**
+              The journal owns only the envelope; which version a
+              payload speaks is domain data, exactly like validity
+              dates."""]
+      [item """**The upcaster chain is caller-supplied and attested** —
+              a pure definition with a content address, registered
+              through lineage claims. The journal recognizes the seam;
+              it never learns the domain."""]
+      [item """**Replay uses today's chain.** A past-state read is
+              reproducible as a function of (entries, chain, fold,
+              init) — a *function*, not a date — which is exactly why
+              the chain is identified rather than ambient."""]
+      [item """**An entry no upcaster covers is a loud failure-channel
+              error at fold time** — naming the position, the declared
+              version, and the chain's endpoints. Never an absence,
+              never a skip. The **coverage pre-flight** — \"would this
+              fold cover all N entries?\" — is a pure query over
+              declared versions and the lineage graph, and it runs
+              **automatically at feature install** when the deployment
+              supplies its journal: an uncovered address refuses the
+              install, naming the address and its entry count."""]
+      [item """**Derivable translators are derived, not written.**
+              `cx schema compat` classifies a schema change and, for
+              the additive/rename/default classes, emits the lineage
+              claim carrying the rewrite rules as data — the journal
+              applies them natively and losslessly at this same seam.
+              Publishing a feature with a schema change derives and
+              records the claim mechanically; only a change that
+              genuinely reinterprets data stops the publish, with the
+              missing rule named."""]]
+
+    [note
+      """Unknown vocabulary has one reconciled rule platform-wide:
+         **tolerate on discovery surfaces, reject on semantic
+         surfaces** — and tolerance is never the compatibility
+         mechanism. The one narrow exception (a downgraded consumer
+         skipping event kinds it postdates) is downgrade-only and
+         carries **visible skip counts** — count and attribution, in
+         the value, at the point of omission — never a silent path."""]]
+
+  [child id=ee-fold-identity n=18c.3 title='Fold identity and the snapshot discipline'
+    [intro
+      """Once upcasters exist, \"the same fold\" means more than the
+         same function. Fold determinism is a **quadruple**: same
+         entries, same upcaster chain, same fold function, same initial
+         value — same result. The chain is part of the fold's identity,
+         carried in the environment slot of the computation record
+         ([[computation-identity]]): adding an upcaster changes every
+         fold address exactly once, and every cache goes cold rather
+         than wrong."""]
+
+    [body
+      """Snapshots are where a missing identity silently loses data. A
+         snapshot is fold output frozen into a signed artifact — v1-fold
+         output, if that is what produced it — and a resume that folds
+         forward from it under a v2 fold would weld two vocabularies
+         into one state with no seam. So **snapshots carry their fold
+         identity inside the signed preimage**, and resuming from a
+         snapshot whose fold identity mismatches the requested fold is
+         a loud typed error, never silently-stale state."""]
+
+    [body
+      """The retention consequence closes the loop: the rule that a
+         snapshot must cover any pruned prefix is read as covered
+         **under the current fold** — re-derive under v2 before
+         pruning a prefix only a v1 snapshot covers, or the prune is
+         refused. The re-derivation is one verb, not a chore:
+         `resnapshot` re-folds a checkpoint at its own position under
+         the current fold quadruple — chain engaged, identity stamped,
+         signed like any snapshot, idempotent when nothing changed —
+         and both refusals (a stale resume, an uncovered prune) name
+         it. That verb is also what keeps upcaster chains short. One
+         journal holding mixed payload vocabularies is legal and
+         normal — heterogeneity is the steady state, not a
+         transition."""]]
+
+  [child id=ee-migration n=18c.4 title='Stored-document migration'
+    [intro
+      """Store-side migration is spelled entirely in machinery that
+         already exists: **get, transform purely, put, advance the
+         ref.** Documents are immutable, addresses never move, the old
+         document stays addressable, and content dedup makes unchanged
+         documents free."""]
+
+    [list
+      [item """**Provenance is a claim.** `[migrated-from hash=…]` is a
+              detached Lane-2 value linking new to old — the same
+              hash-linkage discipline corrections use, never a field
+              smuggled into either document."""]
+      [item """**Migration is the representational relation.** It never
+              appears in the correction taxonomy and never alters valid
+              time — the fact did not change; its spelling did
+              ([[bitemporal]])."""]
+      [item """**A pure migration is a computation** — addressable and
+              cacheable ([[computation-identity]]): re-migrating an
+              unchanged document is a cache hit."""]
+      [item """**An impure migration is not a computation — it is a
+              command.** Enriching against an external service on the
+              way through is forced out into a declared command with
+              effects and an idempotency key ([[commands-effects]]),
+              whose output a pure migration then references. No network
+              call ever hides inside a replay."""]]
+
+    [body
+      """Read-time document projection without a put is permitted but
+         never the default — it produces values whose addresses resolve
+         nowhere, which is exactly the pressure the value-model
+         invariant exists to resist. Migrate forward, advance the ref,
+         and let the old address keep meaning what it always meant."""]]
+]

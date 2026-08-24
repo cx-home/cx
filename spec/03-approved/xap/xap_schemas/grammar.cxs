@@ -1,0 +1,81 @@
+[schema of=grammar mode=open]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Composed-grammar schema (DRAFT).
+#
+# One `*.grammar.cxd` = one `[grammar …]` document: the OUTPUT of composing the
+# grammars of every feature enabled in a XAP into ONE grammar (the single
+# interaction language). It is a deterministic PROJECTION of the feature specs —
+# recomputed, never hand-edited — and content-addressable (same feature set ⇒
+# same document ⇒ same Tier-1 hash). Every member carries `feature=` provenance.
+# Spec: spec/03-approved/xap/xap_grammar_composition.md. Open mode; destined to ship
+# with the cx toolchain alongside feature/xap/surface.cxs.
+# ─────────────────────────────────────────────────────────────────────────────
+
+[grammar
+ [attr xap::string     [opt]]    # the XAP this grammar was composed for (absent for a
+                                 # bare [$xap:compose] projection outside a XAP context)
+ [attr version::string [opt]]
+ [elem features   [card "1..1"]]   # the input feature set (name + version + hash)
+ [elem verbs      [card "1..1"]]
+ [elem nouns      [card "1..1"]]
+ [elem rules      [card "0..1"]]
+ [elem frames     [card "0..1"]]
+ [elem keys       [card "0..1"]]
+ [elem bare-terms [card "1..1"]]]  # the precomputed ρ index
+
+# ── the composed-over feature set (provenance root). 0..* so the EMPTY grammar
+# (the compose identity, spec §3.1/§8.1) validates. ──
+[features [elem feature [card "0..*"]]]
+[feature
+ [attr name::string    [req]]
+ [attr version::string [opt]]
+ [attr hash::string    [opt]]]   # Tier-1 content hash of the feature package (distribution)
+
+# ── verbs — fully qualified, with provenance + effect signature (0..* for the
+# empty grammar) ──
+[verbs [elem verb [card "0..*"]]]
+[verb
+ [attr name::string        [req]]   # qualified: <feature>/<verb>
+ [attr feature::string     [req]]   # provenance (owning feature)
+ [attr effect::string      [req] [enum observe act arrange]]
+ [attr scope::string       [req] [enum shared local]]
+ [attr consequence::string [req] [enum none reversible irreversible]]
+ [attr derived::bool       [opt]]   # true = a composite's verb; signature per §6 derivation
+ [elem constituents [card "0..1"]]] # derived verbs: the qualified verbs they invoke (N-COMPOSE-2 set)
+[type constituents::string]         # space-separated qualified verb names
+
+# ── nouns — fully qualified, with provenance (0..* for the empty grammar) ──
+[nouns [elem noun [card "0..*"]]]
+[noun
+ [attr name::string    [req]]   # qualified: <feature>/<noun>
+ [attr feature::string [req]]
+ [attr derived::bool   [opt]]]
+
+# ── rules — scoped to their owning feature ──
+[rules [elem rule [card "0..*"]]]
+[rule
+ [attr name::string    [req]]   # qualified: <feature>/<rule>
+ [attr feature::string [req]]
+ [attr kind::string    [req] [enum validity mandate exclusion ordering cardinality dependency]]]
+
+# ── frames & keys — the shared rulers, every registration listed (the join seams) ──
+[frames [elem frame [card "0..*"]]]
+[frame
+ [attr family::string [req] [enum geo time value]]
+ [elem registration [card "1..*"]]]
+[keys [elem key [card "0..*"]]]
+[key
+ [attr name::string [req]]
+ [attr type::string [req]]     # the W2-agreed value type/shape
+ [elem registration [card "1..*"]]]
+[registration
+ [attr feature::string [req]]
+ [attr noun::string    [req]]  # qualified noun
+ [attr via::string     [req]]] # the registered noun-field
+
+# ── bare-terms — the ρ index: every speakable bare term → its candidate set ──
+[bare-terms [elem term [card "0..*"]]]
+[term
+ [attr name::string       [req]]   # the bare verb term
+ [attr candidates::string [req]]]  # space-separated qualified verbs defining it

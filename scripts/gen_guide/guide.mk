@@ -57,7 +57,7 @@ endif
 ## engine changed and the playground must reflect it. The render's own stdout
 ## (write-file results) is discarded; real errors still surface.
 guide: $(GUIDE_CX_DEP)
-	@$(GUIDE_CX_BIN) $(GUIDE_GEN)/guide_build.cx --allow-read --allow-write >/dev/null
+	@$(GUIDE_CX_BIN) --allow-read --allow-write $(GUIDE_GEN)/guide_build.cx >/dev/null
 	@echo "guide: built $(GUIDE_OUT)/ via $(GUIDE_GEN)/guide_build.cx (render = .cx)"
 
 ## guide-snippets-check  Docs-example gate (#425): run every
@@ -87,12 +87,14 @@ check-retired-surface:
 ## playground-examples-regen  Regenerate + re-audit
 ##                                   scripts/gen_guide/playground/
 ##                                   playground.examples.js from its generator
-##                                   (gen_examples.py: every entry CLI-audited
-##                                   against the current binary, then the file
-##                                   is rewritten). Run after any engine/syntax
+##                                   (gen_examples.cx reading examples.cxd:
+##                                   every entry CLI-audited against the
+##                                   current binary, then the file is
+##                                   rewritten). Run after any engine/syntax
 ##                                   change the playground must reflect.
 playground-examples-regen: $(GUIDE_CX_DEP)
-	@python3 $(GUIDE_GEN)/playground/gen_examples.py
+	@$(GUIDE_CX_BIN) --allow-read --allow-write --allow-subprocess --allow-env \
+	  $(GUIDE_GEN)/playground/gen_examples.cx
 
 ## guide-wasm    Rebuild the playground wasm AND regenerate the playground
 ##                                   examples, then render the guide. Use when
@@ -164,8 +166,20 @@ build-playground-wasm-for-guide:
 	@# libcx-pthreads keeps SINGLE_FILE=0 because emscripten's pthread
 	@# runtime needs the separate .wasm to spawn Worker threads sharing
 	@# the same wasm module instance via SharedArrayBuffer.
-	@SINGLE_FILE=1 ASYNCIFY=1 PTHREADS=0 OUT_NAME=libcx-async    ./scripts/wasm/build_libcx_wasm.sh
-	@SINGLE_FILE=0 ASYNCIFY=1 PTHREADS=1 OUT_NAME=libcx-pthreads ./scripts/wasm/build_libcx_wasm.sh
+	@# ASYNCIFY_MODE=2 = JSPI (#930): the classic Asyncify rewriter cost
+	@# ~7x host stack per CX eval level under emcc 5.0.7 and broke the
+	@# diagram walkers at ~10 levels; JSPI restores full sync depth
+	@# (guard trips catchably at ~40) and shrinks the single-file bundle
+	@# 36MB → 13MB. MUST stay in lockstep with the top-level Makefile's
+	@# build-playground recipe.
+	@# libcx-sync: plain (ASYNCIFY=0) compatibility bundle for hosts
+	@# without the JSPI API (Safari; flag-gated Firefox) — the JSPI
+	@# bundles abort at instantiation there. cxlib.js selects it when
+	@# WebAssembly.Suspending is absent. MUST stay in lockstep with the
+	@# top-level Makefile's build-playground recipe.
+	@SINGLE_FILE=1 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=0 OUT_NAME=libcx-async    ./scripts/wasm/build_libcx_wasm.sh
+	@SINGLE_FILE=0 ASYNCIFY=1 ASYNCIFY_MODE=2 PTHREADS=1 OUT_NAME=libcx-pthreads ./scripts/wasm/build_libcx_wasm.sh
+	@SINGLE_FILE=1 ASYNCIFY=0                 PTHREADS=0 OUT_NAME=libcx-sync     ./scripts/wasm/build_libcx_wasm.sh
 
 ## guide-http   Build docs/guide/ + boot the dog-food CX HTTP static
 ##                                   server (scripts/gen_guide/guide_serve.cx)
@@ -192,7 +206,7 @@ guide-diff:
 endif
 	@stage="$$(mktemp -d -t cxguide-diff.XXXXXX)"; \
 	 cp -R $(GUIDE_OUT) "$$stage/before" 2>/dev/null || mkdir -p "$$stage/before"; \
-	 $(CURDIR)/vcx/target/cx $(GUIDE_GEN)/guide_build.cx --allow-read --allow-write >/dev/null; \
+	 $(CURDIR)/vcx/target/cx --allow-read --allow-write $(GUIDE_GEN)/guide_build.cx >/dev/null; \
 	 diff -ruN "$$stage/before" $(GUIDE_OUT) || true; \
 	 rm -rf "$$stage"
 

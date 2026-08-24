@@ -798,8 +798,12 @@ char* cx_code_eval_with_len
  *   NULL or ""     -> empty set (pure-only) — the spec default
  *   "all" / "*"    -> full grant (the --allow-all opt-out)
  *   "read,write,…" -> exactly the listed capabilities (least-privilege)
- * A denied effect at its effect point raises cx-err:CXER0271. The grant
- * applies only to this call (the process capability set is reset after). */
+ *   "net=host:443" -> scoped grant (`cap=resource` is THE scope spelling)
+ * An unknown capability name — or the retired `cap:resource` colon
+ * spelling — is a typed error (cx-err:CXER0274) and NO set is installed;
+ * the call returns the error without evaluating (#713/L114). A denied
+ * effect at its effect point raises cx-err:CXER0271. The grant applies
+ * only to this call (the process capability set is reset after). */
 char* cx_code_eval_caps
     (const char* input,
      const char* program,
@@ -811,6 +815,41 @@ typedef int (*cx_code_write_cb)(const char* bytes,
                                     size_t n,
                                     void* user);
 
+/* ── §2.16.1a cx_code_eval_streaming ───────────────────────────────────
+ *
+ * Evaluate `program` against `input` and deliver the rendered output to
+ * `write_cb` as one or more chunks. Concatenating every chunk yields
+ * EXACTLY the byte sequence cx_code_eval would have returned — the
+ * streaming and one-shot surfaces never disagree on content.
+ *
+ * A non-zero return from `write_cb` aborts the call with that failure
+ * wrapped as cx-err:CXER0001.
+ *
+ * INCREMENTAL DELIVERY IS CONDITIONAL. Output is streamed only when ALL
+ * of the following hold:
+ *
+ *   1. output_target is "text", "cx", or NULL/"" (which mean "text"); AND
+ *   2. the top-level program is a `[?for …]` comprehension, or a `[?map]`
+ *      directive (as the whole body or the LAST statement of a block); AND
+ *   3. a `[?for …]` carries NO `order-by` and NO `group-by` clause.
+ *
+ * Condition 3 is inherent, not a gap: those clauses must see the whole
+ * result set before emitting anything, so they can never stream.
+ *
+ * FOR EVERY OTHER SHAPE THE CALL SILENTLY FALLS BACK to one-shot
+ * evaluation: the complete rendered output is materialised in memory and
+ * handed to `write_cb` in a single chunk. Output is still correct — but a
+ * caller streaming a large input to bound memory does NOT get that bound,
+ * and cannot tell from the call itself (a genuinely streamed small result
+ * is also a single chunk).
+ *
+ * Ask cx_code_eval_streamable() FIRST when the input is large enough for
+ * the difference to matter.
+ *
+ * `user` is passed through to every callback. Its LOWEST BIT is reserved
+ * as CX_STREAM_UNBUFFERED: set it to flush after every yield instead of
+ * batching into 32 KiB chunks (interactive per-item output; slower). A
+ * caller that stores a real pointer in `user` must leave that bit clear. */
 char* cx_code_eval_streaming
     (const char* input,   size_t input_len,
      const char* program, size_t program_len,
@@ -818,6 +857,20 @@ char* cx_code_eval_streaming
      cx_code_write_cb write_cb,
      void* user,
      char** err_out);
+
+/* Report whether cx_code_eval_streaming will actually deliver this
+ * (program, output_target) INCREMENTALLY — without evaluating anything.
+ *
+ *   1 — streams (the conditions above are met)
+ *   0 — buffers the whole result into one chunk; this includes a
+ *       program that does not parse, since the streaming call would
+ *       surface that parse error on the one-shot path.
+ *
+ * Same authority the streaming call itself consults, so the answer
+ * cannot drift from the path taken. Allocates nothing; nothing to free. */
+int cx_code_eval_streamable
+    (const char* program, size_t program_len,
+     const char* output_target);
 
 /* ── §2.16.2 v0.7.6 cx_code_diagram (Phase 9.1, gate 17) ────────────────
  *

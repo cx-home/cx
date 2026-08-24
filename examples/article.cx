@@ -7,7 +7,7 @@
     [title CX Language Tour]
     [author J. Smith]
     [published 2026-04-19]
-    [tags ::string[] cx markup tutorial beginner]
+    [tags::string[] cx markup tutorial beginner]
   ]
 
   [body

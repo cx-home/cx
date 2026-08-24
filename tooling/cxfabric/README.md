@@ -70,7 +70,7 @@ of the client surface (`[$fabric:open "xsp://host:port" {…}]`):
 
 ```sh
 CX_ADAPTER_SEED=<hex> CX_ADAPTER_TOKEN=<token> \
-cx webhook-adapter.cx --data=adapter.config.cx \
+cx --data=adapter.config.cx webhook-adapter.cx \
    --allow-net=<daemon> --allow-net=<listen> [--allow-net=<callback>] --allow-env
 ```
 
@@ -97,7 +97,7 @@ no NATS library, no core seam):
 
 ```sh
 CX_BRIDGE_SEED=<hex> \
-cx nats-bridge.cx --data=nats-bridge.config.cx \
+cx --data=nats-bridge.config.cx nats-bridge.cx \
    --allow-net=<daemon> --allow-net=<nats-server> --allow-env
 ```
 

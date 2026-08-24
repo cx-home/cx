@@ -7,9 +7,10 @@ Protocol spec](https://microsoft.github.io/language-server-protocol/).
 ## Capabilities
 
 The table below mirrors the `initialize` response exactly —
-[`tests/check_capabilities.py`](tests/check_capabilities.py) drives a
+[`tests/check_capabilities.cx`](tests/check_capabilities.cx) drives a
 live `cx lsp` over stdio and fails when the server and this table
-disagree (`python3 tooling/lsp/tests/check_capabilities.py [/path/to/cx]`).
+disagree (`cx --allow-read --allow-write --allow-subprocess
+tooling/lsp/tests/check_capabilities.cx [/path/to/cx]`).
 
 | Feature                              | Status |
 | ------------------------------------ | ------ |

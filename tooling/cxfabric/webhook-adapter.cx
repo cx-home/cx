@@ -31,7 +31,7 @@
          [push url="http://…" stream="…" group="…" pattern=":a.*" fmt="cx"?]]]
 
    Run (deny-by-default capabilities):
-     cx webhook-adapter.cx --data=adapter.config.cx \
+     cx --data=adapter.config.cx webhook-adapter.cx \
         --allow-net=<daemon> --allow-net=<listen> [--allow-net=<callback>] \
         --allow-env
 
@@ -53,6 +53,24 @@
 [?def render-entry scope=public pure ($fmt $e)
   [?if [= $fmt 'json'] [then [$json:emit $e]] [else [$format:canonical $e]]]]
 
+[; an err RESPONSE BODY, built from the code and message as SCALARS.
+   #853 (code.md §6.4.1 / §9.2): an `err`-headed element is operand-consuming
+   — in element CHILD position it propagates, and as a CALL OPERAND it
+   short-circuits the call. So an err node can reach the wire neither as a
+   body child nor through `[$format:canonical <err>]`; the body has to be
+   TEXT that was never an err node on this side. Both field arguments are
+   scalars, so this call cannot short-circuit, and `$format:canonical` on a
+   scalar still does the quoting — the message is escaped by the renderer,
+   never by hand (`cx_choose_quote` is identity-bearing; #563-#565).
+   NOTE the one deliberate divergence from strict canonical: attribute values
+   here are always QUOTED, where strict canonical renders them bare when it
+   is safe to. The text is well-formed CX and round-trips to an err carrying
+   the exact fields (pinned by the adapter-refusal lane) — it is not claimed
+   to be canonical bytes. ]
+[?def err-body scope=public pure ($code $message)
+  [$concat '[err code=' [$format:canonical $code]
+           ' message=' [$format:canonical $message] ']']]
+
 [; highest seq= across received entries (they arrive ascending; fold is the
    order-independent belt) ]
 [?def max-seq scope=public pure ($entries)
@@ -70,11 +88,12 @@
     [?let
       [= $path   [$concat '' $req@path]]
       [= $method [$concat '' $req@method]]
-      [; responses are constructed INLINE at each site BY DESIGN: every
-         response body here carries an [err …]-shaped payload, and §9.2
-         implicit err-operand propagation would short-circuit a
-         resp(status, payload) helper call, yielding the payload instead
-         of the response envelope. ]
+      [; response ENVELOPES are constructed INLINE at each site BY DESIGN: a
+         resp(status, payload) helper would take the payload as an operand,
+         and §9.2 err-operand propagation would short-circuit the call and
+         yield the payload instead of the envelope. `err-body` is safe to
+         call because its operands are the code and message SCALARS, never
+         an err node. ]
       [= $hdr-of [?fn ($name)
         [?else [$first [?for [in $h $req/headers/header]
                  [where [= [$str:lower [$concat '' $h@name]] $name]]
@@ -83,9 +102,8 @@
                    [else [= [$hdr-of 'authorization'] [$concat 'Bearer ' $token]]]]]
       [?if [not $authed]
         [then [?element 'response' [?attr 'status' 401]
-                [?element 'body' [$format:canonical [?element 'err'
-                  [?attr 'code' 'cx-err:CXER0271']
-                  [?attr 'message' 'E_ADAPTER_DENIED: this door requires Authorization: Bearer <token>']]]]]]
+                [?element 'body' [err-body 'cx-err:CXER0271'
+                  'E_ADAPTER_DENIED: this door requires Authorization: Bearer <token>']]]]
         [else [?let
           [; route matching — [where] with handler-local comparands.
              Routes path from $cfg directly: a $first-rebound intermediate
@@ -121,12 +139,14 @@
                 [?match $payload
                   [case [err $e]
                     [?element 'response' [?attr 'status' 400]
-                      [?element 'body' [$format:canonical $e]]]]
+                      [?element 'body' [err-body [$concat '' $e@code]
+                                                 [$concat '' [?else $e@message '']]]]]]
                   [case $p
                     [?match [$fabric:publish $f [$concat '' $hook@stream] $p {}]
                       [case [err $e2]
                         [?element 'response' [?attr 'status' 502]
-                          [?element 'body' [$format:canonical $e2]]]]
+                          [?element 'body' [err-body [$concat '' $e2@code]
+                                                     [$concat '' [?else $e2@message '']]]]]]
                       [case $receipt
                         [?element 'response' [?attr 'status' 200]
                           [?element 'body' [$format:canonical $receipt]]]]]]]]]
@@ -136,14 +156,13 @@
                 [?element 'sse-subscribe' [?attr 'topic' $path]
                   [?element 'event' [?attr 'data' 'ready']]]]
               [else [?element 'response' [?attr 'status' 404]
-                      [?element 'body' [$format:canonical [?element 'err'
-                        [?attr 'code' 'cx-err:CXER4926']
-                        [?attr 'message' 'E_ADAPTER_ROUTE: no route at this path']]]]]]]]]]]]]]]
+                      [?element 'body' [err-body 'cx-err:CXER4926'
+                        'E_ADAPTER_ROUTE: no route at this path']]]]]]]]]]]]]
 
 [; one pump pass over the SSE lanes: receive → sse-publish to the topic ]
 [?def pump-sse scope=public impure ($lanebox)
   [?for [in $lane $lanebox//lane]
-    [yield [?let [= $entries [$fabric:receive [$first $lane/fabric-sub] {max: 32, deadline: 200}]]
+    [yield [?let [= $entries [?receive from=[$first $lane/fabric-sub] max=32 deadline=200]]
       [?for [in $e $entries]
         [yield [$http:sse-publish [$concat '' $lane@topic]
                  [?element 'event'
@@ -154,7 +173,7 @@
    redelivers (at-least-once) and the daemon's window backpressures. ]
 [?def pump-push scope=public impure ($lanebox)
   [?for [in $lane $lanebox//lane]
-    [yield [?let [= $entries [$fabric:receive [$first $lane/fabric-sub] {max: 16, deadline: 200}]]
+    [yield [?let [= $entries [?receive from=[$first $lane/fabric-sub] max=16 deadline=200]]
       [?if [> [$count $entries] 0]
         [then [?let
           [; an inline [?element] constructor is a valid def-call argument
@@ -206,23 +225,62 @@
      config as canonical text (pattern=":order.*"). Lanes ride in a BOX
      element — a bare sequence argument would splat across the callee's
      positional params. ]
+  [; RULED R5.12 — a lane that cannot join FAILS THE ADAPTER, by name.
+     Each lane's join is inspected with [?match] rather than dropped into
+     child position: a refusal (e.g. CXER4925 E_FABRIC_DENIED, the principal
+     holding no observe grant on the stream) becomes a `[lane-failed …]`
+     DIAGNOSTIC carrying the stream, the code and the message. It must NOT be
+     left as an err — a [?for] yields a SEQUENCE, and a sequence is not
+     element construction, so an err item is CONTAINED there and the adapter
+     would go on to bind its door and serve with the lane silently dead.
+     That was the observed fault: door answering 401 correctly, both output
+     streams empty, the SSE lane never joined, indefinitely. ]
   [= $sse-box [?element 'lanes' [?for [in $r $cfg/routes/sse]
-    [yield [?element 'lane'
-      [?attr 'topic' [$concat '' $r@path]]
-      [?attr 'fmt' [$concat '' [?else $r@fmt 'cx']]]
-      [$fabric:observe $f [$concat '' $r@stream]
-        [$first [$cx:parse [$concat '' $r@pattern]]]]]]]]]
+    [yield [?match [$fabric:observe $f [$concat '' $r@stream]
+                     [$first [$cx:parse [$concat '' $r@pattern]]]]
+      [case [err $e] [?element 'lane-failed'
+        [?attr 'kind' 'sse']
+        [?attr 'stream' [$concat '' $r@stream]]
+        [?attr 'code' [$concat '' $e@code]]
+        [?attr 'message' [$concat '' [?else $e@message '']]]]]
+      [case $sub [?element 'lane'
+        [?attr 'topic' [$concat '' $r@path]]
+        [?attr 'fmt' [$concat '' [?else $r@fmt 'cx']]]
+        $sub]]]]]]]
   [= $push-box [?element 'lanes' [?for [in $r $cfg/routes/push]
-    [yield [?element 'lane'
-      [?attr 'url' [$concat '' $r@url]]
-      [?attr 'fmt' [$concat '' [?else $r@fmt 'cx']]]
-      [$fabric:subscribe $f [$concat '' $r@stream]
-        [$first [$cx:parse [$concat '' $r@pattern]]]
-        {group: [$concat '' $r@group]}]]]]]]
-  [; serve returns immediately (block=false default; the reactor owns its
-     own threads); the MAIN fiber is the fabric→egress pump — the fabric
-     handle serializes wire turns internally, so reactor handlers publishing
-     while the pump receives interleave safely. ]
-  [= $srv [$http:serve [$concat 'tcp://' [$concat '' $cfg/http@addr]]
-            [make-handler $f $token $cfg] {}]]
-  [pump $sse-box $push-box]]
+    [yield [?match [$fabric:subscribe $f [$concat '' $r@stream]
+                     [$first [$cx:parse [$concat '' $r@pattern]]]
+                     {group: [$concat '' $r@group]}]
+      [case [err $e] [?element 'lane-failed'
+        [?attr 'kind' 'push']
+        [?attr 'stream' [$concat '' $r@stream]]
+        [?attr 'code' [$concat '' $e@code]]
+        [?attr 'message' [$concat '' [?else $e@message '']]]]]
+      [case $sub [?element 'lane'
+        [?attr 'url' [$concat '' $r@url]]
+        [?attr 'fmt' [$concat '' [?else $r@fmt 'cx']]]
+        $sub]]]]]]]
+  [; RULED R5.12 — the gate. Every failed lane is named, and the door is NOT
+     opened: binding `$srv` inside the [else] branch is what makes the refusal
+     fail FAST, because an err- or diagnostic-valued BINDING does not by
+     itself stop the bindings after it (verified: a flat [?let] runs on past
+     one). Branch-local bindings are the sanctioned nesting — a genuinely
+     different scope, not a cascade.
+     KNOWN SHORTFALL, deliberately not papered over: this refusal exits with
+     status 0, because CX has no exit and no raise directive and a top-level
+     result — err or not — is printed and exited 0. The diagnostic is loud and
+     the adapter serves nothing; the exit CODE needs a cli.md ruling. ]
+  [?if [$present $sse-box//lane-failed]
+    [then [adapter-refused-to-start [?attr 'reason' 'lane-join-failed']
+            $sse-box//lane-failed $push-box//lane-failed]]
+    [else [?if [$present $push-box//lane-failed]
+      [then [adapter-refused-to-start [?attr 'reason' 'lane-join-failed']
+              $sse-box//lane-failed $push-box//lane-failed]]
+      [else [?let
+        [; serve returns immediately (block=false default; the reactor owns its
+           own threads); the MAIN fiber is the fabric→egress pump — the fabric
+           handle serializes wire turns internally, so reactor handlers
+           publishing while the pump receives interleave safely. ]
+        [= $srv [$http:serve [$concat 'tcp://' [$concat '' $cfg/http@addr]]
+                  [make-handler $f $token $cfg] {}]]
+        [pump $sse-box $push-box]]]]]]]

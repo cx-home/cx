@@ -5,15 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Surfaces and projections — CX Guide</title>
 <link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <aside class="sidebar">
   <a class="brand" href="index.html" aria-label="CX — home">
-    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
   </a>
   <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
   <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
   <a class="brand-sub" href="about.html">About →</a>
   <div class="side-search">
     <input id="side-search-input" type="search"
@@ -21,168 +25,208 @@
            autocomplete="off" spellcheck="false" data-prefix="" />
     <ul id="side-search-results" class="side-search-results" hidden></ul>
   </div>
-  <section><h4>Guide</h4><ul>
+  <section><h4>Start here</h4><ul>
     <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
     <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
     <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
     <li><a class="active" href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
     <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
     <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
-    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
-    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
-    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
-    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
-    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
-    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
-    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
-    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
     <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
-    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
-    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
-    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
-  </ul></section>
-  <section><h4>Reference</h4><ul>
-    <li><a href="directives.html">Directives</a></li>
-    <li><a href="syntax.html">Core syntax</a></li>
-  </ul></section>
-  <section><h4>Standard library</h4><ul>
-    <li><a href="libraries.html">Overview</a></li>
-    <li><a href="lib-authz.html">authz</a></li>
-    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
     <li><a href="lib-bytes.html">bytes</a></li>
     <li><a href="lib-crypto.html">crypto</a></li>
     <li><a href="lib-csv.html">csv</a></li>
-    <li><a href="lib-did.html">did</a></li>
-    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
     <li><a href="lib-env.html">env</a></li>
-    <li><a href="lib-fabric.html">fabric</a></li>
     <li><a href="lib-format.html">format</a></li>
     <li><a href="lib-fp.html">fp</a></li>
     <li><a href="lib-ft.html">ft</a></li>
     <li><a href="lib-geo.html">geo</a></li>
     <li><a href="lib-hash.html">hash</a></li>
     <li><a href="lib-html.html">html</a></li>
-    <li><a href="lib-http.html">http</a></li>
     <li><a href="lib-i18n.html">i18n</a></li>
     <li><a href="lib-io.html">io</a></li>
-    <li><a href="lib-journal.html">journal</a></li>
     <li><a href="lib-json.html">json</a></li>
     <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
     <li><a href="lib-jsonschema.html">jsonschema</a></li>
     <li><a href="lib-locale.html">locale</a></li>
     <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
     <li><a href="lib-math.html">math</a></li>
     <li><a href="lib-mime.html">mime</a></li>
-    <li><a href="lib-net.html">net</a></li>
     <li><a href="lib-path.html">path</a></li>
     <li><a href="lib-process.html">process</a></li>
     <li><a href="lib-prof.html">prof</a></li>
     <li><a href="lib-random.html">random</a></li>
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
-    <li><a href="lib-session.html">session</a></li>
     <li><a href="lib-similar.html">similar</a></li>
-    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
     <li><a href="lib-test.html">test</a></li>
     <li><a href="lib-time.html">time</a></li>
     <li><a href="lib-url.html">url</a></li>
     <li><a href="lib-uuid.html">uuid</a></li>
     <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-vc.html">vc</a></li>
     <li><a href="lib-xap.html">xap</a></li>
     <li><a href="lib-xsp.html">xsp</a></li>
-  </ul></section>
-  <section><h4>XAP</h4><ul>
     <li><a href="xap.html">Overview</a></li>
     <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
     <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
     <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
     <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
   </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
 </aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Surfaces and projections</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
 <main>
 <section id="surfaces">
   <h1>Surfaces and projections</h1>
   
     <p>CX has one canonical surface (the bracket form) and projections
-       for JSON, YAML, TOML, XML, Markdown, CSV/TSV/PSV, and JSONL.
+       for JSON, YAML, TOML, XML, Markdown, and CSV/TSV/PSV.
        Every projection is defined as a transformation of canonical CX.
        The normative rules live in
-       [`spec/canonical.md`](../../spec/canonical.md) and
-       [`spec/conversions.md`](../../spec/conversions.md); this section
+       <a href="../../spec/03-approved/core/canonical.md"><code>spec/03-approved/core/canonical.md</code></a> and
+       <a href="../../spec/03-approved/core/conversions.md"><code>spec/03-approved/core/conversions.md</code></a>; this section
        is the developer-facing working summary.</p>
     <section id="cx-canonical">
       <h2>CX — the canonical dialect</h2>
       
-        <p>CX has **two** canonical forms — one for source-of-truth
+        <p>CX has <b>two</b> canonical forms — one for source-of-truth
          formatting (preserves comments, anchors, presentation), one for
          content-addressing (strips presentation, expands aliases,
          normalizes everything that doesn't change data). Per
-         [`spec/canonical.md §1`](../../spec/canonical.md).</p>
+         <a href="../../spec/03-approved/core/canonical.md"><code>spec/03-approved/core/canonical.md</code></a> §1.</p>
         <section id="canonical-lossless">
           <h3>Lossless canonical (cx fmt)</h3>
           
-            <p>Lossless canonical (`cx fmt`) preserves every node: comments,
+            <p>Lossless canonical (<code>cx fmt</code>) preserves every node: comments,
            anchors, aliases, merges, CX directives, BlockContent,
            RawText, processing instructions. It normalizes only
-           **presentation**: whitespace, indent, quoting, number
-           formatting, attribute ordering within their declared
-           category.</p>
+           <b>presentation</b>: whitespace, indent, quoting, number
+           formatting.</p>
             <ul>
               
-                <li>**Idempotent:** `fmt(fmt(x)) == fmt(x)` for any valid `x`.</li>
-                <li>**Use cases:** opinionated source-file formatter; diff
+                <li><b>Idempotent:</b> <code>fmt(fmt(x)) == fmt(x)</code> for any valid <code>x</code>.</li>
+                <li><b>Use cases:</b> opinionated source-file formatter; diff
                 stability across edits that don't change data; code
                 review where reviewers see only meaningful changes.</li>
               
             </ul>
             <pre>
-              <code class="language-cx">[# Source — author-friendly form (loose layout, mixed quoting) #]
+              <code class="language-cx">[; Source — author-friendly form (loose layout): ]
            [user
              email="ada@example.com"
              id=42
              active=true]
 
-           [# cx fmt output — presentation normalized, comments preserved #]
-           [user email='ada@example.com' id=42 active=true]</code>
+           [; cx fmt output — presentation normalized, one line: ]
+           [user email="ada@example.com" id=42 active=true]</code>
             </pre>
           
         </section>
         <section id="canonical-strict">
           <h3>Strict canonical (cx canonical / cx hash)</h3>
           
-            <p>Strict canonical (`cx canonical`) reduces input to
-           **data-equivalence form**. Strips comments, expands anchors
-           and aliases, resolves merges, removes presentation-only
-           directives, normalizes date offsets to UTC. Two CX documents
+            <p>Strict canonical (<code>cx canonical</code>) reduces input to
+           <b>data-equivalence form</b>. Strips comments and directives,
+           expands anchors and aliases, resolves merges, normalizes
+           datetime offsets to UTC, renames declared ids to a
+           deterministic document-order scheme. Two CX documents
            have identical strict canonical bytes if and only if they
-           encode the same data.</p>
+           encode the same data. Attribute order is data — it is
+           preserved, never sorted.</p>
             <ul>
               
-                <li>**Use cases:** `cx hash` (content-addressable hashing —
+                <li><b>Use cases:</b> <code>cx hash</code> (content-addressable hashing —
                 SHA-256 of strict canonical bytes); signed
                 configuration (sign the strict canonical bytes;
                 verify after canonicalizing); deduplication keyed on
                 data, not file bytes.</li>
-                <li>**Strict canonical is what the identity story rests on.**
+                <li><b>Strict canonical is what the identity story rests on.</b>
                 Two documents that "encode the same data" but differ on
-                comments, whitespace, attribute order, or anchor names
+                comments, whitespace, quoting, or anchor names
                 still hash to the same bytes.</li>
               
             </ul>
             <pre>
-              <code class="language-cx">[# Source #]
+              <code class="language-cx">[; Source: ]
            [user
-             [# regrettably noisy comment #]
+             [; regrettably noisy comment ]
              email='ada@example.com'
              id=42
              active=true]
 
-           [# cx canonical output — comments stripped, attributes sorted #]
-           [user active=true email='ada@example.com' id=42]</code>
+           [; cx canonical output — comment stripped, attribute order
+              preserved, bare strings where bare-eligible: ]
+           [user email=ada@example.com id=42 active=true]</code>
             </pre>
             <p>The strict-canonical bytes are what the SHA-256 hash is
            taken over (see <a class="xref" href="identity.html#hash">hash</a>) and what the round-trip guarantee
@@ -197,8 +241,8 @@
         <p>JSON is the most common interchange surface. CX → JSON mapping
          is straightforward; JSON → CX is well-defined for the JSON
          subset that maps cleanly to CX's data model. Per
-         [`spec/canonical.md §5`](../../spec/canonical.md) and
-         [`spec/conversions.md §4`](../../spec/conversions.md).</p>
+         <a href="../../spec/03-approved/core/canonical.md"><code>spec/03-approved/core/canonical.md</code></a> §5 and
+         <a href="../../spec/03-approved/core/conversions.md"><code>spec/03-approved/core/conversions.md</code></a> §2.2 / §4.</p>
         <pre>
           <code class="language-cx">[user id=42 email='ada@example.com' active=true
               [roles ('admin', 'editor')]]</code>
@@ -213,20 +257,20 @@
            }
          }</code>
         </pre>
-        <p>**Basic mapping:** Attributes become object keys; element bodies
+        <p><b>Basic mapping:</b> Attributes become object keys; element bodies
          of pure-element content become nested objects keyed by child
          element name; sequences become arrays; scalars map directly.</p>
         <section id="json-mixed-content">
           <h3>Mixed content and the lossless $tag envelope</h3>
           
             <p>Mixed content — text interleaved with inline elements — has
-           no native JSON form. The **default** projection is lossy: the
-           text runs concatenate under a reserved `"_"` key and the
-           inline elements become sibling keys, so run order is not
-           recoverable. Under `--lossless`, an element instead emits as
-           the reserved `$tag` **envelope**
-           ([`spec/conversions.md §2.2.1`](../../spec/conversions.md)):
-           `$children` is an ordered array of runs, so mixed content
+           no native JSON form. The <b>default</b> projection is lossy: the
+           text runs collect into an array under a reserved <code>"_"</code> key and
+           the inline elements become sibling keys, so run order is not
+           recoverable. Under <code>--lossless</code>, an element instead emits as
+           the reserved <code>$tag</code> <b>envelope</b>
+           (<a href="../../spec/03-approved/core/conversions.md"><code>spec/03-approved/core/conversions.md</code></a> §2.2.1):
+           <code>$children</code> is an ordered array of runs, so mixed content
            survives exactly.</p>
             <pre>
               <code class="language-cx">[para 'The function ' [code 'parse'] ' returns a value.']</code>
@@ -234,53 +278,55 @@
             <pre>
               <code class="language-json">{ "$tag": "para", "$children": ["The function ", {"$tag": "code", "$children": ["parse"]}, " returns a value."] }</code>
             </pre>
-            <p>JSON → CX reverses this unconditionally: a `$tag` envelope
+            <p>JSON → CX reverses this unconditionally: a <code>$tag</code> envelope
            reconstructs the element with its body in order. The
-           round-trip is byte-identical against `cx canonical` output
-           (`cx eq` accepts the recovered document); the envelope also
-           carries attributes (`$attrs` + `$attr-types`), element
-           metadata (`$anchor` / `$merge` / `$id` / `$type`), and
-           `[table]` payloads (`$cols` / `$rows`).</p>
+           round-trip is byte-identical against <code>cx canonical</code> output
+           (<code>cx eq</code> accepts the recovered document); the envelope also
+           carries attributes (<code>$attrs</code> + <code>$attr-types</code>), element
+           metadata (<code>$anchor</code> / <code>$merge</code> / <code>$id</code> / <code>$type</code>), and
+           <code>[table]</code> payloads (<code>$cols</code> / <code>$rows</code>).</p>
           
         </section>
         <section id="json-namespaces">
           <h3>Namespace handling</h3>
           
-            <p>CX namespace declarations (`xmlns:dc=URI`) project as JSON
-           object keys with the `xmlns:` prefix preserved. Qualified
-           names like `dc:title` project as JSON keys with the colon
+            <p>CX namespace declarations (<code>xmlns:dc=URI</code>) project as JSON
+           object keys with the <code>xmlns:</code> prefix preserved. Qualified
+           names like <code>dc:title</code> project as JSON keys with the colon
            preserved (JSON keys are arbitrary strings, so this is
            legal). Round-trip is lossless when consumers preserve the
-           `xmlns:` attributes.</p>
+           <code>xmlns:</code> attributes.</p>
           
         </section>
         <section id="json-numbers">
           <h3>Number precision and BigInt</h3>
           
             <p>JSON numbers are IEEE-754 doubles per RFC 8259, with
-           ambiguous integer support beyond `2^53-1`. CX exports int64
-           integers as JSON numbers; `bigint` scalars export as JSON
+           ambiguous integer support beyond <code>2^53-1</code>. CX exports int64
+           integers as JSON numbers; <code>bigint</code> scalars export as JSON
            strings, with the type recovered in lossless mode via the
-           `cx:type` sidecar (map positions) or the per-item
-           `{"cx:bigint": "…"}` carrier (array positions) — see
-           [`spec/conversions.md §0.2`](../../spec/conversions.md).
-           Sized variants (`::i32`, `::u64`) keep their native number
-           image; the width name rides the envelope's `$type` /
-           `$attr-types` in lossless mode.</p>
-            <p>Floats with `nan` / `inf` / `-inf` are not reachable from
+           <code>cx:type</code> sidecar (map positions) or the per-item
+           <code>{"cx:bigint": "…"}</code> carrier (array positions) — see
+           <a href="../../spec/03-approved/core/conversions.md"><code>spec/03-approved/core/conversions.md</code></a> §0.2.
+           Sized variants (<code>::i32</code>, <code>::u64</code>) keep their native number
+           image; the width name rides the envelope's <code>$type</code> /
+           <code>$attr-types</code> in lossless mode.</p>
+            <p>Floats with <code>nan</code> / <code>inf</code> / <code>-inf</code> are not reachable from
            pure CX arithmetic (CX floats are finite-only); at the FFI
-           boundary the JSON module's `nan-handling` option controls
-           `null` / string / error behavior.</p>
+           boundary the JSON module's <code>nan-handling</code> option controls
+           <code>null</code> / string / error behavior.</p>
           
         </section>
         <section id="json-null">
           <h3>null vs missing</h3>
           
             <p>JSON has no way to distinguish "key absent" from "key present
-           with value null." CX preserves the distinction: `[user]` (no
-           email attribute) projects to `{"user": {}}`; `[user email=null]`
-           projects to `{"user": {"email": null}}`. JSON → CX reads
-           absent keys as absent attributes (NOT as null).</p>
+           with value null." CX preserves the distinction where JSON can
+           express it: <code>[user email=null]</code> projects to
+           <code>{"user": {"email": null}}</code>, while an empty element <code>[user]</code>
+           projects to <code>{"user": null}</code> (an element with no attributes
+           and no body has nothing to become an object of). JSON → CX
+           reads absent keys as absent attributes (NOT as null).</p>
           
         </section>
       
@@ -289,10 +335,10 @@
       <h2>YAML projection</h2>
       
         <p>YAML follows the JSON projection but uses YAML's mapping and
-         sequence syntax — including the lossless `$tag` envelope, which
+         sequence syntax — including the lossless <code>$tag</code> envelope, which
          is the same encoding in both lanes
-         ([`spec/conversions.md §2.3.1`](../../spec/conversions.md)):
-         CX anchors and merges ride the envelope's `$anchor` / `$merge`
+         (<a href="../../spec/03-approved/core/conversions.md"><code>spec/03-approved/core/conversions.md</code></a> §2.3.1):
+         CX anchors and merges ride the envelope's <code>$anchor</code> / <code>$merge</code>
          keys in lossless mode.</p>
         <pre>
           <code class="language-cx">[defaults &server-base host='localhost' tls=true]
@@ -311,44 +357,50 @@
                port: 8001</code>
         </pre>
         <p>YAML's loose schema (untyped scalars, multiple ways to spell
-         the same value) is normalized on input: `yes`/`true`/`True`
-         all map to canonical `true`, numeric strings stay strings,
+         the same value) is normalized on input: <code>yes</code>/<code>true</code>/<code>True</code>
+         all map to canonical <code>true</code>, numeric strings stay strings,
          etc. The conversion is documented in
-         [`spec/conversions.md §5`](../../spec/conversions.md).</p>
+         <a href="../../spec/03-approved/core/conversions.md"><code>spec/03-approved/core/conversions.md</code></a> §5.</p>
         <section id="yaml-tags">
-          <h3>YAML tags (!!str, !!int, !!binary)</h3>
+          <h3>YAML tags (!!binary and the !!cx: family)</h3>
           
-            <p>YAML tags survive round-trip: `!!str 42` parses to CX
-           `:string "42"`; `!!int "42"` parses to CX `:int 42`;
-           `!!binary base64bytes` parses to CX `:bytes`. The CX
-           emitter writes tags only when type inference would be
-           ambiguous (e.g. emitting a numeric-looking string requires
-           `!!str` to avoid being read back as a number).</p>
+            <p>Two tag families are honored on YAML → CX parse: <code>!!binary</code>
+           (base64 payload → CX <code>:bytes</code> — <code>a: !!binary aGVsbG8=</code>
+           parses to <code>[a 0x68656c6c6f]</code>) and the CX-specific <code>!!cx:T</code>
+           type carriers. Any other tag — including the standard
+           <code>!!str</code> / <code>!!int</code> — is not interpreted: the <b>whole scalar
+           text, tag included, is kept as one string</b> (<code>!!custom foo</code>
+           parses to the string <code>'!!custom foo'</code>). On emit, ambiguity
+           is prevented by quoting, not tagging: a numeric-looking
+           string emits as <code>'42'</code>; bytes emit with <code>!!binary</code>.</p>
           
         </section>
         <section id="yaml-multiline">
           <h3>Multiline scalars (| and >)</h3>
           
-            <p>Literal block style (`|`) preserves newlines verbatim;
-           folded block style (`&gt;`) collapses single newlines to spaces
-           but preserves blank lines. CX triple-quoted strings round-trip
-           through `|` by default (preserves the as-authored shape).
-           The `&gt;` form is used on emit when the string content has no
-           internal blank lines and the line length would exceed 80
-           columns.</p>
+            <p>On input, YAML's literal (<code>|</code>) and folded (<code>&gt;</code>) block styles
+           parse per YAML 1.2 — newlines preserved or folded
+           respectively. On emit there is <b>no block-scalar form</b>:
+           the canonical YAML emitter is block-style for structure but
+           writes multi-line string values as ordinary quoted scalars
+           with escaped newlines (<code>body: "line one\\nline two"</code>), which
+           round-trip exactly.</p>
           
         </section>
         <section id="yaml-anchors">
           <h3>Anchors and aliases</h3>
           
-            <p>YAML-native anchors (`&amp;name`) and aliases (`*name`) are
+            <p>YAML-native anchors (<code>&amp;name</code>) and aliases (<code>*name</code>) are
            resolved (expanded) on YAML → CX parse — the data content is
            preserved, the anchor/alias structure is not
-           ([`spec/conversions.md §5.1`](../../spec/conversions.md)).
-           In the other direction, CX anchors and merges are dropped by
-           the default YAML emit and carried by the lossless envelope's
-           `$anchor` / `$merge` keys, which the importer reconstructs —
-           so a `--lossless` round-trip preserves them.</p>
+           (<a href="../../spec/03-approved/core/conversions.md"><code>spec/03-approved/core/conversions.md</code></a> §5.1).
+           In the other direction the default YAML emit is symmetric:
+           CX anchors and merges are <b>resolved</b> — aliases expand to
+           their referent, merge hosts inherit — so the YAML carries the
+           semantic document (the Resolved AST, <code>ast.md</code>). The lossless
+           envelope instead carries the authored structure via <code>$anchor</code>
+           / <code>$merge</code> keys, which the importer reconstructs — so a
+           <code>--lossless</code> round-trip preserves them.</p>
           
         </section>
       
@@ -356,53 +408,55 @@
     <section id="toml">
       <h2>TOML projection</h2>
       
-        <p>TOML's table syntax (`[server]`) projects to CX elements; nested
-         tables (`[server.tls]`) project to nested elements; arrays of
-         tables (`&#91;&#91;users]]`) project to repeated child elements. Per
-         [`spec/conversions.md §6`](../../spec/conversions.md).</p>
-        <pre>
-          <code class="language-toml">[server]
-         host = "localhost"
-         tls = true
-
-         [server.tls]
-         cert = "site.pem"
-
-         &#91;&#91;users]]
-         id = 1
-         email = "ada@example.com"
-
-         &#91;&#91;users]]
-         id = 2
-         email = "grace@example.com" </code>
-        </pre>
+        <p>CX → TOML projects the element tree onto TOML tables: each
+         nested element becomes a section whose header is the
+         <b>quoted dotted path</b> from the root, and repeated
+         identically-named children become an array of tables. Per
+         <a href="../../spec/03-approved/core/conversions.md"><code>spec/03-approved/core/conversions.md</code></a> §2.4 / §6.</p>
         <pre>
           <code class="language-cx">[config
-           [server host='localhost' tls=true
-             [tls cert='site.pem']]
+           [server host='localhost' tls=true]
            [users
              [user id=1 email='ada@example.com']
              [user id=2 email='grace@example.com']]]</code>
         </pre>
+        <pre>
+          <code class="language-toml">[config]
+         ["config.server"]
+         host = "localhost"
+         tls = true
+
+         ["config.users"]
+         &#91;&#91;"config.users.user"]]
+         id = 1
+         email = "ada@example.com"
+
+         &#91;&#91;"config.users.user"]]
+         id = 2
+         email = "grace@example.com" </code>
+        </pre>
         <section id="toml-inline">
-          <h3>Inline tables vs dotted keys</h3>
+          <h3>Section headers, not inline tables</h3>
           
-            <p>TOML allows two shapes for nested scalars: inline tables
-           (`server = { host = "x", tls = true }`) and dotted keys
-           (`server.host = "x"`, `server.tls = true`). Both project to
-           the same CX nested-element shape. Canonical CX → TOML
-           output uses the inline form for tables with ≤ 4 entries and
-           the section-header form otherwise.</p>
+            <p>TOML allows three spellings for nested scalars: inline tables
+           (<code>server = { host = "x" }</code>), dotted keys (<code>server.host = "x"</code>),
+           and section headers. All three parse; the emitter's choice is
+           <b>structural, not size-based</b> — there is no entry-count
+           threshold. Every nested element emits as a section with a
+           quoted dotted-path header (<code>["config.server"]</code>), scalars as
+           <code>key = value</code> lines beneath it.</p>
           
         </section>
         <section id="toml-array-of-tables">
           <h3>Array of tables</h3>
           
-            <p>`&#91;&#91;users]]` repeated produces an array. CX preserves order
-           and emits as repeated child elements with the same name.
-           CX → TOML emits `&#91;&#91;name]]` for any sibling group of N≥2
-           identically-named child elements; one-of-a-kind children
-           use the dotted-key form.</p>
+            <p><code>&#91;&#91;users]]</code> repeated on the TOML side produces an array of
+           maps on import (TOML → CX yields map / array values, not
+           elements). CX → TOML emits <code>&#91;&#91;"path.to.name"]]</code> — the
+           quoted-dotted-path array-of-tables header — for any sibling
+           group of identically-named child elements, preserving
+           order; a one-of-a-kind child emits a plain quoted section
+           header, never a dotted key.</p>
           
         </section>
       
@@ -413,8 +467,8 @@
         <p>XML is the closest projection — both CX and XML are
          element-with-attributes-and-body languages. The mapping is
          essentially one-to-one for element / attribute / text content.
-         Per [`spec/canonical.md §8`](../../spec/canonical.md) and
-         [`spec/conversions.md §3`](../../spec/conversions.md).</p>
+         Per <a href="../../spec/03-approved/core/canonical.md"><code>spec/03-approved/core/canonical.md</code></a> §8 and
+         <a href="../../spec/03-approved/core/conversions.md"><code>spec/03-approved/core/conversions.md</code></a> §2.1 / §3.</p>
         <pre>
           <code class="language-cx">[user id=42 email='ada@example.com'
            [profile
@@ -427,16 +481,17 @@
            </profile>
          </user></code>
         </pre>
-        <p>Differences from XML: CX has no DOCTYPE / DTD layer (schemas
+        <p>Differences from XML: CX has no DTD validation layer (schemas
          are first-class CX, see <a class="xref" href="data-language.html#schema">schema</a>); namespace declarations
-         are CX attributes with the `xmlns:` prefix preserved; CDATA
-         sections project to triple-quoted strings.</p>
+         are CX attributes with the <code>xmlns:</code> prefix preserved; CDATA
+         sections project to CX raw-text nodes (<code>[#…#]</code>), whose
+         contents are opaque bytes.</p>
         <section id="xml-pi">
           <h3>Processing instructions and comments</h3>
           
-            <p>XML processing instructions (`&lt;?xml-stylesheet …?&gt;`) project
-           to CX directive elements (`[?xml-stylesheet …]`). XML
-           comments (`&lt;!-- … --&gt;`) project to CX comments (`[# … #]`).
+            <p>XML processing instructions (<code>&lt;?xml-stylesheet …?&gt;</code>) project
+           to CX directive elements (<code>[?xml-stylesheet …]</code>). XML
+           comments (<code>&lt;!-- … --&gt;</code>) project to CX comments (<code>[; … ]</code>).
            Both round-trip losslessly in the lossless canonical form;
            the strict canonicalizer strips comments per
            <a class="xref" href="#canonical-strict">canonical-strict</a>.</p>
@@ -445,22 +500,24 @@
         <section id="xml-space-roundtrip">
           <h3>xml:space round-trip</h3>
           
-            <p>`xml:space=preserve` survives XML round-trip identically.
-           Same for `cx:lang` (round-trips as `xml:lang` if the input
-           used that alias; preserves the chosen form). See
-           <a class="xref" href="data-language.html#xml-space">xml-space</a> and <a class="xref" href="data-language.html#locale">locale</a>.</p>
+            <p><code>xml:space=preserve</code> survives XML round-trip identically —
+           as an <b>inert pass-through attribute</b>. CX gives it no
+           engine semantics: quoted body text is verbatim anyway (see
+           <a class="xref" href="data-language.html#xml-space">xml-space</a>), so there is nothing for the attribute to
+           switch. It rides along for XML consumers that honor it.</p>
           
         </section>
         <section id="xml-doctype-dtd">
           <h3>DOCTYPE and DTD</h3>
           
             <p>CX does not have a DTD layer. XML input with a DOCTYPE
-           declaration is accepted; the DOCTYPE name is captured as a
-           `[?cx doctype=…]` directive (see <a class="xref" href="data-language.html#doctype">doctype</a>). DTD content
-           (`&lt;!ELEMENT&gt;`, `&lt;!ATTLIST&gt;`, `&lt;!ENTITY&gt;`) is parsed but not
-           used for validation — schemas are first-class CX (`.cxs`
-           files, see <a class="xref" href="data-language.html#schema">schema</a>). External entity references are
-           gated per <a class="xref" href="data-language.html#include-capabilities">include-capabilities</a>.</p>
+           declaration is accepted; the declaration is captured as a
+           <b>DoctypeDecl prolog node</b> on the document (<code>&lt;!DOCTYPE html&gt;</code>
+           imports as <code>[!DOCTYPE html]</code> ahead of the root element).
+           DTD internal-subset content (<code>&lt;!ELEMENT&gt;</code>, <code>&lt;!ATTLIST&gt;</code>,
+           <code>&lt;!ENTITY&gt;</code>) is carried verbatim inside that node and is
+           not used for validation — schemas are first-class CX
+           (<code>.cxs</code> files, see <a class="xref" href="data-language.html#schema">schema</a>).</p>
           
         </section>
       
@@ -468,14 +525,14 @@
     <section id="md">
       <h2>Markdown projection</h2>
       
-        <p>Markdown projects to CX as structured prose. Headings become
-         `[h1] [h2] …`; paragraphs become `[p]`; lists become `[ul]` /
-         `[ol]` / `[li]`; inline code becomes `[code]`; links become
-         `[link]`. Round-trip is the design center — `cx convert
-         README.md --to cx --to md` produces byte-identical output for
-         documents within the supported MD subset. Per
-         [`spec/canonical.md §10`](../../spec/canonical.md) and
-         [`spec/conversions.md §7`](../../spec/conversions.md).</p>
+        <p>Markdown is a <b>typed-lossy codec</b>, not one of the lossless
+         data lanes (<a href="../../spec/03-approved/core/conversions.md"><code>spec/03-approved/core/conversions.md</code></a> §7).
+         MD → CX yields a <code>[doc]</code>-rooted prose tree: headings become
+         <code>[h1] [h2] …</code>; paragraphs become <code>[p]</code>; lists become <code>[ul]</code> /
+         <code>[ol]</code> / <code>[li]</code>; inline code becomes <code>[code]</code>. The MD → CX → MD
+         direction is byte-stable for the supported subset, but
+         CX ↔ MD in general is lossy — element names, attributes, and
+         types outside the prose vocabulary do not survive.</p>
         <pre>
           <code class="language-md"># Hello
 
@@ -485,50 +542,54 @@
          - item 2</code>
         </pre>
         <pre>
-          <code class="language-cx">[h1 'Hello']
-         [p 'A paragraph with ' [em 'emphasis'] ' and ' [code 'code'] '.']
-         [ul
-           [li 'item 1']
-           [li 'item 2']]</code>
+          <code class="language-cx">[doc
+           [h1 Hello]
+           [p 'A paragraph with ' [em emphasis] ' and ' [code code] '.']
+           [ul
+             [li item 1]
+             [li item 2]]]</code>
         </pre>
         <section id="md-tables">
           <h3>GFM tables</h3>
           
-            <p>GitHub-Flavored Markdown tables project to CX `[table]`
-           elements with `[tr]` / `[th]` / `[td]` children. Column
-           alignment markers (`:---`, `:---:`, `---:`) project to
-           `align=left`/`center`/`right` attributes on the `[th]`
-           cells.</p>
+            <p>A GFM pipe table in Markdown input is <b>not decomposed</b> into
+           <code>[tr]</code> / <code>[th]</code> / <code>[td]</code> structure — the table's source lines
+           are carried as raw text inside a <code>[table]</code> element, and
+           re-emit reproduces them byte-for-byte.</p>
             <pre>
               <code class="language-md">| Name | Age |
            |:-----|----:|
-           | Ada  |  35 |
-           | Linus | 24 |</code>
+           | Ada  |  35 |</code>
             </pre>
             <pre>
-              <code class="language-cx">[table
-           [tr [th align=left 'Name'] [th align=right 'Age']]
-           [tr [td 'Ada']   [td 35]]
-           [tr [td 'Linus'] [td 24]]]</code>
+              <code class="language-cx">[doc
+           [table [#| Name | Age |
+         |:-----|----:|
+         | Ada  |  35 |#]]]</code>
             </pre>
+            <p>In the other direction, a CX <code>[table[…]]</code> block (see
+           <a class="xref" href="data-language.html#tables">tables</a>) emits as a real GFM pipe table — header row from
+           the declared column names, then one row per data row — per
+           <a href="../../spec/03-approved/core/conversions.md"><code>spec/03-approved/core/conversions.md</code></a> §7.</p>
           
         </section>
         <section id="md-fences">
           <h3>Fenced code with language</h3>
           
-            <p>Fenced code blocks (` ```lang ... ``` `) project to
-           `[pre [code lang=lang ...]]`. The language identifier is
-           preserved; canonical emit uses single-quoted attribute form
-           for the language tag.</p>
+            <p>Fenced code blocks (<code> </code><code></code>lang ... <code></code><code> </code>) project to a
+           <code>[code]</code> element with a bare <code>lang</code> attribute and the code
+           carried verbatim as raw text — <code>[code lang=python
+           [#print(1)#]]</code>. There is no <code>[pre]</code> wrapper. The language
+           identifier round-trips.</p>
           
         </section>
         <section id="md-frontmatter">
           <h3>Frontmatter</h3>
           
-            <p>YAML frontmatter (between `---` markers at top of file)
-           projects to a `[frontmatter]` element with attributes from
-           the YAML mapping. Round-trip preserves the frontmatter
-           shape verbatim.</p>
+            <p>YAML frontmatter (between <code>---</code> markers at top of file)
+           projects to <b>attributes on the <code>[doc]</code> root element</b>.
+           Values stay strings — a frontmatter <code>date:</code> is not
+           auto-typed into a CX date.</p>
             <pre>
               <code class="language-md">---
            title: My Post
@@ -538,28 +599,31 @@
            # Body</code>
             </pre>
             <pre>
-              <code class="language-cx">[frontmatter title='My Post' date=2026-05-22]
-           [h1 'Body']</code>
+              <code class="language-cx">[doc title='My Post' date='2026-05-22'
+           [h1 Body]]</code>
             </pre>
           
         </section>
         <section id="md-footnotes">
           <h3>Footnotes</h3>
           
-            <p>GFM footnotes (`text[^1]` … `[^1]: ref`) project to
-           inline `[fn-ref id=1]` elements with corresponding
-           `[fn-def id=1 ...]` at the document end. Round-trip
-           preserves the labels.</p>
+            <p>GFM footnote syntax (<code>text[^1]</code> … <code>[^1]: ref</code>) is <b>not
+           implemented</b> — there are no <code>[fn-ref]</code> / <code>[fn-def]</code>
+           elements. Footnote markers are treated as ordinary inline
+           text by the prose parser and do not round-trip as
+           footnotes. Keep footnotes out of Markdown that must
+           survive a CX round-trip.</p>
           
         </section>
         <section id="md-math">
-          <h3>Math blocks (KaTeX/MathJax)</h3>
+          <h3>Math blocks</h3>
           
-            <p>`$inline$` and `$$display$$` math project to `[math]`
-           elements with `display=true|false`. The body is the LaTeX
-           source preserved verbatim (no LaTeX parsing). Renderers
-           (KaTeX, MathJax, native renderers) consume the `[math]`
-           element directly.</p>
+            <p>Math syntax (<code>$inline$</code>, <code>$$display$$</code>) is <b>not
+           implemented</b> — there is no <code>[math]</code> element. Dollar-sign
+           math is treated as ordinary inline text and is not
+           protected from the prose parser's emphasis and pairing
+           rules. Keep LaTeX math out of Markdown that must survive
+           a CX round-trip.</p>
           
         </section>
       
@@ -570,42 +634,42 @@
         <p>CSV (comma-separated), TSV (tab-separated), and PSV
          (pipe-separated) all project via the same delimited-data
          pipeline. Per
-         [`spec/canonical.md §9`](../../spec/canonical.md).
-         Delimited round-trip is well-defined but **lossy** (column
+         <a href="../../spec/03-approved/core/canonical.md"><code>spec/03-approved/core/canonical.md</code></a> §9 and
+         <a href="../../spec/03-approved/core/conversions.md"><code>spec/03-approved/core/conversions.md</code></a> §8.
+         Delimited round-trip is well-defined but <b>lossy</b> (column
          types are not preserved on emit, only on the in-memory
          CX side).</p>
         <pre>
           <code class="language-csv">id,name,email,active
          1,Ada,ada@example.com,true
-         2,Grace,grace@example.com,false
-         3,Linus,linus@example.com,true</code>
+         2,Grace,grace@example.com,false</code>
         </pre>
         <pre>
-          <code class="language-cx">[table :columns (id :int, name :string, email :string, active :bool)
-         (1, 'Ada',   'ada@example.com',   true)
-         (2, 'Grace', 'grace@example.com', false)
-         (3, 'Linus', 'linus@example.com', true)]</code>
+          <code class="language-cx">[table [table[id::int name email active::bool]]
+           1 Ada ada@example.com true
+           2 Grace grace@example.com false
+         ]</code>
         </pre>
         <section id="delim-header">
-          <h3>Header detection</h3>
+          <h3>Header row</h3>
           
-            <p>The reader inspects the first row: if all values are
-           non-numeric, non-boolean, non-date strings AND the second
-           row contains at least one typeable value, the first row is
-           the header. The default heuristic can be overridden:
-           `cx convert in.csv --header=auto|present|absent --to cx`.</p>
-            <p>When `header=absent`, columns are named `col1`, `col2`, …;
-           an explicit schema (`--schema cols.cxs`) can name them.</p>
+            <p>The first row is <b>always the header</b> — its cells become
+           the column names of the imported <code>[table[…]]</code> block. There
+           is no header-detection heuristic and no flag to declare the
+           header absent; headerless data needs a header row added
+           before import.</p>
           
         </section>
         <section id="delim-types">
           <h3>Type inference</h3>
           
-            <p>Per-column type inference scans the first 1000 rows (or
-           all rows if fewer): all values match `:int` → `:int`; all
-           match `:int` or `:float` → `:float`; all bool → `:bool`;
-           all date or datetime → `:date` / `:datetime`; otherwise
-           `:string`. An explicit schema overrides inference.</p>
+            <p>Per-column type inference scans the <b>whole column</b>: all
+           values match int → <code>::int</code>; all match int or float →
+           <code>::float</code>; all bool → <code>::bool</code>; all date or datetime →
+           <code>::date</code> / <code>::datetime</code>; otherwise the column stays string
+           (the untyped default). One odd value anywhere in the column
+           is enough to keep it string — inference never truncates its
+           scan.</p>
           
         </section>
         <section id="delim-quoting">
@@ -613,53 +677,24 @@
           
             <p>RFC 4180 rules: fields containing the delimiter, double
            quote, or newline are wrapped in double quotes; internal
-           double quotes are escaped as `""`. Output canonicalizes to
+           double quotes are escaped as <code>""</code>. Output canonicalizes to
            RFC 4180 regardless of input quoting style. Lone CR / LF
            outside quotes are treated as row terminators; embedded
            CRLF inside a quoted field is preserved verbatim.</p>
             <p>CSV → CX → CSV is byte-identical for RFC-4180-conformant
-           input. CSV with non-standard quoting (single quotes, no
-           escape) is accepted on input via `--delimiter-profile=relaxed`
-           and emits as RFC 4180.</p>
+           input (quoted fields and escaped quotes included). The
+           emit direction is defined only for table-shaped documents:
+           a CX document that is not a single flattenable table
+           refuses with a named <code>emit_delimited</code> error rather than
+           guessing a tabular shape.</p>
           
         </section>
-      
-    </section>
-    <section id="jsonl">
-      <h2>JSONL / NDJSON projection</h2>
-      
-        <p>JSON Lines (`.jsonl`, also called NDJSON) is one JSON value
-         per line, separated by `\\n`. Projects to CX as a sequence
-         of top-level documents — equivalent to CX's multi-document
-         file format (`--- ` separator).</p>
-        <pre>
-          <code class="language-jsonl">{"id": 1, "msg": "first"}
-         {"id": 2, "msg": "second"}
-         {"id": 3, "msg": "third"}</code>
-        </pre>
-        <pre>
-          <code class="language-cx">[record id=1 msg='first']
-         ---
-         [record id=2 msg='second']
-         ---
-         [record id=3 msg='third']</code>
-        </pre>
-        <p>The CX → JSONL emitter is record-per-line, no trailing
-         newline. Suitable for streaming log lines, event streams,
-         and large-result-set delivery. The streaming reader emits
-         CX records one at a time without materializing the whole
-         file in memory.</p>
-        <p>JSON Pointer (RFC 6901) — the `path/within/json` form —
-         projects to CXPath via the equivalent step sequence.
-         `/data/0/name` → `/data[1]/name` (CXPath uses 1-based
-         positional predicates; JSON Pointer uses 0-based array
-         indexes).</p>
       
     </section>
     <section id="bytes-wire">
       <h2>Bytes scalar across surfaces</h2>
       
-        <p>The `:bytes` scalar kind (see <a class="xref" href="data-language.html#bytes">bytes</a>) has a different wire
+        <p>The <code>:bytes</code> scalar kind (see <a class="xref" href="data-language.html#bytes">bytes</a>) has a different wire
          form per surface — no surface has a single native binary form
          that all the others share. The CX↔surface bridge applies a
          deterministic encoding per surface:</p>
@@ -702,8 +737,8 @@
               </tr>
               <tr>
                 <td>XML</td>
-                <td>text; cx:type="bytes" when lossless</td>
-                <td>hex text content</td>
+                <td>hex text + cx:type="bytes"</td>
+                <td>the sidecar attribute is emitted unconditionally, not only under --lossless</td>
               </tr>
               <tr>
                 <td>TOML</td>
@@ -712,12 +747,12 @@
               </tr>
               <tr>
                 <td>Markdown</td>
-                <td>text (base64)</td>
-                <td>plain text form</td>
+                <td>HTML-comment fallback</td>
+                <td>a bytes-bearing element has no prose image; it emits as an HTML comment</td>
               </tr>
               <tr>
                 <td>CSV / TSV</td>
-                <td>base64 string in the cell</td>
+                <td>0x&lt;hex&gt; text in the cell</td>
                 <td>deserializer needs schema to know it is bytes</td>
               </tr>
               <tr>
@@ -728,12 +763,11 @@
             
           </tbody>
         </table>
-        <p>The table states the conversions contract, and the shipped
-         lanes match it: JSON / TOML / Markdown emit base64, YAML emits
-         `!!binary`, and the lossless JSON lane recovers the bytes type
-         via the `cx:type` sidecar / `{"cx:bytes": …}` carrier
-         (#458 closed the lane wiring; #475 added the array-position
-         carrier).</p>
+        <p>The table states the shipped behavior per lane: JSON / TOML
+         emit base64 strings, YAML emits <code>!!binary</code>, XML emits the hex
+         text with the <code>cx:type="bytes"</code> sidecar, and the lossless
+         JSON lane recovers the bytes type via the <code>cx:type</code> sidecar /
+         <code>{"cx:bytes": …}</code> carrier.</p>
       
     </section>
     <section id="roundtrip">
@@ -741,23 +775,20 @@
       
         <p>The round-trip contract is the single most important property
          of CX's surface design. Stated formally:</p>
-        <p class="note">For any CX document **D** in canonical form, and any supported
-         projection format **F**, the following identity holds:
+        <p class="note">For any CX document <b>D</b> in canonical form, and any
+         <b>lossless-lane</b> projection format <b>F</b> (XML, or JSON / YAML
+         under <code>--lossless</code>), the following identity holds:
 
-         `to_cx(to_F(D)) == D` (as canonical bytes)
+         <code>to_cx(to_F(D)) == D</code> (as canonical bytes)
 
-         For any document **F** in projection format **F** that was
-         produced by `to_F(D)` for some canonical CX **D**:
-
-         `to_F(to_cx(F)) == F` (as bytes, modulo format-specific
-         whitespace normalization rules in
-         [`spec/conversions.md`](../../spec/conversions.md)).</p>
-        <p>Where this **does not** hold — the lossy projections — the
-         loss is documented and bounded. The conformance suite includes
-         round-trip fixtures for every supported projection; the runner
-         shells out to `cx convert` in both directions and asserts byte
+         For the lossy lanes the loss is documented and bounded — see
+         the matrix below and
+         <a href="../../spec/03-approved/core/conversions.md"><code>spec/03-approved/core/conversions.md</code></a>.</p>
+        <p>The conformance suite includes round-trip fixtures for every
+         supported projection; the runner shells out to
+         <code>cx --from=… --to=…</code> in both directions and asserts byte
          equality (or documented-divergence) per format.</p>
-        <p>**Lossiness matrix** (per [`spec/conversions.md §9`](../../spec/conversions.md)):</p>
+        <p><b>Lossiness matrix</b> (reproduced from <a href="../../spec/03-approved/core/conversions.md"><code>spec/03-approved/core/conversions.md</code></a> §9):</p>
         <table>
           <thead>
             
@@ -770,8 +801,6 @@
                 <th>TOML</th>
                 <th>MD</th>
                 <th>CSV</th>
-                <th>JSONL</th>
-                <th>CXCol/Parquet</th>
               </tr>
             
           </thead>
@@ -781,25 +810,21 @@
                 <td>CX</td>
                 <td>lossless</td>
                 <td>lossless‡</td>
-                <td>lossless▣</td>
-                <td>lossless▣</td>
+                <td>lossy◊ / lossless▣</td>
+                <td>lossy◊ / lossless▣</td>
                 <td>lossy◊</td>
-                <td>lossy</td>
+                <td>lossy◊</td>
                 <td>lossy§</td>
-                <td>per-record</td>
-                <td>table-only</td>
               </tr>
               <tr>
                 <td>XML</td>
                 <td>lossless</td>
                 <td>lossless</td>
-                <td>lossless▣</td>
-                <td>lossless▣</td>
+                <td>lossy◊</td>
+                <td>lossy◊</td>
                 <td>lossy◊</td>
                 <td>lossy</td>
                 <td>lossy§</td>
-                <td>per-record</td>
-                <td>table-only</td>
               </tr>
               <tr>
                 <td>JSON</td>
@@ -810,32 +835,26 @@
                 <td>lossless¶</td>
                 <td>lossy</td>
                 <td>lossy§</td>
-                <td>lossless if 1-per-line</td>
-                <td>table-only</td>
               </tr>
               <tr>
                 <td>YAML</td>
-                <td>lossy*</td>
-                <td>lossy*</td>
+                <td>lossy\*</td>
+                <td>lossy\*</td>
                 <td>lossless¶</td>
                 <td>lossless¶</td>
                 <td>lossless¶</td>
                 <td>lossy</td>
                 <td>lossy§</td>
-                <td>per-doc</td>
-                <td>table-only</td>
               </tr>
               <tr>
                 <td>TOML</td>
-                <td>lossless**</td>
-                <td>lossless**</td>
+                <td>lossless\*\*</td>
+                <td>lossless\*\*</td>
                 <td>lossless¶</td>
                 <td>lossless¶</td>
                 <td>lossless¶</td>
                 <td>lossy</td>
                 <td>lossy§</td>
-                <td>1-doc</td>
-                <td>table-only</td>
               </tr>
               <tr>
                 <td>MD</td>
@@ -846,96 +865,70 @@
                 <td>lossy</td>
                 <td>lossless</td>
                 <td>lossy§</td>
-                <td>1-doc</td>
-                <td>lossy</td>
               </tr>
               <tr>
-                <td>CSV / TSV</td>
+                <td>CSV</td>
                 <td>lossy§</td>
                 <td>lossy§</td>
                 <td>lossy§</td>
                 <td>lossy§</td>
                 <td>lossy§</td>
                 <td>lossy§</td>
-                <td>lossless</td>
-                <td>lossless via :table</td>
-                <td>lossless</td>
-              </tr>
-              <tr>
-                <td>JSONL</td>
-                <td>1-doc-per-rec</td>
-                <td>1-doc-per-rec</td>
-                <td>lossy (concat)</td>
-                <td>lossless</td>
-                <td>lossless if homogeneous</td>
-                <td>lossy</td>
-                <td>lossless if flat</td>
-                <td>lossless</td>
-                <td>lossless if flat</td>
-              </tr>
-              <tr>
-                <td>CXCol / Parquet</td>
-                <td>:table form</td>
-                <td>:table form</td>
-                <td>per-row</td>
-                <td>per-row</td>
-                <td>lossy</td>
-                <td>lossy</td>
-                <td>lossless</td>
-                <td>per-row</td>
                 <td>lossless</td>
               </tr>
             
           </tbody>
         </table>
-        <p>**Legend:**</p>
+        <p><b>Legend:</b></p>
         <ul>
           
-            <li>**lossless** — byte-identical round-trip within the
+            <li><b>lossless</b> — byte-identical round-trip within the
               format's expressive range.</li>
-            <li>**‡** — CX → XML is lossless when consumers preserve the
-              `cx:` namespace attributes.</li>
-            <li>**¶** — lossless within the expressive range of that
+            <li><b>‡</b> — CX → XML is lossless when consumers preserve the
+              <code>cx:</code> namespace attributes.</li>
+            <li><b>¶</b> — lossless within the expressive range of that
               format.</li>
-            <li>**▣** — lossless under `--lossless`: the `$tag`
+            <li><b>▣</b> — lossless under <code>--lossless</code>: the <code>$tag</code>
               structure envelope + value carriers
-              ([`spec/conversions.md §2.2.1 / §2.3.1`](../../spec/conversions.md))
+              (<a href="../../spec/03-approved/core/conversions.md"><code>spec/03-approved/core/conversions.md</code></a> §2.2.1 / §2.3.1)
               recover element documents byte-identically
               (strict-canonical eq). The default (idiomatic) lane keeps
               the ◊ losses. Program directives are outside every
               lane's lossless domain.</li>
-            <li>**◊** — CX → JSON/YAML/TOML default lane with CXDM
+            <li><b>◊</b> — CX → JSON/YAML/TOML/MD default lane with CXDM
               container Items (Array, Map, Sequence-as-Item):
               non-string Map keys are coerced to strings on emit
               (lossy); the Sequence-vs-Array distinction is lost
-              (in lossless mode both recover, via the `cx:key-type`
-              sidecar and the `cx:seq` carrier).</li>
-            <li>**§** — Delimited (CSV/TSV/PSV) is well-defined but lossy:
-              type metadata is lost on emit; comments, anchors,
-              multi-document, mixed content, and PIs are stripped or
-              error; element names are lost on parse (recovered via
-              schema or auto-typing — see <a class="xref" href="#delim-types">delim-types</a>).</li>
-            <li>*** — YAML anchors and aliases are resolved (expanded) on
+              (in lossless mode both recover, via the <code>cx:key-type</code>
+              sidecar and the <code>cx:seq</code> carrier).</li>
+            <li><b>§</b> — Delimited (CSV/TSV/PSV) is well-defined but lossy:
+              type metadata is lost on emit; anchors, aliases, and
+              merges are resolved (an aliased row projects as a full
+              row); comments, multi-document, mixed content, and PIs
+              are stripped or error; element names are lost on parse
+              (recovered via schema or auto-typing — see
+              <a class="xref" href="#delim-types">delim-types</a>).</li>
+            <li>\\* — YAML anchors and aliases are resolved (expanded) on
               parse; not reconstructed in CX output. Data content is
               preserved.</li>
-            <li>**\\*\\*** — TOML has no mixed content or comments, so CX
+            <li>\\*\\* — TOML has no mixed content or comments, so CX
               output contains only what TOML can express; no loss
               within TOML's range.</li>
           
         </ul>
-        <p>**Practically:** you can store data as JSON for the JS
+        <p><b>Practically:</b> you can store data as JSON for the JS
          ecosystem, convert to CX for selection / transformation /
-         hashing, then convert back to JSON for delivery — no
-         information loss, no re-formatting drift, no string-mangling
+         hashing, then convert back to lossless-lane JSON for delivery —
+         no information loss, no re-formatting drift, no string-mangling
          in between. The CSV / TSV / Markdown projections are
          documented one-way exports for their respective ecosystems;
          round-trip back into CX recovers structure but not the
          lossy-on-emit metadata. The CXCol / Parquet bridges are
          lossless for table-shaped data and one-way for everything
          else.</p>
-        <p>The hash is taken over **strict canonical bytes** (see
+        <p>The hash is taken over <b>strict canonical bytes</b> (see
          <a class="xref" href="#canonical-strict">canonical-strict</a>), not over the surface form. Two
-         documents that round-trip identically through any projection
+         documents that round-trip identically through a lossless lane
          hash to the same SHA-256 — including across surfaces. This
          is the foundation of CX's content-addressing story (see
          <a class="xref" href="identity.html#hash">hash</a>).</p>
@@ -944,6 +937,13 @@
   
 </section>
 </main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>Surfaces and projections</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
 <script src="highlight/highlight.js" defer></script>
 <script src="search-index.js" defer></script>
 <script src="search/search.js" defer></script>

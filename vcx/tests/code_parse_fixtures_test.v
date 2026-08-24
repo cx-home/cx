@@ -1,7 +1,9 @@
 module main
 
 import code
+import platform as _
 import cx
+import fixtures
 import os
 
 // ── End-to-end fixture-parsing test ──────────────────────────────────────────
@@ -27,6 +29,48 @@ import os
 // spec/v0_8_0_status.md for the open list. Listing them here keeps the
 // regression gate honest while the items are open.
 const expected_parse_failures = [
+	// RULED: MSS-3 + MSS-4 (#917): four deliberate PARSE rejections — the
+	// map-syntax settlement's refuse-never-invent pins (unknown declaration
+	// kind, spaced glue after a key, checked key ascription, and the
+	// program error surfacing instead of the silent data-fallback mangle).
+	// Each carries an out-err pin in the eval runner.
+	'program-map-103-mss4-unknown-kind-refuses',
+	// #923 (RULED: BC-1): a /-bearing bare attr-value run whose prefix is
+	// not a path head refuses LOUD with the quote-the-value hint at PARSE
+	// (the eval runner pins the out-err).
+	'program-attr-bare-003-slash-run-refuses-loud',
+	// #920: literal dup keys refuse at PARSE in the program reading too
+	// (W014 parity; the eval runner pins the out-err).
+	'program-map-109-dupkey-parity-refuses',
+	// MSS-7: a kind-only tag with a value refuses at parse.
+	'program-map-113-mss7-kind-with-value-refuses',
+	'program-map-104-mss3-spaced-glue-refuses',
+	'program-map-106-mss3-key-ascription-checked',
+	'program-map-107-mss3-fallback-hatch-closed',
+	// CXP-1 (2026-08-20): the [?cx] pragma key set is a CLOSED registry;
+	// this fixture deliberately pins the unknown-key refusal, so its
+	// in-code payload MUST fail to parse.
+	'program-cx-pi-003-unknown-cx-key-refused',
+	// #820 (RULED: 820-1a): the `cx:` namespace is reserved for the
+	// serializer's canonical image, so a `cx:`-prefixed element head is a
+	// PARSE rejection (E210, wrapped CXER0100) in both readings — a
+	// grounded negative, enforced via the eval runner's out_err path.
+	'program-reserved-ns-001-cx-head-refused',
+	// The four CXPath grounded negatives, registered when the stale
+	// `program-cxpath-` entry left pending_phase2_impl_prefixes below:
+	// that prefix blanket-SKIPPED every CXPath fixture in this gate as
+	// "pending Phase 2 V impl" long after CXPath shipped, so the whole
+	// family was unchecked here. Each of these four is a deliberate parse
+	// rejection with an out-err pin, not a gap.
+	//   [?find] is RETIRED from the §4.1 registry:
+	'program-cxpath-010-retired-find-raises-error',
+	//   #472: a GLUED attribute tail on a ROOTED path is rejected —
+	//   `…/name/@attr` is the rooted spelling; the glued form is
+	//   $-binding-path surface only ([135a]):
+	'program-cxpath-attr-tail-003-glued-rooted-tail-rejected',
+	'program-cxpath-attr-tail-004-glued-rooted-tail-no-predicate-rejected',
+	//   #809: only the four [131b] names take the `()` NodeTest form:
+	'program-cxpath-kindtest-011-unknown-kind-test-refused',
 	// #466 attribute ascription: attributes are scalar-only (D2), so an
 	// array annotation `name::T[]=…` in attribute position is a PARSE
 	// rejection (CXER0100) in both readings — a grounded negative,
@@ -85,12 +129,32 @@ const expected_parse_failures = [
 	// accepts a parse-time CXER0100); a COMPUTED zero step keeps the eval-time
 	// D21 check. See vcx/tests/slice_step_zero_test.v.
 	'program-slice-013-step-zero',
+	// #776 (stream 11 §3/§10): a hex token under an exact-kind postfix
+	// ascription rejects at PARSE time (the #466 item-3 rule carried to
+	// the program reading; message carries CXER0290, code CXER0100 —
+	// the eval runner's out_err path accepts the parse-time raise).
+	'program-ascription-002-hex-under-exact-refused',
 	// #421: an unknown `[?name]` head stays fail-closed (CXER0100,
 	// unknown_directive program intent — code.md §1.3 class 1). The `[?cx …]`
 	// PI/config namespace is the carve-out (grammar [34]/[59a]: NOT a §4.1
 	// directive) and parses via the node_lit DATA↔PROGRAM seam; this negative
 	// pins that the carve-out did not loosen the registry for other heads.
 	'program-cx-pi-004-unknown-directive-fails-closed',
+	// Stream 13 L55 (I1): the registry's only alias [?chain] is RETIRED
+	// (unknown directive, CXER0100) and the takewhile/dropwhile clause
+	// spellings are RENAMED take-while/drop-while (old spellings
+	// tombstone-error at parse). Grounded negatives, enforced via the
+	// eval runner's out_err path.
+	'program-iterator-chain-001',
+	'program-for-takewhile-003-retired-spelling-negative',
+	'program-for-dropwhile-003-retired-spelling-negative',
+	// U1.1a / #763 (stream-2 W2): the [?for] lazy hint is RENAMED
+	// [stream] → [lazy] ('stream' is the delivery concept's name). The
+	// old spelling tombstone-errors at parse; [lazy] + a materialising
+	// barrier ([order-by]/[group-by]) refuses at parse per §7.4.
+	// Grounded negatives, enforced via the eval runner's out_err path.
+	'program-for-lazy-002-stream-retired-spelling-negative',
+	'program-for-lazy-003-materialiser-combine-negative',
 	// #478: a DYNAMIC attribute value on a `[table[…]]` element literal
 	// rejects at PARSE time (CXER0100 — the tabular form is data-only and
 	// rides the data-reader seam, which cannot carry `$x`). Grounded
@@ -103,6 +167,13 @@ const expected_parse_failures = [
 	// error. Grounded negative, enforced via the eval runner's out_err
 	// path.
 	'program-table-484-002-misplaced-opener-err',
+	// RULED CRS-1 + PS-1 (#862/#886): explicit `axis::` steps on a call /
+	// directive RESULT reject at PARSE time with the BP-1 diagnostic
+	// (grammar [135a] MUST-reject). Grounded negatives, enforced via the
+	// eval runner's out_err path. (The CRS-1 case shipped without this
+	// registration — the lane was red at the PS-1 baseline; trued here.)
+	'program-callstep-004-axis-on-call-result-refused',
+	'program-callstep-012-axis-on-directive-result-refused',
 ]
 
 // v0.8.0 fixtures whose parser support is gated on Phase 2 V impl.
@@ -127,7 +198,6 @@ const expected_parse_failures = [
 //   program-render-*           — selected entries gated on CXPath
 // pred-* ([expr] general predicate)
 const pending_phase2_impl_prefixes = [
-	'program-cxpath-',
 	'program-match-multi-',
 	'program-modify-',
 	'program-def-',
@@ -178,19 +248,19 @@ struct Fixture {
 	gate    string // per-case gate toggle (enforced|advisory|pending|skip; '' = enforced)
 }
 
-// CX-native: read the .cxd suite via cx.load_fixtures. The doc-example
+// CX-native: read the .cxd suite via fixtures.load_fixtures. The doc-example
 // `=== test: <test-id>` template (formerly stripped here via strip_fences) is
 // already excluded by the converter, so no fence handling is needed; fixtures
 // without an in_code section are skipped, as before.
 fn read_fixtures() []Fixture {
-	mut fixtures := []Fixture{}
-	for c in cx.load_fixtures(fixture_path()) {
+	mut out := []Fixture{}
+	for c in fixtures.load_fixtures(fixture_path()) {
 		if 'in_code' !in c.sections {
 			continue
 		}
-		fixtures << Fixture{ id: c.name, in_code: c.sections['in_code'], gate: c.gate }
+		out << Fixture{ id: c.name, in_code: c.sections['in_code'], gate: c.gate }
 	}
-	return fixtures
+	return out
 }
 
 // Wrap helper names so the parser accepts them as zero-arity calls.
@@ -208,13 +278,13 @@ fn is_expected_failure(id string) bool {
 }
 
 fn test_every_fixture_in_code_parses() {
-	fixtures := read_fixtures()
-	assert fixtures.len > 100, 'expected many fixtures, got ${fixtures.len}'
+	cases := read_fixtures()
+	assert cases.len > 100, 'expected many fixtures, got ${cases.len}'
 	mut failures := []string{}
 	mut expected_pass := 0
 	mut expected_fail_actually_passed := []string{}
 	mut pending_phase2_skipped := 0
-	for f in fixtures {
+	for f in cases {
 		// Skip fixtures gated on Phase 2 V impl (per
 		// pending_phase2_impl_prefixes). When their parser lands,
 		// remove the prefix from the list — this test then naturally

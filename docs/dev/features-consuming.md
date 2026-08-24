@@ -18,21 +18,22 @@ feature distribution & market spec (`spec/03-approved/xap/xap_feature_distributi
 
 `xap.cxd` with hash-pinned feature rows, plus each row's resolved `requires`
 closure, is a **complete reproducible closure** spanning both planes. From the
-live marine deployment:
+live reference deployment:
 
 ```cx
-[feature name=own-ship package=./features/own-ship status=ready version=0.1.1
+[feature name=orders package=./features/orders status=ready version=0.1.1
     manifest=f77d02b1… hash=3c7867a3…
   [requires
-    [pin library=marine-common version=0.2.0 manifest=ef3896cc… hash=5e1fdeee…]
-    [pin library=nmea0183      version=0.1.0 manifest=dfc7a847… hash=9420de8a…]]]
+    [pin library=commerce-common version=0.2.0 manifest=ef3896cc… hash=5e1fdeee…]
+    [pin library=gtin           version=0.1.0 manifest=938ccff3… hash=9f0e24be…]]]
 ```
 
 The composed grammar is a deterministic function of the pinned set, so the
 grammar hash is itself a supply-chain witness. **Update = new hash, explicit
 re-pin; rollback = re-pin the previous hash** (the lifecycle section of the
-distribution spec). In xap-marine, `make registry-pin` regenerates the pinned
-doc from the registry via `registry/pin.cx`.
+distribution spec). A consuming project typically wires a `make registry-pin`
+target that regenerates the pinned doc from its registry (the `reference/shop`
+app carries the worked example).
 
 ## Loading library code by pin — `pkg:` references
 
@@ -47,16 +48,16 @@ names, and `https://`:
 The registry is bound by the `CX_REGISTRY` environment variable (a store URL);
 the full fail-closed verification chain (content re-hash + publisher
 signature) runs on **every** load — there is no trust-the-registry mode.
-Verified against the live marine registry:
+Verified against the committed in-tree registry (2026-08-05):
 
 ```cx
-[?lib 'pkg:marine-common@0.2.0' :as mc]
-[$mc:fmt-speed 6.4 "m/s"]
-# → '3.3 m/s'
+[?lib 'pkg:gtin@0.1.0' :as gtin]
+[$gtin:render "629104150021"]
+# → '6291041500213'
 ```
 
 ```sh
-CX_REGISTRY=file:///…/xap-marine/registry/store cx --allow-read program.cx
+CX_REGISTRY=file:///…/cx-private/registry/store cx --allow-read --allow-env program.cx
 ```
 
 Error lanes (fail-closed, from the distribution spec's function-surface
@@ -66,18 +67,19 @@ tampered tree → `CXER4881`.
 
 The deployment host derives each feature's `pkg:` reference from the
 `xap.cxd` pins, so a running XAP's code plane **is** its lockfile.
-`own-ship.cx` opens with exactly this:
+The feature's module opens with exactly this:
 
 ```cx
-[?lib 'pkg:marine-common@0.2.0' :as mc]
+[?lib 'pkg:gtin@0.1.0' :as gtin]
 ```
 
 ## Vendoring — materialized dependencies
 
-Fetch → verify → write files → `[?lib './…']` remains valid (offline/at-sea
+Fetch → verify → write files → `[?lib './…']` remains valid (offline field
 deployments vendor their whole feature set into a local store and install
-with full trust checks and no network). `xap-marine/tools/vendor.cx` +
-`make vendor` is the working example. `pkg:` is the canonical path; vendoring
+with full trust checks and no network). A `tools/vendor.cx` + `make vendor`
+pair is the working pattern (`reference/shop` carries it). `pkg:` is
+the canonical path; vendoring
 is the explicitly-supported alternative, not required machinery.
 
 ## Version discipline

@@ -5,7 +5,7 @@
    command and output on this page was run before it landed here
    (issue #425 coverage gap). #]
 
-[section id=operations n=17 title='Operations'
+[section id=operations group='Ring 2 — Platform' n=17 title='Operations'
 
   [intro
     """CX in production is deliberately boring: a static binary, a
@@ -52,11 +52,21 @@
 
   [child id=ops-store-daemon n=17.2 title='The store service daemon'
     [body
-      """The one daemon the platform ships is the CX Store service:
-         `cx store-serve` runs a multi-threaded content-addressed
-         store server over HTTP (the CSRP protocol), configured by a
-         CX document and gated by the ordinary capability flags —
-         serving binds a socket, so it needs `--allow-net`:"""]
+      """Two daemons ship with the platform. The first is the CX Store
+         service: `cx store-serve` runs a multi-threaded
+         content-addressed store server over the **XSP store profile**
+         — the store wire, reached by clients as `cx-store://` (TLS)
+         or `cx-store+xsp://` (cleartext dev) — with an optional gRPC
+         edge listener; plain HTTP serves only the bootstrap endpoints
+         (health, ready, metrics, capabilities). Its sibling,
+         `cx fabric-serve`, runs the single-node fabric eventing tier:
+         journal-backed fabrics served to XSP-AUTH clients over raw
+         XSP frames, configured the same way (`--config
+         fabric.service.cx`; the fabric spec is
+         `spec/03-approved/std-lib/fabric.md`). The rest of this
+         subsection covers the store daemon. It is configured by a CX
+         document and gated by the ordinary capability flags — serving
+         binds a socket, so it needs `--allow-net`:"""]
     [example lang=sh
       """$ cx store-serve --config /etc/cxstore/cxstore.service.cx --allow-net"""]
     [body """The config is itself CX data — this is a complete minimal
@@ -70,7 +80,7 @@
          including an honest warning when you have not configured
          auth:"""]
     [output
-      """cx store-serve: listening on tcp://127.0.0.1:18761 — 1 store(s): docs (mem://docs), 4 workers, auth OPEN — no providers configured, anonymous full access (configure [auth …] for production)"""]
+      """cx store-serve: listening on tcp://127.0.0.1:18761 — 1 store(s): docs (mem://docs), 4 workers, auth OPEN — no [xsp [grants …]] configured, anonymous full access (configure grants for production)"""]
     [body
       """Liveness and readiness are plain HTTP endpoints, and the
          binary doubles as its own probe (`cx store-health` exits 0
@@ -87,16 +97,15 @@ ready"""]
     [table
       [tr [th 'signal'] [th 'effect']]
       [tr [td 'SIGTERM / SIGINT'] [td 'stop accepting, drain in-flight requests, checkpoint every mounted store, exit 0']]
-      [tr [td 'SIGHUP'] [td 'reload the hot config (auth, limits, observability, timeouts, TLS identity) without dropping connections — systemd ExecReload']]]
+      [tr [td 'SIGHUP'] [td 'reload the hot config sections — tls, timeouts, limits, observability — without dropping connections, validate-then-swap; bind/stores/workers changes refuse the reload as restart-required. This is the signal an ExecReload= directive should send (the shipped unit does not carry one yet)']]]
     [body
-      """Two operator verbs round out the surface: `cx store-token`
-         mints a cryptographically-random bearer token and prints the
-         ready-to-paste `[auth …]` config stanza (the secret is shown
-         once on stderr and never stored), and `cx store-rotate-kek`
+      """One operator verb rounds out the surface: `cx store-rotate-kek`
          re-wraps an encrypted store under a new key-encryption key,
-         resumable and fail-closed. Auth providers, RBAC, TLS,
-         observability (metrics, tracing, JSON logs), DoS fairness,
-         and the gRPC listener are covered end-to-end in
+         resumable and fail-closed. There is no token-minting verb,
+         because authority is not a bearer secret: clients hold DIDs,
+         and the daemon's `[xsp [grants …]]` table decides every
+         operation. TLS, observability (metrics, tracing, JSON logs),
+         DoS fairness, and the gRPC listener are covered end-to-end in
          `docs/dev/store-service.md`, `docs/dev/store-management.md`,
          and `docs/dev/store-security.md`."""]]
 
@@ -126,8 +135,9 @@ ready"""]
          installs it to the prefix. There is nothing else to ship — a
          CX deployment is the binary, your `.cx` files, and the
          capability flags in the unit file. The binary self-describes:
-         `cx --version` reports version, commit, build date, and the
-         compiled collector."""]]
+         `cx --version` reports version, build profile, commit, build
+         date, the compiled collector, the V-fork pin, the compiled
+         storage engines, and the feature set."""]]
 
   [child id=ops-env n=17.4 title='Environment variables'
     [body
@@ -139,7 +149,7 @@ ready"""]
       [tr [td 'CX_HTTP_N'] [td 'min(4, cores)'] [td 'HTTP reactor (socket-owner) count. An integer is honored as-is; `max` means one per core. Fan-out past 4 rarely helps — the default scales from laptop to server.']]
       [tr [td 'CX_HTTP_EXEC'] [td '16'] [td 'HTTP executor threads running handlers — deliberately above the reactor count so a handler parked on an upstream call never freezes the serve plane.']]
       [tr [td 'CX_HTTP_QUEUE'] [td '1024'] [td 'Pending-job queue depth; overflow answers 503.']]
-      [tr [td 'CX_WORKER_THREADS'] [td '(on)'] [td 'Set to 0 to force [?worker] bodies onto the synchronous path — a diagnostics/bisection escape hatch only; it is not spec-conforming for workers that must overlap.']]
+      [tr [td 'CX_WORKER_THREADS'] [td '(unset)'] [td 'Sizes the worker thread pool — sizing only, never a semantics dial. [?worker] and [?async] bodies always spawn concurrently; the old =0 synchronous-fallback semantics are retired and non-conforming.']]
       [tr [td 'CX_REGISTRY'] [td '(unset)'] [td 'Store URL binding the feature registry for `pkg:` module references; unset, a `pkg:` resolution fails closed (CXER4889).']]
       [tr [td 'CX_STORE_KEK_<id>'] [td '(unset)'] [td 'Key-encryption-key material for encrypted stores, injected by id — key material never lives in config files.']]
       [tr [td 'VGC_MEMLIMIT_MB'] [td '2048'] [td 'Soft heap limit: the GC pacer is clamped here so collection engages well before the hard ceiling (the GOMEMLIMIT analog). Multi-GB deployments raise it deliberately.']]
@@ -160,10 +170,14 @@ ready"""]
          binary tells you which one it carries:"""]
     [output
       """$ cx --version
-cx vX.Y.Z
-  commit   <short-sha>
-  built    <timestamp>
-  gc       e — Perceus RC front line + precise STW vgc backstop"""]
+cx vX.Y.Z             [# the repo VERSION, stamped at build #]
+  profile  platform
+  commit   3ed9ade5
+  built    2026-08-20T05:52:49Z
+  gc       e — Perceus RC front line + precise STW vgc backstop
+  V fork   b3d0da670
+  engines  sqlite redis
+  features (none)"""]
     [body
       """Mode `e` — the shipped default — is a two-layer design:
          precise reference counting (Perceus) reclaims most values
@@ -184,15 +198,18 @@ cx vX.Y.Z
     [body
       """Structured logging is a bundled module, not an external
          dependency. Leveled emits write to the active sink (stderr
-         by default) and return null; `[$log:configure]` sets the
-         minimum level, sink, and format process-wide:"""]
+         by default) and **return null** — bound and discarded here,
+         so the nulls do not echo on stdout; `[$log:configure]` sets
+         the minimum level, sink, and format process-wide:"""]
     [example lang=cx
       """[?lib 'cx-stdlib/log']
-[$log:configure {level: :warn}]
-[$log:info 'not shown']
-[$log:warn 'disk nearly full']"""]
+[?let [= $c [$log:configure {level: :warn}]]
+      [= $i [$log:info 'not shown']]
+      [= $w [$log:warn 'disk nearly full']]
+  'logged']"""]
     [output
-      """warn disk nearly full"""]
+      """warn disk nearly full
+'logged'"""]
     [body
       """Sinks include stderr, stdout, file (with size/time rotation),
          and syslog; formats include text, JSON-lines, and logfmt,

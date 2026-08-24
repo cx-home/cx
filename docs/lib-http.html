@@ -5,15 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>http — CX Guide</title>
 <link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <aside class="sidebar">
   <a class="brand" href="index.html" aria-label="CX — home">
-    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
   </a>
   <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
   <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
   <a class="brand-sub" href="about.html">About →</a>
   <div class="side-search">
     <input id="side-search-input" type="search"
@@ -21,612 +25,655 @@
            autocomplete="off" spellcheck="false" data-prefix="" />
     <ul id="side-search-results" class="side-search-results" hidden></ul>
   </div>
-  <section><h4>Guide</h4><ul>
+  <section><h4>Start here</h4><ul>
     <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
     <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
     <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
     <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
     <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
     <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
-    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
-    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
-    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
-    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
-    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
-    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
-    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
-    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
     <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
-    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
-    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
-    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
-  </ul></section>
-  <section><h4>Reference</h4><ul>
-    <li><a href="directives.html">Directives</a></li>
-    <li><a href="syntax.html">Core syntax</a></li>
-  </ul></section>
-  <section><h4>Standard library</h4><ul>
-    <li><a href="libraries.html">Overview</a></li>
-    <li><a href="lib-authz.html">authz</a></li>
-    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
     <li><a href="lib-bytes.html">bytes</a></li>
     <li><a href="lib-crypto.html">crypto</a></li>
     <li><a href="lib-csv.html">csv</a></li>
-    <li><a href="lib-did.html">did</a></li>
-    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
     <li><a href="lib-env.html">env</a></li>
-    <li><a href="lib-fabric.html">fabric</a></li>
     <li><a href="lib-format.html">format</a></li>
     <li><a href="lib-fp.html">fp</a></li>
     <li><a href="lib-ft.html">ft</a></li>
     <li><a href="lib-geo.html">geo</a></li>
     <li><a href="lib-hash.html">hash</a></li>
     <li><a href="lib-html.html">html</a></li>
-    <li><a class="active" href="lib-http.html">http</a></li>
     <li><a href="lib-i18n.html">i18n</a></li>
     <li><a href="lib-io.html">io</a></li>
-    <li><a href="lib-journal.html">journal</a></li>
     <li><a href="lib-json.html">json</a></li>
     <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
     <li><a href="lib-jsonschema.html">jsonschema</a></li>
     <li><a href="lib-locale.html">locale</a></li>
     <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
     <li><a href="lib-math.html">math</a></li>
     <li><a href="lib-mime.html">mime</a></li>
-    <li><a href="lib-net.html">net</a></li>
     <li><a href="lib-path.html">path</a></li>
     <li><a href="lib-process.html">process</a></li>
     <li><a href="lib-prof.html">prof</a></li>
     <li><a href="lib-random.html">random</a></li>
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
-    <li><a href="lib-session.html">session</a></li>
     <li><a href="lib-similar.html">similar</a></li>
-    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
     <li><a href="lib-test.html">test</a></li>
     <li><a href="lib-time.html">time</a></li>
     <li><a href="lib-url.html">url</a></li>
     <li><a href="lib-uuid.html">uuid</a></li>
     <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a class="active" href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-vc.html">vc</a></li>
     <li><a href="lib-xap.html">xap</a></li>
     <li><a href="lib-xsp.html">xsp</a></li>
-  </ul></section>
-  <section><h4>XAP</h4><ul>
     <li><a href="xap.html">Overview</a></li>
     <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
     <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
     <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
     <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
   </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
 </aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">http</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
 <main>
-<section id="lib-http">
-  <h1>http</h1>
-  <p class="lede">HTTP/1.1 request/response semantics: a programmatic client and server built on the `cx-stdlib/net` transport. The client offers method verbs, headers, materialized bodies, redirects, content decoding, and connection pooling; the server drives an event-loop accept/respond loop with optional Server-Sent Events streaming. Network operations are gated by the `net` capability — http adds no capability of its own; message construction and introspection are pure. A non-2xx status is a value that flows, not a fault.</p>
-  
-    <section id="fn-http-client" class="fn">
-      <h3>http:client</h3>
-      <p class="fn-sig"><code>[$http:client]  -> element</code>  —  Construct an `[http-client]` that pools connections under shared config — no network access yet.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+<section id="lib-http"><h1>http</h1><p class="lede">HTTP/1.1 request/response semantics: a programmatic client and server built on the <code>cx-stdlib/net</code> transport. The client offers method verbs, headers, materialized bodies, redirects, content decoding, and connection pooling; the server drives an event-loop accept/respond loop with optional Server-Sent Events streaming. Network operations are gated by the <code>net</code> capability — http adds no capability of its own; message construction and introspection are pure. A non-2xx status is a value that flows, not a fault.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
+           reader who takes an x/ surface for a frozen one has been misled by
+           the page, not by their own inattention. ]]>
+  <section id="fn-http-client" class="fn">
+    <h3>http:client</h3>
+    <p class="fn-sig"><code>[$http:client]  -> element</code>  —  Construct an <code>[http-client]</code> that pools connections under shared config — no network access yet.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:client]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>[http-client state=open on-close='http/close']</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-close" class="fn">
-      <h3>http:close</h3>
-      <p class="fn-sig"><code>[$http:close]  -> null</code>  —  Close a client, server, or exchange handle, releasing its pooled sockets — idempotent.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>[http-client state=open on-close='http/close']</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-close" class="fn">
+    <h3>http:close</h3>
+    <p class="fn-sig"><code>[$http:close]  -> null</code>  —  Close a client, server, or exchange handle, releasing its pooled sockets — idempotent.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:close [$http:client]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>null</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-get" class="fn">
-      <h3>http:get</h3>
-      <p class="fn-sig"><code>[$http:get]  -> element</code>  —  Issue a one-shot GET to a URL and return the `[response]`.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>null</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-get" class="fn">
+    <h3>http:get</h3>
+    <p class="fn-sig"><code>[$http:get]  -> element</code>  —  Issue a one-shot GET to a URL and return the <code>[response]</code>.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:get 'http://example.com/']</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-post" class="fn">
-      <h3>http:post</h3>
-      <p class="fn-sig"><code>[$http:post]  -> element</code>  —  Issue a one-shot POST with a body to a URL and return the `[response]`.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-post" class="fn">
+    <h3>http:post</h3>
+    <p class="fn-sig"><code>[$http:post]  -> element</code>  —  Issue a one-shot POST with a body to a URL and return the <code>[response]</code>.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:post 'http://example.com/' 'payload']</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-put" class="fn">
-      <h3>http:put</h3>
-      <p class="fn-sig"><code>[$http:put]  -> element</code>  —  Issue a one-shot PUT with a body to a URL and return the `[response]`.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-put" class="fn">
+    <h3>http:put</h3>
+    <p class="fn-sig"><code>[$http:put]  -> element</code>  —  Issue a one-shot PUT with a body to a URL and return the <code>[response]</code>.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:put 'http://example.com/' 'payload']</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-del" class="fn">
-      <h3>http:del</h3>
-      <p class="fn-sig"><code>[$http:del]  -> element</code>  —  Issue a one-shot DELETE to a URL and return the `[response]`.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-del" class="fn">
+    <h3>http:del</h3>
+    <p class="fn-sig"><code>[$http:del]  -> element</code>  —  Issue a one-shot DELETE to a URL and return the <code>[response]</code>.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:del 'http://example.com/']</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-patch" class="fn">
-      <h3>http:patch</h3>
-      <p class="fn-sig"><code>[$http:patch]  -> element</code>  —  Issue a one-shot PATCH with a body to a URL and return the `[response]`.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-patch" class="fn">
+    <h3>http:patch</h3>
+    <p class="fn-sig"><code>[$http:patch]  -> element</code>  —  Issue a one-shot PATCH with a body to a URL and return the <code>[response]</code>.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:patch 'http://example.com/' 'payload']</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-head" class="fn">
-      <h3>http:head</h3>
-      <p class="fn-sig"><code>[$http:head]  -> element</code>  —  Issue a one-shot HEAD to a URL and return the bodyless `[response]`.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-head" class="fn">
+    <h3>http:head</h3>
+    <p class="fn-sig"><code>[$http:head]  -> element</code>  —  Issue a one-shot HEAD to a URL and return the bodyless <code>[response]</code>.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:head 'http://example.com/']</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-options" class="fn">
-      <h3>http:options</h3>
-      <p class="fn-sig"><code>[$http:options]  -> element</code>  —  Issue a one-shot OPTIONS to a URL and return the `[response]`.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-options" class="fn">
+    <h3>http:options</h3>
+    <p class="fn-sig"><code>[$http:options]  -> element</code>  —  Issue a one-shot OPTIONS to a URL and return the <code>[response]</code>.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:options 'http://example.com/']</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-request" class="fn">
-      <h3>http:request</h3>
-      <p class="fn-sig"><code>[$http:request]  -> element</code>  —  Issue a one-shot request with an arbitrary method (including custom methods with bodies).</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-request" class="fn">
+    <h3>http:request</h3>
+    <p class="fn-sig"><code>[$http:request]  -> element</code>  —  Issue a one-shot request with an arbitrary method (including custom methods with bodies).</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:request 'PURGE' 'http://example.com/']</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-send" class="fn">
-      <h3>http:send</h3>
-      <p class="fn-sig"><code>[$http:send]  -> element</code>  —  Issue a built `[request]` through a pooled client and return its `[response]` — concurrency-safe.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-send" class="fn">
+    <h3>http:send</h3>
+    <p class="fn-sig"><code>[$http:send]  -> element</code>  —  Issue a built <code>[request]</code> through a pooled client and return its <code>[response]</code> — concurrency-safe.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:send [$http:client] [request method="GET" url="http://h/"]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-status" class="fn">
-      <h3>http:status</h3>
-      <p class="fn-sig"><code>[$http:status]  -> int</code>  —  Return the HTTP status code of a response.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-status" class="fn">
+    <h3>http:status</h3>
+    <p class="fn-sig"><code>[$http:status]  -> int</code>  —  Return the HTTP status code of a response.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:status [response status=200]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>200</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-ok" class="fn">
-      <h3>http:ok</h3>
-      <p class="fn-sig"><code>[$http:ok]  -> bool</code>  —  Report whether a response status is in the 200–299 success range.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>200</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-ok" class="fn">
+    <h3>http:ok</h3>
+    <p class="fn-sig"><code>[$http:ok]  -> bool</code>  —  Report whether a response status is in the 200–299 success range.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:ok [response status=200]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>true</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-header" class="fn">
-      <h3>http:header</h3>
-      <p class="fn-sig"><code>[$http:header]  -> element</code>  —  Return the first header matching a name (case-insensitive), or absence if none.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>true</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-header" class="fn">
+    <h3>http:header</h3>
+    <p class="fn-sig"><code>[$http:header]  -> element</code>  —  Return the first header matching a name (case-insensitive), or absence if none.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:header [response status=200 [headers [header name="Content-Type" value="application/json"]]] 'content-type']</code>
-          </pre>
-          <pre class="sample-output">
-            <code>[header name=Content-Type value='application/json']</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-headers" class="fn">
-      <h3>http:headers</h3>
-      <p class="fn-sig"><code>[$http:headers]  -> [sequence element]</code>  —  Return all headers in receive order, duplicates preserved.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>[header name=Content-Type value='application/json']</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-headers" class="fn">
+    <h3>http:headers</h3>
+    <p class="fn-sig"><code>[$http:headers]  -> [sequence element]</code>  —  Return all headers in receive order, duplicates preserved.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:headers [response status=200 [headers [header name="A" value="1"] [header name="B" value="c"]]]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>([header name=A value='1'], [header name=B value=c])</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-headers-named" class="fn">
-      <h3>http:headers-named</h3>
-      <p class="fn-sig"><code>[$http:headers-named]  -> [sequence element]</code>  —  Return all headers matching a name (case-insensitive) in receive order.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>([header name=A value='1'], [header name=B value=c])</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-headers-named" class="fn">
+    <h3>http:headers-named</h3>
+    <p class="fn-sig"><code>[$http:headers-named]  -> [sequence element]</code>  —  Return all headers matching a name (case-insensitive) in receive order.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:headers-named [response status=200 [headers [header name="Set-Cookie" value="a"] [header name="Set-Cookie" value="b"]]] 'set-cookie']</code>
-          </pre>
-          <pre class="sample-output">
-            <code>([header name=Set-Cookie value=a], [header name=Set-Cookie value=b])</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-has-body" class="fn">
-      <h3>http:has-body</h3>
-      <p class="fn-sig"><code>[$http:has-body]  -> bool</code>  —  Report whether a message structurally frames a body, distinguishing absent from empty.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>([header name=Set-Cookie value=a], [header name=Set-Cookie value=b])</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-has-body" class="fn">
+    <h3>http:has-body</h3>
+    <p class="fn-sig"><code>[$http:has-body]  -> bool</code>  —  Report whether a message structurally frames a body, distinguishing absent from empty.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:has-body [response status=200 [body 'hi']]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>true</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-body-bytes" class="fn">
-      <h3>http:body-bytes</h3>
-      <p class="fn-sig"><code>[$http:body-bytes]  -> bytes</code>  —  Return the message body octets, decoded if auto-decompress applied — total, empty if no body.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>true</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-body-bytes" class="fn">
+    <h3>http:body-bytes</h3>
+    <p class="fn-sig"><code>[$http:body-bytes]  -> bytes</code>  —  Return the message body octets, decoded if auto-decompress applied — total, empty if no body.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:body-bytes [response status=200 [body 'hi']]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'hi'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-body-bytes-wire" class="fn">
-      <h3>http:body-bytes-wire</h3>
-      <p class="fn-sig"><code>[$http:body-bytes-wire]  -> bytes</code>  —  Return the original on-the-wire body octets before any decompression.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>'hi'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-body-bytes-wire" class="fn">
+    <h3>http:body-bytes-wire</h3>
+    <p class="fn-sig"><code>[$http:body-bytes-wire]  -> bytes</code>  —  Return the original on-the-wire body octets before any decompression.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:body-bytes-wire [response status=200 [body 'gz']]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'gz'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-body-text" class="fn">
-      <h3>http:body-text</h3>
-      <p class="fn-sig"><code>[$http:body-text]  -> string</code>  —  Decode the body to text using the Content-Type charset (default UTF-8).</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>'gz'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-body-text" class="fn">
+    <h3>http:body-text</h3>
+    <p class="fn-sig"><code>[$http:body-text]  -> string</code>  —  Decode the body to text using the Content-Type charset (default UTF-8).</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:body-text [response status=200 [body 'hello']]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'hello'</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-serve" class="fn">
-      <h3>http:serve</h3>
-      <p class="fn-sig"><code>[$http:serve]  -> element</code>  —  Bind a listener and run an accept loop, calling a handler that maps each request to a response.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>'hello'</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-serve" class="fn">
+    <h3>http:serve</h3>
+    <p class="fn-sig"><code>[$http:serve]  -> element</code>  —  Bind a listener and run an accept loop, calling a handler that maps each request to a response.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [?def h ($req::element) [response status=200]]
 [$http:serve 'tcp://0.0.0.0:8080' $h]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-listen" class="fn">
-      <h3>http:listen</h3>
-      <p class="fn-sig"><code>[$http:listen]  -> element</code>  —  Bind a listener for the low-level accept/respond path, returning an `[http-server]`.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-listen" class="fn">
+    <h3>http:listen</h3>
+    <p class="fn-sig"><code>[$http:listen]  -> element</code>  —  Bind a listener for the low-level accept/respond path, returning an <code>[http-server]</code>.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:listen 'tcp://0.0.0.0:8080']</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-accept-iter" class="fn">
-      <h3>http:accept-iter</h3>
-      <p class="fn-sig"><code>[$http:accept-iter]  -> [iterator element]</code>  —  Yield `[exchange]` handles for incoming requests as a single-use iterator.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-accept-iter" class="fn">
+    <h3>http:accept-iter</h3>
+    <p class="fn-sig"><code>[$http:accept-iter]  -> [iterator element]</code>  —  Yield <code>[exchange]</code> handles for incoming requests as a single-use iterator.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:accept-iter [http-server url='tcp://0.0.0.0:8080' state=listening]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-exchange-request" class="fn">
-      <h3>http:exchange-request</h3>
-      <p class="fn-sig"><code>[$http:exchange-request]  -> element</code>  —  Return the parsed server-form `[request]` for an exchange.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-exchange-request" class="fn">
+    <h3>http:exchange-request</h3>
+    <p class="fn-sig"><code>[$http:exchange-request]  -> element</code>  —  Return the parsed server-form <code>[request]</code> for an exchange.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:exchange-request [exchange state=open url='tcp://0.0.0.0:8080']]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-respond" class="fn">
-      <h3>http:respond</h3>
-      <p class="fn-sig"><code>[$http:respond]  -> null</code>  —  Write a response on an exchange's connection; interim 1xx may precede one final response.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-respond" class="fn">
+    <h3>http:respond</h3>
+    <p class="fn-sig"><code>[$http:respond]  -> null</code>  —  Write a response on an exchange's connection; interim 1xx may precede one final response.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:respond [exchange state=open url='tcp://0.0.0.0:8080'] [response status=200]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-stop" class="fn">
-      <h3>http:stop</h3>
-      <p class="fn-sig"><code>[$http:stop]  -> null</code>  —  Gracefully drain a server, answering new exchanges with 503 until the grace period elapses.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-stop" class="fn">
+    <h3>http:stop</h3>
+    <p class="fn-sig"><code>[$http:stop]  -> null</code>  —  Gracefully drain a server, answering new exchanges with 503 until the grace period elapses.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:stop [http-server url='tcp://0.0.0.0:8080' state=listening]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-sse" class="fn">
-      <h3>http:sse</h3>
-      <p class="fn-sig"><code>[$http:sse]  -> element</code>  —  Promote an open exchange to a held-open SSE stream, returning a `[sse-stream]` write handle.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-sse" class="fn">
+    <h3>http:sse</h3>
+    <p class="fn-sig"><code>[$http:sse]  -> element</code>  —  Promote an open exchange to a held-open SSE stream, returning a <code>[sse-stream]</code> write handle.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:sse [exchange state=open] {}]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-send-event" class="fn">
-      <h3>http:send-event</h3>
-      <p class="fn-sig"><code>[$http:send-event]  -> null</code>  —  Frame and flush one `[event]` as a chunk on an SSE stream.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-send-event" class="fn">
+    <h3>http:send-event</h3>
+    <p class="fn-sig"><code>[$http:send-event]  -> null</code>  —  Frame and flush one <code>[event]</code> as a chunk on an SSE stream.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:send-event [sse-stream open=true] [event]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER4539</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-sse-publish" class="fn">
-      <h3>http:sse-publish</h3>
-      <p class="fn-sig"><code>[$http:sse-publish]  -> int</code>  —  Fan out one `[event]` to every connection subscribed to a topic (the concurrent-SSE producer half on the `serve` path); returns the delivered count. Subscribe by returning `[sse-subscribe topic="…" [event …]?]` from a `serve` handler.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER4539</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-sse-publish" class="fn">
+    <h3>http:sse-publish</h3>
+    <p class="fn-sig"><code>[$http:sse-publish]  -> int</code>  —  Fan out one <code>[event]</code> to every connection subscribed to a topic (the concurrent-SSE producer half on the <code>serve</code> path); returns the delivered count. Subscribe by returning <code>[sse-subscribe topic="…" [event …]?]</code> from a <code>serve</code> handler.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:sse-publish "prices" [event]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER4539</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-heartbeat" class="fn">
-      <h3>http:heartbeat</h3>
-      <p class="fn-sig"><code>[$http:heartbeat]  -> null</code>  —  Write one comment-only liveness frame to an SSE stream.</p>
-      
-    </section>
-    <section id="fn-http-stream-open" class="fn">
-      <h3>http:stream-open</h3>
-      <p class="fn-sig"><code>[$http:stream-open]  -> bool</code>  —  Report whether an SSE write stream is still open — the producer-loop guard.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER4539</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-heartbeat" class="fn">
+    <h3>http:heartbeat</h3>
+    <p class="fn-sig"><code>[$http:heartbeat]  -> null</code>  —  Write one comment-only liveness frame to an SSE stream.</p>
+    
+  </section>
+  <section id="fn-http-stream-open" class="fn">
+    <h3>http:stream-open</h3>
+    <p class="fn-sig"><code>[$http:stream-open]  -> bool</code>  —  Report whether an SSE write stream is still open — the producer-loop guard.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:stream-open [sse-stream open=true]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>true</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-sse-connect" class="fn">
-      <h3>http:sse-connect</h3>
-      <p class="fn-sig"><code>[$http:sse-connect]  -> element</code>  —  Open a streaming GET and return an `[sse-source]` read handle on a 2xx event stream.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>true</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-sse-connect" class="fn">
+    <h3>http:sse-connect</h3>
+    <p class="fn-sig"><code>[$http:sse-connect]  -> element</code>  —  Open a streaming GET and return an <code>[sse-source]</code> read handle on a 2xx event stream.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:sse-connect "http://idp.test/stream" {}]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-sse-events" class="fn">
-      <h3>http:sse-events</h3>
-      <p class="fn-sig"><code>[$http:sse-events]  -> [iterator element]</code>  —  Yield parsed `[event]`s from a source in arrival order as a single-use iterator.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-sse-events" class="fn">
+    <h3>http:sse-events</h3>
+    <p class="fn-sig"><code>[$http:sse-events]  -> [iterator element]</code>  —  Yield parsed <code>[event]</code>s from a source in arrival order as a single-use iterator.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:sse-events [sse-source open=true]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-source-open" class="fn">
-      <h3>http:source-open</h3>
-      <p class="fn-sig"><code>[$http:source-open]  -> bool</code>  —  Report whether an SSE read source is still open.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-source-open" class="fn">
+    <h3>http:source-open</h3>
+    <p class="fn-sig"><code>[$http:source-open]  -> bool</code>  —  Report whether an SSE read source is still open.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:source-open [sse-source open=false]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>false</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-http-last-event-id" class="fn">
-      <h3>http:last-event-id</h3>
-      <p class="fn-sig"><code>[$http:last-event-id]  -> element</code>  —  Return the last received event id from a source, or absence if none.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/http']
+        </pre>
+        <pre class="sample-output">
+          <code>false</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-http-last-event-id" class="fn">
+    <h3>http:last-event-id</h3>
+    <p class="fn-sig"><code>[$http:last-event-id]  -> element</code>  —  Return the last received event id from a source, or absence if none.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:last-event-id [sse-source last-event-id="42"]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>'42'</code>
-          </pre>
-        </div>
-      
-    </section>
-  
+        </pre>
+        <pre class="sample-output">
+          <code>'42'</code>
+        </pre>
+      </div>
+    
+  </section>
 </section>
 </main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>http</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
 <script src="highlight/highlight.js" defer></script>
 <script src="search-index.js" defer></script>
 <script src="search/search.js" defer></script>

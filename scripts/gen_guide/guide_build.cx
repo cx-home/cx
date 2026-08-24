@@ -6,7 +6,7 @@
    read → [$cx:parse] → transform → [$xml:emit] → [$io:write-file], no
    subprocess, no Python).
 
-   Run: cx scripts/gen_guide/guide_build.cx --allow-read --allow-write
+   Run: cx --allow-read --allow-write scripts/gen_guide/guide_build.cx
    (the Makefile `guide` target builds the binary + passes the grants).
 
    Pipeline per section:
@@ -57,17 +57,132 @@
         [= $i [$strings:find $b '-']]
     [$strings:replace [$strings:slice $b [+ $i 1] [$strings:length $b]] '.cxd' '']]]
 
+[# ── inline-markdown rendering ───────────────────────────────────────────
+   The .cxd sections carry GFM inline spans in prose strings — `code`,
+   **bold**, *italic* — a convention the docs→guide migration brought over
+   in ~900 places. The projection engine owns rendering them (the same way
+   §3.6 says CX projects markdown), so they become real elements here
+   rather than shipping as literal sigils. Existing <code>/<pre> regions
+   are content, not markup: they are skipped verbatim.
+
+   md-emph: bold/italic on a chunk with no code spans. Both patterns are
+   boundary-guarded (start / whitespace / '(' / '>' before, end / space /
+   punctuation / '<' after) so prose arithmetic ('3 * 4') and glob stars
+   ('a/*.cx and b/*.md') never read as emphasis. NOTE the engine quirk:
+   \s inside a character class silently matches nothing (and an unescaped
+   '(' beside it is E_RE_PATTERN_INVALID), so whitespace is spelled out. #]
+[?def md-emph-once impure ($s)
+  [$re:replace [$re:compile '(^|[ \n\t(>])\*([^ \n\t*<](?:[^*<]*[^ \n\t*<])?)\*($|[ \n\t).,;:!?<])']
+    [$re:replace [$re:compile '(^|[ \n\t(>])\*\*([^*<]+)\*\*($|[ \n\t).,;:!?<])']
+      $s '$1<b>$2</b>$3']
+    '$1<i>$2</i>$3']]
+[; TWO passes: the trailing boundary guard CONSUMES its character (this
+   regex engine has no lookahead), so of two ADJACENT emphasis spans the
+   second loses its leading boundary to the first match and fails; on the
+   second pass the rewritten text supplies a fresh '>' or space boundary. ]
+[?def md-emph scope=public impure ($s)
+  [$md-emph-once [$md-emph-once $s]]]
+
+[# md-ticks: pair backticks into <code> spans; emphasis runs only on the
+   text BETWEEN them, so `a ** b` inside ticks stays verbatim. An unmatched
+   trailing tick is kept literal. The composite forms **`x`** / *`x`* are
+   folded FIRST — the tick split would otherwise part an emphasis pair
+   around its own code span, and the '<'-excluding content classes in
+   md-emph would then (correctly) refuse the crossing match. #]
+[?def md-tick-composites impure ($s)
+  [$re:replace [$re:compile '(^|[ \n\t(>])\*`([^`]+)`\*($|[ \n\t).,;:!?<])']
+    [; boundary-guarded like md-emph — without the guards this pattern
+       cross-pairs a CLOSING ** with a later OPENING ** whenever a code
+       span sits between two bold pairs ('**a** … `x` … **b**' matched
+       as one bold). Two passes for the same consumed-boundary reason
+       as md-emph. ]
+    [$re:replace [$re:compile '(^|[ \n\t(>])\*\*([^*`<]*)`([^`]+)`([^*`<]*)\*\*($|[ \n\t).,;:!?<])']
+      $s '$1<b>$2<code>$3</code>$4</b>$5']
+    '$1<i><code>$2</code></i>$3']]
+[; md-links: markdown [label](url) → <a> — the corpus has always authored
+   links this way and the renderer never had a pass for them (143 literal
+   link spellings shipped on 14 pages). Runs BEFORE tick segmentation so a
+   label carrying `code` stays attached to its url; the url must contain
+   a / . # or : so prose like 'array[0](x)' can never read as a link. ]
+[?def md-links impure ($s)
+  [$re:replace [$re:compile '\[([^\[\]<]+)\]\(([^() \n\t]*[/.#:][^() \n\t]*)\)']
+    $s '<a href="$2">$1</a>']]
+[; md-tick-pairs: every `x` pair → <code>x</code> in ONE global regex pass.
+   The former per-pair self-recursion hit the evaluator's call-depth ceiling
+   at ~195 spans and RETURNED EARLY, silently truncating nine rendered pages
+   (#826 verification find, 2026-08-20 — the Ring 0/1 arcs shipped at 34%/31%).
+   An unpaired trailing tick has no match and stays literal, matching the old
+   behavior. ]
+[?def md-tick-pairs impure ($s)
+  [$re:replace [$re:compile '`([^`]*)`'] $s '<code>$1</code>']]
+
+[; walk-emph: apply md-emph to the prose BETWEEN <code>…</code> regions —
+   iteratively: a [?for] over the '<code' split makes one FLAT call per
+   region, never a nested one, so span count can never meet a depth cap. ]
+[?def walk-emph impure ($s)
+  [?let [= $parts [$strings:split $s '<code']]
+    [$cat (
+      [$md-emph [$first $parts]],
+      [$strings:join
+        [?for [in $p [$tail $parts]]
+          [yield
+            [?let [= $end [$strings:find $p '</code>']]
+              [?if [< $end 0]
+                [then [$cat ('<code', $p)]]
+                [else [$cat ('<code',
+                             [$strings:slice $p 0 [+ $end 7]],
+                             [$md-emph [$strings:slice $p [+ $end 7] [$strings:length $p]]])]]]]]]
+        ''])]]]
+
+[?def md-ticks scope=public impure ($s0)
+  [$walk-emph
+    [$md-tick-pairs
+      [$md-tick-composites [$md-tick-composites [$md-links $s0]]]]]]
+
+[# md-inline: walk the emitted fragment, passing existing <code>…</code>
+   regions through untouched (mirrors escape-code-xrefs; every [pre] body
+   is a [code], so this shields code blocks too). Same flat-iteration shape
+   as walk-emph: prose chunks between pre-existing code regions go through
+   md-ticks; the regions themselves are copied verbatim. #]
+[?def md-inline scope=public impure ($h)
+  [?let [= $parts [$strings:split $h '<code']]
+    [$cat (
+      [$md-ticks [$first $parts]],
+      [$strings:join
+        [?for [in $p [$tail $parts]]
+          [yield
+            [?let [= $end [$strings:find $p '</code>']]
+              [?if [< $end 0]
+                [then [$cat ('<code', $p)]]
+                [else [$cat ('<code',
+                             [$strings:slice $p 0 [+ $end 7]],
+                             [$md-ticks [$strings:slice $p [+ $end 7] [$strings:length $p]]])]]]]]]
+        ''])]]]
+
 [# post-body: clean an [$xml:emit] fragment.
    - strip the empty-name <>/</> wrappers [$xml:emit] emits around a
      [?for]/yield sequence in body position (structural noise, the
      in-program analogue of the old cx --xml <__cx_seq__> wrapper);
-   - rewrite <code lang="X"> → <code class="language-X"> for highlight.js. #]
-[?def post-body scope=public ($h)
-  [$strings:replace
-    [$strings:replace
-      [$strings:replace $h '</>' '']
-      '<>' '']
-    '<code lang="' '<code class="language-']]
+   - rewrite <code lang="X"> → <code class="language-X"> for highlight.js;
+   - render the inline-markdown authoring convention (md-inline above). #]
+[?def post-body scope=public impure ($h)
+  [?let [= $in [$strings:replace
+                 [$strings:replace
+                   [$strings:replace $h '</>' '']
+                   '<>' '']
+                 '<code lang="' '<code class="language-']]
+        [= $out [$md-inline $in]]
+    [; render-completeness gate: every md pass is strictly ADDITIVE (they only
+       insert markup around existing bytes), so a shorter output than input is
+       proof of truncation — the defect class that silently shipped nine
+       truncated pages past all seven doc gates (2026-08-20). Refuse loudly. ]
+    [?if [< [$strings:length $out] [$strings:length $in]]
+      [then [err code=guide-truncated
+        [$cat ('post-body: md-inline SHRANK the fragment (',
+               [$string [$strings:length $in]], ' -> ',
+               [$string [$strings:length $out]],
+               ' bytes) — render truncation; refusing to emit a partial page')]]]
+      [else $out]]]]
 
 [# ── per-section render (recursive) ─────────────────────────────────────
    render-section renders a [section] element to an HTML fragment string;
@@ -123,7 +238,9 @@
          [?if [= $slug $active] [then ' class="active"'] [else '']],
          ' href="', $slug, '.html">',
          [?if [= $n ''] [then '']
-           [else [$cat ('<span class="sec-n">', [$format:compact $n], '</span> ')]]],
+           [else [$cat ('<span class="sec-n">',
+                        [$strings:replace [$format:compact $n] "'" ''],
+                        '</span> ')]]],
          $title, '</a></li>\n')]]
 [?def nav-item scope=public ($m $active) [$nav-link $m@slug $m@title $m@n $active]]
 
@@ -136,10 +253,58 @@
    for-results into a single sequence nests them, so we never do that). #]
 [?def guide-nav-items scope=public ($metas $active)
   [$strings:join [?for [in $m $metas] [yield [$nav-item $m $active]]] '']]
-[?def lib-nav-items scope=public ($libfiles $active)
-  [$cat ([$nav-link 'libraries' 'Overview' '' $active],
-         [$strings:join [?for [in $f $libfiles] [yield
-           [$nav-link [$cat ('lib-', [$stdlib-slug $f])] [$stdlib-slug $f] '' $active]]] ''])]]
+[# group-nav-items: the sections whose group= matches, in reading order.
+   #826 — the nav is the ring model made visible, so a group is a ring and
+   the order is inward-out. #]
+[?def group-nav-items scope=public ($metas $g $active)
+  [$strings:join [?for [in $m $metas] [where [= $m@group $g]]
+    [yield [$nav-item $m $active]]] '']]
+[# lib-nav-items RETIRED with the flat Standard-library group (#826 ruling
+   3a) — see lib-ring-items, which indexes the packs under the ring that owns
+   each one. #]
+[# ── pack → ring (#826 §3, ruling 3a) ────────────────────────────────────
+   `Standard library` stops being a top-level nav group: each ring indexes
+   the packs it OWNS, so the ring page answers "what can I do with only this
+   ring" completely — and a reader on Ring 0 sees, in the same breath, that
+   `http` is not among them.
+        
+   THE ASSIGNMENT IS DERIVED, NOT CURATED. cx_partition.md §2's membership
+   test is "every stdlib pack whose imports stay within Rings 0-1" is Ring 1,
+   and Ring 2 owns the protocol/service packs. A pack is a thin CX wrapper
+   over native `$<pack>-*` builtins, so the ring it belongs to is the ring of
+   the vcx tree that IMPLEMENTS those builtins — `vcx/code` is Ring 1,
+   `vcx/platform` and `vcx/cxstore` are Ring 2. That derivation resolved 44 of
+   46 packs mechanically; `test` resolved to vcx/code/stdlib_testkit.v (Ring 1)
+   and `jsonrpc` is pure CX over [$json:…] with no native builtins (Ring 1).
+   Re-derive rather than hand-edit when a pack moves.
+        
+   RING 0 HAS NO PACKS, and that is a fact about the architecture rather than
+   an omission: Ring 0 has no evaluator, so it has nothing to call a pack
+   from. Its surface is the format itself plus the bindings. #]
+[?def ring2-packs scope=public [returns string] ()
+  ' authz bus did email fabric http journal live net session store vc xap xsp ']
+[?def pack-ring scope=public [returns int] ($name)
+  [?if [>= [$strings:find [$ring2-packs] [$cat (' ', $name, ' ')]] 0]
+    [then 2] [else 1]]]
+[# lib-ring-items: the pack links for ONE ring, in name order.
+
+   The standalone `libraries.html` index page RETIRED here (#826 ruling 3a):
+   with the packs indexed per ring, a single flat index is a second answer to
+   "which packs exist" that is free to disagree with the ring pages — and it
+   was the only page in the tree left reachable from nothing. #]
+[?def lib-ring-items scope=public ($libfiles $ring $active)
+  [$strings:join [?for [in $f $libfiles]
+    [where [and [not [$is-x-file $f]] [= [$pack-ring [$stdlib-slug $f]] $ring]]]
+    [yield [$nav-link [$cat ('lib-', [$stdlib-slug $f])] [$stdlib-slug $f] '' $active]]] '']]
+
+[# x-tier-items: the experimental tier's own links, in name order. Its own
+   group rather than a ring, because the tier is a STABILITY statement and not
+   a layering one — a reader needs to know the promise before the position. #]
+[?def x-tier-items scope=public ($libfiles $active)
+  [$strings:join [?for [in $f $libfiles]
+    [where [$is-x-file $f]]
+    [yield [$nav-link [$module-page $f] [$stdlib-slug $f] '' $active]]] '']]
+
 [?def xap-nav-items scope=public ($active)
   [$cat ([$nav-link 'xap' 'Overview' '' $active],
          [$strings:join [?for [in $d [$xap-demos]] [yield
@@ -149,15 +314,23 @@
   [$cat ([$nav-link 'directives' 'Directives' '' $active],
          [$nav-link 'syntax' 'Core syntax' '' $active])]]
 
-[# nav-html: the sidebar <aside> — one group per top-level area. #]
+[# nav-html: the sidebar <aside> — one group per top-level area.
+
+   #826 §3 — SIX groups: the four rings, plus the two things that are not
+   ring-shaped and should stop pretending to be. `Standard library` is no
+   longer top-level; each ring indexes the packs it owns, so a reader on the
+   Ring 0 page sees what Ring 0 gives them and, in the same breath, that
+   `http` is not among them. Ring order is inward-out, which is also the
+   dependency order the import contract allows. #]
 [?def nav-html scope=public ($metas $libfiles $active)
   [$cat (
     '<aside class="sidebar">\n',
     '  <a class="brand" href="index.html" aria-label="CX — home">\n',
-    '    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />\n',
+    '    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>\n',
     '  </a>\n',
     '  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>\n',
     '  <a class="brand-sub" href="playground.html">Playground →</a>\n',
+    '  <a class="brand-sub" href="downloads.html">Downloads →</a>\n',
     '  <a class="brand-sub" href="about.html">About →</a>\n',
     '  <div class="side-search">\n',
     '    <input id="side-search-input" type="search"\n',
@@ -165,22 +338,60 @@
     '           autocomplete="off" spellcheck="false" data-prefix="" />\n',
     '    <ul id="side-search-results" class="side-search-results" hidden></ul>\n',
     '  </div>\n',
-    [$nav-section 'Guide' [$guide-nav-items $metas $active]],
-    [$nav-section 'Reference' [$ref-nav-items $active]],
-    [$nav-section 'Standard library' [$lib-nav-items $libfiles $active]],
-    [$nav-section 'XAP' [$xap-nav-items $active]],
+    [$nav-section 'Start here' [$group-nav-items $metas 'Start here' $active]],
+    [$nav-section 'Ring 0 — Data'
+      [$cat ([$group-nav-items $metas 'Ring 0 — Data' $active],
+             [$lib-ring-items $libfiles 0 $active])]],
+    [$nav-section 'Ring 1 — Code'
+      [$cat ([$group-nav-items $metas 'Ring 1 — Code' $active],
+             [$lib-ring-items $libfiles 1 $active])]],
+    [$nav-section 'Ring 2 — Platform'
+      [$cat ([$group-nav-items $metas 'Ring 2 — Platform' $active],
+             [$lib-ring-items $libfiles 2 $active],
+             [$xap-nav-items $active])]],
+    [$nav-section 'Ring 3 — Ecosystem'
+      [$cat ([$group-nav-items $metas 'Ring 3 — Ecosystem' $active],
+             [$lib-ring-items $libfiles 3 $active])]],
+    [$nav-section 'x/ tier — experimental'
+      [$x-tier-items $libfiles $active]],
+    [$nav-section 'Reference'
+      [$cat ([$group-nav-items $metas 'Reference' $active],
+             [$ref-nav-items $active])]],
     '</aside>\n')]]
 
-[# wrap-page: body fragment + chrome → full HTML document string. #]
-[?def wrap-page scope=public ($title $active $metas $libfiles $body)
+[# wrap-page: body fragment + chrome → full HTML document string.
+   Drawing-office chrome (ruled 2026-08-20): Google Fonts (Archivo display,
+   Newsreader body, IBM Plex Mono annotations), a mono sheet bar above the
+   content, and a title-block footer on every page — the guide is a set of
+   engineering sheets, and the title block is where a sheet says what it is,
+   which revision, and who checked it. #]
+[?def wrap-page scope=public ($title $active $metas $libfiles $ver $body)
   [$cat (
     '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n',
     '<meta name="viewport" content="width=device-width, initial-scale=1">\n',
     '<title>', $title, ' — CX Guide</title>\n',
     '<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">\n',
+    '<link rel="preconnect" href="https://fonts.googleapis.com">\n',
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n',
+    '<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">\n',
     '<link rel="stylesheet" href="style.css">\n</head>\n<body>\n',
     [$nav-html $metas $libfiles $active],
+    '<header class="sheet-bar">\n',
+    '  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span>',
+    '<span class="sb-title">', $title, '</span></div>\n',
+    '  <div class="sb-right"><a href="playground.html">Playground</a>',
+    '<a href="downloads.html">Downloads</a>',
+    '<a href="about.html">About</a>',
+    '<span class="sb-rev">v', $ver, '</span></div>\n',
+    '</header>\n',
     '<main>\n', [$strings:trim-end-chars $body '\n'], '\n</main>\n',
+    '<footer class="title-block">\n',
+    '  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>\n',
+    '  <div class="tb-cell"><span>Drawing</span><b>', $title, '</b></div>\n',
+    '  <div class="tb-cell"><span>Rev</span><b>', $ver, '</b></div>\n',
+    '  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>\n',
+    '  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>\n',
+    '</footer>\n',
     '<script src="highlight/highlight.js" defer></script>\n',
     '<script src="search-index.js" defer></script>\n',
     '<script src="search/search.js" defer></script>\n',
@@ -197,17 +408,22 @@
    so literal double brackets in code samples (TOML [[array-of-tables]],
    xref syntax shown as syntax) are never treated as cross-references. #]
 [?def escape-code-xrefs scope=public impure ($h)
-  [?let [= $i [$strings:find $h '<code']]
-    [?if [< $i 0] [then $h]
-      [else
-        [?let [= $head [$strings:slice $h 0 $i]]
-              [= $rest [$strings:slice $h $i [$strings:length $h]]]
-              [= $end  [$strings:find $rest '</code>']]
-          [?if [< $end 0] [then $h]
-            [else [$cat (
-              $head,
-              [$strings:replace [$strings:slice $rest 0 [+ $end 7]] '[[' '&#91;&#91;'],
-              [$escape-code-xrefs [$strings:slice $rest [+ $end 7] [$strings:length $rest]]])]]]]]]]]
+  [; flat [?for] walker, same shape as md-inline — the former per-span
+     self-recursion was the SECOND site of the ~195-span depth-cap
+     truncation (2026-08-20; md-ticks/md-inline were the first). ]
+  [?let [= $parts [$strings:split $h '<code']]
+    [$cat (
+      [$first $parts],
+      [$strings:join
+        [?for [in $p [$tail $parts]]
+          [yield
+            [?let [= $end [$strings:find $p '</code>']]
+              [?if [< $end 0]
+                [then [$cat ('<code', $p)]]
+                [else [$cat ('<code',
+                             [$strings:replace [$strings:slice $p 0 [+ $end 7]] '[[' '&#91;&#91;'],
+                             [$strings:slice $p [+ $end 7] [$strings:length $p]])]]]]]]
+        ''])]]]
 
 [# anchor-href: target href for one reference, given the current page slug. #]
 [?def anchor-href scope=public ($cur $slug $frag $name)
@@ -232,25 +448,152 @@
       [?fn ($acc $a) [$anchor-sub $acc $cur $a]]]
     '<span class="xref-unresolved">$0</span>']]
 
-[# index-body: the landing page (docs/guide/index.html) body — title, lede,
-   grouped table of contents (reusing nav-group), source note. #]
+[# ring-figure: the landing page's Fig. 1 — the four rings drawn as an
+   engineering section view (inline SVG, pure hand-authored geometry).
+   Concentric rings with a hatched section cut, center-line construction,
+   leader-line labels, the one-directional import arrows, a dimension line,
+   and the inspection stamp. All coordinates live in one 540×500 viewBox. #]
+[?def ring-figure scope=public ()
+  [$cat (
+    '<svg viewBox="0 0 540 500" role="img" aria-label="The four rings of CX with the one-directional import contract">\n',
+    '<defs>\n',
+    '<pattern id="rf-hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="7" stroke="#1a1812" stroke-width="0.7" opacity="0.45"/></pattern>\n',
+    '<marker id="rf-arr" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#1a1812"/></marker>\n',
+    '<marker id="rf-arrR" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#b3400f"/></marker>\n',
+    '</defs>\n',
+    '<line x1="230" y1="18" x2="230" y2="482" stroke="#1a1812" stroke-width="0.5" stroke-dasharray="14 4 2 4" opacity="0.45"/>\n',
+    '<line x1="14" y1="255" x2="446" y2="255" stroke="#1a1812" stroke-width="0.5" stroke-dasharray="14 4 2 4" opacity="0.45"/>\n',
+    '<circle cx="230" cy="255" r="208" fill="none" stroke="#1a1812" stroke-width="1" stroke-dasharray="4 5" opacity="0.8"/>\n',
+    '<circle cx="230" cy="255" r="195" fill="none" stroke="#1a1812" stroke-width="1.6"/>\n',
+    '<circle cx="230" cy="255" r="148" fill="none" stroke="#1a1812" stroke-width="1.3"/>\n',
+    '<circle cx="230" cy="255" r="101" fill="none" stroke="#1a1812" stroke-width="1.3"/>\n',
+    '<circle cx="230" cy="255" r="54" fill="#efe9d8" stroke="#1a1812" stroke-width="1.6"/>\n',
+    '<path d="M230,255 m0,-148 a148,148 0 0 1 148,148 l-47,0 a101,101 0 0 0 -101,-101 z" fill="url(#rf-hatch)" stroke="none"/>\n',
+    '<text x="230" y="252" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12.5" font-weight="600" letter-spacing="3" fill="#1a1812">DATA</text>\n',
+    '<text x="230" y="267" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="7.5" letter-spacing="1.4" fill="#6b6552">CANNOT EXECUTE</text>\n',
+    '<line x1="118" y1="98" x2="196" y2="200" stroke="#b3400f" stroke-width="1.5" marker-end="url(#rf-arrR)"/>\n',
+    '<text x="44" y="80" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.3" fill="#b3400f">IMPORTS POINT INWARD</text>\n',
+    '<line x1="282" y1="326" x2="342" y2="410" stroke="#b3400f" stroke-width="1.2" stroke-dasharray="6 4"/>\n',
+    '<g stroke="#b3400f" stroke-width="1.5"><line x1="303" y1="358" x2="321" y2="378"/><line x1="321" y1="358" x2="303" y2="378"/></g>\n',
+    '<text x="330" y="432" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.3" fill="#b3400f">NEVER OUTWARD</text>\n',
+    '<g stroke="#1a1812" stroke-width="0.8"><line x1="230" y1="255" x2="52" y2="255" marker-end="url(#rf-arr)"/><line x1="52" y1="245" x2="52" y2="265"/></g>\n',
+    '<text x="76" y="244" font-family="IBM Plex Mono, monospace" font-size="8.5" letter-spacing="1.1" fill="#1a1812">R = 4 RINGS</text>\n',
+    '<g stroke="#1a1812" stroke-width="0.7" fill="#1a1812">\n',
+    '<circle cx="230" cy="63" r="2.2"/><line x1="230" y1="63" x2="386" y2="42"/>\n',
+    '<circle cx="337" cy="152" r="2.2"/><line x1="337" y1="152" x2="396" y2="112"/>\n',
+    '<circle cx="309" cy="197" r="2.2"/><line x1="309" y1="197" x2="406" y2="182"/>\n',
+    '<circle cx="269" cy="230" r="2.2"/><line x1="269" y1="230" x2="416" y2="250"/>\n',
+    '</g>\n',
+    '<g font-family="IBM Plex Mono, monospace" fill="#1a1812">\n',
+    '<text x="392" y="38" font-size="11" font-weight="600" letter-spacing="1.2">RING 3</text><text x="392" y="51" font-size="8.5" fill="#8a8371" letter-spacing="1">ecosystem</text>\n',
+    '<text x="402" y="108" font-size="11" font-weight="600" letter-spacing="1.2">RING 2</text><text x="402" y="121" font-size="8.5" fill="#8a8371" letter-spacing="1">platform</text>\n',
+    '<text x="412" y="178" font-size="11" font-weight="600" letter-spacing="1.2">RING 1</text><text x="412" y="191" font-size="8.5" fill="#8a8371" letter-spacing="1">code</text>\n',
+    '<text x="422" y="246" font-size="11" font-weight="600" letter-spacing="1.2">RING 0</text><text x="422" y="259" font-size="8.5" fill="#8a8371" letter-spacing="1">data</text>\n',
+    '</g>\n',
+    '<g transform="rotate(-8 428 462)">\n',
+    '<rect x="356" y="442" width="144" height="40" fill="none" stroke="#b3400f" stroke-width="1.7"/>\n',
+    '<text x="428" y="459" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" font-weight="600" letter-spacing="2" fill="#b3400f">MACHINE-CHECKED</text>\n',
+    '<text x="428" y="473" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="7" letter-spacing="1.2" fill="#b3400f">IMPORT GATES · RING TAGS</text>\n',
+    '</g>\n',
+    '</svg>\n')]]
+
+[# index-body: the landing page (docs/guide/index.html) body — the hero
+   ("Four rings. One contract." + the Fig. 1 ring figure + the ring ladder),
+   then the grouped table of contents (reusing nav-group), source note. #]
 [?def index-body scope=public ($metas $libfiles $ver)
   [$cat (
-    '<h1>CX — The Data and Code Language</h1>\n',
-    [$cat ('<p class="lede">A developer guide and reference for CX v', $ver, '.\n')],
-    '   Bracket form for data, the same bracket form for code, one\n',
-    '   evaluator, one identity function.</p>\n',
+    '<div class="hero">\n',
+    '<div class="hero-text">\n',
+    '<div class="hero-eyebrow">Sheet 01 · The ring model</div>\n',
+    '<div class="hero-head">\n',
+    '  <svg class="hero-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>\n',
+    '  <h1>Four rings.<br>One contract.<br><span class="accent">Agentic ready.</span></h1>\n',
+    '</div>\n',
+    '<p class="lede"><b>CX is one language for data and code</b> — the same ',
+    'bracket form is a document, a schema, a query, and a program. How much of ',
+    'it you take on is a <b>ring</b>: Ring&nbsp;0 is a data format that cannot ',
+    'execute anything, each ring outward adds exactly one commitment, and ',
+    'imports point inward, never out. The contract is machine-checked.</p>\n',
+    '<div class="ring-ladder">\n',
+    '<div class="rr"><span class="rn">R0</span><span class="rt">Data</span><span class="rd">documents · schemas · values</span></div>\n',
+    '<div class="rr"><span class="rn">R1</span><span class="rt">Code</span><span class="rd">evaluation · deny-by-default capabilities</span></div>\n',
+    '<div class="rr"><span class="rn">R2</span><span class="rt">Platform</span><span class="rd">the store · transports · live surfaces</span></div>\n',
+    '<div class="rr"><span class="rn">R3</span><span class="rt">Ecosystem</span><span class="rd">tooling · packs · the catalog</span></div>\n',
+    '</div>\n',
+    '<div class="hero-cta"><a href="choosing.html">CHOOSE YOUR RING <span class="arr">—&gt;</span></a></div>\n',
+    '</div>\n',
+    '<div class="hero-fig">\n',
+    [$ring-figure],
+    '<div class="fig-caption">Fig. 1 — four rings, one-directional import contract</div>\n',
+    '</div>\n',
+    '</div>\n',
     '<section class="toc-groups"><h2>Table of contents</h2>\n',
-    [$nav-section 'Guide' [$guide-nav-items $metas '']],
-    [$nav-section 'Reference' [$ref-nav-items '']],
-    [$nav-section 'Standard library' [$lib-nav-items $libfiles '']],
-    [$nav-section 'XAP' [$xap-nav-items '']],
+    [$nav-section 'Start here' [$group-nav-items $metas 'Start here' '']],
+    [$nav-section 'Ring 0 — Data'
+      [$cat ([$group-nav-items $metas 'Ring 0 — Data' ''],
+             [$lib-ring-items $libfiles 0 ''])]],
+    [$nav-section 'Ring 1 — Code'
+      [$cat ([$group-nav-items $metas 'Ring 1 — Code' ''],
+             [$lib-ring-items $libfiles 1 ''])]],
+    [$nav-section 'Ring 2 — Platform'
+      [$cat ([$group-nav-items $metas 'Ring 2 — Platform' ''],
+             [$lib-ring-items $libfiles 2 ''],
+             [$xap-nav-items ''])]],
+    [$nav-section 'Ring 3 — Ecosystem'
+      [$cat ([$group-nav-items $metas 'Ring 3 — Ecosystem' ''],
+             [$lib-ring-items $libfiles 3 ''])]],
+    [$nav-section 'x/ tier — experimental'
+      [$x-tier-items $libfiles '']],
+    [$nav-section 'Reference'
+      [$cat ([$group-nav-items $metas 'Reference' ''],
+             [$ref-nav-items ''])]],
     '</section>\n',
     '<p class="note">\n',
     '  Source: <code>docs-src/canonical/sections/*.cxd</code> +\n',
-    '  the co-located docs in <code>stdlib/*.cx</code>. Built by\n',
+    '  the co-located docs in <code>stdlib/*.cx</code> and <code>x/*.cx</code>. Built by\n',
     '  <code>make guide</code>.\n',
     '</p>\n')]]
+
+[# downloads-body: the Downloads page (ruled 2026-08-20: prebuilt profile
+   tarballs land in the docs, top-nav slot between Playground and About).
+   The profile matrix IS the ring model as artifacts — the same cx binary
+   name, a profile-decided surface — so the page presents downloads as
+   "choose your ring". Links use releases/latest/download stable names
+   (scripts/release.sh stages exactly these); darwin-only per RW-CUT.1,
+   other platforms build from source. #]
+[?def downloads-body scope=public ($ver)
+  [$cat (
+    '<section id="downloads">\n',
+    '<h1>Downloads</h1>\n',
+    '<p class="lede">Prebuilt profiles for macOS (Apple Silicon). A profile is the ring model as an artifact — the same <code>cx</code> binary name with a profile-decided surface, so you install only as much of CX as you take on. Other platforms build from source below.</p>\n',
+    '<h2>Install</h2>\n',
+    '<p>The installer resolves the latest release and installs the <code>platform</code> profile by default:</p>\n',
+    '<pre><code class="language-shell">curl -sSL https://cxhome.org/install | sh</code></pre>\n',
+    '<p>Leaner compositions install with <code>CX_PROFILE=</code>:</p>\n',
+    '<pre><code class="language-shell">curl -sSL https://cxhome.org/install | CX_PROFILE=data sh</code></pre>\n',
+    '<h2>Profiles</h2>\n',
+    '<table>\n',
+    '<thead><tr><th>Profile</th><th>Rings</th><th>Surface</th><th>Tarball</th></tr></thead>\n',
+    '<tbody>\n',
+    '<tr><td><code>platform</code> (default)</td><td>0–2</td><td>evaluator + local-effect stdlib + store/fabric/XAP daemons; ships <code>libcx</code> + <code>cx.h</code></td><td><a href="https://github.com/cx-home/cx/releases/latest/download/cx-darwin-arm64.tar.gz">cx-darwin-arm64.tar.gz</a></td></tr>\n',
+    '<tr><td><code>cli</code></td><td>0–1</td><td>evaluator + local-effect stdlib packs + http client; no servers — the binary is the deliverable</td><td><a href="https://github.com/cx-home/cx/releases/latest/download/cx-cli-darwin-arm64.tar.gz">cx-cli-darwin-arm64.tar.gz</a></td></tr>\n',
+    '<tr><td><code>embed</code></td><td>0–1 core</td><td>evaluator only, no local-effect packs; ships the embed-shape <code>libcx</code> + <code>cx.h</code></td><td><a href="https://github.com/cx-home/cx/releases/latest/download/cx-embed-darwin-arm64.tar.gz">cx-embed-darwin-arm64.tar.gz</a></td></tr>\n',
+    '<tr><td><code>data</code></td><td>0</td><td>parse / convert / canonical / hash / diff / validate — cannot execute programs (no evaluator in the artifact); ships <code>libcx-core</code> + <code>cx.h</code></td><td><a href="https://github.com/cx-home/cx/releases/latest/download/cx-data-darwin-arm64.tar.gz">cx-data-darwin-arm64.tar.gz</a></td></tr>\n',
+    '</tbody></table>\n',
+    '<h2>Verify</h2>\n',
+    '<p>Every release carries a <code>SHA256SUMS.txt</code> over all tarballs and the conformance bundle:</p>\n',
+    '<pre><code class="language-shell">shasum -a 256 -c SHA256SUMS.txt --ignore-missing</code></pre>\n',
+    '<h2>Also on every release</h2>\n',
+    '<ul>\n',
+    '<li><b>Conformance bundle</b> — <code>cx-conformance-v', $ver, '.zip</code>: the full fixture corpus, for independent implementations and audits.</li>\n',
+    '<li><b>WebAssembly bundle</b> — <code>libcx-wasm</code> powers the <a href="playground.html">playground</a> and ships alongside the binaries on release tags.</li>\n',
+    '<li><b>All releases</b> — <a href="https://github.com/cx-home/cx/releases">github.com/cx-home/cx/releases</a>, each with notes and checksums.</li>\n',
+    '</ul>\n',
+    '<h2>Other platforms</h2>\n',
+    '<p>Linux and Windows build from source (a static binary on any glibc-based distro; Windows is on the roadmap):</p>\n',
+    '<pre><code class="language-shell">git clone https://github.com/cx-home/cx && cd cx\ndevbox run -- make build && devbox run -- make install</code></pre>\n',
+    '<p class="note">See the <a href="quickstart.html#install">quickstart install section</a> for per-platform detail.</p>\n',
+    '</section>\n')]]
 
 [# copy-if: copy $from → $to only when $from exists (optional assets:
    playground bundle, wasm artifacts, png logo — present only after their
@@ -282,8 +625,11 @@
     {slug: $slug, title: $title, summary: '', text: $text}]]
 
 [# ── section metadata ────────────────────────────────────────────────────
-   One [m group='Guide' n= slug= srcpath= title=] per hand-authored section
-   file (glob = reading order). README.cxd carries no [section] (skipped via
+   One [m group= n= slug= srcpath= title=] per hand-authored section file
+   (glob = reading order). The GROUP comes from the section's own `group=`
+   attribute (#826): placement lives beside the content it places, so a
+   section cannot drift from a mapping table kept somewhere else. A section
+   with no group= falls to Reference rather than vanishing from the nav. README.cxd carries no [section] (skipped via
    the empty check). The old generated 16-libraries.cxd is skipped — the
    Standard-library group is now projected fresh from stdlib/*.cx below. #]
 [?def load-metas scope=public impure ($src)
@@ -292,7 +638,7 @@
       [?let [= $d [$parse-or-die $f]]
             [= $s $d//section]
         [?if [$empty $s] [then ()] [else
-          [m group='Guide' n=$s@n id=$s@id slug=[$slug-of $f] srcpath=$f title=$s@title]]]]]]]]]
+          [m group=[?else $s@group 'Reference'] n=$s@n id=$s@id slug=[$slug-of $f] srcpath=$f title=$s@title]]]]]]]]]
 
 [# ── Standard-library projection ──────────────────────────────────────────
    Reads the co-located [module-doc] / [fn-doc] blocks in stdlib/<m>.cx
@@ -301,6 +647,21 @@
    index. Pure projection: read → [$cx:parse] → extract → reshape. #]
 
 [# stdlib-slug: 'stdlib/path.cx' → 'path'. #]
+[# is-x-file: which TIER a module file belongs to, read off its path. The x/
+   tier is experimental by decision D3, and every surface that shows it says so.
+   #]
+[# The reference covers BOTH module tiers (XD-1a): stdlib/*.cx and x/*.cx are
+   globbed into one list and told apart by their PATH, so the nav can group them
+   separately without threading a second parameter through every page signature.
+   The x/ tier is exempt from the frozen-stability promise (std-lib README,
+   decision D3), so it is never mixed in with the frozen packs — it gets its own
+   nav group and a banner on every page. #]
+[?def is-x-file scope=public [returns bool] ($f)
+  [$strings:starts-with $f 'x/']]
+[# the page slug for a module: the frozen packs keep `lib-`, the experimental
+   tier takes `x-`, so a URL states which promise applies to what it shows. #]
+[?def module-page scope=public ($f)
+  [$cat ([?if [$is-x-file $f] [then 'x-'] [else 'lib-']], [$stdlib-slug $f])]]
 [?def stdlib-slug scope=public ($f)
   [$strings:replace [$strings:slice $f [+ [$strings:rfind $f '/'] 1] [$strings:length $f]] '.cx' '']]
 
@@ -341,35 +702,65 @@
         [pre [code lang=cx [$ex-part $ex 'code']]]
         [pre class="sample-output" [code [$ex-part $ex 'expect']]]]]]]]
 
+[# module-docs: the co-located [module-doc] / [fn-doc] blocks of a
+   bundled module, WITHOUT data-parsing the whole file.
+
+   A stdlib module is a PROGRAM, and a program is entitled to
+   program-only syntax the DATA reader is right to refuse: a bare
+   singleton sequence in call-argument position, a node-valued
+   attribute, program directives in element bodies. stdlib/diagram.cx
+   is the first module to use them, and the whole-file [$cx:parse] this
+   projection used to do died on it — taking every stdlib page of the
+   guide with it (the #425 class of failure: a doc source that stops
+   projecting must FAIL, never silently render an empty page).
+
+   [$cx:ast] returns the verbatim doc SPANS alongside the structured
+   def view, so each doc block is parsed on its own and the module body
+   is never data-read. This is the technique the sibling gate
+   scripts/gen_guide/stdlib_docs_check.cx already uses; both now read
+   docs the same way, so they cannot disagree about a module. #]
+[?def module-docs scope=public impure ($f)
+  [?let [= $raw [$cx:ast [$io:read-file $f]]]
+    [?match $raw
+      [case [err $e]
+        ([$io:write-line [$env:stderr]
+           [$cat ('guide_build: AST FAILED — ', $f, ' — ', $e@message)]],
+         [$env:exit 1])]
+      [else
+        [?let [= $ast [$json:parse $raw]]
+              [= $spans [?else $ast.docs []]]
+          [?if [$empty $spans]
+            [then
+              ([$io:write-line [$env:stderr]
+                 [$cat ('guide_build: NO DOC BLOCKS — ', $f,
+                        ' — the module projects no [module-doc]/[fn-doc]')]],
+               [$env:exit 1])]
+            [else [docs [?splice [?for [in $sp $spans] [yield [$cx:parse $sp]]]]]]]]]]]]
+
 [# render-module: stdlib/<m>.cx → the module page body (HTML fragment). #]
 [?def render-module scope=public impure ($f)
   [?let [= $m [$stdlib-slug $f]]
-        [= $d [$parse-or-die $f]]
+        [= $d [$module-docs $f]]
         [= $fns $d//fn-doc]
     [$post-body [$xml:emit
-      [section id=[$cat ('lib-', $m)]
+      [section id=[$module-page $f]
         [h1 $m]
         [p class="lede" [$module-scope $d]]
+        [# XD-1a: the experimental tier says so on every page it publishes. A
+           reader who takes an x/ surface for a frozen one has been misled by
+           the page, not by their own inattention. #]
+        [?if [$is-x-file $f]
+          [then [p class="note" [$cat ('Experimental x/ tier — imported as cx-x/', $m,
+            '. Bundled and gated in-tree like any other module, but EXEMPT from the frozen-surface stability promise (std-lib README, decision D3): a semver-breaking change is allowed here while the surface settles, and the frozen-surface canary never counts it. Pin behaviour you depend on with your own fixtures.')]]]
+          [else '']]
         [?if [$empty $fns]
           [then [p class="note" """Per-function prose and examples are being migrated into this module. The public surface is specified in the module spec and exercised by the conformance fixtures."""]]
           [else [?for [in $fd $fns] [yield [$fn-html $m $fd]]]]]]]]]]
 
-[# landing-row / render-landing: the Standard-library landing (module index). #]
-[?def landing-row scope=public impure ($f)
-  [?let [= $m [$stdlib-slug $f]] [= $d [$parse-or-die $f]]
-    [li [a href=[$cat ('lib-', $m, '.html')] $m]
-        [$cat ('  —  ', [$first-sentence [$module-scope $d]])]]]]
-[?def render-landing scope=public impure ($files)
-  [$post-body [$xml:emit
-    [section id=libraries
-      [h1 'Standard library']
-      [p class="lede"
-        'The CX standard library ships bundled with the binary as the '
-        [code 'cx-stdlib/*'] ' sub-packages. Load one with '
-        [code "[?lib 'cx-stdlib/<module>']"] ' and call its functions as '
-        [code '[$<module>:<fn> …]']
-        '. Every contract, prose block, and runnable example is co-located with the function definitions in the bundle source — so these pages are generated straight from the shipped code and cannot drift from it.']
-      [ul class="module-index" [?for [in $f $files] [yield [$landing-row $f]]]]]]]]
+[# landing-row / render-landing RETIRED with `libraries.html` (#826 ruling
+   3a): the packs are indexed per RING now, so the flat module index has no
+   consumer. A def with no live consumer is a partial implementation, so it
+   goes rather than waiting to be rediscovered. #]
 
 [# ── Reference projection ────────────────────────────────────────────────────
    The directive + core-syntax reference is projected from the co-located
@@ -514,7 +905,8 @@
   [= $gen 'scripts/gen_guide']
   [= $out 'docs/guide']
   [= $metas [$load-metas $src]]
-  [= $libfiles [$io:glob 'stdlib/*.cx']]
+  [= $libfiles [$fp:flat-map ([$io:glob 'stdlib/*.cx'], [$io:glob 'x/*.cx'])
+                 [?fn ($g) $g]]]
   [= $ver [$strings:trim [$io:read-file 'VERSION']]]
   [= $sec-ancs [?for [in $m $metas] [yield
     [anc name=$m@id slug=$m@slug frag='']]]]
@@ -535,43 +927,45 @@
     [$copy-if [$cat ($gen, '/playground/playground.js')]          [$cat ($out, '/playground/playground.js')]],
     [$copy-if [$cat ($gen, '/playground/playground.examples.js')] [$cat ($out, '/playground/playground.examples.js')]],
     [$copy-if [$cat ($gen, '/playground/playground.css')]         [$cat ($out, '/playground/playground.css')]],
+    [$copy-if [$cat ($gen, '/playground/jspi_probe.html')]        [$cat ($out, '/playground/jspi_probe.html')]],
     [$copy-if [$cat ($gen, '/playground/playground.html')] [$cat ($out, '/playground.html')]],
     [$io:make-dirs [$cat ($out, '/wasm')]],
     [$copy-if 'dist/wasm/cxlib.js'            [$cat ($out, '/wasm/cxlib.js')]],
     [$copy-if 'dist/wasm/libcx-async.js'      [$cat ($out, '/wasm/libcx-async.js')]],
+    [$copy-if 'dist/wasm/libcx-sync.js'       [$cat ($out, '/wasm/libcx-sync.js')]],
     [$copy-if 'dist/wasm/libcx-async.wasm'    [$cat ($out, '/wasm/libcx-async.wasm')]],
     [$copy-if 'dist/wasm/libcx-pthreads.js'   [$cat ($out, '/wasm/libcx-pthreads.js')]],
     [$copy-if 'dist/wasm/libcx-pthreads.wasm' [$cat ($out, '/wasm/libcx-pthreads.wasm')]],
     [$copy-if 'dist/wasm/libcx.js'            [$cat ($out, '/wasm/libcx.js')]],
     [$copy-if 'dist/wasm/libcx.wasm'          [$cat ($out, '/wasm/libcx.wasm')]],
     [$io:write-file [$cat ($out, '/index.html')]
-      [$wrap-page 'CX Guide' 'index' $metas $libfiles [$index-body $metas $libfiles $ver]]],
+      [$wrap-page 'CX Guide' 'index' $metas $libfiles $ver [$index-body $metas $libfiles $ver]]],
     [$io:write-file [$cat ($out, '/about.html')]
-      [$wrap-page 'About' 'about' $metas $libfiles [$io:read-file [$cat ($src, '/about.html')]]]],
+      [$wrap-page 'About' 'about' $metas $libfiles $ver [$io:read-file [$cat ($src, '/about.html')]]]],
+    [$io:write-file [$cat ($out, '/downloads.html')]
+      [$wrap-page 'Downloads' 'downloads' $metas $libfiles $ver [$downloads-body $ver]]],
     [?for [in $m $metas] [yield
       [?let [= $doc [$parse-or-die $m@srcpath]]
             [= $raw [$render-doc $doc]]
             [= $body [$resolve-anchors $raw $m@slug $sec-ancs $child-ancs]]
-            [= $page [$wrap-page $m@title $m@slug $metas $libfiles $body]]
+            [= $page [$wrap-page $m@title $m@slug $metas $libfiles $ver $body]]
         [$io:write-file [$cat ($out, '/', $m@slug, '.html')] $page]]]],
-    [$io:write-file [$cat ($out, '/libraries.html')]
-      [$wrap-page 'Standard library' 'libraries' $metas $libfiles
-        [$render-landing $libfiles]]],
     [?for [in $f $libfiles] [yield
       [?let [= $m [$stdlib-slug $f]]
+            [= $slug [$module-page $f]]
             [= $body [$render-module $f]]
-            [= $page [$wrap-page $m [$cat ('lib-', $m)] $metas $libfiles $body]]
-        [$io:write-file [$cat ($out, '/lib-', $m, '.html')] $page]]]],
+            [= $page [$wrap-page $m $slug $metas $libfiles $ver $body]]
+        [$io:write-file [$cat ($out, '/', $slug, '.html')] $page]]]],
     [$io:write-file [$cat ($out, '/directives.html')]
-      [$wrap-page 'Directive reference' 'directives' $metas $libfiles
+      [$wrap-page 'Directive reference' 'directives' $metas $libfiles $ver
         [$render-directive [$cat ($src, '/reference/directives.cx')]]]],
     [$io:write-file [$cat ($out, '/syntax.html')]
-      [$wrap-page 'Core syntax' 'syntax' $metas $libfiles
+      [$wrap-page 'Core syntax' 'syntax' $metas $libfiles $ver
         [$render-syntax [$cat ($src, '/reference/syntax.cx')]]]],
     [$io:write-file [$cat ($out, '/xap.html')]
-      [$wrap-page 'XAP' 'xap' $metas $libfiles [$xap-landing]]],
+      [$wrap-page 'XAP' 'xap' $metas $libfiles $ver [$xap-landing]]],
     [?for [in $d [$xap-demos]] [yield
-      [?let [= $page [$wrap-page $d@title $d@slug $metas $libfiles [$xap-demo-page $d]]]
+      [?let [= $page [$wrap-page $d@title $d@slug $metas $libfiles $ver [$xap-demo-page $d]]]
         [$io:write-file [$cat ($out, '/', $d@slug, '.html')] $page]]]],
     [$io:write-file [$cat ($out, '/search-index.js')]
       [$cat ('window.CXSearchIndex = ',

@@ -1,0 +1,193 @@
+# tooling/lsp/tests/check_capabilities.cx — capability-table drift check
+# for tooling/lsp/README.md (#423; #922 / PYE-5: check_capabilities.py
+# retires; this is its CX successor).
+#
+# Drives a live `cx lsp` initialize over stdio, extracts the advertised
+# `capabilities` object, and diffs it against EXPECTED — the exact set the
+# README capability table documents. Also probes textDocument/codeAction
+# and textDocument/inlayHint on an open document to verify the documented
+# "advertised, returns a well-formed empty list" status.
+#
+#   cx --allow-read --allow-write --allow-subprocess \
+#     tooling/lsp/tests/check_capabilities.cx [/path/to/cx]   (default: cx on $PATH)
+#
+# Exit 0 when server and README agree; 1 on drift.
+# All defs are strictly define-before-use.
+
+[?lib 'cx-stdlib/io']
+[?lib 'cx-stdlib/env']
+[?lib 'cx-stdlib/process']
+[?lib 'cx-stdlib/strings']
+[?lib 'cx-stdlib/json']
+[?lib 'cx-stdlib/jsonrpc']
+[?lib 'cx-stdlib/map']
+[?lib 'cx-stdlib/bytes']
+[?lib 'cx-stdlib/fp']
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def die scope=public impure ($msg)
+  [?let [= $w [$cry $msg]] [$env:exit 2]]]
+[?def seq-flat scope=public ($xs) [$fp:flat-map $xs [?fn ($x) $x]]]
+
+# The capability keys tooling/lsp/README.md documents, and the shape we
+# expect each to advertise (kind=true → must be literal true; kind=present
+# → any advertised shape). A key here that the server stops advertising,
+# or a server key missing here, is README drift — fix the table.
+[?const EXPECTED (
+  [cap name='textDocumentSync' kind='present'],        # full-document sync
+  [cap name='hoverProvider' kind='true'],
+  [cap name='completionProvider' kind='present'],      # {triggerCharacters: ...}
+  [cap name='definitionProvider' kind='true'],
+  [cap name='documentFormattingProvider' kind='true'],
+  [cap name='semanticTokensProvider' kind='present'],
+  [cap name='documentSymbolProvider' kind='true'],
+  [cap name='foldingRangeProvider' kind='true'],
+  [cap name='selectionRangeProvider' kind='true'],
+  [cap name='referencesProvider' kind='true'],
+  [cap name='renameProvider' kind='present'],          # {prepareProvider: true}
+  [cap name='codeActionProvider' kind='true'],         # advertised; handler returns []
+  [cap name='codeLensProvider' kind='present'],        # {resolveProvider: false}
+  [cap name='inlayHintProvider' kind='true'],          # advertised; handler returns []
+  [cap name='signatureHelpProvider' kind='present'])]
+
+# ── LSP framing (same shape as probe.cx) ─────────────────────────────
+
+[?def frame scope=public ($payload)
+  [?let [= $body [$json:emit $payload]]
+    [$cat ('Content-Length: ', [$string [$strings:length-bytes $body]],
+           '\r\n\r\n', $body)]]]
+
+[?def send scope=public impure ($sin $payload)
+  [$io:write-string $sin [$frame $payload]]]
+
+[?def read-headers scope=public impure ($h $len $fuel)
+  [?if [= $fuel 0] [then -1]
+    [else [?let [= $line [$io:read-line $h]]
+      [?if [= $line '']
+        [then $len]
+        [else [?if [$strings:starts-with $line 'Content-Length:']
+          [then [$read-headers $h
+                  [?else [$strings:to-int [$strings:trim
+                    [$strings:slice $line 15 [$strings:length $line]]]] -1]
+                  [- $fuel 1]]]
+          [else [$read-headers $h $len [- $fuel 1]]]]]]]]]]
+
+[?def read-exact scope=public impure ($h $need $acc)
+  [?if [<= $need 0] [then $acc]
+    [else [?let [= $chunk [$io:read-bytes $h $need]]
+      [?let [= $got [$bytes:length $chunk]]
+        [?if [= $got 0] [then $acc]
+          [else [$read-exact $h [- $need $got] [$bytes:concat ($acc, $chunk)]]]]]]]]]
+
+[?def read-message scope=public impure ($h)
+  [?let [= $len [$read-headers $h -1 100]]
+    [?if [< $len 1] [then ()]
+      [else [?let
+        [= $body [$read-exact $h $len [$bytes:from-string-utf8 '']]]
+        [?if [< [$bytes:length $body] $len] [then ()]
+          [else [?match [$json:parse [$bytes:to-string-utf8 $body]]
+            [case [err $e] ()]
+            [else [$json:parse [$bytes:to-string-utf8 $body]]]]]]]]]]]
+
+[?def read-until-id scope=public impure ($h $want $acc $fuel)
+  [?if [= $fuel 0] [then $acc]
+    [else [?let [= $m [$read-message $h]]
+      [?if [$empty $m] [then $acc]
+        [else [?let [= $acc2 [$seq-flat ($acc, $m)]]
+          [?if [= [?else $m.id -1] $want]
+            [then $acc2]
+            [else [$read-until-id $h $want $acc2 [- $fuel 1]]]]]]]]]]]
+
+# first-with-id: the first message carrying the given id; () if none.
+[?def first-with-id scope=public ($msgs $id)
+  [?let [= $hits [?for [in $m $msgs] [where [= [?else $m.id -1] $id]] [yield $m]]]
+    [?if [$empty $hits] [then ()] [else $hits[1]]]]]
+
+# is-empty-list-result: the message's .result is a well-formed empty list.
+[?def is-empty-list-result scope=public ($m)
+  [= [$json:emit [?else $m.result null]] '[]']]
+
+# ── main ──────────────────────────────────────────────────────────────
+
+[?let
+  [= $argv [$env:argv]]
+  [= $cx [?if [>= [$count $argv] 2] [then $argv[2]] [else 'cx']]]
+  [= $h [$process:spawn ($cx, 'lsp')]]
+  [= $sin [$process:stdin $h]]
+  [= $sout [$process:stdout $h]]
+  [= $uri 'file:///tmp/check_capabilities_probe.cx']
+  [= $doc '[report [item a] [item b]]\n']
+  [= $rng {start: {line: 0, character: 0}, end: {line: 0, character: 5}}]
+  [= $w1 [$send $sin [$jsonrpc:request 1 'initialize'
+      {processId: null, rootUri: null, capabilities: {}}]]]
+  [= $w2 [$send $sin [$jsonrpc:notification 'initialized' {}]]]
+  [= $w3 [$send $sin [$jsonrpc:notification 'textDocument/didOpen'
+      {textDocument: {uri: $uri, languageId: 'cx', version: 1, text: $doc}}]]]
+  [= $w4 [$send $sin [$jsonrpc:request 2 'textDocument/codeAction'
+      {textDocument: {uri: $uri}, range: $rng, context: {diagnostics: []}}]]]
+  [= $w5 [$send $sin [$jsonrpc:request 3 'textDocument/inlayHint'
+      {textDocument: {uri: $uri}, range: $rng}]]]
+  [= $w6 [$send $sin [$jsonrpc:request 99 'shutdown' {}]]]
+  [= $w7 [$io:flush $sin]]
+  [= $msgs [$read-until-id $sout 99 () 200]]
+  [= $w8 [$send $sin [$jsonrpc:notification 'exit' {}]]]
+  [= $w9 [$io:flush $sin]]
+  [= $rcw [$process:wait-timeout $h 5000]]
+  [= $k [?if [$empty $rcw] [then [$process:kill $h]] [else ()]]]
+  [= $c [$process:close $h]]
+
+  [= $init [$first-with-id $msgs 1]]
+  [= $noinit [?if [or [$empty $init] [not [$map:contains $init 'result']]]
+      [then [?let [= $p [$say 'FAIL: no initialize response]']] [$env:exit 1]]]
+      [else ()]]]
+  [= $caps [?else $init.result.capabilities {}]]
+
+  # README key the server does not advertise / wrong shape.
+  [= $missing-msgs [?for [in $e EXPECTED]
+      [where [not [$map:contains $caps [$string $e@name]]]]
+      [yield [$cat ('DRIFT: README documents ', "'", [$string $e@name], "'",
+                    ' but the server does not advertise it')]]]]
+  [= $shape-msgs [?for [in $e EXPECTED]
+      [where [and [= [$string $e@kind] 'true']
+                  [$map:contains $caps [$string $e@name]]
+                  [not [= [$map:get $caps [$string $e@name]] true]]]]
+      [yield [$cat ('DRIFT: ', "'", [$string $e@name], "'", ' advertised as ',
+                    [$json:emit [$map:get $caps [$string $e@name]]],
+                    ', README documents true')]]]]
+  # Server key the README table omits.
+  [= $expected-names [?for [in $e EXPECTED] [yield [$string $e@name]]]]
+  [= $extra-msgs [?for [in $k2 [$sort [$map:keys $caps]]]
+      [where [= [$count [?for [in $n $expected-names] [where [= $n $k2]] [yield 1]]] 0]]
+      [yield [$cat ('DRIFT: server advertises ', "'", $k2, "'",
+                    ' but the README table omits it')]]]]
+  # Documented stub statuses: codeAction + inlayHint return well-formed [].
+  [= $stub-msgs [$seq-flat [?for [in $probe ([p rid=2 name='codeAction'],
+                                             [p rid=3 name='inlayHint'])]
+      [= $resp [$first-with-id $msgs $probe@rid]]
+      [yield [?if [$empty $resp]
+        [then ([$cat ('DRIFT: no response to textDocument/', [$string $probe@name],
+                      ' request')],)]
+        [else [?if [not [$is-empty-list-result $resp]]
+          [then ([$cat ('DRIFT: textDocument/', [$string $probe@name], ' returned ',
+                        [$json:emit [?else $resp.result null]],
+                        ' — README documents a well-formed empty list; update the table')],)]
+          [else ()]]]]]]]]
+
+  [= $all-msgs [$seq-flat ($missing-msgs, $shape-msgs, $extra-msgs, $stub-msgs)]]
+  [= $prints [?for [in $m $all-msgs] [yield [$say $m]]]]
+  [= $failures [$count $all-msgs]]
+  [= $verdict [?if [> $failures 0]
+    [then (
+      [$say [$cat ('FAIL: ', [$string $failures], ' capability drift finding(s)')]],
+      [$say [$cat ('advertised capabilities: ',
+                   [$json:emit-with-opts $caps {indent: 2, sort-keys: true}])]],
+      [$env:exit 1])]
+    [else (
+      [$say [$cat ('OK: server advertises exactly the ',
+                   [$string [$count $expected-names]],
+                   ' capabilities the README documents; ',
+                   'codeAction + inlayHint return well-formed empty lists as documented')]],
+      [$env:exit 0])]]]
+  [?if false [then '']]]

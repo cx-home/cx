@@ -2,7 +2,7 @@
    predicates, attribute steps, combinators). Every attribute a tour
    section touches is present on every user (missing-attribute reads
    hard-error per §6.2). Run:
-     cx examples/cxpath-tour.cx --data=examples/cxpath-tour.input.cx #]
+     cx --data=examples/cxpath-tour.input.cx examples/cxpath-tour.cx #]
 
 [root
   [users

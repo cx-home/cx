@@ -1,0 +1,405 @@
+# scripts/gen_guide/playground/gen_examples.cx — CX Playground example
+# generator (#922 / PYE-5: the Python generator retires; this is its CX
+# successor).
+#
+# Reads the example corpus from examples.cxd (one [ex key=…] per example:
+# [label]/[src]/[note] raw-text payloads, byte-verbatim), CLI-audits every
+# entry against vcx/target/cx, and writes playground.examples.js. Run with
+# --check to verify the checked-in file without rewriting it (the drift
+# gate `make verify-playground-examples`).
+#
+#   vcx/target/cx --allow-read --allow-write --allow-subprocess --allow-env \
+#     scripts/gen_guide/playground/gen_examples.cx [--check]
+#
+# Fidelity decisions, made deliberately (wave-3A of #922):
+#   - ONE process per example, no batching. The audit's contract is to run
+#     each example exactly as the playground does: an isolated evaluation
+#     with ZERO capability grants (mirroring the file:// wasm sandbox), so
+#     a CXER0271 in one entry marks that entry runnable:false without
+#     leaking grants or state into any other. Same deliberate choice as
+#     snippet_check.cx: the SHIPPED binary is what gets tested.
+#   - The audit evaluates the COMPOSED form (src + the note wrapped in a
+#     block comment), because that is the exact string the playground's
+#     Run handler executes — an unbalanced bracket in note prose turns the
+#     comment unterminated and must fail the gate.
+#   - Per-example timeout: 20s via process wait-timeout, then kill. One
+#     difference from the Python (which captured output concurrently): the
+#     pipes are drained after exit, so an example printing more than the
+#     pipe buffer (~64KB) would block and surface as TIMEOUT — loudly red,
+#     never silent. Every current example prints far less.
+#   - JSON string escaping reproduces Python json.dumps ensure_ascii
+#     byte-for-byte (non-ASCII → lowercase \uXXXX, surrogate pairs above
+#     the BMP) so the regenerated file stays byte-identical across the
+#     migration.
+#   - RawText is opaque to the in-process CXDM (core/cxdm.md: "preserved,
+#     not introspectable"), so the corpus is read through `cx --ast
+#     --compact` — the parse-AST JSON carries RawText values byte-exact.
+#
+# All defs are strictly define-before-use.
+
+[?lib 'cx-stdlib/io']
+[?lib 'cx-stdlib/env']
+[?lib 'cx-stdlib/process']
+[?lib 'cx-stdlib/strings']
+[?lib 'cx-stdlib/json']
+[?lib 'cx-stdlib/re']
+[?lib 'cx-stdlib/path']
+[?lib 'cx-stdlib/map']
+[?lib 'cx-stdlib/array']
+[?lib 'cx-stdlib/bytes']
+[?lib 'cx-stdlib/fp']
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+# seq-flat: splice one level of nested sequences (sequence literals and
+# nested [?for] yields do NOT auto-splice — measured on v0.16.0).
+[?def seq-flat scope=public ($xs) [$fp:flat-map $xs [?fn ($x) $x]]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def die scope=public impure ($msg)
+  [?let [= $w [$cry $msg]] [$env:exit 2]]]
+[?def must scope=public impure ($ctx $x)
+  [?match $x
+    [case [err $e] [$die [$cat ('gen_examples: INTERNAL — ', $ctx, ': ', $e@message)]]]
+    [else $x]]]
+
+# ── Python-parity JSON string escaping (json.dumps, ensure_ascii) ────
+# Everything outside 0x20-0x7E is escaped; short escapes for the quote,
+# the backslash, and the five control characters Python shortens; \uXXXX
+# otherwise, with a surrogate pair for codepoints above the BMP.
+
+[?const BS '\\']
+[?const HEXDIGITS '0123456789abcdef']
+
+[?def hex4 scope=public ($cp)
+  [$cat ([$strings:at HEXDIGITS [$mod [$idiv $cp 4096] 16]],
+         [$strings:at HEXDIGITS [$mod [$idiv $cp 256] 16]],
+         [$strings:at HEXDIGITS [$mod [$idiv $cp 16] 16]],
+         [$strings:at HEXDIGITS [$mod $cp 16]])]]
+
+[?def uesc scope=public ($cp)
+  [?if [< $cp 65536]
+    [then [$cat (BS, 'u', [$hex4 $cp])]]
+    [else [$cat (BS, 'u', [$hex4 [+ 55296 [$idiv [- $cp 65536] 1024]]],
+                 BS, 'u', [$hex4 [+ 56320 [$mod [- $cp 65536] 1024]]])]]]]
+
+# esc-rare: a non-literal ASCII byte — quote, backslash, control, DEL.
+[?def esc-rare scope=public ($b0)
+  [?let [= $tbl ([t b=34 o=[$cat (BS, '"')]],
+                 [t b=92 o=[$cat (BS, BS)]],
+                 [t b=8  o=[$cat (BS, 'b')]],
+                 [t b=9  o=[$cat (BS, 't')]],
+                 [t b=10 o=[$cat (BS, 'n')]],
+                 [t b=12 o=[$cat (BS, 'f')]],
+                 [t b=13 o=[$cat (BS, 'r')]])]
+        [= $hit [?for [in $p $tbl] [where [= $p@b $b0]] [yield [$string $p@o]]]]
+    [?if [$empty $hit] [then [$uesc $b0]] [else $hit[1]]]]]
+
+# esc-multi: a non-ASCII byte — continuation bytes yield ''; each lead
+# byte decodes its full codepoint and escapes it.
+[?def esc-multi scope=public ($b $i $b0)
+  [?if [< $b0 192]
+    [then '']
+    [else [?if [< $b0 224]
+      [then [$uesc [+ [* [- $b0 192] 64]
+                      [- [$bytes:at $b [+ $i 1]] 128]]]]
+      [else [?if [< $b0 240]
+        [then [$uesc [+ [+ [* [- $b0 224] 4096]
+                          [* [- [$bytes:at $b [+ $i 1]] 128] 64]]
+                        [- [$bytes:at $b [+ $i 2]] 128]]]]
+        [else [$uesc [+ [+ [+ [* [- $b0 240] 262144]
+                             [* [- [$bytes:at $b [+ $i 1]] 128] 4096]]
+                          [* [- [$bytes:at $b [+ $i 2]] 128] 64]]
+                        [- [$bytes:at $b [+ $i 3]] 128]]]]]]]]]]
+
+# esc-byte: one byte position → its emitted text (fast path: plain ASCII).
+[?def esc-byte scope=public ($b $i $b0)
+  [?if [and [>= $b0 32] [<= $b0 126]]
+    [then [?if [or [= $b0 34] [= $b0 92]]
+      [then [$esc-rare $b0]]
+      [else [$bytes:to-string-utf8 [$bytes:slice $b $i [+ $i 1]]]]]]
+    [else [?if [< $b0 128]
+      [then [$esc-rare $b0]]
+      [else [$esc-multi $b $i $b0]]]]]]
+
+# json-esc: escape one string, walking its UTF-8 bytes.
+[?def json-esc scope=public ($s)
+  [?let [= $b [$bytes:from-string-utf8 $s]]
+        [= $n [$bytes:length $b]]
+    [$cat [?for [in $i [$range 0 [- $n 1]]]
+      [yield [$esc-byte $b $i [$bytes:at $b $i]]]]]]]
+
+# jstr: json.dumps of one string — quotes around the escaped body.
+[?def jstr scope=public ($s) [$cat ('"', [$json-esc $s], '"')]]
+
+# jlist: json.dumps of a string list — '[]' or '["a", "b"]' (comma-space).
+[?def jlist scope=public ($xs)
+  [?if [$empty $xs]
+    [then '[]']
+    [else [$cat ('[', [$strings:join [?for [in $x $xs] [yield [$jstr $x]]] ', '], ']')]]]]
+
+# ── tag inference (port of infer_tags, field for field) ──────────────
+
+[?const DIRECTIVE-RX-SRC '\[\?([a-z][a-z0-9-]*)']
+[?const DOLLARPATH-RX-SRC '\$\w+/']
+[?const BRACKET-RX-SRC '\[([a-z][a-z0-9-]*)\b']
+
+[?const SLOT-KWS (
+  [t needle=':par' tag='par'],       [t needle=':ordered' tag='ordered'],
+  [t needle=':mock' tag='mock'],     [t needle=':where' tag='where'],
+  [t needle=':yield' tag='yield'],   [t needle=':let' tag='let'],
+  [t needle=':init' tag='init'],     [t needle=':using' tag='using'],
+  [t needle=':case' tag='case'],     [t needle=':when' tag='when'],
+  [t needle=':else' tag='else'],     [t needle=':then' tag='then'],
+  [t needle=':in' tag='in'],         [t needle=':body' tag='body'],
+  [t needle=':set-attr' tag='set-attr'], [t needle=':delete' tag='delete'],
+  [t needle=':limit' tag='limit'],   [t needle=':order-by' tag='order-by'],
+  [t needle=':group-by' tag='group-by'])]
+
+[?const BUILTIN-NAMES (
+  'head', 'tail', 'reverse', 'distinct', 'count', 'sum',
+  'min', 'max', 'avg', 'name', 'concat', 'string-length',
+  'contains', 'starts-with', 'ends-with', 'substring',
+  'normalize-space', 'abs', 'round', 'floor', 'ceiling',
+  'nth', 'position', 'cast', 'and', 'or', 'not',
+  'mod', 'modulo', 'rem')]
+
+[?const OP-PAIRS (
+  [t sym='[+ ' name='add'], [t sym='[- ' name='sub'], [t sym='[* ' name='mul'],
+  [t sym='[/ ' name='div'], [t sym='[= ' name='eq'],  [t sym='[> ' name='gt'],
+  [t sym='[< ' name='lt'],  [t sym='[>= ' name='ge'], [t sym='[<= ' name='le'])]
+
+[?def member scope=public ($x $xs)
+  [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+# uniq: first occurrence of each value, input order preserved.
+[?def uniq scope=public ($xs)
+  [?for [in $i [$range 1 [$count $xs]]]
+    [where [= [$count [?for [in $j [$range 1 [- $i 1]]]
+                [where [= $xs[$j] $xs[$i]]] [yield 1]]] 0]]
+    [yield $xs[$i]]]]
+
+[?def infer-tags scope=public ($key $src $note)
+  [?let
+    [= $directive-tags [?for [in $m [$re:find-all [$re:compile DIRECTIVE-RX-SRC] $src]]
+        [yield [$re:group $m 1]]]]
+    [= $slot-tags [?for [in $p SLOT-KWS]
+        [where [$strings:contains $src [$string $p@needle]]]
+        [yield [$string $p@tag]]]]
+    [= $cxpath-tags [?if [or [not [$empty [$re:find [$re:compile DOLLARPATH-RX-SRC] $src]]]
+                             [$strings:contains $src '/@']]
+        [then ('cxpath',)] [else ()]]]
+    [= $desc-tags [?if [$strings:contains $src '//'] [then ('descendant',)] [else ()]]]
+    [= $attr-tags [?if [and [$strings:contains $src '@']
+                            [not [$strings:contains $src '/@']]
+                            [not [$strings:contains $src '"@']]]
+        [then ('attr',)] [else ()]]]
+    [= $bracket-names [?for [in $m [$re:find-all [$re:compile BRACKET-RX-SRC] $src]]
+        [= $nm [$re:group $m 1]]
+        [where [$member $nm BUILTIN-NAMES]]
+        [yield $nm]]]
+    [= $builtin-tags [?if [$empty $bracket-names]
+        [then ()] [else [$seq-flat ($bracket-names, 'builtin')]]]]
+    [= $op-tags [?for [in $p OP-PAIRS]
+        [where [$strings:contains $src [$string $p@sym]]]
+        [yield [$string $p@name]]]]
+    [= $concept-tags [$seq-flat (
+        [?if [$strings:contains [$strings:lower $key] 'par'] [then ('parallel',)] [else ()]],
+        [?if [$strings:contains [$strings:lower $note] 'streaming'] [then ('streaming',)] [else ()]],
+        [?if [$strings:contains $src 'retry'] [then ('retry',)] [else ()]],
+        [?if [$strings:contains $src 'timeout'] [then ('timeout',)] [else ()]],
+        [?if [$strings:contains $src 'fallback'] [then ('fallback',)] [else ()]],
+        [?if [$strings:contains $src 'circuit'] [then ('resilience',)] [else ()]],
+        [?if [$strings:contains $src 'bulkhead'] [then ('resilience',)] [else ()]],
+        [?if [$strings:contains $src 'rate-limit'] [then ('resilience',)] [else ()]])]]
+    [$sort [$uniq [$seq-flat ($directive-tags, $slot-tags, $cxpath-tags, $desc-tags,
+                              $attr-tags, $builtin-tags, $op-tags, $concept-tags)]]]]]
+
+# ── corpus loading (examples.cxd → parse-AST JSON → entries) ─────────
+
+[?def items-of scope=public ($el)
+  [$array:flatten [?else $el.items []]]]
+[?def attrs-of scope=public ($el)
+  [$array:flatten [?else $el.attrs []]]]
+
+[?def raw-text-of scope=public ($el)
+  [$cat [?for [in $it [$items-of $el]]
+    [where [= [$string $it.type] 'RawText']]
+    [yield [$string $it.value]]]]]
+
+# strip-edges: the loader rule — one leading and one trailing newline.
+[?def strip-edges scope=public ($s)
+  [?let [= $a [?if [$strings:starts-with $s '\n']
+                 [then [$strings:slice $s 1 [$strings:length $s]]] [else $s]]]
+    [?if [$strings:ends-with $a '\n']
+      [then [$strings:slice $a 0 [- [$strings:length $a] 1]]]
+      [else $a]]]]
+
+[?def attr-of scope=public ($el $name)
+  [$cat [?for [in $a [$attrs-of $el]]
+    [where [= [$string $a.name] $name]]
+    [yield [$string $a.value]]]]]
+
+[?def section-of scope=public ($kids $name)
+  [$cat [?for [in $c $kids]
+    [where [= [$string $c.type] 'Element']]
+    [where [= [$string $c.name] $name]]
+    [yield [$raw-text-of $c]]]]]
+
+# load-examples: sequence of [entry key=… label=… src=… note=…].
+[?def load-examples scope=public impure ($cxbin $data-path)
+  [?let
+    [= $r [$process:run ($cxbin, '--ast', '--compact', $data-path)]]
+    [= $rc [?if [= $r@exit-code 0] [then 0]
+        [else [$die [$cat ('gen_examples: cx --ast failed on ', $data-path, ': ',
+                           [$strings:trim [$string $r@stderr]])]]]]]
+    [= $ast [$must 'parsing --ast JSON' [$json:parse [$string $r@stdout]]]]
+    [= $t [?if [= [$string $ast.type] 'Document'] [then 0]
+        [else [$die [$cat ('gen_examples: expected a single Document AST from ',
+                           $data-path)]]]]]
+    [$seq-flat [?for [in $root [$array:flatten $ast.elements]]
+      [where [= [$string $root.name] 'playground-examples']]
+      [yield [?for [in $ex [$items-of $root]]
+        [where [= [$string $ex.type] 'Element']]
+        [where [= [$string $ex.name] 'ex']]
+        [= $kids [$items-of $ex]]
+        [yield [entry
+          key=[$attr-of $ex 'key']
+          label=[$section-of $kids 'label']
+          src=[$strip-edges [$section-of $kids 'src']]
+          note=[$strip-edges [$section-of $kids 'note']]]]]]]]]]
+
+# ── audit (one isolated, grant-free child per example) ───────────────
+
+[?const NOTE-RULE '────────────────────']
+
+[?def compose scope=public ($src $note)
+  [$cat ($src, '\n\n[; ', NOTE-RULE, '\n', $note, '\n', NOTE-RULE, ' ]\n')]]
+
+# audit: [res status=… runnable=… msg=…]; status 'ok' unless a top-level
+# parse/eval error (a printed [err …] VALUE is a legitimate result).
+[?def audit scope=public impure ($cxbin $tmp $composed)
+  [?let
+    [= $w [$must 'writing audit tmp file' [$io:write-file $tmp $composed]]]
+    [= $h [$must 'spawning cx' [$process:spawn ($cxbin, $tmp)]]]
+    [= $rcw [$process:wait-timeout $h 20000]]
+    [?if [$empty $rcw]
+      [then [?let [= $k [$process:kill $h]]
+                  [= $c [$process:close $h]]
+        [res status='fail' runnable=true msg='TIMEOUT after 20s']]]
+      [else [?let
+        [= $out [$must 'reading child stdout' [$io:read-all [$process:stdout $h]]]]
+        [= $errout [$must 'reading child stderr' [$io:read-all [$process:stderr $h]]]]
+        [= $c [$process:close $h]]
+        [= $combined [$cat ($out, $errout)]]
+        [= $msg [?if [= [$strings:trim $out] '']
+            [then [$strings:trim $errout]] [else [$strings:trim $out]]]]
+        [= $runnable [not [$strings:contains $combined 'CXER0271']]]
+        [= $err-value-result [$strings:starts-with [$strings:trim-start $out] '[err']]
+        [?if [or [$strings:starts-with $out 'error:']
+                 [and [not [= $rcw 0]] [not $err-value-result]]]
+          [then [res status='fail' runnable=$runnable msg=$msg]]
+          [else [res status='ok' runnable=$runnable msg=$msg]]]]]]]]
+
+# ── render ────────────────────────────────────────────────────────────
+
+[?const HEADER-TAIL (
+  '// Single ordered list, simple → complex:',
+  '//   1-39   data / bindings / control flow      ·  40-60  comprehensions, map/reduce ([par])',
+  '//   61-100 modify / pipe / cxpath / builtins   ·  concurrency / resilience',
+  '//   101-160 cxpath + transforms / composition  ·  161-172 diagrams',
+  '//   173-182 functional composition (cx-stdlib/fp)',
+  '// runnable:false marks an example that needs a wasm-unavailable capability',
+  '// (net / subprocess / fs); it is exempt from the clean-run gate.',
+  '// Generator: scripts/gen_guide/playground/gen_examples.cx — re-run (or `make guide`)',
+  '// after any syntax change; `--check` verifies this file without rewriting it.',
+  '',
+  '(function () {',
+  "  'use strict';",
+  '',
+  '  const program = {')]
+
+[?const FOOTER-LINES (
+  '  };',
+  '',
+  '  window.cxPlaygroundExamples = { program };',
+  '})();')]
+
+# render-block: the emitted lines for one passing example, as ONE string.
+[?def render-block scope=public ($key $label $src $note $runnable)
+  [$strings:join (
+    [$cat ('    ', [$jstr $key], ': {')],
+    [$cat ('      label: ', [$jstr $label], ',')],
+    [$cat ('      input: ', [$jstr $src], ',')],
+    [$cat ('      note:  ', [$jstr $note], ',')],
+    [$cat ('      tags:  ', [$jlist [$infer-tags $key $src $note]], ',')],
+    [$cat ('      runnable: ', [?if $runnable [then 'true'] [else 'false']], ',')],
+    '    },') '\n']]
+
+# ── main ──────────────────────────────────────────────────────────────
+
+[?let
+  [= $argv [$env:argv]]
+  [= $check [$member '--check' $argv]]
+  [= $self-dir [$path:dirname [$path:absolute $argv[1]]]]
+  [= $data-path [$path:join $self-dir 'examples.cxd']]
+  [= $js-path [$path:join $self-dir 'playground.examples.js']]
+  [= $cxbin 'vcx/target/cx']
+  [= $tmpdir [$cat ([$env:var-or-default 'TMPDIR' '/tmp'], '/cx-gen-examples')]]
+  [= $mk [$must 'creating tmp dir' [$io:make-dirs $tmpdir]]]
+  [= $tmp [$cat ($tmpdir, '/example.cx')]]
+
+  [= $entries [$load-examples $cxbin $data-path]]
+  [= $n [$count $entries]]
+  [= $sanity [?if [= $n 0]
+      [then [$die [$cat ('gen_examples: no [ex] entries found in ', $data-path)]]]
+      [else 0]]]
+
+  # One row per entry: audit verdict + the pre-rendered block ('' on fail).
+  [= $rows [?for [in $e $entries]
+      [= $key [$string $e@key]]
+      [= $src [$string $e@src]]
+      [= $note [$string $e@note]]
+      [= $r [$audit $cxbin $tmp [$compose $src $note]]]
+      [yield [row key=$key status=[$string $r@status] msg=[$string $r@msg]
+                block=[?if [= [$string $r@status] 'ok']
+                  [then [$render-block $key [$string $e@label] $src $note $r@runnable]]
+                  [else '']]]]]]
+  [= $fails [?for [in $x $rows] [where [= [$string $x@status] 'fail']] [yield $x]]]
+  [= $nfails [$count $fails]]
+
+  [= $text [$cat ([$strings:join [$seq-flat (
+      [$cat ('// CX Playground — ', [$string $n],
+             ' progressive eval examples (every entry CLI-audited).')],
+      HEADER-TAIL,
+      [?for [in $x $rows] [where [= [$string $x@status] 'ok']] [yield [$string $x@block]]],
+      FOOTER-LINES)] '\n'], '\n')]]
+
+  [= $done (
+    [?if [> $nfails 0]
+      [then (
+        [$cry [$cat ('=== gen_examples: ', [$string $nfails],
+                     ' example(s) FAILED — refusing to ',
+                     [?if $check [then 'verify'] [else 'write']], ' ===')]],
+        [?for [in $x $fails] [yield
+          [$cry [$cat ('FAIL  ', [$strings:pad-end [$string $x@key] 40 ' '], ' ',
+                       [$strings:slice [$string $x@msg] 0 160])]]]],
+        [$env:exit 1])]
+      [else ()]],
+    [?if $check
+      [then [?let
+        [= $exists [$io:exists $js-path]]
+        [= $current [?if $exists
+            [then [$must 'reading current js' [$io:read-file $js-path]]]
+            [else '']]]
+        [?if [and $exists [= $current $text]]
+          [then ([$cry [$cat ('=== gen_examples --check: OK — ', [$string $n],
+                              ' examples clean & current ===')]],
+                 [$env:exit 0])]
+          [else ([$cry '=== gen_examples --check: playground.examples.js is STALE ==='],
+                 [$cry '    Run: make playground-examples-regen'],
+                 [$env:exit 1])]]]]
+      [else (
+        [$must 'writing playground.examples.js' [$io:write-file $js-path $text]],
+        [$cry [$cat ('=== wrote: ', $js-path)]],
+        [$cry [$cat ('=== passing: ', [$string $n], '/', [$string $n], ' (all clean) ===')]])]]
+  )]
+  [?if false [then '']]]

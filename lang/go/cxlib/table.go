@@ -11,8 +11,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 	"sort"
 	"strings"
+
+	"github.com/cockroachdb/apd/v3"
 )
 
 // Table is an immutable handle over a single :table block. Per
@@ -474,8 +477,16 @@ func formatCxCell(v any) string {
 		return fmt.Sprintf("%d", c)
 	case int64:
 		return fmt.Sprintf("%d", c)
+	case *big.Int:
+		// I1 L48: bigint is a first-class semantic kind — base-10
+		// integer image, bare numeric token in CX cell position.
+		return c.Text(10)
 	case float64:
 		return fmt.Sprintf("%g", c)
+	case *apd.Decimal:
+		// I1 L48: decimal is a first-class semantic kind — fixed-point
+		// base-10 image, scale preserved ("1.10" stays "1.10").
+		return c.Text('f')
 	case []any:
 		parts := make([]string, len(c))
 		for i, item := range c {

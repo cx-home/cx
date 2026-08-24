@@ -1,14 +1,21 @@
-"""cxlib.store — ergonomic CSRP client for the cx-store service tier (#105).
+"""cxlib.store — ergonomic client for the cx-store service tier.
 
-A thin façade over the **audited cx-store:// client in the CX core**: each method
+A thin façade over the **audited store client in the CX core**: each method
 builds a one-shot CX program and evaluates it through the capability-aware ABI
 (``cx_code_eval_caps``) with only ``net`` granted (deny-by-default for everything
-else). The CSRP wire protocol is **not** re-implemented here — the core is the
-single source of protocol truth, so hashes and CXER error codes match every other
-binding by construction (spec/02-working/cxstore_service_tier_phase2.md §6.1).
+else). No wire protocol is re-implemented here — the core is the single source
+of protocol truth, so hashes and CXER error codes match every other binding by
+construction.
+
+The wire is the XSP store profile — THE CX-to-CX store wire (store.md §6.4):
+``cx-store://host:port/name/`` (TLS) or ``cx-store+xsp://host:port/name/``
+(cleartext dev). Client identity is XSP-AUTH: pass ``did`` + ``seed_env`` (the
+name of an environment variable holding the 32-byte Ed25519 seed hex — the
+seed itself never rides a URL or a literal). Anonymous under a floor-policy
+daemon needs neither.
 
     from cxlib import StoreClient
-    c = StoreClient("cx-store+http://127.0.0.1:7800/mydocs/", token="…")
+    c = StoreClient("cx-store+xsp://127.0.0.1:7800/mydocs/")
     h = c.put_doc_text('[note [body "hi"]]')
     assert c.exists(h)
     print(c.get_doc_text(h))
@@ -21,13 +28,19 @@ from typing import List, Optional
 from .cx import eval_code_caps
 from .code import CxError
 
-_HASH_RE = re.compile(r"[0-9a-f]{64}")
-# the content hash on each query `[result hash=H …]` / iter `[entry hash=H …]`
-# (bareword or quoted) — the matching / enumerated document's address.
-_RESULT_HASH_RE = re.compile(r"\[result hash='?([0-9a-f]{64})'?")
-_ENTRY_HASH_RE = re.compile(r"\[entry hash='?([0-9a-f]{64})'?")
+# I1 identity epoch: content addresses are TAGGED (`sha2-256:<64hex>`) —
+# the tag is part of the address, so the full tagged string is the handle
+# every method accepts and returns.
+_HASH_RE = re.compile(r"sha2-256:[0-9a-f]{64}")
+# the content address on each query tuple `[result doc=H source=…]` (the L97
+# flat relation — one tuple per MATCH, so query() dedups to per-doc hashes) /
+# iter `[entry hash=H …]` (bareword or quoted).
+_RESULT_HASH_RE = re.compile(r"\[result doc='?(sha2-256:[0-9a-f]{64})'?")
+_ENTRY_HASH_RE = re.compile(r"\[entry hash='?(sha2-256:[0-9a-f]{64})'?")
 _ERR_CODE_RE = re.compile(r'code="?([A-Za-z0-9:\-]+)"?')
 _ERR_MSG_RE = re.compile(r"message=(?:\"([^\"]*)\"|'([^']*)')")
+
+_LIVE_SCHEMES = ("cx-store://", "cx-store+xsp://")
 
 
 def _cx_str(s: str) -> str:
@@ -43,28 +56,35 @@ def _unwrap(s: str) -> str:
 
 
 class StoreClient:
-    """A connection-less client for one ``cx-store://`` URL.
+    """A connection-less client for one store-profile URL.
 
-    The remote backend is stateless per request (each op is one HTTP exchange
-    carrying the URL + bearer), so a single ``StoreClient`` is safe to reuse and
-    holds no socket. The bearer token is carried only inside the open-URL and is
-    never logged.
+    Each op evaluates a one-shot program (open → op); the core client dials the
+    profile session lazily per op, so a ``StoreClient`` holds no socket and is
+    safe to reuse. Identity (``did`` + ``seed_env``) maps onto the core's
+    open-opts ``xsp-did`` / ``xsp-seed-env`` — the seed stays in the process
+    environment, named but never read here.
     """
 
-    def __init__(self, url: str, token: Optional[str] = None) -> None:
-        if not url.startswith(("cx-store://", "cx-store+http://", "cx-store+https://")):
+    def __init__(self, url: str, did: Optional[str] = None,
+                 seed_env: Optional[str] = None) -> None:
+        if not url.startswith(_LIVE_SCHEMES):
             raise ValueError(
-                "StoreClient url must be a cx-store://, cx-store+http:// or "
-                "cx-store+https:// URL, got: " + url
+                "StoreClient url must be a cx-store:// (TLS) or cx-store+xsp:// "
+                "(cleartext dev) URL — the XSP store profile is THE store wire; "
+                "got: " + url
             )
+        if (did is None) != (seed_env is None):
+            raise ValueError("client identity needs BOTH did and seed_env (got one)")
         self._url = url
-        self._token = token
-        self._caps = "net:" + _host_port(url)
+        self._did = did
+        self._seed_env = seed_env
+        self._caps = "net=" + _host_port(url)
 
     # ── public surface (spec §6.1) ───────────────────────────────────────────
 
     def put_doc_text(self, text: str) -> str:
-        """Store a document's canonical text; return its content hash."""
+        """Store a document's canonical text; return its content address
+        (tagged — `sha2-256:<64hex>`)."""
         return _unwrap(self._run('[$store:put-doc-text $c "{}"]'.format(_cx_str(text))))
 
     def get_doc_text(self, doc_hash: str) -> str:
@@ -95,9 +115,10 @@ class StoreClient:
         raises CxError(CXER1709) so the caller can fall back to list+get — never a
         silent empty result."""
         out = self._run('[$store:query $c "{}"]'.format(_cx_str(cxpath)), output_target="cx")
-        # query-result: ([result hash=H (matches)] …) — the hash= on each result is
-        # the matching document's content address.
-        return _RESULT_HASH_RE.findall(out)
+        # L97 flat relation: ([result doc=H source=… MATCH] …) — one tuple per
+        # MATCH; dedup to the documented per-document hash list
+        # (first-appearance order preserved).
+        return list(dict.fromkeys(_RESULT_HASH_RE.findall(out)))
 
     def iter_docs(self) -> List[str]:
         """Server-side iteration (§6.1): enumerate every document through the
@@ -110,22 +131,26 @@ class StoreClient:
 
     # ── internals ────────────────────────────────────────────────────────────
 
-    def _open_url(self) -> str:
-        if not self._token:
-            return self._url
-        idx = self._url.find("://") + 3
-        return self._url[:idx] + self._token + "@" + self._url[idx:]
-
-    # The store namespace must be imported into each one-shot program; the
-    # remote backend opens statelessly (URL parse only — the HTTP happens at the
-    # op), so a fresh open per call is correct and cheap.
-    _PROG = (
+    # The store namespace must be imported into each one-shot program. With
+    # identity, the open carries the core's own open-opts (xsp-did +
+    # xsp-seed-env — validated by the core exactly as the CLI validates them).
+    _PROG_ANON = (
         "[?lib 'cx-stdlib/store' :as store]\n"
         '[?let [= $c [$store:open "{url}"]] {op}]'
     )
+    _PROG_IDENT = (
+        "[?lib 'cx-stdlib/store' :as store]\n"
+        '[?let [= $c [$store:open-opts "{url}" '
+        '[map xsp-did="{did}" xsp-seed-env="{seed_env}"]]] {op}]'
+    )
 
     def _run(self, op_expr: str, output_target: str = "text") -> str:
-        prog = self._PROG.format(url=self._open_url(), op=op_expr)
+        if self._did is not None:
+            prog = self._PROG_IDENT.format(
+                url=self._url, did=self._did, seed_env=self._seed_env, op=op_expr
+            )
+        else:
+            prog = self._PROG_ANON.format(url=self._url, op=op_expr)
         out = eval_code_caps("", prog, self._caps, output_target).strip()
         if out.startswith("[err"):
             raise _to_cx_error(out)
@@ -134,14 +159,15 @@ class StoreClient:
 
 def _host_port(url: str) -> str:
     rest = url.split("://", 1)[1]
-    if "@" in rest.split("/", 1)[0]:
-        rest = rest.split("@", 1)[1]
     authority = rest.split("/", 1)[0]
-    if ":" in authority:
-        return authority
-    # default ports per scheme
-    default = "80" if url.startswith("cx-store+http://") else "443"
-    return authority + ":" + default
+    if ":" not in authority:
+        # the profile refuses a missing port at open ('[xsp] listener address');
+        # fail here with the same demand so the caps grant is always exact.
+        raise ValueError(
+            "StoreClient url needs an explicit host:port (the [xsp] listener "
+            "address), got: " + url
+        )
+    return authority
 
 
 def _to_cx_error(err_text: str) -> CxError:

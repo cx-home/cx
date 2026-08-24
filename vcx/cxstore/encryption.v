@@ -163,6 +163,39 @@ mut:
 	generate_data_key(key_id string) !([]u8, []u8) // (plaintext_dek, wrapped_dek)
 	decrypt_data_key(key_id string, wrapped []u8) ![]u8
 	encrypt_data_key(key_id string, dek []u8) ![]u8 // wrap an existing DEK (rotation)
+	// ── stream 20 (#692): the SEK tier — per-subject destroyable keys ──
+	create_key(key_id string) !  // create-if-absent named key (SEK mint at first subject write)
+	destroy_key(key_id string) ! // remove the named key — the crypto-shred primitive; reads fail closed after
+	has_key(key_id string) bool  // typed-absence probe (discriminates absent from failing-auth; fail-closed reporting)
+}
+
+// ── stream 20 (#692): subject keys (SEK) — the destroyable middle tier ───────
+//
+// KEK (tenant, rotatable) → SEK (per subject, DESTROYABLE) → DEK (per payload).
+// A SEK is an ordinary named KMS key whose id carries the reserved prefix
+// below: `sek/<tenant-key-id>/<subject-token>`, where the token is an opaque
+// CSPRNG value — never the subject id, never derivable from it (the key
+// NAMESPACE must not be a subject oracle). An envelope sealed for a subject
+// records the SEK id as its wrapping key-id (the shipped v2 format carries it
+// unchanged); destroying the SEK renders every DEK under it unrecoverable —
+// crypto-shredding with zero writes to the sealed bytes.
+
+// sek_id_prefix marks a key-id as a per-subject key (SEK).
+pub const sek_id_prefix = 'sek/'
+
+// key_unavailable_msg — the typed absence discrimination carried in error
+// text: the wrapping key is ABSENT at the provider (destroyed, never created,
+// misconfigured, or provider outage — one observable at the unwrap site,
+// audit M33). Fail-closed and deliberately AMBIGUOUS: classifying an absence
+// as a lawful shred needs the journaled shred-request record, never key
+// absence alone. Distinct from an authentication failure (key present, bytes
+// tampered/corrupt).
+pub const key_unavailable_msg = 'E_KEY_UNAVAILABLE'
+
+// is_key_unavailable reports whether an error message carries the typed
+// absence discrimination above.
+pub fn is_key_unavailable(msg string) bool {
+	return msg.contains(key_unavailable_msg)
 }
 
 // LocalKms — reference provider. Holds a per-key-id master key (KEK) in memory
@@ -213,12 +246,43 @@ fn (mut k LocalKms) kek_for(key_id string) ![]u8 {
 	if key_id in k.keks {
 		return k.keks[key_id]
 	}
+	// A SEK is NEVER lazily minted — absence is the crypto-shred signal
+	// (destroyed, or never created), and an ephemeral re-mint would misreport
+	// it downstream as an authentication failure instead of the typed
+	// unavailable finding. Fail closed by name, even in ephemeral mode.
+	if key_id.starts_with(sek_id_prefix) {
+		return error('${key_unavailable_msg}: subject key ${key_id} is not available')
+	}
 	if !k.ephemeral {
 		return error('LocalKms: no master key configured for key_id ${key_id}')
 	}
 	kek := rand.bytes(aead_key_len)!
 	k.keks[key_id] = kek
 	return kek
+}
+
+// create_key mints a named key if absent (idempotent — the SEK-mint path: the
+// first payload for a subject creates its SEK; later payloads reuse it).
+pub fn (mut k LocalKms) create_key(key_id string) ! {
+	if key_id in k.keks {
+		return
+	}
+	key := rand.bytes(aead_key_len)!
+	k.keks[key_id] = key
+}
+
+// destroy_key removes a named key — the crypto-shred primitive (stream 20):
+// every DEK wrapped under it becomes unrecoverable and reads fail closed by
+// construction. Destroying an absent key is a no-op (idempotent, matching the
+// erase-subject command's deduped-replay posture).
+pub fn (mut k LocalKms) destroy_key(key_id string) ! {
+	k.keks.delete(key_id)
+}
+
+// has_key reports whether key_id resolves WITHOUT minting — the typed-absence
+// probe behind the unavailable-vs-tampered discrimination.
+pub fn (mut k LocalKms) has_key(key_id string) bool {
+	return key_id in k.keks
 }
 
 pub fn (mut k LocalKms) generate_data_key(key_id string) !([]u8, []u8) {
@@ -345,7 +409,18 @@ pub fn envelope_seal(mut kms Kms, key_id string, key []u8, payload []u8) ![]u8 {
 // or any tampered byte.
 pub fn envelope_open(mut kms Kms, key []u8, blob []u8) ![]u8 {
 	env := parse_envelope(blob)!
-	dek := kms.decrypt_data_key(env.key_id, env.wrapped)!
+	dek := kms.decrypt_data_key(env.key_id, env.wrapped) or {
+		// Stream 20: discriminate an ABSENT wrapping key (the typed
+		// `unavailable` finding — destroyed SEK, misconfiguration, or provider
+		// outage; fail-closed, never classified as lawful erasure here) from a
+		// PRESENT key failing authentication (tamper/corruption). The probe
+		// runs after the failure, so a provider that resolves lazily has
+		// already tried.
+		if !kms.has_key(env.key_id) {
+			return error('${key_unavailable_msg}: wrapping key ${env.key_id} unavailable (destroyed, misconfigured, or provider outage) — fail-closed')
+		}
+		return err
+	}
 	return aead_open(dek, env.sealed, key)!
 }
 
@@ -401,6 +476,14 @@ mut:
 	dir    string
 	key_id string
 	kms    Kms
+	// seal_overrides — see EncryptingWrapper.seal_overrides (stream 20).
+	seal_overrides map[string]string
+}
+
+// set_seal_override pins an explicit wrapping key-id for one object key
+// (stream 20: the subject path).
+pub fn (mut b EncryptingObjectBackend) set_seal_override(key_hex string, key_id string) {
+	b.seal_overrides[key_hex] = key_id
 }
 
 pub fn new_encrypting_object_backend(dir string, key_id string, kms Kms) !EncryptingObjectBackend {
@@ -412,6 +495,11 @@ pub fn new_encrypting_object_backend(dir string, key_id string, kms Kms) !Encryp
 	}
 }
 
+// kms_instance exposes the backend's KMS (see EncryptingWrapper.kms_instance).
+pub fn (b &EncryptingObjectBackend) kms_instance() Kms {
+	return b.kms
+}
+
 fn (b &EncryptingObjectBackend) object_path(hash []u8) string {
 	hex := hash.hex()
 	return os.join_path(b.dir, hex[..2], hex)
@@ -419,6 +507,31 @@ fn (b &EncryptingObjectBackend) object_path(hash []u8) string {
 
 pub fn (b &EncryptingObjectBackend) has_object(hash []u8) bool {
 	return os.exists(b.object_path(hash))
+}
+
+// get_object_raw returns the at-rest envelope blob for `hash` WITHOUT opening
+// it (stream 20: the erase walk reads recorded wrapping key-ids to scope a
+// subject's sealed objects; classification reads them for the M29 evidence).
+pub fn (b &EncryptingObjectBackend) get_object_raw(hash []u8) ?[]u8 {
+	return os.read_bytes(b.object_path(hash)) or { return none }
+}
+
+// seal_override_for reports the registered explicit wrapping key-id for one
+// object key, if any (stream 20: the erase walk scopes STAGED subject docs —
+// objects routed to a SEK but not yet durable have no envelope to read).
+pub fn (b &EncryptingObjectBackend) seal_override_for(key_hex string) ?string {
+	return b.seal_overrides[key_hex] or { return none }
+}
+
+// remove_object deletes one at-rest envelope file (stream 20 §7: the shred
+// walk purges the sealed residue under a destroyed SEK — a doc re-landed at
+// the same address must never content-dedup against a stale unopenable
+// envelope, or the supersede would break across restart). Idempotent.
+pub fn (mut b EncryptingObjectBackend) remove_object(hash []u8) ! {
+	p := b.object_path(hash)
+	if os.exists(p) {
+		os.rm(p)!
+	}
 }
 
 // object_count is the number of distinct objects physically stored (the
@@ -458,7 +571,9 @@ pub fn (mut b EncryptingObjectBackend) put_object(payload []u8) ![]u8 {
 	if os.exists(path) {
 		return hash // content-address dedup: already stored
 	}
-	blob := envelope_seal(mut b.kms, b.key_id, hash, payload)!
+	// stream 20: a registered subject override wins over the tenant write key.
+	kid := b.seal_overrides[hash.hex()] or { b.key_id }
+	blob := envelope_seal(mut b.kms, kid, hash, payload)!
 	os.mkdir_all(os.dir(path))!
 	os.write_file_array(path, blob)!
 	return hash
@@ -467,12 +582,20 @@ pub fn (mut b EncryptingObjectBackend) put_object(payload []u8) ![]u8 {
 // ── KEK rotation (#287 / store.md §9.1) ──────────────────────────────────────
 
 // KekRotation — one rotation walk's report: objects = rewrapped +
-// already_current always; from_ids lists the distinct OLD key-ids observed.
+// already_current + subject_keyed always (the §9.1 balanced account);
+// from_ids lists the distinct OLD key-ids observed. subject_keyed counts
+// envelopes whose recorded wrapping key is a SEK (stream 20): they are OUT OF
+// SCOPE for tenant-KEK rotation — their wrapping key is the subject key, and
+// re-wrapping them under the tenant KEK would defeat crypto-shredding — so
+// the walk carries them verbatim (a destroyed-SEK envelope included: the
+// shred survives rotation). The SEK KEY MATERIAL re-wraps under the new KEK
+// separately (the KMS custody layer owns it).
 pub struct KekRotation {
 pub mut:
 	objects         int
 	rewrapped       int
 	already_current int
+	subject_keyed   int
 	from_ids        []string
 }
 
@@ -500,6 +623,17 @@ pub fn (mut b EncryptingObjectBackend) rotate_kek(new_key_id string) !KekRotatio
 			path := os.join_path(sub, name)
 			blob := os.read_bytes(path) or {
 				return error('rotation: object ${name} unreadable: ${err.msg()}')
+			}
+			// Stream 20: a SEK-wrapped envelope is out of tenant-rotation
+			// scope — carried verbatim (destroyed-SEK envelopes included; the
+			// shred survives rotation), counted visibly.
+			env0 := parse_envelope(blob) or {
+				return error('rotation: object ${name}: ${err.msg()}')
+			}
+			if env0.key_id.starts_with(sek_id_prefix) {
+				rep.objects++
+				rep.subject_keyed++
+				continue
 			}
 			nb, old_id, changed := rewrap_envelope(mut b.kms, blob, new_key_id) or {
 				return error('rotation: object ${name}: ${err.msg()}')

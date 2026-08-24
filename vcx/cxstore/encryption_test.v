@@ -326,3 +326,91 @@ fn rand_suffix() string {
 	b := rand.bytes(8) or { return 'fallback' }
 	return b.hex()
 }
+
+// ── stream 20 (#692): the SEK tier — subject keys ────────────────────────────
+
+// The typed unavailable-vs-tampered discrimination (audit M33): a DESTROYED
+// (absent) wrapping key reports E_KEY_UNAVAILABLE; a present key over
+// tampered bytes reports an authentication failure, never unavailable.
+fn test_sek_destroy_unavailable_vs_tampered() {
+	mut kms := new_local_kms_locked()
+	tenant := rand.bytes(32) or { panic(err) }
+	kms.add_master('tenant-a', tenant) or { panic(err) }
+	sek_id := 'sek/tenant-a/deadbeefdeadbeefdeadbeefdeadbeef'
+	kms.create_key(sek_id) or { panic(err) }
+	assert kms.has_key(sek_id)
+
+	key := object_name('secret payload'.bytes())
+	mut ki := Kms(kms)
+	blob := envelope_seal(mut ki, sek_id, key, 'secret payload'.bytes()) or { panic(err) }
+	got := envelope_open(mut ki, key, blob) or { panic(err) }
+	assert got.bytestr() == 'secret payload'
+
+	// tampered byte, key PRESENT → auth failure, NOT unavailable.
+	mut bad := blob.clone()
+	bad[bad.len - 1] = bad[bad.len - 1] ^ 0x01
+	if _ := envelope_open(mut ki, key, bad) {
+		assert false, 'tampered envelope must not open'
+	} else {
+		assert !is_key_unavailable(err.msg()), 'tamper must not read as unavailable: ${err.msg()}'
+	}
+
+	// key DESTROYED → the typed unavailable finding (crypto-shred), and the
+	// destruction is idempotent.
+	kms.destroy_key(sek_id) or { panic(err) }
+	kms.destroy_key(sek_id) or { panic(err) }
+	assert !kms.has_key(sek_id)
+	if _ := envelope_open(mut ki, key, blob) {
+		assert false, 'shredded envelope must not open'
+	} else {
+		assert is_key_unavailable(err.msg()), 'want the typed unavailable finding: ${err.msg()}'
+	}
+}
+
+// A SEK id is NEVER lazily minted — even on an ephemeral provider (a re-mint
+// would misreport absence as an authentication failure downstream).
+fn test_sek_never_lazy_mints() {
+	mut kms := new_local_kms() // ephemeral mode: unknown TENANT ids lazy-mint
+	if _, _ := kms.generate_data_key('sek/tenant-a/cafecafecafecafe') {
+		assert false, 'a SEK must never lazy-mint'
+	} else {
+		assert is_key_unavailable(err.msg())
+	}
+}
+
+// The cxobj rotation walk: SEK-wrapped envelopes are out of tenant-rotation
+// scope — carried verbatim, counted in the balanced account.
+fn test_rotate_kek_skips_subject_keyed_envelopes() {
+	dir := os.join_path(os.temp_dir(), 'cx_enc_rot_sek_${rand_suffix()}')
+	defer {
+		os.rmdir_all(dir) or {}
+	}
+	ka := rand.bytes(32) or { panic(err) }
+	kb := rand.bytes(32) or { panic(err) }
+	mut kms := new_local_kms_locked()
+	kms.add_master('tenant-a', ka) or { panic(err) }
+	kms.add_master('tenant-b', kb) or { panic(err) }
+	sek_id := 'sek/tenant-a/feedfacefeedface'
+	kms.create_key(sek_id) or { panic(err) }
+
+	mut b := new_encrypting_object_backend(dir, 'tenant-a', kms) or { panic(err) }
+	b.put_object('tenant object'.bytes()) or { panic(err) }
+	subj := 'subject object'.bytes()
+	skey := object_name(subj)
+	b.set_seal_override(skey.hex(), sek_id)
+	b.put_object(subj) or { panic(err) }
+
+	rep := b.rotate_kek('tenant-b') or { panic(err) }
+	assert rep.objects == 2
+	assert rep.subject_keyed == 1
+	assert rep.rewrapped == 1
+	assert rep.objects == rep.rewrapped + rep.already_current + rep.subject_keyed
+
+	// the subject envelope still wraps under its SEK, and still opens.
+	hex := skey.hex()
+	blob := os.read_bytes(os.join_path(dir, hex[..2], hex)) or { panic(err) }
+	env := parse_envelope(blob) or { panic(err) }
+	assert env.key_id == sek_id
+	got := b.get_object(skey) or { panic('subject object must read after rotation') }
+	assert got.bytestr() == 'subject object'
+}

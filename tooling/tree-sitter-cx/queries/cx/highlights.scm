@@ -19,7 +19,11 @@
 (operator (operator_head) @operator)
 
 ; ── Program binding  $name  (code.md §3.6) ───────────────────────────────────
+; Also the data-mode authorable HOLE (I1 row 9, [L25b]) — one token, one color.
 (program_binding) @variable
+
+; ── Tagged address  sha2-256:<hex> / code:… / genesis:  (I1 stream 19) ───────
+(tagged_address) @constant
 
 ; ── Path argument  //step  inside a call/operator (e.g. [$count //user]) ──────
 (value_path) @keyword.operator

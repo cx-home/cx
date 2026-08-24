@@ -58,14 +58,16 @@ reports the change, so there is no polling interval and no missed window.
 
 The recipe ingests **both** kinds, routing by extension:
 
-- **`.cxd` data documents** → `put-doc-text` (content hash; subtree-deduped on the
-  `cxpack://` object graph).
-- **`.cx` code files** → `put-def` (Tier-2 **code identity** — alpha- and
-  comment-insensitive, dependency-resolved-by-hash, so semantically-equal
-  definitions store once). Code is held verbatim (it does not data-parse) and
-  read back with `get-def`.
+- **`.cxd` data documents** → `put-doc-text` — STRUCTURED documents: identity =
+  hash of the strict-canonical bytes; the canonicalized round-trip is the
+  contract (and subtree-dedup falls out on the object-graph model).
+- **`.cx` code files** → `put-blob` — OPAQUE documents: identity = hash of the
+  **raw bytes as given**, and `get-blob` returns them **byte-exact**. Code never
+  passes through data canonicalization (its concrete syntax — quoting, spacing,
+  comments — is the content), and every read re-verifies key == hash(bytes).
 
-Each is aliased by its relative path, so `get-alias` → hash → `get-doc` (data) or
-`get-def` (code) round-trips by name. Try it: after `make ingest`, resolve the
-sample def with
-`[$store:get-def $c [$store:get-alias $c "sample/code/greet.cx"]]`.
+Each is aliased by its relative path, so `get-alias` → hash → `get-doc-text`
+(data) or `get-blob` (code) round-trips by name. Try it: after `make ingest`,
+resolve the sample def with
+`[$store:get-blob $c [$store:get-alias $c "sample/code/greet.cx"]]` — the bytes
+that come back are identical to `sample/code/greet.cx` on disk.

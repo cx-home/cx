@@ -1,4 +1,4 @@
-[; Sample cxstore service config (spec/02-working/cxstore_service_tier_phase2.md, Appendix A).
+[; Sample cxstore service config.
    Loaded by: cx store-serve --config /etc/cxstore/cxstore.service.cx ;]
 [cxstore-service
   [bind addr="0.0.0.0:8443"]
@@ -6,9 +6,15 @@
   [; [tls cert="/etc/cxstore/tls.crt" key="/etc/cxstore/tls.key"] ;]
   [stores
     [store name="docs" url="file:///var/lib/cxstore/docs"]]
-  [auth
-    [; auth providers are enforced by the authZ sub-area; recognized here ;]
-    [static]]
+  [; Operator authority is ONE grant table riding the XSP store profile
+     (XSP-AUTH on the wire; per-call CxCall credentials on the gRPC edge).
+     Deny-by-default: with no [grants …] the daemon boots auth OPEN and
+     says so in its banner — configure grants for production. The retired
+     [auth …] bearer plane is a hard startup error. ;]
+  [xsp
+    [grants
+      [grant did="did:key:REPLACE-WITH-OPERATOR-DID" caps="read write delete admin"]
+      [grant floor=true caps="read"]]]
   [observability
     [log format="cx"]]
   [workers query-pool=8]]

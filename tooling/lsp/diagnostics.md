@@ -224,7 +224,7 @@ under `conformance/lsp/`):
 Each fixture follows the `LSP_REQUEST` / `LSP_RESPONSE` JSON-pair
 envelope (the `conformance/lsp/` directory and its envelope land with
 the conformance runner's LSP mode — reserved, not yet created; the
-interim manual driver is `tooling/lsp/tests/probe.py`, see
+interim manual driver is `tooling/lsp/tests/probe.cx`, see
 `tooling/lsp/tests/README.md`).
 
 ## Capabilities advertised
@@ -232,7 +232,7 @@ interim manual driver is `tooling/lsp/tests/probe.py`, see
 `cx lsp` `initialize` response must continue to advertise
 `hoverProvider: true` and `completionProvider: { triggerCharacters:
 ["[", "?", "@", ":", "/"] }` (the live advertised set — verified by
-[`tests/check_capabilities.py`](tests/check_capabilities.py)). `/` is
+[`tests/check_capabilities.cx`](tests/check_capabilities.cx)). `/` is
 in the trigger set so path completions fire at the start of `//path`
 typing.
 

@@ -3,6 +3,9 @@ package cxlib
 import (
 	"encoding/binary"
 	"fmt"
+	"math/big"
+
+	"github.com/cockroachdb/apd/v3"
 )
 
 // StreamEvent represents a single CX streaming event.
@@ -120,6 +123,22 @@ func coerceAttrValue(typeStr, valueStr string) any {
 		// wire format already validated the name via V's parser, so we
 		// trust the bytes — no re-validation against the §D1 production.
 		return AtomValue{Name: valueStr}
+	case "decimal":
+		// I1 L48: decimal is a first-class semantic kind — an exact
+		// base-10 host type, never float64 (binary float is the wrong
+		// carrier for a scale-preserving kind). apd keeps the parsed
+		// scale ("1.10" stays "1.10" through Text('f')).
+		if d, _, err := apd.NewFromString(valueStr); err == nil && d.Form == apd.Finite {
+			return d
+		}
+		return valueStr
+	case "bigint":
+		// I1 L48: bigint maps to *big.Int — the kind is never erased,
+		// even when the image fits i64.
+		if n, ok := new(big.Int).SetString(valueStr, 10); ok {
+			return n
+		}
+		return valueStr
 	default:
 		return valueStr
 	}
@@ -522,11 +541,24 @@ func readNode(b *binBuf, version uint8) (Node, error) {
 			SingleUse:  singleByte != 0,
 		}, nil
 
+	case 0x18: // HoleNode — I1 row 9 (L78)
+		// Authorable variable hole `$name`. Additive tag: str:name, no
+		// version gate (mirrors vcx binary.v / Python binary.py).
+		name, err := b.str()
+		if err != nil {
+			return nil, err
+		}
+		return &HoleNode{Name: name}, nil
+
 	case 0xFF: // skip — no payload
 		return &TextNode{Value: ""}, nil
 
 	default:
-		return &TextNode{Value: ""}, nil
+		// Any other tag has an unknown payload; skipping it silently
+		// would desynchronize the reader (the old empty-TextNode return
+		// surfaced as garbage string-length errors nodes later). Fail
+		// loud instead — mirrors the Python binding.
+		return nil, fmt.Errorf("ast_bin: unknown node tag 0x%02x", tid)
 	}
 }
 
@@ -852,6 +884,13 @@ func scalarValueStr(dt string, v any) string {
 		return fmt.Sprintf("%v", x)
 	case float32:
 		return fmt.Sprintf("%v", x)
+	case *big.Int:
+		// I1 L48: bigint image — base-10 integer string.
+		return x.Text(10)
+	case *apd.Decimal:
+		// I1 L48: decimal image — FIXED-POINT base-10, scale preserved
+		// (never exponent form; %v on apd may print scientific).
+		return x.Text('f')
 	}
 	return fmt.Sprintf("%v", v)
 }
@@ -905,6 +944,10 @@ func (w *binWriter) node(n Node) {
 	case *TextNode:
 		w.u8(0x02)
 		w.str(x.Value)
+	case *HoleNode:
+		// I1 row 9 (L78) — additive tag 0x18: str:name.
+		w.u8(0x18)
+		w.str(x.Name)
 	case *ScalarNode:
 		w.u8(0x03)
 		w.str(x.DataType)

@@ -257,6 +257,16 @@ Per-binding obligations:
  per-thread contract is documented in each binding's README and
  catches up with the binding's concurrency story.
 
+**Handle liveness under the collector.** C-held opaque handles (the
+table reader/writer, the events writer) are kept alive by the
+collector's conservative scan of the host executable's data segment,
+the library's own data segment, and registered threads' stacks — the
+same contract the Boehm-era artifacts carried. A handle stored ONLY in
+host `malloc` memory is invisible to the scan and is NOT protected:
+an embedder keeps every live handle reachable from a scanned region
+(a global, a stack local, or a registered thread's frame) for as long
+as it must stay valid.
+
 **Capability bit 26 advertises this ABI.** Bindings that depend on the
 thread-init handshake check `cx_features & (1 << 26)` at load. A
 libcx that returns the bit unset does not implement the handshake;
@@ -750,12 +760,14 @@ Deferred to a follow-up phase (each surfaces a clear
 `arrow: column type 'X' not yet supported in ` /
 `arrow: format 'F' not yet supported in ` error):
 
-- `datetime`: blocked on chunked-table strict-cell wire form (the
- column-major encoder in `data_bin_chunked.v::encode_strict_cell`
- does not yet dispatch on `tag_datetime`).
-- `decimal`: pending the `:decimal` type's column-major
+- `decimal`: pending the `::decimal` type's column-major
  encoding.
 - Dictionary / extension columns: deferred to a follow-up phase.
+
+(`datetime` GRADUATED out of this list — the bridge maps it to Arrow
+`timestamp[ns, UTC]` (`tsn:UTC`), exercised by the `arrow-010`/`arrow-011`
+round-trip fixtures; all ten column types are covered. Stale row found
+at the 2026-08-20 docs audit.)
 
 Validity bitmaps are NULL on both sides (`null_count = 0`).
 CXCol strict-spec column-major encoding has no in-band null
@@ -1342,7 +1354,8 @@ features the loaded library does not implement.
 | 38 | 0x4000000000 | Capability-based security — deny-by-default capability set per `core/security.md`. `cx_code_eval*` accept a capability-set parameter (default empty ⇒ pure-only); a denied effect raises `cx-err:CXER0271` (E_CAP_DENIED). The `[?with-caps]` narrowing directive is gated by this bit. |
 | 39 | 0x8000000000 | Debugging — local + remote debug surface per `misc/debug.md` (breakpoints, stepping, `eval`-in-frame, DAP adapter, record-replay). Off by default; remote attach requires a token. |
 | 40 | 0x10000000000 | Element table record wire format (ast_bin v9) — the pooled `[table[…]]` payload rides the binary AST wire as a table record (tag `0x17`, `ast-bin.md §4.8`): columns (name + canonical long type, empty = string-default) and rows of cells, scalar cells as `0x03 Scalar` (int/float/bool/null/string), collection cells via the existing `0x0F`/`0x10`/`0x11` encodings. Version byte 9 is emitted only when a table payload is present (additive: table-free documents keep their previous envelope byte-for-byte). The runtime `from_chunked` provenance flag is NOT carried. Decoders without bit 40 MUST reject version-9 buffers; decoders MUST reject `0x17` outside the first child slot of an Element or in a < v9 envelope. Independent of bits 36 / 37. |
-| 41-63 | reserved | (set to 0) |
+| 41 | 0x20000000000 | I5 runtime-representation engine (`runtime_representation.md`, #689/#710) — the demand-driven iterator engine (EV-PULL per `code.md` §6.7/§14.4: combinators construct lazily and pull exactly what they yield; err-terminal collapse; result-boundary forcing; the ≥1M-step EV-BUDGET floor) AND the full data-bin §3.10.3 columnar type lattice on the wire (typed column payloads with no per-cell tags: unsigned widths 0x14-0x17, f32/f16 0x21/0x22, bigint/decimal 0x18/0x28, bit-packed bool §3.10.4, atom 0x70, dictionary form 0x62 §3.10.2, nullable wrapper 0x80 §3.10.5, mixed 0x81 §3.10.6 — atoms dictionary-encode by construction; secret-bearing structures are NEVER promoted to columns). Set only when BOTH halves ship; decoders without bit 41 MUST reject §3.10.3 column codes outside the pre-lattice set. Independent of bits 37 / 40. |
+| 42-63 | reserved | (set to 0) |
 
 ---
 

@@ -31,7 +31,7 @@ make guide        # builds the cx binary + playground wasm, then runs guide_buil
 or directly:
 
 ```
-cx scripts/gen_guide/guide_build.cx --allow-read --allow-write
+cx --allow-read --allow-write scripts/gen_guide/guide_build.cx
 ```
 
 The `--allow-read` / `--allow-write` grants are required (the program reads
@@ -100,8 +100,15 @@ breakage at review time.
 
 ## Standard-library pages (projected, not generated-to-disk)
 
-The Standard-library landing (`libraries.html`) and per-module pages
-(`lib-<m>.html`) are projected **at build time** by `guide_build.cx` directly
+Since the #826 restructure there is **no standalone `libraries.html` index**:
+each pack is indexed under the ring that owns it (ruling 3a), and the
+pack→ring assignment is DERIVED from which vcx tree implements the pack's
+native builtins (`vcx/code` → Ring 1, `vcx/platform` / `vcx/cxstore` → Ring 2)
+— see `pack-ring` in `guide_build.cx`. Re-derive rather than hand-edit when a
+pack moves.
+
+The per-module pages (`lib-<m>.html`) are projected **at build time** by
+`guide_build.cx` directly
 from the co-located `[module-doc]`/`[fn-doc]` blocks in `stdlib/*.cx` — the
 single source of truth. There is no checked-in `16-libraries.cxd` section and no
 intermediate coverage document; the module set is the glob of `stdlib/*.cx`, so a
@@ -132,11 +139,12 @@ structural, not procedural:
 
 - `make guide-wasm` rebuilds the wasm **and** regenerates
   `playground.examples.js` (via `make playground-examples-regen` →
-  `gen_examples.py`, which CLI-audits every entry against the current binary)
+  `gen_examples.cx` reading the `examples.cxd` corpus, CLI-auditing every
+  entry against the current binary)
   in the same invocation, then renders the guide — the render always stages
   after both. There is no target that rebuilds the wasm without the examples.
 - `make verify-playground-examples` (top-level Makefile, in `TEST_TARGETS`
-  next to `guide-check`) runs `gen_examples.py --check`: it fails when any
+  next to `guide-check`) runs `gen_examples.cx --check`: it fails when any
   example no longer runs clean on the current binary **or** when the
   checked-in `playground.examples.js` differs from a fresh render — stale
   examples can't ship silently.

@@ -9,22 +9,25 @@ hover / completion response on.
 Run the manual driver against the built `cx` binary:
 
 ```sh
+# The probe driver is CX (flag-first: cx [flags] FILE [args] per cli.md §3):
+PROBE="./vcx/target/cx --allow-read --allow-write --allow-subprocess tooling/lsp/tests/probe.cx ./vcx/target/cx"
+
 # Diagnostics (CXLS001–004):
-python3 tooling/lsp/tests/probe.py ./vcx/target/cx diag tooling/lsp/tests/cxls001_unreachable_after_else.cx
-python3 tooling/lsp/tests/probe.py ./vcx/target/cx diag tooling/lsp/tests/cxls002_missing_else.cx
-python3 tooling/lsp/tests/probe.py ./vcx/target/cx diag tooling/lsp/tests/cxls003_when_consolidation.cx
-python3 tooling/lsp/tests/probe.py ./vcx/target/cx diag tooling/lsp/tests/cxls004_modify_attr_mismatch.cx
+$PROBE diag tooling/lsp/tests/cxls001_unreachable_after_else.cx
+$PROBE diag tooling/lsp/tests/cxls002_missing_else.cx
+$PROBE diag tooling/lsp/tests/cxls003_when_consolidation.cx
+$PROBE diag tooling/lsp/tests/cxls004_modify_attr_mismatch.cx
 
 # CXPath focus hover:
-python3 tooling/lsp/tests/probe.py ./vcx/target/cx hover tooling/lsp/tests/cxpath_focus_hover.cx 0 16
+$PROBE hover tooling/lsp/tests/cxpath_focus_hover.cx 0 16
 
 # Path-context completion:
 #   axis_or_name position (right after `//`)
-python3 tooling/lsp/tests/probe.py ./vcx/target/cx completion tooling/lsp/tests/cxpath_completion_nodetest.cx 1 15
+$PROBE completion tooling/lsp/tests/cxpath_completion_nodetest.cx 1 15
 #   name_only position (right after `::`)
-python3 tooling/lsp/tests/probe.py ./vcx/target/cx completion tooling/lsp/tests/cxpath_completion_axis.cx 1 22
+$PROBE completion tooling/lsp/tests/cxpath_completion_axis.cx 1 22
 #   attr_predicate position (right after `[`)
-python3 tooling/lsp/tests/probe.py ./vcx/target/cx completion tooling/lsp/tests/cxpath_completion_predicate.cx 1 20
+$PROBE completion tooling/lsp/tests/cxpath_completion_predicate.cx 1 20
 ```
 
 Fixtures exercise the full-AST path (`code.parse` walked by

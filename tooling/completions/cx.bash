@@ -15,7 +15,7 @@ _cx_subcmds() {
   # render the program AST; `lock` manages the dependency lockfile;
   # `store-*` are the CSRP store-service verbs (serve / health probe /
   # token mint / KEK rotation); `fabric-serve` is the fabric daemon.
-  echo "fmt canonical hash eq diff lint validate table demo scaffold eval version select diagram code-diagram code-tree lock store-serve store-health store-token store-rotate-kek fabric-serve lsp"
+  echo "fmt canonical hash eq diff lint schema tools validate table demo scaffold xap eval primer version select diagram code-diagram code-tree lock store-serve store-health store-rotate-kek fabric-serve lsp"
 }
 
 _cx_table_verbs() {
@@ -113,6 +113,20 @@ _cx_complete() {
           ;;
       esac
       ;;
+    schema)
+      if [[ ${COMP_CWORD} -eq 2 ]]; then
+        COMPREPLY=( $(compgen -W "infer" -- "$cur") )
+        return 0
+      fi
+      case "$cur" in
+        --*)
+          COMPREPLY=( $(compgen -W "--sample= --output=" -- "$cur") )
+          return 0
+          ;;
+      esac
+      _cx_files
+      return 0
+      ;;
     table)
       if [[ ${COMP_CWORD} -eq 2 ]]; then
         COMPREPLY=( $(compgen -W "$(_cx_table_verbs)" -- "$cur") )
@@ -162,7 +176,7 @@ _cx_complete() {
           return 0
           ;;
         -*)
-          COMPREPLY=( $(compgen -W "--format= -o" -- "$cur") )
+          COMPREPLY=( $(compgen -W "--format= -o --allow-subprocess" -- "$cur") )
           return 0
           ;;
       esac
@@ -208,15 +222,6 @@ _cx_complete() {
       case "$cur" in
         --*)
           COMPREPLY=( $(compgen -W "--url=" -- "$cur") )
-          return 0
-          ;;
-      esac
-      return 0
-      ;;
-    store-token)
-      case "$cur" in
-        --*)
-          COMPREPLY=( $(compgen -W "--id= --roles= --tenant=" -- "$cur") )
           return 0
           ;;
       esac

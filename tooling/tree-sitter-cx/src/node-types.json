@@ -50,6 +50,10 @@
           "named": true
         },
         {
+          "type": "tagged_address",
+          "named": true
+        },
+        {
           "type": "unquoted_value",
           "named": true
         }
@@ -322,6 +326,10 @@
         },
         {
           "type": "solo_colon",
+          "named": true
+        },
+        {
+          "type": "tagged_address",
           "named": true
         },
         {
@@ -915,6 +923,10 @@
           "named": true
         },
         {
+          "type": "tagged_address",
+          "named": true
+        },
+        {
           "type": "text",
           "named": true
         },
@@ -1387,6 +1399,10 @@
         },
         {
           "type": "solo_colon",
+          "named": true
+        },
+        {
+          "type": "tagged_address",
           "named": true
         },
         {
@@ -1884,6 +1900,10 @@
   },
   {
     "type": "solo_colon",
+    "named": true
+  },
+  {
+    "type": "tagged_address",
     "named": true
   },
   {

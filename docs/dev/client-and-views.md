@@ -10,7 +10,7 @@ an agent, and a web client with no change to the XAP — that is the point.
 
 `surfaces/<s>.surface.cxd` binds already-declared feature verbs/views to media
 and layout; it never restates an intent. From the marine helm
-(`xap-marine/surfaces/helm.surface.cxd`):
+(`reference/shop/shop.surface.cxd`):
 
 ```cx
 [surface name=helm xap=marine-helm version=0.1.0
@@ -37,12 +37,12 @@ composition model spec).
 
 A client project carries `client.cxd ⊢ client.cxs`: which XAP it attaches to,
 what it consumes, how it projects, its windows/widgets/session model. The live
-example is `xap-marine-htmx-web-client/marine.client.cxd` — read it before
+example is `reference/shop-web-client/client.cxd` — read it before
 writing your own; it is the template.
 
 ## What a client consumes (the XAP's data endpoints)
 
-From the marine transport block (`xap-marine/xap.cxd`): observe verbs serve as
+From the reference app’s transport block (its `xap.cxd`): observe verbs serve as
 `GET /surface/{feature}` returning `application/cx` readouts; act/arrange
 verbs arrive as `POST /intent` (an XSP request frame wrapping
 `[intent verb=… …]`); `GET /grammar` serves the composed control grammar —
@@ -72,15 +72,15 @@ generic card (`readout → card`, `kv → row`):
  [render-doc-html $doc]]
 ```
 
-In the real client (`xap-marine-htmx-web-client/serve.cx`) that function sits
+In the real client (`reference/shop-web-client/serve.cx`) that function sits
 behind `/pane/{feature}`; the browser polls or receives SSE-relayed pushes;
 feature-specific widgets (autopilot panel, nav dial, instruments) are JSON
 projections of the same surface data. Run the pair:
 
 ```sh
-cd xap-marine && make dev        # XAP :9001 + client :9002 + browser
+cd <your-xap-project> && make dev   # XAP :9001 + client :9002 + browser
 # client alone, against a running XAP:
-cd xap-marine-htmx-web-client
+cd <your-xap-web-client>
 cx --allow-net=127.0.0.1 --allow-read --allow-env serve.cx
 ```
 

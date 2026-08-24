@@ -1,0 +1,417 @@
+[# Section 16a — code tooling: the CLI verbs that serve Ring 1 — running
+   programs under capability grants, lint, diagnostics, visualization,
+   profiling. Split out of the monolithic Tooling section per the #826
+   ruling (CLI verbs go to the ring each serves). Content carried
+   verbatim from the verified 08-tooling children; only numbering and
+   the frame are new. #]
+
+[section id=code-tooling group='Ring 1 — Code' n='16a' title='Code tooling'
+
+  [intro
+    """The working surface of the application author: run a program
+       under an explicit grant set ([[capabilities]]), lint it, debug it
+       from the errors' own positions, draw it, and measure it. The
+       purely data-shaped verbs (fmt, hash, diff, validate, …) live
+       with Ring 0 in [[data-tooling]]; the full subcommand catalog is
+       in [[tooling]]."""]
+
+  [child id=cli-run-caps n='16a.1' title='Running programs and capability flags'
+    [body
+      """`cx program.cx` evaluates a program. A separate data
+         input rides `--data=INPUT.cx` (or `--data=-` for stdin):
+         the input is loaded via the data reading and bound as
+         `$doc` / `$input` before evaluation, and the caller-supplied
+         input **wins** — the program's own data roots never rebind
+         it. Without `--data`, the program's first data root binds
+         implicitly; a document-driven program run without any input
+         raises the loud unbound-`$doc` error rather than silently
+         matching nothing. The four document-driven `examples/`
+         programs (code-tour, cxpath-tour, match-multi, modify-crud)
+         run exactly this way (`cx examples/code-tour.cx
+         --data=examples/code-tour.input.cx`)."""]
+    [body
+      """Unknown flags on this surface are **hard usage errors**
+         (exit 2, naming the flag) — including misspelled
+         `--allow-*` grants. Nothing on the run surface is silently
+         ignored."""]
+    [body
+      """Effects are
+         **deny-by-default**: a program that reads files, writes
+         files, touches the network, reads environment variables,
+         spawns subprocesses, or asks for randomness must be
+         granted that capability explicitly on the command line
+         (denied effect points raise the catchable capability
+         error `CXER0271`):"""]
+    [example lang=sh
+      """$ cx --data=orders.cx report.cx       # orders.cx binds as $doc
+         $ cx --allow-read --allow-write build_site.cx
+         $ cx --allow-net serve.cx
+         $ cx --allow-common pipeline.cx       # the common working set"""]
+    [body
+      """The capability set: `--allow-read`, `--allow-write`,
+         `--allow-net`, `--allow-env`, `--allow-clock`,
+         `--allow-random`, `--allow-subprocess`, `--allow-eval`,
+         `--allow-secret-reveal`. Two broad grants stand beside them:
+         `--allow-common` is all of the above EXCEPT
+         `--allow-secret-reveal`, and `--allow-all` is everything
+         including it. Prefer `--allow-common` while exploring — it
+         keeps `[?secret]` values sealed. See [[security]] for the
+         security model."""]
+    [body
+      """A `cx eval FILE` alias exists for the same action; prefer
+         the plain `cx FILE` spelling — the alias adds nothing."""]]
+
+  [child id=cli-lint n='16a.2' title='cx lint'
+    [body
+      """Style + correctness warnings. See [[lint]] for the rule
+         catalog. Flags: `--format=text|json|summary` (default
+         `text`), `--fail-on=info|warn|error|none` (default
+         `error`), `--disable=ID1,ID2` to suppress checks,
+         `--only=ID` to run one."""]
+    [example lang=sh
+      """$ cx lint config.cx
+         $ cx lint --fail-on=warn --format=json config.cx
+         $ cx lint --only=CX-L004 pipeline.cx"""]]
+
+  [child id=lint n='16a.3' title='Lint rules'
+    [intro
+      """`cx lint` warns about issues a formatter can't or shouldn't
+         fix automatically. Lint and fmt are
+         distinct: `cx fmt` *applies* safe transformations; `cx lint`
+         *warns* about issues that need human judgement to fix. The
+         two never overlap — if a check has a safe auto-fix, it
+         belongs to `cx fmt`."""]
+
+    [child id=lint-catalog n='16a.3.1' title='Rule catalog'
+      [body
+        """Seven lint checks are currently shipped:"""]
+
+      [table
+        [tr [th 'id'] [th 'severity'] [th 'name']]
+        [tr [td 'CX-L001'] [td 'info'] [td 'comment-style consistency']]
+        [tr [td 'CX-L003'] [td 'warn'] [td 'unused anchor']]
+        [tr [td 'CX-L004'] [td 'error'] [td 'dangling alias / merge']]
+        [tr [td 'CX-L005'] [td 'warn'] [td 'deprecated v3.3→v3.4 pattern']]
+        [tr [td 'CX-L006'] [td 'info'] [td 'flatten nested single-binding [?let] staircases']]
+        [tr [td 'CX-L007'] [td 'warn'] [td 'aggregation over a simple field accessor']]
+        [tr [td 'CX-L008'] [td 'warn'] [td 'declared shape flow across [?pipe] stages']]]
+
+      [body
+        """Each check has a normative ID, a default severity, and a
+           documented rationale. Suppression directives and CLI flags accept the ID
+           verbatim. `CX-L002` (type-annotation form consistency) was
+           removed; its ID is retired, never reused."""]]
+
+    [child id=lint-severity n='16a.3.2' title='Severity levels'
+      [body
+        """Three severity levels, normative names:"""]
+
+      [list
+        [item """**`info`** — stylistic drift. Doesn't affect
+                correctness. Doesn't fail CI by default."""]
+        [item """**`warn`** — likely-bug. The code parses, but the
+                result probably isn't what was intended. Fails CI
+                with `--fail-on=warn`."""]
+        [item """**`error`** — almost-certainly-bug. Document
+                semantics are wrong. Fails CI by default
+                (`--fail-on=error`)."""]]]
+
+    [child id=lint-config n='16a.3.3' title='Configuration via .cxlint.cx'
+      [body
+        """Per-project lint config lives in `.cxlint.cx` at the repo
+           root (or any ancestor directory of the linted file). The
+           config file is CX-formatted — same parser, same schema,
+           dogfooded all the way down."""]
+
+      [example lang=cx
+        """[# .cxlint.cx — repo-level lint config #]
+           [lint
+             [# don't warn on unused anchors in this repo #]
+             [disable check=CX-L003]
+
+             [# v3.3 transition warnings only as info, we'll fix gradually #]
+             [severity check=CX-L005 level=info]
+
+             [# treat dangling-alias as warn (not error) in this repo #]
+             [severity check=CX-L004 level=warn]]"""]
+
+      [body
+        """A `[disable …]` applies repo-wide — there is no per-path
+           scoping. `cx lint --config=PATH` overrides auto-discovery,
+           and `--no-config` skips config discovery entirely. Missing
+           config file is not an error — defaults apply."""]]
+
+    [child id=lint-suppress n='16a.3.4' title='Per-element suppression'
+      [body
+        """For one-off suppressions inside a document, use the
+           `[?cx lint-disable=...]` / `[?cx lint-enable=...]`
+           directives. Scope is the enclosing element and its
+           descendants."""]
+
+      [example lang=cx
+        """[?cx lint-disable=CX-L003]
+           [defaults &base host=localhost]   [# no L003 warning #]
+           [?cx lint-enable=CX-L003]
+
+           [# lint-disable=all suppresses every check #]
+           [?cx lint-disable=all]
+           [legacy-block ...]"""]
+
+      [note
+        """Comma-separated lists accepted:
+           `lint-disable=CX-L003,CX-L005`. `lint-disable=all` is the
+           catch-all."""]]
+
+    [child id=lint-cxls n='16a.3.5' title='LSP-only diagnostic codes (CXLS\\*)'
+      [body
+        """The CXLS\\* codes ([[lsp-diagnostics]]) are surfaced only
+           through the LSP and have no corresponding `cx lint`
+           check. They live in the LSP because they need
+           document-wide static analysis (cross-arm reachability,
+           focus-path type-check) and aren't general-enough to be
+           CLI default behaviour. Suppression inside a document
+           uses `[?cx lint-disable=CXLS001]` (same syntax as the
+           CX-L\\* codes); CLI suppression is moot since `cx lint`
+           doesn't emit them."""]]
+
+    [child id=lint-custom n='16a.3.6' title='Custom rule plugins (planned)'
+      [body
+        """A plugin model for user-defined checks is planned
+           (previously rejected; the question is reopened in
+           [`ROADMAP.md`](../../ROADMAP.md) "Later"). Currently,
+           extending the check set means contributing a check to
+           `vcx/cx/lint.v` upstream. Schema-violation checks are a
+           separate path — they layer in automatically as the schema
+           language gains rules."""]]]
+
+  [child id=cli-diagram n='16a.4' title='cx diagram / code-diagram / code-tree'
+    [body
+      """Visualization commands. `cx diagram FILE`
+         renders a containment diagram
+         (`--format=mermaid|svg|png`, `-o out.file`); `cx
+         code-diagram FILE` renders a locked sequence-diagram view
+         of a program; `cx code-tree FILE` renders the evaluation
+         tree. The playground's Diagram toggle uses the same
+         renderers via WASM (see [[playground]]).
+
+         `mermaid` is pure text and needs nothing. The `svg` and
+         `png` formats render through graphviz `dot`, which is a
+         subprocess — so they require the ordinary
+         `--allow-subprocess` grant, exactly like any other effect
+         in CX. Without it the command refuses (`CXER0271`) rather
+         than quietly handing back a diagram you didn't ask for.
+         With the grant but no `dot` installed you get the
+         dot-less envelope: a 1×1 placeholder that still carries
+         the program source, so it still reverse-parses."""]
+    [example lang=sh
+      """$ cx diagram config.cx --format=mermaid
+         $ cx diagram config.cx --format=svg --allow-subprocess -o config.svg
+         $ cx code-diagram pipeline.cx
+         $ cx code-tree pipeline.cx"""]]
+
+  [child id=diagnostics n='16a.5' title='Diagnostics and debugging'
+    [intro
+      """When a CX program isn't doing what you expect, work the
+         ladder: read the error value (every failure is a
+         position-carrying `[err …]`), lint the file, visualize the
+         program (`cx code-tree` / `cx code-diagram`), reach for the
+         LSP if you want to drive from the editor, and capture a
+         fixture (`conformance/code.cxd`) when you need a
+         reproducible bug report."""]
+
+    [child id=diag-trace n='16a.5.1' title='Errors carry positions'
+      [body
+        """Every parse or evaluation failure is a structured error
+           with a source position and a stable code — read it
+           first. A raised error that reaches the top level prints
+           as an `[err code=… message=…]` value; the message names
+           the offending line:column and, for retired syntax, the
+           current replacement form."""]
+      [example lang=sh
+        """$ cx broken.cx
+           error: cx-err:CXER0100: parse: infix attribute comparison
+           `[@active=…]` in a CXPath predicate is retired —
+           predicates are homoiconic CX code; write the prefix
+           operator form `[= $_@active …]` (code.md §5.5.2)
+           at line 2:8"""]]
+
+    [child id=diag-explain n='16a.5.2' title='Visualize the program'
+      [body
+        """`cx code-tree FILE` renders the evaluation tree of a
+           program — which directives nest where, what each binds.
+           `cx code-diagram FILE` renders the locked
+           sequence-diagram view (concurrency, channels, service
+           interactions). `cx --ast FILE` shows the parsed shape
+           when you suspect the parser saw something different from
+           what you meant."""]
+      [example lang=sh
+        """$ cx code-tree pipeline.cx
+           $ cx code-diagram workers.cx
+           $ cx --ast pipeline.cx | jq '.elements[0]'"""]]
+
+    [child id=diag-lsp n='16a.5.3' title='LSP-driven debugging'
+      [body
+        """The LSP surfaces diagnostics live in the editor —
+           parse errors, lint findings, and hover documentation
+           over directives and paths. See [[lsp]] for the shipped
+           capability set."""]]
+
+    [child id=diag-repl n='16a.5.4' title='Interactive REPL'
+      [body
+        """An interactive REPL is **planned**. Until it ships, the
+           equivalent is stdin evaluation with a quick shell
+           wrapper — append each expression to the context document
+           and pipe through `cx`:"""]
+
+      [example lang=sh
+        """# Poor man's REPL
+           while read -r line; do
+             printf '%s\\n%s\\n' \"$(cat ctx.cx)\" \"$line\" | cx
+           done"""]]
+
+    [child id=diag-repro n='16a.5.5' title='Reproducing a bug as a conformance fixture'
+      [body
+        """When you find behaviour that differs from the spec or
+           from another binding, the fastest way to land a fix is
+           to drop a minimal repro into the conformance corpus.
+           Fixtures under `conformance/*.cxd` are the normative
+           contract — every binding runs them in CI."""]
+
+      [body
+        """Fixtures are CX documents — one `[case …]` element per
+           repro, with the input document, the program, and the
+           expected output as children:"""]
+
+      [example lang=cx check=none
+        """[case id=my-bug-id level=core
+             [tags predicate my-area]
+             [in-cx [#
+           [doc [item id=1] [item id=2]]
+           #]]
+             [in-code [#
+           [?for [in $i //item[= $_@id 1]] [yield $i]]
+           #]]
+             [out-text [#
+           [item id=1]
+           #]]]"""]
+      [; check=none — fixture-format excerpt: the raw spans hold
+         fixture payloads, not a runnable program. ]
+
+      [body
+        """Drop the case into the corpus file that matches your
+           area (e.g. `conformance/code.cxd` for evaluator bugs,
+           `conformance/core.cxd` for data-layer bugs,
+           `conformance/lint.cxd` for linter bugs), run
+           `make test-vcx-suite`, watch it fail. Then fix the V
+           core to make it pass."""]]
+
+    [child id=diag-bug-report n='16a.5.6' title='Filing a bug report'
+      [body
+        """A good bug report has four pieces:"""]
+
+      [list
+        [item """`cx --version` output (build + commit line)."""]
+        [item """A minimal reproducer — ideally a `conformance/*.cxd`
+                case — that triggers the bad behaviour."""]
+        [item """Expected output (what you think should happen)."""]
+        [item """Actual output (what does happen)."""]]
+
+      [body
+        """For LSP / editor bugs, also include the
+           `cx lsp --verbose 2>...` log around the failing request
+           and the editor's LSP trace setting (most editors expose
+           "LSP: Toggle Trace" or similar)."""]]]
+
+  [child id=profiling n='16a.6' title='Profiling and benchmarking'
+    [intro
+      """CX ships a standard bench harness for the V core (runners
+         under `vcx/tests/runners/`) and per-binding bench scripts
+         that exercise the FFI path. Binding-level performance budgets
+         are governed by the performance-SLA policy in
+         [`spec/03-approved/process/governance.md §6`](../../spec/03-approved/process/governance.md)."""]
+
+    [child id=profile-eval n='16a.6.1' title='In-program profiling'
+      [body
+        """No profiling CLI flag ships yet — but the in-program
+           profiler does: the bundled `cx-stdlib/prof` pack covers
+           timing reads, named counters, HDR histograms, structured
+           trace events, memory snapshots, and flamegraph emission,
+           callable from any program (timing reads consult the host
+           clock, so they need `--allow-clock`). For source-position
+           debugging see [[diag-trace]]; for structure,
+           `cx code-tree`."""]]
+
+    [child id=profile-bench n='16a.6.2' title='Bench harness'
+      [body
+        """The bench harness is V-native; runners live under
+           `vcx/tests/runners/`. Run individually:"""]
+
+      [example lang=sh
+        """$ make bench-code-streaming   # streaming evaluator
+           $ make bench-code-pattern-compile   # pattern compile cost
+           $ make bench-code-http        # http client perf
+           $ make bench-code-soak        # long-running soak
+           $ make bench-code-cancel      # cancellation responsiveness
+           $ make bench-code-gates       # the three gate-tracked perf benches
+
+           $ make bench-streaming        # data-streaming bench
+           $ make bench-eval             # general eval cost
+           $ make bench-json             # bench-report JSON (report generator, not a workload)"""]
+
+      [body
+        """Each bench prints a **multi-line human summary** (MB/s,
+           ops/sec, or latency percentiles, depending on the
+           dimension). The machine-readable JSON is produced
+           downstream: `make bench-json` runs the streaming bench and
+           parses its stdout into a stable JSON report
+           (`scripts/run_bench_json.cx`), and
+           `make bench-compare BASELINE=a.json CURRENT=b.json`
+           diffs two such reports for regressions.
+           `make bench-code-gates` chains the three gate-tracked
+           benches (pattern-compile, streaming, http)."""]]
+
+    [child id=profile-per-binding n='16a.6.3' title='Per-binding bench'
+      [body
+        """The per-binding bench shim is `bench_report.cx`. It drives
+           every binding through a common harness and prints
+           comparative numbers — per binding, the parse and stream
+           medians on the common fixture, then a comparative table.
+           Filters are **positional** binding names; the only flag is
+           `--verbose`/`-v`, and any other flag is a hard error (exit 1)
+           rather than a silent no-op:"""]
+
+      [example lang=sh
+        """$ cx --allow-read --allow-write --allow-subprocess \
+                --allow-clock --allow-env bench_report.cx python go rust
+           benchmarking python       ... parse=…ms  stream=…ms
+           benchmarking go           ... parse=…ms  stream=…ms
+           benchmarking rust         ... parse=…ms  stream=…ms"""]
+
+      [note
+        """The Go shim's former crash on 1 MB+ inputs is fixed — the
+           FFI call path now locks its goroutine to an OS thread and
+           registers it with the CX runtime. Python's decoder ceiling
+           is architectural (a pure-Python floor); a C extension is a
+           planned future candidate."""]]
+
+    [child id=profile-targets n='16a.6.4' title='Regression tracking'
+      [body
+        """Two tracking planes. The **binding-level budgets** —
+           `loads` and `select` latencies per input size — are
+           normative in
+           [`spec/03-approved/process/governance.md §6.1`](../../spec/03-approved/process/governance.md):
+           regressions beyond the threshold against a recorded
+           baseline fail CI (`make bench-compare`, default threshold
+           30%, `STRICT=1` for 10%). The **V-core streaming gate**
+           lives in
+           `vcx/tests/runners/code_streaming_throughput_bench.v`
+           with a 200 MB/s line — honest status: the gate is not yet
+           green (`[?for]` streaming sits at the ~200 MB/s line;
+           `[?map]` last measured 129.2 MB/s)."""]
+
+      [body
+        """`cx diff` (1 MiB, 1% change), `cx lint` (1 MiB, all
+           checks), and `cx hash` (1 MiB) are tracked as unofficial
+           interactive-latency targets; the governance SLA table does
+           not cover them."""]]]
+]

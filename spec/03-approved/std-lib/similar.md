@@ -268,7 +268,10 @@ The `review` stream cannot complete synchronously. A run emits `{applied, review
 
 ## §7. Errors
 
-Errors are values (never V-errors), in the module's `CXER49xx` band:
+Errors are values (never V-errors), in the module's registered
+`CXER4900–4901` island (governance §9.6; registered 2026-08-05 — these
+two codes shipped inside what was then xap's proposed `4850–4949` band,
+regularized when xap.md §8 yielded `4890–4949`):
 
 | Code | Trigger |
 |---|---|

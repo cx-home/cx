@@ -17,8 +17,9 @@ failing variant with its exact diagnostics.
 
 `inventory.cxs` declares (see the file for the full commented version):
 
-- `[?cx schema-of inventory]` — the document element this schema targets.
-- `[?cx schema-mode strict]` — vocabulary is closed to what the schema declares.
+- `[schema of=inventory mode=strict]` — the header element: `of` names
+  the document element this schema targets; `strict` warns on names
+  the schema does not declare.
 - `[inventory …]` — requires a `site::string` attribute and `1..*`
   `[item]` children.
 - `[item …]` — requires `sku::string`, `name::string`, `qty::int`;

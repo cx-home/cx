@@ -231,7 +231,7 @@ registry — removed per §8.8; its former enumeration here was stale.)
 Reserved clause-head names (the `[name …]` form inside a directive
 body) per the per-directive registry in §4.1: `in`, `where`, `yield`,
 `yield-array`, `yield-map`, `order-by`, `group-by`, `limit`, `take`,
-`drop`, `takewhile`, `dropwhile`, `on-error`, `par`, `stream`,
+`drop`, `take-while`, `drop-while`, `on-error`, `par`, `stream`,
 `ordered`, `then`, `else`, `case`, `when`, `catch`, `returns`,
 `throws`, `using`, `init`, `through`, `recover-with`, `set`, `delete`,
 `rename`, `set-attr`, `delete-attr`, `append`, `prepend`,
@@ -391,9 +391,9 @@ Adding or removing a directive requires a governance amendment per
 | `[?unquote]` | §6.4.3 | Core — quasiquote hole (single value) |
 | `[?splice]` | §6.4.3 | Core — quasiquote hole (sequence graft) |
 | `[?eval]` | §6.4.4 | Core — tree-eval (reuses `cx:eval` sandbox) |
-| `[?for]` | §7 | Core — for-comprehension (Sequence outer; D15) |
-| `[?for-array]` | §7 | Core — for-comprehension (Array outer; D15) |
-| `[?for-map]` | §7 | Core — for-comprehension (Map outer; D15) |
+| `[?for]` | §7 | Core — for-comprehension (Sequence outer) |
+| `[?for-array]` | §7 | Core — for-comprehension (Array outer) |
+| `[?for-map]` | §7 | Core — for-comprehension (Map outer) |
 | `[?let]` | §8 | Core — local binding |
 | `[?fn]` | §8 | Core — function literal |
 | `[?def]` | §12.2 | Module — module-level function |
@@ -413,7 +413,6 @@ Adding or removing a directive requires a governance amendment per
 | `[?enumerate]` | §8 | Iterator stdlib — emit `(i, item)` pairs |
 | `[?chunks]` | §8 | Iterator stdlib — group by `count` |
 | `[?concat]` | §8 | Iterator stdlib — flatten one level across sources |
-| `[?chain]` | §8 | Iterator stdlib — alias of `[?concat]` |
 | `[?cycle]` | §8 | Iterator stdlib — bounded repeat |
 | `[?scan]` | §8 | Iterator stdlib — running-fold prefixes |
 | `[?flatten]` | §8 | Iterator stdlib — flatten one level of nesting |
@@ -436,6 +435,8 @@ Adding or removing a directive requires a governance amendment per
 | `[?worker]` | §10.4 | Concurrency |
 | `[?worker-handle]` | §10.4 | Concurrency |
 | `[?channel]` | §10.4 | Concurrency |
+| `[?subscribe]` | §10.4 | Concurrency |
+| `[?monitor]` | §10.4 | Concurrency |
 | `[?send]` | §10.4 | Concurrency |
 | `[?receive]` | §10.4 | Concurrency |
 | `[?try-send]` | §10.4 | Concurrency |
@@ -501,6 +502,14 @@ shadows the builtin (homoiconic).
 via a reserved `<cx:meta>` element (see [`conversions.md`](conversions.md));
 formats with no native annotation (JSON / YAML / TOML / MD) drop it and
 serialize the inner value.
+
+**Identity (I1 row 14 of the epoch / #708, normative).** The annotation is
+EXCLUDED from identity: the ONE lowering chokepoint that rewrites
+evaluator-internal markers before a value crosses into the data-codec layer
+unwraps the `[?meta]` wrapper exactly as the display renderer does, so
+`cx:hash` / `cx:equal` / `cx:serialize` of an annotated value agree
+byte-for-byte with the bare value. The map rides with the value through
+bindings and returns only; CX-text serialization is transparent.
 
 ---
 
@@ -627,7 +636,12 @@ value `V`, matching proceeds by case:
  (rule 9 equality on each pair). Map patterns are **open (subset)**: `{role: $r}`
  matches any Map carrying ≥ that key. A **rest** `{k: v, *$rest}` binds the
  unmatched pairs as a **Map** (name→value). Match is **by key (unordered)**;
- duplicate keys are n/a (`cxdm.md` forbids them).
+ duplicate keys are n/a (`cxdm.md` forbids them). A key's identity — for the
+ match, for the rest's "already matched" set, and for the canonical form — is
+ the pair **(kind, image)**, so `{'7': $s}` does **not** match an `int` key `7`
+ (RULED: 777-1a). A bare-Ident key and its quoted spelling are the **same**
+ key (`lexicon.ebnf` [L87]), both `string`. Pattern keys admit the same kinds
+ a literal writes (rule below).
 12. **Sequence literal & spread.** `(a, b, c)` matches a Sequence **closed**
  (exactly that arity). A **rest** `(a, *$rest)` binds the remaining items as a
  **Sequence** (`*` only — **not** `**`, which is the element/Document descendant
@@ -889,7 +903,15 @@ binding (no error).
 
 ### §6.2 Path access
 
-Bindings support full CXPath step syntax (grammar [135]):
+**Any value's bracket takes a step (RULED PS-1, 2026-08-20, #886):**
+every program-position bracketed value form's closing bracket accepts
+the same compact-step postfix — bindings, call results, directive
+results (`[?let …]/name`, `[?if …]@attr`, the `[?for]` family),
+operator forms (`[+ 1 2]/x`), element literals (`[user [b 1]]/b`),
+and collection literals (`[1, 2]/x`, `(1, 2)/x`, `{a: 1}.a`) — one
+rule, no seams. Bindings and every bracketed result carry the
+value-meaningful compact CXPath steps (grammar [135]/[135a]; RULED
+BP-1 + CRS-1 + PS-1, 2026-08-20):
 
 | Syntax | Meaning |
 |---|---|
@@ -897,11 +919,17 @@ Bindings support full CXPath step syntax (grammar [135]):
 | `$x/*` | All direct children |
 | `$x//name` | Descendant element named `name` |
 | `$x/..` | Parent of the current focus |
-| `$x/axis::name` | Explicit axis traversal (any axis from [131a]) |
 | `$x/name[pred]` | Child filtered by predicate |
 | `$x/name[pred]/more` | Chained path after predicate |
 | `$x@attr` | Attribute named `attr` (typed value — `cxdm.md` §2.4) |
 | `$x.key` | Map-key access (when `$x` is a decoded map) |
+| `[$f …]@attr`, `[$f …]/name`, … | The same steps on a **call result** (byte-adjacent to the closing `]`; RULED CRS-1) |
+| `[?let …]/name`, `[+ 1 2]/x`, `{a: 1}.a`, … | The same steps on **any bracketed value's result** — directives, operator forms, element / collection / slice literals (byte-adjacent; RULED PS-1) |
+
+Explicit `axis::` spellings are **not** value-path surface (RULED
+BP-1): lateral and ancestor axes have no referent on a detached value,
+and the parser refuses them with a diagnostic naming the rooted-path
+alternative (`//…/axis::name`), where all twelve [131a] axes apply.
 
 Paths chain left-to-right:
 
@@ -909,11 +937,31 @@ Paths chain left-to-right:
 $user/profile/name # child of child
 $user/* # all children
 $user//email # any descendant named 'email'
-$node/ancestor::section # ancestor axis
-$h2/following-sibling::p # following-sibling axis
 $order@total # attribute
 $config.database.host # map-key access into nested map
+[$first $rows]@v # attribute of a call result (CRS-1)
+[$nth $xs $i]/* # children of a call result
 ```
+
+**Result steps ≡ bind-then-step (RULED CRS-1, generalized by PS-1).**
+A step run on ANY bracketed form's result destructures the RESULT
+VALUE with exactly the binding machinery — same step set, same
+adjacency gate, same unwrap and distribution rules below:
+`[$string [$f a]/name]` is identical to
+`[?let [= $t [$f a]] [$string $t/name]]`, and likewise
+`[?if C [then E]]/name`, `[?for …]/x`, `[+ 1 2]/x`, `{a: 1}.a` each
+equal binding the form's result and stepping the binding. Semantics
+are kind-driven and total: a child step on a scalar yields empty
+(absence), `@attr` on a non-element refuses typed (CXER0001) —
+exactly as on a binding of that value.
+
+A whitespace-separated step token stays a separate operand
+(`[$count //*]` is head-plus-argument; a spaced `/x` after any
+closing bracket keeps its current reading), and a call **head** never
+carries steps (`[$fn/x …]` refuses — a head is a name, not a value).
+Pattern-position brackets (match arms, clause children) are bind
+sites, not values — no steps. Data documents are untouched: steps are
+program surface only.
 
 **Terminal labeled-field unwrap.** A *simple field accessor* —
 a binding path whose every step is a plain `/name` child step with no
@@ -999,7 +1047,8 @@ navigating. This is not silent error swallowing — it is the documented
 inspection boundary; the err is still the bound value and still reports
 itself anywhere it is used as an operand.
 
-Grammar: `grammar.ebnf` [135] BindingPath.
+Grammar: `grammar.ebnf` [135] BindingPath; [125] ProgramCall carries
+the same steps as a call-result postfix (RULED CRS-1).
 
 ### §6.3 Function calls
 
@@ -1094,7 +1143,7 @@ a **computed** (dynamic) element name:
  surface; a leading `(:atom …)` in head position is now a parse error.
 - `attr=VALUE` — element-construction attribute. `VALUE` is any
  expression (binding, literal, paren-grouped expression, builtin
- call). Attributes are scalar-only (D2; `lexicon.ebnf` §10): at
+ call). Attributes are scalar-only (`lexicon.ebnf` §10): at
  evaluation time `VALUE` MUST reduce to a scalar — a non-string scalar
  is rendered via the canonical scalar printer, but a NON-SCALAR result
  (element / array / map / sequence) raises `cx-err:CXER0100`
@@ -1105,7 +1154,71 @@ a **computed** (dynamic) element name:
 - `POSITIONAL_ITEM` — any expression; evaluated and appended to the
  element body in source order. Nested record-shape data is expressed
  as nested child elements (`[user [name 'Alice'] [email 'a@b.com']]`)
- .
+ . A positional item is an **operand**: an item that evaluates to
+ `[err …]` propagates rather than being adopted as a child — see
+ "Construction is operand-consuming" below.
+
+**Construction is operand-consuming (normative, #853).** Element
+construction **consumes** its operands, so §9.2 implicit operand
+propagation applies to them: when an evaluated `attr=VALUE` or an
+evaluated `POSITIONAL_ITEM` is `[err …]`, the enclosing construction
+evaluates **to that err** — it does not adopt it as a child, and does not
+stringify it into an attribute. The first err-valued operand
+short-circuits the construction, left-to-right, exactly as for a call or
+an operator element. Propagation is **transitive**: a construction whose
+child construction propagated propagates in turn, so a refusal cannot
+come to rest inside a document at any depth. Without this, a refusal that
+reached a document had stopped being a refusal — it no longer
+short-circuited, and `[?match $x [case [err @code=$c] …]]` could not see
+it, because by then it was a node in a tree.
+
+**The discriminator is POSITION, not value.** A literal `[err …]` element
+written in source is **data** and stays data: a construction whose head is
+literally `err` builds that element. Err-shaped documents therefore remain
+expressible, and `[?quote]`'d forms containing a literal `[err …]` are
+unaffected (§6.4.3.1 applies the same position rule to holes). What
+propagates is an err **produced by an evaluated operand** — a call, a
+binding read, a directive, or a computed-name (`[?element …]`)
+construction. A rule keyed on "is this value an err" instead of on its
+position would pass the headline case and silently make err-shaped data
+inexpressible.
+
+**The cost of this rule, stated (normative).** Embedding a **captured** err
+as data stops working, because a binding read is an operand:
+
+```cx
+[?let [= $e [err code='c' message='m']] [report $e]]
+```
+
+evaluates to `[err code=c message=m]` — the err propagates. It does **not**
+build `[report [err …]]`, even though the err was written as a literal at its
+BINDING site: what matters is that `$e` in child position is a **binding read**,
+and a binding read is an operand.
+
+
+To embed a refusal as data, build a fresh element from its parts, which are
+read by path navigation (§9.2 — navigation does not propagate):
+
+```cx
+[?let [= $e [err code='c' message='m']] [report [code $e@code] [message $e@message]]]
+```
+
+evaluates to `[report [code 'c'] [message 'm']]`.
+
+
+To **collect outcomes** — several results of which some may be refusals,
+the "did it fire exactly once" and "which call was rejected" shapes — use a
+**sequence**, not an element. Sequence construction is not element
+construction and does not propagate, so refusals survive as members:
+
+```cx
+($first, $second, $third)      # keeps every outcome, errs included
+[results $first $second]       # propagates the first err instead
+```
+
+This is the deliberate consequence of making propagation total. The
+alternative — keying on the value — reintroduces refusals buried in
+documents, which is the defect this rule removes.
 
 The attribute-name token is a bare identifier, parsed via the
 ident-then-`=` two-token lookahead. Attribute clauses may be
@@ -1231,6 +1344,17 @@ once, left-to-right, at quote-eval time; a hole's `[err]` propagates
 railway-style (§9.2) then. (Rationale: matches CX eager-by-default and
 yields a deterministic canonicalization/hash of a quoted result.)
 
+**Expression identity (normative — E1, L77/L78/L81, I5 stream 1):**
+the identified tree is the POST-substitution quoted value — exactly
+what `[?quote]` returns. It lowers to authorable canonical CX (bare
+`$x` bindings become the variable-hole spelling `$x`; annotations
+retained exactly where the bare spelling would re-type), and its
+expression identity IS the plain Tier-1 address of those canonical
+bytes (`sha2-256:<hex>` — no new namespace). E1 is name-sensitive BY
+DESIGN (`$x` ≢ `$y`); alpha-normalized expression identity, if ever
+wanted, arrives as an ADDITIONAL tier (the plan address of code.md
+§7.9 is one such tier), never a redefinition.
+
 #### §6.4.3.2 Hygiene — the two-color rule
 
 Two scopes exist: the **quote site** (where `[?quote]` lexically appears)
@@ -1240,18 +1364,31 @@ and the **eval site** (where `[?eval]` later runs the tree).
    site**, immediately, when `[?quote]` evaluates. They capture the
    constructor's lexical scope.
 2. **A bare `$x` that is part of the quoted FORM** (not in a hole): **inert
-   data** — it becomes a `<cx:var>x</cx:var>` node, resolving **only** later,
-   if the tree is `[?eval]`'d, against `[?eval]`'s **context map** — never the
-   quote site, never ambient eval-site bindings.
+   data** — it becomes the authorable VARIABLE-HOLE node (canonical
+   spelling `$x` — I1 row 9, E1 L78; the former internal `<cx:var>` image
+   is the XML PROJECTION only), resolving **only** later, if the tree is
+   `[?eval]`'d, against `[?eval]`'s **context map** — never the quote
+   site, never ambient eval-site bindings.
 
 No accidental capture in either direction. Capture-avoidance is by the
 existing eval sandbox isolation (§6.4.4), not gensym renaming.
+
+**Lowering and identity (I1 row 9, L77/L78/L81, normative).** A
+`[?quote]` result IS plain authorable CX data: bare bindings lower to
+hole nodes (`$x`), every other program construct to its data image, so
+the quoted tree serializes as ordinary CX source text and acquires a
+Tier-1 address — `cx:hash(cx:serialize([?quote F]))` equals `cx hash` of
+the equivalent data document (expression identity IS Tier-1 of the
+lowered tree; the `$x`-vs-`'$x'` collision MUST holds because a
+$-leading STRING always quotes in canonical). `[?eval]` lowers hole
+nodes back to bindings. The `cx:` lift below is the XML projection,
+never the identity substrate.
 
 #### §6.4.3.3 XML images
 
 ```
 [?quote F] → <cx:quote>…F…</cx:quote>   [?unquote E] → <cx:unquote>…E…</cx:unquote>
-[?splice E] → <cx:splice>…E…</cx:splice>   bare $x in a quote → <cx:var>x</cx:var>
+[?splice E] → <cx:splice>…E…</cx:splice>   hole $x → <cx:var name="x"/>
 ```
 
 ### §6.4.4 Tree eval
@@ -1518,6 +1655,7 @@ unless the entry says otherwise.
 | `count(seq)` / `length(seq)` | 1 | Integer count of items in `seq`; non-sequence scalar yields 1. |
 | `empty(seq)` | 1 | Boolean — true iff `count(seq) == 0`. |
 | `exists(seq)` | 1 | Boolean — true iff `count(seq) > 0`. Inverse of `empty(seq)`. The canonical existence test for predicates: the notation atoms `[@name]` / `[axis::name]` are defined by `[$exists $_@name]` / `[$exists $_/axis::name]` (§5.5.2). Scalar argument yields true (treated as 1-item sequence). |
+| `present(value)` | 1 | Boolean — true iff `value` is **present**; false **only** for **absence**. This is the builtin form of the "some vs none" test §9.1.2.3 defines: a present value is "some", the empty node-set / empty sequence is "none". `present` **does not look inside** `value` — a **childless element** (`[input]`, `[br]`) is present, `""` is present, `null` is present (a present value by §9.1.2.1 (2), never absence), an empty `Array` is present. It is false for exactly the absence channel (§9.1.2.1 (1)): the empty sequence `()` and an empty node-set — a path step, predicate, or comprehension that matched nothing — including a lazy Iterator that yields no items. **This is the canonical "did this step match anything" test.** It is NOT `exists`: `count`/`empty`/`exists` ask **content arity**, so over an element they answer that element's own child count (`[$count [input]]` is `0` and `[$exists [input]]` is `false` — by design, the deliberate consequence of the field model, §6.2 #584); those stay the definition of the notation atoms `[@name]` / `[axis::name]` (§5.5.2) and are unchanged. Absence is spelled `[not [$present value]]`. `present` does **not** discriminate a container from its contents — `[c [a] [b]]` and `([a],[b])` are both present; that question is `[= [?else [$name value] ""] ""]`. |
 | `first(seq)` | 1 | First item of `seq`; scalar input passes through unchanged. |
 | `last(seq)` | 1 | Last item of `seq`; scalar input passes through unchanged. |
 | `head(seq)` | 1 | Synonym for `first` (XQuery `fn:head` parity). |
@@ -1527,7 +1665,7 @@ unless the entry says otherwise.
 | `nth(seq, n)` | 2 | The `n`-th item of `seq` (1-indexed, per XPath/XQuery convention). Out-of-range raises `cx-err:CXER0100`. |
 | `position(seq, item)` | 2 | 1-based index of the first item in `seq` structurally equal (`eq`) to `item`; zero if no match. |
 | `range(lo, hi, step?)` | 2–3 | Arithmetic progression `lo, lo+step, …` up to the inclusive bound `hi`. Default `step` is `1`. **Surface:** the prefix builtin `[$range lo hi step?]` ([125d] RangeCall) — usable in every expression position, including a `[?for [in $x [$range …]] …]` generator source. The retired infix `lo to hi by step` is a parse error. **Numeric domain**: **int** (default — int `lo`/`hi`/`step`); **float** (`step` **required**, no implicit `1.0`; computed count-based `n = floor((hi−lo)/step + ε)` then `lo + i·step` to avoid drift; endpoint included only within relative ε); **datetime** (`step` is a `duration` literal — `ns`/`us`/`ms`/`s`/`m`/`h`/`d`/`w`, all exact; a numeric step against a datetime is `cx-err:CXER0100`). Mixed int/float endpoints promote to float. **Calendar `date`/`period` ranges** (`step` is a `period` literal — `mo`/`y`) advance by calendar arithmetic against the anchor date (e.g. month-end clamping); a `period` step requires `date`/`datetime` endpoints. **Edge cases:** `step` of `0` → `cx-err:CXER0100`; a `step` whose sign points away from `hi` → the empty sequence `()` (not an error). **Result kind** (§12.7): a **finite** `[$range lo hi step?]` is an eager **Sequence**; the **open** form `[$range lo *]` (and `[$range lo * step]`) is a lazy **Iterator** (§6.7). |
-| `iterate(f, seed)` | 2 | Functional progression — emits `seed, f(seed), f(f(seed)), …` **forever** (lazy **Iterator**). `f` is any unary callable (a bound `$ref`, a partial `[$f _]`, or a `[?def]`'d function); a non-callable `f` or arity mismatch → `cx-err:CXER0100` at the first pull. Statically infinite: forcing it whole without a bound (`[take]`/`[takewhile]`/a `[?for]` terminator) → `cx-err:CXER0100` (§6.7). `f` MAY be impure (capability-gated; fires once per pull, in consumption order — makes the generator impure, rejected under `--strict`). |
+| `iterate(f, seed)` | 2 | Functional progression — emits `seed, f(seed), f(f(seed)), …` **forever** (lazy **Iterator**). `f` is any unary callable (a bound `$ref`, a partial `[$f _]`, or a `[?def]`'d function); a non-callable `f` or arity mismatch → `cx-err:CXER0100` at the first pull. Statically infinite: forcing it whole without a bound (`[take]`/`[take-while]`/a `[?for]` terminator) → `cx-err:CXER0100` (§6.7). `f` MAY be impure (capability-gated; fires once per pull, in consumption order — makes the generator impure, rejected under `--strict`). |
 | `unfold(f, seed)` | 2 | General anamorphism (dual of fold) — `f` is applied to the current **state** and returns either **`()`** (stop) or a **2-element `Array` `[value, next-state]`** (emit `value`, recurse on `next-state`). Lazy **Iterator**, but **force-realizable** (runs to its `()` stop); a host **force budget** backstops a runaway → `cx-err:CXER0100` ("generator exceeded force budget"), never a hang. The pair is an `Array` (never a sequence — sequences flatten); multi-field state uses an `Array`/`Map`. Malformed result (non-`Array`, or not exactly 2 elements) → `cx-err:CXER0100` at that pull. Same callable/purity rules as `iterate`; an `[err]` from `f` is that element and propagates per §9.2 (the generator is not retried). |
 | `identity(x)` | 1 | Returns `x` unchanged — primarily for pipe stages and `[?map]` shape testing. |
 
@@ -1632,7 +1770,7 @@ was deliberately not adopted (locked 2026-05-23 — see ).
 
 **Target kinds:** `:int`, `:float`, `:string`, `:bool`, `:atom`.
 
-Compound type expressions (`[or T1 T2 …]`, `[sequence T]`) from D7 are
+Compound type expressions (`[or T1 T2 …]`, `[sequence T]`) are
 reserved for a follow-on iteration — the grammar admits only the
 kind-name atoms.
 
@@ -1683,6 +1821,10 @@ directive (XQuery 4.0 §4.13.4) and are filed for a future revision.
 
 ### §6.5.x Built-in purity classification
 
+> **Anchor note.** The name `§6.5.x` is deliberate and permanent: the `x`
+> names the classification axis this section defines — it is not an
+> unassigned number in the `§6.5.0`/`§6.5.1` sequence. Cite it as written.
+
 Every built-in is classified as **pure** or **impure**. The
 classification is normative and closed: adding a new built-in
 requires classifying its purity in the same spec amendment
@@ -1693,11 +1835,20 @@ A reference to a built-in missing from this table raises
 `cx-err:CXER0234` (E_PURITY_UNCLASSIFIED_BUILTIN) at parse /
 module-load.
 
+**Scope: these tables classify THE LANGUAGE.** Native primitives that exist
+only to back a standard-library module's `[?def]` bodies — `cx-stdlib/math`'s
+powers, logs and roots, and the validation primitive — are **classified
+implementation-side** and are deliberately absent here, for the same reason
+the `[?test-…]` harness directives are (§6.5.0): a closed list of the language
+should enumerate the language. They are still classified — the requirement
+that every built-in carry a purity is not waived, only its *location* — and the
+implementation's table is where a reader finds them.
+
 **Pure built-ins (closed list):**
 
 | Group | Built-ins |
 |---|---|
-| Sequence | `count`, `length`, `empty`, `first`, `last`, `head`, `tail`, `reverse`, `distinct`, `nth`, `position`, `range`, `identity` |
+| Sequence | `count`, `length`, `empty`, `first`, `last`, `head`, `tail`, `reverse`, `distinct`, `nth`, `position`, `range`, `identity`, `present` |
 | Higher-order | `filter`, `map`, `reduce` — applied as `[$filter seq pred]`, `[$map seq fn]`, `[$reduce seq fn init]`. The functional twins of the `[?filter]` / `[?map]` / `[?reduce]` directives (§8.10), reachable in any expression position via head-dispatch (§6.3). The function argument is a function value; the call is pure iff that function is pure. |
 | Generator | `range` (arithmetic — also listed under Sequence), `iterate` (functional progression `[$iterate f seed]`), `unfold` (general anamorphism `[$unfold f seed]`). `range` is always pure; `iterate`/`unfold` are pure iff their `f` is pure (an impure capability-gated `f` makes the generator impure — §6.7). All are lazy where infinite (Iterator) and finite where bounded (Sequence — §12.7). |
 | String | `upper`, `lower`, `contains`, `starts-with`, `ends-with`, `substring`, `string-length`, `normalize-space`, `concat`, `text` |
@@ -1717,6 +1868,7 @@ module-load.
 | Random / UUID | `random`, `random-int`, `uuid`, `random-bytes` |
 | Document mutation | `[?modify]` directive evaluation |
 | Channel operations | `[?send]`, `[?receive]`, `[?try-send]`, `[?try-receive]`, `[?close]`, `[?select]` |
+| Evaluation-environment introspection | `caps` (zero-arg: the ACTIVE capability set as the C4 canonical CX value, `security.md` §2/C4 — impure so `pure` bodies stay cap-set-invariant per §6.5.1; capability-free, exception table below) |
 | Worker / async | `[?worker]`, `[?async]`, `[?await]`, `[?await-all]`, `[?await-any]`, `[?await-race]`, `[?cancel]`, `[?check-cancel]`, `[?sleep]` |
 | Service / client | `[?http-service]`, `[?service-handle]`, `[?http-client]` |
 | Resilience composition | `[?retry]`, `[?timeout]`, `[?circuit-breaker]`, `[?fallback]`, `[?rate-limit]`, `[?bulkhead]` (impure because they wrap impure operations and observe wall-clock / counter state) |
@@ -1726,6 +1878,121 @@ module-load.
 the first item structurally equal to `item`") is **pure** and
 distinct from the predicate-context binding `$_position`. The two are namespace-disjoint: `position` is a function
 name; `$_position` is a binding name.
+
+### §6.5.0 The directive purity classification (normative; closed)
+
+Every directive in the §4.1 registry carries exactly one purity class.
+The table below is the **normative closed set**; the implementation's
+classification (`purity_checker.v`) is a conformance **mirror** of it,
+and the `check-directive-purity` gate asserts equality in both
+directions, so neither can drift. **Classifying a directive is a spec
+change: a row lands here first** (RULED tables-1a — the same discipline
+`security.md` §2.1 carries for effect points).
+
+The two classes:
+
+- **pure-flow** — the directive introduces no effect of its own. Its
+  purity is *derived from its body*: `[?if]` is pure when its branches
+  are, impure when one of them calls an impure builtin. Control flow,
+  binding, construction, and the iterator combinators are all pure-flow.
+- **impure** — the directive **is** an effect point, whatever its body
+  does. Concurrency and lifecycle (`[?send]`, `[?worker]`, `[?stop]`),
+  the resilience wrappers that observe wall-clock time (`[?retry]`,
+  `[?timeout]`), the capability-gated `[?reveal]`, and tree-eval
+  (`[?eval]`) are impure by construction.
+
+A `pure` `[?def]` whose body reaches an **impure** directive is rejected
+by the static checker (§6.5.x), which is what makes the effect-totality
+theorem below hold over a *closed* vocabulary rather than a partial one.
+
+Test-only diagnostic directives (`[?test-…]`, not in the §4.1 registry
+and not language surface) are classified **impure** implementation-side —
+they mutate per-run harness state — and are deliberately absent from this
+table: it classifies the language, not the harness.
+
+| Directive | Purity class |
+|---|---|
+| `[?async]` | impure |
+| `[?attr]` | pure-flow |
+| `[?await]` | impure |
+| `[?await-all]` | impure |
+| `[?await-any]` | impure |
+| `[?await-race]` | impure |
+| `[?bulkhead]` | impure |
+| `[?cancel]` | impure |
+| `[?channel]` | impure |
+| `[?check-cancel]` | impure |
+| `[?chunks]` | pure-flow |
+| `[?circuit-breaker]` | impure |
+| `[?close]` | impure |
+| `[?concat]` | pure-flow |
+| `[?const]` | pure-flow |
+| `[?cycle]` | pure-flow |
+| `[?def]` | pure-flow |
+| `[?do]` | pure-flow |
+| `[?drop]` | pure-flow |
+| `[?element]` | pure-flow |
+| `[?else]` | pure-flow |
+| `[?entry]` | pure-flow |
+| `[?enumerate]` | pure-flow |
+| `[?eval]` | impure |
+| `[?fallback]` | impure |
+| `[?filter]` | pure-flow |
+| `[?flatten]` | pure-flow |
+| `[?fn]` | pure-flow |
+| `[?for]` | pure-flow |
+| `[?for-array]` | pure-flow |
+| `[?for-map]` | pure-flow |
+| `[?group-by]` | pure-flow |
+| `[?http-client]` | impure |
+| `[?http-service]` | impure |
+| `[?if]` | pure-flow |
+| `[?let]` | pure-flow |
+| `[?lib]` | pure-flow |
+| `[?loop]` | pure-flow |
+| `[?map]` | pure-flow |
+| `[?match]` | pure-flow |
+| `[?meta]` | pure-flow |
+| `[?modify]` | impure |
+| `[?monitor]` | impure |
+| `[?name]` | pure-flow |
+| `[?partition]` | pure-flow |
+| `[?pipe]` | pure-flow |
+| `[?quote]` | pure-flow |
+| `[?rate-limit]` | impure |
+| `[?receive]` | impure |
+| `[?reduce]` | pure-flow |
+| `[?retry]` | impure |
+| `[?reveal]` | impure |
+| `[?scan]` | pure-flow |
+| `[?secret]` | pure-flow |
+| `[?select]` | impure |
+| `[?send]` | impure |
+| `[?service-handle]` | impure |
+| `[?sleep]` | impure |
+| `[?splice]` | pure-flow |
+| `[?stop]` | impure |
+| `[?str]` | pure-flow |
+| `[?subscribe]` | impure |
+| `[?take]` | pure-flow |
+| `[?timeout]` | impure |
+| `[?to-array]` | pure-flow |
+| `[?to-map]` | pure-flow |
+| `[?to-sequence]` | pure-flow |
+| `[?try-receive]` | impure |
+| `[?try-send]` | impure |
+| `[?unquote]` | pure-flow |
+| `[?view]` | pure-flow |
+| `[?views]` | pure-flow |
+| `[?wait-for]` | impure |
+| `[?with-caps]` | pure-flow |
+| `[?with-error-hook]` | pure-flow |
+| `[?with-open]` | pure-flow |
+| `[?with-scope]` | pure-flow |
+| `[?worker]` | impure |
+| `[?worker-handle]` | impure |
+| `[?zip]` | pure-flow |
+
 
 ### §6.5.1 Effect totality of `pure` + the capability-alignment invariant
 
@@ -1744,8 +2011,37 @@ Over the two admitted closed lists — the §6.5.x pure/impure classification an
 semantic totality. A `pure` function MAY still (a) raise an input-dependent
 `[err]` (e.g. divide-by-zero `CXER0101`, overflow `CXER3000`), (b) not terminate,
 and (c) exceed a budget. The claim is *not* "same result under any cap-set" beyond
-"no capability effect, no `CXER0271`." Determinism modulo input-errors/termination
-is a *separate* property, not asserted here.
+"no capability effect, no `CXER0271`." Determinism is asserted separately — the
+`pure ⇒ deterministic` theorem below (stream-5 ruling L105).
+
+**`pure ⇒ deterministic` (normative theorem — stream-5 ruling L105).** Over the
+same two closed lists, a checker-accepted `pure` function is **deterministic**:
+evaluated with the same inputs it produces the same result value — on every run,
+on every conforming host. Host-dependence in a pure builtin is a **conformance
+bug, never an identity axis** (the L7a computation-identity rule,
+`computation_identity.md`). The three scope carve-outs above are input-determined
+where they occur and recur identically, so determinism composes with effect
+totality: a pure computation is cap-set-invariant AND run-invariant. The known
+holes are closed normatively:
+
+- **`[par]` reassembles source order ALWAYS** (§7.3). Completion-order output
+  was previously *unspecified* without `[ordered]`, so no program can
+  legitimately depend on it — the cutover is free. `[ordered]` is a tombstoned
+  no-op (§7.2). Float aggregation over a `[par]` result is therefore source
+  order — byte-identical to the sequential fold, no reassociation.
+- **No pure builtin may be locale-sensitive.** `upper` / `lower` apply Unicode
+  default casing — the simple (1:1) mapping at this tier — never the host
+  locale (full-mapping casing such as ß→SS is the `strings` module surface).
+  Each audited builtin carries a conformance fixture; a locale-sensitive pure
+  builtin is precisely the L7a host-dependence bug.
+- **Map traversal (pre-registered).** No map-traversal surface exists in the
+  pure list today (latent, not live — maps do not iterate as generator
+  sources). Any future one MUST iterate in canonical key order (the canonical
+  form's map key sort) — the hole is closed before it can open.
+- The theorem inherits the evaluation-semantics pins as prerequisites
+  (`clean_room_implementability.md`: EV-LET-SEQ sequential `[?let]`,
+  EV-CLOSURE-CAP snapshot capture, EV-PULL per-combinator pull counts,
+  EV-BUDGET force floor).
 
 **The capability-alignment invariant (ONE-WAY; conformance-gated).** The invariant
 is **capability-gated ⇒ impure**: every capability-gated effect point is reached
@@ -1761,6 +2057,7 @@ capability-gated):
 | **(a)** state-bearing PRNG: `random-next-*`, `random-int-range`, `random-float-range`, `random-gaussian`, `random-exponential`, `random-poisson`, `random-choose(-weighted)`, `random-sample(-weighted)`, `random-shuffle`, `random-seed` (`std-lib/random`) | draw from a **process-global generator** seeded once; deterministic given the seed and draws **no OS entropy**, so they need no `random` capability. The entropy surfaces (`random-crypto-*`) are the cap-gated counterpart |
 | **(b)** mock clock: `time-mock-set`, `time-mock-advance` (`std-lib/time`) | mutate / read **test-clock** state, never the real wall clock; the wall-clock reads (`time-now`/`time-today`/…) are the cap-gated counterpart |
 | **(c)** spec-classified bare-name builtins with impl pending: `print`, `read-file`, `write-file`, `read-line`, `now`, `today`, `instant-now`, `monotonic-now`, `random`, `random-int`, `uuid`, `random-bytes` | classified `impure` in §6.5.x (load-bearing for purity fixtures, e.g. a `pure` def calling `[$uuid]` must be rejected) but their evaluator handler is **not yet wired**; they **will be capability-gated at impl time** and move out of this table then |
+| **(f)** capability introspection: `caps` (`security.md` C4, stream-5 L104) | reads the ACTIVE grant set — a program can only *observe* its own authority, never exceed it (the §3 narrow-only invariant), so the read is not a gated effect; impure so `pure` bodies stay cap-set-invariant (the `pure ⇒ deterministic` theorem above) |
 
 (`path-absolute` / `path-canonical` are **not** in this table — they resolve
 against the real cwd / filesystem and are **capability-gated under `read`**, so
@@ -1798,7 +2095,7 @@ element atomizes to its **row sequence** per D22 below).
 | `$xs[::-1]` | Reverse (stride `-1` with open ends). |
 | `$xs[*]` | Full axis — returns the source unchanged. |
 | `$xs[-N]` | Negative index — `-1` is last, `-2` is second-to-last, etc. (D9) |
-| `$xs[$_last]` | Last-index sigil — resolves to `len($xs)` at apply time (D6, D11). |
+| `$xs[$_last]` | Last-index sigil — resolves to `len($xs)` at apply time (D6). |
 | `$xs[$_last-1]` | Arithmetic on `$_last` works as a normal expression in slice position. |
 
 **Semantics (normative):**
@@ -1810,7 +2107,7 @@ element atomizes to its **row sequence** per D22 below).
  `$_position`) that resolves to the receiver's length at the
  moment the slice is APPLIED, not when it is constructed. Slices
  stored via `[?def]` remain reusable across receivers of different
- sizes per D11.
+ sizes.
 - **D9** Negative indices count from the end. `-1` is the last
  index, `-2` the second-to-last, etc.
 - **D20** Empty-direction / out-of-range slices return the empty
@@ -1947,17 +2244,36 @@ slicing in idiomatic use.
 live here because iterator construction and consumption surface
 through the same binding/call machinery as the rest of §6.)*
 
+**The pull protocol (rule EV-PULL, §14.4 — stream 22 W5).**
+Consumption is DEMAND-DRIVEN: a combinator pulls from its source
+exactly what it yields — `[?take 3]` over a `[?map]` pulls the map
+(and, transitively, the map's source) exactly 3 times; no combinator
+performs hidden lookahead except where its own row documents it
+(none in the current registry does). Pull counts are observable via
+capability-free counter probes in transform bodies (the conformance
+harness's `test-counter` fixture helper) and are
+pinned per combinator by the corpus discriminator family (an eager
+engine pulls the WHOLE source — the foreclosed divergence). Budget:
+rule EV-BUDGET (the ≥ 1,000,000-pull floor). Engine status: the
+reference implementation's combinators materialize eagerly today —
+the conformance pull family ships `gate=advisory` (the spec-first
+frontier mechanism) and flips enforced with the runtime-
+representation stream's engine rewrite (#710 item 6), the NAMED
+landing. The rule itself is normative NOW: a new implementation
+must be demand-driven; the reference engine is the one carrying a
+frontier debt.
+
 Iterators are produced by:
 
 - The prefix range builtin `[$range lo hi step?]` — a **finite** range is an
  eager Sequence (not an Iterator); see §6.3 / §12.7.
 - The open-end range builtin `[$range lo *]` (stride optional: `[$range lo * step]`)
  — a lazy, statically-known-infinite Iterator. Forcing one to full
- materialisation (no `[take …]` / `[takewhile …]` terminator, nor a `[?for]`
- terminator) **MUST** raise `cx-err:CXER0100` per D19, checked statically where
+ materialisation (no `[take …]` / `[take-while …]` terminator, nor a `[?for]`
+ terminator) **MUST** raise `cx-err:CXER0100`, checked statically where
  the open form is syntactically visible. `cx lsp` emits `CXLS006` (hint)
  statically when a `[?for]` generator source is `[$range lo *]` with no
- `[take …]` / `[takewhile …]` clause, surfacing the runtime error before
+ `[take …]` / `[take-while …]` clause, surfacing the runtime error before
  evaluation.
 - The functional generator `[$iterate f seed]` — emits `seed, f(seed), …`
  forever; a lazy, statically-known-infinite Iterator with the same
@@ -1970,10 +2286,11 @@ Iterators are produced by:
  never a hang. (`[$range lo *]` and `[$iterate]` are *known*-infinite by
  construction, so they require an explicit bound; only `[$unfold]` force-realizes.)
 - Combinator directives `[?map]` / `[?filter]` / `[?reduce]` (terminal — materializes to scalar)
- / `[?zip]` / `[?enumerate]` / `[?take]` / `[?drop]` / `[?chain]` / `[?concat]` / `[?chunks]` / `[?cycle]`
+ / `[?zip]` / `[?enumerate]` / `[?take]` / `[?drop]` / `[?concat]` / `[?chunks]` / `[?cycle]`
  / `[?scan]` / `[?flatten]` / `[?partition]` / `[?group-by]` — see `stdlib.md` for the full
- catalog. `[?concat]` flattens a sequence-of-sequences one level; `[?chain]` is its
- end-to-end alias. An err-valued `[?filter]` / `[?partition]` predicate result
+ catalog. `[?concat]` flattens a sequence-of-sequences one level (its former
+ end-to-end alias `[?chain]` is RETIRED — stream 13 L55: one name per
+ directive, no aliases). An err-valued `[?filter]` / `[?partition]` predicate result
  short-circuits the whole combinator and is its result — §9.2 implicit operand
  propagation, uniform with the `[?for]` `[where …]` clause (§7.2).
 - Explicit lift of a Sequence to an Iterator (a `to-iterator` directive
@@ -1991,7 +2308,7 @@ Equality is identity-only; a `seq-equal` walk-comparison
 helper is **planned, not yet in the §4.1 registry**.
 
 When an Iterator is bound via `[?def $name ITER]`, the memo is
-shared on re-walk per D7 (named iterators are re-walkable;
+shared on re-walk (named iterators are re-walkable;
 anonymous iterators may be single-use depending on source kind).
 
 **Single-use sources.** Some source kinds are
@@ -2015,8 +2332,8 @@ in the Scala for-yield style. The body is a sequence
 of clause-child elements: generators (`[in …]`), pattern generators
 (bare `[pattern]`), let-bindings (`[= $y EXPR]`), filters
 (`[where …]`), stream operators (`[order-by …]`, `[group-by …]`,
-`[limit N]`, `[take N]`, `[drop N]`, `[takewhile P]`, `[dropwhile P]`,
-`[par]`, `[stream]`, `[ordered]`), and exactly one terminating yield
+`[limit N]`, `[take N]`, `[drop N]`, `[take-while P]`, `[drop-while P]`,
+`[par]`, `[lazy]`, `[ordered]`), and exactly one terminating yield
 clause (`[yield E]`, `[yield-array E]`, or `[yield-map K V]`).
 
 ### §7.1 Body grammar
@@ -2029,8 +2346,8 @@ clause (`[yield E]`, `[yield-array E]`, or `[yield-map K V]`).
  ([order-by EXPR (asc|desc)?])?
  ([group-by EXPR])?
  ([limit N])?
- ([take N])* ([drop N])* ([takewhile P])* ([dropwhile P])*
- ([par])? ([stream])? ([ordered])? ([fail-fast])?
+ ([take N])* ([drop N])* ([take-while P])* ([drop-while P])*
+ ([par])? ([lazy])? ([ordered])? ([fail-fast])?
  [yield EXPR] # exactly one yield clause
 ]
 ```
@@ -2062,16 +2379,31 @@ operators transform the yielded sequence:
 
 - `[order-by EXPR]` — sorts by `EXPR` evaluated per item. Optional
  `asc` (default) or `desc` direction follows the expression.
-- `[group-by EXPR]` — groups consecutive items sharing `EXPR` value;
- introduces `$count` and `$group` bindings inside the yield clause.
+- `[group-by EXPR]` — **hash-partitions** items by `EXPR` **value
+ equality over the whole input** (SQL GROUP BY semantics; stream-2
+ ruling L94 — the earlier "consecutive items" wording described run
+ adjacency, which was never what shipped and is windowing territory).
+ Group output order is the **first appearance** of each key, pinned.
+ Inside the yield clause it introduces three bindings: `$key` — the
+ partition key value; `$count` — the group cardinality; `$group` —
+ one `[item …]` element per grouped frame, carrying the
+ comprehension's generator and `[= …]` binder values as named
+ children in clause order, so aggregates navigate `$group/NAME` and
+ atomize in arithmetic: `[?for [in $o /orders] [in $l $o/line]
+ [= $r [* $l@qty $l@price]] [group-by $o@region]
+ [yield [row region=$key revenue=[$sum $group/r]]]`.
 - `[limit N]` — truncates to N items.
 - `[take N]` / `[drop N]` — keep first N / skip first N.
-- `[takewhile P]` / `[dropwhile P]` — predicate-driven prefix windows.
+- `[take-while P]` / `[drop-while P]` — predicate-driven prefix windows.
 - `[par]` — evaluates generators in parallel (§7.3).
-- `[stream]` — evaluates lazily; yields each item as soon as ready (§7.4).
-- `[ordered]` — preserves source order under parallel evaluation;
- **MUST** be paired with `[par]`. Using `[ordered]` without `[par]`
- raises `cx-err:CXER0100` at parse time.
+- `[lazy]` — evaluates lazily; yields each item as soon as ready (§7.4).
+ Renamed from `[stream]` (U1.1a: `stream` is the delivery concept's name,
+ spec/delivery.md); the old spelling raises `cx-err:CXER0100` at parse time.
+- `[ordered]` — **tombstoned no-op** (stream-5 ruling L105): `[par]`
+ preserves source order ALWAYS (§7.3), so `[ordered]` changes nothing.
+ It remains grammatically valid where it was valid — paired with
+ `[par]`; using `[ordered]` without `[par]` still raises
+ `cx-err:CXER0100` at parse time.
 
 **Table sources (D22, #404).** A generator source whose value is a
 `:table`-bearing element iterates the table's **row sequence** (§6.6
@@ -2095,13 +2427,13 @@ navigate into rows; §6.6 D22).
 ```
 
 **Err-valued guards and predicates propagate (normative).** A `[where …]`
-guard or `[takewhile P]` / `[dropwhile P]` predicate that evaluates to an
+guard or `[take-while P]` / `[drop-while P]` predicate that evaluates to an
 `[err]` value is never EBV-coerced (an err element would read truthy — a
 present element always does): it short-circuits the whole comprehension, and that `[err]`
 is the comprehension's result — per §9.2 implicit operand propagation,
 uniformly with operators, calls, and the `[?if]` condition (§8.4). This
 holds identically under `[par]` (§7.3; the earliest-item err wins, matching
-sequential first-failure order) and `[stream]` (§7.4; items already emitted
+sequential first-failure order) and `[lazy]` (§7.4; items already emitted
 stay emitted — the err terminates the remaining stream). A predicate that
 should *tolerate* err-producing probes over heterogeneous items must handle
 the err explicitly (e.g. `[?fallback … [recover-with false]]` or an
@@ -2149,10 +2481,12 @@ of at most W workers (#94): `[par]` = default `W = min(4, ncpu)`, `[par N]` =
 token is a parse error (`cx-err:CXER0100`); an explicit `N > 64×ncpu` is the
 fail-loud sanity cap (`cx-err:CXER0153`), never silently clamped. The inner
 generators of a multi-source comprehension run sequentially within each worker —
-only the outermost loop is parallel. Cardinality MUST be known finite. Output
-order is unspecified unless `[ordered]` is also present (which reassembles source
-order). `take` / `drop` / `limit` are applied to the assembled result.
-Order-dependent shapes — `takewhile` / `dropwhile`, a `$_position` reference, or
+only the outermost loop is parallel. Cardinality MUST be known finite. **Output
+order is source order, ALWAYS** — results reassemble by input index regardless
+of completion timing (§6.5.1 `pure ⇒ deterministic`, stream-5 ruling L105); the
+former completion-order delivery is retired, and `[ordered]` is a tombstoned
+no-op (§7.2). `take` / `drop` / `limit` are applied to the assembled result.
+Order-dependent shapes — `take-while` / `drop-while`, a `$_position` reference, or
 a streaming/`Iterator` generator source — evaluate **sequentially** (the bound
 is on the parallel path only; correctness is preserved). Errors raised during
 parallel evaluation surface the earliest-input-index failure; the optional
@@ -2176,9 +2510,11 @@ redundant width:
   fairness), intentionally excluded from the in-source degree spelling.
 
 **Purity is the parallelization license (normative note).** A `pure`
-computation (§6.5.1) is **safe to evaluate in parallel and to reorder** — by the
+computation (§6.5.1) is **safe to evaluate in parallel** — by the
 effect-totality lemma it has no capability effect and no shared mutable state, so
-there are **no effect races**. The accurate keystone: *pure functions compose
+there are **no effect races**. Execution may interleave freely; the *observed*
+output order is source order always (L105), so parallelism is never
+result-visible for a pure body. The accurate keystone: *pure functions compose
 (`cx-stdlib/fp`) and are provably effect-free (§6.5.1), hence free of effect-races
 under parallel evaluation.* (`[par]` runs a **bounded** worker pool — `[par N]`
 / `[par max]`, default `min(4, ncpu)` — so an impure body's fan-out is capped by
@@ -2191,12 +2527,13 @@ general (an input-dependent `[err]` or nontermination recurs).
 Cancellation/cleanup safety comes from §8.10.7 RAII + §10.5.x cap-revocation, not
 from purity alone.
 
-### §7.4 Streaming evaluation (`[stream]`)
+### §7.4 Lazy evaluation (`[lazy]`)
 
-`[stream]` evaluates lazily: each yielded item is produced as soon as
-the input pipeline can produce it. `[stream]` MUST NOT be combined
+`[lazy]` evaluates lazily: each yielded item is produced as soon as
+the input pipeline can produce it. `[lazy]` MUST NOT be combined
 with `[order-by]` or `[group-by]`; doing so raises a parse-time
-`cx-err:CXER0100`.
+`cx-err:CXER0100`. (`[lazy]` is the U1.1a spelling — the hint was
+named `[stream]` before the delivery concept claimed that word.)
 
 ### §7.5 First generator may be a pattern
 
@@ -2285,14 +2622,14 @@ generator, discard the results) — use a discarding `[?for]`.** At
 statement / top-level position a `[?for]` with no `[order-by]`/`[group-by]`
 **streams** (§7.4): each item is produced, the yield body runs (effects
 included), and the result is sunk without buffering — an O(1) live set
-even over an unbounded generator with a `[take …]`/`[takewhile …]` bound:
+even over an unbounded generator with a `[take …]`/`[take-while …]` bound:
 
 ```cx
 # effect-for-each, streaming, O(1) live set at top level
 [?for [in $x $events] [yield [emit $x]]]
 
 # over a generator, bounded
-[?for [in $line [$iterate next-line $start]] [takewhile [!= $line null]]
+[?for [in $line [$iterate next-line $start]] [take-while [!= $line null]]
  [yield [log $line]]]
 ```
 
@@ -2315,11 +2652,163 @@ result value:
 
 **Why no `[?loop]`.** A dedicated imperative loop (with `break`/
 `continue`/`while`/`forever`) would duplicate capability already present
-— `break` ≈ `[takewhile]`, skip ≈ `[where]`, accumulator ≈ `[?reduce]`'s
+— `break` ≈ `[take-while]`, skip ≈ `[where]`, accumulator ≈ `[?reduce]`'s
 `[init]`, forever ≈ `[$range lo *]` / self-recursion — while importing
 out-of-band control flow that has no homoiconic data image. The three
 tools above cover every shape; keeping them orthogonal (one tool, one
 meaning) is worth more than a more-powerful single construct.
+
+### §7.8 The planar fragment — membership (normative)
+
+A comprehension is a member of the **planar query fragment** — the
+relational subset consumed by plan-form normalization, identity-keyed
+caching, quoted store queries ([`store.md`](../std-lib/store.md) §6.2),
+and incremental maintenance — exactly when it passes the six-point test
+below (stream-2 ruling L95, `spec/03-approved/core/planar_algebra.md`).
+Planarity is **consumer-relative**: a general `[?for]` outside the
+fragment stays fully legal; only a planar consumer applies this test,
+and non-membership there is the typed error `cx-err:CXER0120
+E_NOT_PLANAR` whose message names the violated point — never a silent
+fallback and never a silent widening (the `CXER1709` refuse-to-lie
+posture).
+
+1. **Head** ∈ {`[?for]`, `[?for-array]`, `[?for-map]`}.
+2. **Clause vocabulary** is closed to {generator, `[where]`, `[= …]`,
+   `[order-by]`, `[group-by]`, `[limit]`, `[take]`, `[drop]`} plus the
+   erased hints of point 6. `[take-while]` / `[drop-while]` are
+   excluded (order-observers, not relational operators); `[fail-fast]`
+   is excluded (a parallel-execution observable).
+3. **Every generator source names its root.** A generator source is
+   one of: a **source reference** — a call of a canonical source form,
+   `[$store:source $store PATH]` (`store.md` §6.2) or
+   `[$journal:source $journal STREAM]` (`journal.md` §3.3), recognized
+   by these canonical spellings —; a **nested planar comprehension**
+   (this test applies recursively); or a **pure expression over
+   comprehension-local bindings** (bindings introduced by earlier
+   clauses of the same comprehension — the correlated-unnest form,
+   e.g. `[in $l $o/line]`) and literals. The implicit **ambient
+   document** is non-planar: bare pattern-generators, absolute paths,
+   and any reference to a binding not introduced by the comprehension
+   itself (outside a source-reference call, whose handle argument
+   necessarily arrives from enclosing scope) all fail this point — a
+   source set that cannot name its root is not a source set. **No
+   unbounded generator** (the open-end `[$range N *]`).
+   **The ambient exclusion is not source-slot-scoped** (stream-2
+   ruling, #770): a document-context CXPath read — an ambient path,
+   not rooted at a bound name — **anywhere** in a clause expression,
+   λ count, computed generator source, or yield body fails this point
+   for the same reason: it is a document dependency the source set
+   cannot name, e.g. `[where [> [$count //order] 0]]`. Binding-rooted
+   paths (`$o/customer/@region`) are frame-local reads and are
+   unaffected. A comprehension that needs ambient data lifts it into
+   a source reference.
+4. **Purity.** Every `[where]` predicate, `[order-by]` / `[group-by]`
+   key, `[= …]` binder expression, yield body, **and `[limit]` /
+   `[take]` / `[drop]` count** (stream-2 ruling, #770) is `pure` under
+   the shipped §6.5.x classification, verbatim. A free-name count
+   stays a member — it is a plan parameter under §7.9; an impure
+   count would break the determinism guarantee below.
+5. **No `[?eval]`, no `[?with-scope]`** anywhere in clause expressions,
+   generator sources, or yield bodies — refused by name, in addition
+   to (not instead of) point 4's purity check.
+6. **Order-observers excluded; execution hints erased.** `$_position`
+   / `$_last` in the yield body fail the test; `[par]` / `[lazy]` /
+   `[ordered]` are legal members but are **erased** by planar
+   consumers — planar results are ordered by the algebra, so a hint
+   can neither be observed through a planar consumer nor leak
+   bare-`[par]`'s unspecified order.
+
+Membership guarantees the properties the planar consumers rely on: the
+source set is exactly the source references appearing in the text
+(authorize-before-execute over that set), every source is versionable
+(cacheability), and the whole comprehension is deterministic given the
+sources' contents.
+
+### §7.9 The canonical plan form and the plan address (normative)
+
+Every member of the planar fragment (§7.8) has a **canonical plan
+form** — a normalization of the comprehension — and the plan form's
+injective encoding hashes to the **plan address**, the identity tier
+**above** E1 text identity (stream-2 ruling L93,
+`spec/03-approved/core/planar_algebra.md`). E1 (text, name-sensitive) remains
+the base identity; identity-keyed caching and computation identity for
+planar comprehensions key on the plan address, so equivalent spellings
+share one cache row. Plan-form construction is a **planar consumer**:
+its entry is gated by the §7.8 membership test, and a non-member is the
+typed error `cx-err:CXER0120 E_NOT_PLANAR` — never a silent fallback.
+
+**The fragment's denotation (the plan's semantics).** Within the
+fragment a comprehension denotes the planar algebra's relation:
+generators produce the Cartesian frames in clause order; `[where]` /
+`[= …]` apply to every frame that reaches them (an err anywhere is the
+whole comprehension's err, §7.2); the `[order-by]` / `[group-by]`
+barriers apply in clause order over the surviving frame set; and the λ
+operators (`[limit]` / `[take]` / `[drop]`) truncate the **resulting
+relation** — the algebra's OFFSET/LIMIT reading, matching §7.2's
+"stream operators transform the yielded sequence." An execution
+strategy may skip work (short-circuit generation once a truncation
+bound is met) only where skipping cannot change the result; whether a
+partial (err-capable) predicate admits that is the planar algebra's
+err-totality rule (L96), not a plan-form question.
+
+**Normalization** (each step is a local, terminating rewrite; the set
+is orthogonal and locally confluent, so every member reduces to exactly
+one normal form):
+
+1. **Clause order is preserved.** The semantic clauses — generators,
+   `[where]`, `[= …]`, `[order-by]`, `[group-by]` — keep their surface
+   order: their order is meaning (correlation, err order, barrier
+   composition). The plan tier performs **no** reordering an err could
+   observe; the reportable execution equivalences (σ-pushdown and
+   friends, ruling L96) are executor rewrites and never move the plan
+   address.
+2. **Hint erasure.** `[par]` / `[lazy]` / `[ordered]` do not appear in
+   the plan (§7.8 point 6 — planar results are ordered by the algebra),
+   so hint presence and hint position cannot split the address.
+3. **The λ tail.** λ clauses are position-independent relation
+   truncations (they apply after the barriers in every conforming
+   evaluation), so the plan carries them canonically **last**, drops
+   before takes. `[limit N]` and `[take N]` collapse to the **one
+   canonical take operator** (ruled; both stay legal surface). Literal
+   counts compose — consecutive drops **sum**, consecutive takes take
+   the **minimum**, a literal `[drop 0]` is erased; non-literal counts
+   stay unfused in surface order within their kind.
+4. **Alpha-normalized binders.** Binders the comprehension introduces —
+   clause binds, pattern-generator captures, and binders introduced by
+   pure-flow directives inside clause expressions — encode as de Bruijn
+   levels: `$x`-vs-`$y` respellings share one plan address while E1
+   keeps them distinct. **Free names encode verbatim**: a reference to
+   an enclosing-scope binding (legal only as a source-reference handle
+   argument, §7.8 point 3) is a plan **parameter**, and renaming a
+   parameter is not alpha-equivalence. The γ-introduced reserved
+   bindings `$key` / `$count` / `$group` are operator-defined columns,
+   encoded by name. A nested planar comprehension in generator-source
+   position normalizes recursively under the enclosing scope (the
+   correlated form).
+5. **Defaults are explicit.** An `[order-by]` with no direction encodes
+   as `asc` (the §7.2 default), so the two spellings share.
+
+**Equality ⟺ byte-identity.** The canonical encoding is injective over
+plan structure (every variable-length field is length-prefixed), and
+the contract is the identity round-trip guarantee of
+[`canonical.md`](canonical.md) §2.12.7 in both directions: two plans
+are equal **iff** their canonical encodings are byte-identical, and
+the encoding introduces no divergence plan equality does not also
+recognize. Structurally distinct plans can only collide by hash
+collision, never by encoding.
+
+**The plan address** is the tagged hash of the canonical plan encoding,
+spelled `plan:<algo>:<hex>` (default `plan:sha2-256:<hex>`). The
+`plan:` lead is a **distinct token**: it is never a document address
+(the tagged-address reader refuses it) and never a `computes-as:`
+computation-identity claim. Cache composition — key = (plan address,
+versioned source set) with `expect-pos` invalidation — is specified in
+the planar algebra's consumer hooks and composes into computation
+identity with the plan address in the fn slot.
+
+The in-language surface is `cx:plan-address`
+([`modules/cx.md`](../modules/cx.md)): source in, `plan:<algo>:<hex>`
+out, `CXER0120` for non-members.
 
 ---
 
@@ -2711,17 +3200,18 @@ Applies `fn` to each item in `xs`, returning a sequence of results.
 - `[using fn]` (required): closure value — a unary `[?fn ($x) …]` whose
  body produces the mapped result.
 - `[par]` (optional bareword clause): enables parallel evaluation.
-- `[ordered]` (optional bareword clause): preserves source order in
- the output. **MUST** be paired with `[par]`; raises
- `cx-err:CXER0100` at parse time when used alone.
+- `[ordered]` (optional bareword clause): **tombstoned no-op** (stream-5
+ ruling L105) — `[par]` preserves source order ALWAYS. Still **MUST** be
+ paired with `[par]`; raises `cx-err:CXER0100` at parse time when used
+ alone.
 
 **Output order:**
 
 | Form | Order |
 |---|---|
 | `[?map xs [using fn]]` | source order (sequential — there's only one order) |
-| `[?map xs [using fn] [par]]` | unspecified (completion-order; whichever worker emits first) |
-| `[?map xs [using fn] [par] [ordered]]` | source order (parallel evaluation, ordered output via completion-tracking + reassembly) |
+| `[?map xs [using fn] [par]]` | source order (parallel evaluation; results reassemble by input index — §6.5.1 `pure ⇒ deterministic`, L105) |
+| `[?map xs [using fn] [par] [ordered]]` | source order (identical to bare `[par]` — `[ordered]` is a tombstoned no-op) |
 
 **`[using …]` closure contract:**
 - Pure: no observable side effects on shared state (state-bearing resilience directives like `[?circuit-breaker]` per §10.2.7 are an exception — they explicitly share state across `[?map [par]]` invocations by design).
@@ -2735,7 +3225,7 @@ Applies `fn` to each item in `xs`, returning a sequence of results.
 | `cx-err:CXER0100` | `[ordered]` clause without `[par]` |
 | `cx-err:CXER0100` | positional source missing |
 
-**Visualization (§10.1.2):** sequential form renders as a single chained arrow `xs → fn → out`; `[par]` form renders as parallel branches with merge node; `[par] [ordered]` adds an order-preservation-buffer node before merge.
+**Visualization (§10.1.2):** sequential form renders as a single chained arrow `xs → fn → out`; `[par]` form renders as parallel branches with merge node (source-order reassembly is implicit — L105); a redundant `[ordered]` annotation still renders its order-preservation-buffer node (the diagram draws the source as written).
 
 **Bounded concurrency (#94):** `[par]` owns its width — `[par]` runs a bounded pool of `min(4, ncpu)` workers by default, `[par N]` caps it at `N` (N ≥ 1), `[par max]` at `ncpu`. An `N < 1` / non-integer / non-`max` token is a parse error (`cx-err:CXER0100`); an explicit `N > 64×ncpu` is the fail-loud sanity cap (`cx-err:CXER0153`), never silently clamped. (`[?bulkhead]` is no longer the concurrency-bounding mechanism — it is demoted to an experimental resilience primitive; the old `CXLS005` "wrap in bulkhead" hint is retired.)
 
@@ -2871,7 +3361,7 @@ Remaining outer bindings still close LIFO.
 **Errors:**
 - `cx-err:CXER0100` — empty body, missing `(expr)` / `$binding`, or malformed binding at parse.
 - `cx-err:CXER0108` — `(expr)` evaluates to a value carrying no registered close contract (not closeable; E_NOT_CLOSEABLE).
-- Any error raised by `(expr)` (the open) or by `close` propagates per D4 / D7; `[?with-open]` introduces no new `CXER` code of its own.
+- Any error raised by `(expr)` (the open) or by `close` propagates through the standard §9.2 cascade; `[?with-open]` introduces no new `CXER` code of its own.
 
 ### §8.10.8 `[?with-scope]` — dynamic-scoped context
 
@@ -3309,9 +3799,15 @@ are operand-consuming forms** and follow the same rule (#348): the `[?if]`
 condition (§8.4), `[?match]` `[when …]` conditions and case-level `[where …]`
 guards (§8.2), `[?filter]` / `[?partition]` predicate results (incl. the
 head-dispatch `[$filter]` twin, §6.3), and the `[?for]` `[where …]` /
-`[takewhile …]` / `[dropwhile …]` clauses (§7.2) — an err-valued guard is
+`[take-while …]` / `[drop-while …]` clauses (§7.2) — an err-valued guard is
 never EBV-coerced or skip-coerced; it short-circuits the whole form and is
-its result. To *inspect* an err instead of
+its result. **Element construction is operand-consuming as well** (#853):
+an evaluated `attr=VALUE` or an evaluated positional child that is
+`[err …]` short-circuits the construction, which evaluates to that err
+rather than adopting it as a child — transitively, so a refusal cannot
+settle inside a document at any depth. The one thing that is NOT an
+operand there is a **source-literal** `[err …]` element, which is data by
+position (§6.4.1). To *inspect* an err instead of
 propagating it — read its `@code`, compare it, branch on it — pass it to
 `[?match]` (whose scrutinee slot is a §9.2-exempt boundary, §8.2), `[?else]`, or
 `[?fallback]`, or bind it first (`[?let [= $e EXPR] …]`) and use path navigation,
@@ -3382,7 +3878,9 @@ Per (amended 2026-05-21), CX code reserves the
 | CXER0001 | Generic-core panic (reserved, outside CX-code range — see note below) |
 | CXER0100 – CXER0105 | Pattern / match / iterator / application / arithmetic errors |
 | CXER0106 – CXER0119 | Core directive shape errors (`[?map]`, `[?reduce]`, `[?with-open]`, `[?with-scope]`) |
-| CXER0120 – CXER0139 | For-comprehension errors |
+| CXER0120 – CXER0129 | For-comprehension errors (narrowed at I1 — the band was unused above 0129) |
+| CXER0130 – CXER0135 | Self-describing addresses + hash/suite registries (I1 stream 19, owner-ratified as minted): `CXER0130` bare hex is not an address; `CXER0131` unrecognized hash algorithm / multicodec; `CXER0132` digest shape (length / non-hex / truncated multihash); `CXER0135` unsupported signature suite (fail-closed verifiers, #702). 0133–0134 reserved |
+| CXER0136 – CXER0139 | Reserved (formerly for-comprehension tail) |
 | CXER0140 – CXER0149 | Resilience: retry / timeout |
 | CXER0150 – CXER0159 | Resilience: circuit-breaker / fallback / rate-limit / bulkhead |
 | CXER0160 – CXER0179 | Services (HTTP server) |
@@ -3397,7 +3895,7 @@ Per (amended 2026-05-21), CX code reserves the
 | CXER0250 – CXER0259 | Retired — `[?cx include]` errors are parse-time data-parse `E` codes (`E901–E911`, cxdm.md §11); range reserved, not reassigned |
 | CXER0260 – CXER0269 | Cancellation (narrowed — see note below) |
 | CXER0270 – CXER0279 | Host capability / runtime environment |
-| CXER0280 – CXER0289 | Visualization / renderer |
+| CXER0280 – CXER0289 | Visualization / renderer (CXER0280 RESERVED — see the §9.5 note) |
 | CXER0290 – CXER0299 | Type coercion / cast (`cast` builtin, §6.5 P6) |
 | L001 – L020 | Lint codes (emitted by `cx_lint`, `core/abi.md §2.18`) |
 
@@ -3418,8 +3916,13 @@ implementation is a conformance bug to re-code (arity → `CXER0100`).
 allocation (CXER0200–CXER0219) used only four codes (CXER0200..0203
 — see §9.5 wire-code map). The module system (§§12.1–12.5)
 claims CXER0204..CXER0215; the range table is split accordingly.
-CXER0216 is the member-visibility error (§12.6); slots
-CXER0217..CXER0219 stay reserved for any future Channels growth.
+CXER0216 is the member-visibility error (§12.6). The reserved
+Channels-growth slots are where the U1.11a fan-out codes land:
+`CXER0217` CHANNEL_POLICY and `CXER0218` STREAM_GAP (§10.4.1 /
+§10.4.8) — the U1 application pass had colliding-numbered them
+CXER0204/0205 over the module system's shipped claims, an editorial
+defect repaired here (#762; the ruled contract — one policy code, one
+gap code — is unchanged). Slot CXER0219 stays reserved.
 No existing wire code is renumbered.
 
 **Range amendment (`cast` builtin) — type-coercion codes.** The
@@ -3430,6 +3933,18 @@ codes (CXER0280..0281 — RENDER_FAILED / UNRENDERABLE_DIRECTIVE; see
 CXER0290..0299. Visualization narrows to CXER0280..0289 (with 8
 reserved codes for future renderer growth at CXER0282..0289). No
 existing wire code is renumbered.
+
+**Range amendment — `CXER0280 RENDER_FAILED` RETIRES to reserved
+(RULED 808-1a, 2026-08-17).** The renderer's only failure mode is
+`CXER0281 E_UNRENDERABLE_DIRECTIVE` — a directive shape outside the
+§10.1.2 locked render rules — which exists, is raised
+(`vcx/code/diagram.v`), and is exercised by the corpus. `CXER0280` was
+allocated for a second, more general "could not produce output" class
+that no renderer path has ever reached, so gate 4 (every spec-defined
+code exercised by a fixture) could not cover it and carried it as
+visible debt instead. Inventing a failure class to justify a registry
+row is backwards: the row goes. The code is RESERVED, not reassigned —
+Visualization's free codes are now CXER0280 and CXER0282..0289.
 
 **Range amendment — purity codes.** The
 original Workers allocation (CXER0220–CXER0239) used only three codes
@@ -3445,8 +3960,14 @@ narrows to CXER0260..CXER0269 (with 9 reserved codes for future
 cancellation-related growth at CXER0261..CXER0269), and a new host-
 capability / runtime-environment range claims CXER0270..CXER0279, of which
 CXER0270 (WALL_SLEEP_UNSUPPORTED_IN_HOST), CXER0271 (E_CAP_DENIED,
-`security.md`), and CXER0272 (E_STACK_EXHAUSTED — the evaluator's native-stack
-headroom guard; see §9.5) are allocated. No existing wire code is renumbered.
+`security.md`), CXER0272 (E_STACK_EXHAUSTED — the evaluator's native-stack
+headroom guard; see §9.5), CXER0273 (E_EVAL_BUDGET_EXCEEDED — the
+armed evaluation budget's typed refusal; see §9.5 and the wire-code map),
+and CXER0274 (E_CAP_UNKNOWN — an unknown capability grant name, or the
+retired `cap:resource` scope spelling, in a host grant spec/list **or in a
+`[?def]`'s declared `[effects …]` clause (§12.2.7)**; the grant
+surface refuses LOUDLY and installs nothing, `security.md` — #713/L114)
+are allocated. No existing wire code is renumbered.
 
 **Range amendment — Futures + retired include range.** The
 original Futures allocation (CXER0240–CXER0259) used only two codes
@@ -3520,7 +4041,8 @@ symbolic names used in §§5–10 error tables and their wire codes.
 | WALL_SLEEP_UNSUPPORTED_IN_HOST | `cx-err:CXER0270` | Host capability | Bare `[?sleep]` in wasm host without `_cx_wasm_set_wall_sleep(true)` opt-in |
 | E_CAP_DENIED | `cx-err:CXER0271` | Host capability | Operation requires a capability absent from the active set (`security.md` §4); carries `capability=` + `resource=` |
 | E_STACK_EXHAUSTED | `cx-err:CXER0272` | Host capability | Non-tail evaluation recursion neared the current thread's native-stack limit; the evaluator raises this catchable value-form err (recoverable per §9.1) with headroom to spare instead of ever crashing. Tail calls are trampolined and never trigger it; rewrite the hot recursion tail-recursively, iterate with `[?for]`/`[?reduce]`, or raise the host stack limit |
-| RENDER_FAILED | `cx-err:CXER0280` | Visualization | Renderer could not produce output |
+| E_EVAL_BUDGET_EXCEEDED | `cx-err:CXER0273` | Host capability | An ARMED evaluation budget (an embedder/daemon arms a step limit and/or a monotone-allocation memory ceiling on the evaluation env; unarmed evaluation is unaffected) was exceeded. THROWN, not a value-form err — and terminal for the budgeted evaluation by construction: the budget latches on first trip and every further evaluation step re-refuses, so a handler cannot absorb it and resume. The message names the tripped conjunct (`steps`\|`memory`) and the configured limit, deterministically. First armer: the XSP store profile's pushdown family (its wire row is `CXER5024`) |
+| E_CAP_UNKNOWN | `cx-err:CXER0274` | Host capability | A host grant spec (`cx_code_eval_caps` caps arg / a `[grant …]` list) names an unknown capability, or uses the retired `cap:resource` scope spelling (`cap=resource` is THE scope spelling — L114; `cap:` is the reserved capability-value address prefix). The refusal names the bad token + the accepted set, and NO set is installed (never a silent no-grant — #713). Distinct from the CLI's `--allow-*` unknown-flag hard error (`cli.md`), which fires at flag parse |
 | UNRENDERABLE_DIRECTIVE | `cx-err:CXER0281` | Visualization | Directive shape outside §10.1.2 locked render rules |
 | E_DEF_NOT_TOP_LEVEL | `cx-err:CXER0204` | Module system | `[?def]` written inside an expression / function body |
 | E_DEF_REDECLARED | `cx-err:CXER0205` | Module system | Same-name `[?def]` declared more than once in a module |
@@ -3535,11 +4057,13 @@ symbolic names used in §§5–10 error tables and their wire codes.
 | E_CONST_CYCLE | `cx-err:CXER0214` | Module system | Cyclic `[?const]` dependency detected during pass 2 topological sort |
 | E_CONST_BODY_FAILED | `cx-err:CXER0215` | Module system | Eager `[?const]` expression raised an error during load |
 | E_VISIBILITY | `cx-err:CXER0216` | Module system | Access to a non-exported (private) member of another module (§12.6) |
+| E_NOT_PLANAR | `cx-err:CXER0120` | For-comprehension | Comprehension fails the §7.8 planar-fragment membership test at a planar consumer (message names the violated point) |
 | E_PREDICATE_NOT_PURE | `cx-err:CXER0230` | Purity / predicate | PredicateExpr body calls an impure function or builtin |
 | E_RESERVED_BINDING_USE | `cx-err:CXER0231` | Purity / predicate | Reference to `$_position` or `$_last` outside a predicate body |
 | E_RESERVED_BIND_NAME | `cx-err:CXER0232` | Purity / predicate | `(bind $_)` on a path step — underscore reserved for `$_` |
 | E_PURITY_VIOLATION | `cx-err:CXER0233` | Purity / predicate | `[?def]` declared `pure` (explicit or default) calls an impure function or builtin |
 | E_PURITY_UNCLASSIFIED_BUILTIN | `cx-err:CXER0234` | Purity / predicate | Reference to a builtin missing from the closed purity classification list |
+| E_COMMAND_CONTRACT | `cx-err:CXER0239` | Purity / predicate | Static command-contract violation (§12.2.7): `pure` + non-empty `[effects]`; `[compensates]` target unknown or not a command |
 | E_COMPUTED_NAME_NONSCALAR | `cx-err:CXER0235` | Dynamic construction | `[?element]`/`[?attr]`/`[?entry]`/`[?name]` computed name/key expr is non-scalar (§6.4.2.1) |
 | E_COMPUTED_NAME_SHAPE | `cx-err:CXER0236` | Dynamic construction | Computed name is not a valid NCName, or an empty `[rename]` name (§6.4.2.1) |
 | E_UNQUOTE_SEQUENCE | `cx-err:CXER0237` | Dynamic construction | `[?unquote]` yielded a multi-item sequence in a single-node slot — use `[?splice]` (§6.4.3) |
@@ -3575,11 +4099,23 @@ codes, not `[err …]` values, and are excluded. Append-only.
 **Determinism scope (normative).** For a code with a FIXED message in this
 table, conformance fixtures and the implementation MUST emit that exact message
 byte-for-byte. For a **(site-specific)** catch-all (`CXER0001` / `CXER0100` /
-`CXER0104`), the message PROSE is implementation-defined — only the error CODE
-and the error POSITION are byte-stable. The error POSITION is always reported as
-`line:col` (1-based), never a byte offset. Byte-compatible CLI output therefore
-covers the parsed document, the error CODE, the POSITION, and the process exit
-code — but NOT the free-form prose of a site-specific catch-all.
+`CXER0104`), the message PROSE is implementation-defined (BF-1) — only the error
+CODE and the error POSITION are byte-stable. The error POSITION is always
+reported as `line:col` (1-based), never a byte offset. Byte-compatible CLI
+output therefore covers the parsed document, the error CODE, the POSITION, and
+the process exit code — but NOT the free-form prose of a site-specific
+catch-all.
+
+**Bounded-freedom register (normative).** Every implementation freedom this
+spec grants is registered here with its floor and the fixtures proving the
+floor (the clean-room bar, corollary 3: a freedom without a floor and a
+witness is a trap, not a freedom). The completeness gate
+(`scripts/check_code_spec_consistency.py` gate 1) excuses a freedom token
+ONLY on a line naming a registered BF id; anywhere else it is a spec defect.
+
+| Id | Site | Freedom | Floor (normative) | Proving fixtures |
+|----|------|---------|-------------------|------------------|
+| BF-1 | §9 error table, determinism scope | Message PROSE of the site-specific catch-alls (`CXER0001`/`CXER0100`/`CXER0104`) is implementation-defined (BF-1) | Error CODE and POSITION (`line:col`, 1-based) byte-stable; process exit code stable | every `out-err` fixture asserting a catch-all code matches on the CODE, never the prose |
 
 | Wire code | Canonical message |
 |---|---|
@@ -3595,6 +4131,7 @@ code — but NOT the free-form prose of a site-specific catch-all.
 | `CXER0108` | value has no close contract |
 | `CXER0109` | [?with-scope] argument is not a map |
 | `CXER0110` | enrich hook returned a non-error value |
+| `CXER0120` | comprehension is not planar: ‹reason› |
 | `CXER0140` | retry budget exhausted after ‹attempts› attempts |
 | `CXER0141` | operation timed out after ‹elapsed› |
 | `CXER0150` | circuit breaker open |
@@ -3635,12 +4172,12 @@ code — but NOT the free-form prose of a site-specific catch-all.
 | `CXER0232` | underscore binding name is reserved |
 | `CXER0233` | pure function ‹name› calls an impure operation |
 | `CXER0234` | builtin ‹name› missing purity classification |
+| `CXER0239` | command contract violation on ‹name› (§12.2.7) |
 | `CXER0240` | [?await-all] saw a non-done future |
 | `CXER0241` | await timed out after ‹timeout› |
 | `CXER0260` | operation cancelled |
 | `CXER0270` | wall-clock sleep unsupported in this host |
 | `CXER0271` | ‹capability› capability denied for ‹resource› |
-| `CXER0280` | render failed |
 | `CXER0281` | directive cannot be rendered |
 | `CXER0290` | cannot cast ‹value› to ‹kind› |
 | `CXER0291` | function value cannot be serialized |
@@ -3773,10 +4310,41 @@ when given the same source. Diagrams **MUST** round-trip: every
 diagram produced by a conforming renderer parses back to a CX tree
 that is `cx-diff`-equal to the source.
 
-The renderer is itself a CX program; an implementation **MAY**
-optimize the renderer in native code, but the observable output
-**MUST** match the reference renderer's output bit-for-bit on every
-fixture in `conformance/code.txt` (gate #9).
+The renderer is itself a CX program (`cx-stdlib/diagram`,
+`spec/03-approved/std-lib/diagram.md` — RULED: DR-1/DR-2/DR-3/DR-9,
+#758): the Mermaid target, DOT emission, the SVG/PNG splices and
+envelopes, and the reverse-parse extractors for all three formats are
+CX, and the renderer's ONLY effect is the graphviz hop, an ordinary
+`cx-stdlib/process` call charged to the `subprocess` capability.
+An implementation **MAY** optimize the
+renderer in native code, but the observable output **MUST** match the
+reference renderer's output bit-for-bit on every fixture in
+`conformance/code.cxd` (gate #9; the corpus moved from the historical
+`code.txt` name — trued under DRW1-7) and on the Mermaid golden
+corpus the module spec names (the DR-8 bit-for-bit instrument,
+captured from the pre-cutover renderer).
+
+The §10.1.2 table is additionally COMPLETENESS-GATED (RULED: DR-5,
+gate extension to gate #9): the table below, the module's sealed
+rules-table data value, the golden corpus, and the §4.1 grammar
+registry are diffed bidirectionally, red on drift in either
+direction — every table row has a
+module rule, every rule is corpus-exercised, a registry directive
+outside the table refuses `cx-err:CXER0281` at top level, and every
+registry directive is exactly one of: table row, registry alias
+(`[?for-array]`/`[?for-map]` → the `[?for]` row), admitted
+scaffolding (`[?let]`/`[?def]`/`[?const]`/`[?lib]`), nested-only
+emitter (`[?http-client]`, `[?fn]` — rendered when nested, refused at
+top level), or CXER0281-refused.
+
+The SECOND renderer — the auto-detecting CFG / ERD / SEQ emitter
+behind `cx code-diagram` and the playground's visualization panel — is
+also `cx-stdlib/diagram` since RULED: DRW3-1 (#889): its
+classification rules, its own sealed rule table, and its completeness
+gate are normative in `std-lib/diagram.md` §10, not here. That module
+additionally exposes `of-source`, which renders CX SOURCE TEXT in one
+call and is the ONE path every diagram surface in the engine routes
+through (`cx diagram`, `cx eval --target=…`, the wasm exports).
 
 #### §10.1.2 Locked rendering rules
 
@@ -3807,6 +4375,7 @@ not listed below **SHALL** raise `cx-err:CXER0281` (UNRENDERABLE_DIRECTIVE).
 | `[?async]` | Detached activation in a new swimlane |
 | `[?await]` / `[?await-all]` / `[?await-any]` / `[?await-race]` | Synchronization barrier |
 | `[?cancel]` | Cancellation arrow + barrier |
+| `[?pipe]` | Pipeline stages: input → stage₁ → … → result (RULED: DRW1-3 — a truing to long-shipped renderer behavior, not a new rule) |
 
 #### §10.1.3 Bidirectional editing
 
@@ -3837,7 +4406,6 @@ one renderer core:
 
 | Code | Symbolic name | When |
 |---|---|---|
-| `cx-err:CXER0280` | RENDER_FAILED | Renderer could not produce output |
 | `cx-err:CXER0281` | UNRENDERABLE_DIRECTIVE | Directive shape outside §10.1.2 |
 
 ---
@@ -4207,15 +4775,53 @@ CX code ships single-process concurrency: workers as
 goroutines/threads, channels as in-process queues. Cross-process /
 cross-node transport is out of scope per §1.2.
 
-#### §10.4.1 `[?channel]`
+Channels are the canonical spelling of the in-process (mem) column of
+the platform's one delivery concept — see the delivery concept spec
+([`delivery.md`](../core/delivery.md) §3; RULED:
+U1.1a–U1.15a) — not an independent mechanism. Their semantics are
+defined here and cited there.
+
+#### §10.4.1 `[?channel]` and `[?subscribe]`
 
 ```
 [?channel name=NAME buffer=INT]
+[?channel name=NAME sharing=independent retention=(latest|window) keep=INT]
 ```
 
-Declares a channel with FIFO semantics. `buffer=` is the buffer
-size (≥ 0). A 0-buffer channel is synchronous (rendezvous between
-sender and receiver).
+Declares an in-process stream. The default point is the classic
+channel — `sharing=group` (each value delivered to exactly one
+receiver), `retention=none`, bounded blocking buffer — spelled exactly
+as before: `buffer=` is the buffer size (≥ 0); a 0-buffer channel is
+synchronous (rendezvous between sender and receiver). FIFO semantics
+per §10.4.5.
+
+`sharing=independent` declares a fan-out stream (RULED: U1.11a):
+consumers subscribe (below) and each holds its own cursor. It requires
+`retention=latest` (each subscription holds at most the newest
+undelivered value — drop-oldest; the in-process coalescing point,
+delivery.md §6) or `retention=window keep=K` (K ≥ 1; the last K
+messages replay to a new or lagging subscription). On a fan-out stream
+`[?send]` NEVER blocks on consumers — the window is retention, not
+flow — and `buffer=` is not accepted. Invalid combinations
+(`sharing=independent retention=none`, `sharing=group` with
+`retention=`/`keep=`, `buffer=` with `sharing=independent`) refuse at
+declaration with `cx-err:CXER0217` (CHANNEL_POLICY).
+
+```
+[?subscribe from=CH from-pos=INT]
+```
+
+`[?subscribe]` returns a subscription (the delivery contract,
+delivery.md §4) on a `sharing=independent` channel; on a group channel
+it refuses with `CXER0217` (group consumers receive directly, as
+always). The default anchor is the head (live); the optional
+`from-pos=` resumes within the retained window. A cursor below the
+window — at subscribe time or because the consumer lagged behind
+`keep=K` — is a loud typed gap: `cx-err:CXER0218` (STREAM_GAP),
+carrying the current window floor; the consumer re-subscribes
+(re-seeds). This is the `resume-below-retention` refusal class
+(delivery.md §4). A subscription is closeable; closing the channel
+terminates its subscriptions with CHANNEL_CLOSED after drain.
 
 #### §10.4.2 `[?send]` and `[?try-send]`
 
@@ -4247,6 +4853,28 @@ the channel is closed and drained.
 `[err code=cx-err:CXER0202]` (RECV_TIMEOUT) if no value arrives
 within DURATION.
 
+`CH` in `[?receive]`/`[?try-receive]` is any value satisfying the
+delivery subscription contract
+([`delivery.md`](../core/delivery.md) §4; RULED: U1.2a,
+U1.5a): a channel, a `[?subscribe]`/`[?monitor]` subscription, a
+fabric subscription, a store-feed subscription, a live-mode observe
+handle, an io watch handle. Closed-and-drained is reported uniformly
+as a refusal class — CHANNEL_CLOSED for channels; each module's own
+terminal code per its spec. A value not satisfying the contract →
+`cx-err:CXER0100` at the call.
+
+```
+[?receive from=X max=INT deadline=DURATION]
+```
+
+With `max=N` (N ≥ 1), `[?receive]` is the batched form (RULED:
+U1.12a): it returns a **sequence** of 1..N messages — whatever
+arrived before the optional `deadline=` expired (waiting indefinitely
+without one). Deadline expiry with zero messages returns the **empty
+sequence** (a value, not a fault — an empty batch is a normal
+outcome). `deadline=` requires `max=`; the single-message wait with a
+timeout fault remains `[?try-receive]`, unchanged.
+
 #### §10.4.4 `[?close]`
 
 ```
@@ -4257,7 +4885,9 @@ Marks the channel closed. Subsequent `[?send]` calls **MUST** fail
 with CHANNEL_CLOSED. Subsequent `[?receive]` calls drain buffered
 values, then **MUST** receive CHANNEL_CLOSED. `[?close]` on an
 already-closed channel **MUST** return
-`[err code=cx-err:CXER0203]` (CHANNEL_ALREADY_CLOSED).
+`[err code=cx-err:CXER0203]` (CHANNEL_ALREADY_CLOSED). `CH` is any
+subscription-contract value; closing runs each instance's own
+`on-close` semantics, idempotent (RULED: U1.2a).
 
 #### §10.4.5 Ordering guarantee
 
@@ -4293,22 +4923,75 @@ Worker observability:
  returns the worker's terminal value or `[err]`.
 - `[?cancel worker=$h]` requests cancellation per §10.5.4.
 
+**Program exit (rule EV-WORKER-EXIT, §14.4 — stream 22 W4):** at
+top-level return the runtime CANCELS every live worker and DRAINS to
+quiescence before exiting. A body parked at a §10.5.4 cancellation
+point terminates CANCELLED (its post-park effects never run); a body
+with no cancellation point runs to completion (cancellation is
+cooperative — its effects land; it is never orphaned or silently
+killed). Exit is deterministic: no worker outlives the program. A
+non-cancellable infinite body therefore hangs exit — by construction,
+and visibly.
+
+#### §10.4.6a `[?monitor]`
+
+```
+[?monitor $h]
+```
+
+Returns a subscription (the delivery contract,
+[`delivery.md`](../core/delivery.md) §4; RULED: U2.1a) of
+the worker's lifecycle events, delivered in order: `[spawned name=…]`,
+`[cancelled name=…]`, `[panicked name=… [err …]]`,
+`[done name=… value=…]`. A terminal event
+(`cancelled`/`panicked`/`done`) is always the last; the subscription
+then reports closed-and-drained. **Monitoring an already-terminated
+worker delivers its terminal event immediately** — supervision is
+race-free by construction (there is no window in which a death goes
+unobserved). Multiple monitors on one worker each receive the full
+event sequence (fan-out). `[?wait-for]` is the degenerate
+monitor-then-receive and is unchanged. Monitor subscriptions compose
+with `[?select]` (§10.4.7) — a supervisor waits on N workers'
+terminal events, its control channel, and a `sched` backoff timer in
+one `[?select]`. RAII (§10.5.7.1) is unchanged: closing a monitored
+worker's handle cancels-and-joins it, and the monitor observes
+`[cancelled]`.
+
 #### §10.4.7 `[?select]`
 
 ```
 [?select
  [case [from CH $msg HANDLER]]
  [case [from CH $msg HANDLER]]
+ [case [to CH EXPR HANDLER]]
  [case [timeout DURATION HANDLER]]
 ]
 ```
 
 `[?select]` evaluates all `[case …]` clauses concurrently and
 proceeds with the first to become ready. When multiple cases are
-ready simultaneously, selection **MUST** be uniform-random among
-ready cases. Timeout cases become ready when their timer elapses;
+ready simultaneously, selection **MUST NOT** be deterministically
+biased toward source order (rule EV-SELECT-FAIR, §14.4 — the
+fixture-checkable form; the reference implementation uses
+uniform-random selection, and the uniform-DISTRIBUTION test protocol
+is reference-lane-only per §11.4's partition — a distribution cannot
+be asserted by a conformance fixture, non-deterministic-bias can).
+Timeout cases become ready when their timer elapses;
 they **SHALL NOT** race with channel cases that are already ready
 at entry.
+
+A `[case [from X $msg H]]` accepts any subscription-contract value
+([`delivery.md`](../core/delivery.md) §4; RULED: U1.5a),
+mixed freely in one `[?select]` — waiting on a channel and a fabric
+subscription at once is one `[?select]`, not a poll loop.
+
+A send case (RULED: U1.15a) — `[case [to CH EXPR HANDLER]]` — becomes
+ready when `[?send EXPR to=CH]` would not block. `EXPR` is evaluated
+**once, at `[?select]` entry** (before blocking); on selection the
+value is sent and HANDLER runs. Send cases participate in the same
+EV-SELECT-FAIR selection among ready cases; a send case on a closed
+channel is ready and its selection yields the CHANNEL_CLOSED err to
+the handler's scope.
 
 #### §10.4.8 Error codes
 
@@ -4318,6 +5001,8 @@ at entry.
 | `cx-err:CXER0201` | SEND_TIMEOUT | `[?try-send]` buffer-full timeout |
 | `cx-err:CXER0202` | RECV_TIMEOUT | `[?try-receive]` empty timeout |
 | `cx-err:CXER0203` | CHANNEL_ALREADY_CLOSED | Second `[?close]` on same channel |
+| `cx-err:CXER0217` | CHANNEL_POLICY | Invalid axis combination at `[?channel]`/`[?subscribe]` declaration (§10.4.1; RULED: U1.11a) |
+| `cx-err:CXER0218` | STREAM_GAP | Subscription cursor below the retained window (`keep=K`); re-subscribe to re-seed (§10.4.1) |
 | `cx-err:CXER0220` | WORKER_PANIC | Worker body raised unhandled err |
 | `cx-err:CXER0221` | WORKER_CANCELLED | Worker terminated via `[?cancel]` |
 | `cx-err:CXER0222` | WORKER_NOT_FOUND | `[?worker-handle]` lookup miss |
@@ -4358,6 +5043,17 @@ pending → running → done (EXPR completed normally)
 Terminal states (`done`, `failed`, `cancelled`) **MUST** be
 observable via `[?await]`. Once terminal, a future's state
 **SHALL NOT** change.
+
+**Execution substrate (normative — rule EV-ASYNC-SPAWN).** Spawn is
+**eager**: evaluation of the body begins without requiring any `[?await]`,
+and **fire-and-forget completion is guaranteed** — a spawned body that is
+never awaited still runs to a terminal state before top-level program
+return (subject only to the §10.5.4 cancellation contract). A substrate
+that defers the body until an await (lazy evaluation-on-demand) is
+**non-conforming**: `[?async [ship $order]]` with no await MUST still ship
+the order. Worker-pool SIZING is an implementation concern
+(`CX_WORKER_THREADS`, `misc/cli.md`); the spawn discipline above is not —
+no environment value may select a lazy substrate.
 
 **Dynamic-context capture-at-spawn.** EXPR is spawned
 with a **snapshot of the spawning thread's active dynamic context**
@@ -4429,7 +5125,7 @@ without real delays.
 Explicit `[?sleep DUR mock]` works in every context (auto-mock or
 not) — it always means logical-clock advance. Conformance fixtures,
 unit tests, and any other harness needing deterministic time write
-`mock` explicitly per D4.2.
+`mock` explicitly.
 
 **Interaction matrix:**
 
@@ -4583,6 +5279,90 @@ Every directive, every parameter, and every error code in this
 specification MUST have at least one fixture exercising it. Every
 example in this spec MUST be a fixture.
 
+### §11.1a The evaluation result image (normative — rule EV-RESULT-IMAGE)
+
+Every `out-text` assertion in the conformance corpus compares against the
+**result image**: the textual rendering of a program's evaluation result.
+This section IS that function — before it was written down, the image
+lived only in the reference harness's rendering code, and a
+semantically-correct clean-room implementation failed every eval fixture
+(#707 item 1; ruled in the clean-room-implementability stream). The same
+image is what the `cx` run surface prints for the default `text` target.
+
+The image is defined over CXDM value kinds; nothing here names an
+implementation representation.
+
+**R1 — top-level multi-value.** A program yielding N top-level values
+renders each value's image on its own line, joined with `\n` (no trailing
+newline added by the image itself). A single value renders as itself.
+
+**R2 — scalars.**
+- Atoms render `:name`.
+- Ints, floats, bools, and null render their canonical literals
+  (canonical.md owns the numeric images).
+- Date- and datetime-TYPED scalars render their canonical literal bare —
+  the value re-parses to the same type.
+- Duration-shaped strings (`<digits>` + one of `us|ms|s|m|h`) render bare.
+- Every other string renders under **R6**.
+
+**R3 — collections.**
+- A sequence value renders as `(a, b, c)` — items comma-space separated
+  inside parens; the empty sequence is `()`.
+- An array value renders as `[a, b, c]`.
+- A map value renders as `{k: v, k: v}` in entry order.
+- An iterator value is materialized (fully pulled) at the image boundary
+  and renders as a sequence `(…)`.
+- In collection-ITEM position, a multi-value wrapper renders as a nested
+  paren sequence, except a SINGLETON wrapper, which is transparent — it
+  renders as its single item.
+
+**R4 — elements.** `[name` + attributes + body + `]`:
+- Attributes render ` name=value`; string attribute values follow **R6**
+  (duration-shaped values bare).
+- Body items render space-separated, each per this image.
+- A labeled slot child renders ` :label value`.
+- A bare text node in BODY position renders quoted per **R6**'s quote
+  chooser (never bare — the quote shape must survive the round trip).
+- A multi-value wrapper in body position renders as a paren sequence
+  `(a, b, c)` — the top-level newline form does not nest.
+
+**R5 — element name shorthand.** The unnamed wrapper element that carries
+multi-values is NOT itself part of the image; only its rendering (R1, R3,
+R4) is observable.
+
+**R6 — string quoting (the idiomatic rule).** A string renders BARE iff
+it is bare-safe AND does not auto-type; otherwise it renders quoted:
+- **Bare-safe** (RULED: 831-1a′) — the image must re-read as **the same
+  string in BOTH readings**, so the safe set is their INTERSECTION: the
+  first byte is a name START (`[A-Za-z_]`), and every later byte is a
+  program-identifier char (`[A-Za-z0-9_-]`) or `/`. Everything else
+  quotes — the empty string, any leading sigil (`@ & * # : /`), and any
+  interior whitespace, `.`, `:`, `,`, `=`, `[`, `]`, `'`, `"`, `&`.
+  - The earlier formulation listed only the DATA reading's hazards, which
+    is where it broke: `lexicon.ebnf` [L11]'s **one deliberate name-char
+    mode fork** means the data lexer folds `.` and `:` into a name while
+    the program lexer does not, and a single interior space is legal body
+    text but splits a collection item. Under it the canonical form emitted
+    `{k: a b}`, `{k: a.b}`, `{k: https://a.com}` — text the PROGRAM reader
+    refuses outright (`expected ':' after map key`). Canonical text that
+    only half the language can read is not canonical.
+  - `/` is admitted only as a CONTINUATION (`a/b` round-trips as the same
+    string); leading `/` reads as a path (`//variant`, `/a/b`).
+  - This rule is the **single home** for the collection-item string image:
+    the data emitter (`cx fmt` / `cx canonical`) and the program result
+    renderer share one implementation of it, so the two surfaces cannot
+    drift into two spellings for one value.
+- Auto-types (must quote so the string kind survives): `true`, `false`,
+  `null`; `0x`/`0X`-prefixed; integer and decimal shapes (optional
+  leading `-`); date `YYYY-MM-DD` and datetime `YYYY-MM-DDT…` shapes.
+- Quote chooser: prefer `'…'`; if the value contains `'`, use `"…"`; if
+  it contains both, use `'''…'''`, then `"""…"""`; a value containing
+  every delimiter falls back to `'…'` unescaped-as-shipped.
+
+Conformance grading: `out-text` matches the image exactly after edge
+blank-line trim; a fixture carrying `tol=` relaxes only numeric equality
+(relative tolerance), nothing else.
+
 ### §11.2 Implementation tiers
 
 V is the reference implementation. Tier-1
@@ -4603,7 +5383,7 @@ Release gates per
 3. Companion specs aligned: `grammar.ebnf`, `ast.md`.
 
 **Test gates (4–9):**
-4. `conformance/code.txt` covers every directive × parameter × error
+4. `conformance/code.cxd` covers every directive × parameter × error
  code.
 5. Resilience composition matrix green.
 6. Service + client round-trip green.
@@ -4636,6 +5416,21 @@ inspection, by partial run, or by waiver.
 
 Every protocol is executed in CI from the canonical dev branch
 HEAD prior to tag. Re-runs after the tag are governed by §11.7.
+
+**The gate partition (stream 22, L75 — honest V-bound labeling).**
+Gates divide into two lanes, marked per gate below:
+
+- **conformance-bar** — the gate's protocol is expressible against
+  `spec/` + `conformance/` alone; a clean-room implementation runs it
+  as-is. Gates 1–3 (spec completeness) and the fixture-driven test
+  gates are conformance-bar.
+- **reference-lane-only** — the protocol is bound to the reference
+  implementation's toolchain, build system, or measurement substrate
+  (V test binaries, `make` targets, benchmark hardware baselines,
+  distribution tests). Gates 5–10 and 14–16 are reference-lane-only:
+  they verify THE REFERENCE ARTIFACT, not the language contract, and
+  a clean-room implementation substitutes its own equivalents. A
+  reference-lane gate never defines conformance; the corpus does.
 
 #### §11.4.1 Spec gates (gates 1–3) — procedure
 
@@ -4931,54 +5726,73 @@ renderer's three output formats (SVG, PNG, Mermaid).
 
 **Gate 14 — pattern compilation.**
 
-*Inputs:* `vcx/tests/runners/cxl_pattern_compile_bench.v`.
-*Tool:* `scripts/run_bench_json.py --gate program-compile` followed by
-`scripts/compare_bench.py --strict --threshold 0`.
+*Inputs:* `vcx/tests/runners/code_pattern_compile_bench.v`.
+*Tool:* `make bench-code-pattern-compile`.
 *Protocol:*
 
-1. The bench compiles 1 000 fresh patterns, each of depth 8 with 32
- bindings (generator: `scripts/gen_compile_bench_patterns.py`).
- The compile-only path is measured; cache hits and pre-compiled
- forms are excluded.
+1. The bench compiles ≥ 1 000 fresh patterns, each of depth 8 with 32
+ bindings (generated programmatically inside the runner so shape
+ parameters vary without hand edits). The compile-only path is
+ measured; cache hits and pre-compiled forms are excluded.
 2. The 99th-percentile compile time **MUST** be ≤ 1 ms on the
  reference hardware (§11.5).
-3. The harness emits a JSON record per pattern; the gate's PASS/FAIL
- is computed by `scripts/check_perf_gate.sh --gate program-compile`.
+3. The runner computes the PASS/FAIL verdict itself (p99 vs
+ threshold) and exits non-zero on failure; the log is the gate
+ evidence. *(Citation repair, #805/Q5a: the previously named
+ `scripts/check_perf_gate.sh` / `gen_compile_bench_patterns.py` /
+ `cxl_*` artifacts never existed — the audit's AF-4 finding.)*
 
 **Gate 15 — streaming throughput.**
 
-*Inputs:* `vcx/tests/runners/cxl_streaming_bench.v` with a JSON-shape
-fixture corpus (`bench/data/json_shape_*.cx`, 1 GB total).
-*Tool:* `scripts/run_bench_json.py --gate program-streaming`.
+*Inputs:* `vcx/tests/runners/code_streaming_throughput_bench.v` with a
+JSON-shape corpus synthesized deterministically at run time
+(`GATE15_INPUT_MB`, default 100 MiB — no checked-in corpus).
+*Tool:* `make bench-code-streaming`.
 *Protocol:*
 
-1. The bench evaluates a fixed `[?for]` pattern over the corpus and
- measures sustained throughput in MB/s (bytes-processed ÷
- wall-clock-elapsed, mean over 5 trials with cold-cache disk
- reads).
+1. The bench evaluates each of a fixed set of streaming SHAPES over the
+ corpus — a `[?for]` comprehension and the `[?map]` lane, both
+ producing a per-record value — and measures sustained throughput in
+ MB/s for each (bytes-processed ÷ wall-clock-elapsed, mean over 5
+ trials; the corpus is synthesized in memory, so the number is ENGINE
+ throughput — disk I/O is out of the measurement). More than one shape
+ is measured because a streaming shape that no gate drives can lose
+ its streaming quietly; `[?map]` did (#823).
 2. The throughput **MUST** be ≥ 200 MB/s on the reference hardware
- (§11.5).
+ (§11.5), for every measured shape.
 3. The harness emits the per-trial throughput; the gate fails if
  the mean falls below threshold or any single trial falls below
  80 % of the mean (the latter catches GC- or IO-induced jitter
  that would render the published number untrustworthy).
+4. Every measured shape **MUST** actually stream: it reports a
+ streaming mode through the implementation's own predicate, and it
+ delivers more than one output chunk over the corpus. A shape that
+ silently falls back to whole-result buffering still emits the
+ correct bytes, so throughput alone cannot detect it — and the
+ residency it costs is precisely what this gate exists to bound.
 
 **Gate 16 — HTTP service throughput.**
 
-*Inputs:* `vcx/tests/runners/cxl_http_service_bench.v` with a trivial
-echo service.
-*Tool:* `scripts/run_bench_json.py --gate program-http`.
-*Protocol:*
+*Inputs:* `vcx/tests/runners/code_http_throughput_bench.v` with a
+trivial echo service.
+*Tool:* `make bench-code-http`.
+*Protocol (owner-ruled (b), 2026-08-13 — the external `wrk` form
+stands; a missing tool is a loud RED, never a skip):*
 
-1. The driver spawns the echo service under `[?http-service]` and runs a
- 3-minute steady-state load test with concurrency = 64 (
- `wrk` driver pinned in
- `scripts/run_bench_json.py:cxl_http_payload`).
-2. The harness measures requests-per-second and p99 latency. The
- gate requires **both** ≥ 10 000 req/s **and** p99 ≤ 10 ms on the
- reference hardware (§11.5).
-3. The harness emits the wrk JSON output; the gate's PASS/FAIL is
- computed by `scripts/check_perf_gate.sh --gate program-http`.
+1. The runner spawns the echo service under `[?http-service]` on a
+ real loopback listener and runs a 3-minute steady-state load test
+ with concurrency = 64 through the external `wrk` driver. `wrk`
+ absent → the gate exits non-zero with the install instruction
+ (skipping gates silently is forbidden).
+2. The runner measures requests-per-second and p99 latency from the
+ wrk run. The gate requires **both** ≥ 10 000 req/s **and** p99 ≤
+ 10 ms on the reference hardware (§11.5).
+3. The runner parses wrk's latency-distribution output (wrk's native
+ text form; its JSON emission needs a lua sidecar and is not
+ required) and computes PASS/FAIL itself, exiting non-zero on
+ failure; the log is the gate evidence. *(Citation repair,
+ #805/Q5a: `check_perf_gate.sh` / `run_bench_json.py:cxl_http_payload`
+ never existed.)*
 
 ### §11.5 Reference hardware
 
@@ -5135,7 +5949,7 @@ Source code names modules by **namespace path only**. The
 lockfile is the single source of truth for the version → bytes
 mapping. The grammar reserves `version='X'` as a peer attribute on
 `[?lib]` for hotfix-override scenarios but it is **not idiomatic**
-and no current use case requires it. See D8.
+and no current use case requires it.
 
 Bearer-token and HTTP Basic authentication attributes are reserved
 in the grammar but their semantics are **not specified** in this revision.
@@ -5159,6 +5973,11 @@ MODIFIER ::= 'scope' '=' ('public' | 'private')
  | 'pure' | 'impure'
  | '[returns' TYPE ']'
  | '[throws' TYPE ']'
+ | '[requires' REQUIREMENT+ ']'
+ | '[preconditions' EXPR+ ']'
+ | '[effects' EFFECT-ITEM* ']'
+ | '[idempotent' ('[window' DURATION ']')? ']'
+ | '[compensates' NAME ']'
 PARAM ::= '$' IDENT [TYPEANNOT]
  | '$' IDENT '=' DEFAULT [TYPEANNOT]
 RESTPARAM ::= '*' '$' IDENT [TYPEANNOT]
@@ -5278,8 +6097,9 @@ typed at the call boundary.
  [...]]
 ```
 
-Under `--strict` mode (or `CX_STRICT_TYPES=1`), annotation
-mismatches raise errors at the call boundary:
+Under `--strict` (the CLI flag on run/eval — the ONE dial;
+`CX_STRICT_TYPES` is RETIRED, stream 16 W5), annotation mismatches
+raise errors at the call boundary:
 
 | Mode | Mismatched call arg | Mismatched return |
 |---|---|---|
@@ -5301,6 +6121,94 @@ its **semantics are not specified** in this revision.
 | `E_DEF_REDECLARED` | `cx-err:CXER0205` | Same-name `[?def]` declared twice in a module |
 | `E_TYPE_ARG_MISMATCH` | `cx-err:CXER0206` | `--strict` — argument fails parameter type annotation |
 | `E_TYPE_RETURN_MISMATCH` | `cx-err:CXER0207` | `--strict` — return fails `[returns T]` annotation |
+| `E_COMMAND_CONTRACT` | `cx-err:CXER0239` | static command-contract violation (§12.2.7): `pure` + non-empty `[effects]`; `[compensates]` naming an unknown def or a non-command |
+| `E_CAP_UNKNOWN` | `cx-err:CXER0274` | unknown capability name declared in `[effects …]` (the fail-closed grant-surface refusal, `security.md` C2 — same code, same posture) |
+| `E_CAP_DENIED` | `cx-err:CXER0271` | an effect point outside the command's declared `[effects]` set, reached during the body's dynamic extent (§12.2.7 narrowing) |
+
+#### §12.2.7 Command clauses — `[requires]` / `[preconditions]` / `[effects]` / `[idempotent]` / `[compensates]`
+
+(Commands and effects — the stream-6 surface; governing design in
+`commands_effects.md`, letters L109/L110 + the L139 amendment. Grammar
+`[152a]`/`[152d–h]`.)
+
+**A command def IS a `[?def]` with an `[effects]` clause — that clause
+is THE normative discriminator.** There is no `[?command]` directive:
+the command surface is additive clause-children on the one `[?def]`
+form, exactly like `[returns T]`. Each clause kind may appear **at most
+once** per def; a repeat is a parse error.
+
+- **`[effects [CAP scope*]*]`** — the declared effect set: each item
+  names a capability from the closed `security.md` §2 list, optionally
+  scoped (C4 canonical scope strings; scopes carried at v1, enforced
+  per-domain as each scoping domain lands — the §6 C1 posture).
+  **Checked**: an unknown capability name is the fail-closed
+  `E_CAP_UNKNOWN` (`cx-err:CXER0274`) at def registration — the same
+  refusal a typo'd host grant gets, for the same reason. **Enforced**:
+  for the body's dynamic extent the active capability set narrows to
+  (caller's grant ∩ declared set) — `[?with-caps]`-like, narrow-only,
+  the private-range policy field cleared — so an effect point outside
+  the declaration raises `E_CAP_DENIED` (`cx-err:CXER0271`) at the
+  effect point. Effect conformance is enforced; type conformance is
+  advisory (§12.2.5) — the house asymmetry, now with the command
+  surface on the enforced side. An **explicit** `pure` plus a
+  **non-empty** `[effects]` is the static contradiction
+  `E_COMMAND_CONTRACT` (`cx-err:CXER0239`) by the §6.5.1
+  effect-totality theorem; an UNANNOTATED def with a non-empty
+  `[effects]` is `impure` **by implication** (declaring effects IS
+  declaring impurity — the purity default resolves to `impure`, no
+  redundant bareword required); `pure` plus an **empty** `[effects]`
+  is legal (a declared-no-gated-effect command).
+- **`[requires REQUIREMENT+]`** — authority requirements: `cap:`
+  address string literals (reserved reference prefixes, governance) or
+  capability barewords. Resolution is **fail-closed** at the trust
+  boundary (`commands_effects.md` — the propose/commit machinery).
+- **`[preconditions EXPR+]`** — contract predicates, captured verbatim
+  (the PathPredicate.source convention). Evaluated at **propose**;
+  **re-checked at commit** — divergence is a loud refusal
+  (`commands_effects.md`, two-times enforcement).
+- **`[idempotent ([window DUR])?]`** — declares the command idempotent
+  and retry-safe; an undeclared command is NOT idempotent and
+  retry-unsafe (deny-by-default). **Effect-boundary dedup at the direct
+  call**: a structurally-identical repeat call inside the window is a
+  dedup hit returning the PRESENT wrapper `[deduped <original
+  outcome>]` (never the absence channel); only a SUCCESSFUL outcome
+  records (a failed attempt leaves no record, so `[?retry]`
+  re-executes — this is precisely what makes `[?retry]` safe around a
+  command). **Key**: an explicit caller key wins — the reserved
+  call-site named argument `idempotency-key=` (it never binds a
+  parameter); the derived default hashes the command's **Tier-2
+  address** + the **param-name → value record AFTER defaulting** +
+  the tenant, so positional vs named spelling of the same call is ONE
+  key. The cap-set and authority basis are recorded, never keyed. A
+  malformed `[window DUR]` duration is `E_COMMAND_CONTRACT`
+  (`cx-err:CXER0239`). Absent `[window]` = no expiry (declare a window
+  on server-resident commands); expiry reads the engine clock (the
+  `[?test-clock]`-advanceable resilience posture). The durable
+  commit-boundary dedup (must-not-exist CAS + journaled fact) and the
+  retention-cover extension are specified in `commands_effects.md` /
+  `journal.md` §4.9.
+- **`[compensates NAME]`** — pairs this command with its compensating
+  command. NAME must resolve to a **sibling** `[?def]` that is itself a
+  command (carries `[effects]`); violation is `E_COMMAND_CONTRACT`
+  (`cx-err:CXER0239`). At module level the pairing is order-independent
+  (§12.5 two-pass); at program (script) top level the target must be
+  declared before its pairing def (script declarations are sequential).
+  Deployment/coordination metadata — **outside the Tier-2 hash**.
+
+**Identity (S0 rule).** Every command clause is OUTSIDE the Tier-2
+`computes-as:` hash — the excluded-by-default closed participating
+list is unchanged. Adding or editing a clause moves the def's **Tier-1
+source address** (it is new definition text — the trust key propose
+mode binds, per the L139 amendment) but never its Tier-2 semantic
+identity.
+
+**Purity interaction.** `[effects]` does not replace the purity
+classifier: an `impure` command body is still checked by the §6.5.x
+rules; the narrowing only bounds WHICH capabilities its effect points
+may charge. The §6.5.1 alignment invariant (capability-gated ⇒ impure)
+guarantees a checker-accepted `pure` body reaches no effect point —
+which is why a non-empty declaration on a `pure` def is a contradiction
+rather than a dead letter.
 
 ### §12.3 `[?const]` — module-level constants
 
@@ -5648,12 +6556,24 @@ the element type each `[?to-sequence]` / iteration step yields.
 #### §12.7.6 Dev-strict / prod-silent validation
 
 Type expressions are inert data in default execution. Under
-`--strict` (or `CX_STRICT_TYPES=1`) the evaluator enforces:
+`--strict` (the CLI flag on run/eval; `CX_STRICT_TYPES` is RETIRED —
+stream 16 W5 made the flag real and single) the evaluator enforces:
 
 - Each call site checks every `name::T` parameter annotation;
  mismatched arg → `cx-err:CXER0206`.
 - Each return checks the `[returns T]` annotation;
  mismatched return → `cx-err:CXER0207`.
+- An ELEMENT-NAME type whose name has a registered/pinned schema
+ (validate.md §3.2 registration; `cx.lock` `[schemas]` pins) checks
+ by SCHEMA VALIDATION — the schema's own `of=` root subsumes the
+ head match; an unpinned element-name checks by head match; a pinned
+ name whose content is unavailable fails CLOSED.
+- `[?pipe]` stage flow pre-checks BEFORE execution: adjacent no-hole
+ `[?def]` stage boundaries whose declared `[returns T]`/`::T` cannot
+ compose refuse `cx-err:CXER0206` before any stage runs (Layer B —
+ declarations are the contract; undeclared boundaries are silent).
+ The same rule surfaces as `cx lint` CX-L008 (warn default) — the
+ adoption dial.
 
 Type expressions do not execute. A `[returns Person]` annotation
 is data; the `Person` element type is referenced structurally,
@@ -5951,3 +6871,120 @@ changing downstream behavior.
 
 ---
 
+
+## §14. Evaluation semantics — the clean-room core
+
+This section is the normative home of the EVALUATION layer (stream 22,
+letters 70–76): the bar is a conforming implementation buildable from
+`spec/` + `conformance/` alone. The parse layer has a formal semantics
+(grammar.ebnf + the witness corpus); this section gives the evaluation
+layer its own — not as a full small-step calculus over 79 directives
+(rejected: un-gateable paper review), but as ONE construction: a small
+core (§14.2), the remaining directives as desugarings/compositions over
+it (§14.3), a numbered register of observable-order rules (§14.4), and
+an evaluation-witness corpus discharging every rule with a
+DISCRIMINATOR PAIR — two fixtures whose expected outputs differ under
+the two candidate readings (`witnesses.txt` kinds `eval`/`trace`, plus
+`rule=`-tagged conformance cases; the rule → witness map is a corpus
+query, never a maintained list).
+
+### §14.1 The environment (a defined object)
+
+An evaluation environment is exactly four parts:
+
+1. **The lexical frame** — an immutable-by-default name → value map.
+   Binding forms extend it; nothing mutates an existing binding in
+   place. Call frames copy-on-write: aliased frames are read-only
+   until the first write at that scope.
+2. **The closure snapshot** (rule EV-CLOSURE-CAP) — a closure captures
+   its defining environment BY SNAPSHOT at creation time: the captured
+   frame is a copy, insulated from later rebindings in the creating
+   scope (observable across `[?loop]` iteration rebinding — see the
+   register). A closure additionally carries its defining SCOPE for
+   module-sibling resolution (§12.5); scope resolution is by
+   reference, bindings by snapshot.
+3. **The dynamic-context stack** — `[?with-scope]` (§8.10.8) pushes a
+   flat entry list for its body's dynamic extent and restores on every
+   exit edge (normal and error). Spawned bodies inherit a SNAPSHOT
+   taken at spawn time, never a live alias.
+4. **The current-task slot** — the executing worker/future identity,
+   consulted at the §10.5.4 cancellation points. It is thread-scoped
+   and propagates only within one task's call chain.
+
+### §14.2 The core forms
+
+Eight core forms; everything else in the §4.1 registry is a desugaring
+or a composition over them:
+
+| Core form | Meaning |
+|---|---|
+| **bind** | extend the lexical frame with name → value, in source order, each binding visible to the next (rule EV-LET-SEQ — let* IS the semantics) |
+| **apply** | invoke a callable with evaluated arguments (order: rule EV-ARG-ORDER); parameters bind as a fresh frame over the closure's snapshot |
+| **construct** | build a data value (element / sequence / array / map) from evaluated parts — attributes evaluate first (source order), then body items (source order): rule EV-ARG-ORDER |
+| **match** | destructure a value against a pattern, binding on success (§8.2); the first matching arm wins, in source order |
+| **iterate** | demand-driven production from a source (§6.7; pull protocol: rule EV-PULL — a combinator pulls exactly what it yields; lookahead only where documented; force budget: rule EV-BUDGET) |
+| **sequence** | evaluate expressions in source order for effect and/or value; an `[err]` value short-circuits per §9.2 |
+| **guard-with-caps** | narrow the capability set for a dynamic extent (§9.6/security.md §3); the capability check precedes the effect — a denied effect point NEVER executes (and never traces) |
+| **spawn/await** | start a concurrent task (rule EV-ASYNC-SPAWN — spawn is EAGER; fire-and-forget completion is guaranteed) and join its outcome (§10.5); cancellation observes at the §10.5.4 points |
+
+### §14.3 The desugaring / composition map
+
+Every §4.1 registry directive, by core form (a directive listed under
+several composes them; this map is the L70-D deliverable — the spec's
+own shipped technique, e.g. `[?loop]` is "exactly the tail call the
+form desugars to"):
+
+| Core form | Directives |
+|---|---|
+| bind | `let`, `const`, `def` (module-level bind of a closure), `fn` (closure construction + EV-CLOSURE-CAP snapshot) |
+| apply | `pipe` (left-fold of apply), `modify`, `eval`, `str` |
+| construct | `element`, `attr`, `entry`, `name`, `quote`/`unquote`/`splice` (construction over program trees), `meta` |
+| match | `match`, `if`/`else` (two-arm match on EBV), `for`'s pattern position |
+| iterate | `for`, `for-array`, `for-map`, `map`, `reduce`, `filter`, `take`, `drop`, `zip`, `enumerate`, `chunks`, `concat`, `cycle`, `scan`, `flatten`, `partition`, `group-by`, `to-sequence`, `to-array`, `to-map`, `view`, `views` |
+| sequence | `do`, `loop` (trampolined tail recursion — desugars to bind + sequence + explicit `[break]`/`[continue]` exits), `with-open` (sequence + guaranteed close edge), `with-error-hook` |
+| guard-with-caps | `with-caps`, `secret`, `reveal` |
+| spawn/await | `async`, `await`, `await-all`, `await-any`, `await-race`, `worker`, `worker-handle`, `channel`, `send`, `receive`, `try-send`, `try-receive`, `close`, `select`, `subscribe`, `monitor`, `stop`, `wait-for`, `cancel`, `check-cancel`, `sleep` |
+| (composition) | `retry`, `timeout`, `circuit-breaker`, `fallback`, `rate-limit`, `bulkhead` — resilience wrappers: sequence + apply + (for timeout/rate) the clock; `http-service`, `service-handle`, `http-client` — apply over the service registry; `lib` — module bind (§12.1); `with-scope` — dynamic-context push (§14.1 part 3) |
+
+### §14.4 The observable-order register (normative rules)
+
+Each rule is observable, so normative; each names the divergence it
+forecloses and is discharged by a discriminator pair in the corpus
+(`rule=` tag / `EV-…` witness ids). The pinned semantics ARE shipped
+behavior except EV-WORKER-EXIT (ruled against shipped) and EV-PULL
+(engine conformance lands with the runtime-representation stream).
+
+| Rule | Normative semantics | Forecloses |
+|---|---|---|
+| **EV-RESULT-IMAGE** | §11.1a R1–R6 — ONE producer shared by the run surface and the harness | a mirror-renderer spec fork |
+| **EV-LET-SEQ** | `[?let]` bindings evaluate in source order, each visible to the next (let*) | parallel-let |
+| **EV-CLOSURE-CAP** | capture by snapshot at creation (§14.1 part 2) | capture-by-reference |
+| **EV-ARG-ORDER** | apply arguments evaluate left-to-right in source order; construct evaluates ATTRIBUTES first (source order), then BODY items (source order) — verified shipped behavior at finalization (the register's draft guessed one interleaved pass; the ruled posture pins what ships, item-verified) | right-to-left / body-first / unspecified order |
+| **EV-EFFECT-SET** | the closed effect-point table (security.md §2.1); the capability check precedes the effect; admissions are the `out-effects` trace vocabulary | an open effect set that each engine extends on its own |
+| **EV-ASYNC-SPAWN** | spawn is eager; fire-and-forget completion guaranteed (§10.5.1); no environment value may select a lazy substrate | lazy/deferred-until-await substrates |
+| **EV-CLOCK-PARK** | the mock-clock parking algorithm (§14.5) | ad-hoc mock-clock coordination |
+| **EV-PULL** | demand-driven pull: a combinator pulls exactly what it yields; lookahead only where its own row documents it | eager materialization |
+| **EV-BUDGET** | the iterator force budget is floored: implementations MUST accept ≥ 1,000,000 pulls before the guard may fire (limits ship with floors, never bare numbers) | arbitrarily small budgets |
+| **EV-WORKER-EXIT** | cancel-and-drain at top-level return: live workers receive cancellation, the runtime drains to quiescence, exit is deterministic — no orphaned workers | leaked/killed-without-drain workers |
+| **EV-SELECT-FAIR** | `[?select]` MUST NOT be deterministically biased toward source order among ready cases (the fixture-checkable form); the uniform-distribution test protocol is reference-lane-only (§11.4 partition) | deterministic first-ready selection |
+
+### §14.5 The mock-clock parking algorithm (EV-CLOCK-PARK, normative)
+
+Under a mock clock (§10.5.3), `[?sleep DUR]` PARKS the current task
+until `now + DUR` on the shared logical clock — it never blocks a real
+thread on mock time. An await barrier (`[?await…]` family) advances
+the shared clock ONLY when every runnable future is parked, and then
+exactly to the EARLIEST park deadline, bounded by the awaiter's own
+deadline when one exists. This is what makes the concurrency corpus
+deterministic for every implementation: logical time moves only at
+quiescence, by the smallest step that unparks work.
+
+### §14.6 Cross-references
+
+- security.md §2.1 — the closed effect-point table (EV-EFFECT-SET).
+- conformance/README.md — the `out-effects` channel; `rule=` tagging.
+- `witnesses.txt` — `kind = eval` / `kind = trace` witness rows.
+- governance.md §10.1 — the clean-room change clause + the
+  implementability grades (grade-D = area implementation blockers).
+- code.md §6.7 — iterators (EV-PULL, EV-BUDGET); §10.5 — concurrency
+  (EV-ASYNC-SPAWN, EV-CLOCK-PARK, EV-SELECT-FAIR, EV-WORKER-EXIT).

@@ -1,0 +1,75 @@
+[schema of=client mode=open]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Client-spec schema (DRAFT).
+#
+# One `client.cxd` = one `[client …]` — the FOURTH authored document kind
+# (authoring process §3.1; distribution spec §1's client row), living in the
+# client's OWN project beside the XAP (N-CLIENT-2: a XAP never embeds its
+# renderer). The surface exposes medium-agnostic DATA; a client materializes
+# it into ONE medium's experience: the shell it attaches to, per-pane refresh,
+# and the controls→intents mapping. It never invents an intent — controls
+# BIND what the features declared, exactly as a surface's controls do.
+#
+# Derived from the documented §3.1 field list and the two live instances
+# (reference/shop-web-client/client.cxd; the `cx xap init --client` scaffold).
+# Mode is `open`: clients for other media add tags freely. Destined to ship
+# with the cx toolchain (referenced, not copied, per the authoring process).
+# ─────────────────────────────────────────────────────────────────────────────
+
+[client
+ [attr name::string    [req]]
+ [attr version::string [opt]]
+ [elem summary    [card "0..1"]]
+ [elem attaches   [card "1..1"]]   # a client attaches to exactly one xap+surface
+ [elem medium     [card "1..*"]]   # what it materializes — at least one
+ [elem shell      [card "0..1"]]   # the document shell (web); other media have none
+ [elem panes      [card "0..1"]]
+ [elem controls   [card "0..1"]]
+ [elem javascript [card "0..1"]]]  # web clients: the minimal-JS-by-exception policy
+[type summary::string]
+
+# ── attaches — which XAP, over which surface. The client does not choose
+# what exists; it materializes what the surface declares. ──
+[attaches
+ [attr xap::string     [req]]
+ [attr surface::string [req]]]   # cross-ref to the [surface] name in *.surface.cxd
+
+# ── medium — the medium/media this client materializes. A speech client is
+# its own project attaching to the SAME surface; kind is open (no enum),
+# matching surface.cxs. ──
+[medium
+ [attr name::string [req]]
+ [attr kind::string [req]]    # visual | speech | tactile | … (open, no enum)
+ [attr doc::string  [opt]]]
+
+# ── shell — the document shell the panels land inside ({{surface:NAME}}
+# mounts, spliced by the client's server). ──
+[shell
+ [attr dir::string [req]]
+ [attr doc::string [opt]]]
+
+# ── panes — per-pane live cadence, hypermedia-native (the client's polling
+# counterpart to a feature's own simulation cadence). ──
+[panes [elem pane [card "0..*"]]]
+[pane
+ [attr panel::string   [req]]   # cross-ref to a [panel] name in the surface
+ [attr refresh::string [opt]]   # e.g. 'every 5s' — the hx-trigger cadence
+ [attr doc::string     [opt]]]
+
+# ── controls — already-declared intents bound to this medium's affordances.
+# The client shows the affordance, the PEP decides — a button is not
+# authority, and the runtime refuses any verb outside the declared emits
+# vocabulary. ──
+[controls [elem control [card "0..*"]]]
+[control
+ [attr intent::string [req]]   # names a verb's intent declared in a feature spec
+ [attr as::string     [opt]]   # form | button | … (open, no enum)
+ [attr doc::string    [opt]]]
+
+# ── javascript — the web-client policy: minimal-JS-by-exception. When the
+# element is present it must STATE its policy; an exception is explicit,
+# named and contained (§3.1) — prose in doc=, shape open by mode. ──
+[javascript
+ [attr policy::string [req]]
+ [attr doc::string    [opt]]]

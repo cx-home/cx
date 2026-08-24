@@ -5,15 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Frequently Asked Questions — CX Guide</title>
 <link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <aside class="sidebar">
   <a class="brand" href="index.html" aria-label="CX — home">
-    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
   </a>
   <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
   <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
   <a class="brand-sub" href="about.html">About →</a>
   <div class="side-search">
     <input id="side-search-input" type="search"
@@ -21,88 +25,126 @@
            autocomplete="off" spellcheck="false" data-prefix="" />
     <ul id="side-search-results" class="side-search-results" hidden></ul>
   </div>
-  <section><h4>Guide</h4><ul>
+  <section><h4>Start here</h4><ul>
     <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
     <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
     <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
     <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
     <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
     <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
-    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
-    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
-    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
-    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
-    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
-    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
-    <li><a class="active" href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
-    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
     <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
-    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
-    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
-    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
-  </ul></section>
-  <section><h4>Reference</h4><ul>
-    <li><a href="directives.html">Directives</a></li>
-    <li><a href="syntax.html">Core syntax</a></li>
-  </ul></section>
-  <section><h4>Standard library</h4><ul>
-    <li><a href="libraries.html">Overview</a></li>
-    <li><a href="lib-authz.html">authz</a></li>
-    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
     <li><a href="lib-bytes.html">bytes</a></li>
     <li><a href="lib-crypto.html">crypto</a></li>
     <li><a href="lib-csv.html">csv</a></li>
-    <li><a href="lib-did.html">did</a></li>
-    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
     <li><a href="lib-env.html">env</a></li>
-    <li><a href="lib-fabric.html">fabric</a></li>
     <li><a href="lib-format.html">format</a></li>
     <li><a href="lib-fp.html">fp</a></li>
     <li><a href="lib-ft.html">ft</a></li>
     <li><a href="lib-geo.html">geo</a></li>
     <li><a href="lib-hash.html">hash</a></li>
     <li><a href="lib-html.html">html</a></li>
-    <li><a href="lib-http.html">http</a></li>
     <li><a href="lib-i18n.html">i18n</a></li>
     <li><a href="lib-io.html">io</a></li>
-    <li><a href="lib-journal.html">journal</a></li>
     <li><a href="lib-json.html">json</a></li>
     <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
     <li><a href="lib-jsonschema.html">jsonschema</a></li>
     <li><a href="lib-locale.html">locale</a></li>
     <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
     <li><a href="lib-math.html">math</a></li>
     <li><a href="lib-mime.html">mime</a></li>
-    <li><a href="lib-net.html">net</a></li>
     <li><a href="lib-path.html">path</a></li>
     <li><a href="lib-process.html">process</a></li>
     <li><a href="lib-prof.html">prof</a></li>
     <li><a href="lib-random.html">random</a></li>
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
-    <li><a href="lib-session.html">session</a></li>
     <li><a href="lib-similar.html">similar</a></li>
-    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
     <li><a href="lib-test.html">test</a></li>
     <li><a href="lib-time.html">time</a></li>
     <li><a href="lib-url.html">url</a></li>
     <li><a href="lib-uuid.html">uuid</a></li>
     <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-vc.html">vc</a></li>
     <li><a href="lib-xap.html">xap</a></li>
     <li><a href="lib-xsp.html">xsp</a></li>
-  </ul></section>
-  <section><h4>XAP</h4><ul>
     <li><a href="xap.html">Overview</a></li>
     <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
     <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
     <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
     <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
   </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a class="active" href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
 </aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Frequently Asked Questions</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
 <main>
 <section id="faq">
   <h1>Frequently Asked Questions</h1>
@@ -115,15 +157,15 @@
       <h2>Setup and install</h2>
       
         <section id="faq-not-found">
-          <h3>Why does `cx --version` fail with "command not found"?</h3>
+          <h3>Why does <code>cx --version</code> fail with "command not found"?</h3>
           
-            <p>`cx` is on disk but not on your shell `PATH`. If you used
-           Homebrew, run `brew --prefix cx` to find the install
-           prefix and confirm `$(brew --prefix cx)/bin` is on
-           `PATH`. If you used the devbox build (`make install`),
-           the binary lives at `~/.local/bin/cx` — add that to
-           `PATH`. If you used Docker, you do not actually have
-           `cx` installed; use `docker run cx-lang/cx cx …`
+            <p><code>cx</code> is on disk but not on your shell <code>PATH</code>. If you used
+           Homebrew, run <code>brew --prefix cx</code> to find the install
+           prefix and confirm <code>$(brew --prefix cx)/bin</code> is on
+           <code>PATH</code>. If you used the devbox build (<code>make install</code>),
+           the binary lives at <code>~/.local/bin/cx</code> — add that to
+           <code>PATH</code>. If you used Docker, you do not actually have
+           <code>cx</code> installed; use <code>docker run cx-lang/cx cx …</code>
            instead.</p>
             <pre>
               <code class="language-shell">[# Confirm the binary exists                                #]
@@ -141,16 +183,16 @@
           <h3>Build fails with "V not found"</h3>
           
             <p>The reference build uses devbox to pin the V compiler
-           version. If you ran `make build` outside a devbox shell
+           version. If you ran <code>make build</code> outside a devbox shell
            and got "V not found," either install V manually
            (https://vlang.io) or — better — wrap the build in
            devbox so the toolchain matches CI:</p>
             <pre>
               <code class="language-shell">devbox run -- make build</code>
             </pre>
-            <p class="note">Devbox is at https://www.jetify.com/devbox — `brew
-           install jetify-com/devbox/devbox` or
-           `curl -fsSL https://get.jetify.com/devbox | bash`.</p>
+            <p class="note">Devbox is at https://www.jetify.com/devbox — <code>brew
+           install jetify-com/devbox/devbox</code> or
+           <code>curl -fsSL https://get.jetify.com/devbox | bash</code>.</p>
           
         </section>
         <section id="faq-windows">
@@ -158,10 +200,10 @@
           
             <p>Today: yes, via WSL2 (Ubuntu or Debian inside Windows).
            The Linux build runs unchanged. Native Windows — a
-           PE-format `cx.exe` and `cxlib.dll` — is on the
+           PE-format <code>cx.exe</code> and <code>cxlib.dll</code> — is on the
            roadmap; the bottleneck is the V toolchain's Windows
            support, not CX itself. Track issue
-           [#windows-native](https://github.com/cx-home/cx/issues/windows-native)
+           <a href="https://github.com/cx-home/cx/issues/windows-native">#windows-native</a>
            for the current state.</p>
           
         </section>
@@ -171,38 +213,42 @@
       <h2>Parsing and syntax</h2>
       
         <section id="faq-find-retired">
-          <h3>Why does my `[?find]` fail with CXER0100?</h3>
+          <h3>Why does my <code>[?find]</code> fail with CXER0100?</h3>
           
-            <p>`[?find]` was retired in v0.8.0 — it was [; version-literal-ok ]
-           always sugar for `[?for]` over a pattern. Rewrite each
-           `[?find pattern [yield body]]` to either a direct CXPath
+            <p><code>[?find]</code> was retired in v0.8.0 — it was [; version-literal-ok ]
+           always sugar for <code>[?for]</code> over a pattern. Rewrite each
+           <code>[?find pattern [yield body]]</code> to either a direct CXPath
            (when the pattern is just an element with optional
-           predicates) or to `[?for]` (when the pattern is
+           predicates) or to <code>[?for]</code> (when the pattern is
            structurally more complex). See <a class="xref" href="migration.html#from-v07x">from-v07x</a> for the
            full mapping table.</p>
           
         </section>
         <section id="faq-attr-vs-slot">
-          <h3>Why does `[user :id 42]` parse differently from `[user id=42]`?</h3>
+          <h3>Why does <code>[user :id 42]</code> parse differently from <code>[user id=42]</code>?</h3>
           
-            <p>They are two different syntactic forms. **`name=value`** is
-           the data-element attribute syntax (per `spec/grammar.ebnf
-           [55] Attribute`). **`:name value`** is the *directive
-           labeled-slot* syntax (per `spec/grammar.ebnf [127e]`) and
-           is only valid inside `[?directive …]`. On a data element,
-           `:id` looks like a type tag — and `[user :id 42]` parses
-           as a `user` element whose body is the value `42` carrying
-           the type tag `:id` (which is not a known type, so it errors
-           later). On a directive, `:id 42` is the labeled slot named
-           `id` bound to `42`.</p>
+            <p>They are two different syntactic forms that both parse.
+           <code>name=value</code> — the data-element <i>attribute</i> syntax, per
+           <code>spec/03-approved/formal/grammar.ebnf [55] Attribute</code> —
+           attaches a named value to the element.
+           <code>:name</code> on its own is an <b>atom literal</b> — so
+           <code>[user :id 42]</code> is a <code>user</code> element whose body is two
+           items: the atom <code>:id</code> and the int <code>42</code>. No error is
+           raised; it just doesn't mean "the id attribute is 42".
+           Inside a <code>[?directive …]</code>, the same <code>:name value</code> spelling
+           is the <i>labeled-slot</i> syntax (per
+           <code>spec/03-approved/formal/grammar.ebnf [127e]</code>), so
+           <code>:id 42</code> there is the slot named <code>id</code> bound to <code>42</code>. And
+           if you wanted a type annotation, that is the double-colon
+           glue: <code>[user::int 42]</code>.</p>
             <pre>
-              <code class="language-cx">[# Right — data element with attribute                     #]
+              <code class="language-cx">[# Attribute — the id attribute is 42                      #]
            [user id=42 email='ada@example.com']
 
-           [# Right — directive with labeled slot                     #]
+           [# Directive labeled slot — slot id bound to 'users'       #]
            [?service :id 'users' :port 8080 [route '/users' …]]
 
-           [# Wrong — :id on a data element looks like a type tag     #]
+           [# Atom + int body — NOT an attribute, NOT a type tag      #]
            [user :id 42]</code>
             </pre>
             <p class="note">The two-form distinction is by design — see the body
@@ -210,13 +256,13 @@
           
         </section>
         <section id="faq-count-container">
-          <h3>What is the difference between `[…]` and `(…)` collections?</h3>
+          <h3>What is the difference between <code>[…]</code> and <code>(…)</code> collections?</h3>
           
-            <p>A sequence (`(…)`) is the flat iteration shape — every CX
+            <p>A sequence (<code>(…)</code>) is the flat iteration shape — every CX
            value is a sequence, and directives iterate them. An
-           array (`[…]`) is a container Item that **preserves
-           nesting**: `&#91;&#91;1, 2], [3, 4]]` is two items (two inner
-           arrays), not four. `[$count]` counts the top-level items
+           array (<code>[…]</code>) is a container Item that <b>preserves
+           nesting</b>: <code>&#91;&#91;1, 2], [3, 4]]</code> is two items (two inner
+           arrays), not four. <code>[$count]</code> counts the top-level items
            of either:</p>
             <pre>
               <code class="language-cx">[?let [= $flat   (1, 2, 3)]
@@ -226,8 +272,8 @@
             <pre class="sample-output">
               <code>(3, 2)</code>
             </pre>
-            <p>The distinction is the **container vs atom** principle in
-           [`spec/cxdm.md`](../../spec/cxdm.md) §2.0. See
+            <p>The distinction is the <b>container vs atom</b> principle in
+           <a href="../../spec/03-approved/core/cxdm.md"><code>spec/03-approved/core/cxdm.md</code></a> §2.0. See
            <a class="xref" href="data-language.html#container-atom">container-atom</a> for the full rules; sequences are flat,
            arrays are containers.</p>
           
@@ -240,7 +286,7 @@
            the canonicalizer normalises line endings, quotes,
            whitespace, attribute order, and Unicode (NFC). If you
            observe a divergent hash for the same source on two
-           platforms, that is a **gate 28.6 violation** and a release
+           platforms, that is a <b>gate 28.6 violation</b> and a release
            blocker.</p>
             <pre>
               <code class="language-shell">[# Reproduce on both platforms and bisect                   #]
@@ -250,7 +296,7 @@
             </pre>
             <p class="note">File a bug at https://github.com/cx-home/cx/issues with
            the source document and the divergent hashes from both
-           platforms. Include `cx --version` output from each.</p>
+           platforms. Include <code>cx --version</code> output from each.</p>
           
         </section>
         <section id="faq-attr-reorder">
@@ -259,23 +305,23 @@
             <p>The canonical form sorts attributes lexicographically by
            key — that is what makes the hash stable. The JSON
            projection inherits this sort. If you need to preserve
-           authored order for human consumption, use `cx fmt` (the
+           authored order for human consumption, use <code>cx fmt</code> (the
            lossless canonical) for the source file and reserve the
            JSON projection for machine consumers, which do not care
            about key order.</p>
             <pre>
               <code class="language-shell">cx fmt doc.cx                   [# preserves attr order    #]
-           cx convert --to json doc.cx     [# sorts attr keys         #]</code>
+           cx --to=json doc.cx             [# sorts attr keys         #]</code>
             </pre>
           
         </section>
         <section id="faq-double-anchor">
-          <h3>Can I have two `&anchor` declarations with the same name?</h3>
+          <h3>Can I have two <code>&anchor</code> declarations with the same name?</h3>
           
-            <p>No. Anchor names are document-unique; declaring `&amp;foo`
-           twice raises `CXER0101` at parse time. If you want to
+            <p>No. Anchor names are document-unique; declaring <code>&amp;foo</code>
+           twice raises <code>CXER0101</code> at parse time. If you want to
            reuse an anchor's content in two places, declare it
-           once and merge it twice with `*foo`:</p>
+           once and merge it twice with <code>*foo</code>:</p>
             <pre>
               <code class="language-cx">[# Wrong: duplicate anchor                                  #]
            [a &x value=1]
@@ -294,11 +340,11 @@
       <h2>Code language</h2>
       
         <section id="faq-find-vs-for">
-          <h3>What is the difference between `[?for]` and the old `[?find]`?</h3>
+          <h3>What is the difference between <code>[?for]</code> and the old <code>[?find]</code>?</h3>
           
-            <p>They are the same operation. `[?find]` was retired because it was always
-           pattern-driven `[?for]` with one less keyword. Anything
-           you wrote in `[?find]` form can be expressed as `[?for]`
+            <p>They are the same operation. <code>[?find]</code> was retired because it was always
+           pattern-driven <code>[?for]</code> with one less keyword. Anything
+           you wrote in <code>[?find]</code> form can be expressed as <code>[?for]</code>
            over a pattern, or — more directly — as a CXPath
            expression. See <a class="xref" href="migration.html#from-v07x">from-v07x</a> for the migration table.</p>
             <pre>
@@ -316,9 +362,9 @@
         <section id="faq-dispatch-on-type">
           <h3>How do I dispatch on element type?</h3>
           
-            <p>Use multi-arm `[?match]` with `[case …]` clause-children
-           that name the element type. Each `[case …]` is a pattern +
-           result, the first one that matches wins, and `[else …]` is
+            <p>Use multi-arm <code>[?match]</code> with <code>[case …]</code> clause-children
+           that name the element type. Each <code>[case …]</code> is a pattern +
+           result, the first one that matches wins, and <code>[else …]</code> is
            the catch-all.</p>
             <pre>
               <code class="language-cx">[doc [prose 'text'] [code 'x = 1'] [img src='logo.svg']]
@@ -334,7 +380,7 @@
         <section id="faq-update-value">
           <h3>How do I update a value?</h3>
           
-            <p>Use `[?modify]`. It takes a document, a CXPath
+            <p>Use <code>[?modify]</code>. It takes a document, a CXPath
            focus, and an action; it returns a new document. There is
            no in-place mutation in CX — see the next question.</p>
             <pre>
@@ -348,7 +394,7 @@
           
         </section>
         <section id="faq-pure-functional">
-          <h3>Why does `[?modify]` return a new Doc instead of mutating?</h3>
+          <h3>Why does <code>[?modify]</code> return a new Doc instead of mutating?</h3>
           
             <p>Pure-functional semantics — no in-place writes in CX.
            Concurrency is safe by construction (no reader ever
@@ -356,15 +402,15 @@
            preservable (the old hash still names the old document),
            and structural sharing makes it cheap: unchanged branches
            of the tree are reused between the input and the output,
-           so `[?modify]` is O(log n) in the document size for a
-           single-focus update. See <a class="xref" href="concepts.html#pure-updates">pure-updates</a>.</p>
+           so <code>[?modify]</code> is O(log n) in the document size for a
+           single-focus update. See <a class="xref" href="runtime-representation.html#pure-updates">pure-updates</a>.</p>
           
         </section>
         <section id="faq-pipeline-implicit-bind">
-          <h3>What does `_` mean in a pipeline stage?</h3>
+          <h3>What does <code>_</code> mean in a pipeline stage?</h3>
           
-            <p>`_` is the partial-application hole: a `[?pipe]` stage
-           that carries a single `_` receives the threaded value at
+            <p><code>_</code> is the partial-application hole: a <code>[?pipe]</code> stage
+           that carries a single <code>_</code> receives the threaded value at
            that position. A stage with no hole receives the value
            appended as its final positional argument, so these are
            equivalent:</p>
@@ -384,13 +430,13 @@
           <h3>Which binding should I use?</h3>
           
             <p>Pick by deployment shape:
-           **V** for embedded / native — the reference implementation,
+           <b>V</b> for embedded / native — the reference implementation,
            no FFI overhead, smallest binary footprint.
-           **Python** for scripting, data-engineering pipelines, and
+           <b>Python</b> for scripting, data-engineering pipelines, and
            any analytical workflow already on pandas / polars.
-           **Go** for services — high-throughput servers, especially
+           <b>Go</b> for services — high-throughput servers, especially
            when CX is the wire format.
-           **Rust** for systems integration — FFI into Rust crates,
+           <b>Rust</b> for systems integration — FFI into Rust crates,
            or for the lowest-overhead pure-Rust deployments.
            Layer 1 (the 16 canonical methods) is identical across all
            four, so you can change your mind later.</p>
@@ -401,49 +447,49 @@
           
             <p>Yes. CX values are immutable by construction — every
            update returns a new value via structural sharing.
-           Multiple threads can read the same `Doc` concurrently
+           Multiple threads can read the same <code>Doc</code> concurrently
            without locks. Bindings handle their own GC threading
-           via `cx_thread_register` (see next).</p>
+           via <code>cx_thread_register</code> (see next).</p>
           
         </section>
         <section id="faq-cx-thread-register">
-          <h3>When do I call `cx_thread_register()`?</h3>
+          <h3>When do I call <code>cx_thread_register()</code>?</h3>
           
-            <p>**Never if you use a binding.** The binding's Layer-1
-           wrappers auto-call `cx_thread_register` on the first
-           libcx call from each thread and `cx_thread_unregister`
-           when the thread exits.
-           **Manually only if** you are calling the C ABI directly
-           from a host-spawned thread, e.g. a Rust binding's
-           `tokio::task::spawn_blocking` closure that calls a raw
-           `cx_*` C symbol — that thread is opaque to libcx's
-           Boehm GC and must register itself. See
+            <p>It depends on the binding. <b>Rust</b>: never — every FFI
+           chokepoint calls <code>ensure_thread</code> before the C call and
+           unregisters at thread exit. <b>Go</b>: never — each cgo call
+           runs on a locked OS thread that the internal guard
+           registers. <b>Python</b>: the binding does NOT register
+           threads at all; it assumes the GIL plus a single calling
+           thread, so a <code>threading.Thread</code> that calls into libcx is
+           unprotected — keep libcx calls on one thread, or call
+           <code>cx_thread_register</code> yourself before the first call from
+           a worker thread. <b>Manually always</b> when you call the C
+           ABI directly from a host-spawned thread — that thread is
+           opaque to libcx's Boehm GC until it registers. See
            <a class="xref" href="identity.html#ffi-thread-register">ffi-thread-register</a> and
-           [`spec/abi.md`](../../spec/abi.md) §1.5.5.</p>
+           <a href="../../spec/03-approved/core/abi.md"><code>spec/03-approved/core/abi.md</code></a> §1.6.</p>
           
         </section>
         <section id="faq-python-memory">
-          <h3>Why does my Python Doc keep memory allocated after I drop it?</h3>
+          <h3>Do I need to close a Python Doc to release memory?</h3>
           
-            <p>Boehm GC (the collector inside libcx) is conservative and
-           runs on its own schedule — dropping the Python wrapper
-           does not immediately free the underlying CX nodes. For
-           long-running processes that hold many `Doc` handles
-           briefly, call `.close()` to release the libcx reference
-           explicitly:</p>
+            <p>No — there is nothing to close. A Python <code>Doc</code> is an
+           ordinary refcounted object: the binding copies every
+           string libcx returns and frees the C buffer at the call
+           boundary, so no Doc holds libcx memory between calls.
+           Dropping the last reference reclaims it like any other
+           Python value. <code>Doc</code> has no <code>close()</code>, no <code>__del__</code>, and
+           no context-manager protocol.</p>
+            <p>The handle-backed classes are the ones with an explicit
+           lifecycle — <code>Stream</code>, <code>TableReader</code>, <code>TableWriter</code>, and
+           <code>EventWriter</code> carry <code>close()</code> and support <code>with</code>:</p>
             <pre>
               <code class="language-python">import cxlib
-         doc = cxlib.parse_file('huge.cx')
-         try:
-             use(doc)
-         finally:
-             doc.close()                 [# release immediately       #]</code>
-            </pre>
-            <p>`Doc` is also a context manager:</p>
-            <pre>
-              <code class="language-python">with cxlib.parse_file('huge.cx') as doc:
-             use(doc)
-         [# doc.close() called automatically on exit                   #]</code>
+         with cxlib.TableReader(open('huge.cxcol', 'rb').read()) as reader:
+             for row_group in reader:
+                 use(row_group)
+         [# reader.close() called automatically on exit                #]</code>
             </pre>
             <p class="note">See <a class="xref" href="identity.html#ffi-doc-lifetime">ffi-doc-lifetime</a> for the full per-binding lifetime
            contract. The TS binding had a Boehm GC interaction bug
@@ -459,32 +505,37 @@
         <section id="faq-lint-tree">
           <h3>How do I lint a tree of CX files?</h3>
           
-            <p>`cx lint` works file-by-file; chain it through `find`
+            <p><code>cx lint</code> works file-by-file; chain it through <code>find</code>
            for a tree. The standard recipe:</p>
             <pre>
               <code class="language-shell">find . -name '*.cx' -print0 | xargs -0 cx lint</code>
             </pre>
-            <p>`cx lint` runs the rule set in
-           [`spec/lint.md`](../../spec/lint.md); exit code is the
-           number of files with diagnostics. See <a class="xref" href="tooling.html#lint">lint</a> for the
-           rule list and how to configure rule severity per
-           project (`.cx-lint.yml` at the repo root).</p>
+            <p><code>cx lint</code> runs the built-in rule set (CX-L001 and
+           CX-L003 through CX-L008; the codes are registered in
+           <a href="../../spec/03-approved/core/code.md"><code>spec/03-approved/core/code.md</code></a>
+           §9.4/§9.5). Exit codes are the CLI convention: 0 = no
+           findings at or above <code>--fail-on</code>, 1 = findings, 2 = I/O
+           or parse failure. Per-project configuration lives in a
+           <code>.cxlint.cx</code> file, discovered by walking up from the
+           linted file. See <a class="xref" href="code-tooling.html#lint">lint</a> for the rule list.</p>
           
         </section>
         <section id="faq-semantic-diff">
           <h3>How do I diff two CX files semantically?</h3>
           
-            <p>`cx diff a.cx b.cx --semantic` does a tree-structured
-           diff that ignores attribute order, quote choice, and
-           comment-only changes. Without `--semantic` you get a
-           byte-level diff on the strict canonical form, which is
-           still better than a textual diff because both inputs
-           are normalised first.</p>
+            <p><code>cx diff a.cx b.cx</code> — the diff is always semantic:
+           it walks the strict-canonical forms of both inputs, so
+           attribute order, quote choice, and comment-only changes
+           produce no delta. There is no <code>--semantic</code> flag because
+           there is no other mode. Output shape is
+           <code>--format=unified|json|summary</code> (default unified), with
+           <code>--color[=always|never|auto]</code> / <code>--no-color</code> for the
+           unified view.</p>
             <pre>
-              <code class="language-shell">cx diff before.cx after.cx --semantic
-           cx diff before.cx after.cx --format=unified</code>
+              <code class="language-shell">cx diff before.cx after.cx
+           cx diff before.cx after.cx --format=summary</code>
             </pre>
-            <p>See <a class="xref" href="tooling.html#diff">diff</a> for the algorithm and the JSON-output mode
+            <p>See <a class="xref" href="data-tooling.html#diff">diff</a> for the algorithm and the JSON-output mode
            used by CI integrations.</p>
           
         </section>
@@ -492,32 +543,34 @@
           <h3>How do I run the canonical guide locally?</h3>
           
             <p>The doc-gen pipeline is wired into the top-level
-           `Makefile`. From a devbox shell:</p>
+           <code>Makefile</code>. From a devbox shell:</p>
             <pre>
               <code class="language-shell">devbox run -- make docs                [# build staging tree    #]
            devbox run -- make docs-diff           [# diff vs live           #]
            devbox run -- make docs-publish        [# promote staging→live  #]</code>
             </pre>
-            <p>The generator reads `docs-src/canonical/manifest.cxd`,
+            <p>The generator reads <code>docs-src/canonical/manifest.cxd</code>,
            assembles the section files, expands example
-           placeholders against `conformance/*.txt`, and writes
-           the rendered guide into `_docs_staging/`. See
+           placeholders against <code>conformance/*.cxd</code>, and writes
+           the rendered guide into <code>_docs_staging/</code>. See
            <a class="xref" href="tooling.html#docgen">docgen</a>.</p>
           
         </section>
         <section id="faq-vscode-highlight">
           <h3>Why doesn't VS Code highlight my CX file?</h3>
           
-            <p>The CX VS Code extension is not auto-installed. From the
-           command palette, run "Extensions: Install from VSIX…"
-           and point at `tooling/vscode/cx-language-*.vsix`. After
+            <p>The CX VS Code extension is not auto-installed, and no
+           prebuilt <code>.vsix</code> is committed — build one first with
+           <code>npm run package</code> in <code>tooling/vscode/</code>, then from the
+           command palette run "Extensions: Install from VSIX…"
+           and point at the produced file. After
            install, run "Developer: Reload Window" to pick up the
-           grammar. The extension contributes the `.cx`, `.cxs`,
-           and `.cxd` file associations; if a file is mis-detected,
+           grammar. The extension contributes the <code>.cx</code>, <code>.cxs</code>,
+           and <code>.cxd</code> file associations; if a file is mis-detected,
            click the language label in the status bar and switch
            manually.</p>
             <p class="note">If you are on Neovim, the install script is
-           `tooling/install/install-nvim.sh` — it wires
+           <code>tooling/install/install-nvim.sh</code> — it wires
            tree-sitter and the LSP. See
            <a class="xref" href="tooling.html#editors">editors</a> for Helix and other editors.</p>
           
@@ -528,33 +581,37 @@
       <h2>Performance</h2>
       
         <section id="faq-max-file-size">
-          <h3>How big a file can `cx parse` handle?</h3>
+          <h3>How big a file can cx handle?</h3>
           
-            <p>The parser is bounded by `CX_MAX_BODY` (default 256 MiB).
-           For files larger than the cap, use the streaming
-           evaluator — see <a class="xref" href="data-language.html#streaming-data">streaming-data</a>. Gate 15 of the
-           gate 15 measures the streaming
-           throughput at **353 MB/s** on the reference workload.</p>
+            <p>Parsing is the default action — <code>cx FILE</code> parses and
+           evaluates — and there is no configured size cap: the
+           whole-document path is memory-bound, so the practical
+           limit is the RAM the parsed tree needs. For inputs too
+           big to materialize, use the streaming surfaces — the
+           events pull API at the ABI (<code>cx_events_open</code> /
+           <code>cx_events_next</code>) and streamed <code>[?for]</code> comprehension
+           output — which bound resident memory to a chunk. See
+           <a class="xref" href="data-language.html#streaming-data">streaming-data</a>. The release gate holds streaming
+           throughput to a ≥200 MB/s floor; that gate is not green
+           yet (<code>[?for]</code> measures around the line, <code>[?map]</code> below
+           it), so treat the floor as the target, not a promise.</p>
             <pre>
-              <code class="language-shell">[# Raise the cap if your workflow needs it                  #]
-           CX_MAX_BODY=$((1024*1024*1024)) cx parse big.cx
+              <code class="language-shell">[# Whole-document — fine while the tree fits in memory      #]
+           cx big.cx
 
-           [# Or stream                                                #]
-           cx stream big.cx --eval '//record/@id'</code>
+           [# Streaming comprehension output — bounded memory          #]
+           cx --data=big.cx program.cx</code>
             </pre>
-            <p>The per-document `CX_MAX_*` family is documented at
-           <a class="xref" href="data-language.html#limits">limits</a> — body, depth, attribute count, scalar
-           length, total nodes are independently capped.</p>
           
         </section>
         <section id="faq-single-threaded">
           <h3>Is parsing single-threaded?</h3>
           
-            <p>The **parser** is single-threaded per document — the
+            <p>The <b>parser</b> is single-threaded per document — the
            bracket grammar is inherently sequential. The
-           **streaming evaluator** is single-threaded per stream
-           but multiple streams can run concurrently, and
-           `[?map par=true]` / `[?reduce par=true]` parallelise across
+           <b>streaming evaluator</b> is single-threaded per stream
+           but multiple streams can run concurrently, and a <code>[par]</code>
+           clause on <code>[?map]</code> / <code>[?reduce]</code> parallelises across
            bounded worker pools. For analytical workloads on
            tabular data, CXCol scans are SIMD-accelerated where
            the host CPU supports it.</p>
@@ -565,36 +622,36 @@
           
             <p>The playground is a constrained demonstration surface
            bundled into the browser. It carries unavoidable
-           overhead — Asyncify instrumentation (so `[?sleep]` can
+           overhead — Asyncify instrumentation (so <code>[?sleep]</code> can
            yield through the JS event loop), pthreads runtime (so
-           `par=true` runs real OS threads), and the wasm format
+           <code>[par]</code> runs real OS threads), and the wasm format
            itself. Production CX deployments use the native CLI
-           (~5 MB binary), the language bindings (~1.5 MB per
-           wrapper), or libcx as a shared library directly —
+           (a ~10 MB binary), the language bindings, or libcx as a
+           shared library (~12 MB) directly —
            those paths have no Asyncify overhead, no
            SharedArrayBuffer requirement, no bundle-size
            pressure. The playground exists to make CX explorable
            from any browser without an install step; native CX
-           is the performance target. See <a class="xref" href="concepts.html#wasm-story">wasm-story</a> for the
+           is the performance target. See <a class="xref" href="bindings.html#wasm-story">wasm-story</a> for the
            full framing, including the three playground delivery
-           modes (GitHub Pages, file://, `make guide-http`).</p>
+           modes (GitHub Pages, file://, <code>make guide-http</code>).</p>
           
         </section>
         <section id="faq-playground-par-no-speedup">
-          <h3>I ran [?map par=true] in the playground and it did not speed up — bug?</h3>
+          <h3>I ran [?map [par]] in the playground and it did not speed up — bug?</h3>
           
             <p>Not a bug — your playground is most likely running in
            single-thread mode. Three delivery modes: GitHub Pages
-           and `file://` both serve the
+           and <code>file://</code> both serve the
            single-threaded Asyncify build (no cross-origin
            isolation possible without custom HTTP headers, and
-           browsers gate SharedArrayBuffer behind that). `par=true`
+           browsers gate SharedArrayBuffer behind that). <code>[par]</code>
            is honoured (output multiset is correct, sequential is
            one valid ordering) but doesn't accelerate. For real
            parallel speedup in the playground, run
-           `make guide-http` — the V veb server sends the
+           <code>make guide-http</code> — the V veb server sends the
            required cross-origin-isolation headers, the
-           pthreads-enabled wasm loads, and `par=true` uses real OS
+           pthreads-enabled wasm loads, and <code>[par]</code> uses real OS
            threads. The playground's adaptive footer tells you
            which mode you're in.</p>
           
@@ -602,14 +659,14 @@
         <section id="faq-parquet-perf">
           <h3>How fast is Parquet round-trip vs native CXCol?</h3>
           
-            <p>Parquet writes hit roughly **150 MB/s** on the
-           reference benchmark — the bottleneck is Snappy
-           compression and the Arrow → Parquet conversion.
-           Native **CXCol** is faster because it skips
-           compression by default and uses a wire format
-           designed for the CX value model. Rule of thumb: use
-           **Parquet** for interchange with the broader analytics
-           ecosystem, **CXCol** for CX-internal pipelines. See
+            <p>There is no maintained benchmark number to quote for the
+           Parquet path. Structurally, Parquet writes pay for
+           compression and the Arrow → Parquet conversion; native
+           <b>CXCol</b> skips compression by default and uses a wire
+           format designed for the CX value model, so it is the
+           cheaper CX-internal path. Rule of thumb: use
+           <b>Parquet</b> for interchange with the broader analytics
+           ecosystem, <b>CXCol</b> for CX-internal pipelines. See
            <a class="xref" href="analytics.html#cxcol-vs-others">cxcol-vs-others</a> for the full decision matrix.</p>
           
         </section>
@@ -619,38 +676,43 @@
       <h2>Security</h2>
       
         <section id="faq-include-untrusted">
-          <h3>Is `[?cx include]` safe with untrusted input?</h3>
+          <h3>Is <code>[?cx include]</code> safe with untrusted input?</h3>
           
-            <p>It depends on the capability profile. The default
-           profile (`default`) allows `include-local` — relative
-           paths from the source document — but disallows
-           `include-remote` and `include-absolute`. For untrusted
-           input, use `--profile untrusted`, which disables
-           includes entirely and refuses any directive that
-           touches the filesystem or network:</p>
+            <p>Yes by default — because by default nothing is granted.
+           CX is deny-by-default: with no <code>--allow-*</code> flags the
+           evaluation is pure-only, so includes (which ride the
+           <code>read</code> capability) stay unresolved and no directive can
+           touch the filesystem or network. That makes the bare
+           invocation the safe one for untrusted input:</p>
             <pre>
-              <code class="language-shell">cx --profile untrusted untrusted.cx</code>
+              <code class="language-shell">[# Pure-only — untrusted input cannot reach fs or network  #]
+           cx untrusted.cx
+
+           [# Trusted input that needs includes: grant read + a root  #]
+           cx --allow-read --include-root=./conf main.cx</code>
             </pre>
-            <p>The full capability matrix lives at
+            <p>The full capability model lives at
            <a class="xref" href="data-language.html#include-capabilities">include-capabilities</a> and in
-           [`spec/include.md`](../../spec/include.md) §4. The
-           `cx_features()` bitfield exposes what the loaded libcx
-           supports; the profile gates what the runtime
+           <a href="../../spec/03-approved/core/security.md"><code>spec/03-approved/core/security.md</code></a>.
+           The <code>cx_features()</code> bitmask exposes what the loaded libcx
+           supports; the grant set gates what the runtime
            permits.</p>
           
         </section>
         <section id="faq-resource-limits">
           <h3>How do I limit resource use?</h3>
           
-            <p>Environment variables cap per-document and per-process
-           resource consumption. The full list lives at
-           <a class="xref" href="data-language.html#limits">limits</a> and <a class="xref" href="concepts.html#security">security</a>; the most common are:</p>
+            <p>CX has no environment-variable cap family — there is no
+           parse-size, depth, or node-count knob. What bounds a run:
+           the <b>capability grant set</b> (deny-by-default <code>--allow-*</code>)
+           gates every effect an evaluation can perform, the
+           <b>streaming surfaces</b> bound resident memory to a chunk,
+           and per-process ceilings come from the operating system
+           (<code>ulimit</code>, cgroups, container limits) like any other
+           process. See <a class="xref" href="data-language.html#limits">limits</a> and <a class="xref" href="capabilities.html#security">security</a>.</p>
             <pre>
-              <code class="language-shell">CX_MAX_BODY=$((64*1024*1024))      [# parse size cap   #]
-           CX_MAX_DEPTH=128                    [# nesting cap      #]
-           CX_MAX_ATTRS=4096                   [# attrs per element #]
-           CX_MAX_NODES=$((1024*1024))         [# total nodes      #]
-           CX_EVAL_TIMEOUT_MS=5000             [# eval wall clock  #]
+              <code class="language-shell">[# OS-level ceilings around a pure-only evaluation          #]
+           ulimit -v 1048576        [# 1 GiB address-space cap         #]
            cx input.cx</code>
             </pre>
           
@@ -665,7 +727,7 @@
           
             <p>v0.8.0 is the pre-release API/format-stability boundary. [; version-literal-ok ]
            The changes are mechanical
-           renames plus the `[?find]` → `[?for]`/CXPath rewrite.
+           renames plus the <code>[?find]</code> → <code>[?for]</code>/CXPath rewrite.
            The full diff between v0.7.x and v0.8.0 is documented at [; version-literal-ok ]
            <a class="xref" href="migration.html#from-v07x">from-v07x</a>; the non-mechanical cases (custom directive
            names that collide with new core directives) are listed
@@ -680,17 +742,15 @@
           
             <p>Those bindings were archived in v0.8.0 — they are still [; version-literal-ok ]
            available on v0.7.5 (last release before the archive) [; version-literal-ok ]
-           and live under `lang/_archived/` for reference. The
+           and live under <code>lang/_archived/</code> for reference. The
            current binding set is V, Python, Go, Rust (Tier 1)
-           only. Your options:
-           (a) **Stay on v0.7.5** — it remains tagged and [; version-literal-ok ]
-           supported for the v0.7.x bugfix line; CX file format [; version-literal-ok ]
-           is forward-compatible.
-           (b) **Migrate to a Tier-1 binding** — Layer 1 is
-           identical across all four, so the migration is mostly
-           module-import changes plus host-idiomatic adjustments
-           at Layer 2.
-           See `lang/_archived/README.md` for the per-binding
+           only. The path forward is to <b>migrate to a Tier-1
+           binding</b> — Layer 1 is identical across all four, so the
+           migration is mostly module-import changes plus
+           host-idiomatic adjustments at Layer 2. (There is no
+           supported pre-reshape line to stay on — no maintenance
+           releases are cut for tags before the stability boundary.)
+           See <code>lang/_archived/README.md</code> for the per-binding
            archival notes and pointer to the last working
            commit.</p>
             <p class="note">The decision to archive was about resource focus, not
@@ -715,7 +775,7 @@
           <h3>Why does [zip 02134] produce a string?</h3>
           
             <p>Leading-zero tokens stay strings unless the prefix is
-           `0x` (hex), `0o` (octal), or `0b` (binary). The rule
+           <code>0x</code> (hex), <code>0o</code> (octal), or <code>0b</code> (binary). The rule
            is deliberately predictable: leading-zero numerics are
            typically identifiers (postal codes, area codes, BIC
            codes, account numbers) where the leading zero is
@@ -728,11 +788,11 @@
           
             <p>Arbitrary-precision decimal — for money, scientific
            quantities, or any value where IEEE 754 binary floats
-           would lose precision. `0.1 + 0.2` is
-           `0.30000000000000004` in float; in `:decimal` it is
-           `0.3`. Consumer bindings map `:decimal` to their
-           language's decimal type (Python `Decimal`, Java
-           `BigDecimal`, .NET `decimal`, Ruby `BigDecimal`).</p>
+           would lose precision. <code>0.1 + 0.2</code> is
+           <code>0.30000000000000004</code> in float; in <code>:decimal</code> it is
+           <code>0.3</code>. Consumer bindings map <code>:decimal</code> to their
+           language's decimal type (Python <code>Decimal</code>, Java
+           <code>BigDecimal</code>, .NET <code>decimal</code>, Ruby <code>BigDecimal</code>).</p>
           
         </section>
         <section id="faq-brackets">
@@ -744,7 +804,7 @@
            Indentation breaks under programmatic generation.
            Tags double the character count for every construct
            and force closing-tag repetition. Brackets also pun
-           usefully: `[name]` is the thing called `name`, which
+           usefully: <code>[name]</code> is the thing called <code>name</code>, which
            matches how humans write structured outlines on
            whiteboards.</p>
           
@@ -752,9 +812,9 @@
         <section id="faq-logfmt">
           <h3>What is logfmt mode?</h3>
           
-            <p>A CX file made entirely of bare top-level `key=value`
+            <p>A CX file made entirely of bare top-level <code>key=value</code>
            attributes. Each line parses as a synthetic Element.
-           Log streams are valid CX. You can `cx --json logs.cx`
+           Log streams are valid CX. You can <code>cx --json logs.cx</code>
            and get a JSON array of typed log records — no
            separate logfmt parser needed.</p>
             <pre>
@@ -770,9 +830,11 @@
            classes. All format converters are stateless and can
            run concurrently across threads on disjoint inputs.
            The Boehm GC underneath libcx requires
-           `cx_thread_register` on each calling thread; Tier-1
-           bindings handle this automatically at every FFI
-           chokepoint.</p>
+           <code>cx_thread_register</code> on each calling thread. Rust and Go
+           handle that automatically (per-chokepoint registration;
+           locked OS threads); the Python binding does NOT — it
+           assumes the GIL and a single calling thread, so keep
+           Python libcx calls on one thread.</p>
           
         </section>
         <section id="faq-confusion-raw">
@@ -783,7 +845,7 @@
            your code contains brackets, braces, or quotes, the
            parser will mangle it. Use the bracket-hash raw-text
            form instead — nothing inside is parsed, and the
-           terminator is `#]`.</p>
+           terminator is <code>#]</code>.</p>
             <pre>
               <code class="language-cx">[code [#
              for (let i = 0; i < arr.length; i++) {
@@ -796,13 +858,13 @@
         <section id="faq-license">
           <h3>License and contributing</h3>
           
-            <p>**License:** Apache 2.0. **Contributing:** the project
+            <p><b>License:</b> Apache 2.0. <b>Contributing:</b> the project
            lives at github.com/cx-home/cx — bug reports, doc
            fixes, and pull requests welcome. For format-design
            questions or proposed grammar changes, file an issue
            first; a recorded design decision is a
-           prerequisite for any breaking change. **Security
-           reports:** through GitHub's private vulnerability
+           prerequisite for any breaking change. <b>Security
+           reports:</b> through GitHub's private vulnerability
            reporting at
            github.com/cx-home/cx/security/advisories/new — do not
            file a public issue for security-sensitive bugs.</p>
@@ -813,6 +875,13 @@
   
 </section>
 </main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>Frequently Asked Questions</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
 <script src="highlight/highlight.js" defer></script>
 <script src="search-index.js" defer></script>
 <script src="search/search.js" defer></script>

@@ -29,7 +29,7 @@ make test    # runs all language binding test suites
 [server host=localhost tls=true debug=false
   port::u16=8080                    # u16 covers 0..65535
   max_request_bytes::u32=1_048_576  # 1 MiB - underscores improve readability
-  [tags ::string[] web api internal]
+  [tags::string[] web api internal]
 ]
 #]]]
 

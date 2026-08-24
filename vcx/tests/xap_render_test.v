@@ -77,6 +77,11 @@ fn test_xap_single_render_path() {
 	page := curl('http://127.0.0.1:${port}/')
 	assert page.contains('<li>Ada</li><li>Lin</li>'), 'text/html render did not derive the list from the view; got: ${page}'
 	assert page.contains('<button type="submit">Sign</button>'), 'text/html control not derived from the view; got: ${page}'
+	// #839: single-input controls keep exactly one field (regression guard
+	// for the multi-input fix — the default 'value' field never leaks in
+	// beside a declared slot).
+	assert page.count('<input name=') == 1, 'single-slot control must render exactly one input: ${page}'
+	assert page.contains('<input name="name"'), 'the slot name is view-tree data: ${page}'
 }
 
 // the 3-process topology (xap.md §16): a SEPARATE cx client process signs the
@@ -138,6 +143,74 @@ fn test_xap_three_process_sign() {
 		time.sleep(100 * time.millisecond)
 	}
 	assert surface.contains("[item 'Zoe']"), 'cross-process sign not reflected in the live surface; got: ${surface}'
+}
+
+// #839: a control with TWO [input :slot] children renders BOTH inputs, and a
+// form POST carrying both fields commits a record with both slots — the
+// last-one-wins renderer dropped every slot but the final one, so multi-slot
+// verbs were undriveable from the web medium (the record committed with a
+// missing field and the next view render failed on the absence).
+fn test_xap_multi_input_control_839() {
+	if os.execute('which curl').exit_code != 0 {
+		eprintln('SKIP: curl not available')
+		return
+	}
+	// slot 1 + 3: stays inside the file's 24000-24949 band (same sharing
+	// precedent as the #567/#570 pair on slot 3) — tests in one file run
+	// sequentially and the salt differs per call.
+	port := xap_port(1) + 3
+	dir := os.temp_dir()
+	prog := os.join_path(dir, 'cx_xap_839.cx')
+	os.write_file(prog, '[?lib \'cx-xap\' :as xap]\n' +
+		'[\$xap:component orders\n' +
+		'  {bind: "/orders"\n' +
+		'   emits: ([do :place-order [id :string] [customer :string]])\n' +
+		'   view: [?fn (\$os)\n' +
+		'           [panel\n' +
+		'             [list [?for [in \$o \$os] [yield [item [\$concat \$o/id "/" \$o/customer]]]]]\n' +
+		'             [control :place-order [label "Place order"] [input :id] [input :customer]]]]\n' +
+		'   working-panel: :none}]\n' +
+		'[?let [= \$rt [\$xap:run {tenant: "demo" components: (orders)}]]\n' +
+		'  [\$xap:serve "http://127.0.0.1:${port}" {runtime: \$rt}]]\n') or {
+		panic(err)
+	}
+	pid_s := os.execute('${cx_binary()} --allow-net ${prog} >/tmp/cx-xap-839.${port}.out 2>&1 & echo \$!')
+	pid := pid_s.output.trim_space().int()
+	defer {
+		os.execute('kill ${pid} 2>/dev/null')
+	}
+	mut up := false
+	for _ in 0 .. 30 {
+		if curl('-o /dev/null -w "%{http_code}" http://127.0.0.1:${port}/surface') == '200' {
+			up = true
+			break
+		}
+		time.sleep(100 * time.millisecond)
+	}
+	assert up, 'xap serve never bound on ${port}'
+
+	// BOTH declared slots render as inputs, in declaration order, and the
+	// single-default 'value' field does not leak in beside them. The HTML
+	// leg is the shell at `/` (same as the single-render test).
+	page := curl('http://127.0.0.1:${port}/')
+	assert page.contains('<input name="id"'), 'first slot dropped by the renderer: ${page}'
+	assert page.contains('<input name="customer"'), 'second slot missing: ${page}'
+	assert !page.contains('<input name="value"'), 'default field leaked beside declared slots: ${page}'
+
+	// A POST carrying both fields commits a record with BOTH slots — the
+	// view renders id AND customer, so an absence in either would fail the
+	// concat and never show the joined item.
+	post := curl('-X POST -d "id=o-77&customer=Ada" -H "Content-Type: application/x-www-form-urlencoded" http://127.0.0.1:${port}/intent/place-order')
+	assert post != '', 'intent POST returned nothing'
+	mut surface := ''
+	for _ in 0 .. 10 {
+		surface = curl('http://127.0.0.1:${port}/surface')
+		if surface.contains("[item 'o-77/Ada']") {
+			break
+		}
+		time.sleep(100 * time.millisecond)
+	}
+	assert surface.contains("[item 'o-77/Ada']"), 'multi-slot intent did not commit both fields: ${surface}'
 }
 
 // §24: the /events SSE feed holds the connection open and PUSHES a surface frame

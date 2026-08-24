@@ -12,10 +12,10 @@ mirror is as good as the origin. Against the live marine registry (verified):
 ```cx
 [?lib 'cx-xap' :as xap]
 [?lib 'cx-stdlib/store' :as store]
-[?let [= $reg [$store:open-opts "file:///…/xap-marine/registry/store"
+[?let [= $reg [$store:open-opts "file:///…/your-project/registry/store"
                                 [map read-only="true"]]]
  [= $v [$xap:pkg-verify $reg "own-ship@0.1.1"]]
- [= $cat [$xap:pkg-catalog $reg {term: "nmea"}]]
+ [= $cat [$xap:pkg-catalog $reg {term: "gtin"}]]
  ($v@status, $v@kind, [$count $cat//package])]
 # → ('ok', 'feature', 1)
 ```
@@ -44,7 +44,7 @@ Verified:
 ```cx
 [?lib 'cx-xap' :as xap]
 [?lib 'cx-stdlib/store' :as store]
-[?let [= $reg [$store:open-opts "file:///…/xap-marine/registry/store" [map read-only="true"]]]
+[?let [= $reg [$store:open-opts "file:///…/your-project/registry/store" [map read-only="true"]]]
  [= $xap0 [xap name=my-helm version=0.0.1 [features]]]
  [= $done [$xap:pkg-install $xap0 $reg "own-ship@0.1.1"]]
  [$count $done//features/feature]]
@@ -78,7 +78,7 @@ re-verifies **every pinned feature against its pin** from the committed
 store, checks compose determinism, and resolves wire verbs through ρ:
 
 ```sh
-cd xap-marine && cx --allow-all tools/stage1-test.cx
+cd <your-project> && cx --allow-all tools/stage1-test.cx
 ```
 
 ## Rollback and updates
@@ -100,5 +100,5 @@ cd xap-marine && cx --allow-all tools/stage1-test.cx
 
 `clone` the registry store (or a subset via fetch-by-hash) into a local
 store; verification and install proceed identically with no network — the
-offline-install lane is conformance-fixtured. `xap-marine/tools/vendor.cx`
+offline-install lane is conformance-fixtured. a `tools/vendor.cx`
 materializes required library packages from the registry, verified.

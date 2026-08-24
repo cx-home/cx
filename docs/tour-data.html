@@ -5,15 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>50 Ways to Love Your CX Data — CX Guide</title>
 <link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <aside class="sidebar">
   <a class="brand" href="index.html" aria-label="CX — home">
-    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
   </a>
   <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
   <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
   <a class="brand-sub" href="about.html">About →</a>
   <div class="side-search">
     <input id="side-search-input" type="search"
@@ -21,88 +25,126 @@
            autocomplete="off" spellcheck="false" data-prefix="" />
     <ul id="side-search-results" class="side-search-results" hidden></ul>
   </div>
-  <section><h4>Guide</h4><ul>
+  <section><h4>Start here</h4><ul>
     <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
     <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
     <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
     <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
     <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
     <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
-    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
-    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
-    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
-    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
-    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
-    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
-    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
-    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
     <li><a class="active" href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
     <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
-    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
-    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
-    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
-  </ul></section>
-  <section><h4>Reference</h4><ul>
-    <li><a href="directives.html">Directives</a></li>
-    <li><a href="syntax.html">Core syntax</a></li>
-  </ul></section>
-  <section><h4>Standard library</h4><ul>
-    <li><a href="libraries.html">Overview</a></li>
-    <li><a href="lib-authz.html">authz</a></li>
-    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
     <li><a href="lib-bytes.html">bytes</a></li>
     <li><a href="lib-crypto.html">crypto</a></li>
     <li><a href="lib-csv.html">csv</a></li>
-    <li><a href="lib-did.html">did</a></li>
-    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
     <li><a href="lib-env.html">env</a></li>
-    <li><a href="lib-fabric.html">fabric</a></li>
     <li><a href="lib-format.html">format</a></li>
     <li><a href="lib-fp.html">fp</a></li>
     <li><a href="lib-ft.html">ft</a></li>
     <li><a href="lib-geo.html">geo</a></li>
     <li><a href="lib-hash.html">hash</a></li>
     <li><a href="lib-html.html">html</a></li>
-    <li><a href="lib-http.html">http</a></li>
     <li><a href="lib-i18n.html">i18n</a></li>
     <li><a href="lib-io.html">io</a></li>
-    <li><a href="lib-journal.html">journal</a></li>
     <li><a href="lib-json.html">json</a></li>
     <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
     <li><a href="lib-jsonschema.html">jsonschema</a></li>
     <li><a href="lib-locale.html">locale</a></li>
     <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
     <li><a href="lib-math.html">math</a></li>
     <li><a href="lib-mime.html">mime</a></li>
-    <li><a href="lib-net.html">net</a></li>
     <li><a href="lib-path.html">path</a></li>
     <li><a href="lib-process.html">process</a></li>
     <li><a href="lib-prof.html">prof</a></li>
     <li><a href="lib-random.html">random</a></li>
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
-    <li><a href="lib-session.html">session</a></li>
     <li><a href="lib-similar.html">similar</a></li>
-    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
     <li><a href="lib-test.html">test</a></li>
     <li><a href="lib-time.html">time</a></li>
     <li><a href="lib-url.html">url</a></li>
     <li><a href="lib-uuid.html">uuid</a></li>
     <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-vc.html">vc</a></li>
     <li><a href="lib-xap.html">xap</a></li>
     <li><a href="lib-xsp.html">xsp</a></li>
-  </ul></section>
-  <section><h4>XAP</h4><ul>
     <li><a href="xap.html">Overview</a></li>
     <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
     <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
     <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
     <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
   </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
 </aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">50 Ways to Love Your CX Data</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
 <main>
 <section id="tour-data">
   <h1>50 Ways to Love Your CX Data</h1>
@@ -117,7 +159,7 @@
     <section id="td-1">
       <h2>1. The atom</h2>
       
-        <p>Just `name=value`. In CX this is a valid document on its own — logfmt mode, intended for log lines and structured events.</p>
+        <p>Just <code>name=value</code>. In CX this is a valid document on its own — logfmt mode, intended for log lines and structured events.</p>
         <pre>
           <code class="language-cx">size=large</code>
         </pre>
@@ -162,7 +204,7 @@
     <section id="td-6">
       <h2>6. Bare flag (no equals-value)</h2>
       
-        <p>Presence means yes, absence means no — same idea as `--verbose` or HTML's `required`. Here, this pizza is controversial.</p>
+        <p>Presence means yes, absence means no — same idea as <code>--verbose</code> or HTML's <code>required</code>. Here, this pizza is controversial.</p>
         <pre>
           <code class="language-cx">[pizza name=Hawaiian controversial]</code>
         </pre>
@@ -178,9 +220,9 @@
       
     </section>
     <section id="td-8">
-      <h2>8. Boolean sigil shorthand</h2>
+      <h2>8. Booleans are ordinary attributes</h2>
       
-        <p>Booleans are ordinary attributes — `name=true` / `name=false`; the bare tokens auto-type as bool.</p>
+        <p>Booleans are ordinary attributes — <code>name=true</code> / <code>name=false</code>; the bare tokens auto-type as bool.</p>
         <pre>
           <code class="language-cx">[pizza vegan=true nuts=false gluten=false]</code>
         </pre>
@@ -198,7 +240,7 @@
     <section id="td-10">
       <h2>10. Quoted — single quotes</h2>
       
-        <p>Reads: attribute `name`, value is the string "BBQ Chicken".</p>
+        <p>Reads: attribute <code>name</code>, value is the string "BBQ Chicken".</p>
         <pre>
           <code class="language-cx">[pizza name='BBQ Chicken']</code>
         </pre>
@@ -234,7 +276,7 @@
     <section id="td-14">
       <h2>14. Escape sequences inside quotes</h2>
       
-        <p>Same family as C and JSON: `\\n`, `\\r`, `\\t`, `\\uXXXX`, `\\"`, `\\\\`.</p>
+        <p>Same family as C and JSON: <code>\\n</code>, <code>\\r</code>, <code>\\t</code>, <code>\\uXXXX</code>, <code>\\"</code>, <code>\\\\</code>.</p>
         <pre>
           <code class="language-cx">[pizza alert='Hot!\\nHandle with care.\\tCafé']</code>
         </pre>
@@ -243,9 +285,9 @@
     <section id="td-15">
       <h2>15. Entity references (XML-style)</h2>
       
-        <p>`&amp;amp;`, `&amp;lt;`, `&amp;gt;` work as in XML. Useful when a literal ampersand would confuse the parser.</p>
+        <p><code>&amp;amp;</code>, <code>&amp;lt;</code>, <code>&amp;gt;</code> are recognized in <b>body text</b> — they round-trip faithfully, and an <code>--xml</code> emit renders them as proper XML entities. In attribute values they are <b>not</b> decoded: the characters stay literal (and <code>--xml</code> escapes the ampersand a second time). For a literal <code>&amp;</code> or <code>&lt;</code> in an attribute, just write the character inside quotes.</p>
         <pre>
-          <code class="language-cx">[pizza name='Cheese &amp; Pepper' note='use &lt;tongs&gt;']</code>
+          <code class="language-cx">[note Cheese &amp; Pepper]</code>
         </pre>
       
     </section>
@@ -279,7 +321,7 @@
     <section id="td-19">
       <h2>19. Attributes plus text body</h2>
       
-        <p>Reads: element `pizza`, attribute `name=Margherita`, then text body "Classic since day one.".</p>
+        <p>Reads: element <code>pizza</code>, attribute <code>name=Margherita</code>, then text body "Classic since day one.".</p>
         <pre>
           <code class="language-cx">[pizza name=Margherita Classic since day one.]</code>
         </pre>
@@ -312,7 +354,7 @@
     <section id="td-22">
       <h2>22. Block content [| … |]</h2>
       
-        <p>Like a text body, but indentation and newlines are kept verbatim; the block closes with `|]`. Unlike triple-quoted, inner elements such as `[em best]` are still real markup.</p>
+        <p>Like a text body, but indentation and newlines are kept verbatim; the block closes with <code>|]</code>. Unlike triple-quoted, inner elements such as <code>[em best]</code> are still real markup.</p>
         <pre>
           <code class="language-cx">[poem [|
            Roses are red,
@@ -326,7 +368,7 @@
     <section id="td-23">
       <h2>23. Raw text [# … #]</h2>
       
-        <p>The CDATA of CX. Brackets, quotes, `&lt;`, `&gt;` — all literal characters. The terminator is `#]`.</p>
+        <p>The CDATA of CX. Brackets, quotes, <code>&lt;</code>, <code>&gt;</code> — all literal characters. The terminator is <code>#]</code>.</p>
         <pre>
           <code class="language-cx">[snippet [# if (x < 10) { return "[pizza]"; } #]]</code>
         </pre>
@@ -347,7 +389,7 @@
     <section id="td-25">
       <h2>25. Line comment</h2>
       
-        <p>`#` comments out the rest of the line. Lives outside elements, like a script header.</p>
+        <p><code>#</code> comments out the rest of the line. Lives outside elements, like a script header.</p>
         <pre>
           <code class="language-cx"># weekend special — pulled Monday
          [pizza name=TruffleSpecial price=24]</code>
@@ -357,7 +399,7 @@
     <section id="td-26">
       <h2>26. Inline block comment</h2>
       
-        <p>Element-shaped — fits inside brackets where `#` cannot reach.</p>
+        <p>Element-shaped — fits inside brackets where <code>#</code> cannot reach.</p>
         <pre>
           <code class="language-cx">[pizza name=Diavola [; TODO confirm price ] price=14]</code>
         </pre>
@@ -379,7 +421,7 @@
     <section id="td-28">
       <h2>28. When to use which</h2>
       
-        <p>`#` for line-scoped headers; `[; … ]` when the comment must nest inside an element or span lines. Not HTML's `&lt;!-- … --&gt;` — CX has its own.</p>
+        <p><code>#</code> for line-scoped headers; <code>[; … ]</code> when the comment must nest inside an element or span lines. Not HTML's <code>&lt;!-- … --&gt;</code> — CX has its own.</p>
         <pre>
           <code class="language-cx"># top-of-file header
          [shop [; inline aside on this branch ] port=8080]</code>
@@ -457,7 +499,7 @@
     <section id="td-36">
       <h2>36. Sequence (a, b, c) — flat list</h2>
       
-        <p>Reads: element `toppings`, body is the sequence of three strings.
+        <p>Reads: element <code>toppings</code>, body is the sequence of three strings.
        Collections live in a child element's body — attributes hold a single
        scalar, never a collection.</p>
         <pre>
@@ -489,7 +531,7 @@
     <section id="td-39">
       <h2>39. Map {k: v} — named key to value</h2>
       
-        <p>Reads: element `prices`, body is a map with three entries.</p>
+        <p>Reads: element <code>prices</code>, body is a map with three entries.</p>
         <pre>
           <code class="language-cx">[pizza [prices {small: 9, medium: 12, large: 15}]]</code>
         </pre>
@@ -521,7 +563,7 @@
     <section id="td-42">
       <h2>42. Explicit type annotation</h2>
       
-        <p>A glued `::T` ascription on the name pins the body's type, overriding auto-typing.</p>
+        <p>A glued <code>::T</code> ascription on the name pins the body's type, overriding auto-typing.</p>
         <pre>
           <code class="language-cx">[count::int 42]
          [ratio::decimal 3.14159]</code>
@@ -531,17 +573,17 @@
     <section id="td-43">
       <h2>43. Typed array as body</h2>
       
-        <p>`::int[]` for typed; `::[]` for inferred (string array here).</p>
+        <p><code>::int[]</code> for typed; <code>::[]</code> for inferred (string array here).</p>
         <pre>
-          <code class="language-cx">[oven-temps ::int[] 220 240 260 480]
-         [tags ::[] cheap fast tasty]</code>
+          <code class="language-cx">[oven-temps::int[] 220 240 260 480]
+         [tags::[] cheap fast tasty]</code>
         </pre>
       
     </section>
     <section id="td-44">
       <h2>44. Plain table — header plus rows</h2>
       
-        <p>The `[table[…]]` block declares column names once. Each line below is a row.</p>
+        <p>The <code>[table[…]]</code> block declares column names once. Each line below is a row.</p>
         <pre>
           <code class="language-cx">[menu [table[name size price]]
            Margherita medium 12
@@ -564,7 +606,7 @@
     <section id="td-46">
       <h2>46. Quoted cells and nulls</h2>
       
-        <p>Quote cells with spaces. `null` is a real null in the cell.</p>
+        <p>Quote cells with spaces. <code>null</code> is a real null in the cell.</p>
         <pre>
           <code class="language-cx">[shifts [table[cook hours::int notes]]
            Pepe       8 morning
@@ -576,7 +618,7 @@
     <section id="td-47">
       <h2>47. Anchor and alias</h2>
       
-        <p>`&amp;classic` names this element; `[*classic]` drops a full copy in.</p>
+        <p><code>&amp;classic</code> <b>names</b> this element; <code>[*classic]</code> is an alias node referencing it. Which reading you get depends on the lane. The <b>lossless lanes</b> carry the reference as written: canonical CX emit prints <code>[*classic]</code> back out, and <code>--xml</code> marks it with a <code>cx:</code> attribute, so the document round-trips byte-faithfully. The <b>semantic lanes resolve it</b>: under <code>--json</code>/<code>--yaml</code>/<code>--csv</code> (any lossy projection) and inside a program's <code>$doc</code>, each alias expands to a deep copy of its anchor — the JSON of the example below carries two full Margheritas inside <code>menu</code>. <code>cx lint</code> (CX-L004) errors on a reference whose anchor does not exist, and a lossy projection of a dangling alias refuses outright.</p>
         <pre>
           <code class="language-cx">[pizza &classic name=Margherita price=12 [base tomato]]
          [menu [*classic] [*classic]]</code>
@@ -584,9 +626,9 @@
       
     </section>
     <section id="td-48">
-      <h2>48. Merge with overrides</h2>
+      <h2>48. Merge declaration</h2>
       
-        <p>`*classic` inherits the anchor's attrs and children; overrides apply on top.</p>
+        <p><code>*classic</code> <b>declares</b> a merge from the anchor, with the element's own attrs as overrides. The same lane split as the alias: the lossless lanes keep the declaration as written — canonical emit prints <code>[pizza *classic …]</code>, <code>--xml</code> emits a <code>cx:merge="classic"</code> attribute — while the semantic lanes <b>apply</b> it: under a lossy projection or <code>$doc</code>, the second pizza inherits <code>name=Margherita price=12 [base tomato]</code> and its own attrs win on collision, so it comes out <code>name=ClassicXL size=large price=16</code> with the tomato base. CX-L004 checks the target anchor exists.</p>
         <pre>
           <code class="language-cx">[pizza &classic name=Margherita price=12 [base tomato]]
          [pizza *classic name=ClassicXL size=large price=16]</code>
@@ -620,7 +662,7 @@
     <section id="td-50">
       <h2>50. The whole shop</h2>
       
-        <p>XML decl, anchor, block comments, typed table, merged child, map and sequence children, triple-quoted text. One syntax, everywhere.</p>
+        <p>XML decl, anchor, block comments, typed table, a merge declaration (carried on the lossless lanes, applied on the semantic ones — see 48), map and sequence children, triple-quoted text. One syntax, everywhere.</p>
         <pre>
           <code class="language-cx">[?xml version=1.0 encoding=UTF-8]
          [shop &flagship name='New Haven' port=8080 open=true
@@ -643,7 +685,7 @@
         </pre>
       
     </section>
-    <p class="note">**The arc.** Bare attribute → element → strings → text
+    <p class="note"><b>The arc.</b> Bare attribute → element → strings → text
        bodies → comments → structure → collections → typed arrays
        → tables → anchors → the whole shop. Every step adds one
        shape; no shape requires anything the earlier ones do not
@@ -651,6 +693,13 @@
   
 </section>
 </main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>50 Ways to Love Your CX Data</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
 <script src="highlight/highlight.js" defer></script>
 <script src="search-index.js" defer></script>
 <script src="search/search.js" defer></script>

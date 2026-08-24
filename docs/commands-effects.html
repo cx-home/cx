@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Commands and effects — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Start here</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a class="active" href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
+    <li><a href="lib-jsonschema.html">jsonschema</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-vc.html">vc</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+    <li><a href="lib-xsp.html">xsp</a></li>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+</aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Commands and effects</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
+<main>
+<section id="commands-effects">
+  <h1>Commands and effects</h1>
+  
+    <section id="ce-command">
+      <h2>A command is a def that declares its effects</h2>
+      
+        <p>Most CX definitions are pure. The ones that change the world —
+         refund an order, send an email, advance a ref — are
+         <b>commands</b>, and a command is not a new kind of thing: it is
+         an ordinary <code>[?def]</code> carrying an <code>[effects]</code> clause. That
+         clause is the discriminator; everything else in this section
+         hangs off it.</p>
+        <pre>
+          <code class="language-cx">[?def refund-order impure ($order-id $amount)
+        [requires cap:sha2-256:1f4b…]     [; the authority artifact it needs ]
+        [preconditions [order-exists $order-id] [not-already-refunded $order-id]]
+        [effects [write "orders"] [net "payments.example"]]
+        [idempotent [window P30D]]
+        [compensates cancel-refund]
+        …body…]</code>
+        </pre>
+        <p>Two rules make the declaration worth reading. First, <code>pure</code>
+         plus a non-empty <code>[effects]</code> is a <b>static contradiction</b> — a
+         typed error at definition time, not a runtime surprise. Second,
+         <code>[effects]</code> is <b>checked and enforced, never advisory</b>: each
+         item is a <code>[CAP scope…]</code> pair whose capability name comes from
+         the closed table in <code>spec/03-approved/core/security.md</code> §2
+         (<code>read</code>, <code>write</code>, <code>net</code>, <code>env</code>, <code>clock</code>, <code>random</code>,
+         <code>subprocess</code>, <code>eval</code>, <code>secret-reveal</code>), an unknown name is a
+         fail-closed refusal, and at runtime the declared set acts as a
+         narrowing — an effect point
+         outside the declaration is a loud typed error, exactly as if
+         the capability had been denied. The house sentence: <i>effect
+         conformance is enforced; type conformance is advisory.</i></p>
+        <p class="note">Effects and capabilities compose but differ in direction. A
+         capability grant (see <a class="xref" href="capabilities.html">capabilities</a>) is the <b>caller</b>
+         saying what a run may reach. An <code>[effects]</code> clause is the
+         <b>author</b> saying what this command will do — and the runtime
+         holds them to it. The narrower of the two always wins.</p>
+      
+    </section>
+    <section id="ce-idempotency">
+      <h2>Idempotency — retry-safe by declaration</h2>
+      
+        <p>Networks retry. The question is never whether a refund request
+         will arrive twice, but what happens when it does. A command
+         with an <code>[idempotent]</code> clause deduplicates at the effect
+         boundary; a command without one is <b>not</b> idempotent and not
+         retry-safe — deny-by-default, like everything else.</p>
+        <p><b>The key.</b> An explicit caller key wins when present — only
+         the caller knows that two structurally identical requests are
+         distinct business events. The derived default is a hash of the
+         command's identity, the <b>argument record normalized by
+         parameter name</b>, and the tenant. Name-keying matters: the
+         positional and named spellings of the same refund must produce
+         one key, or the retry double-executes — the sharpest trap in
+         this design space. Deliberately <b>not</b> in the key: the
+         capability set (the same refund under a wider grant is the
+         same refund) and the authority chain (recorded for audit,
+         never keyed).</p>
+        <p><b>The commit.</b> Dedup is enforced with a must-not-exist
+         compare-and-set on the dedup record — the same one-conflict
+         vocabulary refs use (see <a class="xref" href="value-model.html">value-model</a>), applied as
+         exactly-once-create at the effect boundary. A dedup hit does
+         not error and does not vanish into an absence: it returns a
+         <b>present value</b> carrying the original outcome plus a
+         <code>deduped=true</code> marker — \"already done; here is what
+         happened.\"</p>
+        <p><b>The window.</b> Dedup records are journal-backed facts with a
+         declared retention window, and compaction may not reap one
+         before its window expires — a dedup record that silently
+         disappears is a reopened double-execution hole. Within the
+         window, <code>[?retry]</code> around a declared-idempotent command is
+         safe by construction; the delivery substrate stays honestly
+         at-least-once (see <a class="xref" href="consistency.html">consistency</a> for why exactly-once
+         delivery is refused as a vocabulary word).</p>
+      
+    </section>
+    <section id="ce-budgets">
+      <h2>Budgets — quantitative authority</h2>
+      
+        <p>Every other attenuation in the authority model is spatial —
+         which capabilities, which slice, which time window. A budget is
+         the quantitative fourth axis: <b>how much</b>. It rides on a
+         delegation as a <code>[bounds]</code> child.</p>
+        <pre>
+          <code class="language-text">[bounds [rate 10 :per PT1M]                 token bucket
+               [count 500]                          monotone, no refill
+               [spend 250.00::decimal :currency :USD :per P1D]]</code>
+        </pre>
+        <p>Enforcement is placed where it cannot race: the <b>debit
+         happens at the commit point</b>, under the journal stream's
+         commit lock, so the meter is linearizable for free. The policy
+         check reads the meter as part of its materialized snapshot, so
+         authorization stays a pure function over declared inputs —
+         dry-runs stay regression-testable. Exhaustion is a <b>value</b>
+         (<code>[deny [reason :budget-exhausted] [retry-after …]]</code>), not a
+         crash.</p>
+        <ul>
+          
+            <li><b>Refunds do not credit back.</b> Budgets meter authority
+              <i>exercised</i>, not net economic effect — undoing an action
+              does not un-spend the authority that took it.</li>
+            <li><b>Sub-delegation shares the meter by default.</b> A pool
+              never multiplies authority; ten sub-agents of a $250/day
+              delegation share $250/day. A sub-delegation may carry a
+              <i>reserved</i> allocation drawn from the parent's meter at
+              delegation time — escrow, not multiplication.</li>
+            <li><b>Bounds and scopes are independent conjuncts.</b> A bound
+              never widens a scope; a scope never relaxes a bound; a
+              denial names the failing conjunct.</li>
+            <li><b>Spend windows are UTC-calendar-aligned</b> — no
+              tenant-local midnight surprises.</li>
+          
+        </ul>
+      
+    </section>
+    <section id="ce-propose">
+      <h2>Propose mode — approval binds the address</h2>
+      
+        <p>At a trust boundary — an agent tool call, an MCP edge, a
+         propose-only delegation — a command does not execute. It
+         produces a <b>proposal</b>: an ordinary CX value capturing the
+         exact definition (by content address of its source text), the
+         name-keyed argument record, the resolved effect set, the
+         evaluated preconditions, the authority chain, and the
+         idempotency key. Being a value, the proposal has an address.</p>
+        <p><b>Approval is a signed claim binding that address</b> — a Lane-2
+         value about the proposal, never a nod to a name or an argument
+         list. Approving by name or args is forgeable; approving an
+         address means any re-lowering, rewording, or effect-widening
+         produces a <i>different</i> address and needs its own approval. At
+         commit, live preconditions re-evaluate, and divergence from
+         what was approved is a loud refusal — some facts bind at
+         propose time, live facts re-check at commit time.</p>
+        <p>The mode is decided by the <b>boundary</b>, not the caller: an
+         agent-tool edge always proposes, and a delegation can carry a
+         propose-only flag — the grant that lets an agent draft actions
+         all day and commit none of them. The campaign story this
+         enables: \"you have hand-approved thirty sub-$50 refunds —
+         delegate that band?\" is a propose-mode history turning into a
+         budget-bounded delegation, with every step of the transition
+         auditable.</p>
+        <p class="note">The pieces compose into one auditable pipeline: an agent
+         holding a propose-only, budget-bounded delegation proposes a
+         $42 refund; a principal approves the proposal's address; commit
+         re-checks preconditions, debits the spend meter under the
+         stream's lock, deduplicates by key, and the journal records
+         actor and authority chain. Every noun in that sentence is a CX
+         value with a content address.</p>
+      
+    </section>
+  
+</section>
+</main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>Commands and effects</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

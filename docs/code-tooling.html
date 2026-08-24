@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Code tooling — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Start here</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a class="active" href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
+    <li><a href="lib-jsonschema.html">jsonschema</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-vc.html">vc</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+    <li><a href="lib-xsp.html">xsp</a></li>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+</aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Code tooling</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
+<main>
+<section id="code-tooling">
+  <h1>Code tooling</h1>
+  
+    <p>The working surface of the application author: run a program
+       under an explicit grant set (<a class="xref" href="capabilities.html">capabilities</a>), lint it, debug it
+       from the errors' own positions, draw it, and measure it. The
+       purely data-shaped verbs (fmt, hash, diff, validate, …) live
+       with Ring 0 in <a class="xref" href="data-tooling.html">data-tooling</a>; the full subcommand catalog is
+       in <a class="xref" href="tooling.html">tooling</a>.</p>
+    <section id="cli-run-caps">
+      <h2>Running programs and capability flags</h2>
+      
+        <p><code>cx program.cx</code> evaluates a program. A separate data
+         input rides <code>--data=INPUT.cx</code> (or <code>--data=-</code> for stdin):
+         the input is loaded via the data reading and bound as
+         <code>$doc</code> / <code>$input</code> before evaluation, and the caller-supplied
+         input <b>wins</b> — the program's own data roots never rebind
+         it. Without <code>--data</code>, the program's first data root binds
+         implicitly; a document-driven program run without any input
+         raises the loud unbound-<code>$doc</code> error rather than silently
+         matching nothing. The four document-driven <code>examples/</code>
+         programs (code-tour, cxpath-tour, match-multi, modify-crud)
+         run exactly this way (<code>cx examples/code-tour.cx
+         --data=examples/code-tour.input.cx</code>).</p>
+        <p>Unknown flags on this surface are <b>hard usage errors</b>
+         (exit 2, naming the flag) — including misspelled
+         <code>--allow-*</code> grants. Nothing on the run surface is silently
+         ignored.</p>
+        <p>Effects are
+         <b>deny-by-default</b>: a program that reads files, writes
+         files, touches the network, reads environment variables,
+         spawns subprocesses, or asks for randomness must be
+         granted that capability explicitly on the command line
+         (denied effect points raise the catchable capability
+         error <code>CXER0271</code>):</p>
+        <pre>
+          <code class="language-sh">$ cx --data=orders.cx report.cx       # orders.cx binds as $doc
+         $ cx --allow-read --allow-write build_site.cx
+         $ cx --allow-net serve.cx
+         $ cx --allow-common pipeline.cx       # the common working set</code>
+        </pre>
+        <p>The capability set: <code>--allow-read</code>, <code>--allow-write</code>,
+         <code>--allow-net</code>, <code>--allow-env</code>, <code>--allow-clock</code>,
+         <code>--allow-random</code>, <code>--allow-subprocess</code>, <code>--allow-eval</code>,
+         <code>--allow-secret-reveal</code>. Two broad grants stand beside them:
+         <code>--allow-common</code> is all of the above EXCEPT
+         <code>--allow-secret-reveal</code>, and <code>--allow-all</code> is everything
+         including it. Prefer <code>--allow-common</code> while exploring — it
+         keeps <code>[?secret]</code> values sealed. See <a class="xref" href="capabilities.html#security">security</a> for the
+         security model.</p>
+        <p>A <code>cx eval FILE</code> alias exists for the same action; prefer
+         the plain <code>cx FILE</code> spelling — the alias adds nothing.</p>
+      
+    </section>
+    <section id="cli-lint">
+      <h2>cx lint</h2>
+      
+        <p>Style + correctness warnings. See <a class="xref" href="#lint">lint</a> for the rule
+         catalog. Flags: <code>--format=text|json|summary</code> (default
+         <code>text</code>), <code>--fail-on=info|warn|error|none</code> (default
+         <code>error</code>), <code>--disable=ID1,ID2</code> to suppress checks,
+         <code>--only=ID</code> to run one.</p>
+        <pre>
+          <code class="language-sh">$ cx lint config.cx
+         $ cx lint --fail-on=warn --format=json config.cx
+         $ cx lint --only=CX-L004 pipeline.cx</code>
+        </pre>
+      
+    </section>
+    <section id="lint">
+      <h2>Lint rules</h2>
+      
+        <p><code>cx lint</code> warns about issues a formatter can't or shouldn't
+         fix automatically. Lint and fmt are
+         distinct: <code>cx fmt</code> <i>applies</i> safe transformations; <code>cx lint</code>
+         <i>warns</i> about issues that need human judgement to fix. The
+         two never overlap — if a check has a safe auto-fix, it
+         belongs to <code>cx fmt</code>.</p>
+        <section id="lint-catalog">
+          <h3>Rule catalog</h3>
+          
+            <p>Seven lint checks are currently shipped:</p>
+            <table>
+              <thead>
+                
+                  <tr>
+                    <th>id</th>
+                    <th>severity</th>
+                    <th>name</th>
+                  </tr>
+                
+              </thead>
+              <tbody>
+                
+                  <tr>
+                    <td>CX-L001</td>
+                    <td>info</td>
+                    <td>comment-style consistency</td>
+                  </tr>
+                  <tr>
+                    <td>CX-L003</td>
+                    <td>warn</td>
+                    <td>unused anchor</td>
+                  </tr>
+                  <tr>
+                    <td>CX-L004</td>
+                    <td>error</td>
+                    <td>dangling alias / merge</td>
+                  </tr>
+                  <tr>
+                    <td>CX-L005</td>
+                    <td>warn</td>
+                    <td>deprecated v3.3→v3.4 pattern</td>
+                  </tr>
+                  <tr>
+                    <td>CX-L006</td>
+                    <td>info</td>
+                    <td>flatten nested single-binding [?let] staircases</td>
+                  </tr>
+                  <tr>
+                    <td>CX-L007</td>
+                    <td>warn</td>
+                    <td>aggregation over a simple field accessor</td>
+                  </tr>
+                  <tr>
+                    <td>CX-L008</td>
+                    <td>warn</td>
+                    <td>declared shape flow across [?pipe] stages</td>
+                  </tr>
+                
+              </tbody>
+            </table>
+            <p>Each check has a normative ID, a default severity, and a
+           documented rationale. Suppression directives and CLI flags accept the ID
+           verbatim. <code>CX-L002</code> (type-annotation form consistency) was
+           removed; its ID is retired, never reused.</p>
+          
+        </section>
+        <section id="lint-severity">
+          <h3>Severity levels</h3>
+          
+            <p>Three severity levels, normative names:</p>
+            <ul>
+              
+                <li><b><code>info</code></b> — stylistic drift. Doesn't affect
+                correctness. Doesn't fail CI by default.</li>
+                <li><b><code>warn</code></b> — likely-bug. The code parses, but the
+                result probably isn't what was intended. Fails CI
+                with <code>--fail-on=warn</code>.</li>
+                <li><b><code>error</code></b> — almost-certainly-bug. Document
+                semantics are wrong. Fails CI by default
+                (<code>--fail-on=error</code>).</li>
+              
+            </ul>
+          
+        </section>
+        <section id="lint-config">
+          <h3>Configuration via .cxlint.cx</h3>
+          
+            <p>Per-project lint config lives in <code>.cxlint.cx</code> at the repo
+           root (or any ancestor directory of the linted file). The
+           config file is CX-formatted — same parser, same schema,
+           dogfooded all the way down.</p>
+            <pre>
+              <code class="language-cx">[# .cxlint.cx — repo-level lint config #]
+           [lint
+             [# don't warn on unused anchors in this repo #]
+             [disable check=CX-L003]
+
+             [# v3.3 transition warnings only as info, we'll fix gradually #]
+             [severity check=CX-L005 level=info]
+
+             [# treat dangling-alias as warn (not error) in this repo #]
+             [severity check=CX-L004 level=warn]]</code>
+            </pre>
+            <p>A <code>[disable …]</code> applies repo-wide — there is no per-path
+           scoping. <code>cx lint --config=PATH</code> overrides auto-discovery,
+           and <code>--no-config</code> skips config discovery entirely. Missing
+           config file is not an error — defaults apply.</p>
+          
+        </section>
+        <section id="lint-suppress">
+          <h3>Per-element suppression</h3>
+          
+            <p>For one-off suppressions inside a document, use the
+           <code>[?cx lint-disable=...]</code> / <code>[?cx lint-enable=...]</code>
+           directives. Scope is the enclosing element and its
+           descendants.</p>
+            <pre>
+              <code class="language-cx">[?cx lint-disable=CX-L003]
+           [defaults &base host=localhost]   [# no L003 warning #]
+           [?cx lint-enable=CX-L003]
+
+           [# lint-disable=all suppresses every check #]
+           [?cx lint-disable=all]
+           [legacy-block ...]</code>
+            </pre>
+            <p class="note">Comma-separated lists accepted:
+           <code>lint-disable=CX-L003,CX-L005</code>. <code>lint-disable=all</code> is the
+           catch-all.</p>
+          
+        </section>
+        <section id="lint-cxls">
+          <h3>LSP-only diagnostic codes (CXLS\*)</h3>
+          
+            <p>The CXLS\\* codes (<a class="xref" href="tooling.html#lsp-diagnostics">lsp-diagnostics</a>) are surfaced only
+           through the LSP and have no corresponding <code>cx lint</code>
+           check. They live in the LSP because they need
+           document-wide static analysis (cross-arm reachability,
+           focus-path type-check) and aren't general-enough to be
+           CLI default behaviour. Suppression inside a document
+           uses <code>[?cx lint-disable=CXLS001]</code> (same syntax as the
+           CX-L\\* codes); CLI suppression is moot since <code>cx lint</code>
+           doesn't emit them.</p>
+          
+        </section>
+        <section id="lint-custom">
+          <h3>Custom rule plugins (planned)</h3>
+          
+            <p>A plugin model for user-defined checks is planned
+           (previously rejected; the question is reopened in
+           <a href="../../ROADMAP.md"><code>ROADMAP.md</code></a> "Later"). Currently,
+           extending the check set means contributing a check to
+           <code>vcx/cx/lint.v</code> upstream. Schema-violation checks are a
+           separate path — they layer in automatically as the schema
+           language gains rules.</p>
+          
+        </section>
+      
+    </section>
+    <section id="cli-diagram">
+      <h2>cx diagram / code-diagram / code-tree</h2>
+      
+        <p>Visualization commands. <code>cx diagram FILE</code>
+         renders a containment diagram
+         (<code>--format=mermaid|svg|png</code>, <code>-o out.file</code>); <code>cx
+         code-diagram FILE</code> renders a locked sequence-diagram view
+         of a program; <code>cx code-tree FILE</code> renders the evaluation
+         tree. The playground's Diagram toggle uses the same
+         renderers via WASM (see <a class="xref" href="tooling.html#playground">playground</a>).
+
+         <code>mermaid</code> is pure text and needs nothing. The <code>svg</code> and
+         <code>png</code> formats render through graphviz <code>dot</code>, which is a
+         subprocess — so they require the ordinary
+         <code>--allow-subprocess</code> grant, exactly like any other effect
+         in CX. Without it the command refuses (<code>CXER0271</code>) rather
+         than quietly handing back a diagram you didn't ask for.
+         With the grant but no <code>dot</code> installed you get the
+         dot-less envelope: a 1×1 placeholder that still carries
+         the program source, so it still reverse-parses.</p>
+        <pre>
+          <code class="language-sh">$ cx diagram config.cx --format=mermaid
+         $ cx diagram config.cx --format=svg --allow-subprocess -o config.svg
+         $ cx code-diagram pipeline.cx
+         $ cx code-tree pipeline.cx</code>
+        </pre>
+      
+    </section>
+    <section id="diagnostics">
+      <h2>Diagnostics and debugging</h2>
+      
+        <p>When a CX program isn't doing what you expect, work the
+         ladder: read the error value (every failure is a
+         position-carrying <code>[err …]</code>), lint the file, visualize the
+         program (<code>cx code-tree</code> / <code>cx code-diagram</code>), reach for the
+         LSP if you want to drive from the editor, and capture a
+         fixture (<code>conformance/code.cxd</code>) when you need a
+         reproducible bug report.</p>
+        <section id="diag-trace">
+          <h3>Errors carry positions</h3>
+          
+            <p>Every parse or evaluation failure is a structured error
+           with a source position and a stable code — read it
+           first. A raised error that reaches the top level prints
+           as an <code>[err code=… message=…]</code> value; the message names
+           the offending line:column and, for retired syntax, the
+           current replacement form.</p>
+            <pre>
+              <code class="language-sh">$ cx broken.cx
+           error: cx-err:CXER0100: parse: infix attribute comparison
+           `[@active=…]` in a CXPath predicate is retired —
+           predicates are homoiconic CX code; write the prefix
+           operator form `[= $_@active …]` (code.md §5.5.2)
+           at line 2:8</code>
+            </pre>
+          
+        </section>
+        <section id="diag-explain">
+          <h3>Visualize the program</h3>
+          
+            <p><code>cx code-tree FILE</code> renders the evaluation tree of a
+           program — which directives nest where, what each binds.
+           <code>cx code-diagram FILE</code> renders the locked
+           sequence-diagram view (concurrency, channels, service
+           interactions). <code>cx --ast FILE</code> shows the parsed shape
+           when you suspect the parser saw something different from
+           what you meant.</p>
+            <pre>
+              <code class="language-sh">$ cx code-tree pipeline.cx
+           $ cx code-diagram workers.cx
+           $ cx --ast pipeline.cx | jq '.elements[0]'</code>
+            </pre>
+          
+        </section>
+        <section id="diag-lsp">
+          <h3>LSP-driven debugging</h3>
+          
+            <p>The LSP surfaces diagnostics live in the editor —
+           parse errors, lint findings, and hover documentation
+           over directives and paths. See <a class="xref" href="tooling.html#lsp">lsp</a> for the shipped
+           capability set.</p>
+          
+        </section>
+        <section id="diag-repl">
+          <h3>Interactive REPL</h3>
+          
+            <p>An interactive REPL is <b>planned</b>. Until it ships, the
+           equivalent is stdin evaluation with a quick shell
+           wrapper — append each expression to the context document
+           and pipe through <code>cx</code>:</p>
+            <pre>
+              <code class="language-sh"># Poor man's REPL
+           while read -r line; do
+             printf '%s\\n%s\\n' \"$(cat ctx.cx)\" \"$line\" | cx
+           done</code>
+            </pre>
+          
+        </section>
+        <section id="diag-repro">
+          <h3>Reproducing a bug as a conformance fixture</h3>
+          
+            <p>When you find behaviour that differs from the spec or
+           from another binding, the fastest way to land a fix is
+           to drop a minimal repro into the conformance corpus.
+           Fixtures under <code>conformance/*.cxd</code> are the normative
+           contract — every binding runs them in CI.</p>
+            <p>Fixtures are CX documents — one <code>[case …]</code> element per
+           repro, with the input document, the program, and the
+           expected output as children:</p>
+            <pre>
+              <code class="language-cx">[case id=my-bug-id level=core
+             [tags predicate my-area]
+             [in-cx [#
+           [doc [item id=1] [item id=2]]
+           #]]
+             [in-code [#
+           [?for [in $i //item[= $_@id 1]] [yield $i]]
+           #]]
+             [out-text [#
+           [item id=1]
+           #]]]</code>
+            </pre>
+            <p>Drop the case into the corpus file that matches your
+           area (e.g. <code>conformance/code.cxd</code> for evaluator bugs,
+           <code>conformance/core.cxd</code> for data-layer bugs,
+           <code>conformance/lint.cxd</code> for linter bugs), run
+           <code>make test-vcx-suite</code>, watch it fail. Then fix the V
+           core to make it pass.</p>
+          
+        </section>
+        <section id="diag-bug-report">
+          <h3>Filing a bug report</h3>
+          
+            <p>A good bug report has four pieces:</p>
+            <ul>
+              
+                <li><code>cx --version</code> output (build + commit line).</li>
+                <li>A minimal reproducer — ideally a <code>conformance/*.cxd</code>
+                case — that triggers the bad behaviour.</li>
+                <li>Expected output (what you think should happen).</li>
+                <li>Actual output (what does happen).</li>
+              
+            </ul>
+            <p>For LSP / editor bugs, also include the
+           <code>cx lsp --verbose 2&gt;...</code> log around the failing request
+           and the editor's LSP trace setting (most editors expose
+           "LSP: Toggle Trace" or similar).</p>
+          
+        </section>
+      
+    </section>
+    <section id="profiling">
+      <h2>Profiling and benchmarking</h2>
+      
+        <p>CX ships a standard bench harness for the V core (runners
+         under <code>vcx/tests/runners/</code>) and per-binding bench scripts
+         that exercise the FFI path. Binding-level performance budgets
+         are governed by the performance-SLA policy in
+         <a href="../../spec/03-approved/process/governance.md"><code>spec/03-approved/process/governance.md §6</code></a>.</p>
+        <section id="profile-eval">
+          <h3>In-program profiling</h3>
+          
+            <p>No profiling CLI flag ships yet — but the in-program
+           profiler does: the bundled <code>cx-stdlib/prof</code> pack covers
+           timing reads, named counters, HDR histograms, structured
+           trace events, memory snapshots, and flamegraph emission,
+           callable from any program (timing reads consult the host
+           clock, so they need <code>--allow-clock</code>). For source-position
+           debugging see <a class="xref" href="#diag-trace">diag-trace</a>; for structure,
+           <code>cx code-tree</code>.</p>
+          
+        </section>
+        <section id="profile-bench">
+          <h3>Bench harness</h3>
+          
+            <p>The bench harness is V-native; runners live under
+           <code>vcx/tests/runners/</code>. Run individually:</p>
+            <pre>
+              <code class="language-sh">$ make bench-code-streaming   # streaming evaluator
+           $ make bench-code-pattern-compile   # pattern compile cost
+           $ make bench-code-http        # http client perf
+           $ make bench-code-soak        # long-running soak
+           $ make bench-code-cancel      # cancellation responsiveness
+           $ make bench-code-gates       # the three gate-tracked perf benches
+
+           $ make bench-streaming        # data-streaming bench
+           $ make bench-eval             # general eval cost
+           $ make bench-json             # bench-report JSON (report generator, not a workload)</code>
+            </pre>
+            <p>Each bench prints a <b>multi-line human summary</b> (MB/s,
+           ops/sec, or latency percentiles, depending on the
+           dimension). The machine-readable JSON is produced
+           downstream: <code>make bench-json</code> runs the streaming bench and
+           parses its stdout into a stable JSON report
+           (<code>scripts/run_bench_json.cx</code>), and
+           <code>make bench-compare BASELINE=a.json CURRENT=b.json</code>
+           diffs two such reports for regressions.
+           <code>make bench-code-gates</code> chains the three gate-tracked
+           benches (pattern-compile, streaming, http).</p>
+          
+        </section>
+        <section id="profile-per-binding">
+          <h3>Per-binding bench</h3>
+          
+            <p>The per-binding bench shim is <code>bench_report.cx</code>. It drives
+           every binding through a common harness and prints
+           comparative numbers — per binding, the parse and stream
+           medians on the common fixture, then a comparative table.
+           Filters are <b>positional</b> binding names; the only flag is
+           <code>--verbose</code>/<code>-v</code>, and any other flag is a hard error (exit 1)
+           rather than a silent no-op:</p>
+            <pre>
+              <code class="language-sh">$ cx --allow-read --allow-write --allow-subprocess \
+                --allow-clock --allow-env bench_report.cx python go rust
+           benchmarking python       ... parse=…ms  stream=…ms
+           benchmarking go           ... parse=…ms  stream=…ms
+           benchmarking rust         ... parse=…ms  stream=…ms</code>
+            </pre>
+            <p class="note">The Go shim's former crash on 1 MB+ inputs is fixed — the
+           FFI call path now locks its goroutine to an OS thread and
+           registers it with the CX runtime. Python's decoder ceiling
+           is architectural (a pure-Python floor); a C extension is a
+           planned future candidate.</p>
+          
+        </section>
+        <section id="profile-targets">
+          <h3>Regression tracking</h3>
+          
+            <p>Two tracking planes. The <b>binding-level budgets</b> —
+           <code>loads</code> and <code>select</code> latencies per input size — are
+           normative in
+           <a href="../../spec/03-approved/process/governance.md"><code>spec/03-approved/process/governance.md §6.1</code></a>:
+           regressions beyond the threshold against a recorded
+           baseline fail CI (<code>make bench-compare</code>, default threshold
+           30%, <code>STRICT=1</code> for 10%). The <b>V-core streaming gate</b>
+           lives in
+           <code>vcx/tests/runners/code_streaming_throughput_bench.v</code>
+           with a 200 MB/s line — honest status: the gate is not yet
+           green (<code>[?for]</code> streaming sits at the ~200 MB/s line;
+           <code>[?map]</code> last measured 129.2 MB/s).</p>
+            <p><code>cx diff</code> (1 MiB, 1% change), <code>cx lint</code> (1 MiB, all
+           checks), and <code>cx hash</code> (1 MiB) are tracked as unofficial
+           interactive-latency targets; the governance SLA table does
+           not cover them.</p>
+          
+        </section>
+      
+    </section>
+  
+</section>
+</main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>Code tooling</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

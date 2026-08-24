@@ -117,7 +117,13 @@ characters.
 offset size field value
 ─────────────────────────────────────────────────────────────────
 0 5 magic "CXCol" (0x43 0x58 0x43 0x6F 0x6C)
-5 1 version 0x01 (CXCol v1)
+5 1 version 0x01 (CXCol v1) or 0x02 (v2 — the
+ 0x52 extended-map form is present
+ somewhere in the payload; #918,
+ RULED: MSS-4. Producers emit the
+ LOWEST version that carries the
+ document; v1 readers MUST reject
+ v2 envelopes.)
 6 1 flags bit 0 = endian (1 = LE; 0 reserved)
  bit 1 = schema-driven encoding
  (1 = schema reference precedes
@@ -299,6 +305,15 @@ Bindings map to host decimal types per [`../misc/type-mapping.md`](../misc/type-
 strict canonical form. Datetime offsets are normalized to UTC during
 strict canonicalization (per [`canonical.md`](canonical.md) §2.6).
 
+**Transport carriage**: outside strict canonical form, writers carry
+the parsed offset in `offset_minutes` (the LOSSLESS canonical tier of
+[`canonical.md`](canonical.md) §2.6 — `unix_nanos` stays UTC-normalized
+either way, so the instant is offset-independent and the offset only
+restores the local render on decode). Strict canonicalization of a
+binary input runs through the decoded document's strict canonical
+text, which normalizes offsets — the Tier-1 hash is identical for
+both spellings.
+
 For dates that include sub-nanosecond precision in the source, the
 fractional component is rounded to the nearest nanosecond at encode time
 (half-to-even). The text canonical form preserves the original precision;
@@ -355,10 +370,24 @@ Tag `0x45` is the canonical encoding for an empty Sequence-as-Item;
 ```
 0x50 uvarint(pair_count) <key, value>(pair_count)
 0x51 empty map (no payload)
+0x52 uvarint(pair_count) <key, key-type, decl-kind, value>(pair_count)
 ```
 
 Tag `0x51` is canonical for empty map. `0x50` with `count = 0` is
-non-canonical and rejected.
+non-canonical and rejected; likewise `0x52`.
+
+**Extended map (`0x52`, version 2 — #918, RULED: MSS-4).** Emitted only
+when an entry carries a typed (non-string) key or is a declaration-only
+entry `{k: ::T}`; every other map stays the byte-identical `0x50` form.
+Per entry, after the string key: a string `key-type` naming the key's
+scalar kind (`''` = string; the L47 ascribed-key kinds — decimal, bigint,
+int, … — restore on decode), then a string `decl-kind` (`''` = an
+ordinary entry; non-empty marks the entry DECLARED with that kind and its
+value slot holds an inert `0x00` null — the entry's value is ABSENT,
+never null, and readers MUST NOT surface the placeholder as the value).
+`0x52` is valid only in a version-2 envelope. A root-level `0x52` decodes
+as the value-model Map itself, never the keyed-element projection (the
+extended form is produced only by a genuine Map value).
 
 Each pair: `<key>` followed by `<value>`. Pair order is preserved
 insertion order from the source. Sorting is not performed.
@@ -417,8 +446,23 @@ uvarint(row_count)
 
 ```
 <string-key> (tag 0x30, the column name)
-<col-type> (1 byte type code, §3.10.3)
+<col-type-entry> (see below)
+
+<col-type-entry> :=
+ <col-type> (1 byte type code, §3.10.3)
+ | 0x82 <string> <col-type> (declared-name annotation)
 ```
+
+The `0x82` **declared-name annotation** carries the column's declared
+type spelling (a tagged `0x30` string, non-empty) when it differs from
+the type code's default render — `v::f64` and `s::string` round-trip
+their declared spellings instead of drifting to the code defaults
+(`float`, elided). Writers emit the annotation **iff** the declared
+spelling differs from the default render (minimal-annotation
+determinism: a redundant annotation is non-canonical); readers apply
+it as the rendered type name, and it wins over the §3.10.5
+inner-code refinement. At most one annotation per column; readers
+reject duplicates and empty names.
 
 `<col-payload>`: depends on `<col-type>`. See §3.10.3 for layouts.
 
@@ -495,8 +539,17 @@ each column independently.
 | 0x33 | bytes | length-prefixed × row_count |
 | 0x80 | nullable | wrapper (§3.10.5) |
 | 0x81 | mixed | per-row tagged values (§3.10.6) |
+| 0x82 | — | declared-name annotation prefix (§3.10.1; not a payload code) |
 
 Other type codes reserved.
+
+**Encode refusal (loud, never lossy):** a cell whose value the declared
+column type cannot carry exactly REFUSES at encode on every lane — an
+integer outside the declared width never wraps and never silently
+widens, and a float that does not round-trip exactly through a
+declared reduced width (`f16`, `f32`) never silently approximates (it
+refuses, naming the value and the width; the writer's caller widens
+the column or spells the representable value).
 
 #### 3.10.4 Bit-packed bool columns
 
@@ -881,7 +934,7 @@ When flag bit 1 is set, a schema reference appears between the 12-byte
 header and the root value:
 
 ```
-12 1 schema-ref-tag 0x10 / 0x11 / 0x12
+12 1 schema-ref-tag 0x10 / 0x11 / 0x12 / 0x13
 13 ... schema-ref-payload variable; per-tag (below)
 N ... <root value> first byte at the end of schema-ref
 ```
@@ -890,14 +943,17 @@ Schema-ref-tag values:
 
 | tag | form | payload |
 |------|------|---------|
-| 0x10 | content-hash only | 32 bytes: SHA-256 of schema's CXCol strict-canonical encoding |
+| 0x10 | content-hash only | 32 bytes: the schema content-hash (below) |
 | 0x11 | inline schema | uvarint(schema_byte_len) <schema_byte_len bytes>; the schema as a recursive CXCol blob |
 | 0x12 | content-hash + name hint | 32 bytes hash; uvarint(name_byte_len); <name bytes> as UTF-8; informational |
-| 0x13–0x1F | reserved | |
+| 0x13 | multihash (self-describing) | `uvarint(multicodec) ‖ uvarint(digest_len) ‖ digest` — the same content-hash carried as a true varint multihash (sha2-256 = `0x12`, 32; crypto-agility L34). Decoders FAIL CLOSED on an unregistered multicodec, a length contradicting the registry row, or an algorithm they cannot recompute — never a fall-through |
+| 0x14–0x1F | reserved | |
 
-The schema content-hash is computed as **`SHA-256(cx_to_data_bin(parse(schema_text), strict_canonical))`**.
-This is the same primitive `cx_hash` applies to data documents; see
-[`canonical.md`](canonical.md).
+The schema content-hash is the **SHA-256 of the schema's strict
+CANONICAL TEXT bytes** — the same bytes `cx hash` covers, so a schema's
+identity IS its Tier-1 document identity (I1, E2/L82; the former
+CXCol-encoding basis and its framing ambiguity, #724, are superseded).
+See [`canonical.md`](canonical.md).
 
 The `0x12` name hint is a UTF-8 string (commonly the schema's source
 filename, e.g., `"book.cxs"`). Readers MAY use it to look up the
@@ -916,8 +972,8 @@ document.
 The reader walks the schema's type-declaration tree in lockstep with
 the data. Each map node (`0x50 ...`) corresponds to a schema type
 declaration whose name matches the map's enclosing context (root
-matches `[?cx schema-of <name>]`; nested matches the parent's
-`[elem <name>]` declaration).
+matches the schema header's `of` attribute; nested matches the
+parent's `[elem <name>]` declaration).
 
 For each `(key, value)` pair in a map:
 
@@ -971,7 +1027,7 @@ inside the unknown subtree.
 Schema (`server.cxs`):
 
 ```cx
-[?cx schema-of server]
+[schema of=server]
 [server
  [body [elem]]
  [attr host::string [req]]
@@ -1036,7 +1092,7 @@ Same schema as §3.13.3. Document adds an undeclared `region` field:
 [server host=localhost port=8080 active=true region=us-west]
 ```
 
-Under `[?cx schema-mode open]` (default), the validator accepts
+Under `mode=open` (default), the validator accepts
 `region`; the encoder encodes it self-describing:
 
 ```
@@ -1049,7 +1105,7 @@ The reader walks the schema cursor in lockstep through `host`, `port`,
 declaration; it falls back to reading a self-describing value (full
 `0x30 ...` string).
 
-Under `[?cx schema-mode closed]`, the encoder rejects `region` at
+Under `mode=closed`, the encoder rejects `region` at
 emit time (`S012`); a schema-driven CXCol document with `region`
 encoded as self-describing fallback would be rejected by the reader's
 validation pass even if the wire bytes decode correctly.

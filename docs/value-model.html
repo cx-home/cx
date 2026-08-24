@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The value model — CX Guide</title>
+<link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="index.html" aria-label="CX — home">
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
+  </a>
+  <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
+  <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
+  <a class="brand-sub" href="about.html">About →</a>
+  <div class="side-search">
+    <input id="side-search-input" type="search"
+           placeholder="Search the guide…"
+           autocomplete="off" spellcheck="false" data-prefix="" />
+    <ul id="side-search-results" class="side-search-results" hidden></ul>
+  </div>
+  <section><h4>Start here</h4><ul>
+    <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
+    <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
+    <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a class="active" href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
+    <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
+    <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
+    <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
+    <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
+    <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
+    <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
+    <li><a href="lib-bytes.html">bytes</a></li>
+    <li><a href="lib-crypto.html">crypto</a></li>
+    <li><a href="lib-csv.html">csv</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
+    <li><a href="lib-env.html">env</a></li>
+    <li><a href="lib-format.html">format</a></li>
+    <li><a href="lib-fp.html">fp</a></li>
+    <li><a href="lib-ft.html">ft</a></li>
+    <li><a href="lib-geo.html">geo</a></li>
+    <li><a href="lib-hash.html">hash</a></li>
+    <li><a href="lib-html.html">html</a></li>
+    <li><a href="lib-i18n.html">i18n</a></li>
+    <li><a href="lib-io.html">io</a></li>
+    <li><a href="lib-json.html">json</a></li>
+    <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
+    <li><a href="lib-jsonschema.html">jsonschema</a></li>
+    <li><a href="lib-locale.html">locale</a></li>
+    <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
+    <li><a href="lib-math.html">math</a></li>
+    <li><a href="lib-mime.html">mime</a></li>
+    <li><a href="lib-path.html">path</a></li>
+    <li><a href="lib-process.html">process</a></li>
+    <li><a href="lib-prof.html">prof</a></li>
+    <li><a href="lib-random.html">random</a></li>
+    <li><a href="lib-re.html">re</a></li>
+    <li><a href="lib-sched.html">sched</a></li>
+    <li><a href="lib-similar.html">similar</a></li>
+    <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
+    <li><a href="lib-test.html">test</a></li>
+    <li><a href="lib-time.html">time</a></li>
+    <li><a href="lib-url.html">url</a></li>
+    <li><a href="lib-uuid.html">uuid</a></li>
+    <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
+    <li><a href="lib-vc.html">vc</a></li>
+    <li><a href="lib-xap.html">xap</a></li>
+    <li><a href="lib-xsp.html">xsp</a></li>
+    <li><a href="xap.html">Overview</a></li>
+    <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
+    <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
+    <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
+    <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
+  </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
+</aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">The value model</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
+<main>
+<section id="value-model">
+  <h1>The value model</h1>
+  
+    <section id="vm-invariant">
+      <h2>One value, one address</h2>
+      
+        <p>Everything in Ring 0 rests on one promise: <b>a CX value has the
+         same identity and the same meaning whether it is stored,
+         transmitted, queried, executed, replicated, rendered, or handled
+         by an agent.</b> Identity is a content address — the SHA-256 of
+         the value's strict canonical text — and no surface, protocol,
+         or internal representation is allowed to present a different
+         address or a different value for the same canonical bytes.</p>
+        <p>That sentence is a contract, not a description. A store key, a
+         wire frame, a query result, a cached computation, and a signed
+         approval all name values by the same address, so they can be
+         compared, deduplicated, and audited against each other without
+         translation. When two systems disagree about a value, the
+         address settles it.</p>
+        <pre>
+          <code class="language-sh">$ cx hash order.cx
+         sha2-256:f09867e376c94f2f…   # the same address on every machine,
+                                      # every OS, every binding</code>
+        </pre>
+        <p>The address is computed over <b>strict canonical text</b> — the
+         one normalized spelling of a value (attribute order, whitespace,
+         number formatting, and quoting all pinned; see <a class="xref" href="identity.html">identity</a>).
+         Reformatting a document does not move its address; changing one
+         field does. <code>cx eq</code> is exactly \"do the canonical bytes
+         agree\", and <code>cx hash</code> is exactly \"name those bytes\".</p>
+        <p class="note">A surface that <b>cannot</b> honor the invariant for a value class
+         must refuse loudly rather than improvise. Two classes refuse
+         today by design: <b>closures</b> (they capture an environment no
+         canonical text can carry) and <b>secret-bearing values</b>
+         (hashing the plaintext would turn every address into a
+         secret-confirmation oracle; hashing the redacted form would
+         give two secrets one address). Refusal is a typed error —
+         never a silent fallback address. <b>Unbounded iterators</b> (an
+         address that depends on consumption state is not an identity)
+         are today force-materialized before addressing; the typed
+         refusal for them is approved surface that lands with the next
+         identity revision.</p>
+      
+    </section>
+    <section id="homoiconicity">
+      <h2>Code is data — and has the same identity</h2>
+      
+        <p>CX is homoiconic: a program is a CX document. A <code>[?for]</code>
+         directive is an element whose name happens to start with <code>?</code> —
+         attributes, body, closing bracket — structurally identical to
+         <code>[user]</code> or <code>[order]</code>. There is no separate syntax tree for
+         code; the reader emits the same element values the rest of the
+         system manipulates.</p>
+        <p>For Ring 0 this has a precise consequence: a Ring-0 consumer
+         reads a program the way an XML parser reads XSLT — as an inert
+         tree. It can hash it, diff it, validate it, convert it, and
+         hand it on, with no means of running it (there is no evaluator
+         in Ring 0). <b>Identity therefore belongs to Ring 0</b>: a
+         definition hashes to the same bytes everywhere, whether or not
+         the reader could execute it.</p>
+        <ul>
+          
+            <li><b>One toolchain.</b> Parser, formatter, linter, LSP,
+              tree-sitter grammar — one each, used identically on code
+              and data. <code>cx fmt</code> formats both; <code>cx lint</code> checks both;
+              the same CXPath vocabulary that queries a user database
+              queries the program that processes it.</li>
+            <li><b>One identity contract.</b> A program has a content
+              address just like a document does. Build caches key on the
+              hash of canonicalized program text; if the program is
+              semantically unchanged, the cache hits even when the
+              layout differs.</li>
+            <li><b>One projection table.</b> Every CX value — code or data —
+              projects to JSON, XML, YAML, TOML, Markdown, and the
+              binary forms. Shipping code alongside data over the wire
+              is shipping one more document.</li>
+            <li><b>Macros are unnecessary.</b> A directive is data; you
+              build or rewrite it with the same element construction and
+              <code>[?modify]</code> machinery you use on data. Deploy-time program
+              rewrite is a path predicate plus an action — no string
+              substitution, no template engine.</li>
+          
+        </ul>
+        <pre>
+          <code class="language-sh"># A program IS a document — the same tools apply unchanged.
+         $ cat prog.cx
+         [?for [in $x (1, 2)] [yield [n $x]]]
+
+         # Identity works on code exactly as on data:
+         $ cx hash prog.cx
+         sha2-256:b9f0fe8ea88e5cbf…
+
+         # Reformat-stable: a relaid-out spelling of the same program
+         # hashes to the same address.
+         $ cx hash prog-reformatted.cx
+         sha2-256:b9f0fe8ea88e5cbf…</code>
+        </pre>
+      
+    </section>
+    <section id="vm-senses">
+      <h2>The four senses of identity</h2>
+      
+        <p>The word \"identity\" is overloaded in every data system. CX
+         gives each sense its own name, and a specification (or this
+         guide) that says \"identity\" without qualification always
+         means the content address.</p>
+        <table>
+          <thead>
+            
+              <tr>
+                <th>Sense</th>
+                <th>Where</th>
+                <th>What it is</th>
+              </tr>
+            
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td><b>Document ID / IDREF</b></td>
+                <td><code>#name</code>, <code>[ref @name]</code></td>
+                <td>intra-document naming — authored data; participates in the canonical bytes; NOT a content address</td>
+              </tr>
+              <tr>
+                <td><b>Content address</b></td>
+                <td><code>cx hash</code>, store keys, claims</td>
+                <td>THE identity: <code>sha2-256:&lt;hex&gt;</code> over strict canonical text</td>
+              </tr>
+              <tr>
+                <td><b>Canonical equality</b></td>
+                <td><code>cx eq</code>, <code>[$cx:equal]</code></td>
+                <td>a predicate — true iff the canonical bytes agree; not an address</td>
+              </tr>
+              <tr>
+                <td><b>Collection equality</b></td>
+                <td>the value model (cxdm §5)</td>
+                <td>per-kind comparison semantics (order and dedup rules inside values); never an identity claim about documents</td>
+              </tr>
+            
+          </tbody>
+        </table>
+        <p>Additional identity <b>tiers</b> exist above the content address —
+         a code-equivalence tier for definitions and a computation
+         address for cached results (see <a class="xref" href="computation-identity.html">computation-identity</a> in
+         Ring 1) — but they are additional, never substitutes. Trust
+         decisions bind to the content address of the exact text.</p>
+      
+    </section>
+    <section id="vm-lanes">
+      <h2>What rides with a value — the three lanes</h2>
+      
+        <p>Not everything about a value belongs <i>in</i> the value. CX admits
+         exactly three ways to attach information to one, and the list
+         is closed — no fourth lane, no intrinsic envelope under any
+         name.</p>
+        <table>
+          <thead>
+            
+              <tr>
+                <th>Lane</th>
+                <th>Mechanism</th>
+                <th>Identity?</th>
+                <th>Use for</th>
+              </tr>
+            
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>1 — inert side-band</td>
+                <td><code>[?meta]</code> — rides with the value</td>
+                <td><b>excluded</b> — annotating never moves the address</td>
+                <td>display hints, tooling notes, PII flags</td>
+              </tr>
+              <tr>
+                <td>2 — detached claims</td>
+                <td>hash-keyed values ABOUT an address</td>
+                <td>each claim has its own address</td>
+                <td>provenance, approvals, type bindings, lineage</td>
+              </tr>
+              <tr>
+                <td>3 — event envelopes</td>
+                <td>journal entries wrapping payloads verbatim</td>
+                <td>envelope hashed with its payload</td>
+                <td>attribution: who did what, when, in which stream</td>
+              </tr>
+            
+          </tbody>
+        </table>
+        <p>The lane discipline is what keeps identity honest. Two records
+         that differ only in a <code>[?meta]</code> annotation are the <b>same
+         value</b> — same address, same cache hits, same approvals. Two
+         records that differ in an effective date are <b>different
+         values</b>, which is why validity dates are payload data and not
+         metadata (see <a class="xref" href="time.html">bitemporal</a> in Ring 2). And a claim about a
+         value — who produced it, who approved it, what schema it
+         satisfied — is a first-class value of its own, keyed by the
+         subject's address, so it can be signed, stored, and audited
+         without touching the subject.</p>
+      
+    </section>
+    <section id="vm-expression">
+      <h2>Expression identity</h2>
+      
+        <p>Because programs are documents, expressions have addresses too.
+         <code>[?quote]</code> returns the expression as a value — after hole
+         substitution, exactly what would evaluate — and that value's
+         canonical text is the expression's identity. One expression,
+         one address, wherever it was authored and however it was
+         formatted.</p>
+        <pre>
+          <code class="language-cx">[?quote [total-due
+        [$sum [$map $lines [?fn ($l) [* $l@qty $l@unit-price]]]]
+        [tax-for $region]]]
+      [; one Tier-1 address for this pricing expression — the same
+         address in the author's editor, the store, and the approval
+         that binds to it. ]</code>
+        </pre>
+        <p>Expression identity is <b>name-sensitive by design</b>: <code>$x</code> and
+         <code>$y</code> are different expressions with different addresses.
+         (Alpha-normalized equivalence — treating <code>$x</code> and <code>$y</code> as the
+         same binder — exists as an additional tier for cache sharing,
+         never as a redefinition of identity.) This is what makes
+         address-bound approval workable: an agent proposes a concrete
+         expression, a principal approves <b>that address</b>, and no
+         rewording, re-parameterization, or reformatting can ride the
+         approval (see <a class="xref" href="commands-effects.html">commands-effects</a> in Ring 1).</p>
+      
+    </section>
+    <section id="vm-type">
+      <h2>Type identity</h2>
+      
+        <p>A type's identity is a pair: <b>the element name plus the
+         content hash of the schema text that defines it.</b> Two parties
+         adopt a type by exchanging that pair — nominal typing with zero
+         registry, zero coordination service.</p>
+        <pre>
+          <code class="language-text">("order", sha2-256:9c1f0e442ab8...)
+         # a 3PL and a merchant agree on what an order IS by
+         # exchanging these two tokens out-of-band</code>
+        </pre>
+        <p>The pair is primarily <b>recoverable by computation</b> — the name
+         comes from the value, the hash from the schema in force, so
+         there are no extra bytes to desync. When a type identity must
+         be <i>asserted</i> (at a trust boundary), it travels as a detached
+         Lane-2 <code>[type-binding]</code> claim, and asserting it obliges
+         fail-closed validation. A schema document that anchors a type
+         identity declares exactly one type, so editing one type can
+         never silently move another's identity. Schema <i>revisions</i> are
+         distinct type identities — the link between them is explicit
+         lineage, covered in <a class="xref" href="schema.html">schema-evolution</a>.</p>
+      
+    </section>
+    <section id="vm-version">
+      <h2>Version identity</h2>
+      
+        <p>Values are immutable, so a value is never \"at version 17\" —
+         a <b>name</b> is. Version identity belongs to refs: named
+         pointers whose advance history is journal-backed, dense, and
+         gap-free. \"v17\" means: the 17th advance of this ref.</p>
+        <p>Every advance is an act and every act appears in the history —
+         including force-moves and re-pointing a ref at its current
+         target. Racing writers resolve through <b>one conflict
+         vocabulary</b>: a compare-and-set that states its expectation
+         either as the prior address (<code>expect=&lt;address&gt;</code>, with <code>\"\"</code>
+         meaning must-not-exist) or as a position (<code>expect-pos=N</code>), and
+         the loser receives one well-known conflict error, locally and
+         over the wire.</p>
+        <p class="note"><b>No version fields on values.</b> A document carrying
+         <code>version=17</code> as authored data is domain data — it is not the
+         value's version, and nothing in the substrate reads it as one.
+         The version lives in the ref history, where it is auditable;
+         the value lives at its address, where it is immutable. The
+         store's use of refs and histories is covered in <a class="xref" href="store.html">store</a>.</p>
+      
+    </section>
+  
+</section>
+</main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>The value model</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
+<script src="highlight/highlight.js" defer></script>
+<script src="search-index.js" defer></script>
+<script src="search/search.js" defer></script>
+</body>
+</html>

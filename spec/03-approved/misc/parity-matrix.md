@@ -58,7 +58,7 @@ canonical bytes for the same input.
 | Native dict/list `loads` / `dumps` | — | ✓ | ✓ | ✓ |
 | Atom scalar | ✓ | ✓ | ✓ | ✓ |
 | Layer-1 19-method API (see [`misc/bindings.md §2.1`](bindings.md)) | 19/19 | 19/19 | 19/19 | 19/19 |
-| Schema validate | ✓ | ✓ | ✓ | 📋 |
+| Schema validate | ✓ | ✓ | ✓ | ✓ |
 | CXPath as value kind | 🚧 | 📋 | 📋 | 📋 |
 | `[?match]` multi-arm | 📋 | 📋 | 📋 | 📋 |
 | `[?modify]` pure-functional | 📋 | 📋 | 📋 | 📋 |

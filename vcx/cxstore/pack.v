@@ -37,6 +37,17 @@ pub const pack_version = u16(1)
 pub const pack_version_keyed = u16(2)
 pub const header_size = 64
 
+// pack_hash_mh_code — the multicodec code stamped into every entry's
+// formerly-reserved u16 at entry offset 6 (I1 crypto-agility §4, L34): the
+// 32-byte hash slot is self-describing. sha2-256 (0x12) is the registry's
+// required default and the only algorithm this engine implements; all 1.0
+// algorithms are 32-byte — a non-32-byte digest requires pack v3. Readers
+// FAIL CLOSED on any other code, including the pre-epoch zero (the I1 stamp
+// migrated the committed registry packs in place — the slot is covered by
+// no CRC, so the rewrite changed no hash, CRC, or signature). Must match
+// cx.cx_hash_registry — pinned by pack_multicodec_test.v.
+pub const pack_hash_mh_code = u16(0x12)
+
 // entry_kind enum (pack_format.md)
 pub const kind_document = u8(0)
 pub const kind_tombstone = u8(1)
@@ -147,7 +158,7 @@ fn build_entry(kind u8, hash []u8, payload []u8, with_crc bool, do_compress bool
 	put_u32(mut e, elen) // entry_length (incl. this prefix)
 	e << kind // entry_kind
 	e << flags // entry_flags (bit0 crc, bit1 compressed)
-	put_u16(mut e, 0) // reserved
+	put_u16(mut e, pack_hash_mh_code) // hash-slot multicodec code (was reserved)
 	e << hash[..32] // doc_hash (of original payload)
 	put_u32(mut e, plen) // payload_length (stored, possibly compressed)
 	if use_comp {
@@ -384,6 +395,21 @@ fn parse_pack(data []u8) !PackReader {
 	// typed refusal). 44 bytes per record: 32 hash + 8 offset + 4 length.
 	if i64(4) + i64(count) * 44 > i64(footer.len) {
 		return error('cxstore: pack index count ${count} exceeds footer (corrupt/truncated pack)')
+	}
+	// I1 (crypto-agility §4, L34): every entry's u16 multicodec slot must
+	// name an algorithm this engine implements — sha2-256 only. Fail closed
+	// at open on any other code (a pack hashed with an algorithm we cannot
+	// verify must error, never appear empty or self-verify vacuously).
+	for i in 0 .. int(count) {
+		rec_off := footer_start + 4 + i * 44
+		eoff := read_u64(data, rec_off + 32)
+		if eoff + 8 > u64(footer_start) {
+			return error('cxstore: pack index offset out of range (corrupt pack)')
+		}
+		code := read_u16(data, int(eoff) + 6)
+		if code != pack_hash_mh_code {
+			return error('cxstore: unsupported hash multicodec 0x${code:04x} in pack entry (sha2-256 = 0x0012 is the only implemented algorithm)')
+		}
 	}
 	// Parse the membership filter (sits after the index records in the footer).
 	// `filter_kind` (the formerly-reserved bloom_seed slot) selects the kind: a

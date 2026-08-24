@@ -594,7 +594,8 @@ func EvalCode(input, program, outputTarget string) (string, error) {
 
 // EvalCodeCaps is the capability-aware EvalCode: it evaluates `program` under an
 // explicit grant spec `caps` (deny-by-default; "" = pure-only, "all"/"*" = full,
-// else a comma/space list such as "net" or "net:host:443" — host-scoped). The
+// else a comma/space list such as "net" or "net=host:443" — host-scoped; an
+// unknown capability name is a typed CXER0274 error, #713). The
 // grant applies only to this call. Wraps the C ABI cx_code_eval_caps (cap bit 38).
 func EvalCodeCaps(input, program, caps, outputTarget string) (string, error) {
 	defer cxThread()()

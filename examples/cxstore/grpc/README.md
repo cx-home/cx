@@ -8,8 +8,8 @@ only the transport scheme on the client's `[$store:open]` URL differs:
 
 | Transport | Client URL scheme |
 |-----------|-------------------|
-| CSRP (HTTP/1.1) | `cx-store+http://host:port/store/` (`cx-store+https://` for TLS) |
-| gRPC (HTTP/2)   | `cx-store+grpc://host:port/store/`  (`cx-store+grpcs://` for TLS) |
+| CSRP (HTTP/1.1) | **`cx-store+https://host:port/store/`** — TLS, the form to copy (`cx-store+http://` = loopback dev only) |
+| gRPC (HTTP/2)   | **`cx-store+grpcs://host:port/store/`** — TLS, the form to copy (`cx-store+grpc://` = loopback dev only) |
 
 ## Pieces
 
@@ -47,8 +47,13 @@ make stop       # stop the daemon
 
 ## Notes
 
-- The client uses cleartext h2c (`cx-store+grpc://`) against a loopback daemon.
-  For production, run the daemon with TLS and use `cx-store+grpcs://`.
+- **The URL in this example is not the one to copy.** `cx-store+grpc://` is
+  cleartext h2c — the **loopback development shortcut**, so the quickstart
+  needs no certificates. The production form is **`cx-store+grpcs://`**
+  against a TLS daemon; never use the cleartext scheme off `127.0.0.1`.
+  (No TLS-on-loopback demo ships deliberately: a self-signed cert would
+  force `tls-verify=false` on the client, and teaching *disable
+  verification* is worse than an honestly-labeled cleartext shortcut.)
 - Because the Python / Go / Rust client libraries drive the same core client,
   they reach the gRPC server simply by opening a `cx-store+grpc://` URL — one
   client implementation, no per-language gRPC code.

@@ -17,6 +17,7 @@ import cx
 
 import os
 import code
+import platform as _
 
 struct Splice {
 	start int

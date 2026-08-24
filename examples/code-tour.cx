@@ -25,7 +25,7 @@
 
    Run (the sample document binds as $doc — document-driven sections
    need it; without --data the document-rooted queries raise loudly):
-     cx examples/code-tour.cx --data=examples/code-tour.input.cx #]
+     cx --data=examples/code-tour.input.cx examples/code-tour.cx #]
 
 [# ─── Module imports — [?lib] (§12.1) ───
    Three resolver shapes: bundled stdlib name ('cx-stdlib/strings'),
@@ -262,9 +262,16 @@
 
   [# ─── §14. Resilience directives (§10.2) ─── #]
 
+  [; The retry below EXHAUSTS its budget on purpose — that is the lesson.
+     Its value is therefore an [err …], and since #853 an err in element
+     CHILD position PROPAGATES (code.md §6.4.1): written bare it would
+     short-circuit this [section], then [tour], and the whole tour would
+     render as nothing but that one err. The paren SEQUENCE is the escape the
+     ruling documents — a sequence is not element construction, so it CONTAINS
+     the refusal and the demonstration survives. ]
   [section title='retry with exponential backoff'
-    [?retry max=3 backoff=exponential delay=1ms
-      [$checked-div 100 0]]]
+    ([?retry max=3 backoff=exponential delay=1ms
+      [$checked-div 100 0]])]
 
   [section title='timeout + fallback composition ($err bound in recover-with)'
     [?fallback

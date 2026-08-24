@@ -77,9 +77,15 @@ def test_attr_bool():
     srv = cxlib.parse(fx('api_config.cx')).at('config/server')
     assert srv.attr('debug') is False
 
-def test_attr_float():
+def test_attr_decimal_inference():
+    # I1 identity epoch: a bare decimal-point literal infers DECIMAL
+    # (fixed-point base-10, scale preserved) — float needs an explicit
+    # ::float ascription (covered by test_loads_scalars / api_scalars.cx).
+    from decimal import Decimal
     srv = cxlib.parse(fx('api_config.cx')).at('config/server')
-    assert abs(srv.attr('ratio') - 1.5) < 1e-9
+    v = srv.attr('ratio')
+    assert isinstance(v, Decimal), f'expected Decimal, got {type(v).__name__}'
+    assert v == Decimal('1.5')
 
 def test_attr_missing_returns_none():
     srv = cxlib.parse(fx('api_config.cx')).at('config/server')

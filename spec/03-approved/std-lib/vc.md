@@ -62,14 +62,20 @@ The `claim` carries a verbatim §22.2 `[delegation …]`. `from`/`to` principals
 # ── verify ─────────────────────────────────────────────────────────────────
 # Verify signature + validity window + non-revocation. Returns a
 # [vc-verification status=… …] report (never throws on an invalid VC).
-#   status ∈ valid | bad-signature | expired | not-yet-valid | revoked | malformed
+#   status ∈ valid | bad-signature | expired | not-yet-valid | revoked |
+#            malformed | unsupported-suite
 # `now` anchors the validity-window check. `opts.revoked` is the set of revoked
 # VC ids (a fold of revoke events — §5); offline-clean for a did:key issuer.
 [?def verify  scope=public pure   [returns element] ($vc::element $now::datetime $opts::map {})
   [$vc-verify $vc $now $opts]]
 
-# valid? — convenience boolean over verify.
-[?def valid?  scope=public pure   [returns bool]    ($vc::element $now::datetime $opts::map {})
+# valid — convenience boolean over verify.
+#
+# Spelled `valid`, NOT `valid?`: the lexicon does not admit `?` inside an
+# identifier, so a `?`-suffixed name has no qualified call form at all
+# ([$vc:valid? …] is a parse error) and the surface would exist only in
+# this document (RULED: 739-1a).
+[?def valid   scope=public pure   [returns bool]    ($vc::element $now::datetime $opts::map {})
   [$vc-valid $vc $now $opts]]
 
 # ── present ────────────────────────────────────────────────────────────────
@@ -93,6 +99,16 @@ The `claim` carries a verbatim §22.2 `[delegation …]`. `from`/`to` principals
 
 The signed bytes are `render_canonical(credential-without-the-proof-child)` (the lossless, deterministic CX canonical form — [core/canonical.md](../core/canonical.md)). `issue` removes any existing `proof`, canonicalizes, signs with `[$crypto:ed25519-sign]`, and attaches the `[proof …]` with the signature base58btc-encoded (`z`-multibase). `verify` reconstructs the identical bytes (strip `proof`, canonicalize), recovers the issuer's Ed25519 key from `verification-method`/`issuer` via [`did`](did.md) (`key-of` for did:key; `resolve` for did:web), and checks the signature with `[$crypto:ed25519-verify]`. Proof type: `Ed25519Signature2020`.
 
+**Suite enforcement (crypto-agility, stream 19 L36 / #702):** `verify` READS
+`proof type=` and gates it against the signature-suite registry
+([hash.md](hash.md) registry doctrine) **before touching any signature
+byte**. An unknown, reserved-unimplemented, or **absent** suite tag is
+`status=unsupported-suite` — never a default-suite attempt: a stripped tag
+over a still-valid signature is the downgrade attack the gate exists to
+detect (the signature covers the proof-stripped preimage, so tag removal
+does not invalidate it). The W3C `Ed25519Signature2020` / `ed25519-2020`
+spellings map to the registry key `ed25519`; no other spelling is aliased.
+
 ## §5. Revocation (decision #3)
 
 A VC is offline-verifiable, so revoking a *still-unexpired* VC is the cert-revocation problem. The model:
@@ -102,7 +118,7 @@ A VC is offline-verifiable, so revoking a *still-unexpired* VC is the cert-revoc
 
 **(3a — implemented now): single-runtime, journal-backed.** Correct and complete for one runtime; `verify` enforces against the local fold.
 
-**(3b — documented, forward-compatible): cross-runtime propagation.** Because revocation is a journaled *event*, fleet-wide revocation across the [§9.2](../../02-working/xap_architecture.md) load-balanced workers / federated peers / vessels is **just** letting `revoke` events ride the same federation journal-sync that carries every other event — `verify`'s logic is unchanged; only how `revoked-set` is populated changes. Eventual-consistency, offline-tolerant (a verifier enforces on its last-synced view). This is a [§28.3](../xap/xap.md) **D5 open decision** (revocation propagation across N runtimes; trust-domain honor-list) — the federation sync transport itself is out of scope here (relates to the XSP RFC #31). The day-one event model means adopting (3b) needs **no redesign** of issue/verify.
+**(3b — documented, forward-compatible): cross-runtime propagation.** Because revocation is a journaled *event*, fleet-wide revocation across the [§9.2](../../_archived/xap_architecture.md) load-balanced workers / federated peers / vessels is **just** letting `revoke` events ride the same federation journal-sync that carries every other event — `verify`'s logic is unchanged; only how `revoked-set` is populated changes. Eventual-consistency, offline-tolerant (a verifier enforces on its last-synced view). This is a [§28.3](../xap/xap.md) **D5 open decision** (revocation propagation across N runtimes; trust-domain honor-list) — the federation sync transport itself is out of scope here (relates to the XSP RFC #31). The day-one event model means adopting (3b) needs **no redesign** of issue/verify.
 
 ## §6. Trust integration (R9)
 
@@ -114,12 +130,19 @@ A VC is offline-verifiable, so revoking a *still-unexpired* VC is the cert-revoc
 
 | Function | Purity | Effect |
 |---|---|---|
-| `issue`, `verify`, `valid?`, `present` | **pure** | none (Ed25519 sign/verify are deterministic; did:key resolution is offline). A did:web *issuer* requires the caller to resolve first. |
+| `issue`, `verify`, `valid`, `present` | **pure** | none (Ed25519 sign/verify are deterministic; did:key resolution is offline). A did:web *issuer* requires the caller to resolve first. |
 | `revoke`, `revoked-set` | **impure** | journal write / read |
 
 ## §8. Errors / statuses
 
 `verify` returns a status rather than throwing: `valid` · `bad-signature` · `expired` · `not-yet-valid` · `revoked` · `malformed`. `issue` errors: `CXER-VC-KEY-INVALID` (seed not 32 bytes), `CXER-VC-CLAIM-INVALID` (claim is not a `[delegation …]`).
+
+**Valid-time note (stream 8, bitemporal.md L115).** `issued-at`/`expires` — and
+the `expired`/`not-yet-valid` statuses they drive — are a **valid-time window**:
+a per-module instance of the reserved half-open vocabulary
+([`journal.md`](journal.md) §2.9). The spellings predate the vocabulary and
+keep their shipped names; the semantics (from-inclusive, to-exclusive validity
+against a decision instant) are the same concept.
 
 ## §9. Cross-references
 
@@ -128,4 +151,13 @@ A VC is offline-verifiable, so revoking a *still-unexpired* VC is the cert-revoc
 - [std-lib/crypto.md](crypto.md) — Ed25519 sign/verify.
 - [std-lib/journal.md](journal.md) — the revoke-event log.
 - [std-lib/authz.md](authz.md) — the PEP that consumes the delegation.
+- **Erasure legal holds (stream 20, #692):** the journal's `[legal-hold]`
+  claim (journal.md §2.11; a detached-Ed25519-signed Lane-2 claim value on
+  the reserved `cx:legal-hold` stream) proves possession of its `key=` by
+  signature over the claim's strict canonical text sans `[sig]` — binding
+  that key to the named `[signer]` identity is THIS spec's domain, exactly
+  the §4 recovery model (did:key `key-of` / did:web `resolve`): a hold
+  whose signer the deployment cannot bind through the credential model
+  carries no more authority than its raw key possession, and the
+  `erase-subject` precondition treats it accordingly.
 - Issue #26 (foundational did + vc); #31 (XSP / revocation propagation transport).

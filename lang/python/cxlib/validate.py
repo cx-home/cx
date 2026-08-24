@@ -115,7 +115,8 @@ def validate(doc: str, schema: str) -> ValidationReport:
     ValidationReport with one Diagnostic per finding in document order.
 
     Raises RuntimeError on parse failure (malformed CX in either input).
-    Schema-load errors (missing schema-of, unknown anchor, etc.) surface
+    Schema-load errors (missing [schema of=...] header, unknown anchor,
+    etc.) surface
     as a single error-severity Diagnostic, not as an exception."""
     err = ctypes.c_char_p(None)
     doc_b = doc.encode()

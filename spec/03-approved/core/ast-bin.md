@@ -41,7 +41,7 @@ format-stability lock and the cap-bit commitments in
 [element_count nodes]
 ```
 
-The version byte is **9**. Decoders MUST reject buffers
+The version byte is **10**. Decoders MUST reject buffers
 whose version byte is higher than the highest version they support.
 Lower-versioned buffers are decodable in forward-compatible mode (the
 decoder treats absent v(N) extensions as their default-zero values).
@@ -49,8 +49,13 @@ decoder treats absent v(N) extensions as their default-zero values).
 Producers emit the LOWEST version byte that carries the document:
 **6** for the common case, **8** when a PathNode / MatchNode /
 ModifyNode is present, **9** when any Element carries a `[table[…]]`
-payload (the §4.8 table record). A document that needs no v8/v9
-feature therefore produces bytes identical to the pre-v8/v9 layout,
+payload (the §4.8 table record), **10** when any MapNode carries a
+declaration-only entry (RULED: MSS-4, #917): a declared entry `{k: ::T}`
+suffixes its `key_data_type` string with `+decl:<kind>`
+(`string+decl:int`) and its value node is the inert null placeholder —
+the entry's value is ABSENT, never null, and readers MUST NOT surface
+the placeholder as the value. A document that needs no v8/v9/v10
+feature therefore produces bytes identical to the earlier layout,
 and every buffer an older reader could decode is unchanged.
 
 ---
@@ -108,6 +113,7 @@ Each node is recursively encoded as:
 | `0x15` | ModifyNode | `OptString:doc OptString:focus u16:action_count actions[]` — see §4.6. Advisory `source` / top-level `loc` and per-action `action.loc` are NOT carried on the wire. |
 | `0x16` | IteratorNode | `u8:source_kind u8:single_use u16:source_args_count nodes[]` — see §4.7 for the byte-ordinal table and per-source-kind argument shapes. The runtime-derived `memo` / `exhausted` fields are NOT carried on the wire; `single_use` IS. Gated by capability bit 37. |
 | `0x17` | Table record | `u16:col_count cols[] u32:row_count rows[]` — see §4.8. NOT a standalone Node kind: it carries the pooled `Element.table` payload ([`ast.md` §Element "table"](ast.md)) and is valid ONLY as the **first** entry of an Element's `nodes[]` (counted in `child_count`). Format version 9; gated by capability bit 40. Decoders MUST reject `0x17` anywhere else, and in any buffer whose version byte is < 9. |
+| `0x18` | HoleNode | `String:name` — the authorable VARIABLE HOLE `$name` (I1 row 9, E1 L78): a structural node kind (like AliasNode, never a scalar); canonical text spelling `$name`, XML projection `<cx:var name="…"/>`. Additive at I1. (Distinct tag SPACE from data-bin's scalar tags — data-bin `0x18` is bigint.) |
 | `0xFF` | Skip / unknown | (no payload; decoder skips the node) |
 
 **Atom encoding.** Atoms encode under the existing `0x03 Scalar` tag

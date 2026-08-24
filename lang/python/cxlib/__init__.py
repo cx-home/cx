@@ -19,7 +19,7 @@ from .cx import (
     toml_to_data_bin_schema_driven,
     csv_to_data_bin_schema_driven, tsv_to_data_bin_schema_driven,
     psv_to_data_bin_schema_driven, from_data_bin_schema_driven,
-    eval_code, eval_code_streaming, eval_code_caps,
+    eval_code, eval_code_streaming, eval_code_streamable, eval_code_caps,
 )
 from .store import StoreClient
 from .binary import ast_bin as to_ast_bin
@@ -56,5 +56,5 @@ from .code import (
     Doc, Node, parse as parse_doc,
     cx_code_eval, cx_code_diagram, cx_code_tree,
 )
-# CX-native conformance fixture loader (mirror of vcx/cx/fixture_loader.v).
+# CX-native conformance fixture loader (mirror of vcx/fixtures/fixture_loader.v).
 from .fixtures import FixtureCase, load_fixtures, parse_fixture_suite

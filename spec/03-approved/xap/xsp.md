@@ -1,18 +1,24 @@
-# XSP — the XAP Stream Protocol (frame format, v1)
+# XSP — frame + session layer (v1) and the profile model
 
 **Status:** Current (graduated to `03-approved` from `02-working`; the `cx-stdlib/xsp`
 frame codec is shipped + conformance-tested). Resolves the **frame layer** of issue
 **#31** (RFC: XAP Stream Protocol). Defines the self-describing XSP frame, its v1
-transport bindings, and — since the #560 adoption (2026-07-22) — the **§5 session
-layer** (heartbeat/liveness, credit flow control, reconnect-resume), implemented on
-fabric's served tier. Multiplexing beyond per-stream credit and the
-WebSocket/WebTransport bindings remain deferred (§5.4).
+transport bindings, the **§5 session layer** (heartbeat/liveness, credit flow
+control, reconnect-resume — the #560 adoption, 2026-07-22), and — since the
+stream-4 split (#676, the #651/#516 partition campaign) — the **§6 profile
+model**: this document is the GENERIC layer (frame v1 unchanged, session
+mechanics), and everything protocol-specific (payload verb vocabularies,
+semantic feature tokens, error rows) lives in a **profile**. Multiplexing
+beyond per-stream credit and the WebSocket/WebTransport bindings remain
+deferred (§5.4).
 
 > XSP is **not** XAP. XAP is the experience paradigm (the cascade, surfaces,
-> trust — [`xap.md`](xap.md)). **XSP is the streaming wire
-> protocol that carries XAP**: a self-describing frame + transport bindings.
-> Layering: net → http → directives → xap; XSP is the framed transport beneath
-> XAP's semantics.
+> trust — [`xap.md`](xap.md)). **XSP is the streaming wire protocol**: a
+> self-describing frame + transport bindings + session mechanics. What the
+> payloads MEAN belongs to the negotiated **profile** (§6) — the XAP profile
+> carries XAP's semantics; the store profile is the store wire. Layering:
+> net → http → directives → profile semantics; XSP is the framed transport
+> beneath them.
 
 ---
 
@@ -22,11 +28,15 @@ WebSocket/WebTransport bindings remain deferred (§5.4).
 CX-level framed-stream primitive with XAP semantics on top, or **(b)** bake the
 whole protocol into XAP. **Verdict: (a), realized as a dedicated `cx-stdlib/xsp`
 module.** The frame is self-delimiting and transport-agnostic (a reusable
-length-delimited framing primitive); the *meaning* of the `type` enum and the
-`principal` DID is XAP's. For v1 both live in the one `xsp` module — the frame
-codec is generic enough to reuse, and a premature split would add a layer with
-no second consumer yet. The payload is opaque bytes; the canonical encoding is
-**CX `data-bin`** (we dogfood our own binary codec, [`codec.md`](../core/codec.md)).
+length-delimited framing primitive); the *meaning* of a `request`/`reply`/
+`event` payload belongs to the negotiated profile (§6). The original caveat —
+"a premature split would add a layer with no second consumer yet" — resolved
+itself at stream 4 (#676): the store profile IS the second consumer, and the
+generic/profile split this section anticipated is now normative. The payload
+is opaque bytes; the canonical binary encoding is **CX `data-bin`**
+(we dogfood our own binary codec, [`codec.md`](../core/codec.md)); profiles
+rule which lane each payload role rides (the store profile's lanes-by-role
+ruling is the template).
 
 ## §2. The frame — self-describing, self-delimiting
 
@@ -51,12 +61,20 @@ One frame, **network byte order (big-endian)**:
   byte-stream transports (TCP/TLS/Unix — no message boundaries) and
   message-oriented ones (WebSocket/WebTransport) unchanged.
 - **`version`** makes the frame self-describing and forward-compatible: a v2 may
-  append fields; a v1 decoder rejects an unknown version (`CXER-XSP-VERSION`)
-  rather than misparsing — future-proofing by construction.
-- **`type`** is the XAP frame semantics (request/event/reply/cancel +
-  ping/pong/error for liveness). `event` carries a committed cascade event;
-  `request` carries an intent (`[do …]`); `reply` carries its outcome; `cancel`
-  aborts a stream; `error` carries a failure-channel value.
+  append fields; a v1 decoder rejects an unknown version (`CXER5000
+  E_XSP_VERSION`) rather than misparsing — future-proofing by construction.
+  The same posture governs the reserved flag bits: a v1 decoder REJECTS a
+  frame with any of bits 2–7 set (`CXER5005 E_XSP_FLAGS`) — a future flag
+  must be negotiated (§5.0), and silently tolerating unknown bits would make
+  that negotiation unenforceable.
+- **`type`** is the generic exchange grammar (request/event/reply/cancel +
+  ping/pong/error for liveness, credit when negotiated). What a payload MEANS
+  is the profile's (§6): under the **XAP profile** `event` carries a committed
+  cascade event and `request` carries an intent (`[do …]`); under the **store
+  profile** `request`/`reply` carry store verbs and `event` carries
+  credit-governed result/∂ streams. Generic invariants hold everywhere:
+  `reply` answers the `request` on its stream-id; `cancel` aborts a stream;
+  `error` carries a failure-channel value.
 - **`principal`** references the DID (#26 / xap.md §22.1). Identity is
   **orthogonal to transport**: the frame names *who*, verification (proof of key
   control, `did/verify-control`) and authorization (VCs ↔ §22.2 capabilities)
@@ -89,11 +107,17 @@ Attrs default: `type` required; `stream` = 0; `principal` = "" (anonymous);
 `eos` = false; `binary` = true. Errors are failure-channel values (`[err …]`),
 per the SAP §1 / stdlib §5 model.
 
-**Error codes** (`CXER-XSP-*`, symbolic — matching the trust-stack style):
-`CXER-XSP-VERSION` (unknown version), `CXER-XSP-TRUNCATED` (buffer shorter than
-the frame declares), `CXER-XSP-TYPE` (unknown type), `CXER-XSP-LENGTH` (payload
-exceeds the 2^32-1 ceiling), `CXER-XSP-PAYLOAD` (data-bin payload fails to
-parse).
+**Error codes** — numeric and registered since I5 stream 4 (L166, #717;
+generic-layer sub-block `CXER5000–5009` of the `CXER5000–5049` band,
+per-code rows in the store-profile spec's §4 error table):
+`CXER5000 E_XSP_VERSION` (unknown version), `CXER5001 E_XSP_TRUNCATED`
+(buffer shorter than the frame declares), `CXER5002 E_XSP_TYPE` (unknown
+type), `CXER5003 E_XSP_LENGTH` (payload exceeds the 2^32-1 ceiling, or
+principal exceeds 2^16-1), `CXER5004 E_XSP_PAYLOAD` (data-bin payload fails
+to parse/emit), `CXER5005 E_XSP_FLAGS` (reserved flag bits 2–7 set). The
+pre-I5 symbolic spellings (`CXER-XSP-VERSION` …) are RETIRED — a cutover,
+never dual-accepted; the XSP-AUTH handshake's `CXER-XSP-AUTH-*` codes are
+the identity model's and are unchanged by this allocation.
 
 ## §4. Transport bindings (same frame, different carriers)
 
@@ -119,12 +143,36 @@ already has:
   cascade.
 
 This is **asymmetric** (server-push stream + per-intent upstream POST) — exactly
-the shape SSE+POST fits, and the marine surface's actual traffic profile (a
+the shape SSE+POST fits, and the reference instance's actual traffic profile (a
 high-rate event stream down, occasional intents up). #31 rejected SSE+POST as
 the *general* XSP transport (it is one-way + text + a round-trip per upstream
 message); it remains the correct **v1 web binding** until the WebSocket binding
 lands, at which point the *same frames* switch carriers with no client logic
 change above the transport adapter.
+
+**Envelope negotiation (amendment — RULED: SSE-1, owner "1b" 2026-08-20,
+`ledger/rulings_2026_08_20_sse_downstream.md`).** The XSP framing of the SSE
+downstream is **negotiated per subscription**, mirroring the upstream's
+`[envelope codec="xsp"]` opt-in; the envelope changes **carriage only, never
+content**. The plain feed shapes of xap.md's SSE prerequisite section
+(`[surface …]` / `[surface-delta …]` / the deployment host's named per-feature
+readouts) are ALSO normative, so this section reads as negotiated carriage of
+the same events — never a second event vocabulary:
+
+- A subscriber that requests the XSP envelope — `[envelope codec="xsp"]` on
+  the generic `[sse-subscribe …]` promotion, or `?envelope=xsp` on the XAP
+  `GET /events` / `GET /stream` feeds (the same per-subscription query shape
+  as the delta opt-in) — receives each event's `data:` field as
+  base64(XSP `event` frame, `binary=false`) whose payload carries
+  **byte-for-byte** the CX event text the plain lane delivers for the same
+  event. SSE metadata fields (`event:` names, `id:`, `retry:`) stay plain SSE
+  lines — transport metadata, not the event.
+- A subscriber that does not opt in receives the plain-CX events unchanged,
+  byte-identically. Both carriages coexist on one topic/feed; each committed
+  event fans out in both, each subscriber receiving exactly its negotiated
+  one.
+- An unknown envelope/codec value refuses the subscription loudly (never a
+  silent plain fallback an XSP-decoding client could not parse).
 
 ## §5. Session layer — heartbeat, flow control, reconnect-resume
 
@@ -135,31 +183,49 @@ every §5 mechanism rides existing fields, application-level negotiation, and
 one new negotiated-only frame type. A §5-unaware v1 peer interoperates
 untouched — it simply never negotiates the features.
 
-### §5.0. Feature negotiation (post-attach session query)
+### §5.0. Feature negotiation — transcript-covered offers + post-attach limits
 
-Session features are negotiated on the attached channel, AFTER the
-application attach handshake (for fabric: the XSP-AUTH M1/M3 exchange on
-stream 0, identity model §4 — whose M4 confirm shape belongs to the
-graduated identity model and is never extended by this layer). The client
-sends a `session` query; the server answers:
+Negotiation has TWO surfaces with a bright line between them (the stream-4
+L164 ruling, closing the #718 downgrade-strip hole):
+
+**1. Semantic tokens are transcript-covered.** Profile and feature OFFERS
+that change what the peers may SAY to each other ride the XSP-AUTH
+handshake itself: M1 and M2 carry the offered profile + semantic-feature
+token sets, and M4 confirms the selection — **inside the signed
+transcript** (identity model §4.4; the downgrade-protection property is
+thereby extended from versions/suites to vocabulary). A MITM that strips a
+token (`store-feed`, `store-delta`, `credit`, `publish-batch`, `resume`,
+`peer`, …) breaks the transcript signature and the handshake aborts —
+never a silent downgrade. Because this changes what the HKDF-labeled
+transcript covers, the negotiation carriage lands with the
+`xsp-auth/2/…` → `/3/` label bump (the label IS the version handle; a
+`/2/` transcript MUST NOT be replayable against a `/3/` verifier).
+
+**2. Operational limits stay post-attach.** The attached-channel `session`
+query remains for values that tune an already-agreed vocabulary — windows,
+timeouts, liveness cadence:
 
 ```cx
-[fabric-session features="heartbeat credit resume publish-batch" liveness-ms=30000
+[fabric-session features="heartbeat credit resume publish-batch rotate" liveness-ms=30000
                 pending-window=64 request-timeout-ms=30000]
 ```
 
-- `features` — space-separated tokens the server speaks. A client MUST NOT
-  send a `credit` frame (§5.2) to a server that did not advertise `credit`,
-  nor a `publish-batch` verb (fabric.md §13, #607) to one that did not
-  advertise `publish-batch` (the client's batch lane falls back to
-  pipelined single publishes); a client that never asks gets the pre-§5
-  posture unchanged. Unknown tokens are ignored (forward-compatible).
+- `features` — space-separated tokens the server speaks. The shipped set
+  includes `rotate` (session-credential rotation, #640) — carried here
+  since its introduction, now listed. Any token that changes SEMANTICS is
+  transcript-bound per surface 1; the advert restates the confirmed set
+  plus operational-only tokens. A client MUST NOT send a `credit` frame
+  (§5.2) to a peer that did not confirm `credit`, nor a `publish-batch`
+  verb (fabric.md §13, #607) to one that did not confirm it (the client's
+  batch lane falls back to pipelined single publishes); a client that
+  never asks gets the pre-§5 posture unchanged. Unknown tokens are ignored
+  on this discovery surface (forward-compatible).
 - A server that does not know the query refuses it as an unknown verb; the
   client tolerates the refusal and behaves as a pre-§5 peer.
 - This negotiation is why the frame `type` space can grow without a version
-  bump: a type is only ever sent to a peer that advertised the feature
+  bump: a type is only ever sent to a peer that confirmed the feature
   carrying it. An un-negotiated `credit` byte at a pre-§5 peer is rejected
-  loudly (`CXER-XSP-TYPE`), never misparsed.
+  loudly (`CXER5002 E_XSP_TYPE`), never misparsed.
 
 ### §5.1. Heartbeat / liveness
 
@@ -221,6 +287,21 @@ buffers nothing across connections; the durable log is the resume source
 - On reconnect the client re-runs the attach handshake (identity is
   re-proven — resume NEVER bypasses XSP-AUTH), then re-subscribes with a
   cursor: `[subscribe … from=N]` replays from sequence N (inclusive).
+- **Resume guards (stream 7 F2, #714 item 2).** The observe-mode "a client
+  that kept nothing starts wherever it chooses" freedom is exactly two
+  silent failures waiting — a gap (skipped events) and a rewind — and both
+  are **checkable server-side** against the requested cursor and the
+  retained tail. A subscription declaring `:monotonic-reads`/`:gapless`
+  (the fabric §7 consistency floor) gets those checks enforced at
+  re-subscribe: under `:gapless`, a `from=` below the stream's retained
+  floor refuses `cx-err:CXER4991` (naming the requested position and the
+  floor) instead of silently replaying from the seam; `from=` beyond the
+  head stays the standing out-of-range refusal. Undeclared observe
+  subscriptions keep the pre-§5 replay contract byte-identically — the
+  vocabulary is declare-and-verify, never a silent default change. (The
+  stream-3 live surfaces run the same cursor checks unconditionally —
+  live.md CXER5072/5073; declaring the tokens there is validated and adds
+  nothing the default does not already check.)
 - **Group subscriptions resume implicitly**: the committed offset (§19.5
   cumulative ack) is durable server-side state, so a bare re-subscribe
   resumes at committed+1 and the redelivery window is exactly the
@@ -234,6 +315,15 @@ buffers nothing across connections; the durable log is the resume source
   per-observer state.
 - Transient channels do not resume: latest-wins re-read after re-attach is
   the defined semantics.
+- **Head-set cursors (multi-stream feeds):** a subscription whose source
+  set is a SET of streams (the store profile's change feed) resumes with a
+  **map** cursor — `[from [s plane= name=? pos=]…]`, one entry per source
+  stream — never a scalar: no cross-stream total order exists, so a scalar
+  seq would assert an ordering the source cannot honor. The scalar `from=N`
+  remains the single-stream form (fabric). Positions are per-stream, dense,
+  strictly increasing; resume replays strictly above the given positions.
+  Normative shapes and the retention-boundary refusal live in the store
+  profile spec (its §5).
 
 ### §5.4. Still deferred (scoped)
 
@@ -241,10 +331,36 @@ buffers nothing across connections; the durable log is the resume source
   weighted scheduling across streams).
 - **WebSocket & WebTransport bindings** (§4 — the same frames switch
   carriers unchanged).
-- **Cross-runtime VC revocation propagation** (vc.md §5 3b) rides the same
-  server↔server channel once defined.
 
-## §6. Cross-references
+(Cross-runtime VC revocation propagation, formerly deferred here, is now
+owned by the store profile's `peer` channel — a subscription to the peer's
+revocations journal stream; see the store profile spec.)
+
+## §6. Profiles — the semantic layer
+
+A **profile** is a feature-token set + a payload verb vocabulary + its
+error rows, negotiated per §5.0 surface 1 (transcript-covered). The
+generic layer never grows semantics; growth is only ever a token. Rules:
+
+- Frame v1 (§2) and the session mechanics (§5.1–§5.3) are shared by every
+  profile unchanged. A profile MUST NOT redefine frame fields or session
+  invariants; it defines what payloads mean and which encodings each
+  payload role rides.
+- Unknown profile tokens are ignored on the discovery surface;
+  un-negotiated frame types and verbs are loud errors — never misparsed,
+  never silently tolerated (§5.0).
+- Error rows are numeric and registered (governance's error-code registry);
+  a profile allocates its band there in the same change that implements
+  the codes (#717 discipline).
+
+Registry (v1):
+
+| Profile | Vocabulary | Normative home |
+|---|---|---|
+| **XAP** | cascade events, intents (`[do …]`), fabric verbs — today's semantics, re-labeled | [`xap.md`](xap.md), [`fabric.md`](fabric.md), [`xap_identity_model.md`](xap_identity_model.md) |
+| **STORE** | the store wire: store/journal verbs, credit-governed query/iter/list streams, change feed + ∂ frames, object wire, `peer` revocation channel | the stream-4 store profile spec (#676; `spec/03-approved/xap/xsp_store_profile.md` until promotion) |
+
+## §7. Cross-references
 
 - Issue #31 (this RFC); #26 (did/vc — the `principal` field's identity).
 - [`xap_identity_model.md`](xap_identity_model.md) — the identity model

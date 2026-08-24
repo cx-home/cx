@@ -1,6 +1,7 @@
 module main
 
 import cx
+import fixtures
 import os
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
@@ -183,7 +184,7 @@ fn test_headline_rebless_scope() {
 			continue
 		}
 		path := os.join_path(conformance_dir2(), f)
-		for c in cx.load_fixtures(path) {
+		for c in fixtures.load_fixtures(path) {
 			src := c.sections['in_cx'].trim_space()
 			if src == '' || src == '[ignored]' || src == '[empty]' {
 				continue

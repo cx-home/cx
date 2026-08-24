@@ -1,0 +1,127 @@
+[# Section 1b — choosing a ring: the audience router. The four reader
+   paths ruled in the #826 proposal §4, plus the task router (moved here
+   from the rings section, which now hands off). Each path terminates in
+   something the reader can DO. Authored 2026-08-19 for #826. #]
+
+[section id=choosing group='Start here' n='1b' title='Choosing a ring'
+
+  [child id=choose-task n=1b.1 title='Start from what you want to do'
+    [intro
+      """Take the smallest ring that answers your question — you can
+         always move outward later, and nothing you wrote against a
+         lower ring changes when you do, because the lower ring is
+         unchanged by the higher one (see [[rings]] for why that holds
+         structurally)."""]
+
+    [table
+      [tr [th 'If you want to…'] [th 'You need']]
+      [tr [td 'read, write, or convert CX documents'] [td 'Ring 0']]
+      [tr [td 'give data a stable identity, or diff two versions'] [td 'Ring 0']]
+      [tr [td 'validate against a schema'] [td 'Ring 0']]
+      [tr [td 'embed CX somewhere that must not run code'] [td 'Ring 0']]
+      [tr [td 'query, transform, or generate with programs'] [td 'Ring 1']]
+      [tr [td 'run a program with controlled access to files or the network'] [td 'Ring 1']]
+      [tr [td 'store data, keep history, or serve it'] [td 'Ring 2']]
+      [tr [td 'host an XAP feature'] [td 'Ring 2']]
+      [tr [td 'publish, discover, or install a feature'] [td 'Ring 3']]
+      [tr [td 'call CX from Go, Python, Rust, or V'] [td 'Ring 3']]]
+
+    [body
+      """If the table already answered you, jump to that ring's group in
+         the sidebar — each ring's pages open with what the ring is and
+         end with the packs it gives you. If you recognize yourself in
+         one of the four readers below, follow the path — each is
+         ordered, each stop earns the next, and each ends in something
+         you can do."""]]
+
+  [child id=choose-evaluator n=1b.2 title='The first-time evaluator'
+    [body
+      """*\"What is this, and is it for me?\"* — answerable without
+         meeting a single directive:"""]
+    [list
+      [item """[[intro]] — what CX is and what problem it refuses to
+              have."""]
+      [item """[[rings]] — the shape of the system: four rings, one
+              import direction."""]
+      [item """[[quickstart]] — the first five minutes; it runs inside
+              Ring 0 before it shows you anything that executes."""]
+      [item """[[comparison]] — CX against JSON, YAML, XML, Protocol
+              Buffers, and friends, in both directions."""]]
+    [body
+      """You are done when you can say what CX would replace in your
+         stack and which ring that replacement lives in. If the answer
+         is \"nothing\", the comparison page will have told you that
+         honestly."""]]
+
+  [child id=choose-data-adopter n=1b.3 title='The data-format adopter'
+    [body
+      """You want the format — parse, validate, convert, hash, diff —
+         and you never intend to run a program. Ring 0 is a complete
+         product for you, and this path never asks you to understand
+         the evaluator:"""]
+    [list
+      [item """[[data]] — the data language end to end: elements,
+              scalars, collections, anchors."""]
+      [item """[[value-model]] — one value, one address: what identity
+              buys you and what rides in the three lanes."""]
+      [item """[[surfaces]] — projections to and from JSON, XML, YAML,
+              TOML, Markdown, and the binary forms."""]
+      [item """[[identity]] — canonical form and hashing, the mechanics
+              under the promises."""]
+      [item """[[schema-evolution]] — validation, computable
+              compatibility, and what happens when schemas change."""]
+      [item """[[tour-data]] — fifty worked data recipes; [[analytics]]
+              for the columnar and bridge story."""]]
+    [body
+      """You are done when `cx fmt`, `cx validate`, `cx hash`, and
+         `cx diff` are in your build, and the Ring-0 pack index (on the
+         ring's pages) tells you exactly which library surface you may
+         lean on — and that `http` is not in it."""]]
+
+  [child id=choose-app-author n=1b.4 title='The application author'
+    [body
+      """You want to build something that runs — programs first, then a
+         feature on the platform:"""]
+    [list
+      [item """[[quickstart]] — the Ring-1 half: your first programs."""]
+      [item """[[code]] — the code language: directives, CXPath,
+              patterns, errors as values."""]
+      [item """[[capabilities]] — deny-by-default and the grant flags;
+              read this before your first `--allow-*`."""]
+      [item """[[computation-identity]] and [[commands-effects]] — what
+              makes results cacheable and effects auditable."""]
+      [item """[[tour-programs]] — fifty worked program recipes."""]
+      [item """[[store]] and [[xap-distribution]] — when your program
+              becomes a feature others install: authoring, hosting, and
+              distribution."""]]
+    [body
+      """The end-to-end worked story is the ORIEL reference surface — a
+         storefront with departments, baskets, checkout, and three
+         renderers, built entirely from declarations. Its developer
+         guide is `docs/dev/oriel-guide.md` (\"build a surface the ORIEL
+         way\"), and the task-oriented developer set under `docs/dev/`
+         walks authoring, consuming, and distributing features."""]]
+
+  [child id=choose-operator n=1b.5 title='The platform operator'
+    [body
+      """You run the thing: stores, journals, services, upgrades."""]
+    [list
+      [item """[[store]] — the store platform: content addressing,
+              refs, journals, folds."""]
+      [item """[[bitemporal]], [[consistency]], [[event-evolution]] —
+              the three contracts you operate under: two time axes,
+              declared guarantees, and reading old events under new
+              vocabulary."""]
+      [item """[[operations]] — daemons, health, recovery, security
+              posture; the operator reading order continues in
+              `docs/dev/` (store service, management, security)."""]
+      [item """[[xap-distribution]] — the distribution machinery your
+              developers will ask you to operate."""]]
+    [body
+      """You are done when you can answer, without opening a runbook:
+         where is history kept (one journal, append-only), what does a
+         correction do to an invoice already sent (nothing —
+         [[bitemporal]]), and what happens when a consumer asks for a
+         guarantee a replica cannot give (a loud refusal naming the
+         token — [[consistency]])."""]]
+]

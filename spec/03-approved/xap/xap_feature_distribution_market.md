@@ -7,10 +7,10 @@
 **Status:** Current (owner G3 2026-07-12, #363 item 6(a) — graduated from
 `02-working`; authored 2026-07-04). Full design, no "TBD" seams; implementation is
 staged (§10) and the P0+ surface (`$xap:pkg-tree/seal/sign/publish/install/verify`)
-ships and is exercised by the xap-marine and xap-store-console registry flows and
+ships and is exercised by the reference-instance and xap-store-console registry flows and
 their stage-1 invariant gates. Companion to
-[`xap_grammar_composition.md`](../../02-working/xap_grammar_composition.md) (the compose
-gate every install runs), [`xap_authoring_process.md`](../../02-working/xap_authoring_process.md)
+[`xap_grammar_composition.md`](../xap/xap_grammar_composition.md) (the compose
+gate every install runs), [`xap_authoring_process.md`](../xap/xap_authoring_process.md)
 (the three spec layers a package carries), and the approved
 [`xap.md`](xap.md) (trust model, federation, the marketplace ruling)
 and [`std-lib/store.md`](../std-lib/store.md) /
@@ -56,6 +56,13 @@ A **feature package** seals the feature's authoring-process directory as one art
 - **Form:** a **subtree object** (`store.md` §7) in a CX store — the git-style
   tree-of-blobs the store already defines. No archive format is invented; a package
   *is* a stored subtree.
+- **Archetypes distribute as ordinary feature packages.** An archetype — an
+  immutable base feature a third-party catalog sells, instantiated per tenant
+  under the refinement contract — introduces NOTHING here: it travels as a
+  sealed feature package whose Tier-1 hash is exactly the `of=` pin an
+  instance binding names. Instantiation semantics, the refinement contract
+  (rename/add/tighten/select; repurpose and loosen refuse), and the re-bless
+  discipline are the grammar-composition spec's §4.3 (#866).
 - **Identity (two-tier, exactly the store/code-identity model):**
   - **Tier-1** — the subtree root hash: the *exact artifact*. Installs pin Tier-1.
   - **Tier-2** — code identity (`code-identity.md`) of the defs inside `<feature>.cx`:
@@ -76,7 +83,7 @@ install:
 | `kind` | Unit | Contains | Install gate |
 |---|---|---|---|
 | **feature** | the XAP composition unit | the layers of §1: spec (grammar), impl, fixtures, assets | verify (§3) + **compose-gate W1–W6** + `needs` consent |
-| **library** | plain CX code — modules/defs with **no grammar and no governance surface** (an NMEA codec, a spreadsheet writer, geodesy math) | modules + fixtures + docs | verify (§3) + **module-surface check** (exported defs present, Tier-2 identities as declared) |
+| **library** | plain CX code — modules/defs with **no grammar and no governance surface** (a wire-protocol codec, a spreadsheet writer, geodesy math) | modules + fixtures + docs | verify (§3) + **module-surface check** (exported defs present, Tier-2 identities as declared) |
 | **client** | a medium materializer app (a separate project by N-CLIENT-2) | `client.cxd ⊢ client.cxs` + renderer impl | verify (§3) + client-spec validation |
 
 One substrate, per-kind gates — a library never meets the compose gate (nothing to
@@ -88,7 +95,7 @@ compose), a feature never skips it.
   what a principal can *say*).
 - **code plane** — any package `requires` a **library** package (implementation;
   hash-pinned, resolved at load/build; changes what the code *calls*). Features
-  require libraries (the `own-ship` gateway adapter requires the NMEA codec);
+  require libraries (a gateway adapter requires its wire-protocol codec);
   libraries require libraries; **a library never `uses` a feature** (code does not
   depend on grammar).
 
@@ -165,7 +172,7 @@ Normative rules:
 ## §2. The manifest — `package.cxd ⊢ package.cxs`
 
 The fourth authoring document kind at the package boundary (draft schema in
-[`xap_schemas/package.cxs`](../../02-working/xap_schemas/package.cxs)):
+[`xap_schemas/package.cxs`](../xap/xap_schemas/package.cxs)):
 
 | Block | Kinds | Carries |
 |---|---|---|
@@ -210,7 +217,7 @@ Exactly the approved trust model applied at the package boundary
   adds the *provenance* (who published these bytes); it does not touch the runtime
   authority model.
 - **Offline-first:** every verification above is offline-verifiable (hash, signature,
-  VC chain). A boat at sea installs from a local store mirror with full trust checks
+  VC chain). An offline field deployment installs from a local store mirror with full trust checks
   and no phone-home — the same property the identity model already holds for sessions.
 
 ---
@@ -260,7 +267,7 @@ Four stages; **artifacts, hashes, and signatures never change across them**:
 
 | Stage | What | Adds |
 |---|---|---|
-| **0 — monorepo** | features as in-repo dirs, path refs (the marine reference today) | nothing — the floor |
+| **0 — monorepo** | features as in-repo dirs, path refs (the reference instance today) | nothing — the floor |
 | **1 — internal git registry** | sealed + signed packages in a store-layout repo (§4.1); publish by PR; consume by pin; vendor by clone | packaging discipline, review-gated publish, audit trail |
 | **2 — served registry** | a `cx-store://` (CSRP) service over the **same** store — the git repo may remain origin-of-truth with the service as a head | server-side catalog search over grammar data (P1) |
 | **3 — market** | the market XAP (§5) wraps the registry | entitlements (P2), commerce (P3), federation |
@@ -318,7 +325,7 @@ the issued VC:
 | Model | VC shape |
 |---|---|
 | **one-time / perpetual** | no expiry; bound to principal or tenant; attenuated to a **version range** (typically the purchased major, `1.x`). Updates within range verify against the same VC; a new major is a new purchase or an upgrade VC (which supersedes — market policy, invisible above the seam). |
-| **subscription** | **short-lived VCs re-issued on a cadence** (the certificate-renewal pattern — preferred over long-lived VC + revocation polling, which reintroduces phone-home), with a declared **grace window** so an offline holder (a vessel mid-passage) keeps verifying through the term + grace. Lapse fails the *next* enable/verify point per the consuming XAP's policy; the running XAP is untouched (N-DIST-1 — lapse is contractual, surfaced by the composer, never mechanical seizure). |
+| **subscription** | **short-lived VCs re-issued on a cadence** (the certificate-renewal pattern — preferred over long-lived VC + revocation polling, which reintroduces phone-home), with a declared **grace window** so an offline holder (a deployment mid-mission) keeps verifying through the term + grace. Lapse fails the *next* enable/verify point per the consuming XAP's policy; the running XAP is untouched (N-DIST-1 — lapse is contractual, surfaced by the composer, never mechanical seizure). |
 | **per-seat** | an **org-level VC delegable into at most N principal-bound sub-VCs** — seat assignment *is* attenuating delegation (the §22.2 chain doing commercial work), performed by the org's admin, journaled at the org, offline-verifiable per seat. No seat-counting service; the delegation chain is the count. |
 | **metered / usage** | the entitlement grants enable **plus a reporting obligation** in its terms; the consuming XAP's **hash-chained journal is the non-repudiable meter** (committed intents, attributable and replayable), settled post-hoc below the seam. |
 | **trial / free tier** | a time-boxed and/or subset-attenuated **gratis VC**. Same machinery end to end; free is not a special case. |
@@ -394,6 +401,22 @@ Normative points per step:
    goes name → manifest → content), signature + manifest recorded. Released
    aliases are immutable (re-pointing is a market-rule violation; consumers pin
    hashes anyway).
+   **Schema lineage rides the publish (RULED: SEA-1).** When the store already
+   holds a previous released version of the name, publish diffs the two content
+   trees' schema entries (`*.cxs`, matched by tree path) and, for each changed
+   schema, runs the `cx schema compat` classification
+   ([`core/schema.md`](../core/schema.md) §16.5): a **derivable** change derives
+   its Lane-2 `[schema-lineage]` claim + upcaster mechanically; a
+   **reinterpreting** change REFUSES the publish (`CXER4890`) with the
+   classifier's specific missing-rule prompts — unless the package itself
+   carries an **authored** claim covering exactly the detected old→new address
+   pair (tree entries whose path ends `lineage.cx` — SEA-1d). The accepted
+   claims (derived or authored) are stored beside the manifest as one lineage
+   document, aliased **`<name>@<version>+lineage`**. An added schema file links
+   nothing; a removed schema file publishes (feature pruning is legal — the
+   install-time coverage gate below still guards any journal history it leaves
+   behind). Additive changes therefore deploy silently; only a genuine
+   reinterpretation stops the author, with the rule it is missing named.
 4. **acquire/verify** — fetch by hash from any source; run §3 verification.
 5. **compose-gate** — run **W1–W6** (`xap_grammar_composition.md`) over the target
    XAP's enabled set ∪ {candidate}. Conflicts are `[!compose-conflict]` values shown
@@ -411,10 +434,13 @@ Normative points per step:
    an update that would rebind existing utterances surfaces as ambiguity prompts, never
    silent change.
 8. **rollback** — re-pin the previous hash. Journal + snapshot compatibility across
-   feature versions follows the fold rules of the core spec (`xap.md` §14.4): a
-   feature's events remain replayable; a downgraded feature MUST tolerate (skip, not
-   crash on) event kinds introduced by the newer version — schema-mode `open` is the
-   floor that makes this hold.
+   feature versions follows the evolution rules of
+   `schema_event_evolution.md` (stream 21 — the former `xap.md` §14.4
+   citation resolved to no such rule, #716 item 3): a feature's events
+   remain replayable; a downgraded feature MAY skip event kinds introduced
+   by the newer version ONLY as the narrow downgrade exception, and every
+   skip is COUNTED AND VISIBLE (tolerance is discovery-surfaces-only —
+   never a silent drop).
 
 ### §6.1. Function surface & error codes (P0)
 
@@ -429,10 +455,10 @@ parallel primitive). `pkg-tree` and `pkg-sign` are pure; the rest are env-aware
 | `[$xap:pkg-tree ENTRIES]` (pure) | `ENTRIES` = a sequence of `[entry path='…' CONTENT]` (CONTENT = one text/element payload per entry). Returns the canonical `[package-tree …]` content document — entries **sorted by path**, byte-stable under canonical form, so its store hash *is* the package's Tier-1 hash. Empty, duplicate, absolute, or `..`-traversing paths → `CXER4880`. |
 | `[$xap:pkg-seal STORE TREE DRAFT]` | Validates `DRAFT` (kind-aware §2 structure: `kind`, `name`, `version`, `publisher.did` present; `needs` on a `kind=library` → `CXER4880`), stores `TREE`, writes its Tier-1 hash into the manifest's `hash=`, stores the completed manifest **beside** the tree (tag-object pattern), and returns `[sealed hash=<tree> manifest=<manifest-hash>]`. |
 | `[$xap:pkg-sign MANIFEST PRIVATE-KEY]` (pure) | Returns the manifest with its `[signature alg=ed25519 key=… value=…]` filled: a detached ed25519 signature **over the Tier-1 `hash=` string**. `key=` names the key in the publisher's DID document; binding is checked at verify time (signing is possession, verification is trust). |
-| `[$xap:pkg-publish STORE NAME VERSION MANIFEST-HASH]` | Sets alias `NAME@VERSION → MANIFEST-HASH` (§6.3 — the name resolves to the manifest; its `hash=` pins the content). Re-pointing an existing released alias to a *different* hash → `CXER4887`; re-publishing the identical hash is idempotent. |
+| `[$xap:pkg-publish STORE NAME VERSION MANIFEST-HASH]` | Sets alias `NAME@VERSION → MANIFEST-HASH` (§6.3 — the name resolves to the manifest; its `hash=` pins the content). Re-pointing an existing released alias to a *different* hash → `CXER4887`; re-publishing the identical hash is idempotent. **Schema-lineage stage (RULED: SEA-1, §6 step 3):** against the highest previously-released version of NAME, changed `*.cxs` tree entries (path-matched) classify via `core/schema.md` §16.5 — derivable changes derive their `[schema-lineage]` claim + upcaster into a lineage document stored beside the manifest and aliased `NAME@VERSION+lineage`; a reinterpreting change uncovered by an authored in-tree claim (`…lineage.cx`, endpoints matching) refuses `CXER4890` carrying the classifier's `[missing-rule …]` prompts. No previous version, or no schema deltas → the stage is a no-op. |
 | `[$xap:pkg-fetch STORE REF]` | `REF` = a manifest Tier-1 hash or `name@version` alias (aliases are consulted only to discover hashes — trust never rests on one). Returns the manifest document. Missing alias/object → `CXER4886`. |
 | `[$xap:pkg-verify STORE REF OPTS?]` | The §3 fail-closed chain, in order: (1) the manifest's pinned content tree loads (absent → `CXER4886`) and **re-hashes to `hash=`** (divergent → `CXER4881`; unreachable through an honest content-addressed store — it guards dishonest mirrors, behind the store's own `CXER1120`); (2) the detached signature verifies against the **publisher DID** (unsigned or non-verifying → `CXER4882`); (3) every VC in `OPTS.attestations` (+ entitlements, P2) verifies (else `CXER4883`; `OPTS.now` pins the verification clock for determinism). Success returns `[package-verification status=ok name=… version=… kind=… hash=… publisher=…]`; every failure is the err value of its stage — nothing is staged on failure. |
-| `[$xap:pkg-install XAP STORE REF OPTS?]` | `XAP` = the `[xap …]` deployment document, or a previous `[installed …]` report (chaining — the report carries the updated doc). The consumer pipeline (§6 steps 4–6), fail-closed at each stage: **fetch** → **verify** (full chain above) → **per-kind gate** — `feature`: W1–W6 over `XAP`'s enabled feature set ∪ {candidate} via `[$xap:compose]` (conflicts → `CXER4884` carrying the `[conflict …]` set), **plus** the exports-surface check whenever the tree carries a code entry (§1.2 — a `<name>.cx` with no `exports`, `exports` with no code entry, or a declared def absent from the code each → `CXER4884`); `library`: exports-surface check (every `exports` def present in the tree's code; a declared Tier-2 `identity=` must match the code's — else `CXER4884`); `client`: `client.cxd` structural validation → **consent = grants** — with `OPTS.runtime` + `OPTS.grantee`, issue **exactly** the manifest's `needs` set as delegations into the runtime's authority store (enabling *is* granting; a library has no `needs` and receives no grants — N-DIST-2) → **enable**: returns the updated `XAP` deployment document with the package pinned by hash under `[features]`/`[libraries]` and the `requires` closure resolved hash-pinned beneath it (the §7 lockfile view). |
+| `[$xap:pkg-install XAP STORE REF OPTS?]` | `XAP` = the `[xap …]` deployment document, or a previous `[installed …]` report (chaining — the report carries the updated doc). The consumer pipeline (§6 steps 4–6), fail-closed at each stage: **fetch** → **verify** (full chain above) → **per-kind gate** — `feature`: W1–W6 over `XAP`'s enabled feature set ∪ {candidate} via `[$xap:compose]` (conflicts → `CXER4884` carrying the `[conflict …]` set), **plus** the exports-surface check whenever the tree carries a code entry (§1.2 — a `<name>.cx` with no `exports`, `exports` with no code entry, or a declared def absent from the code each → `CXER4884`); `library`: exports-surface check (every `exports` def present in the tree's code; a declared computation-identity `identity=` claim — spelled `computes-as:<algo>:<hex>`, the [$cx:computation-id] token — must match the code's, recomputed via the same pure relation — else `CXER4884`); `client`: `client.cxd` structural validation → **journal-coverage gate (RULED: SEA-1)** — when `OPTS.journal` names the installing deployment's open journal handle, the L151 coverage pre-flight runs as a pure query over (declared `schema=` addresses in the journal) × (the package's lineage graph: every `NAME@*+lineage` document in the store, plus `OPTS.lineage` claims): each in-scope address (SEA-1e: one appearing in the package's history — a published version's schema content-hash, a lineage-claim endpoint, or a current address; a current address being the content-hash of a `*.cxs` entry in the candidate's tree) must be current or admit the unique lineage path to a current address, else the install refuses `CXER4891` naming every uncovered address and its entry count; entries declaring no schema are out of scope; without `OPTS.journal` there is no history to check and the gate is vacuous (deployments that carry journals supply them) → **consent = grants** — with `OPTS.runtime` + `OPTS.grantee`, issue **exactly** the manifest's `needs` set as delegations into the runtime's authority store (enabling *is* granting; a library has no `needs` and receives no grants — N-DIST-2) → **enable**: returns the updated `XAP` deployment document with the package pinned by hash under `[features]`/`[libraries]` and the `requires` closure resolved hash-pinned beneath it (the §7 lockfile view). |
 | `[$xap:pkg-requires-closure STORE MANIFEST]` | Resolves the code plane transitively: each `requires` entry → the store's best published version in range → its manifest → recurse. Returns the closure as a sorted sequence of `[pin library=… version=… manifest=… hash=…]`. Unresolvable → `CXER4886`; a dependency cycle → `CXER4880`. |
 | `[$xap:pkg-catalog STORE OPTS?]` | Discovery over any store, composing only the store's own surfaces (§9): on a store holding **aliases** (a local/file registry) the alias table is authoritative; on a **served** `cx-store://` handle (no alias verbs on the wire) discovery falls back to **CXPath query pushdown** — `//publisher` matches every manifest server-side, each result carrying its manifest hash. Returns a name@version-sorted `[catalog [package name=… version=… kind=… manifest=… hash=… publisher=… [verbs …]? [exports …]?]*]`. `OPTS`: `term` (substring over name + verb/noun/def names), `name`/`version` (exact). Discovery is never trust: install/verify re-run the full §3 chain on whatever discovery surfaced. This is the stage-2 catalog seed (§4.2): the same function serves locally and over the wire, so graduating the registry to a served head changes no consumer code. |
 
@@ -446,8 +472,10 @@ market property: the same signed artifact installs gratis where no policy
 demands a VC and under entitlement where one does — the artifact and its
 verification are identical in both (§5.1, fixture §11.12).
 
-**Error codes** (cx-xap band `CXER4850–4949`; next free block after the
-composition engine's `…4873`; fold into the approved registry at graduation):
+**Error codes** (cx-xap band — registered `CXER4850–4879` after the
+2026-08-05 xap.md §8 amendment (audit C5: the original `…–4949`
+proposal yielded `4890–4949`); next free block after the composition
+engine's `…4873`; fold into the approved registry at graduation):
 
 | Code | Symbol | Raised when |
 |---|---|---|
@@ -460,6 +488,8 @@ composition engine's `…4873`; fold into the approved registry at graduation):
 | `cx-err:CXER4887` | `E_XAP_PKG_ALIAS_IMMUTABLE` | re-pointing a released `name@version` alias to a different hash |
 | `cx-err:CXER4888` | `E_XAP_PKG_PIN_MISMATCH` | a `pkg:` reference's `#hash` pin (or a lockfile pin supplied to the loader) does not match the resolved manifest (§6.2) |
 | `cx-err:CXER4889` | `E_XAP_PKG_REGISTRY_UNBOUND` | a `pkg:` reference is resolved with no registry bound (§6.2) |
+| `cx-err:CXER4890` | `E_XAP_PKG_SCHEMA_REINTERPRETS` | publish-time schema-lineage refusal (RULED: SEA-1): a changed schema entry classifies as reinterpreting (`core/schema.md` §16.5) and no authored in-tree claim covers the pair — carries the classifier's `[missing-rule …]` prompts |
+| `cx-err:CXER4891` | `E_XAP_PKG_COVERAGE_GAP` | install-time journal-coverage refusal (RULED: SEA-1): a declared `schema=` address in the supplied journal, in scope of the package's lineage graph, admits no lineage path to a current schema — names every uncovered address and its entry count |
 
 (`CXER4885` is reserved unallocated: partial-consent semantics are deliberately
 absent in P0 — consent is the caller's decision to invoke `pkg-install` at all,
@@ -652,7 +682,7 @@ first-party/vendored use; each later phase adds a complete capability, not a sca
 12. **Price is a market property** — the same signed package hash installs from a
     gratis market with no VC requirement and from a paid market only with one; the
     artifact and its verification are identical in both.
-13. **Library round-trip** — a `kind=library` package (the NMEA codec is the reference
+13. **Library round-trip** — a `kind=library` package (the in-tree `gtin` codec package is the reference
     case) seals/verifies/installs through the module-surface gate; it never meets the
     compose gate; a `needs` block in a library manifest fails validation.
 14. **N-DIST-2** — library code invoked from a feature executes under exactly the
@@ -679,6 +709,16 @@ first-party/vendored use; each later phase adds a complete capability, not a sca
     contract `readout`, an admitted `POST /intent` reaches `apply` with the
     qualified verb and a denied one never does, and a registered adapter route
     responds — with zero XAP-specific server code in the fixture.
+19. **Publish-lineage (RULED: SEA-1)** — v2 of a feature changes a shipped
+    schema additively: publish derives and stores the `[schema-lineage]` claim
+    (alias `name@version+lineage`) and succeeds silently; a reinterpreting
+    change (a type change) refuses `CXER4890` with the named missing rule; the
+    same change plus an authored in-tree `…lineage.cx` claim covering the pair
+    publishes.
+20. **Install-coverage (RULED: SEA-1)** — a journal holding v1-declared events
+    installs the v2 feature cleanly when the published lineage covers v1→v2;
+    with the lineage absent, the install refuses `CXER4891` naming the
+    uncovered address; without `OPTS.journal` the gate is vacuous.
 
 ---
 
@@ -710,23 +750,23 @@ gains lexicon entries (**package** and its kinds — **feature package** / **lib
 | §11.10 per-seat delegation chain | ✅ | 033/034 |
 | §11.11 bundle coverage (+ §5.3 reference form) | ✅ | 035/036/042/043 |
 | §11.12 price is a market property | ✅ | 016/025 (gratis) vs 037/038 (entitled) — same artifact |
-| §11.13 library round-trip (NMEA reference) | ✅ | 016 + `packages/nmea0183/` corpus (packages suite) |
+| §11.13 library round-trip (gtin reference) | ✅ | 016 + `packages/gtin/` corpus (packages suite) |
 | §11.14 N-DIST-2 (libraries carry no authority) | ✅ | 005 (needs-on-library) + 016 (zero grants issued) |
 | §11.15 git registry → served re-host | ✅ | 025 (stage 1, committed `registry/`) + `vcx/tests/xap_registry_serve_real_test.v` (stage 2, wire) |
 | §4.1 registry realized + publish-by-PR | ✅ | `registry/` (store, keys, publish.cx, `make registry-publish`/`registry-serve`) |
 | §5 market = a XAP (worked case) | ✅ | `market/` feature specs; 039–041 (compose, journaled choreography, N-COMPOSE-2 at `fulfil`) |
 | §1.2 runtime contract + §11.16 gate lanes | ✅ | fixtures 046–049 (all four lanes, enforced) |
 | §6.2 `pkg:` loading + §11.17 lanes | ✅ | `vcx/tests/module_pkg_loader_test.v` (bare / pinned / cross-pin 4888 / unbound 4889 / absent 4886, black-box) |
-| §6.3 deployment host + §11.18 boot fixture | ✅ engine | `vcx/tests/xap_host_real_test.v` (toy XAP from packages only: standard surface, PEP admit/deny, contract apply, adapter route); xap-marine conversion = the first real consumer (in flight) |
+| §6.3 deployment host + §11.18 boot fixture | ✅ engine | `vcx/tests/xap_host_real_test.v` (toy XAP from packages only: standard surface, PEP admit/deny, contract apply, adapter route); the reference-instance conversion = the first real consumer (in flight) |
 | §5 federation | ✅ | 044 (two markets blend as data; installs verify at origin) |
 | §11.7 yank end-to-end (attestation flow) | ◻ deferred | needs the market-XAP composer surface (P3 flow); yank VERB is in the catalog grammar (039), attestation VC machinery shipped (011) |
 | lexicon cutover + `package.cxs` toolchain graduation | ◻ user G3 | the §10-listed reconciliation in `xap.md`, at approval time |
 
 ---
 
-**References:** [`xap_grammar_composition.md`](../../02-working/xap_grammar_composition.md)
+**References:** [`xap_grammar_composition.md`](../xap/xap_grammar_composition.md)
 (the W-gate; composed-grammar determinism) ·
-[`xap_authoring_process.md`](../../02-working/xap_authoring_process.md) (the packaged
+[`xap_authoring_process.md`](../xap/xap_authoring_process.md) (the packaged
 layers) · [`../xap/xap.md`](../xap/xap.md) (trust model §22,
 federation §22.6.1, marketplace ruling; N-TRUST-1) ·
 [`../std-lib/store.md`](../std-lib/store.md) (subtree objects,

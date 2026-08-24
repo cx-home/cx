@@ -5,15 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Capabilities and permissions — CX Guide</title>
 <link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <aside class="sidebar">
   <a class="brand" href="index.html" aria-label="CX — home">
-    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
   </a>
   <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
   <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
   <a class="brand-sub" href="about.html">About →</a>
   <div class="side-search">
     <input id="side-search-input" type="search"
@@ -21,102 +25,140 @@
            autocomplete="off" spellcheck="false" data-prefix="" />
     <ul id="side-search-results" class="side-search-results" hidden></ul>
   </div>
-  <section><h4>Guide</h4><ul>
+  <section><h4>Start here</h4><ul>
     <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
     <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
     <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
     <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
     <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
     <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
-    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
-    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
-    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
-    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
-    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
-    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
-    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
-    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
     <li><a class="active" href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
-    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
-    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
-    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
-  </ul></section>
-  <section><h4>Reference</h4><ul>
-    <li><a href="directives.html">Directives</a></li>
-    <li><a href="syntax.html">Core syntax</a></li>
-  </ul></section>
-  <section><h4>Standard library</h4><ul>
-    <li><a href="libraries.html">Overview</a></li>
-    <li><a href="lib-authz.html">authz</a></li>
-    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
     <li><a href="lib-bytes.html">bytes</a></li>
     <li><a href="lib-crypto.html">crypto</a></li>
     <li><a href="lib-csv.html">csv</a></li>
-    <li><a href="lib-did.html">did</a></li>
-    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
     <li><a href="lib-env.html">env</a></li>
-    <li><a href="lib-fabric.html">fabric</a></li>
     <li><a href="lib-format.html">format</a></li>
     <li><a href="lib-fp.html">fp</a></li>
     <li><a href="lib-ft.html">ft</a></li>
     <li><a href="lib-geo.html">geo</a></li>
     <li><a href="lib-hash.html">hash</a></li>
     <li><a href="lib-html.html">html</a></li>
-    <li><a href="lib-http.html">http</a></li>
     <li><a href="lib-i18n.html">i18n</a></li>
     <li><a href="lib-io.html">io</a></li>
-    <li><a href="lib-journal.html">journal</a></li>
     <li><a href="lib-json.html">json</a></li>
     <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
     <li><a href="lib-jsonschema.html">jsonschema</a></li>
     <li><a href="lib-locale.html">locale</a></li>
     <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
     <li><a href="lib-math.html">math</a></li>
     <li><a href="lib-mime.html">mime</a></li>
-    <li><a href="lib-net.html">net</a></li>
     <li><a href="lib-path.html">path</a></li>
     <li><a href="lib-process.html">process</a></li>
     <li><a href="lib-prof.html">prof</a></li>
     <li><a href="lib-random.html">random</a></li>
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
-    <li><a href="lib-session.html">session</a></li>
     <li><a href="lib-similar.html">similar</a></li>
-    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
     <li><a href="lib-test.html">test</a></li>
     <li><a href="lib-time.html">time</a></li>
     <li><a href="lib-url.html">url</a></li>
     <li><a href="lib-uuid.html">uuid</a></li>
     <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-vc.html">vc</a></li>
     <li><a href="lib-xap.html">xap</a></li>
     <li><a href="lib-xsp.html">xsp</a></li>
-  </ul></section>
-  <section><h4>XAP</h4><ul>
     <li><a href="xap.html">Overview</a></li>
     <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
     <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
     <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
     <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
   </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
 </aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Capabilities and permissions</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
 <main>
 <section id="capabilities">
   <h1>Capabilities and permissions</h1>
   
-    <p>A CX evaluation runs under an explicit **capability set**, and the
-       set is empty unless you grant something: **deny-by-default, no
-       ambient authority**. Pure computation — parsing, canonical emit,
+    <p>A CX evaluation runs under an explicit <b>capability set</b>, and the
+       set is empty unless you grant something: <b>deny-by-default, no
+       ambient authority</b>. Pure computation — parsing, canonical emit,
        CXPath selection, in-memory transforms — needs no capability at
        all. Any operation with an external effect (reading a file,
        dialing a host, spawning a process, even reading the clock)
        checks the active set at the effect point and raises the
-       capability error `CXER0271` when the matching grant is absent.
-       The model is specified in `spec/core/security.md`; this section
-       is the practical guide to the `--allow-*` flags.</p>
+       capability error <code>CXER0271</code> when the matching grant is absent.
+       The model is specified in <code>spec/03-approved/core/security.md</code>; this section
+       is the practical guide to the <code>--allow-*</code> flags.</p>
     <section id="caps-model">
       <h2>Deny-by-default</h2>
       
@@ -131,34 +173,33 @@
         <pre class="sample-output">
           <code>[err code=cx-err:CXER0271 message='E_CAP_DENIED: read capability required for io-read-file; none granted (grant via --allow-read)']</code>
         </pre>
-        <p>The error is **actionable by contract**: it names the missing
+        <p>The error is <b>actionable by contract</b>: it names the missing
          capability, the operation that wanted it, and the exact flag
          that grants it. Add the grant and the same program works:</p>
         <pre>
-          <code class="language-sh">$ cx read_version.cx --allow-read
-'0.12.0
-'</code>
+          <code class="language-sh">$ cx --allow-read read_version.cx
+'0.16.0\\n'</code>
         </pre>
         <p>Grants combine — a program that reads the environment and
          writes a file needs both flags:</p>
         <pre>
-          <code class="language-sh">$ cx snapshot_home.cx --allow-env --allow-write</code>
+          <code class="language-sh">$ cx --allow-env --allow-write snapshot_home.cx</code>
         </pre>
-        <p class="note">A denied effect is refused **fail-closed, before any type or
-         domain validation** — the path is never touched, the socket
+        <p class="note">A denied effect is refused <b>fail-closed, before any type or
+         domain validation</b> — the path is never touched, the socket
          never opened. And because the check happens at the effect
-         point, a `pure` function can never raise `CXER0271` under any
+         point, a <code>pure</code> function can never raise <code>CXER0271</code> under any
          capability set: purity is capability-freedom by construction
-         (the effect-totality rule in `spec/core/security.md`).</p>
+         (the effect-totality rule in <code>spec/03-approved/core/security.md</code>).</p>
       
     </section>
     <section id="caps-grants">
       <h2>The grant list</h2>
       
         <p>Nine capabilities cover every effectful surface in the engine
-         and standard library, plus one blanket opt-out. This is the
+         and standard library, plus two broad grants. This is the
          full set the binary accepts — there are no hidden grants, and
-         a misspelled grant flag (`--alow-net`, `--allow-nett`, …) is a
+         a misspelled grant flag (<code>--alow-net</code>, <code>--allow-nett</code>, …) is a
          hard usage error (exit 2) naming the flag, never a silent
          no-grant:</p>
         <table>
@@ -219,6 +260,11 @@
                 <td>declassifying a [?secret] value via [?reveal]</td>
               </tr>
               <tr>
+                <td>--allow-common</td>
+                <td>(all but secret-reveal)</td>
+                <td>the common working set — everything above except declassifying secrets</td>
+              </tr>
+              <tr>
                 <td>--allow-all</td>
                 <td>(all)</td>
                 <td>every capability — explicit trusted-local opt-out</td>
@@ -235,7 +281,7 @@
         <pre class="sample-output">
           <code>$ cx home.cx
 [err code=cx-err:CXER0271 message='E_CAP_DENIED: env capability required for env-var; none granted (grant via --allow-env)']
-$ cx home.cx --allow-env
+$ cx --allow-env home.cx
 '/Users/ep'</code>
         </pre>
         <p>Reading the clock:</p>
@@ -244,7 +290,7 @@ $ cx home.cx --allow-env
 [$time:now]</code>
         </pre>
         <pre class="sample-output">
-          <code>$ cx now.cx --allow-clock
+          <code>$ cx --allow-clock now.cx
 '2026-07-14T22:11:55.071838Z'</code>
         </pre>
         <p>Asking for entropy:</p>
@@ -253,7 +299,7 @@ $ cx home.cx --allow-env
 [$uuid:v4]</code>
         </pre>
         <pre class="sample-output">
-          <code>$ cx id.cx --allow-random
+          <code>$ cx --allow-random id.cx
 '2c9be10f-2a88-456f-b00d-9af606793775'</code>
         </pre>
         <p>Spawning a subprocess:</p>
@@ -262,7 +308,7 @@ $ cx home.cx --allow-env
 [$process:run ('echo', 'hi')]</code>
         </pre>
         <pre class="sample-output">
-          <code>$ cx run_echo.cx --allow-subprocess
+          <code>$ cx --allow-subprocess run_echo.cx
 [proc-result exit-code=0 signaled=false timed-out=false stdout='hi
 ' stderr='']</code>
         </pre>
@@ -273,10 +319,10 @@ $ cx home.cx --allow-env
           <code class="language-cx">[?eval [?quote [+ $a $b]] [context {a: 10, b: 5}]]</code>
         </pre>
         <pre class="sample-output">
-          <code>$ cx calc.cx --allow-eval
+          <code>$ cx --allow-eval calc.cx
 15</code>
         </pre>
-        <p>Secrets are the inverse case: **wrapping** a value with
+        <p>Secrets are the inverse case: <b>wrapping</b> a value with
          [?secret] needs no grant, and the wrapped value renders
          redacted everywhere — logs, output, serialization:</p>
         <pre>
@@ -286,16 +332,16 @@ $ cx home.cx --allow-env
         <pre class="sample-output">
           <code>'‹redacted›'</code>
         </pre>
-        <p>Only **declassifying** it is gated: `[?reveal $token]` raises
-         `CXER0271` unless the program runs with
-         `--allow-secret-reveal`.</p>
-        <p class="note">Grant scoping syntax such as `--allow-read=./data` or
-         `--allow-env=HOME` is accepted on the command line, but in the
-         current engine only the **net** grant enforces its scope
+        <p>Only <b>declassifying</b> it is gated: <code>[?reveal $token]</code> raises
+         <code>CXER0271</code> unless the program runs with
+         <code>--allow-secret-reveal</code>.</p>
+        <p class="note">Grant scoping syntax such as <code>--allow-read=./data</code> or
+         <code>--allow-env=HOME</code> is accepted on the command line, but in the
+         current engine only the <b>net</b> grant enforces its scope
          (next subsection). For every other capability the resource
          suffix is carried, not yet enforced — the grant is
          all-or-nothing per capability. Per-path and per-name
-         enforcement is specified (`spec/core/security.md`, coarse-v1
+         enforcement is specified (<code>spec/03-approved/core/security.md</code>, coarse-v1
          scoping) and lands per domain; do not rely on a path suffix as
          a security boundary today.</p>
       
@@ -303,7 +349,7 @@ $ cx home.cx --allow-env
     <section id="caps-net">
       <h2>Scoping the network grant</h2>
       
-        <p>`--allow-net` is the one grant with enforced resource scoping,
+        <p><code>--allow-net</code> is the one grant with enforced resource scoping,
          because it is the one most worth narrowing. Three levels:</p>
         <table>
           <thead>
@@ -332,56 +378,78 @@ $ cx home.cx --allow-env
           </tbody>
         </table>
         <p>The private-range deny set on the bare grant is deliberate:
-         `--allow-net` means "talk to the internet", not "probe my
+         <code>--allow-net</code> means "talk to the internet", not "probe my
          loopback and LAN". A program handed a URL that resolves into
-         `127.0.0.0/8`, `10.0.0.0/8`, `192.168.0.0/16`, and the other
+         <code>127.0.0.0/8</code>, <code>10.0.0.0/8</code>, <code>192.168.0.0/16</code>, and the other
          reserved ranges gets a refusal:</p>
         <pre>
           <code class="language-cx">[?lib 'cx-stdlib/http']
 [$http:get 'http://127.0.0.1:1/health']</code>
         </pre>
         <pre class="sample-output">
-          <code>$ cx probe.cx --allow-net
+          <code>$ cx --allow-net probe.cx
 [err code=cx-err:CXER4504 message='E_NET_FORBIDDEN_ADDRESS: 127.0.0.1:1 resolves into a denied range with no admitting literal-IP/localhost grant (§4.5)']</code>
         </pre>
         <p>To talk to a local service, name it — a literal-IP or
-         `localhost` scope overrides the deny set for exactly that
+         <code>localhost</code> scope overrides the deny set for exactly that
          address:</p>
         <pre>
-          <code class="language-sh">$ cx probe.cx --allow-net=127.0.0.1:8443</code>
+          <code class="language-sh">$ cx --allow-net=127.0.0.1:8443 probe.cx</code>
         </pre>
         <p>And a host-scoped grant is a real boundary: with
-         `--allow-net=api.example.com:443`, a dial to any other host is
-         refused with a `CXER0271` naming the host and port it
+         <code>--allow-net=api.example.com:443</code>, a dial to any other host is
+         refused with a <code>CXER0271</code> naming the host and port it
          wanted — so the denial tells you exactly what to review before
          widening the grant.</p>
       
     </section>
-    <section id="caps-allow-all">
-      <h2>The --allow-all opt-out</h2>
+    <section id="caps-broad-grants">
+      <h2>The two broad grants</h2>
       
-        <p>`--allow-all` grants everything. It exists because
-         deny-by-default must stay ergonomic for fully-trusted local
-         use — your own build script, a REPL experiment, a one-off
-         transform on your own machine. It is an explicit, visible
-         opt-out: anyone reading the invocation can see the program
-         runs unconfined.</p>
-        <p>Where **not** to use it: anything long-running, anything
+        <p>Enumerating capabilities per script gets tiresome while you
+         are still exploring, so there are two broad grants. They differ
+         in exactly one capability, and that one matters.</p>
+        <p><code>--allow-common</code> grants the common working set: read, write,
+         net, env, clock, random, subprocess, eval. It does <b>not</b>
+         grant <code>secret-reveal</code>, so a <code>[?reveal]</code> under it still refuses
+         with <code>CXER0271</code> — and the denial propagates out of the <code>[out]</code>
+         wrapper to the top level, printed as a <b>bare</b> <code>[err …]</code>
+         value with exit code 1. This is the grant to reach for while
+         you are learning, and the one these pages use.</p>
+        <pre>
+          <code class="language-cx">[?let [= $s [?secret 'hunter2']]
+  [out [?reveal $s]]]</code>
+        </pre>
+        <pre class="sample-output">
+          <code>$ cx --allow-common reveal.cx
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: secret-reveal capability required for reveal; none granted (grant via --allow-secret-reveal)']
+$ cx --allow-all reveal.cx
+[out 'hunter2']</code>
+        </pre>
+        <p><code>--allow-all</code> grants everything, <code>secret-reveal</code> included. It
+         exists because deny-by-default must stay ergonomic for
+         fully-trusted local use — your own build script, a REPL
+         experiment, a one-off transform on your own machine. It is an
+         explicit, visible opt-out: anyone reading the invocation can
+         see the program runs unconfined.</p>
+        <p>Where <b>not</b> to use either: anything long-running, anything
          network-facing, anything whose inputs you do not control, and
          any invocation you copy into documentation, CI, a systemd
          unit, or a Dockerfile. Those should carry the narrowest set
          that works — the flags are the audit trail. Note that
-         `--allow-all` is strictly wider than granting all nine flags
-         individually: it is also the only grant that bypasses the
-         private-range deny set on network dials.</p>
+         <code>--allow-all</code> is strictly wider than granting all nine flags
+         individually, <code>--allow-common</code> included: it is the only grant
+         that bypasses the private-range deny set on network dials, so
+         a local-service example under <code>--allow-common</code> asks for the
+         scope it needs (<code>--allow-net=127.0.0.1:PORT</code>).</p>
       
     </section>
     <section id="caps-narrowing">
       <h2>Narrowing with [?with-caps]</h2>
       
-        <p>A program can **narrow** its own set for a dynamic extent —
-         never widen it. `[?with-caps]` takes one or more
-         `[deny CAP]` clauses and a body; inside the body the denied
+        <p>A program can <b>narrow</b> its own set for a dynamic extent —
+         never widen it. <code>[?with-caps]</code> takes one or more
+         <code>[deny CAP]</code> clauses and a body; inside the body the denied
          capabilities are gone, even if the process was launched with
          them, and they come back when the body exits:</p>
         <pre>
@@ -390,13 +458,13 @@ $ cx home.cx --allow-env
   [$env:var 'HOME']]</code>
         </pre>
         <pre class="sample-output">
-          <code>$ cx narrowed.cx --allow-env
+          <code>$ cx --allow-env narrowed.cx
 [err code=cx-err:CXER0271 message='E_CAP_DENIED: env capability required for env-var; none granted (grant via --allow-env)']</code>
         </pre>
         <p>This is the tool for running untrusted sub-computations:
          evaluate a tree you did not author under
-         `[?with-caps [deny net] [deny subprocess] …]` and its
-         authority is bounded no matter what it contains. A `deny`
+         <code>[?with-caps [deny net] [deny subprocess] …]</code> and its
+         authority is bounded no matter what it contains. A <code>deny</code>
          cannot be undone inside the body — narrowing is
          one-way by design.</p>
       
@@ -404,10 +472,10 @@ $ cx home.cx --allow-env
     <section id="caps-errors">
       <h2>Denials are values</h2>
       
-        <p>`CXER0271` is a normal error **value**, not a crash. It flows
+        <p><code>CXER0271</code> is a normal error <b>value</b>, not a crash. It flows
          through the program like any other value, so a program can
          detect a missing grant and degrade gracefully with
-         `[?match]` (or `[?else]` / `[?fallback]`):</p>
+         <code>[?match]</code> (or <code>[?else]</code> / <code>[?fallback]</code>):</p>
         <pre>
           <code class="language-cx">[?lib 'cx-stdlib/io']
 [?match [$io:read-file 'config.cx']
@@ -421,19 +489,86 @@ $ cx home.cx --allow-env
         <p>What a denial can never do is succeed silently: there is no
          fallback value, no partial effect, no environment where the
          denied operation "sort of" ran. Either the grant is present
-         and the effect happens, or you hold an `[err]` naming the
+         and the effect happens, or you hold an <code>[err]</code> naming the
          grant.</p>
-        <p class="note">This guide eats the same dog food: every `cx` example on these
+        <p class="note">This guide eats the same dog food: every <code>cx</code> example on these
          pages is executed against the live binary by the docs-example
-         gate, which grants **no** capabilities — a snippet whose only
-         output is a `CXER0271` denial passes (the denial is
+         gate, which grants <b>no</b> capabilities — a snippet whose only
+         output is a <code>CXER0271</code> denial passes (the denial is
          environmental, not staleness), and anything else that errors
          fails the build.</p>
+      
+    </section>
+    <section id="security">
+      <h2>Untrusted inputs and untrusted code</h2>
+      
+        <p>The capability model is one half of CX's security posture; this
+         subsection is the whole posture in one place. The normative
+         reference is the threat model
+         (<code>spec/03-approved/process/threat-model.md</code>), which assumes one
+         of three deployment shapes: <b>A — trusted inputs</b>
+         (operator-authored files; defaults suffice), <b>B —
+         semi-trusted</b> (PRs, CI artifacts, third-party config; pin the
+         toolchain and validate at the boundary), and <b>C — untrusted</b>
+         (network payloads, public uploads; everything below, plus
+         process isolation).</p>
+        <p>CX distinguishes two threats that get conflated elsewhere:</p>
+        <ul>
+          
+            <li><b>Untrusted data, trusted code.</b> Your program parses
+              attacker-supplied bytes. The parser is the attack surface;
+              the mitigations are structural: parsing needs no
+              capabilities at all, every regex call site routes through
+              the vendored RE2 engine (<b>linear-time matching</b> — no
+              catastrophic backtracking class, in the schema <code>[pattern]</code>
+              constraint included), invalid UTF-8 is a typed refusal
+              rather than a silent substitution, and a <code>.cxs</code> schema at
+              the boundary type-checks every field before anything
+              downstream sees the value (<a class="xref" href="schema.html">schema-evolution</a>).</li>
+            <li><b>Untrusted code.</b> You evaluate a tree you did not
+              author. The threat is reach, and reach is exactly what the
+              capability set bounds: with no grants the code can
+              compute, transform, hash, validate, and project — and
+              cannot read a file, dial a host, spawn a process, read the
+              clock or the environment, or declassify a secret. There is
+              no ambient escape hatch to close because there is no
+              ambient authority to begin with.</li>
+          
+        </ul>
+        <p>The idiom for running untrusted sub-computations inside a
+         granted process is <b>narrowing</b>: evaluate the foreign tree
+         under <code>[?with-caps [deny …] …]</code> (see the narrowing subsection
+         above) and its authority is bounded no matter what it contains
+         — a <code>deny</code> cannot be undone from inside. Dynamic evaluation is
+         itself a capability (<code>--allow-eval</code>), so a program that runs
+         runtime-supplied source says so on its command line, visibly.</p>
+        <p>What the capability model does <b>not</b> bound: total CPU and
+         memory spent inside pure computation. A hostile-but-pure
+         program can still burn cycles, so deployment shape C pairs the
+         empty capability set with <b>OS-level process isolation</b> —
+         memory caps, wall-clock timeouts, file-descriptor limits — and
+         monitoring on the refusal codes. Output of untrusted evaluation
+         is a value, not sanitized markup: HTML contexts route it
+         through an escaping renderer, never string concatenation.</p>
+        <p class="note">CX has not yet received an external security audit. The
+         hardening above is real and continuously exercised (the
+         conformance corpus, the capability-denial gates, reproducible
+         builds), but until an audit lands, the recommended posture for
+         shape C is the belt-and-suspenders one: empty grant set,
+         narrowing around foreign trees, schema validation at the
+         boundary, and process isolation around the whole thing.</p>
       
     </section>
   
 </section>
 </main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>Capabilities and permissions</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
 <script src="highlight/highlight.js" defer></script>
 <script src="search-index.js" defer></script>
 <script src="search/search.js" defer></script>

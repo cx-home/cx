@@ -51,10 +51,13 @@ fn doc_method_03_hash_stable_across_whitespace() {
     let b = Doc::from_str("[doc  [x  1]]").expect("b");
     // strict-canonical bytes should normalise whitespace.
     assert_eq!(a.hash().expect("a.hash"), b.hash().expect("b.hash"));
-    // Hash is 64 hex chars.
+    // I1 identity epoch: content addresses are TAGGED — the
+    // `sha2-256:` tag is part of the address (sha2-256:<64hex>).
     let h = a.hash().expect("hash");
-    assert_eq!(h.len(), 64);
-    assert!(h.chars().all(|c| c.is_ascii_hexdigit()));
+    let hex = h.strip_prefix("sha2-256:")
+        .unwrap_or_else(|| panic!("hash must be tagged sha2-256:<64hex>, got {h:?}"));
+    assert_eq!(hex.len(), 64);
+    assert!(hex.chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
 }
 
 #[test]

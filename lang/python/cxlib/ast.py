@@ -1,5 +1,6 @@
 """CX native AST types — parse, emit, and query."""
 from __future__ import annotations
+import decimal
 import json
 import re
 from dataclasses import dataclass, field
@@ -166,8 +167,9 @@ class XMLDecl:
 class CXDirective:
     attrs: list[Attr] = field(default_factory=list)
     # v0.6.0 — directives may carry an `&anchor` and/or nested elements.
-    # Currently used by `[?cx frag &name [body :TYPE :flags]]` (spec
-    # schema.md §8 standalone fragment form). ast_bin format version 4
+    # Added for the standalone-fragment form `[?cx frag &name [body …]]`
+    # (retired at I5 stream 1 — legacy texts still parse; schema load
+    # rejects them, spec schema.md §8). ast_bin format version 4
     # carries them; v1-3 decoders see attrs-only and leave these empty.
     anchor: Optional[str] = None
     items: list["Node"] = field(default_factory=list)
@@ -193,6 +195,16 @@ class EvalDirective:
     name: str
     attrs: list[Attr] = field(default_factory=list)
     items: list["Node"] = field(default_factory=list)
+
+
+@dataclass
+class HoleNode:
+    """I1 row 9 (L78) — the authorable variable hole, bare `$name` on the
+    CX surface. Rides ast_bin as additive tag 0x18 (str:name). Inert at
+    the binding layer; the program evaluator fills holes at quote-lowering
+    time. The STRING "$name" spells '$name' (quoting keeps $-leading
+    images quoted), so the two never collide."""
+    name: str
 
 
 # ── Iterator value kind (v0.8.0 W3f) ────────────────
@@ -527,7 +539,7 @@ class Element:
 Node = Union[
     Element, Text, Scalar, Comment, RawText, EntityRef, BlockContent,
     Alias, PI, XMLDecl, CXDirective, DoctypeDecl,
-    Interpolation, EvalDirective, IteratorNode,
+    Interpolation, EvalDirective, HoleNode, IteratorNode,
 ]
 
 
@@ -779,11 +791,11 @@ def _doc_from_dict(d: dict) -> Document:
 #
 # Reserved prefixes:
 #   - `xml`   → http://www.w3.org/XML/1998/namespace
-#   - `cx`    → https://cx-home.org/ns/cx
+#   - `cx`    → tag:cxhome.org,2026:ns/cx
 #   - `xmlns` → declaration-only; never resolves as a name prefix
 
 XML_NAMESPACE_URI = "http://www.w3.org/XML/1998/namespace"
-CX_NAMESPACE_URI = "https://cx-home.org/ns/cx"
+CX_NAMESPACE_URI = "tag:cxhome.org,2026:ns/cx"
 
 
 def _split_ns_prefix(name: str) -> tuple[str, str]:
@@ -1050,6 +1062,11 @@ def _emit_scalar(s: Scalar) -> str:
         return 'true' if v else 'false'
     if isinstance(v, int):
         return str(v)
+    if isinstance(v, decimal.Decimal) or s.data_type == 'decimal':
+        # I1: decimal renders its fixed-point base-10 image (scale
+        # preserved); str(Decimal) may emit exponent notation.
+        d = v if isinstance(v, decimal.Decimal) else decimal.Decimal(str(v))
+        return format(d, 'f')
     if isinstance(v, float):
         f = f'{v}'
         return f if ('.' in f or 'e' in f.lower()) else f + '.0'
@@ -1068,6 +1085,14 @@ def _emit_attr(a: Attr) -> str:
         return f'{a.name}=:{name}'
     if dt == 'int':
         return f'{a.name}={int(a.value)}'
+    if dt == 'bigint':
+        # I1: Python bigint = int (arbitrary precision); base-10 image.
+        return f'{a.name}={int(a.value)}'
+    if dt == 'decimal':
+        # I1: fixed-point base-10 image, scale preserved (no exponent form).
+        d = a.value if isinstance(a.value, decimal.Decimal) \
+            else decimal.Decimal(str(a.value))
+        return f'{a.name}={format(d, "f")}'
     if dt == 'float':
         f = f'{float(a.value)}'
         v = f if ('.' in f or 'e' in f.lower()) else f + '.0'
@@ -1093,6 +1118,8 @@ def _emit_inline(node: Node) -> str:
         return _emit_scalar(node)
     if isinstance(node, EntityRef):
         return f'&{node.name};'
+    if isinstance(node, HoleNode):
+        return f'${node.name}'
     if isinstance(node, RawText):
         return f'[#{node.value}#]'
     if isinstance(node, Element):
@@ -1179,6 +1206,10 @@ def _emit_node(node: Node, depth: int) -> str:
         return f'{ind}[#{node.value}#]\n'
     if isinstance(node, EntityRef):
         return f'&{node.name};'
+    if isinstance(node, HoleNode):
+        # Bare `$name` — matches the V CX emitter (no indent/newline,
+        # holes are inline body items like entity refs).
+        return f'${node.name}'
     if isinstance(node, Alias):
         return f'{ind}[*{node.name}]\n'
     if isinstance(node, BlockContent):

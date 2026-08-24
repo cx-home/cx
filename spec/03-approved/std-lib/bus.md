@@ -69,6 +69,17 @@ Out of scope (and where it lives instead):
 itself performs no syscall, but it **invokes subscriber handlers**, whose effects
 are the handlers' own (§2.3, §5). The bus **introduces no new capability**.
 
+Bus is DISPATCH, not delivery: synchronous, deterministic, inline, cursor-free
+(N-BUS-1). The platform's delivery concept — streams, cursors, retention, flow
+([`delivery.md`](../core/delivery.md) §7 names this boundary from the
+other side; RULED: U1.4a) — does not govern this module, and this module MUST
+NOT grow delivery semantics (the out-of-scope table above and
+[`fabric.md`](../xap/fabric.md) §8 already pin this). The decision rule:
+dispatch when the caller must observe every handler's completion before
+proceeding; a stream when production and consumption are decoupled in time,
+pace, or place. The §2.2 pattern vocabulary remains the shared selection
+vocabulary, by reference, on both sides.
+
 ## §2. Conceptual model
 
 ### §2.1. The `[bus]` handle, subscriptions, and concurrency

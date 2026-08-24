@@ -114,5 +114,5 @@ patches) is the strategy that both reduces re-base cost and brings that day clos
 - [`third_party/README.md`](../../../third_party/README.md) — operational pin convention + recovery.
 - [`v_runtime_memory_management.md`](../../03-approved/process/v_runtime_memory_management.md) — the Bucket-1 mem-mgmt spec.
 - [`docs/internal/vlang-perceus-rfc-draft.md`](../../../docs/internal/vlang-perceus-rfc-draft.md) — the upstreaming RFC to the V core team.
-- [`evict_cx_from_v_PLAN.md`](../../02-working/evict_cx_from_v_PLAN.md) — the one-time eviction that established §2.
+- [`evict_cx_from_v_PLAN.md`](../../_archived/evict_cx_from_v_PLAN.md) — the one-time eviction that established §2.
 - [`vcx/Makefile`](../../../vcx/Makefile) — the guard that warns loudly when the patched V is absent and `-prod` is silently dropped (the worktree build trap; see §4/§5).

@@ -7,7 +7,12 @@
 //!
 //! Cells admit any Item kind — represented as
 //! `serde_json::Value` (which natively handles scalars, arrays, and
-//! object/maps via its existing variants).
+//! object/maps via its existing variants). Tables carrying `decimal` /
+//! `bigint` cells (first-class kinds since I1 L48) fail loudly at
+//! `from_cx` — `Value` has no carrier for them and the kind is never
+//! erased (M23 advisory window, matching the Arrow bridge's stance);
+//! `data_bin::decode_payload_value` (`CxValue`) carries those payloads
+//! with full fidelity.
 //!
 //! Per: tables are immutable values. All methods that
 //! produce a new table (`slice`, `head`, `tail`, `select_cols`)

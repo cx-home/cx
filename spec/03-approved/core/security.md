@@ -48,6 +48,230 @@ Pure computation, parsing, canonical emit, in-memory transforms need **no**
 capability (consistent with the `pure` classifier — pure code is capability-free
 by construction).
 
+### §2.1 The closed effect-point table (normative; EV-EFFECT-SET)
+
+Every capability-gated primitive, mapped to the capability it charges.
+This table is the **normative closed set** (the stream-22 EV-EFFECT-SET
+relocation: the table previously lived only as implementation data —
+a clause checkable only against an implementation file violates the
+clean-room bar). The implementation's alignment map
+(`effect_alignment.v`) is a conformance **mirror** of this table; the
+`check-effect-alignment` gate asserts spec ↔ implementation equality in
+both directions, so neither can drift. Adding an effect point is a spec
+change: a row lands here first.
+
+Scoping enforcement note (C1, coarse v1): the capability listed is the
+boolean gate charged at the effect point; resource scoping is carried
+per §2 and enforced per-domain as each lands. Three prims derive the
+charged capability per call — `io-open` (from the requested mode:
+read|write), `store-open` / `store-open-opts` (from the URL scheme +
+mode: file:// ⇒ read|write, remote ⇒ net); they are listed under their
+nominal capability. `io-edit-file` is a fourth shape: it is the one
+primitive that requires BOTH `read` and `write` (it reads, replaces
+exactly once, and writes back), and it self-guards on both at its
+dispatch site rather than riding the read/write prim lists; it is listed
+under `read` as its nominal capability.
+
+| Effect-point primitive | Capability |
+|---|---|
+| `env-has-var` | `env` |
+| `env-hostname` | `env` |
+| `env-username` | `env` |
+| `env-var` | `env` |
+| `env-var-bool` | `env` |
+| `env-var-float` | `env` |
+| `env-var-int` | `env` |
+| `env-var-or-default` | `env` |
+| `env-var-required` | `env` |
+| `env-vars` | `env` |
+| `locale-default-locale` | `env` |
+| `env-cwd` | `read` |
+| `env-executable-path` | `read` |
+| `io-read-file` | `read` |
+| `io-read-file-bytes` | `read` |
+| `io-read-file-lines` | `read` |
+| `io-read-all` | `read` |
+| `io-read-all-bytes` | `read` |
+| `io-read-bytes` | `read` |
+| `io-read-line` | `read` |
+| `io-line-iter` | `read` |
+| `io-stat` | `read` |
+| `io-exists` | `read` |
+| `io-is-file` | `read` |
+| `io-is-directory` | `read` |
+| `io-is-symlink` | `read` |
+| `io-is-eof` | `read` |
+| `io-list-dir` | `read` |
+| `io-glob` | `read` |
+| `io-glob-iter` | `read` |
+| `io-walk` | `read` |
+| `io-readlink` | `read` |
+| `io-size` | `read` |
+| `io-created-time` | `read` |
+| `io-modified-time` | `read` |
+| `io-tell` | `read` |
+| `io-seek` | `read` |
+| `io-system-temp-dir` | `read` |
+| `io-temp-dir` | `read` |
+| `io-watch` | `read` |
+| `io-watch-next` | `read` |
+| `io-open` | `read` (mode-derived: read\|write) |
+| `io-open-with-opts` | `write` |
+| `io-write-bytes` | `write` |
+| `io-write-file` | `write` |
+| `io-write-file-bytes` | `write` |
+| `io-write-file-lines` | `write` |
+| `io-write-line` | `write` |
+| `io-write-string` | `write` |
+| `io-append-file` | `write` |
+| `io-append-file-bytes` | `write` |
+| `io-make-dir` | `write` |
+| `io-make-dirs` | `write` |
+| `io-remove` | `write` |
+| `io-remove-dir` | `write` |
+| `io-remove-tree` | `write` |
+| `io-rename` | `write` |
+| `io-copy` | `write` |
+| `io-copy-tree` | `write` |
+| `io-symlink` | `write` |
+| `io-lock` | `write` |
+| `io-unlock` | `write` |
+| `io-flush` | `write` |
+| `io-temp-file` | `write` |
+| `path-absolute` | `read` |
+| `path-canonical` | `read` |
+| `i18n-load-catalog` | `read` |
+| `test-fixture-load` | `read` |
+| `store-open` | `read` (url+mode-derived) |
+| `store-open-opts` | `read` (url+mode-derived) |
+| `time-now` | `clock` |
+| `time-today` | `clock` |
+| `time-instant-now` | `clock` |
+| `time-monotonic-now` | `clock` |
+| `time-utc-now` | `clock` |
+| `time-system-timezone` | `clock` |
+| `prof-now-ns` | `clock` |
+| `prof-now-cpu-ns` | `clock` |
+| `prof-trace` | `clock` |
+| `prof-time-fn` | `clock` |
+| `prof-time-and-trace` | `clock` |
+| `mime-multipart-boundary` | `random` |
+| `random-crypto-bytes` | `random` |
+| `random-crypto-int` | `random` |
+| `random-crypto-hex` | `random` |
+| `random-crypto-base64-url` | `random` |
+| `random-crypto-token-urlsafe` | `random` |
+| `uuid-v4` | `random` |
+| `uuid-v4-bytes` | `random` |
+| `uuid-v7` | `random` |
+| `uuid-v7-bytes` | `random` |
+| `crypto-aead-encrypt` | `random` |
+| `crypto-ed25519-keypair` | `random` |
+| `crypto-x25519-keypair` | `random` |
+| `crypto-password-hash` | `random` |
+| `crypto-jwks-fetch` | `net` |
+| `http-get` | `net` |
+| `http-post` | `net` |
+| `http-put` | `net` |
+| `http-del` | `net` |
+| `http-patch` | `net` |
+| `http-head` | `net` |
+| `http-options` | `net` |
+| `http-request` | `net` |
+| `http-send` | `net` |
+| `http-sse-connect` | `net` |
+| `http-sse-events` | `net` |
+| `http-serve` | `net` |
+| `http-listen` | `net` |
+| `http-accept-iter` | `net` |
+| `http-exchange-request` | `net` |
+| `http-respond` | `net` |
+| `http-stop` | `net` |
+| `net-resolve` | `net` |
+| `net-dial` | `net` |
+| `net-dial-tcp` | `net` |
+| `net-dial-tls` | `net` |
+| `net-dial-udp` | `net` |
+| `net-dial-dtls` | `net` |
+| `net-dial-unix` | `net` |
+| `net-listen` | `net` |
+| `net-listen-tcp` | `net` |
+| `net-listen-tls` | `net` |
+| `net-listen-udp` | `net` |
+| `net-listen-dtls` | `net` |
+| `net-listen-unix` | `net` |
+| `net-accept` | `net` |
+| `net-accept-iter` | `net` |
+| `net-read-bytes` | `net` |
+| `net-read-exact` | `net` |
+| `net-read-line` | `net` |
+| `net-read-all` | `net` |
+| `net-read-all-bytes` | `net` |
+| `net-write-bytes` | `net` |
+| `net-write-string` | `net` |
+| `net-write-line` | `net` |
+| `net-flush` | `net` |
+| `net-is-eof` | `net` |
+| `net-line-iter` | `net` |
+| `net-chunk-iter` | `net` |
+| `net-send-to` | `net` |
+| `net-recv-from` | `net` |
+| `net-send` | `net` |
+| `net-recv` | `net` |
+| `net-tls-wrap` | `net` |
+| `net-tls-accept` | `net` |
+| `net-peer-cert` | `net` |
+| `net-tls-info` | `net` |
+| `net-shutdown` | `net` |
+| `net-set-deadline` | `net` |
+| `net-set-opt` | `net` |
+| `io-edit-file` | `read` |
+| `process-close` | `subprocess` |
+| `process-kill` | `subprocess` |
+| `process-kill-group` | `subprocess` |
+| `process-pid` | `subprocess` |
+| `process-pipeline` | `subprocess` |
+| `process-poll` | `subprocess` |
+| `process-pty` | `subprocess` |
+| `process-run` | `subprocess` |
+| `process-send-signal` | `subprocess` |
+| `process-set-window-size` | `subprocess` |
+| `process-spawn` | `subprocess` |
+| `process-spawn-pty` | `subprocess` |
+| `process-stderr` | `subprocess` |
+| `process-stdin` | `subprocess` |
+| `process-stdout` | `subprocess` |
+| `process-terminate` | `subprocess` |
+| `process-wait` | `subprocess` |
+| `process-wait-timeout` | `subprocess` |
+| `process-window-size` | `subprocess` |
+| `live-changes-since` | `eval` |
+| `live-observe` | `eval` |
+| `live-materialize` | `eval` |
+| `live-advance` | `eval` |
+| `live-adapt-watch` | `write` |
+
+The impure-WITHOUT-capability exception table (state-bearing PRNG, mock
+clock, ambient process basics, capability introspection, impl-pending
+bare names) is the other half of the §6.5.1 alignment invariant and
+lives in `code.md` §6.5.1 — an entry there is deliberately absent here.
+
+**`[effects]` declarations check against this table's capability column
+(commands and effects, stream 6 — L110).** A `[?def]` carrying an
+`[effects …]` clause is a **command**; its declared capability names
+MUST come from the closed §2 nine-name list (an unknown name is the
+fail-closed `E_CAP_UNKNOWN`, `cx-err:CXER0274` — the same refusal the
+grant surface gives a typo'd grant, and for the same reason). At
+runtime the declaration acts as a `[?with-caps]`-like NARROWING: for
+the command body's dynamic extent the active set is the intersection of
+the caller's grant with the declared set, so an effect point outside
+the declaration raises `E_CAP_DENIED` (`cx-err:CXER0271`) at the effect
+point — **checked and enforced, never advisory**. `pure` plus a
+non-empty `[effects]` is the static contradiction
+`E_COMMAND_CONTRACT` (`cx-err:CXER0239`) by the §6.5.1 effect-totality
+theorem. The full clause grammar and static rules live in `code.md`
+§12.2.7.
+
 ## §3 Granting + narrowing
 - **CLI (deny-by-default):** `cx FILE --allow-read=./data --allow-net=api.example.com:443 --allow-env=HOME`. No `--allow-*` ⇒ empty set (pure-only). `--allow-all` is an explicit opt-out for trusted local use.
 - **Embedding / ABI:** the host passes a capability set to `cx_code_eval`/`cx:eval`; defaults to empty.
@@ -99,9 +323,35 @@ flag-every-run), three things are **required**:
   Finer per-URL / per-file scoping is a future extension.
 - **(C2) Error code → `CXER0271`** (next free in the `CXER0270–0279`
   host-capability band, alongside the wasm wall-sleep code `CXER0270`).
+  The GRANT surface is equally fail-closed (#713): an unknown capability
+  name in a host grant spec/list — or the retired `cap:resource` scope
+  spelling (`cap=resource` is THE scope spelling; `cap:` is the reserved
+  capability-value address prefix, L114) — is the typed refusal
+  `E_CAP_UNKNOWN` (`cx-err:CXER0274`) naming the bad token and the accepted
+  set, and NO set is installed. The same code with the same posture covers
+  an unknown capability name declared in a `[?def]`'s `[effects …]` clause
+  (§2.1, `code.md` §12.2.7) — one refusal wherever a capability name is
+  spelled. A typo'd grant must never become a silent
+  no-grant: it flips denial fixtures false-green and makes the grant
+  surface lie.
 - **(C3) CLI default → default-deny** even for the CLI (least authority,
   Deno-proven), made ergonomic by the three §4 requirements (actionable errors +
   `cx.pkg` manifest grant + `--allow-all` opt-out). Embedding default is always
   deny.
-- **(C4) Capability set as a CX value → yes:** the active set is exposed as an
-  introspectable CX document (dogfood; auditable).
+- **(C4) Capability set as a CX value → yes (implemented, stream-5 L104):** the
+  active set is exposed as an introspectable CX value via the zero-arg builtin
+  **`[$caps]`** (classified `impure` in `code.md` §6.5.x — a `pure` body reading
+  the grant set would break the §6.5.1 cap-set-invariance; capability-FREE by
+  the §3 narrow-only invariant: a program can only observe its own authority,
+  never exceed it). **Canonical form** — a map over the closed §2 nine-name
+  list, self-canonicalizing by key sort: granted-unscoped capability → `true`;
+  granted-scoped capability → a sorted sequence of canonicalized scope strings
+  (host globs lower-cased; path roots trailing-slash-normalized); ungranted
+  capability → **absent**. **The `--allow-all` opt-out NORMALIZES to the
+  explicit full grant set plus one policy field** (`private-range-allowed:
+  true` — the §4.5 private-range-deny bypass, the single behavior the opt-out
+  adds): one canonical form, not two (#713 item 3). A `[?with-caps]`-narrowed
+  set is visible to `[$caps]` (the ACTIVE view) and never carries the policy
+  field. This value is the `caps` component of the stream-5 `[computation]`
+  record (`computation_identity.md` — where the ENTRY set is the hash basis).
+  Example: `{net: ('api.example.com:443'), read: true}`.

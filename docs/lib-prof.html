@@ -5,15 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>prof — CX Guide</title>
 <link rel="icon" type="image/svg+xml" href="assets/cx-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <aside class="sidebar">
   <a class="brand" href="index.html" aria-label="CX — home">
-    <img src="assets/cx-logo.svg" alt="CX" width="64" height="64" class="brand-mark" />
+    <svg class="brand-mark" viewBox="0 0 1254 1254" role="img" aria-label="CX"><g fill="currentColor"><path d="M217 170 H604 L603 260 H327 V1005 L581 1006 V1096 H217 Z"/><path d="M429 338 H586 L1093 992 H943 Z"/><path d="M1070 338 H928 L776 521 L846 609 Z"/><path d="M648 675 L716 761 L562 939 H419 Z"/></g></svg>
   </a>
   <a class="brand-sub" href="https://github.com/cx-home/cx" target="_blank" rel="noopener">GitHub →</a>
   <a class="brand-sub" href="playground.html">Playground →</a>
+  <a class="brand-sub" href="downloads.html">Downloads →</a>
   <a class="brand-sub" href="about.html">About →</a>
   <div class="side-search">
     <input id="side-search-input" type="search"
@@ -21,374 +25,417 @@
            autocomplete="off" spellcheck="false" data-prefix="" />
     <ul id="side-search-results" class="side-search-results" hidden></ul>
   </div>
-  <section><h4>Guide</h4><ul>
+  <section><h4>Start here</h4><ul>
     <li><a href="quickstart.html"><span class="sec-n">0</span> Quickstart — first 5 minutes with CX</a></li>
     <li><a href="intro.html"><span class="sec-n">1</span> Introduction</a></li>
+    <li><a href="rings.html"><span class="sec-n">1a</span> The four rings</a></li>
+    <li><a href="choosing.html"><span class="sec-n">1b</span> Choosing a ring</a></li>
+    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
+  </ul></section>
+  <section><h4>Ring 0 — Data</h4><ul>
     <li><a href="data-language.html"><span class="sec-n">2</span> The data language</a></li>
+    <li><a href="value-model.html"><span class="sec-n">2a</span> The value model</a></li>
     <li><a href="surfaces.html"><span class="sec-n">3</span> Surfaces and projections</a></li>
     <li><a href="identity.html"><span class="sec-n">4</span> Identity</a></li>
+    <li><a href="schema.html"><span class="sec-n">4a</span> Schema and its evolution</a></li>
     <li><a href="analytics.html"><span class="sec-n">5</span> Analytics, columnar formats, and bridges</a></li>
-    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
-    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
-    <li><a href="tooling.html"><span class="sec-n">8</span> Tooling</a></li>
-    <li><a href="concepts.html"><span class="sec-n">9</span> Concepts</a></li>
-    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
-    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
-    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
-    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="data-tooling.html"><span class="sec-n">5a</span> Data tooling</a></li>
     <li><a href="tour-data.html"><span class="sec-n">14</span> 50 Ways to Love Your CX Data</a></li>
+  </ul></section>
+  <section><h4>Ring 1 — Code</h4><ul>
+    <li><a href="code.html"><span class="sec-n">6</span> The code language</a></li>
+    <li><a href="computation-identity.html"><span class="sec-n">6a</span> Computation identity</a></li>
+    <li><a href="commands-effects.html"><span class="sec-n">6b</span> Commands and effects</a></li>
+    <li><a href="runtime-representation.html"><span class="sec-n">6c</span> How a value is represented at runtime</a></li>
     <li><a href="tour-programs.html"><span class="sec-n">15</span> 50 Ways to Love Your CX Programs</a></li>
     <li><a href="capabilities.html"><span class="sec-n">16</span> Capabilities and permissions</a></li>
-    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
-    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
-    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
-  </ul></section>
-  <section><h4>Reference</h4><ul>
-    <li><a href="directives.html">Directives</a></li>
-    <li><a href="syntax.html">Core syntax</a></li>
-  </ul></section>
-  <section><h4>Standard library</h4><ul>
-    <li><a href="libraries.html">Overview</a></li>
-    <li><a href="lib-authz.html">authz</a></li>
-    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="code-tooling.html"><span class="sec-n">16a</span> Code tooling</a></li>
+    <li><a href="lib-array.html">array</a></li>
     <li><a href="lib-bytes.html">bytes</a></li>
     <li><a href="lib-crypto.html">crypto</a></li>
     <li><a href="lib-csv.html">csv</a></li>
-    <li><a href="lib-did.html">did</a></li>
-    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-diagram.html">diagram</a></li>
     <li><a href="lib-env.html">env</a></li>
-    <li><a href="lib-fabric.html">fabric</a></li>
     <li><a href="lib-format.html">format</a></li>
     <li><a href="lib-fp.html">fp</a></li>
     <li><a href="lib-ft.html">ft</a></li>
     <li><a href="lib-geo.html">geo</a></li>
     <li><a href="lib-hash.html">hash</a></li>
     <li><a href="lib-html.html">html</a></li>
-    <li><a href="lib-http.html">http</a></li>
     <li><a href="lib-i18n.html">i18n</a></li>
     <li><a href="lib-io.html">io</a></li>
-    <li><a href="lib-journal.html">journal</a></li>
     <li><a href="lib-json.html">json</a></li>
     <li><a href="lib-jsonrpc.html">jsonrpc</a></li>
     <li><a href="lib-jsonschema.html">jsonschema</a></li>
     <li><a href="lib-locale.html">locale</a></li>
     <li><a href="lib-log.html">log</a></li>
+    <li><a href="lib-map.html">map</a></li>
     <li><a href="lib-math.html">math</a></li>
     <li><a href="lib-mime.html">mime</a></li>
-    <li><a href="lib-net.html">net</a></li>
     <li><a href="lib-path.html">path</a></li>
     <li><a href="lib-process.html">process</a></li>
     <li><a class="active" href="lib-prof.html">prof</a></li>
     <li><a href="lib-random.html">random</a></li>
     <li><a href="lib-re.html">re</a></li>
     <li><a href="lib-sched.html">sched</a></li>
-    <li><a href="lib-session.html">session</a></li>
     <li><a href="lib-similar.html">similar</a></li>
-    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-strings.html">strings</a></li>
+    <li><a href="lib-supervise.html">supervise</a></li>
     <li><a href="lib-test.html">test</a></li>
     <li><a href="lib-time.html">time</a></li>
     <li><a href="lib-url.html">url</a></li>
     <li><a href="lib-uuid.html">uuid</a></li>
     <li><a href="lib-validate.html">validate</a></li>
+  </ul></section>
+  <section><h4>Ring 2 — Platform</h4><ul>
+    <li><a href="operations.html"><span class="sec-n">17</span> Operations</a></li>
+    <li><a href="store.html"><span class="sec-n">18</span> The store platform</a></li>
+    <li><a href="time.html"><span class="sec-n">18a</span> Time: valid time and transaction time</a></li>
+    <li><a href="consistency.html"><span class="sec-n">18b</span> Consistency, in the words we use</a></li>
+    <li><a href="event-evolution.html"><span class="sec-n">18c</span> Event evolution</a></li>
+    <li><a href="ux-capability.html"><span class="sec-n">19a</span> Projected surfaces — the ux capability</a></li>
+    <li><a href="lib-authz.html">authz</a></li>
+    <li><a href="lib-bus.html">bus</a></li>
+    <li><a href="lib-did.html">did</a></li>
+    <li><a href="lib-email.html">email</a></li>
+    <li><a href="lib-fabric.html">fabric</a></li>
+    <li><a href="lib-http.html">http</a></li>
+    <li><a href="lib-journal.html">journal</a></li>
+    <li><a href="lib-live.html">live</a></li>
+    <li><a href="lib-net.html">net</a></li>
+    <li><a href="lib-session.html">session</a></li>
+    <li><a href="lib-store.html">store</a></li>
     <li><a href="lib-vc.html">vc</a></li>
     <li><a href="lib-xap.html">xap</a></li>
     <li><a href="lib-xsp.html">xsp</a></li>
-  </ul></section>
-  <section><h4>XAP</h4><ul>
     <li><a href="xap.html">Overview</a></li>
     <li><a href="xap-d1.html">D1 · Greeting CLI</a></li>
     <li><a href="xap-d2.html">D2 · Guestbook (the cascade)</a></li>
     <li><a href="xap-d3.html">D3 · Guestbook on the web</a></li>
     <li><a href="xap-d4.html">D4 · Guestbook + agent</a></li>
   </ul></section>
+  <section><h4>Ring 3 — Ecosystem</h4><ul>
+    <li><a href="bindings.html"><span class="sec-n">7</span> Bindings</a></li>
+    <li><a href="xap-distribution.html"><span class="sec-n">19</span> XAP feature distribution</a></li>
+  </ul></section>
+  <section><h4>x/ tier — experimental</h4><ul>
+    <li><a href="x-a2a-xap.html">a2a-xap</a></li>
+    <li><a href="x-a2a.html">a2a</a></li>
+    <li><a href="x-adjudicate.html">adjudicate</a></li>
+    <li><a href="x-llm.html">llm</a></li>
+    <li><a href="x-mcp-server.html">mcp-server</a></li>
+    <li><a href="x-mcp.html">mcp</a></li>
+    <li><a href="x-run.html">run</a></li>
+    <li><a href="x-term.html">term</a></li>
+    <li><a href="x-tools.html">tools</a></li>
+    <li><a href="x-ux-tui.html">ux-tui</a></li>
+    <li><a href="x-ux-web.html">ux-web</a></li>
+    <li><a href="x-ux.html">ux</a></li>
+  </ul></section>
+  <section><h4>Reference</h4><ul>
+    <li><a href="migration.html"><span class="sec-n">10</span> Migration</a></li>
+    <li><a href="glossary.html"><span class="sec-n">11</span> Glossary</a></li>
+    <li><a href="faq.html"><span class="sec-n">12</span> Frequently Asked Questions</a></li>
+    <li><a href="comparison.html"><span class="sec-n">13</span> Comparison to alternatives</a></li>
+    <li><a href="directives.html">Directives</a></li>
+    <li><a href="syntax.html">Core syntax</a></li>
+  </ul></section>
 </aside>
+<header class="sheet-bar">
+  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">prof</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+</header>
 <main>
-<section id="lib-prof">
-  <h1>prof</h1>
-  <p class="lede">In-program profiling, callable directly from CX code. Provides timing measurement, memory snapshots, named counters, HDR histograms, structured trace events, and flamegraph emission — for the cases where a program measures itself and acts on the result. Timer, counter, histogram, and trace are the four primitives; all are impure because they observe or mutate process state.</p>
-  
-    <section id="fn-prof-time-fn" class="fn">
-      <h3>prof:time-fn</h3>
-      <p class="fn-sig"><code>[$prof:time-fn]  -> element</code>  —  Run a thunk and return a timing element carrying its elapsed time and return value.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/prof']
+<section id="lib-prof"><h1>prof</h1><p class="lede">In-program profiling, callable directly from CX code. Provides timing measurement, memory snapshots, named counters, HDR histograms, structured trace events, and flamegraph emission — for the cases where a program measures itself and acts on the result. Timer, counter, histogram, and trace are the four primitives; all are impure because they observe or mutate process state.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
+           reader who takes an x/ surface for a frozen one has been misled by
+           the page, not by their own inattention. ]]>
+  <section id="fn-prof-time-fn" class="fn">
+    <h3>prof:time-fn</h3>
+    <p class="fn-sig"><code>[$prof:time-fn]  -> element</code>  —  Run a thunk and return a timing element carrying its elapsed time and return value.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/prof']
 [$prof:time-fn "work" [?fn () 42]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-prof-now-ns" class="fn">
-      <h3>prof:now-ns</h3>
-      <p class="fn-sig"><code>[$prof:now-ns]  -> int</code>  —  Return a monotonic-clock reading in nanoseconds.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/prof']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-prof-now-ns" class="fn">
+    <h3>prof:now-ns</h3>
+    <p class="fn-sig"><code>[$prof:now-ns]  -> int</code>  —  Return a monotonic-clock reading in nanoseconds.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/prof']
 [$prof:now-ns]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-prof-now-cpu-ns" class="fn">
-      <h3>prof:now-cpu-ns</h3>
-      <p class="fn-sig"><code>[$prof:now-cpu-ns]  -> int</code>  —  Return the process CPU-time clock value in nanoseconds.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/prof']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-prof-now-cpu-ns" class="fn">
+    <h3>prof:now-cpu-ns</h3>
+    <p class="fn-sig"><code>[$prof:now-cpu-ns]  -> int</code>  —  Return the process CPU-time clock value in nanoseconds.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/prof']
 [$prof:now-cpu-ns]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-prof-mem-snapshot" class="fn">
-      <h3>prof:mem-snapshot</h3>
-      <p class="fn-sig"><code>[$prof:mem-snapshot]  -> element</code>  —  Capture current process memory state, always carrying rss-bytes and a timestamp.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/prof']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-prof-mem-snapshot" class="fn">
+    <h3>prof:mem-snapshot</h3>
+    <p class="fn-sig"><code>[$prof:mem-snapshot]  -> element</code>  —  Capture current process memory state, always carrying rss-bytes and a timestamp.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/prof']
 [?let [= $s [$prof:mem-snapshot]]
   [> $s@rss-bytes 0]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>true</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-prof-gc-trigger" class="fn">
-      <h3>prof:gc-trigger</h3>
-      <p class="fn-sig"><code>[$prof:gc-trigger]  -> null</code>  —  Request a garbage-collection cycle, best-effort; the underlying GC may decline.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/prof']
+        </pre>
+        <pre class="sample-output">
+          <code>true</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-prof-gc-trigger" class="fn">
+    <h3>prof:gc-trigger</h3>
+    <p class="fn-sig"><code>[$prof:gc-trigger]  -> null</code>  —  Request a garbage-collection cycle, best-effort; the underlying GC may decline.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/prof']
 [$prof:gc-trigger]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>null</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-prof-counter-inc" class="fn">
-      <h3>prof:counter-inc</h3>
-      <p class="fn-sig"><code>[$prof:counter-inc]  -> null</code>  —  Atomically add one to the named process-global counter.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/prof']
+        </pre>
+        <pre class="sample-output">
+          <code>null</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-prof-counter-inc" class="fn">
+    <h3>prof:counter-inc</h3>
+    <p class="fn-sig"><code>[$prof:counter-inc]  -> null</code>  —  Atomically add one to the named process-global counter.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/prof']
 [$prof:counter-inc "prof-007-hits"]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>null</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-prof-counter-add" class="fn">
-      <h3>prof:counter-add</h3>
-      <p class="fn-sig"><code>[$prof:counter-add]  -> null</code>  —  Atomically add a delta to the named process-global counter.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/prof']
+        </pre>
+        <pre class="sample-output">
+          <code>null</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-prof-counter-add" class="fn">
+    <h3>prof:counter-add</h3>
+    <p class="fn-sig"><code>[$prof:counter-add]  -> null</code>  —  Atomically add a delta to the named process-global counter.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/prof']
 [?let [= $_ [$prof:counter-add "prof-009-bytes" 5]]
   [$prof:counter-get "prof-009-bytes"]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>5</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-prof-counter-get" class="fn">
-      <h3>prof:counter-get</h3>
-      <p class="fn-sig"><code>[$prof:counter-get]  -> int</code>  —  Read the current value of the named counter.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/prof']
+        </pre>
+        <pre class="sample-output">
+          <code>5</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-prof-counter-get" class="fn">
+    <h3>prof:counter-get</h3>
+    <p class="fn-sig"><code>[$prof:counter-get]  -> int</code>  —  Read the current value of the named counter.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/prof']
 [?let [= $_ [$prof:counter-inc "prof-008-hits"]]
   [$prof:counter-get "prof-008-hits"]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>1</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-prof-counter-reset" class="fn">
-      <h3>prof:counter-reset</h3>
-      <p class="fn-sig"><code>[$prof:counter-reset]  -> null</code>  —  Reset the named counter back to zero.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/prof']
+        </pre>
+        <pre class="sample-output">
+          <code>1</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-prof-counter-reset" class="fn">
+    <h3>prof:counter-reset</h3>
+    <p class="fn-sig"><code>[$prof:counter-reset]  -> null</code>  —  Reset the named counter back to zero.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/prof']
 [?let [= $_ [$prof:counter-add "prof-011-x" 9]] [= $__ [$prof:counter-reset "prof-011-x"]]
   [$prof:counter-get "prof-011-x"]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>0</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-prof-counter-all" class="fn">
-      <h3>prof:counter-all</h3>
-      <p class="fn-sig"><code>[$prof:counter-all]  -> map</code>  —  Return a map of every counter name to its current value.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/prof']
+        </pre>
+        <pre class="sample-output">
+          <code>0</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-prof-counter-all" class="fn">
+    <h3>prof:counter-all</h3>
+    <p class="fn-sig"><code>[$prof:counter-all]  -> map</code>  —  Return a map of every counter name to its current value.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/prof']
 [?let [= $_ [$prof:counter-add "prof-012-only" 3]]
   [$prof:counter-all]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>{prof-012-only: 3}</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-prof-histogram-observe" class="fn">
-      <h3>prof:histogram-observe</h3>
-      <p class="fn-sig"><code>[$prof:histogram-observe]  -> null</code>  —  Record one observation into the named histogram, creating it on first observe.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/prof']
-[$prof:histogram-observe "prof-013-lat" 8.1]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>null</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-prof-histogram-stats" class="fn">
-      <h3>prof:histogram-stats</h3>
-      <p class="fn-sig"><code>[$prof:histogram-stats]  -> element</code>  —  Return count, percentiles, min, max, and mean for the named histogram.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/prof']
-[?let [= $a [$prof:histogram-observe "prof-014-lat" 1.0]] [= $b [$prof:histogram-observe "prof-014-lat" 2.0]] [= $c [$prof:histogram-observe "prof-014-lat" 3.0]] [= $s [$prof:histogram-stats "prof-014-lat"]]
+        </pre>
+        <pre class="sample-output">
+          <code>{prof-012-only: 3}</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-prof-histogram-observe" class="fn">
+    <h3>prof:histogram-observe</h3>
+    <p class="fn-sig"><code>[$prof:histogram-observe]  -> null</code>  —  Record one observation into the named histogram, creating it on first observe.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/prof']
+[$prof:histogram-observe "prof-013-lat" 8.1e0]</code>
+        </pre>
+        <pre class="sample-output">
+          <code>null</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-prof-histogram-stats" class="fn">
+    <h3>prof:histogram-stats</h3>
+    <p class="fn-sig"><code>[$prof:histogram-stats]  -> element</code>  —  Return count, percentiles, min, max, and mean for the named histogram.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/prof']
+[?let [= $a [$prof:histogram-observe "prof-014-lat" 1.0e0]] [= $b [$prof:histogram-observe "prof-014-lat" 2.0e0]] [= $c [$prof:histogram-observe "prof-014-lat" 3.0e0]] [= $s [$prof:histogram-stats "prof-014-lat"]]
   $s@count]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>3</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-prof-histogram-reset" class="fn">
-      <h3>prof:histogram-reset</h3>
-      <p class="fn-sig"><code>[$prof:histogram-reset]  -> null</code>  —  Discard the named histogram's observations while keeping the name.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/prof']
-[?let [= $_ [$prof:histogram-observe "prof-016-lat" 5.0]]
+        </pre>
+        <pre class="sample-output">
+          <code>3</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-prof-histogram-reset" class="fn">
+    <h3>prof:histogram-reset</h3>
+    <p class="fn-sig"><code>[$prof:histogram-reset]  -> null</code>  —  Discard the named histogram's observations while keeping the name.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/prof']
+[?let [= $_ [$prof:histogram-observe "prof-016-lat" 5.0e0]]
   [$prof:histogram-reset "prof-016-lat"]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>null</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-prof-trace" class="fn">
-      <h3>prof:trace</h3>
-      <p class="fn-sig"><code>[$prof:trace]  -> null</code>  —  Emit a structured trace event with the given fields to the buffer.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/prof']
-[$prof:trace "request" {request-id="abc"}]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-prof-trace-flush" class="fn">
-      <h3>prof:trace-flush</h3>
-      <p class="fn-sig"><code>[$prof:trace-flush]  -> null</code>  —  Flush buffered trace events to the configured sink.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/prof']
+        </pre>
+        <pre class="sample-output">
+          <code>null</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-prof-trace" class="fn">
+    <h3>prof:trace</h3>
+    <p class="fn-sig"><code>[$prof:trace]  -> null</code>  —  Emit a structured trace event with the given fields to the buffer.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/prof']
+[$prof:trace "request" {request-id: "abc"}]</code>
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-prof-trace-flush" class="fn">
+    <h3>prof:trace-flush</h3>
+    <p class="fn-sig"><code>[$prof:trace-flush]  -> null</code>  —  Flush buffered trace events to the configured sink.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/prof']
 [?let [= $_ [$prof:prof-configure {trace-sink: "none"}]]
   [$prof:trace-flush]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>null</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-prof-prof-configure" class="fn">
-      <h3>prof:prof-configure</h3>
-      <p class="fn-sig"><code>[$prof:prof-configure]  -> null</code>  —  Configure the trace sink, buffer size, and counter enablement.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/prof']
+        </pre>
+        <pre class="sample-output">
+          <code>null</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-prof-prof-configure" class="fn">
+    <h3>prof:prof-configure</h3>
+    <p class="fn-sig"><code>[$prof:prof-configure]  -> null</code>  —  Configure the trace sink, buffer size, and counter enablement.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/prof']
 [$prof:prof-configure {trace-sink: "none"}]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>null</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-prof-time-and-trace" class="fn">
-      <h3>prof:time-and-trace</h3>
-      <p class="fn-sig"><code>[$prof:time-and-trace]  -> element</code>  —  Time a thunk, emit a trace event with its duration, and return the timing element.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/prof']
+        </pre>
+        <pre class="sample-output">
+          <code>null</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-prof-time-and-trace" class="fn">
+    <h3>prof:time-and-trace</h3>
+    <p class="fn-sig"><code>[$prof:time-and-trace]  -> element</code>  —  Time a thunk, emit a trace event with its duration, and return the timing element.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/prof']
 [$prof:time-and-trace "work" [?fn () 42]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>cx-err:CXER0271</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="fn-prof-flamegraph-emit" class="fn">
-      <h3>prof:flamegraph-emit</h3>
-      <p class="fn-sig"><code>[$prof:flamegraph-emit]  -> string</code>  —  Fold buffered trace events into flamegraph.pl folded-stack output, returned or written to a path.</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[?lib 'cx-stdlib/prof']
+        </pre>
+        <pre class="sample-output">
+          <code>cx-err:CXER0271</code>
+        </pre>
+      </div>
+    
+  </section>
+  <section id="fn-prof-flamegraph-emit" class="fn">
+    <h3>prof:flamegraph-emit</h3>
+    <p class="fn-sig"><code>[$prof:flamegraph-emit]  -> string</code>  —  Fold buffered trace events into flamegraph.pl folded-stack output, returned or written to a path.</p>
+    
+      <div class="example">
+        <pre>
+          <code class="language-cx">[?lib 'cx-stdlib/prof']
 [$prof:flamegraph-emit]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>''</code>
-          </pre>
-        </div>
-      
-    </section>
-  
+        </pre>
+        <pre class="sample-output">
+          <code>''</code>
+        </pre>
+      </div>
+    
+  </section>
 </section>
 </main>
+<footer class="title-block">
+  <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
+  <div class="tb-cell"><span>Drawing</span><b>prof</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
+  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
+</footer>
 <script src="highlight/highlight.js" defer></script>
 <script src="search-index.js" defer></script>
 <script src="search/search.js" defer></script>

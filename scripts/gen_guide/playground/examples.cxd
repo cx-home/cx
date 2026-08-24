@@ -1,0 +1,2431 @@
+[playground-examples
+ [doc [#
+This document is the CX Playground example corpus — the single
+source the playground.examples.js generator (gen_examples.cx) reads.
+
+Format, one [ex] per example, order = presentation order (RAWOPEN and
+RAWCLOSE stand for the raw-text delimiters — hash after the opening
+bracket, hash before the closing bracket — which cannot be written
+literally inside this raw block):
+
+  [ex key=NN-kebab-slug
+   [label RAWOPEN one-line picker label, verbatim RAWCLOSE]
+   [src RAWOPEN
+CX source shown in the editor, flush-left, byte-verbatim
+RAWCLOSE]
+   [note RAWOPEN
+Markdown note shown under the editor, flush-left, byte-verbatim
+RAWCLOSE]
+  ]
+
+Payload convention (same as conformance/fixtures.cxs): label is inline
+RawText, taken verbatim; src and note payloads start on the line after
+the opening raw-text marker and the closing marker sits on its own line,
+so the reader strips exactly one leading and one trailing newline —
+byte-lossless for any flush-left content. A literal hash-bracket
+terminator inside a payload is NOT supported here (the corpus has none;
+the generator refuses if one appears).
+
+Edit workflow: change/add an [ex] here, then run
+  make playground-examples-regen
+which re-audits every entry against the live binary and rewrites
+playground.examples.js. Drift is gated by make verify-playground-examples.
+#]]
+
+ [ex key=01-atom-element
+  [label [#[1] Element — one attribute#]]
+  [src [#
+[pizza size=large]
+#]]
+  [note [#
+**Introduces:** the simplest CX shape — one element with one attribute. Eval returns the value unchanged. Switch the Output tab to JSON / XML to see the same value across projections.
+#]]
+ ]
+
+ [ex key=02-string-scalar
+  [label [#[2] String — bare scalar#]]
+  [src [#
+"hello, world"
+#]]
+  [note [#
+**Introduces:** scalar literals. Strings (`"…"`) are first-class values; everything in CX is a value, including bare scalars at the top level.
+#]]
+ ]
+
+ [ex key=03-number-scalars
+  [label [#[3] Numbers — int / float / negative#]]
+  [src [#
+[stats
+  min=-5
+  mid=0
+  max=99.5
+  ratio=0.001]
+#]]
+  [note [#
+**Introduces:** numeric attribute values. Positive / negative / int / float / sub-unit — all round-trip through projections.
+#]]
+ ]
+
+ [ex key=04-boolean-scalars
+  [label [#[4] Booleans — feature flags#]]
+  [src [#
+[user
+  active=true
+  verified=false
+  admin=true
+  blocked=false]
+#]]
+  [note [#
+**Introduces:** boolean attributes. `true` / `false` are typed scalars (not strings); JSON projects them as booleans.
+#]]
+ ]
+
+ [ex key=05-atom-values
+  [label [#[5] Atoms — `:kebab-case`#]]
+  [src [#
+[response status=:ok]
+#]]
+  [note [#
+**Introduces:** atoms — `:kebab-case` identifiers that evaluate to themselves. Use atoms for enum-like markers without quoting.
+#]]
+ ]
+
+ [ex key=06-string-quoting
+  [label [#[6] Strings — quoting variants#]]
+  [src [#
+[note
+  single='single quotes'
+  double="double quotes"
+  apostrophe="can't"]
+#]]
+  [note [#
+**Introduces:** string quoting — both `'…'` and `"…"`. Pick whichever avoids the most escapes.
+#]]
+ ]
+
+ [ex key=07-triple-quoted
+  [label [#[7] Strings — triple-quoted (multiline)#]]
+  [src [#
+[doc
+  body='''line 1
+line 2
+line 3''']
+#]]
+  [note [#
+**Introduces:** triple-quoted strings `'''…'''`. Multi-line content with embedded newlines, useful for prose or code blocks.
+#]]
+ ]
+
+ [ex key=08-nested-elements
+  [label [#[8] Nested elements — containment#]]
+  [src [#
+[order
+  [customer name=Alice]
+  [item name=pizza qty=2]
+  [item name=salad qty=1]]
+#]]
+  [note [#
+**Introduces:** nesting by containment. Children appear in document order. JSON projects child-element lists as arrays; XML round-trips verbatim.
+#]]
+ ]
+
+ [ex key=09-attrs-vs-children
+  [label [#[9] Attributes vs child elements#]]
+  [src [#
+[user id=1 active=true
+  [email "a@x.com"]
+  [phone "+1-555"]]
+#]]
+  [note [#
+**Introduces:** the attribute-vs-child distinction. Attributes (`id`, `active`) live on the open tag; child elements (`[email …]`) live inside the body. Both project cleanly.
+#]]
+ ]
+
+ [ex key=10-mixed-content
+  [label [#[10] Element — attrs AND text body#]]
+  [src [#
+[link href="https://cx-home.github.io" "CX Guide"]
+#]]
+  [note [#
+**Introduces:** an element carrying both attributes AND a body in the same tag — common for link / button shapes.
+#]]
+ ]
+
+ [ex key=11-sequence
+  [label [#[11] Sequence — ordered values#]]
+  [src [#
+(1, 2, 3, 4, 5)
+#]]
+  [note [#
+**Introduces:** sequence literal `(a, b, c)`. Ordered, heterogeneous, evaluated to themselves. JSON projects as an array.
+#]]
+ ]
+
+ [ex key=12-sequence-mixed
+  [label [#[12] Sequence — mixed scalar types#]]
+  [src [#
+(1, 2.5, "three", true, :four)
+#]]
+  [note [#
+**Introduces:** heterogeneous sequences — CX holds any scalar mix in one container.
+#]]
+ ]
+
+ [ex key=13-map-literal
+  [label [#[13] Map — string keys#]]
+  [src [#
+{name: 'Alice', age: 30, active: true}
+#]]
+  [note [#
+**Introduces:** map literal `{key: value, …}`. String-typed keys; JSON projects as an object.
+#]]
+ ]
+
+ [ex key=14-durations
+  [label [#[14] Durations — first-class scalars#]]
+  [src [#
+[timing
+  short=50ms
+  medium=2s
+  long=15m
+  very-long=2h]
+#]]
+  [note [#
+**Introduces:** duration scalars `Nms` / `Ns` / `Nm` / `Nh`. Recognized by `[?sleep]`, `[?timeout]`, etc.
+#]]
+ ]
+
+ [ex key=15-hyphenated-names
+  [label [#[15] Hyphenated names — kebab identifiers#]]
+  [src [#
+[user-profile is-active=true
+  [contact-info
+    [phone-number kind=mobile value="+1-555"]]]
+#]]
+  [note [#
+**Introduces:** kebab-case identifiers. Element and attribute names can carry hyphens (`user-profile`, `is-active`).
+#]]
+ ]
+
+ [ex key=16-let-basic
+  [label [#[16] [?let] — bind a value, then use it#]]
+  [src [#
+[?let [= $name 'Alice']
+  [greeting hello=$name]]
+#]]
+  [note [#
+**Introduces:** `[?let [= $var VALUE] BODY]` — lexical binding. `$name` substitutes its value inside BODY. Attribute form `hello=$name` reads the binding.
+#]]
+ ]
+
+ [ex key=17-let-nested
+  [label [#[17] [?let] — nested bindings#]]
+  [src [#
+[?let [= $price 12]
+  [?let [= $qty 3]
+    [order
+      subtotal=[* $price $qty]
+      tax=[* [* $price $qty] 0.08]]]]
+#]]
+  [note [#
+**Introduces:** nested `[?let]` chains build local scopes. `[* $price $qty]` is the multiplication directive — CX's arithmetic uses the same `[? …]` bracket shape as every other op.
+#]]
+ ]
+
+ [ex key=18-arith-add
+  [label [#[18] Arithmetic — add#]]
+  [src [#
+[+ 1 2 3 4 5]
+#]]
+  [note [#
+**Introduces:** the `[+ a b c …]` builtin — prefix-form addition over any number of arguments.
+#]]
+ ]
+
+ [ex key=19-arith-mixed
+  [label [#[19] Arithmetic — sub / mul / div#]]
+  [src [#
+[?let [= $x 10]
+  [?let [= $y 3]
+    [stats
+      sum=[+ $x $y]
+      diff=[- $x $y]
+      prod=[* $x $y]]]]
+#]]
+  [note [#
+**Introduces:** `[-]` (subtract) and `[*]` (multiply). All arithmetic is prefix-form.
+#]]
+ ]
+
+ [ex key=20-string-concat
+  [label [#[20] Strings — concat builtin#]]
+  [src [#
+[concat "hello" ", " "world"]
+#]]
+  [note [#
+**Introduces:** `[concat str₁ str₂ …]` — string concatenation.
+#]]
+ ]
+
+ [ex key=21-string-length
+  [label [#[21] Strings — length#]]
+  [src [#
+[string-length "hello"]
+#]]
+  [note [#
+**Introduces:** `[string-length s]` — character count of a string.
+#]]
+ ]
+
+ [ex key=22-string-contains
+  [label [#[22] Strings — contains#]]
+  [src [#
+[contains "foobar" "oob"]
+#]]
+  [note [#
+**Introduces:** `[contains haystack needle]` — boolean test for substring presence.
+#]]
+ ]
+
+ [ex key=23-comparison-eq
+  [label [#[23] Comparison — equality#]]
+  [src [#
+[?let [= $x 7]
+  [= $x 7]]
+#]]
+  [note [#
+**Introduces:** `[= a b]` — equality predicate. Returns `true` / `false`.
+#]]
+ ]
+
+ [ex key=24-comparison-gt
+  [label [#[24] Comparison — `>` / `<` / `>=`#]]
+  [src [#
+[?let [= $n 42]
+  [stats
+    gt=[> $n 10]
+    lt=[< $n 100]
+    ge=[>= $n 42]]]
+#]]
+  [note [#
+**Introduces:** numeric comparisons `[> a b]`, `[< a b]`, `[>= a b]`, `[<= a b]`. Each returns a boolean.
+#]]
+ ]
+
+ [ex key=25-logical
+  [label [#[25] Logical — and / or / not#]]
+  [src [#
+[?let [= $on true]
+  [and $on [or false true] [not false]]]
+#]]
+  [note [#
+**Introduces:** `[and …]` / `[or …]` / `[not x]` — boolean operators with short-circuit semantics.
+#]]
+ ]
+
+ [ex key=26-if-basic
+  [label [#[26] [?if] — branch on a predicate#]]
+  [src [#
+[?let [= $score 87]
+  [?if [>= $score 80]
+    [then [grade letter='A']]
+    [else [grade letter='B']]]]
+#]]
+  [note [#
+**Introduces:** `[?if PRED [then EXPR] [else EXPR]]`. Predicate is any expression; truthy values pick `[then …]`, falsy pick `[else …]`.
+#]]
+ ]
+
+ [ex key=27-if-chained
+  [label [#[27] [?if] — chained branches#]]
+  [src [#
+[?let [= $n 25]
+  [?if [< $n 10]
+    [then :small]
+    [else [?if [< $n 50]
+            [then :medium]
+            [else :large]]]]]
+#]]
+  [note [#
+**Introduces:** chaining `[?if]` via nested `[else …]`. The inner `[?if]` itself returns a value, so it's a valid `[else …]` body.
+#]]
+ ]
+
+ [ex key=28-match-scalar
+  [label [#[28] [?match] — multi-arm on a scalar#]]
+  [src [#
+[?let [= $s 200]
+  [?match $s
+    [case 200 :ok]
+    [case 404 :not-found]
+    [else :err]]]
+#]]
+  [note [#
+**Introduces:** `[?match SCRUTINEE [case PATTERN RESULT] …]`. First matching `[case …]` wins; `[else …]` is the fallback.
+#]]
+ ]
+
+ [ex key=29-match-else-fallback
+  [label [#[29] [?match] — [else …] fires#]]
+  [src [#
+[?let [= $s 500]
+  [?match $s
+    [case 200 :ok]
+    [case 404 :not-found]
+    [else :err]]]
+#]]
+  [note [#
+**Introduces:** the `[else …]` fallback. When no `[case …]` matches, `[else …]` fires.
+#]]
+ ]
+
+ [ex key=30-match-no-else
+  [label [#[30] [?match] — no [else …] returns ()#]]
+  [src [#
+[?let [= $s 500]
+  [?match $s
+    [case 200 :ok]
+    [case 404 :not-found]]]
+#]]
+  [note [#
+**Introduces:** missing `[else …]` semantics. With no fallback, an unmatched scrutinee yields the empty sequence `()`.
+#]]
+ ]
+
+ [ex key=31-match-wildcard
+  [label [#[31] [?match] — wildcard `_`#]]
+  [src [#
+[?let [= $v "surprise"]
+  [?match $v
+    [case 200 :http-ok]
+    [case _   :other]]]
+#]]
+  [note [#
+**Introduces:** the wildcard `_` pattern. Matches any value — equivalent to `[else …]` but lets you bind via richer patterns.
+#]]
+ ]
+
+ [ex key=32-match-element-shape
+  [label [#[32] [?match] — element shape dispatch#]]
+  [src [#
+[?let [= $n [prose "hello"]]
+  [?match $n
+    [case [prose $p] [p body=$p]]
+    [case [code $c]  [pre body=$c]]
+    [else ()]]]
+#]]
+  [note [#
+**Introduces:** matching on element shape with binding. `[prose $p]` matches any `prose` element and binds its body to `$p` for use in `[yield …]`.
+#]]
+ ]
+
+ [ex key=33-match-type-strict
+  [label [#[33] [?match] — type-strict scalar#]]
+  [src [#
+[?let [= $v 200]
+  [?match $v
+    [case "200" :string-match]
+    [case 200   :int-match]
+    [else :other]]]
+#]]
+  [note [#
+**Introduces:** type-strict scalar matching. `200` (int) ≠ `"200"` (string).
+#]]
+ ]
+
+ [ex key=34-cast-string-int
+  [label [#[34] [cast] — string to int#]]
+  [src [#
+[cast "42" :int]
+#]]
+  [note [#
+**Introduces:** `[cast VALUE :TYPE]` — explicit scalar conversion. `CXER0290` on invalid.
+#]]
+ ]
+
+ [ex key=35-cast-float-int
+  [label [#[35] [cast] — float to int (truncate)#]]
+  [src [#
+[cast 3.7 :int]
+#]]
+  [note [#
+**Introduces:** float → int truncation via `[cast]`. Result is `3`, not rounded.
+#]]
+ ]
+
+ [ex key=36-for-sequence
+  [label [#[36] [?for] — iterate a literal sequence#]]
+  [src [#
+[?for [in $n (1, 2, 3, 4, 5)]
+  [yield [square n=$n sq=[* $n $n]]]]
+#]]
+  [note [#
+**Introduces:** the comprehension `[?for [in $var SOURCE] [yield EXPR]]`. Iterates `source`, evaluates `EXPR` per item, collects results.
+#]]
+ ]
+
+ [ex key=37-for-where
+  [label [#[37] [?for] — [where] filter#]]
+  [src [#
+[?for [in $n (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)]
+  [where [> $n 5]]
+  [yield [big n=$n]]]
+#]]
+  [note [#
+**Introduces:** the `[where …]` clause. Filters items before `[yield …]`. Predicates use the bracket form: `[> $n 5]`.
+#]]
+ ]
+
+ [ex key=38-for-yield-cond
+  [label [#[38] [?for] — conditional [yield] body#]]
+  [src [#
+[?for [in $n (1, 2, 3, 4, 5, 6, 7, 8)]
+  [yield [?if [> $n 5]
+           [then [big n=$n]]
+           [else [small n=$n]]]]]
+#]]
+  [note [#
+**Introduces:** conditional inside `[yield …]`. Every iteration yields one element; the branch decides which shape.
+#]]
+ ]
+
+ [ex key=39-for-nested
+  [label [#[39] [?for] — nested iteration#]]
+  [src [#
+[?for [in $i (1, 2, 3)]
+  [yield [?for [in $j (1, 2, 3)]
+           [yield [pair i=$i j=$j]]]]]
+#]]
+  [note [#
+**Introduces:** nested comprehensions. The outer `[yield …]` body is itself a comprehension. Produces a 2D shape.
+#]]
+ ]
+
+ [ex key=40-for-multi-source
+  [label [#[40] [?for] — multiple sources#]]
+  [src [#
+[?for [in $a (1, 2, 3)]
+      [in $b (10, 20, 30)]
+  [yield [pair a=$a b=$b]]]
+#]]
+  [note [#
+**Introduces:** multiple `$var `[in $var SOURCE]` clause` clauses. Outer source iterates outer loop, inner source iterates inner (Cartesian product).
+#]]
+ ]
+
+ [ex key=41-for-let
+  [label [#[41] [?for] — :let clause for derived values#]]
+  [src [#
+[?for [in $n (1, 2, 3, 4, 5)]
+  [= $sq [* $n $n]]
+  [yield [pair n=$n sq=$sq]]]
+#]]
+  [note [#
+**Introduces:** `:let` clause — bind a derived value once per iteration, reuse in subsequent clauses.
+#]]
+ ]
+
+ [ex key=42-for-yield-par
+  [label [#[42] [?for :par] — wall-clock parallel comprehension#]]
+  [src [#
+[?for [in $n (1, 2, 3, 4, 5, 6, 7, 8)]
+  [yield [?let [= $_ [?sleep 500ms]]
+           [item n=$n sq=[* $n $n]]]]
+  [par]]
+#]]
+  [note [#
+**Introduces:** `[?for :par]` parallelizes the outermost generator. Under `make guide-http` mode the 8 sleeps overlap on real OS threads (~500ms). Under file:// the wasm runtime is single-threaded (~4s). Items stream in source order.
+#]]
+ ]
+
+ [ex key=43-for-yield-par-mock
+  [label [#[43] [?for] — parallel comprehension (instant via mock sleep)#]]
+  [src [#
+[?for [in $n (1, 2, 3, 4, 5, 6, 7, 8)]
+  [yield [?let [= $_ [?sleep 500ms mock]]
+           [item n=$n sq=[* $n $n]]]]
+  [par]]
+#]]
+  [note [#
+**Introduces:** `[par]` parallelizes the outermost generator; `[?sleep DUR mock]` advances *virtual* time so this is instant. Under `make guide-http` the 8 sleeps overlap on real OS threads (~500ms); under file:// the wasm runtime is single-threaded. Items stream in source order.
+#]]
+ ]
+
+ [ex key=44-for-yield-stream
+  [label [#[44] [?for] — yield streams as items complete#]]
+  [src [#
+[?for [in $n (1, 2, 3, 4)]
+  [yield [?let [= $_ [?sleep 300ms]]
+           [tick n=$n]]]]
+#]]
+  [note [#
+**Introduces:** `[?for]` streaming. Each `[yield …]` flushes one chunk to the output pane; you see items appear one at a time at the sleep cadence.
+#]]
+ ]
+
+ [ex key=45-for-empty
+  [label [#[45] [?for] — empty source#]]
+  [src [#
+[?for [in $n ()]
+  [yield [item n=$n]]]
+#]]
+  [note [#
+**Introduces:** comprehension over an empty source. Yields zero elements — result is the empty sequence `()`.
+#]]
+ ]
+
+ [ex key=46-fn-via-map
+  [label [#[46] [?fn] — anonymous function via [?map]#]]
+  [src [#
+[?map (1, 2, 3, 4, 5)
+  [using [?fn $x [* $x $x]]]]
+#]]
+  [note [#
+**Introduces:** `[?fn ($param) BODY]` — anonymous closure. `[?map XS [using FN]]` invokes it on each element of `xs`.
+#]]
+ ]
+
+ [ex key=47-map-cube
+  [label [#[47] [?map] — composition with builtins#]]
+  [src [#
+[?map (1, 2, 3, 4)
+  [using [?fn $n [* $n [* $n $n]]]]]
+#]]
+  [note [#
+**Introduces:** composed builtins inside `[?fn]`. `[* $n [* $n $n]]` is `$n × $n × $n` — cube.
+#]]
+ ]
+
+ [ex key=48-map-with-let
+  [label [#[48] [?map] — closure with internal [?let]#]]
+  [src [#
+[?map (1, 2, 3, 4)
+  [using [?fn $n
+           [?let [= $sq [* $n $n]]
+             [point x=$n y=$sq]]]]]
+#]]
+  [note [#
+**Introduces:** rich-shape per-item output. The closure builds a `[point]` element per input, using `[?let]` to name an intermediate.
+#]]
+ ]
+
+ [ex key=49-map-par-mock
+  [label [#[49] [?map] — parallel map (instant via mock sleep)#]]
+  [src [#
+[?map (1, 2, 3, 4, 5, 6, 7, 8)
+  [using [?fn $n
+           [?let [= $_ [?sleep 500ms mock]]
+             [* $n $n]]]]
+  [par]
+  [ordered]]
+#]]
+  [note [#
+**Introduces:** `[?map … [par]]` — parallel map; output is always source order (`[ordered]` is a tombstoned no-op). With `[?sleep DUR mock]` (virtual time) this is instant.
+#]]
+ ]
+
+ [ex key=50-map-par-wall
+  [label [#[50] [?map :par] — wall-clock streaming#]]
+  [src [#
+[?map (1, 2, 3, 4)
+  [using [?fn $n
+           [?let [= $_ [?sleep 500ms]]
+             [* $n $n]]]]
+  [par]]
+#]]
+  [note [#
+**Introduces:** wall-clock `[?map [par]]`. Under `make guide-http` mode the 4 workers run on real OS threads (~500ms). Under file:// the wasm runtime is single-threaded (~2s). Items stream in source order as the completed prefix grows.
+#]]
+ ]
+
+ [ex key=51-map-par-ordered
+  [label [#[51] [?map [par] [ordered]] — tombstoned no-op#]]
+  [src [#
+[?map (1, 2, 3, 4)
+  [using [?fn $n
+           [?let [= $_ [?sleep 500ms]]
+             [* $n $n]]]]
+  [par]
+  [ordered]]
+#]]
+  [note [#
+**Introduces:** `[ordered]` is a tombstoned no-op — `[par]` reassembles source order always, so this is identical to example 50. It remains valid only paired with `[par]`.
+#]]
+ ]
+
+ [ex key=52-fn-passed
+  [label [#[52] [?fn] — define once, pass to [?map]#]]
+  [src [#
+[?let [= $sqr [?fn $n [* $n $n]]]
+  [?map (1, 2, 3, 4, 5, 6, 7, 8)
+    [using $sqr]
+    [par]
+    [ordered]]]
+#]]
+  [note [#
+**Introduces:** closure-passing. Define `$sqr` once with `[?let]`, pass it as `[using]` — decouples definition from use.
+#]]
+ ]
+
+ [ex key=53-reduce-sum
+  [label [#[53] [?reduce] — fold to one value (sum)#]]
+  [src [#
+[?reduce (1, 2, 3, 4, 5)
+  [using [?fn ($a $b) [+ $a $b]]]
+  [init 0]]
+#]]
+  [note [#
+**Introduces:** `[?reduce SRC [using FN] [init Z]]` — fold a sequence to a single value. `[using …]` and `[init …]` are named clauses; the closure takes `($acc $item)`.
+#]]
+ ]
+
+ [ex key=54-reduce-product
+  [label [#[54] [?reduce] — fold to a product#]]
+  [src [#
+[?reduce (1, 2, 3, 4, 5)
+  [using [?fn ($a $b) [* $a $b]]]
+  [init 1]]
+#]]
+  [note [#
+**Introduces:** the same fold with a different combiner + identity. `[init 1]` is the multiplicative identity, so the product of 1..5 is 120.
+#]]
+ ]
+
+ [ex key=55-reduce-par
+  [label [#[55] [?reduce … [par]] — associative tree-reduce#]]
+  [src [#
+[?reduce (1, 2, 3, 4, 5, 6, 7, 8)
+  [using [?fn ($a $b) [+ $a $b]]]
+  [init 0]
+  [par]]
+#]]
+  [note [#
+**Introduces:** `[par]` on a reduce — an associative tree-reduce. The combiner must be associative; under `make guide-http` the tree levels run on real threads.
+#]]
+ ]
+
+ [ex key=56-map-then-reduce
+  [label [#[56] Map → reduce composition#]]
+  [src [#
+[?reduce [?map (1, 2, 3, 4, 5)
+           [using [?fn $n [* $n $n]]]]
+  [using [?fn ($a $b) [+ $a $b]]]
+  [init 0]]
+#]]
+  [note [#
+**Pattern:** map then reduce — square each item, then sum the squares (1+4+9+16+25 = 55). The inner `[?map]` feeds the `[?reduce]` source directly.
+#]]
+ ]
+
+ [ex key=57-map-par-bulkhead
+  [label [#[57] [?map … [par]] — bounded with [?bulkhead]#]]
+  [src [#
+[?map (1, 2, 3, 4, 5, 6, 7, 8)
+  [using [?fn $n
+           [?bulkhead max-concurrent=2
+             [?let [= $_ [?sleep 100ms mock]]
+               [* $n $n]]]]]
+  [par]]
+#]]
+  [note [#
+**Introduces:** `[?bulkhead max-concurrent=N …]` caps in-flight work. With 8 parallel items but a 2-slot bulkhead, the overflow returns `[err cx-err:CXER0152 'bulkhead saturated']` — backpressure surfaced as values.
+#]]
+ ]
+
+ [ex key=58-par-shared-cb
+  [label [#[58] [?map :par] — shared [?circuit-breaker]#]]
+  [src [#
+[?map (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+  [using [?fn $n
+           [?circuit-breaker threshold=0.5 window=1s reset=10s name="shared"
+             [* $n $n]]]]
+  [par]]
+#]]
+  [note [#
+**Introduces:** state-sharing under `[par]`. The named `[?circuit-breaker]` shares state across parallel workers per spec/code.md §10.2.7 — same source-text directive = one shared breaker.
+#]]
+ ]
+
+ [ex key=59-par-rich-shape
+  [label [#[59] [?map :par] — emit rich shapes#]]
+  [src [#
+[?map (1, 2, 3, 4)
+  [using [?fn $n
+           [?let [= $_ [?sleep 250ms]]
+             [point x=$n y=[* $n 2] z=[* $n $n]]]]]
+  [par]]
+#]]
+  [note [#
+**Introduces:** rich per-item output. Each worker emits a `[point]` with three computed slots. The streaming pane fills in as workers complete.
+#]]
+ ]
+
+ [ex key=60-par-with-composition
+  [label [#[60] [?map :par] — composed with everything#]]
+  [src [#
+[?map (1, 2, 3, 4)
+  [using [?fn $n
+           [?retry max=3
+             [?timeout 200ms
+               [?let [= $_ [?sleep 50ms]]
+                 [computed n=$n sq=[* $n $n]]]]]]]
+  [par]
+  [ordered]]
+#]]
+  [note [#
+**Introduces:** the full composition — `[?map :par]` over a `[using]` closure that nests `[?retry]` + `[?timeout]` + `[?sleep]`. Parallel workers compose freely with resilience directives.
+#]]
+ ]
+
+ [ex key=61-modify-delete
+  [label [#[61] [?modify] — pure-functional :delete#]]
+  [src [#
+[?let [= $doc [users
+                [user id=1 name=Alice banned=false]
+                [user id=2 name=Bob   banned=true]
+                [user id=3 name=Carol banned=false]
+                [user id=4 name=Dave  banned=true]]]
+  [?modify $doc //user[= $_@banned true]
+    [delete]]]
+#]]
+  [note [#
+**Introduces:** `[?modify DOC PATH :ACTION]`. Pure-functional — returns a new document; the original `$doc` is unchanged. `//user[@banned=true]` is a CXPath predicate filter; `:delete` removes the matches.
+#]]
+ ]
+
+ [ex key=62-modify-set-attr
+  [label [#[62] [?modify] — :set-attr on every match#]]
+  [src [#
+[?let [= $doc [users
+                [user id=1 [name "Alice"]]
+                [user id=2 [name "Bob"]]]]
+  [?modify $doc //user
+    [set-attr status "active"]]]
+#]]
+  [note [#
+**Introduces:** `:set-attr NAME VALUE` — writes an attribute on every matched node. Adds `status=active` to every user.
+#]]
+ ]
+
+ [ex key=63-modify-chain
+  [label [#[63] [?modify] — chained transforms via [?let]#]]
+  [src [#
+[?let [= $doc [users
+                [user id=1 name=Alice banned=false]
+                [user id=2 name=Bob   banned=true]
+                [user id=3 name=Carol banned=false]]]
+  [?let [= $clean [?modify $doc //user[= $_@banned true]
+                    [delete]]]
+    [?modify $clean //user
+      [set-attr role "member"]]]]
+#]]
+  [note [#
+**Introduces:** composing multiple `[?modify]` steps with `[?let]`. First delete banned users, then set `role=member` on the survivors.
+#]]
+ ]
+
+ [ex key=64-cxpath-axes
+  [label [#[64] CXPath — child + attribute axes#]]
+  [src [#
+[?let [= $doc [order [item qty=2] [item qty=3] [item qty=5]]]
+  [?for [in $i $doc/item]
+    [yield $i/@qty]]]
+#]]
+  [note [#
+**Introduces:** CXPath axes — `/item` selects direct children named `item`; `/@qty` selects the `qty` attribute.
+#]]
+ ]
+
+ [ex key=65-cxpath-where
+  [label [#[65] CXPath — filter via [where]#]]
+  [src [#
+[?let [= $doc [users
+                [user name=Alice active=true  age=30]
+                [user name=Bob   active=false age=25]
+                [user name=Carol active=true  age=22]]]
+  [?for [in $u $doc/user]
+    [where [= $u/@active true]]
+    [yield [active-user name=$u/@name age=$u/@age]]]]
+#]]
+  [note [#
+**Introduces:** filtering a CXPath result via `[where …]`. `$doc/user` selects direct children named `user`; `[where [= $u/@active true]]` filters them.
+#]]
+ ]
+
+ [ex key=66-pipe-canonical
+  [label [#[66] [?pipe] — canonical pipeline (bare stages)#]]
+  [src [#
+[?pipe (1, 2, 3, 4)
+  [?fn ($xs) [?for [in $x $xs]
+               [where [> $x 2]]
+               [yield $x]]]
+  count]
+#]]
+  [note [#
+**Introduces:** `[?pipe SEED STAGE …]` — each bare stage is a transform applied to the threaded value (the `[through …]` wrapper is retired). Here: filter `> 2` (→ 3,4) then `count` (→ 2).
+#]]
+ ]
+
+ [ex key=67-pipe-multistage
+  [label [#[67] [?pipe] — multi-stage threading#]]
+  [src [#
+[?pipe (5, 3, 8, 1, 9)
+  [?fn ($xs) [?for [in $x $xs]
+               [where [> $x 3]]
+               [yield $x]]]
+  [?fn ($xs) [?reduce $xs
+               [using [?fn ($a $b) [+ $a $b]]]
+               [init 0]]]]
+#]]
+  [note [#
+**Pattern:** two function stages thread left-to-right. Filter `> 3` (→ 5,8,9) then sum (→ 22). Each stage receives the previous stage's output as its single argument.
+#]]
+ ]
+
+ [ex key=68-pipe-modify
+  [label [#[68] [?pipe] — a [?modify] stage#]]
+  [src [#
+[?let [= $doc [users [user [name "Alice"]] [user [name "Bob"]]]]
+  [?pipe $doc
+    [?modify //user [set-attr verified true]]]]
+#]]
+  [note [#
+**Pattern:** a `[?modify PATH OP]` directive is a valid pipe stage — it receives the threaded document. Here every `[user]` gets `verified=true`.
+#]]
+ ]
+
+ [ex key=69-fallback-recover
+  [label [#[69] [?fallback] — on err, recover#]]
+  [src [#
+[?fallback [err code="down-primary"]
+  [recover-with [err code="down-secondary"]]]
+#]]
+  [note [#
+**Introduces:** `[?fallback BODY [recover-with R]]`. If positional body is an err, evaluate `[recover-with …]` and return that. Otherwise return the body's value.
+#]]
+ ]
+
+ [ex key=70-fallback-success
+  [label [#[70] [?fallback] — body succeeds, no recover#]]
+  [src [#
+[?fallback [ok value="healthy"]
+  [recover-with [ok value="never"]]]
+#]]
+  [note [#
+**Introduces:** `[?fallback]` happy path. When positional body returns a non-err value, that value is returned and `[recover-with …]` is never evaluated.
+#]]
+ ]
+
+ [ex key=71-builtin-head-tail
+  [label [#[71] Sequence — head + tail#]]
+  [src [#
+[?let [= $xs (10, 20, 30, 40)]
+  [list first=[$head $xs]
+    [rest [$tail $xs]]]]
+#]]
+  [note [#
+**Introduces:** `[head xs]` (first element) + `[tail xs]` (everything after the first).
+#]]
+ ]
+
+ [ex key=72-builtin-nth
+  [label [#[72] Sequence — nth (0-indexed)#]]
+  [src [#
+[nth (10, 20, 30, 40) 2]
+#]]
+  [note [#
+**Introduces:** `[nth xs i]` — zero-indexed element access. Returns `30`.
+#]]
+ ]
+
+ [ex key=73-builtin-distinct
+  [label [#[73] Sequence — distinct#]]
+  [src [#
+[distinct (1, 2, 1, 3, 2, 4, 1)]
+#]]
+  [note [#
+**Introduces:** `[distinct xs]` — preserves first occurrence, drops duplicates.
+#]]
+ ]
+
+ [ex key=74-builtin-reverse
+  [label [#[74] Sequence — reverse#]]
+  [src [#
+[reverse (1, 2, 3, 4, 5)]
+#]]
+  [note [#
+**Introduces:** `[reverse xs]` — flips order.
+#]]
+ ]
+
+ [ex key=75-builtin-position
+  [label [#[75] Sequence — position#]]
+  [src [#
+[position (10, 20, 30, 20, 40) 20]
+#]]
+  [note [#
+**Introduces:** `[position xs needle]` — index of first occurrence (0-based), or -1.
+#]]
+ ]
+
+ [ex key=76-numeric-abs
+  [label [#[76] Numeric — abs#]]
+  [src [#
+[abs -42]
+#]]
+  [note [#
+**Introduces:** `[abs n]` — absolute value.
+#]]
+ ]
+
+ [ex key=77-numeric-round
+  [label [#[77] Numeric — round / floor / ceiling#]]
+  [src [#
+[stats
+  r=[$round 3.7]
+  f=[$floor 3.7]
+  c=[$ceiling 3.2]]
+#]]
+  [note [#
+**Introduces:** `[round f]` / `[floor f]` / `[ceiling f]` — float-to-int with three rounding modes.
+#]]
+ ]
+
+ [ex key=78-string-substring
+  [label [#[78] Strings — substring#]]
+  [src [#
+[substring "hello world" 6 11]
+#]]
+  [note [#
+**Introduces:** `[substring s start end]` — half-open substring slice.
+#]]
+ ]
+
+ [ex key=79-string-starts-ends
+  [label [#[79] Strings — starts-with / ends-with#]]
+  [src [#
+[checks
+  starts=[$starts-with "hello world" "hello"]
+  ends=[$ends-with "hello world" "world"]]
+#]]
+  [note [#
+**Introduces:** `[starts-with s prefix]` + `[ends-with s suffix]` — boolean tests.
+#]]
+ ]
+
+ [ex key=80-string-normalize
+  [label [#[80] Strings — normalize-space#]]
+  [src [#
+[normalize-space "  hello   world  "]
+#]]
+  [note [#
+**Introduces:** `[normalize-space s]` — collapses runs of whitespace, trims edges.
+#]]
+ ]
+
+ [ex key=81-sleep-mock-timeout
+  [label [#[81] [?sleep … mock] inside [?timeout]#]]
+  [src [#
+[?timeout 100ms
+  [?let [= $_ [?sleep 500ms mock]]
+    [ok value='never']]]
+#]]
+  [note [#
+**Introduces:** `[?sleep DUR mock]` — virtual time, instant in wall-clock. The outer `[?timeout 100ms]` fires because the mock-sleep advances the logical clock past 100ms, returning `[err cx-err:CXER0141]`.
+#]]
+ ]
+
+ [ex key=82-sleep-wall
+  [label [#[82] [?sleep DUR] — real wall-clock#]]
+  [src [#
+[?let [= $_ [?sleep 500ms]]
+  [ok value='woke-up']]
+#]]
+  [note [#
+**Introduces:** bare `[?sleep DUR]` — really sleeps. In the playground the async wasm yields cooperatively so the UI stays responsive.
+#]]
+ ]
+
+ [ex key=83-async-await
+  [label [#[83] [?async] + [?await] — minimal future#]]
+  [src [#
+[?let [= $f [?async [ok value=42]]]
+  [?await $f]]
+#]]
+  [note [#
+**Introduces:** `[?async EXPR]` returns a future handle. `[?await $f]` resolves it. Futures are lazy: the body runs on first await.
+#]]
+ ]
+
+ [ex key=84-async-mock-sleep
+  [label [#[84] [?async] — mock sleep then resolve#]]
+  [src [#
+[?let [= $f [?async [?let [= $_ [?sleep 100ms :mock]]
+                      [ok value='done']]]]
+  [?await $f]]
+#]]
+  [note [#
+**Introduces:** futures with internal mock-sleep. The future resolves in logical time.
+#]]
+ ]
+
+ [ex key=85-await-all
+  [label [#[85] [?await-all] — wait on every future#]]
+  [src [#
+[?let [= $fast [?async [?let [= $_ [?sleep 100ms :mock]]
+                         [ok value='a']]]]
+  [?let [= $slow [?async [?let [= $_ [?sleep 400ms :mock]]
+                           [ok value='b']]]]
+    [?await-all ($fast, $slow)]]]
+#]]
+  [note [#
+**Introduces:** `[?await-all (futures…)]`. Waits on every future; returns the sequence of results (or aggregated CXER0240 err).
+#]]
+ ]
+
+ [ex key=86-await-any
+  [label [#[86] [?await-any] — first success wins#]]
+  [src [#
+[?let [= $broken [?async [err code="down"]]]
+  [?let [= $good [?async [ok value='survivor']]]
+    [?await-any ($broken, $good)]]]
+#]]
+  [note [#
+**Introduces:** `[?await-any]`. Returns the first successful future; ignores subsequent failures.
+#]]
+ ]
+
+ [ex key=87-await-race
+  [label [#[87] [?await-race] — first to resolve wins#]]
+  [src [#
+[?let [= $fast [?async [?let [= $_ [?sleep 100ms :mock]]
+                         [ok value='fast']]]]
+  [?let [= $slow [?async [?let [= $_ [?sleep 500ms :mock]]
+                           [ok value='slow']]]]
+    [?await-race ($fast, $slow)]]]
+#]]
+  [note [#
+**Introduces:** `[?await-race]`. Returns the first future to resolve (success OR fail); cancels the losers.
+#]]
+ ]
+
+ [ex key=88-channel-basic
+  [label [#[88] [?channel] — buffered send / receive#]]
+  [src [#
+[?let [= $ch [?channel name="c" buffer=4]]
+  [?let [= $_ [?send 42 to=$ch]]
+    [?receive from=$ch]]]
+#]]
+  [note [#
+**Introduces:** `[?channel :name S :buffer N]` is a typed FIFO queue. `[?send V :to $ch]` enqueues; `[?receive :from $ch]` dequeues. (Note: directives use `:slot value` syntax; the `name=value` attribute form is for element construction.)
+#]]
+ ]
+
+ [ex key=89-worker-basic
+  [label [#[89] [?worker] — long-running task#]]
+  [src [#
+[?worker name="w"
+  [ok value='worked']]
+#]]
+  [note [#
+**Introduces:** `[?worker name=S BODY]` — registers a worker. In the sequential substrate the body runs to completion synchronously.
+#]]
+ ]
+
+ [ex key=90-cancel
+  [label [#[90] [?cancel] — abort a future#]]
+  [src [#
+[?let [= $f [?async [?let [= $_ [?sleep 1s :mock]]
+                      [ok value='never']]]]
+  [?let [= $_ [?cancel $f]]
+    [?await $f]]]
+#]]
+  [note [#
+**Introduces:** `[?cancel $handle]`. Requests cancellation; future resolves to `[err :code "cx-err:CXER0260"]`.
+#]]
+ ]
+
+ [ex key=91-retry-happy
+  [label [#[91] [?retry] — first try wins#]]
+  [src [#
+[?retry max=3
+  [ok value='first-try']]
+#]]
+  [note [#
+**Introduces:** `[?retry max=N BODY]`. Re-runs positional body until it returns a non-err value or `max=N` is hit. Here it succeeds on attempt 1.
+#]]
+ ]
+
+ [ex key=92-retry-eventually
+  [label [#[92] [?retry] — succeeds after some failures#]]
+  [src [#
+[?retry max=5
+  [?test-err-then-ok err-count=2 ok-value=[ok value='recovered']]]
+#]]
+  [note [#
+**Introduces:** `[?test-err-then-ok]` — fixture helper that returns err N times then OK. Combined with `[?retry]` shows the retry succeeding after 2 transient failures.
+#]]
+ ]
+
+ [ex key=93-retry-exhaustion
+  [label [#[93] [?retry] — exhausted → CXER0140#]]
+  [src [#
+[?retry max=3
+  [?test-always-err]]
+#]]
+  [note [#
+**Introduces:** `[?retry]` exhaustion. When `max=N` is hit and positional body still errs, returns `[err :code "cx-err:CXER0140" …]`.
+#]]
+ ]
+
+ [ex key=94-timeout-fires
+  [label [#[94] [?timeout] — fires after mock sleep#]]
+  [src [#
+[?timeout 50ms
+  [?let [= $_ [?sleep 200ms mock]]
+    [ok value='too-slow']]]
+#]]
+  [note [#
+**Introduces:** a `[?timeout]` that elapses. The body's 200ms mock-sleep exceeds the 50ms budget, so the timeout returns `[err cx-err:CXER0141 elapsed=50ms]` rather than the body value.
+#]]
+ ]
+
+ [ex key=95-circuit-breaker-trips
+  [label [#[95] [?circuit-breaker] — trips after failures#]]
+  [src [#
+[?for [in $i (1, 2, 3, 4)]
+  [yield [?circuit-breaker threshold=0.5 window=1s reset=10s min-samples=2
+           [?test-always-err]]]]
+#]]
+  [note [#
+**Introduces:** `[?circuit-breaker]`. After `min-samples=N` samples and `threshold=T` failure ratio, opens for `reset=DUR` time and rejects without invoking positional body.
+#]]
+ ]
+
+ [ex key=96-rate-limit-allow
+  [label [#[96] [?rate-limit] — under the limit#]]
+  [src [#
+[?for [in $i (1, 2, 3)]
+  [yield [?rate-limit max=10 per=1s
+           [ok i=$i]]]]
+#]]
+  [note [#
+**Introduces:** `[?rate-limit :max N :per DUR]`. Admits up to N invocations per window. Within the limit, just passes through.
+#]]
+ ]
+
+ [ex key=97-rate-limit-over
+  [label [#[97] [?rate-limit] — exceeds the limit#]]
+  [src [#
+[?for [in $i (1, 2, 3, 4, 5)]
+  [yield [?rate-limit max=2 per=1s
+           [ok i=$i]]]]
+#]]
+  [note [#
+**Introduces:** over-limit behaviour. After `max=N` admits, further calls return `[err :code "cx-err:CXER0151" :retry-after DUR]`.
+#]]
+ ]
+
+ [ex key=98-bulkhead-pass
+  [label [#[98] [?bulkhead] — under cap#]]
+  [src [#
+[?bulkhead max-concurrent=4 queue=0
+  [ok value="in-flight"]]
+#]]
+  [note [#
+**Introduces:** `[?bulkhead :max-concurrent N]`. Sequential evaluator: passes when current concurrent count < N. Saturated → CXER0152.
+#]]
+ ]
+
+ [ex key=99-composition-stack
+  [label [#[99] Composition — retry + timeout + circuit-breaker#]]
+  [src [#
+[?retry max=3
+  [?timeout 100ms
+    [?circuit-breaker threshold=0.5 window=1s reset=10s
+      [ok value="layered"]]]]
+#]]
+  [note [#
+**Introduces:** layered resilience composition. Outer `[?retry]` wraps inner `[?timeout]` wraps inner `[?circuit-breaker]`. Each err bubbles up the stack.
+#]]
+ ]
+
+ [ex key=100-composition-everything
+  [label [#[100] Composition — every resilience directive#]]
+  [src [#
+[?retry max=2
+  [?fallback [?timeout 200ms
+               [?circuit-breaker threshold=0.5 window=1s reset=10s
+                 [?rate-limit max=100 per=1s
+                   [?bulkhead max-concurrent=4
+                     [ok value="full-stack"]]]]]
+    [recover-with [ok value="fallback-fire"]]]]
+#]]
+  [note [#
+**Introduces:** the full resilience stack — `[?retry]` → `[?fallback]` → `[?timeout]` → `[?circuit-breaker]` → `[?rate-limit]` → `[?bulkhead]`. Demonstrates that all resilience directives compose.
+#]]
+ ]
+
+ [ex key=101-cxpath-descendant
+  [label [#[101] CXPath — descendant axis `//`#]]
+  [src [#
+[?let [= $doc [tree
+                [branch [leaf id=1] [leaf id=2]]
+                [branch [leaf id=3]]
+                [branch [leaf id=4] [leaf id=5]]]]
+  [?for [in $l $doc//leaf]
+    [yield $l/@id]]]
+#]]
+  [note [#
+**Pattern:** find descendants at any depth. **Uses:** `//`, `[yield …]`, attribute access. The `//leaf` step matches every `leaf` element under `$doc`, no matter how deeply nested. (G1 closed.)
+#]]
+ ]
+
+ [ex key=102-cxpath-child
+  [label [#[102] CXPath — child axis `/`#]]
+  [src [#
+[?let [= $doc [shop
+                [item id=1]
+                [item id=2]
+                [staff [member id=99]]]]
+  [?for [in $i $doc//item]
+    [yield $i/@id]]]
+#]]
+  [note [#
+**Pattern:** select direct children only. **Uses:** `/`, `[yield …]`. `/item` finds direct children of `$doc` named `item`; the nested `[member id=A]` inside `staff` is ignored.
+#]]
+ ]
+
+ [ex key=103-cxpath-attr-access
+  [label [#[103] CXPath — attribute access (`/@` and `$x@a`)#]]
+  [src [#
+[?let [= $u [user name=Alice age=30]]
+  [pair slash=$u/@name short=$u@age]]
+#]]
+  [note [#
+**Pattern:** read an attribute by name. **Uses:** `/@attr` (canonical) and `$node@attr` (shorthand). Both return the attribute value; the shorthand reads better inside expressions and as attribute values.
+#]]
+ ]
+
+ [ex key=104-cxpath-wildcard
+  [label [#[104] CXPath — wildcard `*`#]]
+  [src [#
+[?let [= $doc [box [a x=1] [b y=2] [c z=3]]]
+  [?for [in $e $doc/*]
+    [yield [name $e]]]]
+#]]
+  [note [#
+**Pattern:** iterate all children regardless of name. **Uses:** `/*`, `[name $e]`. `[name $e]` returns the element's own name as a string — useful when names are unknown ahead of time.
+#]]
+ ]
+
+ [ex key=105-cxpath-position
+  [label [#[105] CXPath — position predicate `[N]`#]]
+  [src [#
+[?let [= $doc [list [item id=1] [item id=2] [item id=3] [item id=4]]]
+  $doc/item[2]]
+#]]
+  [note [#
+**Pattern:** pick the Nth match. **Uses:** `[N]` inline predicate (1-indexed per XPath convention). Returns the second `item`. (G3 closed.)
+#]]
+ ]
+
+ [ex key=106-cxpath-last
+  [label [#[106] CXPath — last-position `[last()]`#]]
+  [src [#
+[?let [= $doc [list [item id=1] [item id=2] [item id=3]]]
+  $doc/item[= $_position $_last]]
+#]]
+  [note [#
+**Pattern:** pick the final match. **Uses:** `[= $_position $_last]` — the reserved position bindings select the final match at application time.
+#]]
+ ]
+
+ [ex key=107-cxpath-compound
+  [label [#[107] CXPath — compound predicate `[and …]`#]]
+  [src [#
+[?let [= $doc [users
+                [user active=true  age=30]
+                [user active=false age=40]
+                [user active=true  age=22]]]
+  $doc/user[and [= $_@active true] [> $_@age 25]]]
+#]]
+  [note [#
+**Pattern:** filter by multiple conditions. **Uses:** `[and a b]` predicate body wrapping `[= $_@attr v]` and `[> $_@attr v]` comparisons. The bracket-form predicates compose; `or` works the same way. Per `[expr]` general predicate framing.
+#]]
+ ]
+
+ [ex key=108-cxpath-parent
+  [label [#[108] CXPath — parent axis `..`#]]
+  [src [#
+[?let [= $doc [orders
+                [order id=1 [line p=10]]
+                [order id=2 [line p=20]]
+                [order id=3 [line p=30]]]]
+  [?for [in $l $doc//line]
+    [yield $l/../@id]]]
+#]]
+  [note [#
+**Pattern:** find the container of a match. **Uses:** `..` parent axis, chained with `/@id`. For each `line` element, navigate up to its `order` parent and read that order's `id`. (G2 closed.)
+#]]
+ ]
+
+ [ex key=109-rename-via-attr
+  [label [#[109] Transform — rename element via computed name#]]
+  [src [#
+[?let [= $doc [doc
+                [item name=apple  qty=3]
+                [item name=pear   qty=5]
+                [item name=carrot qty=2]]]
+  [?for [in $i $doc//item]
+    [yield [?element $i/@name qty=$i/@qty]]]]
+#]]
+  [note [#
+**Introduces:** `[?element NAME-EXPR …]` — a computed element name. Each `[item name=apple]` is reshaped into `[apple …]`, lifting the `@name` attribute to the tag.
+#]]
+ ]
+
+ [ex key=110-attr-to-child
+  [label [#[110] Transform — promote attribute to child element#]]
+  [src [#
+[?let [= $doc [users
+                [user id=1 name=Alice]
+                [user id=2 name=Bob]]]
+  [?for [in $u $doc//user]
+    [yield [user id=$u/@id
+             [name $u/@name]]]]]
+#]]
+  [note [#
+**Pattern:** move scalar attribute into a nested element shape. **Uses:** `[?for]`, `$u/@…` reads, child-element construction. Common when migrating flat attribute records to a more structured form.
+#]]
+ ]
+
+ [ex key=111-child-to-attr
+  [label [#[111] Transform — demote child element to attribute#]]
+  [src [#
+[?let [= $doc [users
+                [user id=1 [name "Alice"]]
+                [user id=2 [name "Bob"]]]]
+  [?for [in $u $doc//user]
+    [yield [user id=$u/@id name=$u/name]]]]
+#]]
+  [note [#
+**Pattern:** flatten a singleton child into an attribute. **Uses:** `$u/name` to select the child element, then construct a new `user` with `name=…` as an attribute. The inverse of pattern 110.
+#]]
+ ]
+
+ [ex key=112-unwrap-singleton
+  [label [#[112] Transform — strip a wrapper element#]]
+  [src [#
+[?let [= $doc [wrapper [payload value=42]]]
+  [?for [in $p $doc/payload]
+    [yield $p]]]
+#]]
+  [note [#
+**Pattern:** unwrap a singleton parent. **Uses:** `[in $p $doc/payload] [yield $p]`. Drop the outer `wrapper` and emit the child directly. Generalizes when there are N payloads.
+#]]
+ ]
+
+ [ex key=113-wrap-each
+  [label [#[113] Transform — wrap each child in a container#]]
+  [src [#
+[?for [in $n (1, 2, 3, 4)]
+  [yield [box [item id=$n]]]]
+#]]
+  [note [#
+**Pattern:** wrap each element in a consistent container. **Uses:** `[?for]`, nested element construction. The output is a sequence of `[box [item …]]` shapes — useful for boxing scalars into element identity.
+#]]
+ ]
+
+ [ex key=114-computed-attr
+  [label [#[114] Transform — add a computed attribute#]]
+  [src [#
+[?let [= $doc [order
+                [line price=10 qty=2]
+                [line price=20 qty=3]
+                [line price=5  qty=10]]]
+  [?for [in $l $doc/line]
+    [yield [line price=$l/@price
+                 qty=$l/@qty
+                 total=[* $l/@price $l/@qty]]]]]
+#]]
+  [note [#
+**Pattern:** project + augment each record with a derived field. **Uses:** `[?for]`, `[* $l/@price $l/@qty]` for the computation, fresh `line` shape on the way out.
+#]]
+ ]
+
+ [ex key=115-project-attrs
+  [label [#[115] Transform — project (keep only some attrs)#]]
+  [src [#
+[?let [= $doc [users
+                [user id=1 name=A age=30 ssn=secret]
+                [user id=2 name=B age=25 ssn=secret]]]
+  [?for [in $u $doc/user]
+    [yield [user id=$u/@id name=$u/@name]]]]
+#]]
+  [note [#
+**Pattern:** keep only certain attributes (the SQL `SELECT a, b` shape). **Uses:** `[?for]` + explicit attribute construction over `$doc/user` (child axis returns every `user` child after Wave 1 gap A). Useful for shedding sensitive or redundant fields.
+#]]
+ ]
+
+ [ex key=116-reorder
+  [label [#[116] Transform — reorder children#]]
+  [src [#
+[?let [= $doc [list [item id=3] [item id=1] [item id=2]]]
+  [?for [in $i $doc//item]
+    [order-by $i/@id]
+    [yield $i]]]
+#]]
+  [note [#
+**Pattern:** reorder by a derived key. **Uses:** `[order-by EXPR]` comprehension clause (ascending). Output preserves the new order.
+#]]
+ ]
+
+ [ex key=117-filter-where
+  [label [#[117] Filter — keep matches#]]
+  [src [#
+[?for [in $n (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)]
+  [where [> $n 5]]
+  [yield [big n=$n]]]
+#]]
+  [note [#
+**Pattern:** drop everything that doesn't match. **Uses:** `[where …]` clause + bracket-form predicate `[> $n 5]`. Items failing the predicate are skipped entirely.
+#]]
+ ]
+
+ [ex key=118-odd-even-partition
+  [label [#[118] Filter — odd / even partition#]]
+  [src [#
+[?for [in $n (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)]
+  [yield [?if [odd $n]
+           [then [odd-val n=$n]]
+           [else [even-val n=$n]]]]]
+#]]
+  [note [#
+**Pattern:** route each item to one of two shapes by a predicate. **Uses:** `[odd $n]` builtin (Phase 1, this session), `[?if]` ternary. Each iteration yields exactly one element — never both branches.
+#]]
+ ]
+
+ [ex key=119-top-n
+  [label [#[119] Filter — top-N by attribute#]]
+  [src [#
+[?let [= $doc [scores [s v=42] [s v=88] [s v=15] [s v=77] [s v=33]]]
+  [?for [in $s $doc//s]
+    [order-by $s/@v]
+    [limit 3]
+    [yield $s/@v]]]
+#]]
+  [note [#
+**Pattern:** keep the lowest 3 by score. **Uses:** `[order-by]` + `[limit N]`. Returns 15, 33, 42. For top-N descending, reverse the sequence or invert the key.
+#]]
+ ]
+
+ [ex key=120-distinct-by-key
+  [label [#[120] Filter — distinct by key#]]
+  [src [#
+[?let [= $doc [log
+                [hit user=alice]
+                [hit user=bob]
+                [hit user=alice]
+                [hit user=carol]
+                [hit user=bob]]]
+  [?for [in $h $doc//hit]
+    [group-by $h/@user]
+    [yield $h/@user]]]
+#]]
+  [note [#
+**Pattern:** unique values of a derived key. **Uses:** `[group-by]` clause — each distinct key appears once. Different from `[distinct $xs]` (which dedupes scalars); this groups elements by an extracted attribute.
+#]]
+ ]
+
+ [ex key=121-composite-predicate
+  [label [#[121] Filter — composite predicate#]]
+  [src [#
+[?let [= $doc [users
+                [user active=true  age=30 role=admin]
+                [user active=true  age=22 role=user]
+                [user active=false age=40 role=admin]]]
+  $doc/user[and [= $_@active true] [>= $_@age 25]]]
+#]]
+  [note [#
+**Pattern:** combine multiple filter conditions inline. **Uses:** `[and [= $_@a v] [>= $_@b N]]` inline predicate with two clauses. Each `[op @attr value]` is an independent boolean; `and` short-circuits. (G3 closed.)
+#]]
+ ]
+
+ [ex key=122-attr-presence
+  [label [#[122] Filter — attribute presence#]]
+  [src [#
+[?let [= $doc [users
+                [user id=1 email="a@x.com"]
+                [user id=2]
+                [user id=3 email="c@x.com"]]]
+  $doc/user[@email]]
+#]]
+  [note [#
+**Pattern:** keep records that *have* a given attribute. **Uses:** bare `[@email]` predicate — truthy if the attribute exists on the candidate. Drops `user id=2` (no email).
+#]]
+ ]
+
+ [ex key=123-count-matches
+  [label [#[123] Aggregate — count matches#]]
+  [src [#
+[?let [= $doc [log
+                [hit ok=true]
+                [hit ok=false]
+                [hit ok=true]
+                [hit ok=true]]]
+  [$count $doc/hit[= $_@ok true]]]
+#]]
+  [note [#
+**Pattern:** how many records match the predicate? **Uses:** the `[$count $bind]` head-dispatch builtin over an inline-predicate-filtered path.
+#]]
+ ]
+
+ [ex key=124-sum-attr
+  [label [#[124] Aggregate — sum an attribute#]]
+  [src [#
+[?let [= $doc [order
+                [line qty=2 price=10]
+                [line qty=1 price=20]
+                [line qty=3 price=5]]]
+  [sum $doc/line/@price]]
+#]]
+  [note [#
+**Pattern:** total of an attribute across all matches. **Uses:** `[sum $bind]` builtin in element-call form, attribute-axis path `/line/@price` on child axis (gap A fix: `$doc/line` enumerates every `line` child).
+#]]
+ ]
+
+ [ex key=125-min-max
+  [label [#[125] Aggregate — min / max#]]
+  [src [#
+[?let [= $doc [scores [s v=42] [s v=88] [s v=15] [s v=77]]]
+  [stats
+    lo=[$min $doc/s/@v]
+    hi=[$max $doc/s/@v]
+    avg=[$avg $doc/s/@v]]]
+#]]
+  [note [#
+**Pattern:** statistical summary across attribute values. **Uses:** `[min]` / `[max]` / `[avg]` builtins over `$doc/s/@v` (child axis fans out across every `s` child). Compose into a single summary element.
+#]]
+ ]
+
+ [ex key=126-group-aggregate
+  [label [#[126] Aggregate — group-by attribute → count per group#]]
+  [src [#
+[?let [= $doc [orders
+                [o region=US   amt=100]
+                [o region=EU   amt=200]
+                [o region=US   amt=50]
+                [o region=EU   amt=80]
+                [o region=APAC amt=300]]]
+  [?for [in $o $doc/o]
+    [group-by $o/@region]
+    [yield $o/@region]]]
+#]]
+  [note [#
+**Pattern:** what are the distinct group keys? **Uses:** `[group-by]` over `$doc/o` (child axis enumerates each `o` child after gap A). Yields `(US, EU, APAC)`. Aggregations per group await `[?group-by]` iterator combinator.
+#]]
+ ]
+
+ [ex key=127-deep-descendant
+  [label [#[127] Tree — deep descendants at any depth#]]
+  [src [#
+[?let [= $doc [root
+                [a [b [c [d marker=hit]]]]
+                [x [y marker=miss]]]]
+  [?for [in $m $doc//*[@marker]]
+    [yield [name $m]]]]
+#]]
+  [note [#
+**Pattern:** find everything with a given attribute anywhere in the tree. **Uses:** `//*` (descendant wildcard) chained with `[@marker]` (attribute-presence inline predicate), `[name $m]`. The descendant axis walks ALL the way down.
+#]]
+ ]
+
+ [ex key=128-flatten-one-level
+  [label [#[128] Tree — flatten one level#]]
+  [src [#
+[?let [= $doc [groups
+                [g [item "a"] [item "b"]]
+                [g [item "c"]]
+                [g [item "d"] [item "e"]]]]
+  [?for [in $g $doc/g]
+    [yield $g/item]]]
+#]]
+  [note [#
+**Pattern:** pull nested children up one level. **Uses:** `[?for]` over `$doc/g` (child axis), `[yield $g/item]` to splat each group's items. Both axes are child-axis (gap A: `$bind/child` now returns every match, not just the first). The output is a flat sequence.
+#]]
+ ]
+
+ [ex key=129-name-via-builtin
+  [label [#[129] Tree — node name via local-name()#]]
+  [src [#
+[?let [= $doc [config
+                [database host=A]
+                [cache provider=R]
+                [logging level=W]]]
+  [?for [in $section $doc/*]
+    [yield [section type=[$local-name $section]]]]]
+#]]
+  [note [#
+**Pattern:** capture each child's own name as data. **Uses:** `[$local-name $node]` head-dispatch builtin, `[?for]` + dynamic data shape. Output records the kind of each section.
+#]]
+ ]
+
+ [ex key=130-siblings
+  [label [#[130] Tree — find siblings of a node#]]
+  [src [#
+[?let [= $doc [post
+                [title "On X"]
+                [author "Alice"]
+                [body "..."]
+                [tags "T1" "T2"]]]
+  [?for [in $a $doc//author]
+    [yield $a/../*]]]
+#]]
+  [note [#
+**Pattern:** walk to parent, then back down to all children. **Uses:** `..` parent axis + `/*` wildcard. Returns every direct child of the post (including the author itself).
+#]]
+ ]
+
+ [ex key=131-leaves-only
+  [label [#[131] Tree — leaf nodes (no children)#]]
+  [src [#
+[?let [= $doc [tree
+                [n [n1 [leaf id=1]] [leaf id=2]]
+                [leaf id=3]]]
+  [?for [in $l $doc//leaf]
+    [yield $l/@id]]]
+#]]
+  [note [#
+**Pattern:** select only the leaf-shaped nodes by name. **Uses:** `//leaf` descendant-by-name. For tree-shape-with-mixed-names, filter by `count(child::*)=0` once that surface lands.
+#]]
+ ]
+
+ [ex key=132-pipe-of-modifies
+  [label [#[132] Compose — pipe of [?modify] stages#]]
+  [src [#
+[?let [= $doc [users
+                [user id=1 banned=true]
+                [user id=2 banned=false]
+                [user id=3 banned=true]]]
+  [?pipe $doc
+    [?modify //user[= $_@banned true] [delete]]
+    [?modify //user [set-attr role "member"]]]]
+#]]
+  [note [#
+**Pattern:** chain two `[?modify]` stages — first delete banned users (predicate `[= $_@banned true]`), then tag the survivors `role=member`. Stages thread the document left to right.
+#]]
+ ]
+
+ [ex key=133-filter-map-reduce
+  [label [#[133] Compose — filter → map → reduce#]]
+  [src [#
+[?pipe (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+  [?fn ($xs) [?for [in $x $xs]
+               [where [> $x 4]]
+               [yield [* $x $x]]]]
+  [?fn ($xs) [?reduce $xs
+               [using [?fn ($a $b) [+ $a $b]]]
+               [init 0]]]]
+#]]
+  [note [#
+**Pattern:** a classic data pipeline — keep `> 4`, square, then sum (25+36+49+64+81+100 = 355). Two function stages over a `[?pipe]`.
+#]]
+ ]
+
+ [ex key=134-build-index
+  [label [#[134] Compose — index with a computed tier#]]
+  [src [#
+[?let [= $users [users
+                  [user name=Alice score=30]
+                  [user name=Bob   score=20]]]
+  [?for [in $u $users//user]
+    [yield [?element $u/@name
+             tier=[?if [>= $u/@score 25]
+                    [then :gold]
+                    [else :silver]]]]]]
+#]]
+  [note [#
+**Pattern:** build a name-keyed index whose tag is the user name and whose `tier` attribute is computed by an inline `[?if]` on `@score`. Combines computed names (`[?element]`) with a branch.
+#]]
+ ]
+
+ [ex key=135-read-rewrite
+  [label [#[135] Compose — read, transform, emit#]]
+  [src [#
+[?let [= $doc [items [item q=2 p=10] [item q=3 p=5]]]
+  [?for [in $i $doc/item]
+    [= $total [* $i/@q $i/@p]]
+    [yield [line qty=$i/@q price=$i/@p total=$total]]]]
+#]]
+  [note [#
+**Pattern:** comprehension with `:let` for derived per-iteration values. **Uses:** `:let` clause, `[* …]` arithmetic, reshape on `[yield …]`.
+#]]
+ ]
+
+ [ex key=136-rdf-triples-shape
+  [label [#[136] Graph — RDF triple shape#]]
+  [src [#
+[triples
+  [t s=Alice p=knows o=Bob]
+  [t s=Bob   p=knows o=Carol]
+  [t s=Alice p=likes o=pizza]
+  [t s=Carol p=likes o=tea]]
+#]]
+  [note [#
+**Pattern:** model an RDF graph as triple records. **Uses:** flat element shape with `s` / `p` / `o` attributes. Queries are CXPath predicates against this shape.
+#]]
+ ]
+
+ [ex key=137-query-by-subject
+  [label [#[137] Graph — query by subject#]]
+  [src [#
+[?let [= $g [triples
+              [t s=Alice p=knows o=Bob]
+              [t s=Alice p=likes o=pizza]
+              [t s=Bob   p=likes o=tea]]]
+  $g//t[= $_@s "Alice"]]
+#]]
+  [note [#
+**Pattern:** find all statements about a subject. **Uses:** `[= $_@s "Alice"]` inline predicate against the triples graph. Returns every triple where the subject is `Alice`.
+#]]
+ ]
+
+ [ex key=138-query-by-predicate
+  [label [#[138] Graph — query by predicate (relation)#]]
+  [src [#
+[?let [= $g [triples
+              [t s=A p=knows o=B]
+              [t s=B p=knows o=C]
+              [t s=A p=likes o=X]]]
+  $g//t[= $_@p "knows"]]
+#]]
+  [note [#
+**Pattern:** find all statements of a given relation. **Uses:** `[= $_@p "knows"]` inline predicate. Returns the `knows` edges of the graph; flip the predicate for any other relation.
+#]]
+ ]
+
+ [ex key=139-out-edges
+  [label [#[139] Graph — out-edges from a node#]]
+  [src [#
+[?let [= $g [triples
+              [t s=A p=r1 o=B]
+              [t s=A p=r2 o=C]
+              [t s=B p=r1 o=D]]]
+  [?for [in $t $g//t[= $_@s "A"]]
+    [yield [edge to=$t/@o via=$t/@p]]]]
+#]]
+  [note [#
+**Pattern:** all edges leaving a node. **Uses:** `[= $_@s "A"]` predicate, `[?for]` reshape. Each output records the destination and the relation.
+#]]
+ ]
+
+ [ex key=140-in-edges
+  [label [#[140] Graph — in-edges to a node#]]
+  [src [#
+[?let [= $g [triples
+              [t s=A p=r1 o=B]
+              [t s=C p=r1 o=B]
+              [t s=A p=r2 o=D]]]
+  [?for [in $t $g//t[= $_@o "B"]]
+    [yield [edge from=$t/@s via=$t/@p]]]]
+#]]
+  [note [#
+**Pattern:** all edges arriving at a node. **Uses:** `[= $_@o "B"]` predicate against the triples. Each output records the source and relation.
+#]]
+ ]
+
+ [ex key=141-reachability-1hop
+  [label [#[141] Graph — one-hop reachability#]]
+  [src [#
+[?let [= $g [triples
+              [t s=A p=knows o=B]
+              [t s=A p=knows o=C]
+              [t s=B p=knows o=D]]]
+  [?for [in $t $g//t[and [= $_@s "A"] [= $_@p "knows"]]]
+    [yield $t/@o]]]
+#]]
+  [note [#
+**Pattern:** who can `A` reach in one hop via `knows`? **Uses:** `[and [= $_@s "A"] [= $_@p "knows"]]` compound predicate. RHS literals are quoted (`"A"` / `"knows"`) — bare-identifier RHS in operator predicates currently produces no matches and is a separate spec ambiguity, distinct from gaps A/B/C. Multi-hop reachability needs recursion; v0.8.0 surfaces single-hop cleanly.
+#]]
+ ]
+
+ [ex key=142-set-union
+  [label [#[142] Set — union (concat + distinct)#]]
+  [src [#
+[?let [= $a (1, 2, 3, 4)]
+  [?let [= $b (3, 4, 5, 6)]
+    [distinct ((1, 2, 3, 4, 3, 4, 5, 6))]]]
+#]]
+  [note [#
+**Pattern:** combine two sequences and dedupe. **Uses:** sequence literal concatenation (manual), `[distinct]` builtin. (A lazy `[?distinct]` combinator is a planned addition; `[?concat]` covers lazy concatenation.)
+#]]
+ ]
+
+ [ex key=143-set-intersection
+  [label [#[143] Set — intersection (in both)#]]
+  [src [#
+[?let [= $a (1, 2, 3, 4)]
+  [?let [= $b (3, 4, 5, 6)]
+    [?for [in $x $a]
+      [where [or [= $x 3] [= $x 4]]]
+      [yield $x]]]]
+#]]
+  [note [#
+**Pattern:** keep items that appear in both sequences. **Uses:** explicit `[where …]` filter — the v0.8.0 surface doesn't have a generic `[in $x $set]` predicate yet, so the filter spells out membership.
+#]]
+ ]
+
+ [ex key=144-set-difference
+  [label [#[144] Set — difference (A − B)#]]
+  [src [#
+[?for [in $x (1, 2, 3, 4, 5)]
+  [where [and [not [= $x 2]] [not [= $x 4]]]]
+  [yield $x]]
+#]]
+  [note [#
+**Pattern:** keep items NOT in the exclusion set. **Uses:** `[not [= …]]` per excluded item, joined with `[and …]`. Returns `(1, 3, 5)` — i.e., `(1..5) − (2, 4)`.
+#]]
+ ]
+
+ [ex key=145-cartesian
+  [label [#[145] Set — Cartesian product#]]
+  [src [#
+[?for [in $a (1, 2, 3)]
+      [in $b ("x", "y")]
+  [yield [pair a=$a b=$b]]]
+#]]
+  [note [#
+**Pattern:** every combination of two sequences. **Uses:** multi-source `[?for]` — outer loop over `$a`, inner loop over `$b`. Yields 6 pairs (3 × 2).
+#]]
+ ]
+
+ [ex key=146-pivot-rows-to-attrs
+  [label [#[146] ETL — pivot (row-shape → attr-shape)#]]
+  [src [#
+[?let [= $doc [stats
+                [m k=cpu  v=87]
+                [m k=mem  v=62]
+                [m k=disk v=44]]]
+  [snapshot
+    [cpu  $doc/m[= $_@k "cpu"]/@v]
+    [mem  $doc/m[= $_@k "mem"]/@v]
+    [disk $doc/m[= $_@k "disk"]/@v]]]
+#]]
+  [note [#
+**Pattern:** turn N rows-of-(k,v) into one element with N attributes. **Uses:** inline `$doc/m[= $_@k …]/@v` per pivot key (child-axis fix from gap A makes the predicate-filtered path resolve directly — no intermediate `[?let]` chain needed). The terminal `/@v` materialises the attribute as a single-attr element (`[v 87]`), so output renders `cpu="[v 87]"` etc.; to read the raw scalar `87`, bind the row first — `[?let [= $cpu $doc/m[@k="cpu"]] $cpu@v]`. The shape still pivots skinny-tall → wide. (G4 closed.)
+#]]
+ ]
+
+ [ex key=147-unpivot
+  [label [#[147] ETL — unpivot (attrs → rows)#]]
+  [src [#
+[?let [= $row [snapshot cpu=87 mem=62 disk=44]]
+  ([m k=cpu  v=$row/@cpu],
+   [m k=mem  v=$row/@mem],
+   [m k=disk v=$row/@disk])]
+#]]
+  [note [#
+**Pattern:** the inverse of pivot. **Uses:** literal sequence + `$row/@…` reads. Output is the skinny-tall form. Generalizes when there's a known attribute set; an arbitrary-attr unpivot waits on iterator combinators.
+#]]
+ ]
+
+ [ex key=148-transpose-matrix
+  [label [#[148] ETL — transpose a 2D table#]]
+  [src [#
+[?let [= $m [matrix
+              [row a=1 b=2 c=3]
+              [row a=4 b=5 c=6]
+              [row a=7 b=8 c=9]]]
+  [?let [= $r1 $m/row[1]]
+    [?let [= $r2 $m/row[2]]
+      [?let [= $r3 $m/row[3]]
+        [transposed
+          [col k=a [val $r1@a] [val $r2@a] [val $r3@a]]
+          [col k=b [val $r1@b] [val $r2@b] [val $r3@b]]
+          [col k=c [val $r1@c] [val $r2@c] [val $r3@c]]]]]]]
+#]]
+  [note [#
+**Pattern:** transpose a fixed-shape 2D table. **Uses:** position predicates `[1]`/`[2]`/`[3]` (G3 closed) on the child axis `$m/row[N]` (gap A: child axis now returns every match — picking row N by position rather than getting the first row regardless). For arbitrary dimensions, lazy `[?zip]` is the right tool.
+#]]
+ ]
+
+ [ex key=149-group-then-sum
+  [label [#[149] ETL — group-aggregate (region → total)#]]
+  [src [#
+[?let [= $doc [orders
+                [o region=US amt=100]
+                [o region=EU amt=200]
+                [o region=US amt=50]
+                [o region=EU amt=80]]]
+  [totals
+    us=[$sum $doc//o[= $_@region "US"]/@amt]
+    eu=[$sum $doc//o[= $_@region "EU"]/@amt]]]
+#]]
+  [note [#
+**Pattern:** SQL's `GROUP BY region, SUM(amt)` shape. **Uses:** inline predicates `[= $_@region "US"]`, `[sum …]` builtin per group. (Generalizes when groups are known up-front; arbitrary-key group-aggregate awaits.)
+#]]
+ ]
+
+ [ex key=150-join-by-key
+  [label [#[150] ETL — join two collections by attribute#]]
+  [src [#
+[?let [= $orders [o-set
+                   [o id=1 user="A" amt=100]
+                   [o id=2 user="B" amt=200]
+                   [o id=3 user="A" amt=50]]]
+  [?let [= $users [u-set
+                    [u name="A" email="a@x.com"]
+                    [u name="B" email="b@x.com"]]]
+    [?for [in $o $orders//o]
+      [yield [joined order-id=$o/@id amt=$o/@amt
+               [email $users//u[= $_@name $o/@user]/@email]]]]]]
+#]]
+  [note [#
+**Pattern:** inner-join two collections by a shared key — look up each order's user record by name and project the email. **Uses:** cross-binding inline predicate `[@name=$o/@user]` (gap C closed: the RHS now evaluates the path-bearing reference against the *outer* env, so `$o/@user` is the iterating row's key while `$users//u[…]` does the lookup). Terminal `/@email` materialises the value as `[email "…"]` (gap-D class — same `/@attr` materialisation shape as ex 146). The natural single-expression join is now the standard surface; the prior `[?match]` workaround is retired.
+#]]
+ ]
+
+ [ex key=151-range-by-stride
+  [label [#[151] Range — strided `[$range lo hi step]`#]]
+  [src [#
+[?for [in $x [$range 1 10 2]]
+  [yield $x]]
+#]]
+  [note [#
+**Introduces:** `[$range lo hi step]` — the prefix range generator (infix `to`/`by` is retired). Stride 2 over 1..10 yields the odds 1,3,5,7,9.
+#]]
+ ]
+
+ [ex key=152-range-reverse-stride
+  [label [#[152] Range — descending with negative step#]]
+  [src [#
+[?for [in $x [$range 20 4 -4]]
+  [yield $x]]
+#]]
+  [note [#
+**Introduces:** a descending range via a negative step. `[$range 20 4 -4]` counts down 20,16,12,8,4.
+#]]
+ ]
+
+ [ex key=153-take-prefix
+  [label [#[153] Comprehension — `[take N]` over an open range#]]
+  [src [#
+[?for [in $x [$range 1 *]]
+  [where [> $x 100]]
+  [take 5]
+  [yield $x]]
+#]]
+  [note [#
+**Introduces:** `[$range 1 *]` — an *open* (infinite) range — made finite by `[take 5]`. Laziness matters: only enough items to find 5 past 100 are produced (101..105).
+#]]
+ ]
+
+ [ex key=154-drop-prefix
+  [label [#[154] Comprehension — `[drop N]` skip-prefix#]]
+  [src [#
+[?for [in $x [$range 1 10]]
+  [drop 7]
+  [yield $x]]
+#]]
+  [note [#
+**Introduces:** `[drop N]` — skip the first N items of the stream. Dropping 7 of 1..10 leaves 8,9,10.
+#]]
+ ]
+
+ [ex key=155-drop-take-page
+  [label [#[155] Comprehension — paginate via [drop] + [take]#]]
+  [src [#
+[?for [in $x [$range 1 100]]
+  [drop 30]
+  [take 5]
+  [yield $x]]
+#]]
+  [note [#
+**Pattern:** `[drop OFFSET] [take SIZE]` is page-N slicing. Offset 30, size 5 yields items 31..35 — the standard pagination window.
+#]]
+ ]
+
+ [ex key=156-slice-range
+  [label [#[156] Slice — single-axis range `$xs[1:3]`#]]
+  [src [#
+[?let [= $xs ("a", "b", "c", "d", "e")]
+  $xs[1:3]]
+#]]
+  [note [#
+**Pattern:** sub-sequence by inclusive index bounds. **Uses:** `$xs[1:3]` — the slice postfix on a `$binding`. Indices are 1-based and STOP is INCLUSIVE (D4/D5), so the result is `("a", "b", "c")`. Out-of-range or wrong-direction slices return the empty sequence rather than erroring (D20).
+#]]
+ ]
+
+ [ex key=157-slice-last-three
+  [label [#[157] Slice — last N via negative start `$xs[-3:]`#]]
+  [src [#
+[?let [= $xs ("a", "b", "c", "d", "e")]
+  $xs[-3:]]
+#]]
+  [note [#
+**Pattern:** "last three" / pagination tail. **Uses:** negative indices resolve from the end at apply time (`-1` = last, `-3` = third-from-last). Equivalent to Python's `xs[-3:]`. Open-stop walks through the end of the sequence.
+#]]
+ ]
+
+ [ex key=158-slice-reverse
+  [label [#[158] Slice — reverse with `$xs[::-1]`#]]
+  [src [#
+[?let [= $xs ("a", "b", "c", "d", "e")]
+  $xs[::-1]]
+#]]
+  [note [#
+**Pattern:** reverse a sequence in one move. **Uses:** open start/stop + step `-1`. Walks the receiver backwards from the last element to the first inclusive (reverse-stride convention). Equivalent to `[reverse $xs]` but more direct when you're already in slice territory.
+#]]
+ ]
+
+ [ex key=159-slice-every-other
+  [label [#[159] Slice — every other with `$xs[::2]`#]]
+  [src [#
+[?let [= $xs ("a", "b", "c", "d", "e")]
+  $xs[::2]]
+#]]
+  [note [#
+**Pattern:** stride a sequence. **Uses:** open start/stop + step `2` — yields elements at 0-based positions `0, 2, 4` (1-based `1, 3, 5`). Composes with negative stride (`[::-2]` → every-other backwards) and explicit bounds (`[5::-2]` → walk from index 5 backwards by 2).
+#]]
+ ]
+
+ [ex key=160-slice-trim-ends
+  [label [#[160] Slice — trim ends with `$_last`#]]
+  [src [#
+[?let [= $xs ("a", "b", "c", "d", "e")]
+  $xs[2:[- $_last 1]]]
+#]]
+  [note [#
+**Pattern:** drop the first and last item. **Uses:** the `$_last` sigil resolves to the receiver's cardinality at slice-apply time, so `[- $_last 1]` evaluates to `n - 1` regardless of the source. Stop is inclusive, so `[2:n-1]` keeps items 2 through n-1 — i.e. everything except the first and last.
+#]]
+ ]
+
+ [ex key=161-sequence-worker-top
+  [label [#[161] Sequence diagram — top-level `[?worker]`#]]
+  [src [#
+[?worker name="task"
+  [?let [= $_ [?sleep 100ms :mock]]
+    [ok value="done"]]]
+#]]
+  [note [#
+**Pattern:** background task as program entry-point. **Diagram:** because `[?worker]` sits at the top level the emitter switches to Mermaid `sequenceDiagram` instead of `flowchart TD` (per spec/code.md §10.1.2). The worker becomes an actor lane with its body events as messages along that lane. Try wrapping the same body in `[?let [= $w [?worker …]] $w]` and watch the diagram revert to a flowchart — `[?worker]` only steers the dialect when it's the outermost form.
+#]]
+ ]
+
+ [ex key=162-sequence-select-channels
+  [label [#[162] Sequence diagram — `[?select]` across channels#]]
+  [src [#
+[?let [= $ch1 [?channel name="a" buffer=1]]
+  [?let [= $ch2 [?channel name="b" buffer=1]]
+    [?let [= $_ [?send 1 to=$ch1]]
+      [?select
+        [case [from $ch1 $v]  [ok value=$v]]
+        [case [from $ch2 $v]  [ok value=$v]]
+        [case [timeout 50ms]  [err code="timeout"]]]]]]
+#]]
+  [note [#
+**Pattern:** wait on the first of several channels (with a timeout escape hatch). **Diagram:** top-level `[?select]` triggers `sequenceDiagram` — each `[case [from CH $v] …]` arm becomes an arrow from the channel actor; the `[timeout]` arm becomes a self-loop with a duration label. The case-envelope shape `[case [from $ch $msg] HANDLER]` is the split-selector form: selector head is the case kind, handler is positional.
+#]]
+ ]
+
+ [ex key=163-sequence-http-service
+  [label [#[163] Sequence diagram — `[?http-service]` config#]]
+  [src [#
+[?http-service on=http port=0 name="hello"
+  [resource [get "/"]
+    [response status=200
+      [body "hi"]]]]
+#]]
+  [note [#
+**Pattern:** declare a service endpoint and its routes. `on=http` selects the protocol and `port=0` is the in-process conformance shape (no real socket). **Diagram:** a top-level `[?http-service]` triggers `sequenceDiagram` — the service is one actor and each `[resource [METHOD PATH] HANDLER]` becomes an inbound arrow from a generic `client`. **http mode:** the real-socket variant (port>0, served by `cx` under `make guide-http`) actually binds and answers requests; here it just returns a `[service-handle]`.
+#]]
+ ]
+
+ [ex key=164-graph-state-machine-data
+  [label [#[164] Graph view — state machine as data#]]
+  [src [#
+[state-machine
+  [state idle]
+  [state running]
+  [state stopped]
+  [transition from=idle    to=running on=start]
+  [transition from=running to=stopped on=stop]
+  [transition from=stopped to=idle    on=reset]]
+#]]
+  [note [#
+**Pattern:** a state machine described as pure CX data (no directives). **Diagram:** because the root isn't a directive, the emitter classifies this as a data document and renders an `erDiagram` (entity-relationship). The Tree pane shows the full nested structure; the Graph pane shows entity-style boxes for each `[state]` / `[transition]`. (Caveat: `flowchart TD` projection of data-shape graphs — turning each `[transition]` into a real directed arrow — is the proposed evolution of the `(2) detail-level` playground item; today the renderer falls back to `erDiagram`.)
+#]]
+ ]
+
+ [ex key=165-graph-workflow-dag
+  [label [#[165] Graph view — workflow DAG as data#]]
+  [src [#
+[workflow
+  [task id="fetch" cmd="curl"]
+  [task id="parse" cmd="jq"]
+  [task id="store" cmd="psql"]
+  [edge from="fetch" to="parse"]
+  [edge from="parse" to="store"]]
+#]]
+  [note [#
+**Pattern:** a build / orchestration DAG described as data. **Diagram:** renders as an entity diagram (`erDiagram` because the root is data); each `[task]` + each `[edge]` becomes an entity. As with #164, a true directed-graph projection awaits the (2) detail-level work; this example exists so the Tree pane reflects how the relationships are encoded.
+#]]
+ ]
+
+ [ex key=166-flowchart-control-flow
+  [label [#[166] Flowchart — nested if / for control flow#]]
+  [src [#
+[?let [= $xs (1, 2, 3, 4, 5)]
+  [?for [in $x $xs]
+    [yield [?if [> $x 2]
+             [then [hi value=$x]]
+             [else [lo value=$x]]]]]]
+#]]
+  [note [#
+**Pattern:** the most common diagram shape: a for-comprehension with a branch in the body. **Diagram:** flowchart TD; the for-comp becomes a loop header, the `[?if]` becomes a diamond with `true`/`false` arms feeding back into the loop tail. Good baseline to compare against the sequence-diagram examples #161-163.
+#]]
+ ]
+
+ [ex key=167-erd-mid-shop-orders
+  [label [#[167] ERD — shop / customer / order / item (mid)#]]
+  [src [#
+[shop
+  [product sku="A1" name="widget" price=9.99]
+  [product sku="A2" name="gadget" price=19.99]
+  [customer id=1 name="alice"
+    [order id=100
+      [item sku="A1" qty=2]
+      [item sku="A2" qty=1]]]
+  [customer id=2 name="bob"
+    [order id=102
+      [item sku="A2" qty=3]]]]
+#]]
+  [note [#
+**Pattern:** classic e-commerce shape — products, customers, orders containing items. **Diagram:** ERD with four entity types; cardinality classifier draws `customer ‖--o{ order` (repeating child), `order ‖--o{ item` (repeating), `shop ‖--o{ product` (repeating), `shop ‖--o{ customer` (repeating). At `full` level the per-attribute value enumeration shows e.g. `string @sku "A1, A2"` and the synthetic `DOCUMENT` root surfaces source metadata. Mid-size: 4 types, ~12 nodes, ~4 relationships — enough to exercise the cardinality classifier without crowding the view.
+#]]
+ ]
+
+ [ex key=168-erd-large-org-structure
+  [label [#[168] ERD — company / department / team / project (large)#]]
+  [src [#
+[company
+  [department id=1 name="engineering"
+    [team id=10 name="parser"
+      [employee id=100 name="alice" role="lead"]
+      [employee id=101 name="bob" role="engineer"]]
+    [team id=11 name="runtime"
+      [employee id=102 name="carol" role="engineer"]]]
+  [department id=2 name="design"
+    [team id=20 name="ux"
+      [employee id=200 name="dave" role="designer"]]]
+  [project id=1000 name="v0.8.0"
+    [owner employee-id=100]
+    [milestone date="2026-06-01" status="active"]
+    [milestone date="2026-08-01" status="planned"]]
+  [project id=1001 name="docs"
+    [owner employee-id=200]
+    [milestone date="2026-07-01" status="active"]]]
+#]]
+  [note [#
+**Pattern:** organizational hierarchy with cross-cutting projects — the canonical 'real schema' shape. **Diagram:** large ERD with 7 types (company, department, team, employee, project, owner, milestone); `full` level surfaces the inferred-FK candidate `owner.employee-id → employee.id` as a dashed link (FK inference is name-only — no schema). 4-deep nesting + sibling-projects exercises the path-walker. Use this as the 'step-back' test: at `compact` the layout stays readable; at `full` per-attribute value enumeration is where the renderer must decide what to truncate.
+#]]
+ ]
+
+ [ex key=169-cfg-small-bare-if
+  [label [#[169] CFG — bare `[?if]` (small)#]]
+  [src [#
+[?if true
+  [then "yes"]
+  [else "no"]]
+#]]
+  [note [#
+**Pattern:** the smallest CFG — one decision, two arms. **Diagram:** flowchart TD with a single diamond and two leaf nodes. Min-level shows just `[?if]` head; compact shows the diamond + both arm labels; full adds INPUT/OUTPUT terminals + per-arm yield enumeration + source spans. Use as a baseline for the per-level pruning rules.
+#]]
+ ]
+
+ [ex key=170-cfg-large-def-match-process
+  [label [#[170] CFG — `[?def]` + `[?match]` + `[?for]` pipeline#]]
+  [src [#
+[?def classify ($n)
+  [?match $n
+    [case 0 :zero]
+    [else :nonzero]]]
+
+[?def process ($items)
+  [?for [in $i $items]
+    [yield [$classify $i]]]]
+
+[$process (3, 0, 7, 0, 1)]
+#]]
+  [note [#
+**Pattern:** two `[?def]`s composed — `classify` maps a number to an atom via `[?match]`, `process` maps it over a sequence. Parameters carry the `$` sigil and defined functions are called as `[$name …]`. **Diagram:** the control-flow graph shows the match branches and the for-loop.
+#]]
+ ]
+
+ [ex key=171-seq-mid-producer-consumer
+  [label [#[171] Sequence — producer / consumer over a channel#]]
+  [src [#
+[?let [= $ch [?channel name="jobs" buffer=4]]
+  [?let [= $prod [?worker name="producer"
+                   [body [?let [= $_ [?for [in $i [$range 1 3]]
+                                       [yield [?send $i to=$ch]]]]
+                           [?close $ch]]]]]
+    [?let [= $cons [?worker name="consumer"
+                     [body [?for [in $i [$range 1 3]]
+                             [yield [?receive from=$ch]]]]]]
+      [?let [= $_ [?wait-for worker=$prod]]
+        [?wait-for worker=$cons]]]]]
+#]]
+  [note [#
+**Pattern:** a `[?channel buffer=N]` with a `[?worker]` producer (`[?send X to=$ch]` then `[?close]`) and a consumer (`[?receive from=$ch]`), joined with `[?wait-for worker=…]`. **Diagram:** top-level workers render as `sequenceDiagram` actors with channel arrows. **http mode:** under file:// the wasm runtime is single-threaded (workers interleave cooperatively); under `make guide-http` they run on real OS threads.
+#]]
+ ]
+
+ [ex key=172-seq-large-workers-with-backpressure
+  [label [#[172] Sequence — dispatcher + worker + collector#]]
+  [src [#
+[?let [= $jobs [?channel name="jobs" buffer=8]]
+  [?let [= $results [?channel name="results" buffer=16]]
+    [?let [= $d [?worker name="dispatcher"
+                  [body [?let [= $_ [?for [in $j [$range 1 4]]
+                                      [yield [?send $j to=$jobs]]]]
+                          [?close $jobs]]]]]
+      [?let [= $w [?worker name="worker"
+                    [body [?for [in $j [$range 1 4]]
+                            [yield [?send [processed value=[?receive from=$jobs]]
+                                     to=$results]]]]]]
+        [?let [= $_ [?wait-for worker=$d]]
+          [?for [in $k [$range 1 4]]
+            [yield [?receive from=$results]]]]]]]]
+#]]
+  [note [#
+**Pattern:** a two-stage pipeline across two channels — a dispatcher fans jobs into `jobs`, a worker transforms each into `[processed …]` on `results`, and the main thread drains `results`. **Diagram:** multiple top-level workers + channels render as a `sequenceDiagram`. **http mode:** real parallelism (and true channel backpressure on the bounded buffers) only happens under `make guide-http`; file:// interleaves cooperatively.
+#]]
+ ]
+
+ [ex key=173-fp-map
+  [label [#[173] fp — `[$fp:map]` (functor map)#]]
+  [src [#
+[?lib 'cx-stdlib/fp']
+
+[$fp:map (1, 2, 3) [?fn ($x) [* $x $x]]]
+#]]
+  [note [#
+**Introduces:** `cx-stdlib/fp` — composition over the value channels. `[$fp:map F fn]` maps `fn` inside the container `F`; over a sequence it is the ordinary element map (→ 1,4,9). Pure — runs live in the wasm playground.
+#]]
+ ]
+
+ [ex key=174-fp-flat-map
+  [label [#[174] fp — `[$fp:flat-map]` (monad bind)#]]
+  [src [#
+[?lib 'cx-stdlib/fp']
+
+[$fp:flat-map (1, 2, 3) [?fn ($x) ($x, [* $x 10])]]
+#]]
+  [note [#
+**Introduces:** `[$fp:flat-map F fn]` — map then flatten one level. Each item expands to a 2-element sequence, concatenated into `(1,10,2,20,3,30)`.
+#]]
+ ]
+
+ [ex key=175-fp-pure
+  [label [#[175] fp — `[$fp:pure]` (lift)#]]
+  [src [#
+[?lib 'cx-stdlib/fp']
+
+[$fp:pure 42]
+#]]
+  [note [#
+**Introduces:** `[$fp:pure x]` lifts a value into the default `sequence` instance — `pure 42 = (42)`. `[$fp:pure x tag=result]` would lift into `[ok x]` instead.
+#]]
+ ]
+
+ [ex key=176-fp-fold
+  [label [#[176] fp — `[$fp:fold]` (reduce)#]]
+  [src [#
+[?lib 'cx-stdlib/fp']
+
+[$fp:fold (1, 2, 3, 4) 0 [?fn ($acc $x) [+ $acc $x]]]
+#]]
+  [note [#
+**Introduces:** `[$fp:fold F init fn]` — an err-boundary reduce over the container's items (→ 10). Unlike `map`/`flat-map` it may inspect an `[err]`-holding item rather than auto-propagating it.
+#]]
+ ]
+
+ [ex key=177-fp-sequence-results
+  [label [#[177] fp — `[$fp:sequence]` over results#]]
+  [src [#
+[?lib 'cx-stdlib/fp']
+
+[$fp:sequence ([ok 1], [ok 2], [ok 3])]
+#]]
+  [note [#
+**Introduces:** `[$fp:sequence F]` turns a structure of containers inside-out. A sequence of `[ok]`s collapses to one `[ok]` of the sequence — `[ok (1,2,3)]`.
+#]]
+ ]
+
+ [ex key=178-fp-sequence-err
+  [label [#[178] fp — `[$fp:sequence]` short-circuits on `[err]`#]]
+  [src [#
+[?lib 'cx-stdlib/fp']
+
+[$fp:sequence ([ok 1],
+               [err code='cx-err:CXER9999' message='boom'],
+               [ok 3])]
+#]]
+  [note [#
+**Introduces:** the railway. The first `[err]` in the sequence short-circuits and is returned unchanged — `sequence` is the err-boundary form of `traverse`.
+#]]
+ ]
+
+ [ex key=179-fp-traverse-result
+  [label [#[179] fp — `[$fp:traverse]` (result applicative)#]]
+  [src [#
+[?lib 'cx-stdlib/fp']
+
+[$fp:traverse (1, 2, 3) [?fn ($x) [ok $x]]]
+#]]
+  [note [#
+**Introduces:** `[$fp:traverse F fn]` maps an effectful `fn: (a) → G b` across `F` and swaps the layers to `G (F b)`. Here `fn` returns `[ok …]`, so the result is `[ok (1,2,3)]` — the applicative `G` is dispatched from what `fn` returns.
+#]]
+ ]
+
+ [ex key=180-fp-traverse-maybe
+  [label [#[180] fp — `[$fp:traverse]` over Maybe (= the ≤1 sequence)#]]
+  [src [#
+[?lib 'cx-stdlib/fp']
+
+[$fp:traverse (1, 2, 3) [?fn ($x) ($x)]]
+#]]
+  [note [#
+**Introduces:** Maybe is **not** a boxed type in CX — it is the sequence at cardinality ≤ 1 (`Some(x)=(x)`, `None=()`). `fn` returning `(x)` makes `traverse` swap into the sequence/list applicative — `((1,2,3))`.
+#]]
+ ]
+
+ [ex key=181-fp-traverse-none
+  [label [#[181] fp — Maybe short-circuit (a `None` collapses the result)#]]
+  [src [#
+[?lib 'cx-stdlib/fp']
+
+[$fp:traverse (1, 2, 3)
+  [?fn ($x) [?if [= $x 2] () ($x)]]]
+#]]
+  [note [#
+**Introduces:** because `None=()` zeroes the list-applicative product, a single `()` from `fn` collapses the whole traverse to `()` — the Maybe short-circuit, for free, with no `[just]`/`[none]` heads.
+#]]
+ ]
+
+ [ex key=182-fp-traverse-http
+  [label [#[182] fp — `[$fp:traverse]` over HTTP calls (http mode)#]]
+  [src [#
+[?lib 'cx-stdlib/fp']
+[?lib 'cx-stdlib/http']
+
+[$fp:traverse ("https://example.com/a", "https://example.com/b")
+  [?fn ($u) [$http:get $u]]]
+#]]
+  [note [#
+**Pattern:** the real-world `traverse` — fan a fallible effect across a list and collect results on the railway (all `[ok]` → one `[ok (…)]`; first `[err]` short-circuits). **http mode only:** this makes live network calls — run it under `make guide-http` (or `cx --allow-net` in your terminal). The file:// wasm playground has no network/capabilities, so it returns a capability-denied `[err cx-err:CXER0271]`.
+#]]
+ ]
+]

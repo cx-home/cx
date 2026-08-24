@@ -97,7 +97,7 @@ impl ValidationReport {
 }
 
 /// Validate `doc` against `schema`. Schema-load errors (missing
-/// schema-of, unknown anchor, etc.) surface as a single error-severity
+/// `[schema of=...]` header, unknown anchor, etc.) surface as a single error-severity
 /// Diagnostic in the returned report, not as a Rust `Err`. Returns
 /// `Err` only when the document text is malformed CX.
 pub fn validate(doc: &str, schema: &str) -> Result<ValidationReport, String> {

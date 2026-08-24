@@ -72,12 +72,13 @@ class TestLayer1Doc(unittest.TestCase):
         self.assertEqual(d.hash(), d2.hash())
 
     # Method 3 — Doc.hash() -> str
-    def test_hash_is_sha256_hex(self):
+    def test_hash_is_tagged_sha2_256(self):
+        # I1 identity epoch: content addresses are TAGGED — the
+        # `sha2-256:` tag is part of the address.
         d = Doc.parse(HELLO_SRC)
         h = d.hash()
         self.assertIsInstance(h, str)
-        self.assertEqual(len(h), 64)
-        int(h, 16)  # raises if not hex
+        self.assertRegex(h, r"^sha2-256:[0-9a-f]{64}$")
 
     # Method 4 — Doc.equals(other) -> bool
     def test_equals_canonical_bytes(self):

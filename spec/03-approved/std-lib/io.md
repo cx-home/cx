@@ -215,12 +215,20 @@ Returns a lazy iterator over file lines. Memory-bounded regardless of file size.
 
 - `op` is one of `created`, `modified`, `deleted`, or `overflow`. Paths are absolute.
 - The optional `timeout` (milliseconds) bounds the wait: on expiry `watch-next` returns the **absence channel** (the empty sequence — §9.1.2 of `code.md`, caught by `[?else]`), NOT a `null`. This lets a watcher poll an external shutdown flag between waits without busy-spinning. Omitted / negative `timeout` blocks indefinitely.
-- **`[change op=overflow]`** is surfaced when the OS event queue overflows (`inotify` `IN_Q_OVERFLOW`) or coalesces under load (FSEvents `kFSEventStreamEventFlagMustScanSubDirs`). It carries no path; its contract is *"events were dropped — rescan the tree"*. A consumer that ignores overflow can silently drift out of sync, so it must respond with a full re-scan.
+- **`[change op=overflow]`** is surfaced when the OS event queue overflows (`inotify` `IN_Q_OVERFLOW`) or coalesces under load (FSEvents `kFSEventStreamEventFlagMustScanSubDirs`). It carries no path; its contract is *"events were dropped — rescan the tree"*. A consumer that ignores overflow can silently drift out of sync, so it must respond with a full re-scan. This overflow-means-rescan contract is the `:coalesced-rescan` rung of the live-modes adapter guarantee ladder (live modes L134; the pack spec `live.md` §8) — `[$live:adapt-watch]` is the shipped consumer, declaring exactly this rung on its stream.
 - A closed watch (see `watch-close`) makes a parked or subsequent `watch-next` return absence.
 
 `watch-close` tears down the OS watch and **unblocks** any `watch-next` currently parked on the handle in another task (self-pipe on Linux; run-loop stop on macOS). It is idempotent — closing an already-closed or unknown handle is a no-op and never raises `CXER3409`.
 
 `op` classification is best-effort and existence-anchored: a path that no longer exists is reported `deleted`, a freshly-appearing path `created`, an in-place change `modified`. Exactly-once `op` precision is not guaranteed (an editor's save may surface as several events); the recipe pattern (`examples/cxstore/dir-sync/watch.cx`) is therefore **idempotent re-ingest per change** plus **full re-scan on overflow**, which is correct under any coalescing.
+
+A watch handle is an adapter-class delivery source at rung `:coalesced-rescan`
+([`delivery.md`](../core/delivery.md) §3; RULED: U1.8a — the rung
+vocabulary is the live-modes adapter ladder). The handle satisfies the
+delivery.md §4 subscription contract, so the general `[?receive]`/`[?select]`
+(code.md §10.4) accept it — a watcher waits on the filesystem AND its control
+channel in one `[?select]`; `watch-next` remains the module spelling of the
+single-message wait, unchanged.
 
 ## §4. Edge cases and policy
 
