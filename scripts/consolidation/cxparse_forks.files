@@ -10,7 +10,7 @@
 # SPEC-CITATION DEBT: spec/03-approved/core/limits.md:63 cites
 # parse_amplification_test.v by path; not trued here (see diagram.files for
 # the full note and the standing precedent).
-vcx/tests/child_scan_differential_test.v
-vcx/tests/lazy_record_differential_test.v
-vcx/tests/cx_ast_scaling_test.v
-vcx/tests/parse_amplification_test.v
+#absorbed vcx/tests/child_scan_differential_test.v
+#absorbed vcx/tests/lazy_record_differential_test.v
+#absorbed vcx/tests/cx_ast_scaling_test.v
+#absorbed vcx/tests/parse_amplification_test.v
