@@ -1,0 +1,120 @@
+# scripts/lang_stats.cx — repo language shares, self-reported (#954).
+#
+# GitHub's language bar is computed by Linguist, which does not know CX —
+# every .cx/.cxd/.cxs byte is invisible there until the language clears
+# Linguist's in-the-wild adoption bar (tooling/linguist/ holds the staged
+# submission). Until then the README badge is the honest self-report, and
+# this script is its one source of truth: it classifies TRACKED source
+# bytes by extension, prints the share table, and stamps the CX badge
+# line in README.md (idempotent — reruns replace the same line).
+#
+#   vcx/target/cx --allow-read --allow-write --allow-subprocess \
+#     scripts/lang_stats.cx            # print table + stamp README.md
+#   ... lang_stats.cx --print-only     # table only, no README write
+#
+# Classification mirrors Linguist's spirit: only known source extensions
+# count; vendored (third_party/) and generated (docs/, dist/) trees are
+# excluded from the denominator.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/array'   as=array]
+[?lib 'cx-stdlib/fp'      as=fp]
+
+[?def say impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+
+# extension -> language bucket, data-driven on dot-anchored suffixes (the
+# leading '.' makes them collision-free: 'a.mjs' never matches '.js').
+# Only these count toward the denominator.
+[?const EXT-TABLE ([row ext='.cxd' lang='CX'],  [row ext='.cxs' lang='CX'],
+                   [row ext='.cx'  lang='CX'],
+                   [row ext='.v'   lang='V'],
+                   [row ext='.c'   lang='C'],   [row ext='.h'   lang='C'],
+                   [row ext='.go'  lang='Go'],
+                   [row ext='.rs'  lang='Rust'],
+                   [row ext='.py'  lang='Python'],
+                   [row ext='.mjs' lang='JavaScript'], [row ext='.js' lang='JavaScript'],
+                   [row ext='.ts'  lang='TypeScript'],
+                   [row ext='.sh'  lang='Shell'],
+                   [row ext='.lua' lang='Lua'],
+                   [row ext='.css' lang='CSS'],
+                   [row ext='.html' lang='HTML'],
+                   [row ext='.mk'  lang='Make'])]
+
+[?def lang-of scope=private pure [returns string] ($path::string)
+  [?let [= $hits [?for [in $r EXT-TABLE]
+                   [where [$strings:ends-with $path [$string $r@ext]]]
+                   [yield [$string $r@lang]]]]
+    [?else [$first $hits] '']]]
+
+[?def excluded scope=private pure [returns bool] ($path::string)
+  [?if [$strings:starts-with $path 'third_party/'] [then true]
+  [else [?if [$strings:starts-with $path 'docs/'] [then true]
+  [else [?if [$strings:starts-with $path 'dist/'] [then true]
+  [else [$strings:starts-with $path 'lang/_archived/']]]]]]]]
+
+# CX `/` is exact (float/decimal), never truncating — floor to integer
+# tenths explicitly.
+[?def pct-1dp scope=private pure [returns string] ($num::int $den::int)
+  [?let [= $tenths [$floor [/ [* $num 1000] $den]]]
+    [$cat ([$string [$floor [/ $tenths 10]]], '.', [$string [% $tenths 10]])]]]
+
+[?let
+  [= $args [?fallback [$env:parse-args [argspec [flag name=print-only type=bool default=false]]]
+             [recover-with ([$cry 'usage: lang_stats.cx [--print-only]'], [$env:exit 2], null)]]]
+  [= $print-only [$env:flag $args 'print-only']]
+  [= $r [$process:run ('git', 'ls-files')]]
+  [= $_g [?if [not [= $r@exit-code 0]]
+           [then ([$cry 'lang_stats: git ls-files failed'], [$env:exit 2], null)]
+           [else null]]]
+  [= $files [?for [in $f [$strings:split [$string $r@stdout] "\n"]]
+              [where [and [not [= $f '']]
+                     [and [not [excluded $f]]
+                          [not [= [lang-of $f] '']]]]]
+              [yield $f]]]
+  [= $sums [?for [in $f $files]
+             [yield {lang: [lang-of $f],
+                     bytes: [?fallback [$io:size $f] [recover-with 0]]}]]]
+  [= $langs ('CX', 'V', 'C', 'Go', 'Rust', 'Python', 'JavaScript', 'TypeScript',
+             'Shell', 'Lua', 'CSS', 'HTML', 'Make')]
+  [= $totals [?for [in $l $langs]
+               [yield [?let
+                 [= $b [$fp:fold [?for [in $s $sums] [where [= $s/lang $l]] [yield $s/bytes]]
+                        0 [?fn ($acc $x) [+ $acc $x]]]]
+                 {lang: $l, bytes: $b}]]]]
+  [= $den [$fp:fold [?for [in $t $totals] [yield $t/bytes]] 0 [?fn ($acc $x) [+ $acc $x]]]]
+  [= $_hdr [say [$cat ('lang_stats: ', [$string [$count $files]], ' tracked source files, ',
+                       [$string $den], ' bytes (third_party/, docs/, dist/ excluded)')]]]
+  # Fixed $langs order, not sort-by: [$array:sort-by] is the #940 phantom
+  # (registered, LSP-documented, not callable) — calling it absence-poisons
+  # the whole row loop silently.
+  [= $_rows [?for [in $t $totals]
+              [where [> $t/bytes 0]]
+              [yield [say [$cat ('  ', $t/lang, ': ', [pct-1dp $t/bytes $den], '%  (',
+                                 [$string $t/bytes], ' B)')]]]]]
+  [= $cx-bytes [$first [?for [in $t $totals] [where [= $t/lang 'CX']] [yield $t/bytes]]]]
+  [= $cx-pct [pct-1dp $cx-bytes $den]]
+  [= $badge [$cat ('[![CX](https://img.shields.io/badge/CX-', $cx-pct,
+                   '%25_of_source-1a1a17.svg)](#status)')]]
+  [?if $print-only
+    [then [say [$cat ('badge (not stamped): ', $badge)]]]
+    [else
+      [?let [= $readme [$io:read-file 'README.md']]
+        [= $lines [$strings:split $readme "\n"]]
+        [= $has-badge [> [$count [?for [in $l $lines]
+                          [where [$strings:contains $l 'img.shields.io/badge/CX-']]
+                          [yield $l]]] 0]]
+        [= $out-lines [?if $has-badge
+          [then [?for [in $l $lines]
+                  [yield [?if [$strings:contains $l 'img.shields.io/badge/CX-']
+                           [then $badge] [else $l]]]]]
+          [else [?for [in $l $lines]
+                  [yield [?if [$strings:contains $l 'img.shields.io/badge/version-']
+                           [then [$cat ($l, "\n", $badge)]] [else $l]]]]]]]
+        [= $_w [$io:write-file 'README.md' [$strings:join $out-lines "\n"]]]
+        [say [$cat ('README.md stamped: ', $badge)]]]]]]

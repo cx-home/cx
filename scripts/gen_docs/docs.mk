@@ -53,6 +53,9 @@ endif
 ## the subcommand $embed_file()s docs/llm/primer.md at compile time.
 docs: $(DOCS_CX_DEP)
 	@$(DOCS_CX_BIN) $(DOCS_CAPS) $(DOCS_GEN)/primer_build.cx
+	# #954: refresh the README's self-reported CX-share badge alongside the
+	# docs layer (Linguist can't count CX until tooling/linguist/ upstreams).
+	@$(DOCS_CX_BIN) --allow-read --allow-write --allow-subprocess scripts/lang_stats.cx
 
 ## docs-check   DRIFT GATE. Regenerates the layer without writing and fails if
 ##                                   (a) any cited fixture's live output no longer
