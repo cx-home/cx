@@ -166,6 +166,10 @@ lane_globs() {
     # the roster rows live in the Makefile and name files under vcx/
     check-serial-retry-rosters)    echo 'Makefile vcx/*' ;;
     test-xpath-parity-cx)          echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED conformance/* scripts/check_xpath_parity_fixtures.cx" ;;
+    # corpus-audit (RULED: VC-28) runs every rosetta program through the built
+    # binary and fails on drift from AUDIT.md, so it depends on the corpus AND
+    # on anything that changes the binary's behaviour.
+    corpus-audit)                  echo "corpus/* $RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/corpus_audit.sh" ;;
     *)                             echo '' ;; # unknown lane → ALWAYS RUN
   esac
 }

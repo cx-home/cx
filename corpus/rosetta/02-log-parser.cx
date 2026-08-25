@@ -1,11 +1,16 @@
-[?let $lines = (
-  "2026-05-26 10:00:00 INFO  app starting",
-  "2026-05-26 10:00:01 WARN  config file missing",
-  "2026-05-26 10:00:02 ERROR fatal"
-) :in
-  [?for $line :in $lines :yield
-    [?match true
-      :when contains($line, "ERROR") :yield [entry :level :error :msg $line]
-      :when contains($line, "WARN")  :yield [entry :level :warn  :msg $line]
-      :when contains($line, "INFO")  :yield [entry :level :info  :msg $line]
-      :else :yield [entry :level :unknown :msg $line]]]]
+[; Classify log lines into typed entries. The point is that the OUTPUT is
+   structure, not text: each line becomes an [entry] element carrying a level
+   atom, so a consumer filters by shape instead of re-matching the message.
+   Rewritten for the v0.8.0 surface (RULED: VC-28); the original was
+   pre-reshape (`[?let $x = … :in]`, `contains(a, b)` call-parens,
+   `:level :error` atom-as-attribute-name). ]
+[?let [= $lines ("2026-05-26 10:00:00 INFO  app starting",
+                 "2026-05-26 10:00:01 WARN  config file missing",
+                 "2026-05-26 10:00:02 ERROR fatal")]
+  [?for [in $line $lines]
+    [yield
+      [?match true
+        [when [$contains $line "ERROR"] [entry level=:error msg=$line]]
+        [when [$contains $line "WARN"] [entry level=:warn msg=$line]]
+        [when [$contains $line "INFO"] [entry level=:info msg=$line]]
+        [else [entry level=:unknown msg=$line]]]]]]

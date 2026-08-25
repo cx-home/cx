@@ -52,6 +52,14 @@ Observed output (truncated; 30 lines total):
 :fizzbuzz
 ```
 
+**Status:** GREEN (re-derived 2026-08-25, RULED: VC-28). Rewritten for the
+v0.8.0 surface — `[?for [in $n [$range 1 30]] …]` replacing the retired infix
+`1 to 30`, and `[?match true [when …] [else …]]` replacing the `:when`/`:yield`
+colon arms. Runs rc=0 with correct FizzBuzz (`:fizz` at 3, `:buzz` at 5,
+`:fizzbuzz` at 15 and 30). No workarounds; nothing outstanding.
+
+### Historical (v0.7.x surface, superseded)
+
 **Status:** GREEN as of the math-operator surface landing. `[mod $n N]`
 now dispatches through `dispatch_call('mod', [...])` in all four call
 shapes (operator-element / element-paren / XPath-call / directive

@@ -37,6 +37,16 @@ Observed output:
 :valid
 ```
 
+**Status:** GREEN (re-derived 2026-08-25, RULED: VC-28). Rewritten for the
+v0.8.0 surface: `[$count $config//port]` with `[$and]` inside
+`[?match true [when …] [else …]]`, and `backoff=100ms` as an attribute rather
+than the old atom-as-attribute-name form. Runs rc=0 → `:valid`, and verified
+DISCRIMINATING: removing `[port 8080]` flips it to `:invalid`, so the arm is not
+vacuously true. The previously-noted `exists()` gap is moot — `[> [$count …] 0]`
+is the idiom and it is clean.
+
+### Historical (v0.7.x surface, superseded)
+
 **Status:** GREEN (with one minor workaround). The program parses and
 returns `:valid` correctly. Removing either `[port 8080]` or
 `[host "localhost"]` from the source produces `:invalid` as expected.

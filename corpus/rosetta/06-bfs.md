@@ -39,6 +39,18 @@ Observed output:
 [edge "D" "E"]
 ```
 
+**Status:** WORKAROUND (reduced scope; re-derived 2026-08-25, RULED: VC-28).
+Rewritten for the v0.8.0 surface: `$graph//edges` plus a comprehension binding
+`$e@from` / `$e@to`. Runs rc=0 and enumerates all five edges.
+
+Still reduced scope, as before: it returns the edge list, not a path from A to
+E. One thing HAS changed and is recorded rather than assumed — `[?def]`
+recursion exists on the current surface, so a frontier-based traversal is
+plausibly expressible now. It is not written here, and claiming it works
+without writing it would be a guess.
+
+### Historical (v0.7.x surface, superseded)
+
 **Status:** WORKAROUND (reduced scope). The program parses and runs,
 but the original BFS goal is unreachable: it returns the edge list,
 not a path from A to E. Multiple gaps compose to block the real BFS.

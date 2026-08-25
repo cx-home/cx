@@ -44,6 +44,19 @@ Observed output:
 [entry :level :error :msg "2026-05-26 10:00:02 ERROR fatal"]
 ```
 
+**Status:** WORKAROUND (re-derived 2026-08-25, RULED: VC-28). Rewritten for the
+v0.8.0 surface — `[?let [= $lines (…)]]`, `[?for [in $line $lines] [yield …]]`,
+`[$contains]`, and `name=value` attributes — and it runs rc=0 producing three
+correctly-levelled `[entry]` elements.
+
+Still a WORKAROUND, and for the same reason as before the rewrite: severity is
+detected by substring test because there is no `split` / `tokenize`, so `msg`
+carries the whole raw line instead of the timestamp / level / message being
+distinct attributes. The syntax is current; the missing surface is not. This
+remains the largest cross-program gap in the corpus.
+
+### Historical (v0.7.x surface, superseded)
+
 **Status:** WORKAROUND. Classification by `contains()` lets the program
 report a level, but the message field still carries the whole raw line
 because string-splitting is unavailable. A "real" log parser would

@@ -34,6 +34,27 @@ Observed output:
 cx eval: cx-err:CXER0001: no child element "n" on path
 ```
 
+**Status:** WORKAROUND (re-derived 2026-08-25, RULED: VC-28). The program was
+rewritten for the v0.8.0 surface and now **computes the right answer**:
+`3 4 + 5 *` → `[stack [n 35]]`, rc=0. Two workarounds are load-bearing, both
+measured, so this is not GREEN:
+
+1. The stack is read with the DESCENDANT axis (`$acc//n`), not the child axis.
+   A node-set placed in element content nests as a sequence child —
+   `[stack [n 4] ([n 3], [n 9])]` — and the child axis does not see through
+   that grouping, so `$acc/n` reports one item after two pushes. That is
+   **#961** (Cluster A). Switch back to `/n` when it is settled.
+2. An operator arm rebuilds the stack as a single `[n …]` rather than popping
+   two and pushing one, because there is no sequence append (`$concat` is
+   strings only). Correct for this expression; a general RPN evaluator needs a
+   real push/pop.
+
+Also closed by the rewrite: the previously-recorded "multi-arg `[?fn]` apply
+with a non-trivial body" gap. `[?fn ($acc $tok) …]` inside `[?reduce]` is
+exactly that, and it works.
+
+### Historical (v0.7.x surface, superseded)
+
 **Status:** BLOCKED. The reduce machinery does start dispatching, but
 the first non-operator token `3` enters the `:case $v` arm, which
 tries to construct `[stack [n $v] $acc/n]`. With `:init [stack]` the
