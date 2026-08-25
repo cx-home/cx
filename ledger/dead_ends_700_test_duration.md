@@ -179,3 +179,39 @@ the prod guard does.
 Filed, not measurable on darwin. Removing it may break upstream's inherent
 generated-helper duplication; needs a linux measurement (gate DUP probe +
 3 lanes) rather than a blind change.
+
+---
+
+## POST-CLOSE ADDENDUM (2026-08-25) — N1 was TAKEN, and its bound was over-estimated
+
+`N1` (harness worker pool) was ruled in as **VC-32**, redesigned as PROCESS
+sharding after the thread version hit #973, and delivered (`e49cbbb31`).
+
+**Measured, full gate, same machine:**
+
+| | wall |
+|---|---|
+| baseline `b6a130141` | 1,428 s (23.8 min) |
+| warm, pre-sharding | 1,247 s (20.8 min) |
+| post-sharding | **1,154 s (19.2 min)**, GATE-RC=0 |
+
+The LANE improved 4.0-4.4x (768-844 s → 191 s; its CLI phase 717 s → 103 s at
+an identical verdict digest). **The FULL GATE improved by 93 s.**
+
+**The estimate in N1 — "~5-7 min of gate wall" — was WRONG, and the error is
+instructive.** It treated the extraction gate's 13.4-min serial chain as the
+binding floor. It was not: under `-j12` that lane already overlapped with
+others, and the binding constraint is floor (2), total CPU. At 19.2 min wall
+against 182 CPU-min the gate runs ~9.5x parallel, already near the 15.2-min
+CPU-bound floor, so removing serial time from ONE lane cannot buy much.
+
+**Corrected rule for sizing any future lane-level lever:** a lane's serial
+length bounds the gate only while the gate is LATENCY-bound. Once wall x cores
+approaches total CPU-min, the gate is THROUGHPUT-bound and the only lever that
+moves it is removing work (N2). Check which regime the gate is in — parallelism
+ratio versus core count — before estimating.
+
+**Still worth having, on other grounds:** the lane is 4x faster for anyone
+running it alone or via `test-changed`, and the work produced the verdict-digest
+instrument plus two correctness finds (a path-dependent digest, and 271
+comparisons reading a stale fixture — a green gate testing nothing).
