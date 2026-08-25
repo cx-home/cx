@@ -151,6 +151,26 @@ lane_globs() {
 # Build-infra changes invalidate EVERY lane (the Makefiles define the
 # lanes; scripts implement the gates; VERSION/devbox shape the toolchain):
 # any hit here short-circuits to the full union — correct-first.
+# Lane fan-out parallelism. `make test` runs its union under
+# -j$(TEST_JOBS) --output-sync=target; this script called a BARE `make`, so
+# the documented dev loop ran its selected lanes ONE AT A TIME. Measured
+# 2026-08-24: a vcx/tests-only edit selected 32 of 51 lanes and took 2,347 s
+# — SLOWER than the full 1,428 s parallel gate. Selecting fewer lanes is
+# worthless if they then run serially, and the target's whole purpose is to
+# be the fast loop. Same defaults as the Makefile (TEST_JOBS is overridable
+# there and here).
+TEST_JOBS="${TEST_JOBS:-$(sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 8)}"
+MAKEFLAGS_PAR="-j${TEST_JOBS}"
+# --output-sync needs GNU make >= 4.0 (Apple ships 3.81), so it is probed, not
+# assumed. NOT `make --help | grep -q` — that is the exact SIGPIPE-PIPE class
+# check-pipefail-pipes refuses (RULED: SPG-1, #916): grep -q exits on the
+# first match, the producer takes SIGPIPE, and `set -o pipefail` promotes it
+# to a failure. Capture first, match second.
+make_help="$(make --help 2>/dev/null || true)"
+case "$make_help" in
+  *--output-sync*) MAKEFLAGS_PAR="$MAKEFLAGS_PAR --output-sync=target" ;;
+esac
+
 INFRA_HIT=0
 while IFS= read -r f; do
   case "$f" in
@@ -162,13 +182,25 @@ done <<< "$CHANGED"
 # never silently miss a NEW lane (an unlisted lane always runs).
 LANES=$(grep -m1 '^TEST_TARGETS :=' Makefile | sed 's/^TEST_TARGETS := //')
 
+# Serial pre-build BEFORE any parallel fan-out — the same guard `make test`
+# carries (Makefile's `test` recipe): every lane's recursive build then hits
+# the vcx Makefile's up-to-date guard and skips the relink. Without it,
+# concurrent sub-makes RELINK target/cx while sibling lanes are exec'ing it
+# — the v0.16.0 cut's 'Exec format error' / empty-output-rc-0 class. Adding
+# -j here without this would have reintroduced exactly that. Both artifacts
+# are pre-built: `make test` only pre-builds build-vcx, but the lanes this
+# script selects depend on build-vcx-dev too, and it is free when current.
+prebuild() {
+  make build-vcx && make build-vcx-dev
+}
+
 if [ $INFRA_HIT -eq 1 ]; then
   echo "test-changed: build-infra change detected (Makefile/scripts/VERSION/devbox) — running the FULL lane union"
   if [ $DRY -eq 1 ]; then
     echo "test-changed: --dry-run — would run: $LANES"
     exit 0
   fi
-  make $LANES
+  prebuild && make $MAKEFLAGS_PAR $LANES
   exit $?
 fi
 
@@ -208,4 +240,4 @@ if [ $DRY -eq 1 ]; then
   echo "test-changed: --dry-run — nothing executed"
   exit 0
 fi
-make "${run_lanes[@]}"
+prebuild && make $MAKEFLAGS_PAR "${run_lanes[@]}"
