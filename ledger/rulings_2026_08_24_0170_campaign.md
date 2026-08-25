@@ -1105,3 +1105,38 @@ different design than VC-29 authorized, so it awaits the owner's call.
 silent for an hour with no diagnostic. The 25 s bounded probe produced the
 entire diagnosis in one pass. Bound every probe; `sample` the pid before
 killing it.
+
+---
+
+# AMENDMENT 19 (2026-08-25) — VC-32
+
+**Status:** RULED by the owner ("1a") after #973 blocked VC-29 step 2. Recorded
+BEFORE the work per R6.1. (The same reply's "2a" re-confirms VC-28, already
+recorded — corpus/rosetta is adoption evidence: rewrite, re-derive, then gate.)
+
+## VC-32 — the gate lever proceeds by PROCESS sharding, not threads
+
+In-process parallelism is unavailable under the shipped memory model until #973
+is fixed (vgc's STW cannot collect while a thread is parked in a blocking read).
+Process sharding sidesteps it by construction: separate processes, separate
+heaps, no shared collector, and a **single-threaded parent**.
+
+Design ruled:
+
+- **Child** (`--shard=I/K`): collects the work list exactly as the serial gate
+  does, so global work indices are identical, but executes only the cases where
+  `case_ordinal % K == I` and writes fixture files only for those. Its
+  transcript lines carry the GLOBAL work index so the parent can restore
+  serial order.
+- **Parent** (`--jobs=K`): spawns K children with INHERITED stdio — it never
+  blocks reading a child's pipe, which is what would re-enter #973's shape —
+  waits on each in turn, then merges the transcript slices by index, computes
+  the digest, applies the case-count floor, and runs the 17 profile-refusal
+  probes itself.
+- **Default (no flags) stays exactly the serial gate.**
+
+**Acceptance is the digest, unchanged:**
+`7d75a6053eeb282853a5c522795d3d7125ba9b390503bbd6c022598fde61c52e`. A sharded
+run that does not reproduce it byte-for-byte is wrong and is reverted, not
+re-blessed. Per-shard scratch roots keep the stripped argv identical to the
+serial baseline, so the digest is comparable across both modes.
