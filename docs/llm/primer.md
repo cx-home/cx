@@ -668,7 +668,7 @@ then yields empty:
 
 ```console
 $ cx prog.cx
-[out [ok ()]]
+[out [ok]]
 ```
 
 Truthiness is defined per type rather than coerced: zero and empty string are

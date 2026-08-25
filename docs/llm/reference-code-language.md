@@ -64,7 +64,7 @@ error: cx-err:CXER0001: [?if] expects [then …] / [else …] clause children af
 
 ```console
 $ cx prog.cx
-[out [ok ()]]
+[out [ok]]
 ```
 
 Truthiness is defined per type, not by coercion to boolean: zero and empty

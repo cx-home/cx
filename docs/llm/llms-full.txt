@@ -670,7 +670,7 @@ then yields empty:
 
 ```console
 $ cx prog.cx
-[out [ok ()]]
+[out [ok]]
 ```
 
 Truthiness is defined per type rather than coerced: zero and empty string are
@@ -1822,7 +1822,7 @@ error: cx-err:CXER0001: [?if] expects [then …] / [else …] clause children af
 
 ```console
 $ cx prog.cx
-[out [ok ()]]
+[out [ok]]
 ```
 
 Truthiness is defined per type, not by coercion to boolean: zero and empty
