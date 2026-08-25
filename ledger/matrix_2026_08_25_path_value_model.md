@@ -296,3 +296,70 @@ inside the err (`kind=` attr) if wanted, but the code lane is uniform.
 4. Freeze: changing a cell thereafter requires a ruling naming the cell.
    The `[$first $x/*]` sweep and rosetta #05's `//n`→`[?splice]` migration
    ride step 3.
+
+---
+
+# AMENDMENT 1 (2026-08-25) — the Q1–Q8 rulings
+
+**Status: RULED by the owner — reply verbatim: "If these are the best long
+term for cx... 1a 2a 3a 4a 5a 6 confirmed 7 ok 8a".** The conditional invokes
+the standing letter-acceptance rule (each recommendation verified long-term-
+best before recording); the verification probes ran BEFORE this record and
+two refinements they forced are stated inline. Recorded before any spec,
+conformance, or implementation work (R6.1).
+
+- **R-A1 (Q1a):** `[?for]` (and `[?splice]`) in a multi-sibling slot are
+  multi-sibling contributors — one sibling per yield, the directive's defined
+  contribution. Every other form contributes exactly one child; a sequence
+  VALUE as sole element content refuses at construction (#847-1a implemented
+  as ruled). `[?if]`/`[?let]`/call results yielding sequences are values and
+  refuse; the spelling for conditional multi-contribution is
+  `[?splice [?if …]]`.
+- **R-A2 (Q2a, refined by verification):** the document operand is a
+  **container node**, not a distributing collection: its items are its
+  top-level children, and navigation is element-like — `/name` matches its
+  element children, `/*` yields its element children (non-elements skip),
+  `//` descends, predicates apply, both walkers agree; the fast-path
+  single-root unwrap is retired. `$count` over a document is its child-item
+  count (a multi-root document counts N, no longer the accidental 1).
+  Verification note: my §4 text said "collection focus"; a distributing
+  reading would have made `$d/*` yield the roots' children — the node
+  reading is what #964's expectations and cxdm §2.2 describe.
+- **R-A3 (Q3a, with a settled companion):** predicate-rooted paths
+  (rooted at `$_`) are node-set forms — no terminal field collapse, so
+  `[$count $_/tag]` is a match count. Verified blast radius: value
+  predicates (`[= $_/name "ada"]`) survive ONLY through comparison
+  atomization, which is already the SETTLED rule (2026-05-31: comparison/
+  arithmetic atomize, XPath-style; implemented today only for TextNode —
+  `[= [name "ada"] "ada"]` measures false). Companion cell, spec-forced by
+  that settled rule: in comparison position an element whose content is a
+  single scalar/text item atomizes to that item's typed value; a one-member
+  node-set atomizes to its member; multi-member general comparison is
+  existential (any), per the settled rule's own "like XPath general
+  comparison". Elements with complex content keep structural equality.
+- **R-A4 (Q4a):** an err raised while evaluating a predicate body refuses
+  the whole query loudly (CXER-class, naming the predicate and carrying the
+  err). Err VALUES navigated as data remain the inspection lane.
+- **R-A5 (Q5a):** `$count`/`$first` are items-view and kind-total: element →
+  child items, sequence/array → members, map → entries, document → child
+  items, scalar → 1, absence → 0, err → propagates. cxdm §2.1's
+  "count(arr) is a type error" sentence is struck as reconciled; the
+  container/atom distinction stays for the §7 container-preserving
+  operations.
+- **R-A6 (Q6 batch, confirmed):** (i) `/*` distributes over sequence/array
+  focus (children-union, order-preserving); (ii) `/name` distributes over
+  arrays of elements; (iii) `/*` on a scalar yields absence; (iv) a
+  predicate directly on a bound sequence/element binds `$_` per member and
+  distributes; (v) `@attr` on a map refuses CXER0001; (vi) `cx select`
+  refuses unknown callables loudly (composition of R-A4).
+- **R-A7 (Q7 ok):** the verified VC-13 #962 fix is ported (CommentNode
+  through the data emitter + the line-comment newline guard); `cx fmt`
+  routes through the same lossless emitter the data lane uses (#967) — one
+  implementation, two entry points.
+- **R-A8 (Q8a):** operand-kind faults across the stdlib builtin arms answer
+  a uniform `CXER0100` err naming the argument position, the expected kind,
+  and the function name AS WRITTEN; internal builtin names never appear;
+  `none` means only "this dispatcher does not own this name".
+
+Freeze rule (from §5) is in force from this amendment: changing any cell
+hereafter requires a ruling naming the cell.
