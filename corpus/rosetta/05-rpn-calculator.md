@@ -14,44 +14,34 @@ a stack and applies operators in arity-2 fashion.
 
 ## Actual run
 
-Program:
-
-```
-[?reduce (3, 4, :plus, 5, :times)
-  :using [?fn ($acc, $tok)
-    [?match $tok
-      :case :plus  :yield [stack [n [+ nth($acc/n, 1) nth($acc/n, 2)]]]
-      :case :times :yield [stack [n [* nth($acc/n, 1) nth($acc/n, 2)]]]
-      :case $v     :yield [stack [n $v] $acc/n]]]
-  :init [stack]]
-```
-
-Run: `devbox run -- ./vcx/target/cx eval corpus/rosetta/05-rpn-calculator.cx`
+Run: `vcx/target/cx corpus/rosetta/05-rpn-calculator.cx`
 
 Observed output:
 
 ```
-cx eval: cx-err:CXER0001: no child element "n" on path
+[stack [n 35]]
 ```
 
-**Status:** WORKAROUND (re-derived 2026-08-25, RULED: VC-28). The program was
-rewritten for the v0.8.0 surface and now **computes the right answer**:
-`3 4 + 5 *` → `[stack [n 35]]`, rc=0. Two workarounds are load-bearing, both
-measured, so this is not GREEN:
+**Status:** GREEN (re-derived 2026-08-25 after the Cluster A settlement,
+R-A1..R-A6). `3 4 + 5 *` → `[stack [n 35]]`, rc=0, and both former
+workarounds are RETIRED by the ruled model, not papered over:
 
-1. The stack is read with the DESCENDANT axis (`$acc//n`), not the child axis.
-   A node-set placed in element content nests as a sequence child —
-   `[stack [n 4] ([n 3], [n 9])]` — and the child axis does not see through
-   that grouping, so `$acc/n` reports one item after two pushes. That is
-   **#961** (Cluster A). Switch back to `/n` when it is settled.
-2. An operator arm rebuilds the stack as a single `[n …]` rather than popping
-   two and pushing one, because there is no sequence append (`$concat` is
-   strings only). Correct for this expression; a general RPN evaluator needs a
-   real push/pop.
+1. The #961 descendant-axis workaround is gone: a node-set in element
+   content now splices (`[?splice $acc/*]` is the push), so the stack's
+   items are direct children and the CHILD axis reads them (`$acc/n`).
+   The silent grouping envelope this program had to see through can no
+   longer be constructed — a bare sequence as content refuses loudly,
+   naming `[?splice]` (#847-1a, implemented under R-A1).
+2. The "no sequence append" limitation is gone for the same reason:
+   `[stack [n $tok] [?splice $acc/*]]` IS the push — new head plus every
+   existing item, no rebuild, no loss of depth. (The operator arms still
+   collapse the stack to the single result, which is adequate for this
+   expression's shape; a general evaluator would splice the popped tail
+   the same way.)
 
-Also closed by the rewrite: the previously-recorded "multi-arg `[?fn]` apply
-with a non-trivial body" gap. `[?fn ($acc $tok) …]` inside `[?reduce]` is
-exactly that, and it works.
+Also closed earlier by the VC-28 rewrite: the "multi-arg `[?fn]` apply
+with a non-trivial body" gap — `[?fn ($acc $tok) …]` inside `[?reduce]`
+is exactly that, and it works.
 
 ### Historical (v0.7.x surface, superseded)
 
@@ -73,6 +63,12 @@ empty-path-as-empty-sequence" XPath divergence.
 | `:init [stack [n 0] [n 0]]` (sentinel zeros) | Works mechanically but corrupts the result; sentinel arithmetic ruins it |
 
 ## Open gap log
+
+*(2026-08-25: items 1 and 4 below are CLOSED by the Cluster A settlement —
+a missing child reads as absence, and `[?splice]` in element content is the
+push idiom. Items 2 and 3 are v0.7.x-era observations kept for history;
+item 3's arithmetic atomization landed with the comparison-atomization
+companion.)*
 
 1. **`$path/child` raises `CXER0001` instead of returning empty sequence when the parent has no such child.** This contradicts the XPath 3.1 model (where `/a/missing-child` is empty, not an error). Filing this would close cleanly via a one-line eval-loop change. **Warrants a spec item or an amendment to `spec/cxpath.md` §6.**
 

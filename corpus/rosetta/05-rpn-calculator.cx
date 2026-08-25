@@ -6,22 +6,17 @@
    (`:using`/`:init`/`:case`/`:yield` colon clauses, `[?fn ($a, $b)]` comma
    params, `nth(x, 1)` call-parens).
 
-   The stack is read with the DESCENDANT axis (`$acc//n`), not the child axis
-   (`$acc/n`), and that is forced rather than stylistic: placing a node-set in
-   element content nests it as a sequence child — `[stack [n 4] ([n 3], [n 9])]`
-   — and the child axis does not see through that grouping, so `$acc/n` reports
-   one item after two pushes. Measured 2026-08-25; it is #961, in Cluster A,
-   which this session does not touch (VC-27). Switch back to `/n` when #961 is
-   settled.
-
-   Also limited by the surface, not by taste: an operator arm rebuilds the stack
-   as a single `[n …]`, discarding anything deeper, because there is no sequence
-   append (`$concat` is strings only). Correct for this expression; a general RPN
-   evaluator wants a real push/pop. ]
+   R-A1 migration (2026-08-25, the Cluster A settlement): a node-set placed in
+   element content is spliced — `[?splice $acc/*]` pushes the existing stack
+   items as direct children — so the child axis reads the stack and the former
+   descendant-axis workaround (#961) is retired. `$acc/*` (not `$acc/n`) feeds
+   the push because a wildcard read never field-collapses; `$acc/n` reads are
+   fine as operands (a one-item field collapses to its scalar, which arithmetic
+   accepts; a multi-item match stays a node-set, which `$nth` indexes). ]
 [?reduce (3, 4, :plus, 5, :times)
   [using [?fn ($acc $tok)
     [?match $tok
-      [case :plus [stack [n [+ [$nth $acc//n 1] [$nth $acc//n 2]]]]]
-      [case :times [stack [n [* [$nth $acc//n 1] [$nth $acc//n 2]]]]]
-      [else [stack [n $tok] $acc//n]]]]]
+      [case :plus [stack [n [+ [$nth $acc/n 1] [$nth $acc/n 2]]]]]
+      [case :times [stack [n [* [$nth $acc/n 1] [$nth $acc/n 2]]]]]
+      [else [stack [n $tok] [?splice $acc/*]]]]]]
   [init [stack]]]

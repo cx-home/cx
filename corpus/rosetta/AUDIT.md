@@ -36,18 +36,20 @@ and is retired below rather than carried forward as though still true.
 |---|---|---|---|---|
 | 01-fizzbuzz-shapes | `release/0.17` 2026-08-25 | green | 0 | Clean on the current surface: `[$range 1 30]`, `[$mod]`, `[?match true [when …] [else …]]`. Yields shapes (atoms / the number), not text. |
 | 02-log-parser | `release/0.17` 2026-08-25 | workaround | 1 | Clean with `[$contains]` + `[?for [in $line $lines] [yield …]]`. Remaining gap: no `split` / `tokenize` / `format`, so the line is classified but not FIELD-parsed (timestamp / level / message stay inside one string). |
-| 05-rpn-calculator | `release/0.17` 2026-08-25 | workaround | 2 | Folds with `[?reduce … [using [?fn ($acc $tok) …]] [init …]]`, stack carried as a document. TWO measured constraints: (a) the stack must be read with the DESCENDANT axis — a node-set placed in element content nests as a sequence child (`[stack [n 4] ([n 3], [n 9])]`) and the child axis does not see through it, so `$acc/n` reports 1 after two pushes — that is **#961** (Cluster A); (b) no sequence append (`$concat` is strings only), so an operator arm rebuilds the stack as a single `[n …]` rather than popping two and pushing one. Correct for this expression; a general evaluator needs a real push/pop. |
+| 05-rpn-calculator | `release/0.17` 2026-08-25 | green | 0 | Folds with `[?reduce … [using [?fn ($acc $tok) …]] [init …]]`, stack carried as a document. Both former constraints RETIRED by the Cluster A settlement (R-A1, 2026-08-25): a node-set in element content now splices — `[?splice $acc/*]` IS the push (new head + every existing item) — and the child axis reads the stack (`$acc/n`); the silent grouping envelope (#961) can no longer be constructed (a bare sequence as content refuses loudly, #847-1a). Re-measured: `[stack [n 35]]`, rc=0. |
 | 06-bfs | `release/0.17` 2026-08-25 | workaround | 1 | Graph-as-document: `$graph//edges` + a comprehension, no adjacency list built. Enumerates edges — as the original did. A true breadth-first TRAVERSAL (frontier queue, visited set) is not demonstrated; `[?def]` recursion exists on the current surface, so it is plausibly expressible now, but claiming so without writing it would be a guess. |
 | 13-config-validator | `release/0.17` 2026-08-25 | green | 0 | Clean: `[$count $config//port]` + `[$and]` + `[?match true …]`. Verified DISCRIMINATING, not vacuous: removing `[port 8080]` flips it to `:invalid`. |
 | 21-fetch-csv-validate | `e44de53c` | blocked | 0 | **expected pre-impl** — url + csv + validate skeleton bodies pending; flips to green when Phase 3.x V impl ratifies the three companion specs |
 
 ## Summary
 
-- **green**: 2 (#01 #13) — no workarounds, correct output
-- **workaround**: 3 (#02 #05 #06) — all now RUN rc=0 with the correct answer,
-  but each leans on a documented gap: no `split`/`tokenize` (#02), the #961
-  child-axis grouping plus no sequence append (#05), reduced scope versus a real
-  traversal (#06)
+- **green**: 3 (#01 #05 #13) — no workarounds, correct output. #05 graduated
+  2026-08-25: the Cluster A settlement (R-A1) retired both of its gaps —
+  `[?splice]` in element content is the push idiom and the child axis reads
+  the stack; the #961 envelope is unconstructible.
+- **workaround**: 2 (#02 #06) — both RUN rc=0 with the correct answer, but
+  each leans on a documented gap: no `split`/`tokenize` (#02), reduced scope
+  versus a real traversal (#06)
 - **blocked**: 1 (#21 — expected pre-impl, not a surface gap)
 
 **All six were `blocked` before this re-derivation** — every program in the
