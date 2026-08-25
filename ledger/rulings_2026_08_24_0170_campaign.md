@@ -981,3 +981,73 @@ nix and windows spawn paths, and windows cannot be measured on this host.
 4. **The V-fork API gap is FILED as its own issue** — per-stream stdio control
    in `os.Process`, cx-agnostic and upstreamable, requiring a linux AND windows
    measurement rather than a blind darwin-only change.
+
+---
+
+# AMENDMENT 17 (2026-08-25) — VC-27 .. VC-31
+
+**Status:** RULED by the owner, reply verbatim **"1a 2a 3b 4a 5a"**, to the five
+open decisions posed at the end of the #700 close-out session. Recorded BEFORE
+the work per R6.1/R4.2.
+
+## VC-27 (1a) — the Fable-track clusters stay Fable's; this session takes the unowned docket
+
+With #700 closed, the v0.17.0 tag waits on only Cluster A (#961 #964 #965 #966)
+and Cluster B/C (#962 #967 #955). Those stay with the Fable track that VC-19
+assigned them to — the spec-first matrix reasoning is identity-critical work,
+and a shared checkout with two sessions editing one cluster is how work gets
+lost. This session takes what no track owns: **#970** (unknown subcommand
+diagnosed as a missing file), **#968** (approved specs still teach the retired
+`cx store-token`), **#963** (verify the three stale agent branches).
+
+## VC-28 (2a) — corpus/rosetta is ADOPTION EVIDENCE: rewrite it, re-derive the audit, then gate it
+
+The corpus is 70 lines and all six programs predate the v0.8.0 homoiconic
+reshape (infix `to` ranges, `:in`/`:yield` colon forms, `contains(x, y)`
+call-parens). Two rows record **green** for programs that do not parse — an
+active lie in the one artifact whose job is to show CX does ordinary things.
+
+Ruled: rewrite all six in the current surface; **re-derive `AUDIT.md` against
+today's surface** (statuses re-measured; the v0.7.x gap register retired or
+archived rather than left to describe a surface that no longer exists); then
+wire `corpus-audit` into a lane so it cannot rot again. Wiring comes LAST — the
+issue's own reasoning: wiring first would paint the current red into
+`make test`. 21-fetch-csv-validate stays legitimately blocked (pre-impl).
+
+## VC-29 (3b) — the harness worker-pool lever is AUTHORIZED, and starts now
+
+91% of the extraction gate is one binary issuing 21,158 process spawns
+serially. A bounded worker pool is worth ~5-7 min of gate wall and removes the
+serial 13.4-min floor. It does NOT reach 10 minutes (see VC-31).
+
+**Ruled, with the session's own recorded caution as a binding condition:** this
+gate certifies `libcx-core == libcx` over the Ring-0 corpus, and its 12-minute
+CLI lane has **no recorded transcript hash** — only case counts and rc. So:
+
+1. **Record a deterministic CLI-lane verification instrument FIRST**, before any
+   concurrency, and capture its baseline hash. The ABI lane already has one
+   (`2d739c8f74dcfae965788c7befd5248e6ff99cb47f4e69ef25d543005c9737a2`).
+2. Then the pool, with per-pair scratch isolation (the runner shares one work
+   folder today; #883's code-signature kill and #902's `Exec format error` are
+   recorded in that file and concurrency re-arms both), index-ordered result
+   collection so the transcript stays byte-deterministic, and the existing
+   serial divergence re-check kept intact (it distinguishes a real divergence
+   from a spawn flake, and one fired in 1,838 under parallel load).
+3. Verdict identity is the acceptance test: same transcript hash, same case
+   counts, three consecutive runs.
+
+## VC-30 (4a) — #572 CLOSES on its attribution plus the escape detector
+
+The duplicate-symbol class is attributed (mixed-generation cache layers,
+reproduced deterministically), the literal `___v_thread_wait` instance is not
+resurrectable under the #151 vexe salt, and the cache-free retry that used to
+mask a recurrence is now a gate-escape diagnostic that cannot turn one green.
+Leaving it open implies an unknown that no longer exists.
+
+## VC-31 (5a) — VC-22's 10-minute target STANDS as an unmet aspiration, with its cost recorded
+
+Not re-ruled to a reachable number, and not commissioned as a CPU-reduction
+campaign. It stands, and `ledger/dead_ends_700_test_duration.md` states what it
+would take: 182 CPU-min must become ~96-120, since 182 on 12 cores floors the
+wall at 15.2 min and parallelism cannot beat that floor. The end-state gate is
+1,247 s (20.8 min) / 10,756 CPU-s, GATE-RC=0.
