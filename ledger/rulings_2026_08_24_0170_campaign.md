@@ -895,3 +895,47 @@ subject.
    no cached object with the rest of the gate. Moving them to `-gc e` collapses
    that namespace into the main one — the ruling pays the cache rollout as well
    as the memory model, but the memory model is the reason.
+
+---
+
+# AMENDMENT 15 (2026-08-25) — VC-25
+
+**Status:** RULED by the owner at the end of the #700 wave-2 part-(ii) session,
+after the measured negative result on the cache lever. Recorded per R6.1.
+
+## VC-25 — #700 CLOSES; every attempted lever is documented so none is re-tried
+
+**Owner's words, verbatim:** *"close 700 after so many failed attempts and
+document each so we don't reopen and go down bad paths again. Then get back to
+work on the open bugs and issues for this campaign. get it done and sound.
+choose whats best long term for cx."*
+
+### Ruled
+
+1. **#700 is CLOSED**, and its closure is NOT a claim that VC-22's numeric
+   targets were met. They were not: the full gate stands at ~24 min wall /
+   182 CPU-min, and the ring-scoped dev loop at ~10-11 min. What is complete
+   is the issue's ruled CONTENT — wave 1, wave 2 part (i), and wave 2
+   part (ii)'s three deliverables, one of which (the cache rollout) is
+   answered with a measured NO.
+2. **The dead-ends register is the deliverable that closes it**:
+   `ledger/dead_ends_700_test_duration.md`. Every lever attempted across
+   #700's life, with the measured reason it failed and the arithmetic that
+   bounds it. An issue closed without that register would be reopened and the
+   same levers re-attempted — which already happened twice inside this issue
+   (VC-14's numbers, then VC-23's cost attribution).
+3. **The two unruled levers are NOT carried by #700.** They are recorded in
+   the register with their measured bounds and become their own issues if and
+   when they are ruled:
+   - harness worker pool (bounded: ~5-7 min of wall, removes the serial
+     13.4-min floor, does NOT reach 10 min);
+   - total-CPU reduction (the ONLY thing that can reach 10 min; no lever
+     currently exists — consolidation retired by VC-23, -usecache already
+     default on the suite lanes, and VC-22 forbids removing lanes).
+4. **VC-22's 10-minute target is therefore unmet and unclaimed.** It is not
+   re-ruled here. It stands as an aspiration whose cost is now known: it
+   requires halving 182 CPU-min, not rearranging it.
+5. **Campaign work resumes on the open docket**, owner's direction: soundness
+   over speed, long-term-best. The Fable-track clusters (A: #961 #964 #965
+   #966; B/C: #962 #967 #955) remain that track's; this session takes the
+   items no other track owns.
