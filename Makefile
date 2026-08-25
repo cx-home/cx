@@ -1323,6 +1323,49 @@ RETRY_REASON_CASE = case "$$rel" in \
 	    reason="NO REASON DECLARED for this lane -- retried anyway; declare it in RETRY_REASON_CASE in the Makefile" ;; \
 	esac
 
+# The cache-free class is NO LONGER A RETRY — it is a DIAGNOSTIC that never
+# changes the verdict (#700 wave 2 part ii). It was written when the -usecache
+# key was unsound by reputation, so "cache-free green proves the artifact" was
+# the best available answer. Part (i) made the key PROVABLY sound
+# (make check-vcache-soundness, 16 behavioural probes, red-proven), which
+# inverts the conclusion: if a cached build fails where a cache-free build
+# passes, the cache produced a failure the soundness gate did not catch. That
+# is a gate ESCAPE — the single most valuable signal this tree can emit about
+# the cache — and turning it green is how it stays hidden.
+#
+# This is not hypothetical. 2026-08-25, rolling -usecache onto the first
+# NON-TEST binary build surfaced `ld: symbol(s) not found` for
+# builtin__closure__closure_init: three mechanisms each assumed the closure
+# runtime was inside builtin.o while it was in no object at all (fork fix
+# 46f1be51d5, gate probe H11). A verdict-flipping retry on that lane would
+# have reported green and the defect would still be in the tree.
+#
+# So the cache-free run still HAPPENS — it is the classifier, and its outcome
+# is the diagnosis — but `st` is never cleared by it:
+#   cache-free PASSES  → GATE ESCAPE, loud, red, with the capture recipe;
+#   cache-free FAILS   → an ordinary real failure, red.
+# The serial-retry (socket / #951) class is untouched and still flips its
+# verdict: those lanes hold real sockets and their flakiness is environmental,
+# not a statement about compiler correctness.
+# NOTE for editors: this is a make VARIABLE, so a bare `#` starts a make
+# comment and silently truncates the line it is on (measured while writing
+# this: the banner became `GATE ESCAPE (`). Issue numbers here must be
+# written `\#700`, the same idiom RETRY_REASON_CASE above uses for `\#951`.
+CACHE_ESCAPE_PROBE = \
+	echo "──── cache-free DIAGNOSTIC (verdict stays red; classifying): $$rel ────"; \
+	if $(V) -cc cc $(CX_GC) $(CX_ENGINES) test "$$rel"; then \
+	  echo "════ GATE ESCAPE (\#700): $$rel FAILED under $(CX_CACHE) and PASSES cache-free ════"; \
+	  echo "     The module cache produced a failure make check-vcache-soundness does not catch."; \
+	  echo "     DO NOT re-run to get green. Capture and file against \#700:"; \
+	  echo "       - $$log (the cached failure)"; \
+	  echo "       - make check-vcache-soundness   (expect green — that is the point: a hole)"; \
+	  echo "       - the failing cc/ld symbols, and the cache namespace for this lane"; \
+	  echo "     Then add a probe to scripts/vcache_soundness_gate.sh that goes RED on it."; \
+	else \
+	  echo "──── real failure, not a cache artifact (fails cache-free too): $$rel ────"; \
+	fi; \
+	st=1
+
 # A retry roster is matched against the lane paths the suite REPORTS, so a
 # row naming a file that no longer exists matches nothing and silently
 # disables its retry class — the class stops applying and the gate looks
@@ -1370,15 +1413,14 @@ test-vcx-suite: build-vcx-dev check-serial-retry-rosters
 	          $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test "$$rel" || st=1 ;; \
 	        *) \
 	          if grep -aq 'C compilation error' $$log; then \
-	            echo "──── cache-free retry (#572: -usecache layer artifact check): $$rel ────"; \
-	            $(V) -cc cc $(CX_GC) $(CX_ENGINES) test "$$rel" || st=1; \
+	            $(CACHE_ESCAPE_PROBE); \
 	          else \
 	            echo "──── real failure (no retry class applies): $$rel ────"; st=1; \
 	          fi ;; \
 	      esac; \
 	    done; \
 	    if [ $$st -eq 0 ]; then \
-	      echo "──── every failed lane green on its classified retry (socket lanes: serial; C-compile failures: cache-free, #572) ────"; \
+	      echo "──── every failed lane green on its classified SERIAL retry (socket / #951 load-race lanes) ────"; \
 	    fi; \
 	  fi; \
 	fi; \
@@ -1434,15 +1476,14 @@ test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	          $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test "$$rel" || st=1 ;; \
 	        *) \
 	          if grep -aq 'C compilation error' $$log; then \
-	            echo "──── cache-free retry (#572: -usecache layer artifact check): $$rel ────"; \
-	            $(V) -cc cc $(CX_GC) $(CX_ENGINES) test "$$rel" || st=1; \
+	            $(CACHE_ESCAPE_PROBE); \
 	          else \
 	            echo "──── real failure (no retry class applies): $$rel ────"; st=1; \
 	          fi ;; \
 	      esac; \
 	    done; \
 	    if [ $$st -eq 0 ]; then \
-	      echo "──── every failed lane green on its classified retry (socket lanes: serial; C-compile failures: cache-free, #572) ────"; \
+	      echo "──── every failed lane green on its classified SERIAL retry (socket / #951 load-race lanes) ────"; \
 	    fi; \
 	  fi; \
 	fi; exit $$st
@@ -1484,23 +1525,29 @@ test-vcx-cx: build-vcx-dev
 # -d cx_platform: the cmd lane tests the DEFAULT (platform-profile) shape —
 # the shipped binary's composition (I4; a bare cmd/ compile is the cli
 # profile, where CX_ENGINES would be inert).
-# Same #572 classified cache-free retry as test-vcx-suite/test-vcx-code: this
-# is the ONLY vcx test lane besides those that runs -usecache ($(CX_CACHE)), so
-# a stale cache layer can inject a duplicate-symbol OR a "symbol(s) not found"
-# link failure (the latter when a fresh symbol is added to code/ and the cmd
-# lane reuses a pre-change cached object — observed on the S6.3 pushdown
-# symbols). A C-compile/link failure retries once cache-free; anything else is
-# a real failure and stays red.
+# Same cache-free DIAGNOSTIC as test-vcx-suite/test-vcx-code (see
+# CACHE_ESCAPE_PROBE above): this is the ONLY vcx test lane besides those that
+# runs -usecache ($(CX_CACHE)). A cached-only C-compile/link failure is now a
+# GATE ESCAPE against the proven key, reported red with the capture recipe —
+# not retried to green. The historical case this lane recorded (a fresh symbol
+# added to code/ while the cmd lane reused a pre-change cached object, the S6.3
+# pushdown symbols) is precisely a provenance failure that part (i)'s manifests
+# now make impossible, and if it recurs the gate needs a probe, not a retry.
 test-vcx-cmd: build-vcx-dev
 	@log=vcx/target/test-cmd-run.log; stf=vcx/target/test-cmd-status; \
 	{ $(V) -cc cc $(CX_GC) -d cx_platform $(CX_ENGINES) $(CX_CACHE) test vcx/cmd/ 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
 	  if grep -aqE 'C compilation error|linker command failed|symbol\(s\) not found|duplicate symbol' $$log; then \
-	    echo "──── cache-free retry (#572: -usecache layer artifact check): vcx/cmd ────"; \
+	    echo "──── cache-free DIAGNOSTIC (verdict stays red; classifying): vcx/cmd ────"; \
 	    if $(V) -cc cc $(CX_GC) -d cx_platform $(CX_ENGINES) test vcx/cmd/; then \
-	      st=0; \
-	      echo "──── vcx/cmd green on its cache-free retry (#572) ────"; \
+	      echo "════ GATE ESCAPE (#700): vcx/cmd FAILED under $(CX_CACHE) and PASSES cache-free ════"; \
+	      echo "     The module cache produced a failure make check-vcache-soundness does not catch."; \
+	      echo "     DO NOT re-run to get green. Capture $$log + the gate output + the failing"; \
+	      echo "     symbols, file against #700, and add a RED-going probe to"; \
+	      echo "     scripts/vcache_soundness_gate.sh."; \
+	    else \
+	      echo "──── real failure, not a cache artifact (fails cache-free too): vcx/cmd ────"; \
 	    fi; \
 	  fi; \
 	fi; \
