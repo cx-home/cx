@@ -828,3 +828,70 @@ cache state alone is a measured **2.5x** on the identical workload.
   load-race (sup-011) under -j storms — first seen the moment test-changed
   went parallel. It needs a classified retry or the #951 root fix before
   parallel test-changed is trustworthy on trees that select it.
+
+---
+
+# AMENDMENT 14 (2026-08-25) — VC-24
+
+**Status:** RULED by the owner during the #700 wave-2 part-(ii) rollout
+session (Opus 5), on a finding raised from the recipes. Recorded BEFORE the
+work per R6.1/R4.2.
+
+## VC-24 — the gate harness runs on `-gc e`; there is no Boehm lane in CX
+
+**Owner's words, verbatim, in sequence:** *"what, why are we using '-gc boehm'
+that's not what we developed to better support parallelism"* — and, on the
+finding and the options below: *"cx could care less about -gc boehm, we do
+gc e"*.
+
+### The finding that raised it (code-cited)
+
+Three gate-harness binaries are built with an explicit `-gc boehm`, overriding
+`CX_GC ?= -gc e`:
+
+| binary | site |
+|---|---|
+| extraction-gate `probe` | `Makefile:766` |
+| extraction-gate `cli_gate` | `Makefile:767` |
+| `abi_gc_gate` | `Makefile:805` |
+
+They entered in `daf3f921b` (2026-08-06, the I2 exit-gate harness) with **no
+rationale** — the commit message does not mention GC, and the 45-line comment
+block above the recipe explains every other design choice in that gate and is
+silent on this one. `-gc e` had been cx's default since `a27d61b6b`
+(2026-06-13), so these lines overrode the shipped memory model from the day
+they were written. Not a ruling, not a documented exception.
+
+**A real mechanism exists that could have motivated it** (inferred from code,
+not measured): each of the three is a V host that `dlopen`s a libcx built
+`-gc e`. A `-gc e` host would put TWO statically-linked vgc runtimes in one
+process, and vgc keeps process-global and per-image state — a `pthread_once`
+signal-handler install (`thirdparty/vgc/vgc_platform.h:1172,1420`), `__thread`
+TLS (`:148`), and a thread registry per copy. Two collectors can fight over the
+handler and STW-suspend each other's threads.
+
+**Which is exactly why it cannot stay unexamined.** If that is the reason, an
+unexamined `-gc e` dlopen-host defect has been sitting behind a silent
+workaround since 2026-08-06 — the workaround-instead-of-root-cause class this
+campaign exists to close (VC-23 §2).
+
+What it does NOT compromise: the SUBJECT of both gates is the dylib, which is
+built `-gc e`; `abi_gc_gate` proves the artifact carries vgc via `nm` and skips
+loudly otherwise (`abi_gc_gate.v:65,84`). The harness is the anomaly, not the
+subject.
+
+### Ruled
+
+1. **The three harness binaries move to `$(CX_GC)`.** CX has one memory model,
+   architecture E, and the gate harness is not exempt from it. No Boehm lane
+   remains in the tree's own gates.
+2. **If the `-gc e` host comes back RED, that is a measured vgc dlopen-host
+   defect** — it is FILED with the reproduction, prio-labeled, and fixed on its
+   own landing (per the standing prio:high policy); `-gc boehm` may hold the
+   lane in the interim ONLY with a comment naming that issue. A silent Boehm
+   override is not available as an outcome in either branch.
+3. **Rollout consequence, recorded:** `-gc boehm` is a distinct define set, so
+   those three world-builds sit in their own `-usecache` namespace and can share
+   no cached object with the rest of the gate. Moving them to `-gc e` collapses
+   that namespace into the main one — the ruling pays the cache rollout as well
+   as the memory model, but the memory model is the reason.

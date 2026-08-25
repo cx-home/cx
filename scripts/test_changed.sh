@@ -61,6 +61,12 @@ RING2='vcx/platform/*'
 RING_CLI='vcx/cli/* vcx/cmd_data/*'
 RING_CMD='vcx/cmd/*'
 RING_SUP='vcx/testenv/* vcx/fixtures/* vcx/deps/* vcx/bench/* vcx/fuzz/* vcx/tools/* vcx/v.mod third_party/*'
+# The $embed_file estates + the version stamp: these reach the BYTES of every
+# built cx binary (vcx/Makefile BUILD_INPUT_DIRS names ../stdlib ../x
+# ../docs/llm ../VERSION), so a lane that BUILDS OR DRIVES a binary depends on
+# them even when no .v file moved. Previously the binary-driving lanes carried
+# `vcx/*` and picked these up only by accident of also listing stdlib/x.
+RING_EMBED='stdlib/* x/* docs/llm/* VERSION'
 # libcx is built from platform/ (vcx/Makefile:222) — the TOP of the DAG — so
 # every binding/ABI/prod lane legitimately depends on the whole closure. This
 # is the honest bound on ring selection: it narrows those lanes away from
@@ -123,27 +129,43 @@ lane_globs() {
     ring-tag-gate)                 echo 'conformance/* scripts/*' ;;
     cxer-registry-gate)            echo 'vcx/* spec/* scripts/cxer_registry*' ;;
     spec-freeze-gate)              echo '*' ;;
-    test-extraction-gate)          echo 'vcx/* conformance/* stdlib/* third_party/*' ;;
-    abi-gc-gate)                   echo 'vcx/* third_party/*' ;;
+    # ── the expensive binary-driving lanes (VC-22 ring-scoping, #700 wave 2
+    # part ii) ──────────────────────────────────────────────────────────────
+    # These five carried a blanket `vcx/*`, so ANY edit under vcx/ selected all
+    # of them — including a vcx/tests-only edit, the most common dev loop of
+    # all. Measured 2026-08-25: extraction-gate 768-844 s and profile-gate
+    # 660 s, both serial (~0.95x parallelism), so they are not compressible by
+    # -j; the only way a dev loop avoids them is not selecting them.
+    #
+    # Each row is now the lane's real input surface: the full ring closure
+    # (libcx builds from platform/, the TOP of the DAG, so any ring edit
+    # legitimately reaches it — VC-22's honest bound), the support dirs, the
+    # embed estate that changes binary bytes, and the lane's OWN runner
+    # directory. What drops out is vcx/tests/ other than that runner. Nothing
+    # else narrows: over-include on doubt, a false RUN costs minutes and a
+    # false SKIP costs correctness.
+    test-extraction-gate)          echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED vcx/tests/runners/extraction_gate/* conformance/*" ;;
+    abi-gc-gate)                   echo "$RING_LIB $RING_SUP $RING_EMBED vcx/tests/runners/abi_gc_gate/*" ;;
     check-v-fork)                  echo 'third_party/* scripts/v_fork_register.cxd scripts/check_v_fork_patches.cx' ;;
-    libcx-abi-gate)                echo 'vcx/* third_party/*' ;;
-    test-profile-gate)             echo 'vcx/* conformance/* stdlib/* third_party/*' ;;
+    # reads the built library's export surface against include/cx.h.
+    libcx-abi-gate)                echo "$RING_LIB $RING_SUP include/* tools/libcx-abi-gate.sh" ;;
+    test-profile-gate)             echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED vcx/tests/runners/profile_gate/* conformance/*" ;;
     check-code-spec-consistency)   echo 'spec/* vcx/code/*' ;;
     stdlib-catalog-gate)           echo 'stdlib/* vcx/* docs-src/*' ;;
-    address-baseline-gate)         echo 'vcx/* conformance/*' ;;
+    address-baseline-gate)         echo "$RING_LIB $RING_SUP vcx/tests/runners/address_baseline/* conformance/*" ;;
     # #700 wave 1 (2026-08-24): five TEST_TARGETS lanes had no row and so
     # always ran. Each row is the lane's actual input surface, over-including
     # on doubt as the rest do.
     check-code-fixtures)           echo 'conformance/* vcx/* spec/*' ;;
     # the SIGPIPE-PIPE gate reads every shell script in the tree
     check-pipefail-pipes)          echo '*' ;;
-    test-code-diagram)             echo 'conformance/* vcx/* stdlib/*' ;;
+    test-code-diagram)             echo "conformance/* $RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/check_code_diagram_fixtures.cx" ;;
     # the oriel surface lane drives spec/03-approved/xap/demos/oriel/
     test-oriel-lane)               echo 'spec/03-approved/xap/demos/* vcx/* stdlib/* x/*' ;;
     tools-export-gate)             echo 'conformance/tools-export/* vcx/* stdlib/*' ;;
     # the roster rows live in the Makefile and name files under vcx/
     check-serial-retry-rosters)    echo 'Makefile vcx/*' ;;
-    test-xpath-parity-cx)          echo 'vcx/* conformance/* scripts/check_xpath_parity_fixtures.cx' ;;
+    test-xpath-parity-cx)          echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED conformance/* scripts/check_xpath_parity_fixtures.cx" ;;
     *)                             echo '' ;; # unknown lane → ALWAYS RUN
   esac
 }

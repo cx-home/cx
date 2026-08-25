@@ -750,6 +750,17 @@ spec-freeze-gate:
 #     Same case-count floor.
 # Dev-shape builds (same codegen semantics as -prod minus optimization);
 # the release cut re-runs this against the prod-shape artifacts.
+#
+# RULED: VC-24 — the harness builds under $(CX_GC), cx's memory model, like
+# everything else. These three runner binaries (probe, cli_gate, and
+# abi-gc-gate below) carried a hard-coded `-gc boehm` from daf3f921b
+# (2026-08-06) with no rationale in the commit or the comment, overriding the
+# `-gc e` default that had been cx's since a27d61b6b. CX has one collector;
+# the gate harness is not exempt. If a `-gc e` host ever fails HERE it is a
+# vgc dlopen-host defect (two statically-linked vgc runtimes in one process
+# share a pthread_once signal-handler install and keep per-image __thread
+# state) — that gets FILED and fixed on its own landing, never absorbed by a
+# silent Boehm override.
 # Floor = the Ring-0 census recorded at I2 (partition_I2_extraction.md);
 # raise it when Ring-0 cases are added, never lower it silently.
 EXTRACTION_GATE_FLOOR := 1564
@@ -763,8 +774,8 @@ LIBCX_CORE_ART := vcx/target/libcx-core.$(if $(filter Darwin,$(shell uname -s)),
 test-extraction-gate: build-vcx
 	@$(MAKE) -C vcx build-data-dev
 	@mkdir -p vcx/target/extraction_gate
-	@$(V) -n -w -cc cc -gc boehm -o vcx/target/extraction_gate/probe vcx/tests/runners/extraction_gate/probe/
-	@$(V) -n -w -cc cc -gc boehm -o vcx/target/extraction_gate/cli_gate vcx/tests/runners/extraction_gate/cli/
+	@$(V) -n -w -cc cc $(CX_GC) -o vcx/target/extraction_gate/probe vcx/tests/runners/extraction_gate/probe/
+	@$(V) -n -w -cc cc $(CX_GC) -o vcx/target/extraction_gate/cli_gate vcx/tests/runners/extraction_gate/cli/
 	@vcx/target/extraction_gate/probe $(LIBCX_ART) conformance --min-cases=$(EXTRACTION_GATE_FLOOR) > vcx/target/extraction_gate/transcript_monolith.txt
 	@vcx/target/extraction_gate/probe $(LIBCX_CORE_ART) conformance --min-cases=$(EXTRACTION_GATE_FLOOR) > vcx/target/extraction_gate/transcript_core.txt
 	@cmp vcx/target/extraction_gate/transcript_monolith.txt vcx/target/extraction_gate/transcript_core.txt \
@@ -802,7 +813,7 @@ address-baseline-capture:
 abi-gc-gate: build-vcx
 	@$(MAKE) -C vcx build-data-dev
 	@mkdir -p vcx/target/extraction_gate
-	@$(V) -n -w -cc cc -gc boehm -o vcx/target/extraction_gate/abi_gc_gate vcx/tests/runners/abi_gc_gate/
+	@$(V) -n -w -cc cc $(CX_GC) -o vcx/target/extraction_gate/abi_gc_gate vcx/tests/runners/abi_gc_gate/
 	@vcx/target/extraction_gate/abi_gc_gate $(LIBCX_ART)
 	@vcx/target/extraction_gate/abi_gc_gate $(LIBCX_CORE_ART)
 
