@@ -367,6 +367,47 @@ cd "$WORK/kc"; export VCACHE="$WORK/kc/.vcache"
 nb=$(find "$VCACHE" -name '*.module.*builtin.o' | grep -cv 'closure' || true)
 verdict "KEY-CANON-builtin" "1" "$nb"
 
+# ── H11 LINK-SET completeness (I7) ───────────────────────────────────────────
+# The invariant the original audit did not state: every module whose symbols the
+# generated code REFERENCES must be inside a linked object or linked itself. Key
+# soundness (I1-I6) says a served object matches its inputs; it says nothing
+# about an object that is never served at all.
+#
+# Found by rolling -usecache onto the first NON-TEST binary build (#700 wave 2
+# part ii, 2026-08-25). builtin.closure was assumed to be inside builtin.o by
+# THREE mechanisms at once — cgen emitted its bodies header-only
+# (gen/c/fn.v "Builtin function bodies are defined in builtin.o"),
+# util.module_is_builtin() reported it builtin, and handle_usecache skipped
+# linking its object — while the bodies existed in NO object: builtin.o never
+# contained them, and closure.o omitted them because closure_init/
+# closure_try_destroy are module-PRIVATE compiler hooks that an isolated module
+# build eliminates as unused. Result: `ld: symbol(s) not found` on any
+# -usecache build using a closure.
+#
+# It hid for as long as it did because every -usecache consumer to date was a
+# `v test` build, and fn.v's header-only path carries a `!g.pref.is_test`
+# escape hatch. So this probe MUST build an ordinary binary, not a test.
+# Behavioral, like every other probe here: the program is RUN and its output
+# compared, so no particular mechanism can satisfy it — only correctness.
+note "H11 link-set completeness (bundled builtin submodules)"
+rm -rf "$WORK/h11"; mkdir -p "$WORK/h11"
+cat > "$WORK/h11/prog.v" <<'EOF'
+fn make_adder(n int) fn (int) int {
+	return fn [n] (x int) int { return x + n }
+}
+
+fn main() {
+	add5 := make_adder(5)
+	println(add5(37))
+}
+EOF
+cd "$WORK/h11"; export VCACHE="$WORK/h11/.vcache"
+"$V" -usecache -o p1 prog.v > "$WORK/h11/build.log" 2>&1 || echo "h11 build FAILED"
+verdict "H11-closure-link-set" "42" "$([ -x ./p1 ] && ./p1 2>/dev/null || echo LINK-FAILED)"
+# and the opposite failure mode: bundling inline must not ALSO link the object.
+ndef=$(nm ./p1 2>/dev/null | grep -cE ' T _?builtin__closure__closure_init$' || true)
+verdict "H11-no-duplicate-defs" "1" "$ndef"
+
 # ── summary ──────────────────────────────────────────────────────────────────
 echo ""
 echo "vcache-soundness: sound=$PASS red=$RED elapsed=$((SECONDS-T0))s"
