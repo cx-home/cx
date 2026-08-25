@@ -125,7 +125,7 @@ program-construction-err- program-cx-pi- program-delivery-
 program-descendant-seq-roundtrip- program-do- program-doc-implicit-
 program-eq- program-field-read- program-if- program-loop-
 program-mapnode-nav- program-match- program-planar- program-purity-
-program-reserved-ns- program-slot-singleton- program-table-
+program-pvmatrix- program-reserved-ns- program-slot-singleton- program-table-
 program-tree-eval-
 #]],
   [prefixes level=resilience [#

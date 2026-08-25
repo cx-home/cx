@@ -505,9 +505,9 @@
     },
     "71-builtin-head-tail": {
       label: "[71] Sequence \u2014 head + tail",
-      input: "[?let [= $xs (10, 20, 30, 40)]\n  [list first=[$head $xs]\n    [rest [$tail $xs]]]]",
+      input: "[?let [= $xs (10, 20, 30, 40)]\n  [list first=[$head $xs]\n    [rest [?splice [$tail $xs]]]]]",
       note:  "**Introduces:** `[head xs]` (first element) + `[tail xs]` (everything after the first).",
-      tags:  ["eq", "let"],
+      tags:  ["eq", "let", "splice"],
       runnable: true,
     },
     "72-builtin-nth": {
@@ -876,9 +876,9 @@
     },
     "124-sum-attr": {
       label: "[124] Aggregate \u2014 sum an attribute",
-      input: "[?let [= $doc [order\n                [line qty=2 price=10]\n                [line qty=1 price=20]\n                [line qty=3 price=5]]]\n  [sum $doc/line/@price]]",
-      note:  "**Pattern:** total of an attribute across all matches. **Uses:** `[sum $bind]` builtin in element-call form, attribute-axis path `/line/@price` on child axis (gap A fix: `$doc/line` enumerates every `line` child).",
-      tags:  ["builtin", "cxpath", "eq", "let", "sum"],
+      input: "[?let [= $doc [order\n                [line qty=2 price=10]\n                [line qty=1 price=20]\n                [line qty=3 price=5]]]\n  [$sum $doc/line/@price]]",
+      note:  "**Pattern:** total of an attribute across all matches. **Uses:** the `[$sum \u2026]` builtin call over the attribute-axis node-set `/line/@price` (`$doc/line` enumerates every `line` child). Named builtins are reached via the `$`-head call form \u2014 a bare `[sum \u2026]` is data construction (R-A1 migration 2026-08-25: the old spelling constructed a data element; this one computes).",
+      tags:  ["cxpath", "eq", "let"],
       runnable: true,
     },
     "125-min-max": {
@@ -1030,9 +1030,9 @@
     },
     "146-pivot-rows-to-attrs": {
       label: "[146] ETL \u2014 pivot (row-shape \u2192 attr-shape)",
-      input: "[?let [= $doc [stats\n                [m k=cpu  v=87]\n                [m k=mem  v=62]\n                [m k=disk v=44]]]\n  [snapshot\n    [cpu  $doc/m[= $_@k \"cpu\"]/@v]\n    [mem  $doc/m[= $_@k \"mem\"]/@v]\n    [disk $doc/m[= $_@k \"disk\"]/@v]]]",
-      note:  "**Pattern:** turn N rows-of-(k,v) into one element with N attributes. **Uses:** inline `$doc/m[= $_@k \u2026]/@v` per pivot key (child-axis fix from gap A makes the predicate-filtered path resolve directly \u2014 no intermediate `[?let]` chain needed). The terminal `/@v` materialises the attribute as a single-attr element (`[v 87]`), so output renders `cpu=\"[v 87]\"` etc.; to read the raw scalar `87`, bind the row first \u2014 `[?let [= $cpu $doc/m[@k=\"cpu\"]] $cpu@v]`. The shape still pivots skinny-tall \u2192 wide. (G4 closed.)",
-      tags:  ["cxpath", "eq", "let"],
+      input: "[?let [= $doc [stats\n                [m k=cpu  v=87]\n                [m k=mem  v=62]\n                [m k=disk v=44]]]\n  [snapshot\n    [cpu  [?splice $doc/m[= $_@k \"cpu\"]/@v]]\n    [mem  [?splice $doc/m[= $_@k \"mem\"]/@v]]\n    [disk [?splice $doc/m[= $_@k \"disk\"]/@v]]]]",
+      note:  "**Pattern:** turn N rows-of-(k,v) into one element with N attributes. **Uses:** inline `$doc/m[= $_@k \u2026]/@v` per pivot key, spliced into content with `[?splice \u2026]` (R-A1, 2026-08-25: a node-set in element content splices as direct children \u2014 a bare one refuses loudly). The terminal `/@v` materialises the attribute as a single-attr element (`[v 87]`), so each pivot slot carries `[v 87]` as a child; to read the raw scalar `87`, bind the row first \u2014 `[?let [= $cpu $doc/m[@k=\"cpu\"]] $cpu@v]`. The shape still pivots skinny-tall \u2192 wide. (G4 closed.)",
+      tags:  ["cxpath", "eq", "let", "splice"],
       runnable: true,
     },
     "147-unpivot": {
@@ -1058,9 +1058,9 @@
     },
     "150-join-by-key": {
       label: "[150] ETL \u2014 join two collections by attribute",
-      input: "[?let [= $orders [o-set\n                   [o id=1 user=\"A\" amt=100]\n                   [o id=2 user=\"B\" amt=200]\n                   [o id=3 user=\"A\" amt=50]]]\n  [?let [= $users [u-set\n                    [u name=\"A\" email=\"a@x.com\"]\n                    [u name=\"B\" email=\"b@x.com\"]]]\n    [?for [in $o $orders//o]\n      [yield [joined order-id=$o/@id amt=$o/@amt\n               [email $users//u[= $_@name $o/@user]/@email]]]]]]",
-      note:  "**Pattern:** inner-join two collections by a shared key \u2014 look up each order's user record by name and project the email. **Uses:** cross-binding inline predicate `[@name=$o/@user]` (gap C closed: the RHS now evaluates the path-bearing reference against the *outer* env, so `$o/@user` is the iterating row's key while `$users//u[\u2026]` does the lookup). Terminal `/@email` materialises the value as `[email \"\u2026\"]` (gap-D class \u2014 same `/@attr` materialisation shape as ex 146). The natural single-expression join is now the standard surface; the prior `[?match]` workaround is retired.",
-      tags:  ["cxpath", "descendant", "eq", "for", "let"],
+      input: "[?let [= $orders [o-set\n                   [o id=1 user=\"A\" amt=100]\n                   [o id=2 user=\"B\" amt=200]\n                   [o id=3 user=\"A\" amt=50]]]\n  [?let [= $users [u-set\n                    [u name=\"A\" email=\"a@x.com\"]\n                    [u name=\"B\" email=\"b@x.com\"]]]\n    [?for [in $o $orders//o]\n      [yield [joined order-id=$o/@id amt=$o/@amt\n               [email [?splice $users//u[= $_@name $o/@user]/@email]]]]]]]",
+      note:  "**Pattern:** inner-join two collections by a shared key \u2014 look up each order's user record by name and project the email. **Uses:** cross-binding inline predicate `[@name=$o/@user]` (gap C closed: the RHS now evaluates the path-bearing reference against the *outer* env, so `$o/@user` is the iterating row's key while `$users//u[\u2026]` does the lookup), spliced into content with `[?splice \u2026]` (R-A1, 2026-08-25). Terminal `/@email` materialises the value as `[email \"\u2026\"]` (same `/@attr` materialisation shape as ex 146). The natural single-expression join is now the standard surface; the prior `[?match]` workaround is retired.",
+      tags:  ["cxpath", "descendant", "eq", "for", "let", "splice"],
       runnable: true,
     },
     "151-range-by-stride": {
