@@ -363,3 +363,72 @@ conformance, or implementation work (R6.1).
 
 Freeze rule (from §5) is in force from this amendment: changing any cell
 hereafter requires a ruling naming the cell.
+
+---
+
+# AMENDMENT 2 (2026-08-25) — implementation record
+
+**Status: IMPLEMENTED** on `release/0.17` (spec `f0fba48a6`, engine
+`9b17da7cc`, re-pins/migrations following). The 27-cell conformance grid
+(`program-pvmatrix-*` in `conformance/code.cxd`) is green; the freeze from
+AMENDMENT 1 is in force.
+
+## Where each ruling landed
+
+- R-A1: `eval_dc_body_items` (refusal + [?for]/ForComp contribution +
+  absence-contributes-nothing); the diagnostic names `[?splice]`.
+- R-A2: `doc_node_view` on both walkers (`walk_path_step`,
+  `walk_binding_path_seq`); the fast-path single-root unwrap retired;
+  `parse_input_doc` implements the --data binding contract (multi-root
+  binds the document instead of silently dropping roots after the first).
+- R-A3: `MatchEnv.pred_nodeset` scoped to the two predicate sites;
+  `$_`-rooted reads keep node-set shape; comparison atomization completed
+  in `nodes_equal` (single-scalar-content elements atomize; one-sided
+  node-set comparison is existential).
+- R-A4: err VALUES arising in predicate bodies refuse loudly at both
+  predicate sites (`apply_step_predicates`, `filter_path_predicates_idx`);
+  `cx select` inherits the refusal (verified: `predicate raised
+  user-undefined: no callable "strings:contains"`, RC=2).
+- R-A5: `count_items`/`iterate` document arms; the struck cxdm sentence
+  replaced by the items-view rule.
+- R-A6: (i) `/*` distributes in the fast path marker arm; (ii) arr marker
+  joins node-set root expansion; (iii) `/*` non-element → absence;
+  (iv) `$x[pred]` parses via a `$_`-reference token scan (fused-bracket
+  predicate grammar) and evaluates through `apply_binding_predicate`;
+  (v) map `@attr` refuses; (vi) via R-A4.
+- R-A7/R-A8: the two agent-delivered fixes cherry-picked
+  (`b52630848`/`5c3e25cea`, `f60b07b6a`).
+
+## Derived sub-cells pinned during implementation (not separately ruled;
+each derived from an already-ruled or settled rule, flagged here for the
+owner's eye)
+
+1. **Document `/name` is match-semantics** (node-set, no field collapse) —
+   derived from R-A2's "matches its element children" wording and the
+   committed table cell; a document is not a record. `[$count $d/a]` = 1.
+2. **A leading comment is document prolog** (metadata, not an item):
+   `$count` over `[; c][a][b]` = 2. Interior non-element items count.
+3. **Construction absence-rule**: empty sequence contributes nothing;
+   non-empty refuses; arrays/maps stay single-value children — derived
+   from null-totality + #847-1a's own scope.
+4. **`read_result_field` reads a field's whole content** (N items → the
+   N-item sequence) — #584's own field model; pre-R-A1 the envelope made
+   `items[0]` accidentally correct, post-R-A1 it truncated (svc-019 read
+   1 of 1000 payload items).
+5. **`$x[pred]` vs slice discrimination is static**: a bracket body
+   reading `$_`/`$_position` is a predicate; `$_last` stays slice
+   vocabulary; anything else keeps index semantics.
+
+## Migration record (the cutover's honest size)
+
+114 fixtures moved when the refusal landed: 102 `[?splice]` migrations
+(82 ux/ux-web/ux-tui + 20 across store/journal/cx/validate/run/
+mcp-server/live/a2a-xap/code.cxd), 9 re-pins to ruled cells (absence
+plants no visible `()`; [?for]-in-body contributes children; #587's
+`0|0` moved to `3|3` WITH lane parity intact), plus stdlib/supervise's
+status splice, x/tools' fixture, two umbrella programs, and rosetta #05 —
+which GRADUATES to green: both of its documented workarounds were exactly
+the cells this settlement fixed. Pin-strength note: program-callstep-007's
+group boundary is no longer visible in its flattened image (rule-3
+migration kept members/order); if that PS-1 pin needs the grouping, it
+needs a wrapper-element re-pin — flagged, not silently decided.
