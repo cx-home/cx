@@ -17,7 +17,7 @@ Last revised: 2026-05-26 against `v0.8.0-dev` HEAD (post math-operator surface).
 | 05-rpn-calculator | `74fe4f5b` | blocked | 4 | `$path/child` empty-vs-CXER0001 (NEW or amend `spec/cxpath.md` §6) · predicate-context arithmetic on `last()` (extends CXPath predicate work) · multi-arg `[?fn]` re-confirm · no stack abstraction (note alongside `[?reduce]` companions) |
 | 06-bfs | `74fe4f5b` | workaround | 5 | `$bind/child` single-match (CONFIRMED in the gap register) · no `[?loop]` / `[?recur]` (NEW) · no mutable state (deliberate-gap note) · no set ops (NEW) · pattern destructure of `:key val` attribute style (spec note) |
 | 13-config-validator | `74fe4f5b` | green | 4 | `exists()` builtin missing (NEW; one-line) · `:where` outer-match modifier (spec clarification) · schema-path alternative (aligns with `spec/schema.md`) · `$bind/child` re-confirm |
-| 21-fetch-csv-validate | `e44de53c` | blocked (expected pre-impl) | 0 | url + csv + validate skeleton bodies pending — flips to green when Phase 3.x V impl ratifies the three companion specs |
+| 21-fetch-csv-validate | `e44de53c` | blocked | 0 | **expected pre-impl** — url + csv + validate skeleton bodies pending; flips to green when Phase 3.x V impl ratifies the three companion specs |
 
 ## Summary
 

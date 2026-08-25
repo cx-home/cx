@@ -23,8 +23,16 @@ recorded_pairs=$(awk -F'|' '
   }
 ' "$AUDIT_FILE")
 
+# Return the recorded STATUS only — the first token after the slug (#957).
+# This used to rejoin fields 2..NF, so a Status cell carrying a parenthetical
+# ("blocked (expected pre-impl)") round-tripped as text and could never equal a
+# bare live status: that row reported drift permanently, whatever the truth was.
+# The cell itself is fixed in AUDIT.md (annotations belong in the gaps column),
+# and taking one token here means the next annotation cannot silently
+# re-introduce a permanently-drifting row. A status is one word by construction:
+# green / workaround / blocked.
 lookup_recorded() {
-  printf '%s\n' "$recorded_pairs" | awk -v s="$1" '$1==s {for(i=2;i<=NF;i++) printf "%s%s", $i, (i<NF?" ":""); exit}'
+  printf '%s\n' "$recorded_pairs" | awk -v s="$1" '$1==s {print $2; exit}'
 }
 
 drift=0
