@@ -167,4 +167,7 @@
   [patch sha=ed712669b4b58f0dad62738948f3b2b2dea60e38 family=usecache]
   [patch sha=b3d0da670daf4dba21a2b5dd12afd3e9f9d910bd family=usecache]
   [patch sha=c0703d1d75563083b436515980c0464061eb9e7e family=vgc]
+  [patch sha=ed62a0154a06c33f626656728f8030e2ff4d9cdb family=usecache]
+  [patch sha=6ee9d443aeeb0d52b56d37f938cb0e869be0777c family=usecache]
+  [patch sha=dc5c87ec6ab215096b55be3935776488c014b882 family=usecache]
 ]

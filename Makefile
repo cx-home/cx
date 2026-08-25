@@ -301,6 +301,24 @@ check-v-fork: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-v-fork: build-vcx
 	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess scripts/check_v_fork_patches.cx
 
+# V module-cache soundness gate (#700 wave 2, VC-23) — adversarial proof of
+# the -usecache key: for every input that can change a cached object's bytes,
+# mutate it -> MISS; byte-identical rerun -> HIT; planted/poisoned objects ->
+# detected, never linked. Behavioral assertions (built binaries are RUN and
+# compared against current sources), so it stays red-capable against future
+# mechanism regressions; `--prove-red` (run manually) forges a provenance
+# manifest and requires the gate to catch it. ~2 min wall. CADENCE: run on
+# every third_party/v change (alongside check-v-fork), before a release cut,
+# and before widening -usecache to more lanes — it proves the COMPILER, not
+# the tree, so it is not in the default TEST_TARGETS ring. Audit + evidence:
+# ledger/audit_2026_08_24_vcache_key_soundness.md.
+.PHONY: check-vcache-soundness
+check-vcache-soundness:
+	@log=vcx/target/vcache-soundness.log; \
+	bash scripts/vcache_soundness_gate.sh > $$log 2>&1; rc=$$?; \
+	grep -E '^PROBE|^vcache-soundness' $$log; \
+	echo "full log: $$log; GATE-RC=$$rc"; exit $$rc
+
 # V6 — pre-commit lint rules over .cx files. Catches the retired
 # v0.7.x syntax forms the v0.8.0 parser rejects, plus the
 # cxl-version=/cx-eval-version= rename window deprecation.
