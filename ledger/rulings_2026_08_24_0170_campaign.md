@@ -1051,3 +1051,57 @@ campaign. It stands, and `ledger/dead_ends_700_test_duration.md` states what it
 would take: 182 CPU-min must become ~96-120, since 182 on 12 cores floors the
 wall at 15.2 min and parallelism cannot beat that floor. The end-state gate is
 1,247 s (20.8 min) / 10,756 CPU-s, GATE-RC=0.
+
+---
+
+# AMENDMENT 18 (2026-08-25) — VC-29 status: step 1 DELIVERED, step 2 BLOCKED by a runtime defect
+
+Not a new ruling — the recorded outcome of VC-29, so the next session does not
+re-attempt a blocked lever.
+
+## Step 1 (the binding condition) — DELIVERED
+
+The CLI lane now emits a **verdict digest** on every run: one transcript line
+per invocation pair (case identity, argv with scratch paths stripped, agreed rc,
+content hashes of both streams), digest printed in the OK line, detail dumpable
+via `--transcript=PATH`. Baseline captured on the SERIAL gate, twice, before any
+refactor: **`7d75a6053eeb282853a5c522795d3d7125ba9b390503bbd6c022598fde61c52e`**,
+10,579 lines, byte-identical across runs. Re-verified after reverting the pool:
+same digest, RC=0.
+
+This closes the gap VC-29 named — the lane that certifies `libcx-core == libcx`
+could previously report OK over a dropped, reordered, or weakened comparison
+set, because it published only counts and an exit code.
+
+## Step 2 (the worker pool) — BLOCKED by #973, reverted from the tree
+
+The bounded pool was implemented and **deadlocked on its first run**. Diagnosed
+from `sample` on the hung pid: one worker inside `vgc_mark_roots` waiting for
+every thread to reach a safepoint, the others parked in `os__fd_read` →
+`read()`. A thread blocked in a syscall never reaches a safepoint, so the
+collector waits forever while the readers wait for output that is only drained
+after the collection.
+
+Reduced to a 40-line repro, deterministic and now committed at
+`tools/vgc-debug/probes/stw_blocking_syscall_probe/`: `-gc e` 1 thread completes
+in 103 ms, 4 and 8 threads HANG, `-gc boehm` 8 threads completes in 279 ms.
+**Filed as #973 (prio:high)** — vgc has no syscall handoff, so its
+coop-safepoint STW assumes something a blocking read violates by construction.
+Distinct from #834 (linux, signal-owning host) and #743 (dylib in a Go host):
+this needs no host runtime and no dylib.
+
+**Consequence for the lever:** in-process parallelism inside any gate harness is
+unavailable under the shipped memory model until #973 is fixed. The pool is
+reverted; the tree is serial and digest-identical.
+
+**The alternative that sidesteps #973 entirely, NOT taken without a ruling:**
+process-level sharding — K child gate processes, each its own heap, each writing
+a transcript slice, merged by index in the parent. It needs no threads and would
+also give per-shard scratch isolation for free. The work-collection split and
+per-case scratch dirs written for the pool are directly reusable. This is a
+different design than VC-29 authorized, so it awaits the owner's call.
+
+**Method note, paid for with an hour:** the pool was run UNBOUNDED and sat
+silent for an hour with no diagnostic. The 25 s bounded probe produced the
+entire diagnosis in one pass. Bound every probe; `sample` the pid before
+killing it.
