@@ -87,15 +87,30 @@ ceiling). On the profile gate the ceiling is larger but unrealised. The
 rollout was therefore reverted; the fork fix and the gate probe it produced
 were kept, and are independently valuable.
 
-**Unattributed residual, stated as unattributed:** extraction went 768 -> 984 s
-(+216 s) and cold namespaces account for at most ~80 s of that. The remaining
-~140 s is most likely VC-24's `-gc e` switch on a harness that does 21,158
-spawns — the lane is execution-bound, so the harness's own collector matters.
-NOT MEASURED: the intended A/B was refused by the gate's own vacuous-pass
-defense (a corpus subset yielded 0 Ring-0 cases, floor violated, correctly).
-It needs a full-corpus A/B (~25 min) to settle. VC-24 stands regardless — the
-owner ruled the memory model, not the wall clock — but its price is unknown
-and should not be assumed to be zero.
+**Unattributed residual — RESOLVED, measured 2026-08-25 end of session.** The
+first full gate after the fork fix ran **1,868 s / 16,368 CPU-s** (+31% wall,
++50% CPU vs baseline), which was far too much for anything landed. The
+suspicion recorded here was VC-24's `-gc e` harness. **It was wrong.** The
+cause is the `v self` the closure fix required: it changes the vexe salt, so
+every `-usecache` namespace was cold for the three `v test` lanes, and VC-23
+measured cold-vs-warm at 2.5x on identical work.
+
+Settled by re-running the identical gate once those namespaces were warm, with
+ALL of the session's changes in place:
+
+| run | wall | CPU | parallelism |
+|---|---|---|---|
+| baseline `b6a130141` | 1,428 s | 10,924 CPU-s | 7.6x |
+| first run after `v self` (cold namespaces) | 1,868 s | 16,368 CPU-s | 8.76x |
+| **warm, all changes in, GATE-RC=0** | **1,247 s** | **10,756 CPU-s** | 8.62x |
+
+CPU is back to baseline within 1.5% and wall is 13% BELOW it, so **VC-24's
+`-gc e` harness costs nothing measurable** — consistent with its transcript
+being byte-identical (`2d739c8f…`). No cache-free GATE ESCAPE fired.
+
+**Standing trap, recorded:** the FIRST `make test` after any compiler rebuild
+pays cold namespaces on the -usecache lanes. Do not attribute that cost to the
+tree's changes; re-run warm before drawing a conclusion.
 
 ## 3. What the rollout DID buy: a defect the cache was hiding
 
