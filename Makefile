@@ -764,6 +764,23 @@ spec-freeze-gate:
 # Floor = the Ring-0 census recorded at I2 (partition_I2_extraction.md);
 # raise it when Ring-0 cases are added, never lower it silently.
 EXTRACTION_GATE_FLOOR := 1564
+# CLI-lane shard count (RULED: VC-32). This lane was the gate's serial floor:
+# 10,579 invocation pairs = 21,158 process spawns issued two at a time, 717 s at
+# ~1 core, 91% of the extraction gate and 12 of `make test`'s ~21 minutes.
+#
+# It runs as PROCESSES, not threads: a bounded thread pool deadlocked vgc's
+# stop-the-world, because a thread parked in a blocking read never reaches a
+# safepoint (#973). Shards have separate heaps, and the parent is single-threaded
+# with inherited stdio so it never blocks reading a child's pipe.
+#
+# MEASURED 2026-08-25, same binary, cleared scratch: serial 721 s, --jobs=8
+# 103 s (7.0x), and both produce the IDENTICAL verdict digest
+# 07de4e13ae9706744c68b8207c712a33d8c21da662e10cce554ba64fe5f91a0e over the same
+# 1,838 cases / 10,579 pairs. That digest prints in the OK line on every run: if
+# it moves, the lane compared a different set and the change is wrong — do not
+# re-bless it (a moved digest is how a hollow gate looks green; measured once
+# already, 271 comparisons reading a stale fixture).
+EXTRACTION_GATE_JOBS ?= 8
 LIBCX_ART      := vcx/target/$(LIB_NAME).$(if $(filter Darwin,$(shell uname -s)),dylib,so)
 LIBCX_CORE_ART := vcx/target/libcx-core.$(if $(filter Darwin,$(shell uname -s)),dylib,so)
 .PHONY: test-extraction-gate
@@ -781,7 +798,7 @@ test-extraction-gate: build-vcx
 	@cmp vcx/target/extraction_gate/transcript_monolith.txt vcx/target/extraction_gate/transcript_core.txt \
 	  && echo "extraction-gate ABI lane OK — libcx-core transcript byte-identical to libcx ($$(wc -c < vcx/target/extraction_gate/transcript_monolith.txt | tr -d ' ') bytes)" \
 	  || { echo "extraction-gate ABI lane FAILED — transcripts diverge (see vcx/target/extraction_gate/)"; exit 1; }
-	@vcx/target/extraction_gate/cli_gate vcx/target/cx vcx/target/profiles/data/cx conformance --min-cases=$(EXTRACTION_GATE_FLOOR)
+	@vcx/target/extraction_gate/cli_gate vcx/target/cx vcx/target/profiles/data/cx conformance --min-cases=$(EXTRACTION_GATE_FLOOR) --jobs=$(EXTRACTION_GATE_JOBS)
 
 # ── ABI GC-LIVENESS GATE (remediation R3.8 discovery) — a dlopen'd libcx
 # built with -gc e must actually COLLECT: V only emitted vgc_init() in

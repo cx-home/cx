@@ -1140,3 +1140,66 @@ Design ruled:
 run that does not reproduce it byte-for-byte is wrong and is reverted, not
 re-blessed. Per-shard scratch roots keep the stripped argv identical to the
 serial baseline, so the digest is comparable across both modes.
+
+---
+
+# AMENDMENT 20 (2026-08-25) — VC-32 DELIVERED, and the acceptance digest is re-derived
+
+Not a new ruling — the recorded outcome, including a correction to VC-32's own
+stated acceptance value.
+
+## Delivered
+
+**Measured, same binary, cleared scratch, `conformance` corpus, floor 1564:**
+
+| mode | wall | verdict digest |
+|---|---|---|
+| serial | 721 s | `07de4e13ae9706744c68b8207c712a33d8c21da662e10cce554ba64fe5f91a0e` |
+| `--jobs=8` | **103 s** | `07de4e13ae9706744c68b8207c712a33d8c21da662e10cce554ba64fe5f91a0e` |
+
+**7.0x, identical verdict** over the same 1,838 Ring-0 cases and 10,579
+invocation pairs, RC=0 both ways. The lane goes from ~13.4 min to ~3 min, which
+retires the serial floor that made `make test` unable to drop below 13.4 min on
+any core count. It does NOT reach VC-22's 10-minute target: the next floor is
+test-profile-gate at 11 min, and the 182-CPU-min bound (15.2 min on 12 cores)
+still stands — see VC-31.
+
+## The acceptance digest CHANGED, and why (correction to VC-32)
+
+VC-32 named `7d75a605…` as the bar. That value is superseded, and re-blessing it
+would have been wrong for a reason worth recording:
+
+The instrument originally passed fixture files to the child as ABSOLUTE paths,
+and several `validate` diagnostics ECHO the path they were given. So the digest
+encoded the scratch directory — `.../doc.cx` serially versus
+`.../shard-3/doc.cx` in a shard — and moved for a reason that had nothing to do
+with the verdict (measured: 6 of 10,579 lines, stdout hash only, all `validate`
+cases, both binaries agreeing within each mode). Fixture names are now RELATIVE,
+resolved against the child's own working folder, so the digest is
+path-independent and comparable across shard counts and machines. New baseline:
+**`07de4e13ae9706744c68b8207c712a33d8c21da662e10cce554ba64fe5f91a0e`**.
+
+The invariant that matters is unchanged and was met: **serial and sharded must
+produce the SAME digest on the same code.** The hex value is a tool, not the
+property.
+
+## The bug the instrument caught — the reason step 1 came first
+
+Switching to relative names exposed that `run_bin` still hardcoded the child's
+working folder to the ROOT scratch dir while shards write into `.../shard-N`. So
+**271 comparisons resolved `doc.cx` against the wrong directory and read a STALE
+file from an earlier run.** Both binaries read the same leftover, agreed, and the
+gate printed OK — over cases that exist precisely to prove malformed CX is
+REJECTED (`parse-error-malformed-cx`, `attr-value-paren-rejected`,
+`attr-value-map-rejected`). A green gate testing nothing, in the lane that
+certifies `libcx-core == libcx`.
+
+Neither the timing nor the exit code could have revealed it. The verdict digest
+did, on its first real use. Fixed at two levels: `run_bin` takes the caller's
+scratch dir (the cause), and every mode wipes its scratch dir at startup (the
+class), both with the measurement recorded in-comment.
+
+**Standing rule this earns:** a gate that passes relative paths to a child must
+own that child's working directory, and must start from an empty scratch dir. A
+stale-but-VALID fixture is the worst leftover, because agreement on it looks
+exactly like success.
