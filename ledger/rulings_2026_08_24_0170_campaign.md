@@ -724,3 +724,107 @@ full-matrix green, previously unknown): **1,428 s wall / 10,924 CPU-s
 
 **Target:** full gate under 10 minutes; a ring-scoped dev loop under 5. No
 lane is removed from the release gate to buy either number.
+
+---
+
+# AMENDMENT 13 (2026-08-24) — VC-23
+
+**Status:** RULED by the owner, same audit session as VC-21/VC-22, after the
+full measurement set landed. Recorded BEFORE the work per R6.1/R4.2.
+
+**Owner's words, verbatim, in sequence:**
+- *"maybe we shouldn't have merged at all and just driven testing best on
+  the dependency map"*
+- *"we don't have time to waste on bad data or temporary measures. what's
+  the real problem here, root cause, first principles"*
+- and, on the root-cause finding and the effort estimate below: *"record the
+  ruling and start the fable session prompt. get it right and make it great
+  for us and the v community"*
+
+## VC-23 — #700 wave 2 is REDEFINED: module-cache SOUNDNESS in the V fork, not consolidation
+
+### The measured basis (all lanes green, serial, warm tree, in devbox)
+
+`make test` @ b6a130141: **1,428 s wall / 10,924 CPU-s / 7.6x parallelism /
+GATE-RC=0.** All 51 lanes measured individually: **5,052 s serial total**,
+of which 13 lanes carry 4,585 s (91%):
+
+| lane | wall s | note |
+|---|---|---|
+| test-extraction-gate | 806 | ~3 world-builds (-gc boehm x2 + build-data-dev), NO cache |
+| test-profile-gate | 662 | ~6 world-builds (4 profile shapes + 2 runners), NO cache |
+| test-vcx-suite | 586 | 57 test binaries, -usecache |
+| test-vcx-code | 476 | 30 binaries |
+| test-vcx-conform | 296 | |
+| test-vcx-cxstore | 258 | 20 binaries |
+| test-vcx-columnar | 254 | 2 binaries |
+| test-vcx-cmd | 248 | **ONE binary** |
+| test-v | 233 | |
+| test-vcx-cx | 221 | 6 binaries |
+| abi-gc-gate / test-code-diagram / test-xpath-parity-cx | 204/173/168 | |
+| all 38 other lanes COMBINED | 467 | bindings are cheap: python 13, rust 6, go 1 |
+
+Per-file cost curve on the suite lane (gate flags, warm cache): 1 file = 3 s,
+57 files = 235 s — **fixed cost ~200-250 s per LANE, marginal 2-5 s per
+FILE**. The same 57 files cost 586 s in the lane sweep (colder cache): the
+cache state alone is a measured **2.5x** on the identical workload.
+
+### Ruled consequences
+
+1. **The consolidation lever (VC-14 10a) is RETIRED.** At 2-5 s marginal per
+   file, merging all remaining files saves a few hundred seconds ONCE — and
+   permanently destroys the per-subject granularity that dependency-driven
+   selection needs, which skips 200-586 s lanes on EVERY loop. The owner's
+   framing is the ruling: selection on the dependency map should have been
+   the lever all along. No further test-file merging without a new ruling.
+   (VC-21 struck VC-14's numbers; VC-23 retires its lever. The wave-1
+   umbrellas stay as they are — un-merging is not authorized either, the
+   subject-level grouping is serviceable for selection.)
+
+2. **The root cause is named: the gate's cost is proportional to
+   codebase x configurations, not to the change under test.** V compiles
+   whole-program per output binary; the gate builds ~8 full worlds in its
+   top two lanes alone, cold every run; the one mechanism that would make
+   compilation proportional to change — the module cache — is unsound by
+   reputation and used in only 3 lanes behind a cache-free retry crutch.
+   The Makefile's own #572 note has named the real fix for months without
+   it being done: *"the cache-key root fix is the V-fork follow-up."*
+   Every workaround since (#151 #520 #855 #864 retries and avoidances) is
+   interest on that unpaid debt. VC-1 committed to the fork permanently,
+   so the fix is ours alone.
+
+3. **#700 wave 2 = cache soundness + dependency-driven selection.** It
+   still gates the v0.17.0 tag (VC-18 unchanged). Its content is now:
+   (i) the V-fork module-cache key made sound and PROVEN by an adversarial
+   gate — Fable 5, next session; (ii) rollout of the sound cache to the
+   uncached lanes and the suite-level dependency map — Opus 5, after the
+   gate is green and red. The fork already carries the #151 content-hash
+   architecture in vlib/v/builder/rebuilding.v; this is completion and
+   proof, not greenfield.
+
+4. **Model split, ruled on the silent-miscompile risk class:** a wrong
+   cache key IS a silent miscompile — the exact scar class. Fable 5 owns
+   the key-completeness audit, the soundness invariant, and the red-team
+   gate. Opus 5 owns mechanical rollout behind that gate. Estimated ~2
+   sessions best case, ~4 if the gate flushes a live residual (#572's
+   duplicate-symbol class is still un-root-caused).
+
+5. **For the V community, ruled by the owner's words:** the work is
+   structured as an upstreamable series — cx-agnostic (per the standing
+   V-fixes-are-V-only rule), self-contained commits, the invariant and gate
+   documented in the series itself — and OFFERED upstream even though
+   vlang/v closed our prior two patches unmerged. `-usecache` is
+   off-by-default upstream because of exactly this unsoundness; a proven
+   key is of general value whether or not upstream takes it.
+
+### Also recorded from this session's work (landed)
+
+- 895d685a6 — TEST_TARGETS names the five ring lanes + test-vcx-conform;
+  test_changed.sh selects by the ring import contract (VC-22).
+- afe134017 — test-changed fans out in parallel; it had run its selected
+  lanes SERIALLY since creation (measured 2,347 s vs the 1,428 s full gate).
+- **Open correctness item for the campaign, not the cache session:**
+  test-profile-gate has NO retry class and reproduces the #951 supervise
+  load-race (sup-011) under -j storms — first seen the moment test-changed
+  went parallel. It needs a classified retry or the #951 root fix before
+  parallel test-changed is trustworthy on trees that select it.
