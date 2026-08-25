@@ -939,3 +939,45 @@ choose whats best long term for cx."*
    over speed, long-term-best. The Fable-track clusters (A: #961 #964 #965
    #966; B/C: #962 #967 #955) remain that track's; this session takes the
    items no other track owns.
+
+---
+
+# AMENDMENT 16 (2026-08-25) — VC-26
+
+**Status:** RULED by the owner ("1a") during the #956 implementation, before the
+work, per R6.1.
+
+## VC-26 — #956: implement what the platform supports; REFUSE what it cannot, loudly
+
+`spec/03-approved/std-lib/process.md` §3.1 declares `$capture` with four values
+(`:both`/`:stdout`/`:stderr`/`:none`, "Uncaptured streams inherit the parent's")
+and `$new-process-group`. Neither is read on the `run` path — the #793
+silent-acceptance shape, and the cause of a MEASURED unenforceable bound: a
+60,000 ms budget ran 5m07s, sampled at 9m40s (9.7x) before a manual kill,
+because a timeout signalled one pid while a surviving grandchild held the
+captured pipe open and the post-kill `stdout_slurp()` blocked on it.
+
+**Platform constraint, code-cited:** V's `os.Process` exposes ONE all-or-nothing
+`use_stdio_ctl` flag (`third_party/v/vlib/os/process.v:30`) with no per-stream
+redirect. So `:stdout` / `:stderr` — capture one stream, inherit the other —
+are not expressible without extending the V fork's `os.Process` across both the
+nix and windows spawn paths, and windows cannot be measured on this host.
+
+### Ruled
+
+1. **Implement now:** `$new-process-group` on `run` (+ group-signal on timeout,
+   so a budget can actually be enforced), `$capture=:both` (current behaviour),
+   and `$capture=:none` (never redirect — the child inherits the parent's
+   streams per spec, and there is no pipe left for the post-kill slurp to block
+   on). `:none` is the value the #947 bounded-gate work needed.
+2. **Refuse loudly:** `$capture=:stdout` / `:stderr` raise a named error citing
+   the V `os.Process` per-stream gap. A named refusal is strictly better than
+   inert acceptance — the silent acceptance IS the defect being fixed. This is
+   the CXP-1 precedent (close the surface, named refusal), applied to parameter
+   VALUES rather than function names.
+3. **The spec is NOT edited to match the shortfall** (standing rule: never
+   "true" a spec to a shortfall). `process.md` continues to declare all four
+   values; the implementation reports honestly which it cannot yet honour.
+4. **The V-fork API gap is FILED as its own issue** — per-stream stdio control
+   in `os.Process`, cx-agnostic and upstreamable, requiring a linux AND windows
+   measurement rather than a blind darwin-only change.
