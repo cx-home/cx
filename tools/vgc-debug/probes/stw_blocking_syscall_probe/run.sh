@@ -20,6 +20,12 @@ probe() { # probe <gc> <jobs>
       sample $pid 1 -mayDie > "$D/sample-$gc-$jobs.txt" 2>/dev/null
       kill -9 $pid 2>/dev/null
       wait $pid 2>/dev/null
+      # Reap forked-never-exec'd CHILDREN too: mode (b)'s pre-exec fork
+      # copies survive their parent's kill -9 (PPID→1) and spin forever in
+      # the inherited-lock CAS loop — measured: ~30 orphans at ~9% CPU each
+      # for 10.5 h after a -d vgc_no_atfork attribution run. The children
+      # share the parent's binary path, so pkill by that path is exact.
+      pkill -9 -f "$bin" 2>/dev/null
       echo "gc=$gc jobs=$jobs → HUNG (killed at ${BUDGET}s)"
       return
     fi
