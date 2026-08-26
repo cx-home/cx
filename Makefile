@@ -398,6 +398,7 @@ directive-docs-check: build-vcx
 .PHONY: verify-playground-examples
 verify-playground-examples: build-vcx
 	@vcx/target/cx --allow-read --allow-write --allow-subprocess --allow-env \
+	  --allow-clock \
 	  scripts/gen_guide/playground/gen_examples.cx --check
 
 # ── playground diagram validity gate (#992) ───────────────────────────────────

@@ -99,6 +99,7 @@ check-retired-surface:
 ##                                   change the playground must reflect.
 playground-examples-regen: $(GUIDE_CX_DEP)
 	@$(GUIDE_CX_BIN) --allow-read --allow-write --allow-subprocess --allow-env \
+	  --allow-clock \
 	  $(GUIDE_GEN)/playground/gen_examples.cx
 
 ## guide-wasm    Rebuild the playground wasm AND regenerate the playground

@@ -148,6 +148,15 @@ structural, not procedural:
   example no longer runs clean on the current binary **or** when the
   checked-in `playground.examples.js` differs from a fresh render — stale
   examples can't ship silently.
+- Both entry points grant `--allow-clock`. The per-example timeout is
+  **calibrated, not constant** (#988): the harness times a trivial evaluation
+  on the shipped binary and sets the bound to a multiple of that, floored at
+  the 20 s the gate shipped with, so a contended machine stretches the bound
+  instead of failing healthy examples. Every run prints a profile line
+  (corpus wall time, mean, reference probe, bound, slowest entry); a bound
+  that fires is re-probed and retried once, and the log says from measurement
+  whether the entry was starved or hung. `--timings` dumps every entry's wall
+  time, slowest first.
 
 ## Open follow-ups
 

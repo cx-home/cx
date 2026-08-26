@@ -9,7 +9,11 @@
 # gate `make verify-playground-examples`).
 #
 #   vcx/target/cx --allow-read --allow-write --allow-subprocess --allow-env \
-#     scripts/gen_guide/playground/gen_examples.cx [--check]
+#     --allow-clock scripts/gen_guide/playground/gen_examples.cx [--check]
+#
+# (--allow-clock: the per-example bound is CALIBRATED from a measured
+# reference probe rather than hard-coded, and every child is timed — see
+# BOUND-FLOOR-MS / audit-bounded.)
 #
 # Fidelity decisions, made deliberately (wave-3A of #922):
 #   - ONE process per example, no batching. The audit's contract is to run
@@ -22,7 +26,11 @@
 #     block comment), because that is the exact string the playground's
 #     Run handler executes — an unbalanced bracket in note prose turns the
 #     comment unterminated and must fail the gate.
-#   - Per-example timeout: 20s via process wait-timeout, then kill. The
+#   - Per-example timeout: a CALIBRATED bound via process wait-timeout,
+#     then kill — 20s on an idle machine, stretched by whatever the
+#     measured reference probe says contention is doing (#988), and a
+#     fired bound is re-measured and retried once before it is believed.
+#     The
 #     child's stdout/stderr are REDIRECTED TO FILES, never read back off a
 #     pipe (#988). Draining a pipe only after the child exits is a
 #     deadlock: a child whose output exceeds the kernel pipe buffer (16-64
@@ -53,6 +61,7 @@
 [?lib 'cx-stdlib/array']
 [?lib 'cx-stdlib/bytes']
 [?lib 'cx-stdlib/fp']
+[?lib 'cx-stdlib/time']
 
 [?def cat scope=public ($parts) [$strings:join $parts '']]
 # seq-flat: splice one level of nested sequences (sequence literals and
@@ -310,12 +319,62 @@
 # the example is wrong, not that the cap is tight.
 [?const CAPTURE-CAP 4194304]
 
+# ── the per-example bound: CALIBRATED, never a wall-clock constant ────
+#
+# #988's surviving symptom was a 20 s TIMEOUT on 168-erd-large-org-structure,
+# an example that MEASURES 0.058 s standalone and emits 552 B. A fixed 20 s
+# wall-clock deadline is load-BLIND: it says nothing about how fast this
+# machine is running right now, so on a contended box it fires on a
+# perfectly healthy example and reports it as broken. Measured on this
+# corpus (2026-08-26, 12 logical cores):
+#
+#   idle                    182 examples in  19.8 s   (mean 108 ms/example)
+#   48 spinners (4x oversub) 182 examples in 146.6 s   (mean 805 ms/example)
+#
+# — a 7.4x uniform stretch of every example from one source of contention,
+# with nothing wrong anywhere. The bound has to stretch with it.
+#
+# So: measure the machine, then derive the bound. PROBE-MS times the
+# shipped binary on a trivial evaluation — one spawn + one interpreter
+# start + one tiny eval, i.e. the fixed cost EVERY entry pays before its
+# own work — and the bound is BOUND-SLACK times that, floored at
+# BOUND-FLOOR-MS so an idle machine keeps the bound #922 shipped with.
+# The floor is what the constant used to be; the slack is what makes it
+# load-aware.
+[?const BOUND-FLOOR-MS 20000]
+[?const BOUND-SLACK 200]
+
+# PROBE-SRC: the smallest thing the binary can be asked to evaluate. Its
+# cost is process spawn + runtime init, which is what contention inflates.
+[?const PROBE-SRC '1\n']
+
 [?def compose scope=public ($src $note)
   [$cat ($src, '\n\n[; ', NOTE-RULE, '\n', $note, '\n', NOTE-RULE, ' ]\n')]]
 
-# audit: [res status=… runnable=… msg=…]; status 'ok' unless a top-level
-# parse/eval error (a printed [err …] VALUE is a legitimate result).
-[?def audit scope=public impure ($cxbin $tmp $out-path $err-path $composed)
+# probe-ms: what a trivial grant-free evaluation costs on THIS machine at
+# THIS moment, in milliseconds. Same shape as the audit child (sh -c exec,
+# output to files) so the two measure the same thing.
+[?def probe-ms scope=public impure ($cxbin $probe-tmp $out-path $err-path)
+  [?let
+    [= $w [$must 'writing calibration probe' [$io:write-file $probe-tmp PROBE-SRC]]]
+    [= $t0 [$time:monotonic-now]]
+    [= $r [$process:run ('sh', '-c', 'exec "$1" "$2" >"$3" 2>"$4"',
+                         'gen_examples-probe', $cxbin, $probe-tmp,
+                         $out-path, $err-path)]]
+    [= $t1 [$time:monotonic-now]]
+    [$idiv [- $t1 $t0] 1000000]]]
+
+# bound-of: the per-example deadline derived from one probe reading.
+[?def bound-of scope=public pure ($probe)
+  [?let [= $scaled [* $probe BOUND-SLACK]]
+    [?if [> $scaled BOUND-FLOOR-MS] [then $scaled] [else BOUND-FLOOR-MS]]]]
+
+# audit: [res status=… runnable=… msg=… ms=…]; status 'ok' unless a
+# top-level parse/eval error (a printed [err …] VALUE is a legitimate
+# result). `ms` is this child's measured wall time — reported on every
+# TIMEOUT and folded into the run's profile line, so "the bound fired" is
+# never again a claim without a number behind it.
+[?def audit scope=public impure ($cxbin $tmp $out-path $err-path $composed $bound)
   [?let
     [= $w [$must 'writing audit tmp file' [$io:write-file $tmp $composed]]]
     # Truncate the capture files here, not just via the shell's `>`, so
@@ -327,10 +386,12 @@
     # output volume can never wedge the wait (#988). `exec` means the
     # process we wait on and kill IS the child cx, not a shell wrapper;
     # the args ride in as $1..$4 so no path needs quoting by hand.
+    [= $t0 [$time:monotonic-now]]
     [= $h [$must 'spawning cx' [$process:spawn
         ('sh', '-c', 'exec "$1" "$2" >"$3" 2>"$4"', 'gen_examples-audit',
          $cxbin, $tmp, $out-path, $err-path)]]]
-    [= $rcw [$process:wait-timeout $h 20000]]
+    [= $rcw [$process:wait-timeout $h $bound]]
+    [= $ms [$idiv [- [$time:monotonic-now] $t0] 1000000]]
     [?if [$empty $rcw]
       [then [?let [= $k [$process:kill $h]]
                   [= $c [$process:close $h]]
@@ -341,8 +402,9 @@
         # cannot make the report the next problem.
         [= $osz [$must 'sizing killed child stdout' [$io:size $out-path]]]
         [= $esz [$must 'sizing killed child stderr' [$io:size $err-path]]]
-        [res status='fail' runnable=true
-             msg=[$cat ('TIMEOUT after 20s — captured ', [$string $osz],
+        [res status='fail' runnable=true ms=$ms
+             msg=[$cat ('TIMEOUT after ', [$string $ms], ' ms (bound ',
+                        [$string $bound], ' ms) — captured ', [$string $osz],
                         ' B stdout / ', [$string $esz],
                         ' B stderr before the kill')]]]]
       [else [?let
@@ -364,14 +426,66 @@
         [= $runnable [not [$strings:contains $combined 'CXER0271']]]
         [= $err-value-result [$strings:starts-with [$strings:trim-start $out] '[err']]
         [?if $over
-          [then [res status='fail' runnable=true
+          [then [res status='fail' runnable=true ms=$ms
                  msg=[$cat ('output too large: ', [$string [+ $osz $esz]],
                             ' B exceeds the ', [$string CAPTURE-CAP],
                             ' B capture cap — the playground cannot show this')]]]
           [else [?if [or [$strings:starts-with $out 'error:']
                          [and [not [= $rcw 0]] [not $err-value-result]]]
-            [then [res status='fail' runnable=$runnable msg=$msg]]
-            [else [res status='ok' runnable=$runnable msg=$msg]]]]]]]]]]
+            [then [res status='fail' runnable=$runnable ms=$ms msg=$msg]]
+            [else [res status='ok' runnable=$runnable ms=$ms msg=$msg]]]]]]]]]]
+
+# ── the timeout is RE-MEASURED before it is believed (#988) ───────────
+#
+# A bound that fired tells you the child outlived the deadline; it does
+# NOT tell you whether the child was hung or merely starved. The two are
+# distinguishable by measurement, so distinguish them: re-probe the
+# machine (a fresh PROBE-MS reading carries whatever contention arrived
+# mid-run, which a start-of-run calibration cannot), re-derive the bound
+# from it, and run the example ONCE more under that bound.
+#
+#   - starved: the re-probe is slow, the retry passes, and the run says so
+#     on stderr with both attempts' numbers and both bounds. A healthy
+#     example is not failed for the machine's state.
+#   - hung: the re-probe is fast — the machine is fine — and the example
+#     times out AGAIN. That is a defect, and it fails the gate with two
+#     measurements and a reference reading, which is exactly the evidence
+#     #988 was originally filed without.
+#
+# The retry is CLASSIFIED: only a TIMEOUT is retried, never a parse/eval
+# failure, never an over-cap capture.
+[?def audit-bounded scope=public impure
+    ($cxbin $tmp $probe-tmp $out-path $err-path $key $composed $bound)
+  [?let
+    [= $r0 [$audit $cxbin $tmp $out-path $err-path $composed $bound]]
+    [?if [not [$strings:starts-with [$string $r0@msg] 'TIMEOUT']]
+      [then $r0]
+      [else [?let
+        [= $p2 [$probe-ms $cxbin $probe-tmp $out-path $err-path]]
+        [= $b2 [$bound-of $p2]]
+        [= $c1 [$cry [$cat ('RETRY  ', $key, ' — hit the ', [$string $bound],
+                            ' ms bound at ', [$string $r0@ms],
+                            ' ms; re-probe measures ', [$string $p2],
+                            ' ms, so retrying once under a ', [$string $b2],
+                            ' ms bound')]]]
+        [= $r1 [$audit $cxbin $tmp $out-path $err-path $composed $b2]]
+        [= $again [$strings:starts-with [$string $r1@msg] 'TIMEOUT']]
+        [= $c2 [$cry [?if $again
+            [then [$cat ('RETRY  ', $key, ' — TIMED OUT AGAIN at ',
+                         [$string $r1@ms], ' ms: the machine measures ',
+                         [$string $p2], ' ms for a trivial evaluation, so this',
+                         ' is the example, not the load')]]
+            [else [$cat ('RETRY  ', $key, ' — passed in ', [$string $r1@ms],
+                         ' ms on the re-derived bound: attempt 1 was STARVED,',
+                         ' not hung')]]]]]
+        [?if $again
+          [then [res status='fail' runnable=true ms=$r1@ms
+                 msg=[$cat ('TIMEOUT twice — ', [$string $r0@ms], ' ms under a ',
+                            [$string $bound], ' ms bound, then ', [$string $r1@ms],
+                            ' ms under a re-derived ', [$string $b2],
+                            ' ms bound, on a machine measuring ', [$string $p2],
+                            ' ms for a trivial evaluation')]]]
+          [else $r1]]]]]]]
 
 # ── render ────────────────────────────────────────────────────────────
 
@@ -432,6 +546,11 @@
 [?let
   [= $argv [$env:argv]]
   [= $check [$member '--check' $argv]]
+  # --timings: dump every entry's measured wall time, slowest first. The
+  # profile line below always names the maximum; this is for the question
+  # #988 asked and the harness could not answer — "where does the time
+  # actually GO across the corpus?".
+  [= $timings [$member '--timings' $argv]]
   [= $self-dir [$path:dirname [$path:absolute $argv[1]]]]
   [= $data-path [$path:join $self-dir 'examples.cxd']]
   [= $js-path [$path:join $self-dir 'playground.examples.js']]
@@ -443,6 +562,9 @@
   # pipe, so no example can deadlock the wait on its own volume (#988).
   [= $out-path [$cat ($tmpdir, '/example.out')]]
   [= $err-path [$cat ($tmpdir, '/example.err')]]
+  # A SEPARATE tmp for the calibration probe: the audit's tmp holds the
+  # composed example being retried, and the re-probe must not overwrite it.
+  [= $probe-tmp [$cat ($tmpdir, '/probe.cx')]]
 
   [= $entries [$load-examples $cxbin $data-path]]
   [= $n [$count $entries]]
@@ -450,19 +572,49 @@
       [then [$die [$cat ('gen_examples: no [ex] entries found in ', $data-path)]]]
       [else 0]]]
 
+  # Calibrate BEFORE the corpus: one trivial evaluation on the shipped
+  # binary sets the per-example bound for this run (see BOUND-FLOOR-MS).
+  [= $probe0 [$probe-ms $cxbin $probe-tmp $out-path $err-path]]
+  [= $bound0 [$bound-of $probe0]]
+  [= $t-start [$time:monotonic-now]]
+
   # One row per entry: audit verdict + the pre-rendered block ('' on fail).
   [= $rows [?for [in $e $entries]
       [= $key [$string $e@key]]
       [= $src [$string $e@src]]
       [= $note [$string $e@note]]
-      [= $r [$audit $cxbin $tmp $out-path $err-path [$compose $src $note]]]
+      [= $r [$audit-bounded $cxbin $tmp $probe-tmp $out-path $err-path $key
+               [$compose $src $note] $bound0]]
       [yield [row key=$key status=[$string $r@status] msg=[$string $r@msg]
+                ms=$r@ms
                 block=[?if [= [$string $r@status] 'ok']
                   [then [$render-block $key [$string $e@label] $src $note $r@runnable
                           [$string $e@wasm-unsupported] [$string $e@no-stable-value]]]
                   [else '']]]]]]
   [= $fails [?for [in $x $rows] [where [= [$string $x@status] 'fail']] [yield $x]]]
   [= $nfails [$count $fails]]
+
+  # The run's PROFILE, printed unconditionally. #988 was filed against a
+  # harness that could say "TIMEOUT after 20s" and nothing else — no
+  # per-example cost, no machine speed, no idea whether 20 s was a lot or
+  # a little here. These three numbers answer that from the log alone.
+  [= $total-ms [$idiv [- [$time:monotonic-now] $t-start] 1000000]]
+  [= $ms-list [?for [in $x $rows] [yield $x@ms]]]
+  [= $ms-max [$max $ms-list]]
+  [= $slow-keys [$strings:join [?for [in $x $rows]
+      [where [= $x@ms $ms-max]] [yield [$string $x@key]]] ', ']]
+  [= $prof [$cry [$cat (
+      '=== gen_examples profile: ', [$string $n], ' examples in ',
+      [$string $total-ms], ' ms (mean ', [$string [$idiv $total-ms $n]],
+      ' ms) — reference probe ', [$string $probe0], ' ms, per-example bound ',
+      [$string $bound0], ' ms; slowest ', [$string $ms-max], ' ms (', $slow-keys,
+      ') ===')]]]
+  [= $timing-dump [?if $timings
+      [then [?for [in $ms [$reverse [$sort [$uniq $ms-list]]]]
+        [yield [?for [in $x $rows] [where [= $x@ms $ms]]
+          [yield [$cry [$cat ('TIME  ', [$strings:pad-end [$string $x@key] 40 ' '],
+                              ' ', [$string $ms], ' ms')]]]]]]]
+      [else ()]]]
 
   [= $text [$cat ([$strings:join [$seq-flat (
       [$cat ('// CX Playground — ', [$string $n],
