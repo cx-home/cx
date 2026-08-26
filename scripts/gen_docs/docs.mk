@@ -43,7 +43,8 @@ endif
 .PHONY: docs docs-check docs-diff docs-clean
 
 ## docs         Regenerate the LLM onboarding layer (docs/llm/: primer.md,
-##                                   reference-*.md, llms.txt, llms-full.txt) from
+##                                   reference-*.md, playbook-*.md, llms.txt,
+##                                   llms-full.txt) from
 ##                                   docs-src/llm/ templates + conformance fixtures.
 ##                                   Every cited fixture is EXECUTED and its output
 ##                                   re-recorded; a fixture the binary no longer
@@ -51,6 +52,14 @@ endif
 ##
 ## Rebuild `cx` afterwards (`make build-vcx`) so `cx primer` carries the new text —
 ## the subcommand $embed_file()s docs/llm/primer.md at compile time.
+##
+## Verify the embed landed: `vcx/target/cx primer | diff - docs/llm/primer.md`.
+## vcx's up-to-date guard decides by MTIME over BUILD_INPUT_DIRS (docs/llm is in
+## the set), so a build that was already running when `make docs` rewrote the
+## file can finish AFTER it and leave the guard satisfied by a binary that
+## embedded the older text. `touch docs/llm/primer.md` then rebuild. Only
+## tools/release-verify.sh's `cx primer == docs/llm/primer.md` row catches this
+## otherwise — docs-check proves the FILE is fresh, never the EMBED.
 docs: $(DOCS_CX_DEP)
 	@$(DOCS_CX_BIN) $(DOCS_CAPS) $(DOCS_GEN)/primer_build.cx
 	# #954: refresh the README's self-reported CX-share badge alongside the
@@ -59,10 +68,13 @@ docs: $(DOCS_CX_DEP)
 
 ## docs-check   DRIFT GATE. Regenerates the layer without writing and fails if
 ##                                   (a) any cited fixture's live output no longer
-##                                   matches what the fixture records, or (b) the
+##                                   matches what the fixture records, (b) the
 ##                                   committed docs/llm/ differs from a fresh
-##                                   generation. Either way: run `make docs` and
-##                                   commit the result in the same change.
+##                                   generation, or (c) docs/llm/ holds a file no
+##                                   [output] entry claims (an ORPHAN — a document
+##                                   the freshness contract cannot reach). (a)/(b):
+##                                   run `make docs` and commit the result in the
+##                                   same change. (c): delete the file, or declare it.
 docs-check: $(DOCS_CX_DEP)
 	@$(DOCS_CX_BIN) $(DOCS_CAPS) $(DOCS_GEN)/primer_build.cx --check
 

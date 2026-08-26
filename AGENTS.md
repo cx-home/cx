@@ -36,6 +36,10 @@ Same content in the checkout, plus the per-area references:
 - [`docs/llm/primer.md`](docs/llm/primer.md) — the one file to load. The
   surface taught through runnable examples, a ring decision table, the core
   idioms, and the anti-patterns that Lisp/Clojure/shell priors produce.
+- [`docs/llm/playbook-xap.md`](docs/llm/playbook-xap.md) — load this when the
+  task is building a feature deployment: composing feature grammars, derived
+  nouns and deriver principals, the authority model, the `*.xap.cxd`
+  deployment document, identity bootstrap, hosting, and the ux-web surface.
 - [`docs/llm/llms.txt`](docs/llm/llms.txt) — the index, with a reference file
   per area (data language, code language, stdlib, CLI, platform). Load one
   only when the task needs it.

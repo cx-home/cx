@@ -184,23 +184,87 @@ Subcommands (`cx <subcommand> --help` for details):
   store-mint-principal Mint an XSP-AUTH principal offline (seed file + [grant …] stanza).
 ```
 
-## The verbs you will actually reach for
+## The verbs, by what you are trying to do
+
+The `--help` capture above is the complete list. This is the same set sorted
+by intent.
+
+**Run and inspect**
 
 | Command | Use it for |
 |---|---|
 | `cx FILE.cx` | run a program, or print a document's canonical form |
 | `cx -e 'PROG'` | a one-liner |
+| `cx demo` | a self-contained showcase, no I/O, under a second |
+| `cx primer` | this documentation set's primer, for the installed binary |
+| `cx version` | version and build info (same as `-v` / `--version`) |
+
+**Identity, shape, and correctness**
+
+| Command | Use it for |
+|---|---|
 | `cx fmt FILE` | lossless format (keeps comments and anchors) |
 | `cx canonical FILE` | strict canonical text — what identity is defined over |
 | `cx hash FILE` | SHA-256 of the strict-canonical bytes |
 | `cx eq A B` / `cx diff A B` | semantic equality / semantic diff |
 | `cx lint FILE` | style and correctness findings |
 | `cx validate FILE --schema=S.cxs` | schema check |
+| `cx schema infer` / `export` / … | derive a `.cxs`, project it to JSON Schema, classify compatibility |
 | `cx select 'PATH' FILE` | one CXPath query, no program |
 | `cx --from=json --to=cx f.json` | the convert surface |
-| `cx code-diagram FILE` | Mermaid of a program (or `--view=effects` for its capability graph) |
-| `cx primer` | this documentation set's primer, for the installed binary |
-| `cx demo` | a self-contained showcase, no I/O, under a second |
+| `cx table info` / `dump` / `load` | the `[table[…]]` API |
+| `cx scaffold KIND` | a typed, commented skeleton on stdout |
+
+**Understand a program**
+
+| Command | Use it for |
+|---|---|
+| `cx code-diagram FILE` | Mermaid of a program (`--view=effects` for its capability graph) |
+| `cx code-tree FILE` | Tree View JSON of a source |
+| `cx diagram FILE` | render a program as mermaid / svg / png |
+| `cx tools export MODULE.cx` | project command defs to MCP tool descriptors |
+| `cx lsp` | the language server, on stdio |
+
+**Build and ship a feature**
+
+| Command | Use it for |
+|---|---|
+| `cx xap init NAME` | scaffold a feature |
+| `cx xap check-surface DIR` | the surface derivation check |
+| `cx lock` | generate / verify `cx.lock` from `[?lib]` imports |
+
+**Operate a platform** (the platform profile)
+
+| Command | Use it for |
+|---|---|
+| `cx store-serve config.cx` | the store service daemon |
+| `cx fabric-serve config.cx` | the fabric eventing daemon |
+| `cx store-health URL` | readiness probe — exit 0 iff accepting |
+| `cx store-rotate-kek …` | rotate a key-encryption key (re-wrap envelopes) |
+| `cx store-mint-principal …` | mint an XSP-AUTH principal offline — the clean-state bootstrap |
+
+`reference-platform.md` has the bootstrap walkthrough; `playbook-xap.md` has
+the whole arc from feature grammar to hosted surface.
+
+## What the version string tells you
+
+Release-ness is **derived**, never hand-maintained. `cx --version` prints
+`cx vX.Y.Z` only when the binary was built from a clean tree at exactly the
+annotated release tag matching the repo's `VERSION`. Anything else prints
+`cx vX.Y.Z-dev+<commit>` — semantically a pre-release of `X.Y.Z`, which is
+what unreleased source is. If you are reporting a bug, the `-dev+` suffix is
+the part that matters.
+
+## A retired verb tells you what replaced it
+
+A verb that once existed and no longer does answers with **its own
+retirement**, never with "unknown subcommand". `cx store-token`, retired at
+v0.16.0, is the current example — it says the bearer/RBAC plane is gone, that
+store credentials are now XSP-AUTH principals granted in the daemon config,
+and which verb mints one. Retirement entries are kept indefinitely.
+
+So if a verb you remember is missing from `--help`, **run it** rather than
+guessing at a replacement. The tool knows what happened to it.
 
 ## Capability grants
 

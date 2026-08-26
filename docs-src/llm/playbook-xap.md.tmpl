@@ -1,0 +1,862 @@
+# Playbook: building a production XAP — v{{VERSION}}
+
+> **GENERATED.** Source: `docs-src/llm/playbook-xap.md.tmpl` + the conformance
+> corpus. Every code block is a fixture and every output was re-recorded from
+> the `cx` v{{VERSION}} binary at generation time. Where a claim is backed by a
+> file in the repository rather than a fixture, the file and line are cited and
+> **the citation is the evidence** — nothing here is invented. Read `primer.md`
+> first; this document assumes the language.
+
+A **XAP** is CX's unit of packaged functionality. It is a *feature*, never an
+"app". A production deployment is several features composed into one runtime,
+with an authority model, a durable plane, and a projected surface — and the
+striking thing about it is how little of that is code. Most of it is data you
+declare, gated by rules that refuse rather than guess.
+
+This playbook walks the whole arc. Each chapter names what is ruled, what it
+forbids, and where the evidence lives.
+
+## 0. The map
+
+Six artefacts, in the order you author them.
+
+| # | Artefact | What it is | Chapter |
+|---|---|---|---|
+| 1 | `<name>.feature.cxd` | one feature's grammar: nouns, verbs, requirements | §1 |
+| 2 | *(a composite feature)* | a feature that `[uses]` others and declares derived nouns | §3 |
+| 3 | `<deployment>.xap.cxd` | the **wiring layer**: which features, who has authority, what the durable plane is | §5 |
+| 4 | a deriver module | the one producer of a derived noun | §3 |
+| 5 | `<surface>.surface.cxd` | the route table and media binding | §7 |
+| 6 | a client | a separate project; the deployment does not own it | §7 |
+
+The dividing line to hold onto: **a feature document declares grammar; the
+deployment document declares nothing about grammar.** It enables features,
+names principals, and binds the runtime. Per-verb grants live in the feature,
+because that is where the verb lives.
+
+Worked instances to read alongside this document:
+
+* `reference/shop/` — the composition, authority, and distribution reference.
+  Eleven files; `README.md` is the guided tour.
+* `spec/03-approved/xap/demos/oriel/` — the projection flagship: the full ux
+  vocabulary, both renderers, and the headless drive-step harness.
+
+## 1. Author a feature grammar
+
+A feature is a document. Its head is `[feature name=…]`, and it carries
+`[nouns]`, `[verbs]`, and `[requirements]` — all three, always. A verb states
+its `effect` class, the `[intent]` that reaches it, and what it `[reads]` or
+`[writes]`:
+
+{{EXAMPLE:xap-compose-002-qualified-member block}}
+
+Read the output: after composition the verb is `chart/highlight`, not
+`highlight`. **Names qualify on the way in.** That is what lets two features
+each own a `highlight` without either of them knowing about the other.
+
+Requirements are not decoration. They carry `kind`, an RFC-2119 `level`, and
+`[acceptance]` rows — see `reference/shop/shop.xap.cxd:43-54` for three MUSTs
+with their acceptance criteria written as checkable sentences.
+
+Per-verb grants live here too, in the feature's own `[governance]`:
+`reference/shop/orders.feature.cxd:56-58` grants `place-order` and
+`cancel-order` to the `customer` role. The deployment document's
+`[governance]` block is the layer *above* this one, not a replacement for it.
+
+## 2. Compose them
+
+`[$xap:compose]` takes n feature grammars and returns one grammar — or a
+conflict value naming every violation. It is an **algebra with laws**, not a
+merge convention.
+
+**Commutative** — order of arguments cannot change the result, and the
+composed grammar's Tier-1 hash is the equality oracle that proves it:
+
+{{EXAMPLE:xap-compose-003-commutative block}}
+
+**Associative / order-independent at any arity:**
+
+{{EXAMPLE:xap-compose-004-order-independent-nary block}}
+
+**Idempotent** — composing a feature twice is composing it once:
+
+{{EXAMPLE:xap-compose-005-idempotent block}}
+
+**Closed under name collision** — two features may each own a verb of the same
+name, because qualification already separated them:
+
+{{EXAMPLE:xap-compose-006-same-named-verbs-coexist block}}
+
+### The W-gates
+
+Composition runs a well-formedness gate. Each violation has its own code, and
+the gate reports **all** of them rather than stopping at the first:
+
+{{EXAMPLE:xap-compose-008-w1-duplicate-name block}}
+
+{{EXAMPLE:xap-compose-013-w5-uses-not-enabled block}}
+
+{{EXAMPLE:xap-compose-014-report-all-violations block}}
+
+Two faces, one predicate. `[$xap:compose]` raises; `[$xap:compose-report]` is
+the never-raising tooling face, and the law is that **compose raises if and
+only if compose-report says `ok=false`**:
+
+{{EXAMPLE:xap-compose-015-report-ok block}}
+
+### Composing nothing is a refusal
+
+This is worth its own heading because it is the failure mode that makes a gate
+worse than no gate. A gate over the empty set has verified the empty set, and
+reports green:
+
+{{EXAMPLE:xap-compose-051-no-features-refuses block}}
+
+The tooling face agrees, at the same vacuous input, so the two can never
+diverge into "the check passes but the build fails":
+
+{{EXAMPLE:xap-compose-052-no-features-reports-not-ok block}}
+
+**If your feature files were renamed, moved, or not yet written, your
+composition refuses.** It does not congratulate you.
+
+### Bare terms resolve, or say they cannot
+
+A bare `[do highlight]` is resolved by ρ against the composed grammar. With
+one owner it resolves:
+
+{{EXAMPLE:xap-compose-017-resolve-unique-owner block}}
+
+A qualified term bypasses resolution entirely:
+
+{{EXAMPLE:xap-compose-018-resolve-qualified-bypass block}}
+
+And ambiguity is **a value listing the candidates — never a guess**:
+
+{{EXAMPLE:xap-compose-021-resolve-ambiguous-is-a-value block}}
+
+{{EXAMPLE:xap-compose-022-resolve-unknown-term block}}
+
+That property has a name (N-COMPOSE-1) and it is the reason enabling one more
+feature cannot silently change what an existing utterance means. See
+`reference/shop/shop.xap.cxd:51-54`, where a requirement pins exactly this.
+
+## 3. Derived nouns and deriver principals
+
+A **composite** feature `[uses]` other features and declares nouns that are
+`derived=true`, each naming the nouns it is derived `[from …]`:
+
+{{EXAMPLE:xap-compose-026-marine-composite-closure block}}
+
+Four rules govern derived nouns, and each of them is a gate.
+
+**A derived noun must declare `[from …]`.** Without it the composition
+refuses:
+
+{{EXAMPLE:xap-compose-054-w5-derived-noun-without-from block}}
+
+**Every reference inside `[from …]` must resolve.** W5 covers each one:
+
+{{EXAMPLE:xap-compose-053-w5-from-reference-not-a-noun block}}
+
+{{EXAMPLE:xap-compose-055-w5-from-resolving-composes-clean block}}
+
+**Derived nouns are deriver-reserved.** No grammar verb may `[writes]` one —
+the only producer is the declared deriver:
+
+{{EXAMPLE:xap-compose-056-w7-write-verb-on-derived-noun-refuses block}}
+
+**A derived verb's signature is the floor of its constituents.** It cannot be
+weaker than what it composes:
+
+{{EXAMPLE:xap-compose-024-derived-signature-floor block}}
+
+{{EXAMPLE:xap-compose-025-derived-signature-weakening-rejected block}}
+
+### The deriver is a principal
+
+This is the design move that makes the rest cohere. A deriver is not a
+callback or a job; it is an **actor**, declared beside the roles and the
+agents, so run assembly reads *one* block to know every actor in the system:
+
+```cx
+[principals
+  [role name=customer authority=own-orders features='orders shipments']
+  [role name=fulfilment authority=operations features='*']
+  [agent name=expediter]
+  [deriver name=detect produces='delayed-shipment/delay-alert'
+           package='./detect.cx'
+           reads='orders/order shipments/shipment']]
+```
+
+`reference/shop/shop.xap.cxd:18-27`. Note `reads=`: it is the deriver's read
+**authority envelope**, and it must resolve inside the `[from …]` envelope of
+the noun it produces. Run assembly checks that.
+
+The deriver module records its production explicitly —
+`reference/shop/detect.cx:21-25` calls `[$xap:derive $rt {deriver: "detect",
+noun: "delayed-shipment/delay-alert", record: …}]`, and the entry commits as
+`actor: deriver:detect`. The join itself is ordinary CX
+(`reference/shop/detect.cx:32-46`) — there is **no join algebra**. The
+specification declares production, not semantics.
+
+**Precedence you must know:** when the deployment document carries `[deriver]`
+rows, they *supersede* an OPTS `derivers:` key **entirely — they are not
+merged**, and the superseded key is announced at boot. With no `[deriver]`
+rows the OPTS key forwards unchanged. See
+`spec/03-approved/xap/xap_feature_distribution_market.md:634-643`.
+
+## 4. Authority: the PEP, and what a grant does not convey
+
+The policy enforcement point sits between an intent and its effect. Two
+properties carry most of the model.
+
+**Authority is rooted in a principal, delegated, and attenuating.** A permit
+names the chain it travelled:
+
+{{EXAMPLE:authz-001-delegate-check-permit block}}
+
+**A denial is a value carrying its reason.** There is no implicit grant, and
+the reasons stay distinguishable rather than collapsing into one "forbidden" —
+no grant at all, a grant that does not reach this slice, a grant that has
+expired:
+
+{{EXAMPLE:authz-002-check-deny-no-grant block}}
+
+{{EXAMPLE:authz-003-check-deny-out-of-slice block}}
+
+{{EXAMPLE:authz-006-check-deny-expired block}}
+
+The distinction matters operationally: "you were never granted this" and "your
+grant does not cover this resource" send an operator to two different places.
+
+### A composite verb evaluates its transitive leaves
+
+This is the rule that stops a composite from laundering authority. Emitting a
+derived verb requires the grants of every **leaf constituent**, transitively:
+
+{{EXAMPLE:xap-compose-027-composite-emit-denied-without-leaf-grant block}}
+
+A grant on the wrapper's own name conveys **nothing** — the wrapper name is
+never consulted:
+
+{{EXAMPLE:xap-compose-028-composite-wrapper-grant-conveys-nothing block}}
+
+Dial every leaf and the same emit is admitted:
+
+{{EXAMPLE:xap-compose-029-composite-emit-admitted-with-leaf-grants block}}
+
+Nesting does not dilute it — an *intermediate* grant is still insufficient:
+
+{{EXAMPLE:xap-compose-030-nested-composite-intermediate-grant-insufficient block}}
+
+{{EXAMPLE:xap-compose-031-nested-composite-leaf-grants-admit block}}
+
+### The decision explains itself
+
+`[$xap:why-allowed]` answers over exactly the same constituent set the PEP
+used, so the explanation cannot drift from the decision:
+
+{{EXAMPLE:xap-compose-035-why-allowed-composite-denies-on-missing-leaf block}}
+
+{{EXAMPLE:xap-compose-036-why-allowed-composite-permits-with-leaf-grants block}}
+
+The authz layer does the same for delegated authority — naming the **first
+failing link** rather than reporting a bare denial:
+
+{{EXAMPLE:authz-031-explain-permit-chain block}}
+
+{{EXAMPLE:authz-032-explain-deny-first-link block}}
+
+An enterprise deployment needs this more than it needs the enforcement: an
+authority chain nobody can read is one nobody can review.
+
+### The dial moves *who drives*, never *what is permitted*
+
+An agent's autonomy is a dial, and at its floor an agent may observe and
+propose but never act. `reference/shop/shop.xap.cxd:40-41` sets
+`[agent-default name=expediter dial=floor]` and says why: an irreversible verb
+is "out of its reach **by construction, not by convention**". Raising the dial
+is the single explicit act that widens what the agent may do.
+
+## 5. The deployment document (`*.xap.cxd`)
+
+The wiring layer. Its complete child set is fixed by
+`spec/03-approved/xap/xap_schemas/xap.cxs:14-24`:
+
+```
+[xap name= version=
+  [summary …]        [features …]     [principals …]    [runtime …]
+  [deployment …]     [surfacing …]    [governance …]    [requirements …]]
+```
+
+`name=` is required and `[features]` is required exactly once
+(`xap.cxs:15`, `:18`). Everything else is `0..1`. That cardinality is the
+schema saying the same thing the vacuity refusal of §2 says: a deployment that
+enables nothing is not a deployment.
+
+**There is no `[transport]` block, and you must not invent one.** The
+transport is the store —
+`spec/03-approved/xap/xap_feature_distribution_market.md:225`, and "no new
+transport" at `:710`. Remote endpoints are declared as
+`[deployment [remote name= uri= priority=]]`
+(`spec/03-approved/xap/xap_schemas/xap.cxs:125-133`).
+
+The reference instance is `reference/shop/shop.xap.cxd` in full — features
+`:13-16`, principals `:18-27`, deployment `:29-31`, surfacing `:33-35`,
+governance `:37-41`, requirements `:43-54`. Read it; it is 55 lines and it is
+the whole shape.
+
+### `[features]` — pinned, and the hash is the truth
+
+```cx
+[features
+  [feature name=orders package='./orders.feature.cxd']
+  [feature name=shipments package='./shipments.feature.cxd']
+  [feature name=delayed-shipment package='./delayed-shipment.feature.cxd']]
+```
+
+`version=` on a row is **informative; the hash is the truth**
+(`spec/03-approved/xap/xap_schemas/xap.cxs:56`). A pin/content mismatch
+refuses to boot.
+
+### `[runtime]` — the durable plane, as data
+
+Four run options — `journal`, `sources`, `resolver`, `log-reduce` — ride a
+`[runtime]` block, **one child per option, each named for its option key
+verbatim**, so the document and the opts map share one vocabulary. The host
+compiles the document's data into exactly the values `[$xap:run]` accepts:
+there is **one validator, never two**.
+
+```cx
+[runtime
+  [journal url='file:///var/acme/acts' stream=acts
+           checkpoint='file:///var/acme/ckpt' checkpoint-every=512]
+  [sources [source fabric='xsp://127.0.0.1:8447' stream=evidence
+            verb=record group=acme-xap actor='role:operator']]
+  [resolver [affinity component='orders/order-list' when='context[deadline]'
+             class=:orders.urgent rank=1]]
+  [log-reduce window=500 fn='orders:compact']]
+```
+
+`spec/03-approved/xap/xap_feature_distribution_market.md:600-609`. Per child:
+
+* **`[journal url= …]`** — `url=` is required. Without a journal block a
+  hosted XAP is in-process demo mode; with one, the bound stream **is** the
+  runtime's journal and restart is a re-fold.
+* **`[sources [source …]]`** — one `[source]` row each. **A `[sources]` block
+  with no row is a refusal, never a silent no-op.**
+* **`[resolver …]`** — only the kinds that *are* data: `kind=scripted` and
+  `[affinity …]` rule rows. A **closure** resolver is code, not deployment
+  data, and stays on the direct `[$xap:run]` lane.
+* **`[log-reduce window= fn=]`** — `fn=` names a public def of a *pinned
+  feature's* contract module as `<feature>:<def>`. Because a binding may name
+  a contract def, the host's load step runs **before** its attach step.
+
+The four `[runtime]` options have **no OPTS spelling on a hosted XAP**: naming
+one in `[$xap:host]` opts refuses at boot with
+`E_XAP_HOST_BINDING_MISPLACED` — rather than being accepted twice or dropped
+once. Every refusal here is named and loud at boot: an unknown `[runtime]`
+child, a `[journal]` without `url=`, an empty `[sources]`, an `fn=` naming no
+loaded contract def. `spec/…market.md:640-649`.
+
+**Boot ordering.** A `[sources]` subscription **opens** during run assembly —
+so a bad binding refuses at boot rather than at first delivery — but
+**consumes** nothing until the dials and the host-auth map are wired. Opening
+and consuming are two moments, with the deployment's authority between them. A
+boot that refuses after run assembly consumed nothing, therefore acked
+nothing, so every entry stays redeliverable to the next boot.
+`spec/…market.md:651-667`.
+
+> **Honest gap.** No `[runtime]` block is instantiated anywhere in this
+> repository today — the schema (`xap.cxs:90-118`) and the spec example above
+> are the only spellings, and `reference/shop/shop.xap.cxd` carries none.
+> Yours will be the first. Treat the schema as normative and the example as
+> the shape.
+
+## 6. Bootstrap identity
+
+A production deployment is deny-by-default at every layer, which means a fresh
+one has nobody who may talk to it. Bootstrapping is deliberate.
+
+### Mint the principals offline
+
+```console
+cx store-mint-principal --id fleet-ops \
+    --seed-file ./secrets/fleet-ops.seed --caps "read write"
+cx store-mint-principal --id shop-host \
+    --seed-file ./secrets/shop-host.seed --for identity
+```
+
+Nothing transits a wire and no store is opened. The verb generates an Ed25519
+seed, derives its `did:key`, writes the seed at mode 0600 (never to stdout),
+and prints the config rows: `--for grant` (the default) prints the
+`[xsp [grants [grant …]]]` row authorizing that principal; `--for identity`
+prints the daemon's own `[xsp [identity did= seed-env=]]` responder row.
+
+`--caps` is **required** for a grant row — the authority a grant carries is an
+explicit choice at mint time, with no default. The seed environment variable
+is *derived* from `--id` (`CX_XSP_SEED_<NAME>`), so two ids that would derive
+the same variable are refused by name rather than silently sharing one seed.
+
+**The minted principal is inert until an operator splices the grant into the
+config. Config remains the sole authority.** There is no
+trust-on-first-use step and no bearer token anywhere in this path.
+
+The arc: **mint → splice the grant into the config → start the deny-by-default
+daemon → the client presents its DID.**
+
+### Bind the host's channel policy
+
+`[$xap:host]` reads one block of deployment data for its channel
+authentication:
+
+```cx
+[host-auth
+  [identity did="did:key:z6Mk…" seed-env="CX_XAP_HOST_SEED"]
+  [policy mode="mutual"]
+  [principals [principal did="did:key:z6Mk…" role="operator"]]
+  [public [route "/"] [route "/static/"]]]
+```
+
+`spec/03-approved/xap/xap_identity_model.md:635-641`. Four things to know:
+
+* **Absent means today's behavior, byte-for-byte** — the localhost dev floor.
+  Going from floor to production is *adding this block* and nothing else.
+  `:652-657`.
+* **The block is `[host-auth]`, not `[auth]`** — a deployment may already
+  carry an `[auth]` element for its own login configuration, a distinct
+  concern. Squatting on `[auth]` silently broke that invariant once already.
+  `:644-650`.
+* **Boot is fail-closed on `[identity]`** — a missing seed variable, a
+  malformed seed, or a seed whose public key does not re-derive `did=` refuses
+  to boot. Never a latent runtime denial. `:658-663`.
+* **An authenticated DID with no `[principal]` row attaches but holds no
+  dials** — the session is real and every intent is PEP-denied. That is
+  default-deny working, not a bug. `:670-674`.
+
+`[policy mode="floor"]` attaches an anonymous peer as the fixed principal
+`floor:<floor>`; the `floor:` prefix is **constructed by the host** so a floor
+principal can never collide with an inherent-authority `principal:` id.
+`POST /attach` is always open — it *is* the handshake.
+
+### Sessions bind a principal, immutably
+
+Below the host, `cx-stdlib/session` binds a `(principal, tenant)` pair for the
+session's whole life. An anonymous floor is a real principal:
+
+{{EXAMPLE:session-057-attach-guest-floor-binding block}}
+
+…and a deployment that declares no floor refuses cleanly, naming the policy:
+
+{{EXAMPLE:session-058-attach-guest-refused-without-floor block}}
+
+The mutual-authentication path is the same story with a handshake in front of
+it. `[$session:attach-xsp]` binds the **proven** DID — the principal the peer
+demonstrated possession of, never a claimed one — and an anonymous peer with
+no declared floor is refused with `CXER4803`. A presented verifiable
+credential compiles into an ordinary authz delegation, so the *unchanged* PEP
+decides: there is one evaluator, not a credential path running beside the
+authority path, and a credential past its time of use denies at check.
+
+Those four cases carry full RFC key vectors and are long, so they are cited
+rather than printed. Read them in `conformance/stdlib/session.cxd`:
+`session-045-attach-xsp-binds-proven-principal`,
+`session-047-attach-xsp-anonymous-no-floor-rejected`,
+`session-050-present-vc-compiles-to-permit`,
+`session-052-present-vc-time-of-use-expiry`. The shape they pin is the whole
+lesson: **proof, then principal, then delegation, then the same check
+everything else goes through.**
+
+Session ids are opaque and are **never** the raw token:
+
+{{EXAMPLE:session-018-cookie-not-raw-token block}}
+
+{{EXAMPLE:session-023-rotate-changes-id block}}
+
+Re-minting the session id on a privilege transition is the fixation defense.
+`spec/03-approved/xap/demos/oriel/serve.cx:2523-2528` does exactly that on
+sign-in, and carries the basket forward by an **explicit journaled adoption** —
+"never a silent rewrite, never a silent loss".
+
+> **A discipline worth copying verbatim.** Oriel never writes a session id
+> into its journal. It writes a *derived, non-invertible* stream key —
+> `sha2-256(secret ‖ session-id)`, truncated
+> (`spec/03-approved/xap/demos/oriel/session.cx:70`, rationale at `:72-82`).
+> A journal is durable, exportable, and frequently handed to an analyst;
+> writing the session id there would put **live bearer material into the
+> permanent audit record**, where it survives logout and outlives the session
+> it authenticates.
+
+## 7. Host it, and project a surface
+
+### The host is six steps
+
+`[$xap:host XAP-DOC OPTS]` boots a complete XAP from its deployment document
+(`spec/03-approved/xap/xap_feature_distribution_market.md:539-577`):
+
+1. **acquire** — open the store, fetch every pinned `[feature]` by pin, verify.
+   A pin/content mismatch refuses to boot.
+2. **compose** — `[$xap:compose]` over the sealed spec layers; the composed
+   grammar is stored and attached via `[$xap:run {grammar: …}]`, together with
+   the `[runtime]` bindings of §5.
+3. **govern** — roles, `[governance]` grants, and agent envelopes become
+   runtime dials. Actor resolution is an OPTS hook with a default of
+   `role:<author's role>`.
+4. **load** — resolve each feature's `pkg:` reference and register its
+   contract surface, keyed by the composed grammar's qualified verbs.
+5. **serve** — the standard surface: `GET /grammar`, `GET /features`,
+   `GET /surface` + `GET /surface/<f>`, `POST /intent`, `GET /stream`.
+6. **extend** — OPTS registers what is genuinely deployment-specific: extra
+   routes, ingest workers, sim cadence. **Adapters register onto the host;
+   they never fork it.** Adapter routes are consulted *before* the standard
+   surface, so a deployment may enrich a standard route without forking.
+
+**Two layers of refusal, both visible in the ack.** The PEP admits the *verb*;
+the feature's contract `apply` may still refuse the *values* by returning
+`[refused reason=…]`, and the host acks `ok=false` with that reason.
+`spec/…market.md:574-577`.
+
+A XAP with no custom transport is therefore **zero server code**: deployment
+document + published packages + a client. Deploying one more feature is
+publish, add a pinned row, re-pin, restart.
+
+> **Honest gap.** `[$xap:host]` has no live call site in this repository —
+> every occurrence is specification or schema. The nearest working programs
+> use the direct `compose` + `run` lane and say so:
+> `reference/shop-web-client/serve.cx:36`, with `[$xap:compose]` at `:131` and
+> `[$xap:run]` at `:136`. `docs/dev/xap-quickstart.md:73-97` is the six-step
+> summary and carries the `[$xap:host …]!` postfix rule.
+
+### The surface document
+
+Routes are composition data. A `[surface]` names its XAP, binds media, and
+declares which act verbs each route **offers**:
+
+* `spec/03-approved/xap/demos/oriel/surface.cx:11-12` — the surface head.
+* `:23-31` — `[offer verb=…]`, the route's declaration of what is reachable
+  from it. "A route with no `[offer]` is a reading page and asserts nothing."
+* `:32-37` — a route with its feature instance and fragment path.
+* `reference/shop/shop.surface.cxd:26-43` — panels, layout regions, and
+  `[materialize]` rows; `:61-67` — `[clients]`, where a human client and an
+  agent client are declared as peers. The comment there is the design in one
+  sentence: the agent "is not a side channel with its own privileges — what it
+  may do is decided by the dial", not by giving it another door.
+
+The coverage claim is **mechanical, and it refuses at compose time**. An act
+verb no route offers is a refusal, not a lint warning:
+
+{{EXAMPLE:ux-103-an-unaccounted-verb-refuses-at-compose-time block}}
+
+{{EXAMPLE:ux-105-a-dangling-affects-is-refused block}}
+
+Oriel runs that gate at boot (`serve.cx:3940-3948`) and wraps it in a
+`[?match]` on purpose — the refusal is an **err value**, and as a bare call
+operand it would propagate and the log line would never run, which is a silent
+gate. The comment at `serve.cx:3949-3952` says exactly that. This is the
+err-boundary rule of `primer.md` §6 met in real code.
+
+> Several fixtures below carry a `[; R-A1 migration: envelope → spliced
+> children …]` comment. That is not noise you should imitate — it is the
+> corpus marking where a call returning a sequence stopped being wrapped in an
+> envelope element and became `[?splice …]` in element content, per the rule
+> in `primer.md` §5. Read those lines as worked examples of the migration you
+> would have to make in your own code.
+
+### The semantic vocabulary is closed
+
+You do not write HTML. You write a **semantic tree** over a closed vocabulary,
+and a renderer lowers it. Three closed sets govern what you may write, and the
+module reports all three — the element vocabulary first (regions and grouping,
+text and values, collections, navigation, queries, writes, flows, depiction),
+then the **renderer-private** attribute names a semantic tree may never carry,
+then the notice tones:
+
+{{EXAMPLE:ux-010-the-semantic-vocabulary block}}
+
+An element outside the vocabulary is refused, and so is an attribute outside
+the grant table of the member it sits on — one mistake, one refusal, naming
+both the element and the attribute:
+
+{{EXAMPLE:ux-015-unknown-attributes-are-refused block}}
+
+The second set is the sharper one. `target=`, `swap=`, `oob=`, `ext=`,
+`subscribe=`, `on=`, `include=` are **renderer-private**: they are how the web
+renderer thinks, and a semantic tree that names one has stopped being
+renderer-neutral. That is not a hypothetical — an earlier arrangement of this
+module let exactly those concepts climb into the vocabulary, and the
+neutrality claim was false while they were there. The refusal has its own
+code:
+
+{{EXAMPLE:ux-017-one-mistake-one-refusal block}}
+
+Retired members refuse **by name, with the replacement stated** — there are no
+aliases, per the standing no-dual-accept rule.
+
+### Forms project from definitions
+
+You do not hand-author a form. A command — a `[?def]` carrying an `[effects]`
+clause — *projects* onto one:
+
+{{EXAMPLE:ux-060-form-projection-from-a-command-def block}}
+
+An act verb of a feature grammar projects the same way, which is the seam
+between the XAP layer and the UX layer:
+
+{{EXAMPLE:ux-080-feature-form-projects-the-xap-grammar block}}
+
+{{EXAMPLE:ux-082-an-unknown-verb-refuses block}}
+
+The point is that **there is no materialized UI manifest to drift**. The form
+is derived at render time from the definition, so a parameter that changed
+cannot leave a stale control behind. Richer shapes come from the same
+derivation — a reference-typed field projects a chooser, a repeating field
+projects a group, and a refusal keeps what the user typed:
+
+{{EXAMPLE:ux-036-a-reference-typed-field-projects-a-chooser block}}
+
+{{EXAMPLE:ux-037-a-repeating-field-projects-a-group block}}
+
+{{EXAMPLE:ux-038-a-refusal-keeps-what-was-typed block}}
+
+### Identity is content-addressed
+
+A fragment's identity is exactly the triple `(route, feature, element path)` —
+theme, locale, actor, session and data are *content*, never identity:
+
+{{EXAMPLE:ux-001-fragment-address-and-dom-id block}}
+
+{{EXAMPLE:ux-002-identity-is-exactly-the-triple block}}
+
+The DOM id is a *derived rendering* of that address, not a second identity,
+and a reused address is a refusal rather than a silent disambiguation:
+
+{{EXAMPLE:ux-040-minted-addresses block}}
+
+{{EXAMPLE:ux-041-a-reused-address-is-refused block}}
+
+Rows key by their **declared key** or get no address at all. Positional row
+identity is never minted:
+
+{{EXAMPLE:ux-051-unkeyed-rows-get-no-address block}}
+
+### The web renderer, and what it is forbidden to author
+
+`cx-x/ux-web` lowers the semantic tree to HTML plus a **pinned htmx subset**.
+It is the sole author of those attributes, and the list is closed:
+
+{{EXAMPLE:web-003-the-pinned-htmx-subset block}}
+
+`hx-on` is excluded **permanently** — it is what would force `unsafe-inline`
+into `script-src`. Enforcement is two-sided: a name gate at authorship, and a
+re-scan of the *serialized bytes* so a path that bypassed the constructor
+still goes red:
+
+{{EXAMPLE:web-004-off-subset-attributes-are-refused block}}
+
+Escaping is **structural**. Fragments compose as trees and serialize once, so
+there is no interpolation surface to inject into:
+
+{{EXAMPLE:web-005-escaping-is-structural block}}
+
+{{EXAMPLE:web-006-csp-invariants block}}
+
+Here is a complete rendered fragment — a region containing a card, a heading,
+and an action. Read the `hx-target`: it is **derived** from the semantic
+`affects=` path through the same fragment id that minted the target's own id,
+so it cannot drift from what the emitter actually produced. Nothing in the
+semantic tree named a selector:
+
+{{EXAMPLE:web-001-region-and-action-golden block}}
+
+{{EXAMPLE:web-002-keyed-rows-golden block}}
+
+Liveness comes from the render context's binding for a logical feed name,
+never from the tree:
+
+{{EXAMPLE:web-009-the-live-region-rides-the-render-context block}}
+
+{{EXAMPLE:web-023-region-listens-and-refetches block}}
+
+### Refusals are part of the surface
+
+A projection failure never reaches a browser as content:
+
+{{EXAMPLE:web-014-a-refused-tree-yields-no-markup block}}
+
+A field-level refusal lands **on its own control**, with the message beside it
+and both reaching a screen reader:
+
+{{EXAMPLE:web-015-a-refusal-lands-on-its-own-control block}}
+
+And removing a line is an empty response with a renderer-minted control — no
+script involved anywhere:
+
+{{EXAMPLE:web-016-removing-a-line-is-an-empty-response block}}
+
+### One tree, two serializations
+
+This is the property that makes an agent a first-class client rather than a
+scraper. The handler builds **one** semantic tree and the request chooses the
+serialization:
+
+```cx
+[body [?if [$wants-cx $request]
+        [then [$cx:canonical [$view $rctx2 $c0 $body]]]
+        [else [$web:page-html "ORIEL" $assets $body $c0]]]]
+```
+
+`spec/03-approved/xap/demos/oriel/serve.cx:4000-4002`. `$view` wraps the tree
+in the `[ux:view [route …] [feature …] [path …] $rctx [ux:tree …]]` envelope
+(`serve.cx:52-54`) — that five-child element is the agent-parity wire format.
+
+Equivalence between the two faces is not asserted, it is **computed**. The
+content normal form strips presentation, and the renderers are checked against
+it:
+
+{{EXAMPLE:ux-030-content-normal-form block}}
+
+{{EXAMPLE:web-013-content-readback-from-the-html-tree block}}
+
+### Act from inside a collection
+
+The single most common enterprise-UI mistake CX's vocabulary is designed to
+prevent: an `[ux:action]` may sit inside an `[ux:item]` or `[ux:row]` and
+carry its parameters from that item. N items produce N addressable actions.
+
+Parameters are **server-derived at projection time and never read back out of
+the rendered document**. An item whose price changed between render and click
+posts the price it was rendered with, and the command layer refuses it — which
+is the correct outcome, and the one a DOM read cannot produce. A *missing*
+parameter is a projection refusal, because the alternative produces a command
+refusal that blames the user for the projection's bug.
+`spec/03-approved/xap/ux.md:1023-1042`.
+
+## 8. Test it: the drive-step pattern
+
+Parity between faces is a ruled requirement, and it has broken more than once
+— so it is checked by a program rather than asserted in a note.
+`spec/03-approved/xap/demos/oriel/drive.cx` is the reference harness. Four
+pieces:
+
+1. **Wire readers.** `get-view` requests `Accept: application/cx` and parses
+   the answer (`drive.cx:34-38`); `get-html` fetches the other face
+   (`:40-42`); `vtree` / `vctx` unpack the `[ux:view]` envelope (`:54-64`).
+2. **A driver that uses the shipped wire.** `post-raw` posts to
+   `/intent/<verb>` with `follow-redirects: false` (`:70-72`), and
+   `post-headers` toggles `HX-Request: true` for the fragment lane (`:74-83`).
+   Nothing supplies a scope — the server derives it from the cookie it set.
+3. **Steps are values.** `[?def check]` returns
+   `[step name= ok="PASS"|"FAIL" detail=]` (`:132-133`), so the harness output
+   is a document you can query rather than a log you must read.
+4. **Assertions that catch both directions.** `equivalence` (`:147-162`) takes
+   the content-normal-form of a **live route** three ways — semantic, web,
+   terminal — "because it catches a renderer that drops content **and** one
+   that invents it". `paints` (`:167-182`) renders through the terminal face
+   and measures the focus ring, because a face with no pointer cannot hide an
+   unreachable control, so the ring's size *is* the keyboard-reachability
+   measurement.
+
+It is headless on purpose: "a proof that needs a human at a keyboard is not a
+proof anyone can re-run" (`drive.cx:9-10`).
+
+**One trap the header calls out** (`drive.cx:12-15`): a bare `--allow-net`
+denies a loopback literal, and every step then silently reports `offline`.
+Scope the grant.
+
+## 9. What the rulings forbid
+
+The prohibitions are as teachable as the requirements, because each one names
+a failure mode that looks like success.
+
+**No dual-accept.** When a surface changes, the old spelling is *removed*, not
+kept alongside the new one. Retired UX members refuse by name with the
+replacement stated; retired CLI verbs name their own retirement. There is no
+compatibility alias anywhere, deliberately — two spellings for one meaning is
+two things to keep true.
+
+**No silent partials.** A gate over the empty set refuses rather than
+reporting green (`xap-compose-051`). A `[sources]` block with no rows refuses
+rather than binding nothing. A composition reports *every* W-violation rather
+than the first (`xap-compose-014`). The pattern: a check that cannot do its
+job says so.
+
+**No error-as-silent-data.** An externalizing effect refuses to carry an
+`[err]` out of the program unless you wrote `errs=:permit`. This closes the
+`written=0 errors=25`, exit 0 class and the render-`[err]`-into-HTML class at
+the boundary, which is the only honest place. See `primer.md` §6.
+
+{{EXAMPLE:store-err-boundary-001-put-doc-nested-err-refuses block}}
+
+**No guessing at ambiguity.** ρ returns a value listing the candidates. A
+composite never resolves to "probably this one".
+
+**No auto-splicing.** A sequence value in element-content position refuses and
+names `[?splice]`. Nothing silently rewrites what you wrote.
+
+**No laundering authority through a wrapper.** A grant on a composite verb's
+own name conveys nothing; the transitive leaf set is what the PEP evaluates.
+
+**No selectors in a semantic tree.** Every htmx spelling is derived from a
+semantic declaration plus render context. A hand-written selector could drift
+from what the emitter minted — and once did.
+
+**No interpolation.** Fragments compose as trees and serialize once. If you
+find yourself concatenating markup, you have left the supported path.
+
+**No bearer material in a journal.** Write a derived, non-invertible key.
+
+**No enforcement in the browser.** The PEP rechecks at the wire; a refusal is
+plain and does not disclose capability structure. Hiding a control is a
+courtesy, never a control.
+
+**No inventing a module, a directive, or a block.** If it is not in the
+directive registry (`primer.md` §4), the module catalog
+(`reference-stdlib.md`), or the `[xap]` child set (§5 above), it does not
+exist. This is the most expensive mistake to make with a young language,
+because the result is plausible and wrong.
+
+## 10. Before you ship
+
+1. Every feature document has `[nouns]`, `[verbs]`, **and** `[requirements]`.
+2. `[$xap:compose-report]` says `ok=true` over the real feature set — and the
+   set is non-empty.
+3. Every derived noun declares `[from …]`, every reference in it resolves, and
+   exactly one declared deriver produces it.
+4. No grammar verb `[writes]` a derived noun.
+5. The deployment document's children are all in the ruled set. You did not
+   invent `[transport]`.
+6. `[runtime]` names each option key verbatim; `[sources]` has at least one
+   row; `[log-reduce] fn=` names a def of a pinned feature.
+7. Deriver rows and an OPTS `derivers:` key are not both present — the
+   document wins, and the drop is announced.
+8. `[host-auth]` is present for anything not on a localhost dev floor, with
+   `[identity]` fail-closed and a `[principal]` row for every DID that needs a
+   dial.
+9. Principals were minted offline and their grants spliced into config by an
+   operator.
+10. Every act verb is offered by some route; every `affects=` resolves.
+11. The surface tree is semantic — no selector, no htmx attribute, no inline
+    style, no concatenated markup.
+12. Both faces agree under the content normal form, and you ran the check.
+13. Every externalizing effect either carries no `[err]` or says
+    `errs=:permit`.
+14. You ran it. `cx <file>` is a second, and a plausible-looking XAP that
+    does not compose costs a reviewer much more than that.
+
+## Where the evidence lives
+
+| Topic | Normative source |
+|---|---|
+| Composition algebra, W-gates, derived nouns, derivers | `spec/03-approved/xap/xap_grammar_composition.md` |
+| Distribution, the deployment host, `[runtime]` bindings | `spec/03-approved/xap/xap_feature_distribution_market.md` |
+| `[xap]` document schema | `spec/03-approved/xap/xap_schemas/xap.cxs` |
+| Host channel auth, principals, attach | `spec/03-approved/xap/xap_identity_model.md` |
+| The UX projection and the emitter contract | `spec/03-approved/xap/ux.md` |
+| The paradigm and its frozen invariants | `spec/03-approved/xap/xap.md` |
+| The effect boundary | `spec/03-approved/core/commands_effects.md` |
+| Composition + authority + distribution, worked | `reference/shop/` |
+| The projection, worked | `spec/03-approved/xap/demos/oriel/` |
+
+Every example above is a case in `conformance/`; the release gate fails if any
+of them stops holding.

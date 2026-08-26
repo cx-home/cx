@@ -12,12 +12,20 @@ Read by scripts/gen_docs/primer_build.cx (`make docs`). Declares:
              ~1200 cases) and records the primer's provenance in one place.
   [doc]      this block — ignored by the generator.
   [output]   one output file per entry, in llms-full.txt concatenation
-             order. `id=primer` is special: llms.txt lists it under
-             "Start here", everything else under "Reference".
+             order. `section=` files the entry under one of llms.txt's
+             headings — `start` | `build` | `reference` (default
+             `reference`). The vocabulary is CLOSED: an unknown `section=`
+             is a hard failure, because llms.txt IS the discovery surface
+             and a document missing from it is a document nobody loads.
 
 Adding a section that cites a new suite = add the suite here. A template
 citing an undeclared (or nonexistent) fixture id is a HARD generator
 failure, never a silently empty block.
+
+RETIRING a document means deleting its file in the SAME change that drops
+its [output] entry: `--check` fails on any file under docs/llm/ that no
+entry claims (an ORPHAN), because a file the manifest does not know about
+is one the freshness contract cannot reach.
 #]]
 
   [; `base` addresses the reference set; `root` is the SITE ROOT, where the
@@ -37,6 +45,7 @@ correctly.
 code
 core
 llm/antipatterns
+operator_heads
 stdlib/store
 stdlib/journal
 stdlib/http
@@ -52,12 +61,21 @@ stdlib/time
 stdlib/io
 stdlib/env
 stdlib/cx
+stdlib/format
+stdlib/authz
+stdlib/session
+stdlib/log
+stdlib/ux
+stdlib/ux-web
+stdlib/xap-compose
+stdlib/xap-dist
 xml
 table
 identity
 #]]
 
   [output id=primer out='primer.md' template='primer.md.tmpl'
+          section=start
           title='CX primer for LLM assistants'
     [summary [#
 The one file to load before writing CX. The surface taught through runnable
@@ -95,6 +113,18 @@ effectful pack requires.
 The run surface, the convert surface, the subcommand catalog, and the
 capability grant flags — including the flag-placement rule that silently
 denies capabilities when broken.
+#]]]
+
+  [output id=playbook-xap out='playbook-xap.md'
+          template='playbook-xap.md.tmpl'
+          section=build
+          title='Playbook: building a production XAP'
+    [summary [#
+The full arc for a production feature deployment: authoring and composing
+feature grammars, derived nouns and deriver principals, the authority model,
+the *.xap.cxd deployment document and its [runtime] bindings, offline identity
+bootstrap, the deployment host, and the ux-web hypermedia surface — with what
+the rulings forbid stated as plainly as what they require.
 #]]]
 
   [output id=platform out='reference-platform.md'

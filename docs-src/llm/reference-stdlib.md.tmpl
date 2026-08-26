@@ -11,12 +11,17 @@
 `[?lib 'cx-stdlib/strings' as=str]` renames it. `[?lib 'cx-x/tools' as=tools]`
 imports from the experimental tier, and says so in the import line.
 
-Two tiers:
+Three import prefixes:
 
 * **`cx-stdlib/…`** — the frozen standard set. Stable surface.
 * **`cx-x/…`** — experimental. Bundled and conformance-gated, but exempt from
   the stability promise. If you are writing code meant to last, prefer the
   standard tier.
+* **`cx-xap`** — the XAP orchestrator, imported as a whole package
+  (`[?lib 'cx-xap' :as xap]`), **not** as `cx-stdlib/xap`. It layers *above*
+  the standard library and adds no authority, transport, or markup logic of
+  its own. It appears in the standard-tier table below because it is bundled
+  from the same directory; its import line is the exception.
 
 A call is `[$module:fn args…]`. The `$` is not optional stylistically — it is
 the assertion that this is a call rather than an element you are building
@@ -102,6 +107,35 @@ variants that make a pipeline total rather than partial.
 
 {{EXAMPLE:json-001-parse-int block}}
 
+### `format` — four renderings, all of them faithful
+
+`canonical`, `compact`, `pretty` and `diff-friendly` are four *renderings* of
+one value, and every one of them round-trips: parsing the output gives back a
+structurally equal value.
+
+{{EXAMPLE:format-026-round-trip-pretty-typed-scalars block}}
+
+That is a guarantee about **types**, not just text. `pretty` never quotes a
+non-string scalar — a decimal stays a decimal, an atom keeps its `:` sigil, a
+glued type annotation survives:
+
+{{EXAMPLE:format-032-pretty-atom-attribute-keeps-sigil block}}
+
+{{EXAMPLE:format-034-pretty-keeps-glued-type-annotation block}}
+
+There is exactly one deliberate divergence between the forms: `pretty` always
+quotes a string, while `canonical` leaves it bare whenever the bare image
+re-parses as that same string. Both round-trip.
+
+Which one to reach for:
+
+| Form | Use it for |
+|---|---|
+| `canonical` | identity — hashing, addressing, equality. Never for display |
+| `compact` | the same bytes, minimised |
+| `pretty` | reading and debugging. **Not version-stable — never snapshot-test it** |
+| `diff-friendly` | review diffs; sorts attributes |
+
 ### `cx` — CX reflecting on CX
 
 `[$cx:parse]`, `[$cx:serialize]`, `[$cx:ast]`, `[$cx:from-format]`. This is
@@ -109,6 +143,19 @@ how tooling written in CX reads CX — including the generator that produced
 this file.
 
 {{EXAMPLE:cx-001-parse-directive-navigable block}}
+
+### `log` — structured context, not string prefixes
+
+Log context is a **scope**, entered with `[?with-scope]` and read back as a
+map. Nesting overrides key by key, and the scope is restored on exit — which
+is what makes a request id ride an entire call tree without being threaded
+through every signature:
+
+{{EXAMPLE:log-012-current-scope-inside-scope block}}
+
+{{EXAMPLE:log-013-current-scope-nest-override block}}
+
+{{EXAMPLE:log-011-current-scope-empty-no-scope block}}
 
 ### `time` — typed instants, refused nonsense
 
