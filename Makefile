@@ -2280,3 +2280,36 @@ clean:
 .PHONY: test-oriel-lane
 test-oriel-lane: build-vcx
 	@bash scripts/oriel_lane.sh
+
+# ── <cx-diagram> web-component offline lane (#1015) ────────────────────────────
+# Sibling of the playground's no-CDN gate (#1007), for the OTHER surface that
+# was still script-loading mermaid@10 from jsDelivr: tooling/web/cx-diagram.js.
+#
+# ONE ARTIFACT, NOT TWO PINS — the same discipline #1007 set. The repo keeps a
+# single vendored mermaid (scripts/gen_guide/playground/vendor/, pin of record in
+# its README: 10.9.8 UMD, SHA-256 recorded). This target does NOT add a second
+# 3.3 MB copy to git; it STAGES that one file beside the component, exactly as
+# `build-playground` stages the playground's docroot. The component resolves
+# `./vendor/mermaid.min.js` against its own script URL, so the staged layout is
+# what a consumer copying the pair out would reproduce.
+#
+# Deliberately its own target rather than a hook in build-playground: the two
+# surfaces ship separately, and this one needs no emcc and no wasm.
+.PHONY: stage-web-component
+stage-web-component:
+	@echo "[stage-web-component] staging dist/web-component-preview/"
+	@rm -rf dist/web-component-preview
+	@mkdir -p dist/web-component-preview/vendor
+	@cp tooling/web/cx-diagram.js dist/web-component-preview/
+	@cp tooling/web/demo.html dist/web-component-preview/
+	@cp scripts/gen_guide/playground/vendor/mermaid.min.js dist/web-component-preview/vendor/
+	@cp scripts/gen_guide/playground/vendor/LICENSE-mermaid.txt dist/web-component-preview/vendor/
+	@echo "[stage-web-component] docroot ready — open dist/web-component-preview/demo.html"
+
+## test-web-component-offline  The #1015 no-CDN gate for <cx-diagram>: the
+##                  component carries no off-origin URL, demo.html loads no
+##                  off-origin script, and the staged renderer is the ONE
+##                  vendored bundle byte-for-byte (never a second pin).
+.PHONY: test-web-component-offline
+test-web-component-offline: stage-web-component
+	@bash scripts/test_web_component_offline.sh
