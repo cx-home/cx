@@ -12,3 +12,10 @@
 #
 # ── #996, 2026-08-26: the request-level LSP harness.
 #absorbed vcx/tests/lsp_harness_test.v
+#
+# ── #1004, 2026-08-26: no new input. The umbrella's own pins from the
+# absorbed lsp_for_walk_test.v / lsp_semantic_comment_test.v rows were
+# migrated IN PLACE off the retired `lsp_session` / `frame` / `esc_json` /
+# `count_code` / `json_escape` helpers onto the #996 `lsph_run` harness. If
+# those two rows are ever un-absorbed to regenerate, the originals carry the
+# OLD unbounded-os.execute probe: take the umbrella's bodies, not theirs.
