@@ -614,9 +614,10 @@
 
    So every LOCAL asset reference carries `?v=<VERSION>`. The version is
    DERIVED from the repo-root VERSION file that $ver already reads, never
-   spelled a second time. Third-party references (Google Fonts, the mermaid
-   CDN) are left alone: their URLs are already immutable-versioned and are not
-   ours to stamp.
+   spelled a second time. Third-party references (Google Fonts) are left alone:
+   their URLs are already immutable-versioned and are not ours to stamp. The
+   mermaid renderer used to be in that category and no longer is — since #1007
+   it is a vendored local asset and gets stamped like every other one.
 
    `stamp` is for hrefs this file emits. `copy-stamped-if` is for the static
    playground page, which is copied verbatim and carries its own <head>: it
@@ -955,6 +956,7 @@
     [$io:make-dirs [$cat ($out, '/highlight')]],
     [$io:make-dirs [$cat ($out, '/search')]],
     [$io:make-dirs [$cat ($out, '/playground')]],
+    [$io:make-dirs [$cat ($out, '/playground/vendor')]],
     [$io:copy [$cat ($gen, '/style.css')]              [$cat ($out, '/style.css')]],
     [$io:copy [$cat ($gen, '/highlight/highlight.js')] [$cat ($out, '/highlight/highlight.js')]],
     [$io:copy [$cat ($gen, '/search/search.js')]       [$cat ($out, '/search/search.js')]],
@@ -964,14 +966,27 @@
     [$copy-if [$cat ($gen, '/playground/playground.examples.js')] [$cat ($out, '/playground/playground.examples.js')]],
     [$copy-if [$cat ($gen, '/playground/playground.css')]         [$cat ($out, '/playground/playground.css')]],
     [$copy-if [$cat ($gen, '/playground/jspi_probe.html')]        [$cat ($out, '/playground/jspi_probe.html')]],
+    [; #1007 — the diagram renderer is a VENDORED asset, not a CDN <script>, so
+       the Graph pane works over file:// and offline like the rest of the page,
+       and the bytes that draw a reader's diagram move only by commit. Its MIT
+       license travels beside it, the way third_party/re2's does into every
+       release tarball. ]
+    [$copy-if [$cat ($gen, '/playground/vendor/mermaid.min.js')]
+              [$cat ($out, '/playground/vendor/mermaid.min.js')]],
+    [$copy-if [$cat ($gen, '/playground/vendor/LICENSE-mermaid.txt')]
+              [$cat ($out, '/playground/vendor/LICENSE-mermaid.txt')]],
     [; #953 — the playground page carries its own <head>, so it is stamped on
-       the way out rather than copied verbatim. Its LOCAL assets only: the
-       Google Fonts and mermaid CDN URLs in that file are already
-       immutable-versioned and are not ours to rewrite. ]
+       the way out rather than copied verbatim. Its LOCAL assets only, which
+       since #1007 includes the vendored renderer: it is ours now, it changes
+       when the pin moves, and a visitor holding a cached 3 MB bundle from the
+       previous pin is exactly the stale-asset window ?v= exists to close. The
+       Google Fonts URLs are still left alone — already immutable-versioned and
+       not ours to rewrite. ]
     [$copy-stamped-if [$cat ($gen, '/playground/playground.html')]
                       [$cat ($out, '/playground.html')] $ver
                       ('playground/playground.css', 'playground/playground.js',
                        'playground/playground.examples.js', 'highlight/highlight.js',
+                       'playground/vendor/mermaid.min.js',
                        'wasm/cxlib.js')],
     [$io:make-dirs [$cat ($out, '/wasm')]],
     [$copy-if 'dist/wasm/cxlib.js'            [$cat ($out, '/wasm/cxlib.js')]],

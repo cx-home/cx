@@ -6,11 +6,20 @@
 //
 //     example × {auto, instance} × {source, output} × {min, compact, full}
 //
-// against the same mermaid MAJOR the page loads from its CDN. A diagram
-// that does not parse is a pane the reader cannot use — which is how
-// `string @size "'large'"` sat in front of visitors for five releases
-// (#992): every piece of the pipeline "worked", and nothing checked the
-// one property that decides whether a human sees a picture.
+// against THE VERY BUNDLE the page loads. A diagram that does not parse
+// is a pane the reader cannot use — which is how `string @size "'large'"`
+// sat in front of visitors for five releases (#992): every piece of the
+// pipeline "worked", and nothing checked the one property that decides
+// whether a human sees a picture.
+//
+// ONE ARTIFACT, NOT TWO PINS (#1007). This gate used to resolve its own
+// `mermaid` from scripts/playground-gate/node_modules while the page
+// pulled the floating range `mermaid@10` off jsDelivr — two pins that
+// drifted independently and only happened to agree. Both now read
+// scripts/gen_guide/playground/vendor/mermaid.min.js, so "the version the
+// gate blessed" and "the version the reader got" are the same bytes by
+// construction. Moving the pin is therefore a repo change this gate sees,
+// not a CDN change it can't.
 //
 // WHY BOTH SUBJECTS. `auto` comes from the CX diagram module inside the
 // wasm engine; `instance` is built in playground.js in the browser. They
@@ -26,17 +35,19 @@
 // shipped code rotted.
 //
 // USAGE
-//   npm --prefix scripts/playground-gate install     (once)
+//   npm --prefix scripts/playground-gate install     (once — jsdom only)
 //   node scripts/test_playground_mermaid.mjs [--verbose] [--limit N]
 //
-// Requires `make build-playground` to have produced dist/wasm/.
+// Requires `make build-playground` to have produced dist/wasm/. The
+// renderer needs no install: it is in the tree.
 // Exit 0 when every diagram parses; 1 on any failure; 2 on a setup
 // problem (missing deps / missing bundle) — never a silent skip.
 
 import { createRequire } from 'node:module';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 
 const require = createRequire(import.meta.url);
 const ROOT = resolve(import.meta.dirname, '..');
@@ -52,6 +63,9 @@ const LIMIT = LIMIT_IX >= 0 ? parseInt(process.argv[LIMIT_IX + 1], 10) : Infinit
 
 const GATE_MODULES = resolve(ROOT, 'scripts/playground-gate/node_modules');
 const PLAYGROUND = resolve(ROOT, 'scripts/gen_guide/playground');
+// The renderer the PAGE loads (#1007). Not an npm resolution — the file
+// playground.html points its <script> at.
+const VENDORED_MERMAID = resolve(PLAYGROUND, 'vendor/mermaid.min.js');
 
 function setupFail(msg, hint) {
   console.error(`\n[playground-mermaid] SETUP FAILURE: ${msg}`);
@@ -142,13 +156,20 @@ if (!existsSync(GATE_MODULES)) {
   );
 }
 const gateRequire = createRequire(resolve(GATE_MODULES, 'noop.js'));
-let JSDOM, mermaidPkgVersion;
+let JSDOM;
 try {
   ({ JSDOM } = gateRequire('jsdom'));
-  mermaidPkgVersion = gateRequire('mermaid/package.json').version;
 } catch (e) {
-  setupFail(`could not load jsdom / mermaid: ${e.message}`,
+  setupFail(`could not load jsdom: ${e.message}`,
             'npm --prefix scripts/playground-gate install');
+}
+// mermaid is NOT an npm dependency of this gate any more (#1007) — it is
+// vendored beside the page. A missing bundle is a setup failure, never a
+// silent fall back to some node_modules copy, because a copy is exactly
+// the drift this closes.
+if (!existsSync(VENDORED_MERMAID)) {
+  setupFail(`the vendored mermaid bundle is missing: ${VENDORED_MERMAID}`,
+            'see scripts/gen_guide/playground/vendor/README.md — the pin of record');
 }
 
 // ── wasm engine ────────────────────────────────────────────────
@@ -183,10 +204,33 @@ globalThis.document = win.document;
 Object.defineProperty(globalThis, 'navigator',
   { value: win.navigator, configurable: true, writable: true });
 
-// mermaid, for the page AND for this gate's own parse calls.
-const mermaid = (await import(resolve(GATE_MODULES, 'mermaid/dist/mermaid.esm.mjs')
-  .replace(/dist\/mermaid\.esm\.mjs$/, 'dist/mermaid.core.mjs'))
-  .catch(() => import(resolve(GATE_MODULES, 'mermaid')))).default;
+// mermaid — THE VENDORED BUNDLE, the one the page's <script> loads (#1007).
+//
+// Loaded through an explicit CJS shim rather than `import()` or `require()`
+// on purpose. The bundle is UMD, and which branch of a UMD prelude fires
+// under node depends on the nearest package.json's `type` field: with
+// `type: "module"` in scope node parses it as ESM, no `module` is in
+// scope, the prelude falls through to its global-assignment branch and
+// `import()` hands back an empty namespace object — a load that "succeeds"
+// while producing no mermaid. Handing it a `module`/`exports` pair makes
+// the first branch fire deterministically, wherever the file sits and
+// whatever package.json happens to be above it.
+//
+// This runs AFTER the jsdom globals are installed above: the bundle's
+// bundled d3 touches `document` while evaluating.
+const MERMAID_SRC = readFileSync(VENDORED_MERMAID, 'utf8');
+const MERMAID_BYTES = statSync(VENDORED_MERMAID).size;
+const MERMAID_SHA = createHash('sha256').update(MERMAID_SRC).digest('hex');
+const mermaid = (() => {
+  const mod = { exports: {} };
+  new Function('module', 'exports', MERMAID_SRC)(mod, mod.exports);
+  const m = mod.exports && mod.exports.default ? mod.exports.default : mod.exports;
+  if (!m || typeof m.parse !== 'function') {
+    setupFail('the vendored mermaid bundle loaded but exposes no parse().',
+              `is ${VENDORED_MERMAID} the UMD build (dist/mermaid.min.js)?`);
+  }
+  return m;
+})();
 mermaid.initialize({
   startOnLoad: false, theme: 'dark', securityLevel: 'loose',
   htmlLabels: true, flowchart: { curve: 'basis', htmlLabels: true },
@@ -308,7 +352,11 @@ if (fail > 0) {
   }
   if (failures.length > 20) console.log(`\n… and ${failures.length - 20} more`);
 } else if (VERBOSE) {
-  console.log(`shard ${SLICE}: ${pass} parsed, 0 failures (mermaid ${mermaidPkgVersion})`);
+  // Identify the renderer by the BYTES, not by a self-reported version
+  // string (the UMD bundle exports none) — the digest is what a reader
+  // actually ran, and it is the value the vendor README pins.
+  console.log(`shard ${SLICE}: ${pass} parsed, 0 failures `
+    + `(vendored mermaid, ${MERMAID_BYTES} bytes, sha256 ${MERMAID_SHA.slice(0, 12)}…)`);
 }
 // The line the dispatcher reads. Kept last and kept unique.
 console.log(`__SHARD__ ${JSON.stringify({ pass, empty, skipped, fail })}`);

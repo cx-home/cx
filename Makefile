@@ -161,6 +161,7 @@ build-playground:
 	@echo "[build-playground] staging dist/playground-preview/"
 	@rm -rf dist/playground-preview
 	@mkdir -p dist/playground-preview/playground
+	@mkdir -p dist/playground-preview/playground/vendor
 	@mkdir -p dist/playground-preview/wasm
 	@mkdir -p dist/playground-preview/dist/wasm
 	@cp scripts/gen_guide/playground/playground.html dist/playground-preview/
@@ -168,6 +169,13 @@ build-playground:
 	@cp scripts/gen_guide/playground/playground.css dist/playground-preview/playground/
 	@cp scripts/gen_guide/playground/playground.examples.js dist/playground-preview/playground/
 	@cp scripts/gen_guide/playground/jspi_probe.html dist/playground-preview/playground/
+	@# The vendored diagram renderer (#1007) — mermaid at a pinned version,
+	@# no longer a jsDelivr <script>. It is staged like any other playground
+	@# asset because it IS one now; the license travels with it, the way
+	@# third_party/re2's does into every release tarball. Copied, not
+	@# symlinked, so the preview docroot is self-contained.
+	@cp scripts/gen_guide/playground/vendor/mermaid.min.js dist/playground-preview/playground/vendor/
+	@cp scripts/gen_guide/playground/vendor/LICENSE-mermaid.txt dist/playground-preview/playground/vendor/
 	@cp dist/wasm/cxlib.js dist/playground-preview/wasm/cxlib.js
 	@cp dist/wasm/libcx-async.js dist/playground-preview/wasm/libcx-async.js
 	@cp dist/wasm/libcx-sync.js dist/playground-preview/wasm/libcx-sync.js
@@ -389,13 +397,15 @@ verify-playground-examples: build-vcx
 # ── playground diagram validity gate (#992) ───────────────────────────────────
 # Every diagram the playground can put on screen must PARSE:
 #   example × {auto, instance} × {source, output} × {min, compact, full}
-# checked against the same mermaid MAJOR the page loads from its CDN. The
-# emitters are reached where they really live — the `auto` graphs from the built
-# wasm engine, the `instance` graphs from playground.js's own builder — so the
-# gate cannot go green over a shipped file that has rotted.
+# checked against the very mermaid bundle the page loads — since #1007 that is
+# the vendored scripts/gen_guide/playground/vendor/mermaid.min.js, not a CDN
+# range and not the gate's own npm copy, so gate and page cannot pin different
+# renderers. The emitters are reached where they really live — the `auto` graphs
+# from the built wasm engine, the `instance` graphs from playground.js's own
+# builder — so the gate cannot go green over a shipped file that has rotted.
 #
 # Opt-in, like `build-wasm`: it needs `make build-playground` to have produced
-# dist/wasm/, plus one npm install for jsdom + mermaid. Both preconditions FAIL
+# dist/wasm/, plus one npm install for jsdom. Both preconditions FAIL
 # LOUD (exit 2) rather than skipping, so this lane can never report a vacuous
 # pass. It is deliberately NOT in TEST_TARGETS — that lane must not require
 # emcc or a network fetch — and belongs with scripts/test_playground_smoke.sh as

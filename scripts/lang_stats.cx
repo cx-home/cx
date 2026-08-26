@@ -13,8 +13,8 @@
 #   ... lang_stats.cx --print-only     # table only, no README write
 #
 # Classification mirrors Linguist's spirit: only known source extensions
-# count; vendored (third_party/) and generated (docs/, dist/) trees are
-# excluded from the denominator.
+# count; vendored (third_party/, any `vendor/` path segment) and generated
+# (docs/, dist/) trees are excluded from the denominator.
 
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
@@ -52,11 +52,20 @@
                    [yield [$string $r@lang]]]]
     [?else [$first $hits] '']]]
 
+[# A `vendor/` path SEGMENT means third-party bytes, wherever they sit. Most
+   vendoring lands under third_party/, but an asset that has to be served
+   beside the page it belongs to cannot: scripts/gen_guide/playground/vendor/
+   holds the playground's pinned mermaid bundle (#1007), 3.3 MB of somebody
+   else's minified JavaScript. Counting it moved this README's "% of source"
+   badge by 0.3 points, which is the metric describing the wrong thing — the
+   header's rule was always "vendored trees are excluded", and third_party/
+   was only ever the usual address for them, not the definition. #]
 [?def excluded scope=private pure [returns bool] ($path::string)
   [?if [$strings:starts-with $path 'third_party/'] [then true]
   [else [?if [$strings:starts-with $path 'docs/'] [then true]
   [else [?if [$strings:starts-with $path 'dist/'] [then true]
-  [else [$strings:starts-with $path 'lang/_archived/']]]]]]]]
+  [else [?if [$strings:contains $path '/vendor/'] [then true]
+  [else [$strings:starts-with $path 'lang/_archived/']]]]]]]]]]
 
 # CX `/` is exact (float/decimal), never truncating — floor to integer
 # tenths explicitly.

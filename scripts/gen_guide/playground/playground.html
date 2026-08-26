@@ -119,11 +119,17 @@
 <script src="wasm/cxlib.js" defer></script>
 <script src="playground/playground.examples.js" defer></script>
 <script src="highlight/highlight.js" defer></script>
-<!-- Mermaid via jsDelivr CDN. Works under HTTP and (in most modern
-     browsers) file://. We pull it async; the Graph tab shows the
-     raw Mermaid source until the lib finishes loading. -->
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"
-        crossorigin="anonymous" defer></script>
+<!-- Mermaid, VENDORED (#1007). This was a jsDelivr <script> against the
+     floating range `mermaid@10`, which meant two things: the Graph pane
+     needed the network — so §8.11.3's "works without an internet
+     connection" held for evaluation but not for diagrams — and the bytes
+     that drew a reader's diagram could change under an already-cut
+     release tag. The renderer now ships in the repo at a pinned version;
+     scripts/gen_guide/playground/vendor/README.md is the pin of record.
+     Same bundle the validity gate parses against, so gate and page
+     cannot drift apart. Ordered before playground.js and both `defer`,
+     so window.mermaid is present by the time the page initialises. -->
+<script src="playground/vendor/mermaid.min.js" defer></script>
 <script src="playground/playground.js" defer></script>
 </body>
 </html>

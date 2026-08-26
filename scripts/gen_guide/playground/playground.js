@@ -1152,9 +1152,12 @@
       return;
     }
     if (!window.mermaid || typeof window.mermaid.render !== 'function') {
-      // The CDN script has not landed yet (or was blocked). This is a
-      // LOADING state, not a broken shape — say so, and let the next
-      // refreshView() paint the real diagram.
+      // Since #1007 the renderer is VENDORED beside this file and both
+      // <script>s are `defer` in document order, so by the time anything
+      // here runs mermaid is loaded — a CDN that never lands, or a proxy
+      // that blocks it, is no longer a state a reader can reach. The
+      // branch stays because it costs nothing and a missing asset should
+      // read as "still loading", not as a broken shape.
       host.innerHTML = '<p class="cxp-viz-placeholder">Loading the diagram renderer…</p>';
       return;
     }
@@ -1547,7 +1550,10 @@
   // ── Verification seam (#992) ─────────────────────────────
   // scripts/test_playground_mermaid.mjs parses EVERY diagram this page
   // can emit — each example × {auto, instance} × {source, output} ×
-  // each detail rung — against the same mermaid major the page loads.
+  // each detail rung — against the very bundle the page loads: since
+  // #1007 both read scripts/gen_guide/playground/vendor/mermaid.min.js,
+  // so "the gate's mermaid" and "the reader's mermaid" are one artifact
+  // and cannot drift (they were two independent pins before).
   // The instance graphs are built HERE, in the browser, so the gate has
   // to reach this builder rather than reimplement it; a reimplementation
   // would verify a copy and let the shipped one rot. That is the whole
