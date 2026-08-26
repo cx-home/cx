@@ -83,6 +83,21 @@
   } catch (_) { /* sandboxed / disabled — keep default */ }
   let prettyMode = true;            // output panes are pretty-printed by default
   let lastEvalRawCx   = '';         // last successful raw streaming CX output
+  // wasmUnsupportedNote — the loaded example's corpus-declared reason for
+  // NOT running in this engine (#1033), or ''. Module-level rather than a
+  // runProgram() argument on purpose: a marked example must get the honest
+  // banner however the run STARTED, including a manual Run click, which
+  // carries no options from loadExample().
+  let wasmUnsupportedNote = '';
+  // The remedy half of the banner, kept in ONE place rather than repeated
+  // in every corpus entry: the corpus states the FACT about the example,
+  // this states what the reader can do about it. cxlib loads the threaded
+  // build only when crossOriginIsolated + SharedArrayBuffer are available
+  // (COOP/COEP headers, i.e. `make guide-http`); on file:// or plain HTTP
+  // it loads the single-threaded JSPI build, which has no `go`.
+  const WASM_UNSUPPORTED_REMEDY =
+    'Run it in your terminal (`cx program.cx`), or serve the playground with '
+    + 'COOP/COEP (`make guide-http`) to load the threaded build.';
   let nodeRegistry    = [];         // [{start, end, el, kind, key}, …] — for source ↔ tree bridge
   let nodeRegistrySource = '';      // text of the tree currently being rendered
   let graphScale      = 1;          // current SVG zoom factor
@@ -341,15 +356,42 @@
     syncRender();
     clearResults();
     refreshView();
-    // Examples flagged runnable:false need a capability the file:// wasm
-    // sandbox can't grant (net / subprocess / fs). They still Run — they just
-    // return a capability-denied `[err …]` value. Surface that up front so the
-    // result isn't mistaken for a bug.
-    const capNote = (found.ex.runnable === false)
-      ? 'This example needs a capability unavailable in the wasm playground '
-        + '(network / subprocess / filesystem). Run it under `make guide-http` or '
-        + '`cx --allow-net` in your terminal; here it returns a capability-denied result.'
-      : '';
+    // Two different "this won't do what you expect here" markers, and they
+    // are NOT the same thing:
+    //
+    //   runnable:false     — needs a capability the sandbox can't grant
+    //                        (net / subprocess / fs). It still RUNS; it just
+    //                        returns a capability-denied `[err …]` value.
+    //   wasmUnsupported    — the engine cannot reproduce this faithfully
+    //                        (#1033). Either it REFUSES the program outright
+    //                        (the [?worker]/[?async] class: nothing comes back
+    //                        but a V panic, so without a banner the reader gets
+    //                        a raw engine error for something the corpus
+    //                        already knew about), or it EVALUATES IT TO A
+    //                        DIFFERENT VALUE than native cx (example 57: a
+    //                        [?bulkhead] never saturates when [par] is
+    //                        sequential) — a quietly wrong answer, which needs
+    //                        the note even though nothing threw.
+    //
+    // Surface either up front so a result isn't mistaken for a bug.
+    wasmUnsupportedNote = (typeof found.ex.wasmUnsupported === 'string'
+                           && found.ex.wasmUnsupported.trim())
+      ? found.ex.wasmUnsupported.trim() : '';
+    // noStableValue is a third, weaker marker: the program RUNS, but its
+    // native value is a race, so what the reader sees here is not "the"
+    // answer. Saying so beats letting them memorise one run's output.
+    const unstableNote = (typeof found.ex.noStableValue === 'string'
+                          && found.ex.noStableValue.trim())
+      ? found.ex.noStableValue.trim() : '';
+    const capNote = wasmUnsupportedNote
+      ? `${wasmUnsupportedNote} ${WASM_UNSUPPORTED_REMEDY}`
+      : (unstableNote
+        ? `This program has no single answer. ${unstableNote}`
+        : ((found.ex.runnable === false)
+          ? 'This example needs a capability unavailable in the wasm playground '
+            + '(network / subprocess / filesystem). Run it under `make guide-http` or '
+            + '`cx --allow-net` in your terminal; here it returns a capability-denied result.'
+          : ''));
     if (capNote) setStatus(capNote, 'pending');
     runProgram({ auto: true, capNote });
   }
@@ -375,7 +417,15 @@
     pick.value = `${target.kind}:${target.key}`;
     loadExample(pick.value);
   }
-  input.addEventListener('input', () => { syncRender(); refreshView(); });
+  // Editing the source retires the loaded example's wasm-unsupported marker
+  // (#1033). The marker is a claim about THAT program; once the reader has
+  // changed the text, a refusal may be entirely their own, and labelling it
+  // "not supported in this build" would be the same dishonesty in reverse.
+  input.addEventListener('input', () => {
+    wasmUnsupportedNote = '';
+    syncRender();
+    refreshView();
+  });
   input.addEventListener('scroll', syncScroll);
   ['keyup','mouseup','click','select'].forEach(ev =>
     input.addEventListener(ev, () => highlightTreeAtSourceCursor()));
@@ -1515,13 +1565,30 @@
     } catch (err) {
       if (token !== runToken) return;
       const msg = (err && err.message) ? err.message : String(err);
-      // Honest failure: the refusal goes in the OUTPUT PANE, not only in
-      // the status bar. A reader clicking through examples must never be
-      // left staring at an empty pane wondering whether it ran.
-      showRefusal(`// this program refused to run\n${msg}`);
       lastEvalRawCx = '';
-      refreshView();
-      setStatus(`Run failed: ${escapeHtml(msg)}`, 'error');
+      if (wasmUnsupportedNote) {
+        // The corpus already knew this engine refuses this program (#1033).
+        // Showing the reader a raw V panic for a KNOWN limitation reads as
+        // "the playground is broken" when the truth is "this build has no
+        // threads" — so the marker's own words lead, the remedy follows,
+        // and the engine's message rides along as detail instead of as the
+        // headline. This is not a failed run; it is an unsupported one.
+        showRefusal(
+          `// not supported in this playground build\n`
+          + `// ${wasmUnsupportedNote}\n`
+          + `// ${WASM_UNSUPPORTED_REMEDY}\n`
+          + `//\n`
+          + `// engine detail: ${msg}`);
+        refreshView();
+        setStatus(`${wasmUnsupportedNote} ${WASM_UNSUPPORTED_REMEDY}`, 'pending');
+      } else {
+        // Honest failure: the refusal goes in the OUTPUT PANE, not only in
+        // the status bar. A reader clicking through examples must never be
+        // left staring at an empty pane wondering whether it ran.
+        showRefusal(`// this program refused to run\n${msg}`);
+        refreshView();
+        setStatus(`Run failed: ${escapeHtml(msg)}`, 'error');
+      }
       // eslint-disable-next-line no-console
       console.error('[cx-playground] Run failed:', err);
     } finally {

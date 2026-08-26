@@ -420,6 +420,39 @@ verify-playground-examples: build-vcx
 test-playground-mermaid:
 	@node scripts/test_playground_mermaid.mjs
 
+# ── playground wasm EVALUATION sweep (#1033) ──────────────────────────────────
+# Every example in the corpus, evaluated in the engine A READER GETS, either
+# produces the same value native cx produces for the same source under the same
+# (zero) grants, or is explicitly marked wasm-unsupported in examples.cxd with a
+# reason the page shows. A marker that is not justified — marked, but it works —
+# is a FAILURE too, so the gate cannot be defeated by marking the corpus
+# wholesale.
+#
+# WHY THIS IS NOT COVERED ELSEWHERE. verify-playground-examples replays all 182
+# through NATIVE cx; test-playground-mermaid checks that the DIAGRAMS parse (it
+# calls evalCode for its `output` subject but swallows the result into a SKIP).
+# So nothing evaluated the corpus in the shipped wasm engine, and 10 examples
+# that the engine refuses outright shipped green through two release cuts.
+#
+# WHY IT DRIVES A BROWSER. Measured, not assumed: node cannot load the bundle
+# the page loads. libcx-async/-pthreads are JSPI builds that abort under node,
+# and node 22 exposes no JSPI under any flag — so a node harness must use
+# libcx-sync, which DISAGREES with the reader's engine (18 refusals vs 10; it
+# would have demanded false markers on 8 working examples). The gate asserts it
+# got a JSPI bundle rather than quietly measuring the weaker one.
+#
+# Opt-in like build-wasm and the mermaid gate: it needs `make build-playground`
+# to have staged dist/playground-preview/, plus a Chromium-family browser
+# (CX_CHROME overrides). Both preconditions FAIL LOUD (exit 2) rather than
+# skipping, so this lane can never report a vacuous pass. Deliberately NOT in
+# TEST_TARGETS — that lane must not require emcc or a browser — and belongs with
+# test-playground-mermaid and scripts/test_playground_smoke.sh as the playground
+# release lane. Every wait is bounded (WASM_EVAL_DEADLINE, default 900s); the
+# server and browser are reaped on every exit path.
+.PHONY: test-playground-wasm-eval
+test-playground-wasm-eval:
+	@node scripts/test_playground_wasm_eval.mjs
+
 # stdlib catalog drift gate — verifies the single invariant
 #   SPEC_SET == (BUNDLE_SET union DISPATCH_SET)
 # i.e. every status=current [module-meta] in spec/03-approved/std-lib/*.md

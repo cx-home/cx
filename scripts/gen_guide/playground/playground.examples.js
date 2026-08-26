@@ -6,6 +6,12 @@
 //   173-182 functional composition (cx-stdlib/fp)
 // runnable:false marks an example that needs a wasm-unavailable capability
 // (net / subprocess / fs); it is exempt from the clean-run gate.
+// wasmUnsupported marks an example the SHIPPED wasm engine cannot reproduce
+// faithfully (#1033) — it refuses the program, or evaluates it to a different
+// value than native cx — carrying the reason the page shows the reader; the
+// set is pinned in both directions by `make test-playground-wasm-eval`.
+// noStableValue marks an example with NO single expected value (its native
+// result is a race); the sweep then requires only that it still evaluates.
 // Generator: scripts/gen_guide/playground/gen_examples.cx — re-run (or `make guide`)
 // after any syntax change; `--check` verifies this file without rewriting it.
 
@@ -408,9 +414,10 @@
     "57-map-par-bulkhead": {
       label: "[57] [?map \u2026 [par]] \u2014 bounded with [?bulkhead]",
       input: "[?map (1, 2, 3, 4, 5, 6, 7, 8)\n  [using [?fn $n\n           [?bulkhead max-concurrent=2\n             [?let [= $_ [?sleep 100ms mock]]\n               [* $n $n]]]]]\n  [par]]",
-      note:  "**Introduces:** `[?bulkhead max-concurrent=N \u2026]` caps in-flight work. With 8 parallel items but a 2-slot bulkhead, the overflow returns `[err cx-err:CXER0152 'bulkhead saturated']` \u2014 backpressure surfaced as values.",
+      note:  "**Introduces:** `[?bulkhead max-concurrent=N \u2026]` caps in-flight work. With 8 parallel items but a 2-slot bulkhead, the overflow returns `[err cx-err:CXER0152 'bulkhead saturated']` \u2014 backpressure surfaced as values. **Which items overflow is a race:** natively this program has no single answer \u2014 measured 10 distinct results in 12 runs, from zero errs to six. In the browser `[par]` is sequential, so nothing is ever contended and you always get all eight squares.",
       tags:  ["bulkhead", "eq", "fn", "let", "map", "mul", "parallel", "resilience", "sleep"],
       runnable: true,
+      noStableValue: "Which items saturate depends on thread timing: natively this program returns a different value almost every run (measured: 10 distinct results in 12 runs). The playground's single-threaded wasm build runs `[par]` sequentially, so there it is deterministic and never saturates.",
     },
     "58-par-shared-cb": {
       label: "[58] [?map :par] \u2014 shared [?circuit-breaker]",
@@ -593,6 +600,7 @@
       note:  "**Introduces:** `[?async EXPR]` returns a future handle. `[?await $f]` resolves it. Futures are lazy: the body runs on first await.",
       tags:  ["async", "await", "eq", "let"],
       runnable: true,
+      wasmUnsupported: "`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).",
     },
     "84-async-mock-sleep": {
       label: "[84] [?async] \u2014 mock sleep then resolve",
@@ -600,6 +608,7 @@
       note:  "**Introduces:** futures with internal mock-sleep. The future resolves in logical time.",
       tags:  ["async", "await", "eq", "let", "mock", "sleep"],
       runnable: true,
+      wasmUnsupported: "`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).",
     },
     "85-await-all": {
       label: "[85] [?await-all] \u2014 wait on every future",
@@ -607,6 +616,7 @@
       note:  "**Introduces:** `[?await-all (futures\u2026)]`. Waits on every future; returns the sequence of results (or aggregated CXER0240 err).",
       tags:  ["async", "await-all", "eq", "let", "mock", "sleep"],
       runnable: true,
+      wasmUnsupported: "`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).",
     },
     "86-await-any": {
       label: "[86] [?await-any] \u2014 first success wins",
@@ -614,6 +624,7 @@
       note:  "**Introduces:** `[?await-any]`. Returns the first successful future; ignores subsequent failures.",
       tags:  ["async", "await-any", "eq", "let"],
       runnable: true,
+      wasmUnsupported: "`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).",
     },
     "87-await-race": {
       label: "[87] [?await-race] \u2014 first to resolve wins",
@@ -621,6 +632,7 @@
       note:  "**Introduces:** `[?await-race]`. Returns the first future to resolve (success OR fail); cancels the losers.",
       tags:  ["async", "await-race", "eq", "let", "mock", "sleep"],
       runnable: true,
+      wasmUnsupported: "`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).",
     },
     "88-channel-basic": {
       label: "[88] [?channel] \u2014 buffered send / receive",
@@ -635,6 +647,7 @@
       note:  "**Introduces:** `[?worker name=S BODY]` \u2014 registers a worker. In the sequential substrate the body runs to completion synchronously.",
       tags:  ["worker"],
       runnable: true,
+      wasmUnsupported: "`[?worker]` spawns an OS thread; the playground's default single-threaded wasm build refuses it (`go code__run_worker_thread(): Not supported`).",
     },
     "90-cancel": {
       label: "[90] [?cancel] \u2014 abort a future",
@@ -642,6 +655,7 @@
       note:  "**Introduces:** `[?cancel $handle]`. Requests cancellation; future resolves to `[err :code \"cx-err:CXER0260\"]`.",
       tags:  ["async", "await", "cancel", "eq", "let", "mock", "sleep"],
       runnable: true,
+      wasmUnsupported: "`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).",
     },
     "91-retry-happy": {
       label: "[91] [?retry] \u2014 first try wins",
@@ -1136,9 +1150,10 @@
     "161-sequence-worker-top": {
       label: "[161] Sequence diagram \u2014 top-level `[?worker]`",
       input: "[?worker name=\"task\"\n  [?let [= $_ [?sleep 100ms :mock]]\n    [ok value=\"done\"]]]",
-      note:  "**Pattern:** background task as program entry-point. **Diagram:** because `[?worker]` sits at the top level the emitter switches to Mermaid `sequenceDiagram` instead of `flowchart TD` (per spec/code.md \u00a710.1.2). The worker becomes an actor lane with its body events as messages along that lane. Try wrapping the same body in `[?let [= $w [?worker \u2026]] $w]` and watch the diagram revert to a flowchart \u2014 `[?worker]` only steers the dialect when it's the outermost form.",
+      note:  "**Pattern:** background task as program entry-point. **Diagram:** because the program is sequence-shaped the emitter switches to Mermaid `sequenceDiagram` instead of `flowchart TD` (per spec/code.md \u00a710.1.2). The worker becomes an actor lane with its body events as messages along that lane. A trigger reached through a `[?let]` binding counts too \u2014 `[?let [= $w [?worker \u2026]] \u2026]` is still a sequence, since the binding only aliases the lane (examples 171-172 are that shape).",
       tags:  ["eq", "let", "mock", "sleep", "worker"],
       runnable: true,
+      wasmUnsupported: "`[?worker]` spawns an OS thread; the playground's default single-threaded wasm build refuses it (`go code__run_worker_thread(): Not supported`).",
     },
     "162-sequence-select-channels": {
       label: "[162] Sequence diagram \u2014 `[?select]` across channels",
@@ -1206,16 +1221,18 @@
     "171-seq-mid-producer-consumer": {
       label: "[171] Sequence \u2014 producer / consumer over a channel",
       input: "[?let [= $ch [?channel name=\"jobs\" buffer=4]]\n  [?let [= $prod [?worker name=\"producer\"\n                   [body [?let [= $_ [?for [in $i [$range 1 3]]\n                                       [yield [?send $i to=$ch]]]]\n                           [?close $ch]]]]]\n    [?let [= $cons [?worker name=\"consumer\"\n                     [body [?for [in $i [$range 1 3]]\n                             [yield [?receive from=$ch]]]]]]\n      [?let [= $_ [?wait-for worker=$prod]]\n        [?wait-for worker=$cons]]]]]",
-      note:  "**Pattern:** a `[?channel buffer=N]` with a `[?worker]` producer (`[?send X to=$ch]` then `[?close]`) and a consumer (`[?receive from=$ch]`), joined with `[?wait-for worker=\u2026]`. **Diagram:** top-level workers render as `sequenceDiagram` actors with channel arrows. **http mode:** under file:// the wasm runtime is single-threaded (workers interleave cooperatively); under `make guide-http` they run on real OS threads.",
+      note:  "**Pattern:** a `[?channel buffer=N]` with a `[?worker]` producer (`[?send X to=$ch]` then `[?close]`) and a consumer (`[?receive from=$ch]`), joined with `[?wait-for worker=\u2026]`. **Diagram:** the let-bound workers and channels render as `sequenceDiagram` actors with channel arrows. **Running it:** the playground's default wasm build has no threads, so this program does not run in the browser \u2014 see the banner. Under `make guide-http` (COOP/COEP) cxlib loads the pthreads build and the workers run on real OS threads.",
       tags:  ["channel", "close", "eq", "for", "let", "receive", "send", "wait-for", "worker"],
       runnable: true,
+      wasmUnsupported: "`[?worker]` spawns an OS thread; the playground's default single-threaded wasm build refuses it (`go code__run_worker_thread(): Not supported`).",
     },
     "172-seq-large-workers-with-backpressure": {
       label: "[172] Sequence \u2014 dispatcher + worker + collector",
       input: "[?let [= $jobs [?channel name=\"jobs\" buffer=8]]\n  [?let [= $results [?channel name=\"results\" buffer=16]]\n    [?let [= $d [?worker name=\"dispatcher\"\n                  [body [?let [= $_ [?for [in $j [$range 1 4]]\n                                      [yield [?send $j to=$jobs]]]]\n                          [?close $jobs]]]]]\n      [?let [= $w [?worker name=\"worker\"\n                    [body [?for [in $j [$range 1 4]]\n                            [yield [?send [processed value=[?receive from=$jobs]]\n                                     to=$results]]]]]]\n        [?let [= $_ [?wait-for worker=$d]]\n          [?for [in $k [$range 1 4]]\n            [yield [?receive from=$results]]]]]]]]",
-      note:  "**Pattern:** a two-stage pipeline across two channels \u2014 a dispatcher fans jobs into `jobs`, a worker transforms each into `[processed \u2026]` on `results`, and the main thread drains `results`. **Diagram:** multiple top-level workers + channels render as a `sequenceDiagram`. **http mode:** real parallelism (and true channel backpressure on the bounded buffers) only happens under `make guide-http`; file:// interleaves cooperatively.",
+      note:  "**Pattern:** a two-stage pipeline across two channels \u2014 a dispatcher fans jobs into `jobs`, a worker transforms each into `[processed \u2026]` on `results`, and the main thread drains `results`. **Diagram:** the let-bound workers and channels render as a `sequenceDiagram`. **Running it:** the playground's default wasm build has no threads, so this program does not run in the browser \u2014 see the banner. Real parallelism (and true channel backpressure on the bounded buffers) needs `make guide-http`, where cxlib loads the pthreads build.",
       tags:  ["channel", "close", "eq", "for", "let", "receive", "send", "wait-for", "worker"],
       runnable: true,
+      wasmUnsupported: "`[?worker]` spawns an OS thread; the playground's default single-threaded wasm build refuses it (`go code__run_worker_thread(): Not supported`).",
     },
     "173-fp-map": {
       label: "[173] fp \u2014 `[$fp:map]` (functor map)",

@@ -249,7 +249,33 @@
     [where [= [$string $c.name] $name]]
     [yield [$raw-text-of $c]]]]]
 
-# load-examples: sequence of [entry key=… label=… src=… note=…].
+# load-examples: sequence of
+# [entry key=… label=… src=… note=… wasm-unsupported=…].
+#
+# `[wasm-unsupported [# reason #]]` is the #1033 marker: an example the
+# SHIPPED wasm engine cannot reproduce faithfully — either it REFUSES the
+# program (the `[?worker]` / `[?async]` class, which needs `go` and the
+# default single-threaded build has none) or it EVALUATES IT TO A
+# DIFFERENT VALUE than native cx (example 57: a `[?bulkhead]` never
+# saturates when `[par]` is sequential). Either way the reason is what
+# the page shows the reader instead of a raw engine error or a quietly
+# wrong answer.
+#
+# OPTIONAL — `section-of` yields '' when the section is absent, which is
+# the case for 171 of the 182. `make test-playground-wasm-eval` keeps the
+# set honest in BOTH directions: an unmarked refusal or divergence fails,
+# and so does a marker on an example that actually matches native.
+#
+# `[no-stable-value [# reason #]]` is the THIRD state, and it is not a
+# softer spelling of the second: the example has NO single expected value
+# to compare against, because its native result is a race. Example 57's
+# `[?bulkhead]` over `[par]` measured 10 distinct results in 12 native
+# runs. Comparing wasm to a freshly-derived native value there produces a
+# FLAKY gate — it flipped between "justified marker" and "stale marker"
+# on consecutive runs, which is how a gate teaches people to ignore it.
+# So the sweep asserts the weaker, true property for these: the example
+# must still EVALUATE in wasm (a refusal is a different defect and does
+# NOT get to hide behind this marker), and the value is not compared.
 [?def load-examples scope=public impure ($cxbin $data-path)
   [?let
     [= $r [$process:run ($cxbin, '--ast', '--compact', $data-path)]]
@@ -270,7 +296,9 @@
           key=[$attr-of $ex 'key']
           label=[$section-of $kids 'label']
           src=[$strip-edges [$section-of $kids 'src']]
-          note=[$strip-edges [$section-of $kids 'note']]]]]]]]]]
+          note=[$strip-edges [$section-of $kids 'note']]
+          wasm-unsupported=[$strings:trim [$section-of $kids 'wasm-unsupported']]
+          no-stable-value=[$strings:trim [$section-of $kids 'no-stable-value']]]]]]]]]]
 
 # ── audit (one isolated, grant-free child per example) ───────────────
 
@@ -355,6 +383,12 @@
   '//   173-182 functional composition (cx-stdlib/fp)',
   '// runnable:false marks an example that needs a wasm-unavailable capability',
   '// (net / subprocess / fs); it is exempt from the clean-run gate.',
+  '// wasmUnsupported marks an example the SHIPPED wasm engine cannot reproduce',
+  '// faithfully (#1033) — it refuses the program, or evaluates it to a different',
+  '// value than native cx — carrying the reason the page shows the reader; the',
+  '// set is pinned in both directions by `make test-playground-wasm-eval`.',
+  '// noStableValue marks an example with NO single expected value (its native',
+  '// result is a race); the sweep then requires only that it still evaluates.',
   '// Generator: scripts/gen_guide/playground/gen_examples.cx — re-run (or `make guide`)',
   '// after any syntax change; `--check` verifies this file without rewriting it.',
   '',
@@ -370,15 +404,28 @@
   '})();')]
 
 # render-block: the emitted lines for one passing example, as ONE string.
-[?def render-block scope=public ($key $label $src $note $runnable)
-  [$strings:join (
+#
+# The `wasmUnsupported` line is emitted ONLY when the corpus carries a
+# reason (#1033), so the 170-odd examples the wasm engine runs fine do
+# not each grow an empty field. The page keys its honest banner off the
+# presence of this field; `make test-playground-wasm-eval` keeps the set
+# from drifting in either direction.
+[?def render-block scope=public ($key $label $src $note $runnable $wasm-unsupported
+                                $no-stable-value)
+  [$strings:join [$seq-flat (
     [$cat ('    ', [$jstr $key], ': {')],
     [$cat ('      label: ', [$jstr $label], ',')],
     [$cat ('      input: ', [$jstr $src], ',')],
     [$cat ('      note:  ', [$jstr $note], ',')],
     [$cat ('      tags:  ', [$jlist [$infer-tags $key $src $note]], ',')],
     [$cat ('      runnable: ', [?if $runnable [then 'true'] [else 'false']], ',')],
-    '    },') '\n']]
+    [?if [= $wasm-unsupported '']
+      [then ()]
+      [else ([$cat ('      wasmUnsupported: ', [$jstr $wasm-unsupported], ',')])]],
+    [?if [= $no-stable-value '']
+      [then ()]
+      [else ([$cat ('      noStableValue: ', [$jstr $no-stable-value], ',')])]],
+    '    },')] '\n']]
 
 # ── main ──────────────────────────────────────────────────────────────
 
@@ -411,7 +458,8 @@
       [= $r [$audit $cxbin $tmp $out-path $err-path [$compose $src $note]]]
       [yield [row key=$key status=[$string $r@status] msg=[$string $r@msg]
                 block=[?if [= [$string $r@status] 'ok']
-                  [then [$render-block $key [$string $e@label] $src $note $r@runnable]]
+                  [then [$render-block $key [$string $e@label] $src $note $r@runnable
+                          [$string $e@wasm-unsupported] [$string $e@no-stable-value]]]
                   [else '']]]]]]
   [= $fails [?for [in $x $rows] [where [= [$string $x@status] 'fail']] [yield $x]]]
   [= $nfails [$count $fails]]
