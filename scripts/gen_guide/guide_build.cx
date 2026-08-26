@@ -783,9 +783,15 @@
           [then [p class="note" [$cat ('Experimental x/ tier — imported as cx-x/', $m,
             '. Bundled and gated in-tree like any other module, but EXEMPT from the frozen-surface stability promise (std-lib README, decision D3): a semver-breaking change is allowed here while the surface settles, and the frozen-surface canary never counts it. Pin behaviour you depend on with your own fixtures.')]]]
           [else '']]
-        [?if [$empty $fns]
-          [then [p class="note" """Per-function prose and examples are being migrated into this module. The public surface is specified in the module spec and exercised by the conformance fixtures."""]]
-          [else [?for [in $fd $fns] [yield [$fn-html $m $fd]]]]]]]]]]
+        [# R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. #]
+        [?splice [?if [$empty $fns]
+          [then ([p class="note" """Per-function prose and examples are being migrated into this module. The public surface is specified in the module spec and exercised by the conformance fixtures."""])]
+          [else [?for [in $fd $fns] [yield [$fn-html $m $fd]]]]]]]]]]]
 
 [# landing-row / render-landing RETIRED with `libraries.html` (#826 ruling
    3a): the packs are indexed per RING now, so the flat module index has no
