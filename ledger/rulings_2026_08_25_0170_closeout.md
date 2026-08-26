@@ -156,6 +156,18 @@ copy-paste; (iii) `--caps` becomes REQUIRED — an explicit authority choice at
 mint time, no default. (iii) is a surface change to a verb shipped this
 session with no external users: cutover, no dual-accept.
 
+## AMENDMENT 2 (2026-08-26) — CO-4 extension recorded from #984
+
+libcx's `cx_version()` carries version + release state (`X.Y.Z` at a clean
+annotated tag, `X.Y.Z-dev` otherwise) and both join LIB_BUILD_ID; **the
+commit is deliberately NOT claimed by the library** — measured: tracking it
+relinks the -prod dylib ~95 s on every commit incl. no-build-input ones and
+reopens the #902 dlopen-mid-write window, while stamping it untracked is the
+unfalsifiable-stamp class #666/#979 exist to remove. The ABI has no
+provenance surface; `cx --version` is. Implementation decision under CO-4's
+stamp semantics, recorded here so it is not re-litigated; owner may override.
+spec/abi.md §2.1's cx_version sentence extended accordingly (RULED: CO-4).
+
 ## Standing scope notes
 
 - Tag gate for v0.17.0 (owner 1a, first message): #973 ✅(f28c43ff9) ·
