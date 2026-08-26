@@ -24,7 +24,7 @@
   const vizTabs  = [...document.querySelectorAll('.cxp-viz-tab')];
   const subjectTabs = [...document.querySelectorAll('.cxp-subject-tab')];
   const detailSelect = document.getElementById('cxp-detail-select');
-  const graphViewSelect = document.getElementById('cxp-graph-view-select');
+  const gviewTabs = [...document.querySelectorAll('.cxp-gview-tab')];
   const outs     = {
     cx:   document.querySelector('#cxp-out-cx code'),
     json: document.querySelector('#cxp-out-json code'),
@@ -414,14 +414,25 @@
   }
 
   // ── View tab switching ───────────────────────────────────
-  vizTabs.forEach(t => t.addEventListener('click', () => setVizTab(t.dataset.viz)));
-  function setVizTab(name) {
+  // Which representation is showing persists like every other control
+  // on this page (#992): reloading the playground used to drop you back
+  // on Tree even though your Auto/Instance and Detail choices survived,
+  // which made the graph controls look like they had forgotten too.
+  vizTabs.forEach(t => t.addEventListener('click', () => setVizTab(t.dataset.viz, true)));
+  function setVizTab(name, persist) {
+    if (!vizPanes[name]) return;
     vizTabs.forEach(t => t.classList.toggle('is-active', t.dataset.viz === name));
     for (const k of Object.keys(vizPanes)) {
       vizPanes[k].classList.toggle('is-active', k === name);
     }
+    if (persist) { try { localStorage.setItem('cxp.vizMode', name); } catch (_) {} }
     refreshView();
   }
+  (function restoreVizTab() {
+    let stored = null;
+    try { stored = localStorage.getItem('cxp.vizMode'); } catch (_) {}
+    if (stored && vizPanes[stored]) setVizTab(stored, false);
+  })();
   // ── View subject (source / output / all) ─────────────────
   function applySubjectActiveState() {
     subjectTabs.forEach(t => t.classList.toggle('is-active', t.dataset.subject === vizSubject));
@@ -433,9 +444,11 @@
     try { localStorage.setItem('cxp.vizSubject', vizSubject); } catch (_) {}
     refreshView();
   }));
-  // The three detail tabs collapsed into one compact select — the VIEW
-  // header carried three button groups and read as crowded (owner
-  // report 2026-08-22).
+  // ── Graph-scoped controls (#992) ─────────────────────────
+  // Detail and the Auto/Instance subject both configure the GRAPH and
+  // nothing else, so they live in the graph panel's own bar and are on
+  // screen only while the Graph representation is. Both still persist
+  // to localStorage, like every other control on this page.
   function applyDetailActiveState() {
     if (detailSelect) detailSelect.value = detailLevel;
   }
@@ -447,14 +460,15 @@
   });
   // ── Graph view (auto / instance) — #960 ──────────────────
   function applyGraphViewActiveState() {
-    if (graphViewSelect) graphViewSelect.value = graphView;
+    gviewTabs.forEach(t => t.classList.toggle('is-active', t.dataset.gview === graphView));
   }
   applyGraphViewActiveState();
-  if (graphViewSelect) graphViewSelect.addEventListener('change', () => {
-    graphView = graphViewSelect.value;
+  gviewTabs.forEach(t => t.addEventListener('click', () => {
+    graphView = t.dataset.gview;
+    applyGraphViewActiveState();
     try { localStorage.setItem('cxp.graphView', graphView); } catch (_) {}
     refreshView();
-  });
+  }));
 
   function resetVizPanes() {
     vizTreeEl.innerHTML  = '<p class="cxp-viz-placeholder">Run a program to see its structural tree.</p>';
@@ -807,8 +821,38 @@
   // `node.attrs` / `node.items`, which this contract does not carry — so
   // that branch's attr chips are inert today. Reading `children` here is
   // reading what the emitter actually emits, not a second shape.)
+  // ── Why this view draws an HTML TABLE, not ER rows (#992) ────
+  //
+  // An occurrence box has to show `name │ value` per attribute. The
+  // three mermaid forms that could carry that were measured against the
+  // bundled mermaid 10.9.8 rather than argued from the docs:
+  //
+  //   erDiagram entity rows — the shape that LOOKS right, and the one
+  //     the auto view already uses. Both of its unquoted columns are
+  //     ATTRIBUTE_WORDs, `[A-Za-z_][A-Za-z0-9_\-\[\]()]*`, so `42`,
+  //     `-5`, `99.5`, `:ok` and `can't` — the values of playground
+  //     examples [3], [4] and [5] — CANNOT be spelled in either column.
+  //     Putting them there means mangling `min=-5` into `min __5`,
+  //     which is the same class of defect as the `"@"` comment this
+  //     issue is fixing. Disqualified on the values, not on taste.
+  //
+  //   classDiagram members — permissive (every probe value survived
+  //     except `{`/`}`), but mermaid routes any member containing `(`
+  //     into the METHODS compartment, so a paren-carrying value jumps
+  //     out of document order into a different half of the box.
+  //
+  //   flowchart node + HTML label — mermaid renders the label inside a
+  //     foreignObject when `htmlLabels` is on, so a real <table> gives
+  //     genuinely aligned columns, a header row for the element name,
+  //     and CSS control from playground.css. Values are HTML-escaped,
+  //     so nothing about a value can break the diagram.
+  //
+  // The third is what this emits. `htmlLabels` and `securityLevel` are
+  // both set explicitly at mermaid.initialize() so the form the labels
+  // are written for is the form that renders.
   const INSTANCE_NODE_CAP  = 200;  // bound: a 1,000-box diagram is unreadable
-  const INSTANCE_VALUE_CAP = 32;   // per-value label clip, in characters
+  const INSTANCE_VALUE_CAP = 48;   // per-value cell clip, in characters
+  const INSTANCE_ROW_CAP   = 10;   // compact rung: attribute rows per box
 
   // splitElementChildren partitions one element's / directive's
   // `children` into the three roles the label and the walk each need.
@@ -838,41 +882,160 @@
     return `'${clipped}'`;
   }
 
-  // instanceAttrText applies the detail rung to the attribute VALUES on
-  // one node's label — the reading of min / compact / full that an
-  // instance view makes natural, and the same COMPACT_ATTR_CAP the Tree
-  // pane's chips use, so the two panes agree on how much is "compact".
-  function instanceAttrText(attrs, level) {
-    if (level === 'min' || attrs.length === 0) return '';
-    const cap = (level === 'full') ? attrs.length : COMPACT_ATTR_CAP;
-    const shown = [];
-    for (let i = 0; i < Math.min(attrs.length, cap); i++) {
-      shown.push(`@${attrs[i].name}=${instanceValueText(attrs[i].value)}`);
-    }
-    const remaining = attrs.length - cap;
-    if (remaining > 0) {
-      shown.push(`(+${remaining} more attr${remaining === 1 ? '' : 's'})`);
-    }
-    return ' ' + shown.join(' ');
+  // ── Operator-headed elements (#992, owner feedback) ─────
+  //
+  // `[= $score 87]` and `[>= $score 80]` are ELEMENTS whose head is an
+  // operator and whose children are POSITIONAL ARGUMENTS — not
+  // attributes. A name│value table is the wrong shape for them: there
+  // are no names, only an order. They render as `head arg arg` on the
+  // box's caption instead, which is how they are written and how they
+  // read.
+  //
+  // Detecting one is DERIVED, not enumerated. Twelve of the ruled 18
+  // heads (#976) are glyphs — `+ * - / % = != < <= > >= ~` — and a glyph
+  // is precisely a name the identifier production cannot spell, so the
+  // test below covers any glyph head the evaluator ever gains without
+  // this file being told. Only the six WORD heads need listing, and
+  // those are the stable half. The alphabet's single home is
+  // `cx.operator_head_len` (vcx/cx/lexical.v); this is a presentation
+  // test, not a second copy of the rule.
+  const WORD_OPERATOR_HEADS = new Set(
+    ['and', 'or', 'not', 'union', 'intersect', 'except']);
+  const IDENTIFIER_NAME = /^[A-Za-z_][A-Za-z0-9_:.-]*$/;
+  function isOperatorHead(name) {
+    const n = String(name || '');
+    if (n === '' || n === '_') return false;
+    return WORD_OPERATOR_HEADS.has(n) || !IDENTIFIER_NAME.test(n);
   }
 
-  function instanceNodeLabel(node, level) {
-    const parts = splitElementChildren(node);
-    let label = (node.kind === 'directive' ? '?' : '') + String(node.name || '_');
-    label += instanceAttrText(parts.attrs, level);
-    // Mirror the Tree pane: a lone scalar / text body rides its own
-    // element's label instead of becoming a box of its own.
-    if (level !== 'min' && parts.elems.length === 0 && parts.bodies.length === 1) {
-      const only = parts.bodies[0];
-      if (only.kind === 'scalar' || only.kind === 'text') {
-        label += ' ' + instanceValueText(only.value);
+  const INSTANCE_ARG_CAP = 4;   // compact rung: args shown on a caption
+
+  // instanceArgText renders ONE positional argument. A `$ref` stays bare
+  // — it is a reference to a binding, and quoting it would dress it as
+  // the literal string `'$score'`, which is a different program.
+  function instanceArgText(v) {
+    if (typeof v === 'string' && /^\$[A-Za-z_][A-Za-z0-9_-]*$/.test(v)) return v;
+    return instanceValueText(v);
+  }
+
+  // instanceOperatorCaption composes `head arg arg …` for an
+  // operator-headed element, honouring the detail rung: `min` keeps the
+  // bare head, `compact` shows the first few args and counts the rest,
+  // `full` shows every one.
+  //
+  // An ELEMENT child (a nested sub-expression, `[>= [+ $a 1] 80]`) is
+  // rendered in place as `[name]` AND still drawn as its own box below.
+  // The placeholder is not redundant: without it the caption would read
+  // `>= 80`, quietly losing an operand and misreporting the arity.
+  function instanceOperatorCaption(node, level) {
+    const head = String(node.name || '_');
+    if (level === 'min') return head;
+    const kids = Array.isArray(node.children) ? node.children : [];
+    const args = [];
+    for (const c of kids) {
+      if (!c || typeof c !== 'object') continue;
+      if (c.kind === 'element' || c.kind === 'directive') {
+        args.push(`[${(c.kind === 'directive' ? '?' : '') + String(c.name || '_')}]`);
+      } else if (c.kind === 'attribute') {
+        args.push(`${c.name}=${instanceValueText(c.value)}`);
+      } else {
+        args.push(instanceArgText(c.value));
       }
     }
-    return label;
+    if (args.length === 0) return head;
+    const cap = (level === 'full') ? args.length : INSTANCE_ARG_CAP;
+    const shown = args.slice(0, cap);
+    const hidden = args.length - shown.length;
+    if (hidden > 0) shown.push(`(+${hidden})`);
+    return head + ' ' + shown.join(' ');
   }
 
-  // mermaidLabel escapes one composed label for a quoted Mermaid node
-  // body. `#` goes first — the entity form is itself `#`-introduced.
+  // instanceRows applies the detail rung to one node's table body.
+  // `min` shows no rows at all (the occurrence NAMES and their nesting
+  // are the whole point at that rung); `compact` caps the rows and says
+  // how many it withheld; `full` shows every one. A lone scalar / text
+  // body earns a row of its own, labelled by its kind, so a
+  // `[greeting "hello"]` occurrence still shows its value.
+  function instanceRows(node, level) {
+    if (level === 'min') return [];
+    // An operator-headed ELEMENT's children are positional args, and
+    // they ride its caption (above) rather than becoming table rows.
+    // Gated on the kind for the same reason the caption branch is: a
+    // DIRECTIVE spelled `[?not …]` is a directive, not the `not`
+    // operator, and keeps its own `?`-prefixed rendering.
+    if (node.kind === 'element' && isOperatorHead(node.name)) return [];
+    const parts = splitElementChildren(node);
+    const rows = [];
+    for (const a of parts.attrs) {
+      rows.push({ k: String(a.name), v: instanceValueText(a.value) });
+    }
+    // A LONE scalar / text body earns a row — the same rule the Tree
+    // pane applies when it rides a single scalar up onto its element's
+    // own line. It is deliberately not generalised to "every body",
+    // because `cxlib.tree()` reports a sequence literal's PUNCTUATION as
+    // scalar children: `(1, 2, 3)` arrives as seven scalars — `(`, 1,
+    // `,`, 2, `,`, 3, `)`. Rowing all of those turns a five-element
+    // sequence into an eleven-row box of commas. One body is content;
+    // many are syntax.
+    const usable = parts.bodies.filter(b =>
+      (b.kind === 'scalar' || b.kind === 'text')
+      && b.value !== '' && b.value !== null && b.value !== undefined);
+    if (usable.length === 1 && parts.elems.length === 0) {
+      const only = usable[0];
+      rows.push({ k: only.kind, v: instanceValueText(only.value), synthetic: true });
+    }
+    if (level === 'full' || rows.length <= INSTANCE_ROW_CAP) return rows;
+    const shown = rows.slice(0, INSTANCE_ROW_CAP);
+    const hidden = rows.length - shown.length;
+    shown.push({ k: `+${hidden} more`, v: '', overflow: true });
+    return shown;
+  }
+
+  // htmlText escapes one run of value text for an HTML label, then
+  // neutralises `#` — mermaid's own entity introducer, which would
+  // otherwise eat a `#35;`-looking tail out of the middle of a value.
+  // The HTML escapes are NAMED for exactly that reason: a numeric
+  // `&#40;` carries a `#` that mermaid would rewrite before the browser
+  // ever saw it. Order matters — `&` first, `#` last.
+  function htmlText(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/[\r\n\t]+/g, ' ')
+      .replace(/#/g, '#35;');
+  }
+
+  // instanceNodeHtml composes one occurrence box. With no rows to show
+  // it stays a plain bold caption rather than a one-cell table, so the
+  // `min` rung reads as a clean shape diagram instead of a grid of
+  // stubs.
+  function instanceNodeHtml(node, level) {
+    if (node.kind === 'element' && isOperatorHead(node.name)) {
+      const c = instanceOperatorCaption(node, level);
+      return `<span class='cxp-itbl-op'>${htmlText(c)}</span>`;
+    }
+    const title = (node.kind === 'directive' ? '?' : '') + String(node.name || '_');
+    const rows = instanceRows(node, level);
+    const cap = `<span class='cxp-itbl-name'>${htmlText(title)}</span>`;
+    if (rows.length === 0) return cap;
+    const body = rows.map(r => {
+      const cls = r.overflow ? 'cxp-itbl-more' : (r.synthetic ? 'cxp-itbl-syn' : '');
+      return `<tr class='${cls}'>`
+        + `<td class='cxp-itbl-k'>${htmlText(r.k)}</td>`
+        + `<td class='cxp-itbl-v'>${htmlText(r.v)}</td>`
+        + `</tr>`;
+    }).join('');
+    return `<table class='cxp-itbl'>`
+      + `<tr><th colspan='2'>${htmlText(title)}</th></tr>`
+      + body
+      + `</table>`;
+  }
+
+  // mermaidLabel escapes one PLAIN-TEXT label for a quoted Mermaid node
+  // body (the cap note, and any caller that is not composing HTML).
+  // `#` goes first — the entity form is itself `#`-introduced.
   // Brackets and braces matter in particular because a bracket-valued
   // attribute (`k=[a b]`) is captured VERBATIM by the tree emitter, so
   // real values do carry them.
@@ -906,7 +1069,7 @@
         if (drawn < INSTANCE_NODE_CAP) {
           const myId = `i${idSeq++}`;
           drawn++;
-          lines.push(`  ${myId}["${mermaidLabel(instanceNodeLabel(node, level))}"]`);
+          lines.push(`  ${myId}["${instanceNodeHtml(node, level)}"]`);
           if (parentId) lines.push(`  ${parentId} --> ${myId}`);
           childParent = myId;
         } else {
@@ -955,6 +1118,21 @@
     return graphChain;
   }
 
+  // graphUnavailable — the ONE thing a reader sees when a shape has no
+  // renderable diagram (#992). It used to be the raw mermaid source plus
+  // mermaid's own parser error, dumped into the pane: a wall of text
+  // that tells a person learning CX nothing about their program and
+  // reads as if THEY broke something. The diagram source and the error
+  // still reach console.debug for diagnosis — they are developer facts,
+  // not reader facts.
+  function graphUnavailable(host, body, err, why) {
+    // eslint-disable-next-line no-console
+    console.debug('[cx-playground] graph unavailable (%s):', why || 'parse', err, '\n' + body);
+    if (!host || !host.isConnected) return;
+    host.innerHTML = '<p class="cxp-viz-placeholder">Graph unavailable for this shape — '
+      + 'the Tree tab shows it in full.</p>';
+  }
+
   // `host` is the element to draw into — the whole canvas, or one
   // subject section of it in `all` mode. Each await point re-checks
   // `host.isConnected`: a newer refreshView() may have replaced the
@@ -974,7 +1152,10 @@
       return;
     }
     if (!window.mermaid || typeof window.mermaid.render !== 'function') {
-      host.innerHTML = `<pre><code>${escapeHtml(body)}</code></pre>`;
+      // The CDN script has not landed yet (or was blocked). This is a
+      // LOADING state, not a broken shape — say so, and let the next
+      // refreshView() paint the real diagram.
+      host.innerHTML = '<p class="cxp-viz-placeholder">Loading the diagram renderer…</p>';
       return;
     }
     // Validate FIRST: mermaid.parse() only validates (no DOM injection), so a
@@ -984,10 +1165,7 @@
       try {
         await window.mermaid.parse(body);
       } catch (err) {
-        if (!host.isConnected) return;
-        host.innerHTML =
-          `<p class="cxp-viz-placeholder">Diagram not renderable: ${escapeHtml((err && err.message) || String(err))}</p>` +
-          `<pre><code>${escapeHtml(body)}</code></pre>`;
+        graphUnavailable(host, body, err, 'parse');
         sweepMermaidOrphans();
         return;
       }
@@ -1004,10 +1182,7 @@
         applyGraphTransform();
       }
     } catch (err) {
-      if (!host.isConnected) return;
-      host.innerHTML =
-        `<p class="cxp-viz-placeholder">Mermaid render failed: ${escapeHtml(err.message)}</p>` +
-        `<pre><code>${escapeHtml(body)}</code></pre>`;
+      graphUnavailable(host, body, err, 'render');
     } finally {
       sweepMermaidOrphans();
     }
@@ -1207,7 +1382,7 @@
         }
         renderGraph(d, graphHost);
       } catch (e) {
-        if (graphHost) graphHost.innerHTML = `<p class="cxp-viz-placeholder">Diagram unavailable: ${escapeHtml(e.message)}</p>`;
+        graphUnavailable(graphHost, '', e, 'build');
       }
     }
   }
@@ -1226,7 +1401,11 @@
           startOnLoad: false,
           theme: 'dark',
           securityLevel: 'loose',
-          flowchart: { curve: 'basis' },
+          // htmlLabels is what lets the instance view's occurrence boxes
+          // be real <table>s (#992). It defaults on, but the labels are
+          // WRITTEN for it, so it is set rather than assumed.
+          htmlLabels: true,
+          flowchart: { curve: 'basis', htmlLabels: true },
         });
       } catch (_) {}
     }
@@ -1364,4 +1543,14 @@
     if (runBtn.disabled) return;
     runProgram({ auto: false });
   });
+
+  // ── Verification seam (#992) ─────────────────────────────
+  // scripts/test_playground_mermaid.mjs parses EVERY diagram this page
+  // can emit — each example × {auto, instance} × {source, output} ×
+  // each detail rung — against the same mermaid major the page loads.
+  // The instance graphs are built HERE, in the browser, so the gate has
+  // to reach this builder rather than reimplement it; a reimplementation
+  // would verify a copy and let the shipped one rot. That is the whole
+  // seam: one function, read-only, named for what it is.
+  window.cxPlaygroundInternals = { buildInstanceGraph };
 })();

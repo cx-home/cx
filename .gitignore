@@ -75,6 +75,12 @@ tooling/vscode/node_modules/
 tooling/vscode/out/
 tooling/vscode/*.vsix
 
+# Playground diagram-validity gate (#992) — dev-only jsdom + mermaid, installed
+# on demand by `npm --prefix scripts/playground-gate install`. The manifest is
+# committed; the tree it fetches is not.
+scripts/playground-gate/node_modules/
+scripts/playground-gate/package-lock.json
+
 # v0.7.0 CC fuzz harness — crashes are runtime artifacts, never source
 vcx/fuzz/crashes/
 

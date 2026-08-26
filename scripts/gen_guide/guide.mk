@@ -58,6 +58,11 @@ endif
 ## (write-file results) is discarded; real errors still surface.
 guide: $(GUIDE_CX_DEP)
 	@$(GUIDE_CX_BIN) --allow-read --allow-write $(GUIDE_GEN)/guide_build.cx >/dev/null
+	@# The wasm reuse above is deliberate (minutes vs seconds), but it is
+	@# how a 0.13.0 engine reached a v0.17 playground and stayed there for
+	@# five releases (#992). --warn reports and keeps going: the reuse
+	@# stays, the silence does not.
+	@./scripts/wasm/check_wasm_fresh.sh --warn || true
 	@echo "guide: built $(GUIDE_OUT)/ via $(GUIDE_GEN)/guide_build.cx (render = .cx)"
 
 ## guide-snippets-check  Docs-example gate (#425): run every

@@ -182,7 +182,24 @@ build-playground:
 	@cp dist/wasm/libcx-sync.js dist/playground-preview/dist/wasm/libcx-sync.js
 	@if [ -f dist/wasm/libcx-pthreads.js ]; then cp dist/wasm/libcx-pthreads.js dist/playground-preview/dist/wasm/libcx-pthreads.js; fi
 	@if [ -f dist/wasm/libcx-pthreads.wasm ]; then cp dist/wasm/libcx-pthreads.wasm dist/playground-preview/dist/wasm/libcx-pthreads.wasm; fi
+	@# Staleness gate (#992). The three builds above are unconditional, so
+	@# reaching here with a stale artifact means one of them silently did
+	@# not produce what it claimed — which is exactly the failure that
+	@# shipped a 0.13.0 engine into a v0.17 playground for five releases.
+	@# The gate refuses rather than staging it.
+	@$(MAKE) --no-print-directory wasm-fresh-gate
 	@echo "[build-playground] OK — dist/playground-preview/ ready (libcx-async + libcx-pthreads + libcx-sync staged)"
+
+# ── playground engine staleness gate (#992) ───────────────────────────────────
+# Two signals, either of which means the playground would run an engine that is
+# not this tree's: an artifact older than vcx/ + stdlib/ + VERSION + the build
+# script, or an artifact whose own cx_version() export disagrees with VERSION.
+# Run it directly to ask "is my playground current?"; `build-playground` runs it
+# as a post-condition, and `guide` runs it in --warn mode (guide reuses the
+# existing bundle by design, but must never do so silently).
+.PHONY: wasm-fresh-gate
+wasm-fresh-gate:
+	@./scripts/wasm/check_wasm_fresh.sh
 
 # Optional Apache Arrow C-Data interop library (libcx_arrow per ADR
 # 0015 D9 / spec/abi.md §2.11). Separate from libcx; bindings dlopen
@@ -368,6 +385,24 @@ directive-docs-check: build-vcx
 verify-playground-examples: build-vcx
 	@vcx/target/cx --allow-read --allow-write --allow-subprocess --allow-env \
 	  scripts/gen_guide/playground/gen_examples.cx --check
+
+# ── playground diagram validity gate (#992) ───────────────────────────────────
+# Every diagram the playground can put on screen must PARSE:
+#   example × {auto, instance} × {source, output} × {min, compact, full}
+# checked against the same mermaid MAJOR the page loads from its CDN. The
+# emitters are reached where they really live — the `auto` graphs from the built
+# wasm engine, the `instance` graphs from playground.js's own builder — so the
+# gate cannot go green over a shipped file that has rotted.
+#
+# Opt-in, like `build-wasm`: it needs `make build-playground` to have produced
+# dist/wasm/, plus one npm install for jsdom + mermaid. Both preconditions FAIL
+# LOUD (exit 2) rather than skipping, so this lane can never report a vacuous
+# pass. It is deliberately NOT in TEST_TARGETS — that lane must not require
+# emcc or a network fetch — and belongs with scripts/test_playground_smoke.sh as
+# the playground release lane.
+.PHONY: test-playground-mermaid
+test-playground-mermaid:
+	@node scripts/test_playground_mermaid.mjs
 
 # stdlib catalog drift gate — verifies the single invariant
 #   SPEC_SET == (BUNDLE_SET union DISPATCH_SET)

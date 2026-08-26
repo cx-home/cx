@@ -65,25 +65,20 @@
     </div>
   </section>
   <section class="cxp-pane cxp-viz-pane">
+    <!-- One control model (#992): the pane header carries only the two
+         axes that apply to EVERYTHING it can draw — which subject, and
+         which representation. Everything that configures one
+         representation lives inside that representation's own panel, so
+         a control is on screen exactly when it does something. -->
     <div class="cxp-pane-head">
       <span>VIEW</span>
       <span class="cxp-tabs cxp-subject-group" role="tablist"
             title="Choose the subject: the program you wrote, the value it produced, or both">
         <button class="cxp-subject-tab is-active" data-subject="source" type="button">Source</button>
         <button class="cxp-subject-tab"           data-subject="output" type="button">Output</button>
-        <button class="cxp-subject-tab"           data-subject="all"    type="button">All</button>
+        <button class="cxp-subject-tab"           data-subject="all"    type="button">Both</button>
       </span>
-      <select id="cxp-graph-view-select" class="cxp-detail-select"
-              title="Graph subject — auto: the INFERRED SHAPE (one box per element NAME for data, control flow for code); instance: one box per element OCCURRENCE, labelled with its own attribute values">
-        <option value="auto" selected>Graph: auto</option>
-        <option value="instance">Graph: instance</option>
-      </select>
-      <select id="cxp-detail-select" class="cxp-detail-select"
-              title="Adjust how much detail nodes show (attributes, scalar bodies, values)">
-        <option value="min">Detail: min</option>
-        <option value="compact" selected>Detail: compact</option>
-        <option value="full">Detail: full</option>
-      </select>
+      <span class="cxp-spacer"></span>
       <span class="cxp-tabs" role="tablist">
         <button class="cxp-viz-tab is-active" data-viz="tree"  type="button">Tree</button>
         <button class="cxp-viz-tab"           data-viz="graph" type="button">Graph</button>
@@ -93,7 +88,21 @@
       <p class="cxp-viz-placeholder">Run a program to see its structural tree.</p>
     </div>
     <div id="cxp-viz-graph" class="cxp-viz-content">
-      <div class="cxp-graph-controls">
+      <!-- The graph's own controls. This strip is inside the graph
+           panel, so it is on screen only while a graph is. -->
+      <div class="cxp-graph-bar">
+        <span class="cxp-tabs" role="tablist"
+              title="Graph subject — Auto: the INFERRED SHAPE (one box per element NAME for data, control flow for code). Instance: one box per element OCCURRENCE, a table of its own attribute values.">
+          <button class="cxp-gview-tab is-active" data-gview="auto"     type="button">Auto</button>
+          <button class="cxp-gview-tab"           data-gview="instance" type="button">Instance</button>
+        </span>
+        <select id="cxp-detail-select" class="cxp-detail-select"
+                title="How much each box shows — attributes, scalar bodies, values">
+          <option value="min">Detail: min</option>
+          <option value="compact" selected>Detail: compact</option>
+          <option value="full">Detail: full</option>
+        </select>
+        <span class="cxp-spacer"></span>
         <button id="cxp-graph-zoom-out" class="cxp-mini-btn" type="button" title="Zoom out">−</button>
         <button id="cxp-graph-fit"      class="cxp-mini-btn" type="button" title="Reset zoom">⊙</button>
         <button id="cxp-graph-zoom-in"  class="cxp-mini-btn" type="button" title="Zoom in">+</button>
