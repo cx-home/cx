@@ -345,3 +345,18 @@ the DATA projection reads as one surface contradicting itself. Delivered:
 
 The walker's third verdict (#1020's comment) is NOT touched here: it images,
 it does not adjudicate, and #1038 is the open item on that image.
+
+### CO-18 (#1042/#1048 dispositions, owner "1a 1a", 2026-08-26)
+
+(#1042 → a) The wasm [?worker]/[?async] capability gap is a NAMED POST-TAG
+design item — the honest fixes (cooperative in-engine scheduler for the JSPI
+build, or pthreads bundle behind COOP/COEP) are design-track scale; the ten
+affected playground examples are honestly marked with reason + remedy, so
+nothing ships deceptive. Not a tag blocker. (#1048 → a) math.md is AUTHORIZED
+to state the family-wide exact-kind discipline the impl has had since I1 and
+CO-14 leaned on: every $math: verb refuses exact-family (decimal/bigint)
+operands with CXER3002 — the single carve-out $math:div-decimal (the CO-17
+explicit division context); exact arithmetic lives on the CORE heads per L44.
+§4.4's "basic ops on decimals" sentence and §4.3's "statistical ops always
+return float regardless of input" both fall to that pass; the §5 CXER3002 row
+follows. Edits carry RULED: CO-18.
