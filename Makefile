@@ -1144,6 +1144,14 @@ else
  ABI_LIB_PATH_VAR := LD_LIBRARY_PATH
  ABI_ARROW_LIB := vcx/target/libcx_arrow.so
 endif
+#
+# #984 — the harness also pins the LIBRARY's version stamp against the built
+# artifact. The two derived inputs come from the ONE implementation of the rule
+# (vcx/Makefile's CX_VERSION / CX_RELEASE, read back through print-%, the #979
+# precedent) rather than being re-derived here; the harness independently
+# restates what libcx must then report. --no-print-directory: `make -C`
+# otherwise brackets the value with Entering/Leaving lines.
+MAKE_PRINT_VCX = $(shell $(MAKE) -s --no-print-directory -C vcx print-$(1) 2>/dev/null | tail -1 | tr -d '[:space:]')
 abi-c-test: build-vcx build-lib-arrow
 	$(CC) -std=c11 -Wall -Wextra -Werror -g -O1 \
 	 -fsanitize=$(ABI_C_TEST_SAN) \
@@ -1151,7 +1159,9 @@ abi-c-test: build-vcx build-lib-arrow
 	 tests/abi/c_abi_test.c \
 	 -L vcx/target -lcx -ldl \
 	 -o $(ABI_C_TEST_BIN)
-	$(ABI_LIB_PATH_VAR)=vcx/target $(ABI_C_TEST_BIN) $(ABI_ARROW_LIB)
+	CX_EXPECT_VERSION='$(call MAKE_PRINT_VCX,CX_VERSION)' \
+	 CX_EXPECT_RELEASE='$(call MAKE_PRINT_VCX,CX_RELEASE)' \
+	 $(ABI_LIB_PATH_VAR)=vcx/target $(ABI_C_TEST_BIN) $(ABI_ARROW_LIB)
 
 # Pin the Rust binding to the freshly-built libcx (vcx/target), same
 # rationale as test-python above: build.rs probes /usr/local/lib and
@@ -1530,7 +1540,7 @@ test-vcx-cxstore: build-vcx-dev
 # closes.
 .PHONY: test-vcx-cx
 test-vcx-cx: build-vcx-dev
-	@$(V) -cc cc $(CX_GC) test vcx/cx/anchor_resolve_test.v vcx/cx/atom_test.v vcx/cx/token_golden_test.v
+	@$(V) -cc cc $(CX_GC) test vcx/cx/anchor_resolve_test.v vcx/cx/atom_test.v vcx/cx/token_golden_test.v vcx/cx/version_stamp_test.v
 	@$(V) -cc cc $(CX_GC) test vcx/fixtures/
 
 # White-box unit tests that live INSIDE the CLI module (vcx/cmd/*_test.v) —

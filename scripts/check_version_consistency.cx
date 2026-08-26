@@ -12,6 +12,16 @@
 #      scripts/bump_version.sh).
 #   2. CODE SURFACES derive via the `cx_version` build define
 #      (`$d('cx_version', …)`) — never hardcode.
+#   2b. THE DEFINE IS ACTUALLY PASSED to every shared-library recipe,
+#      and the values it stamps are part of the library's build
+#      identity (#984). Deriving is only half the contract: libcx
+#      derived correctly for years while the `lib` recipe passed no
+#      version defines at all, so the C-ABI `cx_version()` answered
+#      the unstamped fallback in every build, release artifacts
+#      included. The artifact-side pin is tests/abi/c_abi_test.c;
+#      this static half catches the STALENESS case no runtime test
+#      can see — a stamp outside LIB_BUILD_ID lets the up-to-date
+#      guard hand back a library whose stamp is a lie.
 #   3. README version badges + SECURITY.md supported series (X.Y.x)
 #      equal / derive from VERSION.
 #   4. STRAY `vX.Y.Z` release literals in the live vcx/ + spec/ +
@@ -181,6 +191,28 @@
           [where [not [$strings:contains [$io:read-file $p] "$d('cx_version'"]]]
           [yield [$concat $p ": release version must derive via $d('cx_version'…), not a hardcoded literal"]]]]
 
+        # 2b. The define must actually be PASSED to every shared-library
+        # recipe, and LIB_BUILD_ID must carry what those defines stamp (#984).
+        [= $mk-lines [$strings:split-lines [$io:read-file "vcx/Makefile"]]]
+        [= $lib-recipe-fails [?for [in $l $mk-lines]
+          [where [$strings:contains $l "-shared -o "]]
+          [where [not [$strings:contains $l "$(LIB_VERSION_DEFINES)"]]]
+          [yield [$concat "vcx/Makefile: a shared-library recipe passes no version defines — "
+                          "libcx would report the unstamped fallback (add $(LIB_VERSION_DEFINES)): "
+                          [$strings:trim $l]]]]]
+        [= $lib-build-id-lines [?for [in $l $mk-lines]
+          [where [$strings:starts-with $l "LIB_BUILD_ID"]]
+          [yield $l]]]
+        [= $lib-build-id-fails
+          [?if [= [$count $lib-build-id-lines] 0]
+            [then ("vcx/Makefile: no LIB_BUILD_ID assignment found — the up-to-date guard's identity cannot be checked")]
+            [else [?for [in $l $lib-build-id-lines]
+              [in $v ("$(CX_VERSION)", "$(CX_RELEASE)")]
+              [where [not [$strings:contains $l $v]]]
+              [yield [$concat "vcx/Makefile: LIB_BUILD_ID omits " $v
+                              " — the library stamps it, so the relink guard could serve an "
+                              "artifact whose version stamp no longer matches this tree"]]]]]]
+
         # 3. README version badges must equal VERSION.
         [= $badge [$concat "badge/version-v" $version "-blue"]]
         [= $badge-rx [$re:compile "badge/version-v([0-9A-Za-z.]+)-blue"]]
@@ -220,7 +252,8 @@
               # 4. Stray release-version literals in live code/spec (#67).
               [= $stray [?for [in $h [$stray-hits]]
                 [yield [$concat "stray version literal (genericize or derive): " $h]]]]
-              [= $fails [$cat-seqs ($manifest-fails, $derive-fails, $badge-fails,
+              [= $fails [$cat-seqs ($manifest-fails, $derive-fails, $lib-recipe-fails,
+                                    $lib-build-id-fails, $badge-fails,
                                     $security-fails, $stray)]]
               [?if [> [$count $fails] 0]
                 [then
@@ -237,6 +270,7 @@
                 [else
                   [?let [= $_ok [$say [$concat "VERSION-CONSISTENCY: OK — manifests + README badges + vscode + "
                       "SECURITY.md series == VERSION (" $version "); cabi.v + main.v derive "
-                      "from the build define; no stray vX.Y.Z literals in vcx/ + spec/ + "
+                      "from the build define; every shared-library recipe passes it and "
+                      "LIB_BUILD_ID carries what it stamps; no stray vX.Y.Z literals in vcx/ + spec/ + "
                       "docs-src/ + stdlib/ + tooling/"]]]
                     [$env:exit 0]]]]]]]]]]]
