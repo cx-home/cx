@@ -168,6 +168,35 @@ provenance surface; `cx --version` is. Implementation decision under CO-4's
 stamp semantics, recorded here so it is not re-litigated; owner may override.
 spec/abi.md §2.1's cx_version sentence extended accordingly (RULED: CO-4).
 
+## Third letter batch (owner: "1a / 2 = long-term-best, no deferral, no
+partial fix", 2026-08-26)
+
+### CO-11 (#990, ruled 1a) — $eq's attribute atomization IS the ruled compare
+
+Two equality notions, both deliberate: `$eq` is VALUE equality under the
+settled atomization policy (atomize in compare/arith only), so
+`[$eq [u a=1.5] [u a='1.5']]` is true BY DESIGN; canonical/hash are the
+type-faithful IDENTITY and already distinguish the forms. The ScalarType
+comment claiming "atom never equals string of same characters" is the liar
+and is corrected; `$eq`'s fn-doc states the two-notion split; a conformance
+pin asserts value-eq true + identity distinct on the same pair, so neither
+notion can drift into the other silently.
+
+### CO-12 (#991, ruled full-fidelity) — canonical serialization is BIJECTIVE;
+the emitter fixed points that lose a kind are DEFECTS and are repaired now
+
+The settled policy's own sentence ("serialization bijective") mandates it:
+measure each divergence first (does float 1.5 truly share a canonical image
+with decimal 1.5? does a canonical-quoted date/datetime attribute re-parse
+as a string?), and every measured kind-loss is repaired in canonical/compact
+— type-faithful images for every scalar kind in every position. Addresses
+MOVE where the old image was lossy; per the #976 precedent every movement is
+named in the commit and affected pins/goldens migrate WITH the movement
+recorded — never silently. Fixed points that measure as NOT lossy (the image
+re-parses to the same typed value) are pinned as deliberate instead. No
+deferral, no partial fix (owner's words). Spec: canonical.md's image table
+gains the per-kind attribute/body forms (RULED: CO-12).
+
 ## Standing scope notes
 
 - Tag gate for v0.17.0 (owner 1a, first message): #973 ✅(f28c43ff9) ·
