@@ -1348,7 +1348,10 @@ CX_SKIP_LOG := vcx/target/test-skips.log
 #   • any lane whose -j run died in a C compilation error → one serial
 #     retry WITHOUT -usecache (#572: a stale cache layer can inject a
 #     duplicate V-runtime symbol, e.g. ___v_thread_wait; cache-free green
-#     proves the artifact — the cache-key root fix is the V-fork follow-up);
+#     proves the artifact — the cache-key root fixes LANDED as #700 wave 2
+#     (canonical keys, provenance manifests, inline-vs-linked discipline) and
+#     #971 removed the muldefs mask; the retry stays as defense-in-depth
+#     until a measured run justifies removing it);
 #   • anything else → a real failure, no retry, gate stays red.
 #   • code_eval_fixtures_test.v joined 2026-08-23 for the #951 supervise
 #     load-race family (sup-011/sup-012: a note/terminal lost or starved
