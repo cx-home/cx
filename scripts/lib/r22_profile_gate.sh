@@ -22,6 +22,12 @@
 #   r22_stage_profiles         <pubdir> <plat>
 #   r22_profile_gate           <pubdir> <plat> [label]
 #
+# R22_EXPECT_HEADLINE (env, optional) — when set, r22_profile_gate additionally
+# requires every staged binary's `cx -v` FIRST LINE to equal it exactly. A cut
+# sets it to "cx vX.Y.Z" so an artifact built off the release tag cannot ship
+# (#979, RULED: CO-4); the standalone pre-cut lane leaves it unset, where the
+# honest headline is the `-dev+` pre-release form.
+#
 # The staging keeps the tolerant `cp … 2>/dev/null || true` form it has
 # always had for the dual .dylib/.so lib names: this landing changes NO
 # lane's strictness. The linux lane's own staging is deliberately NOT
@@ -155,7 +161,7 @@ r22_profile_payload() {
 # fails release.sh.
 r22_profile_gate() {
   local pubdir="$1" plat="$2" label="${3:-}"
-  local prof vtar vdir probe_rc probe_out
+  local prof vtar vdir probe_rc probe_out probe_head
   for prof in platform data embed cli; do
     case "$prof" in
       platform) vtar="$pubdir/cx-${plat}.tar.gz" ;;
@@ -183,6 +189,26 @@ r22_profile_gate() {
         printf '%s\n' "$probe_out" | sed 's/^/    /' >&2
         exit 1 ;;
     esac
+    # Provenance headline (#979, RULED: CO-4). A cut sets R22_EXPECT_HEADLINE
+    # to the release headline ("cx vX.Y.Z"); the standalone pre-cut lane leaves
+    # it unset, because outside a cut the honest headline IS the `-dev+` one
+    # and demanding otherwise would make the lane un-runnable.
+    #
+    # This is the assertion that catches a profile or platform artifact built
+    # off the tag — the failure mode the phase ordering (#979) exists to
+    # prevent, checked on the STAGED TARBALL rather than on the build inputs,
+    # so it holds for the linux lane's container builds too.
+    if [ -n "${R22_EXPECT_HEADLINE:-}" ]; then
+      probe_head="$(printf '%s\n' "$probe_out" | head -1)"
+      if [ "$probe_head" != "$R22_EXPECT_HEADLINE" ]; then
+        echo "RELEASE GATE FAILED (R2.2${label}): $vtar provenance headline is wrong" >&2
+        echo "  expected: $R22_EXPECT_HEADLINE" >&2
+        echo "  got:      $probe_head" >&2
+        echo "  A '-dev+' headline means this artifact was NOT built from a clean" >&2
+        echo "  checkout of the annotated release tag (RULED: CO-4, #979)." >&2
+        exit 1
+      fi
+    fi
     r22_profile_payload "$vdir" "$prof" "$vtar" "$label"
     rm -rf "$vdir"
   done

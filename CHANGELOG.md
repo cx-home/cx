@@ -13,6 +13,31 @@ version, library version).
 
 ## [Unreleased]
 
+### Changed
+
+- **`cx --version`'s headline is a provenance claim, not an echo of the
+  VERSION file (#979, RULED: CO-4).** Release-ness is now DERIVED from git
+  state at build time: HEAD exactly at the annotated tag matching the
+  repo-root `VERSION`, plus a clean tree, stamps `cx v0.17.0`; every other
+  build stamps `cx v0.17.0-dev+<commit>` (`…-dirty` when the tree was
+  edited). Before this, the headline reported the VERSION file
+  unconditionally — and `VERSION` flips to the coming release at the *start*
+  of a line's development, so every build between two cuts claimed a release
+  that had not been cut, on the very line downstream BOMs and installers pin
+  on. `-dev+<commit>` is a semver **pre-release** of `VERSION`, which is what
+  unreleased source is: it orders before the release it will become. No
+  second hand-maintained switch was added — `VERSION` plus git state decide,
+  and `make -C vcx print-CX_RELEASE` reads back the single implementation.
+  The `commit` / `-dirty` (#666) / `V fork` lines are unchanged.
+  The release lane moved with the semantics: `scripts/tag_release.sh` creates
+  the annotated tag **before** `make build-vcx` (a build that precedes its
+  own tag cannot be at it) and its provenance gate now demands the bare
+  `cx vX.Y.Z` headline; `scripts/release.sh` performs every artifact build —
+  platform, the three §4 profiles, and the dockerized linux lane — at the
+  tagged commit, with the merge to `main` moved after them (phase 2c),
+  because being on `main` puts HEAD off the tag. The R2.2 profile gate
+  enforces the expected headline on every staged tarball.
+
 ### Errata — v0.16.0 release notes
 
 - **The removal of `cx store-token` was omitted from the 0.16.0 notes
