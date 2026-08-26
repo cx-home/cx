@@ -171,4 +171,5 @@
   [patch sha=6ee9d443aeeb0d52b56d37f938cb0e869be0777c family=usecache]
   [patch sha=dc5c87ec6ab215096b55be3935776488c014b882 family=usecache]
   [patch sha=46f1be51d58b0a4daf9efdb33febd4d067fdad1e family=usecache]
+  [patch sha=a2898599f3f0d6130a9d8ada8f11a25369130ac2 family=vgc]
 ]
