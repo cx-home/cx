@@ -537,7 +537,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test check-v-fork check-serial-retry-rosters test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx corpus-audit
+TEST_TARGETS := abi-c-test check-v-fork check-serial-retry-rosters test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx corpus-audit
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS lanes whose
@@ -1645,23 +1645,67 @@ test-vcx-columnar: build-vcx-dev
 	fi
 
 # ── sqlite [$store] backend gate — #77 / #220 (concurrent-writer durability) ──
-# The sqlite:// store backend lives behind `-d cxstore_sqlite` (links libsqlite3);
-# it is NOT in the default `make test` gate so that gate stays green without
-# sqlite headers. This DEDICATED target runs the gated in-module suite — the
-# round-trip/dedup/integrity tests plus the #220 concurrent-writer stress
-# (32-wide burst through the daemon dispatch path → no crash, cold reopen
-# intact) — with the flag. On macOS the system libsqlite3 ships no headers, so
-# they come from Homebrew sqlite.
+# The sqlite:// store backend lives behind `-d cxstore_sqlite` (links libsqlite3).
+# It runs the gated in-module suite — the round-trip/dedup/integrity tests plus
+# the #220 concurrent-writer stress (32-wide burst through the daemon dispatch
+# path → no crash, cold reopen intact). On macOS the system libsqlite3 ships no
+# headers, so they come from Homebrew sqlite.
+#
+# IN TEST_TARGETS since #989. It was held out on the reasoning that `make test`
+# must stay green on a box without sqlite headers — but 41f44e97c then landed
+# #891's shared-open protection behind a lane no gate ran, so the protection
+# could rot without anything noticing, which is the cost the exclusion was
+# actually buying. The header worry is answered the way #318 answers it for
+# test-vcx-columnar, three targets up: PROBE the prerequisite and SELF-SKIP with
+# a named reason into $(CX_SKIP_LOG) when it is absent (skips are counted
+# separately and printed loudly — never silently, never as failures). A box with
+# sqlite runs the lane; a box without says so out loud.
+#
+# GATE-DURATION EVIDENCE (#700 dead-ends register — a lane may not join the ring
+# on assertion; ledger/dead_ends_700_test_duration.md). MEASURED on the
+# reference machine, this recipe's own `v test` (the build-vcx-dev prerequisite
+# is shared with every other vcx lane, so it is not marginal cost), 3/3 green on
+# every run:
+#
+#   cold caches, contended    231.1 s elapsed | comptime 674.9 CPU-s | runtime 1.6 s
+#   warm, uncontended          38.1 s elapsed | comptime 108.7 CPU-s | runtime 4.4 s
+#   THIS recipe at HEAD,
+#   after a full build-dev      73.7 s elapsed | comptime 218.1 CPU-s | runtime 1.2 s
+#
+# The third row is the one to budget against — the shape a gate run actually
+# sees, and it reproduced within 3% across a rebase (75.8 s / 224.0 CPU-s on the
+# earlier base). Sized the way the register's POST-CLOSE ADDENDUM requires: by
+# CPU, not by serial length. The gate is THROUGHPUT-bound (1,154 s wall x 12
+# cores against 182 CPU-min is ~9.5x parallelism, already near the 15.2-min CPU
+# floor), so a lane's own duration is NOT its cost — its CPU-min is. This lane
+# adds 3.6 CPU-min (+2.0% of 182), projecting to ~+23 s of gate wall; the warm
+# and cold extremes bracket that at +1.0% and +6.2%.
+#
+# The estimate in #989 ("seconds") was low by 6-60x, and the reason is worth
+# recording: the RUNTIME is milliseconds (1.2-4.4 s for all three suites), but V
+# recompiles the whole platform module once per test FILE, so the lane is ~99%
+# compile. A lane's runtime is not its gate cost.
+#
+# What it buys: the ONLY gate coverage of the sqlite backend, including #891's
+# shared-open protection and the #220 concurrent-writer durability contract.
+# Before this the alternative was not a cheaper lane, it was no coverage.
 ifeq ($(UNAME_S),Darwin)
   SQLITE_CFLAGS := -I/opt/homebrew/opt/sqlite/include
   SQLITE_LDFLAGS := -L/opt/homebrew/opt/sqlite/lib
+  SQLITE_PKGCONFIG := /opt/homebrew/opt/sqlite/lib/pkgconfig
 else
   SQLITE_CFLAGS :=
   SQLITE_LDFLAGS :=
+  SQLITE_PKGCONFIG :=
 endif
 .PHONY: test-vcx-sqlite
 test-vcx-sqlite: build-vcx-dev
-	$(V) -cc cc $(CX_GC) -d cxstore_sqlite -cflags "$(SQLITE_CFLAGS)" -ldflags "$(SQLITE_LDFLAGS)" test vcx/platform/store_sqlite_test.v vcx/platform/store_sqlite_encryption_test.v vcx/platform/store_concurrent_writer_test.v
+	@if ! PKG_CONFIG_PATH="$(SQLITE_PKGCONFIG):$$PKG_CONFIG_PATH" pkg-config --exists sqlite3 2>/dev/null; then \
+	  line="SKIP test-vcx-sqlite: libsqlite3 development headers not discoverable via pkg-config (absent prerequisite, #318 — brew install sqlite / apt libsqlite3-dev)"; \
+	  echo "$$line"; mkdir -p vcx/target; echo "$$line" >> $(CX_SKIP_LOG); \
+	else \
+	  $(V) -cc cc $(CX_GC) -d cxstore_sqlite -cflags "$(SQLITE_CFLAGS)" -ldflags "$(SQLITE_LDFLAGS)" test vcx/platform/store_sqlite_test.v vcx/platform/store_sqlite_encryption_test.v vcx/platform/store_concurrent_writer_test.v; \
+	fi
 
 # V module search path. `lang/v/native/` + `lang/v/conformance.v` import
 # `cx` and `code` modules whose source lives under `vcx/`. The historical

@@ -102,6 +102,10 @@ lane_globs() {
     # Makefile still names it cannot fall through to deny-by-default.
     test-vcx)                      echo 'vcx/* stdlib/* x/* conformance/* third_party/*' ;;
     test-vcx-columnar)             echo 'vcx/platform/store_columnar* vcx/platform/stdlib_store.v vcx/arrow/* third_party/*' ;;
+    # the sqlite backend lane (#989 wired it into TEST_TARGETS): the gated
+    # store_sqlite_* suites plus the #220/#891 concurrent-writer + shared-open
+    # stress, which drives the daemon dispatch path in stdlib_store.v.
+    test-vcx-sqlite)               echo 'vcx/platform/store_sqlite* vcx/platform/store_concurrent_writer_test.v vcx/platform/stdlib_store.v third_party/*' ;;
     check-no-legacy-try)           echo 'vcx/* conformance/* stdlib/* docs-src/*' ;;
     check-no-infix-range)          echo 'conformance/* stdlib/* docs-src/* examples/*' ;;
     check-no-cxl-token)            echo '*' ;;

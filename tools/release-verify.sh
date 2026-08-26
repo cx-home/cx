@@ -90,6 +90,38 @@ check "make verify-doc-blocks" \
 check "make verify-doc-links" \
  "make -s verify-doc-links"
 
+section "Guide generator (#989)"
+# THE OTHER DOC GENERATOR. `make docs-check` below covers docs/llm/; NOTHING
+# covered docs/guide/, and the asymmetry is not because the guide is cheap to
+# get wrong — it is the published site. `make guide` was wired into no gate at
+# all, which is how the generator sat RED for a full day after the R-A1
+# [?splice] cutover (fixed at e40596614: an [?if]-returned sequence of fn
+# sections landed in element content, a shape the settled semantics refuse). It
+# hid because it only fires for a module with 2+ fn-docs and because every
+# "green" guide run in between happened on a stale pre-settlement worktree base.
+#
+# Cost, measured (the #700 dead-ends register wants a number, not an adjective):
+# 27.3-27.8 s wall / 26.5 CPU-s, single-process, warm — twice, at HEAD. That is
+# noise inside a release gate that already runs `make test`. It is NOT wired
+# into TEST_TARGETS: adding a serial ~27 s renderer to the ring is its own
+# gate-duration decision, and the register requires such decisions be taken
+# deliberately rather than as a side effect. Here is also where the row MUST be
+# on the merits — the guide is otherwise first rendered by
+# `make publish` at step 9 of the release process, i.e. AFTER the tag. A red
+# generator discovered there has already shipped a tag it cannot publish from.
+#
+# NOT a smoke of a stub: this renders all 106 pages of the real site from
+# docs-src/canonical/, so every module page (the 2+ fn-doc ones included) is
+# exercised — red-proofed by reintroducing the e40596614 shape, which fails the
+# row. GUIDE_SKIP_CX_BUILD=1 is deliberate: without it the guide's own
+# rebuild-if-a-.v-moved rule can drop a DEV binary onto vcx/target/cx in the
+# middle of a release gate, under the later rows that probe the shipped one.
+# The row tests the GENERATOR against the binary already under test.
+# docs/guide/ is gitignored, so the render cannot dirty the tree the
+# "working tree clean" row above just checked.
+check "make guide (generator renders; not red before the tag)" \
+ "make -s guide GUIDE_SKIP_CX_BUILD=1"
+
 section "LLM onboarding layer (#938)"
 # THE DRIFT GATE. `make docs-check` regenerates docs/llm/ in memory and fails
 # if either half moved:
