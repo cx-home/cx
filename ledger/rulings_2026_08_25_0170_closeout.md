@@ -124,6 +124,38 @@ worktrees pruned, #963 closed. Evidence chain on the issue.
    (a channel-like fan-out — the channel exemption reading suggests exempt).
    Left unguarded; raised as a question rather than slipped either way.
 
+## Second letter batch (owner: "1a 2a 3a", 2026-08-25 late)
+
+### CO-8 (AMENDMENT 1 item 4, ruled 1a) — journal and fabric stay UNGUARDED
+
+`$journal:append` and `$fabric:emit` are NOT err-at-boundary refusal points:
+the journal is exactly where error events belong as first-class records, and
+fabric emit is channel-shaped fan-out — the CO-2 channel exemption applies.
+CONFIRMED exemptions, to be pinned (one fixture each: an err event journals
+green; an err value fabric-emits green) with the next fixture-touching commit.
+
+### CO-9 (#982, ruled 2a) — hosted bindings are DEPLOYMENT-DOCUMENT DATA
+
+The hosted-XAP binding surface for `journal:`, `sources:`, `resolver:`, and
+`log-reduce:` is the `*.xap.cxd` wiring layer — data in the deployment
+document, where the composition spec already places deriver principals — so a
+XAP with durable bindings stays "zero server code" (§6.3). The opts map stays
+the DIRECT `[$xap:run]` surface; the document is the HOSTED surface; the host
+compiles document bindings into the same run opts `xap_run` already validates
+(one validator, never two). The #977 opts forwarding for `derivers:` stands as
+the direct-run parity path; the document's deriver principals, when bound,
+supersede per the composition spec. Spec-edit authorization: RULED: CO-9.
+
+### CO-10 (#969 edges, ruled 3a) — all three mint hardenings
+
+(i) `store-mint-principal` REFUSES an --id whose derived seed-env name
+collides with a different id (hyphen/underscore aliasing) — named refusal,
+never a silent second seed that does not load; (ii) `--for identity` emits the
+daemon-side `[xsp [identity …]]` row so the walkthrough's daemon step becomes
+copy-paste; (iii) `--caps` becomes REQUIRED — an explicit authority choice at
+mint time, no default. (iii) is a surface change to a verb shipped this
+session with no external users: cutover, no dual-accept.
+
 ## Standing scope notes
 
 - Tag gate for v0.17.0 (owner 1a, first message): #973 ✅(f28c43ff9) ·
