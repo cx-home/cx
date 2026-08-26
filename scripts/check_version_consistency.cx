@@ -201,7 +201,7 @@
                           "libcx would report the unstamped fallback (add $(LIB_VERSION_DEFINES)): "
                           [$strings:trim $l]]]]]
         [= $lib-build-id-lines [?for [in $l $mk-lines]
-          [where [$strings:starts-with $l "LIB_BUILD_ID"]]
+          [where [$strings:starts-with $l "LIB_BUILD_ID "]]
           [yield $l]]]
         [= $lib-build-id-fails
           [?if [= [$count $lib-build-id-lines] 0]
