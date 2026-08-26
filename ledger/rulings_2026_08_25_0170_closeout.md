@@ -1,0 +1,110 @@
+# Rulings — v0.17.0 close-out campaign (2026-08-25)
+
+Owner reply: "1a 2a 3a 4a 5a 6a — and #963 (a)", conditioned on long-term-best
+per the standing letter-acceptance policy; each recommendation re-verified
+against that bar before recording (CO-2 carries the one honest refinement the
+verification produced). Context: the downstream (sponsor) v0.16.0 feedback,
+verified against `release/0.17` HEAD and filed as #974–#979; evidence comments
+on each issue.
+
+## CO-1 (#974, ruled 1a) — store multicodec read-compat
+
+A cxpack pack entry whose hash-multicodec slot reads `0x0000` is accepted as
+the sha2-256 it implicitly was: v0.15's writer emitted a literal reserved `0`
+in that slot, so zero MEANS sha2-256 for every pack that can legally exist.
+Readers accept exactly {0x0000, 0x0012}; every other code still fails closed.
+On the first write to a store containing zero-slot entries, the writer stamps
+them forward to 0x0012 in place (the slot is covered by no CRC/signature —
+the I1 in-repo migration already relied on this). Gate: a committed
+v0.15-shaped pack fixture (the 5-byte zeroing witness from the #974
+verification) must open, read, AND accept a republish, forever. CHANGELOG
+erratum under [Unreleased] correcting the v0.16.0 "stored formats are
+unchanged" claim (published notes are a separate artifact and are not
+rewritten).
+
+## CO-2 (#975, ruled 2a) — refusals refuse at the EFFECT boundary
+
+**No frozen matrix cell moves.** The measured collection-literal member cells
+(paren sequence, array literal, map literal: an [err] member rests as data,
+construction succeeds) are CONFIRMED as ruled — err-as-value composition is
+load-bearing (stdlib/supervise's `([sup-note …], $err)` pair transits channels
+as data; the #853 position table stands). The new rule is additive and lives
+where the value leaves the program: **an effect that externalizes a document
+containing an [err] element at any depth refuses** — `[out …]`, store writes,
+http response emission — with a typed refusal naming the first contained err's
+code and path, **unless the effect names the permission explicitly**
+(attribute `errs=:permit` on the effect form; exact spelling settled at spec
+time, one spelling for all three effect families). Pure functions are
+untouched: `$format:*` over a document containing [err] stays legal (rendering
+an error to log it is legitimate); channels, bindings, matching stay legal.
+This closes the downstream `written=0 errors=25`-with-exit-0 class and the
+err-into-HTML escape at the only honest place: the boundary. Spec text lands
+in the effects section; conformance: one refusal case per effect family + one
+:permit case + the supervise-pair regression pin (channel transit of an err
+stays data). Spec edit authorized by THIS ruling (RULED: CO-2).
+
+## CO-3 (#978, ruled 3a) — $format:pretty becomes round-trip faithful
+
+Strings stay quoted (the documented `string-quote` option semantics);
+non-string scalars are NEVER quoted by pretty (or diff-friendly, which shares
+the fault). This restores the module's own normative claim
+(stdlib/format.cx:30 "every form round-trips"). The pretty↔canonical quoting
+divergence that remains (pretty always-quotes strings; canonical bare-when-
+safe) is documented in the module doc + spec. Pin: for each formatter form,
+parse(format(v)) is structurally equal to v; plus the score=1.5 regression
+witness. The "started quoting" downstream claim is recorded as refuted
+(quoting is v0.8.0-original; archaeology in the #978 evidence comment).
+
+## CO-4 (#979, ruled 4a) — release-ness derives from HEAD==tag
+
+`cx version`'s headline stamp derives release-ness from git state at build
+time: HEAD exactly at the annotated release tag matching repo-root VERSION and
+a clean tree ⇒ `cx v0.17.0`; anything else ⇒ `cx v0.17.0-dev+<commit>`
+(pre-release ordering is semantically correct: unreleased source IS a
+pre-release of VERSION). No second hand-maintained value — VERSION + git
+state only (the derive-don't-multiply rule). Wired into the version-stamp
+derivation consumed by scripts/release.sh BEFORE the v0.17.0 tag, so the
+0.17.0 artifacts are the first honest ones. The commit/-dirty/V-fork lines
+stay as they are.
+
+## CO-5 (#969, ruled 5a) — clean-state bootstrap = offline identity mint
+
+A shipped verb mints an XSP principal OFFLINE: generates an ed25519 seed,
+derives the DID (`$did:key-create` — the primitive already exists), writes
+the seed to a file the operator controls (0600; never stdout by default),
+and prints (i) the `[grant …]` stanza to splice into the daemon's
+`[xsp [grants …]]` table and (ii) the client's `xsp-did` + `xsp-seed-env`
+usage. Config remains the SOLE authority; nothing transits a wire; no
+trust-on-first-use machinery; no bearer minting (G1a–G3a stand). Ships in the
+platform profile beside store-serve. Docs: a clean-state bootstrap walkthrough
+(mint → grant in config → start deny-by-default → client presents), replacing
+the out-of-band shrug #968's corrections currently state. Naming settled at
+implementation next to the existing verb family; spec addition authorized
+(RULED: CO-5).
+
+## CO-6 (#968 riders, ruled 6a) — retired verbs name their retirement; CSRP-era store docs get their own issue
+
+(i) On top of #970's unknown-verb guard: a retired-verb list so `cx
+store-token` (and future retirees) answers "retired at v0.16.0; credentials
+are XSP-AUTH principals; see #969's successor" instead of "unknown
+subcommand" — the #426 lesson applied to retirement. The cmd_data
+`absent_profile_verbs` entry and its extraction-gate pin move consistently.
+(ii) The CSRP-era content in docs/dev/store-service.md +
+docs/dev/store-management.md beyond store-token (four auth providers,
+bearer-in-URL, RBAC-gated ops) is filed as its own docs issue.
+
+## CO-7 (#963, ruled (a)) — EXECUTED
+
+The three agent branches verified FULLY LANDED (11/11 commits rebased twins;
+9 patch-id-identical; 2 resolved to base drift + upstream conflict-marker
+cleanup; 338 paths, 0 absent; ledger content byte-identical) are deleted,
+worktrees pruned, #963 closed. Evidence chain on the issue.
+
+## Standing scope notes
+
+- Tag gate for v0.17.0 (owner 1a, first message): #973 ✅(f28c43ff9) ·
+  #951-disposition · #963 ✅ · #970 · #968 · #957-verify ✅(branch pending
+  integration) + the downstream blockers #969 #974 #975 #976. #826 does NOT
+  gate the tag (dedicated Fable session follows, ruled 2a).
+- #971/#972 (upstream V, linux/os.Process) are next-wave Opus; #834 stays
+  excluded (structural dead end, its own issue).
