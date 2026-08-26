@@ -237,3 +237,21 @@ objective. CONDITION carried from L44: if $avg's exact division reaches a
 non-terminating quotient with no ruled scale/rounding context, the impl STOPS
 on that cell and the rounding ruling is taken together with #1044 ($div/$idiv,
 same question) — no invented rounding.
+
+### CO-15 (§3.3 pipeline per-stage keys, owner "1a", 2026-08-26) — NARROWING RATIFIED + PER-STAGE ENV IS REAL, NOW
+
+Two halves, one ruling. (1) The #1028 spec correction (held commit: §3.3 stops
+promising "same keys as run") is RATIFIED — the five per-stage-incoherent keys
+($timeout-ms/$kill-on-timeout, $new-process-group, $check, $encoding) refuse
+BY NAME with the tabulated §4.3/§4.5/§4.7 citations; refusal-by-name is the
+forward-compatibility mechanism. (2) Per-stage env is NOT deferred (owner:
+"why would we push that capability down the road") — it is the one refused key
+whose blocker was spelling, not coherence. RULED spelling: a child element of
+the stage's opts, `[opts [env {KEY: "value", …}]]` (map value as element
+content — legal under the frozen matrix; the scalar-only-attribute rule is
+untouched). RULED semantics: override per KEY, applied in the order env-clear
+→ pipeline $env → stage [env …], POSIX `FOO=1 cmd1 | BAR=2 cmd2` precedent.
+§3.3 therefore names FOUR stage keys: cwd, env-clear, search-path, env — and
+this ruling carries the spec-edit authorization for that amendment
+(RULED: CO-15). Implementation rides the #1028 per-stage opts machinery;
+red-proof + granted-path conformance twins both directions.
