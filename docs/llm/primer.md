@@ -421,7 +421,7 @@ and do not carry one over from another Lisp.
 | `[?name]` | Core — shared name sub-form (`set-attr`/`rename`) |
 | `[?quote]` | Core — quasiquote (eager; two-color hygiene) |
 | `[?unquote]` | Core — quasiquote hole (single value) |
-| `[?splice]` | Core — quasiquote hole (sequence graft) |
+| `[?splice]` | Core — adopts a sequence value's members into element content (R-A1: a sequence value cannot BE element content; `[?splice]` is the syntactic adopter, alongside contributing `[?for]`) |
 | `[?eval]` | Core — tree-eval (reuses `cx:eval` sandbox) |
 | `[?for]` | Core — for-comprehension (Sequence outer) |
 | `[?for-array]` | Core — for-comprehension (Array outer) |

@@ -169,6 +169,12 @@ build-playground:
 	@cp scripts/gen_guide/playground/playground.css dist/playground-preview/playground/
 	@cp scripts/gen_guide/playground/playground.examples.js dist/playground-preview/playground/
 	@cp scripts/gen_guide/playground/jspi_probe.html dist/playground-preview/playground/
+	@# highlight/ + assets/ make the preview docroot FAITHFUL to the shipped
+	@# page (#1007's offline run surfaced two ERR_FILE_NOT_FOUND here that
+	@# docs/guide does not have — the smoke gate must test the real layout).
+	@mkdir -p dist/playground-preview/highlight dist/playground-preview/assets
+	@cp scripts/gen_guide/highlight/*.js dist/playground-preview/highlight/ 2>/dev/null || true
+	@cp -R scripts/gen_guide/assets/. dist/playground-preview/assets/ 2>/dev/null || true
 	@# The vendored diagram renderer (#1007) — mermaid at a pinned version,
 	@# no longer a jsDelivr <script>. It is staged like any other playground
 	@# asset because it IS one now; the license travels with it, the way
