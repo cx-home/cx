@@ -294,3 +294,54 @@ terminates, and §6.5 already rules truncation toward zero, so CXER3002 cannot
 arise there — result kind is the exact family's integral representation (int
 while it fits i64, bigint past it), the convention floor/ceiling/round already
 use. No cell was invented.
+
+#### #1019 disposition — WORKS AS SPECIFIED (existing rulings applied; no new CO)
+
+#1019 reported an orthogonality defect: `cx --ast --compact` refuses (E211) a
+resource the evaluator runs, and #1020's comment made it three-way by adding
+the walker's best-effort image. Reading the governing clauses closes it as
+SPECIFIED — the three lanes are not one surface disagreeing with itself, they
+are three readings the spec already distinguishes, each behaving as written:
+
+- **code.md §6.4.1 (element construction).** `attr=VALUE` — `VALUE` is any
+  expression, and "at evaluation time `VALUE` MUST reduce to a scalar". The
+  constraint is stated AT EVAL, on the reduced value. The evaluator is right
+  to accept `[m x=[+ 1 2]]`: the head reduces to `3`, a scalar.
+- **lexicon.ebnf §10 (D2, attributes are scalar-only).** The DATA reading has
+  no evaluator, so it can only decide the question at PARSE, on the SYNTAX. A
+  bracket opener in attribute-value position is refused outright — cx-err:E211
+  (cxdm.md §11 E_ATTR_NODE_VALUED). That is the graduated 2026-06-03 rule and
+  the whole point of the 037-041 family.
+- **code.md §1.3 (the data / program reading).** DATA is a SUBSET of PROGRAM.
+  A form the program reading admits is therefore NOT required to survive the
+  data reading; the reverse would be the defect. `--ast` is the data reading
+  (cli.md §2.2), so its refusal is the contracted direction, not a stale
+  strictness.
+- **cli.md §2.2 (the bare convert surface).** Conversion is the data reading
+  by construction. Nothing on that lane may evaluate, so nothing on that lane
+  can apply the §6.4.1 eval-time test.
+
+Precedent: `ledger/rulings_2026_08_20_diagram_wave3.md` — "the SCANNER was
+fixed", the module was not contorted. Same shape here: the lane whose
+INSTRUMENT was wrong gets fixed, and the ruled semantics of the other lanes
+are not bent to match a tool's convenience.
+
+Disposition (option b of the close-out analysis): **no semantic change.** The
+residue was orientation, not verdict — a program-shaped resource refused on
+the DATA projection reads as one surface contradicting itself. Delivered:
+
+1. `--ast` appends ONE line when E211 fires on a source whose data reading
+   carries a registered program directive — "this resource is program-shaped;
+   --ast is the DATA projection (cli.md §2.2)". Message-only; the verdict,
+   exit code, and every other lane are byte-unchanged. The predicate is
+   `cx.source_carries_program_directive`, a LEXICAL twin of
+   `code.data_reading_has_program_directive` — needed because the tree the
+   latter walks is exactly what E211 prevented from existing.
+2. `conformance/core.cxd` 041a-attr-value-call-rejected pins the split as a
+   contract: `[m x=[+ 1 2]]` → E211 in the data reading, joining 037-041. It
+   is the family's one `code_only` census row (the siblings are both_reject —
+   a paren/brace/bare bracket has no head for the program reading to reduce
+   either), and the cxparse corpus baseline moves deliberately for it.
+
+The walker's third verdict (#1020's comment) is NOT touched here: it images,
+it does not adjudicate, and #1038 is the open item on that image.
