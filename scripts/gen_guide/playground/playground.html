@@ -73,6 +73,11 @@
         <button class="cxp-subject-tab"           data-subject="output" type="button">Output</button>
         <button class="cxp-subject-tab"           data-subject="all"    type="button">All</button>
       </span>
+      <select id="cxp-graph-view-select" class="cxp-detail-select"
+              title="Graph subject — auto: the INFERRED SHAPE (one box per element NAME for data, control flow for code); instance: one box per element OCCURRENCE, labelled with its own attribute values">
+        <option value="auto" selected>Graph: auto</option>
+        <option value="instance">Graph: instance</option>
+      </select>
       <select id="cxp-detail-select" class="cxp-detail-select"
               title="Adjust how much detail nodes show (attributes, scalar bodies, values)">
         <option value="min">Detail: min</option>

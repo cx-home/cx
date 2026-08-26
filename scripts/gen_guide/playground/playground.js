@@ -24,6 +24,7 @@
   const vizTabs  = [...document.querySelectorAll('.cxp-viz-tab')];
   const subjectTabs = [...document.querySelectorAll('.cxp-subject-tab')];
   const detailSelect = document.getElementById('cxp-detail-select');
+  const graphViewSelect = document.getElementById('cxp-graph-view-select');
   const outs     = {
     cx:   document.querySelector('#cxp-out-cx code'),
     json: document.querySelector('#cxp-out-json code'),
@@ -96,6 +97,39 @@
     const stored = localStorage.getItem('cxp.detailLevel');
     if (stored === 'min' || stored === 'compact' || stored === 'full') {
       detailLevel = stored;
+    }
+  } catch (_) { /* sandboxed / disabled — keep default */ }
+
+  // graphView names WHAT THE GRAPH PANE GRAPHS (#960). It is a SUBJECT
+  // axis, not a detail rung — the same axis `cx code-diagram --view=`
+  // carries on the CLI, whose spellings this reuses so the two surfaces
+  // stay one vocabulary:
+  //
+  //   'auto'     — the INFERRED SHAPE, rendered by the CX diagram module
+  //                through `cxlib.diagram(src, 'mermaid:LEVEL')`. For a
+  //                data document that is an erDiagram: ONE entity per
+  //                element NAME, carrying attribute names and kinds and
+  //                never a single value. For code it is the CFG / SEQ
+  //                auto-detection. Unchanged, and still the default.
+  //   'instance' — one graphed node per element OCCURRENCE, labelled
+  //                with that occurrence's OWN attribute values, edges
+  //                parent → child. Built here in the browser from the
+  //                `cxlib.tree()` contract, which already carries every
+  //                value the label needs.
+  //
+  // Why the second view is not a fourth detail rung: `min`/`compact`/
+  // `full` vary how much of ONE subject is drawn. Three sibling
+  // `[node …]` elements collapse into a single ERD entity at EVERY rung,
+  // so no rung can draw the example in #960. The subject itself has to
+  // change. `detailLevel` still applies inside the instance view — there
+  // it caps how many attribute VALUES ride each node's label.
+  //
+  // Persists to localStorage per-browser, like detailLevel / vizSubject.
+  let graphView = 'auto';
+  try {
+    const storedView = localStorage.getItem('cxp.graphView');
+    if (storedView === 'auto' || storedView === 'instance') {
+      graphView = storedView;
     }
   } catch (_) { /* sandboxed / disabled — keep default */ }
 
@@ -409,6 +443,16 @@
   if (detailSelect) detailSelect.addEventListener('change', () => {
     detailLevel = detailSelect.value;
     try { localStorage.setItem('cxp.detailLevel', detailLevel); } catch (_) {}
+    refreshView();
+  });
+  // ── Graph view (auto / instance) — #960 ──────────────────
+  function applyGraphViewActiveState() {
+    if (graphViewSelect) graphViewSelect.value = graphView;
+  }
+  applyGraphViewActiveState();
+  if (graphViewSelect) graphViewSelect.addEventListener('change', () => {
+    graphView = graphViewSelect.value;
+    try { localStorage.setItem('cxp.graphView', graphView); } catch (_) {}
     refreshView();
   });
 
@@ -738,6 +782,153 @@
     markSelected(best ? best.el : null);
   }
 
+  // ── Instance graph (Graph: instance) — #960 ─────────────
+  //
+  // Emits a Mermaid `flowchart TD` in which ONE node is drawn per
+  // element / directive OCCURRENCE, labelled with that occurrence's own
+  // attribute VALUES, with one edge per parent → child containment
+  // step. So
+  //
+  //   [node name=a id=4 [node name=b id=23] [node name=b1 id=35]]
+  //
+  // draws three boxes — `node @name='a' @id=4`, `node @name='b' @id=23`,
+  // `node @name='b1' @id=35` — where the `auto` view draws a SINGLE
+  // `node` ERD entity carrying attribute names and kinds and no value at
+  // any rung, because an ERD has one entity per element NAME.
+  //
+  // Source of truth is the `cxlib.tree()` contract (vcx/cx/code_tree.v):
+  // every node is `{kind, name?, value?, loc, children?}` and attributes
+  // are `{kind:'attribute', name, value}` entries INSIDE `children`,
+  // siblings of nested elements and of scalar / text bodies. Values
+  // arrive JSON-typed — ints and floats as numbers, booleans as
+  // booleans, atoms as strings keeping their leading `:`.
+  //
+  // (Measured 2026-08-25: the Tree pane's element branch above reads
+  // `node.attrs` / `node.items`, which this contract does not carry — so
+  // that branch's attr chips are inert today. Reading `children` here is
+  // reading what the emitter actually emits, not a second shape.)
+  const INSTANCE_NODE_CAP  = 200;  // bound: a 1,000-box diagram is unreadable
+  const INSTANCE_VALUE_CAP = 32;   // per-value label clip, in characters
+
+  // splitElementChildren partitions one element's / directive's
+  // `children` into the three roles the label and the walk each need.
+  function splitElementChildren(node) {
+    const attrs = [], elems = [], bodies = [];
+    const kids = Array.isArray(node.children) ? node.children : [];
+    for (const c of kids) {
+      if (!c || typeof c !== 'object') continue;
+      if (c.kind === 'attribute') attrs.push(c);
+      else if (c.kind === 'element' || c.kind === 'directive') elems.push(c);
+      else bodies.push(c);
+    }
+    return { attrs, elems, bodies };
+  }
+
+  // instanceValueText renders one JSON-typed value for a graph label.
+  // Strings quote; numbers and booleans stay bare; an atom keeps its
+  // `:name` spelling rather than being dressed as a string.
+  function instanceValueText(v) {
+    if (v === null || v === undefined) return 'null';
+    if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+    const s = String(v);
+    if (/^:[A-Za-z_][A-Za-z0-9_-]*$/.test(s)) return s;
+    const clipped = (s.length > INSTANCE_VALUE_CAP)
+      ? s.slice(0, INSTANCE_VALUE_CAP - 1) + '…'
+      : s;
+    return `'${clipped}'`;
+  }
+
+  // instanceAttrText applies the detail rung to the attribute VALUES on
+  // one node's label — the reading of min / compact / full that an
+  // instance view makes natural, and the same COMPACT_ATTR_CAP the Tree
+  // pane's chips use, so the two panes agree on how much is "compact".
+  function instanceAttrText(attrs, level) {
+    if (level === 'min' || attrs.length === 0) return '';
+    const cap = (level === 'full') ? attrs.length : COMPACT_ATTR_CAP;
+    const shown = [];
+    for (let i = 0; i < Math.min(attrs.length, cap); i++) {
+      shown.push(`@${attrs[i].name}=${instanceValueText(attrs[i].value)}`);
+    }
+    const remaining = attrs.length - cap;
+    if (remaining > 0) {
+      shown.push(`(+${remaining} more attr${remaining === 1 ? '' : 's'})`);
+    }
+    return ' ' + shown.join(' ');
+  }
+
+  function instanceNodeLabel(node, level) {
+    const parts = splitElementChildren(node);
+    let label = (node.kind === 'directive' ? '?' : '') + String(node.name || '_');
+    label += instanceAttrText(parts.attrs, level);
+    // Mirror the Tree pane: a lone scalar / text body rides its own
+    // element's label instead of becoming a box of its own.
+    if (level !== 'min' && parts.elems.length === 0 && parts.bodies.length === 1) {
+      const only = parts.bodies[0];
+      if (only.kind === 'scalar' || only.kind === 'text') {
+        label += ' ' + instanceValueText(only.value);
+      }
+    }
+    return label;
+  }
+
+  // mermaidLabel escapes one composed label for a quoted Mermaid node
+  // body. `#` goes first — the entity form is itself `#`-introduced.
+  // Brackets and braces matter in particular because a bracket-valued
+  // attribute (`k=[a b]`) is captured VERBATIM by the tree emitter, so
+  // real values do carry them.
+  function mermaidLabel(s) {
+    return String(s)
+      .replace(/#/g,  '#35;')
+      .replace(/"/g,  '#quot;')
+      .replace(/</g,  '#lt;')
+      .replace(/>/g,  '#gt;')
+      .replace(/\[/g, '#91;')
+      .replace(/\]/g, '#93;')
+      .replace(/\(/g, '#40;')
+      .replace(/\)/g, '#41;')
+      .replace(/\{/g, '#123;')
+      .replace(/\}/g, '#125;')
+      .replace(/[\r\n]+/g, ' ');
+  }
+
+  // buildInstanceGraph walks the tree in document order. The cap bounds
+  // what is DRAWN, never what is COUNTED — the "showing N of M" note has
+  // to be true, so the walk continues past the cap to finish counting.
+  function buildInstanceGraph(treeJson, level) {
+    if (!treeJson || typeof treeJson !== 'object') return '';
+    const lines = ['flowchart TD'];
+    let total = 0, drawn = 0, idSeq = 0;
+    const walk = (node, parentId) => {
+      if (!node || typeof node !== 'object') return;
+      let childParent = parentId;
+      if (node.kind === 'element' || node.kind === 'directive') {
+        total++;
+        if (drawn < INSTANCE_NODE_CAP) {
+          const myId = `i${idSeq++}`;
+          drawn++;
+          lines.push(`  ${myId}["${mermaidLabel(instanceNodeLabel(node, level))}"]`);
+          if (parentId) lines.push(`  ${parentId} --> ${myId}`);
+          childParent = myId;
+        } else {
+          childParent = null;   // nothing under an undrawn node is drawn
+        }
+      }
+      const kids = Array.isArray(node.children) ? node.children : [];
+      for (const c of kids) walk(c, childParent);
+    };
+    walk(treeJson, null);
+    if (total === 0) {
+      // Reachable: a document that is a bare scalar has no occurrence to
+      // graph. Say so rather than emit an empty flowchart.
+      return 'flowchart TD\n  i0["(no element occurrences to graph)"]';
+    }
+    if (total > drawn) {
+      lines.push(`  cap["${mermaidLabel(
+        `showing ${drawn} of ${total} element occurrences (node cap ${INSTANCE_NODE_CAP})`)}"]`);
+    }
+    return lines.join('\n');
+  }
+
   // ── Graph rendering ─────────────────────────────────────
   let mermaidIdCounter = 0;
   // Mermaid's render() appends a temporary `d<id>` measurement node to <body>
@@ -985,21 +1176,35 @@
         if (graphHost) graphHost.innerHTML = `<p class="cxp-viz-placeholder">${escapeHtml(part.empty)}</p>`;
         continue;
       }
-      // Tree
+      // Tree. The parsed tree is hoisted because `Graph: instance`
+      // graphs THIS SAME tree — one cxlib.tree() call feeds both panes.
+      let parsedTree = null;
       try {
         const treeJson = (typeof cxlib.tree === 'function') ? cxlib.tree(part.text) : null;
-        const parsed = typeof treeJson === 'string' ? JSON.parse(treeJson) : treeJson;
-        renderTree(parsed, part.text, treeHost, part.register);
+        parsedTree = typeof treeJson === 'string' ? JSON.parse(treeJson) : treeJson;
+        renderTree(parsedTree, part.text, treeHost, part.register);
       } catch (e) {
         treeHost.innerHTML = `<p class="cxp-viz-placeholder">Tree view unavailable: ${escapeHtml(e.message)}</p>`;
         if (part.register) nodeRegistry = [];
       }
-      // Graph
+      // Graph — the subject is graphView (#960), the rung is detailLevel.
       try {
-        // Encode the View pane's current detail level into the format
-        // suffix; the V side parses `mermaid:LEVEL` per render_diagram.
-        const fmtWithDetail = `mermaid:${detailLevel}`;
-        const d = (typeof cxlib.diagram === 'function') ? cxlib.diagram(part.text, fmtWithDetail) : '';
+        let d;
+        if (graphView === 'instance') {
+          // INSTANCE: one box per element occurrence, labelled with its
+          // own attribute values. Built here from the tree contract.
+          if (parsedTree == null) {
+            throw new Error('the tree this view graphs is unavailable');
+          }
+          d = buildInstanceGraph(parsedTree, detailLevel);
+        } else {
+          // AUTO: the inferred shape (ERD / CFG / SEQ), rendered by the
+          // CX diagram module. Encode the View pane's current detail
+          // level into the format suffix; the V side parses
+          // `mermaid:LEVEL` per render_diagram.
+          const fmtWithDetail = `mermaid:${detailLevel}`;
+          d = (typeof cxlib.diagram === 'function') ? cxlib.diagram(part.text, fmtWithDetail) : '';
+        }
         renderGraph(d, graphHost);
       } catch (e) {
         if (graphHost) graphHost.innerHTML = `<p class="cxp-viz-placeholder">Diagram unavailable: ${escapeHtml(e.message)}</p>`;
