@@ -91,9 +91,16 @@
 
 # Error codes whose raising surface lives OUTSIDE conformance/code.cxd —
 # re-verified per run by scanning the named file (a rotted mapping fails).
+# CXER0275 (E_ERR_AT_BOUNDARY, RULED: CO-2) fires only at externalizing
+# EFFECTS — store document writes and http response emission — which
+# code.cxd's core-language surface cannot reach; its pins live in the store
+# fixture lane (store-err-boundary-001..004) and the live-listener serve
+# tests. (A [# #] comment cannot sit inside this paren sequence — the #826
+# authoring trap — so the note lives here.)
 [?const CROSS-SUITE (
   [xs code='CXER0120' file='conformance/stdlib/cx.cxd'],
-  [xs code='CXER0273' file='vcx/tests/eval_semantics_umbrella_test.v'])]
+  [xs code='CXER0273' file='vcx/tests/eval_semantics_umbrella_test.v'],
+  [xs code='CXER0275' file='conformance/stdlib/store.cxd'])]
 
 # Spec-defined codes NO implementation can raise today — pinned NAMED to
 # their filed issue. EMPTY as of #808 (mechanism kept).
