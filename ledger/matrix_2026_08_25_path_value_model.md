@@ -432,3 +432,26 @@ the cells this settlement fixed. Pin-strength note: program-callstep-007's
 group boundary is no longer visible in its flattened image (rule-3
 migration kept members/order); if that PS-1 pin needs the grouping, it
 needs a wrapper-element re-pin — flagged, not silently decided.
+
+## Final verdict (2026-08-25)
+
+**FULL GATE GREEN** (`make test`, run 6, zero failing lanes; log
+`fullgate6.log`): profile gates 3278/2676 graded OK on the cli/embed
+profiles, extraction gate 10,801 invocation pairs byte-identical across 8
+shards (the CLI lane's verdict-digest moved to `dc00d61e…` — the ruled
+semantics legitimately moved conformance outputs; serial/sharded still
+agree byte-for-byte), corpus-audit 6/6, spec-freeze clean, docs current.
+
+Five earlier gate runs each caught one real class and are part of the
+record: (1) guide/docs drift → regenerated, fn-doc examples re-synced;
+(2) spec-freeze `RULED:` tokens → unpushed messages reworded, all rulings
+were recorded before the work; (3) the loop-carrier collision — [break]/
+[continue] are positional value carriers, exempted and pinned
+(pvmatrix-041) after the oriel TUI died on its first keystroke; (4) the
+tours' axis showcases and five test-embedded programs migrated, the #847
+parity pins moved to the ruled values WITH parity intact, the address
+baseline re-blessed (1 deliberate move + 87 pre-existing unpinned defs
+now pinned); (5) sup-011 — the PRE-EXISTING #951 profile-gate flake
+(no retry class in that lane), 3/3 green in isolation with the correct
+CXER5094 on the same binary, green in run 6; its disposition stays with
+#951, not this settlement.
