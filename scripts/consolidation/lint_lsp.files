@@ -11,4 +11,4 @@
 # they always were; the umbrella carries them.
 #
 # ── #996, 2026-08-26: the request-level LSP harness.
-vcx/tests/lsp_harness_test.v
+#absorbed vcx/tests/lsp_harness_test.v
