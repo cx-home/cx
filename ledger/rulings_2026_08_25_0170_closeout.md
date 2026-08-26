@@ -221,3 +221,19 @@ prio:high with a named landing.
   gate the tag (dedicated Fable session follows, ruled 2a).
 - #971/#972 (upstream V, linux/os.Process) are next-wave Opus; #834 stays
   excluded (structural dead end, its own issue).
+
+### CO-14 (aggregates numeric policy, owner "2a", 2026-08-26) — AGGREGATES ADOPT THE OPERATORS' DISCIPLINE
+
+The letter (residue of #1017): today `[+ 39.98 1.5e0]` refuses ([cast] is the
+only decimal↔float bridge) while `[$sum (39.98, 1.5e0)]` silently returns a
+float — a documented §6.5 promotion whose text predates decimal's promotion to
+a full semantic kind. RULED (a): the aggregate family ($sum/$min/$max/$avg and
+kin) adopts the operators' discipline — mixed decimal+float REFUSES like the
+heads; exact families stay exact end-to-end; $avg over decimals yields decimal
+via the ruled exact-division rules; §6.5's aggregate rows get the authorized
+pass stating all of it (RULED: CO-14). Silent f64 bridging is precisely what
+caused #1017, and one numeric discipline everywhere is the orthogonality
+objective. CONDITION carried from L44: if $avg's exact division reaches a
+non-terminating quotient with no ruled scale/rounding context, the impl STOPS
+on that cell and the rounding ruling is taken together with #1044 ($div/$idiv,
+same question) — no invented rounding.
