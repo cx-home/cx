@@ -29,6 +29,26 @@ version, library version).
   the successor bootstrap is under design (#969). The approved CLI and
   store-management-console specs are trued to match.
 
+- **"stored documents … are unchanged" was wrong for cxpack stores written
+  by v0.15 (#974).** The 0.16.0 Migration section says "Nothing else: cx
+  source, schemas, stored documents, and wire formats are unchanged". The
+  at-rest pack format did move: `8fafb76fa` (I1 crypto-agility §4, L34) gave
+  the formerly-RESERVED u16 at pack-entry offset 6 a meaning — the hash
+  multicodec — and made readers fail closed on anything but sha2-256
+  (`0x0012`). v0.15's writer had been emitting a literal `0` into that slot
+  while it was still reserved, so from 0.16.0 every v0.15-written store
+  refused to open with `unsupported hash multicodec 0x0000`. That is a
+  stored-format break, and it shipped announced as the opposite.
+  **Fixed in this cycle (RULED: CO-1)**: readers accept exactly `{0x0000,
+  0x0012}` — zero is read as the sha2-256 it always implicitly was, since
+  v0.15 had no other hash algorithm to name — and every other code still
+  fails closed. The first durable write to a store holding zero slots stamps
+  them forward to `0x0012` in place, so no operator action is required: open
+  the store and publish. A committed v0.15-shaped fixture
+  (`vcx/tests/testdata/v015_pack_compat/`) pins open, read, and republish
+  forever. The published 0.16.0 release notes are a separate artifact and
+  are not rewritten.
+
 ## [0.16.0] — 2026-08-20
 
 The **partition** release. v0.13.0 made CX consumable and v0.14.0 made a
