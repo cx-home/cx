@@ -179,6 +179,15 @@ html, body {
 .cxt-inline-scalar { color: var(--syn-string); margin-left: 6px; }
 .cxt-inline-scalar.num { color: var(--syn-number); }
 .cxt-inline-scalar.bool { color: var(--syn-keyword); }
+/* #1001 — a chip half and a ridden-up scalar body are their OWN click
+   targets into the source pane, so they show as clickable and can carry
+   the selection mark that used to sit only on a whole row. */
+.cxt-row [data-loc] { cursor: pointer; }
+.cxt-row [data-loc].is-selected {
+  background: rgba(97, 175, 239, 0.25);
+  outline: 1px solid var(--accent);
+  border-radius: 2px;
+}
 
 /* ── Main 3-region grid ─────────────────────────────────────── */
 /* Source + Output stack in the left 2/3; View pane takes the right 1/3.

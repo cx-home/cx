@@ -106,6 +106,12 @@
   // 'compact' (default) = name + first 2 attrs + (+N more) + inlined
   // scalar bodies of leaf children; 'full' = name + all attrs +
   // scalar bodies. Persists to localStorage per-browser.
+  //
+  // True of the Tree since #1001, not before it: the Tree's rung-aware
+  // branch read `node.attrs` / `node.items`, which the `cxlib.tree()`
+  // contract does not carry, so this comment described an intention
+  // rather than the page. It reads the contract's `children` now,
+  // through the same `splitElementChildren` the instance graph uses.
   const COMPACT_ATTR_CAP = 2;
   let detailLevel = 'compact';
   try {
@@ -494,11 +500,13 @@
     try { localStorage.setItem('cxp.vizSubject', vizSubject); } catch (_) {}
     refreshView();
   }));
-  // ── Graph-scoped controls (#992) ─────────────────────────
-  // Detail and the Auto/Instance subject both configure the GRAPH and
-  // nothing else, so they live in the graph panel's own bar and are on
-  // screen only while the Graph representation is. Both still persist
-  // to localStorage, like every other control on this page.
+  // ── Detail — a VIEW-pane control since #1001 ─────────────
+  // It configures both representations the pane can draw (the Tree's
+  // rows and the Graph's boxes), so by this pane's own control model it
+  // sits on the axis header rather than inside one panel. #992 had it
+  // in the graph bar because Detail was graph-only IN FACT — the Tree's
+  // detail branch read fields the tree contract does not carry and
+  // never ran. Persists to localStorage, like every other control here.
   function applyDetailActiveState() {
     if (detailSelect) detailSelect.value = detailLevel;
   }
@@ -595,8 +603,15 @@
     host.querySelectorAll('.cxt-row').forEach(row => {
       row.addEventListener('click', (e) => {
         e.stopPropagation();
+        // A loc-bearing span ON the row — an attribute chip's name or
+        // value half, a ridden-up scalar body — is a TIGHTER target
+        // than the row's own node, and clicking it means it. Falling
+        // back to the node keeps every other row behaving as before.
+        const inner = e.target && e.target.closest
+          ? e.target.closest('.cxt-row [data-loc]') : null;
         const node = row.closest('.cxt-node');
-        const locStr = node && node.dataset.loc;
+        const target = inner || node;
+        const locStr = target && target.dataset.loc;
         if (!locStr) return;
         let { start, end } = JSON.parse(locStr);
         // Only the SOURCE tree indexes the editor: translate loc offsets
@@ -612,26 +627,82 @@
           input.focus();
           input.setSelectionRange(start, end);
         }
-        markSelected(node);
+        markSelected(target);
       });
     });
   }
 
   // ── Inline-attr + inline-scalar helpers (detail-level aware) ──
-  // Renders `attrs` as small space-separated chips (`@name=value`) on
-  // the element's head row. At Compact, caps at COMPACT_ATTR_CAP and
-  // appends `(+K more)`; at Full shows all.
+  //
+  // These read the `cxlib.tree()` contract DIRECTLY — attribute nodes as
+  // the emitter hands them over, `{kind:'attribute', name, value, loc}`
+  // entries inside `children`, partitioned by `splitElementChildren`,
+  // the very function the instance-graph tables consume. Before #1001
+  // this pair was fed `node.attrs` / `node.items`, which no node in that
+  // contract carries, so neither ever ran: the Tree drew the raw JSON
+  // walk at every rung (four rows per attribute) and `Detail` had no
+  // observable effect on it at all.
+  //
+  // locStr renders one `data-loc` attribute for a click target, or ''
+  // when the node carries no loc.
+  function locStr(loc) {
+    if (!loc || typeof loc.start !== 'number') return '';
+    return ` data-loc='${JSON.stringify({ start: loc.start, end: loc.end })}'`;
+  }
+  // registerHeadTargets enrolls the loc-bearing spans that ride an
+  // element's own row — attribute chips and a ridden-up scalar body —
+  // into the source ↔ tree bridge, so collapsing them out of the walk
+  // costs no click target. Scoped to THIS node's row: a descendant's
+  // row is registered when that descendant is rendered.
+  function registerHeadTargets(wrap) {
+    let row = null;
+    for (const c of wrap.children) {
+      if (c.classList && c.classList.contains('cxt-row')) { row = c; break; }
+    }
+    if (!row) return;
+    row.querySelectorAll('[data-loc]').forEach(el => {
+      try {
+        const l = JSON.parse(el.dataset.loc);
+        if (typeof l.start === 'number') nodeRegistry.push({ start: l.start, end: l.end, el });
+      } catch (_) { /* malformed loc — no target, never a crash */ }
+    });
+  }
+  // attrSubLocs splits one attribute's loc — which covers the whole
+  // `name=value` span — into its two halves, by walking the text this
+  // tree was built from. This is the SAME split the verbose attribute
+  // branch performs; factored out so the chips keep the per-half click
+  // targets that branch provided rather than trading them away.
+  function attrSubLocs(loc) {
+    if (!loc || typeof loc.start !== 'number' || !nodeRegistrySource) return null;
+    const span = nodeRegistrySource.slice(loc.start, loc.end);
+    const eq = span.indexOf('=');
+    if (eq < 0) return null;
+    // The value's quote characters are part of its literal span and are
+    // kept, so a highlight matches what the user sees in the source.
+    return {
+      nameLoc: { start: loc.start, end: loc.start + eq },
+      valLoc:  { start: loc.start + eq + 1, end: loc.end },
+    };
+  }
+  // Renders attribute nodes as small space-separated chips (`@name=value`)
+  // on the element's head row. At Compact, caps at COMPACT_ATTR_CAP and
+  // appends `(+K more)`; at Full shows all. The cap is 2 because a head
+  // row is a LINE label, and 2-plus-overflow is what the diagram spec's
+  // compact rung already spends on a line's attribute chips — the Tree
+  // and the `mermaid:compact` label say the same thing at the same rung.
   function renderAttrChips(attrs, level) {
     if (!attrs || attrs.length === 0) return '';
     const cap = (level === 'full') ? attrs.length : COMPACT_ATTR_CAP;
+    const shown = attrs.slice(0, cap);
     let out = '';
-    for (let i = 0; i < Math.min(attrs.length, cap); i++) {
-      const a = attrs[i];
-      const name = (a && typeof a === 'object') ? a.name : '';
-      const val  = (a && typeof a === 'object') ? a.value : a;
-      out += `<span class="cxt-attr-chip">@${escapeHtml(String(name))}=<span class="v">${formatAttrValue(val)}</span></span>`;
+    for (const a of shown) {
+      const sub = attrSubLocs(a.loc);
+      out += `<span class="cxt-attr-chip"${sub ? '' : locStr(a.loc)}>`
+        + `<span class="cxt-chip-k"${sub ? locStr(sub.nameLoc) : ''}>@${escapeHtml(String(a.name))}</span>=`
+        + `<span class="v"${sub ? locStr(sub.valLoc) : ''}>${formatAttrValue(a.value)}</span>`
+        + `</span>`;
     }
-    const remaining = attrs.length - cap;
+    const remaining = attrs.length - shown.length;
     if (remaining > 0) {
       out += `<span class="cxt-attr-more">(+${remaining} more attr${remaining === 1 ? '' : 's'})</span>`;
     }
@@ -644,14 +715,16 @@
     if (typeof v === 'boolean') return String(v);
     return escapeHtml(String(v));
   }
-  // Renders a single inlined scalar leaf body next to its parent
-  // element's name row (Compact/Full only).
+  // Renders a single inlined scalar / text body next to its parent
+  // element's name row (Compact/Full only), carrying its own loc so the
+  // ridden-up body stays its own click target.
   function renderInlineScalar(node) {
     const v = (node && typeof node === 'object') ? node.value : node;
-    if (typeof v === 'string')  return `<span class="cxt-inline-scalar">"${escapeHtml(v)}"</span>`;
-    if (typeof v === 'number')  return `<span class="cxt-inline-scalar num">${v}</span>`;
-    if (typeof v === 'boolean') return `<span class="cxt-inline-scalar bool">${v}</span>`;
-    return `<span class="cxt-inline-scalar">${escapeHtml(String(v))}</span>`;
+    const at = (node && typeof node === 'object') ? locStr(node.loc) : '';
+    if (typeof v === 'string')  return `<span class="cxt-inline-scalar"${at}>"${escapeHtml(v)}"</span>`;
+    if (typeof v === 'number')  return `<span class="cxt-inline-scalar num"${at}>${v}</span>`;
+    if (typeof v === 'boolean') return `<span class="cxt-inline-scalar bool"${at}>${v}</span>`;
+    return `<span class="cxt-inline-scalar"${at}>${escapeHtml(String(v))}</span>`;
   }
 
   function renderNode(node, label, inheritedLoc, register) {
@@ -701,50 +774,106 @@
     }
     // Object
     const keys = Object.keys(node);
-    // ── Element specialization (detail-level aware) ─────────────
-    // Elements get inline attr chips + inline-scalar leaf bodies at
-    // compact/full; Min hides attrs entirely. Skip keys 'attrs' /
-    // 'items' from the default walk and handle them ourselves.
-    const isElement = node.kind === 'element' && typeof node.name === 'string';
-    let skipKeys = null;
-    let inlineScalarValue = null;
+    // ── Element / directive specialization, by DETAIL rung (#1001) ──
+    //
+    // The rung is applied to the SAME data the instance-graph tables
+    // consume — `splitElementChildren` over the `cxlib.tree()`
+    // contract's `children`, where attributes are
+    // `{kind:'attribute', name, value, loc}` siblings of nested
+    // elements and of scalar / text bodies. There is no second
+    // projection here and no second copy of the partition rule.
+    //
+    // Before #1001 this branch read `node.attrs` / `node.items`, which
+    // that contract does not carry, so it never fired:
+    // `[user active=true verified=false admin=true blocked=false]`
+    // drew seventeen rows (four per attribute) and `Detail` had no
+    // observable effect on the Tree at any rung.
+    //
+    // The rungs mean here exactly what they mean in the graph:
+    //   min      — NAMES and NESTING only. `instanceRows` returns no
+    //              rows at that rung for the same reason: what the
+    //              rung is for is the shape, not the values.
+    //   compact  — the first COMPACT_ATTR_CAP attributes as chips plus
+    //              a loud `(+K more attrs)`, and a lone scalar / text
+    //              body ridden up onto the element's own row.
+    //   full     — every attribute as a chip, same body rule.
+    //
+    // The chips do NOT cost the per-attribute click target that the
+    // verbose walk provided: each chip carries its own `data-loc` for
+    // the name half and another for the value half — the same split,
+    // from the same helper, that the `attribute` branch below performs.
+    const isElement = (node.kind === 'element' || node.kind === 'directive')
+      && typeof node.name === 'string';
     if (isElement) {
-      const attrs = Array.isArray(node.attrs) ? node.attrs : [];
-      const items = Array.isArray(node.items) ? node.items : [];
-      skipKeys = new Set(['kind', 'name', 'attrs', 'items']);
-      // Inline scalar leaf body? Only when a single scalar item lives
-      // under this element and the user wants at least Compact detail.
-      if (detailLevel !== 'min' && items.length === 1) {
-        const only = items[0];
-        if (only && typeof only === 'object' && only.kind === 'scalar') {
-          inlineScalarValue = only;
-        }
+      const parts = splitElementChildren(node);
+      const skipKeys = new Set(['kind', 'name', 'children', 'loc']);
+      // A LONE scalar / text body rides its element's row — the same
+      // rule, on the same predicate, that `instanceRows` applies when
+      // it gives such a body a row of its own: one body is content,
+      // several are a LIST, and an element with element children of
+      // its own is not a leaf.
+      const usable = parts.bodies.filter(b =>
+        (b.kind === 'scalar' || b.kind === 'text')
+        && b.value !== '' && b.value !== null && b.value !== undefined);
+      const inlineScalarValue = (detailLevel !== 'min'
+        && usable.length === 1 && parts.elems.length === 0)
+        ? usable[0] : null;
+      // What still walks as rows: element / directive children always,
+      // bodies unless the single one was ridden up, and any key the
+      // contract grows that is not one of the four this branch owns
+      // (so an addition surfaces instead of silently disappearing).
+      // Attributes never walk here — at compact/full they are the
+      // chips on the row above, and at `min` they are what the rung
+      // cuts.
+      const walked = [];
+      for (const c of (Array.isArray(node.children) ? node.children : [])) {
+        if (!c || typeof c !== 'object') { walked.push(c); continue; }
+        if (c.kind === 'attribute') continue;
+        if (c === inlineScalarValue) continue;
+        walked.push(c);
       }
-      const showChildren = !(inlineScalarValue && attrs.length === 0);
-      const hasChildren = items.length > 0 || (Object.keys(node).some(k => !skipKeys.has(k)));
-      const toggleChar = (showChildren && hasChildren && !inlineScalarValue) ? '▾' : '·';
-      let head = `<span class="cxt-label-name">${escapeHtml(node.name)}</span>`;
-      if (detailLevel !== 'min' && attrs.length > 0) {
-        head += renderAttrChips(attrs, detailLevel);
+      const extraKeys = keys.filter(k => !skipKeys.has(k));
+      const hasChildren = walked.length > 0 || extraKeys.length > 0;
+      const toggleChar = hasChildren ? '▾' : '·';
+      const title = (node.kind === 'directive' ? '?' : '') + node.name;
+      let head = `<span class="cxt-label-name">${escapeHtml(title)}</span>`;
+      if (detailLevel !== 'min' && parts.attrs.length > 0) {
+        head += renderAttrChips(parts.attrs, detailLevel);
       }
       if (inlineScalarValue) {
         head += renderInlineScalar(inlineScalarValue);
       }
       wrap.innerHTML = rowHtml(`<span class="cxt-toggle">${toggleChar}</span>`, head);
-      // Walk only non-skip keys (excludes attrs/items handled above)
+      if (register) registerHeadTargets(wrap);
       const kids = document.createElement('div');
       kids.className = 'cxt-children';
-      // Walk items as children unless we inlined the single scalar.
-      if (!inlineScalarValue) {
-        for (const child of items) {
-          kids.appendChild(renderNode(child, '', loc, register));
-        }
+      // `null`, not `''`: a contained child has no KEY naming it, and
+      // `labelPart('')` would still draw the `: ` separator in front of
+      // every row.
+      for (const child of walked) {
+        kids.appendChild(renderNode(child, null, loc, register));
       }
-      for (const k of keys) {
-        if (skipKeys.has(k) || k === 'loc') continue;
+      for (const k of extraKeys) {
         kids.appendChild(renderNode(node[k], k, loc, register));
       }
       wrap.appendChild(kids);
+      return wrap;
+    }
+    // ── Value leaves (#1001) ────────────────────────────────────
+    // `{kind:'scalar'|'text'|'path', value, loc}` is a LEAF: one row
+    // carrying its value, the way the element branch above spells a
+    // ridden-up body. Walked as a bare object it drew three rows —
+    // `scalar`, then `kind: "scalar"`, then `value: "$orders"` — which
+    // is the same raw-JSON-walk defect #1001 reports for attributes,
+    // one node kind over. The contract's own `kind` is what styles the
+    // value; nothing here parses it.
+    if (node.kind === 'scalar' || node.kind === 'text' || node.kind === 'path') {
+      const v = node.value;
+      const cls = (node.kind === 'path') ? 'cxt-label-meta' : inferValueClass(v);
+      const shown = (typeof v === 'string' && node.kind !== 'path')
+        ? `"${escapeHtml(v)}"` : escapeHtml(String(v));
+      wrap.innerHTML = rowHtml('<span class="cxt-toggle">·</span>',
+        `<span class="${cls}">${shown}</span>`);
       return wrap;
     }
     const toggle = keys.length > 0 ? '<span class="cxt-toggle">▾</span>' : '<span class="cxt-toggle">·</span>';
@@ -817,7 +946,11 @@
   }
 
   function markSelected(node) {
-    vizTreeEl.querySelectorAll('.cxt-node.is-selected').forEach(n => n.classList.remove('is-selected'));
+    // Not `.cxt-node.is-selected`: since #1001 the selection can land on
+    // a span that rides an element's own row (an attribute chip half, a
+    // ridden-up scalar body), and a stale mark on one of those would
+    // never be cleared by a node-only sweep.
+    vizTreeEl.querySelectorAll('.is-selected').forEach(n => n.classList.remove('is-selected'));
     if (!node) return;
     node.classList.add('is-selected');
     // Expand ancestors.
@@ -867,10 +1000,11 @@
   // arrive JSON-typed — ints and floats as numbers, booleans as
   // booleans, atoms as strings keeping their leading `:`.
   //
-  // (Measured 2026-08-25: the Tree pane's element branch above reads
-  // `node.attrs` / `node.items`, which this contract does not carry — so
-  // that branch's attr chips are inert today. Reading `children` here is
-  // reading what the emitter actually emits, not a second shape.)
+  // (Measured 2026-08-25, FIXED at #1001: the Tree pane's element branch
+  // above used to read `node.attrs` / `node.items`, which this contract
+  // does not carry, so its attr chips were inert. It reads `children`
+  // through `splitElementChildren` now — the same partition this view
+  // takes, one projection for both.)
   // ── Why this view draws an HTML TABLE, not ER rows (#992) ────
   //
   // An occurrence box has to show `name │ value` per attribute. The

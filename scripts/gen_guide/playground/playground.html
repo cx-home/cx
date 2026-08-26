@@ -65,11 +65,19 @@
     </div>
   </section>
   <section class="cxp-pane cxp-viz-pane">
-    <!-- One control model (#992): the pane header carries only the two
-         axes that apply to EVERYTHING it can draw — which subject, and
-         which representation. Everything that configures one
-         representation lives inside that representation's own panel, so
-         a control is on screen exactly when it does something. -->
+    <!-- One control model (#992): the pane header carries only the axes
+         that apply to EVERYTHING it can draw — which subject, which
+         representation, and (since #1001) how much detail. Everything
+         that configures ONE representation lives inside that
+         representation's own panel, so a control is on screen exactly
+         when it does something.
+
+         Detail moved back up here at #1001. #992 had put it in the
+         graph bar because Detail was graph-only IN FACT: the Tree's
+         detail-aware branch read fields the tree contract does not
+         carry and never fired. Now that the Tree honours the rung, the
+         control governs both representations and belongs on the axis
+         header by this pane's own rule. -->
     <div class="cxp-pane-head">
       <span>VIEW</span>
       <span class="cxp-tabs cxp-subject-group" role="tablist"
@@ -79,6 +87,22 @@
         <button class="cxp-subject-tab"           data-subject="all"    type="button">Both</button>
       </span>
       <span class="cxp-spacer"></span>
+      <!-- The option text is the bare rung, not "Detail: <rung>", and
+           that is MEASURED rather than a preference: at the View pane's
+           natural width (467px at a 1400px window) the header holds one
+           row only while this control is ≤85px, and "DETAIL: COMPACT"
+           is 129px. The long spelling re-stacked the header into two
+           ragged rows, which is the exact surface complaint PQ-5 bought
+           out. The rungs are the same vocabulary the CLI spells
+           `--detail`, the two groups beside this one are bare value
+           sets too, and the control names itself on hover. -->
+      <select id="cxp-detail-select" class="cxp-detail-select"
+              aria-label="Detail level"
+              title="Detail — how much each Tree row and Graph box shows: attributes, scalar bodies, values">
+        <option value="min">min</option>
+        <option value="compact" selected>compact</option>
+        <option value="full">full</option>
+      </select>
       <span class="cxp-tabs" role="tablist">
         <button class="cxp-viz-tab is-active" data-viz="tree"  type="button">Tree</button>
         <button class="cxp-viz-tab"           data-viz="graph" type="button">Graph</button>
@@ -96,12 +120,6 @@
           <button class="cxp-gview-tab is-active" data-gview="auto"     type="button">Auto</button>
           <button class="cxp-gview-tab"           data-gview="instance" type="button">Instance</button>
         </span>
-        <select id="cxp-detail-select" class="cxp-detail-select"
-                title="How much each box shows — attributes, scalar bodies, values">
-          <option value="min">Detail: min</option>
-          <option value="compact" selected>Detail: compact</option>
-          <option value="full">Detail: full</option>
-        </select>
         <span class="cxp-spacer"></span>
         <button id="cxp-graph-zoom-out" class="cxp-mini-btn" type="button" title="Zoom out">−</button>
         <button id="cxp-graph-fit"      class="cxp-mini-btn" type="button" title="Reset zoom">⊙</button>

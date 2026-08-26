@@ -269,6 +269,12 @@ listing, and those are the stable half.
   late edit inside a different issue. Filed as **#1001**. Note the
   placement consequence recorded under PQ-5: fixing F1 makes `Detail` an
   all-representations control and moves it back to the pane header.
+  **CLOSED 2026-08-26** —
+  `ledger/rulings_2026_08_26_playground_tree_detail_1001.md` (TD-1..TD-6).
+  The trade-off this entry parked is DECLINED rather than accepted: the
+  chips carry their own locs and register, so the per-attribute click
+  granularity survives the collapse. `Detail` moved to the header, by
+  PQ-5's own rule.
 - **F2 — `cx_code_tree` mis-parses a triple-quoted attribute value.**
   `[doc body='''line 1\nline 2\nline 3''']` emits `attribute body` with
   `value: ""` plus two sibling `text` nodes carrying the content. The
