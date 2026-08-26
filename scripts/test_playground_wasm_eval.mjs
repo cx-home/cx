@@ -96,98 +96,23 @@
 // Exit 0 when every example evaluates or is justifiably marked; 1 on any
 // failure; 2 on a setup problem — never a silent skip.
 
-import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
-import { resolve, join } from 'node:path';
-import { spawn, spawnSync } from 'node:child_process';
-import { tmpdir } from 'node:os';
+// The server / browser / CDP boot lives in scripts/playground-gate/
+// browser_harness.mjs, shared with the #1049 Tree gate: two copies of this
+// rig would be two Chrome flag sets and two readiness rules drifting apart.
+import { readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { createHarness, loadExamples, ROOT, NATIVE }
+  from './playground-gate/browser_harness.mjs';
 
-const ROOT = resolve(import.meta.dirname, '..');
 const VERBOSE = process.argv.includes('--verbose');
 const LIMIT_IX = process.argv.indexOf('--limit');
 const LIMIT = LIMIT_IX >= 0 ? parseInt(process.argv[LIMIT_IX + 1], 10) : Infinity;
 
-const PLAYGROUND = resolve(ROOT, 'scripts/gen_guide/playground');
-const PREVIEW = resolve(ROOT, 'dist/playground-preview');
-const NATIVE = process.env.CX_BIN
-  ? resolve(process.env.CX_BIN) : resolve(ROOT, 'vcx/target/cx');
 const DEADLINE_MS = (parseInt(process.env.WASM_EVAL_DEADLINE || '900', 10)) * 1000;
-const STARTED = Date.now();
 
-// Chromium-family candidates. CX_CHROME wins; otherwise the usual
-// install locations. A missing browser is a LOUD setup failure — this
-// gate has no weaker engine to fall back to (see the header).
-const CHROME_CANDIDATES = [
-  process.env.CX_CHROME,
-  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-  '/Applications/Chromium.app/Contents/MacOS/Chromium',
-  '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
-  '/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser',
-].filter(Boolean);
-
-let server = null, browser = null, profileDir = null, tmpDir = null;
-
-function cleanup() {
-  for (const p of [server, browser]) {
-    if (p && p.pid && p.exitCode === null) {
-      try { p.kill('SIGKILL'); } catch (_) {}
-    }
-  }
-  for (const d of [profileDir, tmpDir]) {
-    if (d) { try { rmSync(d, { recursive: true, force: true }); } catch (_) {} }
-  }
-}
-process.on('exit', cleanup);
-for (const sig of ['SIGINT', 'SIGTERM']) {
-  process.on(sig, () => { cleanup(); process.exit(130); });
-}
-
-function setupFail(msg, hint) {
-  console.error(`\n[playground-wasm-eval] SETUP FAILURE: ${msg}`);
-  if (hint) console.error(`[playground-wasm-eval]   → ${hint}`);
-  cleanup();
-  process.exit(2);
-}
-
-function checkDeadline(where) {
-  if (Date.now() - STARTED > DEADLINE_MS) {
-    console.error(`\n[playground-wasm-eval] DEADLINE: exceeded ${DEADLINE_MS / 1000}s at ${where}`);
-    cleanup();
-    process.exit(1);
-  }
-}
-
-// ── preconditions (all loud) ───────────────────────────────────
-if (!existsSync(join(PREVIEW, 'playground.html'))) {
-  setupFail('dist/playground-preview/ is not staged.', 'make build-playground');
-}
-if (!existsSync(join(PREVIEW, 'wasm/libcx-async.js'))) {
-  setupFail('the JSPI bundle dist/playground-preview/wasm/libcx-async.js is missing.',
-            'make build-playground');
-}
-if (!existsSync(NATIVE)) {
-  setupFail(`the native reference binary is missing: ${NATIVE}`, 'make build-vcx-dev');
-}
-const CHROME = CHROME_CANDIDATES.find(existsSync);
-if (!CHROME) {
-  setupFail('no Chromium-family browser found — this gate needs one (node has no JSPI).',
-            'install Chrome/Chromium, or set CX_CHROME=<path>');
-}
-
-// ── the corpus ─────────────────────────────────────────────────
-function loadExamples() {
-  const src = readFileSync(resolve(PLAYGROUND, 'playground.examples.js'), 'utf8');
-  const fakeWindow = {};
-  try {
-    new Function('window', 'globalThis', src)(fakeWindow, fakeWindow);
-  } catch (e) {
-    setupFail(`could not evaluate playground.examples.js: ${e.message}`);
-  }
-  const program = (fakeWindow.cxPlaygroundExamples || {}).program || {};
-  if (Object.keys(program).length === 0) {
-    setupFail('playground.examples.js yielded no examples.');
-  }
-  return program;
-}
+const H = createHarness({ label: 'playground-wasm-eval', deadlineMs: DEADLINE_MS });
+const { setupFail, checkDeadline, cleanup } = H;
 
 // wasmMarker — the corpus's explicit wasm-unsupported marker, or ''.
 //
@@ -240,170 +165,19 @@ function noStableValue(ex) {
   return (typeof m === 'string' && m.trim()) ? m.trim() : '';
 }
 
-// ── the static server ──────────────────────────────────────────
-// The page is served over HTTP rather than opened as file:// because a
-// headless browser's file:// origin rules vary by version; the BUNDLE
-// selection is what matters and it is identical (cxlib picks libcx-async
-// unless crossOriginIsolated + SAB are present, which neither file:// nor
-// this plain server provides). The gate asserts the JSPI bundle loaded,
-// so this choice cannot silently change the engine under test.
-function freePortCandidates() {
-  const base = 8790 + (process.pid % 200);
-  return [base, base + 1, base + 2, base + 3, base + 4];
-}
-
-async function bootServer() {
-  for (const port of freePortCandidates()) {
-    checkDeadline('server boot');
-    const p = spawn(NATIVE, [
-      '--allow-read', '--allow-net', '--allow-clock',
-      resolve(ROOT, 'scripts/serve_static.cx'),
-      '--port', String(port), '--root', PREVIEW,
-    ], { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
-    let stderr = '';
-    p.stderr.on('data', d => { stderr += String(d); });
-    // serve_static.cx exits rc 1 fast on a busy port, so a failed boot IS
-    // the busy check (the same contract test_playground_smoke.sh relies on).
-    const up = await new Promise(res => {
-      let settled = false;
-      p.once('exit', () => { if (!settled) { settled = true; res(false); } });
-      (async () => {
-        for (let i = 0; i < 80; i++) {
-          await new Promise(r => setTimeout(r, 125));
-          if (settled) return;
-          try {
-            const r = await fetch(`http://127.0.0.1:${port}/playground.html`,
-                                  { signal: AbortSignal.timeout(2000) });
-            if (r.ok) { settled = true; return res(true); }
-          } catch (_) { /* not yet */ }
-        }
-        if (!settled) { settled = true; res(false); }
-      })();
-    });
-    if (up) { server = p; return port; }
-    try { p.kill('SIGKILL'); } catch (_) {}
-    if (stderr && VERBOSE) console.log(`[server] port ${port}: ${stderr.trim().split('\n')[0]}`);
-  }
-  setupFail('could not boot scripts/serve_static.cx on any candidate port.',
-            'is another copy of this gate running?');
-}
-
-// ── the browser + CDP ──────────────────────────────────────────
-async function bootBrowser(pageUrl) {
-  const cdpPort = 9330 + (process.pid % 300);
-  profileDir = mkdtempSync(join(tmpdir(), 'cx-wasm-eval-profile-'));
-  browser = spawn(CHROME, [
-    `--remote-debugging-port=${cdpPort}`,
-    '--headless=new', '--no-first-run', '--no-default-browser-check',
-    '--disable-gpu', '--disable-dev-shm-usage',
-    `--user-data-dir=${profileDir}`,
-    'about:blank',
-  ], { stdio: ['ignore', 'pipe', 'pipe'] });
-
-  let version = null;
-  for (let i = 0; i < 160; i++) {
-    checkDeadline('browser boot');
-    if (browser.exitCode !== null) {
-      setupFail(`the browser exited (code ${browser.exitCode}) before its debugging port opened.`);
-    }
-    await new Promise(r => setTimeout(r, 250));
-    try {
-      const r = await fetch(`http://127.0.0.1:${cdpPort}/json/version`,
-                            { signal: AbortSignal.timeout(2000) });
-      if (r.ok) { version = await r.json(); break; }
-    } catch (_) { /* not yet */ }
-  }
-  if (!version) setupFail(`the browser's CDP port ${cdpPort} never opened.`);
-
-  const tabRes = await fetch(
-    `http://127.0.0.1:${cdpPort}/json/new?${encodeURI(pageUrl)}`,
-    { method: 'PUT', signal: AbortSignal.timeout(15000) });
-  if (!tabRes.ok) setupFail(`CDP refused to open a tab: HTTP ${tabRes.status}`);
-  const tab = await tabRes.json();
-
-  const ws = new WebSocket(tab.webSocketDebuggerUrl);
-  let msgId = 0;
-  const pending = new Map();
-  ws.addEventListener('message', ev => {
-    const m = JSON.parse(ev.data);
-    if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); }
-  });
-  const opened = await new Promise(res => {
-    const t = setTimeout(() => res(false), 20000);
-    ws.addEventListener('open', () => { clearTimeout(t); res(true); }, { once: true });
-    ws.addEventListener('error', () => { clearTimeout(t); res(false); }, { once: true });
-  });
-  if (!opened) setupFail('could not open the CDP websocket to the page.');
-
-  function send(method, params, timeoutMs = 60000) {
-    const id = ++msgId;
-    return new Promise((res, rej) => {
-      const t = setTimeout(() => { pending.delete(id); rej(new Error(`CDP ${method} timed out`)); }, timeoutMs);
-      pending.set(id, m => { clearTimeout(t); res(m); });
-      ws.send(JSON.stringify({ id, method, params }));
-    });
-  }
-  async function evalJs(expression, timeoutMs = 60000) {
-    const r = await send('Runtime.evaluate',
-      { expression, awaitPromise: true, returnByValue: true, timeout: timeoutMs - 2000 },
-      timeoutMs);
-    if (r.error) throw new Error(`CDP error: ${JSON.stringify(r.error).slice(0, 300)}`);
-    const res = r.result || {};
-    if (res.exceptionDetails) {
-      throw new Error(`page threw: ${JSON.stringify(res.exceptionDetails).slice(0, 300)}`);
-    }
-    return res.result ? res.result.value : undefined;
-  }
-  return { evalJs, version, close: () => { try { ws.close(); } catch (_) {} } };
-}
-
 // ── run ────────────────────────────────────────────────────────
-const program = loadExamples();
+// The whole rig — preconditions, static server, headless Chrome, a tab on
+// playground.html, cxlib ready, and the JSPI engine ASSERTED — comes from
+// the shared harness. See its header for why a browser and not node.
+const program = loadExamples(readFileSync, setupFail);
 const keys = Object.keys(program).slice(0, LIMIT);
 
-const port = await bootServer();
-const pageUrl = `http://127.0.0.1:${port}/playground.html`;
-const { evalJs, version, close } = await bootBrowser(pageUrl);
-console.log(`[playground-wasm-eval] browser: ${version['Browser']}`);
-console.log(`[playground-wasm-eval] page:    ${pageUrl}`);
-
-// Wait for the page's own cxlib to finish booting.
-let ready = '';
-for (let i = 0; i < 200; i++) {
-  checkDeadline('cxlib boot');
-  try {
-    ready = await evalJs(`(async () => {
-      if (!globalThis.cxlib) return 'no-cxlib';
-      try { await cxlib.ready; } catch (e) { return 'ready-threw:' + (e && e.message); }
-      return 'ready';
-    })()`, 30000);
-  } catch (e) { ready = `cdp:${e.message}`; }
-  if (ready === 'ready') break;
-  await new Promise(r => setTimeout(r, 500));
-}
-if (ready !== 'ready') setupFail(`the page's cxlib never became ready (${ready}).`);
-
-// ASSERT THE ENGINE. A non-JSPI bundle here means the gate is measuring
-// the weaker engine whose verdicts are known to be wrong (see header) —
-// a setup failure, never a quiet downgrade.
-const engine = JSON.parse(await evalJs(`JSON.stringify({
-  scripts: [...document.scripts].map(s => s.src).filter(s => /libcx/.test(s)),
-  suspending: typeof WebAssembly.Suspending,
-  mode: (cxlib.mode && cxlib.mode()) || (cxlib.info && cxlib.info().mode) || '',
-})`, 30000));
-const bundle = (engine.scripts || []).join(' ');
-if (!/libcx-(async|pthreads)\.js/.test(bundle)) {
-  setupFail(`the page loaded a NON-JSPI bundle (${bundle || 'none'}).`,
-            'this gate must measure the engine the reader gets; see the header');
-}
-if (engine.suspending !== 'function') {
-  setupFail('WebAssembly.Suspending is unavailable in this browser — it cannot run the JSPI bundle.',
-            'use a newer Chromium-family browser, or set CX_CHROME');
-}
-console.log(`[playground-wasm-eval] engine:  ${bundle.replace(/^.*\//, '')} (JSPI)`);
+const { evalJs, close } = await H.bootPage({
+  portBase: 8790, cdpBase: 9330, needNative: true, verbose: VERBOSE,
+});
 console.log(`[playground-wasm-eval] examples: ${keys.length}\n`);
 
-tmpDir = mkdtempSync(join(tmpdir(), 'cx-wasm-eval-'));
+const tmpDir = H.mkTmp('cx-wasm-eval-');
 const TMP_CX = join(tmpDir, 'example.cx');
 
 // nativeEval — the reference value: THIS tree's cx, zero grants, one

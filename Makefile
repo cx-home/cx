@@ -454,6 +454,42 @@ test-playground-mermaid:
 test-playground-wasm-eval:
 	@node scripts/test_playground_wasm_eval.mjs
 
+# ── playground TREE PANE gate (#1049) ─────────────────────────────────────────
+# A pinned set of examples is loaded into the real page THROUGH THE PAGE'S OWN
+# CONTROLS — the picker's `change`, the Detail select's `change`, the Source and
+# Tree tabs — and the Tree it draws at each Detail rung is read back out of the
+# DOM and compared with scripts/playground-gate/tree_expectations.json: row
+# counts, chip counts, the exact `(+K more attrs)` note, the one-row value-leaf
+# rule, directives spelled `?name`, and the click bridge round-tripped in both
+# directions.
+#
+# WHY THIS IS NOT COVERED ELSEWHERE. NOTHING RENDERS THE TREE. The mermaid gate
+# parses diagrams; the wasm-eval sweep evaluates the corpus; the smoke lane
+# checks assets. That is exactly how #1001's element branch — reading
+# `node.attrs`/`node.items`, fields the cxlib.tree() contract does not carry —
+# sat inert as dead code through the whole #992 quality package, with `Detail`
+# having no observable effect on the Tree at any rung. #1001's own close-out
+# (TD-7) recorded the gap as open rather than glossing it; this closes it.
+#
+# THE EXPECTATIONS ARE PINNED, NOT DERIVED, and unlike the wasm sweep that is
+# forced: there is no second Tree renderer to derive truth from. They live in
+# ONE reviewable fixture so a deliberate Tree change re-pins in one place with
+# the diff visible (`node scripts/test_playground_tree.mjs --pin`). The raw-JSON
+# -walk check is SHAPE-based rather than count-based on purpose — re-pinning the
+# counts cannot make the #1001 defect shape pass.
+#
+# Opt-in like build-wasm and the other two playground gates: it needs `make
+# build-playground` staged plus a Chromium-family browser (CX_CHROME overrides),
+# and both preconditions FAIL LOUD (exit 2) rather than skipping, so this lane
+# can never report a vacuous pass. Deliberately NOT in TEST_TARGETS — that lane
+# must not require emcc or a browser — and belongs with test-playground-mermaid,
+# test-playground-wasm-eval and scripts/test_playground_smoke.sh as the
+# playground release lane. Every wait is bounded (TREE_GATE_DEADLINE, default
+# 600s); server and browser are reaped on every exit path.
+.PHONY: test-playground-tree
+test-playground-tree:
+	@node scripts/test_playground_tree.mjs
+
 # stdlib catalog drift gate — verifies the single invariant
 #   SPEC_SET == (BUNDLE_SET union DISPATCH_SET)
 # i.e. every status=current [module-meta] in spec/03-approved/std-lib/*.md

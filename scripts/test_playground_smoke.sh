@@ -25,9 +25,14 @@
 # Binary: CX_BIN overrides; default is the tree's vcx/target/cx. A
 # missing binary is a loud failure, never a PATH fallback (#929).
 #
-# Full live-integration testing (Mermaid render, interactive tree,
-# bidirectional bridge) is browser-driven and lives in
-# scripts/test_playground_browser.js (Phase 7 follow-up).
+# Full live-integration testing is browser-driven and lives in the three
+# gates beside this one — `scripts/test_playground_browser.js` was the
+# Phase 7 placeholder for them and was never authored:
+#
+#   make test-playground-mermaid    every diagram the page can emit parses
+#   make test-playground-wasm-eval  the corpus evaluates as native does (#1033)
+#   make test-playground-tree       the Tree pane and its bidirectional
+#                                   source bridge, per rung (#1049)
 #
 # Exit 0 on pass; 1 on any failure. The server is killed on every exit
 # path (pass, fail, signal) — no orphans.
@@ -281,7 +286,9 @@ echo "  - no off-origin <script> in playground.html; off-origin refs limited to 
 echo "  - dist/wasm/libcx-pthreads.js exports _cx_code_eval + _cx_code_diagram"
 echo "  - dist/wasm/cxlib.js has all 8 sampled Layer-1 methods"
 echo
-echo "Browser-level verification (Mermaid render, tree, bridge):"
-echo "  - run scripts/test_playground_browser.js once authored (Phase 7)"
+echo "Browser-level verification (these run a real Chrome on this bundle):"
+echo "  - make test-playground-mermaid    diagrams parse"
+echo "  - make test-playground-wasm-eval  corpus evaluates as native does"
+echo "  - make test-playground-tree       Tree pane + source bridge, per rung"
 
 exit 0
