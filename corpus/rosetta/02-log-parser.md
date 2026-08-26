@@ -20,28 +20,27 @@ That version is currently impossible — see "Open gap log."
 
 Program:
 
-```
-[?let $lines = (
-  "2026-05-26 10:00:00 INFO  app starting",
-  "2026-05-26 10:00:01 WARN  config file missing",
-  "2026-05-26 10:00:02 ERROR fatal"
-) :in
-  [?for $line :in $lines :yield
-    [?match true
-      :when contains($line, "ERROR") :yield [entry :level :error :msg $line]
-      :when contains($line, "WARN")  :yield [entry :level :warn  :msg $line]
-      :when contains($line, "INFO")  :yield [entry :level :info  :msg $line]
-      :else :yield [entry :level :unknown :msg $line]]]]
+```cx
+[?let [= $lines ("2026-05-26 10:00:00 INFO  app starting",
+                 "2026-05-26 10:00:01 WARN  config file missing",
+                 "2026-05-26 10:00:02 ERROR fatal")]
+  [?for [in $line $lines]
+    [yield
+      [?match true
+        [when [$contains $line "ERROR"] [entry level=:error msg=$line]]
+        [when [$contains $line "WARN"] [entry level=:warn msg=$line]]
+        [when [$contains $line "INFO"] [entry level=:info msg=$line]]
+        [else [entry level=:unknown msg=$line]]]]]]
 ```
 
-Run: `devbox run -- ./vcx/target/cx eval corpus/rosetta/02-log-parser.cx`
+Run: `vcx/target/cx corpus/rosetta/02-log-parser.cx`
 
 Observed output:
 
 ```
-[entry :level :info :msg "2026-05-26 10:00:00 INFO  app starting"]
-[entry :level :warn :msg "2026-05-26 10:00:01 WARN  config file missing"]
-[entry :level :error :msg "2026-05-26 10:00:02 ERROR fatal"]
+[entry level=:info msg='2026-05-26 10:00:00 INFO  app starting']
+[entry level=:warn msg='2026-05-26 10:00:01 WARN  config file missing']
+[entry level=:error msg='2026-05-26 10:00:02 ERROR fatal']
 ```
 
 **Status:** WORKAROUND (re-derived 2026-08-25, RULED: VC-28). Rewritten for the
@@ -55,7 +54,18 @@ carries the whole raw line instead of the timestamp / level / message being
 distinct attributes. The syntax is current; the missing surface is not. This
 remains the largest cross-program gap in the corpus.
 
-### Historical (v0.7.x surface, superseded)
+## Historical (v0.7.x surface, superseded)
+
+Everything below this line describes the **pre-reshape** surface and is kept as
+a discovery trail, not as findings. Note in particular that its item 2 —
+"`[entry level=:info]` parse-fails, atoms can't be attribute values" — is now
+false: that is exactly the form the current program uses. `AUDIT.md` carries
+the retirement list and the live gap register; this section is history.
+
+The one item still live is the first: no `split` / `tokenize`. That gap is
+recorded in the current status above, not here.
+
+### Status at the time
 
 **Status:** WORKAROUND. Classification by `contains()` lets the program
 report a level, but the message field still carries the whole raw line
@@ -63,7 +73,7 @@ because string-splitting is unavailable. A "real" log parser would
 have the timestamp, level, and message as distinct attributes — that
 shape is BLOCKED on the missing string-ops surface.
 
-## Workarounds used
+### Workarounds used
 
 | Idiomatic | Used | Reason |
 |---|---|---|
@@ -72,7 +82,7 @@ shape is BLOCKED on the missing string-ops surface.
 | `[contains $line "ERROR"]` directive form | Used XPath form `contains($line, "ERROR")` | `contains` is XPath-call-only; the directive form returns the literal element (same bug as `floor`) |
 | `:case [entry :level $l] :yield ...` pattern destructure | (not attempted here) | The match is on a *string*, not a structured shape — destructuring isn't relevant for this stage |
 
-## Open gap log
+### Open gap log
 
 Surface-completeness hypothesis confirmations:
 

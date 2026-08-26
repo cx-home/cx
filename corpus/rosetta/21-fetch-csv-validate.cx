@@ -1,34 +1,57 @@
-[?lib 'cx-stdlib/url']
+[; Fetch a vendor CSV, parse it into typed records, and count the rows that
+   satisfy a schema — the minimum viable agentic data-ingest pipeline, written
+   as three [?def]s so each stage is separately nameable and testable.
+
+   Rewritten for the v0.8.0 surface (RULED: VC-28, completing the corpus-wide
+   migration the other five programs got on 2026-08-25). The original was
+   pre-reshape throughout: `:scope`/`:returns`/`:pure` colon-slot modifiers on
+   [?def] (retired — grammar [152a] refuses them by name), the
+   `[?http-client :method … :yield-body $b :in …]` request form (the directive
+   is a client HANDLE constructor now; the one-shot verbs live in
+   cx-stdlib/http), `[?let $x = … :in]`, `[?for … :where … :yield …]`, and
+   `[field :name "email"]` colon-attributes.
+
+   Two things the rewrite MEASURED rather than assumed:
+
+   1. `[$csv:parse]` yields all-string cells, so a `type="int"` field fails
+      with `score: expected int, got string`. `[$csv:parse-with-schema]` with
+      `{score: :int}` is the surface's answer — column coercion at parse time,
+      which is why the schema names the column twice (once to coerce, once to
+      bound-check). This was hypothesis 2 in the write-up's gap log; it is now
+      a measured answer, not a hypothesis.
+   2. A CXDM map (the csv row shape) IS accepted by `[$validate:validate-shape]`
+      — the `$value::any` signature is honoured. Hypothesis 3, closed.
+
+   The program still exits non-zero under the corpus gate, and that is the
+   HONEST outcome: the fetch needs the `net` capability, which the offline gate
+   does not grant, so it refuses with CXER0271 before any byte moves. Run it
+   for real with:
+     cx --allow-net=crm.example.com corpus/rosetta/21-fetch-csv-validate.cx ]
+
+[?lib 'cx-stdlib/http']
 [?lib 'cx-stdlib/csv']
 [?lib 'cx-stdlib/validate']
 
 [?const LEAD_SCHEMA [schema
-  [field :name "email"      :type "string" :pattern ".+@.+\..+"]
-  [field :name "first_name" :type "string" :min-length 1]
-  [field :name "last_name"  :type "string" :min-length 1]
-  [field :name "score"      :type "int"    :min 0 :max 100]]]
+  [field name="email"      type="string" pattern=".+@.+\..+"]
+  [field name="first_name" type="string" min-length=1]
+  [field name="last_name"  type="string" min-length=1]
+  [field name="score"      type="int"    min=0 max=100]]]
 
-[?def fetch-leads
-  :scope public
-  :returns [sequence element]
-  (csv-url:string)
-  [?let $parsed-url = [url/parse $csv-url] :in
-   [?http-client :method "GET" :url (url/build $parsed-url) :yield-body $body :in
-    [csv/parse $body]]]]
+[; Stage 1 — fetch + parse. `score` is coerced at parse time so the schema's
+   int bound has an int to bound. ]
+[?def fetch-leads scope=public impure [effects [net]] [returns [sequence any]] ($csv-url::string)
+  [$csv:parse-with-schema [$http:body-text [$http:get $csv-url]] {score: :int}]]
 
-[?def validate-lead
-  :pure
-  :returns element
-  (row:element)
-  [validate/validate-shape $row :against LEAD_SCHEMA]]
+[; Stage 2 — validate one row against the schema; returns [ok …] / [invalid …],
+   the inspectable outcome, never the propagating [err] sentinel. ]
+[?def validate-lead scope=public pure [returns element] ($row::any)
+  [$validate:validate-shape $row LEAD_SCHEMA]]
 
-[?def count-valid-leads
-  :scope public
-  :returns int
-  (csv-url:string)
-  [?let $rows = [fetch-leads $csv-url] :in
-   [count [?for $row :in $rows
-           :where (validate/is-ok (validate-lead $row))
-           :yield $row]]]]
+[; Stage 3 — keep only the rows that validate, and count them. ]
+[?def count-valid-leads scope=public impure [effects [net]] [returns int] ($csv-url::string)
+  [$count [?for [in $row [$fetch-leads $csv-url]]
+            [where [$validate:is-ok [$validate-lead $row]]]
+            [yield $row]]]]
 
-[count-valid-leads "https://crm.example.com/exports/leads.csv"]
+[$count-valid-leads "https://crm.example.com/exports/leads.csv"]

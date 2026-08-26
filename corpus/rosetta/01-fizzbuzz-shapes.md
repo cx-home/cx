@@ -19,16 +19,17 @@ fall-through all have to compose.
 
 Program (the natural form, per the Rosetta-corpus brief):
 
-```
-[?for $n :in 1 to 30 :yield
-  [?match true
-    :when [and [= [mod $n 3] 0] [= [mod $n 5] 0]] :yield :fizzbuzz
-    :when [= [mod $n 3] 0] :yield :fizz
-    :when [= [mod $n 5] 0] :yield :buzz
-    :else :yield $n]]
+```cx
+[?for [in $n [$range 1 30]]
+  [yield
+    [?match true
+      [when [= [$mod $n 15] 0] :fizzbuzz]
+      [when [= [$mod $n 3] 0] :fizz]
+      [when [= [$mod $n 5] 0] :buzz]
+      [else $n]]]]
 ```
 
-Run: `devbox run -- ./vcx/target/cx eval corpus/rosetta/01-fizzbuzz-shapes.cx`
+Run: `vcx/target/cx corpus/rosetta/01-fizzbuzz-shapes.cx`
 
 Observed output (truncated; 30 lines total):
 
@@ -58,7 +59,15 @@ v0.8.0 surface — `[?for [in $n [$range 1 30]] …]` replacing the retired infi
 colon arms. Runs rc=0 with correct FizzBuzz (`:fizz` at 3, `:buzz` at 5,
 `:fizzbuzz` at 15 and 30). No workarounds; nothing outstanding.
 
-### Historical (v0.7.x surface, superseded)
+## Historical (v0.7.x surface, superseded)
+
+Everything below this line describes the **pre-reshape** surface and is kept as
+a discovery trail, not as findings. Its gap items are closed today — `[$mod]`,
+`[?def]`, multi-arg `[?fn]`, and prefix `[+ $a $b]` all work, and the
+paren-infix shapes it calls "parse failures" are not shapes CX has. `AUDIT.md`
+carries the retirement list and the live gap register; this section is history.
+
+### Status at the time
 
 **Status:** GREEN as of the math-operator surface landing. `[mod $n N]`
 now dispatches through `dispatch_call('mod', [...])` in all four call
@@ -67,9 +76,9 @@ multi-arg). The natural shape-yielding FizzBuzz body in §"Actual run"
 runs to completion and produces the canonical fizz / buzz / fizzbuzz
 sequence — matching the Python / Clojure / jq reference renditions.
 
-## Workarounds attempted
+### Workarounds attempted
 
-(Historical — kept for the math-operator discovery-process trail.)
+(Kept for the math-operator discovery-process trail.)
 
 | Attempt (pre-math-operator surface) | Result |
 |---|---|
@@ -90,7 +99,7 @@ real gap: `:else :yield $n` in a `[?match]` whose subject is `$n`
 emits literal `"$n"` (string) rather than the value of `$n` — only
 binding a catchall via `:case $x :yield ...` recovers the value.
 
-## Open gap log
+### Open gap log
 
 Surface-completeness hypothesis confirmations from this program:
 

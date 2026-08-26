@@ -36,8 +36,15 @@ if [ ! -x "$CX" ]; then
 fi
 
 # Default targets: everywhere ```cx fences live.
+#
+# corpus/ joined the set (#957): the rosetta write-ups each quote their
+# program in a fenced block, and every one of them had drifted to
+# pre-reshape syntax while the .cx beside it was current — the block said
+# `[?for $n :in 1 to 30 :yield …]` next to a file that says
+# `[?for [in $n [$range 1 30]] …]`. Nothing checked them, so the flagship
+# teaching material taught a surface that no longer exists.
 if [ $# -eq 0 ]; then
-  set -- "$ROOT/spec" "$ROOT/docs-src" "$ROOT/docs" "$ROOT/README.md"
+  set -- "$ROOT/spec" "$ROOT/docs-src" "$ROOT/docs" "$ROOT/corpus" "$ROOT/README.md"
 fi
 
 TARGETS=()

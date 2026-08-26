@@ -43,7 +43,16 @@ Also closed earlier by the VC-28 rewrite: the "multi-arg `[?fn]` apply
 with a non-trivial body" gap — `[?fn ($acc $tok) …]` inside `[?reduce]`
 is exactly that, and it works.
 
-### Historical (v0.7.x surface, superseded)
+## Historical (v0.7.x surface, superseded)
+
+Everything below this line describes the **pre-reshape** surface and is kept as
+a discovery trail, not as findings. Its blocking item — `$path/child` raising
+`CXER0001` instead of reading as absence — is closed by the Cluster A
+settlement, as is the "no native stack abstraction" item (`[?splice]` in
+element content is the push). `AUDIT.md` carries the retirement list and the
+live gap register; this section is history.
+
+### Status at the time
 
 **Status:** BLOCKED. The reduce machinery does start dispatching, but
 the first non-operator token `3` enters the `:case $v` arm, which
@@ -53,7 +62,7 @@ initial `$acc` has no `n` children, and `$acc/n` raises
 sequence. This is the canonical "empty-path-as-error vs
 empty-path-as-empty-sequence" XPath divergence.
 
-## Workarounds attempted
+### Workarounds attempted
 
 | Attempt | Result |
 |---|---|
@@ -62,7 +71,7 @@ empty-path-as-empty-sequence" XPath divergence.
 | Predicate arithmetic `$acc/n[last()-1]` | Parse error — predicate doesn't allow arithmetic on `last()` |
 | `:init [stack [n 0] [n 0]]` (sentinel zeros) | Works mechanically but corrupts the result; sentinel arithmetic ruins it |
 
-## Open gap log
+### Open gap log
 
 *(2026-08-25: items 1 and 4 below are CLOSED by the Cluster A settlement —
 a missing child reads as absence, and `[?splice]` in element content is the
