@@ -971,12 +971,15 @@
     }
     // A LONE scalar / text body earns a row — the same rule the Tree
     // pane applies when it rides a single scalar up onto its element's
-    // own line. It is deliberately not generalised to "every body",
-    // because `cxlib.tree()` reports a sequence literal's PUNCTUATION as
-    // scalar children: `(1, 2, 3)` arrives as seven scalars — `(`, 1,
-    // `,`, 2, `,`, 3, `)`. Rowing all of those turns a five-element
-    // sequence into an eleven-row box of commas. One body is content;
-    // many are syntax.
+    // own line. It is deliberately not generalised to "every body":
+    // one body is content, many are a LIST, and a list of values is not
+    // what a two-column name/value table is for — a five-item sequence
+    // would draw a five-row box whose left column says `scalar` five
+    // times. (This guard was first written to bound #1000, which had
+    // `cxlib.tree()` reporting a sequence literal's PUNCTUATION as
+    // scalar children — `(1, 2, 3)` arrived as seven scalars, `(`, 1,
+    // `,`, 2, `,`, 3, `)`. That is fixed at the emitter now; the rule
+    // stands on its own ground, not on the defect.)
     const usable = parts.bodies.filter(b =>
       (b.kind === 'scalar' || b.kind === 'text')
       && b.value !== '' && b.value !== null && b.value !== undefined);
