@@ -100,6 +100,30 @@ The three agent branches verified FULLY LANDED (11/11 commits rebased twins;
 cleanup; 338 paths, 0 absent; ledger content byte-identical) are deleted,
 worktrees pruned, #963 closed. Evidence chain on the issue.
 
+## AMENDMENT 1 (2026-08-25) — CO-2 scope resolutions from implementation
+
+1. **The "[out …]" family is vacuous on the current surface**: there is no
+   `[out]` effect form — the fixtures that used the name used it as a plain
+   element. The run-surface print is deliberately NOT a refusal point (it is
+   how errors are inspected; a top-level err already exits nonzero). Recorded
+   in commands_effects.md §7.5 so the ruling's scope stays honest.
+2. **Guarded store family named precisely**: put-doc, put-doc-stream,
+   put-doc-text (stores a PARSED document — not an opaque byte write), and
+   modify-doc (the action payload is the injection vehicle). Blob and
+   string/bytes file writes exempt by construction. The store verbs grow an
+   optional trailing `$opts::map {}` (the existing pull/status idiom) as the
+   `errs=:permit` carrier — backward-compatible.
+3. **http guard site**: cx_response_to_wire — every user-handler lane
+   (module serve, [?http-service] resources, xap host adapter routes)
+   funnels there; framework-built error wires (mk_wire/xap_wire_cx) bypass
+   it and stay loud as they are. A bare [err] handler result previously
+   left as a 200 with the err serialized — now the loud 500.
+4. **Two adjacent families observed, NOT guarded here, needing their own
+   letter**: `$journal:append` (an event that is an err — but the journal
+   is arguably exactly where errors belong as events) and `$fabric:emit`
+   (a channel-like fan-out — the channel exemption reading suggests exempt).
+   Left unguarded; raised as a question rather than slipped either way.
+
 ## Standing scope notes
 
 - Tag gate for v0.17.0 (owner 1a, first message): #973 ✅(f28c43ff9) ·
