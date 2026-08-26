@@ -1025,10 +1025,14 @@
         """Operate on numeric scalars. `sum`/`min`/`max`/`avg`
            operate on a sequence and skip non-numeric items;
            `floor`/`ceiling`/`round`/`abs` operate on a single
-           value. The aggregates obey the same numeric discipline
-           the arithmetic heads do: a decimal or bigint operand
-           folds exactly, and mixing one with a float raises
-           CXER0100 — `[cast]` is the only bridge."""]
+           value. A numeric operand is an `int`, a `float`, or one
+           of the exact kinds `decimal` / `bigint` — and the exact
+           kinds are their own family, not floats in disguise: a
+           decimal or bigint operand folds exactly (`int` embeds
+           losslessly), while mixing one with a float raises
+           CXER0100 — `[cast]` is the only bridge. That is the
+           arithmetic heads' rule; the aggregates are a different
+           operand shape, never a different numeric semantics."""]
       [table
         [tr [th 'builtin'] [th 'arity'] [th 'semantics']]
         [tr [td 'sum(seq)'] [td '1'] [td 'Sum of numeric scalars; empty yields int 0; int/float mix → float; decimal/bigint fold exactly']]
