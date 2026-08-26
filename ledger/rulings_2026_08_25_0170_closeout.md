@@ -255,3 +255,17 @@ untouched). RULED semantics: override per KEY, applied in the order env-clear
 this ruling carries the spec-edit authorization for that amendment
 (RULED: CO-15). Implementation rides the #1028 per-stage opts machinery;
 red-proof + granted-path conformance twins both directions.
+
+### CO-16 (run dispositions + spawn encoding + process spec pass, owner "1b 2a 3b", 2026-08-26)
+
+(1b) #1023: §3.1/§4.3 are AMENDED — `run`'s $capture adopts spawn's FULL
+disposition vocabulary (:pipe→capture, :inherit, :discard, file path; CXER4013
+semantics), retracting §4.3's "run has no file target" clause. One disposition
+vocabulary across all entry points (orthogonality objective; same no-deferral
+logic as CO-15). (2a) spawn's $encoding stays VALIDATED-AND-INERT — §4.7 gains
+the sentence saying spawn captures nothing so encoding decodes nothing there;
+text-vs-bytes stays on each io read per io.md. (3b) the #1034/#1035 drafted
+prose (§4.4 descriptor-release contract, §4.7 accepted-set + per-entry-point
+scoping) lands BATCHED with the 1b/2a amendments in ONE spec pass, so
+§4.3/§4.7 change once. All spec edits under this entry carry RULED: CO-16.
+Sequencing: implementation rides after #1047 (same file) integrates.
