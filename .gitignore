@@ -97,5 +97,12 @@ bench/current.json
 **/.cxstore-lineage
 *.cxstore-lineage
 
+# #1005: the cross-process writable-open sentinel. Runtime state, like the
+# lineage sidecar — it names whichever process currently holds the root, and
+# the lock itself lives on the descriptor, never in the file. A committed one
+# would be a stale record of a machine that is not this one.
+**/.cxstore-lock
+*.cxstore-lock
+
 # campaign working notes — agent briefs, not shipped surface
 .campaign/
