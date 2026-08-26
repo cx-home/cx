@@ -172,4 +172,6 @@
   [patch sha=dc5c87ec6ab215096b55be3935776488c014b882 family=usecache]
   [patch sha=46f1be51d58b0a4daf9efdb33febd4d067fdad1e family=usecache]
   [patch sha=a2898599f3f0d6130a9d8ada8f11a25369130ac2 family=vgc]
+  [patch sha=c3fc9c9670db968fb1202ec1c70cdca2b41df79c family=vlib]
+  [patch sha=cf25c483081e2ee1b41c322678591a5b1e4b0286 family=usecache]
 ]
