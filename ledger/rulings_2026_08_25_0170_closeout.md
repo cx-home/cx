@@ -281,3 +281,16 @@ default context; the co14-017/017a reservation pins FLIP to refusal under this
 ruling. (2a) #1045: code.md §6.5's stale operand sentence ("numerically typed
 (int/float)") is corrected to state the shipped exact-family discipline per
 L44. Both edits carry RULED: CO-17.
+
+#### CO-17 execution note
+
+CO-14's reservation is FLIPPED as this entry directs: `[$avg (1.00, 2.00,
+2.00)]` refuses with CXER3002 naming `$math:div-decimal` instead of promoting
+to `1.6666666666666667e0` — pins co14-017 (renamed
+`…-avg-nonterminating-refuses`) and the umbrella's reserved-cell test flip
+with it, and co14-017a's twin message follows the one shared refusal. `$idiv`
+needed no rounding ruling and STOPPED on no cell: an integral quotient always
+terminates, and §6.5 already rules truncation toward zero, so CXER3002 cannot
+arise there — result kind is the exact family's integral representation (int
+while it fits i64, bigint past it), the convention floor/ceiling/round already
+use. No cell was invented.
