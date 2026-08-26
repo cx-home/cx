@@ -31,8 +31,30 @@
 #
 # Exit 0 on pass; 1 on any failure. The server is killed on every exit
 # path (pass, fail, signal) — no orphans.
+#
+# BOUNDED RUN (#988). This script was reported HANGING under `devbox run
+# --` (3/3) while passing bare, sampled in bash's wait_for/__wait4. It no
+# longer reproduces: 6/6 green under devbox, 2/2 bare. The cause was NOT
+# identified — #973 (vgc STW deadlock once a second thread blocks in a
+# syscall) was the leading suspect and would fit a server wedged
+# mid-response, but that is UNPROVEN here: #988's sibling symptom in
+# gen_examples.cx is green at the pre-#973 baseline too, so the shared
+# explanation is more likely machine load than either defect.
+#
+# Which is the point of this guard. The reason an unidentified wedge could
+# cost 3/3 runs and a bisect is that NOTHING here was bounded: no curl
+# carried a timeout, so a slow or wedged server produced an unkillable
+# gate instead of a failed one. A gate that hangs is worse than a gate
+# that fails. Every curl now carries --max-time, a watchdog terminates
+# the run past SMOKE_DEADLINE, and the server is reaped with a bounded
+# escalation to SIGKILL — so the next occurrence is a diagnosis, not a
+# hang.
 
 set -uo pipefail
+
+# Bounds — overridable for slow machines, never removable.
+SMOKE_DEADLINE="${SMOKE_DEADLINE:-240}"
+CURL_MAX_TIME="${CURL_MAX_TIME:-30}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PLAYGROUND="$ROOT/dist/playground-preview"
@@ -54,11 +76,44 @@ if [[ ! -f "$PLAYGROUND/dist/wasm/libcx-async.js" ]]; then
 fi
 
 SERVER_PID=""
+WATCHDOG_PID=""
 cleanup() {
-    [[ -n "$SERVER_PID" ]] && kill "$SERVER_PID" 2>/dev/null
-    [[ -n "$SERVER_PID" ]] && wait "$SERVER_PID" 2>/dev/null
+    # Kill the watchdog first — otherwise it outlives this script and
+    # later signals whatever process recycled our pid.
+    [[ -n "$WATCHDOG_PID" ]] && kill "$WATCHDOG_PID" 2>/dev/null
+    if [[ -n "$SERVER_PID" ]]; then
+        kill "$SERVER_PID" 2>/dev/null
+        # Bounded reap: a wedged server must not hang the gate at exit,
+        # and a runtime-deadlocked process can ignore SIGTERM.
+        for _ in 1 2 3 4 5 6 7 8 9 10; do
+            kill -0 "$SERVER_PID" 2>/dev/null || break
+            sleep 0.5
+        done
+        kill -KILL "$SERVER_PID" 2>/dev/null
+    fi
 }
 trap cleanup EXIT
+# TERM/INT are trapped too, or the watchdog's own SIGTERM would kill this
+# shell WITHOUT running the EXIT trap — orphaning the server it started.
+# cleanup is idempotent, so the second run from EXIT is a no-op.
+trap 'cleanup; exit 143' TERM INT
+
+# Watchdog — the outer bound on the whole run. A gate that hangs is worse
+# than a gate that fails, so past the deadline we terminate ourselves.
+(
+    sleep "$SMOKE_DEADLINE"
+    if kill -0 $$ 2>/dev/null; then
+        echo "Gate 17 FAIL — smoke run exceeded ${SMOKE_DEADLINE}s (bounded-run guard, #988)." >&2
+        kill -TERM $$ 2>/dev/null
+        sleep 5
+        kill -KILL $$ 2>/dev/null
+    fi
+) &
+WATCHDOG_PID=$!
+# disown: keeps bash from printing "Terminated" job notices onto the
+# gate's stderr when cleanup signals these jobs. SIGKILL escalation
+# above is what guarantees no orphan, not `wait`.
+disown "$WATCHDOG_PID" 2>/dev/null || true
 
 # boot_server PORT — start the CX static server on PORT and wait for
 # readiness. Returns 0 once playground.html answers; 1 if the server
@@ -69,8 +124,10 @@ boot_server() {
         "$ROOT/scripts/serve_static.cx" --port "$port" --root "$PLAYGROUND" \
         >/dev/null 2>&1 &
     SERVER_PID=$!
+    disown "$SERVER_PID" 2>/dev/null || true
     for try in 1 2 3 4 5; do
-        if curl -sf -o /dev/null "http://127.0.0.1:$port/playground.html"; then
+        if curl -sf --max-time "$CURL_MAX_TIME" -o /dev/null \
+             "http://127.0.0.1:$port/playground.html"; then
             return 0
         fi
         if ! kill -0 "$SERVER_PID" 2>/dev/null; then
@@ -121,8 +178,9 @@ for asset in playground.html playground/playground.js playground/playground.css 
              playground/playground.examples.js \
              playground/vendor/mermaid.min.js playground/vendor/LICENSE-mermaid.txt \
              dist/wasm/libcx-async.js dist/wasm/cxlib.js; do
-    if ! curl -sf -o /dev/null "http://127.0.0.1:$PORT/$asset"; then
-        fail "$asset returned non-200"
+    if ! curl -sf --max-time "$CURL_MAX_TIME" -o /dev/null \
+           "http://127.0.0.1:$PORT/$asset"; then
+        fail "$asset returned non-200 (or exceeded ${CURL_MAX_TIME}s)"
     fi
 done
 
@@ -192,7 +250,11 @@ fi
 # writing the large (~250 KB) buffer → echo takes SIGPIPE (141) → pipefail
 # propagates it → the `if !` fires a false failure. A here-string is fed by
 # the shell, so there is no upstream process to receive SIGPIPE.
-js="$(curl -sf "http://127.0.0.1:$PORT/dist/wasm/libcx-pthreads.js")"
+js="$(curl -sf --max-time "$CURL_MAX_TIME" \
+        "http://127.0.0.1:$PORT/dist/wasm/libcx-pthreads.js")"
+if [[ -z "$js" ]]; then
+    fail "libcx-pthreads.js fetch returned nothing within ${CURL_MAX_TIME}s"
+fi
 if ! grep -q '_cx_code_eval' <<< "$js"; then
     fail "_cx_code_eval not present in libcx-pthreads.js — wasm not rebuilt against v0.8.0 ABI"
 fi
@@ -201,7 +263,11 @@ if ! grep -q '_cx_code_diagram' <<< "$js"; then
 fi
 
 # cxlib.js JS surface — check Layer-1 method names per spec/bindings.md
-cxlib_js="$(curl -sf "http://127.0.0.1:$PORT/dist/wasm/cxlib.js")"
+cxlib_js="$(curl -sf --max-time "$CURL_MAX_TIME" \
+              "http://127.0.0.1:$PORT/dist/wasm/cxlib.js")"
+if [[ -z "$cxlib_js" ]]; then
+    fail "cxlib.js fetch returned nothing within ${CURL_MAX_TIME}s"
+fi
 for method in eval selectAll modify findAll parse bytes hash equals; do
     if ! grep -q "\\b$method\\b" <<< "$cxlib_js"; then
         fail "cxlib.js missing Layer-1 method: $method"

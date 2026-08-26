@@ -22,11 +22,16 @@
 #     block comment), because that is the exact string the playground's
 #     Run handler executes — an unbalanced bracket in note prose turns the
 #     comment unterminated and must fail the gate.
-#   - Per-example timeout: 20s via process wait-timeout, then kill. One
-#     difference from the Python (which captured output concurrently): the
-#     pipes are drained after exit, so an example printing more than the
-#     pipe buffer (~64KB) would block and surface as TIMEOUT — loudly red,
-#     never silent. Every current example prints far less.
+#   - Per-example timeout: 20s via process wait-timeout, then kill. The
+#     child's stdout/stderr are REDIRECTED TO FILES, never read back off a
+#     pipe (#988). Draining a pipe only after the child exits is a
+#     deadlock: a child whose output exceeds the kernel pipe buffer (16-64
+#     KiB) blocks forever in write(), the parent's wait-timeout expires,
+#     and a fast example is reported as "TIMEOUT after 20s". Files have no
+#     such bound, so output size stops being a correctness variable. The
+#     child is still ONE grant-free process running the shipped binary:
+#     `sh -c 'exec …'` replaces the shell with cx, so the handle's pid IS
+#     the child cx and kill still reaches it directly.
 #   - JSON string escaping reproduces Python json.dumps ensure_ascii
 #     byte-for-byte (non-ASCII → lowercase \uXXXX, surrogate pairs above
 #     the BMP) so the regenerated file stays byte-identical across the
@@ -271,33 +276,74 @@
 
 [?const NOTE-RULE '────────────────────']
 
+# CAPTURE-CAP: the most output one example may emit (stdout + stderr) and
+# still be read back. 4 MiB is ~4000x the largest current example and far
+# past anything the playground could put on screen, so exceeding it means
+# the example is wrong, not that the cap is tight.
+[?const CAPTURE-CAP 4194304]
+
 [?def compose scope=public ($src $note)
   [$cat ($src, '\n\n[; ', NOTE-RULE, '\n', $note, '\n', NOTE-RULE, ' ]\n')]]
 
 # audit: [res status=… runnable=… msg=…]; status 'ok' unless a top-level
 # parse/eval error (a printed [err …] VALUE is a legitimate result).
-[?def audit scope=public impure ($cxbin $tmp $composed)
+[?def audit scope=public impure ($cxbin $tmp $out-path $err-path $composed)
   [?let
     [= $w [$must 'writing audit tmp file' [$io:write-file $tmp $composed]]]
-    [= $h [$must 'spawning cx' [$process:spawn ($cxbin, $tmp)]]]
+    # Truncate the capture files here, not just via the shell's `>`, so
+    # whatever we read back is unambiguously THIS example's output — a
+    # killed child must never be reported with its predecessor's bytes.
+    [= $w1 [$must 'truncating stdout capture' [$io:write-file $out-path '']]]
+    [= $w2 [$must 'truncating stderr capture' [$io:write-file $err-path '']]]
+    # >$out-path 2>$err-path: the child never writes into a pipe, so its
+    # output volume can never wedge the wait (#988). `exec` means the
+    # process we wait on and kill IS the child cx, not a shell wrapper;
+    # the args ride in as $1..$4 so no path needs quoting by hand.
+    [= $h [$must 'spawning cx' [$process:spawn
+        ('sh', '-c', 'exec "$1" "$2" >"$3" 2>"$4"', 'gen_examples-audit',
+         $cxbin, $tmp, $out-path, $err-path)]]]
     [= $rcw [$process:wait-timeout $h 20000]]
     [?if [$empty $rcw]
       [then [?let [= $k [$process:kill $h]]
                   [= $c [$process:close $h]]
-        [res status='fail' runnable=true msg='TIMEOUT after 20s']]]
+        # Report what the child DID emit before the kill. A bare "TIMEOUT"
+        # is undiagnosable — that is exactly what left #988 guessing at an
+        # output-volume cause for an example that emits 552 bytes. Sizes
+        # come from stat, never from reading the file, so a runaway child
+        # cannot make the report the next problem.
+        [= $osz [$must 'sizing killed child stdout' [$io:size $out-path]]]
+        [= $esz [$must 'sizing killed child stderr' [$io:size $err-path]]]
+        [res status='fail' runnable=true
+             msg=[$cat ('TIMEOUT after 20s — captured ', [$string $osz],
+                        ' B stdout / ', [$string $esz],
+                        ' B stderr before the kill')]]]]
       [else [?let
-        [= $out [$must 'reading child stdout' [$io:read-all [$process:stdout $h]]]]
-        [= $errout [$must 'reading child stderr' [$io:read-all [$process:stderr $h]]]]
         [= $c [$process:close $h]]
+        # A pipe used to bound the child's output by deadlocking on it; a
+        # file does not, so the bound has to be STATED. Measure before
+        # reading — past the cap the example fails loudly on its volume
+        # instead of the generator inhaling it.
+        [= $osz [$must 'sizing child stdout' [$io:size $out-path]]]
+        [= $esz [$must 'sizing child stderr' [$io:size $err-path]]]
+        [= $over [> [+ $osz $esz] CAPTURE-CAP]]
+        [= $out [?if $over [then '']
+            [else [$string [$must 'reading child stdout' [$io:read-file $out-path]]]]]]
+        [= $errout [?if $over [then '']
+            [else [$string [$must 'reading child stderr' [$io:read-file $err-path]]]]]]
         [= $combined [$cat ($out, $errout)]]
         [= $msg [?if [= [$strings:trim $out] '']
             [then [$strings:trim $errout]] [else [$strings:trim $out]]]]
         [= $runnable [not [$strings:contains $combined 'CXER0271']]]
         [= $err-value-result [$strings:starts-with [$strings:trim-start $out] '[err']]
-        [?if [or [$strings:starts-with $out 'error:']
-                 [and [not [= $rcw 0]] [not $err-value-result]]]
-          [then [res status='fail' runnable=$runnable msg=$msg]]
-          [else [res status='ok' runnable=$runnable msg=$msg]]]]]]]]
+        [?if $over
+          [then [res status='fail' runnable=true
+                 msg=[$cat ('output too large: ', [$string [+ $osz $esz]],
+                            ' B exceeds the ', [$string CAPTURE-CAP],
+                            ' B capture cap — the playground cannot show this')]]]
+          [else [?if [or [$strings:starts-with $out 'error:']
+                         [and [not [= $rcw 0]] [not $err-value-result]]]
+            [then [res status='fail' runnable=$runnable msg=$msg]]
+            [else [res status='ok' runnable=$runnable msg=$msg]]]]]]]]]]
 
 # ── render ────────────────────────────────────────────────────────────
 
@@ -346,6 +392,10 @@
   [= $tmpdir [$cat ([$env:var-or-default 'TMPDIR' '/tmp'], '/cx-gen-examples')]]
   [= $mk [$must 'creating tmp dir' [$io:make-dirs $tmpdir]]]
   [= $tmp [$cat ($tmpdir, '/example.cx')]]
+  # Per-example capture files — see `audit`: output goes to disk, never a
+  # pipe, so no example can deadlock the wait on its own volume (#988).
+  [= $out-path [$cat ($tmpdir, '/example.out')]]
+  [= $err-path [$cat ($tmpdir, '/example.err')]]
 
   [= $entries [$load-examples $cxbin $data-path]]
   [= $n [$count $entries]]
@@ -358,7 +408,7 @@
       [= $key [$string $e@key]]
       [= $src [$string $e@src]]
       [= $note [$string $e@note]]
-      [= $r [$audit $cxbin $tmp [$compose $src $note]]]
+      [= $r [$audit $cxbin $tmp $out-path $err-path [$compose $src $note]]]
       [yield [row key=$key status=[$string $r@status] msg=[$string $r@msg]
                 block=[?if [= [$string $r@status] 'ok']
                   [then [$render-block $key [$string $e@label] $src $note $r@runnable]]
