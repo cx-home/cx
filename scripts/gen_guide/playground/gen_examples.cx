@@ -285,6 +285,15 @@
 # So the sweep asserts the weaker, true property for these: the example
 # must still EVALUATE in wasm (a refusal is a different defect and does
 # NOT get to hide behind this marker), and the value is not compared.
+#
+# THE SET IS CURRENTLY EMPTY (#1043). Example 57 — the only example that
+# ever used this state — was redesigned to be deterministic: `[par N]`
+# bounds the width and the `[?bulkhead]` is sized so it cannot shed, so
+# its value no longer depends on thread timing and it is compared against
+# native like every other example. The state is KEPT because the hazard
+# is real and structural (any example whose value depends on which worker
+# wins a race), not because anything needs it today. Prefer redesigning a
+# racy example over reaching for this marker.
 [?def load-examples scope=public impure ($cxbin $data-path)
   [?let
     [= $r [$process:run ($cxbin, '--ast', '--compact', $data-path)]]

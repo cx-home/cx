@@ -216,12 +216,20 @@ function wasmMarker(ex) {
 // because its native result is a RACE, so a wasm≡native assertion on it
 // is not a test, it is a coin flip.
 //
-// Measured on the one example that needs it (57-map-par-bulkhead: a
+// Measured on the example that first needed it (57-map-par-bulkhead: a
 // 2-slot `[?bulkhead]` over 8 `[par]` items): 10 DISTINCT native results
 // in 12 runs, from zero saturation errs to six — and one of those runs
 // happened to equal the wasm result exactly. That is not hypothetical
 // flakiness: this gate flipped between "justified marker" and "stale
 // marker" on consecutive runs before the state existed.
+//
+// THE SET IS CURRENTLY EMPTY (#1043): example 57 was redesigned so its
+// value cannot depend on thread timing (`[par N]` bounds the width; the
+// `[?bulkhead]` is sized so it cannot shed), and it is now compared
+// against native like every other example. The state is kept because the
+// hazard is structural, not because anything uses it — the summary line
+// below reports 0, and a future non-zero count should be challenged
+// rather than accepted.
 //
 // What the sweep asserts for these is the weaker but TRUE property: the
 // example must still EVALUATE in the wasm engine. A refusal is a

@@ -412,12 +412,11 @@
       runnable: true,
     },
     "57-map-par-bulkhead": {
-      label: "[57] [?map \u2026 [par]] \u2014 bounded with [?bulkhead]",
-      input: "[?map (1, 2, 3, 4, 5, 6, 7, 8)\n  [using [?fn $n\n           [?bulkhead max-concurrent=2\n             [?let [= $_ [?sleep 100ms mock]]\n               [* $n $n]]]]]\n  [par]]",
-      note:  "**Introduces:** `[?bulkhead max-concurrent=N \u2026]` caps in-flight work. With 8 parallel items but a 2-slot bulkhead, the overflow returns `[err cx-err:CXER0152 'bulkhead saturated']` \u2014 backpressure surfaced as values. **Which items overflow is a race:** natively this program has no single answer \u2014 measured 10 distinct results in 12 runs, from zero errs to six. In the browser `[par]` is sequential, so nothing is ever contended and you always get all eight squares.",
-      tags:  ["bulkhead", "eq", "fn", "let", "map", "mul", "parallel", "resilience", "sleep"],
+      label: "[57] [par N] bounds the width \u2014 [?bulkhead] isolates the failure",
+      input: "[?map (1, 2, 3, 4, 5, 6, 7, 8)\n  [using [?fn $shard\n           [?bulkhead max-concurrent=8\n             [?if [= $shard 5]\n               [then [err code=\"shard-offline\" shard=$shard]]\n               [else [* $shard $shard]]]]]]\n  [par 2]]",
+      note:  "**Introduces:** `[par N]` \u2014 the width bound. Since #94 **`[par]` owns its own concurrency**: `[par 2]` runs a two-worker pool over the eight shards (bare `[par]` defaults to `min(4, ncpu)`, `[par max]` uses `ncpu`). `[?bulkhead]` is *not* the fan-out limiter \u2014 that lint was retired \u2014 so the compartment here is sized to the whole batch (`max-concurrent=8`) and never sheds.\n\nWhat it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and that failure stays in shard 5's own slot. The other seven still return their squares and the batch completes \u2014 a failed compartment does not sink the ship. Output is always source order (\u00a77.3), so the result is the same every run and in the browser.\n\n**Why not show `CXER0152`?** A `[?bulkhead]` can only shed when two workers contend for the last permit, and *which* one loses is thread timing \u2014 a program with no single answer. `[?bulkhead]` is EXPERIMENTAL (spec/code.md \u00a710.2.6): its permit counter is a non-atomic read-modify-write, so under real contention the cap is not reliably enforced in either direction. For production load-shedding reach for `[?rate-limit]` (examples 96\u201397) or a buffered `[?channel]`.",
+      tags:  ["bulkhead", "eq", "fn", "if", "map", "mul", "parallel", "resilience"],
       runnable: true,
-      noStableValue: "Which items saturate depends on thread timing: natively this program returns a different value almost every run (measured: 10 distinct results in 12 runs). The playground's single-threaded wasm build runs `[par]` sequentially, so there it is deterministic and never saturates.",
     },
     "58-par-shared-cb": {
       label: "[58] [?map :par] \u2014 shared [?circuit-breaker]",
