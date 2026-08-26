@@ -1025,13 +1025,16 @@
         """Operate on numeric scalars. `sum`/`min`/`max`/`avg`
            operate on a sequence and skip non-numeric items;
            `floor`/`ceiling`/`round`/`abs` operate on a single
-           value."""]
+           value. The aggregates obey the same numeric discipline
+           the arithmetic heads do: a decimal or bigint operand
+           folds exactly, and mixing one with a float raises
+           CXER0100 — `[cast]` is the only bridge."""]
       [table
         [tr [th 'builtin'] [th 'arity'] [th 'semantics']]
-        [tr [td 'sum(seq)'] [td '1'] [td 'Sum of numeric scalars; empty yields int 0; any float → float result']]
-        [tr [td 'min(seq)'] [td '1'] [td 'Minimum numeric; empty yields int 0']]
-        [tr [td 'max(seq)'] [td '1'] [td 'Maximum numeric; empty yields int 0']]
-        [tr [td 'avg(seq)'] [td '1'] [td 'Arithmetic mean as float; empty yields float 0.0']]
+        [tr [td 'sum(seq)'] [td '1'] [td 'Sum of numeric scalars; empty yields int 0; int/float mix → float; decimal/bigint fold exactly']]
+        [tr [td 'min(seq)'] [td '1'] [td 'Minimum numeric, in its own kind; empty yields int 0']]
+        [tr [td 'max(seq)'] [td '1'] [td 'Maximum numeric, in its own kind; empty yields int 0']]
+        [tr [td 'avg(seq)'] [td '1'] [td 'Arithmetic mean — float, or exact over decimal/bigint; empty yields float 0.0']]
         [tr [td 'abs(x)'] [td '1'] [td 'Absolute value; preserves int/float kind']]
         [tr [td 'floor(x)'] [td '1'] [td 'Largest integer ≤ x; int passes through']]
         [tr [td 'ceiling(x)'] [td '1'] [td 'Smallest integer ≥ x; int passes through']]
