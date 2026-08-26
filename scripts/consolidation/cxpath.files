@@ -1,4 +1,17 @@
-# area: cxpath
-vcx/tests/cxpath_forward_test.v
-vcx/tests/cxpath_misc_test.v
-vcx/tests/cxpath_projection_pins_test.v
+# area: cxpath — RETIRED.
+#
+# The three rows below were consolidated into vcx/tests/cxpath_umbrella_test.v
+# by the wave-1 `apply` (0f9f19e29), and that umbrella was itself retired
+# whole in b78a3b4c8 (#803 / gate-truth-805: the placeholder CxNode axis
+# engine and the modify bridge lane died with it). Nothing in the tree
+# carries these bodies any more, so the rows are `#retired`, not
+# `#absorbed`.
+#
+# They stay recorded rather than deleted for the same reason every other
+# history row does (#1012): the manifest IS the provenance record, and a
+# row that quietly disappears is a row nobody can trace. Restoring any of
+# these originals to regenerate is refused by name —
+# `scripts/consolidate_tests.sh audit cxpath`.
+#retired vcx/tests/cxpath_forward_test.v
+#retired vcx/tests/cxpath_misc_test.v
+#retired vcx/tests/cxpath_projection_pins_test.v

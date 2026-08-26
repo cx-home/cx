@@ -2,18 +2,26 @@
 # flag-gated trio+1 (own Makefile targets), store_lazy_load (serial roster),
 # store_rotation + store_porcelain (same-name-different-body helper pair —
 # generator refusal; standalone per the #700 rule, no renames w/o a ruling).
-vcx/platform/store_anchor_identity_test.v
-vcx/platform/store_blob_surface_test.v
-vcx/platform/store_cluster_residuals_test.v
-vcx/platform/store_crash_consistency_test.v
-vcx/platform/store_document_model_test.v
-vcx/platform/store_flat_file_test.v
-vcx/platform/store_ft_test.v
-vcx/platform/store_introspection_test.v
-vcx/platform/store_legacy_code_refusal_test.v
-vcx/platform/store_lifecycle_wave3_test.v
-vcx/platform/store_modify_select_test.v
-vcx/platform/store_open_opts_map_test.v
-vcx/platform/store_silent_partial_wave5_test.v
-vcx/platform/store_subtree_objectmodel_test.v
-vcx/platform/store_verbatim_roundtrip_evidence_test.v
+#absorbed vcx/platform/store_anchor_identity_test.v
+#absorbed vcx/platform/store_blob_surface_test.v
+#absorbed vcx/platform/store_cluster_residuals_test.v
+#absorbed vcx/platform/store_crash_consistency_test.v
+#absorbed vcx/platform/store_document_model_test.v
+#absorbed vcx/platform/store_flat_file_test.v
+#absorbed vcx/platform/store_ft_test.v
+#absorbed vcx/platform/store_introspection_test.v
+#absorbed vcx/platform/store_legacy_code_refusal_test.v
+#absorbed vcx/platform/store_lifecycle_wave3_test.v
+#absorbed vcx/platform/store_modify_select_test.v
+#absorbed vcx/platform/store_open_opts_map_test.v
+#absorbed vcx/platform/store_silent_partial_wave5_test.v
+#absorbed vcx/platform/store_subtree_objectmodel_test.v
+#absorbed vcx/platform/store_verbatim_roundtrip_evidence_test.v
+#
+# ── #1012, 2026-08-26: the rows above were folded in by `apply`, which
+# (unlike `absorb`) never rewrote the manifest — so they sat here as LIVE
+# rows naming originals that were removed at the merge. Marked as the
+# history they always were. Absorption is one-way: the umbrella owns
+# these bodies, and any fix made to the umbrella since exists only there.
+# Restoring an original to regenerate is refused by name —
+# `scripts/consolidate_tests.sh audit <area>`.

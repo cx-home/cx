@@ -587,7 +587,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test check-v-fork check-serial-retry-rosters test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx corpus-audit
+TEST_TARGETS := abi-c-test check-v-fork check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx corpus-audit
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS lanes whose
@@ -1545,6 +1545,18 @@ check-serial-retry-rosters:
 	  exit 1; \
 	fi; \
 	echo "check-serial-retry-rosters OK — every retry-roster row names an existing lane"
+
+# #700 consolidation absorbs a lane file's tests into an umbrella and REMOVES
+# the original; every fix made to the umbrella afterwards then lives only
+# there. So a restored original is a loaded gun: regenerating from it
+# re-derives the section from pre-absorption bytes and drops those fixes with
+# no diagnostic (#1012). `audit all` asserts the one-way rule across every
+# manifest — no live row an umbrella already carries, no absorbed original
+# back in the tree — which is a standing property of the tree, not just of a
+# regeneration, so it belongs in the gate and not only in the driver.
+.PHONY: check-consolidation-manifests
+check-consolidation-manifests:
+	@scripts/consolidate_tests.sh audit all
 
 test-vcx-suite: build-vcx-dev check-serial-retry-rosters skip-ledger-reset
 	@log=vcx/target/test-suite-run.log; stf=vcx/target/test-suite-status; \
