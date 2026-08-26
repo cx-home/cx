@@ -648,6 +648,55 @@ body.cxp-resizing.is-row { cursor: row-resize; }
   white-space: nowrap;
 }
 
+/* ── Auto/CFG nested value tables (#1031) ────────────────────
+   The Auto view's CFG boxes carry VALUES — a binding right-hand side, a
+   yield payload, an element body — and a nested document used to render
+   as one flat line in one box. It now renders as nested tables, emitted
+   by stdlib/diagram.cx §9.4b and reusing the .cxp-itbl rules above:
+   same two columns, same header row, same `(+N more)` idiom. Only what
+   NESTING needs is added here.
+
+   Nesting has to be legible without indentation games, because the
+   mermaid node draws only the OUTER border and everything inside is one
+   <foreignObject>. So depth reads from a left rule and one step down in
+   type size, not from margins that would compound at depth 4. */
+.cxp-vtbl { margin: 0; }
+
+/* A row whose VALUE is another table. The cell gives up `nowrap` (the
+   inner table sets its own metrics) and gains an inset rule plus a
+   faint wash — measured, not guessed: a 1px hairline in `--border-soft`
+   is invisible against the node fill at these sizes, and without a
+   visible boundary a nested table reads as another COLUMN of the parent
+   rather than as content inside a cell. The rule is drawn in the
+   element-name accent so containment is unmistakable at a glance. */
+.cxp-vtbl-nest > .cxp-itbl-v {
+  padding: 3px 4px 3px 8px !important;
+  white-space: normal;
+  border-left: 2px solid var(--syn-name, #e5c07b);
+  background: rgba(255, 255, 255, 0.035);
+}
+.cxp-vtbl-nest > .cxp-itbl-k {
+  font-weight: 600;
+  padding-top: 4px !important;
+}
+
+/* An inner table is quieter than its parent and carries no header row
+   of its own — the parent row's key already names it. Absolute px, not
+   `em`, so four levels of nesting do not shrink into illegibility. */
+.cxp-vtbl .cxp-vtbl { font-size: 11px; }
+
+/* A structured child the rung will not open (`compact`'s one-level
+   story, or the depth / budget cap at `full`). Its cell is a SUMMARY:
+   attribute chips, which are real data and are styled as such, plus a
+   withheld count. Only the count is dimmed — dimming the whole cell
+   would misreport `@id=1 @name='Alice'` as a note about the diagram
+   rather than as the document's own content. */
+.cxp-vtbl-sum > .cxp-itbl-k { font-weight: 600; }
+.cxp-vtbl-more {
+  color: var(--text-dim, #8b8578);
+  font-style: italic;
+}
+
 /* the detail dropdown (replaces the three-tab detail group) */
 .cxp-detail-select {
   background: var(--cxp-bg-raise, #2a2620);
