@@ -271,6 +271,32 @@ with no change here. Recorded because the issue's parenthetical names
 `?element` bodies among the shapes that carry nested element values, and
 this is why that one is not delivered.
 
+> **CLOSED by #1038 (2026-08-26).** The upstream fix landed where this
+> entry said it belonged: `dgc_element_image` lifts the `<cx:expr>`
+> hatch in the code/effects modes to `<cx:element><cx:name>…` — the
+> shape `code.md` §6.4.2.2 has ruled since #396 and the E1 quote-image
+> already built, so no tag was invented. NT-9c's own example
+> `[?element "wrapper" [inner a=1 [deep b=2]]]` now draws the nested
+> tables it predicted. **One correction to this entry:** "§9.4b picks it
+> up with no change here" was WRONG. The §9.4b role questions were
+> written against tags that could not be `cx:`-prefixed —
+> `cd-vt-data-elem-p` answers `false` for every `$is-cx` node — so
+> `<cx:element>` had to be admitted BY NAME as the one `cx:` tag that is
+> a data element, and `cx:name` had to join `cx:attr`/`cx:slot` in the
+> meta-child exclusion so the head is never drawn as a row. Two HEAD
+> readings also had to be fixed, both measured rather than reasoned:
+> `[$exists]` on the empty `<cx:seq>` of `[?element ()]` reads FALSE
+> (the same `lab` trap §2 documents) and `cd-label` answers `<lit>` for
+> every sequence, so the §6.4.2.1 absence channel degraded first to `?`
+> and then to `<lit>`; and the flat one-line label must KEEP its
+> `[?element …]` head, because a bare `[$n …]` is the spelling of a
+> CALL. And `cd-vt-key` had to key a NESTED computed element by its
+> computed NAME rather than by the `element` tag — keyed by the tag,
+> every `[?element]` row in a document reads identically, which is the
+> flat-line defect wearing a table. Zero golden bytes moved (the DR-8
+> corpus was green before the new pin was added), so no DR-8
+> mini-ruling was owed.
+
 ## NT-10 — the visual pass is part of the deliverable
 
 Walked in the pane at 1400×900 over the reported example plus nine more
