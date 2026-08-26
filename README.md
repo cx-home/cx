@@ -224,6 +224,15 @@ still ahead (in-repo fuzz harnesses exist — see
 [`SECURITY.md`](SECURITY.md) — but no third-party audit yet), so pin a tested
 version and apply normal pre-1.0 caution, as the disclaimer above says.
 
+**About the CX badge.** GitHub's language bar shows no CX, and that is a gap
+in the tooling rather than in this repository: the bar is computed by
+[Linguist](https://github.com/github-linguist/linguist), whose registry has no
+CX entry yet, so every `.cx`, `.cxd`, and `.cxs` byte is uncounted. Linguist
+admits a language only after it is in wide public use, and a project cannot
+self-register — so the badge above is the honest self-report meanwhile,
+measured by `scripts/lang_stats.cx` over tracked source (vendored and
+generated trees excluded) and refreshed with every release.
+
 ## Contributing
 
 CX is built in the open, and feedback shapes it. The most useful things you can

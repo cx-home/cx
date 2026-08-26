@@ -7,3 +7,33 @@ third_party/** linguist-vendored
 docs/** linguist-generated
 dist/** linguist-generated
 lang/_archived/** linguist-vendored
+
+# V source here is OURS (vlang), not Verilog. `.v` is contested in Linguist
+# and its disambiguation heuristic mis-files vcx/ as Verilog — that was the
+# 198 KB of phantom "Verilog" #954 measured on the languages API. `V` IS a
+# registered Linguist language (type: programming, alias `vlang`,
+# language_id 603371597 — registry verified 2026-08-25), so unlike the CX
+# lines below this override is LIVE TODAY: an explicit linguist-language
+# bypasses the heuristic outright. The repo contains no Verilog,
+# SystemVerilog, or VHDL source, so the rule has no false positives, and it
+# leaves third_party/v vendored (the vendored/generated gate is applied
+# before language classification).
+*.v linguist-language=V
+
+# CX's own extensions, staged AHEAD of the Linguist submission in
+# tooling/linguist/. These three lines are INERT until CX is merged into
+# their languages.yml: an unknown name in linguist-language is dropped and
+# normal detection resumes (lazy_blob.rb falls through to `super` when
+# `Language.find_by_alias` returns nil), and Linguist's override docs state
+# the case outright — a language "not yet mentioned in languages.yml will
+# not be included in the language statistics, even if you specify ...
+# linguist-language=MyCoolLang linguist-detectable". They sit here so the
+# public bar flips to a truthful CX share the moment the submission lands,
+# with no follow-up commit and no drift between what we submitted and what
+# we claim. .cxd (conformance fixture documents) and .cxs (schemas) count
+# as CX alongside .cx, matching the single entry in languages.yml.snippet;
+# the explicit linguist-detectable is belt-and-braces — redundant while
+# that entry stays `type: programming`, load-bearing if it ever isn't.
+*.cx  linguist-language=CX linguist-detectable
+*.cxd linguist-language=CX linguist-detectable
+*.cxs linguist-language=CX linguist-detectable
