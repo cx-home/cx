@@ -87,7 +87,12 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 # all name one commit. vX.Y.Z (any Z) cuts from release/X.Y.0 — patch releases
 # ride the same branch.
 CUR_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-EXPECT_BRANCH="release/${VERSION%.*}.0"
+# #666 topology as renamed 2026-08-24: the branch tracks a minor LINE
+# (release/0.17), not one release — matching release.sh's own derivation.
+# The old release/X.Y.0 spelling here would hard-fail every cut from the
+# renamed line while release.sh passed its own check (found by CO-4's
+# release-ordering audit, #979).
+EXPECT_BRANCH="release/${VERSION%.*}"
 if [[ $DRY_RUN -eq 0 ]]; then
     if [[ "$CUR_BRANCH" != "$EXPECT_BRANCH" ]]; then
         fail "Not on $EXPECT_BRANCH (currently on $CUR_BRANCH); v$VERSION cuts from its release branch (#666)."
