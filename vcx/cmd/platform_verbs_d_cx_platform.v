@@ -66,5 +66,28 @@ fn platform_subcommands() []SubcommandSpec {
 			]
 			run:     run_store_rotate_kek
 		},
+		SubcommandSpec{
+			name:    'store-mint-principal'
+			summary: 'Mint an XSP-AUTH principal offline (seed file + [grant …] stanza).'
+			help:    [
+				'Usage: cx store-mint-principal --id NAME --seed-file PATH [--caps "read write"] [--force]',
+				'',
+				'Mints one XSP-AUTH principal entirely OFFLINE — the clean-state bootstrap',
+				'for a deny-by-default daemon. Generates an Ed25519 seed, derives its',
+				'did:key, writes the seed to PATH (mode 0600; never printed), and prints',
+				'the [grant ...] row for the service config\'s [xsp [grants ...]] table plus',
+				'the client\'s xsp-did / xsp-seed-env open-opts.',
+				'',
+				'Nothing transits a wire and no store is opened. Config remains the SOLE',
+				'authority: the minted principal is inert until an operator splices the',
+				'printed grant into the daemon config.',
+				'  --id NAME         principal name; derives the seed env var CX_XSP_SEED_<NAME>',
+				'  --seed-file PATH  where the 32-byte seed lands, as hex, mode 0600',
+				'  --caps CLASSES    space-separated grant capabilities for the printed row',
+				'                    (read write delete admin peer); default "read write"',
+				'  --force           replace an existing seed file (invalidates its DID)',
+			]
+			run:     run_store_mint_principal
+		},
 	]
 }

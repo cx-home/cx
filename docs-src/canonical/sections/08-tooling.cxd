@@ -87,6 +87,7 @@
         [tr [td 'cx store-serve'] [td 'Serve a cx-store (platform profile only)']]
         [tr [td 'cx store-health'] [td 'Store health probe (platform profile only)']]
         [tr [td 'cx store-rotate-kek'] [td 'Rotate the store key-encryption key (platform profile only)']]
+        [tr [td 'cx store-mint-principal'] [td 'Mint an XSP-AUTH principal offline — seed file + [grant …] stanza (platform profile only)']]
         [tr [td 'cx fabric-serve'] [td 'Serve a cx-fabric (platform profile only)']]
         [tr [td 'cx eval FILE'] [td 'Alias of the default run action; prefer cx FILE']]
         [tr [td 'cx select PATH FILE'] [td 'CXPath query over a document — matches in canonical CX, one per line']]
