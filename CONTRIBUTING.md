@@ -114,8 +114,10 @@ external service such as `CX_TEST_S3_ENDPOINT`/`CX_TEST_FTP_URL`/
 `CX_TEST_SFTP_URL`, or a missing host tool like `openssl` — **self-skips
 with a named reason instead of failing**, so a bare checkout never reads
 as a wall of phantom regressions. Whole-lane skips are recorded in
-`vcx/target/test-skips.log` and `make test-vcx-suite` prints the
-skipped-with-reason digest after the run (they are counted separately,
+`vcx/target/test-skips.d/` — one file per skipping lane, so concurrent
+lanes under `make -j` cannot overwrite each other's entry — and `make
+test-vcx-suite` merges them into the skipped-with-reason digest it prints
+after the run (they are counted separately,
 never as failures). Plain `v test` suppresses the output of passing
 lanes; use `v -stats test …` to see `SKIP` lines inline. The binary
 path is resolved relative to the source tree, so lanes behave the same

@@ -1348,10 +1348,52 @@ CX_CACHE ?= -usecache
 # #318 — a lane whose environment prerequisite is absent (e.g. vcx/target/cx
 # not built in a bare out-of-tree checkout) SELF-SKIPS with a named reason via
 # vcx/testenv (exit 0, never failing-as-regression) and records the reason in
-# this ledger. Plain `v test` suppresses passing-lane output, so the recipe
-# truncates the ledger before the run and prints the skipped-with-reason
-# digest LOUDLY after it — skips are counted separately, never silently.
-CX_SKIP_LOG := vcx/target/test-skips.log
+# this ledger. Plain `v test` suppresses passing-lane output, so the digest is
+# printed LOUDLY after the run — skips are counted separately, never silently.
+#
+# ── The ledger is a DIRECTORY, one file per writer (#1013) ───────────────────
+# It used to be a single append-target file that test-vcx-suite truncated at
+# the top of its own recipe. That is a lost-update race under `make -j`: the
+# writers are three independent make targets — test-vcx-suite (via the
+# vcx/testenv lanes it runs), test-vcx-columnar, and, since #989,
+# test-vcx-sqlite — and nothing ordered the truncation before the appends. A
+# sqlite or columnar self-skip that landed BEFORE test-vcx-suite reached its
+# `rm -f` was erased, so the digest under-reported. stdout still carried the
+# SKIP line, so nothing went fully silent — which is exactly why it could sit
+# there: the digest, the surface a reader is told to trust for the count, was
+# the only thing wrong.
+#
+# Two properties fix it, and both are needed:
+#
+#   (1) NO SHARED WRITE TARGET. Every writer owns one file named after itself
+#       and TRUNCATES it (`>`), never appends to a file another writer touches.
+#       Concurrency is then irrelevant — there is no interleaving to lose. It
+#       also de-duplicates: a lane re-run by the classified serial retry below
+#       overwrites its own line instead of logging the skip twice.
+#
+#   (2) A RESET THAT HAPPENS-BEFORE EVERY WRITE. Clearing the directory inside
+#       one writer's recipe would reintroduce (1)'s race at directory level, so
+#       the reset is its own .PHONY target that every skip-producing lane names
+#       as a prerequisite. make runs a shared prerequisite exactly once per
+#       invocation and completes it before any dependent recipe starts, under
+#       -j included — so the ordering is a property of the dependency graph
+#       rather than of recipe timing.
+#
+# The digest merges the directory at read time (`cat` + `wc -l` over the
+# merge), which is what the old single-file consumer did to the concatenation
+# it was hoping for.
+CX_SKIP_DIR := vcx/target/test-skips.d
+# Writers name their own file; `$(call CX_SKIP_FILE,<writer>)` builds the path.
+CX_SKIP_FILE = $(CX_SKIP_DIR)/$(1)
+
+# skip-ledger-reset — property (2) above. Ordered before every writer by being
+# a prerequisite of each, so it can never race an append. Cheap and idempotent:
+# the whole point is that it runs once, early, and is never re-entered.
+.PHONY: skip-ledger-reset
+skip-ledger-reset:
+	@rm -rf $(CX_SKIP_DIR)
+	@mkdir -p $(CX_SKIP_DIR)
+
 .PHONY: test-vcx-suite
 # On a suite failure the recipe retries EXACTLY the lanes that failed, each
 # under the retry class it belongs to — never a fixed proxy list (#572: the
@@ -1470,8 +1512,7 @@ check-serial-retry-rosters:
 	fi; \
 	echo "check-serial-retry-rosters OK — every retry-roster row names an existing lane"
 
-test-vcx-suite: build-vcx-dev check-serial-retry-rosters
-	@rm -f $(CX_SKIP_LOG)
+test-vcx-suite: build-vcx-dev check-serial-retry-rosters skip-ledger-reset
 	@log=vcx/target/test-suite-run.log; stf=vcx/target/test-suite-status; \
 	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/tests/ 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
@@ -1505,9 +1546,10 @@ test-vcx-suite: build-vcx-dev check-serial-retry-rosters
 	    fi; \
 	  fi; \
 	fi; \
-	if [ -s $(CX_SKIP_LOG) ]; then \
-	  echo "──── $$(wc -l < $(CX_SKIP_LOG) | tr -d ' ') lane(s) SKIPPED with a named reason (absent prerequisite, counted separately — NOT failures) ────"; \
-	  cat $(CX_SKIP_LOG); \
+	skips=$$(cat $(CX_SKIP_DIR)/* 2>/dev/null); \
+	if [ -n "$$skips" ]; then \
+	  echo "──── $$(printf '%s\n' "$$skips" | wc -l | tr -d ' ') lane(s) SKIPPED with a named reason (absent prerequisite, counted separately — NOT failures) ────"; \
+	  printf '%s\n' "$$skips"; \
 	fi; exit $$st
 
 # White-box unit tests that live INSIDE the `code` module (vcx/code/*_test.v) —
@@ -1651,10 +1693,10 @@ else
   COLUMNAR_ARROW_PKGCONFIG :=
 endif
 .PHONY: test-vcx-columnar
-test-vcx-columnar: build-vcx-dev
+test-vcx-columnar: build-vcx-dev skip-ledger-reset
 	@if ! PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" pkg-config --exists arrow parquet 2>/dev/null; then \
 	  line="SKIP test-vcx-columnar: Apache Arrow/Parquet not discoverable via pkg-config (absent prerequisite, #318 — brew install apache-arrow / apt libarrow-dev libparquet-dev)"; \
-	  echo "$$line"; mkdir -p vcx/target; echo "$$line" >> $(CX_SKIP_LOG); \
+	  echo "$$line"; mkdir -p $(CX_SKIP_DIR); echo "$$line" > $(call CX_SKIP_FILE,test-vcx-columnar); \
 	else \
 	  $(MAKE) -C vcx arrow-shim && \
 	  PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test vcx/platform/store_columnar_test.v vcx/platform/store_columnar_lineage_test.v; \
@@ -1673,7 +1715,7 @@ test-vcx-columnar: build-vcx-dev
 # could rot without anything noticing, which is the cost the exclusion was
 # actually buying. The header worry is answered the way #318 answers it for
 # test-vcx-columnar, three targets up: PROBE the prerequisite and SELF-SKIP with
-# a named reason into $(CX_SKIP_LOG) when it is absent (skips are counted
+# a named reason into $(CX_SKIP_DIR) when it is absent (skips are counted
 # separately and printed loudly — never silently, never as failures). A box with
 # sqlite runs the lane; a box without says so out loud.
 #
@@ -1715,10 +1757,10 @@ else
   SQLITE_PKGCONFIG :=
 endif
 .PHONY: test-vcx-sqlite
-test-vcx-sqlite: build-vcx-dev
+test-vcx-sqlite: build-vcx-dev skip-ledger-reset
 	@if ! PKG_CONFIG_PATH="$(SQLITE_PKGCONFIG):$$PKG_CONFIG_PATH" pkg-config --exists sqlite3 2>/dev/null; then \
 	  line="SKIP test-vcx-sqlite: libsqlite3 development headers not discoverable via pkg-config (absent prerequisite, #318 — brew install sqlite / apt libsqlite3-dev)"; \
-	  echo "$$line"; mkdir -p vcx/target; echo "$$line" >> $(CX_SKIP_LOG); \
+	  echo "$$line"; mkdir -p $(CX_SKIP_DIR); echo "$$line" > $(call CX_SKIP_FILE,test-vcx-sqlite); \
 	else \
 	  $(V) -cc cc $(CX_GC) -d cxstore_sqlite -cflags "$(SQLITE_CFLAGS)" -ldflags "$(SQLITE_LDFLAGS)" test vcx/platform/store_sqlite_test.v vcx/platform/store_sqlite_encryption_test.v vcx/platform/store_concurrent_writer_test.v; \
 	fi
