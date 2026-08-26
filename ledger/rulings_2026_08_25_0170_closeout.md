@@ -269,3 +269,15 @@ prose (§4.4 descriptor-release contract, §4.7 accepted-set + per-entry-point
 scoping) lands BATCHED with the 1b/2a amendments in ONE spec pass, so
 §4.3/§4.7 change once. All spec edits under this entry carry RULED: CO-16.
 Sequencing: implementation rides after #1047 (same file) integrates.
+
+### CO-17 (exact division context + §6.5 operand sentence, owner "1a 2a", 2026-08-26)
+
+(1a) #1044: the CORE lane REFUSES BY NAME on any non-terminating exact
+division — $div (and $idiv's family), and the $avg-over-decimals cell CO-14
+reserved (5.00÷3): the refusal names $math:div-decimal as the explicit
+precision+mode context. Terminating quotients return exact decimals via the
+heads' lane (cx_exact_div scale convention). Refuse-loudly beats a hidden
+default context; the co14-017/017a reservation pins FLIP to refusal under this
+ruling. (2a) #1045: code.md §6.5's stale operand sentence ("numerically typed
+(int/float)") is corrected to state the shipped exact-family discipline per
+L44. Both edits carry RULED: CO-17.
