@@ -180,6 +180,14 @@ Filed, not measurable on darwin. Removing it may break upstream's inherent
 generated-helper duplication; needs a linux measurement (gate DUP probe +
 3 lanes) rather than a blind change.
 
+**TAKEN 2026-08-26.** The linux measurement was made in an `ubuntu:22.04`
+container (the `scripts/release_linux.sh` lane's base image and toolchain:
+gcc 11.4, GNU ld 2.38), A/B against the same tree with and without the flag.
+The feared inherent duplication does not exist — the flag was pure masking,
+and `cmd/v` itself builds `-usecache` cold and warm without it. Removed in
+the fork; evidence and the full one-definition table are in the 2026-08-26
+addendum to `ledger/audit_2026_08_24_vcache_key_soundness.md`.
+
 ---
 
 ## POST-CLOSE ADDENDUM (2026-08-25) — N1 was TAKEN, and its bound was over-estimated

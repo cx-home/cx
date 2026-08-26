@@ -59,7 +59,7 @@ A cached module object's identity is `hash(vopts + module_path)` where
 | 19 | **`#include`/`#insert` local C headers** compiled into a layer (for vcx: include/cx.h et al.) | **nowhere** for the module cache (crun hashes them via crun_hash_stmt_dependency_path rebuilding.v:610-633; the module path does not) | **HOLE H7** | **measured RED**: header edit `return 1`→`return 2` → binary still prints 1 |
 | 20 | fail-closed on failed module rebuild | guard rebuilding.v:34-74 — but it computes `stale_o` BEFORE the cc salt exists (`rebuild_modules` runs at parse end, builder.v:393; the salt first appears at validate/cc time) | **DEFECT H4: the #151 guard is vacuous** | **measured** (traced): on a failed rebuild the parent computed bucket `ac/acfc60…` and declared "no cached object under this key — harmless" while the object sat in `87/875299…`; the source hashes were then saved anyway. Net behavior stayed fail-closed (loud panic) only because `validate_usecache_type_tables` → `rebuild_cached_module` re-attempts on demand — a backstop that is load-bearing by accident |
 | 21 | concurrent writers/readers of one cache entry | none: build-module cc writes the `.o` DIRECTLY to its final cache path (cc.v:1297-1327); metadata via plain write_file (vcache.v:172-184); no locks, no tmp+rename | **HOLE H8** | code-cited; matches the -j-storm environment #572 was seen in |
-| 22 | duplicate-symbol resolution | linux + use_cache adds `-Xlinker -z muldefs` (cc.v:1092-1099): first-definition-wins, silently; macOS errors loudly | **HOLE H9** (masking, linux-only) | code-cited; not measurable on this host |
+| 22 | duplicate-symbol resolution | linux + use_cache adds `-Xlinker -z muldefs` (cc.v:1092-1099): first-definition-wins, silently; macOS errors loudly | **HOLE H9** (masking, linux-only) — **CLOSED 2026-08-26**, see below | code-cited here; MEASURED on linux later (#971) |
 | 23 | module cache-key canonicalization | key = module path AS SPELLED (vcache.v:107-150): `vlib/builtin` and its absolute path are two entries | **DEFECT H10**: every cold cache builds builtin (and closure) TWICE; the class already produced a ~9000-duplicate-symbol incident (guard comment rebuilding.v:330-337) | measured (two builtin buckets after one cold build) |
 | 24 | VCACHE location | basepath only, never the key | sound | code-cited |
 | 25 | VFLAGS/CLI | parsed into prefs → covered exactly as far as rows above are | derivative | code-cited |
@@ -122,6 +122,70 @@ reproduced.
 7. **H9 (muldefs)** cannot be validated on this host — FILED as a linux
    follow-up rather than changed blind (removing it may break upstream's
    inherent generated-helper duplication; needs a linux measurement).
+   **Measured and closed 2026-08-26 — see the addendum.**
+
+## ADDENDUM (2026-08-26) — H9 measured on linux and CLOSED (#971)
+
+The linux measurement this audit could not make was made in an
+`ubuntu:22.04` container (gcc 11.4, GNU ld 2.38, arm64), building the fork
+twice from the same bootstrap: once with `cc.v` at the pin `a2898599f3`
+(the flag present) and once with it removed. Full logs:
+`scripts/vcache_soundness_gate.sh` is unaffected; the container transcripts
+are the evidence of record quoted below.
+
+**The suspicion in item 7 was wrong.** There is no inherent
+generated-helper duplication left for the flag to tolerate — the fix series
+above, plus two guards that predate it, give every class of per-object
+generated code exactly one definition:
+
+| class | one-definition mechanism |
+|---|---|
+| a module's own fns/consts/globals | defined in its object, `extern`/header-only in every other (`gen/c/fn.v`, `gen/c/consts_and_globals.v`) |
+| generic instantiations | `static` under `use_cache` (`gen/c/fn.v`) |
+| sumtype casting fns | `static` under `use_cache` (`gen/c/cgen.v`) |
+| `$embed_file` blobs | `static` under `use_cache` (`gen/c/embed.v`) |
+| `#include "x.c"` definition-includes | emitted only in the owning object (`gen/c/cgen.v`) |
+| bundled builtin submodules, #864-invalidated layers | inline in the program TU, object not linked (`builder/rebuilding.v`) |
+| builtin under two path spellings (H10) | `CacheManager.canonical_mod` |
+| mixed-generation layers (H3/H8/H-POISON) | provenance manifest + atomic publication |
+
+**Measured, same tree, same container:**
+
+- flag present → `-Xlinker -z` / `-Xlinker muldefs` on the `-usecache` link
+  line; flag removed → absent. Both builds of the probe (generic + sumtype
+  + closure + module const across a cached layer) link and print the same
+  correct line, cold cache and warm.
+- `-usecache` build of **the V compiler itself** (`cmd/v`, ~60 cache
+  layers), cold and warm, links with rc=0 without the flag and the produced
+  binary runs. Five vlib-heavy examples plus `cmd/tools/vrepl.v` likewise.
+- The flag is therefore not load-bearing: it was masking, exactly as row 22
+  said, and nothing legitimate depended on it.
+- The regression test is **red-proven on the platform that matters**: built
+  by the pre-fix compiler it goes RED on its flag assertion (`-Xlinker
+  muldefs` in the dumped link line); built by the fixed one it goes GREEN.
+  Green on darwin too, where the change is a compile-time no-op (the removed
+  block was inside `$if linux`) — which is exactly why darwin could not
+  measure H9 in the first place.
+
+**What is now loud on linux that was silent:** a non-`static` C function
+definition reaching two objects — i.e. an `#insert`ed or `.h`-included C
+*definition* from a module that also owns a cached object. macOS has always
+rejected that (reproduced on darwin: `ld: 1 duplicate symbols`), so this
+change makes linux agree with macOS rather than introducing a new rule. All
+of vlib's own `#insert` headers respect it (`static`/`static inline`/macros)
+with one darwin-only exception, `vlib/os/notify/kqueue.h` (`__kevent__` is a
+non-static definition) — an upstream V defect that is already loud on the
+only platform it builds on, and unrelated to this change.
+
+**I6 now holds on every platform** — duplicate symbol definitions across
+linked cache layers are never silently resolved. The fork carries it as
+`3ab05d32511954d4cf9a952481c8b250354c72b4` (family `usecache`), on top of
+the `a2898599f3` pin, together with the regression test that keeps it true
+(`vlib/v/builder/usecache_one_definition_test.v` — cold and warm `-usecache`
+builds of a probe covering every per-object-generated construct, plus an
+assertion that the link line asks for no duplicate tolerance). The
+`[patch sha=…]` row and the submodule pin move belong to the same motion and
+are made when that commit is integrated, per the register's own procedure.
 
 Gate: `scripts/vcache_soundness_gate.sh` (devbox, log + GATE-RC, no pipes)
 runs every probe above as an EXPECTED/OBSERVED assertion — green requires
