@@ -1,6 +1,14 @@
 # area: lint_lsp
-vcx/tests/lint_field_read_test.v
-vcx/tests/lint_let_staircase_test.v
-vcx/tests/lsp_for_walk_test.v
-vcx/tests/lsp_parser_parity_test.v
-vcx/tests/lsp_semantic_comment_test.v
+#absorbed vcx/tests/lint_field_read_test.v
+#absorbed vcx/tests/lint_let_staircase_test.v
+#absorbed vcx/tests/lsp_for_walk_test.v
+#absorbed vcx/tests/lsp_parser_parity_test.v
+#absorbed vcx/tests/lsp_semantic_comment_test.v
+# ── The five rows above were folded in by the wave-1 `apply` (6ee4db427).
+# `apply` does not rewrite the manifest — only `absorb` does — so they sat
+# here as live rows naming files that no longer exist, which made every later
+# `absorb lint_lsp` refuse at the missing-file guard. Marked as the history
+# they always were; the umbrella carries them.
+#
+# ── #996, 2026-08-26: the request-level LSP harness.
+vcx/tests/lsp_harness_test.v
