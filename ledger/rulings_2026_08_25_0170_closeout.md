@@ -197,6 +197,22 @@ re-parses to the same typed value) are pinned as deliberate instead. No
 deferral, no partial fix (owner's words). Spec: canonical.md's image table
 gains the per-kind attribute/body forms (RULED: CO-12).
 
+### CO-13 (#1003, delegated disposition, 2026-08-26) — check_capabilities.cx RETIRED
+
+Retire-vs-fix decided against what the script actually covered: its 15-key
+EXPECTED was a second hardcoded copy of the harness's roster (which pins the
+set in BOTH directions with strictly stronger shape assertions); its headline
+claim ("fails when the server and this table disagree") was vacuous — a copy
+of a roster is not a reading of one; nothing invoked it. Its ONE unique
+assertion (list providers answer [] not null) ported to the harness —
+CORRECTED, because the script had been agreeing with a stale README row
+(inlayHint has been live since Phase 4.5; pinning the script's claim would
+have frozen the drift). probe.cx fixed, not retired: a manual exploration
+driver gates nothing by design and is not the vacuous-gate class. The hang's
+mechanism (stdlib process: no safe streaming-child primitive; both shapes
+deadlock at the 64 KiB pipe boundary, bisected exactly) is filed as its own
+prio:high with a named landing.
+
 ## Standing scope notes
 
 - Tag gate for v0.17.0 (owner 1a, first message): #973 ✅(f28c43ff9) ·
