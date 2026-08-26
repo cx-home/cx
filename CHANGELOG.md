@@ -13,7 +13,21 @@ version, library version).
 
 ## [Unreleased]
 
-Nothing yet.
+### Errata — v0.16.0 release notes
+
+- **The removal of `cx store-token` was omitted from the 0.16.0 notes
+  (#968).** The verb was deleted at the stream-4 S3 demolition
+  (`abaea9b9b`, RULED: R4.4-a / G1a / G2a) together with the whole CSRP
+  bearer/RBAC plane, and shipped removed in 0.16.0 — but it appears under
+  neither Changed nor Migration there. Stated now: `cx store-token` is gone
+  from every profile, the `[auth …]` config section is a hard config error,
+  and store credentials are XSP-AUTH principals — an ed25519 DID supplied
+  through the `xsp-did` / `xsp-seed-env` open-opts, authorized by the
+  `[xsp [grants …]]` table (grants present ⇒ deny-by-default). No shipped
+  `cx` verb mints a seed or emits a `[grants …]` stanza, so a
+  deny-by-default deployment provisions its first principal out of band;
+  the successor bootstrap is under design (#969). The approved CLI and
+  store-management-console specs are trued to match.
 
 ## [0.16.0] — 2026-08-20
 
