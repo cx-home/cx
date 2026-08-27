@@ -74,8 +74,9 @@ guide: $(GUIDE_CX_DEP)
 ##                                   Nonzero exit on any failing snippet or any
 ##                                   unparseable section file.
 guide-snippets-check: $(GUIDE_CX_DEP)
-	@CX_BIN="$(GUIDE_CX_BIN)" $(GUIDE_CX_BIN) $(GUIDE_GEN)/snippet_check.cx \
-	  --allow-read --allow-write --allow-subprocess --allow-env
+	@CX_BIN="$(GUIDE_CX_BIN)" $(GUIDE_CX_BIN) \
+	  --allow-read --allow-write --allow-subprocess --allow-env \
+	  $(GUIDE_GEN)/snippet_check.cx
 	@$(GUIDE_GEN)/check_retired_surface.sh
 
 ## check-retired-surface  Companion scan to the snippet gate: rejects
