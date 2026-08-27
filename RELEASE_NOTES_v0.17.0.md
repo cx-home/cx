@@ -7,7 +7,10 @@ The **settlement** release. v0.16.0 stated what CX *is* — four rings with a
 one-directional import contract. This release states what CX **means**: the
 path/value model is now a total, measured, frozen matrix — every operand kind
 × operation cell has ruled semantics and a conformance pin — and a refusal
-can no longer leave a program as silent data. Alongside the semantics, this
+can no longer leave a program as silent data at the effect boundary (the
+sequence-content rule and `CXER0275`; an `[err]` inside a collection remains
+an ordinary value in-process, by the frozen matrix, and program output may
+carry it with exit 0 — the boundary, not the exit status, is the contract). Alongside the semantics, this
 is the first release shaped by real downstream deployment feedback: every
 reported defect was verified, ruled, and repaired, most of them deeper than
 reported.
