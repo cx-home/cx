@@ -1120,7 +1120,7 @@ test-no-parallel: $(TEST_TARGETS)
 # gate drives the tree's own cx binary end to end.
 .PHONY: test-code-diagram
 test-code-diagram: CX_RUNNER ?= $(CURDIR)/vcx/target/cx
-test-code-diagram: build-vcx-dev
+test-code-diagram: build-vcx
 	@"$(CX_RUNNER)" --allow-read --allow-write --allow-env --allow-subprocess scripts/check_code_diagram_fixtures.cx
 
 # ── gate 28.5a — CXPath / XPath 3.1 alignment, CX side (RULED: VC-7, #945) ─
@@ -1132,7 +1132,7 @@ test-code-diagram: build-vcx-dev
 # spec/02-working/cxpath_alignment.md. In TEST_TARGETS.
 .PHONY: test-xpath-parity-cx
 test-xpath-parity-cx: CX_RUNNER ?= $(CURDIR)/vcx/target/cx
-test-xpath-parity-cx: build-vcx-dev
+test-xpath-parity-cx: build-vcx
 	@"$(CX_RUNNER)" --allow-read --allow-write --allow-env --allow-subprocess scripts/check_xpath_parity_fixtures.cx
 
 # ── gate 28.5b — the Saxon-HE cross-check (MANUAL, RULED: VC-7, #945) ─────
