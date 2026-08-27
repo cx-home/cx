@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,7 +143,7 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">a2a-xap</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="x-a2a-xap"><h1>a2a-xap</h1><p class="lede">A2A tasks over the xap substrate (EXPERIMENTAL x/ tier, #6 Y2b). An A2A
@@ -159,73 +159,55 @@
    grant-status) — decentralized, verifiable, and the input to #7's PEP. Together
    (journal + bus + did/vc) this is the distinctive A2A-over-xap positioning.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]><p class="note">Experimental x/ tier — imported as cx-x/a2a-xap. Bundled and gated in-tree like any other module, but EXEMPT from the frozen-surface stability promise (std-lib README, decision D3): a semver-breaking change is allowed here while the surface settles, and the frozen-surface canary never counts it. Pin behaviour you depend on with your own fixtures.</p>
-  <section id="fn-a2a-xap-task-event" class="fn">
-    <h3>a2a-xap:task-event</h3>
-    <p class="fn-sig"><code>[$a2a-xap:task-event]  ($id::string $state::string $address::string '') -> element</code>  —  Shape one A2A task transition [a2a-task id= state= address=?] as a journalable element; address carries the Tier-1 subject (the proposal address for input-required).</p>
-    
-  </section>
-  <section id="fn-a2a-xap-propose-task" class="fn">
-    <h3>a2a-xap:propose-task</h3>
-    <p class="fn-sig"><code>[$a2a-xap:propose-task]  ($jr::element $id::string $proposal::element) -> element</code>  —  Park a task pending approval: journal the input-required transition carrying the proposal's Tier-1 address — the durable, replayable pending-approval record (approval happens out-of-band).</p>
-    
-  </section>
-  <section id="fn-a2a-xap-approval-credential" class="fn">
-    <h3>a2a-xap:approval-credential</h3>
-    <p class="fn-sig"><code>[$a2a-xap:approval-credential]  ($issuer-did::string $issuer-key::bytes $subject-did::string $proposal-address::string $opts::map) -> element</code>  —  Issue a DID-signed credential whose delegation subject IS the proposal address — the same delegation value shape the PEP consumes, so A2A-carried approvals and authz approvals speak one language.</p>
-    
-  </section>
-  <section id="fn-a2a-xap-record" class="fn">
-    <h3>a2a-xap:record</h3>
-    <p class="fn-sig"><code>[$a2a-xap:record]  -> element</code>  —  Append a task transition to the journal, returning the committed hash-chained [entry].</p>
-    
-  </section>
-  <section id="fn-a2a-xap-history" class="fn">
-    <h3>a2a-xap:history</h3>
-    <p class="fn-sig"><code>[$a2a-xap:history]  -> [sequence element]</code>  —  Read the recorded task entries in sequence order (the replayable lifecycle).</p>
-    
-  </section>
-  <section id="fn-a2a-xap-lifecycle" class="fn">
-    <h3>a2a-xap:lifecycle</h3>
-    <p class="fn-sig"><code>[$a2a-xap:lifecycle]  -> [sequence string]</code>  —  Project recorded entries to their ordered state path, e.g. ('submitted', 'working', 'completed').</p>
-    
-  </section>
-  <section id="fn-a2a-xap-message-envelope" class="fn">
-    <h3>a2a-xap:message-envelope</h3>
-    <p class="fn-sig"><code>[$a2a-xap:message-envelope]  -> element</code>  —  Wrap an A2A message as a topic-carrying bus message on the :a2a-message topic.</p>
-    
-  </section>
-  <section id="fn-a2a-xap-publish-message" class="fn">
-    <h3>a2a-xap:publish-message</h3>
-    <p class="fn-sig"><code>[$a2a-xap:publish-message]  -> element</code>  —  Emit an A2A message to the bus; the delivery report's @delivered count is the subscriber fan-out.</p>
-    
-  </section>
-  <section id="fn-a2a-xap-agent-did" class="fn">
-    <h3>a2a-xap:agent-did</h3>
-    <p class="fn-sig"><code>[$a2a-xap:agent-did]  -> string</code>  —  Derive the DID identifying an agent from its Ed25519 public key.</p>
-    
-  </section>
-  <section id="fn-a2a-xap-grant-credential" class="fn">
-    <h3>a2a-xap:grant-credential</h3>
-    <p class="fn-sig"><code>[$a2a-xap:grant-credential]  -> element</code>  —  Issue a DID-signed capability delegation (a Verifiable Credential) from an issuer agent to a subject agent.</p>
-    
-  </section>
-  <section id="fn-a2a-xap-grant-status" class="fn">
-    <h3>a2a-xap:grant-status</h3>
-    <p class="fn-sig"><code>[$a2a-xap:grant-status]  -> string</code>  —  Verify a grant credential at a given time, returning its status ('valid'/'expired'/'revoked'/…) — the PEP authz gate.</p>
-    
-  </section>
-</section>
+           the page, not by their own inattention. ]]><p class="note">Experimental x/ tier — imported as cx-x/a2a-xap. Bundled and gated in-tree like any other module, but EXEMPT from the frozen-surface stability promise (std-lib README, decision D3): a semver-breaking change is allowed here while the surface settles, and the frozen-surface canary never counts it. Pin behaviour you depend on with your own fixtures.</p><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-a2a-xap-task-event" class="fn">
+  <h3>a2a-xap:task-event</h3>
+  <p class="fn-sig"><code>[$a2a-xap:task-event]  ($id::string $state::string $address::string '') -> element</code>  —  Shape one A2A task transition [a2a-task id= state= address=?] as a journalable element; address carries the Tier-1 subject (the proposal address for input-required).</p>
+</section><section id="fn-a2a-xap-propose-task" class="fn">
+  <h3>a2a-xap:propose-task</h3>
+  <p class="fn-sig"><code>[$a2a-xap:propose-task]  ($jr::element $id::string $proposal::element) -> element</code>  —  Park a task pending approval: journal the input-required transition carrying the proposal's Tier-1 address — the durable, replayable pending-approval record (approval happens out-of-band).</p>
+</section><section id="fn-a2a-xap-approval-credential" class="fn">
+  <h3>a2a-xap:approval-credential</h3>
+  <p class="fn-sig"><code>[$a2a-xap:approval-credential]  ($issuer-did::string $issuer-key::bytes $subject-did::string $proposal-address::string $opts::map) -> element</code>  —  Issue a DID-signed credential whose delegation subject IS the proposal address — the same delegation value shape the PEP consumes, so A2A-carried approvals and authz approvals speak one language.</p>
+</section><section id="fn-a2a-xap-record" class="fn">
+  <h3>a2a-xap:record</h3>
+  <p class="fn-sig"><code>[$a2a-xap:record]  -> element</code>  —  Append a task transition to the journal, returning the committed hash-chained [entry].</p>
+</section><section id="fn-a2a-xap-history" class="fn">
+  <h3>a2a-xap:history</h3>
+  <p class="fn-sig"><code>[$a2a-xap:history]  -> [sequence element]</code>  —  Read the recorded task entries in sequence order (the replayable lifecycle).</p>
+</section><section id="fn-a2a-xap-lifecycle" class="fn">
+  <h3>a2a-xap:lifecycle</h3>
+  <p class="fn-sig"><code>[$a2a-xap:lifecycle]  -> [sequence string]</code>  —  Project recorded entries to their ordered state path, e.g. ('submitted', 'working', 'completed').</p>
+</section><section id="fn-a2a-xap-message-envelope" class="fn">
+  <h3>a2a-xap:message-envelope</h3>
+  <p class="fn-sig"><code>[$a2a-xap:message-envelope]  -> element</code>  —  Wrap an A2A message as a topic-carrying bus message on the :a2a-message topic.</p>
+</section><section id="fn-a2a-xap-publish-message" class="fn">
+  <h3>a2a-xap:publish-message</h3>
+  <p class="fn-sig"><code>[$a2a-xap:publish-message]  -> element</code>  —  Emit an A2A message to the bus; the delivery report's @delivered count is the subscriber fan-out.</p>
+</section><section id="fn-a2a-xap-agent-did" class="fn">
+  <h3>a2a-xap:agent-did</h3>
+  <p class="fn-sig"><code>[$a2a-xap:agent-did]  -> string</code>  —  Derive the DID identifying an agent from its Ed25519 public key.</p>
+</section><section id="fn-a2a-xap-grant-credential" class="fn">
+  <h3>a2a-xap:grant-credential</h3>
+  <p class="fn-sig"><code>[$a2a-xap:grant-credential]  -> element</code>  —  Issue a DID-signed capability delegation (a Verifiable Credential) from an issuer agent to a subject agent.</p>
+</section><section id="fn-a2a-xap-grant-status" class="fn">
+  <h3>a2a-xap:grant-status</h3>
+  <p class="fn-sig"><code>[$a2a-xap:grant-status]  -> string</code>  —  Verify a grant credential at a given time, returning its status ('valid'/'expired'/'revoked'/…) — the PEP authz gate.</p>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>a2a-xap</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

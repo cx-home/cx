@@ -240,7 +240,24 @@ pub fn check_lossless(mode string) {
 // ("unknown source/target format: …") rather than silently folding to cx.
 pub fn convert_and_print(input string, from_fmt string, mode string, compact bool, lossless bool) {
 	out := if mode == 'ast' {
-		cx.to_ast(input) or { eprintln('error: ${err}'); exit(1) }
+		cx.to_ast(input) or {
+			eprintln('error: ${err}')
+			// #1019: the three-way E211 / evaluator split is WORKS AS
+			// SPECIFIED — `[m x=[$call]]` is a legal PROGRAM form and an
+			// illegal DATA attribute (code.md §6.4.1 VALUE-must-reduce-to-
+			// scalar at eval; lexicon §10 D2 refuses node-valued attrs at
+			// parse; code.md §1.3 DATA ⊆ PROGRAM). `--ast` is the data
+			// reading, so it is RIGHT to refuse. What was missing is the
+			// orientation: a program-shaped resource on the DATA projection
+			// looks like the lane disagreeing with itself. One extra line
+			// names the lane. Message-only — the verdict and exit code are
+			// unchanged.
+			if err.msg().contains('cx-err:E211')
+				&& cx.source_carries_program_directive(input.bytes()) {
+				eprintln('this resource is program-shaped; --ast is the DATA projection (cli.md §2.2)')
+			}
+			exit(1)
+		}
 	} else if mode == 'cx' && compact {
 		cx.to_cx_compact(input) or { eprintln('error: ${err}'); exit(1) }
 	} else if mode == 'csv' {

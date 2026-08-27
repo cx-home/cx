@@ -61,7 +61,7 @@ Cover the full subcommand list from the `vcx/cmd/main.v` dispatch table
 (`fmt`, `canonical`, `hash`, `eq`, `diff`, `lint`, `validate`, `table`,
 `demo`, `scaffold`, `eval`, `diagram`, `code-diagram`, `code-tree`,
 `lock`, `store-serve`, `store-health`,
-`store-rotate-kek`, `lsp`), per-subcommand flags (including the
+`store-rotate-kek`, `store-mint-principal`, `lsp`), per-subcommand flags (including the
 `--allow-*` capability grants), the top-level conversion flags, and
 file-extension completion for `.cx` / `.cxd` / `.cxs` plus the
 convertible foreign formats (`.xml` / `.json` / `.yaml` / `.toml` /

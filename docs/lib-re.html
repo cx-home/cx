@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,338 +143,279 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">re</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-re"><h1>re</h1><p class="lede">Regular expressions backed by the RE2 engine, guaranteeing linear-time matching against any input with no catastrophic backtracking. The cost is that some PCRE features are unavailable — notably backreferences and lookbehind. Provides pattern compilation; match, find, find-all, and lazy find-iter; literal and function-based replace; split; named and numbered capture groups; and pattern inspection.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-re-compile" class="fn">
-    <h3>re:compile</h3>
-    <p class="fn-sig"><code>[$re:compile]  -> element</code>  —  Compile a pattern string into an opaque reusable regex value using default flags.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/re']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-re-compile" class="fn">
+  <h3>re:compile</h3>
+  <p class="fn-sig"><code>[$re:compile]  -> element</code>  —  Compile a pattern string into an opaque reusable regex value using default flags.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/re']
 [$re:pattern-text [$re:compile "a.b"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'a.b'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-re-compile-with-flags" class="fn">
-    <h3>re:compile-with-flags</h3>
-    <p class="fn-sig"><code>[$re:compile-with-flags]  -> element</code>  —  Compile a pattern with a flags map (case-insensitive, multiline, dotall, unicode, literal, match-byte limit).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/re']
+    </pre>
+    <pre class="sample-output">
+      <code>'a.b'</code>
+    </pre>
+  </div>
+</section><section id="fn-re-compile-with-flags" class="fn">
+  <h3>re:compile-with-flags</h3>
+  <p class="fn-sig"><code>[$re:compile-with-flags]  -> element</code>  —  Compile a pattern with a flags map (case-insensitive, multiline, dotall, unicode, literal, match-byte limit).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/re']
 [$re:matches [$re:compile-with-flags "abc" {"case-insensitive": true}] "ABC"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-re-matches" class="fn">
-    <h3>re:matches</h3>
-    <p class="fn-sig"><code>[$re:matches]  -> bool</code>  —  Report whether the pattern matches the entire string.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/re']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-re-matches" class="fn">
+  <h3>re:matches</h3>
+  <p class="fn-sig"><code>[$re:matches]  -> bool</code>  —  Report whether the pattern matches the entire string.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/re']
 [$re:matches [$re:compile "a+"] "aaa"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-re-find" class="fn">
-    <h3>re:find</h3>
-    <p class="fn-sig"><code>[$re:find]  -> element</code>  —  Find the first match, returning a match element with start, end, text, and groups — or [no-match].</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/re']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-re-find" class="fn">
+  <h3>re:find</h3>
+  <p class="fn-sig"><code>[$re:find]  -> element</code>  —  Find the first match, returning a match element with start, end, text, and groups — or [no-match].</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/re']
 [$re:group [$re:find [$re:compile "[0-9]+"] "abc123def"] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'123'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-re-find-from" class="fn">
-    <h3>re:find-from</h3>
-    <p class="fn-sig"><code>[$re:find-from]  -> element</code>  —  Find the first match at or after the given byte position.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/re']
+    </pre>
+    <pre class="sample-output">
+      <code>'123'</code>
+    </pre>
+  </div>
+</section><section id="fn-re-find-from" class="fn">
+  <h3>re:find-from</h3>
+  <p class="fn-sig"><code>[$re:find-from]  -> element</code>  —  Find the first match at or after the given byte position.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/re']
 [$re:group [$re:find-from [$re:compile "ab"] "abab" 2] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'ab'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-re-find-all" class="fn">
-    <h3>re:find-all</h3>
-    <p class="fn-sig"><code>[$re:find-all]  -> [sequence element]</code>  —  Find all non-overlapping matches as a materialized sequence of match elements.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/re']
+    </pre>
+    <pre class="sample-output">
+      <code>'ab'</code>
+    </pre>
+  </div>
+</section><section id="fn-re-find-all" class="fn">
+  <h3>re:find-all</h3>
+  <p class="fn-sig"><code>[$re:find-all]  -> [sequence element]</code>  —  Find all non-overlapping matches as a materialized sequence of match elements.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/re']
 [$count [$re:find-all [$re:compile "ab"] "abXabYab"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>3</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-re-find-iter" class="fn">
-    <h3>re:find-iter</h3>
-    <p class="fn-sig"><code>[$re:find-iter]  -> [iterator element]</code>  —  Lazily iterate over non-overlapping matches, yielding each match element on demand.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/re']
+    </pre>
+    <pre class="sample-output">
+      <code>3</code>
+    </pre>
+  </div>
+</section><section id="fn-re-find-iter" class="fn">
+  <h3>re:find-iter</h3>
+  <p class="fn-sig"><code>[$re:find-iter]  -> [iterator element]</code>  —  Lazily iterate over non-overlapping matches, yielding each match element on demand.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/re']
 [$count [$re:find-iter [$re:compile "ab"] "abXabYab"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>3</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-re-group" class="fn">
-    <h3>re:group</h3>
-    <p class="fn-sig"><code>[$re:group]  -> string</code>  —  Return the text of numbered capture group i in a match, where 0 is the full match.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/re']
+    </pre>
+    <pre class="sample-output">
+      <code>3</code>
+    </pre>
+  </div>
+</section><section id="fn-re-group" class="fn">
+  <h3>re:group</h3>
+  <p class="fn-sig"><code>[$re:group]  -> string</code>  —  Return the text of numbered capture group i in a match, where 0 is the full match.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/re']
 [$re:group [$re:find [$re:compile "[0-9]+"] "abc123def"] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'123'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-re-group-named" class="fn">
-    <h3>re:group-named</h3>
-    <p class="fn-sig"><code>[$re:group-named]  -> string</code>  —  Return the text of a named capture group in a match.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/re']
+    </pre>
+    <pre class="sample-output">
+      <code>'123'</code>
+    </pre>
+  </div>
+</section><section id="fn-re-group-named" class="fn">
+  <h3>re:group-named</h3>
+  <p class="fn-sig"><code>[$re:group-named]  -> string</code>  —  Return the text of a named capture group in a match.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/re']
 [$re:group-named [$re:find [$re:compile "(?P<year>[0-9]{4})"] "y2026"] "year"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'2026'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-re-groups-all" class="fn">
-    <h3>re:groups-all</h3>
-    <p class="fn-sig"><code>[$re:groups-all]  -> [sequence string]</code>  —  Return all capture groups of a match as a sequence, starting with the full match.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/re']
+    </pre>
+    <pre class="sample-output">
+      <code>'2026'</code>
+    </pre>
+  </div>
+</section><section id="fn-re-groups-all" class="fn">
+  <h3>re:groups-all</h3>
+  <p class="fn-sig"><code>[$re:groups-all]  -> [sequence string]</code>  —  Return all capture groups of a match as a sequence, starting with the full match.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/re']
 [$re:groups-all [$re:find [$re:compile "(a+)(b+)"] "aabbb"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(aabbb, aa, bbb)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-re-groups-map" class="fn">
-    <h3>re:groups-map</h3>
-    <p class="fn-sig"><code>[$re:groups-map]  -> map</code>  —  Return the named capture groups of a match as a name-to-text map.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/re']
+    </pre>
+    <pre class="sample-output">
+      <code>(aabbb, aa, bbb)</code>
+    </pre>
+  </div>
+</section><section id="fn-re-groups-map" class="fn">
+  <h3>re:groups-map</h3>
+  <p class="fn-sig"><code>[$re:groups-map]  -> map</code>  —  Return the named capture groups of a match as a name-to-text map.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/re']
 [$map-get [$re:groups-map [$re:find [$re:compile "(?P<year>[0-9]{4})"] "y2026"]] "year"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'2026'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-re-replace" class="fn">
-    <h3>re:replace</h3>
-    <p class="fn-sig"><code>[$re:replace]  -> string</code>  —  Replace all matches using a template string with $0, $1, ${name}, and $$ substitutions.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/re']
+    </pre>
+    <pre class="sample-output">
+      <code>'2026'</code>
+    </pre>
+  </div>
+</section><section id="fn-re-replace" class="fn">
+  <h3>re:replace</h3>
+  <p class="fn-sig"><code>[$re:replace]  -> string</code>  —  Replace all matches using a template string with $0, $1, ${name}, and $$ substitutions.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/re']
 [$re:replace [$re:compile "[0-9]+"] "a1b22c333" "<$0>"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'a<1>b<22>c<333>'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-re-replace-first" class="fn">
-    <h3>re:replace-first</h3>
-    <p class="fn-sig"><code>[$re:replace-first]  -> string</code>  —  Replace only the first match using a template string.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/re']
+    </pre>
+    <pre class="sample-output">
+      <code>'a<1>b<22>c<333>'</code>
+    </pre>
+  </div>
+</section><section id="fn-re-replace-first" class="fn">
+  <h3>re:replace-first</h3>
+  <p class="fn-sig"><code>[$re:replace-first]  -> string</code>  —  Replace only the first match using a template string.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/re']
 [$re:replace-first [$re:compile "[0-9]+"] "a1b2c3" "<$0>"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'a<1>b2c3'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-re-replace-fn" class="fn">
-    <h3>re:replace-fn</h3>
-    <p class="fn-sig"><code>[$re:replace-fn]  -> string</code>  —  Replace each match with the result of a callable invoked on that match element.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/re']
+    </pre>
+    <pre class="sample-output">
+      <code>'a<1>b2c3'</code>
+    </pre>
+  </div>
+</section><section id="fn-re-replace-fn" class="fn">
+  <h3>re:replace-fn</h3>
+  <p class="fn-sig"><code>[$re:replace-fn]  -> string</code>  —  Replace each match with the result of a callable invoked on that match element.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/re']
 [$re:replace-fn [$re:compile "[0-9]+"] "a1b22c" [?fn ($m) [$re:group $m 0]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'a1b22c'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-re-split" class="fn">
-    <h3>re:split</h3>
-    <p class="fn-sig"><code>[$re:split]  -> [sequence string]</code>  —  Split a string into segments around every match of the pattern.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/re']
+    </pre>
+    <pre class="sample-output">
+      <code>'a1b22c'</code>
+    </pre>
+  </div>
+</section><section id="fn-re-split" class="fn">
+  <h3>re:split</h3>
+  <p class="fn-sig"><code>[$re:split]  -> [sequence string]</code>  —  Split a string into segments around every match of the pattern.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/re']
 [$re:split [$re:compile ","] "a,b,c"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(a, b, c)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-re-split-limit" class="fn">
-    <h3>re:split-limit</h3>
-    <p class="fn-sig"><code>[$re:split-limit]  -> [sequence string]</code>  —  Split a string on the pattern into at most max+1 segments.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/re']
+    </pre>
+    <pre class="sample-output">
+      <code>(a, b, c)</code>
+    </pre>
+  </div>
+</section><section id="fn-re-split-limit" class="fn">
+  <h3>re:split-limit</h3>
+  <p class="fn-sig"><code>[$re:split-limit]  -> [sequence string]</code>  —  Split a string on the pattern into at most max+1 segments.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/re']
 [$re:split-limit [$re:compile ","] "a,b,c,d" 1]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(a, 'b,c,d')</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-re-group-count" class="fn">
-    <h3>re:group-count</h3>
-    <p class="fn-sig"><code>[$re:group-count]  -> int</code>  —  Return the number of capture groups in a compiled pattern.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/re']
+    </pre>
+    <pre class="sample-output">
+      <code>(a, 'b,c,d')</code>
+    </pre>
+  </div>
+</section><section id="fn-re-group-count" class="fn">
+  <h3>re:group-count</h3>
+  <p class="fn-sig"><code>[$re:group-count]  -> int</code>  —  Return the number of capture groups in a compiled pattern.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/re']
 [$re:group-count [$re:compile "(a)(b)"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-re-group-names" class="fn">
-    <h3>re:group-names</h3>
-    <p class="fn-sig"><code>[$re:group-names]  -> [sequence string]</code>  —  Return the names of the named capture groups in a compiled pattern.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/re']
+    </pre>
+    <pre class="sample-output">
+      <code>2</code>
+    </pre>
+  </div>
+</section><section id="fn-re-group-names" class="fn">
+  <h3>re:group-names</h3>
+  <p class="fn-sig"><code>[$re:group-names]  -> [sequence string]</code>  —  Return the names of the named capture groups in a compiled pattern.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/re']
 [$re:group-names [$re:compile "(?P<year>[0-9]{4})-(?P<month>[0-9]{2})"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(year, month)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-re-pattern-text" class="fn">
-    <h3>re:pattern-text</h3>
-    <p class="fn-sig"><code>[$re:pattern-text]  -> string</code>  —  Return the original source pattern string of a compiled regex.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/re']
+    </pre>
+    <pre class="sample-output">
+      <code>(year, month)</code>
+    </pre>
+  </div>
+</section><section id="fn-re-pattern-text" class="fn">
+  <h3>re:pattern-text</h3>
+  <p class="fn-sig"><code>[$re:pattern-text]  -> string</code>  —  Return the original source pattern string of a compiled regex.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/re']
 [$re:pattern-text [$re:compile "a.b"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'a.b'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-re-pattern-flags" class="fn">
-    <h3>re:pattern-flags</h3>
-    <p class="fn-sig"><code>[$re:pattern-flags]  -> map</code>  —  Return the resolved compilation flags of a compiled regex as a map.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/re']
+    </pre>
+    <pre class="sample-output">
+      <code>'a.b'</code>
+    </pre>
+  </div>
+</section><section id="fn-re-pattern-flags" class="fn">
+  <h3>re:pattern-flags</h3>
+  <p class="fn-sig"><code>[$re:pattern-flags]  -> map</code>  —  Return the resolved compilation flags of a compiled regex as a map.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/re']
 [$map-get [$re:pattern-flags [$re:compile-with-flags "abc" {"case-insensitive": true}]] "case-insensitive"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-re-escape" class="fn">
-    <h3>re:escape</h3>
-    <p class="fn-sig"><code>[$re:escape]  -> string</code>  —  Escape regex metacharacters in a string (RE2 QuoteMeta) so it matches as a verbatim literal.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/re']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-re-escape" class="fn">
+  <h3>re:escape</h3>
+  <p class="fn-sig"><code>[$re:escape]  -> string</code>  —  Escape regex metacharacters in a string (RE2 QuoteMeta) so it matches as a verbatim literal.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/re']
 [$re:matches [$re:compile [$re:escape "a.b*c"]] "a.b*c"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>re</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

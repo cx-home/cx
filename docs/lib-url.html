@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,218 +143,183 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">url</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-url"><h1>url</h1><p class="lede">RFC 3986 and WHATWG-URL-aligned URL parsing, building, and component encoding. Split URLs into named components, reconstruct them, percent-encode and decode arbitrary byte sequences, and parse or serialize query strings. The parse-then-build round-trip is canonical rather than byte-identical: it strips default ports, lowercases scheme and host, and normalizes percent-encoding. Transport is out of scope — this module produces URL strings and parsed components, not network requests.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-url-parse" class="fn">
-    <h3>url:parse</h3>
-    <p class="fn-sig"><code>[$url:parse]  -> element</code>  —  Parse a URL string into its components, strict per RFC 3986 generic syntax.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/url']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-url-parse" class="fn">
+  <h3>url:parse</h3>
+  <p class="fn-sig"><code>[$url:parse]  -> element</code>  —  Parse a URL string into its components, strict per RFC 3986 generic syntax.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/url']
 [$url:parse "https://example.com/path?q=1"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[url [scheme 'https'] [host 'example.com'] [path '/path'] [query 'q=1']]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-url-parse-lenient" class="fn">
-    <h3>url:parse-lenient</h3>
-    <p class="fn-sig"><code>[$url:parse-lenient]  -> element</code>  —  Parse a URL with best-effort recovery for messy real-world input.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/url']
+    </pre>
+    <pre class="sample-output">
+      <code>[url [scheme 'https'] [host 'example.com'] [path '/path'] [query 'q=1']]</code>
+    </pre>
+  </div>
+</section><section id="fn-url-parse-lenient" class="fn">
+  <h3>url:parse-lenient</h3>
+  <p class="fn-sig"><code>[$url:parse-lenient]  -> element</code>  —  Parse a URL with best-effort recovery for messy real-world input.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/url']
 [$url:build [$url:parse-lenient "https://example.com\\path"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'https://example.com/path'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-url-parse-whatwg" class="fn">
-    <h3>url:parse-whatwg</h3>
-    <p class="fn-sig"><code>[$url:parse-whatwg]  -> element</code>  —  Parse a URL using the WHATWG model for browser-exact web-URL behavior.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/url']
+    </pre>
+    <pre class="sample-output">
+      <code>'https://example.com/path'</code>
+    </pre>
+  </div>
+</section><section id="fn-url-parse-whatwg" class="fn">
+  <h3>url:parse-whatwg</h3>
+  <p class="fn-sig"><code>[$url:parse-whatwg]  -> element</code>  —  Parse a URL using the WHATWG model for browser-exact web-URL behavior.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/url']
 [$url:build [$url:parse-whatwg "https://example.com\\path"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'https://example.com/path'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-url-parse-with-opts" class="fn">
-    <h3>url:parse-with-opts</h3>
-    <p class="fn-sig"><code>[$url:parse-with-opts]  -> element</code>  —  Parse a URL with explicit options for parsing model and default scheme.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/url']
+    </pre>
+    <pre class="sample-output">
+      <code>'https://example.com/path'</code>
+    </pre>
+  </div>
+</section><section id="fn-url-parse-with-opts" class="fn">
+  <h3>url:parse-with-opts</h3>
+  <p class="fn-sig"><code>[$url:parse-with-opts]  -> element</code>  —  Parse a URL with explicit options for parsing model and default scheme.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/url']
 [$url:build [$url:parse-with-opts "example.com/path" {"default-scheme": "https"}]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'https://example.com/path'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-url-build" class="fn">
-    <h3>url:build</h3>
-    <p class="fn-sig"><code>[$url:build]  -> string</code>  —  Assemble a URL string from components, auto-encoding raw values and canonicalizing.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/url']
+    </pre>
+    <pre class="sample-output">
+      <code>'https://example.com/path'</code>
+    </pre>
+  </div>
+</section><section id="fn-url-build" class="fn">
+  <h3>url:build</h3>
+  <p class="fn-sig"><code>[$url:build]  -> string</code>  —  Assemble a URL string from components, auto-encoding raw values and canonicalizing.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/url']
 [$url:build [$url:parse-lenient "https://example.com\\path"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'https://example.com/path'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-url-build-raw" class="fn">
-    <h3>url:build-raw</h3>
-    <p class="fn-sig"><code>[$url:build-raw]  -> string</code>  —  Assemble a URL string from pre-encoded components without re-encoding their content.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/url']
+    </pre>
+    <pre class="sample-output">
+      <code>'https://example.com/path'</code>
+    </pre>
+  </div>
+</section><section id="fn-url-build-raw" class="fn">
+  <h3>url:build-raw</h3>
+  <p class="fn-sig"><code>[$url:build-raw]  -> string</code>  —  Assemble a URL string from pre-encoded components without re-encoding their content.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/url']
 [$url:build-raw [url [scheme "https"] [host "api.example.com"] [path "/users/a%2Fb%20c/profile"]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'https://api.example.com/users/a%2Fb%20c/profile'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-url-normalize" class="fn">
-    <h3>url:normalize</h3>
-    <p class="fn-sig"><code>[$url:normalize]  -> string</code>  —  Return the canonical form of a URL string — equivalent to parse then build.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/url']
+    </pre>
+    <pre class="sample-output">
+      <code>'https://api.example.com/users/a%2Fb%20c/profile'</code>
+    </pre>
+  </div>
+</section><section id="fn-url-normalize" class="fn">
+  <h3>url:normalize</h3>
+  <p class="fn-sig"><code>[$url:normalize]  -> string</code>  —  Return the canonical form of a URL string — equivalent to parse then build.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/url']
 [$url:normalize "HTTPS://EXAMPLE.com:443/%2f"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'https://example.com/%2F'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-url-encode" class="fn">
-    <h3>url:encode</h3>
-    <p class="fn-sig"><code>[$url:encode]  -> string</code>  —  Percent-encode a string with the generic set, leaving unreserved characters alone.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/url']
+    </pre>
+    <pre class="sample-output">
+      <code>'https://example.com/%2F'</code>
+    </pre>
+  </div>
+</section><section id="fn-url-encode" class="fn">
+  <h3>url:encode</h3>
+  <p class="fn-sig"><code>[$url:encode]  -> string</code>  —  Percent-encode a string with the generic set, leaving unreserved characters alone.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/url']
 [$url:encode "a b/c"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'a%20b%2Fc'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-url-decode" class="fn">
-    <h3>url:decode</h3>
-    <p class="fn-sig"><code>[$url:decode]  -> string</code>  —  Percent-decode a string and return UTF-8, raising on malformed sequences.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/url']
+    </pre>
+    <pre class="sample-output">
+      <code>'a%20b%2Fc'</code>
+    </pre>
+  </div>
+</section><section id="fn-url-decode" class="fn">
+  <h3>url:decode</h3>
+  <p class="fn-sig"><code>[$url:decode]  -> string</code>  —  Percent-decode a string and return UTF-8, raising on malformed sequences.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/url']
 [$url:decode "a%20b%2Fc"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'a b/c'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-url-query-parse" class="fn">
-    <h3>url:query-parse</h3>
-    <p class="fn-sig"><code>[$url:query-parse]  -> map</code>  —  Parse a query string into a map, with repeated keys collected into a sequence.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/url']
+    </pre>
+    <pre class="sample-output">
+      <code>'a b/c'</code>
+    </pre>
+  </div>
+</section><section id="fn-url-query-parse" class="fn">
+  <h3>url:query-parse</h3>
+  <p class="fn-sig"><code>[$url:query-parse]  -> map</code>  —  Parse a query string into a map, with repeated keys collected into a sequence.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/url']
 [$url:query-parse "a=1&b=2&a=3"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>{a: ('1', '3'), b: '2'}</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-url-query-encode" class="fn">
-    <h3>url:query-encode</h3>
-    <p class="fn-sig"><code>[$url:query-encode]  -> string</code>  —  Serialize a map into a query string, with sequence values producing repeated keys.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/url']
+    </pre>
+    <pre class="sample-output">
+      <code>{a: ('1', '3'), b: '2'}</code>
+    </pre>
+  </div>
+</section><section id="fn-url-query-encode" class="fn">
+  <h3>url:query-encode</h3>
+  <p class="fn-sig"><code>[$url:query-encode]  -> string</code>  —  Serialize a map into a query string, with sequence values producing repeated keys.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/url']
 [$url:query-encode [$url:query-parse "a=1&b=2&a=3"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'a=1&a=3&b=2'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-url-join" class="fn">
-    <h3>url:join</h3>
-    <p class="fn-sig"><code>[$url:join]  -> string</code>  —  Resolve a reference relative to a base URL per RFC 3986.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/url']
+    </pre>
+    <pre class="sample-output">
+      <code>'a=1&a=3&b=2'</code>
+    </pre>
+  </div>
+</section><section id="fn-url-join" class="fn">
+  <h3>url:join</h3>
+  <p class="fn-sig"><code>[$url:join]  -> string</code>  —  Resolve a reference relative to a base URL per RFC 3986.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/url']
 [$url:join "http://a/b/c/d;p?q" "g"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'http://a/b/c/g'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-url-is-absolute" class="fn">
-    <h3>url:is-absolute</h3>
-    <p class="fn-sig"><code>[$url:is-absolute]  -> bool</code>  —  Report whether a URL is absolute — true iff it has a scheme component.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/url']
+    </pre>
+    <pre class="sample-output">
+      <code>'http://a/b/c/g'</code>
+    </pre>
+  </div>
+</section><section id="fn-url-is-absolute" class="fn">
+  <h3>url:is-absolute</h3>
+  <p class="fn-sig"><code>[$url:is-absolute]  -> bool</code>  —  Report whether a URL is absolute — true iff it has a scheme component.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/url']
 [$url:is-absolute "https://example.com/x"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>url</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

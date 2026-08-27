@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,59 +143,56 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">sched</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-sched"><h1>sched</h1><p class="lede">Scheduled events and timers on the event loop. Arm a timer that fires a callback or posts a tick to a channel — after a relative duration, at an absolute tz-aware instant, on a recurring cadence (fixed-delay or fixed-rate), against a recurrence rule, or on a cron schedule — then cancel it or observe its state. Timers can be made durable so they survive a process restart (persisted to a journal and re-armed via restore), apply a catch-up policy for occurrences missed while down, and run under a manual test clock that advances virtual time deterministically. It composes time, journal, and the shared event loop, adding no calendar grammar, persistence mechanism, or new capability of its own.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-sched-after" class="fn">
-    <h3>sched:after</h3>
-    <p class="fn-sig"><code>[$sched:after]  -> element</code>  —  Fire an event once after a relative duration; returns a cancelable timer handle.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/sched']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-sched-after" class="fn">
+  <h3>sched:after</h3>
+  <p class="fn-sig"><code>[$sched:after]  -> element</code>  —  Fire an event once after a relative duration; returns a cancelable timer handle.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/sched']
 [?lib 'cx-stdlib/time']
 [?let [= $ch [?channel name="ticks" buffer=4]]
 [= $t [$sched:after [$time:duration-m 10] $ch]]
 [= $s0 [$sched:timer-state $t]]
 [= $_ [$sched:test-clock-advance [$time:duration-m 10]]]
 [seq $s0 [$sched:timer-state $t] [?receive from=$ch]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[seq 'armed' 'fired' [tick timer=timer-1]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-sched-at" class="fn">
-    <h3>sched:at</h3>
-    <p class="fn-sig"><code>[$sched:at]  -> element</code>  —  Fire an event once at an absolute tz-aware instant; a past instant fires on the next loop turn.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/sched']
+    </pre>
+    <pre class="sample-output">
+      <code>[seq 'armed' 'fired' [tick timer=timer-1]]</code>
+    </pre>
+  </div>
+</section><section id="fn-sched-at" class="fn">
+  <h3>sched:at</h3>
+  <p class="fn-sig"><code>[$sched:at]  -> element</code>  —  Fire an event once at an absolute tz-aware instant; a past instant fires on the next loop turn.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/sched']
 [?lib 'cx-stdlib/time']
 [?let [= $ch [?channel name="t" buffer=4]]
 [= $t [$sched:at [$time:datetime 1970 1 1 0 10 0] $ch]]
 [= $s0 [$sched:timer-state $t]]
 [= $_ [$sched:test-clock-advance [$time:duration-m 10]]]
 [seq $s0 [$sched:timer-state $t] [?receive from=$ch]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[seq 'armed' 'fired' [tick timer=timer-1]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-sched-every" class="fn">
-    <h3>sched:every</h3>
-    <p class="fn-sig"><code>[$sched:every]  -> element</code>  —  Fire repeatedly on a recurring cadence (fixed-delay or fixed-rate) until canceled.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/sched']
+    </pre>
+    <pre class="sample-output">
+      <code>[seq 'armed' 'fired' [tick timer=timer-1]]</code>
+    </pre>
+  </div>
+</section><section id="fn-sched-every" class="fn">
+  <h3>sched:every</h3>
+  <p class="fn-sig"><code>[$sched:every]  -> element</code>  —  Fire repeatedly on a recurring cadence (fixed-delay or fixed-rate) until canceled.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/sched']
 [?lib 'cx-stdlib/time']
 [?let [= $ch [?channel name="t" buffer=16]]
 [= $t [$sched:every [$time:duration-m 1] $ch]]
@@ -206,20 +203,17 @@
 [= $d [?receive from=$ch]]
 [= $e [?receive from=$ch]]
 [seq [$sched:timer-state $t] $a $b $c $d $e]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[seq 'armed' [tick timer=timer-1] [tick timer=timer-1] [tick timer=timer-1] [tick timer=timer-1] [tick timer=timer-1]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-sched-recur" class="fn">
-    <h3>sched:recur</h3>
-    <p class="fn-sig"><code>[$sched:recur]  -> element</code>  —  Fire on each occurrence of a time recurrence rule, stopping at its COUNT/UNTIL bound.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/sched']
+    </pre>
+    <pre class="sample-output">
+      <code>[seq 'armed' [tick timer=timer-1] [tick timer=timer-1] [tick timer=timer-1] [tick timer=timer-1] [tick timer=timer-1]]</code>
+    </pre>
+  </div>
+</section><section id="fn-sched-recur" class="fn">
+  <h3>sched:recur</h3>
+  <p class="fn-sig"><code>[$sched:recur]  -> element</code>  —  Fire on each occurrence of a time recurrence rule, stopping at its COUNT/UNTIL bound.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/sched']
 [?lib 'cx-stdlib/time']
 [?let [= $ch [?channel name="t" buffer=16]]
 [= $r [$time:recurrence :daily '1970-01-01T00:00:00Z' 'UTC' {count: 3}]]
@@ -229,138 +223,118 @@
 [= $b [?receive from=$ch]]
 [= $c [?receive from=$ch]]
 [seq [$sched:timer-state $t] $a $b $c]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[seq 'fired' [tick timer=timer-1] [tick timer=timer-1] [tick timer=timer-1]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-sched-cron" class="fn">
-    <h3>sched:cron</h3>
-    <p class="fn-sig"><code>[$sched:cron]  -> element</code>  —  Fire on a cron schedule by parsing the expression into a recurrence rule, then behaving as recur.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/sched']
+    </pre>
+    <pre class="sample-output">
+      <code>[seq 'fired' [tick timer=timer-1] [tick timer=timer-1] [tick timer=timer-1]]</code>
+    </pre>
+  </div>
+</section><section id="fn-sched-cron" class="fn">
+  <h3>sched:cron</h3>
+  <p class="fn-sig"><code>[$sched:cron]  -> element</code>  —  Fire on a cron schedule by parsing the expression into a recurrence rule, then behaving as recur.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/sched']
 [?lib 'cx-stdlib/time']
 [?let [= $ch [?channel name="t" buffer=4]]
 [= $t [$sched:cron "0 0 * * *" $ch]]
 [= $_ [$sched:test-clock-advance [$time:duration-d 1]]]
 [seq [$sched:timer-state $t] [?receive from=$ch]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[seq 'armed' [tick timer=timer-1]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-sched-cancel" class="fn">
-    <h3>sched:cancel</h3>
-    <p class="fn-sig"><code>[$sched:cancel]  -> bool</code>  —  Cancel an armed timer, returning true iff a fire was prevented; idempotent.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/sched']
+    </pre>
+    <pre class="sample-output">
+      <code>[seq 'armed' [tick timer=timer-1]]</code>
+    </pre>
+  </div>
+</section><section id="fn-sched-cancel" class="fn">
+  <h3>sched:cancel</h3>
+  <p class="fn-sig"><code>[$sched:cancel]  -> bool</code>  —  Cancel an armed timer, returning true iff a fire was prevented; idempotent.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/sched']
 [?lib 'cx-stdlib/time']
 [?let [= $ch [?channel name="t" buffer=4]]
 [= $t [$sched:after [$time:duration-m 10] $ch]]
 [= $c [$sched:cancel $t]]
 [= $_ [$sched:test-clock-advance [$time:duration-m 10]]]
 [seq $c [$sched:timer-state $t]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[seq true 'canceled']</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-sched-timer-state" class="fn">
-    <h3>sched:timer-state</h3>
-    <p class="fn-sig"><code>[$sched:timer-state]  -> string</code>  —  Read a timer's current state — armed, fired, or canceled.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/sched']
+    </pre>
+    <pre class="sample-output">
+      <code>[seq true 'canceled']</code>
+    </pre>
+  </div>
+</section><section id="fn-sched-timer-state" class="fn">
+  <h3>sched:timer-state</h3>
+  <p class="fn-sig"><code>[$sched:timer-state]  -> string</code>  —  Read a timer's current state — armed, fired, or canceled.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/sched']
 [?lib 'cx-stdlib/time']
 [?let [= $ch [?channel name="ticks" buffer=4]]
 [= $t [$sched:after [$time:duration-m 10] $ch]]
 [= $s0 [$sched:timer-state $t]]
 [= $_ [$sched:test-clock-advance [$time:duration-m 10]]]
 [seq $s0 [$sched:timer-state $t] [?receive from=$ch]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[seq 'armed' 'fired' [tick timer=timer-1]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-sched-restore" class="fn">
-    <h3>sched:restore</h3>
-    <p class="fn-sig"><code>[$sched:restore]  -> element</code>  —  Re-arm durable timers from a journal after a restart, binding fire values from a registry.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/sched']
+    </pre>
+    <pre class="sample-output">
+      <code>[seq 'armed' 'fired' [tick timer=timer-1]]</code>
+    </pre>
+  </div>
+</section><section id="fn-sched-restore" class="fn">
+  <h3>sched:restore</h3>
+  <p class="fn-sig"><code>[$sched:restore]  -> element</code>  —  Re-arm durable timers from a journal after a restart, binding fire values from a registry.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/sched']
 [?lib 'cx-stdlib/journal']
 [?lib 'cx-stdlib/time']
 [?let [= $ch [?channel name="t" buffer=4]]
 [= $jr [$journal:open "mem://sched" "tenant"]]
 [= $t [$sched:after [$time:duration-m 10] $ch {name: 'win' durable: $jr}]]
 [$sched:restore $jr {'win': $ch}]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[restore-report rearmed=1 skipped=0 orphaned=0]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-sched-test-clock-advance" class="fn">
-    <h3>sched:test-clock-advance</h3>
-    <p class="fn-sig"><code>[$sched:test-clock-advance]  -> null</code>  —  Advance the manual virtual clock and fire every timer now due, in deadline order.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/sched']
+    </pre>
+    <pre class="sample-output">
+      <code>[restore-report rearmed=1 skipped=0 orphaned=0]</code>
+    </pre>
+  </div>
+</section><section id="fn-sched-test-clock-advance" class="fn">
+  <h3>sched:test-clock-advance</h3>
+  <p class="fn-sig"><code>[$sched:test-clock-advance]  -> null</code>  —  Advance the manual virtual clock and fire every timer now due, in deadline order.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/sched']
 [?lib 'cx-stdlib/time']
 [?let [= $ch [?channel name="ticks" buffer=4]]
 [= $t [$sched:after [$time:duration-m 10] $ch]]
 [= $s0 [$sched:timer-state $t]]
 [= $_ [$sched:test-clock-advance [$time:duration-m 10]]]
 [seq $s0 [$sched:timer-state $t] [?receive from=$ch]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[seq 'armed' 'fired' [tick timer=timer-1]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-sched-clock-mode" class="fn">
-    <h3>sched:clock-mode</h3>
-    <p class="fn-sig"><code>[$sched:clock-mode]  -> string</code>  —  Read the loop's current clock source — wall or manual.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/sched']
+    </pre>
+    <pre class="sample-output">
+      <code>[seq 'armed' 'fired' [tick timer=timer-1]]</code>
+    </pre>
+  </div>
+</section><section id="fn-sched-clock-mode" class="fn">
+  <h3>sched:clock-mode</h3>
+  <p class="fn-sig"><code>[$sched:clock-mode]  -> string</code>  —  Read the loop's current clock source — wall or manual.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/sched']
 [$sched:clock-mode]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>':manual'</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>':manual'</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>sched</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

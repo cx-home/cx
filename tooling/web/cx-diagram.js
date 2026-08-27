@@ -44,9 +44,27 @@
 // to recover the original program. This mirrors the reverse_parse_
 // diagram() Python/Go/V binding contract.
 //
-// Mermaid.js dependency: loaded from a CDN (jsdelivr) on first
-// connectedCallback. Override `cxDiagramConfig.mermaidUrl` before the
-// first attach to use a local copy.
+// Mermaid.js dependency: SAME-ORIGIN, never a CDN (#1015, the class
+// #1007 closed for the playground). On first connectedCallback the
+// component loads `./vendor/mermaid.min.js` resolved against its OWN
+// script URL — so a consumer who copies cx-diagram.js and the vendored
+// bundle out together, keeping their relative layout, gets a renderer
+// that works offline with zero configuration.
+//
+// The injection point is `cxDiagramConfig.mermaidUrl`: set it before the
+// first attach to point anywhere else. It must name a CLASSIC/UMD build
+// (one that assigns `window.mermaid`) — that is what the vendored
+// artifact is. There is no CDN fallback by design: a floating remote
+// version is exactly what this component stopped doing. If neither a
+// configured URL nor the component's own script URL can be resolved,
+// rendering fails with an explicit message naming the property to set —
+// never a silent reach for the network.
+//
+// This repo does not keep a second copy of the 3.3 MB bundle: the ONE
+// vendored artifact lives at scripts/gen_guide/playground/vendor/ (pin of
+// record in its README — mermaid 10.9.8, UMD, SHA-256 recorded), and
+// `make stage-web-component` stages it beside this file under
+// dist/web-component-preview/ for the demo page and the offline gate.
 //
 // Browser support: modern evergreen (custom elements v1, ES modules,
 // fetch). No IE11 polyfill ships here.
@@ -54,8 +72,28 @@
 (function (global) {
   'use strict';
 
-  var DEFAULT_MERMAID_URL =
-    'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  // Where did THIS file get loaded from? `document.currentScript` answers
+  // for a classic <script>; it is null under `type="module"`, so fall back
+  // to finding our own tag in the DOM. Both are lookups of one fact — the
+  // component's own URL — not two ways of configuring anything.
+  function selfScriptUrl() {
+    var cur = global.document && global.document.currentScript;
+    if (cur && cur.src) return cur.src;
+    var tags = global.document
+      ? global.document.querySelectorAll('script[src]')
+      : [];
+    for (var i = 0; i < tags.length; i++) {
+      if (/cx-diagram\.js(\?|#|$)/.test(tags[i].src)) return tags[i].src;
+    }
+    return null;
+  }
+
+  // Resolved at parse time: `document.currentScript` is only valid while
+  // this script is executing, and our own tag is in the DOM by now.
+  var SELF_URL = selfScriptUrl();
+  var DEFAULT_MERMAID_URL = SELF_URL
+    ? new global.URL('./vendor/mermaid.min.js', SELF_URL).href
+    : null;
 
   global.cxDiagramConfig = global.cxDiagramConfig || {
     mermaidUrl: DEFAULT_MERMAID_URL,
@@ -65,10 +103,41 @@
 
   function loadMermaid() {
     if (mermaidPromise) return mermaidPromise;
-    mermaidPromise = import(global.cxDiagramConfig.mermaidUrl).then(function (mod) {
-      var mermaid = mod.default || mod;
-      mermaid.initialize({ startOnLoad: false });
-      return mermaid;
+    mermaidPromise = new Promise(function (resolve, reject) {
+      var url = global.cxDiagramConfig.mermaidUrl;
+      if (!url) {
+        reject(new Error(
+          'no mermaid URL: could not resolve cx-diagram.js\'s own script URL, ' +
+          'so the default ./vendor/mermaid.min.js could not be located. Set ' +
+          'window.cxDiagramConfig.mermaidUrl to a same-origin UMD mermaid ' +
+          'build before the first <cx-diagram> attaches.'));
+        return;
+      }
+      // The vendored artifact is a UMD bundle: it assigns window.mermaid
+      // and exports nothing to an ES module namespace, so `import()` on it
+      // would "succeed" while producing no mermaid (#1007). Load it the way
+      // it is built to be loaded, and read the global it defines.
+      var tag = global.document.createElement('script');
+      tag.src = url;
+      tag.async = true;
+      tag.onload = function () {
+        var mermaid = global.mermaid;
+        if (!mermaid || typeof mermaid.render !== 'function') {
+          reject(new Error('loaded ' + url + ' but window.mermaid is not a ' +
+            'mermaid build (cxDiagramConfig.mermaidUrl must name a ' +
+            'classic/UMD bundle)'));
+          return;
+        }
+        mermaid.initialize({ startOnLoad: false });
+        resolve(mermaid);
+      };
+      tag.onerror = function () {
+        reject(new Error('could not load mermaid from ' + url +
+          ' (the renderer is same-origin by design — there is no CDN ' +
+          'fallback; stage vendor/mermaid.min.js beside cx-diagram.js or ' +
+          'set cxDiagramConfig.mermaidUrl)'));
+      };
+      global.document.head.appendChild(tag);
     });
     return mermaidPromise;
   }

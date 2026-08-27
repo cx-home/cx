@@ -718,17 +718,22 @@ line 3''']
  ]
 
  [ex key=57-map-par-bulkhead
-  [label [#[57] [?map … [par]] — bounded with [?bulkhead]#]]
+  [label [#[57] [par N] bounds the width — [?bulkhead] isolates the failure#]]
   [src [#
 [?map (1, 2, 3, 4, 5, 6, 7, 8)
-  [using [?fn $n
-           [?bulkhead max-concurrent=2
-             [?let [= $_ [?sleep 100ms mock]]
-               [* $n $n]]]]]
-  [par]]
+  [using [?fn $shard
+           [?bulkhead max-concurrent=8
+             [?if [= $shard 5]
+               [then [err code="shard-offline" shard=$shard]]
+               [else [* $shard $shard]]]]]]
+  [par 2]]
 #]]
   [note [#
-**Introduces:** `[?bulkhead max-concurrent=N …]` caps in-flight work. With 8 parallel items but a 2-slot bulkhead, the overflow returns `[err cx-err:CXER0152 'bulkhead saturated']` — backpressure surfaced as values.
+**Introduces:** `[par N]` — the width bound. Since #94 **`[par]` owns its own concurrency**: `[par 2]` runs a two-worker pool over the eight shards (bare `[par]` defaults to `min(4, ncpu)`, `[par max]` uses `ncpu`). `[?bulkhead]` is *not* the fan-out limiter — that lint was retired — so the compartment here is sized to the whole batch (`max-concurrent=8`) and never sheds.
+
+What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and that failure stays in shard 5's own slot. The other seven still return their squares and the batch completes — a failed compartment does not sink the ship. Output is always source order (§7.3), so the result is the same every run and in the browser.
+
+**Why not show `CXER0152`?** A `[?bulkhead]` can only shed when two workers contend for the last permit, and *which* one loses is thread timing — a program with no single answer. `[?bulkhead]` is EXPERIMENTAL (spec/code.md §10.2.6): its permit counter is a non-atomic read-modify-write, so under real contention the cap is not reliably enforced in either direction. For production load-shedding reach for `[?rate-limit]` (examples 96–97) or a buffered `[?channel]`.
 #]]
  ]
 
@@ -921,7 +926,7 @@ line 3''']
   [src [#
 [?let [= $xs (10, 20, 30, 40)]
   [list first=[$head $xs]
-    [rest [$tail $xs]]]]
+    [rest [?splice [$tail $xs]]]]]
 #]]
   [note [#
 **Introduces:** `[head xs]` (first element) + `[tail xs]` (everything after the first).
@@ -1055,6 +1060,7 @@ line 3''']
   [note [#
 **Introduces:** `[?async EXPR]` returns a future handle. `[?await $f]` resolves it. Futures are lazy: the body runs on first await.
 #]]
+  [wasm-unsupported [#`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).#]]
  ]
 
  [ex key=84-async-mock-sleep
@@ -1067,6 +1073,7 @@ line 3''']
   [note [#
 **Introduces:** futures with internal mock-sleep. The future resolves in logical time.
 #]]
+  [wasm-unsupported [#`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).#]]
  ]
 
  [ex key=85-await-all
@@ -1081,6 +1088,7 @@ line 3''']
   [note [#
 **Introduces:** `[?await-all (futures…)]`. Waits on every future; returns the sequence of results (or aggregated CXER0240 err).
 #]]
+  [wasm-unsupported [#`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).#]]
  ]
 
  [ex key=86-await-any
@@ -1093,6 +1101,7 @@ line 3''']
   [note [#
 **Introduces:** `[?await-any]`. Returns the first successful future; ignores subsequent failures.
 #]]
+  [wasm-unsupported [#`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).#]]
  ]
 
  [ex key=87-await-race
@@ -1107,6 +1116,7 @@ line 3''']
   [note [#
 **Introduces:** `[?await-race]`. Returns the first future to resolve (success OR fail); cancels the losers.
 #]]
+  [wasm-unsupported [#`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).#]]
  ]
 
  [ex key=88-channel-basic
@@ -1130,6 +1140,7 @@ line 3''']
   [note [#
 **Introduces:** `[?worker name=S BODY]` — registers a worker. In the sequential substrate the body runs to completion synchronously.
 #]]
+  [wasm-unsupported [#`[?worker]` spawns an OS thread; the playground's default single-threaded wasm build refuses it (`go code__run_worker_thread(): Not supported`).#]]
  ]
 
  [ex key=90-cancel
@@ -1143,6 +1154,7 @@ line 3''']
   [note [#
 **Introduces:** `[?cancel $handle]`. Requests cancellation; future resolves to `[err :code "cx-err:CXER0260"]`.
 #]]
+  [wasm-unsupported [#`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).#]]
  ]
 
  [ex key=91-retry-happy
@@ -1588,10 +1600,10 @@ line 3''']
                 [line qty=2 price=10]
                 [line qty=1 price=20]
                 [line qty=3 price=5]]]
-  [sum $doc/line/@price]]
+  [$sum $doc/line/@price]]
 #]]
   [note [#
-**Pattern:** total of an attribute across all matches. **Uses:** `[sum $bind]` builtin in element-call form, attribute-axis path `/line/@price` on child axis (gap A fix: `$doc/line` enumerates every `line` child).
+**Pattern:** total of an attribute across all matches. **Uses:** the `[$sum …]` builtin call over the attribute-axis node-set `/line/@price` (`$doc/line` enumerates every `line` child). Named builtins are reached via the `$`-head call form — a bare `[sum …]` is data construction (R-A1 migration 2026-08-25: the old spelling constructed a data element; this one computes).
 #]]
  ]
 
@@ -1908,12 +1920,12 @@ line 3''']
                 [m k=mem  v=62]
                 [m k=disk v=44]]]
   [snapshot
-    [cpu  $doc/m[= $_@k "cpu"]/@v]
-    [mem  $doc/m[= $_@k "mem"]/@v]
-    [disk $doc/m[= $_@k "disk"]/@v]]]
+    [cpu  [?splice $doc/m[= $_@k "cpu"]/@v]]
+    [mem  [?splice $doc/m[= $_@k "mem"]/@v]]
+    [disk [?splice $doc/m[= $_@k "disk"]/@v]]]]
 #]]
   [note [#
-**Pattern:** turn N rows-of-(k,v) into one element with N attributes. **Uses:** inline `$doc/m[= $_@k …]/@v` per pivot key (child-axis fix from gap A makes the predicate-filtered path resolve directly — no intermediate `[?let]` chain needed). The terminal `/@v` materialises the attribute as a single-attr element (`[v 87]`), so output renders `cpu="[v 87]"` etc.; to read the raw scalar `87`, bind the row first — `[?let [= $cpu $doc/m[@k="cpu"]] $cpu@v]`. The shape still pivots skinny-tall → wide. (G4 closed.)
+**Pattern:** turn N rows-of-(k,v) into one element with N attributes. **Uses:** inline `$doc/m[= $_@k …]/@v` per pivot key, spliced into content with `[?splice …]` (R-A1, 2026-08-25: a node-set in element content splices as direct children — a bare one refuses loudly). The terminal `/@v` materialises the attribute as a single-attr element (`[v 87]`), so each pivot slot carries `[v 87]` as a child; to read the raw scalar `87`, bind the row first — `[?let [= $cpu $doc/m[@k="cpu"]] $cpu@v]`. The shape still pivots skinny-tall → wide. (G4 closed.)
 #]]
  ]
 
@@ -1979,10 +1991,10 @@ line 3''']
                     [u name="B" email="b@x.com"]]]
     [?for [in $o $orders//o]
       [yield [joined order-id=$o/@id amt=$o/@amt
-               [email $users//u[= $_@name $o/@user]/@email]]]]]]
+               [email [?splice $users//u[= $_@name $o/@user]/@email]]]]]]]
 #]]
   [note [#
-**Pattern:** inner-join two collections by a shared key — look up each order's user record by name and project the email. **Uses:** cross-binding inline predicate `[@name=$o/@user]` (gap C closed: the RHS now evaluates the path-bearing reference against the *outer* env, so `$o/@user` is the iterating row's key while `$users//u[…]` does the lookup). Terminal `/@email` materialises the value as `[email "…"]` (gap-D class — same `/@attr` materialisation shape as ex 146). The natural single-expression join is now the standard surface; the prior `[?match]` workaround is retired.
+**Pattern:** inner-join two collections by a shared key — look up each order's user record by name and project the email. **Uses:** cross-binding inline predicate `[@name=$o/@user]` (gap C closed: the RHS now evaluates the path-bearing reference against the *outer* env, so `$o/@user` is the iterating row's key while `$users//u[…]` does the lookup), spliced into content with `[?splice …]` (R-A1, 2026-08-25). Terminal `/@email` materialises the value as `[email "…"]` (same `/@attr` materialisation shape as ex 146). The natural single-expression join is now the standard surface; the prior `[?match]` workaround is retired.
 #]]
  ]
 
@@ -2109,8 +2121,9 @@ line 3''']
     [ok value="done"]]]
 #]]
   [note [#
-**Pattern:** background task as program entry-point. **Diagram:** because `[?worker]` sits at the top level the emitter switches to Mermaid `sequenceDiagram` instead of `flowchart TD` (per spec/code.md §10.1.2). The worker becomes an actor lane with its body events as messages along that lane. Try wrapping the same body in `[?let [= $w [?worker …]] $w]` and watch the diagram revert to a flowchart — `[?worker]` only steers the dialect when it's the outermost form.
+**Pattern:** background task as program entry-point. **Diagram:** because the program is sequence-shaped the emitter switches to Mermaid `sequenceDiagram` instead of `flowchart TD` (per spec/code.md §10.1.2). The worker becomes an actor lane with its body events as messages along that lane. A trigger reached through a `[?let]` binding counts too — `[?let [= $w [?worker …]] …]` is still a sequence, since the binding only aliases the lane (examples 171-172 are that shape).
 #]]
+  [wasm-unsupported [#`[?worker]` spawns an OS thread; the playground's default single-threaded wasm build refuses it (`go code__run_worker_thread(): Not supported`).#]]
  ]
 
  [ex key=162-sequence-select-channels
@@ -2278,8 +2291,9 @@ line 3''']
         [?wait-for worker=$cons]]]]]
 #]]
   [note [#
-**Pattern:** a `[?channel buffer=N]` with a `[?worker]` producer (`[?send X to=$ch]` then `[?close]`) and a consumer (`[?receive from=$ch]`), joined with `[?wait-for worker=…]`. **Diagram:** top-level workers render as `sequenceDiagram` actors with channel arrows. **http mode:** under file:// the wasm runtime is single-threaded (workers interleave cooperatively); under `make guide-http` they run on real OS threads.
+**Pattern:** a `[?channel buffer=N]` with a `[?worker]` producer (`[?send X to=$ch]` then `[?close]`) and a consumer (`[?receive from=$ch]`), joined with `[?wait-for worker=…]`. **Diagram:** the let-bound workers and channels render as `sequenceDiagram` actors with channel arrows. **Running it:** the playground's default wasm build has no threads, so this program does not run in the browser — see the banner. Under `make guide-http` (COOP/COEP) cxlib loads the pthreads build and the workers run on real OS threads.
 #]]
+  [wasm-unsupported [#`[?worker]` spawns an OS thread; the playground's default single-threaded wasm build refuses it (`go code__run_worker_thread(): Not supported`).#]]
  ]
 
  [ex key=172-seq-large-workers-with-backpressure
@@ -2300,8 +2314,9 @@ line 3''']
             [yield [?receive from=$results]]]]]]]]
 #]]
   [note [#
-**Pattern:** a two-stage pipeline across two channels — a dispatcher fans jobs into `jobs`, a worker transforms each into `[processed …]` on `results`, and the main thread drains `results`. **Diagram:** multiple top-level workers + channels render as a `sequenceDiagram`. **http mode:** real parallelism (and true channel backpressure on the bounded buffers) only happens under `make guide-http`; file:// interleaves cooperatively.
+**Pattern:** a two-stage pipeline across two channels — a dispatcher fans jobs into `jobs`, a worker transforms each into `[processed …]` on `results`, and the main thread drains `results`. **Diagram:** the let-bound workers and channels render as a `sequenceDiagram`. **Running it:** the playground's default wasm build has no threads, so this program does not run in the browser — see the banner. Real parallelism (and true channel backpressure on the bounded buffers) needs `make guide-http`, where cxlib loads the pthreads build.
 #]]
+  [wasm-unsupported [#`[?worker]` spawns an OS thread; the playground's default single-threaded wasm build refuses it (`go code__run_worker_thread(): Not supported`).#]]
  ]
 
  [ex key=173-fp-map
@@ -2428,4 +2443,5 @@ line 3''']
 **Pattern:** the real-world `traverse` — fan a fallible effect across a list and collect results on the railway (all `[ok]` → one `[ok (…)]`; first `[err]` short-circuits). **http mode only:** this makes live network calls — run it under `make guide-http` (or `cx --allow-net` in your terminal). The file:// wasm playground has no network/capabilities, so it returns a capability-denied `[err cx-err:CXER0271]`.
 #]]
  ]
+
 ]

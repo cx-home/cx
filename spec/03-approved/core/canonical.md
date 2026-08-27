@@ -204,9 +204,9 @@ exists.
 | Integer | Shortest decimal form. No leading zeros (except for `0` itself). No `+`. No underscores in canonical output (underscores in source are stripped). |
 | Negative integer | `-` immediately before digits, no space. |
 | Hex integer | Lowercase `0x` prefix. Lowercase hex digits. Used in canonical output only if source used hex form (lossless preserves intent); strict canonical converts all integers to decimal. |
-| Float | Shortest round-trip decimal representation per Ryū algorithm. Always includes a decimal point: `1.0`, never `1.` or `1`. |
-| Float scientific notation | Used only when shorter than fixed form. Lowercase `e`. No `+` after exponent. Mantissa includes `.` (e.g., `1.5e10`, `2.0e-7`). Single-digit mantissa with zero fraction allowed: `1e10` is valid only as input; canonical emits `1.0e10`. |
-| Negative zero (float) | `-0.0`, distinct from `0.0`. |
+| Float | Shortest round-trip decimal representation per Ryū algorithm, **always carrying an exponent** — see the next row. |
+| Float scientific notation | **Always** (ruling 2b; restated by CO-12). Lowercase `e`; mantissa always carries `.`; the exponent prints bare — no `+`, no zero-padding. `1.5` images `1.5e0`, `100.0` images `1.0e2`. The exponent is not a size optimization, it is the kind's *self-description*: a bare fixed-point image like `1.5` IS the `decimal` kind's canonical spelling (§2.5, `cxdm.md` §2.2), so an exponent-less float image re-parses as a decimal and the two kinds collapse onto one address. One spelling, one kind, one address. |
+| Negative zero (float) | `-0.0e0`, distinct from `0.0e0`. Zero is not exempt from the exponent-always rule — a fixed-point `0.0` would re-type `decimal` like any other. |
 | Subnormal floats | Preserved bit-exact via Ryū. |
 | NaN, +Inf, -Inf | Rejected (no canonical form). |
 
@@ -220,6 +220,34 @@ exists.
 | Date | `YYYY-MM-DD` per ISO 8601. |
 | Datetime (lossless) | `YYYY-MM-DDTHH:MM:SS[.fff][Z\|±HH:MM]` exactly as in source, with offset preserved. Fractional seconds emitted only if present in source; trailing zeros stripped. |
 | Datetime (strict) | Normalized to UTC: `YYYY-MM-DDTHH:MM:SS[.fff]Z`. Original offset is discarded. |
+
+### 2.6a Per-kind image by position — the bijectivity table
+
+*(RULED: CO-12, #991.)* Canonical serialization is **bijective**: `parse(canonical(v)) ≡ v`, **kinds included**. The image a scalar takes must therefore re-parse to the *same kind* in the position it occupies. This table is normative and states that image for every scalar kind in every position; the `format.md` §2.1 table is its std-lib restatement and MUST agree with it.
+
+The trap it closes: CX's runtime value model gives `decimal`, `bigint`, `atom`, `date`, `datetime`, `duration`, `period`, and `bytes` no distinct payload — each parks its verbatim CX image in a **string** payload and carries its kind alongside. An emitter that decides quoting or spelling from the *payload* reads all eight as strings. **Quoting and spelling are decided from the scalar's TYPE, never its payload**, in every position and every form.
+
+| Kind | Attribute value | Element body / collection item / map value |
+|---|---|---|
+| `string` | Bare when the bare image re-reads as that same string, else quoted (§2.3). An image that would auto-type MUST quote. | Same rule; the narrower collection-item bare set is `code.md` §11.1a **R6**. |
+| `int` | Bare — `age=41`. | Bare — `41`. |
+| `float` | Bare, **exponent-always** — `r=1.5e0` (§2.5). Never `r=1.5`: that image is `decimal`'s. | Bare, exponent-always — `1.5e0`. |
+| `decimal` | Bare, scale preserved — `score=1.5`, `d=2.50` — **iff** the bare image re-types `decimal`; an integral image carries the glued form `n::decimal=2`. | Same rule; the postfix ascription is `2::decimal`. |
+| `bigint` | Bare — `n=123456789012345678901234567890` — iff the bare image re-types `bigint` (over-i64 auto-promotes); a ≤ i64 value carries `n::bigint=2`. | Same rule; postfix `2::bigint`. |
+| `bool` | Bare — `active=true`. | Bare — `true`. |
+| `null` | Bare — `x=null`. | Bare — `null`. |
+| `atom` | `:` sigil retained — `tier=:gold`. Never the glued `::atom=` form. | `:gold`. |
+| `date` | **Bare** — `on=2026-08-25`. Never quoted: `on='2026-08-25'` re-parses as a `string`. | Bare — `2026-08-25`. |
+| `datetime` | **Bare** — `at=2026-08-25T10:30:00Z`. Never quoted. | Bare — `2026-08-25T10:30:00Z`. |
+| `duration` | Glued annotation — `t::duration=100ms`. | Bare — `100ms` (the span image auto-types). |
+| `period` | Glued annotation — `p::period=3mo`. | Bare — `3mo`. |
+| sized numeric | Glued annotation — `port::u16=8080`. | Glued on the element head — `[port::u16 8080]`. |
+| `bytes` | Glued annotation — `b::bytes=0x2a`. No bytes image auto-types (`0x…` is the hex INT literal), so the ascription is always load-bearing. | Postfix ascription — `0x2a::bytes`. |
+
+Two consequences worth stating outright, because both were live defects until CO-12:
+
+- **`float` and `decimal` may never share an image.** `1.5` is decimal's; `1.5e0` is float's. An emitter that gives both the same bytes has produced a cross-kind **address collision** — two distinct values, one content address.
+- **A non-string scalar is never quoted, by any form, in any position.** Quoting re-parses it as a string and silently changes the kind, which is a conformance failure — not a layout choice an emitter may make.
 
 ### 2.7 Type annotations
 

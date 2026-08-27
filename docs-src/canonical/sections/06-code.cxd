@@ -1025,20 +1025,35 @@
         """Operate on numeric scalars. `sum`/`min`/`max`/`avg`
            operate on a sequence and skip non-numeric items;
            `floor`/`ceiling`/`round`/`abs` operate on a single
-           value."""]
+           value. A numeric operand is an `int`, a `float`, or one
+           of the exact kinds `decimal` / `bigint` — and the exact
+           kinds are their own family, not floats in disguise: a
+           decimal or bigint operand folds exactly (`int` embeds
+           losslessly), while mixing one with a float raises
+           CXER0100 — `[cast]` is the only bridge. That is the
+           arithmetic heads' rule; the aggregates are a different
+           operand shape, never a different numeric semantics."""]
       [table
         [tr [th 'builtin'] [th 'arity'] [th 'semantics']]
-        [tr [td 'sum(seq)'] [td '1'] [td 'Sum of numeric scalars; empty yields int 0; any float → float result']]
-        [tr [td 'min(seq)'] [td '1'] [td 'Minimum numeric; empty yields int 0']]
-        [tr [td 'max(seq)'] [td '1'] [td 'Maximum numeric; empty yields int 0']]
-        [tr [td 'avg(seq)'] [td '1'] [td 'Arithmetic mean as float; empty yields float 0.0']]
+        [tr [td 'sum(seq)'] [td '1'] [td 'Sum of numeric scalars; empty yields int 0; int/float mix → float; decimal/bigint fold exactly']]
+        [tr [td 'min(seq)'] [td '1'] [td 'Minimum numeric, in its own kind; empty yields int 0']]
+        [tr [td 'max(seq)'] [td '1'] [td 'Maximum numeric, in its own kind; empty yields int 0']]
+        [tr [td 'avg(seq)'] [td '1'] [td 'Arithmetic mean — float, or exact over decimal/bigint; empty yields float 0.0']]
         [tr [td 'abs(x)'] [td '1'] [td 'Absolute value; preserves int/float kind']]
         [tr [td 'floor(x)'] [td '1'] [td 'Largest integer ≤ x; int passes through']]
         [tr [td 'ceiling(x)'] [td '1'] [td 'Smallest integer ≥ x; int passes through']]
         [tr [td 'round(x)'] [td '1'] [td 'Half-away-from-zero rounding (XPath fn:round)']]
         [tr [td 'mod(a, b)'] [td '2'] [td 'Remainder; sign follows dividend; b=0 raises CXER0101']]
-        [tr [td 'div(a, b)'] [td '2'] [td 'True division if either is float; integer division if both int']]
-        [tr [td 'idiv(a, b)'] [td '2'] [td 'Integer (truncating) division regardless of operand kinds']]]
+        [tr [td 'div(a, b)'] [td '2'] [td 'True division if either is float; integer division if both int; exact over decimal/bigint, as `/`']]
+        [tr [td 'idiv(a, b)'] [td '2'] [td 'Integer (truncating) division regardless of operand kinds; exact quotient over decimal/bigint']]]
+      [body
+        """Exact division either terminates or says so: a
+           decimal/bigint quotient that does not terminate raises
+           CXER3002 and the refusal names `$math:div-decimal`, the
+           verb carrying an explicit precision + mode. There is no
+           default rounding context. `/`, `div` and an exact `avg`
+           are one implementation, so they never disagree. `idiv`
+           is exempt — an integral quotient always terminates."""]
       [body
         """Type coercion is the single explicit `cast` operator —
            `[cast '42' :int]`, `[cast 3 :float]`, `[cast 42

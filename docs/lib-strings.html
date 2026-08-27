@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,868 +143,702 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">strings</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-strings"><h1>strings</h1><p class="lede">String inspection, search, and transformation for general text work. Covers length and character-class predicates, case conversion, find/contains/split/join, trim, replace, pad, runtime <code>format</code> templates, and escape helpers for HTML, shell, JSON, and regex. CX strings are UTF-8 and most operations are Unicode-aware: indexing, length, and slicing are codepoint-positioned, case folding follows Unicode tables, and predicates use Unicode categories. For byte-level work see cx-stdlib/bytes; for regex see cx-stdlib/re.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-strings-length" class="fn">
-    <h3>strings:length</h3>
-    <p class="fn-sig"><code>[$strings:length]  -> int</code>  —  Count the codepoints (Unicode scalar values) in a string.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-strings-length" class="fn">
+  <h3>strings:length</h3>
+  <p class="fn-sig"><code>[$strings:length]  -> int</code>  —  Count the codepoints (Unicode scalar values) in a string.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:length "héllo"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>5</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-length-bytes" class="fn">
-    <h3>strings:length-bytes</h3>
-    <p class="fn-sig"><code>[$strings:length-bytes]  -> int</code>  —  Count the UTF-8 bytes in a string.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>5</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-length-bytes" class="fn">
+  <h3>strings:length-bytes</h3>
+  <p class="fn-sig"><code>[$strings:length-bytes]  -> int</code>  —  Count the UTF-8 bytes in a string.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:length-bytes "héllo"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>6</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-is-empty" class="fn">
-    <h3>strings:is-empty</h3>
-    <p class="fn-sig"><code>[$strings:is-empty]  -> bool</code>  —  Report whether a string has zero length.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>6</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-is-empty" class="fn">
+  <h3>strings:is-empty</h3>
+  <p class="fn-sig"><code>[$strings:is-empty]  -> bool</code>  —  Report whether a string has zero length.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:is-empty ""]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-at" class="fn">
-    <h3>strings:at</h3>
-    <p class="fn-sig"><code>[$strings:at]  -> string</code>  —  Return the single-character substring at a codepoint position; raises if out of bounds.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-at" class="fn">
+  <h3>strings:at</h3>
+  <p class="fn-sig"><code>[$strings:at]  -> string</code>  —  Return the single-character substring at a codepoint position; raises if out of bounds.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:at "héllo" 1]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'é'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-slice" class="fn">
-    <h3>strings:slice</h3>
-    <p class="fn-sig"><code>[$strings:slice]  -> string</code>  —  Extract a half-open substring by codepoint range; bounds are clamped.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'é'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-slice" class="fn">
+  <h3>strings:slice</h3>
+  <p class="fn-sig"><code>[$strings:slice]  -> string</code>  —  Extract a half-open substring by codepoint range; bounds are clamped.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:slice "héllo" 1 4]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'éll'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-reverse" class="fn">
-    <h3>strings:reverse</h3>
-    <p class="fn-sig"><code>[$strings:reverse]  -> string</code>  —  Reverse a string by codepoint.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'éll'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-reverse" class="fn">
+  <h3>strings:reverse</h3>
+  <p class="fn-sig"><code>[$strings:reverse]  -> string</code>  —  Reverse a string by codepoint.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:reverse "héllo"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'olléh'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-contains" class="fn">
-    <h3>strings:contains</h3>
-    <p class="fn-sig"><code>[$strings:contains]  -> bool</code>  —  Report whether a string contains the given substring.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'olléh'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-contains" class="fn">
+  <h3>strings:contains</h3>
+  <p class="fn-sig"><code>[$strings:contains]  -> bool</code>  —  Report whether a string contains the given substring.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:contains "foobar" "oba"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-find" class="fn">
-    <h3>strings:find</h3>
-    <p class="fn-sig"><code>[$strings:find]  -> int</code>  —  Return the codepoint index of the first occurrence of a substring, or -1 if absent.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-find" class="fn">
+  <h3>strings:find</h3>
+  <p class="fn-sig"><code>[$strings:find]  -> int</code>  —  Return the codepoint index of the first occurrence of a substring, or -1 if absent.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:find "héllo" "llo"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-find-from" class="fn">
-    <h3>strings:find-from</h3>
-    <p class="fn-sig"><code>[$strings:find-from]  -> int</code>  —  Find the first occurrence of a substring at or after a starting index, or -1 if absent.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>2</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-find-from" class="fn">
+  <h3>strings:find-from</h3>
+  <p class="fn-sig"><code>[$strings:find-from]  -> int</code>  —  Find the first occurrence of a substring at or after a starting index, or -1 if absent.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:find-from "abcabc" "bc" 2]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>4</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-rfind" class="fn">
-    <h3>strings:rfind</h3>
-    <p class="fn-sig"><code>[$strings:rfind]  -> int</code>  —  Return the codepoint index of the last (right-to-left) occurrence of a substring, or -1 if absent.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>4</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-rfind" class="fn">
+  <h3>strings:rfind</h3>
+  <p class="fn-sig"><code>[$strings:rfind]  -> int</code>  —  Return the codepoint index of the last (right-to-left) occurrence of a substring, or -1 if absent.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:rfind "abcabc" "bc"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>4</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-starts-with" class="fn">
-    <h3>strings:starts-with</h3>
-    <p class="fn-sig"><code>[$strings:starts-with]  -> bool</code>  —  Report whether a string begins with the given prefix.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>4</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-starts-with" class="fn">
+  <h3>strings:starts-with</h3>
+  <p class="fn-sig"><code>[$strings:starts-with]  -> bool</code>  —  Report whether a string begins with the given prefix.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:starts-with "foobar" "foo"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-ends-with" class="fn">
-    <h3>strings:ends-with</h3>
-    <p class="fn-sig"><code>[$strings:ends-with]  -> bool</code>  —  Report whether a string ends with the given suffix.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-ends-with" class="fn">
+  <h3>strings:ends-with</h3>
+  <p class="fn-sig"><code>[$strings:ends-with]  -> bool</code>  —  Report whether a string ends with the given suffix.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:ends-with "foobar" "bar"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-count" class="fn">
-    <h3>strings:count</h3>
-    <p class="fn-sig"><code>[$strings:count]  -> int</code>  —  Count non-overlapping occurrences of a substring.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-count" class="fn">
+  <h3>strings:count</h3>
+  <p class="fn-sig"><code>[$strings:count]  -> int</code>  —  Count non-overlapping occurrences of a substring.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:count "aaaa" "aa"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-find-all" class="fn">
-    <h3>strings:find-all</h3>
-    <p class="fn-sig"><code>[$strings:find-all]  -> [sequence int]</code>  —  Return the codepoint indices of every non-overlapping occurrence of a substring.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>2</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-find-all" class="fn">
+  <h3>strings:find-all</h3>
+  <p class="fn-sig"><code>[$strings:find-all]  -> [sequence int]</code>  —  Return the codepoint indices of every non-overlapping occurrence of a substring.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:find-all "abcabc" "bc"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(1, 4)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-upper" class="fn">
-    <h3>strings:upper</h3>
-    <p class="fn-sig"><code>[$strings:upper]  -> string</code>  —  Upper-case a string using Unicode default case tables (locale-independent).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>(1, 4)</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-upper" class="fn">
+  <h3>strings:upper</h3>
+  <p class="fn-sig"><code>[$strings:upper]  -> string</code>  —  Upper-case a string using Unicode default case tables (locale-independent).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:upper "hello"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'HELLO'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-lower" class="fn">
-    <h3>strings:lower</h3>
-    <p class="fn-sig"><code>[$strings:lower]  -> string</code>  —  Lower-case a string using Unicode default case tables (locale-independent).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'HELLO'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-lower" class="fn">
+  <h3>strings:lower</h3>
+  <p class="fn-sig"><code>[$strings:lower]  -> string</code>  —  Lower-case a string using Unicode default case tables (locale-independent).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:lower "HeLLo"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'hello'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-title" class="fn">
-    <h3>strings:title</h3>
-    <p class="fn-sig"><code>[$strings:title]  -> string</code>  —  Title-case a string at Unicode UAX #29 word boundaries.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'hello'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-title" class="fn">
+  <h3>strings:title</h3>
+  <p class="fn-sig"><code>[$strings:title]  -> string</code>  —  Title-case a string at Unicode UAX #29 word boundaries.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:title "jean-paul sartre"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'Jean-Paul Sartre'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-case-fold" class="fn">
-    <h3>strings:case-fold</h3>
-    <p class="fn-sig"><code>[$strings:case-fold]  -> string</code>  —  Produce the canonical case-folded form for case-insensitive comparison.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'Jean-Paul Sartre'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-case-fold" class="fn">
+  <h3>strings:case-fold</h3>
+  <p class="fn-sig"><code>[$strings:case-fold]  -> string</code>  —  Produce the canonical case-folded form for case-insensitive comparison.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:case-fold "STRAßE"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'strasse'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-swap-case" class="fn">
-    <h3>strings:swap-case</h3>
-    <p class="fn-sig"><code>[$strings:swap-case]  -> string</code>  —  Swap the case of each cased character, upper to lower and lower to upper.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'strasse'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-swap-case" class="fn">
+  <h3>strings:swap-case</h3>
+  <p class="fn-sig"><code>[$strings:swap-case]  -> string</code>  —  Swap the case of each cased character, upper to lower and lower to upper.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:swap-case "Hello World"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'hELLO wORLD'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-upper-locale" class="fn">
-    <h3>strings:upper-locale</h3>
-    <p class="fn-sig"><code>[$strings:upper-locale]  -> string</code>  —  Upper-case a string with locale-aware rules (e.g. Turkish dotted-i).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'hELLO wORLD'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-upper-locale" class="fn">
+  <h3>strings:upper-locale</h3>
+  <p class="fn-sig"><code>[$strings:upper-locale]  -> string</code>  —  Upper-case a string with locale-aware rules (e.g. Turkish dotted-i).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:upper-locale "abc" "en"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'ABC'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-lower-locale" class="fn">
-    <h3>strings:lower-locale</h3>
-    <p class="fn-sig"><code>[$strings:lower-locale]  -> string</code>  —  Lower-case a string with locale-aware rules (e.g. Turkish dotted-i).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'ABC'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-lower-locale" class="fn">
+  <h3>strings:lower-locale</h3>
+  <p class="fn-sig"><code>[$strings:lower-locale]  -> string</code>  —  Lower-case a string with locale-aware rules (e.g. Turkish dotted-i).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:lower-locale "ABC" "en"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'abc'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-trim" class="fn">
-    <h3>strings:trim</h3>
-    <p class="fn-sig"><code>[$strings:trim]  -> string</code>  —  Strip Unicode whitespace from both ends of a string.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'abc'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-trim" class="fn">
+  <h3>strings:trim</h3>
+  <p class="fn-sig"><code>[$strings:trim]  -> string</code>  —  Strip Unicode whitespace from both ends of a string.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:trim "　 hi 　"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'hi'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-trim-start" class="fn">
-    <h3>strings:trim-start</h3>
-    <p class="fn-sig"><code>[$strings:trim-start]  -> string</code>  —  Strip Unicode whitespace from the start of a string.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'hi'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-trim-start" class="fn">
+  <h3>strings:trim-start</h3>
+  <p class="fn-sig"><code>[$strings:trim-start]  -> string</code>  —  Strip Unicode whitespace from the start of a string.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:trim-start "   hi   "]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'hi   '</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-trim-end" class="fn">
-    <h3>strings:trim-end</h3>
-    <p class="fn-sig"><code>[$strings:trim-end]  -> string</code>  —  Strip Unicode whitespace from the end of a string.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'hi   '</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-trim-end" class="fn">
+  <h3>strings:trim-end</h3>
+  <p class="fn-sig"><code>[$strings:trim-end]  -> string</code>  —  Strip Unicode whitespace from the end of a string.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:trim-end "   hi   "]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'   hi'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-trim-chars" class="fn">
-    <h3>strings:trim-chars</h3>
-    <p class="fn-sig"><code>[$strings:trim-chars]  -> string</code>  —  Strip any of the given characters from both ends of a string.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'   hi'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-trim-chars" class="fn">
+  <h3>strings:trim-chars</h3>
+  <p class="fn-sig"><code>[$strings:trim-chars]  -> string</code>  —  Strip any of the given characters from both ends of a string.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:trim-chars "<<hi>>" ""]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'hi'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-trim-start-chars" class="fn">
-    <h3>strings:trim-start-chars</h3>
-    <p class="fn-sig"><code>[$strings:trim-start-chars]  -> string</code>  —  Strip any of the given characters from the start of a string.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'hi'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-trim-start-chars" class="fn">
+  <h3>strings:trim-start-chars</h3>
+  <p class="fn-sig"><code>[$strings:trim-start-chars]  -> string</code>  —  Strip any of the given characters from the start of a string.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:trim-start-chars "xxhi" "x"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'hi'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-trim-end-chars" class="fn">
-    <h3>strings:trim-end-chars</h3>
-    <p class="fn-sig"><code>[$strings:trim-end-chars]  -> string</code>  —  Strip any of the given characters from the end of a string.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'hi'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-trim-end-chars" class="fn">
+  <h3>strings:trim-end-chars</h3>
+  <p class="fn-sig"><code>[$strings:trim-end-chars]  -> string</code>  —  Strip any of the given characters from the end of a string.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:trim-end-chars "hixx" "x"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'hi'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-split" class="fn">
-    <h3>strings:split</h3>
-    <p class="fn-sig"><code>[$strings:split]  -> [sequence string]</code>  —  Split a string on each occurrence of a separator; empty separator splits every character.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'hi'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-split" class="fn">
+  <h3>strings:split</h3>
+  <p class="fn-sig"><code>[$strings:split]  -> [sequence string]</code>  —  Split a string on each occurrence of a separator; empty separator splits every character.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:split "a,b,c" ","]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(a, b, c)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-split-limit" class="fn">
-    <h3>strings:split-limit</h3>
-    <p class="fn-sig"><code>[$strings:split-limit]  -> [sequence string]</code>  —  Split a string on a separator into at most max+1 segments.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>(a, b, c)</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-split-limit" class="fn">
+  <h3>strings:split-limit</h3>
+  <p class="fn-sig"><code>[$strings:split-limit]  -> [sequence string]</code>  —  Split a string on a separator into at most max+1 segments.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:split-limit "a,b,c,d" "," 2]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(a, b, 'c,d')</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-split-lines" class="fn">
-    <h3>strings:split-lines</h3>
-    <p class="fn-sig"><code>[$strings:split-lines]  -> [sequence string]</code>  —  Split a string into lines on LF, CRLF, or CR; a trailing empty line is dropped.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>(a, b, 'c,d')</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-split-lines" class="fn">
+  <h3>strings:split-lines</h3>
+  <p class="fn-sig"><code>[$strings:split-lines]  -> [sequence string]</code>  —  Split a string into lines on LF, CRLF, or CR; a trailing empty line is dropped.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:split-lines "a\nb\r\nc\rd"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(a, b, c, d)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-split-whitespace" class="fn">
-    <h3>strings:split-whitespace</h3>
-    <p class="fn-sig"><code>[$strings:split-whitespace]  -> [sequence string]</code>  —  Split a string on runs of Unicode whitespace, collapsing consecutive whitespace.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>(a, b, c, d)</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-split-whitespace" class="fn">
+  <h3>strings:split-whitespace</h3>
+  <p class="fn-sig"><code>[$strings:split-whitespace]  -> [sequence string]</code>  —  Split a string on runs of Unicode whitespace, collapsing consecutive whitespace.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:split-whitespace "  a   b \t c  "]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(a, b, c)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-join" class="fn">
-    <h3>strings:join</h3>
-    <p class="fn-sig"><code>[$strings:join]  -> string</code>  —  Concatenate a sequence of strings, inserting the separator between each.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>(a, b, c)</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-join" class="fn">
+  <h3>strings:join</h3>
+  <p class="fn-sig"><code>[$strings:join]  -> string</code>  —  Concatenate a sequence of strings, inserting the separator between each.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:join ("a", "b", "c") "-"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'a-b-c'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-replace" class="fn">
-    <h3>strings:replace</h3>
-    <p class="fn-sig"><code>[$strings:replace]  -> string</code>  —  Replace every occurrence of a substring with another.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'a-b-c'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-replace" class="fn">
+  <h3>strings:replace</h3>
+  <p class="fn-sig"><code>[$strings:replace]  -> string</code>  —  Replace every occurrence of a substring with another.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:replace "a.b.c" "." "-"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'a-b-c'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-replace-first" class="fn">
-    <h3>strings:replace-first</h3>
-    <p class="fn-sig"><code>[$strings:replace-first]  -> string</code>  —  Replace only the first occurrence of a substring with another.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'a-b-c'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-replace-first" class="fn">
+  <h3>strings:replace-first</h3>
+  <p class="fn-sig"><code>[$strings:replace-first]  -> string</code>  —  Replace only the first occurrence of a substring with another.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:replace-first "a.b.c" "." "-"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'a-b.c'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-replace-n" class="fn">
-    <h3>strings:replace-n</h3>
-    <p class="fn-sig"><code>[$strings:replace-n]  -> string</code>  —  Replace at most the first n occurrences of a substring with another.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'a-b.c'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-replace-n" class="fn">
+  <h3>strings:replace-n</h3>
+  <p class="fn-sig"><code>[$strings:replace-n]  -> string</code>  —  Replace at most the first n occurrences of a substring with another.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:replace-n "a.b.c.d" "." "-" 2]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'a-b-c.d'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-replace-exactly" class="fn">
-    <h3>strings:replace-exactly</h3>
-    <p class="fn-sig"><code>[$strings:replace-exactly]  -> string</code>  —  Fail-loud surgical replace: <code>from</code> MUST occur exactly once, else an [err cx-err:CXER2903] value (no silent no-op on a miss, no over-replace on ambiguity). The safety the harness Edit tool gives, for in-CX text edits.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'a-b-c.d'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-replace-exactly" class="fn">
+  <h3>strings:replace-exactly</h3>
+  <p class="fn-sig"><code>[$strings:replace-exactly]  -> string</code>  —  Fail-loud surgical replace: <code>from</code> MUST occur exactly once, else an [err cx-err:CXER2903] value (no silent no-op on a miss, no over-replace on ambiguity). The safety the harness Edit tool gives, for in-CX text edits.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:replace-exactly "a.b.c" "b" "X"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'a.X.c'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-pad-start" class="fn">
-    <h3>strings:pad-start</h3>
-    <p class="fn-sig"><code>[$strings:pad-start]  -> string</code>  —  Left-pad a string with a fill string until it reaches the target width.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'a.X.c'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-pad-start" class="fn">
+  <h3>strings:pad-start</h3>
+  <p class="fn-sig"><code>[$strings:pad-start]  -> string</code>  —  Left-pad a string with a fill string until it reaches the target width.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:pad-start "abc" 10 "0"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'0000000abc'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-pad-end" class="fn">
-    <h3>strings:pad-end</h3>
-    <p class="fn-sig"><code>[$strings:pad-end]  -> string</code>  —  Right-pad a string with a fill string until it reaches the target width.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'0000000abc'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-pad-end" class="fn">
+  <h3>strings:pad-end</h3>
+  <p class="fn-sig"><code>[$strings:pad-end]  -> string</code>  —  Right-pad a string with a fill string until it reaches the target width.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:pad-end "abc" 6 "."]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'abc...'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-center" class="fn">
-    <h3>strings:center</h3>
-    <p class="fn-sig"><code>[$strings:center]  -> string</code>  —  Center a string within the target width, padding both sides with a fill string.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'abc...'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-center" class="fn">
+  <h3>strings:center</h3>
+  <p class="fn-sig"><code>[$strings:center]  -> string</code>  —  Center a string within the target width, padding both sides with a fill string.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:center "hi" 6 "*"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'**hi**'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-repeat" class="fn">
-    <h3>strings:repeat</h3>
-    <p class="fn-sig"><code>[$strings:repeat]  -> string</code>  —  Concatenate n copies of a string.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'**hi**'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-repeat" class="fn">
+  <h3>strings:repeat</h3>
+  <p class="fn-sig"><code>[$strings:repeat]  -> string</code>  —  Concatenate n copies of a string.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:repeat "ab" 3]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'ababab'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-is-ascii" class="fn">
-    <h3>strings:is-ascii</h3>
-    <p class="fn-sig"><code>[$strings:is-ascii]  -> bool</code>  —  Report whether every character is ASCII (empty string is true).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'ababab'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-is-ascii" class="fn">
+  <h3>strings:is-ascii</h3>
+  <p class="fn-sig"><code>[$strings:is-ascii]  -> bool</code>  —  Report whether every character is ASCII (empty string is true).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:is-ascii "hello"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-is-digit" class="fn">
-    <h3>strings:is-digit</h3>
-    <p class="fn-sig"><code>[$strings:is-digit]  -> bool</code>  —  Report whether every character is a Unicode digit (empty string is true).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-is-digit" class="fn">
+  <h3>strings:is-digit</h3>
+  <p class="fn-sig"><code>[$strings:is-digit]  -> bool</code>  —  Report whether every character is a Unicode digit (empty string is true).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:is-digit "12345"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-is-alpha" class="fn">
-    <h3>strings:is-alpha</h3>
-    <p class="fn-sig"><code>[$strings:is-alpha]  -> bool</code>  —  Report whether every character is a Unicode letter (empty string is true).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-is-alpha" class="fn">
+  <h3>strings:is-alpha</h3>
+  <p class="fn-sig"><code>[$strings:is-alpha]  -> bool</code>  —  Report whether every character is a Unicode letter (empty string is true).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:is-alpha "abcDEF"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-is-alphanumeric" class="fn">
-    <h3>strings:is-alphanumeric</h3>
-    <p class="fn-sig"><code>[$strings:is-alphanumeric]  -> bool</code>  —  Report whether every character is a Unicode letter or digit (empty string is true).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-is-alphanumeric" class="fn">
+  <h3>strings:is-alphanumeric</h3>
+  <p class="fn-sig"><code>[$strings:is-alphanumeric]  -> bool</code>  —  Report whether every character is a Unicode letter or digit (empty string is true).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:is-alphanumeric "abc123"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-is-whitespace" class="fn">
-    <h3>strings:is-whitespace</h3>
-    <p class="fn-sig"><code>[$strings:is-whitespace]  -> bool</code>  —  Report whether every character is Unicode whitespace (empty string is true).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-is-whitespace" class="fn">
+  <h3>strings:is-whitespace</h3>
+  <p class="fn-sig"><code>[$strings:is-whitespace]  -> bool</code>  —  Report whether every character is Unicode whitespace (empty string is true).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:is-whitespace "  \t\n"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-is-upper" class="fn">
-    <h3>strings:is-upper</h3>
-    <p class="fn-sig"><code>[$strings:is-upper]  -> bool</code>  —  Report whether every cased character is upper-case (empty string is true).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-is-upper" class="fn">
+  <h3>strings:is-upper</h3>
+  <p class="fn-sig"><code>[$strings:is-upper]  -> bool</code>  —  Report whether every cased character is upper-case (empty string is true).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:is-upper "ABC"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-is-lower" class="fn">
-    <h3>strings:is-lower</h3>
-    <p class="fn-sig"><code>[$strings:is-lower]  -> bool</code>  —  Report whether every cased character is lower-case (empty string is true).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-is-lower" class="fn">
+  <h3>strings:is-lower</h3>
+  <p class="fn-sig"><code>[$strings:is-lower]  -> bool</code>  —  Report whether every cased character is lower-case (empty string is true).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:is-lower "abc"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-is-blank" class="fn">
-    <h3>strings:is-blank</h3>
-    <p class="fn-sig"><code>[$strings:is-blank]  -> bool</code>  —  Report whether a string is empty or contains only whitespace.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-is-blank" class="fn">
+  <h3>strings:is-blank</h3>
+  <p class="fn-sig"><code>[$strings:is-blank]  -> bool</code>  —  Report whether a string is empty or contains only whitespace.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:is-blank "   "]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-format" class="fn">
-    <h3>strings:format</h3>
-    <p class="fn-sig"><code>[$strings:format]  -> string</code>  —  Substitute positional and named placeholders in a template with the given args.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-format" class="fn">
+  <h3>strings:format</h3>
+  <p class="fn-sig"><code>[$strings:format]  -> string</code>  —  Substitute positional and named placeholders in a template with the given args.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:format "Hello, {}! You have {} messages." ("Alice", 5)]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'Hello, Alice! You have 5 messages.'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-escape-html" class="fn">
-    <h3>strings:escape-html</h3>
-    <p class="fn-sig"><code>[$strings:escape-html]  -> string</code>  —  Escape the five HTML metacharacters & < > double-quote and single-quote.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'Hello, Alice! You have 5 messages.'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-escape-html" class="fn">
+  <h3>strings:escape-html</h3>
+  <p class="fn-sig"><code>[$strings:escape-html]  -> string</code>  —  Escape the five HTML metacharacters & < > double-quote and single-quote.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:escape-html "<a href=\"x\">&'"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'&lt;a href=&quot;x&quot;&gt;&amp;&#39;'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-unescape-html" class="fn">
-    <h3>strings:unescape-html</h3>
-    <p class="fn-sig"><code>[$strings:unescape-html]  -> string</code>  —  Decode numeric and HTML5 named character references back to text.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'&lt;a href=&quot;x&quot;&gt;&amp;&#39;'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-unescape-html" class="fn">
+  <h3>strings:unescape-html</h3>
+  <p class="fn-sig"><code>[$strings:unescape-html]  -> string</code>  —  Decode numeric and HTML5 named character references back to text.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:unescape-html "a&hellip;b&mdash;c&copy;"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'a…b—c©'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-escape-shell" class="fn">
-    <h3>strings:escape-shell</h3>
-    <p class="fn-sig"><code>[$strings:escape-shell]  -> string</code>  —  Quote a string for safe use as a single POSIX shell argument.</p>
-    
-  </section>
-  <section id="fn-strings-escape-json" class="fn">
-    <h3>strings:escape-json</h3>
-    <p class="fn-sig"><code>[$strings:escape-json]  -> string</code>  —  Apply JSON string escapes to a string.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'a…b—c©'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-escape-shell" class="fn">
+  <h3>strings:escape-shell</h3>
+  <p class="fn-sig"><code>[$strings:escape-shell]  -> string</code>  —  Quote a string for safe use as a single POSIX shell argument.</p>
+</section><section id="fn-strings-escape-json" class="fn">
+  <h3>strings:escape-json</h3>
+  <p class="fn-sig"><code>[$strings:escape-json]  -> string</code>  —  Apply JSON string escapes to a string.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:escape-json "a\"b"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'a\\"b'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-escape-regex" class="fn">
-    <h3>strings:escape-regex</h3>
-    <p class="fn-sig"><code>[$strings:escape-regex]  -> string</code>  —  Escape regex metacharacters so a string matches literally.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'a\\"b'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-escape-regex" class="fn">
+  <h3>strings:escape-regex</h3>
+  <p class="fn-sig"><code>[$strings:escape-regex]  -> string</code>  —  Escape regex metacharacters so a string matches literally.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:escape-regex "a.b*c"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'a\.b\*c'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-to-number" class="fn">
-    <h3>strings:to-number</h3>
-    <p class="fn-sig"><code>[$strings:to-number]  -> [or number absence]</code>  —  Parse a locale-free numeric string into a number — int for pure-integer syntax, float for fractional / exponent syntax. Surrounding whitespace is trimmed; a non-numeric input (trailing junk, grouping separators, empty) yields the absence channel () rather than a silent string passthrough, so callers branch with [?else]. For grouping / Unicode digits use cx-stdlib/locale.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>'a\.b\*c'</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-to-number" class="fn">
+  <h3>strings:to-number</h3>
+  <p class="fn-sig"><code>[$strings:to-number]  -> [or number absence]</code>  —  Parse a locale-free numeric string into a number — int for pure-integer syntax, float for fractional / exponent syntax. Surrounding whitespace is trimmed; a non-numeric input (trailing junk, grouping separators, empty) yields the absence channel () rather than a silent string passthrough, so callers branch with [?else]. For grouping / Unicode digits use cx-stdlib/locale.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:to-number "3.07"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>3.07</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-to-int" class="fn">
-    <h3>strings:to-int</h3>
-    <p class="fn-sig"><code>[$strings:to-int]  -> [or int absence]</code>  —  Parse a locale-free integer string (optional sign, ASCII digits) into an int; fractional or exponent syntax ("3.07", "1e3") and non-numeric input yield the absence channel ().</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>3.07e0</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-to-int" class="fn">
+  <h3>strings:to-int</h3>
+  <p class="fn-sig"><code>[$strings:to-int]  -> [or int absence]</code>  —  Parse a locale-free integer string (optional sign, ASCII digits) into an int; fractional or exponent syntax ("3.07", "1e3") and non-numeric input yield the absence channel ().</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:to-int "42"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>42</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-strings-to-float" class="fn">
-    <h3>strings:to-float</h3>
-    <p class="fn-sig"><code>[$strings:to-float]  -> [or float absence]</code>  —  Parse any locale-free numeric string into a float ("5" -> 5.0); a non-numeric input yields the absence channel ().</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/strings']
+    </pre>
+    <pre class="sample-output">
+      <code>42</code>
+    </pre>
+  </div>
+</section><section id="fn-strings-to-float" class="fn">
+  <h3>strings:to-float</h3>
+  <p class="fn-sig"><code>[$strings:to-float]  -> [or float absence]</code>  —  Parse any locale-free numeric string into a float ("5" -> 5.0); a non-numeric input yields the absence channel ().</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/strings']
 [$strings:to-float "5"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>5.0</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>5.0e0</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>strings</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

@@ -7,8 +7,16 @@ import cx
 // entry u16 (entry offset 6) is the multicodec code of the hash algorithm
 // naming the 32-byte doc_hash slot. The engine implements sha2-256
 // (multicodec 0x12 — the registry's required default); readers FAIL CLOSED
-// on any other code, including the pre-epoch zero. All 1.0 algorithms are
-// 32-byte; a non-32-byte digest requires pack v3.
+// on any other code. All 1.0 algorithms are 32-byte; a non-32-byte digest
+// requires pack v3.
+//
+// RULED: CO-1 (#974) narrowed "any other code" by exactly one value: the
+// pre-epoch zero is ACCEPTED as sha2-256, because v0.15 wrote a literal 0
+// into the slot while it was still reserved and had only one hash algorithm
+// to write about. The read-compat behaviour and the forward stamp are pinned
+// in pack_read_compat_test.v; this file stays the WRITER pin (the writer
+// still emits 0x0012 and only 0x0012) plus the fail-closed pin for every
+// code outside {0x0000, 0x0012}.
 
 fn mh_tmp_pack(name string) string {
 	return os.join_path(os.temp_dir(), name)
@@ -95,17 +103,25 @@ fn test_reader_fails_closed_on_unknown_code() {
 	} else {
 		assert err.msg().contains('unsupported hash multicodec'), 'wrong error: ${err.msg()}'
 	}
-	// The pre-epoch reserved zero is equally dead — fail loud, no dual-accept.
+	// RULED: CO-1 (#974) — the pre-epoch reserved zero is the ONE exception:
+	// v0.15 wrote it while the slot was still reserved, so it names the only
+	// hash algorithm that era had. Accepted, and the reader says so.
 	data[header_size + 6] = 0x00
 	os.write_file_array(path, data) or {
 		assert false, 'rewrite failed: ${err}'
 		return
 	}
-	if _ := open_pack(path) {
-		assert false, 'open_pack accepted the pre-epoch zero code'
-	} else {
-		assert err.msg().contains('unsupported hash multicodec'), 'wrong error: ${err.msg()}'
+	r := open_pack(path) or {
+		assert false, 'open_pack refused the pre-epoch zero code: ${err}'
+		return
 	}
+	assert r.legacy_hash_slots == 1
+	got := r.get(object_name('payload'.bytes())) or {
+		assert false, 'zero-slot entry did not read back'
+		return
+	}
+	assert got == 'payload'.bytes()
+	r.close()
 	os.rm(path) or {}
 }
 

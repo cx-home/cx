@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,308 +143,255 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">process</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-process"><h1>process</h1><p class="lede">Run child processes: spawn them, capture their output, stream their stdio, connect them into pipelines, deliver signals, manage process groups, and drive pseudo-terminals. Every command is an argv array of strings — there is no shell-string form anywhere, which structurally rules out command injection. Child stdio reuses the io handle model, and a child's environment is set per-call rather than globally.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-process-run" class="fn">
-    <h3>process:run</h3>
-    <p class="fn-sig"><code>[$process:run]  -> element</code>  —  Spawn an argv command, run it to completion, and return a proc-result with captured stdout, stderr, and exit code.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/process']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-process-run" class="fn">
+  <h3>process:run</h3>
+  <p class="fn-sig"><code>[$process:run]  -> element</code>  —  Spawn an argv command, run it to completion, and return a proc-result with captured stdout, stderr, and exit code.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/process']
 [$process:run ("echo", "hello")]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-process-spawn" class="fn">
-    <h3>process:spawn</h3>
-    <p class="fn-sig"><code>[$process:spawn]  -> element</code>  —  Start an argv command and return a proc handle for streaming its stdio and managing its lifecycle.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/process']
-[$process:spawn ("tail", "-f", "/var/log/app.log")]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-process-stdin" class="fn">
-    <h3>process:stdin</h3>
-    <p class="fn-sig"><code>[$process:stdin]  -> element</code>  —  Return the child's writable stdin handle; closing it signals EOF to the child.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/process']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-process-spawn" class="fn">
+  <h3>process:spawn</h3>
+  <p class="fn-sig"><code>[$process:spawn]  -> element</code>  —  Start an argv command and return a proc handle for streaming its stdio and managing its lifecycle. Each of stdin/stdout/stderr is independently :pipe (default), :inherit, :discard, or a file path — a piped stream nobody drains fills at the OS pipe capacity and stops the child.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/process']
+[$process:spawn ("tail", "-f", "/var/log/app.log") stderr=:inherit]</code>
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-process-stdin" class="fn">
+  <h3>process:stdin</h3>
+  <p class="fn-sig"><code>[$process:stdin]  -> element</code>  —  Return the child's writable stdin handle; closing it signals EOF to the child.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/process']
 [$process:stdin [$process:spawn ("cat")]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-process-stdout" class="fn">
-    <h3>process:stdout</h3>
-    <p class="fn-sig"><code>[$process:stdout]  -> element</code>  —  Return the child's readable stdout handle for incremental consumption.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/process']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-process-stdout" class="fn">
+  <h3>process:stdout</h3>
+  <p class="fn-sig"><code>[$process:stdout]  -> element</code>  —  Return the child's readable stdout handle for incremental consumption.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/process']
 [$process:stdout [$process:spawn ("echo", "hi")]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-process-stderr" class="fn">
-    <h3>process:stderr</h3>
-    <p class="fn-sig"><code>[$process:stderr]  -> element</code>  —  Return the child's readable stderr handle for incremental consumption.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/process']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-process-stderr" class="fn">
+  <h3>process:stderr</h3>
+  <p class="fn-sig"><code>[$process:stderr]  -> element</code>  —  Return the child's readable stderr handle for incremental consumption.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/process']
 [$process:stderr [$process:spawn ("echo", "hi")]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-process-pid" class="fn">
-    <h3>process:pid</h3>
-    <p class="fn-sig"><code>[$process:pid]  -> int</code>  —  Return the child's operating-system process id.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/process']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-process-pid" class="fn">
+  <h3>process:pid</h3>
+  <p class="fn-sig"><code>[$process:pid]  -> int</code>  —  Return the child's operating-system process id.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/process']
 [$process:pid [$process:spawn ("sleep", "30")]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-process-wait" class="fn">
-    <h3>process:wait</h3>
-    <p class="fn-sig"><code>[$process:wait]  -> int</code>  —  Block until the child exits, reap it, and return its exit code.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/process']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-process-wait" class="fn">
+  <h3>process:wait</h3>
+  <p class="fn-sig"><code>[$process:wait]  -> int</code>  —  Block until the child exits, reap it, and return its exit code.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/process']
 [$process:wait [$process:spawn ("echo", "hi")]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-process-wait-timeout" class="fn">
-    <h3>process:wait-timeout</h3>
-    <p class="fn-sig"><code>[$process:wait-timeout]  -> [or int [sequence int]]</code>  —  Block up to ms for the child to exit, returning its exit code or absence if still running.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/process']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-process-wait-timeout" class="fn">
+  <h3>process:wait-timeout</h3>
+  <p class="fn-sig"><code>[$process:wait-timeout]  -> [or int [sequence int]]</code>  —  Block up to ms for the child to exit, returning its exit code or absence if still running.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/process']
 [$process:wait-timeout [$process:spawn ("sleep", "30")] 100]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-process-poll" class="fn">
-    <h3>process:poll</h3>
-    <p class="fn-sig"><code>[$process:poll]  -> [or int [sequence int]]</code>  —  Check without blocking, returning the child's exit code or absence if it is still running.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/process']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-process-poll" class="fn">
+  <h3>process:poll</h3>
+  <p class="fn-sig"><code>[$process:poll]  -> [or int [sequence int]]</code>  —  Check without blocking, returning the child's exit code or absence if it is still running.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/process']
 [$process:poll [$process:spawn ("sleep", "30")]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-process-close" class="fn">
-    <h3>process:close</h3>
-    <p class="fn-sig"><code>[$process:close]  -> null</code>  —  Release the handle, closing open stdio and reaping the child; idempotent and does not kill a running child.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/process']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-process-close" class="fn">
+  <h3>process:close</h3>
+  <p class="fn-sig"><code>[$process:close]  -> null</code>  —  Release the handle, closing open stdio and reaping the child; idempotent and does not kill a running child.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/process']
 [$process:close [$process:spawn ("echo", "hi")]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-process-pipeline" class="fn">
-    <h3>process:pipeline</h3>
-    <p class="fn-sig"><code>[$process:pipeline]  -> element</code>  —  Connect stages end-to-end and return a pipeline-result with a pipefail-aggregate exit code.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/process']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-process-pipeline" class="fn">
+  <h3>process:pipeline</h3>
+  <p class="fn-sig"><code>[$process:pipeline]  -> element</code>  —  Connect stages end-to-end and return a pipeline-result with a pipefail-aggregate exit code.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/process']
 [$process:pipeline ([stage [argv "printf" "a\nb\nERR\n"]], [stage [argv "grep" "ERR"]])]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-process-send-signal" class="fn">
-    <h3>process:send-signal</h3>
-    <p class="fn-sig"><code>[$process:send-signal]  -> null</code>  —  Deliver the named signal atom to the child; a no-op if it has already exited.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/process']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-process-send-signal" class="fn">
+  <h3>process:send-signal</h3>
+  <p class="fn-sig"><code>[$process:send-signal]  -> null</code>  —  Deliver the named signal atom to the child; a no-op if it has already exited.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/process']
 [$process:send-signal [$process:spawn ("sleep", "30")] :hup]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-process-terminate" class="fn">
-    <h3>process:terminate</h3>
-    <p class="fn-sig"><code>[$process:terminate]  -> null</code>  —  Deliver SIGTERM to the child for polite, catchable termination.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/process']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-process-terminate" class="fn">
+  <h3>process:terminate</h3>
+  <p class="fn-sig"><code>[$process:terminate]  -> null</code>  —  Deliver SIGTERM to the child for polite, catchable termination.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/process']
 [$process:terminate [$process:spawn ("sleep", "30")]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-process-kill" class="fn">
-    <h3>process:kill</h3>
-    <p class="fn-sig"><code>[$process:kill]  -> null</code>  —  Deliver SIGKILL to the child for forced termination.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/process']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-process-kill" class="fn">
+  <h3>process:kill</h3>
+  <p class="fn-sig"><code>[$process:kill]  -> null</code>  —  Deliver SIGKILL to the child for forced termination.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/process']
 [$process:kill [$process:spawn ("sleep", "30")]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-process-kill-group" class="fn">
-    <h3>process:kill-group</h3>
-    <p class="fn-sig"><code>[$process:kill-group]  -> null</code>  —  Signal the child's whole process group, reaching it and every descendant as a unit.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/process']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-process-kill-group" class="fn">
+  <h3>process:kill-group</h3>
+  <p class="fn-sig"><code>[$process:kill-group]  -> null</code>  —  Signal the child's whole process group, reaching it and every descendant as a unit.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/process']
 [$process:kill-group [$process:spawn ("./serve.sh") new-process-group=true] :term]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-process-spawn-pty" class="fn">
-    <h3>process:spawn-pty</h3>
-    <p class="fn-sig"><code>[$process:spawn-pty]  -> element</code>  —  Start a command attached to a fresh pseudo-terminal so it sees a real tty.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/process']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-process-spawn-pty" class="fn">
+  <h3>process:spawn-pty</h3>
+  <p class="fn-sig"><code>[$process:spawn-pty]  -> element</code>  —  Start a command attached to a fresh pseudo-terminal so it sees a real tty.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/process']
 [$process:spawn-pty ("vi", "notes.txt")]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-process-pty" class="fn">
-    <h3>process:pty</h3>
-    <p class="fn-sig"><code>[$process:pty]  -> element</code>  —  Return the pty master, one bidirectional io handle for the child's combined stdio.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/process']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-process-pty" class="fn">
+  <h3>process:pty</h3>
+  <p class="fn-sig"><code>[$process:pty]  -> element</code>  —  Return the pty master, one bidirectional io handle for the child's combined stdio.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/process']
 [$process:pty [$process:spawn-pty ("vi", "notes.txt")]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-process-window-size" class="fn">
-    <h3>process:window-size</h3>
-    <p class="fn-sig"><code>[$process:window-size]  -> element</code>  —  Return the pty's current window size as a size element with rows and cols.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/process']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-process-window-size" class="fn">
+  <h3>process:window-size</h3>
+  <p class="fn-sig"><code>[$process:window-size]  -> element</code>  —  Return the pty's current window size as a size element with rows and cols.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/process']
 [$process:window-size [$process:spawn-pty ("vi", "notes.txt")]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-process-set-window-size" class="fn">
-    <h3>process:set-window-size</h3>
-    <p class="fn-sig"><code>[$process:set-window-size]  -> null</code>  —  Resize the pty's window and deliver SIGWINCH to the child.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/process']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-process-set-window-size" class="fn">
+  <h3>process:set-window-size</h3>
+  <p class="fn-sig"><code>[$process:set-window-size]  -> null</code>  —  Resize the pty's window and deliver SIGWINCH to the child.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/process']
 [$process:set-window-size [$process:spawn-pty ("vi", "notes.txt")] 40 120]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>process</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

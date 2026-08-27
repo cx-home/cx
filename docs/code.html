@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,40 +143,38 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">The code language</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="code">
   <h1>The code language</h1>
-  
-    <section id="overview">
-      <h2>The CX code language</h2>
-      
-        <p>CX code is CX data with a leading <code>?</code> on the element name. A
+  <section id="overview">
+    <h2>The CX code language</h2>
+    <p>CX code is CX data with a leading <code>?</code> on the element name. A
          directive like <code>[?for]</code> is a normal element to the parser; the
          evaluator recognizes the <code>?</code> prefix and dispatches on the
          directive name. Everything else — patterns, paths, function
          calls, builtins, errors — is built from ordinary CX shapes.</p>
-        <pre>
-          <code class="language-cx">[# Data is data:                       #]
+    <pre>
+      <code class="language-cx">[# Data is data:                       #]
          [user id=1 email='ada@example.com']
 
          [# Code is data, plus a `?`:           #]
          [?for [in $u //user] [yield $u@email]]</code>
-        </pre>
-        <p>The evaluator is <code>cx_code_eval(input, program, output_target,
+    </pre>
+    <p>The evaluator is <code>cx_code_eval(input, program, output_target,
          err_out)</code> at the C ABI level; every binding's Layer-1
          <code>Doc.eval(code)</code> wraps it (see <a class="xref" href="bindings.html">bindings</a>). The full
          normative spec is
          <a href="../../spec/03-approved/core/code.md"><code>spec/core/code.md</code></a>.
          This section is the working developer guide.</p>
-        <p>Code can do five things: <b>select</b> (CXPath, see <a class="xref" href="#cxpath">cxpath</a>),
+    <p>Code can do five things: <b>select</b> (CXPath, see <a class="xref" href="#cxpath">cxpath</a>),
          <b>iterate</b> (<code>[?for]</code>, see <a class="xref" href="#for">for</a>), <b>dispatch</b>
          (<code>[?match]</code>, see <a class="xref" href="#match">match</a>), <b>bind</b> (<code>[?let]</code> / <code>[?def]</code> /
          <code>[?fn]</code>), and <b>update</b> (<code>[?modify]</code>, see <a class="xref" href="#modify">modify</a>). Every
          other directive is one of these five lifted into a specific
          domain — concurrency, async, resilience, services.</p>
-        <p><b>Code is data.</b> A directive is an element whose name happens
+    <p><b>Code is data.</b> A directive is an element whose name happens
          to start with <code>?</code>. You can pattern-match on <code>[?for ...]</code>
          exactly the way you pattern-match on <code>[user ...]</code>. You can
          transform code with <code>[?modify]</code>. You can hash it, project it
@@ -184,271 +182,249 @@
          end. The render rules in <a href="../../spec/03-approved/core/code.md"><code>spec/core/code.md</code></a>
          §10.1 turn any well-formed program into a sequence diagram
          deterministically — because the program is just a tree.</p>
-        <p><b>Pure-functional core.</b> Every directive returns a value;
+    <p><b>Pure-functional core.</b> Every directive returns a value;
          there is no assignment, no mutation, no rebinding. The
          concurrency primitives (channels, workers, async) exchange
          only immutable values, so there is no shared-mutable-state
          hazard by construction. See <a class="xref" href="runtime-representation.html#pure-updates">pure-updates</a> for the
          lens/zipper foundation that <code>[?modify]</code> builds on.</p>
-      
-    </section>
-    <section id="directives">
-      <h2>Directive registry</h2>
-      
-        <p>There are currently <b>eighty normative directives</b>.
+  </section>
+  <section id="directives">
+    <h2>Directive registry</h2>
+    <p>There are currently <b>eighty normative directives</b>.
          Adding or removing any directive requires a governance change per
          <a href="../../spec/03-approved/process/governance.md"><code>spec/process/governance.md</code></a>. The
          authoritative registry lives in
          <a href="../../spec/03-approved/core/code.md"><code>spec/core/code.md</code></a> §4.1; this
          subsection is an at-a-glance grouping of the directives this
          guide teaches — see the registry for the complete set.</p>
-        <p><b>Core constructs (11).</b> Built into the evaluator;
+    <p><b>Core constructs (11).</b> Built into the evaluator;
          everything else composes from these:</p>
-        <table>
-          <thead>
-            
-              <tr>
-                <th>directive</th>
-                <th>purpose</th>
-              </tr>
-            
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>[?match]</td>
-                <td>Pattern dispatch — single-arm assertion or multi-arm first-match (see <a class="xref" href="#match">match</a>)</td>
-              </tr>
-              <tr>
-                <td>[?modify]</td>
-                <td>Pure-functional update — apply an action at every CXPath focus (see <a class="xref" href="#modify">modify</a>)</td>
-              </tr>
-              <tr>
-                <td>[?for]</td>
-                <td>Iteration / comprehension over a CXPath, pattern, or sequence (see <a class="xref" href="#for">for</a>)</td>
-              </tr>
-              <tr>
-                <td>[?let]</td>
-                <td>Local binding scoped to a body (see <a class="xref" href="#let">let</a>)</td>
-              </tr>
-              <tr>
-                <td>[?fn]</td>
-                <td>Anonymous function literal — body of $bindings → expression</td>
-              </tr>
-              <tr>
-                <td>[?def]</td>
-                <td>Named top-level definition (function or value)</td>
-              </tr>
-              <tr>
-                <td>[?if]</td>
-                <td>Boolean branch with EBV condition (see <a class="xref" href="#if">if</a> + <a class="xref" href="#ebv">ebv</a>)</td>
-              </tr>
-              <tr>
-                <td>[?else]</td>
-                <td>Value-or-default coalesce — recover on [err] or absence (getOrElse; see <a class="xref" href="#errors">errors</a>)</td>
-              </tr>
-              <tr>
-                <td>[?pipe]</td>
-                <td>Pipeline — canonical form of the <code>|</code> operator (see <a class="xref" href="#pipe">pipe</a>)</td>
-              </tr>
-              <tr>
-                <td>[?map]</td>
-                <td>Map a closure over a sequence (sequential by default; the bareword [par] clause enables parallel evaluation and always preserves source order; [ordered] is a tombstoned no-op)</td>
-              </tr>
-              <tr>
-                <td>[?reduce]</td>
-                <td>Fold a sequence to a single value via a binary closure starting from [init …] (sequential left-fold by default; [par] requires associativity)</td>
-              </tr>
-            
-          </tbody>
-        </table>
-        <p><b>Resilience (6).</b> Wrap an inner expression with a
+    <table>
+      <thead>
+        <tr>
+          <th>directive</th>
+          <th>purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>[?match]</td>
+          <td>Pattern dispatch — single-arm assertion or multi-arm first-match (see <a class="xref" href="#match">match</a>)</td>
+        </tr>
+        <tr>
+          <td>[?modify]</td>
+          <td>Pure-functional update — apply an action at every CXPath focus (see <a class="xref" href="#modify">modify</a>)</td>
+        </tr>
+        <tr>
+          <td>[?for]</td>
+          <td>Iteration / comprehension over a CXPath, pattern, or sequence (see <a class="xref" href="#for">for</a>)</td>
+        </tr>
+        <tr>
+          <td>[?let]</td>
+          <td>Local binding scoped to a body (see <a class="xref" href="#let">let</a>)</td>
+        </tr>
+        <tr>
+          <td>[?fn]</td>
+          <td>Anonymous function literal — body of $bindings → expression</td>
+        </tr>
+        <tr>
+          <td>[?def]</td>
+          <td>Named top-level definition (function or value)</td>
+        </tr>
+        <tr>
+          <td>[?if]</td>
+          <td>Boolean branch with EBV condition (see <a class="xref" href="#if">if</a> + <a class="xref" href="#ebv">ebv</a>)</td>
+        </tr>
+        <tr>
+          <td>[?else]</td>
+          <td>Value-or-default coalesce — recover on [err] or absence (getOrElse; see <a class="xref" href="#errors">errors</a>)</td>
+        </tr>
+        <tr>
+          <td>[?pipe]</td>
+          <td>Pipeline — canonical form of the <code>|</code> operator (see <a class="xref" href="#pipe">pipe</a>)</td>
+        </tr>
+        <tr>
+          <td>[?map]</td>
+          <td>Map a closure over a sequence (sequential by default; the bareword [par] clause enables parallel evaluation and always preserves source order; [ordered] is a tombstoned no-op)</td>
+        </tr>
+        <tr>
+          <td>[?reduce]</td>
+          <td>Fold a sequence to a single value via a binary closure starting from [init …] (sequential left-fold by default; [par] requires associativity)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><b>Resilience (6).</b> Wrap an inner expression with a
          failure-handling policy. See <a class="xref" href="#resilience">resilience</a> for the parameter
          tables:</p>
-        <table>
-          <thead>
-            
-              <tr>
-                <th>directive</th>
-                <th>purpose</th>
-              </tr>
-            
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>[?retry]</td>
-                <td>Re-run on failure with backoff + jitter; bounded by max=</td>
-              </tr>
-              <tr>
-                <td>[?timeout]</td>
-                <td>Bound execution time; cancel + return [on-timeout …] on expiry</td>
-              </tr>
-              <tr>
-                <td>[?circuit-breaker]</td>
-                <td>Open after threshold-exceeded failures in a rolling window</td>
-              </tr>
-              <tr>
-                <td>[?fallback]</td>
-                <td>Run [recover-with …] secondary if primary returns [err …] ($err bound in the recovery)</td>
-              </tr>
-              <tr>
-                <td>[?rate-limit]</td>
-                <td>Token-bucket cap — max= calls per per= duration</td>
-              </tr>
-              <tr>
-                <td>[?bulkhead]</td>
-                <td>Bound max-concurrent= in-flight; optional [queue …]</td>
-              </tr>
-            
-          </tbody>
-        </table>
-        <p><b>Services + clients (3).</b> HTTP service definition + client
+    <table>
+      <thead>
+        <tr>
+          <th>directive</th>
+          <th>purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>[?retry]</td>
+          <td>Re-run on failure with backoff + jitter; bounded by max=</td>
+        </tr>
+        <tr>
+          <td>[?timeout]</td>
+          <td>Bound execution time; cancel + return [on-timeout …] on expiry</td>
+        </tr>
+        <tr>
+          <td>[?circuit-breaker]</td>
+          <td>Open after threshold-exceeded failures in a rolling window</td>
+        </tr>
+        <tr>
+          <td>[?fallback]</td>
+          <td>Run [recover-with …] secondary if primary returns [err …] ($err bound in the recovery)</td>
+        </tr>
+        <tr>
+          <td>[?rate-limit]</td>
+          <td>Token-bucket cap — max= calls per per= duration</td>
+        </tr>
+        <tr>
+          <td>[?bulkhead]</td>
+          <td>Bound max-concurrent= in-flight; optional [queue …]</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><b>Services + clients (3).</b> HTTP service definition + client
          construction. See <a class="xref" href="#services">services</a>:</p>
-        <table>
-          <thead>
-            
-              <tr>
-                <th>directive</th>
-                <th>purpose</th>
-              </tr>
-            
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>[?http-service]</td>
-                <td>Declare an HTTP service with resource handlers; returns a handle</td>
-              </tr>
-              <tr>
-                <td>[?service-handle]</td>
-                <td>Look up an existing service by name=</td>
-              </tr>
-              <tr>
-                <td>[?http-client]</td>
-                <td>Construct an HTTP client (optionally wrapped in resilience)</td>
-              </tr>
-            
-          </tbody>
-        </table>
-        <p><b>Concurrency (11).</b> Workers + channels + subscriptions +
+    <table>
+      <thead>
+        <tr>
+          <th>directive</th>
+          <th>purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>[?http-service]</td>
+          <td>Declare an HTTP service with resource handlers; returns a handle</td>
+        </tr>
+        <tr>
+          <td>[?service-handle]</td>
+          <td>Look up an existing service by name=</td>
+        </tr>
+        <tr>
+          <td>[?http-client]</td>
+          <td>Construct an HTTP client (optionally wrapped in resilience)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><b>Concurrency (11).</b> Workers + channels + subscriptions +
          selection. See <a class="xref" href="#workers">workers</a>:</p>
-        <table>
-          <thead>
-            
-              <tr>
-                <th>directive</th>
-                <th>purpose</th>
-              </tr>
-            
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>[?worker]</td>
-                <td>Spawn a worker; concurrent with siblings in the enclosing scope</td>
-              </tr>
-              <tr>
-                <td>[?worker-handle]</td>
-                <td>Look up an existing worker by name=</td>
-              </tr>
-              <tr>
-                <td>[?channel]</td>
-                <td>Create a FIFO channel — [?channel name=… buffer=N]; buffer=0 is rendezvous</td>
-              </tr>
-              <tr>
-                <td>[?subscribe]</td>
-                <td>Attach a subscription to a retained channel — resume from a position within the retained window</td>
-              </tr>
-              <tr>
-                <td>[?monitor]</td>
-                <td>Subscribe to a worker lifecycle-event stream (spawned / cancelled / panicked / done)</td>
-              </tr>
-              <tr>
-                <td>[?send]</td>
-                <td>Blocking send to a channel; returns [ok] or CHANNEL_CLOSED</td>
-              </tr>
-              <tr>
-                <td>[?try-send]</td>
-                <td>Send with timeout= — SEND_TIMEOUT if buffer stays full</td>
-              </tr>
-              <tr>
-                <td>[?receive]</td>
-                <td>Blocking receive — returns next value or CHANNEL_CLOSED</td>
-              </tr>
-              <tr>
-                <td>[?try-receive]</td>
-                <td>Receive with timeout= — RECV_TIMEOUT if empty</td>
-              </tr>
-              <tr>
-                <td>[?close]</td>
-                <td>Close a channel; second close raises CHANNEL_ALREADY_CLOSED</td>
-              </tr>
-              <tr>
-                <td>[?select]</td>
-                <td>Multi-way receive — first ready case wins (uniform-random on ties)</td>
-              </tr>
-            
-          </tbody>
-        </table>
-        <p><b>Async (8).</b> Futures + barriers + cancellation. See
+    <table>
+      <thead>
+        <tr>
+          <th>directive</th>
+          <th>purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>[?worker]</td>
+          <td>Spawn a worker; concurrent with siblings in the enclosing scope</td>
+        </tr>
+        <tr>
+          <td>[?worker-handle]</td>
+          <td>Look up an existing worker by name=</td>
+        </tr>
+        <tr>
+          <td>[?channel]</td>
+          <td>Create a FIFO channel — [?channel name=… buffer=N]; buffer=0 is rendezvous</td>
+        </tr>
+        <tr>
+          <td>[?subscribe]</td>
+          <td>Attach a subscription to a retained channel — resume from a position within the retained window</td>
+        </tr>
+        <tr>
+          <td>[?monitor]</td>
+          <td>Subscribe to a worker lifecycle-event stream (spawned / cancelled / panicked / done)</td>
+        </tr>
+        <tr>
+          <td>[?send]</td>
+          <td>Blocking send to a channel; returns [ok] or CHANNEL_CLOSED</td>
+        </tr>
+        <tr>
+          <td>[?try-send]</td>
+          <td>Send with timeout= — SEND_TIMEOUT if buffer stays full</td>
+        </tr>
+        <tr>
+          <td>[?receive]</td>
+          <td>Blocking receive — returns next value or CHANNEL_CLOSED</td>
+        </tr>
+        <tr>
+          <td>[?try-receive]</td>
+          <td>Receive with timeout= — RECV_TIMEOUT if empty</td>
+        </tr>
+        <tr>
+          <td>[?close]</td>
+          <td>Close a channel; second close raises CHANNEL_ALREADY_CLOSED</td>
+        </tr>
+        <tr>
+          <td>[?select]</td>
+          <td>Multi-way receive — first ready case wins (uniform-random on ties)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><b>Async (8).</b> Futures + barriers + cancellation. See
          <a class="xref" href="#async">async</a>:</p>
-        <table>
-          <thead>
-            
-              <tr>
-                <th>directive</th>
-                <th>purpose</th>
-              </tr>
-            
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>[?async]</td>
-                <td>Evaluate EXPR asynchronously; return a future immediately</td>
-              </tr>
-              <tr>
-                <td>[?await]</td>
-                <td>Block until a future is terminal; return value or [err]</td>
-              </tr>
-              <tr>
-                <td>[?await-all]</td>
-                <td>Join N futures — all-or-error barrier</td>
-              </tr>
-              <tr>
-                <td>[?await-any]</td>
-                <td>Yield first to terminate; others continue running</td>
-              </tr>
-              <tr>
-                <td>[?await-race]</td>
-                <td>Yield first to terminate; cancel the rest</td>
-              </tr>
-              <tr>
-                <td>[?cancel]</td>
-                <td>Request cooperative cancellation on a future/worker handle</td>
-              </tr>
-              <tr>
-                <td>[?check-cancel]</td>
-                <td>Polling cancellation point inside a CPU-bound loop</td>
-              </tr>
-              <tr>
-                <td>[?sleep]</td>
-                <td>Cancellable sleep for DURATION</td>
-              </tr>
-            
-          </tbody>
-        </table>
-        <p><b>Lifecycle (2).</b> <code>[?stop]</code> — initiate graceful shutdown on a
+    <table>
+      <thead>
+        <tr>
+          <th>directive</th>
+          <th>purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>[?async]</td>
+          <td>Evaluate EXPR asynchronously; return a future immediately</td>
+        </tr>
+        <tr>
+          <td>[?await]</td>
+          <td>Block until a future is terminal; return value or [err]</td>
+        </tr>
+        <tr>
+          <td>[?await-all]</td>
+          <td>Join N futures — all-or-error barrier</td>
+        </tr>
+        <tr>
+          <td>[?await-any]</td>
+          <td>Yield first to terminate; others continue running</td>
+        </tr>
+        <tr>
+          <td>[?await-race]</td>
+          <td>Yield first to terminate; cancel the rest</td>
+        </tr>
+        <tr>
+          <td>[?cancel]</td>
+          <td>Request cooperative cancellation on a future/worker handle</td>
+        </tr>
+        <tr>
+          <td>[?check-cancel]</td>
+          <td>Polling cancellation point inside a CPU-bound loop</td>
+        </tr>
+        <tr>
+          <td>[?sleep]</td>
+          <td>Cancellable sleep for DURATION</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><b>Lifecycle (2).</b> <code>[?stop]</code> — initiate graceful shutdown on a
          service or worker handle — and <code>[?wait-for]</code> — block until a
          service or worker terminates, returning its terminal value or
          <code>[err]</code>.</p>
-        <p class="note"><b>Retired in v0.8.0.</b> <code>[?find]</code> is no longer a directive. Use [; version-literal-ok ]
+    <p class="note"><b>Retired in v0.8.0.</b> <code>[?find]</code> is no longer a directive. Use [; version-literal-ok ]
          <code>[?for]</code> with a pattern generator, or CXPath <code>//pattern</code>. See
          <a class="xref" href="migration.html">migration</a> for mechanical migration rules. The rationale:
          CXPath is the universal selector, so the
          <code>[?find]</code> shape was redundant with <code>[?for]</code>+CXPath.</p>
-        <p class="note"><b>Implementation status.</b> Multi-arm <code>[?match]</code>,
+    <p class="note"><b>Implementation status.</b> Multi-arm <code>[?match]</code>,
          <code>[?modify]</code>, and the CXPath value kind in
          constructs other than <code>[?for]</code> are <b>fully
          specified</b> but not all are wired through every binding
@@ -458,116 +434,109 @@
          <a href="../../spec/03-approved/misc/parity-matrix.md"><code>spec/misc/parity-matrix.md</code></a>. Where
          a feature is spec'd-but-not-shipped this guide says so
          explicitly.</p>
-      
-    </section>
-    <section id="cxpath">
-      <h2>CXPath — the universal selector</h2>
-      
-        <p>CXPath is the single selector vocabulary across reading,
+  </section>
+  <section id="cxpath">
+    <h2>CXPath — the universal selector</h2>
+    <p>CXPath is the single selector vocabulary across reading,
          iteration, dispatch, and update. It aligns with XPath 3.1
          (see <a href="../../spec/03-approved/core/code.md"><code>spec/core/code.md</code></a> §5.5)
          with deliberate divergences kept minimal. <b>Path is a value
          kind</b>, not parser sugar — paths compile, cache, round-trip
          through every projection, and visualize as themselves.</p>
-        <p>The simplest CXPath is the descendant search:</p>
-        <pre>
-          <code class="language-cx">//user                       [# every user, anywhere in doc      #]
+    <p>The simplest CXPath is the descendant search:</p>
+    <pre>
+      <code class="language-cx">//user                       [# every user, anywhere in doc      #]
          //user[= $_@active true]     [# every active user                #]
          //user/@email                [# scalar attribute values          #]
          //section[1]                 [# first section (1-indexed)        #]
          //section[h2]                [# section that has an h2 child     #]</code>
-        </pre>
-        <p>The grammar is the XPath 3.1 <b>selection core</b>, lifted into
+    </pre>
+    <p>The grammar is the XPath 3.1 <b>selection core</b>, lifted into
          CX with one comparison operator family:</p>
-        <pre>
-          <code class="language-text">PathExpr   ::= '//' StepList | '/' StepList | StepList
+    <pre>
+      <code class="language-text">PathExpr   ::= '//' StepList | '/' StepList | StepList
          Step       ::= ( Axis '::' )? NodeTest Predicate*
          Predicate  ::= '[' PredExpr ']'
          PredExpr   ::= INT | AttrTest | StepTest | ScalarLiteral
                       | BindingOrPath | FusedPrefixForm</code>
-        </pre>
-        <section id="cxpath-axes">
-          <h3>The twelve axes</h3>
-          
-            <p>CXPath supports twelve axes. The default axis is <code>child</code>,
+    </pre>
+    <section id="cxpath-axes">
+      <h3>The twelve axes</h3>
+      <p>CXPath supports twelve axes. The default axis is <code>child</code>,
            so <code>name</code> ≡ <code>child::name</code>. The full set:</p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>axis</th>
-                    <th>direction</th>
-                    <th>what-it-selects</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>child</td>
-                    <td>down</td>
-                    <td>Direct children of context node (default axis)</td>
-                  </tr>
-                  <tr>
-                    <td>descendant</td>
-                    <td>down</td>
-                    <td>Children, grandchildren, deeper — excludes self</td>
-                  </tr>
-                  <tr>
-                    <td>descendant-or-self</td>
-                    <td>down</td>
-                    <td><code>descendant</code> plus the context node itself</td>
-                  </tr>
-                  <tr>
-                    <td>parent</td>
-                    <td>up</td>
-                    <td>The unique parent of context (or empty at root)</td>
-                  </tr>
-                  <tr>
-                    <td>ancestor</td>
-                    <td>up</td>
-                    <td>Parent, grandparent, up to root — excludes self</td>
-                  </tr>
-                  <tr>
-                    <td>ancestor-or-self</td>
-                    <td>up</td>
-                    <td><code>ancestor</code> plus the context node itself</td>
-                  </tr>
-                  <tr>
-                    <td>following-sibling</td>
-                    <td>lateral</td>
-                    <td>Later siblings with same parent</td>
-                  </tr>
-                  <tr>
-                    <td>preceding-sibling</td>
-                    <td>lateral</td>
-                    <td>Earlier siblings with same parent</td>
-                  </tr>
-                  <tr>
-                    <td>following</td>
-                    <td>document</td>
-                    <td>Every node after context in document order (excluding descendants)</td>
-                  </tr>
-                  <tr>
-                    <td>preceding</td>
-                    <td>document</td>
-                    <td>Every node before context in document order (excluding ancestors)</td>
-                  </tr>
-                  <tr>
-                    <td>self</td>
-                    <td>self</td>
-                    <td>Context node itself — useful for predicate filters</td>
-                  </tr>
-                  <tr>
-                    <td>attribute</td>
-                    <td>attr</td>
-                    <td>Attributes of context — shorthand is <code>@name</code></td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <pre>
-              <code class="language-cx">[# Common axis idioms                                              #]
+      <table>
+        <thead>
+          <tr>
+            <th>axis</th>
+            <th>direction</th>
+            <th>what-it-selects</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>child</td>
+            <td>down</td>
+            <td>Direct children of context node (default axis)</td>
+          </tr>
+          <tr>
+            <td>descendant</td>
+            <td>down</td>
+            <td>Children, grandchildren, deeper — excludes self</td>
+          </tr>
+          <tr>
+            <td>descendant-or-self</td>
+            <td>down</td>
+            <td><code>descendant</code> plus the context node itself</td>
+          </tr>
+          <tr>
+            <td>parent</td>
+            <td>up</td>
+            <td>The unique parent of context (or empty at root)</td>
+          </tr>
+          <tr>
+            <td>ancestor</td>
+            <td>up</td>
+            <td>Parent, grandparent, up to root — excludes self</td>
+          </tr>
+          <tr>
+            <td>ancestor-or-self</td>
+            <td>up</td>
+            <td><code>ancestor</code> plus the context node itself</td>
+          </tr>
+          <tr>
+            <td>following-sibling</td>
+            <td>lateral</td>
+            <td>Later siblings with same parent</td>
+          </tr>
+          <tr>
+            <td>preceding-sibling</td>
+            <td>lateral</td>
+            <td>Earlier siblings with same parent</td>
+          </tr>
+          <tr>
+            <td>following</td>
+            <td>document</td>
+            <td>Every node after context in document order (excluding descendants)</td>
+          </tr>
+          <tr>
+            <td>preceding</td>
+            <td>document</td>
+            <td>Every node before context in document order (excluding ancestors)</td>
+          </tr>
+          <tr>
+            <td>self</td>
+            <td>self</td>
+            <td>Context node itself — useful for predicate filters</td>
+          </tr>
+          <tr>
+            <td>attribute</td>
+            <td>attr</td>
+            <td>Attributes of context — shorthand is <code>@name</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <pre>
+        <code class="language-cx">[# Common axis idioms                                              #]
            //section//*                              [# all descendants       #]
            //code/ancestor::section                   [# enclosing sections    #]
            //user/following-sibling::user             [# later peer users      #]
@@ -575,92 +544,84 @@
            //h2/preceding-sibling::*[1]               [# immediate prior sib   #]
            //user[= $_@role 'admin']                  [# only-if-admin filter  #]
            //user/attribute::email                    [# == //user/@email      #]</code>
-            </pre>
-            <p>The same step vocabulary applies from a <b>binding</b>
+      </pre>
+      <p>The same step vocabulary applies from a <b>binding</b>
            (grammar [135a]): <code>$u/name</code> (child), <code>$u//item</code>
            (descendant), <code>$u@email</code> (attribute), <code>$u/..</code> (parent),
            and <code>$m.key</code> (map-key access on a map-valued binding).
            See <a class="xref" href="bindings.html">bindings</a>.</p>
-          
-        </section>
-        <section id="cxpath-predicates">
-          <h3>Predicates — positional, attribute, function, composite</h3>
-          
-            <p>A predicate is <code>[...]</code> after a step. The predicate body is
+    </section>
+    <section id="cxpath-predicates">
+      <h3>Predicates — positional, attribute, function, composite</h3>
+      <p>A predicate is <code>[...]</code> after a step. The predicate body is
            <b>prefix CX code over the context node</b> <code>$_</code> — plus a
            small set of atomic shorthands. The admitted shapes:</p>
-            <ul>
-              
-                <li><b>Positional</b> — <code>INT</code> selects the Nth match
+      <ul>
+        <li><b>Positional</b> — <code>INT</code> selects the Nth match
                 (1-indexed). <code>//section[1]</code> is the first section.
                 Negative positions are NOT supported; <code>[$_last]</code>
                 selects the last, <code>[= $_position N]</code> the Nth.</li>
-                <li><b>Attribute test</b> — <code>[@name]</code> (attribute present)
+        <li><b>Attribute test</b> — <code>[@name]</code> (attribute present)
                 and <code>[@!name]</code> (attribute absent). Value comparisons
                 are prefix forms: <code>[= $_@name V]</code>, <code>[!= …]</code>,
                 <code>[&lt; …]</code> etc.</li>
-                <li><b>Step-existence</b> — a bare child name: <code>[h2]</code>
+        <li><b>Step-existence</b> — a bare child name: <code>[h2]</code>
                 keeps elements that have an <code>h2</code> child.</li>
-                <li><b>Prefix expression</b> — any prefix CX form over
+        <li><b>Prefix expression</b> — any prefix CX form over
                 <code>$_</code>: comparisons (<code>[= $_@id 42]</code>), boolean
                 combinators (<code>[and …]</code> / <code>[or …]</code> / <code>[not …]</code>), and
                 function calls (<code>[$strings:contains $_@email
                 '@example.com']</code>).</li>
-              
-            </ul>
-            <pre>
-              <code class="language-cx">//user[1]                              [# first user                #]
+      </ul>
+      <pre>
+        <code class="language-cx">//user[1]                              [# first user                #]
            //user[= $_@id 42]                     [# attr equality             #]
            //user[@active]                        [# attr present              #]
            //user[$strings:contains $_@email '@example.com']
            //user[and [>= $_@age 18] [= $_@country 'US']]
            //section[h2]                          [# has an h2 child           #]
            //section[and [$count $_/h2] [$count $_/p]]</code>
-            </pre>
-            <p>Predicates chain: <code>//user[= $_@active true][1]</code> is the
+      </pre>
+      <p>Predicates chain: <code>//user[= $_@active true][1]</code> is the
            first active user — the second predicate filters the
            result of the first. The order matters.</p>
-          
-        </section>
-        <section id="cxpath-comparison">
-          <h3>Comparison — one operator family</h3>
-          
-            <p><b>One operator syntax: <code>= != &lt; &lt;= &gt; &gt;=</code>.</b> No keyword
+    </section>
+    <section id="cxpath-comparison">
+      <h3>Comparison — one operator family</h3>
+      <p><b>One operator syntax: <code>= != &lt; &lt;= &gt; &gt;=</code>.</b> No keyword
            synonyms (<code>eq</code> / <code>ne</code> / <code>lt</code> / ...) — they are not in the
            grammar. Semantics are <b>value-comparison</b>: both sides
            must be single values; a multi-valued operand raises
            <code>CXER0103</code>; no type coercion.</p>
-            <p>This is the deliberate divergence from XPath 3.1's
+      <p>This is the deliberate divergence from XPath 3.1's
            general-comparison default. In XPath, <code>//x = 1</code> is true if
            <i>any</i> <code>x</code> equals 1 — a common gotcha when the path
            silently returns multiple nodes. In CX, the path must
            return a single value, or the comparison raises. To
            express "any equals", filter the sequence itself:
            <code>[$exists //x[= $_ 1]]</code>.</p>
-            <pre>
-              <code class="language-cx">//user[= $_@age 42]              [# single attr → ok             #]
+      <pre>
+        <code class="language-cx">//user[= $_@age 42]              [# single attr → ok             #]
            //section[> [$count $_/p] 3]     [# both sides single → ok       #]
            //user[= $_@email 'ada@example.com']
            [# a multi-valued operand raises — filter the sequence
               instead of comparing it wholesale #]
            [$exists //user/tag[= $_ 'admin']]</code>
-            </pre>
-          
-        </section>
-        <section id="cxpath-bindings">
-          <h3>Paths on bindings</h3>
-          
-            <p>A CXPath rooted at a binding navigates from that value
+      </pre>
+    </section>
+    <section id="cxpath-bindings">
+      <h3>Paths on bindings</h3>
+      <p>A CXPath rooted at a binding navigates from that value
            instead of from the document root:</p>
-            <pre>
-              <code class="language-cx">[# $u/name — direct child · $u/* — all children ·
+      <pre>
+        <code class="language-cx">[# $u/name — direct child · $u/* — all children ·
             $u//item — descendant · $u@active — attribute (shorthand) ·
             $u/@active — attribute (full axis form)                    #]
            [?let [= $u [user active=true region='EU'
                         [name 'Ada'] [item 1] [item 2]]]
              ($u/name, $u/*, $u//item, $u@active, $u/@active)]</code>
-            </pre>
-            <p>The path operators that work on bindings are the same
+      </pre>
+      <p>The path operators that work on bindings are the same
            operators that work on the implicit document — one
            vocabulary. The leading <code>//</code> form is anchored at the
            <b>document root</b>, regardless of context; <code>$u//x</code> is
@@ -669,99 +630,89 @@
            same surface (grammar [135a]): <code>$u/..</code> steps to the
            parent, and <code>$m.key</code> reads a key from a map-valued
            binding.</p>
-          
-        </section>
-        <section id="cxpath-context">
-          <h3>Where CXPath values are accepted</h3>
-          
-            <p>CXPath is a value kind. Every construct that takes "a
+    </section>
+    <section id="cxpath-context">
+      <h3>Where CXPath values are accepted</h3>
+      <p>CXPath is a value kind. Every construct that takes "a
            selector" accepts a CXPath value:</p>
-            <pre>
-              <code class="language-cx">[?for [in $u //user[= $_@active true]] [yield [$render $u]]]
+      <pre>
+        <code class="language-cx">[?for [in $u //user[= $_@active true]] [yield [$render $u]]]
            [?if //admin [then [admin-panel]] [else ()]]
            [?match $n [case //prose [p $n]] [else ()]]
            [?let [= $cfg //meta/@config] [$render $cfg]]
            [?modify $doc //user/@status [set 'verified']]
            [$count //user[= $_@active true]]</code>
-            </pre>
-            <p>The same path expression — <code>//user[= $_@active true]</code> —
+      </pre>
+      <p>The same path expression — <code>//user[= $_@active true]</code> —
            appears as a <code>[?for]</code> generator, as an <code>[?if]</code> condition,
            as a <code>[?match]</code> arm, as a <code>[?let]</code> initializer, as a
            <code>[?modify]</code> focus, and as a builtin argument. This is the
            unification CX ratifies: no separate "path syntax"
            per construct.</p>
-            <p><b>Status note.</b> CXPath value-kind at non-<code>[?for]</code>
+      <p><b>Status note.</b> CXPath value-kind at non-<code>[?for]</code>
            positions is production-ready in V; full Tier-2 binding parity is
            tracked in
            <a href="../../spec/03-approved/misc/parity-matrix.md"><code>spec/misc/parity-matrix.md</code></a>.</p>
-          
-        </section>
-        <section id="cxpath-divergences">
-          <h3>Deliberate divergences from XPath 3.1</h3>
-          
-            <p>CXPath is a working subset of XPath 3.1 + deliberate
+    </section>
+    <section id="cxpath-divergences">
+      <h3>Deliberate divergences from XPath 3.1</h3>
+      <p>CXPath is a working subset of XPath 3.1 + deliberate
            changes. The normative treatment is
            <a href="../../spec/03-approved/core/code.md"><code>spec/core/code.md</code></a> §5.5;
            the headline differences:</p>
-            <ul>
-              
-                <li><b>One comparison family</b> (<code>= != &lt; &lt;= &gt; &gt;=</code>) —
+      <ul>
+        <li><b>One comparison family</b> (<code>= != &lt; &lt;= &gt; &gt;=</code>) —
                 XPath's split into general (<code>=</code>) and value (<code>eq</code>) is
                 gone; CX uses value-comparison semantics
                 exclusively. Rationale: the general-comparison
                 gotcha is XPath's most-reported source of subtle
                 bugs.</li>
-                <li><b>Path is a value kind</b> — XPath paths are syntactic
+        <li><b>Path is a value kind</b> — XPath paths are syntactic
                 fragments inside XPath expressions only. In CX they
                 are first-class values.</li>
-                <li><b>1-indexed positions</b> — adopted from XPath
+        <li><b>1-indexed positions</b> — adopted from XPath
                 verbatim (<code>//x[1]</code> is the first), but CX explicitly
                 rejects <code>[0]</code> (raises <code>CXER0100</code>); XPath silently
                 yields the empty sequence.</li>
-                <li><b>No general-purpose</b> <code>for</code> / <code>let</code> <b>inside paths</b> —
+        <li><b>No general-purpose</b> <code>for</code> / <code>let</code> <b>inside paths</b> —
                 CX moves binding into the <code>[?for]</code> / <code>[?let]</code>
                 directive surface; predicates take expressions but
                 not binding clauses. Use the surrounding directive.</li>
-                <li><b>No paren-calls anywhere</b> — XPath's <code>count(//user)</code>
+        <li><b>No paren-calls anywhere</b> — XPath's <code>count(//user)</code>
                 spelling does not exist; every call is the
                 head-dispatch form <code>[$count //user]</code>, in predicates
                 too (<code>[&gt; [$count $_/*] 0]</code>). <code>position()</code> / <code>last()</code>
                 are the reserved predicate bindings <code>$_position</code> /
                 <code>$_last</code>.</li>
-              
-            </ul>
-            <p class="note">The normative CXPath treatment — semantics, the desugar
+      </ul>
+      <p class="note">The normative CXPath treatment — semantics, the desugar
            table, and predicate evaluation — is
            <a href="../../spec/03-approved/core/code.md"><code>spec/core/code.md</code></a> §5.5;
            the XPath 3.1 parity corpus is
            <a href="../../conformance/xpath_31_parity.cxd"><code>conformance/xpath_31_parity.cxd</code></a>.</p>
-          
-        </section>
-      
     </section>
-    <section id="patterns">
-      <h2>Patterns and matching</h2>
-      
-        <p>A <b>pattern</b> is a literal CX subtree extended with binding
+  </section>
+  <section id="patterns">
+    <h2>Patterns and matching</h2>
+    <p>A <b>pattern</b> is a literal CX subtree extended with binding
          holes (<code>$name</code>), wildcards (<code>*</code>, <code>**</code>, <code>_</code>), type guards
          (<code>:TypeName</code>), scalar literals, and CXPath values. Patterns
          appear in <code>[?for]</code>'s first generator, in <code>[?match]</code> arms,
          and in destructuring <code>[?let]</code>. The full pattern grammar is
          in <a href="../../spec/03-approved/core/code.md"><code>spec/core/code.md</code></a> §5.</p>
-        <section id="pattern-element-shape">
-          <h3>Element-shape patterns</h3>
-          
-            <p>An element-shape pattern matches an element by name,
+    <section id="pattern-element-shape">
+      <h3>Element-shape patterns</h3>
+      <p>An element-shape pattern matches an element by name,
            attributes, and (recursively) body content. The pattern
            uses ordinary CX syntax with bind-holes where you want
            to capture values:</p>
-            <pre>
-              <code class="language-cx">[user email=$e]               [# bind email attribute             #]
+      <pre>
+        <code class="language-cx">[user email=$e]               [# bind email attribute             #]
            [user @active=true $u]        [# attr filter; bind whole user     #]
            [user @id=42 [name $n]]       [# bind name's body                 #]
            [post author=$a body=$b]      [# bind two attrs                   #]</code>
-            </pre>
-            <p><b>Binding semantics depend on context.</b> A pattern
+      </pre>
+      <p><b>Binding semantics depend on context.</b> A pattern
            <code>[NAME $x]</code> <b>without</b> attribute predicates auto-unwraps
            the body — text body binds the string, scalar body binds
            the scalar, empty body binds the element itself,
@@ -772,15 +723,13 @@
            you name attributes you are filtering "what kind of
            element", so the bind value is the element; when you
            don't, the bind value is the inner content.</p>
-          
-        </section>
-        <section id="pattern-scalar">
-          <h3>Scalar literal patterns</h3>
-          
-            <p>Scalar literals are valid patterns. They match by
+    </section>
+    <section id="pattern-scalar">
+      <h3>Scalar literal patterns</h3>
+      <p>Scalar literals are valid patterns. They match by
            value-equality:</p>
-            <pre>
-              <code class="language-cx">[?match $status
+      <pre>
+        <code class="language-cx">[?match $status
            [case 200    :ok]
            [case 404    :not-found]
            [case 500    :server-error]
@@ -788,154 +737,138 @@
            [case true   :enabled]
            [case null   :missing]
            [else        :unknown]]</code>
-            </pre>
-            <p>Integers, floats, strings, bools, dates, datetimes, and
+      </pre>
+      <p>Integers, floats, strings, bools, dates, datetimes, and
            <code>null</code> are all matchable as scalar literals. Float
            equality follows IEEE-754 — <code>nan</code> is <b>never</b> equal
            to <code>nan</code>. Test for NaN explicitly with
            <code>[?lib 'cx-stdlib/math']</code> and <code>[$math:is-nan $x]</code>.</p>
-          
-        </section>
-        <section id="pattern-cxpath">
-          <h3>CXPath patterns</h3>
-          
-            <p>A CXPath value used as a pattern matches if the
+    </section>
+    <section id="pattern-cxpath">
+      <h3>CXPath patterns</h3>
+      <p>A CXPath value used as a pattern matches if the
            candidate value is in the path's result sequence:</p>
-            <pre>
-              <code class="language-cx">[doc [heading 'Title'] [prose 'Body.']]
+      <pre>
+        <code class="language-cx">[doc [heading 'Title'] [prose 'Body.']]
            [?let [= $node [$first //heading]]
              [?match $node
                [case //heading [h2 [$text $node]]]
                [case //prose   [p  [$text $node]]]
                [else           $node]]]</code>
-            </pre>
-            <p>In a <code>[?for]</code> body, the same CXPath as the generator
+      </pre>
+      <p>In a <code>[?for]</code> body, the same CXPath as the generator
            selects directly:</p>
-            <pre>
-              <code class="language-cx">[users [user email='ada@ex.com' active=true]
+      <pre>
+        <code class="language-cx">[users [user email='ada@ex.com' active=true]
                 [user email='bob@ex.com' active=false]]
            [?for [in $u //user[= $_@active true]] [yield $u@email]]</code>
-            </pre>
-            <p>CXPath patterns and element-shape patterns compose in
+      </pre>
+      <p>CXPath patterns and element-shape patterns compose in
            the same arm list — <code>[?match]</code> can dispatch on a mix of
            both, with first-match-wins ordering (see <a class="xref" href="#match">match</a>).</p>
-          
-        </section>
-        <section id="pattern-wildcards">
-          <h3>Wildcards — *, **, _</h3>
-          
-            <p>Three wildcard forms:</p>
-            <ul>
-              
-                <li><code>*</code> — <b>any single element.</b> <code>[* $x]</code> matches any
+    </section>
+    <section id="pattern-wildcards">
+      <h3>Wildcards — *, **, _</h3>
+      <p>Three wildcard forms:</p>
+      <ul>
+        <li><code>*</code> — <b>any single element.</b> <code>[* $x]</code> matches any
                 element and binds it. <code>[section * $body]</code> matches
                 any section and binds the body wildcard slot.</li>
-                <li><code>**</code> — <b>recursive descent.</b> <code>[**]</code> matches any
+        <li><code>**</code> — <b>recursive descent.</b> <code>[**]</code> matches any
                 element at this position or deeper. Wrapping an
                 inner pattern — <code>[** [user $u]]</code> — matches a <code>user</code>
                 anywhere in the body and binds it.</li>
-                <li><code>_</code> — <b>anything, no bind.</b> <code>_</code> matches any value
+        <li><code>_</code> — <b>anything, no bind.</b> <code>_</code> matches any value
                 (including non-elements) without binding it. The
                 idiomatic catch-all in <code>[?match]</code>.</li>
-              
-            </ul>
-            <pre>
-              <code class="language-cx">[?let [= $node [section [h2 'T'] [code 'x = 1']]]
+      </ul>
+      <pre>
+        <code class="language-cx">[?let [= $node [section [h2 'T'] [code 'x = 1']]]
              [?match $node
                [case [section * $body] [matched-section]]
                [case [** [code $c]]    [highlighted $c]]
                [case _                 $node]]]</code>
-            </pre>
-          
-        </section>
-        <section id="pattern-binding">
-          <h3>Named bindings — $name</h3>
-          
-            <p><code>$name</code> (lowercase, leading <code>$</code>) is a binding hole. It
+      </pre>
+    </section>
+    <section id="pattern-binding">
+      <h3>Named bindings — $name</h3>
+      <p><code>$name</code> (lowercase, leading <code>$</code>) is a binding hole. It
            appears in attribute-value position
            (<code>[user email=$e]</code>), in body position (<code>[user $u]</code>),
            and in a destructuring <code>[?for]</code> generator
            (<code>[?for [in [user $u] /users/user] …]</code>).</p>
-            <p>A bind hole always succeeds at its position; the
+      <p>A bind hole always succeeds at its position; the
            bind value depends on what the surrounding pattern
            dictates (see <a class="xref" href="#pattern-element-shape">pattern-element-shape</a>). Naming
            collisions inside one arm raise <code>CXER0100</code>
            (PARSE_ERROR) — <code>[user @id=$x @name=$x]</code> would require
            the values be equal, which the current spec does not
            support; use a single bind and check with a <code>[when …]</code> clause.</p>
-          
-        </section>
-        <section id="pattern-type-guards">
-          <h3>Type-guard heads</h3>
-          
-            <p>A type guard <code>:TypeName</code> at <b>pattern-head position</b>
+    </section>
+    <section id="pattern-type-guards">
+      <h3>Type-guard heads</h3>
+      <p>A type guard <code>:TypeName</code> at <b>pattern-head position</b>
            narrows by schema-typed shape:</p>
-            <pre>
-              <code class="language-cx">[# Match only elements whose schema type is ServerConfig #]
+      <pre>
+        <code class="language-cx">[# Match only elements whose schema type is ServerConfig #]
            [?match $cfg
              [case [:ServerConfig $c] [$validate-server $c]]
              [case [:ClientConfig $c] [$validate-client $c]]
              [else [result status=err code='CXER0103' reason='unknown config']]]</code>
-            </pre>
-            <p>Type-guard resolution is by the document's schema
+      </pre>
+      <p>Type-guard resolution is by the document's schema
            binding (see <a class="xref" href="data-language.html#schema">schema</a> in the data section); with no
            schema in scope type guards are rejected at program
            load. Pair with schema binding (<code>[?cx schema='…']</code>) for
            type-driven dispatch.</p>
-          
-        </section>
-      
     </section>
-    <section id="bindings">
-      <h2>Bindings and paths</h2>
-      
-        <p>A binding is a name introduced by <code>[?let]</code>, <code>[?for]</code>,
+  </section>
+  <section id="bindings">
+    <h2>Bindings and paths</h2>
+    <p>A binding is a name introduced by <code>[?let]</code>, <code>[?for]</code>,
          <code>[?fn]</code>, or <code>[?match]</code> pattern. Bindings are referenced via
          <code>$name</code>. They are immutable — there is no rebinding (per
          CX's pure-functional discipline).</p>
-        <pre>
-          <code class="language-cx">[users [user role='admin' email='root@example.com']
+    <pre>
+      <code class="language-cx">[users [user role='admin' email='root@example.com']
               [user role='user'  email='ada@example.com']]
          [?let [= $admins //user[= $_@role 'admin']]
            [?for [in $a $admins] [yield $a@email]]]</code>
-        </pre>
-        <p>A binding's value is whatever expression produced it:
+    </pre>
+    <p>A binding's value is whatever expression produced it:
          a sequence, a scalar, an element, an array, a map, an
          error, a future, a CXPath, a function literal. Every value
          is a sequence (per the sequence-flat principle); single
          values are sequences of one.</p>
-        <p><b>Navigation from a binding</b> uses CXPath syntax (see
+    <p><b>Navigation from a binding</b> uses CXPath syntax (see
          <a class="xref" href="#cxpath-bindings">cxpath-bindings</a>). The path operators that work on
          bindings are the same operators that work on the implicit
          document — one vocabulary. <code>$u/email</code> is a child step;
          <code>$u@email</code> is the attribute shorthand; <code>$u/@email</code> is the
          full attribute axis form.</p>
-        <p><b>Scope.</b> A binding is in scope inside the directive
+    <p><b>Scope.</b> A binding is in scope inside the directive
          body that introduced it. <code>[?let [= $x E] BODY]</code> puts
          <code>$x</code> in scope for <code>BODY</code> only; outside the let it does
          not exist. <code>[?for [in $u SEQ] [yield E]]</code> puts <code>$u</code> in
          scope for <code>E</code> (one iteration at a time, per item).</p>
-        <p><b>Shadowing.</b> A nested binding with the same name shadows
+    <p><b>Shadowing.</b> A nested binding with the same name shadows
          the outer for the inner scope; this is the standard lexical
          rule and matches every host language. CX does not warn on
          shadowing — readability is the author's responsibility.</p>
-      
-    </section>
-    <section id="constructs">
-      <h2>Core constructs</h2>
-      
-        <p>The six core constructs are how every CX program is built.
+  </section>
+  <section id="constructs">
+    <h2>Core constructs</h2>
+    <p>The six core constructs are how every CX program is built.
          Each is documented in the following sub-sections.</p>
-        <section id="for">
-          <h3>[?for] — iteration</h3>
-          
-            <p><code>[?for]</code> is the iteration / comprehension primitive. The
+    <section id="for">
+      <h3>[?for] — iteration</h3>
+      <p><code>[?for]</code> is the iteration / comprehension primitive. The
            expression in the <code>[in …]</code> clause is either a CXPath
            (yields a sequence to iterate), a pattern (matches the
            generator — the <code>[?find]</code> replacement), or any expression
            that evaluates to a sequence.</p>
-            <pre>
-              <code class="language-cx">[site
+      <pre>
+        <code class="language-cx">[site
              [user id=1 email='ada@example.com'   age=36 active=true]
              [user id=2 email='grace@example.com' age=17 active=false]
              [post author=1 [title 'Notes']]
@@ -961,8 +894,8 @@
 
            [# Lazy evaluation over large input                           #]
            [?for [in $row //logs/row] [lazy] [yield [$text $row]]]</code>
-            </pre>
-            <p><code>[par]</code> and <code>[lazy]</code> are evaluation-modifier clauses —
+      </pre>
+      <p><code>[par]</code> and <code>[lazy]</code> are evaluation-modifier clauses —
            same surface, different scheduler. <code>[par]</code> distributes
            iterations across a bounded worker pool (<code>min(4, ncpu)</code>
            workers by default; <code>[par N]</code> caps it at N) and <b>always
@@ -972,32 +905,30 @@
            the iteration runs in bounded memory regardless of input
            size. Full semantics in
            <a href="../../spec/03-approved/core/code.md"><code>spec/core/code.md</code></a> §7.</p>
-            <p><b>Multiple <code>[where …]</code> clauses</b> AND together; <b>multiple
+      <p><b>Multiple <code>[where …]</code> clauses</b> AND together; <b>multiple
            <code>[yield …]</code> clauses</b> concatenate (per the sequence-flat
            principle — yields never produce a list-of-lists).</p>
-          
-        </section>
-        <section id="match">
-          <h3>[?match] — dispatch (single + multi-arm)</h3>
-          
-            <p><code>[?match]</code> is pattern dispatch. CX supports two
+    </section>
+    <section id="match">
+      <h3>[?match] — dispatch (single + multi-arm)</h3>
+      <p><code>[?match]</code> is pattern dispatch. CX supports two
            forms: <b>2-arg destructure</b> (single arm, asserts the
            value matches or raises) and <b>multi-arm</b> (first-match-
            wins across N arms). The multi-arm form is a recent
            addition.</p>
-            <p><b>Single-arm form</b> — pattern-bind a value and assert
+      <p><b>Single-arm form</b> — pattern-bind a value and assert
            the shape:</p>
-            <pre>
-              <code class="language-cx">[# Destructures $result as [ok V] or raises CXER0100 #]
+      <pre>
+        <code class="language-cx">[# Destructures $result as [ok V] or raises CXER0100 #]
            [?let [= $result [ok 42]]
              [?match $result [ok $v] [yield [rendered $v]]]]</code>
-            </pre>
-            <p><b>Multi-arm form</b> — first-match-wins across <code>[case …]</code> /
+      </pre>
+      <p><b>Multi-arm form</b> — first-match-wins across <code>[case …]</code> /
            <code>[when …]</code> / <code>[else …]</code> clauses. Arms may mix element-shape
            patterns, scalar literals, CXPath paths, wildcards,
            and predicate-only <code>[when …]</code> clauses:</p>
-            <pre>
-              <code class="language-cx">[?let [= $node [code 'x = 1']]
+      <pre>
+        <code class="language-cx">[?let [= $node [code 'x = 1']]
              [?match $node
                [case [prose $p]   [p $p]]
                [case [code $c]    [pre $c]]
@@ -1017,112 +948,102 @@
                [case [http-get $u] [where [= $u '/admin']] [route $u]]
                [case [http-get $u]                         [status 403]]
                [else                                       [status 400]]]]</code>
-            </pre>
-            <p><b>Arm semantics:</b></p>
-            <ul>
-              
-                <li><code>[case PAT R]</code> — <b>match against pattern PAT.</b>
+      </pre>
+      <p><b>Arm semantics:</b></p>
+      <ul>
+        <li><code>[case PAT R]</code> — <b>match against pattern PAT.</b>
                 Arms evaluate top-to-bottom; the first one whose
                 pattern matches "wins". Later arms are not tried,
                 even if they would also have matched.</li>
-                <li><code>[when PRED R]</code> — <b>match iff predicate truthy.</b>
+        <li><code>[when PRED R]</code> — <b>match iff predicate truthy.</b>
                 No pattern; the predicate is evaluated with the
                 scrutinee in scope as <code>$_</code> (and any earlier <code>[case
                 …]</code> bindings still in scope only if the same arm).</li>
-                <li><code>[else R]</code> — <b>catch-all, always last.</b> Equivalent
+        <li><code>[else R]</code> — <b>catch-all, always last.</b> Equivalent
                 to <code>[case _ R]</code>. Multiple <code>[else …]</code> clauses raise
                 <code>CXER0100</code>.</li>
-                <li><code>[case PAT [where PRED] R]</code> — <b>guard on a case
+        <li><code>[case PAT [where PRED] R]</code> — <b>guard on a case
                 arm.</b> The pattern must match AND the predicate
                 must be truthy.</li>
-                <li><b>No implicit EBV in</b> <code>[case …]</code>. <code>[case …]</code> tests
+        <li><b>No implicit EBV in</b> <code>[case …]</code>. <code>[case …]</code> tests
                 pattern equality / structural match; it does not
                 apply EBV. <code>[when …]</code> uses EBV.</li>
-              
-            </ul>
-            <p><b>No-match behavior differs by form.</b> The 2-arg form
+      </ul>
+      <p><b>No-match behavior differs by form.</b> The 2-arg form
            raises <code>CXER0100</code>; the multi-arm form yields <code>()</code> (the
            empty sequence) if no arm matches and no <code>[else …]</code> is
            present. An unreachable arm (covered by an earlier arm
            with no guard) raises a warning at parse time but does
            not fail compilation.</p>
-            <p class="note"><b>Status.</b> Multi-arm <code>[?match]</code> is fully spec'd.
+      <p class="note"><b>Status.</b> Multi-arm <code>[?match]</code> is fully spec'd.
            V's evaluator carries the production-ready
            implementation; Tier-2 binding parity is per
            <a href="../../spec/03-approved/misc/parity-matrix.md"><code>spec/misc/parity-matrix.md</code></a>.</p>
-          
-        </section>
-        <section id="if">
-          <h3>[?if] — boolean branch (with EBV)</h3>
-          
-            <p><code>[?if cond [then E1] [else E2]]</code> is the explicit boolean
+    </section>
+    <section id="if">
+      <h3>[?if] — boolean branch (with EBV)</h3>
+      <p><code>[?if cond [then E1] [else E2]]</code> is the explicit boolean
            branch. The condition is evaluated with the EBV
            (Effective Boolean Value) rule — see <a class="xref" href="#ebv">ebv</a> below.</p>
-            <pre>
-              <code class="language-cx">[site [admin 'root'] [config debug=false]]
+      <pre>
+        <code class="language-cx">[site [admin 'root'] [config debug=false]]
            [?if //admin [then [admin-panel]] [else [user-panel]]]
            [?let [= $age 36]
              [?if [>= $age 18] [then :adult] [else :minor]]]
            [?let [= $cfg [$first //config]]
              [?if $cfg@debug [then [debug-trace]] [else ()]]]</code>
-            </pre>
-            <p>For multi-way conditionals prefer <code>[?match]</code> multi-arm
+      </pre>
+      <p>For multi-way conditionals prefer <code>[?match]</code> multi-arm
            (see <a class="xref" href="#match">match</a>). <code>[?if]</code> stays separate from <code>[?match]</code>
            because they have different contracts — <code>[?if]</code> uses
            EBV (truthy/falsy with container rules), <code>[?match]</code>
            <code>[case …]</code> does <b>not</b> (it tests strictly by structural
            equality / pattern match).</p>
-            <p><b>The <code>[else …]</code> clause is optional.</b> When omitted, an
+      <p><b>The <code>[else …]</code> clause is optional.</b> When omitted, an
            untrue condition yields <code>()</code> (the empty sequence). Many
            CX idioms exploit this — <code>[?if $n@hidden [then ()] [else
            [$render $n]]]</code> reads as "render unless hidden".</p>
-            <section id="ebv">
-              <h4>EBV — the Effective Boolean Value rule</h4>
-              
-                <p>The EBV rule, applied in order (per
+      <section id="ebv">
+        <h4>EBV — the Effective Boolean Value rule</h4>
+        <p>The EBV rule, applied in order (per
              <a href="../../spec/03-approved/core/cxdm.md"><code>spec/core/cxdm.md</code></a> §4.6):</p>
-                <ul>
-                  
-                    <li><b>Empty sequence</b> <code>()</code> → false.</li>
-                    <li><b>Single Scalar</b> of kind <code>bool</code> → that bool's
+        <ul>
+          <li><b>Empty sequence</b> <code>()</code> → false.</li>
+          <li><b>Single Scalar</b> of kind <code>bool</code> → that bool's
                   value.</li>
-                    <li><b>Single Scalar</b> of kind <code>string</code> →
+          <li><b>Single Scalar</b> of kind <code>string</code> →
                   length &gt; 0.</li>
-                    <li><b>Single Scalar</b> of kind <code>int</code> / <code>float</code> →
+          <li><b>Single Scalar</b> of kind <code>int</code> / <code>float</code> →
                   value <code>!= 0</code> (and not <code>nan</code> for float).</li>
-                    <li><b>Single Scalar</b> of kind <code>null</code> → false.</li>
-                    <li><b>Single Scalar</b> of kind <code>date</code> / <code>datetime</code> /
+          <li><b>Single Scalar</b> of kind <code>null</code> → false.</li>
+          <li><b>Single Scalar</b> of kind <code>date</code> / <code>datetime</code> /
                   <code>bytes</code> → true (existence is truthy).</li>
-                    <li><b>Single Node (element)</b> → true.</li>
-                    <li><b>Single Array</b> (v1.1 / v0.8.0) → true iff [; version-literal-ok ]
+          <li><b>Single Node (element)</b> → true.</li>
+          <li><b>Single Array</b> (v1.1 / v0.8.0) → true iff [; version-literal-ok ]
                   non-empty (length &gt; 0).</li>
-                    <li><b>Single Map</b> (v1.1) → true iff non-empty.</li>
-                    <li><b>Sequence of length &gt; 1</b> → true.</li>
-                  
-                </ul>
-                <p>This is the rule that makes <code>[?if //service …]</code>
+          <li><b>Single Map</b> (v1.1) → true iff non-empty.</li>
+          <li><b>Sequence of length &gt; 1</b> → true.</li>
+        </ul>
+        <p>This is the rule that makes <code>[?if //service …]</code>
              mean "if any service exists", <code>[?if @debug …]</code> mean
              "if the debug attribute exists and is truthy", and
              <code>[?if @items …]</code> mean "if the items array is
              non-empty" when <code>@items</code> is an Array-typed
              attribute.</p>
-                <p>The container rules (Array/Map empty-is-falsy)
+        <p>The container rules (Array/Map empty-is-falsy)
              follow the convention shared by Python lists/dicts,
              JSON-template engines, and YAML/TOML processors.
              CX deliberately diverges from XPath 3.1 here, which
              raises a type error on EBV(array); CX's pragmatic
              rule reads more naturally in template position.</p>
-              
-            </section>
-          
-        </section>
-        <section id="let">
-          <h3>[?let] — binding</h3>
-          
-            <p><code>[?let]</code> introduces a local binding. The bound name is
+      </section>
+    </section>
+    <section id="let">
+      <h3>[?let] — binding</h3>
+      <p><code>[?let]</code> introduces a local binding. The bound name is
            in scope inside the body that follows.</p>
-            <pre>
-              <code class="language-cx">[meta host='api.example.com' port='8443']
+      <pre>
+        <code class="language-cx">[meta host='api.example.com' port='8443']
 
            [# Multiple bindings — flat, sequential, each sees the prior #]
            [?let [= $meta [$first //meta]]
@@ -1130,83 +1051,77 @@
                  [= $port [$string $meta@port]]
                  [= $url  [$concat 'https://' $base ':' $port]]
              [endpoint target=$url]]</code>
-            </pre>
-            <p><code>[?let]</code> is the only way to give an expression a name
+      </pre>
+      <p><code>[?let]</code> is the only way to give an expression a name
            currently — there is no <code>def</code> inside a function body,
            no inline <code>where</code> (that is a <code>[?for]</code> filter). To name
            a value that is used multiple times, <code>[?let]</code> is
            idiomatic.</p>
-          
-        </section>
-        <section id="modify">
-          <h3>[?modify] — pure-functional updates</h3>
-          
-            <p><code>[?modify]</code> is the update directive. It takes a
+    </section>
+    <section id="modify">
+      <h3>[?modify] — pure-functional updates</h3>
+      <p><code>[?modify]</code> is the update directive. It takes a
            document (or sub-tree), a CXPath focus, and one or
            more action slots; it returns a <b>new</b> document with
            the action applied at every focus match. The original
            is unchanged (pure-functional).</p>
-            <p>The <b>eleven action slots</b> are:</p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>action</th>
-                    <th>description</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>[set V]</td>
-                    <td>Replace matched value, element body, or attribute value with V</td>
-                  </tr>
-                  <tr>
-                    <td>[delete]</td>
-                    <td>Remove matched node from its parent body (or attribute from element)</td>
-                  </tr>
-                  <tr>
-                    <td>[using F]</td>
-                    <td>Apply function F to each match; F receives the match, returns the replacement</td>
-                  </tr>
-                  <tr>
-                    <td>[rename N]</td>
-                    <td>Rename matched element (preserves attrs + body)</td>
-                  </tr>
-                  <tr>
-                    <td>[set-attr N V]</td>
-                    <td>Add new attribute N=V, or overwrite if N already present</td>
-                  </tr>
-                  <tr>
-                    <td>[delete-attr N]</td>
-                    <td>Remove attribute N from matched element</td>
-                  </tr>
-                  <tr>
-                    <td>[append V]</td>
-                    <td>Add child V at end of matched body</td>
-                  </tr>
-                  <tr>
-                    <td>[prepend V]</td>
-                    <td>Add child V at start of matched body</td>
-                  </tr>
-                  <tr>
-                    <td>[insert-before V]</td>
-                    <td>Insert V as a sibling immediately before each match</td>
-                  </tr>
-                  <tr>
-                    <td>[insert-after V]</td>
-                    <td>Insert V as a sibling immediately after each match</td>
-                  </tr>
-                  <tr>
-                    <td>[replace V]</td>
-                    <td>Replace entire matched node (including its surrounding placement) with V</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <pre>
-              <code class="language-cx">[doc
+      <p>The <b>eleven action slots</b> are:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>action</th>
+            <th>description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>[set V]</td>
+            <td>Replace matched value, element body, or attribute value with V</td>
+          </tr>
+          <tr>
+            <td>[delete]</td>
+            <td>Remove matched node from its parent body (or attribute from element)</td>
+          </tr>
+          <tr>
+            <td>[using F]</td>
+            <td>Apply function F to each match; F receives the match, returns the replacement</td>
+          </tr>
+          <tr>
+            <td>[rename N]</td>
+            <td>Rename matched element (preserves attrs + body)</td>
+          </tr>
+          <tr>
+            <td>[set-attr N V]</td>
+            <td>Add new attribute N=V, or overwrite if N already present</td>
+          </tr>
+          <tr>
+            <td>[delete-attr N]</td>
+            <td>Remove attribute N from matched element</td>
+          </tr>
+          <tr>
+            <td>[append V]</td>
+            <td>Add child V at end of matched body</td>
+          </tr>
+          <tr>
+            <td>[prepend V]</td>
+            <td>Add child V at start of matched body</td>
+          </tr>
+          <tr>
+            <td>[insert-before V]</td>
+            <td>Insert V as a sibling immediately before each match</td>
+          </tr>
+          <tr>
+            <td>[insert-after V]</td>
+            <td>Insert V as a sibling immediately after each match</td>
+          </tr>
+          <tr>
+            <td>[replace V]</td>
+            <td>Replace entire matched node (including its surrounding placement) with V</td>
+          </tr>
+        </tbody>
+      </table>
+      <pre>
+        <code class="language-cx">[doc
              [user id=1 name='Ada' active=true]
              [user id=2 name='Bob' active=false banned=true]
              [section id='intro' [para 'Hi.']]
@@ -1245,57 +1160,55 @@
              [?modify //user/@status [set 'verified']]
              [?modify //user[= $_@banned true] [delete]]
              [?modify //user [set-attr last-audit '2026-05-22']]]</code>
-            </pre>
-            <p><b>Pure-functional — structural sharing.</b> <code>[?modify]</code>
+      </pre>
+      <p><b>Pure-functional — structural sharing.</b> <code>[?modify]</code>
            does not copy the whole tree. Only the spine from root
            to each matched node is copied; unchanged branches are
            shared with the original (immutable persistent data
            structure). The new allocation is O(depth × matches) —
            the spine, not the document size — and the
            original <code>$doc</code> value is still valid for read or hash.</p>
-            <p><b>Multi-match.</b> The focus path selects a sequence; the
+      <p><b>Multi-match.</b> The focus path selects a sequence; the
            action applies to every node in that sequence. Zero
            matches returns the original unchanged (not an error —
            the no-match-no-op invariant lets pipelines compose
            safely). All-matches-at-once means there is no
            ordering hazard between matches.</p>
-            <p><b>Identity invariant.</b> <code>[?modify $doc //x [set v]]</code>
+      <p><b>Identity invariant.</b> <code>[?modify $doc //x [set v]]</code>
            where <code>//x</code> matches no nodes returns <code>$doc</code> unchanged
            — same canonical bytes, same SHA-256. <code>[?modify $doc
            //x [delete]]</code> where every <code>//x</code> is removed returns a
            value where <code>[$count //x]</code> is 0. Round-trip through
            ast-bin / data-bin / JSON preserves the post-modify
            shape exactly.</p>
-            <p class="note"><b>Status.</b> <code>[?modify]</code> is fully spec'd.
+      <p class="note"><b>Status.</b> <code>[?modify]</code> is fully spec'd.
            The V evaluator carries the production-ready
            implementation. Tier-2 binding parity is tracked in
            <a href="../../spec/03-approved/misc/parity-matrix.md"><code>spec/misc/parity-matrix.md</code></a>.</p>
-          
-        </section>
-        <section id="pipe">
-          <h3>Pipelines and composition</h3>
-          
-            <p>The <code>[?pipe]</code> directive threads the output of one
+    </section>
+    <section id="pipe">
+      <h3>Pipelines and composition</h3>
+      <p>The <code>[?pipe]</code> directive threads the output of one
            expression into the input of the next. Pipelines
            compose <code>[?modify]</code>, <code>[?for]</code>, builtins, and
            user-defined functions into readable top-to-bottom
            data flow.</p>
-            <pre>
-              <code class="language-cx">[shop [user active=true age=30]
+      <pre>
+        <code class="language-cx">[shop [user active=true age=30]
                [user active=true age=20]
                [user active=false age=40]]
            [?pipe //user[= $_@active true]
              [?fn ($us) [?for [in $u $us] [yield $u@age]]]
              [$reverse]
              [$nth _ 1]]</code>
-            </pre>
-            <p><b>Stages are bare transforms.</b> <code>[?pipe SRC STAGE …]</code>
+      </pre>
+      <p><b>Stages are bare transforms.</b> <code>[?pipe SRC STAGE …]</code>
            evaluates <code>SRC</code>, then supplies the value to each <code>STAGE</code>
            left-to-right. A stage is a transform — a bare name, a
            <code>$ref</code>, or a <code>[$call …]</code> — never wrapped in a keyword
            (there is no <code>[through]</code> clause). <code>[?pipe 5 add1 add1]</code>
            → <code>7</code>.</p>
-            <p><b>Stage invocation (§8.9.1).</b> How the value is supplied
+      <p><b>Stage invocation (§8.9.1).</b> How the value is supplied
            depends on the stage shape: a <b>hole-form</b> stage carries
            a single partial-application hole <code>_</code> and the value fills
            it (<code>[$get _ '/users/42']</code> → <code>get(client, '/users/42')</code>);
@@ -1306,18 +1219,18 @@
            non-callable stage (a literal, map, or data element) is
            <code>cx-err:CXER0100</code> — it never silently passes the value
            through.</p>
-            <p><b>Fan-out behavior.</b> When <code>SRC</code> evaluates to a sequence,
+      <p><b>Fan-out behavior.</b> When <code>SRC</code> evaluates to a sequence,
            a stage sees the whole sequence as a single value (the
            sequence-flat principle — no implicit per-item dispatch).
            For a per-item transform, thread a <code>[?fn]</code> lambda that
            runs the comprehension:</p>
-            <pre>
-              <code class="language-cx">[users [user name=ada] [user name=bob]]
+      <pre>
+        <code class="language-cx">[users [user name=ada] [user name=bob]]
            [?pipe //user
            [?fn ($us) [?for [in $u $us] [yield [decorated name=$u@name]]]]
            [$count]]</code>
-            </pre>
-            <p><code>[tap f]</code> — <b>observe without diverting</b> (§8.9.2). A
+      </pre>
+      <p><code>[tap f]</code> — <b>observe without diverting</b> (§8.9.2). A
            <code>[tap f]</code> stage applies <code>f</code> to the current value for its
            <b>side effect</b>; the value passes through unchanged and
            <code>f</code>'s return is discarded. Inside a stage, <code>_</code> names the
@@ -1326,26 +1239,23 @@
            its code is <code>CXER0001</code> (panic) or <code>CXER0260</code>
            (cancellation); every other error is discarded for the
            data flow (the error-hook still observes it).</p>
-            <p><b>Railway short-circuit (§8.9.3).</b> The pipe is a
+      <p><b>Railway short-circuit (§8.9.3).</b> The pipe is a
            single-channel failure railway: the first stage to yield
            <code>[err …]</code> skips every remaining stage — taps included —
            and that <code>[err]</code> is the result. An empty result is <b>not</b>
            a short-circuit; it flows to the next stage. There is no
            infix <code>|</code> and no <code>[through]</code> wrapper — both retired.</p>
-          
-        </section>
-      
     </section>
-    <section id="builtins">
-      <h2>Built-in functions</h2>
-      
-        <p>Built-ins are the standard library at the expression
+  </section>
+  <section id="builtins">
+    <h2>Built-in functions</h2>
+    <p>Built-ins are the standard library at the expression
          layer. They are pure-functional, total over their
          declared input types, and stable across bindings.
          Full normative table in
          <a href="../../spec/03-approved/core/code.md"><code>spec/core/code.md</code></a> §6.5; the
          subsections below organize the ~47 names by category.</p>
-        <p><b>Invocation.</b> Every call uses the
+    <p><b>Invocation.</b> Every call uses the
          bracket head-dispatch form: <code>[$name args…]</code> for the
          built-in surface, or <code>[$module:name args…]</code> for
          stdlib-module calls. There is <b>no paren-call form</b> —
@@ -1356,290 +1266,287 @@
          element). The <code>name(args)</code> spelling in the tables below is
          arity notation (mirroring the spec), not invocation
          syntax.</p>
-        <section id="sequence-builtins">
-          <h3>Sequence built-ins</h3>
-          
-            <p>Operate on a Sequence. Argument may be a CX program
+    <section id="sequence-builtins">
+      <h3>Sequence built-ins</h3>
+      <p>Operate on a Sequence. Argument may be a CX program
            sequence, the implicit document, or a single
            non-sequence value (treated as a 1-element
            sequence).</p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>builtin</th>
-                    <th>arity</th>
-                    <th>semantics</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>count(seq) / length(seq)</td>
-                    <td>1</td>
-                    <td>Integer count; scalar input yields 1</td>
-                  </tr>
-                  <tr>
-                    <td>empty(seq)</td>
-                    <td>1</td>
-                    <td>Boolean — true iff count(seq) == 0</td>
-                  </tr>
-                  <tr>
-                    <td>exists(seq)</td>
-                    <td>1</td>
-                    <td>Boolean — true iff count(seq) &gt; 0; opposite of empty</td>
-                  </tr>
-                  <tr>
-                    <td>present(value)</td>
-                    <td>1</td>
-                    <td>Boolean — true iff value is present; false only for absence (the empty sequence / empty node-set). The canonical "did this step match anything" test — unlike exists, it never looks inside: a childless element, an empty string, and null are all present</td>
-                  </tr>
-                  <tr>
-                    <td>first(seq)</td>
-                    <td>1</td>
-                    <td>First item; scalar passes through; XQuery fn:head parity</td>
-                  </tr>
-                  <tr>
-                    <td>last(seq)</td>
-                    <td>1</td>
-                    <td>Last item; scalar passes through</td>
-                  </tr>
-                  <tr>
-                    <td>head(seq)</td>
-                    <td>1</td>
-                    <td>Synonym for first</td>
-                  </tr>
-                  <tr>
-                    <td>tail(seq)</td>
-                    <td>1</td>
-                    <td>All items except first; scalar yields ()</td>
-                  </tr>
-                  <tr>
-                    <td>reverse(seq)</td>
-                    <td>1</td>
-                    <td>Items in reverse order; scalar passes through</td>
-                  </tr>
-                  <tr>
-                    <td>distinct(seq)</td>
-                    <td>1</td>
-                    <td>Items with structural duplicates removed; first-occurrence order</td>
-                  </tr>
-                  <tr>
-                    <td>nth(seq, n)</td>
-                    <td>2</td>
-                    <td>1-indexed item access; out-of-range raises CXER0100</td>
-                  </tr>
-                  <tr>
-                    <td>position(seq, item)</td>
-                    <td>2</td>
-                    <td>1-based index of first structural match; zero if absent</td>
-                  </tr>
-                  <tr>
-                    <td>range(lo, hi, step?)</td>
-                    <td>2-3</td>
-                    <td>Arithmetic progression, inclusive bound; [$range lo *] is a lazy open iterator</td>
-                  </tr>
-                  <tr>
-                    <td>iterate(f, seed)</td>
-                    <td>2</td>
-                    <td>Lazy infinite iterator: seed, f(seed), f(f(seed)), …</td>
-                  </tr>
-                  <tr>
-                    <td>unfold(f, seed)</td>
-                    <td>2</td>
-                    <td>Anamorphism: f(state) yields () to stop or [value, next-state] to emit</td>
-                  </tr>
-                  <tr>
-                    <td>identity(x)</td>
-                    <td>1</td>
-                    <td>Returns x unchanged — for pipe stages and shape testing</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <p>Set combinators are <b>reserved operator heads</b>, not
+      <table>
+        <thead>
+          <tr>
+            <th>builtin</th>
+            <th>arity</th>
+            <th>semantics</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>count(seq) / length(seq)</td>
+            <td>1</td>
+            <td>Integer count; scalar input yields 1</td>
+          </tr>
+          <tr>
+            <td>empty(seq)</td>
+            <td>1</td>
+            <td>Boolean — true iff count(seq) == 0</td>
+          </tr>
+          <tr>
+            <td>exists(seq)</td>
+            <td>1</td>
+            <td>Boolean — true iff count(seq) &gt; 0; opposite of empty</td>
+          </tr>
+          <tr>
+            <td>present(value)</td>
+            <td>1</td>
+            <td>Boolean — true iff value is present; false only for absence (the empty sequence / empty node-set). The canonical "did this step match anything" test — unlike exists, it never looks inside: a childless element, an empty string, and null are all present</td>
+          </tr>
+          <tr>
+            <td>first(seq)</td>
+            <td>1</td>
+            <td>First item; scalar passes through; XQuery fn:head parity</td>
+          </tr>
+          <tr>
+            <td>last(seq)</td>
+            <td>1</td>
+            <td>Last item; scalar passes through</td>
+          </tr>
+          <tr>
+            <td>head(seq)</td>
+            <td>1</td>
+            <td>Synonym for first</td>
+          </tr>
+          <tr>
+            <td>tail(seq)</td>
+            <td>1</td>
+            <td>All items except first; scalar yields ()</td>
+          </tr>
+          <tr>
+            <td>reverse(seq)</td>
+            <td>1</td>
+            <td>Items in reverse order; scalar passes through</td>
+          </tr>
+          <tr>
+            <td>distinct(seq)</td>
+            <td>1</td>
+            <td>Items with structural duplicates removed; first-occurrence order</td>
+          </tr>
+          <tr>
+            <td>nth(seq, n)</td>
+            <td>2</td>
+            <td>1-indexed item access; out-of-range raises CXER0100</td>
+          </tr>
+          <tr>
+            <td>position(seq, item)</td>
+            <td>2</td>
+            <td>1-based index of first structural match; zero if absent</td>
+          </tr>
+          <tr>
+            <td>range(lo, hi, step?)</td>
+            <td>2-3</td>
+            <td>Arithmetic progression, inclusive bound; [$range lo *] is a lazy open iterator</td>
+          </tr>
+          <tr>
+            <td>iterate(f, seed)</td>
+            <td>2</td>
+            <td>Lazy infinite iterator: seed, f(seed), f(f(seed)), …</td>
+          </tr>
+          <tr>
+            <td>unfold(f, seed)</td>
+            <td>2</td>
+            <td>Anamorphism: f(state) yields () to stop or [value, next-state] to emit</td>
+          </tr>
+          <tr>
+            <td>identity(x)</td>
+            <td>1</td>
+            <td>Returns x unchanged — for pipe stages and shape testing</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Set combinators are <b>reserved operator heads</b>, not
            <code>[$…]</code> builtins: <code>[union A B]</code>, <code>[intersect A B]</code>,
            <code>[except A B]</code>. Slicing / windowing / ordering /
            grouping are directives and comprehension clauses:
            <code>[?take]</code>, <code>[?drop]</code>, <code>[?filter]</code>, <code>[?flatten]</code>,
            <code>[order-by …]</code>, <code>[group-by …]</code> (see <a class="xref" href="#for">for</a>).</p>
-            <pre>
-              <code class="language-cx">[site [user active=true] [user active=false]
+      <pre>
+        <code class="language-cx">[site [user active=true] [user active=false]
                  [tag 'a'] [tag 'b'] [tag 'a']]
            ([$count //user[= $_@active true]],
             [$distinct [?for [in $t //tag] [yield [$text $t]]]],
             [?take 3 [$range 1 100]],
             [union (1, 2) (2, 3)])</code>
-            </pre>
-          
-        </section>
-        <section id="string-builtins">
-          <h3>String built-ins</h3>
-          
-            <p>Operate on a String scalar. Non-string scalars are
+      </pre>
+    </section>
+    <section id="string-builtins">
+      <h3>String built-ins</h3>
+      <p>Operate on a String scalar. Non-string scalars are
            stringified by the canonical scalar printer; element
            arguments raise <code>CXER0100</code> unless documented
            otherwise.</p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>builtin</th>
-                    <th>arity</th>
-                    <th>semantics</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>upper(s)</td>
-                    <td>1</td>
-                    <td>Unicode upper-cased copy of s</td>
-                  </tr>
-                  <tr>
-                    <td>lower(s)</td>
-                    <td>1</td>
-                    <td>Unicode lower-cased copy of s</td>
-                  </tr>
-                  <tr>
-                    <td>contains(s, sub)</td>
-                    <td>2</td>
-                    <td>Boolean substring test; empty sub yields true</td>
-                  </tr>
-                  <tr>
-                    <td>starts-with(s, prefix)</td>
-                    <td>2</td>
-                    <td>Boolean prefix test; empty prefix yields true</td>
-                  </tr>
-                  <tr>
-                    <td>ends-with(s, suffix)</td>
-                    <td>2</td>
-                    <td>Boolean suffix test; empty suffix yields true</td>
-                  </tr>
-                  <tr>
-                    <td>substring(s, start, len?)</td>
-                    <td>2-3</td>
-                    <td>1-indexed substring; positions clamp; never raises</td>
-                  </tr>
-                  <tr>
-                    <td>string-length(s)</td>
-                    <td>1</td>
-                    <td>Integer count of Unicode codepoints (NOT bytes)</td>
-                  </tr>
-                  <tr>
-                    <td>normalize-space(s)</td>
-                    <td>1</td>
-                    <td>Strip leading/trailing + collapse internal whitespace</td>
-                  </tr>
-                  <tr>
-                    <td>concat(s1, s2, …)</td>
-                    <td>≥1</td>
-                    <td>String concatenation; non-string scalars stringified</td>
-                  </tr>
-                  <tr>
-                    <td>text(elem)</td>
-                    <td>1</td>
-                    <td>Body text of elem as string; concatenates text children</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <p>The wider string toolkit — trim, split/join, replace,
+      <table>
+        <thead>
+          <tr>
+            <th>builtin</th>
+            <th>arity</th>
+            <th>semantics</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>upper(s)</td>
+            <td>1</td>
+            <td>Unicode upper-cased copy of s</td>
+          </tr>
+          <tr>
+            <td>lower(s)</td>
+            <td>1</td>
+            <td>Unicode lower-cased copy of s</td>
+          </tr>
+          <tr>
+            <td>contains(s, sub)</td>
+            <td>2</td>
+            <td>Boolean substring test; empty sub yields true</td>
+          </tr>
+          <tr>
+            <td>starts-with(s, prefix)</td>
+            <td>2</td>
+            <td>Boolean prefix test; empty prefix yields true</td>
+          </tr>
+          <tr>
+            <td>ends-with(s, suffix)</td>
+            <td>2</td>
+            <td>Boolean suffix test; empty suffix yields true</td>
+          </tr>
+          <tr>
+            <td>substring(s, start, len?)</td>
+            <td>2-3</td>
+            <td>1-indexed substring; positions clamp; never raises</td>
+          </tr>
+          <tr>
+            <td>string-length(s)</td>
+            <td>1</td>
+            <td>Integer count of Unicode codepoints (NOT bytes)</td>
+          </tr>
+          <tr>
+            <td>normalize-space(s)</td>
+            <td>1</td>
+            <td>Strip leading/trailing + collapse internal whitespace</td>
+          </tr>
+          <tr>
+            <td>concat(s1, s2, …)</td>
+            <td>≥1</td>
+            <td>String concatenation; non-string scalars stringified</td>
+          </tr>
+          <tr>
+            <td>text(elem)</td>
+            <td>1</td>
+            <td>Body text of elem as string; concatenates text children</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The wider string toolkit — trim, split/join, replace,
            case-folding variants, padding — is the
            <code>cx-stdlib/strings</code> module (<code>[?lib 'cx-stdlib/strings']</code>,
            then <code>[$strings:trim …]</code>, <code>[$strings:split …]</code>,
            <code>[$strings:join …]</code>, <code>[$strings:replace …]</code>). Regular
            expressions are <code>cx-stdlib/re</code>. See the Standard-library pages.</p>
-            <pre>
-              <code class="language-cx">[?lib 'cx-stdlib/strings']
+      <pre>
+        <code class="language-cx">[?lib 'cx-stdlib/strings']
            ([$upper 'hello world'],
             [$contains 'ada@example.com' '@example.com'],
             [$strings:join ('a', 'b', 'c') ', '],
             [$strings:split 'a,b,c' ','],
             [$strings:replace 'foofoo' 'foo' 'bar'])</code>
-            </pre>
-          
-        </section>
-        <section id="numeric-builtins">
-          <h3>Numeric built-ins</h3>
-          
-            <p>Operate on numeric scalars. <code>sum</code>/<code>min</code>/<code>max</code>/<code>avg</code>
+      </pre>
+    </section>
+    <section id="numeric-builtins">
+      <h3>Numeric built-ins</h3>
+      <p>Operate on numeric scalars. <code>sum</code>/<code>min</code>/<code>max</code>/<code>avg</code>
            operate on a sequence and skip non-numeric items;
            <code>floor</code>/<code>ceiling</code>/<code>round</code>/<code>abs</code> operate on a single
-           value.</p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>builtin</th>
-                    <th>arity</th>
-                    <th>semantics</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>sum(seq)</td>
-                    <td>1</td>
-                    <td>Sum of numeric scalars; empty yields int 0; any float → float result</td>
-                  </tr>
-                  <tr>
-                    <td>min(seq)</td>
-                    <td>1</td>
-                    <td>Minimum numeric; empty yields int 0</td>
-                  </tr>
-                  <tr>
-                    <td>max(seq)</td>
-                    <td>1</td>
-                    <td>Maximum numeric; empty yields int 0</td>
-                  </tr>
-                  <tr>
-                    <td>avg(seq)</td>
-                    <td>1</td>
-                    <td>Arithmetic mean as float; empty yields float 0.0</td>
-                  </tr>
-                  <tr>
-                    <td>abs(x)</td>
-                    <td>1</td>
-                    <td>Absolute value; preserves int/float kind</td>
-                  </tr>
-                  <tr>
-                    <td>floor(x)</td>
-                    <td>1</td>
-                    <td>Largest integer ≤ x; int passes through</td>
-                  </tr>
-                  <tr>
-                    <td>ceiling(x)</td>
-                    <td>1</td>
-                    <td>Smallest integer ≥ x; int passes through</td>
-                  </tr>
-                  <tr>
-                    <td>round(x)</td>
-                    <td>1</td>
-                    <td>Half-away-from-zero rounding (XPath fn:round)</td>
-                  </tr>
-                  <tr>
-                    <td>mod(a, b)</td>
-                    <td>2</td>
-                    <td>Remainder; sign follows dividend; b=0 raises CXER0101</td>
-                  </tr>
-                  <tr>
-                    <td>div(a, b)</td>
-                    <td>2</td>
-                    <td>True division if either is float; integer division if both int</td>
-                  </tr>
-                  <tr>
-                    <td>idiv(a, b)</td>
-                    <td>2</td>
-                    <td>Integer (truncating) division regardless of operand kinds</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <p>Type coercion is the single explicit <code>cast</code> operator —
+           value. A numeric operand is an <code>int</code>, a <code>float</code>, or one
+           of the exact kinds <code>decimal</code> / <code>bigint</code> — and the exact
+           kinds are their own family, not floats in disguise: a
+           decimal or bigint operand folds exactly (<code>int</code> embeds
+           losslessly), while mixing one with a float raises
+           CXER0100 — <code>[cast]</code> is the only bridge. That is the
+           arithmetic heads' rule; the aggregates are a different
+           operand shape, never a different numeric semantics.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>builtin</th>
+            <th>arity</th>
+            <th>semantics</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>sum(seq)</td>
+            <td>1</td>
+            <td>Sum of numeric scalars; empty yields int 0; int/float mix → float; decimal/bigint fold exactly</td>
+          </tr>
+          <tr>
+            <td>min(seq)</td>
+            <td>1</td>
+            <td>Minimum numeric, in its own kind; empty yields int 0</td>
+          </tr>
+          <tr>
+            <td>max(seq)</td>
+            <td>1</td>
+            <td>Maximum numeric, in its own kind; empty yields int 0</td>
+          </tr>
+          <tr>
+            <td>avg(seq)</td>
+            <td>1</td>
+            <td>Arithmetic mean — float, or exact over decimal/bigint; empty yields float 0.0</td>
+          </tr>
+          <tr>
+            <td>abs(x)</td>
+            <td>1</td>
+            <td>Absolute value; preserves int/float kind</td>
+          </tr>
+          <tr>
+            <td>floor(x)</td>
+            <td>1</td>
+            <td>Largest integer ≤ x; int passes through</td>
+          </tr>
+          <tr>
+            <td>ceiling(x)</td>
+            <td>1</td>
+            <td>Smallest integer ≥ x; int passes through</td>
+          </tr>
+          <tr>
+            <td>round(x)</td>
+            <td>1</td>
+            <td>Half-away-from-zero rounding (XPath fn:round)</td>
+          </tr>
+          <tr>
+            <td>mod(a, b)</td>
+            <td>2</td>
+            <td>Remainder; sign follows dividend; b=0 raises CXER0101</td>
+          </tr>
+          <tr>
+            <td>div(a, b)</td>
+            <td>2</td>
+            <td>True division if either is float; integer division if both int; exact over decimal/bigint, as <code>/</code></td>
+          </tr>
+          <tr>
+            <td>idiv(a, b)</td>
+            <td>2</td>
+            <td>Integer (truncating) division regardless of operand kinds; exact quotient over decimal/bigint</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Exact division either terminates or says so: a
+           decimal/bigint quotient that does not terminate raises
+           CXER3002 and the refusal names <code>$math:div-decimal</code>, the
+           verb carrying an explicit precision + mode. There is no
+           default rounding context. <code>/</code>, <code>div</code> and an exact <code>avg</code>
+           are one implementation, so they never disagree. <code>idiv</code>
+           is exempt — an integral quotient always terminates.</p>
+      <p>Type coercion is the single explicit <code>cast</code> operator —
            <code>[cast '42' :int]</code>, <code>[cast 3 :float]</code>, <code>[cast 42
            :string]</code> — there is no <code>to-int</code> / <code>to-float</code> family; a
            failed cast is <code>CXER0290</code> (E_CAST_FAILED). CX floats are
@@ -1648,161 +1555,144 @@
            <code>cx-stdlib/math</code>. <code>CXER0101</code> (E_ARITH_DIVIDE_ZERO) is
            division or modulo by zero, specifically. Exponentiation
            is <code>[$math:pow]</code> in <code>cx-stdlib/math</code>.</p>
-            <pre>
-              <code class="language-cx">[orders [order amount=10] [order amount=32]]
+      <pre>
+        <code class="language-cx">[orders [order amount=10] [order amount=32]]
            ([$sum [?for [in $o //order] [yield $o@amount]]],
             [$round 3.7],
             [$mod 17 5],
             [cast '42' :int])</code>
-            </pre>
-          
-        </section>
-        <section id="logical-builtins">
-          <h3>Logical built-ins</h3>
-          
-            <p>Boolean combinators and EBV-aware tests. <code>and</code> / <code>or</code>
+      </pre>
+    </section>
+    <section id="logical-builtins">
+      <h3>Logical built-ins</h3>
+      <p>Boolean combinators and EBV-aware tests. <code>and</code> / <code>or</code>
            short-circuit; <code>not</code> is total over any EBV-typed
            argument.</p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>builtin</th>
-                    <th>arity</th>
-                    <th>semantics</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>not(v)</td>
-                    <td>1</td>
-                    <td>Boolean negation under EBV (cxdm §6); an Iterator operand raises — force it first</td>
-                  </tr>
-                  <tr>
-                    <td>and(a, b, …)</td>
-                    <td>≥1</td>
-                    <td>Boolean — true iff all args truthy; short-circuit L→R; bare operator head</td>
-                  </tr>
-                  <tr>
-                    <td>or(a, b, …)</td>
-                    <td>≥1</td>
-                    <td>Boolean — true iff any arg truthy; short-circuit L→R; bare operator head</td>
-                  </tr>
-                  <tr>
-                    <td>eq(a, b)</td>
-                    <td>2</td>
-                    <td>Structural equality — types, values, attributes, children all match</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <p><code>and</code> / <code>or</code> / <code>not</code> are bare operator heads
+      <table>
+        <thead>
+          <tr>
+            <th>builtin</th>
+            <th>arity</th>
+            <th>semantics</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>not(v)</td>
+            <td>1</td>
+            <td>Boolean negation under EBV (cxdm §6); an Iterator operand raises — force it first</td>
+          </tr>
+          <tr>
+            <td>and(a, b, …)</td>
+            <td>≥1</td>
+            <td>Boolean — true iff all args truthy; short-circuit L→R; bare operator head</td>
+          </tr>
+          <tr>
+            <td>or(a, b, …)</td>
+            <td>≥1</td>
+            <td>Boolean — true iff any arg truthy; short-circuit L→R; bare operator head</td>
+          </tr>
+          <tr>
+            <td>eq(a, b)</td>
+            <td>2</td>
+            <td>Structural equality — types, values, attributes, children all match</td>
+          </tr>
+        </tbody>
+      </table>
+      <p><code>and</code> / <code>or</code> / <code>not</code> are bare operator heads
            (<code>[and P Q]</code>, no <code>$</code> sigil); <code>eq</code> is the structural
            equality the <code>=</code> operator also uses. There is no
            <code>xor</code> / <code>if()</code> / <code>instance-of</code> builtin — branch with
            <code>[?if]</code>, and test types by schema validation or
            <code>[?match]</code> shape dispatch.</p>
-            <pre>
-              <code class="language-cx">[site [user verified=true active=true banned=false] [error 'e1']]
+      <pre>
+        <code class="language-cx">[site [user verified=true active=true banned=false] [error 'e1']]
            [?let [= $u [$first //user]]
              ([and $u@verified $u@active [not $u@banned]],
               [$exists //error],
               [eq [a 1] [a 1]])]</code>
-            </pre>
-          
-        </section>
-        <section id="accessor-builtins">
-          <h3>Node-accessor built-ins</h3>
-          
-            <p>Operate on an Element node — read structural
+      </pre>
+    </section>
+    <section id="accessor-builtins">
+      <h3>Node-accessor built-ins</h3>
+      <p>Operate on an Element node — read structural
            properties. Script-level equivalents of the Layer-1
            binding methods (see <a class="xref" href="bindings.html#layer-1">layer-1</a>).</p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>builtin</th>
-                    <th>arity</th>
-                    <th>semantics</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>name(elem)</td>
-                    <td>1</td>
-                    <td>Element name as a string (including any namespace prefix); non-element raises CXER0100</td>
-                  </tr>
-                  <tr>
-                    <td>local-name(elem)</td>
-                    <td>1</td>
-                    <td>Element name without namespace prefix</td>
-                  </tr>
-                  <tr>
-                    <td>string(value)</td>
-                    <td>1</td>
-                    <td>A scalar's canonical text, or an element/attribute's text content</td>
-                  </tr>
-                  <tr>
-                    <td>text(elem)</td>
-                    <td>1</td>
-                    <td>Body text of elem; concatenates text children (string builtin, listed for discoverability)</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <p>Structural navigation is CXPath, not accessor calls:
+      <table>
+        <thead>
+          <tr>
+            <th>builtin</th>
+            <th>arity</th>
+            <th>semantics</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>name(elem)</td>
+            <td>1</td>
+            <td>Element name as a string (including any namespace prefix); non-element raises CXER0100</td>
+          </tr>
+          <tr>
+            <td>local-name(elem)</td>
+            <td>1</td>
+            <td>Element name without namespace prefix</td>
+          </tr>
+          <tr>
+            <td>string(value)</td>
+            <td>1</td>
+            <td>A scalar's canonical text, or an element/attribute's text content</td>
+          </tr>
+          <tr>
+            <td>text(elem)</td>
+            <td>1</td>
+            <td>Body text of elem; concatenates text children (string builtin, listed for discoverability)</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Structural navigation is CXPath, not accessor calls:
            children are <code>$e/*</code>, the parent is
            <code>//x/parent::*</code> (document-anchored), attributes are
            <code>$e@name</code>. Inside a predicate the reserved bindings
            <code>$_position</code> and <code>$_last</code> replace XPath's
            <code>position()</code> / <code>last()</code> — there are no zero-arity
            accessor calls.</p>
-            <pre>
-              <code class="language-cx">[# name → 'section' · string → 'one' · [$_last] → the last
+      <pre>
+        <code class="language-cx">[# name → 'section' · string → 'one' · [$_last] → the last
             section · [= $_position 1] → the first                    #]
            [doc [section 'one'] [section 'two']]
            ([$name [$first //section]],
             [$string [$first //section]],
             //section[$_last],
             //section[= $_position 1])</code>
-            </pre>
-          
-        </section>
-      
+      </pre>
     </section>
-    <section id="errors">
-      <h2>Errors as values</h2>
-      
-        <p>CX treats errors as ordinary values. An error is a CX
+  </section>
+  <section id="errors">
+    <h2>Errors as values</h2>
+    <p>CX treats errors as ordinary values. An error is a CX
          element with kind <code>[err :code "cx-err:CXERnnnn" …]</code>. It
          can be passed around, pattern-matched, transformed, and
          recovered from. Full error registry in
          <a href="../../spec/03-approved/core/code.md"><code>spec/core/code.md</code></a> §9.5.</p>
-        <p><b>Propagation operators.</b> Two postfix operators thread
+    <p><b>Propagation operators.</b> Two postfix operators thread
          errors through expressions:</p>
-        <ul>
-          
-            <li><code>f($x)?</code> — call <code>f</code>; if it errored, propagate
+    <ul>
+      <li><code>f($x)?</code> — call <code>f</code>; if it errored, propagate
               the error unchanged through the surrounding
               directive (which catches it). This is the "early
               return" form.</li>
-            <li><code>f($x)!</code> — call <code>f</code>; if it errored, raise
+      <li><code>f($x)!</code> — call <code>f</code>; if it errored, raise
               immediately as a host exception (cross the
               CX/binding boundary). Use sparingly — it converts
               the error from a value to a runtime trap.</li>
-          
-        </ul>
-        <pre>
-          <code class="language-cx">[?match [?let [= $u [$lookup-user $id]?] [$render $u]]
+    </ul>
+    <pre>
+      <code class="language-cx">[?match [?let [= $u [$lookup-user $id]?] [$render $u]]
            [case [err code='CXER0204'] [err message='no such user']]
            [case [err code='CXER0163'] [err message='lookup timed out']]
            [else [err message='lookup failed']]]</code>
-        </pre>
-        <p>Recovery is <code>[?match]</code> (see <a class="xref" href="#match">match</a>) over the <code>[err]</code>
+    </pre>
+    <p>Recovery is <code>[?match]</code> (see <a class="xref" href="#match">match</a>) over the <code>[err]</code>
          channel: the errorable expression is the scrutinee, and an
          <code>[err]</code> it produces is captured (not propagated) so a
          <code>[case [err …] …]</code> arm can dispatch on its code. Match by
@@ -1814,7 +1704,7 @@
          value-or-default, <code>[?else EXPR DEFAULT]</code> (§8.13) is the
          lighter sugar; <code>[?fallback PRIMARY [recover-with …]]</code> (§10.2.4)
          binds <code>$err</code> in the recovery.</p>
-        <p><b>Why not exceptions.</b> Exceptions contaminate every signature
+    <p><b>Why not exceptions.</b> Exceptions contaminate every signature
          with an invisible \"may throw\" that no tool can see, and force
          every caller to either catch or be transparent. In CX the
          error is in the value, the propagation discipline is in the
@@ -1826,56 +1716,51 @@
          a parallel control-flow mechanism: a worker that errors sends
          the <code>[err]</code> through its result channel and terminates
          cleanly.</p>
-        <section id="error-registry">
-          <h3>Error code registry (CXER0100–0299)</h3>
-          
-            <p>The CXER0100–0299 range is reserved for code-language
+    <section id="error-registry">
+      <h3>Error code registry (CXER0100–0299)</h3>
+      <p>The CXER0100–0299 range is reserved for code-language
            errors. Errors are organized into subsystems by tens
            digits. The complete normative map is in
            <a href="../../spec/03-approved/core/code.md"><code>spec/core/code.md</code></a> §9.5 — this
            subsection is the developer-facing summary.</p>
-            <p><b>Parse / arithmetic / application — CXER010x:</b></p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>code</th>
-                    <th>symbolic</th>
-                    <th>meaning</th>
-                    <th>recovery</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>CXER0100</td>
-                    <td>PARSE_ERROR</td>
-                    <td>Pattern syntax invalid; directive name not in registry; arity mismatch</td>
-                    <td>Fix source — this is author error, not runtime</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0101</td>
-                    <td>E_ARITH_DIVIDE_ZERO</td>
-                    <td>Division or modulo by zero — [$div] / [$mod] / [$idiv] and the / and % operator heads</td>
-                    <td>Guard the divisor, or [?match] [case [err code="cx-err:CXER0101"] …]</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0102</td>
-                    <td>E_PARTIAL_APP</td>
-                    <td>Invalid partial application — a _ hole in a rest position, or a partial applied with more arguments than held positions</td>
-                    <td>Author error — fix the call shape</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0103</td>
-                    <td>MULTI_VALUED_PREDICATE</td>
-                    <td>Value-comparison or predicate with a multi-valued operand</td>
-                    <td>Filter the sequence and compare single values ([$exists //x[= $_ V]])</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <p>Nearby classes that are <b>not</b> CXER010x: anchor / merge
+      <p><b>Parse / arithmetic / application — CXER010x:</b></p>
+      <table>
+        <thead>
+          <tr>
+            <th>code</th>
+            <th>symbolic</th>
+            <th>meaning</th>
+            <th>recovery</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CXER0100</td>
+            <td>PARSE_ERROR</td>
+            <td>Pattern syntax invalid; directive name not in registry; arity mismatch</td>
+            <td>Fix source — this is author error, not runtime</td>
+          </tr>
+          <tr>
+            <td>CXER0101</td>
+            <td>E_ARITH_DIVIDE_ZERO</td>
+            <td>Division or modulo by zero — [$div] / [$mod] / [$idiv] and the / and % operator heads</td>
+            <td>Guard the divisor, or [?match] [case [err code="cx-err:CXER0101"] …]</td>
+          </tr>
+          <tr>
+            <td>CXER0102</td>
+            <td>E_PARTIAL_APP</td>
+            <td>Invalid partial application — a _ hole in a rest position, or a partial applied with more arguments than held positions</td>
+            <td>Author error — fix the call shape</td>
+          </tr>
+          <tr>
+            <td>CXER0103</td>
+            <td>MULTI_VALUED_PREDICATE</td>
+            <td>Value-comparison or predicate with a multi-valued operand</td>
+            <td>Filter the sequence and compare single values ([$exists //x[= $_ V]])</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Nearby classes that are <b>not</b> CXER010x: anchor / merge
            errors are data-language <code>E</code> codes
            (<a href="../../spec/03-approved/core/cxdm.md"><code>spec/core/cxdm.md</code></a> §11);
            a sized-integer literal out of range is the lex-time
@@ -1883,291 +1768,263 @@
            (E_CAST_FAILED), recovered by matching on the code or
            spelling a representable value — coercion is always the
            explicit <code>[cast V :int]</code> form.</p>
-            <p><b>Resilience — CXER014x / CXER015x:</b></p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>code</th>
-                    <th>symbolic</th>
-                    <th>meaning</th>
-                    <th>recovery</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>CXER0140</td>
-                    <td>RETRY_EXHAUSTED</td>
-                    <td>[?retry] reached max= attempts without success</td>
-                    <td>[?match] [case [err code="CXER0140"] …]; tune max= / backoff=</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0141</td>
-                    <td>TIMEOUT</td>
-                    <td>[?timeout] DURATION elapsed</td>
-                    <td>[on-timeout EXPR] or [?match] [case [err code="CXER0141"] …]</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0150</td>
-                    <td>BREAKER_OPEN</td>
-                    <td>[?circuit-breaker] tripped; rejecting calls</td>
-                    <td>Wait :reset DURATION; fallback path</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0151</td>
-                    <td>RATE_LIMITED</td>
-                    <td>[?rate-limit] tokens exhausted</td>
-                    <td>Honor :retry-after slot in the err; back off</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0152</td>
-                    <td>BULKHEAD_FULL</td>
-                    <td>[?bulkhead] max-concurrent= + queue= exhausted</td>
-                    <td>Backpressure caller; reduce concurrency</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <p><b>Services — CXER016x:</b></p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>code</th>
-                    <th>symbolic</th>
-                    <th>meaning</th>
-                    <th>recovery</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>CXER0160</td>
-                    <td>BAD_REQUEST</td>
-                    <td>HTTP 400 — malformed body or path-param parse failure</td>
-                    <td>Return [response status=400 [body $err]] to client</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0161</td>
-                    <td>UNAUTHORIZED</td>
-                    <td>HTTP 401 — :auth returned err</td>
-                    <td>Return 401; client re-authenticates</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0162</td>
-                    <td>NOT_FOUND</td>
-                    <td>HTTP 404 — no resource matched path + method</td>
-                    <td>Return 404; client checks URL</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0163</td>
-                    <td>REQUEST_TIMEOUT</td>
-                    <td>HTTP 408 — :read-timeout exceeded</td>
-                    <td>Retry with backoff; reduce request size</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0164</td>
-                    <td>PAYLOAD_TOO_LARGE</td>
-                    <td>HTTP 413 — body &gt; max-body-bytes=</td>
-                    <td>Chunk upload; increase max-body-bytes= if appropriate</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0165</td>
-                    <td>INTERNAL_ERROR</td>
-                    <td>HTTP 500 — unhandled err in resource body</td>
-                    <td>Recover the body with [?match]/[?fallback]; log and return generic 500 to client</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0166</td>
-                    <td>SHUTTING_DOWN</td>
-                    <td>HTTP 503 — service in shutdown drain</td>
-                    <td>Client retries elsewhere; do not retry same instance</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <p><b>Client — CXER018x:</b></p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>code</th>
-                    <th>symbolic</th>
-                    <th>meaning</th>
-                    <th>recovery</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>CXER0180</td>
-                    <td>CONNECTION_REFUSED</td>
-                    <td>TCP connect failure</td>
-                    <td>Retry with backoff; check :target URL</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0181</td>
-                    <td>TLS_HANDSHAKE_FAILED</td>
-                    <td>TLS negotiation failed</td>
-                    <td>Check :tls config; cert validity; retry</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0182</td>
-                    <td>INVALID_RESPONSE</td>
-                    <td>Server response could not be parsed</td>
-                    <td>Log raw response; report upstream issue</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <p><b>Concurrency — CXER020x / CXER022x:</b></p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>code</th>
-                    <th>symbolic</th>
-                    <th>meaning</th>
-                    <th>recovery</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>CXER0200</td>
-                    <td>CHANNEL_CLOSED</td>
-                    <td>Receive from drained-closed channel; send to closed channel</td>
-                    <td>Treat as normal stream-end; [?match] on err code</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0201</td>
-                    <td>SEND_TIMEOUT</td>
-                    <td>[?try-send] buffer-full timeout</td>
-                    <td>Drop, queue elsewhere, or back off</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0202</td>
-                    <td>RECV_TIMEOUT</td>
-                    <td>[?try-receive] empty timeout</td>
-                    <td>Poll again; abandon work if pattern persists</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0203</td>
-                    <td>CHANNEL_ALREADY_CLOSED</td>
-                    <td>Second [?close] on same channel</td>
-                    <td>Idempotent close idiom — [?else [?close $ch] ()]</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0220</td>
-                    <td>WORKER_PANIC</td>
-                    <td>Worker body raised unhandled err</td>
-                    <td>Inspect cause= attribute; restart worker or supervisor pattern</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0221</td>
-                    <td>WORKER_CANCELLED</td>
-                    <td>Worker terminated via [?cancel]</td>
-                    <td>Expected on graceful shutdown; clean up resources</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0222</td>
-                    <td>WORKER_NOT_FOUND</td>
-                    <td>[?worker-handle name=N] lookup miss</td>
-                    <td>Recover with [?match] on the err code, or [?else] a default</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <p><b>Async — CXER024x / CXER026x:</b></p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>code</th>
-                    <th>symbolic</th>
-                    <th>meaning</th>
-                    <th>recovery</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>CXER0240</td>
-                    <td>AWAIT_ALL_FAILED</td>
-                    <td>[?await-all] saw ≥ 1 non-done future</td>
-                    <td>Inspect :causes slot — sequence of [err …] per failed future</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0241</td>
-                    <td>AWAIT_TIMEOUT</td>
-                    <td>[?await $f timeout=DURATION] deadline expired (future itself still running)</td>
-                    <td>Tune timeout=; abandon or [?cancel $f]</td>
-                  </tr>
-                  <tr>
-                    <td>CXER0260</td>
-                    <td>CANCELLED</td>
-                    <td>Operation observed cooperative cancellation</td>
-                    <td>Expected; clean up; do not retry</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <p><b>Visualization — CXER028x:</b></p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>code</th>
-                    <th>symbolic</th>
-                    <th>meaning</th>
-                    <th>recovery</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>CXER0281</td>
-                    <td>UNRENDERABLE_DIRECTIVE</td>
-                    <td>Directive shape outside §10.1.2 locked render rules — the sole live renderer code (CXER0280 is retired to reserved)</td>
-                    <td>Adjust source; renderer is conservative on purpose</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <p>The CXER0000–0099 range is reserved for data-language
+      <p><b>Resilience — CXER014x / CXER015x:</b></p>
+      <table>
+        <thead>
+          <tr>
+            <th>code</th>
+            <th>symbolic</th>
+            <th>meaning</th>
+            <th>recovery</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CXER0140</td>
+            <td>RETRY_EXHAUSTED</td>
+            <td>[?retry] reached max= attempts without success</td>
+            <td>[?match] [case [err code="CXER0140"] …]; tune max= / backoff=</td>
+          </tr>
+          <tr>
+            <td>CXER0141</td>
+            <td>TIMEOUT</td>
+            <td>[?timeout] DURATION elapsed</td>
+            <td>[on-timeout EXPR] or [?match] [case [err code="CXER0141"] …]</td>
+          </tr>
+          <tr>
+            <td>CXER0150</td>
+            <td>BREAKER_OPEN</td>
+            <td>[?circuit-breaker] tripped; rejecting calls</td>
+            <td>Wait :reset DURATION; fallback path</td>
+          </tr>
+          <tr>
+            <td>CXER0151</td>
+            <td>RATE_LIMITED</td>
+            <td>[?rate-limit] tokens exhausted</td>
+            <td>Honor :retry-after slot in the err; back off</td>
+          </tr>
+          <tr>
+            <td>CXER0152</td>
+            <td>BULKHEAD_FULL</td>
+            <td>[?bulkhead] max-concurrent= + queue= exhausted</td>
+            <td>Backpressure caller; reduce concurrency</td>
+          </tr>
+        </tbody>
+      </table>
+      <p><b>Services — CXER016x:</b></p>
+      <table>
+        <thead>
+          <tr>
+            <th>code</th>
+            <th>symbolic</th>
+            <th>meaning</th>
+            <th>recovery</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CXER0160</td>
+            <td>BAD_REQUEST</td>
+            <td>HTTP 400 — malformed body or path-param parse failure</td>
+            <td>Return [response status=400 [body $err]] to client</td>
+          </tr>
+          <tr>
+            <td>CXER0161</td>
+            <td>UNAUTHORIZED</td>
+            <td>HTTP 401 — :auth returned err</td>
+            <td>Return 401; client re-authenticates</td>
+          </tr>
+          <tr>
+            <td>CXER0162</td>
+            <td>NOT_FOUND</td>
+            <td>HTTP 404 — no resource matched path + method</td>
+            <td>Return 404; client checks URL</td>
+          </tr>
+          <tr>
+            <td>CXER0163</td>
+            <td>REQUEST_TIMEOUT</td>
+            <td>HTTP 408 — :read-timeout exceeded</td>
+            <td>Retry with backoff; reduce request size</td>
+          </tr>
+          <tr>
+            <td>CXER0164</td>
+            <td>PAYLOAD_TOO_LARGE</td>
+            <td>HTTP 413 — body &gt; max-body-bytes=</td>
+            <td>Chunk upload; increase max-body-bytes= if appropriate</td>
+          </tr>
+          <tr>
+            <td>CXER0165</td>
+            <td>INTERNAL_ERROR</td>
+            <td>HTTP 500 — unhandled err in resource body</td>
+            <td>Recover the body with [?match]/[?fallback]; log and return generic 500 to client</td>
+          </tr>
+          <tr>
+            <td>CXER0166</td>
+            <td>SHUTTING_DOWN</td>
+            <td>HTTP 503 — service in shutdown drain</td>
+            <td>Client retries elsewhere; do not retry same instance</td>
+          </tr>
+        </tbody>
+      </table>
+      <p><b>Client — CXER018x:</b></p>
+      <table>
+        <thead>
+          <tr>
+            <th>code</th>
+            <th>symbolic</th>
+            <th>meaning</th>
+            <th>recovery</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CXER0180</td>
+            <td>CONNECTION_REFUSED</td>
+            <td>TCP connect failure</td>
+            <td>Retry with backoff; check :target URL</td>
+          </tr>
+          <tr>
+            <td>CXER0181</td>
+            <td>TLS_HANDSHAKE_FAILED</td>
+            <td>TLS negotiation failed</td>
+            <td>Check :tls config; cert validity; retry</td>
+          </tr>
+          <tr>
+            <td>CXER0182</td>
+            <td>INVALID_RESPONSE</td>
+            <td>Server response could not be parsed</td>
+            <td>Log raw response; report upstream issue</td>
+          </tr>
+        </tbody>
+      </table>
+      <p><b>Concurrency — CXER020x / CXER022x:</b></p>
+      <table>
+        <thead>
+          <tr>
+            <th>code</th>
+            <th>symbolic</th>
+            <th>meaning</th>
+            <th>recovery</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CXER0200</td>
+            <td>CHANNEL_CLOSED</td>
+            <td>Receive from drained-closed channel; send to closed channel</td>
+            <td>Treat as normal stream-end; [?match] on err code</td>
+          </tr>
+          <tr>
+            <td>CXER0201</td>
+            <td>SEND_TIMEOUT</td>
+            <td>[?try-send] buffer-full timeout</td>
+            <td>Drop, queue elsewhere, or back off</td>
+          </tr>
+          <tr>
+            <td>CXER0202</td>
+            <td>RECV_TIMEOUT</td>
+            <td>[?try-receive] empty timeout</td>
+            <td>Poll again; abandon work if pattern persists</td>
+          </tr>
+          <tr>
+            <td>CXER0203</td>
+            <td>CHANNEL_ALREADY_CLOSED</td>
+            <td>Second [?close] on same channel</td>
+            <td>Idempotent close idiom — [?else [?close $ch] ()]</td>
+          </tr>
+          <tr>
+            <td>CXER0220</td>
+            <td>WORKER_PANIC</td>
+            <td>Worker body raised unhandled err</td>
+            <td>Inspect cause= attribute; restart worker or supervisor pattern</td>
+          </tr>
+          <tr>
+            <td>CXER0221</td>
+            <td>WORKER_CANCELLED</td>
+            <td>Worker terminated via [?cancel]</td>
+            <td>Expected on graceful shutdown; clean up resources</td>
+          </tr>
+          <tr>
+            <td>CXER0222</td>
+            <td>WORKER_NOT_FOUND</td>
+            <td>[?worker-handle name=N] lookup miss</td>
+            <td>Recover with [?match] on the err code, or [?else] a default</td>
+          </tr>
+        </tbody>
+      </table>
+      <p><b>Async — CXER024x / CXER026x:</b></p>
+      <table>
+        <thead>
+          <tr>
+            <th>code</th>
+            <th>symbolic</th>
+            <th>meaning</th>
+            <th>recovery</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CXER0240</td>
+            <td>AWAIT_ALL_FAILED</td>
+            <td>[?await-all] saw ≥ 1 non-done future</td>
+            <td>Inspect :causes slot — sequence of [err …] per failed future</td>
+          </tr>
+          <tr>
+            <td>CXER0241</td>
+            <td>AWAIT_TIMEOUT</td>
+            <td>[?await $f timeout=DURATION] deadline expired (future itself still running)</td>
+            <td>Tune timeout=; abandon or [?cancel $f]</td>
+          </tr>
+          <tr>
+            <td>CXER0260</td>
+            <td>CANCELLED</td>
+            <td>Operation observed cooperative cancellation</td>
+            <td>Expected; clean up; do not retry</td>
+          </tr>
+        </tbody>
+      </table>
+      <p><b>Visualization — CXER028x:</b></p>
+      <table>
+        <thead>
+          <tr>
+            <th>code</th>
+            <th>symbolic</th>
+            <th>meaning</th>
+            <th>recovery</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CXER0281</td>
+            <td>UNRENDERABLE_DIRECTIVE</td>
+            <td>Directive shape outside §10.1.2 locked render rules — the sole live renderer code (CXER0280 is retired to reserved)</td>
+            <td>Adjust source; renderer is conservative on purpose</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The CXER0000–0099 range is reserved for data-language
            errors (parse, validate, canonicalize); see
            <a class="xref" href="data-language.html#limits">limits</a> in the data section. CXER0300+ is
            reserved for future subsystems.</p>
-          
-        </section>
-      
     </section>
-    <section id="concurrency">
-      <h2>Concurrency</h2>
-      
-        <p>CX has three concurrency surfaces, all spelled as
+  </section>
+  <section id="concurrency">
+    <h2>Concurrency</h2>
+    <p>CX has three concurrency surfaces, all spelled as
          directives. They build on the pure-functional core:
          every channel send, every worker call, every async
          await sees only immutable values, so there is no
          shared-mutable-state hazard. Spec:
          <a href="../../spec/03-approved/core/code.md"><code>spec/core/code.md</code></a> §10.3–§10.5.</p>
-        <section id="services">
-          <h3>Services and clients</h3>
-          
-            <p><code>[?http-service]</code> declares a named HTTP service with
+    <section id="services">
+      <h3>Services and clients</h3>
+      <p><code>[?http-service]</code> declares a named HTTP service with
            resource handlers. <code>[?http-client]</code> is its client
            side. Resources handle requests and return
            responses; the bodies are ordinary CX code.</p>
-            <p><b>Service definition:</b></p>
-            <pre>
-              <code class="language-cx">[?http-service on=http port=8080 name='users'
+      <p><b>Service definition:</b></p>
+      <pre>
+        <code class="language-cx">[?http-service on=http port=8080 name='users'
            read-timeout=30s
            write-timeout=30s
            max-body-bytes=10485760            [# 10 MiB                  #]
@@ -2182,17 +2039,17 @@
              consumes=application/cx
              [?let [= $body $request/body]
                [response status=201 [body [$create-user $body]]]]]]</code>
-            </pre>
-            <p><b>Resource parameters.</b> Each <code>[resource]</code> declares
+      </pre>
+      <p><b>Resource parameters.</b> Each <code>[resource]</code> declares
            <code>method=METHOD path=PATH</code>, optional <code>produces=</code> /
            <code>consumes=</code> MIME attributes, optional <code>[auth …]</code>
            predicate-expression clause, and a body expression
            in positional position. PATH supports <code>:name</code>
            parameter binding — <code>/users/:id</code> exposes
            <code>$request/path-params/id</code> inside the body.</p>
-            <p><b>Request and response shapes:</b></p>
-            <pre>
-              <code class="language-cx">[request method='GET' path='/users/42'
+      <p><b>Request and response shapes:</b></p>
+      <pre>
+        <code class="language-cx">[request method='GET' path='/users/42'
              [path-params [id 42]]
              [query-params]
              [headers [header name='Accept' value='application/cx']]
@@ -2201,8 +2058,8 @@
            [response status=200
              [headers [header name='Content-Type' value='application/cx']]
              [body [user id=42]]]</code>
-            </pre>
-            <p><b>Lifecycle.</b> <code>[?http-service]</code> returns a handle.
+      </pre>
+      <p><b>Lifecycle.</b> <code>[?http-service]</code> returns a handle.
            <code>[?service-handle name=N]</code> looks up an existing
            service. <code>[?stop $handle]</code> initiates graceful
            shutdown — drains in-flight requests for up to
@@ -2210,539 +2067,487 @@
            during drain receive HTTP 503 (<code>CXER0166</code>).
            Process SIGTERM / SIGINT also triggers graceful
            shutdown.</p>
-            <p><b>HTTP client.</b> <code>[?http-client target=URL …]</code>
+      <p><b>HTTP client.</b> <code>[?http-client target=URL …]</code>
            returns a client value; operations pipe through
            it:</p>
-            <pre>
-              <code class="language-cx">[?let [= $c [?http-client target='https://api.example.com'
+      <pre>
+        <code class="language-cx">[?let [= $c [?http-client target='https://api.example.com'
                                     timeout=30s
                                     [resilience [?retry max=3]]]]
              [?pipe $c [$get _ '/users/42']]]</code>
-            </pre>
-            <p><b>Status.</b> Services are a stable surface;
+      </pre>
+      <p><b>Status.</b> Services are a stable surface;
            Tier-1 V binding ships the full implementation.
            Tier-2 bindings expose <code>[?http-client]</code> and
            <code>[?service-handle]</code> lookup but service-hosting may
            defer to the host's native HTTP framework. See
            <a class="xref" href="bindings.html">bindings</a>.</p>
-          
-        </section>
-        <section id="workers">
-          <h3>Workers and channels</h3>
-          
-            <p><code>[?worker]</code> spawns a concurrent worker. <code>[?channel]</code>
+    </section>
+    <section id="workers">
+      <h3>Workers and channels</h3>
+      <p><code>[?worker]</code> spawns a concurrent worker. <code>[?channel]</code>
            creates a FIFO message queue. <code>[?send]</code> and
            <code>[?receive]</code> move values across. <code>[?select]</code> is the
            multi-way receive.</p>
-            <pre>
-              <code class="language-cx">[?let [= $ch    [?channel name='jobs' buffer=8]]
+      <pre>
+        <code class="language-cx">[?let [= $ch    [?channel name='jobs' buffer=8]]
               [= $sent1 [?send 1 to=$ch]]
               [= $sent2 [?send 2 to=$ch]]
            ([?receive from=$ch], [?receive from=$ch])]</code>
-            </pre>
-            <pre>
-              <code class="language-cx">[?let [= $ch [?channel name='jobs' buffer=100]]
+      </pre>
+      <pre>
+        <code class="language-cx">[?let [= $ch [?channel name='jobs' buffer=100]]
              ([?worker name='producer'
                 [body [?for [in $i [$range 1 100]]
                         [yield [?send $i to=$ch]]]]],
               [?worker name='consumer'
                 [body [?for [in $i [$range 1 100]]
                         [yield [$process [?receive from=$ch]]]]]])]</code>
-            </pre>
-            <p><b>Channel semantics.</b> <code>[?channel name=… buffer=N]</code> has
+      </pre>
+      <p><b>Channel semantics.</b> <code>[?channel name=… buffer=N]</code> has
            a bounded FIFO buffer. <code>buffer=0</code> is synchronous
            (rendezvous — send blocks until receive). FIFO
            ordering is preserved per producer-consumer pair;
            with multiple producers, per-producer FIFO is
            preserved but there is no global cross-producer
            ordering.</p>
-            <p><b>Send / receive variants.</b></p>
-            <ul>
-              
-                <li><code>[?send V to=CH]</code> — block when buffer full;
+      <p><b>Send / receive variants.</b></p>
+      <ul>
+        <li><code>[?send V to=CH]</code> — block when buffer full;
                 returns <code>[ok]</code> once buffered. Returns
                 <code>CXER0200</code> (CHANNEL_CLOSED) if CH is
                 closed.</li>
-                <li><code>[?try-send V to=CH timeout=DURATION]</code> —
+        <li><code>[?try-send V to=CH timeout=DURATION]</code> —
                 same but returns <code>CXER0201</code> (SEND_TIMEOUT) on
                 buffer-full timeout.</li>
-                <li><code>[?receive from=CH]</code> — block when empty;
+        <li><code>[?receive from=CH]</code> — block when empty;
                 returns next value. Returns <code>CXER0200</code> when CH
                 is closed and drained.</li>
-                <li><code>[?try-receive from=CH timeout=DURATION]</code> —
+        <li><code>[?try-receive from=CH timeout=DURATION]</code> —
                 same but returns <code>CXER0202</code> (RECV_TIMEOUT) on
                 empty-channel timeout.</li>
-                <li><code>[?close CH]</code> — mark closed. Subsequent
+        <li><code>[?close CH]</code> — mark closed. Subsequent
                 <code>[?send]</code> fails immediately; subsequent
                 <code>[?receive]</code> drains buffered values then
                 returns CHANNEL_CLOSED. Double-close raises
                 <code>CXER0203</code>.</li>
-              
-            </ul>
-            <p><b>Worker observability.</b> Workers are
+      </ul>
+      <p><b>Worker observability.</b> Workers are
            handle-addressable:</p>
-            <pre>
-              <code class="language-cx">[?let [= $w [?worker name='sync-job' [body [$sync-database]]]]
+      <pre>
+        <code class="language-cx">[?let [= $w [?worker name='sync-job' [body [$sync-database]]]]
              ([?wait-for worker=$w],                  [# block until done #]
               [?cancel worker=$w],                    [# cooperative      #]
               [?check-cancel])]                       [# polling point    #]</code>
-            </pre>
-            <p><b>Select — multi-way receive.</b> Evaluates all
+      </pre>
+      <p><b>Select — multi-way receive.</b> Evaluates all
            <code>[case …]</code> clauses concurrently; proceeds with the
            first ready. Uniform-random selection on
            simultaneous readiness:</p>
-            <pre>
-              <code class="language-cx">[?let [= $jobs   [?channel name='jobs' buffer=1]]
+      <pre>
+        <code class="language-cx">[?let [= $jobs   [?channel name='jobs' buffer=1]]
               [= $signal [?channel name='sig'  buffer=1]]
               [= $sent   [?send 42 to=$jobs]]
            [?select
              [case [from $jobs $job]   [handled $job]]
              [case [from $signal $sig] [signalled $sig]]
              [case [timeout 5s]        [heartbeat]]]]</code>
-            </pre>
-            <p class="note"><b>Shape.</b> <code>[?select]</code> clauses are clause-children:
+      </pre>
+      <p class="note"><b>Shape.</b> <code>[?select]</code> clauses are clause-children:
            <code>[case [from CH $msg] HANDLER]</code> for a receive and
            <code>[case [timeout DURATION] HANDLER]</code> for a deadline. The
            <a href="../../spec/03-approved/core/code.md"><code>spec/core/code.md</code></a>
            §10.4.7 registry holds the authoritative shape. The v0.7.x <code>:case [:from CH $msg H]</code> [; version-literal-ok ]
            colon-slot form is retired — there is no dual-accept.</p>
-          
-        </section>
-        <section id="async">
-          <h3>Async, await, and cancellation</h3>
-          
-            <p><code>[?async EXPR]</code> evaluates EXPR in a new async
+    </section>
+    <section id="async">
+      <h3>Async, await, and cancellation</h3>
+      <p><code>[?async EXPR]</code> evaluates EXPR in a new async
            context and returns a future immediately:</p>
-            <pre>
-              <code class="language-cx">[?let [= $f1 [?async [+ 1 1]]]
+      <pre>
+        <code class="language-cx">[?let [= $f1 [?async [+ 1 1]]]
               [= $f2 [?async [* 2 2]]]
               [= $f3 [?async [$upper 'go']]]
            [?await-all ($f1, $f2, $f3)]]</code>
-            </pre>
-            <p><b>Future state machine.</b> Futures progress through
+      </pre>
+      <p><b>Future state machine.</b> Futures progress through
            <code>pending → running → done</code> / <code>failed</code> /
            <code>cancelled</code>. Once terminal, the state is
            immutable.</p>
-            <p><b>Barrier variants:</b></p>
-            <ul>
-              
-                <li><code>[?await $f]</code> — block until terminal; return
+      <p><b>Barrier variants:</b></p>
+      <ul>
+        <li><code>[?await $f]</code> — block until terminal; return
                 value on done, propagate err on failed,
                 CANCELLED on cancelled.</li>
-                <li><code>[?await $f timeout=DURATION]</code> — add a hard
+        <li><code>[?await $f timeout=DURATION]</code> — add a hard
                 deadline; on expiry return <code>CXER0241</code>
                 (AWAIT_TIMEOUT). The future continues running
                 — <code>timeout=</code> bounds the caller's wait, not the
                 future itself.</li>
-                <li><code>[?await-all FUTURES]</code> — block until all
+        <li><code>[?await-all FUTURES]</code> — block until all
                 terminal. If all done, yield sequence of
                 values. If any failed/cancelled, yield
                 <code>CXER0240</code> with a <code>[causes …]</code> child carrying
                 every non-done cause in input order.</li>
-                <li><code>[?await-any FUTURES]</code> — yield first to
+        <li><code>[?await-any FUTURES]</code> — yield first to
                 terminate. Other futures continue running;
                 their results are discarded.</li>
-                <li><code>[?await-race FUTURES]</code> — yield first to
+        <li><code>[?await-race FUTURES]</code> — yield first to
                 terminate; <b>other futures are cancelled</b>.
                 Use for "I only need one".</li>
-              
-            </ul>
-            <p><b>Cooperative cancellation contract.</b> <code>[?cancel
+      </ul>
+      <p><b>Cooperative cancellation contract.</b> <code>[?cancel
            $f]</code> requests cancellation — it is a signal, not
            a kill. The runtime guarantees cancellation
            observation at:</p>
-            <ul>
-              
-                <li>HTTP client calls at next network read/write
+      <ul>
+        <li>HTTP client calls at next network read/write
                 boundary.</li>
-                <li><code>[?sleep DURATION]</code> — immediately.</li>
-                <li><code>[?send]</code> / <code>[?receive]</code> / <code>[?try-send]</code> /
+        <li><code>[?sleep DURATION]</code> — immediately.</li>
+        <li><code>[?send]</code> / <code>[?receive]</code> / <code>[?try-send]</code> /
                 <code>[?try-receive]</code> — immediately, returning
                 <code>CXER0260</code> (CANCELLED).</li>
-                <li><code>[?for]</code> — at every iteration boundary.</li>
-                <li><code>[?await]</code> — immediately.</li>
-              
-            </ul>
-            <p><b>Pure CPU loops without yield points do NOT
+        <li><code>[?for]</code> — at every iteration boundary.</li>
+        <li><code>[?await]</code> — immediately.</li>
+      </ul>
+      <p><b>Pure CPU loops without yield points do NOT
            observe cancellation.</b> Authors who want a
            cancellable hot loop must insert <code>[?check-cancel]</code>
            at appropriate boundaries — it evaluates to <code>[ok]</code>
            normally, or <code>CXER0260</code> (CANCELLED) if
            cancellation is pending.</p>
-            <pre>
-              <code class="language-cx">[?def cancellable-compute impure ($n)
+      <pre>
+        <code class="language-cx">[?def cancellable-compute impure ($n)
              [?for [in $i [$range 1 $n]]
                [where [= [?check-cancel] [ok]]]
                [yield [* $i $i]]]]
            [$cancellable-compute 4]</code>
-            </pre>
-            <p><b>Composition with resilience.</b> <code>[?async]</code>
+      </pre>
+      <p><b>Composition with resilience.</b> <code>[?async]</code>
            composes with every resilience directive.
            <code>[?async [?timeout 5s [$slow-call]]]</code> returns
            a future that resolves to <code>CXER0141</code> (TIMEOUT)
            after 5s if <code>slow-call</code> hasn't completed.</p>
-            <p><b>Status.</b> Async/await is stable in V.
+      <p><b>Status.</b> Async/await is stable in V.
            Tier-2 binding parity (Python <code>asyncio</code>, Go
            <code>chan</code>, Rust <code>tokio</code>) ships per
            <a href="../../spec/03-approved/misc/parity-matrix.md"><code>spec/misc/parity-matrix.md</code></a>.</p>
-          
-        </section>
-      
     </section>
-    <section id="resilience">
-      <h2>Resilience directives</h2>
-      
-        <p>The six resilience directives wrap an inner
+  </section>
+  <section id="resilience">
+    <h2>Resilience directives</h2>
+    <p>The six resilience directives wrap an inner
          expression with a failure-handling policy. They are
          not new control-flow primitives — they are normal CX
          code with cleanly-named policies. Spec:
          <a href="../../spec/03-approved/core/code.md"><code>spec/core/code.md</code></a> §10.2.</p>
-        <p><b>Common error shape.</b> Every resilience directive
+    <p><b>Common error shape.</b> Every resilience directive
          on terminal failure emits a structured <code>[err …]</code>
          per the §10.2.7 error-code matrix (see
          <a class="xref" href="#error-registry">error-registry</a>).</p>
-        <section id="retry">
-          <h3>[?retry] — bounded re-run with backoff</h3>
-          
-            <p>Re-run an inner body on <code>[err …]</code> return, up to
+    <section id="retry">
+      <h3>[?retry] — bounded re-run with backoff</h3>
+      <p>Re-run an inner body on <code>[err …]</code> return, up to
            <code>max=</code> attempts, sleeping between attempts per
            <code>backoff=</code> / <code>delay=</code> / <code>jitter=</code>. Terminal
            failure raises <code>CXER0140</code> (RETRY_EXHAUSTED).</p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>parameter</th>
-                    <th>default</th>
-                    <th>semantics</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>max=INT</td>
-                    <td>(required)</td>
-                    <td>Maximum attempts; must be &gt; 0</td>
-                  </tr>
-                  <tr>
-                    <td>backoff=STRATEGY</td>
-                    <td>exponential</td>
-                    <td>constant / linear / exponential / fibonacci</td>
-                  </tr>
-                  <tr>
-                    <td>delay=DURATION</td>
-                    <td>100ms</td>
-                    <td>Base delay; combined with backoff formula</td>
-                  </tr>
-                  <tr>
-                    <td>jitter=MODE</td>
-                    <td>equal</td>
-                    <td>none / full / equal / decorrelated</td>
-                  </tr>
-                  <tr>
-                    <td>[on PREDICATE]</td>
-                    <td>[?fn ($e) true]</td>
-                    <td>Per-err filter; retry iff truthy</td>
-                  </tr>
-                  <tr>
-                    <td>body (positional)</td>
-                    <td>(required)</td>
-                    <td>Inner expression to retry</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <p><b>Backoff formulas</b> (delay for attempt N, N ≥ 1):
+      <table>
+        <thead>
+          <tr>
+            <th>parameter</th>
+            <th>default</th>
+            <th>semantics</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>max=INT</td>
+            <td>(required)</td>
+            <td>Maximum attempts; must be &gt; 0</td>
+          </tr>
+          <tr>
+            <td>backoff=STRATEGY</td>
+            <td>exponential</td>
+            <td>constant / linear / exponential / fibonacci</td>
+          </tr>
+          <tr>
+            <td>delay=DURATION</td>
+            <td>100ms</td>
+            <td>Base delay; combined with backoff formula</td>
+          </tr>
+          <tr>
+            <td>jitter=MODE</td>
+            <td>equal</td>
+            <td>none / full / equal / decorrelated</td>
+          </tr>
+          <tr>
+            <td>[on PREDICATE]</td>
+            <td>[?fn ($e) true]</td>
+            <td>Per-err filter; retry iff truthy</td>
+          </tr>
+          <tr>
+            <td>body (positional)</td>
+            <td>(required)</td>
+            <td>Inner expression to retry</td>
+          </tr>
+        </tbody>
+      </table>
+      <p><b>Backoff formulas</b> (delay for attempt N, N ≥ 1):
            <code>constant</code> = <code>delay=</code>; <code>linear</code> = <code>delay × N</code>;
            <code>exponential</code> = <code>delay × 2^(N-1)</code>; <code>fibonacci</code> =
            <code>delay × fib(N)</code>.</p>
-            <p><b>Jitter modes</b> (D = pre-jitter delay): <code>none</code> =
+      <p><b>Jitter modes</b> (D = pre-jitter delay): <code>none</code> =
            <code>D</code>; <code>full</code> = <code>uniform(0, D)</code>; <code>equal</code> = <code>D/2 +
            uniform(0, D/2)</code>; <code>decorrelated</code> = <code>uniform(delay,
            last_delay × 3)</code>.</p>
-            <pre>
-              <code class="language-cx">[?retry max=5 backoff=exponential delay=200ms jitter=equal
+      <pre>
+        <code class="language-cx">[?retry max=5 backoff=exponential delay=200ms jitter=equal
            [on [?fn ($e) [= $e@code 'CXER0163']]]        [# only on timeout #]
            [?pipe $client [$get _ '/users/42']]]</code>
-            </pre>
-          
-        </section>
-        <section id="timeout">
-          <h3>[?timeout] — hard deadline</h3>
-          
-            <p>Bound execution time of an inner body. On expiry,
+      </pre>
+    </section>
+    <section id="timeout">
+      <h3>[?timeout] — hard deadline</h3>
+      <p>Bound execution time of an inner body. On expiry,
            cooperatively cancel the body and return
            the <code>[on-timeout …]</code> clause body (if present) or
            <code>[result status=err code='cx-err:CXER0141'
            elapsed=DURATION]</code>.</p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>parameter</th>
-                    <th>default</th>
-                    <th>semantics</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>DURATION (positional)</td>
-                    <td>(required)</td>
-                    <td>Hard deadline; e.g. 5s, 250ms</td>
-                  </tr>
-                  <tr>
-                    <td>body (positional)</td>
-                    <td>(required)</td>
-                    <td>Inner expression with cooperative cancel points</td>
-                  </tr>
-                  <tr>
-                    <td>[on-timeout EXPR]</td>
-                    <td>(none)</td>
-                    <td>Fallback expression on expiry; otherwise raises CXER0141</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <pre>
-              <code class="language-cx">[?timeout 5s
+      <table>
+        <thead>
+          <tr>
+            <th>parameter</th>
+            <th>default</th>
+            <th>semantics</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>DURATION (positional)</td>
+            <td>(required)</td>
+            <td>Hard deadline; e.g. 5s, 250ms</td>
+          </tr>
+          <tr>
+            <td>body (positional)</td>
+            <td>(required)</td>
+            <td>Inner expression with cooperative cancel points</td>
+          </tr>
+          <tr>
+            <td>[on-timeout EXPR]</td>
+            <td>(none)</td>
+            <td>Fallback expression on expiry; otherwise raises CXER0141</td>
+          </tr>
+        </tbody>
+      </table>
+      <pre>
+        <code class="language-cx">[?timeout 5s
              [$slow-database-query $q]
              [on-timeout [result status=err code='CXER0141' reason='db slow']]]</code>
-            </pre>
-          
-        </section>
-        <section id="circuit-breaker">
-          <h3>[?circuit-breaker] — fail-fast on consecutive failures</h3>
-          
-            <p>Three states: <b>closed</b> (passes through), <b>open</b>
+      </pre>
+    </section>
+    <section id="circuit-breaker">
+      <h3>[?circuit-breaker] — fail-fast on consecutive failures</h3>
+      <p>Three states: <b>closed</b> (passes through), <b>open</b>
            (rejects with <code>CXER0150</code> (BREAKER_OPEN) without
            calling <code>:body</code>), <b>half-open</b> (allows one
            probe). Transitions:</p>
-            <ul>
-              
-                <li>Closed → open when failure ratio in rolling
+      <ul>
+        <li>Closed → open when failure ratio in rolling
                 <code>window=</code> exceeds <code>threshold=</code>, with at least
                 <code>min-samples=</code> recorded.</li>
-                <li>Open → half-open after <code>reset=</code> elapses.</li>
-                <li>Half-open → closed if probe succeeds.</li>
-                <li>Half-open → open if probe fails.</li>
-              
-            </ul>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>parameter</th>
-                    <th>default</th>
-                    <th>semantics</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>threshold=RATIO</td>
-                    <td>(required)</td>
-                    <td>Failure ratio 0.0–1.0 to trip breaker</td>
-                  </tr>
-                  <tr>
-                    <td>window=DURATION</td>
-                    <td>(required)</td>
-                    <td>Rolling-window length for sampling</td>
-                  </tr>
-                  <tr>
-                    <td>reset=DURATION</td>
-                    <td>(required)</td>
-                    <td>Half-open delay after trip</td>
-                  </tr>
-                  <tr>
-                    <td>min-samples=INT</td>
-                    <td>10</td>
-                    <td>Minimum sample count before threshold check</td>
-                  </tr>
-                  <tr>
-                    <td>name=STR</td>
-                    <td>(lexical position)</td>
-                    <td>State-identity key for cross-position sharing</td>
-                  </tr>
-                  <tr>
-                    <td>body (positional)</td>
-                    <td>(required)</td>
-                    <td>Inner expression</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <pre>
-              <code class="language-cx">[?circuit-breaker
+        <li>Open → half-open after <code>reset=</code> elapses.</li>
+        <li>Half-open → closed if probe succeeds.</li>
+        <li>Half-open → open if probe fails.</li>
+      </ul>
+      <table>
+        <thead>
+          <tr>
+            <th>parameter</th>
+            <th>default</th>
+            <th>semantics</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>threshold=RATIO</td>
+            <td>(required)</td>
+            <td>Failure ratio 0.0–1.0 to trip breaker</td>
+          </tr>
+          <tr>
+            <td>window=DURATION</td>
+            <td>(required)</td>
+            <td>Rolling-window length for sampling</td>
+          </tr>
+          <tr>
+            <td>reset=DURATION</td>
+            <td>(required)</td>
+            <td>Half-open delay after trip</td>
+          </tr>
+          <tr>
+            <td>min-samples=INT</td>
+            <td>10</td>
+            <td>Minimum sample count before threshold check</td>
+          </tr>
+          <tr>
+            <td>name=STR</td>
+            <td>(lexical position)</td>
+            <td>State-identity key for cross-position sharing</td>
+          </tr>
+          <tr>
+            <td>body (positional)</td>
+            <td>(required)</td>
+            <td>Inner expression</td>
+          </tr>
+        </tbody>
+      </table>
+      <pre>
+        <code class="language-cx">[?circuit-breaker
              threshold=0.5 window=60s reset=30s min-samples=20
              name='users-api'
              [?pipe $client [$get _ '/users/42']]]</code>
-            </pre>
-          
-        </section>
-        <section id="fallback">
-          <h3>[?fallback] — alternative on error</h3>
-          
-            <p>If primary returns <code>[err …]</code>, evaluate secondary
+      </pre>
+    </section>
+    <section id="fallback">
+      <h3>[?fallback] — alternative on error</h3>
+      <p>If primary returns <code>[err …]</code>, evaluate secondary
            and return its value (which may itself be <code>[err]</code>
            — <code>[?fallback]</code> does not wrap that case).</p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>parameter</th>
-                    <th>default</th>
-                    <th>semantics</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>body (positional)</td>
-                    <td>(required)</td>
-                    <td>First expression tried (primary)</td>
-                  </tr>
-                  <tr>
-                    <td>[recover-with SECONDARY]</td>
-                    <td>(required)</td>
-                    <td>Fallback expression evaluated only on primary err</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <pre>
-              <code class="language-cx">[?fallback
+      <table>
+        <thead>
+          <tr>
+            <th>parameter</th>
+            <th>default</th>
+            <th>semantics</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>body (positional)</td>
+            <td>(required)</td>
+            <td>First expression tried (primary)</td>
+          </tr>
+          <tr>
+            <td>[recover-with SECONDARY]</td>
+            <td>(required)</td>
+            <td>Fallback expression evaluated only on primary err</td>
+          </tr>
+        </tbody>
+      </table>
+      <pre>
+        <code class="language-cx">[?fallback
              [?pipe $client [$get _ '/users/42']]
              [recover-with [$load-from-cache 42]]]</code>
-            </pre>
-            <p class="note"><code>$err</code> <b>in the recovery scope.</b> Inside the recovery
+      </pre>
+      <p class="note"><code>$err</code> <b>in the recovery scope.</b> Inside the recovery
            scope, <code>$err</code> is bound to the primary's <code>[err …]</code> value, so
            recovery can introspect the failure (e.g. <code>[recover-with
            [response status=500 reason=$err/@message]]</code>). The
            clause-child <code>[recover-with …]</code> form is the sole accepted
            shape (no legacy colon-slot).</p>
-          
-        </section>
-        <section id="rate-limit">
-          <h3>[?rate-limit] — token-bucket cap</h3>
-          
-            <p>Permits at most <code>max=</code> invocations per <code>per=</code>
+    </section>
+    <section id="rate-limit">
+      <h3>[?rate-limit] — token-bucket cap</h3>
+      <p>Permits at most <code>max=</code> invocations per <code>per=</code>
            window. Excess invocations return <code>CXER0151</code>
            (RATE_LIMITED) with a <code>retry-after=DURATION</code>
            attribute — the time until the next token frees.</p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>parameter</th>
-                    <th>default</th>
-                    <th>semantics</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>max=INT</td>
-                    <td>(required)</td>
-                    <td>Tokens per window; must be &gt; 0</td>
-                  </tr>
-                  <tr>
-                    <td>per=DURATION</td>
-                    <td>(required)</td>
-                    <td>Refill window</td>
-                  </tr>
-                  <tr>
-                    <td>name=STR</td>
-                    <td>(lexical position)</td>
-                    <td>State-identity key</td>
-                  </tr>
-                  <tr>
-                    <td>body (positional)</td>
-                    <td>(required)</td>
-                    <td>Inner expression</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <pre>
-              <code class="language-cx">[?rate-limit max=100 per=1s name='github-api'
+      <table>
+        <thead>
+          <tr>
+            <th>parameter</th>
+            <th>default</th>
+            <th>semantics</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>max=INT</td>
+            <td>(required)</td>
+            <td>Tokens per window; must be &gt; 0</td>
+          </tr>
+          <tr>
+            <td>per=DURATION</td>
+            <td>(required)</td>
+            <td>Refill window</td>
+          </tr>
+          <tr>
+            <td>name=STR</td>
+            <td>(lexical position)</td>
+            <td>State-identity key</td>
+          </tr>
+          <tr>
+            <td>body (positional)</td>
+            <td>(required)</td>
+            <td>Inner expression</td>
+          </tr>
+        </tbody>
+      </table>
+      <pre>
+        <code class="language-cx">[?rate-limit max=100 per=1s name='github-api'
              [?pipe $client [$get _ '/repos/cx-home/cx']]]</code>
-            </pre>
-          
-        </section>
-        <section id="bulkhead">
-          <h3>[?bulkhead] — bound concurrent calls</h3>
-          
-            <p>Bounds concurrent invocations. If <code>max-concurrent=</code>
+      </pre>
+    </section>
+    <section id="bulkhead">
+      <h3>[?bulkhead] — bound concurrent calls</h3>
+      <p>Bounds concurrent invocations. If <code>max-concurrent=</code>
            slots are busy and <code>queue=</code> slots are full,
            returns <code>CXER0152</code> (BULKHEAD_FULL). Queued
            requests wait FIFO for a free slot.</p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>parameter</th>
-                    <th>default</th>
-                    <th>semantics</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>max-concurrent=INT</td>
-                    <td>(required)</td>
-                    <td>In-flight cap; must be &gt; 0</td>
-                  </tr>
-                  <tr>
-                    <td>queue=INT</td>
-                    <td>0</td>
-                    <td>Wait-queue depth; 0 = no queue, fail-fast on full</td>
-                  </tr>
-                  <tr>
-                    <td>name=STR</td>
-                    <td>(lexical position)</td>
-                    <td>State-identity key</td>
-                  </tr>
-                  <tr>
-                    <td>body (positional)</td>
-                    <td>(required)</td>
-                    <td>Inner expression</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <pre>
-              <code class="language-cx">[?bulkhead max-concurrent=10 queue=50 name='db-pool'
+      <table>
+        <thead>
+          <tr>
+            <th>parameter</th>
+            <th>default</th>
+            <th>semantics</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>max-concurrent=INT</td>
+            <td>(required)</td>
+            <td>In-flight cap; must be &gt; 0</td>
+          </tr>
+          <tr>
+            <td>queue=INT</td>
+            <td>0</td>
+            <td>Wait-queue depth; 0 = no queue, fail-fast on full</td>
+          </tr>
+          <tr>
+            <td>name=STR</td>
+            <td>(lexical position)</td>
+            <td>State-identity key</td>
+          </tr>
+          <tr>
+            <td>body (positional)</td>
+            <td>(required)</td>
+            <td>Inner expression</td>
+          </tr>
+        </tbody>
+      </table>
+      <pre>
+        <code class="language-cx">[?bulkhead max-concurrent=10 queue=50 name='db-pool'
              [$query-database $q]]</code>
-            </pre>
-          
-        </section>
-        <section id="resilience-composition">
-          <h3>Composition</h3>
-          
-            <p>Resilience directives compose by nesting. The
+      </pre>
+    </section>
+    <section id="resilience-composition">
+      <h3>Composition</h3>
+      <p>Resilience directives compose by nesting. The
            outermost runs first, so its policy sees the
            inner policies' err codes. Standard pattern reads
            top-down:</p>
-            <pre>
-              <code class="language-cx">[?retry max=3
+      <pre>
+        <code class="language-cx">[?retry max=3
             [?timeout 10s
               [?circuit-breaker threshold=0.5 window=60s reset=30s
                 [?http-client target='https://api.example.com' method='get']]]]</code>
-            </pre>
-            <p>Reading: retry up to 3 times a 10-second-bounded
+      </pre>
+      <p>Reading: retry up to 3 times a 10-second-bounded
            call gated by a 50%-failure circuit-breaker. If
            the breaker opens, <code>[?retry]</code> sees <code>CXER0150</code> and
            decides whether to keep retrying (default <code>[on …]</code>
            predicate returns truthy → yes; override to scope
            which errs retry).</p>
-            <p><b>State identity (stateful directives).</b>
+      <p><b>State identity (stateful directives).</b>
            <code>[?circuit-breaker]</code>, <code>[?rate-limit]</code>, and
            <code>[?bulkhead]</code> carry state across invocations. By
            default state is keyed by lexical source-text
@@ -2752,42 +2557,36 @@
            to key by name instead, enabling cross-position
            sharing (one rate-limit budget enforced by
            callers in different modules).</p>
-          
-        </section>
-      
     </section>
-    <section id="evaluation-framing">
-      <h2>Evaluation framing — directives, patterns, comprehensions</h2>
-      
-        <p>The directive registry above lists each form; this section
+  </section>
+  <section id="evaluation-framing">
+    <h2>Evaluation framing — directives, patterns, comprehensions</h2>
+    <p>The directive registry above lists each form; this section
          shows how the forms fit together — directives as the
          language layer over data, pattern matching as the way
          programs walk a tree, comprehensions as the composition
          glue. CXPath is a value kind (with <code>[?find]</code> retired) and
          <code>[expr]</code> is the general predicate.</p>
-        <section id="directives-overview">
-          <h3>Directives turn data into a language</h3>
-          
-            <p>A directive is a CX element whose name starts with <code>?</code>.
+    <section id="directives-overview">
+      <h3>Directives turn data into a language</h3>
+      <p>A directive is a CX element whose name starts with <code>?</code>.
            It carries semantics — iteration, branching,
            substitution, include, function call — that the
            evaluator interprets when running a CX program.
            Directives parse as regular CX, evaluate to text or
            values, and compose with each other through their slot
            bodies.</p>
-            <pre>
-              <code class="language-text">EXPR                                     [; bare expression evaluates ]
+      <pre>
+        <code class="language-text">EXPR                                     [; bare expression evaluates ]
            [?for [in $x PATH] [yield BODY]]         [; iterate ]
            [?if COND [then THEN] [else ELSE]]       [; branch ]
            [?let [= $x EXPR] BODY]                  [; bind a name ]
            [?def name ($a $b) BODY]                 [; define a function ]</code>
-            </pre>
-          
-        </section>
-        <section id="patterns-walking">
-          <h3>Pattern matching — walking the tree</h3>
-          
-            <p>The current program surface replaces XPath-style queries
+      </pre>
+    </section>
+    <section id="patterns-walking">
+      <h3>Pattern matching — walking the tree</h3>
+      <p>The current program surface replaces XPath-style queries
            with <code>[?for]</code> pattern generators and CXPath path values
            (<code>[?find]</code> retired). A pattern is a CX
            literal where element names match by shape, attribute
@@ -2795,8 +2594,8 @@
            matched subtrees. <code>[?for]</code> walks the tree (deep by
            default) and binds for each match; <code>[?match]</code> tests a
            single value (multi-arm dispatch).</p>
-            <pre>
-              <code class="language-cx">[shop
+      <pre>
+        <code class="language-cx">[shop
              [user [name 'Ada']]
              [item active=true 'i1']
              [pizza [name 'Margherita'] [price 12]]]
@@ -2804,26 +2603,23 @@
            [?for [item @active=true $i] [yield $i]]
            [?for [pizza [name $n] [price $p]]
                  [yield [hit name=$n price=$p]]]</code>
-            </pre>
-          
-        </section>
-        <section id="comprehensions">
-          <h3>Comprehensions and composition</h3>
-          
-            <p><code>[?for]</code> iterates a sequence (or matches a pattern across
+      </pre>
+    </section>
+    <section id="comprehensions">
+      <h3>Comprehensions and composition</h3>
+      <p><code>[?for]</code> iterates a sequence (or matches a pattern across
            the tree) and yields per-iteration values; <code>[where …]</code>
            filters, <code>[order-by …]</code> sorts, <code>[group-by …]</code> aggregates.
            <code>[?let]</code> binds names; <code>[?if]</code> branches. The <code>[?pipe]</code>
            directive composes them.</p>
-            <pre>
-              <code class="language-cx">[?for [in $x (1, 2, 3)] [where [> $x 1]] [yield [* $x $x]]]
+      <pre>
+        <code class="language-cx">[?for [in $x (1, 2, 3)] [where [> $x 1]] [yield [* $x $x]]]
            [?let [= $a 10] [= $b 32] [+ $a $b]]
            [?pipe (1, 2, 3, 4) [$count]]</code>
-            </pre>
-            <section id="comprehensions-future-surface">
-              <h4>Future surface — ranges, slices, Iterator</h4>
-              
-                <p>A future surface extends the
+      </pre>
+      <section id="comprehensions-future-surface">
+        <h4>Future surface — ranges, slices, Iterator</h4>
+        <p>A future surface extends the
              comprehension surface with <b>strided ranges</b>
              (<code>[$range 1 99 2]</code>, <code>[$range 1 *]</code>), <b>slice expressions on a
              binding postfix</b> (<code>$xs[2:5]</code>, <code>$xs[::-1]</code>,
@@ -2832,7 +2628,7 @@
              kind</b> in CXDM §2 alongside Sequence / Array / Map.
              Comprehensions become lazy by default; named iterators
              (<code>[?def]</code>) memoize on first walk so re-use is safe.</p>
-                <p>Four worked examples (§W1–§W4) each have a paired
+        <p>Four worked examples (§W1–§W4) each have a paired
              conformance fixture
              <code>program-slice-wN-*</code> in
              <a href="../../conformance/code.cxd"><code>conformance/code.cxd</code></a>;
@@ -2846,8 +2642,8 @@
              (<a href="../../spec/03-approved/formal/grammar.ebnf"><code>spec/formal/grammar.ebnf</code></a>
              [159b]) — bare-fn-call, path predicate, and slice
              postfix coexist.</p>
-                <pre>
-                  <code class="language-cx">[# W1 — strided range, then slice, then comprehension #]
+        <pre>
+          <code class="language-cx">[# W1 — strided range, then slice, then comprehension #]
              [?def $odds [$range 1 99 2]]
              [?def $first-ten $odds[:10]]
              [?def $squares [?for [in $x $first-ten] [yield [* $x $x]]]]
@@ -2857,8 +2653,8 @@
 
              [# W7 — map comprehension over CXPath source #]
              [?for [in $u //user] [yield-map [$u@id $u@email]]]</code>
-                </pre>
-                <p>The path-to-iterator taxonomy (D26): a CXPath value is
+        </pre>
+        <p>The path-to-iterator taxonomy (D26): a CXPath value is
              <b>not</b> an <code>Iterator</code> — it is a <i>description of a
              selection</i>. Evaluation materialises it to a <code>sequence</code>
              (eager, the kind currently in use). The <code>sequence</code>
@@ -2869,16 +2665,12 @@
              directive is planned but not registered). There is no
              <code>iterator → path</code> direction — paths describe; iterators
              walk.</p>
-              
-            </section>
-          
-        </section>
-      
+      </section>
     </section>
-    <section id="cxpath-quickref">
-      <h2>CXPath reference — quick form</h2>
-      
-        <p>At-a-glance CXPath reference. The normative grammar lives
+  </section>
+  <section id="cxpath-quickref">
+    <h2>CXPath reference — quick form</h2>
+    <p>At-a-glance CXPath reference. The normative grammar lives
          in <a href="../../spec/03-approved/formal/grammar.ebnf"><code>spec/formal/grammar.ebnf</code></a>
          productions [130]/[131]/[135] (path steps / binding paths) and
          [159]/[160a] (general PredicateExpr + the <code>(bind $name)</code>
@@ -2886,11 +2678,10 @@
          in <a href="../../spec/03-approved/core/code.md"><code>spec/core/code.md</code></a> §5.5.
          CXPath is a first-class value kind;
          general predicates with <code>$_</code> / <code>$_position</code> / <code>$_last</code>.</p>
-        <section id="cxpath-quick-table">
-          <h3>Quick reference</h3>
-          
-            <pre>
-              <code class="language-cx">[; Every user in the document. ]
+    <section id="cxpath-quick-table">
+      <h3>Quick reference</h3>
+      <pre>
+        <code class="language-cx">[; Every user in the document. ]
            //user
 
            [; Every user whose @active attribute equals true. ]
@@ -2919,13 +2710,11 @@
            [union //a //b]
            [intersect //x //y]
            [except //all //banned]</code>
-            </pre>
-          
-        </section>
-        <section id="cxpath-four-forms">
-          <h3>Four leading forms</h3>
-          
-            <p>Every CXPath has one of four leading-token forms.
+      </pre>
+    </section>
+    <section id="cxpath-four-forms">
+      <h3>Four leading forms</h3>
+      <p>Every CXPath has one of four leading-token forms.
            - <code>//</code> <b>descendant</b> — <code>//user</code> —
              <code>descendant-or-self::node()/child::user</code>; the most
              common shape.
@@ -2936,12 +2725,10 @@
            - <code>$name/</code> <b>binding</b> — <code>$u/email</code> — rooted at a
              previously-bound value (per <code>[?for]</code> / <code>[?let]</code> /
              <code>(bind $name)</code>).</p>
-          
-        </section>
-        <section id="cxpath-axes">
-          <h3>Twelve axes</h3>
-          
-            <p>Every step can specify an axis. The default axis is
+    </section>
+    <section id="cxpath-axes">
+      <h3>Twelve axes</h3>
+      <p>Every step can specify an axis. The default axis is
            <code>child::</code>; the <code>attribute::</code> axis has the dedicated
            <code>@</code> sigil. CX implements all twelve
            XPath 3.1 axes: <code>child</code>, <code>descendant</code>,
@@ -2949,19 +2736,17 @@
            <code>ancestor-or-self</code>, <code>self</code>, <code>following-sibling</code>,
            <code>preceding-sibling</code>, <code>following</code>, <code>preceding</code>,
            <code>attribute</code>.</p>
-            <p>Composite shortcut forms: <code>/name</code> ≡ <code>child::name</code>;
+      <p>Composite shortcut forms: <code>/name</code> ≡ <code>child::name</code>;
            <code>//name</code> ≡ <code>descendant-or-self::node()/child::name</code>;
            <code>@name</code> ≡ <code>attribute::name</code>; <code>..</code> ≡ <code>parent::node()</code>;
            <code>.</code> ≡ <code>self::node()</code>. Attribute axis is name-disjoint
            from element axes — <code>//user/@name</code> selects the
            attribute only; <code>//user/name</code> selects the child
            element only.</p>
-          
-        </section>
-        <section id="cxpath-predicates">
-          <h3>General predicate + reserved bindings</h3>
-          
-            <p>Predicates filter the step sequence. A predicate body
+    </section>
+    <section id="cxpath-predicates">
+      <h3>General predicate + reserved bindings</h3>
+      <p>Predicates filter the step sequence. A predicate body
            is prefix CX code coerced to a boolean via the
            Effective Boolean Value (EBV) rule. The atomic
            shorthands — <code>[@name]</code> / <code>[@!name]</code> (attribute
@@ -2969,7 +2754,7 @@
            (step-existence) — remain available and round-trip via
            canonical re-emit. Value comparisons are always prefix:
            <code>[= $_@name V]</code>.</p>
-            <p><b>Three reserved bindings</b> in scope inside every
+      <p><b>Three reserved bindings</b> in scope inside every
            predicate body: <code>$_</code> (current candidate item, type
            matches the candidate kind), <code>$_position</code> (1-based int
            index — equivalent to XPath <code>position()</code>), <code>$_last</code>
@@ -2977,63 +2762,56 @@
            equivalent to XPath <code>last()</code>). Predicates are eagerly
            materialised, so <code>$_last</code> is known on
            every predicate evaluation.</p>
-            <p><b>Comparison sigils</b> are value-comparison only: <code>=</code>,
+      <p><b>Comparison sigils</b> are value-comparison only: <code>=</code>,
            <code>!=</code>, <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>. No keyword synonyms (no
            <code>eq</code>/<code>ne</code>/<code>lt</code>/etc.). Comparing a sequence with more
            than one item raises <code>CXER0103</code>. <b>Purity</b> — every
            predicate body MUST be pure; impure
            callees fail load with <code>CXER0230</code>.</p>
-          
-        </section>
-        <section id="cxpath-bind">
-          <h3>Cross-step reference — nested generators</h3>
-          
-            <p>To reference an <b>outer</b> step's focus from an inner
+    </section>
+    <section id="cxpath-bind">
+      <h3>Cross-step reference — nested generators</h3>
+      <p>To reference an <b>outer</b> step's focus from an inner
            predicate ("leads of teams with at least three
            members"), stack <code>[?for]</code> generators — each generator
            names its focus, and every later clause sees the
            earlier bindings:</p>
-            <pre>
-              <code class="language-cx">[org
+      <pre>
+        <code class="language-cx">[org
              [team [member role='lead' [name 'a']] [member [name 'b']] [member [name 'c']]]
              [team [member role='lead' [name 'e']]]]
            [?for [in $t //team]
                  [in $m $t/member]
                  [where [and [= $m@role 'lead'] [>= [$count $t/member] 3]]]
              [yield $m/name]]</code>
-            </pre>
-            <p class="note">The grammar reserves a <code>(bind $name)</code> path-step
+      </pre>
+      <p class="note">The grammar reserves a <code>(bind $name)</code> path-step
            annotation (grammar.ebnf [160a]) for naming a step's
            focus inline; the nested-generator form above is the
            conformance-exercised idiom.</p>
-          
-        </section>
-        <section id="cxpath-binding-surface">
-          <h3>In the host bindings</h3>
-          
-            <p>Every Tier-1 binding exposes CXPath identically through
+    </section>
+    <section id="cxpath-binding-surface">
+      <h3>In the host bindings</h3>
+      <p>Every Tier-1 binding exposes CXPath identically through
            its Layer-1 surface — same selector, same bytes
            returned across the C ABI.</p>
-            <pre>
-              <code class="language-python">emails = doc.select_all("//user[= $_@active true]/@email")</code>
-            </pre>
-            <pre>
-              <code class="language-go">emails, _ := doc.SelectAll("//user[= $_@active true]/@email")</code>
-            </pre>
-            <pre>
-              <code class="language-rust">let emails = doc.select_all("//user[= $_@active true]/@email")?;</code>
-            </pre>
-            <pre>
-              <code class="language-v">emails := doc.select_all('//user[= $_@active true]/@email')!</code>
-            </pre>
-          
-        </section>
-      
+      <pre>
+        <code class="language-python">emails = doc.select_all("//user[= $_@active true]/@email")</code>
+      </pre>
+      <pre>
+        <code class="language-go">emails, _ := doc.SelectAll("//user[= $_@active true]/@email")</code>
+      </pre>
+      <pre>
+        <code class="language-rust">let emails = doc.select_all("//user[= $_@active true]/@email")?;</code>
+      </pre>
+      <pre>
+        <code class="language-v">emails := doc.select_all('//user[= $_@active true]/@email')!</code>
+      </pre>
     </section>
-    <section id="errors-catalog">
-      <h2>Error code catalog</h2>
-      
-        <p>Every CX error carries a structured payload: <code>cx-err:CODE</code>
+  </section>
+  <section id="errors-catalog">
+    <h2>Error code catalog</h2>
+    <p>Every CX error carries a structured payload: <code>cx-err:CODE</code>
          then a unit separator (US, <code>0x1F</code>) then a human-readable
          description then optionally another unit separator and a
          value. Bindings preserve this shape so <code>[?match]</code> can match
@@ -3043,21 +2821,18 @@
          §9.4/§9.5, with the governance rules for code allocation in
          <a href="../../spec/03-approved/process/governance.md"><code>spec/process/governance.md</code></a>
          §9.6.</p>
-        <section id="errors-security">
-          <h3>Capability and runtime caps</h3>
-          
-            <p>- <code>CXER0271</code> — capability denied at an effect point.
+    <section id="errors-security">
+      <h3>Capability and runtime caps</h3>
+      <p>- <code>CXER0271</code> — capability denied at an effect point.
              Capabilities are deny-by-default; the param-less eval
              entry points run with the <b>empty capability set</b> —
              "pure-only" is the empty set, not a pragma.
            - <code>CXER0272</code> — <code>E_STACK_EXHAUSTED</code>: the evaluator's
              native-stack exhaustion guard.</p>
-          
-        </section>
-        <section id="errors-eval-gates">
-          <h3>Purity and eval gates</h3>
-          
-            <p>- <code>CXER0230</code> — purity gate: an impure callee where
+    </section>
+    <section id="errors-eval-gates">
+      <h3>Purity and eval gates</h3>
+      <p>- <code>CXER0230</code> — purity gate: an impure callee where
              purity is required (e.g. inside a CXPath predicate)
              is rejected at parse / module-load.
            - <code>CXER0233</code> — a <code>pure</code> def reaching <code>[?eval]</code> /
@@ -3066,12 +2841,10 @@
              tree may not widen the capability set.
            - <code>CXER4114</code> — eval depth gate: <code>cx:eval</code> / <code>[?eval]</code>
              recursion exceeded the shared depth budget.</p>
-          
-        </section>
-        <section id="errors-include">
-          <h3>E9xx — include resolver</h3>
-          
-            <p>- <code>E901</code> — absolute path rejected.
+    </section>
+    <section id="errors-include">
+      <h3>E9xx — include resolver</h3>
+      <p>- <code>E901</code> — absolute path rejected.
            - <code>E902</code> — path escapes include root (lexical or
              symlink).
            - <code>E903</code> — URL-scheme path rejected.
@@ -3083,34 +2856,29 @@
            - <code>E909</code> — I/O error during read.
            - <code>E910</code> — non-UTF-8 content.
            - <code>E911</code> — included file parse failure.</p>
-          
-        </section>
-        <section id="errors-catching">
-          <h3>Recovering with [?match]</h3>
-          
-            <pre>
-              <code class="language-cx">[?lib 'cx-stdlib/io']
+    </section>
+    <section id="errors-catching">
+      <h3>Recovering with [?match]</h3>
+      <pre>
+        <code class="language-cx">[?lib 'cx-stdlib/io']
            [?match [$io:read-file '/no/such/file.cx']
              [case [err @code=$c] [where [= $c 'cx-err:CXER0271']] [needs-capability]]
              [case [err $e] [other-error code=$e@code]]
              [else :ok]]</code>
-            </pre>
-          
-        </section>
-      
+      </pre>
     </section>
-  
+  </section>
 </section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>The code language</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

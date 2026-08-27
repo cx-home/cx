@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,7 +143,7 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">adjudicate</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="x-adjudicate"><h1>adjudicate</h1><p class="lede">Out-of-band agent adjudicator for the similar review band (EXPERIMENTAL
@@ -157,48 +157,40 @@
    effectful adjudicate-pair/adjudicate, which compose cx-x/llm:complete under a
    scoped net grant.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]><p class="note">Experimental x/ tier — imported as cx-x/adjudicate. Bundled and gated in-tree like any other module, but EXEMPT from the frozen-surface stability promise (std-lib README, decision D3): a semver-breaking change is allowed here while the surface settles, and the frozen-surface canary never counts it. Pin behaviour you depend on with your own fixtures.</p>
-  <section id="fn-adjudicate-prompt-of" class="fn">
-    <h3>adjudicate:prompt-of</h3>
-    <p class="fn-sig"><code>[$adjudicate:prompt-of]  -> string</code>  —  Render one review [pair …] as the adjudication prompt (payloads via format:canonical; score/evidence included when present). Prompt text is not version-stable.</p>
-    
-  </section>
-  <section id="fn-adjudicate-verdict-of" class="fn">
-    <h3>adjudicate:verdict-of</h3>
-    <p class="fn-sig"><code>[$adjudicate:verdict-of]  -> atom</code>  —  Parse a model reply to :match / :no-match / :review by precedence (no-match before match, then review); unparseable → :review.</p>
-    
-  </section>
-  <section id="fn-adjudicate-resolution-of" class="fn">
-    <h3>adjudicate:resolution-of</h3>
-    <p class="fn-sig"><code>[$adjudicate:resolution-of]  -> element</code>  —  Build one [resolution verdict=… decided-by=… [left …] [right …]] record (the similar.md §4.1 resolutions row shape).</p>
-    
-  </section>
-  <section id="fn-adjudicate-decisive" class="fn">
-    <h3>adjudicate:decisive</h3>
-    <p class="fn-sig"><code>[$adjudicate:decisive]  -> any</code>  —  Filter resolution records to firm verdicts (:match/:no-match), dropping :review, preserving order.</p>
-    
-  </section>
-  <section id="fn-adjudicate-adjudicate-pair" class="fn">
-    <h3>adjudicate:adjudicate-pair</h3>
-    <p class="fn-sig"><code>[$adjudicate:adjudicate-pair]  -> element</code>  —  Adjudicate one review pair via cx-x/llm:complete (net): prompt-of → verdict-of → resolution record with decided-by='agent:<model>'.</p>
-    
-  </section>
-  <section id="fn-adjudicate-adjudicate" class="fn">
-    <h3>adjudicate:adjudicate</h3>
-    <p class="fn-sig"><code>[$adjudicate:adjudicate]  -> any</code>  —  Adjudicate a sequence of review pairs in input order (net); returns resolution records ready to carry on a predicate as resolutions:.</p>
-    
-  </section>
-</section>
+           the page, not by their own inattention. ]]><p class="note">Experimental x/ tier — imported as cx-x/adjudicate. Bundled and gated in-tree like any other module, but EXEMPT from the frozen-surface stability promise (std-lib README, decision D3): a semver-breaking change is allowed here while the surface settles, and the frozen-surface canary never counts it. Pin behaviour you depend on with your own fixtures.</p><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-adjudicate-prompt-of" class="fn">
+  <h3>adjudicate:prompt-of</h3>
+  <p class="fn-sig"><code>[$adjudicate:prompt-of]  -> string</code>  —  Render one review [pair …] as the adjudication prompt (payloads via format:canonical; score/evidence included when present). Prompt text is not version-stable.</p>
+</section><section id="fn-adjudicate-verdict-of" class="fn">
+  <h3>adjudicate:verdict-of</h3>
+  <p class="fn-sig"><code>[$adjudicate:verdict-of]  -> atom</code>  —  Parse a model reply to :match / :no-match / :review by precedence (no-match before match, then review); unparseable → :review.</p>
+</section><section id="fn-adjudicate-resolution-of" class="fn">
+  <h3>adjudicate:resolution-of</h3>
+  <p class="fn-sig"><code>[$adjudicate:resolution-of]  -> element</code>  —  Build one [resolution verdict=… decided-by=… [left …] [right …]] record (the similar.md §4.1 resolutions row shape).</p>
+</section><section id="fn-adjudicate-decisive" class="fn">
+  <h3>adjudicate:decisive</h3>
+  <p class="fn-sig"><code>[$adjudicate:decisive]  -> any</code>  —  Filter resolution records to firm verdicts (:match/:no-match), dropping :review, preserving order.</p>
+</section><section id="fn-adjudicate-adjudicate-pair" class="fn">
+  <h3>adjudicate:adjudicate-pair</h3>
+  <p class="fn-sig"><code>[$adjudicate:adjudicate-pair]  -> element</code>  —  Adjudicate one review pair via cx-x/llm:complete (net): prompt-of → verdict-of → resolution record with decided-by='agent:<model>'.</p>
+</section><section id="fn-adjudicate-adjudicate" class="fn">
+  <h3>adjudicate:adjudicate</h3>
+  <p class="fn-sig"><code>[$adjudicate:adjudicate]  -> any</code>  —  Adjudicate a sequence of review pairs in input order (net); returns resolution records ready to carry on a predicate as resolutions:.</p>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>adjudicate</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

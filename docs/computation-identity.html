@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,58 +143,52 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Computation identity</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="computation-identity">
   <h1>Computation identity</h1>
-  
-    <section id="ci-idea">
-      <h2>Naming a computation, not just a value</h2>
-      
-        <p>Ring 0 gives every <b>value</b> an address. Ring 1 extends the
+  <section id="ci-idea">
+    <h2>Naming a computation, not just a value</h2>
+    <p>Ring 0 gives every <b>value</b> an address. Ring 1 extends the
          same move to <b>computations</b>: a pure function applied to known
          inputs in a known environment is itself a value — a record —
          and that record's content address names the computation. Same
          function, same inputs, same environment: same address,
          everywhere, forever.</p>
-        <p>The record has four slots, and each earns its place:</p>
-        <table>
-          <thead>
-            
-              <tr>
-                <th>Slot</th>
-                <th>What it carries</th>
-                <th>Why it is in the hash</th>
-              </tr>
-            
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td><code>fn</code></td>
-                <td>the definition — its code-equivalence key for cache sharing, plus the content address of the exact source text for trust</td>
-                <td>a different definition is a different computation</td>
-              </tr>
-              <tr>
-                <td><code>inputs</code></td>
-                <td>the content address of every argument</td>
-                <td>reformatting an input does not move it; changing a field does</td>
-              </tr>
-              <tr>
-                <td><code>env</code></td>
-                <td>runtime version, builtin-set identity, schema dialect</td>
-                <td>a runtime patch can fix a determinism bug — and a fix must invalidate</td>
-              </tr>
-              <tr>
-                <td><code>caps</code></td>
-                <td>the capability set in canonical form</td>
-                <td>recorded for completeness — for a pure computation it provably cannot change the result</td>
-              </tr>
-            
-          </tbody>
-        </table>
-        <p>What this buys: a node that holds neither the source nor the
+    <p>The record has four slots, and each earns its place:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Slot</th>
+          <th>What it carries</th>
+          <th>Why it is in the hash</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>fn</code></td>
+          <td>the definition — its code-equivalence key for cache sharing, plus the content address of the exact source text for trust</td>
+          <td>a different definition is a different computation</td>
+        </tr>
+        <tr>
+          <td><code>inputs</code></td>
+          <td>the content address of every argument</td>
+          <td>reformatting an input does not move it; changing a field does</td>
+        </tr>
+        <tr>
+          <td><code>env</code></td>
+          <td>runtime version, builtin-set identity, schema dialect</td>
+          <td>a runtime patch can fix a determinism bug — and a fix must invalidate</td>
+        </tr>
+        <tr>
+          <td><code>caps</code></td>
+          <td>the capability set in canonical form</td>
+          <td>recorded for completeness — for a pure computation it provably cannot change the result</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>What this buys: a node that holds neither the source nor the
          inputs can serve a cached result by address, and the requester
          can re-derive the address to verify what it was handed. A
          reformatted input is a cache <b>hit</b> (same address); a runtime
@@ -203,7 +197,7 @@
          only ever grows additively — when a field is added, every
          address changes exactly once, and the old cache goes cold
          rather than stale.</p>
-        <p class="note">The cache is <b>pure-only and fail-loud</b>: constructing a
+    <p class="note">The cache is <b>pure-only and fail-loud</b>: constructing a
          computation record for an impure function is a typed error, and
          results live in an ordinary store namespace — an explicit
          lookup, not an invisible memoization layer. Budget exhaustion
@@ -212,55 +206,49 @@
          reads onto a <b>tape</b> and treating the tape as one more
          addressed input — determinism manufactured after the fact,
          with the same identity machinery.</p>
-      
-    </section>
-    <section id="determinism">
-      <h2>Determinism and reproducibility</h2>
-      
-        <p>Computation identity only works because CX evaluation is
+  </section>
+  <section id="determinism">
+    <h2>Determinism and reproducibility</h2>
+    <p>Computation identity only works because CX evaluation is
          deterministic where it claims to be. The same input produces
          byte-identical output across machines, operating systems,
          architectures, and bindings — the foundation under
          content-addressing, reproducible builds, cross-binding parity
          tests, and audit trails.</p>
-        <ul>
-          
-            <li><b>Canonical form is the substrate.</b> Attribute order,
+    <ul>
+      <li><b>Canonical form is the substrate.</b> Attribute order,
               whitespace, quoting, and numeric formatting are pinned by
               the canonical rules (see <a class="xref" href="identity.html">identity</a>), so equality and
               hashing never depend on who serialized the value.</li>
-            <li><b>Float formatting is CX's own.</b> Canonical float output
+      <li><b>Float formatting is CX's own.</b> Canonical float output
               uses a self-contained shortest-round-trip algorithm, not
               the host <code>printf</code> — libc differences (musl, glibc, Apple)
               cannot leak into canonical bytes.</li>
-            <li><b>Arithmetic is IEEE-754 strict.</b> Round-to-nearest-even,
+      <li><b>Arithmetic is IEEE-754 strict.</b> Round-to-nearest-even,
               no fast-math, bit-identical exact arithmetic across
               platforms. Transcendentals (<code>sin</code>, <code>log</code>, …) use the host
               libm and are documented as platform-dependent — keep them
               out of anything whose address you rely on.</li>
-            <li><b>No locale leaks.</b> Pure builtins are locale-free by
+      <li><b>No locale leaks.</b> Pure builtins are locale-free by
               rule: case mapping is Unicode default casing, never the
               host locale. A locale-sensitive pure builtin is treated as
               a conformance bug, not a platform quirk.</li>
-          
-        </ul>
-        <p>What is deliberately <b>not</b> deterministic, and flagged as
+    </ul>
+    <p>What is deliberately <b>not</b> deterministic, and flagged as
          such: effectful builtins that read the world (<code>now</code>, <code>random</code>,
          <code>uuid</code> — each behind its capability, see <a class="xref" href="capabilities.html">capabilities</a>);
          wall-clock timeout behavior under <code>[?timeout]</code>; and the
          <i>timing</i> of parallel execution (though never its result — next
          subsection).</p>
-      
-    </section>
-    <section id="ci-theorem">
-      <h2>pure means deterministic — including under [par]</h2>
-      
-        <p>CX's purity checker classifies every definition, and the
+  </section>
+  <section id="ci-theorem">
+    <h2>pure means deterministic — including under [par]</h2>
+    <p>CX's purity checker classifies every definition, and the
          guarantee is normative: <b>a pure computation is deterministic</b>
          — same inputs, same environment, same result, regardless of
          capability set, thread count, or evaluation order. This is the
          theorem that makes a computation address meaningful at all.</p>
-        <p>The clause that historically breaks this promise in other
+    <p>The clause that historically breaks this promise in other
          systems is parallelism, so CX pins it explicitly: <code>[par]</code>
          <b>reassembles results in source order, always.</b> A parallel
          <code>[?for]</code>, <code>[?map]</code>, or <code>[?reduce]</code> may <i>execute</i> iterations in
@@ -270,30 +258,28 @@
          unordered mode. (An older <code>[ordered]</code> clause survives
          grammatically as a documented no-op: order is no longer
          optional, so there is nothing left for it to request.)</p>
-        <pre>
-          <code class="language-cx">[?map (1, 2, 3, 4) [using [?fn ($x) [* $x $x]]] [par]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(1, 4, 9, 16)</code>
-        </pre>
-      
-    </section>
-    <section id="parallelism">
-      <h2>Parallelism by construction</h2>
-      
-        <p>Because every value is immutable and every error is a value,
+    <pre>
+      <code class="language-cx">[?map (1, 2, 3, 4) [using [?fn ($x) [* $x $x]]] [par]]</code>
+    </pre>
+    <pre class="sample-output">
+      <code>(1, 4, 9, 16)</code>
+    </pre>
+  </section>
+  <section id="parallelism">
+    <h2>Parallelism by construction</h2>
+    <p>Because every value is immutable and every error is a value,
          parallelism costs almost nothing to adopt. <code>[par]</code> on <code>[?for]</code>,
          <code>[?map]</code>, and <code>[?reduce]</code> splits pure work across a bounded
          worker pool; there is no user-level lock primitive because
          there is no shared mutable state to protect.</p>
-        <pre>
-          <code class="language-cx">[# Comprehension over matches: ]
+    <pre>
+      <code class="language-cx">[# Comprehension over matches: ]
          [?for [in $r //request] [par] [yield [got [$text $r]]]]
 
          [# Associative parallel fold: ]
          [?reduce (1, 2, 3) [using [?fn ($a $b) [+ $a $b]]] [init 0] [par]]</code>
-        </pre>
-        <p><b>Why it is safe.</b> No CX expression can mutate a value another
+    </pre>
+    <p><b>Why it is safe.</b> No CX expression can mutate a value another
          thread is reading — <code>[?modify]</code> returns a new tree, and
          derived values share structure with their origins by pointer
          (see <a class="xref" href="runtime-representation.html">runtime-representation</a>), so handing a large document
@@ -302,7 +288,7 @@
          checker proves pure, and the source-order reassembly rule
          (above) guarantees the result is indistinguishable from
          sequential evaluation.</p>
-        <p><b>When <code>[par]</code> does not help.</b> Tiny bodies lose to dispatch
+    <p><b>When <code>[par]</code> does not help.</b> Tiny bodies lose to dispatch
          overhead — for a trivial body over a small input, the cost of
          distributing the work can exceed the work itself, so
          sequential evaluation wins. An erroring iteration
@@ -313,20 +299,18 @@
          every cooperative-cancellation system. Error values from
          iterations propagate like any other value; see the error
          material in <a class="xref" href="code.html">code</a>.</p>
-      
-    </section>
-  
+  </section>
 </section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>Computation identity</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,158 +143,135 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">map</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-map"><h1>map</h1><p class="lede">Bundled cx-stdlib module.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-map-get" class="fn">
-    <h3>map:get</h3>
-    <p class="fn-sig"><code>[$map:get]  (m::map, k::any) -> any</code>  —  The value bound to key k, or the empty sequence when the key is absent — key identity is the (kind, image) pair, so an int 1 never finds a string '1'.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/map']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-map-get" class="fn">
+  <h3>map:get</h3>
+  <p class="fn-sig"><code>[$map:get]  (m::map, k::any) -> any</code>  —  The value bound to key k, or the empty sequence when the key is absent — key identity is the (kind, image) pair, so an int 1 never finds a string '1'.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/map']
 [$map:get {port: 8080} 'port']</code>
-        </pre>
-        <pre class="sample-output">
-          <code>8080</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-map-keys" class="fn">
-    <h3>map:keys</h3>
-    <p class="fn-sig"><code>[$map:keys]  (m::map) -> any</code>  —  The sequence of keys in insertion order, each carrying its own kind.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/map']
+    </pre>
+    <pre class="sample-output">
+      <code>8080</code>
+    </pre>
+  </div>
+</section><section id="fn-map-keys" class="fn">
+  <h3>map:keys</h3>
+  <p class="fn-sig"><code>[$map:keys]  (m::map) -> any</code>  —  The sequence of keys in insertion order, each carrying its own kind.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/map']
 [$map:keys {a: 1, b: 2}]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(a, b)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-map-size" class="fn">
-    <h3>map:size</h3>
-    <p class="fn-sig"><code>[$map:size]  (m::map) -> int</code>  —  The entry count, declaration entries included.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/map']
+    </pre>
+    <pre class="sample-output">
+      <code>(a, b)</code>
+    </pre>
+  </div>
+</section><section id="fn-map-size" class="fn">
+  <h3>map:size</h3>
+  <p class="fn-sig"><code>[$map:size]  (m::map) -> int</code>  —  The entry count, declaration entries included.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/map']
 [$map:size {a: 1, b: 2}]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-map-contains" class="fn">
-    <h3>map:contains</h3>
-    <p class="fn-sig"><code>[$map:contains]  (m::map, k::any) -> bool</code>  —  Whether the key is bound, under (kind, image) key identity.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/map']
+    </pre>
+    <pre class="sample-output">
+      <code>2</code>
+    </pre>
+  </div>
+</section><section id="fn-map-contains" class="fn">
+  <h3>map:contains</h3>
+  <p class="fn-sig"><code>[$map:contains]  (m::map, k::any) -> bool</code>  —  Whether the key is bound, under (kind, image) key identity.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/map']
 [$map:contains {a: 1} 'a']</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-map-put" class="fn">
-    <h3>map:put</h3>
-    <p class="fn-sig"><code>[$map:put]  (m::map, k::any, v::any) -> map</code>  —  A new map with k bound to v — replacing in place when the key exists, appended last when new.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/map']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-map-put" class="fn">
+  <h3>map:put</h3>
+  <p class="fn-sig"><code>[$map:put]  (m::map, k::any, v::any) -> map</code>  —  A new map with k bound to v — replacing in place when the key exists, appended last when new.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/map']
 [$map:put {a: 1} 'b' 2]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>{a: 1, b: 2}</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-map-entry" class="fn">
-    <h3>map:entry</h3>
-    <p class="fn-sig"><code>[$map:entry]  (k::any, v::any) -> map</code>  —  The single-entry map holding k bound to v.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/map']
+    </pre>
+    <pre class="sample-output">
+      <code>{a: 1, b: 2}</code>
+    </pre>
+  </div>
+</section><section id="fn-map-entry" class="fn">
+  <h3>map:entry</h3>
+  <p class="fn-sig"><code>[$map:entry]  (k::any, v::any) -> map</code>  —  The single-entry map holding k bound to v.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/map']
 [$map:entry 'a' 1]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>{a: 1}</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-map-merge" class="fn">
-    <h3>map:merge</h3>
-    <p class="fn-sig"><code>[$map:merge]  (maps::any) -> map</code>  —  A sequence of maps folded left to right into one map; later bindings win on key collision, first occurrence fixes an entry's position.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/map']
+    </pre>
+    <pre class="sample-output">
+      <code>{a: 1}</code>
+    </pre>
+  </div>
+</section><section id="fn-map-merge" class="fn">
+  <h3>map:merge</h3>
+  <p class="fn-sig"><code>[$map:merge]  (maps::any) -> map</code>  —  A sequence of maps folded left to right into one map; later bindings win on key collision, first occurrence fixes an entry's position.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/map']
 [$map:merge ({a: 1, b: 2}, {b: 9, c: 3})]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>{a: 1, b: 9, c: 3}</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-map-remove" class="fn">
-    <h3>map:remove</h3>
-    <p class="fn-sig"><code>[$map:remove]  (m::map, k::any) -> map</code>  —  A new map without the key; a miss is the identity.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/map']
+    </pre>
+    <pre class="sample-output">
+      <code>{a: 1, b: 9, c: 3}</code>
+    </pre>
+  </div>
+</section><section id="fn-map-remove" class="fn">
+  <h3>map:remove</h3>
+  <p class="fn-sig"><code>[$map:remove]  (m::map, k::any) -> map</code>  —  A new map without the key; a miss is the identity.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/map']
 [$map:remove {a: 1, b: 2} 'a']</code>
-        </pre>
-        <pre class="sample-output">
-          <code>{b: 2}</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-map-for-each" class="fn">
-    <h3>map:for-each</h3>
-    <p class="fn-sig"><code>[$map:for-each]  (m::map, fn::any) -> any</code>  —  Apply a two-parameter function to each (key, value) pair in insertion order; the sequence of results.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/map']
+    </pre>
+    <pre class="sample-output">
+      <code>{b: 2}</code>
+    </pre>
+  </div>
+</section><section id="fn-map-for-each" class="fn">
+  <h3>map:for-each</h3>
+  <p class="fn-sig"><code>[$map:for-each]  (m::map, fn::any) -> any</code>  —  Apply a two-parameter function to each (key, value) pair in insertion order; the sequence of results.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/map']
 [$map:for-each {a: 1, b: 2} [?fn ($k $v) $v]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(1, 2)</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>(1, 2)</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>map</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

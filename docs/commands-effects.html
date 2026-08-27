@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,31 +143,29 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Commands and effects</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="commands-effects">
   <h1>Commands and effects</h1>
-  
-    <section id="ce-command">
-      <h2>A command is a def that declares its effects</h2>
-      
-        <p>Most CX definitions are pure. The ones that change the world —
+  <section id="ce-command">
+    <h2>A command is a def that declares its effects</h2>
+    <p>Most CX definitions are pure. The ones that change the world —
          refund an order, send an email, advance a ref — are
          <b>commands</b>, and a command is not a new kind of thing: it is
          an ordinary <code>[?def]</code> carrying an <code>[effects]</code> clause. That
          clause is the discriminator; everything else in this section
          hangs off it.</p>
-        <pre>
-          <code class="language-cx">[?def refund-order impure ($order-id $amount)
+    <pre>
+      <code class="language-cx">[?def refund-order impure ($order-id $amount)
         [requires cap:sha2-256:1f4b…]     [; the authority artifact it needs ]
         [preconditions [order-exists $order-id] [not-already-refunded $order-id]]
         [effects [write "orders"] [net "payments.example"]]
         [idempotent [window P30D]]
         [compensates cancel-refund]
         …body…]</code>
-        </pre>
-        <p>Two rules make the declaration worth reading. First, <code>pure</code>
+    </pre>
+    <p>Two rules make the declaration worth reading. First, <code>pure</code>
          plus a non-empty <code>[effects]</code> is a <b>static contradiction</b> — a
          typed error at definition time, not a runtime surprise. Second,
          <code>[effects]</code> is <b>checked and enforced, never advisory</b>: each
@@ -180,22 +178,20 @@
          outside the declaration is a loud typed error, exactly as if
          the capability had been denied. The house sentence: <i>effect
          conformance is enforced; type conformance is advisory.</i></p>
-        <p class="note">Effects and capabilities compose but differ in direction. A
+    <p class="note">Effects and capabilities compose but differ in direction. A
          capability grant (see <a class="xref" href="capabilities.html">capabilities</a>) is the <b>caller</b>
          saying what a run may reach. An <code>[effects]</code> clause is the
          <b>author</b> saying what this command will do — and the runtime
          holds them to it. The narrower of the two always wins.</p>
-      
-    </section>
-    <section id="ce-idempotency">
-      <h2>Idempotency — retry-safe by declaration</h2>
-      
-        <p>Networks retry. The question is never whether a refund request
+  </section>
+  <section id="ce-idempotency">
+    <h2>Idempotency — retry-safe by declaration</h2>
+    <p>Networks retry. The question is never whether a refund request
          will arrive twice, but what happens when it does. A command
          with an <code>[idempotent]</code> clause deduplicates at the effect
          boundary; a command without one is <b>not</b> idempotent and not
          retry-safe — deny-by-default, like everything else.</p>
-        <p><b>The key.</b> An explicit caller key wins when present — only
+    <p><b>The key.</b> An explicit caller key wins when present — only
          the caller knows that two structurally identical requests are
          distinct business events. The derived default is a hash of the
          command's identity, the <b>argument record normalized by
@@ -206,7 +202,7 @@
          capability set (the same refund under a wider grant is the
          same refund) and the authority chain (recorded for audit,
          never keyed).</p>
-        <p><b>The commit.</b> Dedup is enforced with a must-not-exist
+    <p><b>The commit.</b> Dedup is enforced with a must-not-exist
          compare-and-set on the dedup record — the same one-conflict
          vocabulary refs use (see <a class="xref" href="value-model.html">value-model</a>), applied as
          exactly-once-create at the effect boundary. A dedup hit does
@@ -214,7 +210,7 @@
          <b>present value</b> carrying the original outcome plus a
          <code>deduped=true</code> marker — \"already done; here is what
          happened.\"</p>
-        <p><b>The window.</b> Dedup records are journal-backed facts with a
+    <p><b>The window.</b> Dedup records are journal-backed facts with a
          declared retention window, and compaction may not reap one
          before its window expires — a dedup record that silently
          disappears is a reopened double-execution hole. Within the
@@ -222,21 +218,19 @@
          safe by construction; the delivery substrate stays honestly
          at-least-once (see <a class="xref" href="consistency.html">consistency</a> for why exactly-once
          delivery is refused as a vocabulary word).</p>
-      
-    </section>
-    <section id="ce-budgets">
-      <h2>Budgets — quantitative authority</h2>
-      
-        <p>Every other attenuation in the authority model is spatial —
+  </section>
+  <section id="ce-budgets">
+    <h2>Budgets — quantitative authority</h2>
+    <p>Every other attenuation in the authority model is spatial —
          which capabilities, which slice, which time window. A budget is
          the quantitative fourth axis: <b>how much</b>. It rides on a
          delegation as a <code>[bounds]</code> child.</p>
-        <pre>
-          <code class="language-text">[bounds [rate 10 :per PT1M]                 token bucket
+    <pre>
+      <code class="language-text">[bounds [rate 10 :per PT1M]                 token bucket
                [count 500]                          monotone, no refill
                [spend 250.00::decimal :currency :USD :per P1D]]</code>
-        </pre>
-        <p>Enforcement is placed where it cannot race: the <b>debit
+    </pre>
+    <p>Enforcement is placed where it cannot race: the <b>debit
          happens at the commit point</b>, under the journal stream's
          commit lock, so the meter is linearizable for free. The policy
          check reads the meter as part of its materialized snapshot, so
@@ -244,36 +238,32 @@
          dry-runs stay regression-testable. Exhaustion is a <b>value</b>
          (<code>[deny [reason :budget-exhausted] [retry-after …]]</code>), not a
          crash.</p>
-        <ul>
-          
-            <li><b>Refunds do not credit back.</b> Budgets meter authority
+    <ul>
+      <li><b>Refunds do not credit back.</b> Budgets meter authority
               <i>exercised</i>, not net economic effect — undoing an action
               does not un-spend the authority that took it.</li>
-            <li><b>Sub-delegation shares the meter by default.</b> A pool
+      <li><b>Sub-delegation shares the meter by default.</b> A pool
               never multiplies authority; ten sub-agents of a $250/day
               delegation share $250/day. A sub-delegation may carry a
               <i>reserved</i> allocation drawn from the parent's meter at
               delegation time — escrow, not multiplication.</li>
-            <li><b>Bounds and scopes are independent conjuncts.</b> A bound
+      <li><b>Bounds and scopes are independent conjuncts.</b> A bound
               never widens a scope; a scope never relaxes a bound; a
               denial names the failing conjunct.</li>
-            <li><b>Spend windows are UTC-calendar-aligned</b> — no
+      <li><b>Spend windows are UTC-calendar-aligned</b> — no
               tenant-local midnight surprises.</li>
-          
-        </ul>
-      
-    </section>
-    <section id="ce-propose">
-      <h2>Propose mode — approval binds the address</h2>
-      
-        <p>At a trust boundary — an agent tool call, an MCP edge, a
+    </ul>
+  </section>
+  <section id="ce-propose">
+    <h2>Propose mode — approval binds the address</h2>
+    <p>At a trust boundary — an agent tool call, an MCP edge, a
          propose-only delegation — a command does not execute. It
          produces a <b>proposal</b>: an ordinary CX value capturing the
          exact definition (by content address of its source text), the
          name-keyed argument record, the resolved effect set, the
          evaluated preconditions, the authority chain, and the
          idempotency key. Being a value, the proposal has an address.</p>
-        <p><b>Approval is a signed claim binding that address</b> — a Lane-2
+    <p><b>Approval is a signed claim binding that address</b> — a Lane-2
          value about the proposal, never a nod to a name or an argument
          list. Approving by name or args is forgeable; approving an
          address means any re-lowering, rewording, or effect-widening
@@ -281,7 +271,7 @@
          commit, live preconditions re-evaluate, and divergence from
          what was approved is a loud refusal — some facts bind at
          propose time, live facts re-check at commit time.</p>
-        <p>The mode is decided by the <b>boundary</b>, not the caller: an
+    <p>The mode is decided by the <b>boundary</b>, not the caller: an
          agent-tool edge always proposes, and a delegation can carry a
          propose-only flag — the grant that lets an agent draft actions
          all day and commit none of them. The campaign story this
@@ -289,27 +279,25 @@
          delegate that band?\" is a propose-mode history turning into a
          budget-bounded delegation, with every step of the transition
          auditable.</p>
-        <p class="note">The pieces compose into one auditable pipeline: an agent
+    <p class="note">The pieces compose into one auditable pipeline: an agent
          holding a propose-only, budget-bounded delegation proposes a
          $42 refund; a principal approves the proposal's address; commit
          re-checks preconditions, debits the spend meter under the
          stream's lock, deduplicates by key, and the journal records
          actor and authority chain. Every noun in that sentence is a CX
          value with a content address.</p>
-      
-    </section>
-  
+  </section>
 </section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>Commands and effects</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

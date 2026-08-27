@@ -1,9 +1,10 @@
-# CX Store, security — capabilities, encryption, RBAC, tenancy
+# CX Store, security — capabilities, encryption, authority, tenancy
 
 Four independent layers, each fail-closed. Governing specs: the security spec
 (`spec/03-approved/core/security.md`), the store spec (capabilities and
-encryption-at-rest sections), and the CXStore service-tier spec (auth/RBAC/
-tenancy).
+encryption-at-rest sections), the CXStore service-tier spec (tenancy), and
+the XSP store profile (`spec/03-approved/xap/xsp_store_profile.md`) for the
+daemon's authority model.
 
 ## 1. Host capabilities — deny-by-default at the effect point
 
@@ -59,21 +60,29 @@ production KMS implements the same seam. **KEK rotation is shipped**
 re-wraps every DEK under the new KEK in place (see the guide's store page
 for a verified end-to-end run).
 
-## 3. Service-tier RBAC & tenancy
+## 3. Service-tier authority & tenancy
 
-The daemon layers structured authZ over CSRP's permanent Bearer base
-(details + verified 401/403 lanes in [store: service](store-service.md)):
+The daemon has exactly one authority model — XSP-AUTH principals decided
+through one grant table (walkthrough and config shapes in
+[store: service](store-service.md)):
 
-- Four credential providers (static/JWT/DID/OIDC) → one principal shape
-  `{id, kind, roles, tenant}`; deny-by-default — no role means only
-  `capabilities`/`health`/`ready`.
-- Permissions are the CSRP op classes (`read`/`write`/`delete`/`admin` +
-  the `metrics` scrape scope); object-wire ops mirror their data-op peers.
+- A principal is an Ed25519 `did:key` whose seed the holder proves
+  possession of per attach. `[xsp [grants …]]` is the only grant table:
+  present ⇒ deny-by-default, absent ⇒ the open dev posture. The CSRP-era
+  `[auth …]` section — static tokens, JWT, OIDC, role bundles — is a hard
+  config error, not a legacy path.
+- Capabilities are classes, not roles: `read`, `write`, `delete`, `admin`,
+  `peer`, optionally sliced by `over=`. Each configured grant compiles to
+  an ordinary delegation, so attenuation and revocation are the same
+  calculus everywhere rather than a second engine.
 - **Tenant boundary = store-per-tenant**: separate stores mean separate
-  dedup pools — no cross-tenant existence oracle by construction. An op on
-  a store outside the principal's tenant is `403 CXER1703`.
-- Secrets hygiene: tokens hashed at rest; `${env:VAR}` config injection so
-  key material is never inlined; logs carry the role, never the token.
+  dedup pools — no cross-tenant existence oracle by construction. Scoping
+  rides the authority basis (a grant is bound to its mount); a cross-tenant
+  delegation is a fault, never something that quietly compiles to nothing.
+- Secrets hygiene: a principal's seed lives in a `0600` file and reaches
+  the process through `xsp-seed-env`, never a URL, an opts literal or the
+  config text; `${env:VAR}` config injection keeps TLS key material out of
+  the file; the request log carries no credential material.
 
 ## 4. XAP-layer authority (when the store backs a XAP)
 

@@ -35,9 +35,9 @@ guide's Ring 2 and Ring 3 pages, plus the ORIEL worked example.
 
 **Operating a store** *(Ring 2 — operations)*
 
-12. [Store: service tier](store-service.md) — the daemon, auth, observability, CSRP/gRPC, deploy artifacts.
+12. [Store: service tier](store-service.md) — the daemon, the XSP-AUTH bootstrap, observability, the profile/gRPC listeners, deploy artifacts.
 13. [Store: management](store-management.md) — status, gc, diff, branch; recovery and migration; the admin console.
-14. [Store: security](store-security.md) — capabilities, encryption-at-rest, RBAC, tenancy.
+14. [Store: security](store-security.md) — capabilities, encryption-at-rest, XSP-AUTH authority, tenancy.
 
 ## Conventions used throughout
 

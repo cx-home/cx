@@ -103,6 +103,25 @@ if (ENVIRONMENT_IS_NODE) {
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
+// include: scripts/wasm/jspi_mode_prejs.js
+// jspi_mode_prejs.js — stamped into the emscripten factory via --pre-js
+// when the build runs with ASYNCIFY=1 ASYNCIFY_MODE=2 (JSPI, -sASYNCIFY=2).
+// cxlib.js reads Module.cxAsyncifyMode to pick the async call path:
+//   2         → JSPI: wrap raw wasm exports with WebAssembly.promising
+//               (ccall {async:true} is classic-Asyncify plumbing and
+//               throws `TypeError: ret.then is not a function` under
+//               JSPI — measured, emcc 5.0.7).
+//   undefined → classic Asyncify (or plain build): keep the historic
+//               ccall {async:true} path. Old artifacts never define
+//               this flag, so they keep working unchanged.
+// This must be a build-time stamp, not a runtime probe: a classic
+// -sASYNCIFY=1 artifact running in a JSPI-capable browser would pass
+// any `WebAssembly.Suspending` feature test, and wrapping a
+// classic-instrumented export with WebAssembly.promising silently
+// bypasses the Asyncify unwind machinery.
+Module["cxAsyncifyMode"] = 2;
+
+// end include: scripts/wasm/jspi_mode_prejs.js
 var arguments_ = [];
 
 var thisProgram = "./this.program";
@@ -522,7 +541,7 @@ if (ENVIRONMENT_IS_PTHREAD) {
   self.onunhandledrejection = e => {
     throw e.reason || e;
   };
-  function handleMessage(e) {
+  async function handleMessage(e) {
     try {
       var msgData = e["data"];
       //dbg('msgData: ' + Object.keys(msgData));
@@ -586,7 +605,7 @@ if (ENVIRONMENT_IS_PTHREAD) {
           initializedJS = true;
         }
         try {
-          invokeEntryPoint(msgData.start_routine, msgData.arg);
+          await invokeEntryPoint(msgData.start_routine, msgData.arg);
         } catch (ex) {
           if (ex != "unwind") {
             // The pthread "crashed".  Do not call `_emscripten_thread_exit` (which
@@ -724,9 +743,6 @@ function postRun() {
   // catches the exception?
   err(what);
   ABORT = true;
-  if (what.search(/RuntimeError: [Uu]nreachable/) >= 0) {
-    what += '. "unreachable" may be due to ASYNCIFY_STACK_SIZE not being large enough (try increasing it)';
-  }
   // Use a wasm runtime error, because a JS error might be seen as a foreign
   // exception, which means we'd run destructors on it. We need the error to
   // simply make the program stop.
@@ -852,6 +868,7 @@ async function createWasm() {
     wasmExports = Asyncify.instrumentWasmExports(wasmExports);
     registerTLSInit(wasmExports["_emscripten_tls_init"]);
     assignWasmExports(wasmExports);
+    Module["wasmExports"] = wasmExports;
     // We now have the Wasm module loaded up, keep a reference to the compiled module so we can post it to the workers.
     wasmModule = module;
     return wasmExports;
@@ -1366,33 +1383,6 @@ var onPostRuns = [];
 
 var addOnPostRun = cb => onPostRuns.push(cb);
 
-var dynCalls = {};
-
-var dynCallLegacy = (sig, ptr, args) => {
-  sig = sig.replace(/p/g, "i");
-  assert(sig in dynCalls, `bad function pointer type - sig is not in dynCalls: '${sig}'`);
-  if (args?.length) {
-    // j (64-bit integer) is fine, and is implemented as a BigInt. Without
-    // legalization, the number of parameters should match (j is not expanded
-    // into two i's).
-    assert(args.length === sig.length - 1);
-  } else {
-    assert(sig.length == 1);
-  }
-  var f = dynCalls[sig];
-  return f(ptr, ...args);
-};
-
-var dynCall = (sig, ptr, args = [], promising = false) => {
-  assert(ptr, `null function pointer in dynCall`);
-  assert(!promising, "async dynCall is not supported in this mode");
-  var rtn = dynCallLegacy(sig, ptr, args);
-  function convert(rtn) {
-    return rtn;
-  }
-  return convert(rtn);
-};
-
 function establishStackSpace(pthread_ptr) {
   var stackHigh = (growMemViews(), HEAPU32)[(((pthread_ptr) + (48)) >> 2)];
   var stackSize = (growMemViews(), HEAPU32)[(((pthread_ptr) + (52)) >> 2)];
@@ -1445,7 +1435,20 @@ function establishStackSpace(pthread_ptr) {
   }
 }
 
-var invokeEntryPoint = (ptr, arg) => {
+var wasmTableMirror = [];
+
+var getWasmTableEntry = funcPtr => {
+  var func = wasmTableMirror[funcPtr];
+  if (!func) {
+    /** @suppress {checkTypes} */ wasmTableMirror[funcPtr] = func = wasmTable.get(funcPtr);
+    if (Asyncify.isAsyncExport(func)) {
+      wasmTableMirror[funcPtr] = func = Asyncify.makeAsyncFunction(func);
+    }
+  }
+  return func;
+};
+
+var invokeEntryPoint = async (ptr, arg) => {
   // An old thread on this worker may have been canceled without returning the
   // `runtimeKeepaliveCounter` to zero. Reset it now so the new thread won't
   // be affected.
@@ -1466,7 +1469,7 @@ var invokeEntryPoint = (ptr, arg) => {
   // *ThreadMain(void *arg) form, or try linking with the Emscripten linker
   // flag -sEMULATE_FUNCTION_POINTER_CASTS to add in emulation for this x86
   // ABI extension.
-  var result = (a1 => dynCall_ii(ptr, a1))(arg);
+  var result = WebAssembly.promising(getWasmTableEntry(ptr))(arg);
   checkStackCookie();
   function finish(result) {
     // In MINIMAL_RUNTIME the noExitRuntime concept does not apply to
@@ -1478,6 +1481,7 @@ var invokeEntryPoint = (ptr, arg) => {
     }
     __emscripten_thread_exit(result);
   }
+  result = await result;
   finish(result);
 };
 
@@ -1620,7 +1624,7 @@ var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
 
 var ___assert_fail = (condition, filename, line, func) => abort(`Assertion failed: ${UTF8ToString(condition)}, at: ` + [ filename ? UTF8ToString(filename) : "unknown filename", line, func ? UTF8ToString(func) : "unknown function" ]);
 
-var ___call_sighandler = (fp, sig) => (a1 => dynCall_vi(fp, a1))(sig);
+var ___call_sighandler = (fp, sig) => getWasmTableEntry(fp)(sig);
 
 function pthreadCreateProxied(pthread_ptr, attr, startRoutine, arg) {
   if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(2, 0, 1, pthread_ptr, attr, startRoutine, arg);
@@ -5210,8 +5214,19 @@ function ___syscall_connect(fd, addr, addrlen, d1, d2, d3) {
   }
 }
 
+function ___syscall_dup(fd) {
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(8, 0, 1, fd);
+  try {
+    var old = SYSCALLS.getStreamFromFD(fd);
+    return FS.dupStream(old).fd;
+  } catch (e) {
+    if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
+    return -e.errno;
+  }
+}
+
 function ___syscall_dup3(fd, newfd, flags) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(8, 0, 1, fd, newfd, flags);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(9, 0, 1, fd, newfd, flags);
   try {
     if (fd === newfd) return -28;
     if (flags & ~524288) return -28;
@@ -5232,7 +5247,7 @@ function ___syscall_dup3(fd, newfd, flags) {
 }
 
 function ___syscall_faccessat(dirfd, path, amode, flags) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(9, 0, 1, dirfd, path, amode, flags);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(10, 0, 1, dirfd, path, amode, flags);
   try {
     path = SYSCALLS.getStr(path);
     assert(!flags || flags == 512);
@@ -5273,7 +5288,7 @@ var syscallGetVarargI = () => {
 var syscallGetVarargP = syscallGetVarargI;
 
 function ___syscall_fcntl64(fd, cmd, varargs) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(10, 0, 1, fd, cmd, varargs);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(11, 0, 1, fd, cmd, varargs);
   SYSCALLS.varargs = varargs;
   try {
     var stream = SYSCALLS.getStreamFromFD(fd);
@@ -5333,9 +5348,28 @@ function ___syscall_fcntl64(fd, cmd, varargs) {
 }
 
 function ___syscall_fstat64(fd, buf) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(11, 0, 1, fd, buf);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(12, 0, 1, fd, buf);
   try {
     return SYSCALLS.writeStat(buf, FS.fstat(fd));
+  } catch (e) {
+    if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
+    return -e.errno;
+  }
+}
+
+var INT53_MAX = 9007199254740992;
+
+var INT53_MIN = -9007199254740992;
+
+var bigintToI53Checked = num => (num < INT53_MIN || num > INT53_MAX) ? NaN : Number(num);
+
+function ___syscall_ftruncate64(fd, length) {
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(13, 0, 1, fd, length);
+  length = bigintToI53Checked(length);
+  try {
+    if (isNaN(length)) return -22;
+    FS.ftruncate(fd, length);
+    return 0;
   } catch (e) {
     if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
     return -e.errno;
@@ -5348,7 +5382,7 @@ var stringToUTF8 = (str, outPtr, maxBytesToWrite) => {
 };
 
 function ___syscall_getcwd(buf, size) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(12, 0, 1, buf, size);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(14, 0, 1, buf, size);
   try {
     if (size === 0) return -28;
     var cwd = FS.cwd();
@@ -5363,7 +5397,7 @@ function ___syscall_getcwd(buf, size) {
 }
 
 function ___syscall_getdents64(fd, dirp, count) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(13, 0, 1, fd, dirp, count);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(15, 0, 1, fd, dirp, count);
   try {
     var stream = SYSCALLS.getStreamFromFD(fd);
     stream.getdents ||= FS.readdir(stream.path);
@@ -5419,8 +5453,22 @@ function ___syscall_getdents64(fd, dirp, count) {
   }
 }
 
+function ___syscall_getsockname(fd, addr, addrlen, d1, d2, d3) {
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(16, 0, 1, fd, addr, addrlen, d1, d2, d3);
+  try {
+    var sock = getSocketFromFD(fd);
+    // TODO: sock.saddr should never be undefined, see TODO in websocket_sock_ops.getname
+    var errno = writeSockaddr(addr, sock.family, DNS.lookup_name(sock.saddr || "0.0.0.0"), sock.sport, addrlen);
+    assert(!errno);
+    return 0;
+  } catch (e) {
+    if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
+    return -e.errno;
+  }
+}
+
 function ___syscall_ioctl(fd, op, varargs) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(14, 0, 1, fd, op, varargs);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(17, 0, 1, fd, op, varargs);
   SYSCALLS.varargs = varargs;
   try {
     var stream = SYSCALLS.getStreamFromFD(fd);
@@ -5543,7 +5591,7 @@ function ___syscall_ioctl(fd, op, varargs) {
 }
 
 function ___syscall_listen(fd, backlog) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(15, 0, 1, fd, backlog);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(18, 0, 1, fd, backlog);
   try {
     var sock = getSocketFromFD(fd);
     sock.sock_ops.listen(sock, backlog);
@@ -5555,7 +5603,7 @@ function ___syscall_listen(fd, backlog) {
 }
 
 function ___syscall_lstat64(path, buf) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(16, 0, 1, path, buf);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(19, 0, 1, path, buf);
   try {
     path = SYSCALLS.getStr(path);
     return SYSCALLS.writeStat(buf, FS.lstat(path));
@@ -5566,7 +5614,7 @@ function ___syscall_lstat64(path, buf) {
 }
 
 function ___syscall_mkdirat(dirfd, path, mode) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(17, 0, 1, dirfd, path, mode);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(20, 0, 1, dirfd, path, mode);
   try {
     path = SYSCALLS.getStr(path);
     path = SYSCALLS.calculateAt(dirfd, path);
@@ -5580,7 +5628,7 @@ function ___syscall_mkdirat(dirfd, path, mode) {
 }
 
 function ___syscall_newfstatat(dirfd, path, buf, flags) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(18, 0, 1, dirfd, path, buf, flags);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(21, 0, 1, dirfd, path, buf, flags);
   try {
     path = SYSCALLS.getStr(path);
     var nofollow = flags & 256;
@@ -5596,7 +5644,7 @@ function ___syscall_newfstatat(dirfd, path, buf, flags) {
 }
 
 function ___syscall_openat(dirfd, path, flags, varargs) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(19, 0, 1, dirfd, path, flags, varargs);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(22, 0, 1, dirfd, path, flags, varargs);
   SYSCALLS.varargs = varargs;
   try {
     path = SYSCALLS.getStr(path);
@@ -5845,7 +5893,7 @@ var PIPEFS = {
 };
 
 function ___syscall_pipe2(fdPtr, flags) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(20, 0, 1, fdPtr, flags);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(23, 0, 1, fdPtr, flags);
   try {
     if (fdPtr == 0) {
       throw new FS.ErrnoError(21);
@@ -5869,7 +5917,7 @@ function ___syscall_pipe2(fdPtr, flags) {
 }
 
 var ___syscall_poll = function(fds, nfds, timeout) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(21, 0, 2, fds, nfds, timeout);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(24, 0, 2, fds, nfds, timeout);
   let innerFunc = () => {
     try {
       const isAsyncContext = PThread.currentProxiedOperationCallerThread;
@@ -5952,7 +6000,7 @@ var ___syscall_poll = function(fds, nfds, timeout) {
 ___syscall_poll.isAsync = true;
 
 function ___syscall_readlinkat(dirfd, path, buf, bufsize) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(22, 0, 1, dirfd, path, buf, bufsize);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(25, 0, 1, dirfd, path, buf, bufsize);
   try {
     path = SYSCALLS.getStr(path);
     path = SYSCALLS.calculateAt(dirfd, path);
@@ -5972,7 +6020,7 @@ function ___syscall_readlinkat(dirfd, path, buf, bufsize) {
 }
 
 function ___syscall_recvfrom(fd, buf, len, flags, addr, addrlen) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(23, 0, 1, fd, buf, len, flags, addr, addrlen);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(26, 0, 1, fd, buf, len, flags, addr, addrlen);
   try {
     var sock = getSocketFromFD(fd);
     var msg = sock.sock_ops.recvmsg(sock, len);
@@ -5991,7 +6039,7 @@ function ___syscall_recvfrom(fd, buf, len, flags, addr, addrlen) {
 }
 
 function ___syscall_renameat(olddirfd, oldpath, newdirfd, newpath) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(24, 0, 1, olddirfd, oldpath, newdirfd, newpath);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(27, 0, 1, olddirfd, oldpath, newdirfd, newpath);
   try {
     oldpath = SYSCALLS.getStr(oldpath);
     newpath = SYSCALLS.getStr(newpath);
@@ -6006,7 +6054,7 @@ function ___syscall_renameat(olddirfd, oldpath, newdirfd, newpath) {
 }
 
 function ___syscall_rmdir(path) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(25, 0, 1, path);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(28, 0, 1, path);
   try {
     path = SYSCALLS.getStr(path);
     FS.rmdir(path);
@@ -6018,7 +6066,7 @@ function ___syscall_rmdir(path) {
 }
 
 function ___syscall_sendto(fd, message, length, flags, addr, addr_len) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(26, 0, 1, fd, message, length, flags, addr, addr_len);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(29, 0, 1, fd, message, length, flags, addr, addr_len);
   try {
     var sock = getSocketFromFD(fd);
     if (!addr) {
@@ -6035,7 +6083,7 @@ function ___syscall_sendto(fd, message, length, flags, addr, addr_len) {
 }
 
 function ___syscall_socket(domain, type, protocol) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(27, 0, 1, domain, type, protocol);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(30, 0, 1, domain, type, protocol);
   try {
     var sock = SOCKFS.createSocket(domain, type, protocol);
     assert(sock.stream.fd < 64);
@@ -6048,7 +6096,7 @@ function ___syscall_socket(domain, type, protocol) {
 }
 
 function ___syscall_stat64(path, buf) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(28, 0, 1, path, buf);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(31, 0, 1, path, buf);
   try {
     path = SYSCALLS.getStr(path);
     return SYSCALLS.writeStat(buf, FS.stat(path));
@@ -6059,7 +6107,7 @@ function ___syscall_stat64(path, buf) {
 }
 
 function ___syscall_symlinkat(target, dirfd, linkpath) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(29, 0, 1, target, dirfd, linkpath);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(32, 0, 1, target, dirfd, linkpath);
   try {
     target = SYSCALLS.getStr(target);
     linkpath = SYSCALLS.getStr(linkpath);
@@ -6073,7 +6121,7 @@ function ___syscall_symlinkat(target, dirfd, linkpath) {
 }
 
 function ___syscall_unlinkat(dirfd, path, flags) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(30, 0, 1, dirfd, path, flags);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(33, 0, 1, dirfd, path, flags);
   try {
     path = SYSCALLS.getStr(path);
     path = SYSCALLS.calculateAt(dirfd, path);
@@ -6286,12 +6334,6 @@ var ydayFromDate = date => {
   return yday;
 };
 
-var INT53_MAX = 9007199254740992;
-
-var INT53_MIN = -9007199254740992;
-
-var bigintToI53Checked = num => (num < INT53_MIN || num > INT53_MAX) ? NaN : Number(num);
-
 function __localtime_js(time, tmPtr) {
   time = bigintToI53Checked(time);
   var date = new Date(time * 1e3);
@@ -6314,7 +6356,7 @@ function __localtime_js(time, tmPtr) {
 }
 
 function __mmap_js(len, prot, flags, fd, offset, allocated, addr) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(31, 0, 1, len, prot, flags, fd, offset, allocated, addr);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(34, 0, 1, len, prot, flags, fd, offset, allocated, addr);
   offset = bigintToI53Checked(offset);
   try {
     // musl's mmap doesn't allow values over a certain limit
@@ -6333,7 +6375,7 @@ function __mmap_js(len, prot, flags, fd, offset, allocated, addr) {
 }
 
 function __munmap_js(addr, len, prot, flags, fd, offset) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(32, 0, 1, addr, len, prot, flags, fd, offset);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(35, 0, 1, addr, len, prot, flags, fd, offset);
   offset = bigintToI53Checked(offset);
   try {
     var stream = SYSCALLS.getStreamFromFD(fd);
@@ -6553,7 +6595,7 @@ var getEnvStrings = () => {
 };
 
 function _environ_get(__environ, environ_buf) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(33, 0, 1, __environ, environ_buf);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(36, 0, 1, __environ, environ_buf);
   var bufSize = 0;
   var envp = 0;
   for (var string of getEnvStrings()) {
@@ -6566,7 +6608,7 @@ function _environ_get(__environ, environ_buf) {
 }
 
 function _environ_sizes_get(penviron_count, penviron_buf_size) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(34, 0, 1, penviron_count, penviron_buf_size);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(37, 0, 1, penviron_count, penviron_buf_size);
   var strings = getEnvStrings();
   (growMemViews(), HEAPU32)[((penviron_count) >> 2)] = strings.length;
   var bufSize = 0;
@@ -6578,7 +6620,7 @@ function _environ_sizes_get(penviron_count, penviron_buf_size) {
 }
 
 function _fd_close(fd) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(35, 0, 1, fd);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(38, 0, 1, fd);
   try {
     var stream = SYSCALLS.getStreamFromFD(fd);
     FS.close(stream);
@@ -6590,7 +6632,7 @@ function _fd_close(fd) {
 }
 
 function _fd_fdstat_get(fd, pbuf) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(36, 0, 1, fd, pbuf);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(39, 0, 1, fd, pbuf);
   try {
     var rightsBase = 0;
     var rightsInheriting = 0;
@@ -6631,7 +6673,7 @@ function _fd_fdstat_get(fd, pbuf) {
 };
 
 function _fd_read(fd, iov, iovcnt, pnum) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(37, 0, 1, fd, iov, iovcnt, pnum);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(40, 0, 1, fd, iov, iovcnt, pnum);
   try {
     var stream = SYSCALLS.getStreamFromFD(fd);
     var num = doReadv(stream, iov, iovcnt);
@@ -6644,7 +6686,7 @@ function _fd_read(fd, iov, iovcnt, pnum) {
 }
 
 function _fd_seek(fd, offset, whence, newOffset) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(38, 0, 1, fd, offset, whence, newOffset);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(41, 0, 1, fd, offset, whence, newOffset);
   offset = bigintToI53Checked(offset);
   try {
     if (isNaN(offset)) return 22;
@@ -6659,6 +6701,30 @@ function _fd_seek(fd, offset, whence, newOffset) {
     return e.errno;
   }
 }
+
+var _fd_sync = function(fd) {
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(42, 0, 2, fd);
+  let innerFunc = () => {
+    try {
+      var stream = SYSCALLS.getStreamFromFD(fd);
+      var rtn = stream.stream_ops?.fsync?.(stream);
+      return new Promise(resolve => {
+        var mount = stream.node.mount;
+        if (mount?.type.syncfs) {
+          mount.type.syncfs(mount, false, err => resolve(err ? 29 : 0));
+        } else {
+          resolve(rtn);
+        }
+      });
+    } catch (e) {
+      if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
+      return e.errno;
+    }
+  };
+  return Asyncify.handleAsync(innerFunc);
+};
+
+_fd_sync.isAsync = true;
 
 /** @param {number=} offset */ var doWritev = (stream, iov, iovcnt, offset) => {
   var ret = 0;
@@ -6681,7 +6747,7 @@ function _fd_seek(fd, offset, whence, newOffset) {
 };
 
 function _fd_write(fd, iov, iovcnt, pnum) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(39, 0, 1, fd, iov, iovcnt, pnum);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(43, 0, 1, fd, iov, iovcnt, pnum);
   try {
     var stream = SYSCALLS.getStreamFromFD(fd);
     var num = doWritev(stream, iov, iovcnt);
@@ -6694,7 +6760,7 @@ function _fd_write(fd, iov, iovcnt, pnum) {
 }
 
 function _getaddrinfo(node, service, hint, out) {
-  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(40, 0, 1, node, service, hint, out);
+  if (ENVIRONMENT_IS_PTHREAD) return proxyToMainThread(44, 0, 1, node, service, hint, out);
   // Note getaddrinfo currently only returns a single addrinfo with ai_next defaulting to NULL. When NULL
   // hints are specified or ai_family set to AF_UNSPEC or ai_socktype or ai_protocol set to 0 then we
   // really should provide a linked list of suitable addrinfo values.
@@ -6860,246 +6926,53 @@ var runtimeKeepalivePop = () => {
 
 var Asyncify = {
   instrumentWasmImports(imports) {
+    assert("Suspending" in WebAssembly, "JSPI not supported by current environment. Perhaps it needs to be enabled via flags?");
     var importPattern = /^(invoke_.*|__asyncjs__.*)$/;
     for (let [x, original] of Object.entries(imports)) {
       if (typeof original == "function") {
         let isAsyncifyImport = original.isAsync || importPattern.test(x);
-        imports[x] = (...args) => {
-          var originalAsyncifyState = Asyncify.state;
-          try {
-            return original(...args);
-          } finally {
-            // Only asyncify-declared imports are allowed to change the
-            // state.
-            // Changing the state from normal to disabled is allowed (in any
-            // function) as that is what shutdown does (and we don't have an
-            // explicit list of shutdown imports).
-            var changedToDisabled = originalAsyncifyState === Asyncify.State.Normal && Asyncify.state === Asyncify.State.Disabled;
-            // invoke_* functions are allowed to change the state if we do
-            // not ignore indirect calls.
-            var ignoredInvoke = x.startsWith("invoke_") && true;
-            if (Asyncify.state !== originalAsyncifyState && !isAsyncifyImport && !changedToDisabled && !ignoredInvoke) {
-              abort(`import ${x} was not in ASYNCIFY_IMPORTS, but changed the state`);
-            }
-          }
-        };
+        // Wrap async imports with a suspending WebAssembly function.
+        if (isAsyncifyImport) {
+          imports[x] = original = new WebAssembly.Suspending(original);
+        }
       }
     }
   },
-  instrumentFunction(original) {
-    var wrapper = (...args) => {
-      Asyncify.exportCallStack.push(original);
-      try {
-        return original(...args);
-      } finally {
-        if (!ABORT) {
-          var top = Asyncify.exportCallStack.pop();
-          assert(top === original);
-          Asyncify.maybeStopUnwind();
-        }
-      }
-    };
-    Asyncify.funcWrappers.set(original, wrapper);
-    wrapper = createNamedFunction(`__asyncify_wrapper_${original.name}`, wrapper);
-    return wrapper;
-  },
   instrumentWasmExports(exports) {
+    var exportPattern = /^(main|__main_argc_argv)$/;
+    Asyncify.asyncExports = new Set;
     var ret = {};
     for (let [x, original] of Object.entries(exports)) {
       if (typeof original == "function") {
-        var wrapper = Asyncify.instrumentFunction(original);
-        ret[x] = wrapper;
+        // Wrap all exports with a promising WebAssembly function.
+        let isAsyncifyExport = exportPattern.test(x);
+        if (isAsyncifyExport) {
+          Asyncify.asyncExports.add(original);
+          original = Asyncify.makeAsyncFunction(original);
+        }
+        ret[x] = original;
       } else {
         ret[x] = original;
       }
     }
     return ret;
   },
-  State: {
-    Normal: 0,
-    Unwinding: 1,
-    Rewinding: 2,
-    Disabled: 3
+  asyncExports: null,
+  isAsyncExport(func) {
+    return Asyncify.asyncExports?.has(func);
   },
-  state: 0,
-  StackSize: 65536,
-  currData: null,
-  handleSleepReturnValue: 0,
-  exportCallStack: [],
-  callstackFuncToId: new Map,
-  callStackIdToFunc: new Map,
-  funcWrappers: new Map,
-  callStackId: 0,
-  asyncPromiseHandlers: null,
-  sleepCallbacks: [],
-  getCallStackId(func) {
-    assert(func);
-    if (!Asyncify.callstackFuncToId.has(func)) {
-      var id = Asyncify.callStackId++;
-      Asyncify.callstackFuncToId.set(func, id);
-      Asyncify.callStackIdToFunc.set(id, func);
-    }
-    return Asyncify.callstackFuncToId.get(func);
-  },
-  maybeStopUnwind() {
-    if (Asyncify.currData && Asyncify.state === Asyncify.State.Unwinding && Asyncify.exportCallStack.length === 0) {
-      // We just finished unwinding.
-      // Be sure to set the state before calling any other functions to avoid
-      // possible infinite recursion here (For example in debug pthread builds
-      // the dbg() function itself can call back into WebAssembly to get the
-      // current pthread_self() pointer).
-      Asyncify.state = Asyncify.State.Normal;
-      runtimeKeepalivePush();
-      // Keep the runtime alive so that a re-wind can be done later.
-      runAndAbortIfError(_asyncify_stop_unwind);
-      if (typeof Fibers != "undefined") {
-        Fibers.trampoline();
-      }
+  handleAsync: async startAsync => {
+    runtimeKeepalivePush();
+    try {
+      return await startAsync();
+    } finally {
+      runtimeKeepalivePop();
     }
   },
-  whenDone() {
-    assert(Asyncify.currData, "tried to wait for an async operation when none is in progress");
-    assert(!Asyncify.asyncPromiseHandlers, "cannot have multiple async operations in flight at once");
-    return new Promise((resolve, reject) => {
-      Asyncify.asyncPromiseHandlers = {
-        resolve,
-        reject
-      };
-    });
-  },
-  allocateData() {
-    // An asyncify data structure has three fields:
-    //  0  current stack pos
-    //  4  max stack pos
-    //  8  id of function at bottom of the call stack (callStackIdToFunc[id] == wasm func)
-    // The Asyncify ABI only interprets the first two fields, the rest is for the runtime.
-    // We also embed a stack in the same memory region here, right next to the structure.
-    // This struct is also defined as asyncify_data_t in emscripten/fiber.h
-    var ptr = _malloc(12 + Asyncify.StackSize);
-    Asyncify.setDataHeader(ptr, ptr + 12, Asyncify.StackSize);
-    Asyncify.setDataRewindFunc(ptr);
-    return ptr;
-  },
-  setDataHeader(ptr, stack, stackSize) {
-    (growMemViews(), HEAPU32)[((ptr) >> 2)] = stack;
-    (growMemViews(), HEAPU32)[(((ptr) + (4)) >> 2)] = stack + stackSize;
-  },
-  setDataRewindFunc(ptr) {
-    var bottomOfCallStack = Asyncify.exportCallStack[0];
-    assert(bottomOfCallStack, "exportCallStack is empty");
-    var rewindId = Asyncify.getCallStackId(bottomOfCallStack);
-    (growMemViews(), HEAP32)[(((ptr) + (8)) >> 2)] = rewindId;
-  },
-  getDataRewindFunc(ptr) {
-    var id = (growMemViews(), HEAP32)[(((ptr) + (8)) >> 2)];
-    var func = Asyncify.callStackIdToFunc.get(id);
-    assert(func, `id ${id} not found in callStackIdToFunc`);
-    return func;
-  },
-  doRewind(ptr) {
-    var original = Asyncify.getDataRewindFunc(ptr);
-    var func = Asyncify.funcWrappers.get(original);
-    assert(original);
-    assert(func);
-    // Once we have rewound and the stack we no longer need to artificially
-    // keep the runtime alive.
-    runtimeKeepalivePop();
-    return callUserCallback(func);
-  },
-  handleSleep(startAsync) {
-    assert(Asyncify.state !== Asyncify.State.Disabled, "handleSleep called after Asyncify was shut down");
-    if (ABORT) return;
-    if (Asyncify.state === Asyncify.State.Normal) {
-      // Prepare to sleep. Call startAsync, and see what happens:
-      // if the code decided to call our callback synchronously,
-      // then no async operation was in fact begun, and we don't
-      // need to do anything.
-      var reachedCallback = false;
-      var reachedAfterCallback = false;
-      startAsync((handleSleepReturnValue = 0) => {
-        // old emterpretify API supported other stuff
-        assert([ "undefined", "number", "boolean", "bigint" ].includes(typeof handleSleepReturnValue), `invalid type for handleSleepReturnValue: '${typeof handleSleepReturnValue}'`);
-        if (ABORT) return;
-        Asyncify.handleSleepReturnValue = handleSleepReturnValue;
-        reachedCallback = true;
-        if (!reachedAfterCallback) {
-          // We are happening synchronously, so no need for async.
-          return;
-        }
-        // This async operation did not happen synchronously, so we did
-        // unwind. In that case there can be no compiled code on the stack,
-        // as it might break later operations (we can rewind ok now, but if
-        // we unwind again, we would unwind through the extra compiled code
-        // too).
-        assert(!Asyncify.exportCallStack.length, "waking up (starting to rewind) must be done from JS, without compiled code on the stack");
-        Asyncify.state = Asyncify.State.Rewinding;
-        runAndAbortIfError(() => _asyncify_start_rewind(Asyncify.currData));
-        if (typeof MainLoop != "undefined" && MainLoop.func) {
-          MainLoop.resume();
-        }
-        var asyncWasmReturnValue, isError = false;
-        try {
-          asyncWasmReturnValue = Asyncify.doRewind(Asyncify.currData);
-        } catch (err) {
-          asyncWasmReturnValue = err;
-          isError = true;
-        }
-        // Track whether the return value was handled by any promise handlers.
-        var handled = false;
-        if (!Asyncify.currData) {
-          // All asynchronous execution has finished.
-          // `asyncWasmReturnValue` now contains the final
-          // return value of the exported async WASM function.
-          // Note: `asyncWasmReturnValue` is distinct from
-          // `Asyncify.handleSleepReturnValue`.
-          // `Asyncify.handleSleepReturnValue` contains the return
-          // value of the last C function to have executed
-          // `Asyncify.handleSleep()`, whereas `asyncWasmReturnValue`
-          // contains the return value of the exported WASM function
-          // that may have called C functions that
-          // call `Asyncify.handleSleep()`.
-          var asyncPromiseHandlers = Asyncify.asyncPromiseHandlers;
-          if (asyncPromiseHandlers) {
-            Asyncify.asyncPromiseHandlers = null;
-            (isError ? asyncPromiseHandlers.reject : asyncPromiseHandlers.resolve)(asyncWasmReturnValue);
-            handled = true;
-          }
-        }
-        if (isError && !handled) {
-          // If there was an error and it was not handled by now, we have no choice but to
-          // rethrow that error into the global scope where it can be caught only by
-          // `onerror` or `onunhandledpromiserejection`.
-          throw asyncWasmReturnValue;
-        }
-      });
-      reachedAfterCallback = true;
-      if (!reachedCallback) {
-        // A true async operation was begun; start a sleep.
-        Asyncify.state = Asyncify.State.Unwinding;
-        // TODO: reuse, don't alloc/free every sleep
-        Asyncify.currData = Asyncify.allocateData();
-        if (typeof MainLoop != "undefined" && MainLoop.func) {
-          MainLoop.pause();
-        }
-        runAndAbortIfError(() => _asyncify_start_unwind(Asyncify.currData));
-      }
-    } else if (Asyncify.state === Asyncify.State.Rewinding) {
-      // Stop a resume.
-      Asyncify.state = Asyncify.State.Normal;
-      runAndAbortIfError(_asyncify_stop_rewind);
-      _free(Asyncify.currData);
-      Asyncify.currData = null;
-      // Call all sleep callbacks now that the sleep-resume is all done.
-      Asyncify.sleepCallbacks.forEach(callUserCallback);
-    } else {
-      abort(`invalid state: ${Asyncify.state}`);
-    }
-    return Asyncify.handleSleepReturnValue;
-  },
-  handleAsync: startAsync => Asyncify.handleSleep(async wakeUp => {
-    // TODO: add error handling as a second param when handleSleep implements it.
-    wakeUp(await startAsync());
-  })
+  handleSleep: startAsync => Asyncify.handleAsync(() => new Promise(startAsync)),
+  makeAsyncFunction(original) {
+    return WebAssembly.promising(original);
+  }
 };
 
 var getCFunc = ident => {
@@ -7165,36 +7038,14 @@ var stringToUTF8OnStack = str => {
       }
     }
   }
-  // Data for a previous async operation that was in flight before us.
-  var previousAsync = Asyncify.currData;
   var ret = func(...cArgs);
   function onDone(ret) {
-    runtimeKeepalivePop();
     if (stack !== 0) stackRestore(stack);
     return convertReturnValue(ret);
   }
   var asyncMode = opts?.async;
-  // Keep the runtime alive through all calls. Note that this call might not be
-  // async, but for simplicity we push and pop in all calls.
-  runtimeKeepalivePush();
-  if (Asyncify.currData != previousAsync) {
-    // A change in async operation happened. If there was already an async
-    // operation in flight before us, that is an error: we should not start
-    // another async operation while one is active, and we should not stop one
-    // either. The only valid combination is to have no change in the async
-    // data (so we either had one in flight and left it alone, or we didn't have
-    // one), or to have nothing in flight and to start one.
-    assert(!(previousAsync && Asyncify.currData), "We cannot start an async operation when one is already in flight");
-    assert(!(previousAsync && !Asyncify.currData), "We cannot stop an async operation in flight");
-    // This is a new async operation. The wasm is paused and has unwound its stack.
-    // We need to return a Promise that resolves the return value
-    // once the stack is rewound and execution finishes.
-    assert(asyncMode, `The call to ${ident} is running asynchronously. If this was intended, add the async option to the ccall/cwrap call.`);
-    return Asyncify.whenDone().then(onDone);
-  }
+  if (asyncMode) return ret.then(onDone);
   ret = onDone(ret);
-  // If this is an async ccall, ensure we return a promise
-  if (asyncMode) return Promise.resolve(ret);
   return ret;
 };
 
@@ -7203,17 +7054,6 @@ var stringToUTF8OnStack = str => {
    * @param {Array=} argTypes
    * @param {Object=} opts
    */ var cwrap = (ident, returnType, argTypes, opts) => (...args) => ccall(ident, returnType, argTypes, args, opts);
-
-var wasmTableMirror = [];
-
-var getWasmTableEntry = funcPtr => {
-  var func = wasmTableMirror[funcPtr];
-  if (!func) {
-    /** @suppress {checkTypes} */ wasmTableMirror[funcPtr] = func = wasmTable.get(funcPtr);
-  }
-  /** @suppress {checkTypes} */ assert(wasmTable.get(funcPtr) == func, "table mirror is out of date");
-  return func;
-};
 
 var updateTableMap = (offset, count) => {
   if (functionsInTableMap) {
@@ -7401,6 +7241,8 @@ FS.staticInit();
 }
 
 // Begin runtime exports
+Module["wasmExports"] = wasmExports;
+
 Module["ccall"] = ccall;
 
 Module["cwrap"] = cwrap;
@@ -7419,11 +7261,11 @@ Module["stringToUTF8"] = stringToUTF8;
 
 Module["lengthBytesUTF8"] = lengthBytesUTF8;
 
-var missingLibrarySymbols = [ "writeI53ToI64", "writeI53ToI64Clamped", "writeI53ToI64Signaling", "writeI53ToU64Clamped", "writeI53ToU64Signaling", "readI53FromI64", "readI53FromU64", "convertI32PairToI53", "convertI32PairToI53Checked", "convertU32PairToI53", "getTempRet0", "setTempRet0", "withStackSave", "readEmAsmArgs", "jstoi_q", "autoResumeAudioContext", "getDynCaller", "asmjsMangle", "HandleAllocator", "addOnInit", "addOnPostCtor", "addOnPreMain", "addOnExit", "STACK_SIZE", "STACK_ALIGN", "POINTER_SIZE", "ASSERTIONS", "intArrayToString", "AsciiToString", "stringToAscii", "UTF16ToString", "stringToUTF16", "lengthBytesUTF16", "UTF32ToString", "stringToUTF32", "lengthBytesUTF32", "stringToNewUTF8", "registerKeyEventCallback", "maybeCStringToJsString", "findEventTarget", "getBoundingClientRect", "fillMouseEventData", "registerMouseEventCallback", "registerWheelEventCallback", "registerUiEventCallback", "registerFocusEventCallback", "fillDeviceOrientationEventData", "registerDeviceOrientationEventCallback", "fillDeviceMotionEventData", "registerDeviceMotionEventCallback", "screenOrientation", "fillOrientationChangeEventData", "registerOrientationChangeEventCallback", "fillFullscreenChangeEventData", "registerFullscreenChangeEventCallback", "JSEvents_requestFullscreen", "JSEvents_resizeCanvasForFullscreen", "registerRestoreOldStyle", "hideEverythingExceptGivenElement", "restoreHiddenElements", "setLetterbox", "softFullscreenResizeWebGLRenderTarget", "doRequestFullscreen", "fillPointerlockChangeEventData", "registerPointerlockChangeEventCallback", "registerPointerlockErrorEventCallback", "requestPointerLock", "fillVisibilityChangeEventData", "registerVisibilityChangeEventCallback", "registerTouchEventCallback", "fillGamepadEventData", "registerGamepadEventCallback", "registerBeforeUnloadEventCallback", "fillBatteryEventData", "registerBatteryEventCallback", "setCanvasElementSizeCallingThread", "setCanvasElementSizeMainThread", "setCanvasElementSize", "getCanvasSizeCallingThread", "getCanvasSizeMainThread", "getCanvasElementSize", "jsStackTrace", "getCallstack", "convertPCtoSourceLocation", "wasiRightsToMuslOFlags", "wasiOFlagsToMuslOFlags", "safeSetTimeout", "setImmediateWrapped", "safeRequestAnimationFrame", "clearImmediateWrapped", "registerPostMainLoop", "registerPreMainLoop", "getPromise", "makePromise", "idsToPromises", "makePromiseCallback", "ExceptionInfo", "findMatchingCatch", "incrementUncaughtExceptionCount", "decrementUncaughtExceptionCount", "Browser_asyncPrepareDataCounter", "arraySum", "addDays", "FS_mkdirTree", "_setNetworkCallback", "heapObjectForWebGLType", "toTypedArrayIndex", "webgl_enable_ANGLE_instanced_arrays", "webgl_enable_OES_vertex_array_object", "webgl_enable_WEBGL_draw_buffers", "webgl_enable_WEBGL_multi_draw", "webgl_enable_EXT_polygon_offset_clamp", "webgl_enable_EXT_clip_control", "webgl_enable_WEBGL_polygon_mode", "emscriptenWebGLGet", "computeUnpackAlignedImageSize", "colorChannelsInGlTextureFormat", "emscriptenWebGLGetTexPixelData", "emscriptenWebGLGetUniform", "webglGetUniformLocation", "webglPrepareUniformLocationsBeforeFirstUse", "webglGetLeftBracePos", "emscriptenWebGLGetVertexAttrib", "__glGetActiveAttribOrUniform", "writeGLArray", "emscripten_webgl_destroy_context_before_on_calling_thread", "registerWebGlEventCallback", "ALLOC_NORMAL", "ALLOC_STACK", "allocate", "writeStringToMemory", "writeAsciiToMemory", "allocateUTF8", "allocateUTF8OnStack", "demangle", "stackTrace", "getNativeTypeSize" ];
+var missingLibrarySymbols = [ "writeI53ToI64", "writeI53ToI64Clamped", "writeI53ToI64Signaling", "writeI53ToU64Clamped", "writeI53ToU64Signaling", "readI53FromI64", "readI53FromU64", "convertI32PairToI53", "convertI32PairToI53Checked", "convertU32PairToI53", "getTempRet0", "setTempRet0", "withStackSave", "readEmAsmArgs", "jstoi_q", "autoResumeAudioContext", "getDynCaller", "dynCall", "asmjsMangle", "HandleAllocator", "addOnInit", "addOnPostCtor", "addOnPreMain", "addOnExit", "STACK_SIZE", "STACK_ALIGN", "POINTER_SIZE", "ASSERTIONS", "intArrayToString", "AsciiToString", "stringToAscii", "UTF16ToString", "stringToUTF16", "lengthBytesUTF16", "UTF32ToString", "stringToUTF32", "lengthBytesUTF32", "stringToNewUTF8", "registerKeyEventCallback", "maybeCStringToJsString", "findEventTarget", "getBoundingClientRect", "fillMouseEventData", "registerMouseEventCallback", "registerWheelEventCallback", "registerUiEventCallback", "registerFocusEventCallback", "fillDeviceOrientationEventData", "registerDeviceOrientationEventCallback", "fillDeviceMotionEventData", "registerDeviceMotionEventCallback", "screenOrientation", "fillOrientationChangeEventData", "registerOrientationChangeEventCallback", "fillFullscreenChangeEventData", "registerFullscreenChangeEventCallback", "JSEvents_requestFullscreen", "JSEvents_resizeCanvasForFullscreen", "registerRestoreOldStyle", "hideEverythingExceptGivenElement", "restoreHiddenElements", "setLetterbox", "softFullscreenResizeWebGLRenderTarget", "doRequestFullscreen", "fillPointerlockChangeEventData", "registerPointerlockChangeEventCallback", "registerPointerlockErrorEventCallback", "requestPointerLock", "fillVisibilityChangeEventData", "registerVisibilityChangeEventCallback", "registerTouchEventCallback", "fillGamepadEventData", "registerGamepadEventCallback", "registerBeforeUnloadEventCallback", "fillBatteryEventData", "registerBatteryEventCallback", "setCanvasElementSizeCallingThread", "setCanvasElementSizeMainThread", "setCanvasElementSize", "getCanvasSizeCallingThread", "getCanvasSizeMainThread", "getCanvasElementSize", "jsStackTrace", "getCallstack", "convertPCtoSourceLocation", "wasiRightsToMuslOFlags", "wasiOFlagsToMuslOFlags", "safeSetTimeout", "setImmediateWrapped", "safeRequestAnimationFrame", "clearImmediateWrapped", "registerPostMainLoop", "registerPreMainLoop", "getPromise", "makePromise", "idsToPromises", "makePromiseCallback", "ExceptionInfo", "findMatchingCatch", "incrementUncaughtExceptionCount", "decrementUncaughtExceptionCount", "Browser_asyncPrepareDataCounter", "arraySum", "addDays", "FS_mkdirTree", "_setNetworkCallback", "heapObjectForWebGLType", "toTypedArrayIndex", "webgl_enable_ANGLE_instanced_arrays", "webgl_enable_OES_vertex_array_object", "webgl_enable_WEBGL_draw_buffers", "webgl_enable_WEBGL_multi_draw", "webgl_enable_EXT_polygon_offset_clamp", "webgl_enable_EXT_clip_control", "webgl_enable_WEBGL_polygon_mode", "emscriptenWebGLGet", "computeUnpackAlignedImageSize", "colorChannelsInGlTextureFormat", "emscriptenWebGLGetTexPixelData", "emscriptenWebGLGetUniform", "webglGetUniformLocation", "webglPrepareUniformLocationsBeforeFirstUse", "webglGetLeftBracePos", "emscriptenWebGLGetVertexAttrib", "__glGetActiveAttribOrUniform", "writeGLArray", "emscripten_webgl_destroy_context_before_on_calling_thread", "registerWebGlEventCallback", "ALLOC_NORMAL", "ALLOC_STACK", "allocate", "writeStringToMemory", "writeAsciiToMemory", "allocateUTF8", "allocateUTF8OnStack", "demangle", "stackTrace", "getNativeTypeSize" ];
 
 missingLibrarySymbols.forEach(missingLibrarySymbol);
 
-var unexportedSymbols = [ "run", "out", "err", "callMain", "abort", "wasmExports", "writeStackCookie", "checkStackCookie", "INT53_MAX", "INT53_MIN", "bigintToI53Checked", "HEAP8", "HEAP16", "HEAPU16", "HEAP32", "HEAPU32", "HEAPF32", "HEAPF64", "HEAP64", "HEAPU64", "stackSave", "stackRestore", "stackAlloc", "createNamedFunction", "ptrToString", "zeroMemory", "exitJS", "getHeapMax", "growMemory", "ENV", "ERRNO_CODES", "strError", "inetPton4", "inetNtop4", "inetPton6", "inetNtop6", "readSockaddr", "writeSockaddr", "DNS", "Protocols", "Sockets", "timers", "warnOnce", "readEmAsmArgsArray", "getExecutableName", "dynCallLegacy", "dynCall", "handleException", "keepRuntimeAlive", "runtimeKeepalivePush", "runtimeKeepalivePop", "callUserCallback", "maybeExit", "asyncLoad", "alignMemory", "mmapAlloc", "wasmTable", "wasmMemory", "getUniqueRunDependency", "noExitRuntime", "addRunDependency", "removeRunDependency", "addOnPreRun", "addOnPostRun", "convertJsFunctionToWasm", "freeTableIndexes", "functionsInTableMap", "getEmptyTableSlot", "updateTableMap", "getFunctionAddress", "PATH", "PATH_FS", "UTF8Decoder", "UTF8ArrayToString", "stringToUTF8Array", "intArrayFromString", "UTF16Decoder", "stringToUTF8OnStack", "writeArrayToMemory", "JSEvents", "specialHTMLTargets", "findCanvasEventTarget", "currentFullscreenStrategy", "restoreOldWindowedStyle", "UNWIND_CACHE", "ExitStatus", "getEnvStrings", "checkWasiClock", "doReadv", "doWritev", "initRandomFill", "randomFill", "emSetImmediate", "emClearImmediate_deps", "emClearImmediate", "promiseMap", "uncaughtExceptionCount", "exceptionCaught", "Browser", "requestFullscreen", "requestFullScreen", "setCanvasSize", "getUserMedia", "createContext", "getPreloadedImageData__data", "wget", "MONTH_DAYS_REGULAR", "MONTH_DAYS_LEAP", "MONTH_DAYS_REGULAR_CUMULATIVE", "MONTH_DAYS_LEAP_CUMULATIVE", "isLeapYear", "ydayFromDate", "SYSCALLS", "getSocketFromFD", "getSocketAddress", "preloadPlugins", "FS_createPreloadedFile", "FS_preloadFile", "FS_modeStringToFlags", "FS_getMode", "FS_fileDataToTypedArray", "FS_stdin_getChar_buffer", "FS_stdin_getChar", "FS_unlink", "FS_createPath", "FS_createDevice", "FS_readFile", "FS", "FS_root", "FS_mounts", "FS_devices", "FS_streams", "FS_nextInode", "FS_nameTable", "FS_currentPath", "FS_initialized", "FS_ignorePermissions", "FS_filesystems", "FS_syncFSRequests", "FS_lookupPath", "FS_getPath", "FS_hashName", "FS_hashAddNode", "FS_hashRemoveNode", "FS_lookupNode", "FS_createNode", "FS_destroyNode", "FS_isRoot", "FS_isMountpoint", "FS_isFile", "FS_isDir", "FS_isLink", "FS_isChrdev", "FS_isBlkdev", "FS_isFIFO", "FS_isSocket", "FS_flagsToPermissionString", "FS_nodePermissions", "FS_mayLookup", "FS_mayCreate", "FS_mayDelete", "FS_mayOpen", "FS_checkOpExists", "FS_nextfd", "FS_getStreamChecked", "FS_getStream", "FS_createStream", "FS_closeStream", "FS_dupStream", "FS_doSetAttr", "FS_chrdev_stream_ops", "FS_major", "FS_minor", "FS_makedev", "FS_registerDevice", "FS_getDevice", "FS_getMounts", "FS_syncfs", "FS_mount", "FS_unmount", "FS_lookup", "FS_mknod", "FS_statfs", "FS_statfsStream", "FS_statfsNode", "FS_create", "FS_mkdir", "FS_mkdev", "FS_symlink", "FS_rename", "FS_rmdir", "FS_readdir", "FS_readlink", "FS_stat", "FS_fstat", "FS_lstat", "FS_doChmod", "FS_chmod", "FS_lchmod", "FS_fchmod", "FS_doChown", "FS_chown", "FS_lchown", "FS_fchown", "FS_doTruncate", "FS_truncate", "FS_ftruncate", "FS_utime", "FS_open", "FS_close", "FS_isClosed", "FS_llseek", "FS_read", "FS_write", "FS_mmap", "FS_msync", "FS_ioctl", "FS_writeFile", "FS_cwd", "FS_chdir", "FS_createDefaultDirectories", "FS_createDefaultDevices", "FS_createSpecialDirectories", "FS_createStandardStreams", "FS_staticInit", "FS_init", "FS_quit", "FS_findObject", "FS_analyzePath", "FS_createFile", "FS_createDataFile", "FS_forceLoadFile", "FS_createLazyFile", "MEMFS", "TTY", "PIPEFS", "SOCKFS", "tempFixedLengthArray", "miniTempWebGLFloatBuffers", "miniTempWebGLIntBuffers", "GL", "AL", "GLUT", "EGL", "GLEW", "IDBStore", "runAndAbortIfError", "Asyncify", "Fibers", "SDL", "SDL_gfx", "waitAsyncPolyfilled", "print", "printErr", "jstoi_s", "PThread", "terminateWorker", "cleanupThread", "registerTLSInit", "spawnThread", "exitOnMainThread", "proxyToMainThread", "proxiedJSCallArgs", "invokeEntryPoint", "checkMailbox" ];
+var unexportedSymbols = [ "run", "out", "err", "callMain", "abort", "writeStackCookie", "checkStackCookie", "INT53_MAX", "INT53_MIN", "bigintToI53Checked", "HEAP8", "HEAP16", "HEAPU16", "HEAP32", "HEAPU32", "HEAPF32", "HEAPF64", "HEAP64", "HEAPU64", "stackSave", "stackRestore", "stackAlloc", "createNamedFunction", "ptrToString", "zeroMemory", "exitJS", "getHeapMax", "growMemory", "ENV", "ERRNO_CODES", "strError", "inetPton4", "inetNtop4", "inetPton6", "inetNtop6", "readSockaddr", "writeSockaddr", "DNS", "Protocols", "Sockets", "timers", "warnOnce", "readEmAsmArgsArray", "getExecutableName", "handleException", "keepRuntimeAlive", "runtimeKeepalivePush", "runtimeKeepalivePop", "callUserCallback", "maybeExit", "asyncLoad", "alignMemory", "mmapAlloc", "wasmTable", "wasmMemory", "getUniqueRunDependency", "noExitRuntime", "addRunDependency", "removeRunDependency", "addOnPreRun", "addOnPostRun", "convertJsFunctionToWasm", "freeTableIndexes", "functionsInTableMap", "getEmptyTableSlot", "updateTableMap", "getFunctionAddress", "PATH", "PATH_FS", "UTF8Decoder", "UTF8ArrayToString", "stringToUTF8Array", "intArrayFromString", "UTF16Decoder", "stringToUTF8OnStack", "writeArrayToMemory", "JSEvents", "specialHTMLTargets", "findCanvasEventTarget", "currentFullscreenStrategy", "restoreOldWindowedStyle", "UNWIND_CACHE", "ExitStatus", "getEnvStrings", "checkWasiClock", "doReadv", "doWritev", "initRandomFill", "randomFill", "emSetImmediate", "emClearImmediate_deps", "emClearImmediate", "promiseMap", "uncaughtExceptionCount", "exceptionCaught", "Browser", "requestFullscreen", "requestFullScreen", "setCanvasSize", "getUserMedia", "createContext", "getPreloadedImageData__data", "wget", "MONTH_DAYS_REGULAR", "MONTH_DAYS_LEAP", "MONTH_DAYS_REGULAR_CUMULATIVE", "MONTH_DAYS_LEAP_CUMULATIVE", "isLeapYear", "ydayFromDate", "SYSCALLS", "getSocketFromFD", "getSocketAddress", "preloadPlugins", "FS_createPreloadedFile", "FS_preloadFile", "FS_modeStringToFlags", "FS_getMode", "FS_fileDataToTypedArray", "FS_stdin_getChar_buffer", "FS_stdin_getChar", "FS_unlink", "FS_createPath", "FS_createDevice", "FS_readFile", "FS", "FS_root", "FS_mounts", "FS_devices", "FS_streams", "FS_nextInode", "FS_nameTable", "FS_currentPath", "FS_initialized", "FS_ignorePermissions", "FS_filesystems", "FS_syncFSRequests", "FS_lookupPath", "FS_getPath", "FS_hashName", "FS_hashAddNode", "FS_hashRemoveNode", "FS_lookupNode", "FS_createNode", "FS_destroyNode", "FS_isRoot", "FS_isMountpoint", "FS_isFile", "FS_isDir", "FS_isLink", "FS_isChrdev", "FS_isBlkdev", "FS_isFIFO", "FS_isSocket", "FS_flagsToPermissionString", "FS_nodePermissions", "FS_mayLookup", "FS_mayCreate", "FS_mayDelete", "FS_mayOpen", "FS_checkOpExists", "FS_nextfd", "FS_getStreamChecked", "FS_getStream", "FS_createStream", "FS_closeStream", "FS_dupStream", "FS_doSetAttr", "FS_chrdev_stream_ops", "FS_major", "FS_minor", "FS_makedev", "FS_registerDevice", "FS_getDevice", "FS_getMounts", "FS_syncfs", "FS_mount", "FS_unmount", "FS_lookup", "FS_mknod", "FS_statfs", "FS_statfsStream", "FS_statfsNode", "FS_create", "FS_mkdir", "FS_mkdev", "FS_symlink", "FS_rename", "FS_rmdir", "FS_readdir", "FS_readlink", "FS_stat", "FS_fstat", "FS_lstat", "FS_doChmod", "FS_chmod", "FS_lchmod", "FS_fchmod", "FS_doChown", "FS_chown", "FS_lchown", "FS_fchown", "FS_doTruncate", "FS_truncate", "FS_ftruncate", "FS_utime", "FS_open", "FS_close", "FS_isClosed", "FS_llseek", "FS_read", "FS_write", "FS_mmap", "FS_msync", "FS_ioctl", "FS_writeFile", "FS_cwd", "FS_chdir", "FS_createDefaultDirectories", "FS_createDefaultDevices", "FS_createSpecialDirectories", "FS_createStandardStreams", "FS_staticInit", "FS_init", "FS_quit", "FS_findObject", "FS_analyzePath", "FS_createFile", "FS_createDataFile", "FS_forceLoadFile", "FS_createLazyFile", "MEMFS", "TTY", "PIPEFS", "SOCKFS", "tempFixedLengthArray", "miniTempWebGLFloatBuffers", "miniTempWebGLIntBuffers", "GL", "AL", "GLUT", "EGL", "GLEW", "IDBStore", "runAndAbortIfError", "Asyncify", "Fibers", "SDL", "SDL_gfx", "waitAsyncPolyfilled", "print", "printErr", "jstoi_s", "PThread", "terminateWorker", "cleanupThread", "registerTLSInit", "spawnThread", "exitOnMainThread", "proxyToMainThread", "proxiedJSCallArgs", "invokeEntryPoint", "checkMailbox" ];
 
 unexportedSymbols.forEach(unexportedRuntimeSymbol);
 
@@ -7435,7 +7277,7 @@ unexportedSymbols.forEach(unexportedRuntimeSymbol);
 // either synchronously or asynchronously from other threads in postMessage()d
 // or internally queued events. This way a pthread in a Worker can synchronously
 // access e.g. the DOM on the main thread.
-var proxiedFunctionTable = [ _proc_exit, exitOnMainThread, pthreadCreateProxied, ___syscall_accept4, ___syscall_bind, ___syscall_chdir, ___syscall_chmod, ___syscall_connect, ___syscall_dup3, ___syscall_faccessat, ___syscall_fcntl64, ___syscall_fstat64, ___syscall_getcwd, ___syscall_getdents64, ___syscall_ioctl, ___syscall_listen, ___syscall_lstat64, ___syscall_mkdirat, ___syscall_newfstatat, ___syscall_openat, ___syscall_pipe2, ___syscall_poll, ___syscall_readlinkat, ___syscall_recvfrom, ___syscall_renameat, ___syscall_rmdir, ___syscall_sendto, ___syscall_socket, ___syscall_stat64, ___syscall_symlinkat, ___syscall_unlinkat, __mmap_js, __munmap_js, _environ_get, _environ_sizes_get, _fd_close, _fd_fdstat_get, _fd_read, _fd_seek, _fd_write, _getaddrinfo ];
+var proxiedFunctionTable = [ _proc_exit, exitOnMainThread, pthreadCreateProxied, ___syscall_accept4, ___syscall_bind, ___syscall_chdir, ___syscall_chmod, ___syscall_connect, ___syscall_dup, ___syscall_dup3, ___syscall_faccessat, ___syscall_fcntl64, ___syscall_fstat64, ___syscall_ftruncate64, ___syscall_getcwd, ___syscall_getdents64, ___syscall_getsockname, ___syscall_ioctl, ___syscall_listen, ___syscall_lstat64, ___syscall_mkdirat, ___syscall_newfstatat, ___syscall_openat, ___syscall_pipe2, ___syscall_poll, ___syscall_readlinkat, ___syscall_recvfrom, ___syscall_renameat, ___syscall_rmdir, ___syscall_sendto, ___syscall_socket, ___syscall_stat64, ___syscall_symlinkat, ___syscall_unlinkat, __mmap_js, __munmap_js, _environ_get, _environ_sizes_get, _fd_close, _fd_fdstat_get, _fd_read, _fd_seek, _fd_sync, _fd_write, _getaddrinfo ];
 
 function checkIncomingModuleAPI() {
   ignoredModuleProp("fetchSettings");
@@ -7454,15 +7296,15 @@ var _emscripten_stack_get_end = makeInvalidEarlyAccess("_emscripten_stack_get_en
 
 var _emscripten_stack_get_free = makeInvalidEarlyAccess("_emscripten_stack_get_free");
 
+var _free = Module["_free"] = makeInvalidEarlyAccess("_free");
+
 var _malloc = Module["_malloc"] = makeInvalidEarlyAccess("_malloc");
 
-var _free = Module["_free"] = makeInvalidEarlyAccess("_free");
+var _pthread_self = makeInvalidEarlyAccess("_pthread_self");
 
 var _fflush = makeInvalidEarlyAccess("_fflush");
 
 var _strerror = makeInvalidEarlyAccess("_strerror");
-
-var _pthread_self = makeInvalidEarlyAccess("_pthread_self");
 
 var _cx_free = Module["_cx_free"] = makeInvalidEarlyAccess("_cx_free");
 
@@ -7550,46 +7392,6 @@ var __emscripten_stack_alloc = makeInvalidEarlyAccess("__emscripten_stack_alloc"
 
 var _emscripten_stack_get_current = makeInvalidEarlyAccess("_emscripten_stack_get_current");
 
-var dynCall_ji = makeInvalidEarlyAccess("dynCall_ji");
-
-var dynCall_iii = makeInvalidEarlyAccess("dynCall_iii");
-
-var dynCall_vii = makeInvalidEarlyAccess("dynCall_vii");
-
-var dynCall_vi = makeInvalidEarlyAccess("dynCall_vi");
-
-var dynCall_viii = makeInvalidEarlyAccess("dynCall_viii");
-
-var dynCall_v = makeInvalidEarlyAccess("dynCall_v");
-
-var dynCall_i = makeInvalidEarlyAccess("dynCall_i");
-
-var dynCall_iiii = makeInvalidEarlyAccess("dynCall_iiii");
-
-var dynCall_ii = makeInvalidEarlyAccess("dynCall_ii");
-
-var dynCall_iiiii = makeInvalidEarlyAccess("dynCall_iiiii");
-
-var dynCall_iiiiii = makeInvalidEarlyAccess("dynCall_iiiiii");
-
-var dynCall_viiiiiii = makeInvalidEarlyAccess("dynCall_viiiiiii");
-
-var dynCall_viiii = makeInvalidEarlyAccess("dynCall_viiii");
-
-var dynCall_viiiii = makeInvalidEarlyAccess("dynCall_viiiii");
-
-var dynCall_jiji = makeInvalidEarlyAccess("dynCall_jiji");
-
-var dynCall_iidiiii = makeInvalidEarlyAccess("dynCall_iidiiii");
-
-var _asyncify_start_unwind = makeInvalidEarlyAccess("_asyncify_start_unwind");
-
-var _asyncify_stop_unwind = makeInvalidEarlyAccess("_asyncify_stop_unwind");
-
-var _asyncify_start_rewind = makeInvalidEarlyAccess("_asyncify_start_rewind");
-
-var _asyncify_stop_rewind = makeInvalidEarlyAccess("_asyncify_stop_rewind");
-
 var __indirect_function_table = makeInvalidEarlyAccess("__indirect_function_table");
 
 var wasmTable = makeInvalidEarlyAccess("wasmTable");
@@ -7598,11 +7400,11 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports["emscripten_stack_get_base"] != "undefined", "missing Wasm export: emscripten_stack_get_base");
   assert(typeof wasmExports["emscripten_stack_get_end"] != "undefined", "missing Wasm export: emscripten_stack_get_end");
   assert(typeof wasmExports["emscripten_stack_get_free"] != "undefined", "missing Wasm export: emscripten_stack_get_free");
-  assert(typeof wasmExports["malloc"] != "undefined", "missing Wasm export: malloc");
   assert(typeof wasmExports["free"] != "undefined", "missing Wasm export: free");
+  assert(typeof wasmExports["malloc"] != "undefined", "missing Wasm export: malloc");
+  assert(typeof wasmExports["pthread_self"] != "undefined", "missing Wasm export: pthread_self");
   assert(typeof wasmExports["fflush"] != "undefined", "missing Wasm export: fflush");
   assert(typeof wasmExports["strerror"] != "undefined", "missing Wasm export: strerror");
-  assert(typeof wasmExports["pthread_self"] != "undefined", "missing Wasm export: pthread_self");
   assert(typeof wasmExports["cx_free"] != "undefined", "missing Wasm export: cx_free");
   assert(typeof wasmExports["cx_wasm_set_arena_size"] != "undefined", "missing Wasm export: cx_wasm_set_arena_size");
   assert(typeof wasmExports["cx_wasm_reset"] != "undefined", "missing Wasm export: cx_wasm_reset");
@@ -7646,35 +7448,15 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports["_emscripten_stack_restore"] != "undefined", "missing Wasm export: _emscripten_stack_restore");
   assert(typeof wasmExports["_emscripten_stack_alloc"] != "undefined", "missing Wasm export: _emscripten_stack_alloc");
   assert(typeof wasmExports["emscripten_stack_get_current"] != "undefined", "missing Wasm export: emscripten_stack_get_current");
-  assert(typeof wasmExports["dynCall_ji"] != "undefined", "missing Wasm export: dynCall_ji");
-  assert(typeof wasmExports["dynCall_iii"] != "undefined", "missing Wasm export: dynCall_iii");
-  assert(typeof wasmExports["dynCall_vii"] != "undefined", "missing Wasm export: dynCall_vii");
-  assert(typeof wasmExports["dynCall_vi"] != "undefined", "missing Wasm export: dynCall_vi");
-  assert(typeof wasmExports["dynCall_viii"] != "undefined", "missing Wasm export: dynCall_viii");
-  assert(typeof wasmExports["dynCall_v"] != "undefined", "missing Wasm export: dynCall_v");
-  assert(typeof wasmExports["dynCall_i"] != "undefined", "missing Wasm export: dynCall_i");
-  assert(typeof wasmExports["dynCall_iiii"] != "undefined", "missing Wasm export: dynCall_iiii");
-  assert(typeof wasmExports["dynCall_ii"] != "undefined", "missing Wasm export: dynCall_ii");
-  assert(typeof wasmExports["dynCall_iiiii"] != "undefined", "missing Wasm export: dynCall_iiiii");
-  assert(typeof wasmExports["dynCall_iiiiii"] != "undefined", "missing Wasm export: dynCall_iiiiii");
-  assert(typeof wasmExports["dynCall_viiiiiii"] != "undefined", "missing Wasm export: dynCall_viiiiiii");
-  assert(typeof wasmExports["dynCall_viiii"] != "undefined", "missing Wasm export: dynCall_viiii");
-  assert(typeof wasmExports["dynCall_viiiii"] != "undefined", "missing Wasm export: dynCall_viiiii");
-  assert(typeof wasmExports["dynCall_jiji"] != "undefined", "missing Wasm export: dynCall_jiji");
-  assert(typeof wasmExports["dynCall_iidiiii"] != "undefined", "missing Wasm export: dynCall_iidiiii");
-  assert(typeof wasmExports["asyncify_start_unwind"] != "undefined", "missing Wasm export: asyncify_start_unwind");
-  assert(typeof wasmExports["asyncify_stop_unwind"] != "undefined", "missing Wasm export: asyncify_stop_unwind");
-  assert(typeof wasmExports["asyncify_start_rewind"] != "undefined", "missing Wasm export: asyncify_start_rewind");
-  assert(typeof wasmExports["asyncify_stop_rewind"] != "undefined", "missing Wasm export: asyncify_stop_rewind");
   assert(typeof wasmExports["__indirect_function_table"] != "undefined", "missing Wasm export: __indirect_function_table");
   _emscripten_stack_get_base = wasmExports["emscripten_stack_get_base"];
   _emscripten_stack_get_end = wasmExports["emscripten_stack_get_end"];
   _emscripten_stack_get_free = wasmExports["emscripten_stack_get_free"];
-  _malloc = Module["_malloc"] = createExportWrapper("malloc", 1);
   _free = Module["_free"] = createExportWrapper("free", 1);
+  _malloc = Module["_malloc"] = createExportWrapper("malloc", 1);
+  _pthread_self = wasmExports["pthread_self"];
   _fflush = createExportWrapper("fflush", 1);
   _strerror = createExportWrapper("strerror", 1);
-  _pthread_self = wasmExports["pthread_self"];
   _cx_free = Module["_cx_free"] = createExportWrapper("cx_free", 1);
   _cx_wasm_set_arena_size = Module["_cx_wasm_set_arena_size"] = createExportWrapper("cx_wasm_set_arena_size", 1);
   _cx_wasm_reset = Module["_cx_wasm_reset"] = createExportWrapper("cx_wasm_reset", 0);
@@ -7718,26 +7500,6 @@ function assignWasmExports(wasmExports) {
   __emscripten_stack_restore = wasmExports["_emscripten_stack_restore"];
   __emscripten_stack_alloc = wasmExports["_emscripten_stack_alloc"];
   _emscripten_stack_get_current = wasmExports["emscripten_stack_get_current"];
-  dynCall_ji = dynCalls["ji"] = createExportWrapper("dynCall_ji", 2);
-  dynCall_iii = dynCalls["iii"] = createExportWrapper("dynCall_iii", 3);
-  dynCall_vii = dynCalls["vii"] = createExportWrapper("dynCall_vii", 3);
-  dynCall_vi = dynCalls["vi"] = createExportWrapper("dynCall_vi", 2);
-  dynCall_viii = dynCalls["viii"] = createExportWrapper("dynCall_viii", 4);
-  dynCall_v = dynCalls["v"] = createExportWrapper("dynCall_v", 1);
-  dynCall_i = dynCalls["i"] = createExportWrapper("dynCall_i", 1);
-  dynCall_iiii = dynCalls["iiii"] = createExportWrapper("dynCall_iiii", 4);
-  dynCall_ii = dynCalls["ii"] = createExportWrapper("dynCall_ii", 2);
-  dynCall_iiiii = dynCalls["iiiii"] = createExportWrapper("dynCall_iiiii", 5);
-  dynCall_iiiiii = dynCalls["iiiiii"] = createExportWrapper("dynCall_iiiiii", 6);
-  dynCall_viiiiiii = dynCalls["viiiiiii"] = createExportWrapper("dynCall_viiiiiii", 8);
-  dynCall_viiii = dynCalls["viiii"] = createExportWrapper("dynCall_viiii", 5);
-  dynCall_viiiii = dynCalls["viiiii"] = createExportWrapper("dynCall_viiiii", 6);
-  dynCall_jiji = dynCalls["jiji"] = createExportWrapper("dynCall_jiji", 4);
-  dynCall_iidiiii = dynCalls["iidiiii"] = createExportWrapper("dynCall_iidiiii", 7);
-  _asyncify_start_unwind = createExportWrapper("asyncify_start_unwind", 1);
-  _asyncify_stop_unwind = createExportWrapper("asyncify_stop_unwind", 0);
-  _asyncify_start_rewind = createExportWrapper("asyncify_start_rewind", 1);
-  _asyncify_stop_rewind = createExportWrapper("asyncify_stop_rewind", 0);
   __indirect_function_table = wasmTable = wasmExports["__indirect_function_table"];
 }
 
@@ -7753,12 +7515,15 @@ function assignWasmImports() {
     /** @export */ __syscall_chdir: ___syscall_chdir,
     /** @export */ __syscall_chmod: ___syscall_chmod,
     /** @export */ __syscall_connect: ___syscall_connect,
+    /** @export */ __syscall_dup: ___syscall_dup,
     /** @export */ __syscall_dup3: ___syscall_dup3,
     /** @export */ __syscall_faccessat: ___syscall_faccessat,
     /** @export */ __syscall_fcntl64: ___syscall_fcntl64,
     /** @export */ __syscall_fstat64: ___syscall_fstat64,
+    /** @export */ __syscall_ftruncate64: ___syscall_ftruncate64,
     /** @export */ __syscall_getcwd: ___syscall_getcwd,
     /** @export */ __syscall_getdents64: ___syscall_getdents64,
+    /** @export */ __syscall_getsockname: ___syscall_getsockname,
     /** @export */ __syscall_ioctl: ___syscall_ioctl,
     /** @export */ __syscall_listen: ___syscall_listen,
     /** @export */ __syscall_lstat64: ___syscall_lstat64,
@@ -7805,6 +7570,7 @@ function assignWasmImports() {
     /** @export */ fd_fdstat_get: _fd_fdstat_get,
     /** @export */ fd_read: _fd_read,
     /** @export */ fd_seek: _fd_seek,
+    /** @export */ fd_sync: _fd_sync,
     /** @export */ fd_write: _fd_write,
     /** @export */ getaddrinfo: _getaddrinfo,
     /** @export */ memory: wasmMemory,
@@ -7844,7 +7610,7 @@ function run() {
     dependenciesFulfilled = run;
     return;
   }
-  function doRun() {
+  async function doRun() {
     // run may have just been called through dependencies being fulfilled just in this very frame,
     // or while the async setStatus time below was happening
     assert(!calledRun);

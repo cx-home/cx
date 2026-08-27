@@ -1,7 +1,7 @@
 # CX
 
-[![Version](https://img.shields.io/badge/version-v0.16.0-blue.svg)](#status)
-[![CX](https://img.shields.io/badge/CX-34.4%25_of_source-1a1a17.svg)](#status)
+[![Version](https://img.shields.io/badge/version-v0.17.0-blue.svg)](#status)
+[![CX](https://img.shields.io/badge/CX-33.9%25_of_source-1a1a17.svg)](#status)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-cx--home.github.io%2Fcx-brightgreen.svg)](https://cx-home.github.io/cx/)
 [![Status](https://img.shields.io/badge/status-pre--1.0_experimental-orange.svg)](#status)
@@ -223,6 +223,15 @@ A formal external security review and the multi-core performance work are
 still ahead (in-repo fuzz harnesses exist — see
 [`SECURITY.md`](SECURITY.md) — but no third-party audit yet), so pin a tested
 version and apply normal pre-1.0 caution, as the disclaimer above says.
+
+**About the CX badge.** GitHub's language bar shows no CX, and that is a gap
+in the tooling rather than in this repository: the bar is computed by
+[Linguist](https://github.com/github-linguist/linguist), whose registry has no
+CX entry yet, so every `.cx`, `.cxd`, and `.cxs` byte is uncounted. Linguist
+admits a language only after it is in wide public use, and a project cannot
+self-register — so the badge above is the honest self-report meanwhile,
+measured by `scripts/lang_stats.cx` over tracked source (vendored and
+generated trees excluded) and refreshed with every release.
 
 ## Contributing
 

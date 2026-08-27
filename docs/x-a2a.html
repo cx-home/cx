@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,7 +143,7 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">a2a</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="x-a2a"><h1>a2a</h1><p class="lede">A minimal A2A (Agent-to-Agent) protocol client (EXPERIMENTAL x/ tier, #6
@@ -156,73 +156,55 @@
    (replayable lifecycle), messages→cx-stdlib/bus (pub/sub), auth→cx-stdlib/did + vc
    (signed agent cards + message provenance).</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]><p class="note">Experimental x/ tier — imported as cx-x/a2a. Bundled and gated in-tree like any other module, but EXEMPT from the frozen-surface stability promise (std-lib README, decision D3): a semver-breaking change is allowed here while the surface settles, and the frozen-surface canary never counts it. Pin behaviour you depend on with your own fixtures.</p>
-  <section id="fn-a2a-text-part" class="fn">
-    <h3>a2a:text-part</h3>
-    <p class="fn-sig"><code>[$a2a:text-part]  -> map</code>  —  Build one text content part {kind:"text", text}.</p>
-    
-  </section>
-  <section id="fn-a2a-message" class="fn">
-    <h3>a2a:message</h3>
-    <p class="fn-sig"><code>[$a2a:message]  -> map</code>  —  Build an A2A message {role, parts:[…], messageId, kind:"message"} with a single text part.</p>
-    
-  </section>
-  <section id="fn-a2a-user-message" class="fn">
-    <h3>a2a:user-message</h3>
-    <p class="fn-sig"><code>[$a2a:user-message]  -> map</code>  —  Build a user-role A2A message (the common client send).</p>
-    
-  </section>
-  <section id="fn-a2a-send-request" class="fn">
-    <h3>a2a:send-request</h3>
-    <p class="fn-sig"><code>[$a2a:send-request]  -> map</code>  —  Build the JSON-RPC <code>message/send</code> request carrying a message.</p>
-    
-  </section>
-  <section id="fn-a2a-agent-card" class="fn">
-    <h3>a2a:agent-card</h3>
-    <p class="fn-sig"><code>[$a2a:agent-card]  ($name::string $description::string $url::string $version::string $skills::any) -> map</code>  —  Build a minimal A2A Agent Card (name/description/url/version/capabilities/skills). Skills are the caller's — derive them from module source via skills-for.</p>
-    
-  </section>
-  <section id="fn-a2a-skill-of" class="fn">
-    <h3>a2a:skill-of</h3>
-    <p class="fn-sig"><code>[$a2a:skill-of]  ($d::element) -> map</code>  —  Map ONE cx-x/tools descriptor to the A2A skill entry ({id,name,description,tags}) — the A2A lossy ruling drops the JSON Schemas and keeps the true annotation hints as tags.</p>
-    
-  </section>
-  <section id="fn-a2a-skills-for" class="fn">
-    <h3>a2a:skills-for</h3>
-    <p class="fn-sig"><code>[$a2a:skills-for]  ($source::string) -> any</code>  —  Module source text → the Agent Card skills array from the SAME projection the MCP adapter serves (one model, two lossy adapters). A projection failure propagates its [err].</p>
-    
-  </section>
-  <section id="fn-a2a-message-text" class="fn">
-    <h3>a2a:message-text</h3>
-    <p class="fn-sig"><code>[$a2a:message-text]  -> string</code>  —  Extract the first text part of a Message reply (result.parts[0].text).</p>
-    
-  </section>
-  <section id="fn-a2a-task-state" class="fn">
-    <h3>a2a:task-state</h3>
-    <p class="fn-sig"><code>[$a2a:task-state]  -> string</code>  —  Extract the lifecycle state of a Task reply (result.status.state).</p>
-    
-  </section>
-  <section id="fn-a2a-send-message" class="fn">
-    <h3>a2a:send-message</h3>
-    <p class="fn-sig"><code>[$a2a:send-message]  -> any</code>  —  POST a message/send request to an A2A endpoint (net) and return the parsed reply.</p>
-    
-  </section>
-  <section id="fn-a2a-ask" class="fn">
-    <h3>a2a:ask</h3>
-    <p class="fn-sig"><code>[$a2a:ask]  -> string</code>  —  Send a user text message to an A2A peer (net) and return its reply text. Compose as a cx-x/run Runnable.</p>
-    
-  </section>
-</section>
+           the page, not by their own inattention. ]]><p class="note">Experimental x/ tier — imported as cx-x/a2a. Bundled and gated in-tree like any other module, but EXEMPT from the frozen-surface stability promise (std-lib README, decision D3): a semver-breaking change is allowed here while the surface settles, and the frozen-surface canary never counts it. Pin behaviour you depend on with your own fixtures.</p><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-a2a-text-part" class="fn">
+  <h3>a2a:text-part</h3>
+  <p class="fn-sig"><code>[$a2a:text-part]  -> map</code>  —  Build one text content part {kind:"text", text}.</p>
+</section><section id="fn-a2a-message" class="fn">
+  <h3>a2a:message</h3>
+  <p class="fn-sig"><code>[$a2a:message]  -> map</code>  —  Build an A2A message {role, parts:[…], messageId, kind:"message"} with a single text part.</p>
+</section><section id="fn-a2a-user-message" class="fn">
+  <h3>a2a:user-message</h3>
+  <p class="fn-sig"><code>[$a2a:user-message]  -> map</code>  —  Build a user-role A2A message (the common client send).</p>
+</section><section id="fn-a2a-send-request" class="fn">
+  <h3>a2a:send-request</h3>
+  <p class="fn-sig"><code>[$a2a:send-request]  -> map</code>  —  Build the JSON-RPC <code>message/send</code> request carrying a message.</p>
+</section><section id="fn-a2a-agent-card" class="fn">
+  <h3>a2a:agent-card</h3>
+  <p class="fn-sig"><code>[$a2a:agent-card]  ($name::string $description::string $url::string $version::string $skills::any) -> map</code>  —  Build a minimal A2A Agent Card (name/description/url/version/capabilities/skills). Skills are the caller's — derive them from module source via skills-for.</p>
+</section><section id="fn-a2a-skill-of" class="fn">
+  <h3>a2a:skill-of</h3>
+  <p class="fn-sig"><code>[$a2a:skill-of]  ($d::element) -> map</code>  —  Map ONE cx-x/tools descriptor to the A2A skill entry ({id,name,description,tags}) — the A2A lossy ruling drops the JSON Schemas and keeps the true annotation hints as tags.</p>
+</section><section id="fn-a2a-skills-for" class="fn">
+  <h3>a2a:skills-for</h3>
+  <p class="fn-sig"><code>[$a2a:skills-for]  ($source::string) -> any</code>  —  Module source text → the Agent Card skills array from the SAME projection the MCP adapter serves (one model, two lossy adapters). A projection failure propagates its [err].</p>
+</section><section id="fn-a2a-message-text" class="fn">
+  <h3>a2a:message-text</h3>
+  <p class="fn-sig"><code>[$a2a:message-text]  -> string</code>  —  Extract the first text part of a Message reply (result.parts[0].text).</p>
+</section><section id="fn-a2a-task-state" class="fn">
+  <h3>a2a:task-state</h3>
+  <p class="fn-sig"><code>[$a2a:task-state]  -> string</code>  —  Extract the lifecycle state of a Task reply (result.status.state).</p>
+</section><section id="fn-a2a-send-message" class="fn">
+  <h3>a2a:send-message</h3>
+  <p class="fn-sig"><code>[$a2a:send-message]  -> any</code>  —  POST a message/send request to an A2A endpoint (net) and return the parsed reply.</p>
+</section><section id="fn-a2a-ask" class="fn">
+  <h3>a2a:ask</h3>
+  <p class="fn-sig"><code>[$a2a:ask]  -> string</code>  —  Send a user text message to an A2A peer (net) and return its reply text. Compose as a cx-x/run Runnable.</p>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>a2a</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

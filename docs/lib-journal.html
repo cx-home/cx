@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,35 +143,35 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">journal</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-journal"><h1>journal</h1><p class="lede">An append-only, hash-chained, tenant-partitioned event log and the deterministic projection of that log into state. Open or attach a journal over a <code>store</code> backend, <code>append</code> attributed events (each returning a committed <code>[entry]</code> with its sequence, content hash, and predecessor link), <code>read</code> / <code>slice</code> / <code>query</code> ranges, and <code>fold</code> the log into a state projection. The chain is deterministic — replayable, dry-runnable, and hash-verifiable — which is the entire reason it exists. <code>snapshot</code>, <code>retain</code>, and <code>compact</code> accelerate and bound replay as derived artifacts; they never edit the live chain, so append-only and chain integrity hold permanently.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-journal-open" class="fn">
-    <h3>journal:open</h3>
-    <p class="fn-sig"><code>[$journal:open]  -> element</code>  —  Open a journal over a <code>store</code> backend URL for one tenant, creating or attaching to its hash chain.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-journal-open" class="fn">
+  <h3>journal:open</h3>
+  <p class="fn-sig"><code>[$journal:open]  -> element</code>  —  Open a journal over a <code>store</code> backend URL for one tenant, creating or attaching to its hash chain.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://acme" "acme"]]
   [$journal:append $j [do :refund] {actor: "ops" authority: "d-77"}]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[entry seq=1 tenant=acme actor=ops authority=d-77 ts='1970-01-01T00:00:01Z' prev-hash='genesis:' payload='sha2-256:1c28ab1fd422c356d61afc4be98fe2ff836d21b306487a4d67a62b40fc762ec5' hash='sha2-256:902dfe8cf83616e030e70ec30429c632601d4bd29308b757049706a3afb218a4' [event [do :refund]]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-attach" class="fn">
-    <h3>journal:attach</h3>
-    <p class="fn-sig"><code>[$journal:attach]  -> element</code>  —  Attach a journal to an already-open <code>store</code> handle for one tenant, reusing its connection.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store']
+    </pre>
+    <pre class="sample-output">
+      <code>[entry seq=1 tenant=acme actor=ops authority=d-77 ts='1970-01-01T00:00:01Z' prev-hash='genesis:' payload='sha2-256:1c28ab1fd422c356d61afc4be98fe2ff836d21b306487a4d67a62b40fc762ec5' hash='sha2-256:902dfe8cf83616e030e70ec30429c632601d4bd29308b757049706a3afb218a4' [event [do :refund]]]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-attach" class="fn">
+  <h3>journal:attach</h3>
+  <p class="fn-sig"><code>[$journal:attach]  -> element</code>  —  Attach a journal to an already-open <code>store</code> handle for one tenant, reusing its connection.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store']
 [?lib 'cx-stdlib/journal']
 [?let [= $s [$store:open "mem://r"]]
 [= $j1 [$journal:attach $s "acme"]]
@@ -180,275 +180,230 @@
 [= $c [$journal:close $j1]]
 [= $j2 [$journal:attach $s "acme"]]
   [$journal:verify $j2]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[verification valid=true checked-from=1 checked-to=2 head-hash='sha2-256:1d4f5830f65cd9c6b37aa82309376cb3933b6ff91b7d0c7ef877d4403c9dabb0']</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-close" class="fn">
-    <h3>journal:close</h3>
-    <p class="fn-sig"><code>[$journal:close]  -> null</code>  —  Close the journal handle; subsequent operations on it raise CXER4612.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>[verification valid=true checked-from=1 checked-to=2 head-hash='sha2-256:1d4f5830f65cd9c6b37aa82309376cb3933b6ff91b7d0c7ef877d4403c9dabb0']</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-close" class="fn">
+  <h3>journal:close</h3>
+  <p class="fn-sig"><code>[$journal:close]  -> null</code>  —  Close the journal handle; subsequent operations on it raise CXER4612.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
 [= $x [$journal:close $j]]
   [$journal:append $j [a] {actor: "u" authority: "g"}]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER4612</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-append" class="fn">
-    <h3>journal:append</h3>
-    <p class="fn-sig"><code>[$journal:append]  -> element</code>  —  Commit an attributed event, returning the new <code>[entry]</code> with its seq, content hash, and predecessor link.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER4612</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-append" class="fn">
+  <h3>journal:append</h3>
+  <p class="fn-sig"><code>[$journal:append]  -> element</code>  —  Commit an attributed event, returning the new <code>[entry]</code> with its seq, content hash, and predecessor link.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://acme" "acme"]]
   [$journal:append $j [do :refund] {actor: "ops" authority: "d-77"}]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[entry seq=1 tenant=acme actor=ops authority=d-77 ts='1970-01-01T00:00:01Z' prev-hash='genesis:' payload='sha2-256:1c28ab1fd422c356d61afc4be98fe2ff836d21b306487a4d67a62b40fc762ec5' hash='sha2-256:902dfe8cf83616e030e70ec30429c632601d4bd29308b757049706a3afb218a4' [event [do :refund]]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-read" class="fn">
-    <h3>journal:read</h3>
-    <p class="fn-sig"><code>[$journal:read]  -> element</code>  —  Return the single <code>[entry]</code> at <code>seq</code>, or the absence channel if out of range.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>[entry seq=1 tenant=acme actor=ops authority=d-77 ts='1970-01-01T00:00:01Z' prev-hash='genesis:' payload='sha2-256:1c28ab1fd422c356d61afc4be98fe2ff836d21b306487a4d67a62b40fc762ec5' hash='sha2-256:902dfe8cf83616e030e70ec30429c632601d4bd29308b757049706a3afb218a4' [event [do :refund]]]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-read" class="fn">
+  <h3>journal:read</h3>
+  <p class="fn-sig"><code>[$journal:read]  -> element</code>  —  Return the single <code>[entry]</code> at <code>seq</code>, or the absence channel if out of range.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
 [= $e1 [$journal:append $j [a 1] {actor: "u" authority: "g"}]]
 [= $e2 [$journal:append $j [b 2] {actor: "u" authority: "g"}]]
   [$journal:read $j 2]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[entry seq=2 tenant=acme actor=u authority=g ts='1970-01-01T00:00:02Z' prev-hash='sha2-256:69c69761d531660401aa7275810f13828b1db1430511243efbaddc053637311d' payload=sha2-256:e74783796d0d83dfce07552c3773cc9ab4f270fbeb19ada5438a363d79b08e18 hash='sha2-256:1d4f5830f65cd9c6b37aa82309376cb3933b6ff91b7d0c7ef877d4403c9dabb0' [event [b 2]]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-slice" class="fn">
-    <h3>journal:slice</h3>
-    <p class="fn-sig"><code>[$journal:slice]  -> [sequence element]</code>  —  Return the entries with <code>from ≤ seq ≤ to</code> (inclusive, 1-based), in sequence order.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>[entry seq=2 tenant=acme actor=u authority=g ts='1970-01-01T00:00:02Z' prev-hash='sha2-256:69c69761d531660401aa7275810f13828b1db1430511243efbaddc053637311d' payload=sha2-256:e74783796d0d83dfce07552c3773cc9ab4f270fbeb19ada5438a363d79b08e18 hash='sha2-256:1d4f5830f65cd9c6b37aa82309376cb3933b6ff91b7d0c7ef877d4403c9dabb0' [event [b 2]]]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-slice" class="fn">
+  <h3>journal:slice</h3>
+  <p class="fn-sig"><code>[$journal:slice]  -> [sequence element]</code>  —  Return the entries with <code>from ≤ seq ≤ to</code> (inclusive, 1-based), in sequence order.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
 [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
 [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
 [= $e3 [$journal:append $j [c] {actor: "u" authority: "g"}]]
   [$journal:slice $j 2 3]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>([entry seq=2 tenant=acme actor=u authority=g ts='1970-01-01T00:00:02Z' prev-hash='sha2-256:83a013836d0939e47c191cd4a5c079e89fe2f1ecfee486f7da7db50fcdeb9b98' payload=sha2-256:ca0dff2eeeb428d9b948154b48f08f4957c2aa0b9c36f31410812c2943df3b74 hash=sha2-256:d0ff5f72f597fa548dc5e52dc2e65d474e18a5fae0b440d09e2c29901ac39ac5 [event [b]]], [entry seq=3 tenant=acme actor=u authority=g ts='1970-01-01T00:00:03Z' prev-hash=sha2-256:d0ff5f72f597fa548dc5e52dc2e65d474e18a5fae0b440d09e2c29901ac39ac5 payload=sha2-256:a1f3760d1baa325a1f6dc4dd0b659aae82fac0bcbc4c86d25dc8e2651e4c9769 hash=sha2-256:aea8756847199d3ffb540efb20ebfcc5d25f1b8a9396d66d1dfd14ca4b23952d [event [c]]])</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-since" class="fn">
-    <h3>journal:since</h3>
-    <p class="fn-sig"><code>[$journal:since]  -> [sequence element]</code>  —  Return the tail of the log from <code>from</code> to the current head.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>([entry seq=2 tenant=acme actor=u authority=g ts='1970-01-01T00:00:02Z' prev-hash='sha2-256:83a013836d0939e47c191cd4a5c079e89fe2f1ecfee486f7da7db50fcdeb9b98' payload=sha2-256:ca0dff2eeeb428d9b948154b48f08f4957c2aa0b9c36f31410812c2943df3b74 hash=sha2-256:d0ff5f72f597fa548dc5e52dc2e65d474e18a5fae0b440d09e2c29901ac39ac5 [event [b]]], [entry seq=3 tenant=acme actor=u authority=g ts='1970-01-01T00:00:03Z' prev-hash=sha2-256:d0ff5f72f597fa548dc5e52dc2e65d474e18a5fae0b440d09e2c29901ac39ac5 payload=sha2-256:a1f3760d1baa325a1f6dc4dd0b659aae82fac0bcbc4c86d25dc8e2651e4c9769 hash=sha2-256:aea8756847199d3ffb540efb20ebfcc5d25f1b8a9396d66d1dfd14ca4b23952d [event [c]]])</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-since" class="fn">
+  <h3>journal:since</h3>
+  <p class="fn-sig"><code>[$journal:since]  -> [sequence element]</code>  —  Return the tail of the log from <code>from</code> to the current head.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
 [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
 [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
   [$journal:since $j 2]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>([entry seq=2 tenant=acme actor=u authority=g ts='1970-01-01T00:00:02Z' prev-hash='sha2-256:83a013836d0939e47c191cd4a5c079e89fe2f1ecfee486f7da7db50fcdeb9b98' payload=sha2-256:ca0dff2eeeb428d9b948154b48f08f4957c2aa0b9c36f31410812c2943df3b74 hash=sha2-256:d0ff5f72f597fa548dc5e52dc2e65d474e18a5fae0b440d09e2c29901ac39ac5 [event [b]]])</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-query" class="fn">
-    <h3>journal:query</h3>
-    <p class="fn-sig"><code>[$journal:query]  -> [sequence element]</code>  —  Return the entries whose <code>[event …]</code> payload or envelope matches a CXPath filter.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>([entry seq=2 tenant=acme actor=u authority=g ts='1970-01-01T00:00:02Z' prev-hash='sha2-256:83a013836d0939e47c191cd4a5c079e89fe2f1ecfee486f7da7db50fcdeb9b98' payload=sha2-256:ca0dff2eeeb428d9b948154b48f08f4957c2aa0b9c36f31410812c2943df3b74 hash=sha2-256:d0ff5f72f597fa548dc5e52dc2e65d474e18a5fae0b440d09e2c29901ac39ac5 [event [b]]])</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-query" class="fn">
+  <h3>journal:query</h3>
+  <p class="fn-sig"><code>[$journal:query]  -> [sequence element]</code>  —  Return the entries whose <code>[event …]</code> payload or envelope matches a CXPath filter.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
 [= $e1 [$journal:append $j [do :refund] {actor: "u" authority: "g"}]]
 [= $e2 [$journal:append $j [note "hi"] {actor: "u" authority: "g"}]]
   [$journal:query $j "/event/do"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>([entry seq=1 tenant=acme actor=u authority=g ts='1970-01-01T00:00:01Z' prev-hash='genesis:' payload='sha2-256:1c28ab1fd422c356d61afc4be98fe2ff836d21b306487a4d67a62b40fc762ec5' hash=sha2-256:cf7b52e49ca5b3d13a97c4304790ab001c42130f15db55b91ce07a1bbceff7cc [event [do :refund]]])</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-source" class="fn">
-    <h3>journal:source</h3>
-    <p class="fn-sig"><code>[$journal:source]  -> [sequence element]</code>  —  Return one stream's retained committed entries in seq order — the journal-stream source-reference form for planar comprehensions (code.md 7.8).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>([entry seq=1 tenant=acme actor=u authority=g ts='1970-01-01T00:00:01Z' prev-hash='genesis:' payload='sha2-256:1c28ab1fd422c356d61afc4be98fe2ff836d21b306487a4d67a62b40fc762ec5' hash=sha2-256:cf7b52e49ca5b3d13a97c4304790ab001c42130f15db55b91ce07a1bbceff7cc [event [do :refund]]])</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-source" class="fn">
+  <h3>journal:source</h3>
+  <p class="fn-sig"><code>[$journal:source]  -> [sequence element]</code>  —  Return one stream's retained committed entries in seq order — the journal-stream source-reference form for planar comprehensions (code.md 7.8).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
 [= $e1 [$journal:append $j [a 1] {actor: "u" authority: "g" stream: "orders"}]]
 [= $e2 [$journal:append $j [a 2] {actor: "u" authority: "g" stream: "orders"}]]
 [= $e3 [$journal:append $j [b 9] {actor: "u" authority: "g"}]]
   [$count [$journal:source $j "orders"]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-head" class="fn">
-    <h3>journal:head</h3>
-    <p class="fn-sig"><code>[$journal:head]  -> element</code>  —  Return the head <code>[entry]</code> from the handle's CACHED view, or absence if the log is empty. Makes NO freshness claim (stream 7 F1): under a second writer — another process on a local root, another client behind a read-only view — it may report a stale position with no signal; it satisfies neither <code>:read-your-writes</code> freshness nor a declared-fresh need. A caller that needs the durable head uses the distinct impure verb <code>head-fresh</code>.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>2</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-head" class="fn">
+  <h3>journal:head</h3>
+  <p class="fn-sig"><code>[$journal:head]  -> element</code>  —  Return the head <code>[entry]</code> from the handle's CACHED view, or absence if the log is empty. Makes NO freshness claim (stream 7 F1): under a second writer — another process on a local root, another client behind a read-only view — it may report a stale position with no signal; it satisfies neither <code>:read-your-writes</code> freshness nor a declared-fresh need. A caller that needs the durable head uses the distinct impure verb <code>head-fresh</code>.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
   [$journal:head $j]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>()</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-head-fresh" class="fn">
-    <h3>journal:head-fresh</h3>
-    <p class="fn-sig"><code>[$journal:head-fresh]  -> element</code>  —  Return the head <code>[entry]</code> after re-resolving the durable head through the SUBSTRATE (stream 7 F1 — the declared-fresh head verb): a read-only local handle re-takes its private snapshot view from disk through the normal capability-gated open path; a remote-backed handle asks the daemon; mem:// answers the live instance. Impure by contract; absence on an empty stream, like <code>head</code>.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>()</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-head-fresh" class="fn">
+  <h3>journal:head-fresh</h3>
+  <p class="fn-sig"><code>[$journal:head-fresh]  -> element</code>  —  Return the head <code>[entry]</code> after re-resolving the durable head through the SUBSTRATE (stream 7 F1 — the declared-fresh head verb): a read-only local handle re-takes its private snapshot view from disk through the normal capability-gated open path; a remote-backed handle asks the daemon; mem:// answers the live instance. Impure by contract; absence on an empty stream, like <code>head</code>.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://cst-098" "acme"]]
 [= $a [$journal:append $j [x 1] {actor: "u" authority: "g"}]]
 [= $b [$journal:append $j [x 2] {actor: "u" authority: "g"}]]
 [= $h [$journal:head $j]]
 [= $hf [$journal:head-fresh $j]]
   [heads cached=$h/@seq fresh=$hf/@seq]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[heads cached=2 fresh=2]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-streams" class="fn">
-    <h3>journal:streams</h3>
-    <p class="fn-sig"><code>[$journal:streams]  -> [sequence element]</code>  —  List the distinct stream names present in the journal. A tenant-wide composition over these streams is NOT a cut (stream 7 F8): each stream's head is snapshotted independently, with no cross-stream linearization claimed — a verifiable multi-stream cut is <code>:at-head-set</code>, the signed snapshot head-set.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>[heads cached=2 fresh=2]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-streams" class="fn">
+  <h3>journal:streams</h3>
+  <p class="fn-sig"><code>[$journal:streams]  -> [sequence element]</code>  —  List the distinct stream names present in the journal. A tenant-wide composition over these streams is NOT a cut (stream 7 F8): each stream's head is snapshotted independently, with no cross-stream linearization claimed — a verifiable multi-stream cut is <code>:at-head-set</code>, the signed snapshot head-set.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
 [= $a [$journal:append $j [x 1] {actor: "u" authority: "g" stream: "s1"}]]
 [= $b [$journal:append $j [x 2] {actor: "u" authority: "g" stream: "s1"}]]
 [= $c [$journal:append $j [y 1] {actor: "u" authority: "g" stream: "s2"}]]
   [$journal:streams $j]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(s1, s2)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-fold" class="fn">
-    <h3>journal:fold</h3>
-    <p class="fn-sig"><code>[$journal:fold]  -> any</code>  —  Fold ONE stream into a state projection with a pure reducer and initial value. A tenant-wide state composed from per-stream folds is NOT a cut (stream 7 F8): each stream's head snapshots independently, no cross-stream linearization is claimed — the verifiable cut is <code>:at-head-set</code> (the signed snapshot head-set).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>(s1, s2)</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-fold" class="fn">
+  <h3>journal:fold</h3>
+  <p class="fn-sig"><code>[$journal:fold]  -> any</code>  —  Fold ONE stream into a state projection with a pure reducer and initial value. A tenant-wide state composed from per-stream folds is NOT a cut (stream 7 F8): each stream's head snapshots independently, no cross-stream linearization is claimed — the verifiable cut is <code>:at-head-set</code> (the signed snapshot head-set).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
 [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
 [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
 [= $e3 [$journal:append $j [c] {actor: "u" authority: "g"}]]
   [$journal:fold $j [?fn ($a $e) [+ $a 1]] 0]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>3</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-fold-slice" class="fn">
-    <h3>journal:fold-slice</h3>
-    <p class="fn-sig"><code>[$journal:fold-slice]  -> any</code>  —  Fold a <code>from..to</code> range of the log into a state projection.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>3</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-fold-slice" class="fn">
+  <h3>journal:fold-slice</h3>
+  <p class="fn-sig"><code>[$journal:fold-slice]  -> any</code>  —  Fold a <code>from..to</code> range of the log into a state projection.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
 [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
 [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
 [= $e3 [$journal:append $j [c] {actor: "u" authority: "g"}]]
   [$journal:fold-slice $j [?fn ($a $e) [+ $a 1]] 0 2 3]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-fold-value" class="fn">
-    <h3>journal:fold-value</h3>
-    <p class="fn-sig"><code>[$journal:fold-value]  -> any</code>  —  Fold an already-read entry sequence into state, without touching the journal.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>2</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-fold-value" class="fn">
+  <h3>journal:fold-value</h3>
+  <p class="fn-sig"><code>[$journal:fold-value]  -> any</code>  —  Fold an already-read entry sequence into state, without touching the journal.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
 [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
 [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
 [= $es [$journal:since $j 1]]
   [$journal:fold-value $es [?fn ($a $e) [+ $a 10]] 0]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>20</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-temporal-slice" class="fn">
-    <h3>journal:temporal-slice</h3>
-    <p class="fn-sig"><code>[$journal:temporal-slice]  -> [sequence element]</code>  —  The PURE bitemporal projection over already-materialized entries (stream 8, the fold-value twin): opts {at-seq: N} cuts on the TX axis; {valid-at: T} engages the as-of collapse (in-cut :correction targets drop across their whole extent, :amendment clamps its target's valid-to to the amender's valid-from) then keeps the entries whose half-open [from, to) contains T. Entries without valid-time vocabulary are valid always; shredded entries pass through visibly.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>20</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-temporal-slice" class="fn">
+  <h3>journal:temporal-slice</h3>
+  <p class="fn-sig"><code>[$journal:temporal-slice]  -> [sequence element]</code>  —  The PURE bitemporal projection over already-materialized entries (stream 8, the fold-value twin): opts {at-seq: N} cuts on the TX axis; {valid-at: T} engages the as-of collapse (in-cut :correction targets drop across their whole extent, :amendment clamps its target's valid-to to the amender's valid-from) then keeps the entries whose half-open [from, to) contains T. Entries without valid-time vocabulary are valid always; shredded entries pass through visibly.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://bt-110" "acme"]]
 [= $e1 [$journal:append $j [promo pct=10 valid-from="2026-08-01" valid-to="2026-08-05"] {actor: "u" authority: "g"}]]
 [= $es [$journal:since $j 1]]
   [boundary at-from=[$count [$journal:temporal-slice $es {valid-at: "2026-08-01"}]] inside=[$count [$journal:temporal-slice $es {valid-at: "2026-08-04"}]] at-to=[$count [$journal:temporal-slice $es {valid-at: "2026-08-05"}]] before=[$count [$journal:temporal-slice $es {valid-at: "2026-07-31"}]]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[boundary at-from=1 inside=1 at-to=0 before=0]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-upcast" class="fn">
-    <h3>journal:upcast</h3>
-    <p class="fn-sig"><code>[$journal:upcast]  -> [sequence element]</code>  —  The PURE upcaster seam over already-materialized entries (stream 21, the temporal-slice twin): applies a caller-supplied pure chain — an entry-to-entry projection — to every entry that carries an event payload. The chain's output supplies the payload only; the envelope is the journal's (rewriting seq= or hash= refuses CXER4642, dropping the payload refuses CXER4642). An entry the chain refuses is a loud CXER4641 naming seq, hash, and the declared schema — never absence, never a skip. Shredded entries pass through without chain application. The fold and replay opts take the same chain under {upcast: $chain}, composed BEFORE the valid-time projection.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>[boundary at-from=1 inside=1 at-to=0 before=0]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-upcast" class="fn">
+  <h3>journal:upcast</h3>
+  <p class="fn-sig"><code>[$journal:upcast]  -> [sequence element]</code>  —  The PURE upcaster seam over already-materialized entries (stream 21, the temporal-slice twin): applies a caller-supplied pure chain — an entry-to-entry projection — to every entry that carries an event payload. The chain's output supplies the payload only; the envelope is the journal's (rewriting seq= or hash= refuses CXER4642, dropping the payload refuses CXER4642). An entry the chain refuses is a loud CXER4641 naming seq, hash, and the declared schema — never absence, never a skip. Shredded entries pass through without chain application. The fold and replay opts take the same chain under {upcast: $chain}, composed BEFORE the valid-time projection.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://se-118" "acme"]]
 [= $e1 [$journal:append $j [order id="A-1" total=107 schema="sha2-256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"] {actor: "svc" authority: "g"}]]
 [= $e2 [$journal:append $j [order id="A-2" subtotal=90 tax=10 schema="sha2-256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2"] {actor: "svc" authority: "g"}]]
@@ -458,20 +413,17 @@
       [event [order id=$e/event/order/@id subtotal=[- $e/event/order/@total 10] tax=10 schema="sha2-256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2"]]]]
     [else $e]]]]
   [upcast v2-subtotals=[$journal:fold $j [?fn ($a $e) [+ $a $e/event/order/@subtotal]] 0 "" {upcast: $up}] raw-v2-only=[$journal:fold $j [?fn ($a $e) [+ $a [$sum $e/event/order/@subtotal]]] 0] pure-count=[$count [$journal:upcast [$journal:since $j 1] $up]]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[upcast v2-subtotals=187 raw-v2-only=90 pure-count=2]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-lineage-path" class="fn">
-    <h3>journal:lineage-path</h3>
-    <p class="fn-sig"><code>[$journal:lineage-path]  -> [sequence element]</code>  —  The lineage load (stream 21): validates a set of Lane-2 schema-lineage claims — each relating two schema content addresses under a closed relation set (:additive/:narrowing/:split/:merge) with an upcaster slot — FAIL-CLOSED: a duplicate edge, a cycle, or any pair of endpoints admitting two paths refuses CXER4643; then returns the claims along the UNIQUE from-to path in composition order. No covering path is the loud CXER4644 (lineage is directed). Same-endpoint queries return the empty (identity) chain.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>[upcast v2-subtotals=187 raw-v2-only=90 pure-count=2]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-lineage-path" class="fn">
+  <h3>journal:lineage-path</h3>
+  <p class="fn-sig"><code>[$journal:lineage-path]  -> [sequence element]</code>  —  The lineage load (stream 21): validates a set of Lane-2 schema-lineage claims — each relating two schema content addresses under a closed relation set (:additive/:narrowing/:split/:merge) with an upcaster slot — FAIL-CLOSED: a duplicate edge, a cycle, or any pair of endpoints admitting two paths refuses CXER4643; then returns the claims along the UNIQUE from-to path in composition order. No covering path is the loud CXER4644 (lineage is directed). Same-endpoint queries return the empty (identity) chain.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $v1 "sha2-256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"]
 [= $v2 "sha2-256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2"]
 [= $v3 "sha2-256:c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3"]
@@ -482,21 +434,18 @@
 [= $hops [$count $path]]
 [= $ambig [?fallback [$journal:lineage-path ($c12, $c23, $c13) $v1 $v3] [recover-with [context] [code $err@code]]]]
 [= $gap [?fallback [$journal:lineage-path ($c12,) $v2 $v1] [recover-with [context] [code $err@code]]]]
-  [probe hops=$hops [rels $path/relation] [ambig $ambig] [gap $gap]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[probe hops=2 [rels ([relation :additive], [relation :split])] [ambig [code 'cx-err:CXER4643']] [gap [code 'cx-err:CXER4644']]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-legal-holds" class="fn">
-    <h3>journal:legal-holds</h3>
-    <p class="fn-sig"><code>[$journal:legal-holds]  -> element</code>  —  The hold-stream load (stream 20): a legal hold is a SIGNED Lane-2 [legal-hold] claim journaled to the reserved per-tenant cx:legal-hold stream — it binds from its journaled position onward. Placement is write-time enforced (the reserved stream records only well-formed signed claims; a malformed/unsigned append refuses CXER4620), and the load re-validates FAIL-CLOSED (a hold that cannot bind fails loud, never a skip). Returns [holds stream= head= count=] with one [hold seq= subject=|hash= signer= at=] per binding hold; opts {subject:|hash:} filter. head is the position the erase-subject precondition pins. The signature covers the claim's strict canonical text with the [sig] child removed; verification proves possession of key= — binding the key to the signer identity is authz/vc's domain.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+  [probe hops=$hops [rels [?splice $path/relation]] [ambig $ambig] [gap $gap]]]</code>
+    </pre>
+    <pre class="sample-output">
+      <code>[probe hops=2 [rels [relation :additive] [relation :split]] [ambig [code 'cx-err:CXER4643']] [gap [code 'cx-err:CXER4644']]]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-legal-holds" class="fn">
+  <h3>journal:legal-holds</h3>
+  <p class="fn-sig"><code>[$journal:legal-holds]  -> element</code>  —  The hold-stream load (stream 20): a legal hold is a SIGNED Lane-2 [legal-hold] claim journaled to the reserved per-tenant cx:legal-hold stream — it binds from its journaled position onward. Placement is write-time enforced (the reserved stream records only well-formed signed claims; a malformed/unsigned append refuses CXER4620), and the load re-validates FAIL-CLOSED (a hold that cannot bind fails loud, never a skip). Returns [holds stream= head= count=] with one [hold seq= subject=|hash= signer= at=] per binding hold; opts {subject:|hash:} filter. head is the position the erase-subject precondition pins. The signature covers the claim's strict canonical text with the [sig] child removed; verification proves possession of key= — binding the key to the signer identity is authz/vc's domain.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/bytes']
 [?lib 'cx-stdlib/cx']
@@ -512,20 +461,17 @@
 [= $e2 [$journal:append $j [legal-hold [hash "sha2-256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"] [signer "did:ex:counsel"] [at "2026-08-12"] [sig alg=:ed25519 value=$s2 key=$pub]] {actor: "counsel" authority: "h-1" stream: "cx:legal-hold"}]]
 [= $refused [?fallback [$journal:append $j [legal-hold [subject "did:ex:eve"] [signer "did:ex:counsel"] [at "2026-08-12"]] {actor: "counsel" authority: "h-1" stream: "cx:legal-hold"}] [recover-with [context] [code $err@code]]]]
   [probe [all [$journal:legal-holds $j]] [dana [$journal:legal-holds $j {subject: "did:ex:dana"}]] [refused $refused]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[probe [all [holds stream=cx:legal-hold head=2 count=2 [hold seq=1 subject=did:ex:dana signer=did:ex:counsel at='2026-08-12'] [hold seq=2 hash=sha2-256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa signer=did:ex:counsel at='2026-08-12']]] [dana [holds stream=cx:legal-hold head=2 count=1 [hold seq=1 subject=did:ex:dana signer=did:ex:counsel at='2026-08-12']]] [refused [code 'cx-err:CXER4620']]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-erase-subject" class="fn">
-    <h3>journal:erase-subject</h3>
-    <p class="fn-sig"><code>[$journal:erase-subject]  -> element</code>  —  The recorded RTBF command (stream 20): journal an attributed [erase-subject] record to the reserved per-tenant cx:erasure stream, then execute the crypto-shred walk — destroy the subject's SEK(s), tombstone every subject-sealed doc ([erased] with attribution), purge derived surfaces (computation cache, materialization checkpoints, in-process dedup records and plaintext caches), across the backing store and every store the segment index names. HOLD-BEATS-SHRED: a signed legal hold binding the subject (or a scoped hash) refuses CXER4621 atomically — the hold-stream head pins before commit and re-checks under the writing commit lock. The KMS destroy is strictly POST-COMMIT (the forward-only pivot). Idempotent: the journaled record IS the durable dedup record (its request= id is an opaque CSPRNG token); a resubmission answers [deduped <the recorded shred-report>] and re-runs only the idempotent walk (self-heal). A committed shred advances the tenant shred-generation, staling every pre-shred snapshot's fold-id (CXER4640 on fold-from — re-snapshot is forced). Direct appends to cx:erasure refuse CXER4622. Returns the balanced [shred-report …]: docs = erased + already-erased.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>[probe [all [holds stream=cx:legal-hold head=2 count=2 [hold seq=1 subject=did:ex:dana signer=did:ex:counsel at='2026-08-12'] [hold seq=2 hash=sha2-256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa signer=did:ex:counsel at='2026-08-12']]] [dana [holds stream=cx:legal-hold head=2 count=1 [hold seq=1 subject=did:ex:dana signer=did:ex:counsel at='2026-08-12']]] [refused [code 'cx-err:CXER4620']]]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-erase-subject" class="fn">
+  <h3>journal:erase-subject</h3>
+  <p class="fn-sig"><code>[$journal:erase-subject]  -> element</code>  —  The recorded RTBF command (stream 20): journal an attributed [erase-subject] record to the reserved per-tenant cx:erasure stream, then execute the crypto-shred walk — destroy the subject's SEK(s), tombstone every subject-sealed doc ([erased] with attribution), purge derived surfaces (computation cache, materialization checkpoints, in-process dedup records and plaintext caches), across the backing store and every store the segment index names. HOLD-BEATS-SHRED: a signed legal hold binding the subject (or a scoped hash) refuses CXER4621 atomically — the hold-stream head pins before commit and re-checks under the writing commit lock. The KMS destroy is strictly POST-COMMIT (the forward-only pivot). Idempotent: the journaled record IS the durable dedup record (its request= id is an opaque CSPRNG token); a resubmission answers [deduped <the recorded shred-report>] and re-runs only the idempotent walk (self-heal). A committed shred advances the tenant shred-generation, staling every pre-shred snapshot's fold-id (CXER4640 on fold-from — re-snapshot is forced). Direct appends to cx:erasure refuse CXER4622. Returns the balanced [shred-report …]: docs = erased + already-erased.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/bytes']
 [?lib 'cx-stdlib/cx']
@@ -546,20 +492,17 @@
 [= $stale [?fallback [$journal:fold-from $j $snap [?fn ($acc $e) $acc] {fold-id: "fold:demo-g1"}] [recover-with [context] [code $err@code]]]]
 [= $forged [?fallback [$journal:append $j [erase-subject [subject "did:ex:mallory"]] {actor: "m" authority: "m" stream: "cx:erasure"}] [recover-with [context] [code $err@code]]]]
   [probe [held $held] [gen0 $g0] [gen1 $g1] [first $r1] [replay $r2] [stale $stale] [forged $forged]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[probe [held [code 'cx-err:CXER4621']] [gen0 0] [gen1 1] [first [shred-report subject=did:ex:dana request=shred-fx-dana docs=0 erased=0 already-erased=0 subject-keys=0 derived=0 checkpoints=0 dedup-records=0 stores=1 disposed=0 generation=1 holds-head=1]] [replay [deduped [shred-report subject=did:ex:dana request=shred-fx-dana docs=0 erased=0 already-erased=0 subject-keys=0 derived=0 checkpoints=0 dedup-records=0 stores=1 disposed=0 generation=1 holds-head=1]]] [stale [code 'cx-err:CXER4640']] [forged [code 'cx-err:CXER4622']]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-ingest-stream" class="fn">
-    <h3>journal:ingest-stream</h3>
-    <p class="fn-sig"><code>[$journal:ingest-stream]  -> element</code>  —  Replica-local stream ingestion (stream 9, distributed_store §2) — the journal half of sync. Register a source journal's named stream into this journal's tenant as a DISJOINT AGGREGATE: entries re-land BYTE-IDENTICAL (the entry hash survives; the chain verifies unchanged here), no sequencer is consulted (tenant state is your order-independent composition of per-stream folds). Idempotent: re-ingesting an unchanged stream answers ingested=0, and a source that merely grew re-lands only the tail (clean prefix extension). A stream key this journal already holds with a DIFFERENT chain refuses CXER5050 E_SYNC_STREAM_DIVERGENT (a replica stream is a new aggregate, never a merge into an origin stream — <code>append</code> re-hashes by design, so identity-preserving transfer happens only here). The default stream and reserved cx:* streams refuse CXER5052 E_SYNC_STREAM_RESERVED (evidence streams propagate on the feed, never by hand-ingestion). An unverifiable or gapped source chain refuses CXER5051 E_SYNC_CHAIN_INVALID and nothing lands. Payload docs ride along when the source holds them; a payload lawfully shredded at the source still lands its entry (the chain covers the ADDRESS) with the count visible (<code>payloads-absent=</code>, present only when non-zero). Returns the balanced [ingest-report …]: entries = ingested + already-present.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store']
+    </pre>
+    <pre class="sample-output">
+      <code>[probe [held [code 'cx-err:CXER4621']] [gen0 0] [gen1 1] [first [shred-report subject=did:ex:dana request=shred-fx-dana docs=0 erased=0 already-erased=0 subject-keys=0 derived=0 checkpoints=0 dedup-records=0 stores=1 disposed=0 generation=1 holds-head=1]] [replay [deduped [shred-report subject=did:ex:dana request=shred-fx-dana docs=0 erased=0 already-erased=0 subject-keys=0 derived=0 checkpoints=0 dedup-records=0 stores=1 disposed=0 generation=1 holds-head=1]]] [stale [code 'cx-err:CXER4640']] [forged [code 'cx-err:CXER4622']]]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-ingest-stream" class="fn">
+  <h3>journal:ingest-stream</h3>
+  <p class="fn-sig"><code>[$journal:ingest-stream]  -> element</code>  —  Replica-local stream ingestion (stream 9, distributed_store §2) — the journal half of sync. Register a source journal's named stream into this journal's tenant as a DISJOINT AGGREGATE: entries re-land BYTE-IDENTICAL (the entry hash survives; the chain verifies unchanged here), no sequencer is consulted (tenant state is your order-independent composition of per-stream folds). Idempotent: re-ingesting an unchanged stream answers ingested=0, and a source that merely grew re-lands only the tail (clean prefix extension). A stream key this journal already holds with a DIFFERENT chain refuses CXER5050 E_SYNC_STREAM_DIVERGENT (a replica stream is a new aggregate, never a merge into an origin stream — <code>append</code> re-hashes by design, so identity-preserving transfer happens only here). The default stream and reserved cx:* streams refuse CXER5052 E_SYNC_STREAM_RESERVED (evidence streams propagate on the feed, never by hand-ingestion). An unverifiable or gapped source chain refuses CXER5051 E_SYNC_CHAIN_INVALID and nothing lands. Payload docs ride along when the source holds them; a payload lawfully shredded at the source still lands its entry (the chain covers the ADDRESS) with the count visible (<code>payloads-absent=</code>, present only when non-zero). Returns the balanced [ingest-report …]: entries = ingested + already-present.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store']
 [?lib 'cx-stdlib/journal']
 [?let
 [= $sa [$store:open "mem://s9-rep"]]
@@ -581,20 +524,17 @@
 [= $x2 [$journal:append $ja [real] {actor: "clerk" authority: "tab-1" stream: "order:r2"}]]
 [= $div [?fallback [$journal:ingest-stream $jb $ja "order:r2"] [recover-with [context] [code $err@code]]]]
   [probe [first $r1] [replay $r2] [verify $v] [tail $r3] [head-a $ha/@hash] [head-b $hb/@hash] [reserved $res] [divergent $div]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[probe [first [ingest-report stream=order:r1 entries=2 ingested=2 already-present=0 head=2 hash='sha2-256:5ba2f8da382bc68298b496299225e48c4a93ddb227512669324ec25b578f8c71']] [replay [ingest-report stream=order:r1 entries=2 ingested=0 already-present=2 head=2 hash='sha2-256:5ba2f8da382bc68298b496299225e48c4a93ddb227512669324ec25b578f8c71']] [verify [verification valid=true checked-from=1 checked-to=2 head-hash='sha2-256:5ba2f8da382bc68298b496299225e48c4a93ddb227512669324ec25b578f8c71']] [tail [ingest-report stream=order:r1 entries=3 ingested=1 already-present=2 head=3 hash='sha2-256:42d713eb7091fe473fa9c5be03422675c69e4b9db150bb727add638f6fd75174']] [head-a 'sha2-256:42d713eb7091fe473fa9c5be03422675c69e4b9db150bb727add638f6fd75174'] [head-b 'sha2-256:42d713eb7091fe473fa9c5be03422675c69e4b9db150bb727add638f6fd75174'] [reserved [code 'cx-err:CXER5052']] [divergent [code 'cx-err:CXER5050']]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-register-replica" class="fn">
-    <h3>journal:register-replica</h3>
-    <p class="fn-sig"><code>[$journal:register-replica]  -> element</code>  —  Register (or advance — upsert) a replica at this origin journal (stream 9, distributed_store §5, L177 — register-or-refuse retention): the registration records the replica's synced cursor per stream, and the retention cover rule EXTENDS to it — a retain/compact boundary above a registered replica's cursor refuses CXER4616 loud (advance the registration on a later sync, or deregister, before pruning). The alternative is client-anchored: no origin state, and a cursor below the compacted floor gets the loud re-seed refusals (ingest CXER5051, resume CXER4617, live CXER5073). Both are spec'd; the deployment chooses.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store']
+    </pre>
+    <pre class="sample-output">
+      <code>[probe [first [ingest-report stream=order:r1 entries=2 ingested=2 already-present=0 head=2 hash='sha2-256:5ba2f8da382bc68298b496299225e48c4a93ddb227512669324ec25b578f8c71']] [replay [ingest-report stream=order:r1 entries=2 ingested=0 already-present=2 head=2 hash='sha2-256:5ba2f8da382bc68298b496299225e48c4a93ddb227512669324ec25b578f8c71']] [verify [verification valid=true checked-from=1 checked-to=2 head-hash='sha2-256:5ba2f8da382bc68298b496299225e48c4a93ddb227512669324ec25b578f8c71']] [tail [ingest-report stream=order:r1 entries=3 ingested=1 already-present=2 head=3 hash='sha2-256:42d713eb7091fe473fa9c5be03422675c69e4b9db150bb727add638f6fd75174']] [head-a 'sha2-256:42d713eb7091fe473fa9c5be03422675c69e4b9db150bb727add638f6fd75174'] [head-b 'sha2-256:42d713eb7091fe473fa9c5be03422675c69e4b9db150bb727add638f6fd75174'] [reserved [code 'cx-err:CXER5052']] [divergent [code 'cx-err:CXER5050']]]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-register-replica" class="fn">
+  <h3>journal:register-replica</h3>
+  <p class="fn-sig"><code>[$journal:register-replica]  -> element</code>  —  Register (or advance — upsert) a replica at this origin journal (stream 9, distributed_store §5, L177 — register-or-refuse retention): the registration records the replica's synced cursor per stream, and the retention cover rule EXTENDS to it — a retain/compact boundary above a registered replica's cursor refuses CXER4616 loud (advance the registration on a later sync, or deregister, before pruning). The alternative is client-anchored: no origin state, and a cursor below the compacted floor gets the loud re-seed refusals (ingest CXER5051, resume CXER4617, live CXER5073). Both are spec'd; the deployment chooses.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store']
 [?lib 'cx-stdlib/journal']
 [?let
 [= $s [$store:open "mem://reg-136"]]
@@ -608,20 +548,17 @@
 [= $ok [$journal:retain $j {stream: "s1" keep-after-seq: 2 snapshot: $snap}]]
 [= $dereg [$journal:deregister-replica $j "tab-1" {stream: "s1"}]]
   [probe [registered $reg] [refused $ref] [advanced $reg2] [retained $ok] [dereg $dereg]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[probe [registered [replica-registration id=tab-1 stream=s1 seq=1]] [refused [code 'cx-err:CXER4616']] [advanced [replica-registration id=tab-1 stream=s1 seq=2]] [retained [retention boundary=2 covered-by-seq=2 stream=s1]] [dereg [deregistered id=tab-1 existed=true]]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-deregister-replica" class="fn">
-    <h3>journal:deregister-replica</h3>
-    <p class="fn-sig"><code>[$journal:deregister-replica]  -> element</code>  —  Remove a replica's registration at this origin (stream 9): the retention hold it bought is released — history below the next prune boundary may compact away, and a replica that returns later below the floor re-seeds via the loud client-anchored refusals. Returns [deregistered id= existed=].</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store']
+    </pre>
+    <pre class="sample-output">
+      <code>[probe [registered [replica-registration id=tab-1 stream=s1 seq=1]] [refused [code 'cx-err:CXER4616']] [advanced [replica-registration id=tab-1 stream=s1 seq=2]] [retained [retention boundary=2 covered-by-seq=2 stream=s1]] [dereg [deregistered id=tab-1 existed=true]]]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-deregister-replica" class="fn">
+  <h3>journal:deregister-replica</h3>
+  <p class="fn-sig"><code>[$journal:deregister-replica]  -> element</code>  —  Remove a replica's registration at this origin (stream 9): the retention hold it bought is released — history below the next prune boundary may compact away, and a replica that returns later below the floor re-seeds via the loud client-anchored refusals. Returns [deregistered id= existed=].</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store']
 [?lib 'cx-stdlib/journal']
 [?let
 [= $s [$store:open "mem://reg-136"]]
@@ -635,20 +572,17 @@
 [= $ok [$journal:retain $j {stream: "s1" keep-after-seq: 2 snapshot: $snap}]]
 [= $dereg [$journal:deregister-replica $j "tab-1" {stream: "s1"}]]
   [probe [registered $reg] [refused $ref] [advanced $reg2] [retained $ok] [dereg $dereg]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[probe [registered [replica-registration id=tab-1 stream=s1 seq=1]] [refused [code 'cx-err:CXER4616']] [advanced [replica-registration id=tab-1 stream=s1 seq=2]] [retained [retention boundary=2 covered-by-seq=2 stream=s1]] [dereg [deregistered id=tab-1 existed=true]]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-apply-erasures" class="fn">
-    <h3>journal:apply-erasures</h3>
-    <p class="fn-sig"><code>[$journal:apply-erasures]  -> element</code>  —  The shred-reach worker (stream 9 × stream 20's joint requirement): consume the origin's journaled shred-requests (the reserved cx:erasure stream) and execute THIS replica's OWN erase-subject per record under the SAME (subject, request-token) key — the replica journals its own attributed record, runs its own local walk, and emits its own balanced shred-report; replay answers [deduped …] per record (idempotent — fleet convergence is the collection of per-replica reports, never an origin-side assumption). A record refused by a LOCAL legal hold is a LOUD [held subject= request= code=] child (hold-beats-shred holds at every replica); held= appears only when non-zero and means the fleet has NOT converged. Returns [erasure-sync records= applied= deduped= held?=].</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store']
+    </pre>
+    <pre class="sample-output">
+      <code>[probe [registered [replica-registration id=tab-1 stream=s1 seq=1]] [refused [code 'cx-err:CXER4616']] [advanced [replica-registration id=tab-1 stream=s1 seq=2]] [retained [retention boundary=2 covered-by-seq=2 stream=s1]] [dereg [deregistered id=tab-1 existed=true]]]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-apply-erasures" class="fn">
+  <h3>journal:apply-erasures</h3>
+  <p class="fn-sig"><code>[$journal:apply-erasures]  -> element</code>  —  The shred-reach worker (stream 9 × stream 20's joint requirement): consume the origin's journaled shred-requests (the reserved cx:erasure stream) and execute THIS replica's OWN erase-subject per record under the SAME (subject, request-token) key — the replica journals its own attributed record, runs its own local walk, and emits its own balanced shred-report; replay answers [deduped …] per record (idempotent — fleet convergence is the collection of per-replica reports, never an origin-side assumption). A record refused by a LOCAL legal hold is a LOUD [held subject= request= code=] child (hold-beats-shred holds at every replica); held= appears only when non-zero and means the fleet has NOT converged. Returns [erasure-sync records= applied= deduped= held?=].</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store']
 [?lib 'cx-stdlib/journal']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/bytes']
@@ -671,20 +605,17 @@
 [= $r3 [$journal:erase-subject $jo "did:ex:eve" {actor: "dpo" authority: "rtbf-9"} {request: "shred-ae-3"}]]
 [= $a3 [$journal:apply-erasures $jr $jo]]
   [probe [first $a1] [replay $a2] [with-held $a3]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[probe [first [erasure-sync records=2 applied=2 deduped=0 [shred-report subject=did:ex:dana request=shred-ae-1 docs=0 erased=0 already-erased=0 subject-keys=0 derived=0 checkpoints=0 dedup-records=0 stores=1 disposed=0 generation=1 holds-head=0] [shred-report subject=did:ex:carol request=shred-ae-2 docs=0 erased=0 already-erased=0 subject-keys=0 derived=0 checkpoints=0 dedup-records=0 stores=1 disposed=0 generation=2 holds-head=0]]] [replay [erasure-sync records=2 applied=0 deduped=2 [deduped [shred-report subject=did:ex:dana request=shred-ae-1 docs=0 erased=0 already-erased=0 subject-keys=0 derived=0 checkpoints=0 dedup-records=0 stores=1 disposed=0 generation=1 holds-head=0]] [deduped [shred-report subject=did:ex:carol request=shred-ae-2 docs=0 erased=0 already-erased=0 subject-keys=0 derived=0 checkpoints=0 dedup-records=0 stores=1 disposed=0 generation=2 holds-head=0]]]] [with-held [erasure-sync records=3 applied=0 deduped=2 held=1 [deduped [shred-report subject=did:ex:dana request=shred-ae-1 docs=0 erased=0 already-erased=0 subject-keys=0 derived=0 checkpoints=0 dedup-records=0 stores=1 disposed=0 generation=1 holds-head=0]] [deduped [shred-report subject=did:ex:carol request=shred-ae-2 docs=0 erased=0 already-erased=0 subject-keys=0 derived=0 checkpoints=0 dedup-records=0 stores=1 disposed=0 generation=2 holds-head=0]] [held subject=did:ex:eve request=shred-ae-3 code=cx-err:CXER4621]]]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-saga-run" class="fn">
-    <h3>journal:saga-run</h3>
-    <p class="fn-sig"><code>[$journal:saga-run]  -> element</code>  —  The Ring-2 saga runner (stream 10, cross_stream_coordination §2): drive a [saga-def id= [step name= pivot?=true [fn <command>] [args {…}]]…] — every step a COMMAND invocation (effects narrowing, [idempotent] dedup, and the [requires-at] admission all apply; the runner is the second journal-bound admission site) — journaling every status transition as a new [saga] record on the home stream (opts.stream; opts.actor + opts.authority = the authority basis, mandatory). The journaled record IS the durable step-dedup: on resume, steps recorded :done never re-execute, and re-running a completed saga answers [deduped <the recorded value>]. A failed step marks the saga :failed (compensation flows are the reverse-pre-pivot / forward-only-post-pivot vocabulary). Saga state never enters any other stream's fold — participants replay in isolation byte-identically; the saga document is an order-independent reporting JOIN.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store']
+    </pre>
+    <pre class="sample-output">
+      <code>[probe [first [erasure-sync records=2 applied=2 deduped=0 [shred-report subject=did:ex:dana request=shred-ae-1 docs=0 erased=0 already-erased=0 subject-keys=0 derived=0 checkpoints=0 dedup-records=0 stores=1 disposed=0 generation=1 holds-head=0] [shred-report subject=did:ex:carol request=shred-ae-2 docs=0 erased=0 already-erased=0 subject-keys=0 derived=0 checkpoints=0 dedup-records=0 stores=1 disposed=0 generation=2 holds-head=0]]] [replay [erasure-sync records=2 applied=0 deduped=2 [deduped [shred-report subject=did:ex:dana request=shred-ae-1 docs=0 erased=0 already-erased=0 subject-keys=0 derived=0 checkpoints=0 dedup-records=0 stores=1 disposed=0 generation=1 holds-head=0]] [deduped [shred-report subject=did:ex:carol request=shred-ae-2 docs=0 erased=0 already-erased=0 subject-keys=0 derived=0 checkpoints=0 dedup-records=0 stores=1 disposed=0 generation=2 holds-head=0]]]] [with-held [erasure-sync records=3 applied=0 deduped=2 held=1 [deduped [shred-report subject=did:ex:dana request=shred-ae-1 docs=0 erased=0 already-erased=0 subject-keys=0 derived=0 checkpoints=0 dedup-records=0 stores=1 disposed=0 generation=1 holds-head=0]] [deduped [shred-report subject=did:ex:carol request=shred-ae-2 docs=0 erased=0 already-erased=0 subject-keys=0 derived=0 checkpoints=0 dedup-records=0 stores=1 disposed=0 generation=2 holds-head=0]] [held subject=did:ex:eve request=shred-ae-3 code=cx-err:CXER4621]]]]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-saga-run" class="fn">
+  <h3>journal:saga-run</h3>
+  <p class="fn-sig"><code>[$journal:saga-run]  -> element</code>  —  The Ring-2 saga runner (stream 10, cross_stream_coordination §2): drive a [saga-def id= [step name= pivot?=true [fn <command>] [args {…}]]…] — every step a COMMAND invocation (effects narrowing, [idempotent] dedup, and the [requires-at] admission all apply; the runner is the second journal-bound admission site) — journaling every status transition as a new [saga] record on the home stream (opts.stream; opts.actor + opts.authority = the authority basis, mandatory). The journaled record IS the durable step-dedup: on resume, steps recorded :done never re-execute, and re-running a completed saga answers [deduped <the recorded value>]. A failed step marks the saga :failed (compensation flows are the reverse-pre-pivot / forward-only-post-pivot vocabulary). Saga state never enters any other stream's fold — participants replay in isolation byte-identically; the saga document is an order-independent reporting JOIN.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store']
 [?lib 'cx-stdlib/journal']
 [?def release-inventory impure [effects] ($sku='' $qty=1) [released sku=$sku]]
 [?def reserve-inventory impure [effects] [compensates release-inventory] ($sku='' $qty=1) [reserved sku=$sku qty=$qty]]
@@ -703,20 +634,17 @@
 [= $st [$journal:saga-status $j "cs-1" {stream: "order:o-5521"}]]
 [= $v [$journal:verify $j {stream: "order:o-5521"}]]
   [probe [run $r1] [replay $r2] [status $st/@status] [chain $v/@valid]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[probe [run [saga id=cs-1 status=:done [step name=reserve-inventory status=:done] [step name=authorize-payment status=:done] [step name=place-order status=:done pivot=true]]] [replay [deduped [saga id=cs-1 status=:done [step name=reserve-inventory status=:done] [step name=authorize-payment status=:done] [step name=place-order status=:done pivot=true]]]] [status :done] [chain true]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-saga-status" class="fn">
-    <h3>journal:saga-status</h3>
-    <p class="fn-sig"><code>[$journal:saga-status]  -> element</code>  —  The last recorded [saga] value for an id on its home stream (opts.stream) — the :at-head-set-class reporting read ("is the checkout done?"); absence when no record exists. Read-only: the record scan never mutates saga state.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store']
+    </pre>
+    <pre class="sample-output">
+      <code>[probe [run [saga id=cs-1 status=:done [step name=reserve-inventory status=:done] [step name=authorize-payment status=:done] [step name=place-order status=:done pivot=true]]] [replay [deduped [saga id=cs-1 status=:done [step name=reserve-inventory status=:done] [step name=authorize-payment status=:done] [step name=place-order status=:done pivot=true]]]] [status :done] [chain true]]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-saga-status" class="fn">
+  <h3>journal:saga-status</h3>
+  <p class="fn-sig"><code>[$journal:saga-status]  -> element</code>  —  The last recorded [saga] value for an id on its home stream (opts.stream) — the :at-head-set-class reporting read ("is the checkout done?"); absence when no record exists. Read-only: the record scan never mutates saga state.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store']
 [?lib 'cx-stdlib/journal']
 [?def release-inventory impure [effects] ($sku='' $qty=1) [released sku=$sku]]
 [?def reserve-inventory impure [effects] [compensates release-inventory] ($sku='' $qty=1) [reserved sku=$sku qty=$qty]]
@@ -735,199 +663,166 @@
 [= $st [$journal:saga-status $j "cs-1" {stream: "order:o-5521"}]]
 [= $v [$journal:verify $j {stream: "order:o-5521"}]]
   [probe [run $r1] [replay $r2] [status $st/@status] [chain $v/@valid]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[probe [run [saga id=cs-1 status=:done [step name=reserve-inventory status=:done] [step name=authorize-payment status=:done] [step name=place-order status=:done pivot=true]]] [replay [deduped [saga id=cs-1 status=:done [step name=reserve-inventory status=:done] [step name=authorize-payment status=:done] [step name=place-order status=:done pivot=true]]]] [status :done] [chain true]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-shred-generation" class="fn">
-    <h3>journal:shred-generation</h3>
-    <p class="fn-sig"><code>[$journal:shred-generation]  -> int</code>  —  The tenant's current shred-generation (0 before any committed erase-subject). The ENV-quadrant input of the §7 snapshot-reach design: bind it into your fold identity (the fold-id you pass to snapshot/fold-from/retain), and every committed shred moves the current fold-id — pre-shred snapshots then refuse fold-from with CXER4640, forcing a re-snapshot under the post-shred fold. A refused (held) erase never advances it.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>[probe [run [saga id=cs-1 status=:done [step name=reserve-inventory status=:done] [step name=authorize-payment status=:done] [step name=place-order status=:done pivot=true]]] [replay [deduped [saga id=cs-1 status=:done [step name=reserve-inventory status=:done] [step name=authorize-payment status=:done] [step name=place-order status=:done pivot=true]]]] [status :done] [chain true]]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-shred-generation" class="fn">
+  <h3>journal:shred-generation</h3>
+  <p class="fn-sig"><code>[$journal:shred-generation]  -> int</code>  —  The tenant's current shred-generation (0 before any committed erase-subject). The ENV-quadrant input of the §7 snapshot-reach design: bind it into your fold identity (the fold-id you pass to snapshot/fold-from/retain), and every committed shred moves the current fold-id — pre-shred snapshots then refuse fold-from with CXER4640, forcing a re-snapshot under the post-shred fold. A refused (held) erase never advances it.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://gen" "acme"]]
 [= $g0 [$journal:shred-generation $j]]
 [= $r [$journal:erase-subject $j "did:ex:dana" {actor: "dpo" authority: "rtbf-9"} {request: "shred-g-1"}]]
   [probe [before $g0] [after [$journal:shred-generation $j]]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[probe [before 0] [after 1]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-overlaps" class="fn">
-    <h3>journal:overlaps</h3>
-    <p class="fn-sig"><code>[$journal:overlaps]  -> bool</code>  —  Do two vocabulary-bearing elements' half-open validity windows intersect? Absent valid-from/valid-to = unbounded on that side; half-open adjacency (one window's valid-to equal to the other's valid-from) does NOT overlap — no boundary double-count.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>[probe [before 0] [after 1]]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-overlaps" class="fn">
+  <h3>journal:overlaps</h3>
+  <p class="fn-sig"><code>[$journal:overlaps]  -> bool</code>  —  Do two vocabulary-bearing elements' half-open validity windows intersect? Absent valid-from/valid-to = unbounded on that side; half-open adjacency (one window's valid-to equal to the other's valid-from) does NOT overlap — no boundary double-count.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $a [promo pct=10 valid-from="2026-08-01" valid-to="2026-08-05"]]
 [= $b [promo pct=20 valid-from="2026-08-04"]]
 [= $c [promo pct=30 valid-from="2026-08-05" valid-to="2026-08-09"]]
   [intervals ab=[$journal:overlaps $a $b] ac=[$journal:overlaps $a $c] open=[$journal:overlaps $b $c] in=[$journal:contains-instant $a "2026-08-01"] out=[$journal:contains-instant $a "2026-08-05"]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[intervals ab=true ac=false open=true in=true out=false]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-contains-instant" class="fn">
-    <h3>journal:contains-instant</h3>
-    <p class="fn-sig"><code>[$journal:contains-instant]  -> bool</code>  —  Does the element's half-open validity window contain the instant? valid-from is inclusive, valid-to exclusive; an absent end is unbounded; an element with no valid-time vocabulary contains every instant.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>[intervals ab=true ac=false open=true in=true out=false]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-contains-instant" class="fn">
+  <h3>journal:contains-instant</h3>
+  <p class="fn-sig"><code>[$journal:contains-instant]  -> bool</code>  —  Does the element's half-open validity window contain the instant? valid-from is inclusive, valid-to exclusive; an absent end is unbounded; an element with no valid-time vocabulary contains every instant.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $a [promo pct=10 valid-from="2026-08-01" valid-to="2026-08-05"]]
 [= $b [promo pct=20 valid-from="2026-08-04"]]
 [= $c [promo pct=30 valid-from="2026-08-05" valid-to="2026-08-09"]]
   [intervals ab=[$journal:overlaps $a $b] ac=[$journal:overlaps $a $c] open=[$journal:overlaps $b $c] in=[$journal:contains-instant $a "2026-08-01"] out=[$journal:contains-instant $a "2026-08-05"]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[intervals ab=true ac=false open=true in=true out=false]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-replay" class="fn">
-    <h3>journal:replay</h3>
-    <p class="fn-sig"><code>[$journal:replay]  -> any</code>  —  Deterministically re-execute the log into state, honouring replay options such as <code>at-seq</code>.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>[intervals ab=true ac=false open=true in=true out=false]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-replay" class="fn">
+  <h3>journal:replay</h3>
+  <p class="fn-sig"><code>[$journal:replay]  -> any</code>  —  Deterministically re-execute the log into state, honouring replay options such as <code>at-seq</code>.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
 [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
 [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
 [= $e3 [$journal:append $j [c] {actor: "u" authority: "g"}]]
   [$journal:replay $j [?fn ($a $e) [+ $a 1]] 0 {at-seq: 2}]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-dry-run" class="fn">
-    <h3>journal:dry-run</h3>
-    <p class="fn-sig"><code>[$journal:dry-run]  -> element</code>  —  Preview the state and <code>[entry]</code> an append would produce, without committing it.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>2</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-dry-run" class="fn">
+  <h3>journal:dry-run</h3>
+  <p class="fn-sig"><code>[$journal:dry-run]  -> element</code>  —  Preview the state and <code>[entry]</code> an append would produce, without committing it.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
 [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
   [$journal:dry-run $j [b] {actor: "u" authority: "g"} [?fn ($a $e) [+ $a 1]] 0]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[dry-run [state 2] [entry seq=2 tenant=acme actor=u authority=g ts='1970-01-01T00:00:02Z' prev-hash='sha2-256:83a013836d0939e47c191cd4a5c079e89fe2f1ecfee486f7da7db50fcdeb9b98' payload=sha2-256:ca0dff2eeeb428d9b948154b48f08f4957c2aa0b9c36f31410812c2943df3b74 hash=sha2-256:d0ff5f72f597fa548dc5e52dc2e65d474e18a5fae0b440d09e2c29901ac39ac5]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-verify" class="fn">
-    <h3>journal:verify</h3>
-    <p class="fn-sig"><code>[$journal:verify]  -> element</code>  —  Verify hash-chain integrity end to end, returning a <code>[verification]</code> finding (not an error on corruption). The chain verdict is syntactic — the entry hash covers the payload ADDRESS, so valid=true holds with payloads lawfully destroyed. On a valid walk every detached payload is fetched and re-hashed, and every missing payload reconciles against an ATTRIBUTED erasure record (a covering journaled shred-request, or the address's [erased] tombstone): the report gains redacted= payloads-verified= unattributed-missing= when the accounting engages, and any unattributed-missing > 0 is a LOUD finding — a payload gone with no lawful record is evidence of tampering or key loss, never silently counted among the redactions (stream 20).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>[dry-run [state 2] [entry seq=2 tenant=acme actor=u authority=g ts='1970-01-01T00:00:02Z' prev-hash='sha2-256:83a013836d0939e47c191cd4a5c079e89fe2f1ecfee486f7da7db50fcdeb9b98' payload=sha2-256:ca0dff2eeeb428d9b948154b48f08f4957c2aa0b9c36f31410812c2943df3b74 hash=sha2-256:d0ff5f72f597fa548dc5e52dc2e65d474e18a5fae0b440d09e2c29901ac39ac5]]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-verify" class="fn">
+  <h3>journal:verify</h3>
+  <p class="fn-sig"><code>[$journal:verify]  -> element</code>  —  Verify hash-chain integrity end to end, returning a <code>[verification]</code> finding (not an error on corruption). The chain verdict is syntactic — the entry hash covers the payload ADDRESS, so valid=true holds with payloads lawfully destroyed. On a valid walk every detached payload is fetched and re-hashed, and every missing payload reconciles against an ATTRIBUTED erasure record (a covering journaled shred-request, or the address's [erased] tombstone): the report gains redacted= payloads-verified= unattributed-missing= when the accounting engages, and any unattributed-missing > 0 is a LOUD finding — a payload gone with no lawful record is evidence of tampering or key loss, never silently counted among the redactions (stream 20).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
 [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
 [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
   [$journal:verify $j {}]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[verification valid=true checked-from=1 checked-to=2 head-hash=sha2-256:d0ff5f72f597fa548dc5e52dc2e65d474e18a5fae0b440d09e2c29901ac39ac5]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-verify-slice" class="fn">
-    <h3>journal:verify-slice</h3>
-    <p class="fn-sig"><code>[$journal:verify-slice]  -> element</code>  —  Verify hash-chain integrity over a <code>from..to</code> range, with the same payload reconciliation axis as <code>verify</code> over exactly that range.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>[verification valid=true checked-from=1 checked-to=2 head-hash=sha2-256:d0ff5f72f597fa548dc5e52dc2e65d474e18a5fae0b440d09e2c29901ac39ac5]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-verify-slice" class="fn">
+  <h3>journal:verify-slice</h3>
+  <p class="fn-sig"><code>[$journal:verify-slice]  -> element</code>  —  Verify hash-chain integrity over a <code>from..to</code> range, with the same payload reconciliation axis as <code>verify</code> over exactly that range.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
 [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
 [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
 [= $e3 [$journal:append $j [c] {actor: "u" authority: "g"}]]
   [$journal:verify-slice $j 2 3]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[verification valid=true checked-from=2 checked-to=3 head-hash=sha2-256:aea8756847199d3ffb540efb20ebfcc5d25f1b8a9396d66d1dfd14ca4b23952d]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-coherence" class="fn">
-    <h3>journal:coherence</h3>
-    <p class="fn-sig"><code>[$journal:coherence]  -> element</code>  —  Semantic linter over the reserved payload vocabulary: checks valid-from/valid-to carriers (half-open [from, to); open end = absent, never null) and [supersedes hash= relation=] linkage (relation is the atom :correction or :amendment), resolving each well-formed target against the tenant's retained entry hashes (stream 8). Given {upcast: $chain} it also runs the coverage pre-flight (stream 21): the chain is dry-applied to every event-bearing entry and each refusal becomes an :uncovered-entry finding with the declared schema visible. Findings are VALUES — never errors; verify stays syntactic.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>[verification valid=true checked-from=2 checked-to=3 head-hash=sha2-256:aea8756847199d3ffb540efb20ebfcc5d25f1b8a9396d66d1dfd14ca4b23952d]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-coherence" class="fn">
+  <h3>journal:coherence</h3>
+  <p class="fn-sig"><code>[$journal:coherence]  -> element</code>  —  Semantic linter over the reserved payload vocabulary: checks valid-from/valid-to carriers (half-open [from, to); open end = absent, never null) and [supersedes hash= relation=] linkage (relation is the atom :correction or :amendment), resolving each well-formed target against the tenant's retained entry hashes (stream 8). Given {upcast: $chain} it also runs the coverage pre-flight (stream 21): the chain is dry-applied to every event-bearing entry and each refusal becomes an :uncovered-entry finding with the declared schema visible. Findings are VALUES — never errors; verify stays syntactic.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://bt-105" "acme"]]
 [= $e1 [$journal:append $j [price amount=10 [supersedes hash="sha2-256:00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff" relation=:correction]] {actor: "u" authority: "g"}]]
   [$journal:coherence $j {}]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[coherence tenant=acme checked=1 findings=1 [finding kind=':dangling-supersedes' seq=1 hash='sha2-256:00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff']]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-snapshot" class="fn">
-    <h3>journal:snapshot</h3>
-    <p class="fn-sig"><code>[$journal:snapshot]  -> element</code>  —  Fold the log up to a sequence into a signed, derived state checkpoint so fold need not re-run from genesis. opts.fold-id (stream 21) records the fold identity — the (entries, chain, fn, init) quadruple as a computation address — INSIDE the signed preimage (the slot reserved at I1, omitted while unset); the tenant SET form refuses it (no reserved slot in its preimage).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>[coherence tenant=acme checked=1 findings=1 [finding kind=':dangling-supersedes' seq=1 hash='sha2-256:00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff00ff']]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-snapshot" class="fn">
+  <h3>journal:snapshot</h3>
+  <p class="fn-sig"><code>[$journal:snapshot]  -> element</code>  —  Fold the log up to a sequence into a signed, derived state checkpoint so fold need not re-run from genesis. opts.fold-id (stream 21) records the fold identity — the (entries, chain, fn, init) quadruple as a computation address — INSIDE the signed preimage (the slot reserved at I1, omitted while unset); the tenant SET form refuses it (no reserved slot in its preimage).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
 [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
   [$journal:snapshot $j [?fn ($a $e) [+ $a 1]] 0 {sign: "false"}]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[snapshot tenant=acme at-seq=1 anchor-hash='sha2-256:83a013836d0939e47c191cd4a5c079e89fe2f1ecfee486f7da7db50fcdeb9b98' hash-algo=sha2-256 sig-algo=none [state 1]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-snapshot-verify" class="fn">
-    <h3>journal:snapshot-verify</h3>
-    <p class="fn-sig"><code>[$journal:snapshot-verify]  -> element</code>  —  Check a <code>[snapshot]</code> against the chain and against its own signature.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>[snapshot tenant=acme at-seq=1 anchor-hash='sha2-256:83a013836d0939e47c191cd4a5c079e89fe2f1ecfee486f7da7db50fcdeb9b98' hash-algo=sha2-256 sig-algo=none [state 1]]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-snapshot-verify" class="fn">
+  <h3>journal:snapshot-verify</h3>
+  <p class="fn-sig"><code>[$journal:snapshot-verify]  -> element</code>  —  Check a <code>[snapshot]</code> against the chain and against its own signature.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
 [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
 [= $bad [snapshot tenant=acme at-seq=1 anchor-hash="sha256:deadbeef" hash-algo=sha256 sig-algo=none [state 99]]]
   [$journal:snapshot-verify $j $bad]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[snapshot-verification valid=false at-seq=1 reason=':algo-mismatch']</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-fold-from" class="fn">
-    <h3>journal:fold-from</h3>
-    <p class="fn-sig"><code>[$journal:fold-from]  -> any</code>  —  Reconstruct state fast: verify a snapshot, then fold only the tail of entries after it. opts.fold-id declares the caller's CURRENT fold identity — a snapshot carrying a different identity, or none, refuses CXER4640 loudly (re-snapshot under the current fold); opts.upcast composes the stream-21 chain over the tail. Undeclared keeps the shipped path.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>[snapshot-verification valid=false at-seq=1 reason=':algo-mismatch']</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-fold-from" class="fn">
+  <h3>journal:fold-from</h3>
+  <p class="fn-sig"><code>[$journal:fold-from]  -> any</code>  —  Reconstruct state fast: verify a snapshot, then fold only the tail of entries after it. opts.fold-id declares the caller's CURRENT fold identity — a snapshot carrying a different identity, or none, refuses CXER4640 loudly (re-snapshot under the current fold); opts.upcast composes the stream-21 chain over the tail. Undeclared keeps the shipped path.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
 [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
 [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
@@ -936,59 +831,50 @@
 [= $full [$journal:fold $j [?fn ($a $e) [+ $a 1]] 0]]
 [= $fast [$journal:fold-from $j $snap [?fn ($a $e) [+ $a 1]]]]
   [equiv full=$full fast=$fast]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[equiv full=3 fast=3]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-resnapshot" class="fn">
-    <h3>journal:resnapshot</h3>
-    <p class="fn-sig"><code>[$journal:resnapshot]  -> element</code>  —  The L147 maintenance discipline as a verb (RULED: SEA-1): re-derive a snapshot at its OWN at-seq/stream under the CURRENT fold quadruple — fn, init, opts.upcast chain, opts.fold-id (required; the identity to stamp) — verifying the old snapshot against the chain first and signing per the snapshot rules (opts.signing-key / opts.sign=false / opts.signer). Idempotent when the snapshot already carries the declared identity. Refusals reuse existing codes: bad anchor CXER4615, bad signature CXER4613, set form / absent fold-id CXER4610, uncovered entries CXER4641, pruned prefix refuses like snapshot.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>[equiv full=3 fast=3]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-resnapshot" class="fn">
+  <h3>journal:resnapshot</h3>
+  <p class="fn-sig"><code>[$journal:resnapshot]  -> element</code>  —  The L147 maintenance discipline as a verb (RULED: SEA-1): re-derive a snapshot at its OWN at-seq/stream under the CURRENT fold quadruple — fn, init, opts.upcast chain, opts.fold-id (required; the identity to stamp) — verifying the old snapshot against the chain first and signing per the snapshot rules (opts.signing-key / opts.sign=false / opts.signer). Idempotent when the snapshot already carries the declared identity. Refusals reuse existing codes: bad anchor CXER4615, bad signature CXER4613, set form / absent fold-id CXER4610, uncovered entries CXER4641, pruned prefix refuses like snapshot.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://rsnap" "acme"]]
 [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
 [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
 [= $old [$journal:snapshot $j [?fn ($a $e) [+ $a 1]] 0 {sign: "false" at-seq: 1}]]
 [= $new [$journal:resnapshot $j [?fn ($a $e) [+ $a 1]] 0 $old {sign: "false" fold-id: "computes-as:sha2-256:v2v2"}]]
   [rederived at=$new@at-seq fold=$new@fold-id same-anchor=[= $old@anchor-hash $new@anchor-hash]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[rederived at=1 fold=computes-as:sha2-256:v2v2 same-anchor=true]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-retain" class="fn">
-    <h3>journal:retain</h3>
-    <p class="fn-sig"><code>[$journal:retain]  -> element</code>  —  Record a prune-behind-a-snapshot <code>[retention]</code> policy and check its snapshot coverage; deletes nothing. policy.fold-id declares the caller's CURRENT fold: the cover rule then reads covered-under-the-current-fold — a cover frozen under any other fold (or none) refuses CXER4616 with the re-snapshot teaching, closing the vocabulary-change data-loss path.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>[rederived at=1 fold=computes-as:sha2-256:v2v2 same-anchor=true]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-retain" class="fn">
+  <h3>journal:retain</h3>
+  <p class="fn-sig"><code>[$journal:retain]  -> element</code>  —  Record a prune-behind-a-snapshot <code>[retention]</code> policy and check its snapshot coverage; deletes nothing. policy.fold-id declares the caller's CURRENT fold: the cover rule then reads covered-under-the-current-fold — a cover frozen under any other fold (or none) refuses CXER4616 with the re-snapshot teaching, closing the vocabulary-change data-loss path.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
 [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
 [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
 [= $snap [$journal:snapshot $j [?fn ($a $e) [+ $a 1]] 0 {signing-key: "0101010101010101010101010101010101010101010101010101010101010101" at-seq: 2}]]
   [$journal:retain $j {keep-after-seq: 2 snapshot: $snap}]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[retention boundary=2 covered-by-seq=2]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-compact" class="fn">
-    <h3>journal:compact</h3>
-    <p class="fn-sig"><code>[$journal:compact]  -> element</code>  —  Copy a snapshot plus the retained tail forward into a new segment, leaving the source chain intact.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>[retention boundary=2 covered-by-seq=2]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-compact" class="fn">
+  <h3>journal:compact</h3>
+  <p class="fn-sig"><code>[$journal:compact]  -> element</code>  —  Copy a snapshot plus the retained tail forward into a new segment, leaving the source chain intact.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://src" "acme"]]
 [= $e1 [$journal:append $j [a] {actor: "u" authority: "g"}]]
 [= $e2 [$journal:append $j [b] {actor: "u" authority: "g"}]]
@@ -997,20 +883,17 @@
 [= $ret [$journal:retain $j {keep-after-seq: 2 snapshot: $snap}]]
 [= $seg [$journal:compact $j {retention: $ret target: "mem://seg"}]]
   [$journal:verify $j {}]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[verification valid=true checked-from=1 checked-to=3 head-hash=sha2-256:aea8756847199d3ffb540efb20ebfcc5d25f1b8a9396d66d1dfd14ca4b23952d]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-subscribe" class="fn">
-    <h3>journal:subscribe</h3>
-    <p class="fn-sig"><code>[$journal:subscribe]  -> element</code>  —  Open a local tail-follow subscription over one stream (the delivery contract): committed entries strictly above opts.from (default: the current head) deliver in seq order through [?receive]/[?select]; a from below the retained floor refuses CXER4617.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>[verification valid=true checked-from=1 checked-to=3 head-hash=sha2-256:aea8756847199d3ffb540efb20ebfcc5d25f1b8a9396d66d1dfd14ca4b23952d]</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-subscribe" class="fn">
+  <h3>journal:subscribe</h3>
+  <p class="fn-sig"><code>[$journal:subscribe]  -> element</code>  —  Open a local tail-follow subscription over one stream (the delivery contract): committed entries strictly above opts.from (default: the current head) deliver in seq order through [?receive]/[?select]; a from below the retained floor refuses CXER4617.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://jsub-doc" "acme"]]
 [= $e1 [$journal:append $j [a 1] {actor: "u" authority: "g"}]]
 [= $sub [$journal:subscribe $j {from: 0}]]
@@ -1018,43 +901,38 @@
 [= $e2 [$journal:append $j [a 2] {actor: "u" authority: "g"}]]
 [= $b [?receive from=$sub max=5 deadline=0]]
   ([first $r1/@seq], [then n=[$count $b]], [rung $sub@rung])]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>([first 1], [then n=1], [rung ':complete-ordered'])</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-journal-seq-at" class="fn">
-    <h3>journal:seq-at</h3>
-    <p class="fn-sig"><code>[$journal:seq-at]  -> element</code>  —  Resolve a timestamp to a stream position: the largest seq whose commit ts is at-or-before the given datetime, or absence — time is an index into positions, never a cursor form.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/journal']
+    </pre>
+    <pre class="sample-output">
+      <code>([first 1], [then n=1], [rung ':complete-ordered'])</code>
+    </pre>
+  </div>
+</section><section id="fn-journal-seq-at" class="fn">
+  <h3>journal:seq-at</h3>
+  <p class="fn-sig"><code>[$journal:seq-at]  -> element</code>  —  Resolve a timestamp to a stream position: the largest seq whose commit ts is at-or-before the given datetime, or absence — time is an index into positions, never a cursor form.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/journal']
 [?let [= $j [$journal:open "mem://jseq-doc" "acme"]]
 [= $e1 [$journal:append $j [a 1] {actor: "u" authority: "g"}]]
 [= $e2 [$journal:append $j [a 2] {actor: "u" authority: "g"}]]
 [= $p [$journal:seq-at $j "1970-01-01T00:00:01Z"]]
   [at seq=$p@seq]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[at seq=1]</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>[at seq=1]</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>journal</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,382 +143,341 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Core syntax</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="syntax">
   <h1>Core syntax</h1>
   <p class="lede">The CX surface syntax — the data / document layer specified in <code>lexicon.ebnf</code>, <code>grammar.ebnf</code>, and <code>code.md</code> §3 / <code>cxdm.md</code>. Elements, attributes, scalars and type annotations, atoms, anchors / merges / ids, comments, raw and block content, entity references, namespaces, and table literals. Each example shows a source snippet and its <code>cx fmt</code> canonical render, pinned verbatim to the data conformance corpora.</p>
-  
-    <section id="syn-element" class="fn">
-      <h3>
-        <code>element</code>
-      </h3>
-      <p class="fn-sig"><code>[name attr=val CHILD…]</code>  —  An element: a bracketed head name followed by optional attributes and a body of text, scalars, or nested elements.</p>
-      <p class="note">Kind · structure</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[input type=text name=q]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>[input type=text name=q]</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="syn-nested-elements" class="fn">
-      <h3>
-        <code>nested-elements</code>
-      </h3>
-      <p class="fn-sig"><code>[parent [child …] …]</code>  —  Elements nest as body children; whitespace between children is non-semantic and is normalised on render.</p>
-      <p class="note">Kind · structure</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[config
+  <section id="syn-element" class="fn">
+    <h3>
+      <code>element</code>
+    </h3>
+    <p class="fn-sig"><code>[name attr=val CHILD…]</code>  —  An element: a bracketed head name followed by optional attributes and a body of text, scalars, or nested elements.</p>
+    <p class="note">Kind · structure</p>
+    <div class="example">
+      <pre>
+        <code class="language-cx">[input type=text name=q]</code>
+      </pre>
+      <pre class="sample-output">
+        <code>[input type=text name=q]</code>
+      </pre>
+    </div>
+  </section>
+  <section id="syn-nested-elements" class="fn">
+    <h3>
+      <code>nested-elements</code>
+    </h3>
+    <p class="fn-sig"><code>[parent [child …] …]</code>  —  Elements nest as body children; whitespace between children is non-semantic and is normalised on render.</p>
+    <p class="note">Kind · structure</p>
+    <div class="example">
+      <pre>
+        <code class="language-cx">[config
   [db host=localhost port=5432]
   [server port=8080]
 ]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>[config
+      </pre>
+      <pre class="sample-output">
+        <code>[config
   [db host=localhost port=5432]
   [server port=8080]
 ]</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="syn-mixed-content" class="fn">
-      <h3>
-        <code>mixed-content</code>
-      </h3>
-      <p class="fn-sig"><code>[name TEXT [child] TEXT]</code>  —  Mixed content interleaves bare text and child elements in one body; bare text runs render quoted.</p>
-      <p class="note">Kind · structure</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[p text [b bold] more]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>[p 'text ' [b bold] ' more']</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="syn-attribute" class="fn">
-      <h3>
-        <code>attribute</code>
-      </h3>
-      <p class="fn-sig"><code>name=value</code>  —  A scalar attribute on an element; the value auto-types (int, bool, atom, string) unless quoted.</p>
-      <p class="note">Kind · attribute</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[socket port=8080 protocol=:tcp]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>[socket port=8080 protocol=:tcp]</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="syn-boolean-scalar" class="fn">
-      <h3>
-        <code>boolean-scalar</code>
-      </h3>
-      <p class="fn-sig"><code>[name true] / [name false]</code>  —  Bare <code>true</code>/<code>false</code> in body position auto-type to booleans; quote them to keep a string.</p>
-      <p class="note">Kind · scalar</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[active true]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>[active true]</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="syn-null-scalar" class="fn">
-      <h3>
-        <code>null-scalar</code>
-      </h3>
-      <p class="fn-sig"><code>[name null]</code>  —  Bare <code>null</code> in body position auto-types to the null value.</p>
-      <p class="note">Kind · scalar</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[value null]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>[value null]</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="syn-quoted-string" class="fn">
-      <h3>
-        <code>quoted-string</code>
-      </h3>
-      <p class="fn-sig"><code>[name 'value']</code>  —  A quoted body value is kept verbatim as a string — auto-typing is suppressed.</p>
-      <p class="note">Kind · scalar</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[status 'true']</code>
-          </pre>
-          <pre class="sample-output">
-            <code>[status 'true']</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="syn-type-annotation" class="fn">
-      <h3>
-        <code>type-annotation</code>
-      </h3>
-      <p class="fn-sig"><code>name::Type</code>  —  A glued <code>::T</code> type annotation pins a scalar to an explicit type, overriding auto-typing.</p>
-      <p class="note">Kind · annotation</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[age::int 30]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>[age::int 30]</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="syn-atom" class="fn">
-      <h3>
-        <code>atom</code>
-      </h3>
-      <p class="fn-sig"><code>:NAME</code>  —  An atom literal: an interned, type-strict symbolic scalar that never equals a same-spelled string.</p>
-      <p class="note">Kind · scalar</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[status :active]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>[status :active]</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="syn-atom-collection" class="fn">
-      <h3>
-        <code>atom-collection</code>
-      </h3>
-      <p class="fn-sig"><code>[:a, :b] / (:a, :b) / {k: :v}</code>  —  Atoms are first-class scalars usable inside arrays, sequences, and map values.</p>
-      <p class="note">Kind · scalar</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[transitions [:idle, :running, :complete]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>[transitions [:idle, :running, :complete]]</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="syn-anchor" class="fn">
-      <h3>
-        <code>anchor</code>
-      </h3>
-      <p class="fn-sig"><code>&name</code>  —  An anchor labels an element so it can be aliased or merged elsewhere in the document.</p>
-      <p class="note">Kind · identity</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[defaults &def timeout=30 retries=3]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>[defaults &def timeout=30 retries=3]</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="syn-merge" class="fn">
-      <h3>
-        <code>merge</code>
-      </h3>
-      <p class="fn-sig"><code>*name</code>  —  A merge pulls an anchored element's attributes into the current element (later attributes win).</p>
-      <p class="note">Kind · identity</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[defaults &def timeout=30 retries=3]
+      </pre>
+    </div>
+  </section>
+  <section id="syn-mixed-content" class="fn">
+    <h3>
+      <code>mixed-content</code>
+    </h3>
+    <p class="fn-sig"><code>[name TEXT [child] TEXT]</code>  —  Mixed content interleaves bare text and child elements in one body; bare text runs render quoted.</p>
+    <p class="note">Kind · structure</p>
+    <div class="example">
+      <pre>
+        <code class="language-cx">[p text [b bold] more]</code>
+      </pre>
+      <pre class="sample-output">
+        <code>[p 'text ' [b bold] ' more']</code>
+      </pre>
+    </div>
+  </section>
+  <section id="syn-attribute" class="fn">
+    <h3>
+      <code>attribute</code>
+    </h3>
+    <p class="fn-sig"><code>name=value</code>  —  A scalar attribute on an element; the value auto-types (int, bool, atom, string) unless quoted.</p>
+    <p class="note">Kind · attribute</p>
+    <div class="example">
+      <pre>
+        <code class="language-cx">[socket port=8080 protocol=:tcp]</code>
+      </pre>
+      <pre class="sample-output">
+        <code>[socket port=8080 protocol=:tcp]</code>
+      </pre>
+    </div>
+  </section>
+  <section id="syn-boolean-scalar" class="fn">
+    <h3>
+      <code>boolean-scalar</code>
+    </h3>
+    <p class="fn-sig"><code>[name true] / [name false]</code>  —  Bare <code>true</code>/<code>false</code> in body position auto-type to booleans; quote them to keep a string.</p>
+    <p class="note">Kind · scalar</p>
+    <div class="example">
+      <pre>
+        <code class="language-cx">[active true]</code>
+      </pre>
+      <pre class="sample-output">
+        <code>[active true]</code>
+      </pre>
+    </div>
+  </section>
+  <section id="syn-null-scalar" class="fn">
+    <h3>
+      <code>null-scalar</code>
+    </h3>
+    <p class="fn-sig"><code>[name null]</code>  —  Bare <code>null</code> in body position auto-types to the null value.</p>
+    <p class="note">Kind · scalar</p>
+    <div class="example">
+      <pre>
+        <code class="language-cx">[value null]</code>
+      </pre>
+      <pre class="sample-output">
+        <code>[value null]</code>
+      </pre>
+    </div>
+  </section>
+  <section id="syn-quoted-string" class="fn">
+    <h3>
+      <code>quoted-string</code>
+    </h3>
+    <p class="fn-sig"><code>[name 'value']</code>  —  A quoted body value is kept verbatim as a string — auto-typing is suppressed.</p>
+    <p class="note">Kind · scalar</p>
+    <div class="example">
+      <pre>
+        <code class="language-cx">[status 'true']</code>
+      </pre>
+      <pre class="sample-output">
+        <code>[status 'true']</code>
+      </pre>
+    </div>
+  </section>
+  <section id="syn-type-annotation" class="fn">
+    <h3>
+      <code>type-annotation</code>
+    </h3>
+    <p class="fn-sig"><code>name::Type</code>  —  A glued <code>::T</code> type annotation pins a scalar to an explicit type, overriding auto-typing.</p>
+    <p class="note">Kind · annotation</p>
+    <div class="example">
+      <pre>
+        <code class="language-cx">[age::int 30]</code>
+      </pre>
+      <pre class="sample-output">
+        <code>[age::int 30]</code>
+      </pre>
+    </div>
+  </section>
+  <section id="syn-atom" class="fn">
+    <h3>
+      <code>atom</code>
+    </h3>
+    <p class="fn-sig"><code>:NAME</code>  —  An atom literal: an interned, type-strict symbolic scalar that never equals a same-spelled string.</p>
+    <p class="note">Kind · scalar</p>
+    <div class="example">
+      <pre>
+        <code class="language-cx">[status :active]</code>
+      </pre>
+      <pre class="sample-output">
+        <code>[status :active]</code>
+      </pre>
+    </div>
+  </section>
+  <section id="syn-atom-collection" class="fn">
+    <h3>
+      <code>atom-collection</code>
+    </h3>
+    <p class="fn-sig"><code>[:a, :b] / (:a, :b) / {k: :v}</code>  —  Atoms are first-class scalars usable inside arrays, sequences, and map values.</p>
+    <p class="note">Kind · scalar</p>
+    <div class="example">
+      <pre>
+        <code class="language-cx">[transitions [:idle, :running, :complete]]</code>
+      </pre>
+      <pre class="sample-output">
+        <code>[transitions [:idle, :running, :complete]]</code>
+      </pre>
+    </div>
+  </section>
+  <section id="syn-anchor" class="fn">
+    <h3>
+      <code>anchor</code>
+    </h3>
+    <p class="fn-sig"><code>&name</code>  —  An anchor labels an element so it can be aliased or merged elsewhere in the document.</p>
+    <p class="note">Kind · identity</p>
+    <div class="example">
+      <pre>
+        <code class="language-cx">[defaults &def timeout=30 retries=3]</code>
+      </pre>
+      <pre class="sample-output">
+        <code>[defaults &def timeout=30 retries=3]</code>
+      </pre>
+    </div>
+  </section>
+  <section id="syn-merge" class="fn">
+    <h3>
+      <code>merge</code>
+    </h3>
+    <p class="fn-sig"><code>*name</code>  —  A merge pulls an anchored element's attributes into the current element (later attributes win).</p>
+    <p class="note">Kind · identity</p>
+    <div class="example">
+      <pre>
+        <code class="language-cx">[defaults &def timeout=30 retries=3]
 [production *def host=prod.example.com retries=5]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>[defaults &def timeout=30 retries=3]
+      </pre>
+      <pre class="sample-output">
+        <code>[defaults &def timeout=30 retries=3]
 [production *def host=prod.example.com retries=5]</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="syn-id" class="fn">
-      <h3>
-        <code>id</code>
-      </h3>
-      <p class="fn-sig"><code>#id</code>  —  An ID declaration names an element for reference; <code>@id</code> refers back to it.</p>
-      <p class="note">Kind · identity</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[user #u-1 name=alice]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>[user #u-1 name=alice]</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="syn-id-reference" class="fn">
-      <h3>
-        <code>id-reference</code>
-      </h3>
-      <p class="fn-sig"><code>@id</code>  —  An IDREF refers to a declared <code>#id</code>; forward references resolve.</p>
-      <p class="note">Kind · identity</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[users
+      </pre>
+    </div>
+  </section>
+  <section id="syn-id" class="fn">
+    <h3>
+      <code>id</code>
+    </h3>
+    <p class="fn-sig"><code>#id</code>  —  An ID declaration names an element for reference; <code>@id</code> refers back to it.</p>
+    <p class="note">Kind · identity</p>
+    <div class="example">
+      <pre>
+        <code class="language-cx">[user #u-1 name=alice]</code>
+      </pre>
+      <pre class="sample-output">
+        <code>[user #u-1 name=alice]</code>
+      </pre>
+    </div>
+  </section>
+  <section id="syn-id-reference" class="fn">
+    <h3>
+      <code>id-reference</code>
+    </h3>
+    <p class="fn-sig"><code>@id</code>  —  An IDREF refers to a declared <code>#id</code>; forward references resolve.</p>
+    <p class="note">Kind · identity</p>
+    <div class="example">
+      <pre>
+        <code class="language-cx">[users
   [user #u-1 name=alice]
   [reviewer assigned-to=@u-1]
 ]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>[users
+      </pre>
+      <pre class="sample-output">
+        <code>[users
   [user #u-1 name=alice]
   [reviewer assigned-to=@u-1]
 ]</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="syn-block-content" class="fn">
-      <h3>
-        <code>block-content</code>
-      </h3>
-      <p class="fn-sig"><code>[| … |]</code>  —  Block content: a verbatim text block delimited by <code>[|</code> and <code>|]</code>.</p>
-      <p class="note">Kind · structure</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[p [|hello world|]]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>[p [|hello world|]]</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="syn-comment" class="fn">
-      <h3>
-        <code>comment</code>
-      </h3>
-      <p class="fn-sig"><code>[; … ]</code>  —  A block comment <code>[; … ]</code> is preserved by the lossless formatter and dropped by the strict canonical form.</p>
-      <p class="note">Kind · comment</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[;a comment]
+      </pre>
+    </div>
+  </section>
+  <section id="syn-block-content" class="fn">
+    <h3>
+      <code>block-content</code>
+    </h3>
+    <p class="fn-sig"><code>[| … |]</code>  —  Block content: a verbatim text block delimited by <code>[|</code> and <code>|]</code>.</p>
+    <p class="note">Kind · structure</p>
+    <div class="example">
+      <pre>
+        <code class="language-cx">[p [|hello world|]]</code>
+      </pre>
+      <pre class="sample-output">
+        <code>[p [|hello world|]]</code>
+      </pre>
+    </div>
+  </section>
+  <section id="syn-comment" class="fn">
+    <h3>
+      <code>comment</code>
+    </h3>
+    <p class="fn-sig"><code>[; … ]</code>  —  A block comment <code>[; … ]</code> is preserved by the lossless formatter and dropped by the strict canonical form.</p>
+    <p class="note">Kind · comment</p>
+    <div class="example">
+      <pre>
+        <code class="language-cx">[;a comment]
 [p text]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>[;a comment]
+      </pre>
+      <pre class="sample-output">
+        <code>[;a comment]
 [p text]</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="syn-raw-text" class="fn">
-      <h3>
-        <code>raw-text</code>
-      </h3>
-      <p class="fn-sig"><code>[# … #]</code>  —  Raw text / CDATA: content between <code>[#</code> and <code>#]</code> is taken literally (no parsing) — distinct from a comment.</p>
-      <p class="note">Kind · structure</p>
-      
-    </section>
-    <section id="syn-entity-reference" class="fn">
-      <h3>
-        <code>entity-reference</code>
-      </h3>
-      <p class="fn-sig"><code>&name; / &#nnn;</code>  —  Entity and character references in text: named XML entities and numeric character references are recognised.</p>
-      <p class="note">Kind · scalar</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[p &amp; &lt; &gt;]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>[p &amp; &lt; &gt;]</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="syn-namespace" class="fn">
-      <h3>
-        <code>namespace</code>
-      </h3>
-      <p class="fn-sig"><code>xmlns:prefix=URI / prefix:name</code>  —  XML namespaces: declare with <code>xmlns</code> / <code>xmlns:prefix</code> and qualify names as <code>prefix:local</code>.</p>
-      <p class="note">Kind · namespace</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[doc xmlns:dc=http://purl.org/dc/elements/1.1/
+      </pre>
+    </div>
+  </section>
+  <section id="syn-raw-text" class="fn">
+    <h3>
+      <code>raw-text</code>
+    </h3>
+    <p class="fn-sig"><code>[# … #]</code>  —  Raw text / CDATA: content between <code>[#</code> and <code>#]</code> is taken literally (no parsing) — distinct from a comment.</p>
+    <p class="note">Kind · structure</p>
+  </section>
+  <section id="syn-entity-reference" class="fn">
+    <h3>
+      <code>entity-reference</code>
+    </h3>
+    <p class="fn-sig"><code>&name; / &#nnn;</code>  —  Entity and character references in text: named XML entities and numeric character references are recognised.</p>
+    <p class="note">Kind · scalar</p>
+    <div class="example">
+      <pre>
+        <code class="language-cx">[p &amp; &lt; &gt;]</code>
+      </pre>
+      <pre class="sample-output">
+        <code>[p &amp; &lt; &gt;]</code>
+      </pre>
+    </div>
+  </section>
+  <section id="syn-namespace" class="fn">
+    <h3>
+      <code>namespace</code>
+    </h3>
+    <p class="fn-sig"><code>xmlns:prefix=URI / prefix:name</code>  —  XML namespaces: declare with <code>xmlns</code> / <code>xmlns:prefix</code> and qualify names as <code>prefix:local</code>.</p>
+    <p class="note">Kind · namespace</p>
+    <div class="example">
+      <pre>
+        <code class="language-cx">[doc xmlns:dc=http://purl.org/dc/elements/1.1/
   [dc:title Hello]
 ]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>[doc xmlns:dc=http://purl.org/dc/elements/1.1/
+      </pre>
+      <pre class="sample-output">
+        <code>[doc xmlns:dc=http://purl.org/dc/elements/1.1/
   [dc:title Hello]
 ]</code>
-          </pre>
-        </div>
-      
-    </section>
-    <section id="syn-table" class="fn">
-      <h3>
-        <code>table</code>
-      </h3>
-      <p class="fn-sig"><code>[table[col::T …]] ROW…</code>  —  A typed table literal: a column header (<code>[table[…]]</code>) followed by whitespace-separated cell rows.</p>
-      <p class="note">Kind · table</p>
-      
-        <div class="example">
-          <pre>
-            <code class="language-cx">[users [table[name::string age::int active::bool]]
+      </pre>
+    </div>
+  </section>
+  <section id="syn-table" class="fn">
+    <h3>
+      <code>table</code>
+    </h3>
+    <p class="fn-sig"><code>[table[col::T …]] ROW…</code>  —  A typed table literal: a column header (<code>[table[…]]</code>) followed by whitespace-separated cell rows.</p>
+    <p class="note">Kind · table</p>
+    <div class="example">
+      <pre>
+        <code class="language-cx">[users [table[name::string age::int active::bool]]
   alice 30 true
   bob 25 false
 ]</code>
-          </pre>
-          <pre class="sample-output">
-            <code>[users [table[name::string age::int active::bool]]
+      </pre>
+      <pre class="sample-output">
+        <code>[users [table[name::string age::int active::bool]]
   alice 30 true
   bob 25 false
 ]</code>
-          </pre>
-        </div>
-      
-    </section>
-  
+      </pre>
+    </div>
+  </section>
 </section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>Core syntax</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,208 +143,176 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">json</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-json"><h1>json</h1><p class="lede">Parse JSON (RFC 8259) into CXDM values and emit CXDM values back to JSON. Supports two parse modes (strict and lenient) and three emit modes (canonical, pretty, compact). The data subset round-trips losslessly; CX elements emit idiomatically by default or via a lossless <code>named</code> encoding on demand. Distinct from the cross-format CLI conversion path — this is the in-program library form.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-json-parse" class="fn">
-    <h3>json:parse</h3>
-    <p class="fn-sig"><code>[$json:parse]  -> any</code>  —  Strictly parse a JSON string into a CXDM value, rejecting trailing commas, comments, and NaN/Infinity.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/json']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-json-parse" class="fn">
+  <h3>json:parse</h3>
+  <p class="fn-sig"><code>[$json:parse]  -> any</code>  —  Strictly parse a JSON string into a CXDM value, rejecting trailing commas, comments, and NaN/Infinity.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/json']
 [$json:parse "42"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>42</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-json-parse-with-opts" class="fn">
-    <h3>json:parse-with-opts</h3>
-    <p class="fn-sig"><code>[$json:parse-with-opts]  -> any</code>  —  Parse a JSON string with options controlling leniency, number mode, and depth/byte limits.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/json']
+    </pre>
+    <pre class="sample-output">
+      <code>42</code>
+    </pre>
+  </div>
+</section><section id="fn-json-parse-with-opts" class="fn">
+  <h3>json:parse-with-opts</h3>
+  <p class="fn-sig"><code>[$json:parse-with-opts]  -> any</code>  —  Parse a JSON string with options controlling leniency, number mode, and depth/byte limits.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/json']
 [$json:parse-with-opts "[1, 2,]" {lenient: true}]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[1, 2]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-json-parse-bytes" class="fn">
-    <h3>json:parse-bytes</h3>
-    <p class="fn-sig"><code>[$json:parse-bytes]  -> any</code>  —  Parse JSON from a byte buffer, stripping a UTF-8 BOM and auto-detecting UTF-16 with BOM.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/json']
+    </pre>
+    <pre class="sample-output">
+      <code>[1, 2]</code>
+    </pre>
+  </div>
+</section><section id="fn-json-parse-bytes" class="fn">
+  <h3>json:parse-bytes</h3>
+  <p class="fn-sig"><code>[$json:parse-bytes]  -> any</code>  —  Parse JSON from a byte buffer, stripping a UTF-8 BOM and auto-detecting UTF-16 with BOM.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/json']
 [?lib 'cx-stdlib/bytes']
 [$json:parse-bytes [$bytes:from-string-utf8 "42"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>42</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-json-emit" class="fn">
-    <h3>json:emit</h3>
-    <p class="fn-sig"><code>[$json:emit]  -> string</code>  —  Emit a CXDM value as canonical JSON: compact, with map keys sorted for deterministic output.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/json']
+    </pre>
+    <pre class="sample-output">
+      <code>42</code>
+    </pre>
+  </div>
+</section><section id="fn-json-emit" class="fn">
+  <h3>json:emit</h3>
+  <p class="fn-sig"><code>[$json:emit]  -> string</code>  —  Emit a CXDM value as canonical JSON: compact, with map keys sorted for deterministic output.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/json']
 [$json:emit 42]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'42'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-json-emit-pretty" class="fn">
-    <h3>json:emit-pretty</h3>
-    <p class="fn-sig"><code>[$json:emit-pretty]  -> string</code>  —  Emit a CXDM value as pretty-printed JSON with two-space indent, preserving map insertion order.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/json']
+    </pre>
+    <pre class="sample-output">
+      <code>'42'</code>
+    </pre>
+  </div>
+</section><section id="fn-json-emit-pretty" class="fn">
+  <h3>json:emit-pretty</h3>
+  <p class="fn-sig"><code>[$json:emit-pretty]  -> string</code>  —  Emit a CXDM value as pretty-printed JSON with two-space indent, preserving map insertion order.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/json']
 [$json:emit-pretty {a: 1}]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'{\n  "a": 1\n}'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-json-emit-with-opts" class="fn">
-    <h3>json:emit-with-opts</h3>
-    <p class="fn-sig"><code>[$json:emit-with-opts]  -> string</code>  —  Emit a CXDM value to JSON with options for indent, key sorting, ASCII escaping, lossless elements, and NaN handling.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/json']
+    </pre>
+    <pre class="sample-output">
+      <code>'{\n  "a": 1\n}'</code>
+    </pre>
+  </div>
+</section><section id="fn-json-emit-with-opts" class="fn">
+  <h3>json:emit-with-opts</h3>
+  <p class="fn-sig"><code>[$json:emit-with-opts]  -> string</code>  —  Emit a CXDM value to JSON with options for indent, key sorting, ASCII escaping, lossless elements, and NaN handling.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/json']
 [$json:emit-with-opts [empty] {lossless: true}]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'{"$tag":"empty","$attrs":{},"$children":[]}'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-json-emit-bytes" class="fn">
-    <h3>json:emit-bytes</h3>
-    <p class="fn-sig"><code>[$json:emit-bytes]  -> bytes</code>  —  Emit a CXDM value as canonical JSON encoded to a UTF-8 byte buffer.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/json']
+    </pre>
+    <pre class="sample-output">
+      <code>'{"$tag":"empty","$attrs":{},"$children":[]}'</code>
+    </pre>
+  </div>
+</section><section id="fn-json-emit-bytes" class="fn">
+  <h3>json:emit-bytes</h3>
+  <p class="fn-sig"><code>[$json:emit-bytes]  -> bytes</code>  —  Emit a CXDM value as canonical JSON encoded to a UTF-8 byte buffer.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/json']
 [?lib 'cx-stdlib/bytes']
 [$bytes:to-string-utf8 [$json:emit-bytes 42]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'42'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-json-parse-stream" class="fn">
-    <h3>json:parse-stream</h3>
-    <p class="fn-sig"><code>[$json:parse-stream]  -> [sequence any]</code>  —  Parse a JSONL/NDJSON stream where each input element is one complete JSON value, yielding parsed values.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/json']
+    </pre>
+    <pre class="sample-output">
+      <code>'42'</code>
+    </pre>
+  </div>
+</section><section id="fn-json-parse-stream" class="fn">
+  <h3>json:parse-stream</h3>
+  <p class="fn-sig"><code>[$json:parse-stream]  -> [sequence any]</code>  —  Parse a JSONL/NDJSON stream where each input element is one complete JSON value, yielding parsed values.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/json']
 [$json:parse-stream ("1", "2", "3")]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(1, 2, 3)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-json-parse-many" class="fn">
-    <h3>json:parse-many</h3>
-    <p class="fn-sig"><code>[$json:parse-many]  -> [sequence any]</code>  —  Parse multiple whitespace-separated JSON values from one string using JSON-aware boundary detection.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/json']
+    </pre>
+    <pre class="sample-output">
+      <code>(1, 2, 3)</code>
+    </pre>
+  </div>
+</section><section id="fn-json-parse-many" class="fn">
+  <h3>json:parse-many</h3>
+  <p class="fn-sig"><code>[$json:parse-many]  -> [sequence any]</code>  —  Parse multiple whitespace-separated JSON values from one string using JSON-aware boundary detection.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/json']
 [$json:parse-many "1 2 3"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(1, 2, 3)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-json-emit-stream" class="fn">
-    <h3>json:emit-stream</h3>
-    <p class="fn-sig"><code>[$json:emit-stream]  -> [sequence string]</code>  —  Emit a sequence of CXDM values as JSONL, yielding one newline-terminated record per value.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/json']
+    </pre>
+    <pre class="sample-output">
+      <code>(1, 2, 3)</code>
+    </pre>
+  </div>
+</section><section id="fn-json-emit-stream" class="fn">
+  <h3>json:emit-stream</h3>
+  <p class="fn-sig"><code>[$json:emit-stream]  -> [sequence string]</code>  —  Emit a sequence of CXDM values as JSONL, yielding one newline-terminated record per value.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/json']
 [?let [= $r [$json:emit-stream (1, 2)]] [$count $r]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-json-is-valid" class="fn">
-    <h3>json:is-valid</h3>
-    <p class="fn-sig"><code>[$json:is-valid]  -> bool</code>  —  Report whether a string is valid JSON in strict mode, without building a value tree.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/json']
+    </pre>
+    <pre class="sample-output">
+      <code>2</code>
+    </pre>
+  </div>
+</section><section id="fn-json-is-valid" class="fn">
+  <h3>json:is-valid</h3>
+  <p class="fn-sig"><code>[$json:is-valid]  -> bool</code>  —  Report whether a string is valid JSON in strict mode, without building a value tree.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/json']
 [$json:is-valid "{\"a\": 1}"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-json-encode" class="fn">
-    <h3>json:encode</h3>
-    <p class="fn-sig"><code>[$json:encode]  -> string</code>  —  Serialize a value to canonical CX form (not JSON) — a module re-export scaffold outside the json surface.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx"># json:encode = CX canonical form via $format-canonical (NOT JSON); a §12.4.4
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-json-encode" class="fn">
+  <h3>json:encode</h3>
+  <p class="fn-sig"><code>[$json:encode]  -> string</code>  —  Serialize a value to canonical CX form (not JSON) — a module re-export scaffold outside the json surface.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx"># json:encode = CX canonical form via $format-canonical (NOT JSON); a §12.4.4
 # module re-export scaffold (paired with the private encoder-not-reexported),
 # not part of the json §3 surface — also exercised by conformance/code.cxd.
 [?lib 'cx-stdlib/json']
 [$json:encode {a: 1}]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'{a: 1}'</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>'{a: 1}'</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>json</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

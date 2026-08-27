@@ -68,3 +68,26 @@ tarballs (same stable-name scheme, `cx-linux-x86_64.tar.gz`).
    grammar and `:MasonInstall cx` for the server; the in-repo
    `{ dir = '…/cx/tooling/neovim' }` path keeps working for
    from-source users.
+
+---
+
+## Submission status — READ BY THE RELEASE GATE
+
+`scripts/check_editor_distribution.cx` (a `tools/release-verify.sh` row) reads
+this table on every release. Each submission must either name the release it was
+last submitted for, or carry an explicit deferral with a reason. A blank row
+FAILS the release — that is the point: these two PRs went unnoticed for four
+days after their payloads were prepared (#874), because nothing anywhere
+recorded that they were owed.
+
+`submitted-for` takes a version (`0.17.0`). `deferred` takes a reason in prose.
+Exactly one of the two per row; a row with both, or neither, fails.
+
+| submission | submitted-for | deferred |
+|---|---|---|
+| nvim-treesitter | — | the mirror must publish this release first; both PRs resolve assets from `releases/latest/download` (see Sequencing above) |
+| mason | — | same — mason pins `pkg:github/cx-home/cx@vX.Y.Z` to a tag that must exist before the PR is opened |
+
+When a submission lands, replace its `deferred` cell with `—` and put the
+version in `submitted-for`. Do not delete a row: the gate counts rows, so a
+deleted obligation reads as no obligation.

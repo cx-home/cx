@@ -68,6 +68,17 @@ const pin_sources = {
 	'pin-cfg-def-with-match':    "[?def classify (\$n) [?match \$n [case 0 'zero'] [else 'other']]]"
 	'pin-cfg-def-and-call':      '[?def helper (\$n) [+ \$n 1]]\n[?def main () [helper 1]]'
 	'pin-cfg-if-no-else':        '[?if [> \$x 0] [then [pos]]]'
+	// #1037 — the cd-esc asymmetry between the if-arm and match-arm
+	// emitters. An arm body whose LABEL carries a `"` is the only shape
+	// that can tell the two apart, and the corpus had none: every arm
+	// value in it is quote-free, so `cd-if-arm-emit`'s missing escape
+	// was invisible for the whole life of the port. These two are the
+	// SAME body under the two emitters, so a reader sees that only the
+	// directive differs. With the fix reverted the if pin goes RED
+	// (measured `t["'he said "hi"'"]` against a `\"`-escaped golden),
+	// which is the whole point of pinning them.
+	'pin-cfg-if-arm-quote':      '[?if [= 1 1] [then "he said \\"hi\\""] [else "she said \\"bye\\""]]'
+	'pin-cfg-match-arm-quote':   '[?match 1 [case 1 "he said \\"hi\\""] [else "she said \\"bye\\""]]'
 	'pin-erd-scalar-kinds':      '[rec [i 1] [f 1.5e0] [b true] [s "x"] [a :atom]]'
 	'pin-erd-non-identifier':    '[+ [x 1] [y 2]]'
 	'pin-erd-fk-inference':      '[order [order-id 1] [total 2]]\n[order [order-id 2] [total 3]]'
@@ -104,6 +115,25 @@ const pin_sources = {
 	'pin-err-literal-seq-note':   '[?worker name="w" [err code="x"]]'
 	'pin-err-literal-seq-select': '[?worker name="w" body=[?select [case [timeout 50ms] [err code="timeout"]] [case [default] [other]]]]'
 	'pin-err-literal-cfg-branch': '[?if [= 1 1] [then [err code="x"]] [else [ping]]]'
+	// #1032 / RULED: SEQ-4 (ledger/rulings_2026_08_26_seq_classification.md)
+	// — the shape class this corpus never pinned: a `[?let]` spine whose
+	// sequence triggers are ALL let-BOUND (`[= $ch [?channel …]]`) and
+	// whose terminal is a NON-trigger. Every SEQ pin above reaches its
+	// trigger either bare at top level or bare at the end of the spine,
+	// so the classifier's failure to descend through the binding clause
+	// was invisible here — and playground examples 171/172, whose exact
+	// sources these are, emitted `flowchart TD` for three months and two
+	// release cuts while their labels and notes both promised a
+	// sequenceDiagram. These two pins are the shape's only guard: with
+	// SEQ-2 reverted they go RED (measured `flowchart TD` against a
+	// `sequenceDiagram` golden), which is the whole point of pinning them.
+	//
+	// Sourced verbatim from scripts/gen_guide/playground/playground.examples.js
+	// — the page's own bytes, so a corpus edit that re-breaks the shape
+	// (as 1ffef3024's v0.8.0 syntax migration did; version-literal-ok) moves these goldens
+	// instead of passing unobserved.
+	'pin-seq-let-bound-spine-pair': '[?let [= \$ch [?channel name="jobs" buffer=4]]\n  [?let [= \$prod [?worker name="producer"\n                   [body [?let [= \$_ [?for [in \$i [\$range 1 3]]\n                                       [yield [?send \$i to=\$ch]]]]\n                           [?close \$ch]]]]]\n    [?let [= \$cons [?worker name="consumer"\n                     [body [?for [in \$i [\$range 1 3]]\n                             [yield [?receive from=\$ch]]]]]]\n      [?let [= \$_ [?wait-for worker=\$prod]]\n        [?wait-for worker=\$cons]]]]]'
+	'pin-seq-let-bound-spine-fanout': '[?let [= \$jobs [?channel name="jobs" buffer=8]]\n  [?let [= \$results [?channel name="results" buffer=16]]\n    [?let [= \$d [?worker name="dispatcher"\n                  [body [?let [= \$_ [?for [in \$j [\$range 1 4]]\n                                      [yield [?send \$j to=\$jobs]]]]\n                          [?close \$jobs]]]]]\n      [?let [= \$w [?worker name="worker"\n                    [body [?for [in \$j [\$range 1 4]]\n                            [yield [?send [processed value=[?receive from=\$jobs]]\n                                     to=\$results]]]]]]\n        [?let [= \$_ [?wait-for worker=\$d]]\n          [?for [in \$k [\$range 1 4]]\n            [yield [?receive from=\$results]]]]]]]]'
 }
 
 fn main() {

@@ -15,7 +15,7 @@ _cx_subcmds() {
   # render the program AST; `lock` manages the dependency lockfile;
   # `store-*` are the CSRP store-service verbs (serve / health probe /
   # token mint / KEK rotation); `fabric-serve` is the fabric daemon.
-  echo "fmt canonical hash eq diff lint schema tools validate table demo scaffold xap eval primer version select diagram code-diagram code-tree lock store-serve store-health store-rotate-kek fabric-serve lsp"
+  echo "fmt canonical hash eq diff lint schema tools validate table demo scaffold xap eval primer version select diagram code-diagram code-tree lock store-serve store-health store-rotate-kek store-mint-principal fabric-serve lsp"
 }
 
 _cx_table_verbs() {
@@ -231,6 +231,15 @@ _cx_complete() {
       case "$cur" in
         --*)
           COMPREPLY=( $(compgen -W "--url= --encrypt-key-id= --new-key-id=" -- "$cur") )
+          return 0
+          ;;
+      esac
+      return 0
+      ;;
+    store-mint-principal)
+      case "$cur" in
+        --*)
+          COMPREPLY=( $(compgen -W "--id= --seed-file= --caps= --for= --force" -- "$cur") )
           return 0
           ;;
       esac

@@ -179,6 +179,15 @@ html, body {
 .cxt-inline-scalar { color: var(--syn-string); margin-left: 6px; }
 .cxt-inline-scalar.num { color: var(--syn-number); }
 .cxt-inline-scalar.bool { color: var(--syn-keyword); }
+/* #1001 — a chip half and a ridden-up scalar body are their OWN click
+   targets into the source pane, so they show as clickable and can carry
+   the selection mark that used to sit only on a whole row. */
+.cxt-row [data-loc] { cursor: pointer; }
+.cxt-row [data-loc].is-selected {
+  background: rgba(97, 175, 239, 0.25);
+  outline: 1px solid var(--accent);
+  border-radius: 2px;
+}
 
 /* ── Main 3-region grid ─────────────────────────────────────── */
 /* Source + Output stack in the left 2/3; View pane takes the right 1/3.
@@ -324,7 +333,7 @@ body.cxp-resizing.is-row { cursor: row-resize; }
   letter-spacing: 0;
   font-weight: 500;
 }
-.cxp-tab, .cxp-viz-tab, .cxp-subject-tab {
+.cxp-tab, .cxp-viz-tab, .cxp-subject-tab, .cxp-gview-tab {
   padding: 3px 10px;
   font-size: 11px;
   font-weight: 600;
@@ -338,11 +347,12 @@ body.cxp-resizing.is-row { cursor: row-resize; }
 }
 .cxp-tab + .cxp-tab,
 .cxp-viz-tab + .cxp-viz-tab,
-.cxp-subject-tab + .cxp-subject-tab { border-left: none; }
-.cxp-tab:first-child, .cxp-viz-tab:first-child, .cxp-subject-tab:first-child { border-radius: 3px 0 0 3px; }
-.cxp-tab:last-child,  .cxp-viz-tab:last-child,  .cxp-subject-tab:last-child  { border-radius: 0 3px 3px 0; }
-.cxp-tab:hover, .cxp-viz-tab:hover, .cxp-subject-tab:hover { color: var(--text); background: var(--bg-hover); }
-.cxp-tab.is-active, .cxp-viz-tab.is-active, .cxp-subject-tab.is-active {
+.cxp-subject-tab + .cxp-subject-tab,
+.cxp-gview-tab + .cxp-gview-tab { border-left: none; }
+.cxp-tab:first-child, .cxp-viz-tab:first-child, .cxp-subject-tab:first-child, .cxp-gview-tab:first-child { border-radius: 3px 0 0 3px; }
+.cxp-tab:last-child,  .cxp-viz-tab:last-child,  .cxp-subject-tab:last-child,  .cxp-gview-tab:last-child  { border-radius: 0 3px 3px 0; }
+.cxp-tab:hover, .cxp-viz-tab:hover, .cxp-subject-tab:hover, .cxp-gview-tab:hover { color: var(--text); background: var(--bg-hover); }
+.cxp-tab.is-active, .cxp-viz-tab.is-active, .cxp-subject-tab.is-active, .cxp-gview-tab.is-active {
   background: var(--accent);
   border-color: var(--accent);
   color: #0e1116;
@@ -489,23 +499,32 @@ body.cxp-resizing.is-row { cursor: row-resize; }
 .cxt-label-boolean { color: var(--syn-keyword); }
 .cxt-label-meta    { color: var(--text-dim); font-style: italic; }
 
-/* Graph view: zoom toolbar pinned top-right; canvas scrolls so a
-   large diagram is fully reachable via pan (drag) + zoom buttons. */
-#cxp-viz-graph { position: relative; padding: 0; }
-.cxp-graph-controls {
-  position: absolute;
-  top: 6px;
-  right: 6px;
+/* Graph view: the graph's OWN control bar sits at the top of the graph
+   panel (#992) — subject, detail and zoom, all of which configure this
+   representation and nothing else, so they are on screen exactly when a
+   graph is. The canvas fills the rest and scrolls, so a large diagram
+   stays fully reachable via pan (drag) + zoom. */
+#cxp-viz-graph { position: relative; padding: 0; display: none; }
+#cxp-viz-graph.is-active { display: flex; flex-direction: column; }
+.cxp-graph-bar {
+  flex: 0 0 auto;
   display: flex;
-  gap: 2px;
+  align-items: center;
+  gap: 8px;
+  row-gap: 5px;
+  flex-wrap: wrap;
+  padding: 5px 10px;
+  background: var(--bg-head);
+  border-bottom: 1px solid var(--border);
   z-index: 5;
 }
 .cxp-graph-canvas {
-  position: absolute;
-  inset: 0;
+  flex: 1 1 auto;
+  position: relative;
   overflow: auto;
-  padding: 30px 14px 14px;
+  padding: 14px;
   cursor: grab;
+  min-height: 0;
 }
 .cxp-graph-canvas:active { cursor: grabbing; }
 .cxp-graph-svg { transform-origin: top left; transition: transform 0.1s ease-out; }
@@ -580,6 +599,111 @@ body.cxp-resizing.is-row { cursor: row-resize; }
   .cxp-toolbar { flex-wrap: wrap; gap: 6px; }
   #cxp-pick { min-width: 200px; flex: 1; }
   .cxp-brand span { display: none; }
+}
+
+/* ── Instance-view occurrence tables (#992) ──────────────────
+   The Graph pane's `Instance` subject draws one box per element
+   OCCURRENCE, and each box is a real two-column table: the element name
+   as a header row, then one row per attribute with its name and its own
+   value. Mermaid renders the label inside a <foreignObject>, so these
+   are ordinary HTML rules — but they only reach the table when mermaid
+   is configured with htmlLabels (playground.js sets it explicitly).
+
+   The table is deliberately quiet: no outer border (the mermaid node
+   already draws one), a single hairline under the header, and a value
+   column that is allowed to be the wide one. */
+.cxp-itbl {
+  border-collapse: collapse;
+  font-family: var(--code-font);
+  font-size: 11.5px;
+  line-height: 1.45;
+  margin: 0 auto;
+  text-align: left;
+}
+.cxp-itbl th {
+  padding: 1px 7px 3px;
+  border-bottom: 1px solid var(--border-soft, #4a443a);
+  color: var(--syn-name, #e5c07b);
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+}
+.cxp-itbl td {
+  padding: 1px 7px;
+  vertical-align: top;
+  white-space: nowrap;
+}
+.cxp-itbl-k { color: var(--syn-attr, #d19a66); padding-right: 12px !important; }
+.cxp-itbl-v { color: var(--text, #e8e0d0); }
+/* A synthesised row — a scalar / text BODY rather than an attribute.
+   Italic so it never passes for an attribute the source did not write. */
+.cxp-itbl-syn .cxp-itbl-k { font-style: italic; opacity: 0.75; }
+/* The compact rung's withheld-row count. Dim, and spanning, because it
+   is a note about the table rather than a row of it. */
+.cxp-itbl-more .cxp-itbl-k { color: var(--text-dim, #8b8578); font-style: italic; }
+
+/* A bare occurrence caption — what `Detail: min` draws, and what an
+   element with no attributes and no scalar body draws at every rung. */
+.cxp-itbl-name { color: var(--syn-name, #e5c07b); font-weight: 700; }
+
+/* An operator-headed element (`[= $score 87]`) reads as an EXPRESSION,
+   not as a record: head then positional args, in source order. Coloured
+   as a keyword rather than as an element name so the two shapes are
+   distinguishable at a glance in a graph that mixes them. */
+.cxp-itbl-op {
+  color: var(--syn-keyword, #c678dd);
+  font-weight: 600;
+  font-family: var(--code-font);
+  white-space: nowrap;
+}
+
+/* ── Auto/CFG nested value tables (#1031) ────────────────────
+   The Auto view's CFG boxes carry VALUES — a binding right-hand side, a
+   yield payload, an element body — and a nested document used to render
+   as one flat line in one box. It now renders as nested tables, emitted
+   by stdlib/diagram.cx §9.4b and reusing the .cxp-itbl rules above:
+   same two columns, same header row, same `(+N more)` idiom. Only what
+   NESTING needs is added here.
+
+   Nesting has to be legible without indentation games, because the
+   mermaid node draws only the OUTER border and everything inside is one
+   <foreignObject>. So depth reads from a left rule and one step down in
+   type size, not from margins that would compound at depth 4. */
+.cxp-vtbl { margin: 0; }
+
+/* A row whose VALUE is another table. The cell gives up `nowrap` (the
+   inner table sets its own metrics) and gains an inset rule plus a
+   faint wash — measured, not guessed: a 1px hairline in `--border-soft`
+   is invisible against the node fill at these sizes, and without a
+   visible boundary a nested table reads as another COLUMN of the parent
+   rather than as content inside a cell. The rule is drawn in the
+   element-name accent so containment is unmistakable at a glance. */
+.cxp-vtbl-nest > .cxp-itbl-v {
+  padding: 3px 4px 3px 8px !important;
+  white-space: normal;
+  border-left: 2px solid var(--syn-name, #e5c07b);
+  background: rgba(255, 255, 255, 0.035);
+}
+.cxp-vtbl-nest > .cxp-itbl-k {
+  font-weight: 600;
+  padding-top: 4px !important;
+}
+
+/* An inner table is quieter than its parent and carries no header row
+   of its own — the parent row's key already names it. Absolute px, not
+   `em`, so four levels of nesting do not shrink into illegibility. */
+.cxp-vtbl .cxp-vtbl { font-size: 11px; }
+
+/* A structured child the rung will not open (`compact`'s one-level
+   story, or the depth / budget cap at `full`). Its cell is a SUMMARY:
+   attribute chips, which are real data and are styled as such, plus a
+   withheld count. Only the count is dimmed — dimming the whole cell
+   would misreport `@id=1 @name='Alice'` as a note about the diagram
+   rather than as the document's own content. */
+.cxp-vtbl-sum > .cxp-itbl-k { font-weight: 600; }
+.cxp-vtbl-more {
+  color: var(--text-dim, #8b8578);
+  font-style: italic;
 }
 
 /* the detail dropdown (replaces the three-tab detail group) */

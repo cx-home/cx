@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,7 +143,7 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">term</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="x-term"><h1>term</h1><p class="lede">Native raw-mode terminal input for interactive TUIs (EXPERIMENTAL x/
@@ -154,48 +154,40 @@
    wrapped TUI framework. POSIX; gated on the <code>read</code> capability; a non-tty raises
    cx-err:CXER3450.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]><p class="note">Experimental x/ tier — imported as cx-x/term. Bundled and gated in-tree like any other module, but EXEMPT from the frozen-surface stability promise (std-lib README, decision D3): a semver-breaking change is allowed here while the surface settles, and the frozen-surface canary never counts it. Pin behaviour you depend on with your own fixtures.</p>
-  <section id="fn-term-is-tty" class="fn">
-    <h3>term:is-tty</h3>
-    <p class="fn-sig"><code>[$term:is-tty]  -> bool</code>  —  Report whether stdin (fd 0) is a terminal. False under a pipe / headless run — guard interactive paths with it. Requires no capability.</p>
-    
-  </section>
-  <section id="fn-term-raw-mode" class="fn">
-    <h3>term:raw-mode</h3>
-    <p class="fn-sig"><code>[$term:raw-mode]  -> null</code>  —  Switch the tty (fd 0) to raw mode (cfmakeraw: no line buffering, no echo, byte-at-a-time) and save the prior termios so cooked-mode restores it. Raises cx-err:CXER3450 on a non-tty. Needs the <code>read</code> capability.</p>
-    
-  </section>
-  <section id="fn-term-cooked-mode" class="fn">
-    <h3>term:cooked-mode</h3>
-    <p class="fn-sig"><code>[$term:cooked-mode]  -> null</code>  —  Restore the tty's saved (pre-raw) termios. A no-op if raw-mode was never entered. Pair with raw-mode (ideally via a scope guard) so the terminal is always restored. Needs the <code>read</code> capability.</p>
-    
-  </section>
-  <section id="fn-term-size" class="fn">
-    <h3>term:size</h3>
-    <p class="fn-sig"><code>[$term:size]  -> element</code>  —  Report the terminal window size as <code>[size rows=R cols=C]</code> (TIOCGWINSZ). Raises cx-err:CXER3450 on a non-tty. Needs the <code>read</code> capability.</p>
-    
-  </section>
-  <section id="fn-term-read-event" class="fn">
-    <h3>term:read-event</h3>
-    <p class="fn-sig"><code>[$term:read-event]  timeout=INT-MS -> element</code>  —  Read and decode the next terminal event from raw stdin: <code>[key name=NAME mods=(:ctrl :alt :shift)]</code> for a keystroke (arrows, fn-keys, ctrl/alt-chords, printable), or <code>[timeout]</code> when a <code>timeout=MS</code> bound expires first (#861, R7.1 — the wrapper forwards the primitive's optional duration; the default -1 blocks). For waiting on keystrokes AND live sources together, <code>[$term:select {keys: true timeout: MS}]</code> remains the primitive. Requires raw-mode. Needs the <code>read</code> capability.</p>
-    
-  </section>
-  <section id="fn-term-select" class="fn">
-    <h3>term:select</h3>
-    <p class="fn-sig"><code>[$term:select]  {keys: bool sources: (handle …) timeout: int-ms} -> element</code>  —  Wait for the FIRST ready of keystrokes (keys: true → raw stdin), any source handle's fd becoming readable (sources: a sequence of [socket]/[exchange]/SSE-stream handles), or the timer (timeout: milliseconds; omit/-1 to block). Returns the decoded <code>[key …]</code> for a keystroke, <code>[ready index=N <handle>]</code> when source N is readable (read it via its own module, e.g. http:sse-events — term stays decoupled from each source's framing), or <code>[timeout]</code>. The one primitive that unifies live-stream and interactive input in a single loop. Requires raw-mode for keystrokes. Needs the <code>read</code> capability.</p>
-    
-  </section>
-</section>
+           the page, not by their own inattention. ]]><p class="note">Experimental x/ tier — imported as cx-x/term. Bundled and gated in-tree like any other module, but EXEMPT from the frozen-surface stability promise (std-lib README, decision D3): a semver-breaking change is allowed here while the surface settles, and the frozen-surface canary never counts it. Pin behaviour you depend on with your own fixtures.</p><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-term-is-tty" class="fn">
+  <h3>term:is-tty</h3>
+  <p class="fn-sig"><code>[$term:is-tty]  -> bool</code>  —  Report whether stdin (fd 0) is a terminal. False under a pipe / headless run — guard interactive paths with it. Requires no capability.</p>
+</section><section id="fn-term-raw-mode" class="fn">
+  <h3>term:raw-mode</h3>
+  <p class="fn-sig"><code>[$term:raw-mode]  -> null</code>  —  Switch the tty (fd 0) to raw mode (cfmakeraw: no line buffering, no echo, byte-at-a-time) and save the prior termios so cooked-mode restores it. Raises cx-err:CXER3450 on a non-tty. Needs the <code>read</code> capability.</p>
+</section><section id="fn-term-cooked-mode" class="fn">
+  <h3>term:cooked-mode</h3>
+  <p class="fn-sig"><code>[$term:cooked-mode]  -> null</code>  —  Restore the tty's saved (pre-raw) termios. A no-op if raw-mode was never entered. Pair with raw-mode (ideally via a scope guard) so the terminal is always restored. Needs the <code>read</code> capability.</p>
+</section><section id="fn-term-size" class="fn">
+  <h3>term:size</h3>
+  <p class="fn-sig"><code>[$term:size]  -> element</code>  —  Report the terminal window size as <code>[size rows=R cols=C]</code> (TIOCGWINSZ). Raises cx-err:CXER3450 on a non-tty. Needs the <code>read</code> capability.</p>
+</section><section id="fn-term-read-event" class="fn">
+  <h3>term:read-event</h3>
+  <p class="fn-sig"><code>[$term:read-event]  timeout=INT-MS -> element</code>  —  Read and decode the next terminal event from raw stdin: <code>[key name=NAME mods=(:ctrl :alt :shift)]</code> for a keystroke (arrows, fn-keys, ctrl/alt-chords, printable), or <code>[timeout]</code> when a <code>timeout=MS</code> bound expires first (#861, R7.1 — the wrapper forwards the primitive's optional duration; the default -1 blocks). For waiting on keystrokes AND live sources together, <code>[$term:select {keys: true timeout: MS}]</code> remains the primitive. Requires raw-mode. Needs the <code>read</code> capability.</p>
+</section><section id="fn-term-select" class="fn">
+  <h3>term:select</h3>
+  <p class="fn-sig"><code>[$term:select]  {keys: bool sources: (handle …) timeout: int-ms} -> element</code>  —  Wait for the FIRST ready of keystrokes (keys: true → raw stdin), any source handle's fd becoming readable (sources: a sequence of [socket]/[exchange]/SSE-stream handles), or the timer (timeout: milliseconds; omit/-1 to block). Returns the decoded <code>[key …]</code> for a keystroke, <code>[ready index=N <handle>]</code> when source N is readable (read it via its own module, e.g. http:sse-events — term stays decoupled from each source's framing), or <code>[timeout]</code>. The one primitive that unifies live-stream and interactive input in a single loop. Requires raw-mode for keystrokes. Needs the <code>read</code> capability.</p>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>term</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,7 +143,7 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">ux-web</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="x-ux-web"><h1>ux-web</h1><p class="lede">The WEB RENDERER of the UX projection (EXPERIMENTAL x/ tier;
@@ -161,138 +161,94 @@
    readback from its own output to the common content normal form on which the
    two renderings are asserted to agree.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]><p class="note">Experimental x/ tier — imported as cx-x/ux-web. Bundled and gated in-tree like any other module, but EXEMPT from the frozen-surface stability promise (std-lib README, decision D3): a semver-breaking change is allowed here while the surface settles, and the frozen-surface canary never counts it. Pin behaviour you depend on with your own fixtures.</p>
-  <section id="fn-ux-web-htmx-subset" class="fn">
-    <h3>ux-web:htmx-subset</h3>
-    <p class="fn-sig"><code>[$ux-web:htmx-subset]  () -> [sequence string]</code>  —  The pinned, normative htmx attribute set the emitter may author; additions are individual rulings and hx-on is excluded permanently.</p>
-    
-  </section>
-  <section id="fn-ux-web-htmx-allowed" class="fn">
-    <h3>ux-web:htmx-allowed</h3>
-    <p class="fn-sig"><code>[$ux-web:htmx-allowed]  ($attr::string) -> bool</code>  —  Is one attribute name on the pinned htmx subset?</p>
-    
-  </section>
-  <section id="fn-ux-web-lower" class="fn">
-    <h3>ux-web:lower</h3>
-    <p class="fn-sig"><code>[$ux-web:lower]  ($el::any $c0::map) -> any</code>  —  Lower a semantic tree to its HTML element tree — the rendering, before serialization.</p>
-    
-  </section>
-  <section id="fn-ux-web-render" class="fn">
-    <h3>ux-web:render</h3>
-    <p class="fn-sig"><code>[$ux-web:render]  ($el::any $ctx::map) -> string | [err …]</code>  —  Project one semantic tree to HTML text, or refuse with one [err …] naming every violation — never a partial render. Runs the SHARED semantic gate first, so a tree this renderer accepts and the terminal renderer rejects cannot exist.</p>
-    
-  </section>
-  <section id="fn-ux-web-render-fragment" class="fn">
-    <h3>ux-web:render-fragment</h3>
-    <p class="fn-sig"><code>[$ux-web:render-fragment]  ($el::any $f::element $rctx::any) -> string | [err …]</code>  —  Project one semantic tree addressed by an explicit fragment address — the swap-target form the intent round trip returns.</p>
-    
-  </section>
-  <section id="fn-ux-web-lower-ops" class="fn">
-    <h3>ux-web:lower-ops</h3>
-    <p class="fn-sig"><code>[$ux-web:lower-ops]  ($ops::any $ctx::map) -> any</code>  —  Lower the core's semantic patch operations to out-of-band HTML — the ONLY place hx-swap-oob is authored, with every container id derived from the op's element path by the same frag-id that minted it.</p>
-    
-  </section>
-  <section id="fn-ux-web-render-rows" class="fn">
-    <h3>ux-web:render-rows</h3>
-    <p class="fn-sig"><code>[$ux-web:render-rows]  ($rows-el::any $ctx::map) -> string | [err …]</code>  —  A row container's contents as bytes — what an innerHTML swap at the collection expects, and the one parse context in which a <tr> payload survives.</p>
-    
-  </section>
-  <section id="fn-ux-web-render-ops" class="fn">
-    <h3>ux-web:render-ops</h3>
-    <p class="fn-sig"><code>[$ux-web:render-ops]  ($ops::any $ctx::map) -> string | [err …]</code>  —  The serialized out-of-band payload one ∂ script becomes — through the same subset and CSP scans as a page, so a live update cannot skip the invariants.</p>
-    
-  </section>
-  <section id="fn-ux-web-unbound-filter-refusals" class="fn">
-    <h3>ux-web:unbound-filter-refusals</h3>
-    <p class="fn-sig"><code>[$ux-web:unbound-filter-refusals]  ($el::any $rctx::any) -> [sequence element]</code>  —  Refuse a filter whose affected collection has no fragment endpoint bound — a control that renders and does nothing passes every server-side gate.</p>
-    
-  </section>
-  <section id="fn-ux-web-input-kind-of" class="fn">
-    <h3>ux-web:input-kind-of</h3>
-    <p class="fn-sig"><code>[$ux-web:input-kind-of]  ($kind::string) -> string</code>  —  Map a declared CX kind to its HTML control type; decimal and bigint stay text because they ride string carriers and a number input would corrupt them. Renderer-private — the terminal renderer maps the same kinds to its own editors.</p>
-    
-  </section>
-  <section id="fn-ux-web-off-subset-attrs" class="fn">
-    <h3>ux-web:off-subset-attrs</h3>
-    <p class="fn-sig"><code>[$ux-web:off-subset-attrs]  ($html::string) -> [sequence element]</code>  —  Scan serialized emitter output and refuse every hx-*/sse-* attribute that is not on the pinned subset.</p>
-    
-  </section>
-  <section id="fn-ux-web-csp-violations" class="fn">
-    <h3>ux-web:csp-violations</h3>
-    <p class="fn-sig"><code>[$ux-web:csp-violations]  ($html::string) -> [sequence element]</code>  —  Scan serialized emitter output for the strict-CSP invariants: no inline style=, no inline script, no event-handler attribute.</p>
-    
-  </section>
-  <section id="fn-ux-web-content-of-html" class="fn">
-    <h3>ux-web:content-of-html</h3>
-    <p class="fn-sig"><code>[$ux-web:content-of-html]  ($h::any) -> element</code>  —  Read the lowered HTML tree back to the common content normal form — the WEB side of the equivalence assertion, taken from the tree this renderer actually serializes.</p>
-    
-  </section>
-  <section id="fn-ux-web-content-repr-html" class="fn">
-    <h3>ux-web:content-repr-html</h3>
-    <p class="fn-sig"><code>[$ux-web:content-repr-html]  ($el::any $ctx::map) -> string</code>  —  The canonical bytes the web rendering contributes to the equivalence assertion.</p>
-    
-  </section>
-  <section id="fn-ux-web-token-value-safe" class="fn">
-    <h3>ux-web:token-value-safe</h3>
-    <p class="fn-sig"><code>[$ux-web:token-value-safe]  ($v::string) -> bool</code>  —  Is a theme token value safe to place in a generated stylesheet — the CSS analogue of the emitter's escaping invariant?</p>
-    
-  </section>
-  <section id="fn-ux-web-theme-refusals" class="fn">
-    <h3>ux-web:theme-refusals</h3>
-    <p class="fn-sig"><code>[$ux-web:theme-refusals]  ($theme::element) -> [sequence element]</code>  —  Every unsafe token value in one theme document.</p>
-    
-  </section>
-  <section id="fn-ux-web-theme-css" class="fn">
-    <h3>ux-web:theme-css</h3>
-    <p class="fn-sig"><code>[$ux-web:theme-css]  ($theme::element) -> string | [err …]</code>  —  Compile a token theme document to the generated stylesheet — custom properties plus the component rule table; an unsafe token refuses the whole sheet.</p>
-    
-  </section>
-  <section id="fn-ux-web-component-rules" class="fn">
-    <h3>ux-web:component-rules</h3>
-    <p class="fn-sig"><code>[$ux-web:component-rules]  () -> [sequence element]</code>  —  The pack-owned .ux-* rule table as structured data; every declaration references a theme token, so no color, size, or font is hard-coded.</p>
-    
-  </section>
-  <section id="fn-ux-web-join-str" class="fn">
-    <h3>ux-web:join-str</h3>
-    <p class="fn-sig"><code>[$ux-web:join-str]  ($parts::any) -> string</code>  —  Concatenate a sequence of strings as a pure, total fold.</p>
-    
-  </section>
-  <section id="fn-ux-web-csp-header" class="fn">
-    <h3>ux-web:csp-header</h3>
-    <p class="fn-sig"><code>[$ux-web:csp-header]  ($assets::any) -> string</code>  —  The strict Content-Security-Policy value, pinning each vendored script by the SRI digest of the bytes actually served.</p>
-    
-  </section>
-  <section id="fn-ux-web-page-html" class="fn">
-    <h3>ux-web:page-html</h3>
-    <p class="fn-sig"><code>[$ux-web:page-html]  ($title::string $assets::any $el::any $ctx::map) -> string | [err …]</code>  —  The served bytes for one route: doctype, token stylesheet, hash-pinned kernel, and the lowered body — refused whole on any violation.</p>
-    
-  </section>
-  <section id="fn-ux-web-asset-manifest" class="fn">
-    <h3>ux-web:asset-manifest</h3>
-    <p class="fn-sig"><code>[$ux-web:asset-manifest]  ($dir::string $names::any) -> [sequence element] | [err …]</code>  —  Read the vendored kernel's bytes and derive each asset's SRI digest, so script-src and integrity= can never drift from what is served; a missing asset refuses.</p>
-    
-  </section>
-  <section id="fn-ux-web-font-value-safe" class="fn">
-    <h3>ux-web:font-value-safe</h3>
-    <p class="fn-sig"><code>[$ux-web:font-value-safe]  ($v::string) -> bool</code>  —  The token-value-safe allowlist widened by exactly one character: '+' — a unicode-range is written U+0000-00FF and there is no other way to spell it; admitted here and nowhere else.</p>
-    
-  </section>
-  <section id="fn-ux-web-theme-vars" class="fn">
-    <h3>ux-web:theme-vars</h3>
-    <p class="fn-sig"><code>[$ux-web:theme-vars]  ($theme::element) -> string</code>  —  The theme's tokens as CSS custom properties: shared tokens and the default palette on :root, each non-default palette re-stated under its prefers-color-scheme condition (P0-104).</p>
-    
-  </section>
-</section>
+           the page, not by their own inattention. ]]><p class="note">Experimental x/ tier — imported as cx-x/ux-web. Bundled and gated in-tree like any other module, but EXEMPT from the frozen-surface stability promise (std-lib README, decision D3): a semver-breaking change is allowed here while the surface settles, and the frozen-surface canary never counts it. Pin behaviour you depend on with your own fixtures.</p><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-ux-web-htmx-subset" class="fn">
+  <h3>ux-web:htmx-subset</h3>
+  <p class="fn-sig"><code>[$ux-web:htmx-subset]  () -> [sequence string]</code>  —  The pinned, normative htmx attribute set the emitter may author; additions are individual rulings and hx-on is excluded permanently.</p>
+</section><section id="fn-ux-web-htmx-allowed" class="fn">
+  <h3>ux-web:htmx-allowed</h3>
+  <p class="fn-sig"><code>[$ux-web:htmx-allowed]  ($attr::string) -> bool</code>  —  Is one attribute name on the pinned htmx subset?</p>
+</section><section id="fn-ux-web-lower" class="fn">
+  <h3>ux-web:lower</h3>
+  <p class="fn-sig"><code>[$ux-web:lower]  ($el::any $c0::map) -> any</code>  —  Lower a semantic tree to its HTML element tree — the rendering, before serialization.</p>
+</section><section id="fn-ux-web-render" class="fn">
+  <h3>ux-web:render</h3>
+  <p class="fn-sig"><code>[$ux-web:render]  ($el::any $ctx::map) -> string | [err …]</code>  —  Project one semantic tree to HTML text, or refuse with one [err …] naming every violation — never a partial render. Runs the SHARED semantic gate first, so a tree this renderer accepts and the terminal renderer rejects cannot exist.</p>
+</section><section id="fn-ux-web-render-fragment" class="fn">
+  <h3>ux-web:render-fragment</h3>
+  <p class="fn-sig"><code>[$ux-web:render-fragment]  ($el::any $f::element $rctx::any) -> string | [err …]</code>  —  Project one semantic tree addressed by an explicit fragment address — the swap-target form the intent round trip returns.</p>
+</section><section id="fn-ux-web-lower-ops" class="fn">
+  <h3>ux-web:lower-ops</h3>
+  <p class="fn-sig"><code>[$ux-web:lower-ops]  ($ops::any $ctx::map) -> any</code>  —  Lower the core's semantic patch operations to out-of-band HTML — the ONLY place hx-swap-oob is authored, with every container id derived from the op's element path by the same frag-id that minted it.</p>
+</section><section id="fn-ux-web-render-rows" class="fn">
+  <h3>ux-web:render-rows</h3>
+  <p class="fn-sig"><code>[$ux-web:render-rows]  ($rows-el::any $ctx::map) -> string | [err …]</code>  —  A row container's contents as bytes — what an innerHTML swap at the collection expects, and the one parse context in which a <tr> payload survives.</p>
+</section><section id="fn-ux-web-render-ops" class="fn">
+  <h3>ux-web:render-ops</h3>
+  <p class="fn-sig"><code>[$ux-web:render-ops]  ($ops::any $ctx::map) -> string | [err …]</code>  —  The serialized out-of-band payload one ∂ script becomes — through the same subset and CSP scans as a page, so a live update cannot skip the invariants.</p>
+</section><section id="fn-ux-web-unbound-filter-refusals" class="fn">
+  <h3>ux-web:unbound-filter-refusals</h3>
+  <p class="fn-sig"><code>[$ux-web:unbound-filter-refusals]  ($el::any $rctx::any) -> [sequence element]</code>  —  Refuse a filter whose affected collection has no fragment endpoint bound — a control that renders and does nothing passes every server-side gate.</p>
+</section><section id="fn-ux-web-input-kind-of" class="fn">
+  <h3>ux-web:input-kind-of</h3>
+  <p class="fn-sig"><code>[$ux-web:input-kind-of]  ($kind::string) -> string</code>  —  Map a declared CX kind to its HTML control type; decimal and bigint stay text because they ride string carriers and a number input would corrupt them. Renderer-private — the terminal renderer maps the same kinds to its own editors.</p>
+</section><section id="fn-ux-web-off-subset-attrs" class="fn">
+  <h3>ux-web:off-subset-attrs</h3>
+  <p class="fn-sig"><code>[$ux-web:off-subset-attrs]  ($html::string) -> [sequence element]</code>  —  Scan serialized emitter output and refuse every hx-*/sse-* attribute that is not on the pinned subset.</p>
+</section><section id="fn-ux-web-csp-violations" class="fn">
+  <h3>ux-web:csp-violations</h3>
+  <p class="fn-sig"><code>[$ux-web:csp-violations]  ($html::string) -> [sequence element]</code>  —  Scan serialized emitter output for the strict-CSP invariants: no inline style=, no inline script, no event-handler attribute.</p>
+</section><section id="fn-ux-web-content-of-html" class="fn">
+  <h3>ux-web:content-of-html</h3>
+  <p class="fn-sig"><code>[$ux-web:content-of-html]  ($h::any) -> element</code>  —  Read the lowered HTML tree back to the common content normal form — the WEB side of the equivalence assertion, taken from the tree this renderer actually serializes.</p>
+</section><section id="fn-ux-web-content-repr-html" class="fn">
+  <h3>ux-web:content-repr-html</h3>
+  <p class="fn-sig"><code>[$ux-web:content-repr-html]  ($el::any $ctx::map) -> string</code>  —  The canonical bytes the web rendering contributes to the equivalence assertion.</p>
+</section><section id="fn-ux-web-token-value-safe" class="fn">
+  <h3>ux-web:token-value-safe</h3>
+  <p class="fn-sig"><code>[$ux-web:token-value-safe]  ($v::string) -> bool</code>  —  Is a theme token value safe to place in a generated stylesheet — the CSS analogue of the emitter's escaping invariant?</p>
+</section><section id="fn-ux-web-theme-refusals" class="fn">
+  <h3>ux-web:theme-refusals</h3>
+  <p class="fn-sig"><code>[$ux-web:theme-refusals]  ($theme::element) -> [sequence element]</code>  —  Every unsafe token value in one theme document.</p>
+</section><section id="fn-ux-web-theme-css" class="fn">
+  <h3>ux-web:theme-css</h3>
+  <p class="fn-sig"><code>[$ux-web:theme-css]  ($theme::element) -> string | [err …]</code>  —  Compile a token theme document to the generated stylesheet — custom properties plus the component rule table; an unsafe token refuses the whole sheet.</p>
+</section><section id="fn-ux-web-component-rules" class="fn">
+  <h3>ux-web:component-rules</h3>
+  <p class="fn-sig"><code>[$ux-web:component-rules]  () -> [sequence element]</code>  —  The pack-owned .ux-* rule table as structured data; every declaration references a theme token, so no color, size, or font is hard-coded.</p>
+</section><section id="fn-ux-web-join-str" class="fn">
+  <h3>ux-web:join-str</h3>
+  <p class="fn-sig"><code>[$ux-web:join-str]  ($parts::any) -> string</code>  —  Concatenate a sequence of strings as a pure, total fold.</p>
+</section><section id="fn-ux-web-csp-header" class="fn">
+  <h3>ux-web:csp-header</h3>
+  <p class="fn-sig"><code>[$ux-web:csp-header]  ($assets::any) -> string</code>  —  The strict Content-Security-Policy value, pinning each vendored script by the SRI digest of the bytes actually served.</p>
+</section><section id="fn-ux-web-page-html" class="fn">
+  <h3>ux-web:page-html</h3>
+  <p class="fn-sig"><code>[$ux-web:page-html]  ($title::string $assets::any $el::any $ctx::map) -> string | [err …]</code>  —  The served bytes for one route: doctype, token stylesheet, hash-pinned kernel, and the lowered body — refused whole on any violation.</p>
+</section><section id="fn-ux-web-asset-manifest" class="fn">
+  <h3>ux-web:asset-manifest</h3>
+  <p class="fn-sig"><code>[$ux-web:asset-manifest]  ($dir::string $names::any) -> [sequence element] | [err …]</code>  —  Read the vendored kernel's bytes and derive each asset's SRI digest, so script-src and integrity= can never drift from what is served; a missing asset refuses.</p>
+</section><section id="fn-ux-web-font-value-safe" class="fn">
+  <h3>ux-web:font-value-safe</h3>
+  <p class="fn-sig"><code>[$ux-web:font-value-safe]  ($v::string) -> bool</code>  —  The token-value-safe allowlist widened by exactly one character: '+' — a unicode-range is written U+0000-00FF and there is no other way to spell it; admitted here and nowhere else.</p>
+</section><section id="fn-ux-web-theme-vars" class="fn">
+  <h3>ux-web:theme-vars</h3>
+  <p class="fn-sig"><code>[$ux-web:theme-vars]  ($theme::element) -> string</code>  —  The theme's tokens as CSS custom properties: shared tokens and the default palette on :root, each non-default palette re-stated under its prefers-color-scheme condition (P0-104).</p>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>ux-web</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

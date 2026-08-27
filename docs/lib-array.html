@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,278 +143,231 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">array</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-array"><h1>array</h1><p class="lede">Bundled cx-stdlib module.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-array-size" class="fn">
-    <h3>array:size</h3>
-    <p class="fn-sig"><code>[$array:size]  (a::array) -> int</code>  —  The item count.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/array']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-array-size" class="fn">
+  <h3>array:size</h3>
+  <p class="fn-sig"><code>[$array:size]  (a::array) -> int</code>  —  The item count.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/array']
 [$array:size [10, 20, 30]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>3</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-array-get" class="fn">
-    <h3>array:get</h3>
-    <p class="fn-sig"><code>[$array:get]  (a::array, i::int) -> any</code>  —  The item at 1-based position i; out of range refuses loudly.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/array']
+    </pre>
+    <pre class="sample-output">
+      <code>3</code>
+    </pre>
+  </div>
+</section><section id="fn-array-get" class="fn">
+  <h3>array:get</h3>
+  <p class="fn-sig"><code>[$array:get]  (a::array, i::int) -> any</code>  —  The item at 1-based position i; out of range refuses loudly.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/array']
 [$array:get [10, 20, 30] 2]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>20</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-array-head" class="fn">
-    <h3>array:head</h3>
-    <p class="fn-sig"><code>[$array:head]  (a::array) -> any</code>  —  The first item; the empty array yields the empty sequence.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/array']
+    </pre>
+    <pre class="sample-output">
+      <code>20</code>
+    </pre>
+  </div>
+</section><section id="fn-array-head" class="fn">
+  <h3>array:head</h3>
+  <p class="fn-sig"><code>[$array:head]  (a::array) -> any</code>  —  The first item; the empty array yields the empty sequence.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/array']
 [$array:head [10, 20]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>10</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-array-tail" class="fn">
-    <h3>array:tail</h3>
-    <p class="fn-sig"><code>[$array:tail]  (a::array) -> array</code>  —  Everything after the first item; the empty array's tail is the empty array.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/array']
+    </pre>
+    <pre class="sample-output">
+      <code>10</code>
+    </pre>
+  </div>
+</section><section id="fn-array-tail" class="fn">
+  <h3>array:tail</h3>
+  <p class="fn-sig"><code>[$array:tail]  (a::array) -> array</code>  —  Everything after the first item; the empty array's tail is the empty array.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/array']
 [$array:tail [10, 20, 30]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[20, 30]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-array-append" class="fn">
-    <h3>array:append</h3>
-    <p class="fn-sig"><code>[$array:append]  (a::array, v::any) -> array</code>  —  A new array with the value as the last item.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/array']
+    </pre>
+    <pre class="sample-output">
+      <code>[20, 30]</code>
+    </pre>
+  </div>
+</section><section id="fn-array-append" class="fn">
+  <h3>array:append</h3>
+  <p class="fn-sig"><code>[$array:append]  (a::array, v::any) -> array</code>  —  A new array with the value as the last item.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/array']
 [$array:append [1, 2] 3]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[1, 2, 3]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-array-reverse" class="fn">
-    <h3>array:reverse</h3>
-    <p class="fn-sig"><code>[$array:reverse]  (a::array) -> array</code>  —  The items in reverse order.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/array']
+    </pre>
+    <pre class="sample-output">
+      <code>[1, 2, 3]</code>
+    </pre>
+  </div>
+</section><section id="fn-array-reverse" class="fn">
+  <h3>array:reverse</h3>
+  <p class="fn-sig"><code>[$array:reverse]  (a::array) -> array</code>  —  The items in reverse order.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/array']
 [$array:reverse [1, 2, 3]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[3, 2, 1]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-array-subarray" class="fn">
-    <h3>array:subarray</h3>
-    <p class="fn-sig"><code>[$array:subarray]  (a::array, start::int, len::int) -> array</code>  —  len items starting at 1-based start, clamped to the array's end.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/array']
+    </pre>
+    <pre class="sample-output">
+      <code>[3, 2, 1]</code>
+    </pre>
+  </div>
+</section><section id="fn-array-subarray" class="fn">
+  <h3>array:subarray</h3>
+  <p class="fn-sig"><code>[$array:subarray]  (a::array, start::int, len::int) -> array</code>  —  len items starting at 1-based start, clamped to the array's end.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/array']
 [$array:subarray [10, 20, 30, 40] 2 2]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[20, 30]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-array-put" class="fn">
-    <h3>array:put</h3>
-    <p class="fn-sig"><code>[$array:put]  (a::array, i::int, v::any) -> array</code>  —  A new array with 1-based position i replaced by the value; out of range refuses.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/array']
+    </pre>
+    <pre class="sample-output">
+      <code>[20, 30]</code>
+    </pre>
+  </div>
+</section><section id="fn-array-put" class="fn">
+  <h3>array:put</h3>
+  <p class="fn-sig"><code>[$array:put]  (a::array, i::int, v::any) -> array</code>  —  A new array with 1-based position i replaced by the value; out of range refuses.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/array']
 [$array:put [1, 2, 3] 2 9]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[1, 9, 3]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-array-remove" class="fn">
-    <h3>array:remove</h3>
-    <p class="fn-sig"><code>[$array:remove]  (a::array, i::int) -> array</code>  —  A new array without 1-based position i; out of range refuses.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/array']
+    </pre>
+    <pre class="sample-output">
+      <code>[1, 9, 3]</code>
+    </pre>
+  </div>
+</section><section id="fn-array-remove" class="fn">
+  <h3>array:remove</h3>
+  <p class="fn-sig"><code>[$array:remove]  (a::array, i::int) -> array</code>  —  A new array without 1-based position i; out of range refuses.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/array']
 [$array:remove [1, 2, 3] 2]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[1, 3]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-array-insert-before" class="fn">
-    <h3>array:insert-before</h3>
-    <p class="fn-sig"><code>[$array:insert-before]  (a::array, i::int, v::any) -> array</code>  —  A new array with the value inserted before 1-based position i; i = size + 1 appends.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/array']
+    </pre>
+    <pre class="sample-output">
+      <code>[1, 3]</code>
+    </pre>
+  </div>
+</section><section id="fn-array-insert-before" class="fn">
+  <h3>array:insert-before</h3>
+  <p class="fn-sig"><code>[$array:insert-before]  (a::array, i::int, v::any) -> array</code>  —  A new array with the value inserted before 1-based position i; i = size + 1 appends.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/array']
 [$array:insert-before [1, 3] 2 2]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[1, 2, 3]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-array-flatten" class="fn">
-    <h3>array:flatten</h3>
-    <p class="fn-sig"><code>[$array:flatten]  (a::any) -> any</code>  —  The sequence of leaf items with every nested array and boxed sequence expanded, depth-first.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/array']
+    </pre>
+    <pre class="sample-output">
+      <code>[1, 2, 3]</code>
+    </pre>
+  </div>
+</section><section id="fn-array-flatten" class="fn">
+  <h3>array:flatten</h3>
+  <p class="fn-sig"><code>[$array:flatten]  (a::any) -> any</code>  —  The sequence of leaf items with every nested array and boxed sequence expanded, depth-first.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/array']
 [$array:flatten [1, [2, [3]], 4]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(1, 2, 3, 4)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-array-join" class="fn">
-    <h3>array:join</h3>
-    <p class="fn-sig"><code>[$array:join]  (arrays::any) -> array</code>  —  A sequence of arrays concatenated left to right into one array.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/array']
+    </pre>
+    <pre class="sample-output">
+      <code>(1, 2, 3, 4)</code>
+    </pre>
+  </div>
+</section><section id="fn-array-join" class="fn">
+  <h3>array:join</h3>
+  <p class="fn-sig"><code>[$array:join]  (arrays::any) -> array</code>  —  A sequence of arrays concatenated left to right into one array.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/array']
 [$array:join ([1, 2], [3])]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[1, 2, 3]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-array-sort" class="fn">
-    <h3>array:sort</h3>
-    <p class="fn-sig"><code>[$array:sort]  (a::array) -> array</code>  —  Ascending by the language's one sort arrangement — the [\$sort] comparator (kind-class, then value).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/array']
+    </pre>
+    <pre class="sample-output">
+      <code>[1, 2, 3]</code>
+    </pre>
+  </div>
+</section><section id="fn-array-sort" class="fn">
+  <h3>array:sort</h3>
+  <p class="fn-sig"><code>[$array:sort]  (a::array) -> array</code>  —  Ascending by the language's one sort arrangement — the [\$sort] comparator (kind-class, then value).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/array']
 [$array:sort [3, 1, 2]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[1, 2, 3]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-array-filter" class="fn">
-    <h3>array:filter</h3>
-    <p class="fn-sig"><code>[$array:filter]  (a::array, fn::any) -> array</code>  —  The items for which the one-parameter predicate answers true, order preserved.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/array']
+    </pre>
+    <pre class="sample-output">
+      <code>[1, 2, 3]</code>
+    </pre>
+  </div>
+</section><section id="fn-array-filter" class="fn">
+  <h3>array:filter</h3>
+  <p class="fn-sig"><code>[$array:filter]  (a::array, fn::any) -> array</code>  —  The items for which the one-parameter predicate answers true, order preserved.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/array']
 [$array:filter [1, 2, 3, 4] [?fn ($x) [> $x 2]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[3, 4]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-array-for-each" class="fn">
-    <h3>array:for-each</h3>
-    <p class="fn-sig"><code>[$array:for-each]  (a::array, fn::any) -> array</code>  —  A new array of the function applied to each item, order preserved.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/array']
+    </pre>
+    <pre class="sample-output">
+      <code>[3, 4]</code>
+    </pre>
+  </div>
+</section><section id="fn-array-for-each" class="fn">
+  <h3>array:for-each</h3>
+  <p class="fn-sig"><code>[$array:for-each]  (a::array, fn::any) -> array</code>  —  A new array of the function applied to each item, order preserved.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/array']
 [$array:for-each [1, 2, 3] [?fn ($x) [* $x 10]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[10, 20, 30]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-array-fold-left" class="fn">
-    <h3>array:fold-left</h3>
-    <p class="fn-sig"><code>[$array:fold-left]  (a::array, init::any, fn::any) -> any</code>  —  Fold left: fn(fn(init, a1), a2)… — fn takes (accumulator, item).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/array']
+    </pre>
+    <pre class="sample-output">
+      <code>[10, 20, 30]</code>
+    </pre>
+  </div>
+</section><section id="fn-array-fold-left" class="fn">
+  <h3>array:fold-left</h3>
+  <p class="fn-sig"><code>[$array:fold-left]  (a::array, init::any, fn::any) -> any</code>  —  Fold left: fn(fn(init, a1), a2)… — fn takes (accumulator, item).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/array']
 [$array:fold-left [1, 2, 3] 0 [?fn ($acc $x) [+ $acc $x]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>6</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-array-fold-right" class="fn">
-    <h3>array:fold-right</h3>
-    <p class="fn-sig"><code>[$array:fold-right]  (a::array, init::any, fn::any) -> any</code>  —  Fold right: fn(a1, fn(a2, … init)) — fn takes (item, accumulator).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/array']
+    </pre>
+    <pre class="sample-output">
+      <code>6</code>
+    </pre>
+  </div>
+</section><section id="fn-array-fold-right" class="fn">
+  <h3>array:fold-right</h3>
+  <p class="fn-sig"><code>[$array:fold-right]  (a::array, init::any, fn::any) -> any</code>  —  Fold right: fn(a1, fn(a2, … init)) — fn takes (item, accumulator).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/array']
 [$array:fold-right [1, 2, 3] 0 [?fn ($x $acc) [- $x $acc]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>2</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>array</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

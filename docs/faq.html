@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,23 +143,20 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Frequently Asked Questions</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="faq">
   <h1>Frequently Asked Questions</h1>
-  
-    <p>If you ran into something confusing in your first week of CX,
+  <p>If you ran into something confusing in your first week of CX,
        it is probably here. Each answer leads with the recovery
        command and follows up with the why. Grouped by topic; use
        your editor's search if you arrived from a search engine.</p>
-    <section id="faq-setup">
-      <h2>Setup and install</h2>
-      
-        <section id="faq-not-found">
-          <h3>Why does <code>cx --version</code> fail with "command not found"?</h3>
-          
-            <p><code>cx</code> is on disk but not on your shell <code>PATH</code>. If you used
+  <section id="faq-setup">
+    <h2>Setup and install</h2>
+    <section id="faq-not-found">
+      <h3>Why does <code>cx --version</code> fail with "command not found"?</h3>
+      <p><code>cx</code> is on disk but not on your shell <code>PATH</code>. If you used
            Homebrew, run <code>brew --prefix cx</code> to find the install
            prefix and confirm <code>$(brew --prefix cx)/bin</code> is on
            <code>PATH</code>. If you used the devbox build (<code>make install</code>),
@@ -167,8 +164,8 @@
            <code>PATH</code>. If you used Docker, you do not actually have
            <code>cx</code> installed; use <code>docker run cx-lang/cx cx …</code>
            instead.</p>
-            <pre>
-              <code class="language-shell">[# Confirm the binary exists                                #]
+      <pre>
+        <code class="language-shell">[# Confirm the binary exists                                #]
            which cx || ls -l ~/.local/bin/cx
 
            [# Add ~/.local/bin to PATH for this shell                  #]
@@ -176,58 +173,48 @@
 
            [# Persist it (zsh)                                         #]
            echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc</code>
-            </pre>
-          
-        </section>
-        <section id="faq-v-not-found">
-          <h3>Build fails with "V not found"</h3>
-          
-            <p>The reference build uses devbox to pin the V compiler
+      </pre>
+    </section>
+    <section id="faq-v-not-found">
+      <h3>Build fails with "V not found"</h3>
+      <p>The reference build uses devbox to pin the V compiler
            version. If you ran <code>make build</code> outside a devbox shell
            and got "V not found," either install V manually
            (https://vlang.io) or — better — wrap the build in
            devbox so the toolchain matches CI:</p>
-            <pre>
-              <code class="language-shell">devbox run -- make build</code>
-            </pre>
-            <p class="note">Devbox is at https://www.jetify.com/devbox — <code>brew
+      <pre>
+        <code class="language-shell">devbox run -- make build</code>
+      </pre>
+      <p class="note">Devbox is at https://www.jetify.com/devbox — <code>brew
            install jetify-com/devbox/devbox</code> or
            <code>curl -fsSL https://get.jetify.com/devbox | bash</code>.</p>
-          
-        </section>
-        <section id="faq-windows">
-          <h3>Can I use CX on Windows?</h3>
-          
-            <p>Today: yes, via WSL2 (Ubuntu or Debian inside Windows).
+    </section>
+    <section id="faq-windows">
+      <h3>Can I use CX on Windows?</h3>
+      <p>Today: yes, via WSL2 (Ubuntu or Debian inside Windows).
            The Linux build runs unchanged. Native Windows — a
            PE-format <code>cx.exe</code> and <code>cxlib.dll</code> — is on the
            roadmap; the bottleneck is the V toolchain's Windows
            support, not CX itself. Track issue
            <a href="https://github.com/cx-home/cx/issues/windows-native">#windows-native</a>
            for the current state.</p>
-          
-        </section>
-      
     </section>
-    <section id="faq-parsing">
-      <h2>Parsing and syntax</h2>
-      
-        <section id="faq-find-retired">
-          <h3>Why does my <code>[?find]</code> fail with CXER0100?</h3>
-          
-            <p><code>[?find]</code> was retired in v0.8.0 — it was [; version-literal-ok ]
+  </section>
+  <section id="faq-parsing">
+    <h2>Parsing and syntax</h2>
+    <section id="faq-find-retired">
+      <h3>Why does my <code>[?find]</code> fail with CXER0100?</h3>
+      <p><code>[?find]</code> was retired in v0.8.0 — it was [; version-literal-ok ]
            always sugar for <code>[?for]</code> over a pattern. Rewrite each
            <code>[?find pattern [yield body]]</code> to either a direct CXPath
            (when the pattern is just an element with optional
            predicates) or to <code>[?for]</code> (when the pattern is
            structurally more complex). See <a class="xref" href="migration.html#from-v07x">from-v07x</a> for the
            full mapping table.</p>
-          
-        </section>
-        <section id="faq-attr-vs-slot">
-          <h3>Why does <code>[user :id 42]</code> parse differently from <code>[user id=42]</code>?</h3>
-          
-            <p>They are two different syntactic forms that both parse.
+    </section>
+    <section id="faq-attr-vs-slot">
+      <h3>Why does <code>[user :id 42]</code> parse differently from <code>[user id=42]</code>?</h3>
+      <p>They are two different syntactic forms that both parse.
            <code>name=value</code> — the data-element <i>attribute</i> syntax, per
            <code>spec/03-approved/formal/grammar.ebnf [55] Attribute</code> —
            attaches a named value to the element.
@@ -241,8 +228,8 @@
            <code>:id 42</code> there is the slot named <code>id</code> bound to <code>42</code>. And
            if you wanted a type annotation, that is the double-colon
            glue: <code>[user::int 42]</code>.</p>
-            <pre>
-              <code class="language-cx">[# Attribute — the id attribute is 42                      #]
+      <pre>
+        <code class="language-cx">[# Attribute — the id attribute is 42                      #]
            [user id=42 email='ada@example.com']
 
            [# Directive labeled slot — slot id bound to 'users'       #]
@@ -250,80 +237,72 @@
 
            [# Atom + int body — NOT an attribute, NOT a type tag      #]
            [user :id 42]</code>
-            </pre>
-            <p class="note">The two-form distinction is by design — see the body
+      </pre>
+      <p class="note">The two-form distinction is by design — see the body
            discussion at <a class="xref" href="data-language.html#attributes">attributes</a>.</p>
-          
-        </section>
-        <section id="faq-count-container">
-          <h3>What is the difference between <code>[…]</code> and <code>(…)</code> collections?</h3>
-          
-            <p>A sequence (<code>(…)</code>) is the flat iteration shape — every CX
+    </section>
+    <section id="faq-count-container">
+      <h3>What is the difference between <code>[…]</code> and <code>(…)</code> collections?</h3>
+      <p>A sequence (<code>(…)</code>) is the flat iteration shape — every CX
            value is a sequence, and directives iterate them. An
            array (<code>[…]</code>) is a container Item that <b>preserves
            nesting</b>: <code>&#91;&#91;1, 2], [3, 4]]</code> is two items (two inner
            arrays), not four. <code>[$count]</code> counts the top-level items
            of either:</p>
-            <pre>
-              <code class="language-cx">[?let [= $flat   (1, 2, 3)]
+      <pre>
+        <code class="language-cx">[?let [= $flat   (1, 2, 3)]
                [= $nested &#91;&#91;1, 2], [3, 4]]]
            ([$count $flat], [$count $nested])]</code>
-            </pre>
-            <pre class="sample-output">
-              <code>(3, 2)</code>
-            </pre>
-            <p>The distinction is the <b>container vs atom</b> principle in
+      </pre>
+      <pre class="sample-output">
+        <code>(3, 2)</code>
+      </pre>
+      <p>The distinction is the <b>container vs atom</b> principle in
            <a href="../../spec/03-approved/core/cxdm.md"><code>spec/03-approved/core/cxdm.md</code></a> §2.0. See
            <a class="xref" href="data-language.html#container-atom">container-atom</a> for the full rules; sequences are flat,
            arrays are containers.</p>
-          
-        </section>
-        <section id="faq-hash-mismatch">
-          <h3>Why does my hash differ on Linux vs macOS?</h3>
-          
-            <p>It should not. The strict canonical bytes (and therefore
+    </section>
+    <section id="faq-hash-mismatch">
+      <h3>Why does my hash differ on Linux vs macOS?</h3>
+      <p>It should not. The strict canonical bytes (and therefore
            the SHA-256) are platform-independent by construction —
            the canonicalizer normalises line endings, quotes,
            whitespace, attribute order, and Unicode (NFC). If you
            observe a divergent hash for the same source on two
            platforms, that is a <b>gate 28.6 violation</b> and a release
            blocker.</p>
-            <pre>
-              <code class="language-shell">[# Reproduce on both platforms and bisect                   #]
+      <pre>
+        <code class="language-shell">[# Reproduce on both platforms and bisect                   #]
            cx canonical doc.cx | shasum -a 256
            cx fmt doc.cx | cx canonical | shasum -a 256
            [# Both should produce identical hex output on every host. #]</code>
-            </pre>
-            <p class="note">File a bug at https://github.com/cx-home/cx/issues with
+      </pre>
+      <p class="note">File a bug at https://github.com/cx-home/cx/issues with
            the source document and the divergent hashes from both
            platforms. Include <code>cx --version</code> output from each.</p>
-          
-        </section>
-        <section id="faq-attr-reorder">
-          <h3>Why is my JSON output attribute-reordered?</h3>
-          
-            <p>The canonical form sorts attributes lexicographically by
+    </section>
+    <section id="faq-attr-reorder">
+      <h3>Why is my JSON output attribute-reordered?</h3>
+      <p>The canonical form sorts attributes lexicographically by
            key — that is what makes the hash stable. The JSON
            projection inherits this sort. If you need to preserve
            authored order for human consumption, use <code>cx fmt</code> (the
            lossless canonical) for the source file and reserve the
            JSON projection for machine consumers, which do not care
            about key order.</p>
-            <pre>
-              <code class="language-shell">cx fmt doc.cx                   [# preserves attr order    #]
+      <pre>
+        <code class="language-shell">cx fmt doc.cx                   [# preserves attr order    #]
            cx --to=json doc.cx             [# sorts attr keys         #]</code>
-            </pre>
-          
-        </section>
-        <section id="faq-double-anchor">
-          <h3>Can I have two <code>&anchor</code> declarations with the same name?</h3>
-          
-            <p>No. Anchor names are document-unique; declaring <code>&amp;foo</code>
+      </pre>
+    </section>
+    <section id="faq-double-anchor">
+      <h3>Can I have two <code>&anchor</code> declarations with the same name?</h3>
+      <p>No. Anchor names are document-unique; declaring <code>&amp;foo</code>
            twice raises <code>CXER0101</code> at parse time. If you want to
            reuse an anchor's content in two places, declare it
            once and merge it twice with <code>*foo</code>:</p>
-            <pre>
-              <code class="language-cx">[# Wrong: duplicate anchor                                  #]
+      <pre>
+        <code class="language-cx">[# Wrong: duplicate anchor                                  #]
            [a &x value=1]
            [b &x value=2]   [# → CXER0101                              #]
 
@@ -331,24 +310,20 @@
            [defaults &x timeout=30 retries=3]
            [service-a *x]
            [service-b *x]</code>
-            </pre>
-          
-        </section>
-      
+      </pre>
     </section>
-    <section id="faq-code">
-      <h2>Code language</h2>
-      
-        <section id="faq-find-vs-for">
-          <h3>What is the difference between <code>[?for]</code> and the old <code>[?find]</code>?</h3>
-          
-            <p>They are the same operation. <code>[?find]</code> was retired because it was always
+  </section>
+  <section id="faq-code">
+    <h2>Code language</h2>
+    <section id="faq-find-vs-for">
+      <h3>What is the difference between <code>[?for]</code> and the old <code>[?find]</code>?</h3>
+      <p>They are the same operation. <code>[?find]</code> was retired because it was always
            pattern-driven <code>[?for]</code> with one less keyword. Anything
            you wrote in <code>[?find]</code> form can be expressed as <code>[?for]</code>
            over a pattern, or — more directly — as a CXPath
            expression. See <a class="xref" href="migration.html#from-v07x">from-v07x</a> for the migration table.</p>
-            <pre>
-              <code class="language-cx">[# v0.7.x — old form (retired)                              #] # version-literal-ok
+      <pre>
+        <code class="language-cx">[# v0.7.x — old form (retired)                              #] # version-literal-ok
            [?find [user @active=true $u] :yield $u]
 
            [# v0.8.0 — CXPath form (preferred)                         #] # version-literal-ok
@@ -356,47 +331,41 @@
 
            [# v0.8.0 — equivalent pattern form                         #] # version-literal-ok
            [?for [user @active=true $u] [yield $u]]</code>
-            </pre>
-          
-        </section>
-        <section id="faq-dispatch-on-type">
-          <h3>How do I dispatch on element type?</h3>
-          
-            <p>Use multi-arm <code>[?match]</code> with <code>[case …]</code> clause-children
+      </pre>
+    </section>
+    <section id="faq-dispatch-on-type">
+      <h3>How do I dispatch on element type?</h3>
+      <p>Use multi-arm <code>[?match]</code> with <code>[case …]</code> clause-children
            that name the element type. Each <code>[case …]</code> is a pattern +
            result, the first one that matches wins, and <code>[else …]</code> is
            the catch-all.</p>
-            <pre>
-              <code class="language-cx">[doc [prose 'text'] [code 'x = 1'] [img src='logo.svg']]
+      <pre>
+        <code class="language-cx">[doc [prose 'text'] [code 'x = 1'] [img src='logo.svg']]
            [?for [in $n //doc/*] [yield
              [?match $n
                [case [prose $p]   [p $p]]
                [case [code $c]    [pre $c]]
                [case [img src=$s] [figure src=$s]]
                [else              ()]]]]</code>
-            </pre>
-          
-        </section>
-        <section id="faq-update-value">
-          <h3>How do I update a value?</h3>
-          
-            <p>Use <code>[?modify]</code>. It takes a document, a CXPath
+      </pre>
+    </section>
+    <section id="faq-update-value">
+      <h3>How do I update a value?</h3>
+      <p>Use <code>[?modify]</code>. It takes a document, a CXPath
            focus, and an action; it returns a new document. There is
            no in-place mutation in CX — see the next question.</p>
-            <pre>
-              <code class="language-cx">[users [user id=1 email='ada@example.com']]
+      <pre>
+        <code class="language-cx">[users [user id=1 email='ada@example.com']]
            [?modify $doc //user[= $_@id 1]/@email [set 'ada@cx.dev']]
 
            [# Eleven actions: [set …] / [delete] / [using …] / [rename …] #]
            [# [set-attr …] / [delete-attr …] / [append …] / [prepend …]   #]
            [# [insert-before …] / [insert-after …] / [replace …]          #]</code>
-            </pre>
-          
-        </section>
-        <section id="faq-pure-functional">
-          <h3>Why does <code>[?modify]</code> return a new Doc instead of mutating?</h3>
-          
-            <p>Pure-functional semantics — no in-place writes in CX.
+      </pre>
+    </section>
+    <section id="faq-pure-functional">
+      <h3>Why does <code>[?modify]</code> return a new Doc instead of mutating?</h3>
+      <p>Pure-functional semantics — no in-place writes in CX.
            Concurrency is safe by construction (no reader ever
            observes a half-modified tree), equality is trivially
            preservable (the old hash still names the old document),
@@ -404,32 +373,26 @@
            of the tree are reused between the input and the output,
            so <code>[?modify]</code> is O(log n) in the document size for a
            single-focus update. See <a class="xref" href="runtime-representation.html#pure-updates">pure-updates</a>.</p>
-          
-        </section>
-        <section id="faq-pipeline-implicit-bind">
-          <h3>What does <code>_</code> mean in a pipeline stage?</h3>
-          
-            <p><code>_</code> is the partial-application hole: a <code>[?pipe]</code> stage
+    </section>
+    <section id="faq-pipeline-implicit-bind">
+      <h3>What does <code>_</code> mean in a pipeline stage?</h3>
+      <p><code>_</code> is the partial-application hole: a <code>[?pipe]</code> stage
            that carries a single <code>_</code> receives the threaded value at
            that position. A stage with no hole receives the value
            appended as its final positional argument, so these are
            equivalent:</p>
-            <pre>
-              <code class="language-cx">[users [user active=true] [user active=false]]
+      <pre>
+        <code class="language-cx">[users [user active=true] [user active=false]]
            ([?pipe //user[= $_@active true] [$count]],
             [?pipe //user[= $_@active true] [$count _]])</code>
-            </pre>
-          
-        </section>
-      
+      </pre>
     </section>
-    <section id="faq-bindings">
-      <h2>Bindings</h2>
-      
-        <section id="faq-which-binding">
-          <h3>Which binding should I use?</h3>
-          
-            <p>Pick by deployment shape:
+  </section>
+  <section id="faq-bindings">
+    <h2>Bindings</h2>
+    <section id="faq-which-binding">
+      <h3>Which binding should I use?</h3>
+      <p>Pick by deployment shape:
            <b>V</b> for embedded / native — the reference implementation,
            no FFI overhead, smallest binary footprint.
            <b>Python</b> for scripting, data-engineering pipelines, and
@@ -440,22 +403,18 @@
            or for the lowest-overhead pure-Rust deployments.
            Layer 1 (the 16 canonical methods) is identical across all
            four, so you can change your mind later.</p>
-          
-        </section>
-        <section id="faq-thread-safe">
-          <h3>Are CX values thread-safe?</h3>
-          
-            <p>Yes. CX values are immutable by construction — every
+    </section>
+    <section id="faq-thread-safe">
+      <h3>Are CX values thread-safe?</h3>
+      <p>Yes. CX values are immutable by construction — every
            update returns a new value via structural sharing.
            Multiple threads can read the same <code>Doc</code> concurrently
            without locks. Bindings handle their own GC threading
            via <code>cx_thread_register</code> (see next).</p>
-          
-        </section>
-        <section id="faq-cx-thread-register">
-          <h3>When do I call <code>cx_thread_register()</code>?</h3>
-          
-            <p>It depends on the binding. <b>Rust</b>: never — every FFI
+    </section>
+    <section id="faq-cx-thread-register">
+      <h3>When do I call <code>cx_thread_register()</code>?</h3>
+      <p>It depends on the binding. <b>Rust</b>: never — every FFI
            chokepoint calls <code>ensure_thread</code> before the C call and
            unregisters at thread exit. <b>Go</b>: never — each cgo call
            runs on a locked OS thread that the internal guard
@@ -469,48 +428,42 @@
            opaque to libcx's Boehm GC until it registers. See
            <a class="xref" href="identity.html#ffi-thread-register">ffi-thread-register</a> and
            <a href="../../spec/03-approved/core/abi.md"><code>spec/03-approved/core/abi.md</code></a> §1.6.</p>
-          
-        </section>
-        <section id="faq-python-memory">
-          <h3>Do I need to close a Python Doc to release memory?</h3>
-          
-            <p>No — there is nothing to close. A Python <code>Doc</code> is an
+    </section>
+    <section id="faq-python-memory">
+      <h3>Do I need to close a Python Doc to release memory?</h3>
+      <p>No — there is nothing to close. A Python <code>Doc</code> is an
            ordinary refcounted object: the binding copies every
            string libcx returns and frees the C buffer at the call
            boundary, so no Doc holds libcx memory between calls.
            Dropping the last reference reclaims it like any other
            Python value. <code>Doc</code> has no <code>close()</code>, no <code>__del__</code>, and
            no context-manager protocol.</p>
-            <p>The handle-backed classes are the ones with an explicit
+      <p>The handle-backed classes are the ones with an explicit
            lifecycle — <code>Stream</code>, <code>TableReader</code>, <code>TableWriter</code>, and
            <code>EventWriter</code> carry <code>close()</code> and support <code>with</code>:</p>
-            <pre>
-              <code class="language-python">import cxlib
+      <pre>
+        <code class="language-python">import cxlib
          with cxlib.TableReader(open('huge.cxcol', 'rb').read()) as reader:
              for row_group in reader:
                  use(row_group)
          [# reader.close() called automatically on exit                #]</code>
-            </pre>
-            <p class="note">See <a class="xref" href="identity.html#ffi-doc-lifetime">ffi-doc-lifetime</a> for the full per-binding lifetime
+      </pre>
+      <p class="note">See <a class="xref" href="identity.html#ffi-doc-lifetime">ffi-doc-lifetime</a> for the full per-binding lifetime
            contract. The TS binding had a Boehm GC interaction bug
            on Node — see lang/_archived/typescript/README.md if you
            need historical context.</p>
-          
-        </section>
-      
     </section>
-    <section id="faq-tooling">
-      <h2>Tooling</h2>
-      
-        <section id="faq-lint-tree">
-          <h3>How do I lint a tree of CX files?</h3>
-          
-            <p><code>cx lint</code> works file-by-file; chain it through <code>find</code>
+  </section>
+  <section id="faq-tooling">
+    <h2>Tooling</h2>
+    <section id="faq-lint-tree">
+      <h3>How do I lint a tree of CX files?</h3>
+      <p><code>cx lint</code> works file-by-file; chain it through <code>find</code>
            for a tree. The standard recipe:</p>
-            <pre>
-              <code class="language-shell">find . -name '*.cx' -print0 | xargs -0 cx lint</code>
-            </pre>
-            <p><code>cx lint</code> runs the built-in rule set (CX-L001 and
+      <pre>
+        <code class="language-shell">find . -name '*.cx' -print0 | xargs -0 cx lint</code>
+      </pre>
+      <p><code>cx lint</code> runs the built-in rule set (CX-L001 and
            CX-L003 through CX-L008; the codes are registered in
            <a href="../../spec/03-approved/core/code.md"><code>spec/03-approved/core/code.md</code></a>
            §9.4/§9.5). Exit codes are the CLI convention: 0 = no
@@ -518,12 +471,10 @@
            or parse failure. Per-project configuration lives in a
            <code>.cxlint.cx</code> file, discovered by walking up from the
            linted file. See <a class="xref" href="code-tooling.html#lint">lint</a> for the rule list.</p>
-          
-        </section>
-        <section id="faq-semantic-diff">
-          <h3>How do I diff two CX files semantically?</h3>
-          
-            <p><code>cx diff a.cx b.cx</code> — the diff is always semantic:
+    </section>
+    <section id="faq-semantic-diff">
+      <h3>How do I diff two CX files semantically?</h3>
+      <p><code>cx diff a.cx b.cx</code> — the diff is always semantic:
            it walks the strict-canonical forms of both inputs, so
            attribute order, quote choice, and comment-only changes
            produce no delta. There is no <code>--semantic</code> flag because
@@ -531,35 +482,31 @@
            <code>--format=unified|json|summary</code> (default unified), with
            <code>--color[=always|never|auto]</code> / <code>--no-color</code> for the
            unified view.</p>
-            <pre>
-              <code class="language-shell">cx diff before.cx after.cx
+      <pre>
+        <code class="language-shell">cx diff before.cx after.cx
            cx diff before.cx after.cx --format=summary</code>
-            </pre>
-            <p>See <a class="xref" href="data-tooling.html#diff">diff</a> for the algorithm and the JSON-output mode
+      </pre>
+      <p>See <a class="xref" href="data-tooling.html#diff">diff</a> for the algorithm and the JSON-output mode
            used by CI integrations.</p>
-          
-        </section>
-        <section id="faq-make-docs">
-          <h3>How do I run the canonical guide locally?</h3>
-          
-            <p>The doc-gen pipeline is wired into the top-level
+    </section>
+    <section id="faq-make-docs">
+      <h3>How do I run the canonical guide locally?</h3>
+      <p>The doc-gen pipeline is wired into the top-level
            <code>Makefile</code>. From a devbox shell:</p>
-            <pre>
-              <code class="language-shell">devbox run -- make docs                [# build staging tree    #]
+      <pre>
+        <code class="language-shell">devbox run -- make docs                [# build staging tree    #]
            devbox run -- make docs-diff           [# diff vs live           #]
            devbox run -- make docs-publish        [# promote staging→live  #]</code>
-            </pre>
-            <p>The generator reads <code>docs-src/canonical/manifest.cxd</code>,
+      </pre>
+      <p>The generator reads <code>docs-src/canonical/manifest.cxd</code>,
            assembles the section files, expands example
            placeholders against <code>conformance/*.cxd</code>, and writes
            the rendered guide into <code>_docs_staging/</code>. See
            <a class="xref" href="tooling.html#docgen">docgen</a>.</p>
-          
-        </section>
-        <section id="faq-vscode-highlight">
-          <h3>Why doesn't VS Code highlight my CX file?</h3>
-          
-            <p>The CX VS Code extension is not auto-installed, and no
+    </section>
+    <section id="faq-vscode-highlight">
+      <h3>Why doesn't VS Code highlight my CX file?</h3>
+      <p>The CX VS Code extension is not auto-installed, and no
            prebuilt <code>.vsix</code> is committed — build one first with
            <code>npm run package</code> in <code>tooling/vscode/</code>, then from the
            command palette run "Extensions: Install from VSIX…"
@@ -569,21 +516,17 @@
            and <code>.cxd</code> file associations; if a file is mis-detected,
            click the language label in the status bar and switch
            manually.</p>
-            <p class="note">If you are on Neovim, the install script is
+      <p class="note">If you are on Neovim, the install script is
            <code>tooling/install/install-nvim.sh</code> — it wires
            tree-sitter and the LSP. See
            <a class="xref" href="tooling.html#editors">editors</a> for Helix and other editors.</p>
-          
-        </section>
-      
     </section>
-    <section id="faq-perf">
-      <h2>Performance</h2>
-      
-        <section id="faq-max-file-size">
-          <h3>How big a file can cx handle?</h3>
-          
-            <p>Parsing is the default action — <code>cx FILE</code> parses and
+  </section>
+  <section id="faq-perf">
+    <h2>Performance</h2>
+    <section id="faq-max-file-size">
+      <h3>How big a file can cx handle?</h3>
+      <p>Parsing is the default action — <code>cx FILE</code> parses and
            evaluates — and there is no configured size cap: the
            whole-document path is memory-bound, so the practical
            limit is the RAM the parsed tree needs. For inputs too
@@ -595,19 +538,17 @@
            throughput to a ≥200 MB/s floor; that gate is not green
            yet (<code>[?for]</code> measures around the line, <code>[?map]</code> below
            it), so treat the floor as the target, not a promise.</p>
-            <pre>
-              <code class="language-shell">[# Whole-document — fine while the tree fits in memory      #]
+      <pre>
+        <code class="language-shell">[# Whole-document — fine while the tree fits in memory      #]
            cx big.cx
 
            [# Streaming comprehension output — bounded memory          #]
            cx --data=big.cx program.cx</code>
-            </pre>
-          
-        </section>
-        <section id="faq-single-threaded">
-          <h3>Is parsing single-threaded?</h3>
-          
-            <p>The <b>parser</b> is single-threaded per document — the
+      </pre>
+    </section>
+    <section id="faq-single-threaded">
+      <h3>Is parsing single-threaded?</h3>
+      <p>The <b>parser</b> is single-threaded per document — the
            bracket grammar is inherently sequential. The
            <b>streaming evaluator</b> is single-threaded per stream
            but multiple streams can run concurrently, and a <code>[par]</code>
@@ -615,12 +556,10 @@
            bounded worker pools. For analytical workloads on
            tabular data, CXCol scans are SIMD-accelerated where
            the host CPU supports it.</p>
-          
-        </section>
-        <section id="faq-playground-slower">
-          <h3>Why is the playground slower than running cx in the terminal?</h3>
-          
-            <p>The playground is a constrained demonstration surface
+    </section>
+    <section id="faq-playground-slower">
+      <h3>Why is the playground slower than running cx in the terminal?</h3>
+      <p>The playground is a constrained demonstration surface
            bundled into the browser. It carries unavoidable
            overhead — Asyncify instrumentation (so <code>[?sleep]</code> can
            yield through the JS event loop), pthreads runtime (so
@@ -635,12 +574,10 @@
            is the performance target. See <a class="xref" href="bindings.html#wasm-story">wasm-story</a> for the
            full framing, including the three playground delivery
            modes (GitHub Pages, file://, <code>make guide-http</code>).</p>
-          
-        </section>
-        <section id="faq-playground-par-no-speedup">
-          <h3>I ran [?map [par]] in the playground and it did not speed up — bug?</h3>
-          
-            <p>Not a bug — your playground is most likely running in
+    </section>
+    <section id="faq-playground-par-no-speedup">
+      <h3>I ran [?map [par]] in the playground and it did not speed up — bug?</h3>
+      <p>Not a bug — your playground is most likely running in
            single-thread mode. Three delivery modes: GitHub Pages
            and <code>file://</code> both serve the
            single-threaded Asyncify build (no cross-origin
@@ -654,12 +591,10 @@
            pthreads-enabled wasm loads, and <code>[par]</code> uses real OS
            threads. The playground's adaptive footer tells you
            which mode you're in.</p>
-          
-        </section>
-        <section id="faq-parquet-perf">
-          <h3>How fast is Parquet round-trip vs native CXCol?</h3>
-          
-            <p>There is no maintained benchmark number to quote for the
+    </section>
+    <section id="faq-parquet-perf">
+      <h3>How fast is Parquet round-trip vs native CXCol?</h3>
+      <p>There is no maintained benchmark number to quote for the
            Parquet path. Structurally, Parquet writes pay for
            compression and the Arrow → Parquet conversion; native
            <b>CXCol</b> skips compression by default and uses a wire
@@ -668,41 +603,35 @@
            <b>Parquet</b> for interchange with the broader analytics
            ecosystem, <b>CXCol</b> for CX-internal pipelines. See
            <a class="xref" href="analytics.html#cxcol-vs-others">cxcol-vs-others</a> for the full decision matrix.</p>
-          
-        </section>
-      
     </section>
-    <section id="faq-security">
-      <h2>Security</h2>
-      
-        <section id="faq-include-untrusted">
-          <h3>Is <code>[?cx include]</code> safe with untrusted input?</h3>
-          
-            <p>Yes by default — because by default nothing is granted.
+  </section>
+  <section id="faq-security">
+    <h2>Security</h2>
+    <section id="faq-include-untrusted">
+      <h3>Is <code>[?cx include]</code> safe with untrusted input?</h3>
+      <p>Yes by default — because by default nothing is granted.
            CX is deny-by-default: with no <code>--allow-*</code> flags the
            evaluation is pure-only, so includes (which ride the
            <code>read</code> capability) stay unresolved and no directive can
            touch the filesystem or network. That makes the bare
            invocation the safe one for untrusted input:</p>
-            <pre>
-              <code class="language-shell">[# Pure-only — untrusted input cannot reach fs or network  #]
+      <pre>
+        <code class="language-shell">[# Pure-only — untrusted input cannot reach fs or network  #]
            cx untrusted.cx
 
            [# Trusted input that needs includes: grant read + a root  #]
            cx --allow-read --include-root=./conf main.cx</code>
-            </pre>
-            <p>The full capability model lives at
+      </pre>
+      <p>The full capability model lives at
            <a class="xref" href="data-language.html#include-capabilities">include-capabilities</a> and in
            <a href="../../spec/03-approved/core/security.md"><code>spec/03-approved/core/security.md</code></a>.
            The <code>cx_features()</code> bitmask exposes what the loaded libcx
            supports; the grant set gates what the runtime
            permits.</p>
-          
-        </section>
-        <section id="faq-resource-limits">
-          <h3>How do I limit resource use?</h3>
-          
-            <p>CX has no environment-variable cap family — there is no
+    </section>
+    <section id="faq-resource-limits">
+      <h3>How do I limit resource use?</h3>
+      <p>CX has no environment-variable cap family — there is no
            parse-size, depth, or node-count knob. What bounds a run:
            the <b>capability grant set</b> (deny-by-default <code>--allow-*</code>)
            gates every effect an evaluation can perform, the
@@ -710,22 +639,18 @@
            and per-process ceilings come from the operating system
            (<code>ulimit</code>, cgroups, container limits) like any other
            process. See <a class="xref" href="data-language.html#limits">limits</a> and <a class="xref" href="capabilities.html#security">security</a>.</p>
-            <pre>
-              <code class="language-shell">[# OS-level ceilings around a pure-only evaluation          #]
+      <pre>
+        <code class="language-shell">[# OS-level ceilings around a pure-only evaluation          #]
            ulimit -v 1048576        [# 1 GiB address-space cap         #]
            cx input.cx</code>
-            </pre>
-          
-        </section>
-      
+      </pre>
     </section>
-    <section id="faq-migration">
-      <h2>Migration</h2>
-      
-        <section id="faq-migrate-v07">
-          <h3>How do I migrate from v0.7.x?</h3>
-          
-            <p>v0.8.0 is the pre-release API/format-stability boundary. [; version-literal-ok ]
+  </section>
+  <section id="faq-migration">
+    <h2>Migration</h2>
+    <section id="faq-migrate-v07">
+      <h3>How do I migrate from v0.7.x?</h3>
+      <p>v0.8.0 is the pre-release API/format-stability boundary. [; version-literal-ok ]
            The changes are mechanical
            renames plus the <code>[?find]</code> → <code>[?for]</code>/CXPath rewrite.
            The full diff between v0.7.x and v0.8.0 is documented at [; version-literal-ok ]
@@ -735,12 +660,10 @@
            a v0.7.x codebase, the rename tables there give [; version-literal-ok ]
            you everything to do it by hand or with a one-off
            project-local script.</p>
-          
-        </section>
-        <section id="faq-archived-bindings">
-          <h3>What if I am on TypeScript / Java / C# / Ruby / Kotlin / Swift binding?</h3>
-          
-            <p>Those bindings were archived in v0.8.0 — they are still [; version-literal-ok ]
+    </section>
+    <section id="faq-archived-bindings">
+      <h3>What if I am on TypeScript / Java / C# / Ruby / Kotlin / Swift binding?</h3>
+      <p>Those bindings were archived in v0.8.0 — they are still [; version-literal-ok ]
            available on v0.7.5 (last release before the archive) [; version-literal-ok ]
            and live under <code>lang/_archived/</code> for reference. The
            current binding set is V, Python, Go, Rust (Tier 1)
@@ -753,52 +676,44 @@
            See <code>lang/_archived/README.md</code> for the per-binding
            archival notes and pointer to the last working
            commit.</p>
-            <p class="note">The decision to archive was about resource focus, not
+      <p class="note">The decision to archive was about resource focus, not
            technical limitation — those bindings worked. The
            The Tier-1 set was chosen for ecosystem reach
            (Python for analytics, Go for services, Rust for
            systems, V as the native reference). Community-
            maintained revivals are welcome and the C ABI stays
            stable for them.</p>
-          
-        </section>
-      
     </section>
-    <section id="faq-first-thirty">
-      <h2>First thirty minutes — quick answers</h2>
-      
-        <p>Working answers to questions adopters ask in the first
+  </section>
+  <section id="faq-first-thirty">
+    <h2>First thirty minutes — quick answers</h2>
+    <p>Working answers to questions adopters ask in the first
          thirty minutes. The §12.1-§12.8 children above cover
          deeper operational topics; this section is the
          beginner-question backstop.</p>
-        <section id="faq-leading-zero">
-          <h3>Why does [zip 02134] produce a string?</h3>
-          
-            <p>Leading-zero tokens stay strings unless the prefix is
+    <section id="faq-leading-zero">
+      <h3>Why does [zip 02134] produce a string?</h3>
+      <p>Leading-zero tokens stay strings unless the prefix is
            <code>0x</code> (hex), <code>0o</code> (octal), or <code>0b</code> (binary). The rule
            is deliberately predictable: leading-zero numerics are
            typically identifiers (postal codes, area codes, BIC
            codes, account numbers) where the leading zero is
            data, not a numeric value. CX's design directly
            inverts YAML's "country: NO" footgun.</p>
-          
-        </section>
-        <section id="faq-decimal">
-          <h3>What is :decimal for?</h3>
-          
-            <p>Arbitrary-precision decimal — for money, scientific
+    </section>
+    <section id="faq-decimal">
+      <h3>What is :decimal for?</h3>
+      <p>Arbitrary-precision decimal — for money, scientific
            quantities, or any value where IEEE 754 binary floats
            would lose precision. <code>0.1 + 0.2</code> is
            <code>0.30000000000000004</code> in float; in <code>:decimal</code> it is
            <code>0.3</code>. Consumer bindings map <code>:decimal</code> to their
            language's decimal type (Python <code>Decimal</code>, Java
            <code>BigDecimal</code>, .NET <code>decimal</code>, Ruby <code>BigDecimal</code>).</p>
-          
-        </section>
-        <section id="faq-brackets">
-          <h3>Why brackets instead of braces, indentation, or tags?</h3>
-          
-            <p>Brackets are the lightest balanced delimiter not in
+    </section>
+    <section id="faq-brackets">
+      <h3>Why brackets instead of braces, indentation, or tags?</h3>
+      <p>Brackets are the lightest balanced delimiter not in
            heavy use already. Braces are JSON; mixing braces with
            the rest of CX would create constant visual collision.
            Indentation breaks under programmatic generation.
@@ -807,26 +722,22 @@
            usefully: <code>[name]</code> is the thing called <code>name</code>, which
            matches how humans write structured outlines on
            whiteboards.</p>
-          
-        </section>
-        <section id="faq-logfmt">
-          <h3>What is logfmt mode?</h3>
-          
-            <p>A CX file made entirely of bare top-level <code>key=value</code>
+    </section>
+    <section id="faq-logfmt">
+      <h3>What is logfmt mode?</h3>
+      <p>A CX file made entirely of bare top-level <code>key=value</code>
            attributes. Each line parses as a synthetic Element.
            Log streams are valid CX. You can <code>cx --json logs.cx</code>
            and get a JSON array of typed log records — no
            separate logfmt parser needed.</p>
-            <pre>
-              <code class="language-cx">ts=2026-05-07T10:30:00Z level=info svc=api req_id=abc123 latency_ms=45
+      <pre>
+        <code class="language-cx">ts=2026-05-07T10:30:00Z level=info svc=api req_id=abc123 latency_ms=45
            ts=2026-05-07T10:30:01Z level=warn svc=api req_id=def456 latency_ms=210 slow=true</code>
-            </pre>
-          
-        </section>
-        <section id="faq-thread-safety">
-          <h3>Is CX thread-safe?</h3>
-          
-            <p>The C ABI is documented per-symbol with thread-safety
+      </pre>
+    </section>
+    <section id="faq-thread-safety">
+      <h3>Is CX thread-safe?</h3>
+      <p>The C ABI is documented per-symbol with thread-safety
            classes. All format converters are stateless and can
            run concurrently across threads on disjoint inputs.
            The Boehm GC underneath libcx requires
@@ -835,30 +746,26 @@
            locked OS threads); the Python binding does NOT — it
            assumes the GIL and a single calling thread, so keep
            Python libcx calls on one thread.</p>
-          
-        </section>
-        <section id="faq-confusion-raw">
-          <h3>Why does my embedded code get garbled?</h3>
-          
-            <p>The bracket-pipe block-content form is parsed as CX, so
+    </section>
+    <section id="faq-confusion-raw">
+      <h3>Why does my embedded code get garbled?</h3>
+      <p>The bracket-pipe block-content form is parsed as CX, so
            child-element brackets inside it open new elements. If
            your code contains brackets, braces, or quotes, the
            parser will mangle it. Use the bracket-hash raw-text
            form instead — nothing inside is parsed, and the
            terminator is <code>#]</code>.</p>
-            <pre>
-              <code class="language-cx">[code [#
+      <pre>
+        <code class="language-cx">[code [#
              for (let i = 0; i < arr.length; i++) {
                console.log(arr[i]);
              }
            #]]</code>
-            </pre>
-          
-        </section>
-        <section id="faq-license">
-          <h3>License and contributing</h3>
-          
-            <p><b>License:</b> Apache 2.0. <b>Contributing:</b> the project
+      </pre>
+    </section>
+    <section id="faq-license">
+      <h3>License and contributing</h3>
+      <p><b>License:</b> Apache 2.0. <b>Contributing:</b> the project
            lives at github.com/cx-home/cx — bug reports, doc
            fixes, and pull requests welcome. For format-design
            questions or proposed grammar changes, file an issue
@@ -868,22 +775,19 @@
            reporting at
            github.com/cx-home/cx/security/advisories/new — do not
            file a public issue for security-sensitive bugs.</p>
-          
-        </section>
-      
     </section>
-  
+  </section>
 </section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>Frequently Asked Questions</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

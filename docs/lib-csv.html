@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,117 +143,103 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">csv</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-csv"><h1>csv</h1><p class="lede">Parse and emit CSV/TSV following RFC 4180 with Excel-pragmatic extensions. Rows round-trip between strings and CXDM records: a header dialect yields maps keyed by header strings, while a headerless dialect yields positional arrays. Dialect handling covers delimiter, quote, escape, and line-terminator, and cell values are strings unless coerced via a schema. Distinct from the cross-format CLI conversion path — this is the in-program library form.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-csv-parse" class="fn">
-    <h3>csv:parse</h3>
-    <p class="fn-sig"><code>[$csv:parse]  -> [sequence any]</code>  —  Parse CSV with the default headered dialect into a sequence of maps keyed by header strings.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/csv']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-csv-parse" class="fn">
+  <h3>csv:parse</h3>
+  <p class="fn-sig"><code>[$csv:parse]  -> [sequence any]</code>  —  Parse CSV with the default headered dialect into a sequence of maps keyed by header strings.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/csv']
 [$count [$csv:parse "email,first_name,score\nalice@example.com,Alice,87"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>1</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-csv-parse-with-dialect" class="fn">
-    <h3>csv:parse-with-dialect</h3>
-    <p class="fn-sig"><code>[$csv:parse-with-dialect]  -> [sequence any]</code>  —  Parse a string with a named or fully-specified dialect; the row shape follows the dialect header setting.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/csv']
+    </pre>
+    <pre class="sample-output">
+      <code>1</code>
+    </pre>
+  </div>
+</section><section id="fn-csv-parse-with-dialect" class="fn">
+  <h3>csv:parse-with-dialect</h3>
+  <p class="fn-sig"><code>[$csv:parse-with-dialect]  -> [sequence any]</code>  —  Parse a string with a named or fully-specified dialect; the row shape follows the dialect header setting.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/csv']
 [?let [= $rows [$csv:parse-with-dialect "a\tb\n1\t2" [dialect [name "tsv"]]]]
       [= $row [$nth $rows 1]]
   $row/a]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'1'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-csv-parse-with-schema" class="fn">
-    <h3>csv:parse-with-schema</h3>
-    <p class="fn-sig"><code>[$csv:parse-with-schema]  -> [sequence any]</code>  —  Parse CSV and coerce schema-named columns to typed values; absent columns stay strings.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/csv']
+    </pre>
+    <pre class="sample-output">
+      <code>'1'</code>
+    </pre>
+  </div>
+</section><section id="fn-csv-parse-with-schema" class="fn">
+  <h3>csv:parse-with-schema</h3>
+  <p class="fn-sig"><code>[$csv:parse-with-schema]  -> [sequence any]</code>  —  Parse CSV and coerce schema-named columns to typed values; absent columns stay strings.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/csv']
 [?let [= $rows [$csv:parse-with-schema "score\n87" {score: :int}]]
       [= $row [$nth $rows 1]]
   $row/score]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>87</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-csv-emit" class="fn">
-    <h3>csv:emit</h3>
-    <p class="fn-sig"><code>[$csv:emit]  -> string</code>  —  Emit a sequence of record rows as CSV using the default dialect, quoting and escaping per RFC 4180.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/csv']
+    </pre>
+    <pre class="sample-output">
+      <code>87</code>
+    </pre>
+  </div>
+</section><section id="fn-csv-emit" class="fn">
+  <h3>csv:emit</h3>
+  <p class="fn-sig"><code>[$csv:emit]  -> string</code>  —  Emit a sequence of record rows as CSV using the default dialect, quoting and escaping per RFC 4180.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/csv']
 [$csv:emit ({a: "1", b: "2"})]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'a,b\n1,2\n'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-csv-emit-with-dialect" class="fn">
-    <h3>csv:emit-with-dialect</h3>
-    <p class="fn-sig"><code>[$csv:emit-with-dialect]  -> string</code>  —  Emit record rows as CSV/TSV using a named or fully-specified dialect.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/csv']
+    </pre>
+    <pre class="sample-output">
+      <code>'a,b\n1,2\n'</code>
+    </pre>
+  </div>
+</section><section id="fn-csv-emit-with-dialect" class="fn">
+  <h3>csv:emit-with-dialect</h3>
+  <p class="fn-sig"><code>[$csv:emit-with-dialect]  -> string</code>  —  Emit record rows as CSV/TSV using a named or fully-specified dialect.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/csv']
 [$csv:emit-with-dialect ({a: "1", b: "2"}) [dialect [name "tsv"]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'a\tb\n1\t2\n'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-csv-dialects-builtin" class="fn">
-    <h3>csv:dialects-builtin</h3>
-    <p class="fn-sig"><code>[$csv:dialects-builtin]  -> map</code>  —  Return the seven built-in dialects (csv, tsv, psv, excel, excel-tab, unix, headless) keyed by name.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/csv']
+    </pre>
+    <pre class="sample-output">
+      <code>'a\tb\n1\t2\n'</code>
+    </pre>
+  </div>
+</section><section id="fn-csv-dialects-builtin" class="fn">
+  <h3>csv:dialects-builtin</h3>
+  <p class="fn-sig"><code>[$csv:dialects-builtin]  -> map</code>  —  Return the seven built-in dialects (csv, tsv, psv, excel, excel-tab, unix, headless) keyed by name.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/csv']
 [$count [$keys [$csv:dialects-builtin]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>7</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>7</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>csv</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

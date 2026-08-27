@@ -196,6 +196,28 @@ they exercise).
 
 `cx:resolve-includes` runs the [`spec/core/code.md`](../core/code.md) §13 `[?cx include]` resolution algorithm at runtime against an explicit root.
 
+**`cx:references` — the reference record.** Each item is a map with exactly
+these five keys, in canonical (sorted) order:
+
+| Key | Type | Meaning |
+|---|---|---|
+| `attr` | `string` | the attribute name carrying the reference; `''` for the body-position and alias forms, which have no attribute |
+| `kind` | `string` | the reference form, by grammar production — see below |
+| `path` | `string` | the canonical position of the REFERRING node, in the same spelling `cx:diff` / `cx:patch` address with |
+| `ref` | `string` | the referenced name, WITHOUT its sigil |
+| `resolved` | `bool` | whether that name is declared in this value |
+
+`kind` takes one of the four forms the grammar admits, and none is omitted:
+`idref` (an `@name` attribute) and `body-ref` (`[ref @name]`) reference the
+**ID** namespace; `alias` (`[*name]`) and `merge` (a `*name` on an element
+head) reference the **ANCHOR** namespace. The two namespaces are disjoint
+([`cxdm.md`](../core/cxdm.md) §4), so `resolved` is checked against the ID table for
+`idref`/`body-ref` and the anchor table for `alias`/`merge`.
+
+`resolved` is why the item is a map rather than a `[sequence string]`:
+resolution is the question a caller is asking, and recomputing it in-language
+would mean re-walking the whole value once per reference.
+
 ### §2.3 Transform helpers
 
 | Fn | Signature | Returns | Purity |
@@ -218,6 +240,23 @@ distributed-store alignment): `error-on-conflict` raises `CXER4110` whose
 err CARRIES every collision as a typed `[conflict subject=<path>
 kind=:merge-value [ours <a-side>] [theirs <b-side>]]` child — the ONE
 conflict shape (`distributed_store.md` §4), never a bare message.
+
+**`cx:strip-attrs` — what a name-pattern is.** `$pattern` is a **name glob**
+over a single name segment: `*` matches any run of characters, `?` matches one,
+and `[…]` is a character class. It is matched against the attribute NAME alone
+— a name glob has no path structure and never spans a separator, so it is the
+same shape `io:glob` matches one segment with and the same shape `bus.md` uses
+for head-name patterns.
+
+It is **not** a regular expression. The `pattern=` of the schema and validate
+surfaces is RE2; this is deliberately the simpler form, because an attribute
+name is one segment and the glob is the vocabulary the engine already applies
+to segments.
+
+A pattern is invalid — `CXER4115` (§6) — when it is empty or blank, or when a
+`[` character class is left unterminated. Those are the only two malformed
+cases: every other string is a well-formed glob that may simply match nothing,
+and matching nothing is a result, not an error.
 
 `cx:pretty-print` opts: `indent` (int, default 2), `max-line-length` (int, default 80), `sort-attrs` (bool, default false), `strip-comments` (bool, default false).
 

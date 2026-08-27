@@ -75,6 +75,12 @@ tooling/vscode/node_modules/
 tooling/vscode/out/
 tooling/vscode/*.vsix
 
+# Playground diagram-validity gate (#992) — dev-only jsdom + mermaid, installed
+# on demand by `npm --prefix scripts/playground-gate install`. The manifest is
+# committed; the tree it fetches is not.
+scripts/playground-gate/node_modules/
+scripts/playground-gate/package-lock.json
+
 # v0.7.0 CC fuzz harness — crashes are runtime artifacts, never source
 vcx/fuzz/crashes/
 
@@ -90,3 +96,13 @@ bench/current.json
 # FL-1 (#764): feed-lineage sidecars are runtime artifacts, never committed
 **/.cxstore-lineage
 *.cxstore-lineage
+
+# #1005: the cross-process writable-open sentinel. Runtime state, like the
+# lineage sidecar — it names whichever process currently holds the root, and
+# the lock itself lives on the descriptor, never in the file. A committed one
+# would be a stale record of a machine that is not this one.
+**/.cxstore-lock
+*.cxstore-lock
+
+# campaign working notes — agent briefs, not shipped surface
+.campaign/

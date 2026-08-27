@@ -506,6 +506,15 @@ fn test_stdlib_module_fixtures() {
 	files.sort()
 	mut ran := 0
 	mut failures := []string{}
+	// #1026 coverage accounting. The authz suite's 25 [out-err …] cases were
+	// long ASSUMED green here because they showed red under the standalone
+	// document runner (conformance_run.v), which has no evaluator and was
+	// scoring them against a parse of their `[in-cx [empty]]` scaffolding.
+	// "Presumably green" is what that issue objects to, so the lane now STATES
+	// its coverage instead: which modules exercised the err channel, and how
+	// many cases each contributed.
+	mut out_err_ran := 0
+	mut out_err_by_module := map[string]int{}
 	module_gate, suite_default := load_gate_policy('stdlib')
 	mut adv_ids := map[string]bool{}
 	for fname in files {
@@ -521,6 +530,10 @@ fn test_stdlib_module_fixtures() {
 				continue // excluded from the gate (not run)
 			}
 			ran++
+			if f.out_err != '' {
+				out_err_ran++
+				out_err_by_module[fname.all_before('.cxd')]++
+			}
 			adv_ids['${fname}/${f.id}'] = eff_gate == 'advisory'
 			mut env := code.new_env()
 			// strict-tag parity (stream 14, the audit note): the stdlib and
@@ -640,6 +653,23 @@ fn test_stdlib_module_fixtures() {
 		for fl in enforced {
 			println('  ${fl}')
 		}
+	}
+	// #1026: state the coverage rather than leaving it inferred. `ran` counting
+	// up is the claim that these fixtures were EXECUTED here — the property the
+	// document runner could not honestly make about them.
+	mut err_mods := out_err_by_module.keys()
+	err_mods.sort()
+	mut err_parts := []string{}
+	for m in err_mods {
+		err_parts << '${m}=${out_err_by_module[m]}'
+	}
+	println('stdlib corpus: ${ran} fixtures ran across ${files.len} module file(s); ' +
+		'${out_err_ran} exercised the [out-err …] channel — ${err_parts.join(' ')}')
+	if files.len > 0 {
+		// A corpus that discovers files but runs nothing is the vacuous-pass
+		// shape this issue is about; refuse to call that green.
+		assert ran > 0, 'stdlib corpus: ${files.len} module file(s) found but ZERO fixtures ran'
+		assert out_err_ran > 0, 'stdlib corpus: no fixture exercised the [out-err …] channel — the negative lane is not running'
 	}
 	if !bless && !epoch {
 		assert enforced.len == 0

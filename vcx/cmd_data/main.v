@@ -23,7 +23,12 @@ import cli
 // profile, so a data-profile install fails loud and self-diagnosing when a
 // script expects `cx eval`/`cx lsp`/….
 
+// Version stamp: the SAME build defines the monolith carries (vcx/Makefile's
+// VERSION_DEFINES reaches every profile binary), and the SAME headline
+// formatter — cli.version_headline, #979/RULED: CO-4. A provenance claim two
+// artifacts spell differently is not a claim.
 const version = $d('cx_version', '0.0.0-dev')
+const cx_release = $d('cx_release', 'dev')
 const cx_commit = $d('cx_commit', 'unknown')
 const cx_build_date = $d('cx_build_date', 'unknown')
 const cx_gc = $d('cx_gc', 'unknown')
@@ -35,7 +40,15 @@ const cx_vfork = $d('cx_vfork', 'unknown')
 // extraction gate's CLI lane, which probes each name against both binaries).
 const absent_profile_verbs = ['fmt', 'lint', 'eval', 'select', 'diagram', 'code-diagram',
 	'code-tree', 'table', 'scaffold', 'demo', 'lock', 'lsp', 'store-serve', 'fabric-serve',
-	'store-health', 'store-token', 'store-rotate-kek']
+	'store-health', 'store-rotate-kek', 'store-mint-principal']
+
+// retired_verbs — verb words that once shipped and were deliberately removed
+// (RULED: CO-6). Kept in sync with vcx/cmd/main.v's map; a retired word must
+// answer with its retirement in EVERY profile, never with a profile refusal
+// that implies availability elsewhere.
+const retired_verbs = {
+	'store-token': 'the bearer/RBAC plane is gone; store credentials are XSP-AUTH principals granted in the daemon config ([xsp [grants ...]]). Mint one offline with `cx store-mint-principal` (#969).'
+}
 
 // Run-surface flags the monolith accepts that are meaningless without an
 // evaluator. Refused with the profile message (not "unknown flag") so the
@@ -49,7 +62,7 @@ fn print_version() {
 		'boehm' { 'boehm — conservative tracing collector' }
 		else { cx_gc }
 	}
-	println('cx v${version}')
+	println(cli.version_headline(version, cx_release, cx_commit))
 	println('  profile  data (Ring 0 — no evaluator; this artifact cannot execute programs)')
 	println('  commit   ${cx_commit}')
 	println('  built    ${cx_build_date}')
@@ -243,6 +256,14 @@ fn main() {
 				sc.run(rest)
 				return
 			}
+		}
+		// RULED: CO-6 — a RETIRED verb word names its own retirement in every
+		// profile: listing it among absent_profile_verbs implied it was
+		// available in a richer profile, which is false.
+		if args[0] in retired_verbs {
+			eprintln('cx: `${args[0]}` is retired — ${retired_verbs[args[0]]}')
+			eprintln('run `cx --help` for the current subcommand catalog')
+			exit(2)
 		}
 		if args[0] in absent_profile_verbs {
 			profile_refusal('`cx ${args[0]}`')

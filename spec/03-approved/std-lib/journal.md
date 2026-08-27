@@ -1719,7 +1719,8 @@ is **the capability the underlying `store` backend requires** — journal adds n
 A denial raises `cx-err:CXER0271 E_CAP_DENIED` at the **store effect point**, naming
 the missing grant + resource (store §9 verbatim):
 `[err code=cx-err:CXER0271 capability=write resource='file:///var/xap/acme']`. CLI:
-`cx FILE --allow-write=/var/xap`. **Cancellation + revocation** follow store / SAP
+`cx FILE --allow-write` (write scoping to a directory such as `/var/xap` is the
+#1061 target state; a scoped suffix refuses today). **Cancellation + revocation** follow store / SAP
 §5.2: a cancelled `replay`/`fold`/`verify`/`snapshot`/`compact` at a cancellation point
 reports the core `CXER0260`; a raw store effect after cancel hits `CXER0271`;
 `[?with-open]` close runs under restored caps. journal introduces **no journal-specific

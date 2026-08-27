@@ -137,7 +137,60 @@ pub fn cx_wasm_reset() int {
 // to non-Makefile builds. (cx_abi_version_str is the ABI *contract* version —
 // independent of the release version, bumped only on ABI changes.)
 const cx_version_str = $d('cx_version', '0.0.0-dev')
+// Release state — the `cx_release` build define (#979/RULED: CO-4, extended to
+// the library by #984). `release` iff the Makefile found HEAD at the annotated
+// tag matching VERSION with a clean tree; anything else, including the
+// unstamped default, is a pre-release build. The honest value is the default.
+const cx_release_str = $d('cx_release', 'dev')
+// The stamp the library reports. Computed once — `cx_version()` hands the
+// caller a fresh malloc'd copy per §2.1, so the composition itself must not
+// re-run per call.
+const cx_version_stamped = version_stamp(cx_version_str, cx_release_str)
 const cx_abi_version_str = '2.0'
+
+// release_state_release is the ONE `cx_release` define value naming a build
+// that IS the release its VERSION names. Lives in Ring 0 because BOTH the C
+// ABI and the CLI headline ask the question, and a predicate two artifacts
+// answer differently is not a predicate.
+pub const release_state_release = 'release'
+
+// is_release_build answers "does this build carry the release VERSION names".
+// Exact match only: an unstamped build, a typo, or some future state falls to
+// the pre-release answer, which is the safe direction.
+pub fn is_release_build(release_state string) bool {
+	return release_state == release_state_release
+}
+
+// version_stamp renders the SEMVER IDENTITY of an artifact — the shared half
+// of the #979/CO-4 provenance rule, one implementation for the library and the
+// CLI:
+//
+//	release  →  X.Y.Z
+//	dev      →  X.Y.Z-dev
+//
+// `-dev` is not decoration. Unreleased source IS a semver PRE-RELEASE of
+// VERSION, so the stamp orders BEFORE the release it will become and a build
+// in flight stops claiming a release that was never cut — the exact failure
+// CO-4 removed from the CLI headline and #984 removed from the library, which
+// had been reporting the unstamped `0.0.0-dev` in every build because the lib
+// recipes never received VERSION_DEFINES at all.
+//
+// The build METADATA half (`+<commit>`) is deliberately NOT here. It belongs
+// to the surface that has a provenance section — `cx --version`, which prints
+// commit / built / gc / V fork lines — and semver ignores build metadata in
+// precedence, so the library loses no ordering power by omitting it. Keeping
+// the commit out also keeps libcx a deterministic function of source + flags +
+// VERSION + tag state: a docs-only commit does not change the artifact, so it
+// must not change the artifact's stamp (nor force a -prod relink of it).
+//
+// Pure — no build gates, no environment — so both define values are directly
+// testable.
+pub fn version_stamp(version string, release_state string) string {
+	if is_release_build(release_state) {
+		return version
+	}
+	return '${version}-dev'
+}
 
 // Capability bitmask per spec/abi.md §3. Implemented capabilities in
 // this build: bits 0-5 (v1 ABI + binary AST/events + symmetric AST +
@@ -235,9 +288,14 @@ const cx_features_str = '0x37fff7fffff'
 // The arrow-composed variant: identical plus bit 23 (0x800000).
 const cx_features_str_arrow = '0x37fffffffff'
 
+// cx_version returns the library version per spec/abi.md §2.1 — the repo-root
+// VERSION, carrying the `-dev` pre-release marker on every build that is not
+// the release VERSION names (#984, extending #979/CO-4 to the C ABI). Before
+// #984 the lib recipes passed no version defines at all, so every libcx —
+// release artifacts included — answered the unstamped `0.0.0-dev`.
 @[export: 'cx_version']
 pub fn cx_version() &char {
-	return c_string(cx_version_str)
+	return c_string(cx_version_stamped)
 }
 
 // cx_abi_version returns the ABI major.minor version. Bindings call

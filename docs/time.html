@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,51 +143,45 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Time: valid time and transaction time</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="bitemporal">
   <h1>Time: valid time and transaction time</h1>
-  
-    <section id="bt-two-axes">
-      <h2>Two different questions about when</h2>
-      
-        <p>\"When\" is two questions wearing one word. <i>When was this fact
+  <section id="bt-two-axes">
+    <h2>Two different questions about when</h2>
+    <p>\"When\" is two questions wearing one word. <i>When was this fact
          true in the world?</i> — <b>valid time</b>. <i>When did we learn it?</i> —
          <b>transaction time</b>. Systems that fuse them cannot answer the
          auditor's question — \"what did we know when we sent that
          invoice?\" — because the moment a correction lands, the past
          silently repaints. CX keeps the axes separate, and each lives
          exactly where it belongs.</p>
-        <table>
-          <thead>
-            
-              <tr>
-                <th>Axis</th>
-                <th>Lives</th>
-                <th>Coordinate</th>
-                <th>Who owns it</th>
-              </tr>
-            
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td><b>Transaction time</b></td>
-                <td>the journal envelope</td>
-                <td>the entry sequence number — a position, not a clock</td>
-                <td>the journal</td>
-              </tr>
-              <tr>
-                <td><b>Valid time</b></td>
-                <td>the payload — your data</td>
-                <td><code>valid-from=</code> / <code>valid-to=</code> attributes</td>
-                <td>you</td>
-              </tr>
-            
-          </tbody>
-        </table>
-        <p>Transaction time is <b>position, not wall-clock</b>: each stream's
+    <table>
+      <thead>
+        <tr>
+          <th>Axis</th>
+          <th>Lives</th>
+          <th>Coordinate</th>
+          <th>Who owns it</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>Transaction time</b></td>
+          <td>the journal envelope</td>
+          <td>the entry sequence number — a position, not a clock</td>
+          <td>the journal</td>
+        </tr>
+        <tr>
+          <td><b>Valid time</b></td>
+          <td>the payload — your data</td>
+          <td><code>valid-from=</code> / <code>valid-to=</code> attributes</td>
+          <td>you</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Transaction time is <b>position, not wall-clock</b>: each stream's
          entries are dense, gap-free, and hash-chained, so \"as of entry
          27\" is exact, replayable, and machine-independent, while
          timestamps stay non-authoritative annotations. Valid time is
@@ -198,99 +192,87 @@
          are different values with different addresses, which is exactly
          why validity is payload and not metadata (see the lane
          discipline in <a class="xref" href="value-model.html">value-model</a>).</p>
-      
-    </section>
-    <section id="bt-corrections">
-      <h2>Corrections — three relations, not one</h2>
-      
-        <p>The journal is append-only, so a correction is a new entry —
+  </section>
+  <section id="bt-corrections">
+    <h2>Corrections — three relations, not one</h2>
+    <p>The journal is append-only, so a correction is a new entry —
          but \"a later entry\" can mean three different things, and a
          substrate that cannot tell them apart makes restatement
          unauditable. A correcting entry names what it corrects by
          <b>content address</b> (<code>[supersedes hash=…]</code>) and declares which
          relation it is:</p>
-        <table>
-          <thead>
-            
-              <tr>
-                <th>Relation</th>
-                <th>Meaning</th>
-                <th>How it folds</th>
-              </tr>
-            
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td><code>:assertion</code></td>
-                <td>a late-arriving fact — nothing was wrong</td>
-                <td>joins the timeline; supersedes nothing</td>
-              </tr>
-              <tr>
-                <td><code>:correction</code></td>
-                <td>the prior fact was WRONG</td>
-                <td>supersedes it across its whole valid extent</td>
-              </tr>
-              <tr>
-                <td><code>:amendment</code></td>
-                <td>the prior fact was right then, wrong now</td>
-                <td>closes its valid interval; opens a new one</td>
-              </tr>
-            
-          </tbody>
-        </table>
-        <p>Both entries remain forever — the superseded fact is never
+    <table>
+      <thead>
+        <tr>
+          <th>Relation</th>
+          <th>Meaning</th>
+          <th>How it folds</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>:assertion</code></td>
+          <td>a late-arriving fact — nothing was wrong</td>
+          <td>joins the timeline; supersedes nothing</td>
+        </tr>
+        <tr>
+          <td><code>:correction</code></td>
+          <td>the prior fact was WRONG</td>
+          <td>supersedes it across its whole valid extent</td>
+        </tr>
+        <tr>
+          <td><code>:amendment</code></td>
+          <td>the prior fact was right then, wrong now</td>
+          <td>closes its valid interval; opens a new one</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Both entries remain forever — the superseded fact is never
          deleted, the chain stays verifiable, and the correction itself
          is attributed (who corrected it, under what authority, at which
          position). A dangling <code>supersedes</code> reference is a <i>finding</i>
          from the coherence verb, never a chain break: chain
          verification stays syntactic.</p>
-        <p class="note">A fourth relation exists and deliberately stays out of this
+    <p class="note">A fourth relation exists and deliberately stays out of this
          taxonomy: <b>migration</b> — the vocabulary changed, not the fact
          (see <a class="xref" href="event-evolution.html">event-evolution</a>). A migration entry never alters valid
          time and never folds as a correction; conflating \"we
          restated the number\" with \"we renamed the field\" is how
          audit trails rot.</p>
-      
-    </section>
-    <section id="bt-read">
-      <h2>The bitemporal read</h2>
-      
-        <p>Reads take two coordinates, independently optional:
+  </section>
+  <section id="bt-read">
+    <h2>The bitemporal read</h2>
+    <p>Reads take two coordinates, independently optional:
          <code>{at-seq: N}</code> — the transaction position — and
          <code>{valid-at: T}</code> — the instant in the world. Four quadrants,
          one of which is THE bitemporal query:</p>
-        <table>
-          <thead>
-            
-              <tr>
-                <th>Query</th>
-                <th>Answers</th>
-              </tr>
-            
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>now / now</td>
-                <td>what do we currently believe is true now</td>
-              </tr>
-              <tr>
-                <td><code>at-seq</code> / now</td>
-                <td>what did we believe at position N about now</td>
-              </tr>
-              <tr>
-                <td>now / <code>valid-at</code></td>
-                <td>what do we currently believe was true at T</td>
-              </tr>
-              <tr>
-                <td><code>at-seq</code> / <code>valid-at</code></td>
-                <td><b>what did we know when</b> — the audit query</td>
-              </tr>
-            
-          </tbody>
-        </table>
-        <p>The worked example the corpus pins: on Aug 5 we learn the Aug 1
+    <table>
+      <thead>
+        <tr>
+          <th>Query</th>
+          <th>Answers</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>now / now</td>
+          <td>what do we currently believe is true now</td>
+        </tr>
+        <tr>
+          <td><code>at-seq</code> / now</td>
+          <td>what did we believe at position N about now</td>
+        </tr>
+        <tr>
+          <td>now / <code>valid-at</code></td>
+          <td>what do we currently believe was true at T</td>
+        </tr>
+        <tr>
+          <td><code>at-seq</code> / <code>valid-at</code></td>
+          <td><b>what did we know when</b> — the audit query</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>The worked example the corpus pins: on Aug 5 we learn the Aug 1
          price was wrong. Entry 12 asserted 19.99 valid from Aug 1; an
          order priced from it at entry 13; entry 27 corrects to 17.99,
          superseding entry 12, valid from the same Aug 1. Then
@@ -300,7 +282,7 @@
          basis. The pair is the restatement delta: the number the
          auditor actually asks for, produced from one immutable chain,
          no rewrites anywhere.</p>
-        <p>Mechanically, the bitemporal read is a <b>pure projection over
+    <p>Mechanically, the bitemporal read is a <b>pure projection over
          entries, composed before the fold</b> — the fold contract itself
          never changes (see <a class="xref" href="store.html">store</a> for folds). The projection selects
          and collapses per the correction taxonomy; interval predicates
@@ -309,50 +291,44 @@
          upcast first, then the valid-time projection, so an upcaster
          may synthesize validity vocabulary for entries that predate
          it.</p>
-      
-    </section>
-    <section id="bt-boundaries">
-      <h2>What this design refuses</h2>
-      
-        <ul>
-          
-            <li><b>No store temporal tables.</b> The journal is the only
+  </section>
+  <section id="bt-boundaries">
+    <h2>What this design refuses</h2>
+    <ul>
+      <li><b>No store temporal tables.</b> The journal is the only
               history; anything table-shaped is a fold over it.</li>
-            <li><b>No in-place temporal rewrites.</b> Append-only is
+      <li><b>No in-place temporal rewrites.</b> Append-only is
               permanent; a rewritten past is not a past.</li>
-            <li><b>No wall-clock ordering authority.</b> Positions order
+      <li><b>No wall-clock ordering authority.</b> Positions order
               entries; timestamps annotate them. A tenant-wide
               coordinate is a <i>set</i> of per-stream positions (a
               head-set), carried by signed snapshots — there is no
               global sequence to pretend to.</li>
-            <li><b>Validity windows elsewhere are instances, not
+      <li><b>Validity windows elsewhere are instances, not
               inventions.</b> Authorization <code>[until]</code>, credential
               issued/expires, session not-before/expiry — each is a
               valid-time window named by its own module; the vocabulary
               here is the common language under them.</li>
-          
-        </ul>
-        <p>One composition rule reaches into authorization: a policy
+    </ul>
+    <p>One composition rule reaches into authorization: a policy
          decision evaluated against historical context records <b>both</b>
          coordinates — the position its context was folded at and the
          instant it was asked about — so \"what would we have decided at
          position P about instant T\" is a first-class, auditable
          query. See <a class="xref" href="operations.html">operations</a> for the operational side of
          journals, retention, and snapshots.</p>
-      
-    </section>
-  
+  </section>
 </section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>Time: valid time and transaction time</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,22 +143,20 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">How a value is represented at runtime</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="runtime-representation">
   <h1>How a value is represented at runtime</h1>
-  
-    <section id="rr-transparency">
-      <h2>Transparency is the contract</h2>
-      
-        <p>CX pins <b>what you can observe</b> and leaves <b>how the engine
+  <section id="rr-transparency">
+    <h2>Transparency is the contract</h2>
+    <p>CX pins <b>what you can observe</b> and leaves <b>how the engine
          gets there</b> free. Results, canonical bytes, content addresses,
          error codes, evaluation order, and equality must be identical
          whichever internal path executes — that is normative. Whether
          the engine walked a node tree, a byte slice, or a column buffer
          to produce them is quality of implementation.</p>
-        <p>This is the ruling that lets the engine get faster without the
+    <p>This is the ruling that lets the engine get faster without the
          spec moving: no internal representation is identity-bearing
          (identity is canonical text, full stop — <a class="xref" href="value-model.html">value-model</a>), so a
          faster path that produces byte-identical observables is always
@@ -167,26 +165,24 @@
          pair-fixtures pin that the same data yields the same results
          and addresses as text, as binary, as chunked columns, and back
          from an Arrow round-trip.</p>
-        <p class="note">The companion obligation is <b>honest reporting</b>: wherever a
+    <p class="note">The companion obligation is <b>honest reporting</b>: wherever a
          representation choice is invisible in results, it must be
          visible in introspection. Engines report which path executed —
          batch or node, pushdown or scan — through their status
          surfaces, so you can reason about performance without reading
          engine internals, and a full scan can never masquerade as an
          index.</p>
-      
-    </section>
-    <section id="pure-updates">
-      <h2>Pure-functional updates — the spine copy</h2>
-      
-        <p><code>[?modify]</code> names a location and a change and returns a <b>new</b>
+  </section>
+  <section id="pure-updates">
+    <h2>Pure-functional updates — the spine copy</h2>
+    <p><code>[?modify]</code> names a location and a change and returns a <b>new</b>
          document; the input is observably untouched (see the modify
          material in <a class="xref" href="code.html">code</a>). What makes that affordable on large
          trees is <b>structural sharing</b>: only the spine from the root
          to each matched node is fresh; every unchanged subtree is the
          same memory as the original.</p>
-        <pre>
-          <code class="language-text">input doc:                    output doc (after set on root/foo/@bar):
+    <pre>
+      <code class="language-text">input doc:                    output doc (after set on root/foo/@bar):
 
             root [a]                      root' [a]                ← new
              ├─ foo [b]                    ├─ foo' [b']            ← new
@@ -194,8 +190,8 @@
              │   ├─ baz     ─┼─── shared ──┤   ├─ baz              ← same ref
              │   └─ children ┘             │   └─ children         ← same ref
              └─ qux                        └─ qux                  ← same ref</code>
-        </pre>
-        <p>\"Same ref\" is literal — the same pointer. The two documents
+    </pre>
+    <p>\"Same ref\" is literal — the same pointer. The two documents
          differ in identity (different addresses, <code>eq</code> is false) while
          sharing almost all of their bytes in RAM. Allocation is
          O(depth × matches), not O(document size); the GC reclaims
@@ -204,7 +200,7 @@
          Clojure's maps and Haskell's lenses — and it is why a pipeline
          of ten modifications over a large document costs a fraction of
          ten copies.</p>
-        <p>Two consequences worth owning. <b>Thread safety for free:</b>
+    <p>Two consequences worth owning. <b>Thread safety for free:</b>
          since no node is ever mutated, any number of threads can read
          shared subtrees without locks — which is half of why <code>[par]</code>
          is cheap (see <a class="xref" href="computation-identity.html">computation-identity</a>). <b>The identity
@@ -212,25 +208,23 @@
          there is no set-attribute-in-place anywhere in the surface,
          and there never will be — immutability here is structural, not
          disciplinary.</p>
-      
-    </section>
-    <section id="streaming">
-      <h2>Streaming — bounded memory over unbounded input</h2>
-      
-        <p>Large inputs — log streams, exports, telemetry — do not have to
+  </section>
+  <section id="streaming">
+    <h2>Streaming — bounded memory over unbounded input</h2>
+    <p>Large inputs — log streams, exports, telemetry — do not have to
          materialize as trees. The <code>[lazy]</code> clause on <code>[?for]</code> asks the
          evaluator for a stream-aware pass: parse events flow through
          the iteration body row by row, and resident memory is bounded
          by what the body accumulates, not by the input.</p>
-        <pre>
-          <code class="language-cx">[logs [entry level='error' service='api']
+    <pre>
+      <code class="language-cx">[logs [entry level='error' service='api']
                [entry level='info'  service='api']
                [entry level='error' service='db']]
          [?for [in $row //logs/entry] [lazy]
            [where [= $row@level 'error']]
            [yield $row@service]]</code>
-        </pre>
-        <p>Streaming is for <b>forward passes</b>. Random access is what
+    </pre>
+    <p>Streaming is for <b>forward passes</b>. Random access is what
          trees are for — you cannot jump to the 99th match of a stream
          without consuming 98 — and <code>[lazy]</code> is a hint the evaluator may
          partially decline when a predicate genuinely needs
@@ -241,101 +235,91 @@
          subsection): a row-group reader with per-column statistics
          feeding a <code>[lazy]</code> pipeline is the constant-memory shape for
          columnar workloads.</p>
-      
-    </section>
-    <section id="rr-columnar">
-      <h2>Columnar data in flight</h2>
-      
-        <p>Bulk tabular data moves as <b>columns</b>, not boxed rows — on the
+  </section>
+  <section id="rr-columnar">
+    <h2>Columnar data in flight</h2>
+    <p>Bulk tabular data moves as <b>columns</b>, not boxed rows — on the
          wire (the chunked table format) and, progressively, in flight
          inside the engine. The logical value model does not change:
          columnar is a representation beneath the transparency line,
          with a small set of observable rules above it.</p>
-        <ul>
-          
-            <li><b>Table rows are not children.</b> A <code>[table[…]]</code> block's
+    <ul>
+      <li><b>Table rows are not children.</b> A <code>[table[…]]</code> block's
               rows are cells behind the table API, not CXDM child
               elements — <code>$t//row</code> selects nothing. That carve-out is
               the columnar seam: it is what lets a million rows live as
               column buffers without a million element boxes.</li>
-            <li><b>The column type lattice is the wire's.</b> A decimal
+      <li><b>The column type lattice is the wire's.</b> A decimal
               column never silently becomes a string column or an int
               column; declared widths keep their width; irregular
               columns fall back to a per-row-tagged escape, honestly
               reported — never silently widened.</li>
-            <li><b>Atom columns dictionary-encode by construction</b> —
+      <li><b>Atom columns dictionary-encode by construction</b> —
               tag-shaped values are the natural dictionary fit.</li>
-            <li><b>Secrets never get a raw columnar cell.</b> Redaction
+      <li><b>Secrets never get a raw columnar cell.</b> Redaction
               semantics cannot be bypassed by a bulk buffer;
               secret-bearing shapes force the node path. A security
               rule, not a performance one.</li>
-          
-        </ul>
-        <p>Where node form is <b>required to exist</b> (materialized or
+    </ul>
+    <p>Where node form is <b>required to exist</b> (materialized or
          indistinguishably emulated), because it is observable: identity
          and hashing (always over canonical text), inspection surfaces
          (emitters, AST projections, the LSP), CXPath navigation,
          pattern matching, quasiquotation, and metadata reflection.
          Everywhere else, the engine is free — and expected — to stay
          columnar for bulk movement and unboxed for scalar work.</p>
-      
-    </section>
-    <section id="performance">
-      <h2>Performance characteristics</h2>
-      
-        <p>The honest summary: CX is fast where the representation story
+  </section>
+  <section id="performance">
+    <h2>Performance characteristics</h2>
+    <p>The honest summary: CX is fast where the representation story
          above is finished and measurably behind its own targets where
          it is not — and the project publishes both. Numbers live where
          they are re-measured, not in prose that goes stale: <code>make
          bench</code> refreshes the bench record, the perf gates in the
          release process enforce floors, and this page teaches the
          <i>shape</i> of the costs.</p>
-        <ul>
-          
-            <li><b>Parsing is allocation-bound.</b> The classic tree parse
+    <ul>
+      <li><b>Parsing is allocation-bound.</b> The classic tree parse
               allocates per element; huge inputs want the streaming or
               binary paths. Binary AST and schema-driven binary decode
               skip text lexing entirely; chunked columnar tables also
               skip row boxing.</li>
-            <li><b>A parsed document costs more resident memory than its
+      <li><b>A parsed document costs more resident memory than its
               source bytes</b> (headers, interned names, attribute maps) —
               measure before planning capacity, and lean on structural
               sharing: derived documents cost their spine, not their
               size.</li>
-            <li><b>The canonical emitter pays a normalization pass</b> over
+      <li><b>The canonical emitter pays a normalization pass</b> over
               the regular emitter — you buy identity with it.</li>
-            <li><b>FFI overhead is per-call, not per-byte</b> — negligible
+      <li><b>FFI overhead is per-call, not per-byte</b> — negligible
               per document, dominant per tiny call in a hot loop; batch
               at the boundary.</li>
-          
-        </ul>
-        <p><b>When CX wins over JSON:</b> large documents (the binary forms
+    </ul>
+    <p><b>When CX wins over JSON:</b> large documents (the binary forms
          are smaller on the wire and cheaper to parse); repeated parsing
          under content-addressed caching (canonical bytes hit caches
          that formatting-sensitive formats miss); type-tagged data
          (dates, decimals, sized integers as first-class scalars);
          schema-validated boundaries; and shipping code beside data over
          one wire with one identity story.</p>
-        <p><b>When JSON wins over CX:</b> consumers that only speak JSON
+    <p><b>When JSON wins over CX:</b> consumers that only speak JSON
          (project to it and pay the type loss knowingly); tiny one-off
          payloads where ubiquity beats capability; flat key-value
          config where TOML or JSON is already enough. The comparison
          page (<a class="xref" href="comparison.html">comparison</a>) carries the full argument in both
          directions.</p>
-      
-    </section>
-  
+  </section>
 </section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>How a value is represented at runtime</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

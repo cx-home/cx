@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,103 +143,75 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">xsp</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-xsp"><h1>xsp</h1><p class="lede">The XAP Stream Protocol frame codec — a self-describing, self-delimiting frame [version · type · stream-id · principal-DID · flags · len · payload] that carries XAP over any transport. The payload is opaque bytes and the canonical binary encoding dogfoods CX <code>data-bin</code>. Identity is orthogonal to transport: the <code>principal</code> field names a DID, while verification and authorization remain separate concerns.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-xsp-encode" class="fn">
-    <h3>xsp:encode</h3>
-    <p class="fn-sig"><code>[$xsp:encode]  -> bytes</code>  —  Encode a [frame …] element into wire bytes, data-bin-encoding the payload by default or UTF-8-encoding it when binary=false.</p>
-    
-  </section>
-  <section id="fn-xsp-decode" class="fn">
-    <h3>xsp:decode</h3>
-    <p class="fn-sig"><code>[$xsp:decode]  -> element</code>  —  Decode one frame at offset 0 into a [frame …] element whose <code>consumed</code> attr is the total frame length so a reader can advance to the next frame.</p>
-    
-  </section>
-  <section id="fn-xsp-decode-all" class="fn">
-    <h3>xsp:decode-all</h3>
-    <p class="fn-sig"><code>[$xsp:decode-all]  -> element</code>  —  Decode a buffer of concatenated frames into a [frames …] element whose children are the parsed [frame …] elements, with any trailing partial frame as a [remainder …] child.</p>
-    
-  </section>
-  <section id="fn-xsp-auth-hello" class="fn">
-    <h3>xsp:auth-hello</h3>
-    <p class="fn-sig"><code>[$xsp:auth-hello]  -> element</code>  —  Build the XSP-AUTH M1 hello from injected randomness (nonce, ephemeral X25519 public key), the dialed endpoint, and an optional initiator DID (absent = anonymous).</p>
-    
-  </section>
-  <section id="fn-xsp-auth-challenge" class="fn">
-    <h3>xsp:auth-challenge</h3>
-    <p class="fn-sig"><code>[$xsp:auth-challenge]  -> element</code>  —  Responder side: validate M1 and build M2, signing the role-pinned transcript with the responder's Ed25519 seed — there is no anonymous responder.</p>
-    
-  </section>
-  <section id="fn-xsp-auth-prove" class="fn">
-    <h3>xsp:auth-prove</h3>
-    <p class="fn-sig"><code>[$xsp:auth-prove]  -> element</code>  —  Initiator side: verify M2 (selected version, channel-binding equality, responder transcript signature), derive the key schedule, and build M3 with the key-confirmation tag, the attach request, and — when a DID is claimed — the initiator transcript signature.</p>
-    
-  </section>
-  <section id="fn-xsp-auth-confirm" class="fn">
-    <h3>xsp:auth-confirm</h3>
-    <p class="fn-sig"><code>[$xsp:auth-confirm]  -> element</code>  —  Responder side: verify M3 (initiator tag; transcript signature when a DID is claimed; anonymous refused under require-mutual), then build M4 carrying the responder key-confirmation tag and the attach result session.</p>
-    
-  </section>
-  <section id="fn-xsp-auth-finish" class="fn">
-    <h3>xsp:auth-finish</h3>
-    <p class="fn-sig"><code>[$xsp:auth-finish]  -> element</code>  —  Initiator side: verify M4's responder key-confirmation tag and return the [xsp-auth-established …] report with the responder DID, channel id, and bound session.</p>
-    
-  </section>
-  <section id="fn-xsp-auth-transcript" class="fn">
-    <h3>xsp:auth-transcript</h3>
-    <p class="fn-sig"><code>[$xsp:auth-transcript]  -> element</code>  —  Assemble the signed transcript element — M1 verbatim plus M2 with its [sig] child stripped — the exact subject of both handshake signatures.</p>
-    
-  </section>
-  <section id="fn-xsp-auth-keys" class="fn">
-    <h3>xsp:auth-keys</h3>
-    <p class="fn-sig"><code>[$xsp:auth-keys]  -> element</code>  —  Derive the HKDF key schedule (confirmation tags, per-direction proof keys, channel id) from the ephemeral X25519 shared secret salted by both nonces; both sides derive identical values.</p>
-    
-  </section>
-  <section id="fn-xsp-auth-verify" class="fn">
-    <h3>xsp:auth-verify</h3>
-    <p class="fn-sig"><code>[$xsp:auth-verify]  -> bool</code>  —  Low-level transcript-signature check for one role; the initiator role additionally covers the responder's signature (transcript closure).</p>
-    
-  </section>
-  <section id="fn-xsp-auth-rotate" class="fn">
-    <h3>xsp:auth-rotate</h3>
-    <p class="fn-sig"><code>[$xsp:auth-rotate]  -> element</code>  —  Produce a §6.3 rotation continuity proof: the outgoing key signs the incoming DID bound to the prior channel id, attesting the new key's holder held the old.</p>
-    
-  </section>
-  <section id="fn-xsp-auth-rotate-verify" class="fn">
-    <h3>xsp:auth-rotate-verify</h3>
-    <p class="fn-sig"><code>[$xsp:auth-rotate-verify]  -> bool</code>  —  Verify a rotation continuity proof against the outgoing key (offline-recovered from a did:key/did:peer old DID, or supplied for did:web).</p>
-    
-  </section>
-  <section id="fn-xsp-auth-frame-check" class="fn">
-    <h3>xsp:auth-frame-check</h3>
-    <p class="fn-sig"><code>[$xsp:auth-frame-check]  -> string</code>  —  Enforce the §4.8 post-handshake binding: an empty-principal frame inherits the session principal; a non-empty principal must equal it or the frame is rejected — the rule that makes the XSP principal field a checked label, never an identity source.</p>
-    
-  </section>
-  <section id="fn-xsp-auth-proof" class="fn">
-    <h3>xsp:auth-proof</h3>
-    <p class="fn-sig"><code>[$xsp:auth-proof]  -> bytes</code>  —  Compute the per-request possession proof for request/response transports: HMAC(key, counter-be8 concatenated with sha256(frame-bytes)).</p>
-    
-  </section>
-  <section id="fn-xsp-auth-proof-verify" class="fn">
-    <h3>xsp:auth-proof-verify</h3>
-    <p class="fn-sig"><code>[$xsp:auth-proof-verify]  -> bool</code>  —  Verify a per-request possession proof in constant time; a counter below 1 never verifies.</p>
-    
-  </section>
-</section>
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-xsp-encode" class="fn">
+  <h3>xsp:encode</h3>
+  <p class="fn-sig"><code>[$xsp:encode]  -> bytes</code>  —  Encode a [frame …] element into wire bytes, data-bin-encoding the payload by default or UTF-8-encoding it when binary=false.</p>
+</section><section id="fn-xsp-decode" class="fn">
+  <h3>xsp:decode</h3>
+  <p class="fn-sig"><code>[$xsp:decode]  -> element</code>  —  Decode one frame at offset 0 into a [frame …] element whose <code>consumed</code> attr is the total frame length so a reader can advance to the next frame.</p>
+</section><section id="fn-xsp-decode-all" class="fn">
+  <h3>xsp:decode-all</h3>
+  <p class="fn-sig"><code>[$xsp:decode-all]  -> element</code>  —  Decode a buffer of concatenated frames into a [frames …] element whose children are the parsed [frame …] elements, with any trailing partial frame as a [remainder …] child.</p>
+</section><section id="fn-xsp-auth-hello" class="fn">
+  <h3>xsp:auth-hello</h3>
+  <p class="fn-sig"><code>[$xsp:auth-hello]  -> element</code>  —  Build the XSP-AUTH M1 hello from injected randomness (nonce, ephemeral X25519 public key), the dialed endpoint, and an optional initiator DID (absent = anonymous).</p>
+</section><section id="fn-xsp-auth-challenge" class="fn">
+  <h3>xsp:auth-challenge</h3>
+  <p class="fn-sig"><code>[$xsp:auth-challenge]  -> element</code>  —  Responder side: validate M1 and build M2, signing the role-pinned transcript with the responder's Ed25519 seed — there is no anonymous responder.</p>
+</section><section id="fn-xsp-auth-prove" class="fn">
+  <h3>xsp:auth-prove</h3>
+  <p class="fn-sig"><code>[$xsp:auth-prove]  -> element</code>  —  Initiator side: verify M2 (selected version, channel-binding equality, responder transcript signature), derive the key schedule, and build M3 with the key-confirmation tag, the attach request, and — when a DID is claimed — the initiator transcript signature.</p>
+</section><section id="fn-xsp-auth-confirm" class="fn">
+  <h3>xsp:auth-confirm</h3>
+  <p class="fn-sig"><code>[$xsp:auth-confirm]  -> element</code>  —  Responder side: verify M3 (initiator tag; transcript signature when a DID is claimed; anonymous refused under require-mutual), then build M4 carrying the responder key-confirmation tag and the attach result session.</p>
+</section><section id="fn-xsp-auth-finish" class="fn">
+  <h3>xsp:auth-finish</h3>
+  <p class="fn-sig"><code>[$xsp:auth-finish]  -> element</code>  —  Initiator side: verify M4's responder key-confirmation tag and return the [xsp-auth-established …] report with the responder DID, channel id, and bound session.</p>
+</section><section id="fn-xsp-auth-transcript" class="fn">
+  <h3>xsp:auth-transcript</h3>
+  <p class="fn-sig"><code>[$xsp:auth-transcript]  -> element</code>  —  Assemble the signed transcript element — M1 verbatim plus M2 with its [sig] child stripped — the exact subject of both handshake signatures.</p>
+</section><section id="fn-xsp-auth-keys" class="fn">
+  <h3>xsp:auth-keys</h3>
+  <p class="fn-sig"><code>[$xsp:auth-keys]  -> element</code>  —  Derive the HKDF key schedule (confirmation tags, per-direction proof keys, channel id) from the ephemeral X25519 shared secret salted by both nonces; both sides derive identical values.</p>
+</section><section id="fn-xsp-auth-verify" class="fn">
+  <h3>xsp:auth-verify</h3>
+  <p class="fn-sig"><code>[$xsp:auth-verify]  -> bool</code>  —  Low-level transcript-signature check for one role; the initiator role additionally covers the responder's signature (transcript closure).</p>
+</section><section id="fn-xsp-auth-rotate" class="fn">
+  <h3>xsp:auth-rotate</h3>
+  <p class="fn-sig"><code>[$xsp:auth-rotate]  -> element</code>  —  Produce a §6.3 rotation continuity proof: the outgoing key signs the incoming DID bound to the prior channel id, attesting the new key's holder held the old.</p>
+</section><section id="fn-xsp-auth-rotate-verify" class="fn">
+  <h3>xsp:auth-rotate-verify</h3>
+  <p class="fn-sig"><code>[$xsp:auth-rotate-verify]  -> bool</code>  —  Verify a rotation continuity proof against the outgoing key (offline-recovered from a did:key/did:peer old DID, or supplied for did:web).</p>
+</section><section id="fn-xsp-auth-frame-check" class="fn">
+  <h3>xsp:auth-frame-check</h3>
+  <p class="fn-sig"><code>[$xsp:auth-frame-check]  -> string</code>  —  Enforce the §4.8 post-handshake binding: an empty-principal frame inherits the session principal; a non-empty principal must equal it or the frame is rejected — the rule that makes the XSP principal field a checked label, never an identity source.</p>
+</section><section id="fn-xsp-auth-proof" class="fn">
+  <h3>xsp:auth-proof</h3>
+  <p class="fn-sig"><code>[$xsp:auth-proof]  -> bytes</code>  —  Compute the per-request possession proof for request/response transports: HMAC(key, counter-be8 concatenated with sha256(frame-bytes)).</p>
+</section><section id="fn-xsp-auth-proof-verify" class="fn">
+  <h3>xsp:auth-proof-verify</h3>
+  <p class="fn-sig"><code>[$xsp:auth-proof-verify]  -> bool</code>  —  Verify a per-request possession proof in constant time; a counter below 1 never verifies.</p>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>xsp</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

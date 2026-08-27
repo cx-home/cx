@@ -389,7 +389,7 @@ Adding or removing a directive requires a governance amendment per
 | `[?name]` | §6.4.2 | Core — shared name sub-form (`set-attr`/`rename`) |
 | `[?quote]` | §6.4.3 | Core — quasiquote (eager; two-color hygiene) |
 | `[?unquote]` | §6.4.3 | Core — quasiquote hole (single value) |
-| `[?splice]` | §6.4.3 | Core — quasiquote hole (sequence graft) |
+| `[?splice]` | §6.4.3 | Core — adopts a sequence value's members into element content (R-A1: a sequence value cannot BE element content; `[?splice]` is the syntactic adopter, alongside contributing `[?for]`) |
 | `[?eval]` | §6.4.4 | Core — tree-eval (reuses `cx:eval` sandbox) |
 | `[?for]` | §7 | Core — for-comprehension (Sequence outer) |
 | `[?for-array]` | §7 | Core — for-comprehension (Array outer) |
@@ -611,7 +611,7 @@ value `V`, matching proceeds by case:
  matches iff the candidate value has the same kind AND same canonical
  representation. No coercion: `[case 200 …]` does not match `"200"`,
  and `[case :ok …]` does not match `"ok"`. Use
- `[case _ [where [eq [$to-int $v] 200]] …]` for coerced match. Atom patterns are surface `:NAME` per §3.6 below.
+ `[case _ [where [eq [cast $v :int] 200]] …]` for coerced match. Atom patterns are surface `:NAME` per §3.6 below.
 9. **Plain attributes (non-`@`).** A plain attribute clause `attr=VALUE`
  in a pattern (no leading `@`) is a **structural-equality test** on the
  candidate's attribute named `attr`: the candidate MUST carry an
@@ -1047,6 +1047,83 @@ navigating. This is not silent error swallowing — it is the documented
 inspection boundary; the err is still the bound value and still reports
 itself anywhere it is used as an operand.
 
+**The path/value matrix (normative — owner rulings R-A1..R-A6, 2026-08-25;
+ruling record `ledger/matrix_2026_08_25_path_value_model.md`).** The rules
+above compose into one total model. The table below is FROZEN: changing a
+cell requires a ruling that names the cell.
+
+1. **Focus classes.** An **element** and a **document** are container
+   *nodes*: their items are their child items (a document's child items
+   are its top-level nodes). A **sequence** and an **array** are
+   *collections*: their items are their members. A **map**'s items are
+   its entries. A **scalar**, an **err**, and **absence** carry no child
+   items.
+2. **Steps distribute over collections** (the step-distribution rule
+   above), uniformly for `/name`, `//name`, `/@attr`, `@attr`, `/*`, and
+   predicates: the step applies to each member, non-element members skip
+   (not a fault), order is preserved, and an empty result collapses to
+   absence. `/*` on a collection is the union of the members' children —
+   never the member list itself. Steps on a container *node* address its
+   child items: `$d/*` on a document is its top-level elements
+   (non-elements skip), identical on every engine path — a step must
+   never answer differently by evaluation lane.
+3. **Predicates apply to any focus.** A predicate step on a collection
+   binds `$_` per member; on any other focus it binds `$_` to the focus
+   itself and yields the focus or absence. A path rooted at `$_` is a
+   **node-set form** and never field-collapses — `[$count $_/tag]`
+   counts matches. Value comparisons inside predicates hold because
+   comparison **atomizes** (the settled 2026-05-31 comparison/arithmetic
+   atomization rule): an element whose content is a single scalar or
+   text item compares as that item's typed value; a one-member node-set
+   compares as its member; a multi-member node-set compares
+   existentially (any member satisfying the comparison satisfies it);
+   elements with complex content compare structurally.
+4. **Aggregates are items-view and kind-total.** `$count` / `$first`
+   read the focus's items: element / document → child items, sequence /
+   array → members, map → entries, scalar → itself (count 1), absence →
+   0 / absence. An err operand propagates — errs are operands everywhere
+   except navigation.
+5. **Faults are loud; absence is quiet.** A missing name or attribute on
+   a compatible focus is absence. An operation the focus cannot carry —
+   a typed `@attr` read on a scalar, a map, or any other non-element —
+   refuses `cx-err:CXER0001`. An err **raised while evaluating a
+   predicate body** refuses the whole query loudly (`cx-err:CXER0001`
+   naming the predicate and carrying the err): a filter must never fail
+   open (select-all) or silently closed (select-none) on a broken
+   predicate. This includes `cx select`, which has no module loading and
+   therefore refuses any unresolved callable in a predicate. An err
+   **value** navigated as data remains the inspection lane above.
+6. **A non-empty sequence value never becomes element content** — the
+   element-construction refusal (see "A sequence value never becomes
+   element content", element construction). Parsed paren-sequence bodies
+   remain the settled opaque cells: `/name` does not dissolve them, `//`
+   passes through, `/*` sees the sequence node (the #587/#847
+   decisions, unchanged).
+
+| focus ↓ / op → | `/name` | `//name` | `@attr` (typed) | `/*` | `[pred]` | `$count` | `$first` |
+|---|---|---|---|---|---|---|---|
+| element | field collapse (single simple match) / node-set | descendants | typed value | children | `$_` = focus | child items | first child item |
+| document | matching top-level elements | descendants | refuses CXER0001 | top-level elements | `$_` per top-level element | top-level items | first top-level item |
+| sequence / array of elements | distributes | distributes | distributes | members' children | `$_` per member | members | first member |
+| collection with non-element members | skips them | skips them | skips them | skips them | skips them | all members | first member |
+| map | entry read (collapses like a field) | descends entries | refuses CXER0001 | entries as `[key value]` | `$_` per entry | entries | first entry |
+| scalar | absence | absence | refuses CXER0001 | absence | `$_` = focus | 1 | itself |
+| err | own children (inspection) | own descendants | own attrs (`@code`) | own children | `$_` = the err | propagates | propagates |
+| absence | absence | absence | absence | absence | absence | 0 | absence |
+
+**The `--data` binding contract (normative, R-A2).** `$doc` binds the
+document's **root element** when the file has exactly one top-level
+element (top-level comments and PIs neither count against uniqueness nor
+join the bound value) — this is the platform's `$doc/field` idiom and is
+load-bearing. A file with zero or several top-level elements binds the
+**document node**, navigated per the document row above; silently
+dropping all roots after the first (the previous behavior) is a defect,
+not a contract. `[$cx:parse]` always yields the parsed document value, navigated per the
+document row (a leading comment is document prolog — metadata, not an
+item; interior non-element items are preserved, skipped by `/*` and
+named steps, counted by `$count`); a program that wants the root steps
+to it (`$d/root/…`, `[$first $d/*]`).
+
 Grammar: `grammar.ebnf` [135] BindingPath; [125] ProgramCall carries
 the same steps as a call-result postfix (RULED CRS-1).
 
@@ -1157,6 +1234,58 @@ a **computed** (dynamic) element name:
  . A positional item is an **operand**: an item that evaluates to
  `[err …]` propagates rather than being adopted as a child — see
  "Construction is operand-consuming" below.
+
+**A sequence value never becomes element content (normative — #847
+ruling 1a, implemented under R-A1, 2026-08-25).** A `POSITIONAL_ITEM`
+that evaluates to a **non-empty sequence** refuses construction with
+`cx-err:CXER0100`, and the diagnostic names `[?splice]` as the idiom:
+`[violations $vs]` refuses; `[violations [?splice $vs]]` adopts the
+members as children. This applies to the static form and to
+`[?element …]` alike. Auto-splicing was explicitly rejected (it silently
+rewrites what the author wrote), as was making the child axis dissolve
+such content (it makes `/*` provenance-dependent) — the refusal is the
+one loud, early answer. Two boundary rules complete it:
+
+- **Directives contribute; values are adopted or refused.** `[?splice]`
+  and `[?for]` in a multi-sibling slot are *multi-sibling contributors* —
+  `[?for]` contributes one sibling per `[yield]`, which is its defined
+  contribution, not a value being auto-spliced. Every other form —
+  a binding read, a call result, `[?if]` / `[?let]` / `[?match]` results —
+  contributes exactly one child, so one of those yielding a non-empty
+  sequence refuses as above. Conditional multi-contribution is spelled
+  `[?splice [?if …]]`.
+- **Dispatch consumes arguments; only plain construction refuses.** A
+  bracketed form that dispatches — a `$`-head call
+  (`[$sum $doc/line/@price]`), an operator head (`[= …]`, `[+ …]`), or a
+  closure call — consumes an operand-produced sequence as an ARGUMENT,
+  legal everywhere. The refusal applies only to a form that IS plain
+  element construction: bare named-builtin heads (`[sum …]` — named
+  builtins are reached only via `[$name …]`), any other data head, and
+  always the computed-name `[?element …]` form (the user is
+  constructing).
+- **The loop carriers are exempt.** `[break …]` / `[continue …]` are the
+  `[?loop]` protocol's POSITIONAL value carriers, not documents: every
+  expression contributes exactly one value — absence rides as the empty
+  sequence and a sequence value rides whole — because the loop rebinds
+  its declared bindings positionally and a dropped or spliced value
+  would silently shift every binding after it.
+- **Absence contributes nothing.** An item that evaluates to the empty
+  sequence (an absent optional read, an empty comprehension bound
+  elsewhere) contributes no child: `[c $u/nothing]` builds `[c]`. The
+  §9.1.2.1 null-totality posture — absence is not data, so there is
+  nothing to adopt and nothing to refuse. (Previously an absent item was
+  adopted as a visible empty-sequence child; that was part of the same
+  envelope defect class this rule removes.)
+
+Parsed **data** is untouched: a paren-sequence body in a data document
+remains a sequence child with the settled navigation (`/name` opaque,
+`//` through, `/*` sees the sequence node). And the discriminator is
+POSITION, not value (the same principle as the literal-`[err]` rule
+below): a **source-literal** paren sequence written in the body —
+`[pair (1, 2)]` — is the author explicitly writing the envelope the data
+reading gives those bytes, so it constructs the sequence child
+(cross-parser parity; the settled opaque cells apply to it). Only a
+sequence produced by an **evaluated operand** refuses.
 
 **Construction is operand-consuming (normative, #853).** Element
 construction **consumes** its operands, so §9.2 implicit operand
@@ -1606,7 +1735,18 @@ is never a data element). So `[+]` (zero operands), `[not P Q]` (binary
 `+ - * /` MUST be a single numeric scalar, OR a single node that
 **atomizes** to one — an attribute or child/text node atomizes to its
 **typed scalar value**, and is a valid operand iff that value is
-numerically typed (`int`/`float`). CX is type-strict: a **string-typed**
+numerically typed: `int`, `float`, or one of the **exact** kinds
+`decimal` / `bigint`. The exact kinds are not floats in disguise, and the
+arithmetic heads treat them as their own family (per the `decimal`/`bigint`
+kind rules): a `decimal` or `bigint` operand routes the WHOLE fold through
+exact base-10 arithmetic, so `[+ 19.99 19.99]` is the `decimal` `39.98` and
+a `bigint` past 2^53 never saturates; `int` embeds losslessly in that
+family, so `[* 2 19.99]` is exact too; and an exact operand mixed with a
+**`float`** one raises `cx-err:CXER0100` rather than bridging — `[cast]`
+is the only `decimal`↔`float` crossing, in either direction. Division adds
+the one rule that is division's alone: an exact quotient that does not
+terminate raises `cx-err:CXER3002` and names the rounding context it needs
+(*Exact division*, below). CX is type-strict: a **string-typed**
 scalar is NOT numeric and does NOT parse — `[+ "5" 3]` and a string-typed
 attribute `[+ $doc/box@w 3]` (where `w="5"`) both raise `cx-err:CXER0100`;
 convert explicitly with `[cast $s :int]` first. (An unquoted
@@ -1688,17 +1828,17 @@ unless the entry says otherwise.
 
 | Built-in | Arity | Semantics |
 |---|---|---|
-| `sum(seq)` | 1 | Sum of numeric scalars in `seq`; non-numeric items skipped. Empty / all-non-numeric yields integer 0. Any float promotes the result to float. |
-| `max(seq)` | 1 | Maximum numeric scalar in `seq`; non-numeric items skipped. Empty yields integer 0. |
-| `min(seq)` | 1 | Minimum numeric scalar in `seq`; non-numeric items skipped. Empty yields integer 0. |
-| `avg(seq)` | 1 | Arithmetic mean of numeric scalars in `seq` as a float. Empty / all-non-numeric yields float 0.0. |
+| `sum(seq)` | 1 | Sum of numeric scalars in `seq`; non-numeric items skipped. Empty / all-non-numeric yields integer 0. An int-only fold stays `int` (checked — `CXER3000` on overflow); an int/float mix promotes to float. An **exact** operand folds exactly — see *Aggregate numeric discipline* below. |
+| `max(seq)` | 1 | Maximum numeric scalar in `seq`; non-numeric items skipped. Empty yields integer 0. The winner is returned **in its own kind** (an int/float mix yields the winner's float view). |
+| `min(seq)` | 1 | Minimum numeric scalar in `seq`; non-numeric items skipped. Empty yields integer 0. The winner is returned **in its own kind** (an int/float mix yields the winner's float view). |
+| `avg(seq)` | 1 | Arithmetic mean of the numeric scalars in `seq`. Empty / all-non-numeric yields float 0.0. An int-only or int/float fold yields a **float**; an **exact** fold yields an exact mean — see *Aggregate numeric discipline* below. |
 | `abs(x)` | 1 | Absolute value of numeric `x`. Integer input returns integer; float input returns float. |
 | `floor(x)` | 1 | Largest integer ≤ `x`. Integer input passes through; float input returns integer. |
 | `ceiling(x)` | 1 | Smallest integer ≥ `x`. Integer input passes through; float input returns integer. |
 | `round(x)` | 1 | Half-away-from-zero rounding (XPath `fn:round` convention). Integer input passes through; float input returns integer. |
 | `mod(a, b)` | 2 | Remainder of `a / b` (sign follows `a`, truncated division). `b = 0` raises `cx-err:CXER0101` (E_ARITH_DIVIDE_ZERO). |
-| `div(a, b)` | 2 | Division: true division when either operand is float (float result); integer division (truncated toward zero) when both are integers. `b = 0` raises `cx-err:CXER0101`. |
-| `idiv(a, b)` | 2 | Integer (truncating) division regardless of operand kinds; result is an integer. `b = 0` raises `cx-err:CXER0101`. |
+| `div(a, b)` | 2 | Division: true division when either operand is float (float result); integer division (truncated toward zero) when both are integers. An **exact** (`decimal`/`bigint`) operand routes the whole operation to the exact division `/` performs — same result, same refusal — see *Exact division* below. `b = 0` raises `cx-err:CXER0101`. |
+| `idiv(a, b)` | 2 | Integer (truncating) division regardless of operand kinds; result is an integer. Over **exact** operands it is the exact integral quotient, in the exact family's integral representation (`int` while it fits `int`'s range, `bigint` beyond it — never a saturated `int`). `b = 0` raises `cx-err:CXER0101`. |
 
 Invoked head-dispatch as built-ins: `[$mod $a $b]` / `[$div $a $b]` /
 `[$idiv $a $b]` (bare `[mod a b]` is element construction, per the §6.5
@@ -1731,6 +1871,70 @@ coalesce into the operand sequence: `[$min 5 3 8]` is equivalent to
 `[$min (5, 3, 8)]`. (The `Arity 1` column documents the canonical
 single-sequence form.)
 
+**Aggregate numeric discipline — one discipline, not two (normative;
+RULED: CO-14).** The sequence aggregates `sum` / `max` / `min` / `avg` are
+numeric folds, so they obey the **same** numeric rules the arithmetic heads
+`+ - * / %` obey (the exact-kind rules of `decimal`/`bigint` arithmetic).
+The aggregates are a different *operand shape* — a sequence rather than
+scalars — never a different *numeric semantics*.
+
+- **Exact stays exact, end to end.** A `decimal` or `bigint` operand routes
+  the whole fold through exact base-10 arithmetic; no binary float appears
+  anywhere in it. `[$sum (19.99, 19.99)]` is the `decimal` `39.98` exactly
+  as `[+ 19.99 19.99]` is, `[$max]` / `[$min]` return the winner in its own
+  kind, and a `bigint` past 2^53 never saturates.
+- **No silent bridge.** An **exact** operand mixed with a **`float`**
+  operand raises `cx-err:CXER0100` — the same code, and the same message,
+  the heads raise, `[cast]` being the only `decimal`↔`float` bridge. So
+  `[$sum (39.98, 1.5e0)]` refuses exactly as `[+ 39.98 1.5e0]` does. The
+  refusal is **order-independent** (it is decided by the operand that
+  completes the mix) and does not depend on whether the source was
+  materialized or streamed. Int↔float promotion is **unchanged** — `int`
+  embeds losslessly in the float lane and in the exact one, so
+  `[$sum (1, 2, 3.0e0)]` is still the float `6.0e0` and
+  `[$sum (1, 2, 3.0)]` is the `decimal` `6.0`. The aggregates' XPath
+  `fn:number` string-leniency is unchanged and follows the same rule by
+  what it produces: an integer-valued string is an `int` and embeds
+  (`[$sum (19.99, "5")]` is `24.99`), while a fractional one is a
+  **double** and is therefore the refused mix (`[$sum (19.99, "1.5")]`
+  raises) — read it exactly with `[cast … :decimal]`.
+- **An exact `avg` is an exact mean.** It is the exact sum divided by the
+  count under the **same** exact division `/` folds with, so
+  `[$avg xs]` and `[/ [$sum xs] [$count xs]]` agree by construction —
+  result kind and scale included. `[$avg (1.00, 2.00)]` is the `decimal`
+  `1.500`, exactly as `[/ 3.00 2]` is.
+
+**Exact division — one rule, every spelling (normative; RULED: CO-17).**
+Exact division has no float to fall back on, so it either terminates or
+says so. It **terminates** when the reduced denominator carries no prime
+factor other than 2 or 5, and then the result is the exact quotient as a
+`decimal` (`[/ 1.00 8]` is `0.12500` — the scale follows from the
+factors removed, and trailing zeros are data). Otherwise it **refuses**
+with `cx-err:CXER3002`, and the refusal **names the context it needs**:
+`$math:div-decimal`, the module-lane verb that carries an explicit
+precision + mode. There is no default context and no silent rounding —
+being told where to go beats being handed a number nobody chose.
+
+That one rule reaches every spelling of the operation, because they are one
+implementation: `/`, `div`, and the exact `avg` all divide through it and
+therefore cannot disagree on a kind, a scale, or a refusal.
+`[$avg (1.00, 2.00, 2.00)]` and `[/ [+ 1.00 2.00 2.00] 3]` both raise;
+`[$div a b]` and `[/ a b]` are equal wherever they answer **over
+exact-family operands** — over int-only operands the two deliberately
+differ, `$div` truncating to the integral quotient where `/` performs true
+division (`[$div 7 2]` is `3`, `[/ 7 2]` is `3.5` — the pinned
+`div-co17-009` row). (This settles
+the cell CO-14 recorded as reserved, where `avg` alone still promoted to a
+float — the last position on the numeric surface at which an exact fold
+silently produced a binary `float`.)
+
+`idiv` is **not** an instance of this rule and never raises `CXER3002`: it
+asks for the **integral** quotient, which always terminates, and truncation
+toward zero is its own already-normative rounding. So `[$idiv 10.00 3]` is
+`3` where `[$div 10.00 3]` refuses, and `a` = `b × [$idiv a b]` +
+`[% a b]` holds exactly over the exact family, both halves truncating
+toward zero.
+
 **Logical built-ins:**
 
 | Built-in | Arity | Semantics |
@@ -1738,7 +1942,7 @@ single-sequence form.)
 | `not(x)` | 1 | Boolean negation of `x` under the EBV table in `cxdm.md` (booleans → negate; integers → `x == 0`; floats → `x == 0.0` (ints and floats share the numeric rule; NaN never arises — CX floats are finite-only); strings → empty; sequences → no items, a singleton reading as its one item; arrays/maps → empty; a present element or other node → always truthy, regardless of contents — presence, not emptiness). An Iterator operand has **no EBV** and raises the catchable `cx-err:CXER0100` — force the stream explicitly and test the realized value (cxdm.md EBV table). |
 | `and(a, b, …)` | ≥ 1 | Boolean — true iff every argument is truthy. Short-circuit: argument evaluation order is left-to-right. |
 | `or(a, b, …)` | ≥ 1 | Boolean — true iff at least one argument is truthy. Short-circuit: left-to-right. |
-| `eq(a, b)` | 2 | Structural equality. Two scalars are equal iff same kind and same value. Two elements are equal iff same name, attribute count, child count, and structurally-equal children + attribute values. |
+| `eq(a, b)` | 2 | VALUE equality under the atomization policy (RULED: CO-11): scalar comparison atomizes, so a decimal and the string of its image, and an atom and its same-named string, compare EQUAL — `[$eq [u a=1.5] [u a='1.5']]` is true. Two elements are equal iff same name, attribute count, child count, and value-equal children + attribute values. This is one of CX's two deliberate equality notions: the other is the type-faithful IDENTITY (strict-canonical bytes — `cx eq`, `cx hash`, structural node equality), which DISTINGUISHES those pairs and mints them distinct addresses. Neither notion may drift into the other (pinned). |
 
 **Node-accessor built-ins:**
 
@@ -3150,7 +3354,7 @@ the focus kind.
 
 ```cx
 # Element focus, element return — focus replaced by new element.
-[?modify $doc //price [using [?fn ($p) [price-tag [$to-int $p]]]]]
+[?modify $doc //price [using [?fn ($p) [price-tag [cast $p :int]]]]]
 
 # Element focus, string return — focus replaced by the string verbatim.
 [?modify $doc //price [using [?fn ($p) [$concat "$" [$to-string $p]]]]]
@@ -3968,6 +4172,23 @@ retired `cap:resource` scope spelling, in a host grant spec/list **or in a
 `[?def]`'s declared `[effects …]` clause (§12.2.7)**; the grant
 surface refuses LOUDLY and installs nothing, `security.md` — #713/L114)
 are allocated. No existing wire code is renumbered.
+
+**CXER0275 (E_ERR_AT_BOUNDARY — RULED: CO-2).** In-process, an `[err]`
+element is a value like any other: collection literals carry it, channels
+transit it, pure functions format it. What an `[err]` must never do is
+leave the program **silently**: an externalizing effect — a store document
+write (`put-doc` / `put-doc-stream` / `put-doc-text` / `modify-doc`) or an
+http response emission (a handler result, root `[err]` included) — refuses
+with `cx-err:CXER0275`, naming the first contained err's code and path,
+unless the effect form carries `errs=:permit` (one spelling across every
+effect family: the optional trailing opts map on the store verbs; the
+attribute on `[response]` / `[sse-subscribe]`). Opaque byte writes (blobs,
+string/bytes file writes) are exempt by construction — bytes carry no
+`[err]` to find; serializing a document to text is a pure act and is not a
+refusal point. The effects chapter (`commands_effects.md`) carries the
+normative rule; conformance pins one refusal + one `:permit` case per
+guarded family and the err-as-value regressions (channel transit, collection
+construction).
 
 **Range amendment — Futures + retired include range.** The
 original Futures allocation (CXER0240–CXER0259) used only two codes

@@ -82,21 +82,39 @@ boundary the verbs degrade to the doc-level `migrate`.
 
 ## Admin plane on a service handle
 
-On a `cx-store://` handle, `status` and `gc` are the daemon's admin-plane ops
-(RBAC `admin`, tenant-scoped, same names as the CX surface); `mounts`
-enumerates the daemon's stores tenant-filtered; `config-reload` triggers the
-validate-then-swap reload. All are daemon-level: on a local handle `mounts`/
-`config-reload` raise `CXER1709` — a local handle IS its only store. Wire
-details: the CSRP spec's admin-ops rows.
+On a `cx-store://` (or `cx-store+xsp://`) handle, `status` and `gc` are the
+daemon's admin-plane ops — same names as the CX surface, scoped to the
+mount the session attached to; `mounts` enumerates the daemon's stores;
+`config-reload` triggers the validate-then-swap reload. All four sit in the
+`admin` capability class of the one grant table (`[xsp [grants …]]`), so a
+principal reaches them only through a grant that names `admin`; with no
+grants configured the daemon is in its open dev posture and the
+daemon-level ops still require a DID-proven principal rather than falling
+open. All are daemon-level: on a local handle `mounts`/`config-reload` raise
+`CXER1709` — a local handle IS its only store. Wire details: the XSP store
+profile spec (`spec/03-approved/xap/xsp_store_profile.md`); the daemon
+advertises the admin ops it actually routes in its bootstrap `capabilities`
+response, so a client degrades off that list instead of probing for 404s.
 
 ## The admin console
 
 Fleet-facing management UI lives in its **own repo** (`xap-store-console`) —
-itself a XAP built from feature packages, connecting over CSRP with
-role-scoped credentials; it is never embedded in the daemon. Everything it
-consumes is a public RBAC-gated CSRP op, so the console doubles as proof the
-management API is complete. Free tier: connect/health/metrics/status/browse/
-reload/maintain (gc). Contract: the store management console spec
-(`spec/03-approved/misc/store_management_console.md`). Bootstrap credentials
-with `cx store-token` (see [store: service](store-service.md)); the console's
-own docs cover the rest — not duplicated here.
+itself a XAP built from feature packages, connecting in over the store wire
+(the XSP store profile) as an ordinary granted principal; it is never
+embedded in the daemon. Everything it consumes is a public op on that wire,
+gated by the one grant table like every other client, so the console doubles
+as proof the management API is complete. Free tier: connect/health/metrics/
+status/browse/reload/maintain (gc). Contract: the store management console
+spec (`spec/03-approved/misc/store_management_console.md`) — read its CSRP
+references through the wire-transition note at its head, which maps every
+CSRP op verb-for-verb onto the profile.
+
+Credentials are XSP-AUTH principals. Mint the console's own with
+`cx store-mint-principal` — it produces a seed file and the `[grant …]`
+stanza to splice into the daemon's `[xsp [grants …]]` table, offline, and
+grants nothing until an operator installs it. Give it the narrowest caps the
+tier needs: `read` covers browsing (get/list/iter/query), while the whole
+admin plane — `status`, `gc`, `mounts`, `config-reload` — sits in `admin`.
+The clean-state walkthrough is in
+[store: service](store-service.md#clean-state-bootstrap--mint-grant-serve-present).
+The console's own docs cover the rest — not duplicated here.

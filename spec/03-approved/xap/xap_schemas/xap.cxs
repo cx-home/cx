@@ -17,6 +17,7 @@
  [elem summary    [card "0..1"]]
  [elem features   [card "1..1"]]
  [elem principals [card "0..1"]]
+ [elem runtime    [card "0..1"]]
  [elem deployment [card "0..1"]]
  [elem surfacing  [card "0..1"]]
  [elem governance [card "0..1"]]
@@ -75,8 +76,46 @@
 [deriver
  [attr name::string     [req]]
  [attr produces::string [req]]   # qualified '<feature>/<noun>', derived=true in the composed grammar
+ [attr reads::string    [opt]]   # space-separated read set; MUST resolve inside produces=' [from …] envelope (§4.2 rule 3)
  [attr package::string  [opt]]   # path/package ref to the implementing component
  [attr doc::string      [opt]]]
+
+# ── runtime bindings — the durable plane is deployment DATA (RULED: CO-9,
+# distribution spec §6.3.1). One child per [$xap:run] option (xap.md §3.1),
+# each named for its option key verbatim; the host COMPILES these into the run
+# opts [$xap:run] already validates — one validator, never two. The four have
+# no OPTS spelling on a hosted XAP. Attributes are carried through
+# attribute-for-attribute, so the fabric client opts (tenant/did/seed/…) ride
+# on [journal]/[source] exactly as §3.1.1/§3.1.2's "remaining keys" say. ──
+[runtime
+ [elem journal    [card "0..1"]]
+ [elem sources    [card "0..1"]]
+ [elem resolver   [card "0..1"]]
+ [elem log-reduce [card "0..1"]]]
+[journal
+ [attr url::string              [req]]           # a journal url, or an xsp:// fabric daemon
+ [attr stream::string           [default acts]]
+ [attr checkpoint::string       [opt]]           # §3.1.1 fold-checkpoint store url (#595)
+ [attr checkpoint-every::int    [opt]]]          # default 256
+[sources [elem source [card "1..*"]]]            # a block that binds nothing is a refusal
+[source
+ [attr fabric::string  [req]]                    # xsp:// daemon, a journal url, or a named remote
+ [attr stream::string  [req]]
+ [attr verb::string    [req]]                    # the cascade verb entries enter as
+ [attr group::string   [req]]                    # consumer group — offsets commit server-side
+ [attr pattern::string [opt]]                    # bus pattern; default = the verb head-name
+ [attr actor::string   [opt]]]                   # committing actor; default = the entry's proven actor
+[resolver
+ [attr kind::string [default scripted] [enum scripted]]  # a CLOSURE resolver is code, not data
+ [elem affinity [card "0..*"]]]                  # the [$xap:resolver-default] rule set, verbatim
+[affinity
+ [attr component::string [req]]
+ [attr when::string      [req]]
+ [attr class::string     [req]]
+ [attr rank::int         [opt]]]
+[log-reduce
+ [attr window::int  [req]]                       # >= 1; absent binding = unbounded (today's behavior)
+ [attr fn::string   [req]]]                      # '<feature>:<def>' — a pinned feature's §1.2 contract def
 
 # ── deployment / packaging (in-process default; federation = the escape hatch).
 # `remote` entries name the CX stores feature packages are acquired from

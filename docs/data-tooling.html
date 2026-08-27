@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,69 +143,61 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Data tooling</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="data-tooling">
   <h1>Data tooling</h1>
-  
-    <p>Every verb on this page runs against documents and needs nothing
+  <p>Every verb on this page runs against documents and needs nothing
        above Ring 0: no evaluator, no capabilities, no server. They are
        the daily drivers of the data-format adopter — convert, format,
        canonicalize, hash, compare, validate, query, and diff — and
        each is exit-code-honest so it slots straight into CI. The verbs
        that execute programs live with Ring 1 (<a class="xref" href="code-tooling.html">code-tooling</a>); the
        full subcommand catalog is in <a class="xref" href="tooling.html">tooling</a>.</p>
-    <section id="cli-projections">
-      <h2>Projection and conversion flags</h2>
-      
-        <p>Format projection is a top-level flag surface, not a
+  <section id="cli-projections">
+    <h2>Projection and conversion flags</h2>
+    <p>Format projection is a top-level flag surface, not a
          subcommand. One flag picks the output projection of an
          input document; <code>--from</code> / <code>--to</code> drive explicit
          conversions:</p>
-        <pre>
-          <code class="language-sh">$ cx --ast config.cx                 # JSON AST
+    <pre>
+      <code class="language-sh">$ cx --ast config.cx                 # JSON AST
          $ cx --json config.cx                # JSON projection
          $ cx --yaml config.cx                # YAML projection
          $ cx --xml --compact config.cx       # XML, minimised
          $ cx --from=md --to=cx README.md     # Markdown in, CX out
          $ cx --from=cx --to=json --lossless order.cx
          $ echo '[hello world]' | cx --json -  # stdin</code>
-        </pre>
-        <ul>
-          
-            <li>Projection flags: <code>--ast</code> <code>--cx</code> <code>--xml</code> <code>--json</code>
+    </pre>
+    <ul>
+      <li>Projection flags: <code>--ast</code> <code>--cx</code> <code>--xml</code> <code>--json</code>
               <code>--yaml</code> <code>--toml</code> <code>--md</code> <code>--csv</code> <code>--tsv</code> <code>--psv</code>,
               each optionally with <code>--compact</code>.</li>
-            <li><code>--from=cx|xml|json|yaml|toml|md|csv|tsv|psv
+      <li><code>--from=cx|xml|json|yaml|toml|md|csv|tsv|psv
               --to=cx|xml|json|yaml|toml|md|csv|tsv|psv</code>
               — explicit conversion; <code>--lossless</code> makes XML carry
               per-value types (<code>&lt;cx:T&gt;</code>) for an exact round-trip.</li>
-            <li><code>--include-root=DIR</code> — resolve <code>[?cx include=…]</code>
+      <li><code>--include-root=DIR</code> — resolve <code>[?cx include=…]</code>
               against DIR before projecting (include resolution is
               opt-in; without a root the directive is preserved).</li>
-          
-        </ul>
-      
-    </section>
-    <section id="cli-fmt">
-      <h2>cx fmt</h2>
-      
-        <p>Pretty-prints in <b>lossless canonical</b> form. Comments,
+    </ul>
+  </section>
+  <section id="cli-fmt">
+    <h2>cx fmt</h2>
+    <p>Pretty-prints in <b>lossless canonical</b> form. Comments,
          anchors, and authorial structure are preserved;
          whitespace and quoting are normalised. Reads the file
          argument (or stdin) and writes the formatted document to
          stdout.</p>
-        <pre>
-          <code class="language-sh">$ cx fmt config.cx                    # formatted, to stdout
+    <pre>
+      <code class="language-sh">$ cx fmt config.cx                    # formatted, to stdout
          $ cx fmt config.cx > config.fmt.cx && mv config.fmt.cx config.cx</code>
-        </pre>
-      
-    </section>
-    <section id="cli-canon">
-      <h2>cx canonical / cx hash / cx eq</h2>
-      
-        <p><code>cx canonical</code> emits the <b>strict canonical text</b> per
+    </pre>
+  </section>
+  <section id="cli-canon">
+    <h2>cx canonical / cx hash / cx eq</h2>
+    <p><code>cx canonical</code> emits the <b>strict canonical text</b> per
          <a href="../../spec/03-approved/core/canonical.md"><code>spec/core/canonical.md</code></a>: comments
          stripped, attributes sorted, anchors expanded, whitespace
          collapsed, quoting normalised. Two data-equivalent inputs
@@ -213,17 +205,15 @@
          (SHA-256 of those bytes) and <code>cx eq</code> (exit 0 iff the
          strict-canonical forms match, 1 if they differ, 2 on
          error) build on.</p>
-        <pre>
-          <code class="language-sh">$ cx canonical config.cx | shasum -a 256   # equivalent to cx hash
+    <pre>
+      <code class="language-sh">$ cx canonical config.cx | shasum -a 256   # equivalent to cx hash
          $ cx hash config.cx
          $ cx eq prod.cx proposed.cx && echo unchanged || echo changed</code>
-        </pre>
-      
-    </section>
-    <section id="cli-validate">
-      <h2>cx validate</h2>
-      
-        <p>Validates a document against a <code>.cxs</code> schema
+    </pre>
+  </section>
+  <section id="cli-validate">
+    <h2>cx validate</h2>
+    <p>Validates a document against a <code>.cxs</code> schema
          (<a href="../../spec/03-approved/core/schema.md"><code>spec/core/schema.md</code></a>). Flags:
          <code>--schema=SCHEMA.cxs</code> (required),
          <code>--fail-on=info|warn|error|none</code> (default <code>error</code>),
@@ -231,16 +221,14 @@
          directive), <code>--apply-defaults</code> (materialise schema-default
          attribute values). Exit 0 if no diagnostics at/above the
          threshold, 1 if any, 2 on I/O or schema failure.</p>
-        <pre>
-          <code class="language-sh">$ cx validate users.cx --schema=users.cxs
+    <pre>
+      <code class="language-sh">$ cx validate users.cx --schema=users.cxs
          $ cx validate users.cx --schema=users.cxs --mode=strict --fail-on=warn</code>
-        </pre>
-      
-    </section>
-    <section id="cli-select">
-      <h2>cx select</h2>
-      
-        <p>CXPath query over one document —
+    </pre>
+  </section>
+  <section id="cli-select">
+    <h2>cx select</h2>
+    <p>CXPath query over one document —
          <code>cx select 'PATH' [FILE]</code> (stdin when FILE is <code>-</code> or
          absent). The document binds as <code>$doc</code>; PATH is a single
          CXPath value expression (<code>$doc/…</code>, <code>/…</code>, or <code>//…</code>,
@@ -251,108 +239,93 @@
          2 on error. A pure read — no capability grants accepted
          or needed. Contract:
          <a href="../../spec/03-approved/misc/cli.md"><code>spec/misc/cli.md</code></a> §3.8.</p>
-        <pre>
-          <code class="language-sh">$ cx select '//user[= $_@role admin]' users.cx
+    <pre>
+      <code class="language-sh">$ cx select '//user[= $_@role admin]' users.cx
          [user name=Alice role=admin]
          $ cx select '$doc/user@name' users.cx
          [name 'Alice']
          [name 'Bob']
          $ cat users.cx | cx select '//user' && echo matched</code>
-        </pre>
-      
-    </section>
-    <section id="cli-table">
-      <h2>cx table</h2>
-      
-        <p>The public Table API surface for CXCol / <code>[table[…]]</code>
+    </pre>
+  </section>
+  <section id="cli-table">
+    <h2>cx table</h2>
+    <p>The public Table API surface for CXCol / <code>[table[…]]</code>
          payloads: <code>cx table info FILE</code> (column/row counts, types,
          byte size), <code>cx table dump FILE --to=cx</code> (round-trip via
          the Table API), <code>cx table load FILE --to=cx</code> (symmetric
          inverse). Parquet / Arrow output (<code>--to=parquet|arrow</code>)
          defers to the <code>libcx_arrow</code> bridge. See <a class="xref" href="analytics.html">analytics</a>.</p>
-        <pre>
-          <code class="language-sh">$ cx table info data.cxbin
+    <pre>
+      <code class="language-sh">$ cx table info data.cxbin
          $ cx table dump data.cxbin --to=cx | head</code>
-        </pre>
-      
-    </section>
-    <section id="cli-diff">
-      <h2>cx diff</h2>
-      
-        <p>Semantic diff — walks the strict-canonical forms, so
+    </pre>
+  </section>
+  <section id="cli-diff">
+    <h2>cx diff</h2>
+    <p>Semantic diff — walks the strict-canonical forms, so
          presentation-only edits produce no delta. See <a class="xref" href="#diff">diff</a>
          for the output contract. Flags: <code>--format=unified|json|summary</code>
          (default <code>unified</code>), <code>--no-color</code>. Exit codes match
          <code>diff(1)</code>: 0 equal, 1 differs, 2 error.</p>
-        <pre>
-          <code class="language-sh">$ cx diff prod.cx proposed.cx
+    <pre>
+      <code class="language-sh">$ cx diff prod.cx proposed.cx
          $ cx diff --format=json prod.cx proposed.cx
          $ cx diff prod.cx proposed.cx && echo no-op   # CI gate</code>
-        </pre>
-      
-    </section>
-    <section id="diff">
-      <h2>Diff semantics</h2>
-      
-        <p><code>cx diff</code> produces a <b>semantic</b> diff — tree-structured,
+    </pre>
+  </section>
+  <section id="diff">
+    <h2>Diff semantics</h2>
+    <p><code>cx diff</code> produces a <b>semantic</b> diff — tree-structured,
          canonical-byte-aware, formatting-blind. Two
          data-equivalent inputs diff to nothing, even if they differ
          at the text level. This is what makes <code>cx diff</code> usable as a
          CI gate: it reports semantic deltas, not formatting noise.</p>
-        <section id="diff-scope">
-          <h3>What cx diff reports (and ignores)</h3>
-          
-            <p><code>cx diff</code> reports differences in the strict canonical form
+    <section id="diff-scope">
+      <h3>What cx diff reports (and ignores)</h3>
+      <p><code>cx diff</code> reports differences in the strict canonical form
            (<a href="../../spec/03-approved/core/canonical.md"><code>spec/core/canonical.md §1.2</code></a>).
            Specifically it <b>reports</b>:</p>
-            <ul>
-              
-                <li>Element added / removed (by canonical path).</li>
-                <li>Element renamed (different canonical name at the
+      <ul>
+        <li>Element added / removed (by canonical path).</li>
+        <li>Element renamed (different canonical name at the
                 same path).</li>
-                <li>Attribute added / removed / value-changed (by
+        <li>Attribute added / removed / value-changed (by
                 canonical name).</li>
-                <li>Body content changed (atomic-value or text-content
+        <li>Body content changed (atomic-value or text-content
                 differences).</li>
-                <li>Type annotation changed (e.g., <code>:int</code> vs <code>:u32</code> —
+        <li>Type annotation changed (e.g., <code>:int</code> vs <code>:u32</code> —
                 the annotation IS part of the data).</li>
-                <li>Element order changed <i>when order is
+        <li>Element order changed <i>when order is
                 data-significant</i> (per
                 <a href="../../spec/03-approved/core/canonical.md"><code>spec/core/canonical.md §2.1</code></a>).</li>
-              
-            </ul>
-            <p>And <b>ignores</b>:</p>
-            <ul>
-              
-                <li>Comments (<code># line</code> and <code>[# block #]</code>).</li>
-                <li>Attribute order on the same element.</li>
-                <li>Anchor / alias / merge details — expanded to the
+      </ul>
+      <p>And <b>ignores</b>:</p>
+      <ul>
+        <li>Comments (<code># line</code> and <code>[# block #]</code>).</li>
+        <li>Attribute order on the same element.</li>
+        <li>Anchor / alias / merge details — expanded to the
                 resolved form before diff.</li>
-                <li>Whitespace, indentation, line breaks.</li>
-                <li>Numeric formatting (<code>1_000_000</code> vs <code>1000000</code>).</li>
-                <li>Quoting style (<code>'foo'</code> vs <code>"foo"</code>).</li>
-                <li>Element-name aliases that resolve to the same
+        <li>Whitespace, indentation, line breaks.</li>
+        <li>Numeric formatting (<code>1_000_000</code> vs <code>1000000</code>).</li>
+        <li>Quoting style (<code>'foo'</code> vs <code>"foo"</code>).</li>
+        <li>Element-name aliases that resolve to the same
                 canonical name.</li>
-              
-            </ul>
-          
-        </section>
-        <section id="diff-output">
-          <h3>Output formats</h3>
-          
-            <p>Three output modes via <code>--format</code>:</p>
-            <ul>
-              
-                <li><code>unified</code> (default) — element-rooted hunks,
+      </ul>
+    </section>
+    <section id="diff-output">
+      <h3>Output formats</h3>
+      <p>Three output modes via <code>--format</code>:</p>
+      <ul>
+        <li><code>unified</code> (default) — element-rooted hunks,
                 <code>-</code> / <code>+</code> / <code> </code> prefixes. Human-readable.</li>
-                <li><code>json</code> — structured array of change records.
+        <li><code>json</code> — structured array of change records.
                 Suitable for CI gates and editor integrations.</li>
-                <li><code>summary</code> — one-line counts. Useful for shell
+        <li><code>summary</code> — one-line counts. Useful for shell
                 prompts and PR bots.</li>
-              
-            </ul>
-            <pre>
-              <code class="language-sh">$ cx diff prod.cx proposed.cx
+      </ul>
+      <pre>
+        <code class="language-sh">$ cx diff prod.cx proposed.cx
            --- prod.cx
            +++ proposed.cx
            @@ /config/database @@
@@ -360,9 +333,9 @@
            -port=5432
            +port=5433
             replica='secondary.db'</code>
-            </pre>
-            <pre>
-              <code class="language-json">[
+      </pre>
+      <pre>
+        <code class="language-json">[
              {
                \"kind\": \"attribute-changed\",
                \"path\": \"/config/database/@port\",
@@ -370,87 +343,74 @@
                \"after\":  {\"name\": \"port\", \"value\": 5433, \"type\": \"int\"}
              }
            ]</code>
-            </pre>
-          
-        </section>
-        <section id="diff-json">
-          <h3>JSON change-record shape</h3>
-          
-            <p>Each record has a stable shape:</p>
-            <ul>
-              
-                <li><code>kind</code> — one of <code>element-added</code>, <code>element-removed</code>,
+      </pre>
+    </section>
+    <section id="diff-json">
+      <h3>JSON change-record shape</h3>
+      <p>Each record has a stable shape:</p>
+      <ul>
+        <li><code>kind</code> — one of <code>element-added</code>, <code>element-removed</code>,
                 <code>element-renamed</code>, <code>attribute-added</code>,
                 <code>attribute-removed</code>, <code>attribute-changed</code>,
                 <code>body-changed</code>, <code>type-changed</code>, <code>order-changed</code>.</li>
-                <li><code>path</code> — CXPath expression locating the change. The
+        <li><code>path</code> — CXPath expression locating the change. The
                 same expression drops straight into a CX program
                 (<code>[?for [in $x PATH] …]</code>).</li>
-                <li><code>before</code> / <code>after</code> — relevant value for the kind.
+        <li><code>before</code> / <code>after</code> — relevant value for the kind.
                 Absent when the side has no value (e.g.
                 <code>element-added</code> has no <code>before</code>). The field is
                 <b>omitted</b>, not <code>null</code> — per the four-way
                 null/empty/missing distinction of
                 <a href="../../spec/03-approved/core/code.md"><code>spec/core/code.md §8.13</code></a>
                 this is <i>missing</i>.</li>
-              
-            </ul>
-          
-        </section>
-        <section id="diff-git">
-          <h3>Git integration</h3>
-          
-            <p><code>cx diff</code> plugs into <code>git diff</code> via the standard custom-
+      </ul>
+    </section>
+    <section id="diff-git">
+      <h3>Git integration</h3>
+      <p><code>cx diff</code> plugs into <code>git diff</code> via the standard custom-
            diff-driver mechanism. Add this to <code>.gitattributes</code>:</p>
-            <pre>
-              <code class="language-text">*.cx    diff=cx
+      <pre>
+        <code class="language-text">*.cx    diff=cx
            *.cxd   diff=cx
            *.cxs   diff=cx</code>
-            </pre>
-            <pre>
-              <code class="language-sh"># One-time per repo
+      </pre>
+      <pre>
+        <code class="language-sh"># One-time per repo
            git config diff.cx.command 'cx diff'</code>
-            </pre>
-            <p>With this in place, <code>git diff path/to/config.cx</code> and
+      </pre>
+      <p>With this in place, <code>git diff path/to/config.cx</code> and
            <code>git show HEAD path/to/config.cx</code> use the semantic diff
            automatically. PR review UIs that respect <code>.gitattributes</code>
            (GitHub, GitLab, Gerrit) pick it up too.</p>
-          
-        </section>
-        <section id="diff-exit-codes">
-          <h3>Exit codes</h3>
-          
-            <p>Match <code>diff(1)</code>:</p>
-            <ul>
-              
-                <li><code>0</code> — inputs are data-equivalent (no
-                differences).</li>
-                <li><code>1</code> — inputs differ (at least one semantic
-                delta).</li>
-                <li><code>2</code> — error (parse failure, file not found,
-                invalid arguments).</li>
-              
-            </ul>
-            <pre>
-              <code class="language-sh"># Use directly as a CI gate
-           cx diff prod.cx proposed.cx && echo no-change || review-changes</code>
-            </pre>
-          
-        </section>
-      
     </section>
-  
+    <section id="diff-exit-codes">
+      <h3>Exit codes</h3>
+      <p>Match <code>diff(1)</code>:</p>
+      <ul>
+        <li><code>0</code> — inputs are data-equivalent (no
+                differences).</li>
+        <li><code>1</code> — inputs differ (at least one semantic
+                delta).</li>
+        <li><code>2</code> — error (parse failure, file not found,
+                invalid arguments).</li>
+      </ul>
+      <pre>
+        <code class="language-sh"># Use directly as a CI gate
+           cx diff prod.cx proposed.cx && echo no-change || review-changes</code>
+      </pre>
+    </section>
+  </section>
 </section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>Data tooling</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

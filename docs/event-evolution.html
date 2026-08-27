@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,23 +143,21 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Event evolution</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="event-evolution">
   <h1>Event evolution</h1>
-  
-    <section id="ee-frame">
-      <h2>Old events, new vocabulary</h2>
-      
-        <p>A journal outlives every schema that ever described its
+  <section id="ee-frame">
+    <h2>Old events, new vocabulary</h2>
+    <p>A journal outlives every schema that ever described its
          payloads. Version 1 order events keep existing after the
          <code>Order</code> type moves to v2 — the substrate is append-only, and
          batch-rewriting history is excluded by design (and pinned by a
          negative fixture). So the platform question is never \"how do
          we upgrade the data\" — it is <b>\"how do we read yesterday's
          events in today's vocabulary.\"</b></p>
-        <p>The two halves of the answer, by storage shape: <b>journals
+    <p>The two halves of the answer, by storage shape: <b>journals
          migrate on read</b> — always, because appends are forever — and
          <b>stores migrate in batch</b> — new documents plus ref advances,
          non-destructive by construction, because the old document
@@ -167,32 +165,29 @@
          cites it. The Ring-0 vocabulary underneath (what compatible
          means, how two schema revisions are linked) is
          <a class="xref" href="schema.html">schema-evolution</a>; this section is the machinery.</p>
-      
-    </section>
-    <section id="ee-upcasters">
-      <h2>Upcasters at the pre-fold seam</h2>
-      
-        <p>An <b>upcaster</b> is a pure entry-to-entry projection composed
+  </section>
+  <section id="ee-upcasters">
+    <h2>Upcasters at the pre-fold seam</h2>
+    <p>An <b>upcaster</b> is a pure entry-to-entry projection composed
          <i>before</i> the fold — the same seam the bitemporal projection
          uses (<a class="xref" href="time.html">bitemporal</a>; upcast first, then the valid-time
          projection). The fold contract itself never changes; the fold
          simply sees entries that already speak the current
          vocabulary.</p>
-        <ul>
-          
-            <li><b>Version tags are payload vocabulary, never envelope.</b>
+    <ul>
+      <li><b>Version tags are payload vocabulary, never envelope.</b>
               The journal owns only the envelope; which version a
               payload speaks is domain data, exactly like validity
               dates.</li>
-            <li><b>The upcaster chain is caller-supplied and attested</b> —
+      <li><b>The upcaster chain is caller-supplied and attested</b> —
               a pure definition with a content address, registered
               through lineage claims. The journal recognizes the seam;
               it never learns the domain.</li>
-            <li><b>Replay uses today's chain.</b> A past-state read is
+      <li><b>Replay uses today's chain.</b> A past-state read is
               reproducible as a function of (entries, chain, fold,
               init) — a <i>function</i>, not a date — which is exactly why
               the chain is identified rather than ambient.</li>
-            <li><b>An entry no upcaster covers is a loud failure-channel
+      <li><b>An entry no upcaster covers is a loud failure-channel
               error at fold time</b> — naming the position, the declared
               version, and the chain's endpoints. Never an absence,
               never a skip. The <b>coverage pre-flight</b> — \"would this
@@ -201,7 +196,7 @@
               <b>automatically at feature install</b> when the deployment
               supplies its journal: an uncovered address refuses the
               install, naming the address and its entry count.</li>
-            <li><b>Derivable translators are derived, not written.</b>
+      <li><b>Derivable translators are derived, not written.</b>
               <code>cx schema compat</code> classifies a schema change and, for
               the additive/rename/default classes, emits the lineage
               claim carrying the rewrite rules as data — the journal
@@ -210,21 +205,18 @@
               records the claim mechanically; only a change that
               genuinely reinterprets data stops the publish, with the
               missing rule named.</li>
-          
-        </ul>
-        <p class="note">Unknown vocabulary has one reconciled rule platform-wide:
+    </ul>
+    <p class="note">Unknown vocabulary has one reconciled rule platform-wide:
          <b>tolerate on discovery surfaces, reject on semantic
          surfaces</b> — and tolerance is never the compatibility
          mechanism. The one narrow exception (a downgraded consumer
          skipping event kinds it postdates) is downgrade-only and
          carries <b>visible skip counts</b> — count and attribution, in
          the value, at the point of omission — never a silent path.</p>
-      
-    </section>
-    <section id="ee-fold-identity">
-      <h2>Fold identity and the snapshot discipline</h2>
-      
-        <p>Once upcasters exist, \"the same fold\" means more than the
+  </section>
+  <section id="ee-fold-identity">
+    <h2>Fold identity and the snapshot discipline</h2>
+    <p>Once upcasters exist, \"the same fold\" means more than the
          same function. Fold determinism is a <b>quadruple</b>: same
          entries, same upcaster chain, same fold function, same initial
          value — same result. The chain is part of the fold's identity,
@@ -232,7 +224,7 @@
          (<a class="xref" href="computation-identity.html">computation-identity</a>): adding an upcaster changes every
          fold address exactly once, and every cache goes cold rather
          than wrong.</p>
-        <p>Snapshots are where a missing identity silently loses data. A
+    <p>Snapshots are where a missing identity silently loses data. A
          snapshot is fold output frozen into a signed artifact — v1-fold
          output, if that is what produced it — and a resume that folds
          forward from it under a v2 fold would weld two vocabularies
@@ -240,7 +232,7 @@
          identity inside the signed preimage</b>, and resuming from a
          snapshot whose fold identity mismatches the requested fold is
          a loud typed error, never silently-stale state.</p>
-        <p>The retention consequence closes the loop: the rule that a
+    <p>The retention consequence closes the loop: the rule that a
          snapshot must cover any pruned prefix is read as covered
          <b>under the current fold</b> — re-derive under v2 before
          pruning a prefix only a v1 snapshot covers, or the prune is
@@ -253,56 +245,50 @@
          journal holding mixed payload vocabularies is legal and
          normal — heterogeneity is the steady state, not a
          transition.</p>
-      
-    </section>
-    <section id="ee-migration">
-      <h2>Stored-document migration</h2>
-      
-        <p>Store-side migration is spelled entirely in machinery that
+  </section>
+  <section id="ee-migration">
+    <h2>Stored-document migration</h2>
+    <p>Store-side migration is spelled entirely in machinery that
          already exists: <b>get, transform purely, put, advance the
          ref.</b> Documents are immutable, addresses never move, the old
          document stays addressable, and content dedup makes unchanged
          documents free.</p>
-        <ul>
-          
-            <li><b>Provenance is a claim.</b> <code>[migrated-from hash=…]</code> is a
+    <ul>
+      <li><b>Provenance is a claim.</b> <code>[migrated-from hash=…]</code> is a
               detached Lane-2 value linking new to old — the same
               hash-linkage discipline corrections use, never a field
               smuggled into either document.</li>
-            <li><b>Migration is the representational relation.</b> It never
+      <li><b>Migration is the representational relation.</b> It never
               appears in the correction taxonomy and never alters valid
               time — the fact did not change; its spelling did
               (<a class="xref" href="time.html">bitemporal</a>).</li>
-            <li><b>A pure migration is a computation</b> — addressable and
+      <li><b>A pure migration is a computation</b> — addressable and
               cacheable (<a class="xref" href="computation-identity.html">computation-identity</a>): re-migrating an
               unchanged document is a cache hit.</li>
-            <li><b>An impure migration is not a computation — it is a
+      <li><b>An impure migration is not a computation — it is a
               command.</b> Enriching against an external service on the
               way through is forced out into a declared command with
               effects and an idempotency key (<a class="xref" href="commands-effects.html">commands-effects</a>),
               whose output a pure migration then references. No network
               call ever hides inside a replay.</li>
-          
-        </ul>
-        <p>Read-time document projection without a put is permitted but
+    </ul>
+    <p>Read-time document projection without a put is permitted but
          never the default — it produces values whose addresses resolve
          nowhere, which is exactly the pressure the value-model
          invariant exists to resist. Migrate forward, advance the ref,
          and let the old address keep meaning what it always meant.</p>
-      
-    </section>
-  
+  </section>
 </section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>Event evolution</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

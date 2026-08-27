@@ -8,10 +8,10 @@
 > Same text offline: `cx primer`. If that version does not match this
 > heading, the binary and the document disagree — trust the binary.
 
-## 0. Ten facts that carry most of the distance
+## 0. Twelve facts that carry most of the distance
 
 CX post-dates your training data. Whatever you remember about a language
-called "CX" is not this one. Read these ten before writing anything.
+called "CX" is not this one. Read these twelve before writing anything.
 
 1. **One syntax, two readings.** `[name attr=value child…]` is *the* form. A
    document, a query, a program, and the compiler's own AST are all the same
@@ -26,19 +26,27 @@ called "CX" is not this one. Read these ten before writing anything.
    has one attribute and one child. Attributes are a map on the node;
    children are an ordered sequence. Patterns can match either.
 5. **Scalars are typed on read.** `true` is a boolean, `42` an int, `1.5` a
-   float, `null` the explicit null, a bare word an atom, quoted text a
-   string. Quoting is how you *stop* auto-typing.
+   **decimal** (*not* a float — see §2), `null` the explicit null, a bare word
+   an atom, quoted text a string. Quoting is how you *stop* auto-typing.
 6. **Collections are values, not elements.** Sequences are `(a, b, c)` and
    maps are `{key: value}`. A comprehension yields a sequence.
 7. **Errors are values, not exceptions.** `[err code=… message=…]` flows
    through the program and propagates out of any element you construct from
    it. There is no `try`/`catch` directive — `[?try]` was retired.
-8. **Absence is a value, not a crash.** A missing map key, an out-of-range
-   read, an empty match set: each has a defined, distinguishable answer.
-9. **Effects are deny-by-default.** Reading a file, dialing a host, or
-   reading the clock needs a capability granted on the command line, and a
-   denial is an ordinary error value naming the flag that would allow it.
-10. **`cx [flags] FILE [program-args…]`.** Flags bind *before* the file.
+8. **…but an error may not leave silently.** An externalizing effect — a
+   store document write, an HTTP response — refuses to carry a document
+   containing an `[err]` at any depth out of the program. You permit it
+   explicitly with `errs=:permit` or not at all. See §6.
+9. **A sequence value is never element content.** `[violations $vs]` where
+   `$vs` is a sequence is *refused*, not spliced. The idiom is
+   `[violations [?splice $vs]]`. Nothing auto-splices in CX. See §5.
+10. **Absence is a value, not a crash.** A missing map key, an out-of-range
+    read, an empty match set: each has a defined, distinguishable answer —
+    and an absent item contributes *no child* rather than an empty one.
+11. **Effects are deny-by-default.** Reading a file, dialing a host, or
+    reading the clock needs a capability granted on the command line, and a
+    denial is an ordinary error value naming the flag that would allow it.
+12. **`cx [flags] FILE [program-args…]`.** Flags bind *before* the file.
     Everything after the file belongs to the program. Getting this backwards
     does not produce a usage error — see the anti-patterns in §9.
 
@@ -94,6 +102,33 @@ canonical form keeps the quotes exactly where they are needed:
 The same rule inside a sequence:
 
 {{EXAMPLE:831-sequence-item-string-stays-program-readable block}}
+
+### `1.5` is a decimal, not a float
+
+Worth stopping on, because almost every language you know reads a bare
+fraction as a binary float and CX does not.
+
+| Kind | How you get one |
+|---|---|
+| **decimal** | a plain fraction literal: `1.5`, `2.50`, `0.1`. Exact, base-10, arbitrary precision |
+| **float** | an `e`-exponent literal (`1.5e0`), a `::float` annotation, `[cast x :float]`, division `[/ …]`, `[$avg …]`, and the float-returning `math` functions |
+
+`[price 19.99]` is a decimal and stays exact; `[/ 7 2]` is a float.
+Arithmetic keeps a decimal a decimal — `[* 2 1.5]` is `3.0`, and ints mix in
+freely — but the two kinds never mix with each other:
+
+{{PAIR:ap-decimal-float-mix-wrong ap-decimal-float-mix-right}}
+
+The formatters keep decimals exactly as written:
+
+{{EXAMPLE:format-036-pretty-map-values-typed block}}
+
+The kinds are also distinct to **identity and to equality**: `1.5` and `1.5e0`
+denote the same number but are different values, so they canonicalize
+differently, hash differently, and `[$eq]` answers `false`. (Contrast §6's
+decimal-vs-*string* case, which is `true` — atomization crosses the
+scalar/text line, never the decimal/float one.) `reference-data-language.md`
+has the image rule.
 
 ### Collections
 
@@ -321,6 +356,34 @@ The infix sugar parses to exactly the same thing:
 
 {{EXAMPLE:program-element-dynamic-head-001-string block}}
 
+### Build element content with `[?splice]`, never by dropping a sequence in
+
+This is the single rule most likely to break the first program you write,
+because every templating language you have seen splices a list into a slot
+silently. **CX does not.** A non-empty sequence *value* in element-content
+position is refused, and the diagnostic names the idiom you meant:
+
+{{EXAMPLE:program-pvmatrix-026-construct-seq-refused block}}
+
+{{EXAMPLE:program-pvmatrix-027-construct-splice-adopts block}}
+
+Four consequences worth memorising:
+
+* **`[?for]` and `[?splice]` contribute siblings; everything else contributes
+  one child.** A binding read, a call result, an `[?if]` / `[?let]` /
+  `[?match]` result each contribute exactly one — so one of those yielding a
+  sequence refuses. Conditional multi-contribution is `[?splice [?if …]]`.
+* **An argument is not content.** A `$`-head call, an operator head, or a
+  closure call *consumes* a sequence argument happily. Only plain element
+  construction refuses.
+* **Absence contributes nothing.** `[c $u/nothing]` builds `[c]`, not an
+  element with an empty child.
+* **`[break]` / `[continue]` are exempt.** They are `[?loop]`'s positional
+  value carriers, not documents: absence rides as the empty sequence and a
+  sequence rides whole, because the loop rebinds positionally.
+
+`reference-code-language.md` has the worked example for each.
+
 ### Transform with `[?modify]`
 
 `[?modify]` rewrites a document by matching positions and replacing them. It
@@ -395,6 +458,53 @@ A missing map key reads as empty rather than raising:
 
 {{EXAMPLE:map-002-get-absent-is-empty block}}
 
+### An error may not *leave* the program silently
+
+Everything above is about errors *inside* a program, where they are ordinary
+values. Leaving is different. An **externalizing effect** refuses to carry a
+document containing an `[err]` at any depth out of the program:
+
+{{EXAMPLE:store-err-boundary-001-put-doc-nested-err-refuses block}}
+
+`cx-err:CXER0275` names the first contained err's code and its path. Two
+families are guarded, and they are the two that turn a refusal into someone
+else's data:
+
+* **Store document writes** — `put-doc`, `put-doc-stream`, `put-doc-text`
+  (it stores a *parsed* document), and `modify-doc` (its action payload is
+  the injection vehicle).
+* **HTTP response emission** — a handler result, whether a `[response]`
+  envelope, a bare document, or a bare `[err]`. The refusal is a loud 500;
+  the bare-err-as-200 shape is exactly the silent class this closes.
+
+Externalizing a refusal *deliberately* is legal, and it has **one spelling
+everywhere**: `errs=:permit` — a key in the trailing opts map on the store
+verbs, an attribute on `[response]` / `[sse-subscribe]`:
+
+{{EXAMPLE:store-err-boundary-002-put-doc-permit-externalizes block}}
+
+Exempt by construction: blob and byte writes (bytes carry no `[err]` to
+find), channels, bindings, matching, formatting, the journal (an error event
+is exactly what a journal is for), fabric emit, and the run-surface print. An
+err in a collection is still just a value:
+
+{{EXAMPLE:store-err-boundary-004-err-stays-a-value-in-process block}}
+
+This is what closes the `written=0 errors=25`, exit 0 class — the generator
+that reports success while its output carries the refusals as data.
+
+### Two equality notions, both deliberate
+
+`[$eq]` / `[=]` is **value** equality under the atomization policy: a scalar
+compares against the string of its image, so these are `true` by design.
+
+{{EXAMPLE:program-eq-021-two-equality-notions block}}
+
+`cx canonical` / `cx hash` / `cx eq` / a store handle are the **identity**
+notion — type-faithful over the strict-canonical bytes — and they distinguish
+exactly those pairs. When you are asking "is this the same document" for a
+cache key or a content address, you want identity, not `[$eq]`.
+
 ## 7. Capabilities
 
 The nine capabilities are `read write net env clock random subprocess eval
@@ -405,7 +515,10 @@ names the flag which would have granted it, so you never guess:
 
 `--allow-common` is everything except `secret-reveal`; `--allow-all` includes
 it and therefore declassifies secrets. `--allow-net` takes an optional scope
-(`--allow-net=example.com:443`). Grant the narrowest thing that works.
+(`--allow-net=example.com:443`) and is the **only** grant that scopes — a
+resource suffix on `--allow-read`, `--allow-write` or `--allow-env` is a usage
+error (exit 2, before evaluation), not a narrowing. Grant the narrowest thing
+that works.
 
 `env:argv` and `env:parse-args` are **ungated** — reading your own arguments
 is not an effect.
@@ -495,17 +608,24 @@ than guessed at:
 3. `[?let]` is flat. One `[?let]`, many `[= …]`, one body.
 4. `[?if]` has `[then]` and `[else]` clause names.
 5. Every directive you used is in the §4 registry.
-6. Every effect has its `--allow-…` grant, and you granted the narrowest one.
-7. Strings that must stay text are quoted.
-8. You did not write `[?try]`, `[?chain]`, `[?find]`, or `[?par-map]` — all
-   retired.
-9. You ran it. `cx FILE.cx` is one second; a plausible-looking CX program
-   that does not parse costs the reader much more than that.
+6. Every module you imported is in the §8 catalog. You did not invent one.
+7. Every effect has its `--allow-…` grant, and you granted the narrowest one.
+8. Strings that must stay text are quoted.
+9. No sequence value sits in element content. Where you meant many children,
+   you wrote `[?splice …]` or `[?for …]`.
+10. Every externalizing effect either carries no `[err]` or says
+    `errs=:permit` — deliberately.
+11. Where you compared for identity you used `cx hash` / canonical bytes, not
+    `[$eq]`.
+12. You did not write `[?try]`, `[?chain]`, `[?find]`, or `[?par-map]` — all
+    retired.
+13. You ran it. `cx FILE.cx` is one second; a plausible-looking CX program
+    that does not parse costs the reader much more than that.
 
 ## 11. Where to go next
 
-Load a reference only when the task needs it — this primer is meant to be the
-whole context for ordinary work.
+Load one only when the task needs it — this primer is meant to be the whole
+context for ordinary work.
 
 | File | Load it when |
 |---|---|
@@ -514,6 +634,7 @@ whole context for ordinary work.
 | `reference-stdlib.md` | you are looking for a module or a capability |
 | `reference-cli.md` | you are scripting `cx` itself |
 | `reference-platform.md` | you are persisting, serving, or distributing |
+| `playbook-xap.md` | **you are building a feature deployment** — composing feature grammars, authoring the `*.xap.cxd` deployment document, bootstrapping identity, hosting, or projecting a ux-web surface |
 
 The normative source is `spec/03-approved/`. The conformance corpus under
 `conformance/` is the executable truth: every claim in this primer is a case

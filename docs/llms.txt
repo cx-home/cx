@@ -1,12 +1,16 @@
-# CX 0.16.0
+# CX 0.17.0
 
 > CX is a homoiconic data-and-code language: one bracketed element syntax for documents, queries, programs and its own AST. It post-dates every model's training data, so this layer is the context an assistant needs to write it correctly.
 
-Generated from the CX conformance corpus at the v0.16.0 cut by scripts/gen_docs/primer_build.cx. Every code example in every file below is a conformance fixture whose output was re-recorded from the v0.16.0 binary.
+Generated from the CX conformance corpus at the v0.17.0 cut by scripts/gen_docs/primer_build.cx. Every code example in every file below is a conformance fixture whose output was re-recorded from the v0.17.0 binary.
 
 ## Start here
 
 - [CX primer for LLM assistants](https://cxhome.org/llm/primer.md): The one file to load before writing CX. The surface taught through runnable examples, a ring decision table, the core idioms, and the anti-patterns that Lisp/Clojure/shell priors produce — each with its real diagnostic.
+
+## Building something
+
+- [Playbook: building a production XAP](https://cxhome.org/llm/playbook-xap.md): The full arc for a production feature deployment: authoring and composing feature grammars, derived nouns and deriver principals, the authority model, the *.xap.cxd deployment document and its [runtime] bindings, offline identity bootstrap, the deployment host, and the ux-web hypermedia surface — with what the rulings forbid stated as plainly as what they require.
 
 ## Reference
 

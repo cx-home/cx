@@ -33,6 +33,7 @@ complete -c cx -f -n '__fish_use_subcommand' -a lock -d 'Manage the dependency l
 complete -c cx -f -n '__fish_use_subcommand' -a store-serve -d 'Run the CSRP store-service daemon'
 complete -c cx -f -n '__fish_use_subcommand' -a store-health -d 'Readiness probe for the store service'
 complete -c cx -f -n '__fish_use_subcommand' -a store-rotate-kek -d 'Rotate the store key-encryption key'
+complete -c cx -f -n '__fish_use_subcommand' -a store-mint-principal -d 'Mint an XSP-AUTH principal offline (seed file + grant stanza)'
 complete -c cx -f -n '__fish_use_subcommand' -a fabric-serve -d 'Run the fabric event-stream daemon'
 complete -c cx -f -n '__fish_use_subcommand' -a lsp -d 'Run cx Language Server over stdio'
 
@@ -152,6 +153,13 @@ complete -c cx -f -n '__fish_seen_subcommand_from store-health' -l url -r -d 're
 complete -c cx -f -n '__fish_seen_subcommand_from store-rotate-kek' -l url -r -d 'store URL'
 complete -c cx -f -n '__fish_seen_subcommand_from store-rotate-kek' -l encrypt-key-id -r -d 'current KEK id'
 complete -c cx -f -n '__fish_seen_subcommand_from store-rotate-kek' -l new-key-id -r -d 'replacement KEK id'
+
+# store-mint-principal flags
+complete -c cx -f -n '__fish_seen_subcommand_from store-mint-principal' -l id -r -d 'principal name (canonical: lowercase, -); derives CX_XSP_SEED_<NAME>'
+complete -c cx -F -n '__fish_seen_subcommand_from store-mint-principal' -l seed-file -r -d 'where the 0600 seed lands'
+complete -c cx -f -n '__fish_seen_subcommand_from store-mint-principal' -l caps -r -d 'REQUIRED for a grant row: read write delete admin peer'
+complete -c cx -f -n '__fish_seen_subcommand_from store-mint-principal' -l for -r -a 'grant identity' -d 'which daemon row to print (default grant)'
+complete -c cx -f -n '__fish_seen_subcommand_from store-mint-principal' -l force -d 'replace an existing seed file (invalidates its DID)'
 
 # lsp flags
 complete -c cx -f -n '__fish_seen_subcommand_from lsp' -l verbose -d 'trace methods on stderr'

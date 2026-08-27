@@ -231,10 +231,11 @@ interim manual driver is `tooling/lsp/tests/probe.cx`, see
 
 `cx lsp` `initialize` response must continue to advertise
 `hoverProvider: true` and `completionProvider: { triggerCharacters:
-["[", "?", "@", ":", "/"] }` (the live advertised set — verified by
-[`tests/check_capabilities.cx`](tests/check_capabilities.cx)). `/` is
-in the trigger set so path completions fire at the start of `//path`
-typing.
+["[", "?", "@", ":", "/"] }` (the live advertised set — pinned by
+`vcx/tests/lint_lsp_umbrella_test.v`, in the `make test-vcx-suite`
+lane; #1003 retired the standalone `tests/check_capabilities.cx` in
+its favour). `/` is in the trigger set so path completions fire at the
+start of `//path` typing.
 
 ## Atom literal recognition (code.md §3.6)
 

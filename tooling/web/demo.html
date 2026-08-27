@@ -10,6 +10,16 @@
   </style>
 </head>
 <body>
+  <!-- Open the STAGED copy, not this file in place: the component loads its
+       renderer from ./vendor/mermaid.min.js (same-origin, never a CDN — #1015),
+       and the repo keeps exactly one vendored mermaid, over in
+       scripts/gen_guide/playground/vendor/. `make stage-web-component` puts
+       this page, the component and that bundle in one docroot:
+
+           make stage-web-component
+           open dist/web-component-preview/demo.html
+
+       `make test-web-component-offline` is the gate over the same layout. -->
   <h1>&lt;cx-diagram&gt; reference renderer</h1>
   <p>Three input modes: <code>mermaid</code> attribute, inner text, and <code>src</code> URL.</p>
 

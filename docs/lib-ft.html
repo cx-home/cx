@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,215 +143,183 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">ft</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-ft"><h1>ft</h1><p class="lede">In-program fulltext search with structured ranking and snippet generation. Builds a naive in-memory inverted index from a document set or a store, then runs a query language (keyword conjunctions, phrases, boolean operators, field restriction) ranked by TF-IDF (default) or BM25. The tokenization pipeline — Unicode word segmentation, case folding, stopword removal, and English stemming — runs entirely inside the process, with no persistent index and no external engine. The Index is an opaque in-memory value rebuilt per run.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-ft-index" class="fn">
-    <h3>ft:index</h3>
-    <p class="fn-sig"><code>[$ft:index]  -> element</code>  —  Build an Index over a sequence of documents using the default tokenization pipeline.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/ft']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-ft-index" class="fn">
+  <h3>ft:index</h3>
+  <p class="fn-sig"><code>[$ft:index]  -> element</code>  —  Build an Index over a sequence of documents using the default tokenization pipeline.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/ft']
 [$ft:index-stats [$ft:index ()]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>{doc-count: 0, term-count: 0, size-bytes: 0, languages: ()}</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-ft-index-with-opts" class="fn">
-    <h3>ft:index-with-opts</h3>
-    <p class="fn-sig"><code>[$ft:index-with-opts]  -> element</code>  —  Build an Index with explicit options for language, stopwords, stemmer, tokenizer, and fields.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/ft']
+    </pre>
+    <pre class="sample-output">
+      <code>{doc-count: 0, term-count: 0, size-bytes: 0, languages: ()}</code>
+    </pre>
+  </div>
+</section><section id="fn-ft-index-with-opts" class="fn">
+  <h3>ft:index-with-opts</h3>
+  <p class="fn-sig"><code>[$ft:index-with-opts]  -> element</code>  —  Build an Index with explicit options for language, stopwords, stemmer, tokenizer, and fields.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/ft']
 [?let [= $idx [$ft:index-with-opts ([doc [title "Database design"] [body "schemas and indexes"]]) {fields: ("title")}]]
   [$ft:search $idx [$ft:parse-query "body:schemas"] 10]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER1202</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-ft-search" class="fn">
-    <h3>ft:search</h3>
-    <p class="fn-sig"><code>[$ft:search]  -> [sequence element]</code>  —  Run a query against an Index and return up to limit ranked result elements.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/ft']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER1202</code>
+    </pre>
+  </div>
+</section><section id="fn-ft-search" class="fn">
+  <h3>ft:search</h3>
+  <p class="fn-sig"><code>[$ft:search]  -> [sequence element]</code>  —  Run a query against an Index and return up to limit ranked result elements.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/ft']
 [?let [= $idx [$ft:index ([doc "database design"], [doc "schema migrations"])]]
   [$ft:search $idx [$ft:parse-query ""] 10]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>()</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-ft-parse-query" class="fn">
-    <h3>ft:parse-query</h3>
-    <p class="fn-sig"><code>[$ft:parse-query]  -> element</code>  —  Parse an end-user query string (the §2.2.1 data format) into the canonical [query …] element — the only place the string format exists.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/ft']
+    </pre>
+    <pre class="sample-output">
+      <code>()</code>
+    </pre>
+  </div>
+</section><section id="fn-ft-parse-query" class="fn">
+  <h3>ft:parse-query</h3>
+  <p class="fn-sig"><code>[$ft:parse-query]  -> element</code>  —  Parse an end-user query string (the §2.2.1 data format) into the canonical [query …] element — the only place the string format exists.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/ft']
 [$ft:parse-query "database"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[query [term 'database']]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-ft-search-with-opts" class="fn">
-    <h3>ft:search-with-opts</h3>
-    <p class="fn-sig"><code>[$ft:search-with-opts]  -> [sequence element]</code>  —  Search with options for scoring mode, limit, offset, min-score, and query tokenization.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/ft']
+    </pre>
+    <pre class="sample-output">
+      <code>[query [term 'database']]</code>
+    </pre>
+  </div>
+</section><section id="fn-ft-search-with-opts" class="fn">
+  <h3>ft:search-with-opts</h3>
+  <p class="fn-sig"><code>[$ft:search-with-opts]  -> [sequence element]</code>  —  Search with options for scoring mode, limit, offset, min-score, and query tokenization.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/ft']
 [?let [= $idx [$ft:index ([doc id="d1" "database one"], [doc id="d2" "database two"], [doc id="d3" "database three"])]]
   [$count [$ft:search-with-opts $idx [$ft:parse-query "database"] {limit: 2}]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-ft-search-store" class="fn">
-    <h3>ft:search-store</h3>
-    <p class="fn-sig"><code>[$ft:search-store]  -> [sequence element]</code>  —  Build an Index from a store's documents and search it in one call.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/ft']
+    </pre>
+    <pre class="sample-output">
+      <code>2</code>
+    </pre>
+  </div>
+</section><section id="fn-ft-search-store" class="fn">
+  <h3>ft:search-store</h3>
+  <p class="fn-sig"><code>[$ft:search-store]  -> [sequence element]</code>  —  Build an Index from a store's documents and search it in one call.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/ft']
 [?lib 'cx-stdlib/store']
 [?let [= $store [$store:open "mem:///ft-conformance"]]
   [= $_ [$store:put-doc $store [doc id="d1" "database design and analytics"]]]
   [$ft:doc-ids [$ft:search-store $store [$ft:parse-query "database"] 10]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(d1)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-ft-snippet" class="fn">
-    <h3>ft:snippet</h3>
-    <p class="fn-sig"><code>[$ft:snippet]  -> string</code>  —  Extract a context window around query matches, wrapping each match in <mark> tags.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/ft']
+    </pre>
+    <pre class="sample-output">
+      <code>(d1)</code>
+    </pre>
+  </div>
+</section><section id="fn-ft-snippet" class="fn">
+  <h3>ft:snippet</h3>
+  <p class="fn-sig"><code>[$ft:snippet]  -> string</code>  —  Extract a context window around query matches, wrapping each match in <mark> tags.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/ft']
 [?lib 'cx-stdlib/strings']
 [$strings:contains [$ft:snippet [doc "the database design covers schemas and indexes"] [$ft:parse-query "database"] 80] "<mark>"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-ft-snippet-with-opts" class="fn">
-    <h3>ft:snippet-with-opts</h3>
-    <p class="fn-sig"><code>[$ft:snippet-with-opts]  -> string</code>  —  Extract snippets with options for context size, count, ellipsis, and mark delimiters.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/ft']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-ft-snippet-with-opts" class="fn">
+  <h3>ft:snippet-with-opts</h3>
+  <p class="fn-sig"><code>[$ft:snippet-with-opts]  -> string</code>  —  Extract snippets with options for context size, count, ellipsis, and mark delimiters.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/ft']
 [?lib 'cx-stdlib/strings']
 [$strings:contains [$ft:snippet-with-opts [doc "the database design covers schemas"] [$ft:parse-query "database"] {mark-prefix: "[[", mark-suffix: "]]"}] "[[database]]"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-ft-tokenize" class="fn">
-    <h3>ft:tokenize</h3>
-    <p class="fn-sig"><code>[$ft:tokenize]  -> [sequence string]</code>  —  Run the default pipeline over text and return its token sequence — useful for debugging alignment.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/ft']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-ft-tokenize" class="fn">
+  <h3>ft:tokenize</h3>
+  <p class="fn-sig"><code>[$ft:tokenize]  -> [sequence string]</code>  —  Run the default pipeline over text and return its token sequence — useful for debugging alignment.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/ft']
 [?lib 'cx-stdlib/strings']
 [$contains [$ft:tokenize "the cat in the hat" "en"] "the"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>false</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-ft-doc-ids" class="fn">
-    <h3>ft:doc-ids</h3>
-    <p class="fn-sig"><code>[$ft:doc-ids]  -> [sequence string]</code>  —  Extract the document IDs from a sequence of search results.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/ft']
+    </pre>
+    <pre class="sample-output">
+      <code>false</code>
+    </pre>
+  </div>
+</section><section id="fn-ft-doc-ids" class="fn">
+  <h3>ft:doc-ids</h3>
+  <p class="fn-sig"><code>[$ft:doc-ids]  -> [sequence string]</code>  —  Extract the document IDs from a sequence of search results.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/ft']
 [?let [= $idx [$ft:index ([doc id="d1" "database design and analytics"], [doc id="d2" "kitchen recipes for soup"])]]
   [$ft:doc-ids [$ft:search $idx [$ft:parse-query "database"] 10]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(d1)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-ft-score-of" class="fn">
-    <h3>ft:score-of</h3>
-    <p class="fn-sig"><code>[$ft:score-of]  -> float</code>  —  Extract the relevance score from a single search result.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/ft']
+    </pre>
+    <pre class="sample-output">
+      <code>(d1)</code>
+    </pre>
+  </div>
+</section><section id="fn-ft-score-of" class="fn">
+  <h3>ft:score-of</h3>
+  <p class="fn-sig"><code>[$ft:score-of]  -> float</code>  —  Extract the relevance score from a single search result.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/ft']
 [?let [= $idx [$ft:index ([doc id="d1" "database design"])]]
   [= $results [$ft:search $idx [$ft:parse-query "database"] 10]]
   [$gte [$ft:score-of [$first $results]] 0.0]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-ft-index-stats" class="fn">
-    <h3>ft:index-stats</h3>
-    <p class="fn-sig"><code>[$ft:index-stats]  -> map</code>  —  Report Index statistics — document count, term count, byte size, and languages.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/ft']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-ft-index-stats" class="fn">
+  <h3>ft:index-stats</h3>
+  <p class="fn-sig"><code>[$ft:index-stats]  -> map</code>  —  Report Index statistics — document count, term count, byte size, and languages.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/ft']
 [$ft:index-stats [$ft:index ()]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>{doc-count: 0, term-count: 0, size-bytes: 0, languages: ()}</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>{doc-count: 0, term-count: 0, size-bytes: 0, languages: ()}</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>ft</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

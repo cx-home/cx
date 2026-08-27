@@ -17,6 +17,13 @@ CSRP op named in this spec maps verb-for-verb onto profile ops (the
 admin-plane names are unchanged). Read this document's CSRP references
 through that mapping; the console migrates with the other consumers before
 the CSRP data plane is removed.
+**Bootstrap-retirement note (cx-private#968):** the CSRP wire came out at
+the stream-4 S3 demolition, and the `cx store-token` half of the §4.5
+token bootstrap came out with it — the verb is deleted and the `[auth …]`
+config section it wrote for is a hard config error. The 2026-07-06 owner
+lock below records what was decided for the CSRP world; it is not a
+description of the shipped surface. §4.5 is rewritten against the
+successor-bootstrap ruling, which is under design as cx-private#969.
 **Delivers:** a separate project — one XAP whose features (free + paid) manage
 `cx store-serve` deployments. This spec is the project's contract; the
 implementation repo is bootstrapped from it.
@@ -196,17 +203,32 @@ credentials — no admin/admin, ever. The console mirrors this honestly:
 
 ### §4.5. Token bootstrap (owner-locked 2026-07-06: CLI helper + console flow, one stanza format)
 
-Operators must not hand-roll `sha256:` secret-hashes. Both halves ship, and
-both emit the SAME stanza shape — one documented recipe:
+**SUPERSEDED — read with the bootstrap-retirement note above.** The
+mechanism this section specifies is CSRP-era: bearer tokens, `sha256:`
+secret-hashes, and the `[static [token …]]` stanza all went out with the
+CSRP bearer/RBAC plane. Under XSP-AUTH a principal is an ed25519 DID
+(`xsp-did` / `xsp-seed-env` open-opts) and `[xsp [grants …]]` is the only
+grant table ([`cxstore-grpc.md`](cxstore-grpc.md) §4); no shipped verb mints
+a seed or emits a `[grants …]` stanza, so a deny-by-default daemon is
+provisioned out of band today. The text below stands as the record of the
+2026-07-06 owner lock — the print-once posture and the one-stanza-shape
+constraint are the parts the successor design (cx-private#969) is expected
+to carry forward.
 
-- **CLI helper (daemon-side, cx-private):**
-  `cx store-token --id ops --roles admin --tenant '*'` generates a
-  cryptographically-random token, prints the ready-to-paste
+Operators must not hand-roll `sha256:` secret-hashes. Both halves were
+specified to ship, and both emit the SAME stanza shape — one documented
+recipe:
+
+- **CLI helper (daemon-side, cx-private) — RETIRED:**
+  `cx store-token --id ops --roles admin --tenant '*'` generated a
+  cryptographically-random token, printed the ready-to-paste
   `[static [token id=… secret-hash="sha256:…" roles=… tenant=…]]` stanza on
-  stdout, and shows the SECRET once on stderr (so the stanza can be piped
-  into a config while the secret goes to the operator's eyes). The daemon
-  stays securable without a console. This is the ONLY daemon-side code this
-  spec introduces — optional sugar, not API.
+  stdout, and showed the SECRET once on stderr (so the stanza could be piped
+  into a config while the secret went to the operator's eyes). It was the
+  ONLY daemon-side code this spec introduced — optional sugar, not API — and
+  it was deleted with the CSRP plane. The claim it backed, *"the daemon
+  stays securable without a console"*, is currently unmet: that is the gap
+  cx-private#969 exists to close.
 - **Console flow (`store-connect`):** the guided first-secured-setup runs
   the same generation client-side, hands the operator the identical stanza
   to place in the config file, then triggers `config-reload` through an
@@ -305,8 +327,9 @@ versionable, journal-referenced); `store-fleet` verbs operate over it.
 - A log-shipping wire op on the daemon (§2 — `store-audit` consumes logs via
   collector/file adapters).
 - Phase-3 (multi-node) features — seam named (§2), built when Phase 3 lands.
-- New daemon endpoints of any kind. (The §4.5 `cx store-token` CLI helper is
-  a local generator subcommand, not an endpoint.)
+- New daemon endpoints of any kind. (The retired §4.5 `cx store-token` CLI
+  helper was a local generator subcommand, not an endpoint; whatever
+  cx-private#969 rules must satisfy the same non-goal.)
 
 ## §9. Dependencies
 

@@ -126,6 +126,76 @@ separate template dialect.
 
 {{EXAMPLE:program-modify-outer-pred-003-bound-outer-filters block}}
 
+## Construction — what actually becomes a child
+
+This is the rule most likely to break a program written from priors, because
+every templating language you have seen splices a list into a slot silently.
+CX does not. **A non-empty sequence value never becomes element content.**
+Writing `[violations $vs]` where `$vs` is a sequence is refused loudly, and
+the diagnostic names the idiom you wanted:
+
+{{EXAMPLE:program-pvmatrix-026-construct-seq-refused block}}
+
+`[?splice]` is that idiom. It grafts the members in as siblings, and the
+child axis then sees them:
+
+{{EXAMPLE:program-pvmatrix-027-construct-splice-adopts block}}
+
+Auto-splicing was considered and rejected: it silently rewrites what the
+author wrote, and it makes `/*` depend on where a value came from. One loud,
+early refusal is the answer instead.
+
+### The four rules that follow from it
+
+**1. Directives contribute; values are adopted or refused.** `[?splice]` and
+`[?for]` in a multi-sibling slot are *multi-sibling contributors* — `[?for]`
+contributes one sibling per `[yield]`, which is its defined contribution, not
+a value being auto-spliced:
+
+{{EXAMPLE:program-pvmatrix-028-construct-for-contributes block}}
+
+Everything else — a binding read, a call result, an `[?if]` / `[?let]` /
+`[?match]` result — contributes exactly *one* child, so one of those yielding
+a non-empty sequence refuses the same way. Conditional multi-contribution is
+spelled `[?splice [?if …]]`:
+
+{{EXAMPLE:program-pvmatrix-031-construct-if-seq-refused block}}
+
+**2. Dispatch consumes arguments; only plain construction refuses.** A
+bracketed form that *dispatches* — a `$`-head call, an operator head
+(`[= …]`, `[+ …]`), a closure call — takes an operand-produced sequence as an
+ARGUMENT, which is legal everywhere. An argument is not content:
+
+{{EXAMPLE:program-pvmatrix-040-dispatching-head-consumes-seq-arg block}}
+
+The refusal applies only to a form that *is* plain element construction: a
+bare data head, a bare named-builtin head (named builtins are reached only as
+`[$name …]`), and always the computed-name `[?element …]` form.
+
+**3. Absence contributes nothing.** An item that evaluates to the empty
+sequence — an absent optional read, an empty comprehension — contributes no
+child at all. It is not adopted as a visible empty child:
+
+{{EXAMPLE:program-pvmatrix-029-construct-absence-contributes-nothing block}}
+
+**4. The loop carriers are exempt.** `[break …]` and `[continue …]` are the
+`[?loop]` protocol's *positional value carriers*, not documents. Every
+expression there contributes exactly one value: an absence rides as the empty
+sequence and a sequence rides whole — because the loop rebinds its declared
+bindings positionally, and a dropped or spliced value would silently shift
+every binding after it.
+
+{{EXAMPLE:program-pvmatrix-041-loop-carriers-positional block}}
+
+### Position, not value
+
+The discriminator is where a thing is written, not what it looks like — the
+same principle as the literal-`[err]` rule below. A **source-literal** paren
+sequence in element content is data, and keeps the data reading's navigation
+(`/name` opaque, `//` through, `/*` sees the sequence node):
+
+{{EXAMPLE:program-pvmatrix-039-literal-seq-body-is-data block}}
+
 ## Errors
 
 An error is the value `[err code=… message=… …]`. It is produced, returned,

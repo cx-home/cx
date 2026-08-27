@@ -40,6 +40,7 @@ _cx() {
     'store-serve:Run the CSRP store-service daemon'
     'store-health:Readiness probe against a running store service'
     'store-rotate-kek:Rotate the store key-encryption key'
+    'store-mint-principal:Mint an XSP-AUTH principal offline (seed file + grant stanza)'
     'fabric-serve:Run the fabric event-stream daemon'
     'lsp:Run the cx Language Server over stdio (JSON-RPC 2.0)'
   )
@@ -228,6 +229,14 @@ _cx() {
         '--url=[store URL]:url:' \
         '--encrypt-key-id=[current KEK id]:key-id:' \
         '--new-key-id=[replacement KEK id]:key-id:'
+      ;;
+    store-mint-principal)
+      _arguments \
+        '--id=[principal name (canonical: lowercase, -); derives CX_XSP_SEED_<NAME>]:name:' \
+        '--seed-file=[where the 0600 seed lands]:file:_files' \
+        '--caps=[REQUIRED for a grant row: read write delete admin peer]:caps:' \
+        '--for=[which daemon row to print (default grant)]:row:(grant identity)' \
+        '--force[replace an existing seed file (invalidates its DID)]'
       ;;
     lsp)
       _arguments \

@@ -6,11 +6,22 @@ Protocol spec](https://microsoft.github.io/language-server-protocol/).
 
 ## Capabilities
 
-The table below mirrors the `initialize` response exactly —
-[`tests/check_capabilities.cx`](tests/check_capabilities.cx) drives a
-live `cx lsp` over stdio and fails when the server and this table
-disagree (`cx --allow-read --allow-write --allow-subprocess
-tooling/lsp/tests/check_capabilities.cx [/path/to/cx]`).
+The table below mirrors the `initialize` response exactly. What holds it
+to that is `vcx/tests/lint_lsp_umbrella_test.v` (#996), which drives a live
+`cx lsp` over real stdio framing and pins the advertised capability roster
+in both directions — a key the server stops advertising and a key it starts
+advertising both fail — plus the shapes clients branch on, and a request per
+advertised capability so that advertising something with no handler behind it
+fails too. It runs in `make test-vcx-suite`, so this table cannot drift
+quietly.
+
+There is no separate capability-check script. `tests/check_capabilities.cx`
+was one until #1003: it duplicated the roster, could not actually compare
+itself against this table (its expectations were a second hardcoded copy),
+hung forever whenever the server it spawned said more than 64 KiB on stderr,
+and was wired into no make target. The one assertion it carried that the
+harness did not — what the list-returning providers put on the wire — now
+lives in the harness.
 
 | Feature                              | Status |
 | ------------------------------------ | ------ |
@@ -29,7 +40,7 @@ tooling/lsp/tests/check_capabilities.cx [/path/to/cx]`).
 | `textDocument/codeLens` (§4.1 directive CodeLens) | ✅ |
 | `textDocument/signatureHelp`         | ✅     |
 | `textDocument/codeAction` (advertised; returns a well-formed empty list — recipes pending) | 🚧 |
-| `textDocument/inlayHint` (advertised; returns a well-formed empty list — populated hints pending) | 🚧 |
+| `textDocument/inlayHint` (declared `[?pipe]`-stage return-type hints) | ✅ |
 
 ## Diagnostic + completion surface
 
@@ -58,16 +69,23 @@ methods:
 cx lsp --verbose 2>/tmp/cx-lsp.log
 ```
 
-Smoke test from a shell (manual JSON-RPC echo):
+Smoke test from a shell (manual JSON-RPC echo). Note the redirections: the
+server's response to a single request can run to six figures of bytes
+(`textDocument/completion` answers with ~159 KB on the fixtures in
+`tests/`), so drive it through **files**, never an interactive pipe you are
+not draining — a full 64 KiB pipe wedges the server mid-write (#1003).
 
 ```sh
-python3 - <<'EOF' | cx lsp
-import sys, json
-def msg(o):
-    b = json.dumps(o)
-    sys.stdout.write(f"Content-Length: {len(b)}\r\n\r\n{b}")
-msg({"jsonrpc":"2.0","id":1,"method":"initialize","params":{}})
-msg({"jsonrpc":"2.0","id":2,"method":"shutdown","params":None})
-msg({"jsonrpc":"2.0","method":"exit","params":None})
-EOF
+frame() { printf 'Content-Length: %s\r\n\r\n%s' "$(printf %s "$1" | wc -c)" "$1"; }
+{
+  frame '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
+  frame '{"jsonrpc":"2.0","id":2,"method":"shutdown","params":null}'
+  frame '{"jsonrpc":"2.0","method":"exit"}'
+} > /tmp/cx-lsp-in.bin
+
+cx lsp < /tmp/cx-lsp-in.bin > /tmp/cx-lsp-out.bin 2> /tmp/cx-lsp-err.log
 ```
+
+For anything past a smoke test, use [`tests/probe.cx`](tests/probe.cx) — it
+drives a whole session for one file and position, on the same bounded
+file-fed shape.

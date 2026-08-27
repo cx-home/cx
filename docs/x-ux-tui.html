@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,7 +143,7 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">ux-tui</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="x-ux-tui"><h1>ux-tui</h1><p class="lede">The TERMINAL RENDERER of the UX projection (EXPERIMENTAL x/ tier;
@@ -160,153 +160,103 @@
    over <code>cx-x/term</code>. <code>content-of-tui</code> reads the terminal tree back to the
    common content normal form the web renderer also targets.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]><p class="note">Experimental x/ tier — imported as cx-x/ux-tui. Bundled and gated in-tree like any other module, but EXEMPT from the frozen-surface stability promise (std-lib README, decision D3): a semver-breaking change is allowed here while the surface settles, and the frozen-surface canary never counts it. Pin behaviour you depend on with your own fixtures.</p>
-  <section id="fn-ux-tui-render" class="fn">
-    <h3>ux-tui:render</h3>
-    <p class="fn-sig"><code>[$ux-tui:render]  ($el::any $ctx::map $opts::map) -> string | [err …]</code>  —  Paint one semantic tree as a terminal block, or refuse with one [err …] — running the SHARED semantic gate first, so a tree this renderer accepts and the web renderer rejects cannot exist.</p>
-    
-  </section>
-  <section id="fn-ux-tui-lines-of" class="fn">
-    <h3>ux-tui:lines-of</h3>
-    <p class="fn-sig"><code>[$ux-tui:lines-of]  ($t::any $opts::map) -> [sequence string]</code>  —  Paint a terminal tree to its lines — what the shell writes into a region of the screen.</p>
-    
-  </section>
-  <section id="fn-ux-tui-lower" class="fn">
-    <h3>ux-tui:lower</h3>
-    <p class="fn-sig"><code>[$ux-tui:lower]  ($el::any $ctx::map $opts::map) -> any</code>  —  Lower a semantic tree to the terminal tree — structure and content, no escape codes and no geometry.</p>
-    
-  </section>
-  <section id="fn-ux-tui-value-of" class="fn">
-    <h3>ux-tui:value-of</h3>
-    <p class="fn-sig"><code>[$ux-tui:value-of]  ($opts::map $name::string $dflt::string) -> string</code>  —  A control's edited value from the shell's overlay, or the tree's own.</p>
-    
-  </section>
-  <section id="fn-ux-tui-panel-stops" class="fn">
-    <h3>ux-tui:panel-stops</h3>
-    <p class="fn-sig"><code>[$ux-tui:panel-stops]  ($t::any) -> [sequence element]</code>  —  The ring positions that begin a new panel — the coarse movement scale. A flat ring puts every table row between the operator and the form below it, which is what makes a keyboard surface feel unnavigable however good each stop is.</p>
-    
-  </section>
-  <section id="fn-ux-tui-focusables" class="fn">
-    <h3>ux-tui:focusables</h3>
-    <p class="fn-sig"><code>[$ux-tui:focusables]  ($t::any) -> [sequence element]</code>  —  The focus ring in document order — derived from the tree rather than hand-listed, so it stays correct when the projection changes.</p>
-    
-  </section>
-  <section id="fn-ux-tui-focus-at" class="fn">
-    <h3>ux-tui:focus-at</h3>
-    <p class="fn-sig"><code>[$ux-tui:focus-at]  ($t::any $i::int) -> element | ()</code>  —  The focusable at a 1-based ring position, WRAPPING — a ring that clamps strands the last control.</p>
-    
-  </section>
-  <section id="fn-ux-tui-form-inputs" class="fn">
-    <h3>ux-tui:form-inputs</h3>
-    <p class="fn-sig"><code>[$ux-tui:form-inputs]  ($t::any $fid::string) -> [sequence element]</code>  —  Every input and hidden field under one form — what a submit collects, including the CSRF token, from the same tree the browser posts.</p>
-    
-  </section>
-  <section id="fn-ux-tui-base-theme" class="fn">
-    <h3>ux-tui:base-theme</h3>
-    <p class="fn-sig"><code>[$ux-tui:base-theme]  () -> element</code>  —  The pack's default terminal theme: one token per visual decision, values as SGR parameter strings.</p>
-    
-  </section>
-  <section id="fn-ux-tui-token-value-safe" class="fn">
-    <h3>ux-tui:token-value-safe</h3>
-    <p class="fn-sig"><code>[$ux-tui:token-value-safe]  ($v::string) -> bool</code>  —  Is a terminal token value safe — digits and semicolons only? An SGR parameter is tenant data reaching a control sequence, an injection surface exactly like a stylesheet.</p>
-    
-  </section>
-  <section id="fn-ux-tui-theme-refusals" class="fn">
-    <h3>ux-tui:theme-refusals</h3>
-    <p class="fn-sig"><code>[$ux-tui:theme-refusals]  ($theme::element) -> [sequence element]</code>  —  Every unsafe token value in one terminal theme document.</p>
-    
-  </section>
-  <section id="fn-ux-tui-editor-kind-of" class="fn">
-    <h3>ux-tui:editor-kind-of</h3>
-    <p class="fn-sig"><code>[$ux-tui:editor-kind-of]  ($kind::string) -> string</code>  —  Map a declared CX kind to this renderer's editor. Deliberately NOT the web mapping — kind states the type, never the widget — though money and decimal stay text for the same carrier reason.</p>
-    
-  </section>
-  <section id="fn-ux-tui-vis-len" class="fn">
-    <h3>ux-tui:vis-len</h3>
-    <p class="fn-sig"><code>[$ux-tui:vis-len]  ($s::string) -> int</code>  —  A string's VISIBLE width, with SGR sequences removed — every pad and border measures with this, because raw length counts escape bytes as columns and shears every table once colour is on.</p>
-    
-  </section>
-  <section id="fn-ux-tui-pad-vis" class="fn">
-    <h3>ux-tui:pad-vis</h3>
-    <p class="fn-sig"><code>[$ux-tui:pad-vis]  ($s::string $w::int) -> string</code>  —  Pad a possibly-styled string to a visible width.</p>
-    
-  </section>
-  <section id="fn-ux-tui-wrap" class="fn">
-    <h3>ux-tui:wrap</h3>
-    <p class="fn-sig"><code>[$ux-tui:wrap]  ($s::string $w::int) -> [sequence string]</code>  —  Word-wrap text to a width — a terminal has a hard right edge and no reflow engine, and the vocabulary never said how wide anything is.</p>
-    
-  </section>
-  <section id="fn-ux-tui-inline" class="fn">
-    <h3>ux-tui:inline</h3>
-    <p class="fn-sig"><code>[$ux-tui:inline]  ($t::any $opts::map) -> string</code>  —  An element's content as one line — the terminal analogue of inline flow, for leaves and runs of badges and links.</p>
-    
-  </section>
-  <section id="fn-ux-tui-content-of-tui" class="fn">
-    <h3>ux-tui:content-of-tui</h3>
-    <p class="fn-sig"><code>[$ux-tui:content-of-tui]  ($t::any) -> element</code>  —  Read the terminal tree back to the common content normal form — the TERMINAL side of the three-way equivalence assertion.</p>
-    
-  </section>
-  <section id="fn-ux-tui-content-repr-tui" class="fn">
-    <h3>ux-tui:content-repr-tui</h3>
-    <p class="fn-sig"><code>[$ux-tui:content-repr-tui]  ($el::any $ctx::map) -> string</code>  —  The canonical bytes the terminal rendering contributes to the equivalence assertion.</p>
-    
-  </section>
-  <section id="fn-ux-tui-alt-screen-on" class="fn">
-    <h3>ux-tui:alt-screen-on</h3>
-    <p class="fn-sig"><code>[$ux-tui:alt-screen-on]  () -> string</code>  —  Enter the alternate screen buffer and hide the cursor — a full-screen surface must not scroll the user's scrollback away.</p>
-    
-  </section>
-  <section id="fn-ux-tui-alt-screen-off" class="fn">
-    <h3>ux-tui:alt-screen-off</h3>
-    <p class="fn-sig"><code>[$ux-tui:alt-screen-off]  () -> string</code>  —  Restore the cursor and leave the alternate screen, putting the terminal back exactly as it was found.</p>
-    
-  </section>
-  <section id="fn-ux-tui-clear-home" class="fn">
-    <h3>ux-tui:clear-home</h3>
-    <p class="fn-sig"><code>[$ux-tui:clear-home]  () -> string</code>  —  Clear the screen and home the cursor — the start of every repaint.</p>
-    
-  </section>
-  <section id="fn-ux-tui-status-bar" class="fn">
-    <h3>ux-tui:status-bar</h3>
-    <p class="fn-sig"><code>[$ux-tui:status-bar]  ($keys::any $w::int $opts::map) -> string</code>  —  The footer keymap: bindings on screen, so nothing has to be memorized or documented elsewhere.</p>
-    
-  </section>
-  <section id="fn-ux-tui-sgr" class="fn">
-    <h3>ux-tui:sgr</h3>
-    <p class="fn-sig"><code>[$ux-tui:sgr]  ($code::string) -> string</code>  —  One SGR control sequence from its parameter string.</p>
-    
-  </section>
-  <section id="fn-ux-tui-esc" class="fn">
-    <h3>ux-tui:esc</h3>
-    <p class="fn-sig"><code>[$ux-tui:esc]  () -> string</code>  —  The ESC byte — CX string literals cannot encode it, so it comes from bytes.</p>
-    
-  </section>
-  <section id="fn-ux-tui-sgr-reset" class="fn">
-    <h3>ux-tui:sgr-reset</h3>
-    <p class="fn-sig"><code>[$ux-tui:sgr-reset]  () -> string</code>  —  The SGR reset sequence.</p>
-    
-  </section>
-  <section id="fn-ux-tui-style" class="fn">
-    <h3>ux-tui:style</h3>
-    <p class="fn-sig"><code>[$ux-tui:style]  ($s::string $theme::any $token::string $color::bool) -> string</code>  —  Wrap a string in one theme token's SGR, or leave it alone when colour is off.</p>
-    
-  </section>
-  <section id="fn-ux-tui-join-lines" class="fn">
-    <h3>ux-tui:join-lines</h3>
-    <p class="fn-sig"><code>[$ux-tui:join-lines]  ($ls::any) -> string</code>  —  Join a sequence of rendered lines with newlines into one screen string — a pure, total reduction; the empty sequence yields the empty string.</p>
-    
-  </section>
-</section>
+           the page, not by their own inattention. ]]><p class="note">Experimental x/ tier — imported as cx-x/ux-tui. Bundled and gated in-tree like any other module, but EXEMPT from the frozen-surface stability promise (std-lib README, decision D3): a semver-breaking change is allowed here while the surface settles, and the frozen-surface canary never counts it. Pin behaviour you depend on with your own fixtures.</p><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-ux-tui-render" class="fn">
+  <h3>ux-tui:render</h3>
+  <p class="fn-sig"><code>[$ux-tui:render]  ($el::any $ctx::map $opts::map) -> string | [err …]</code>  —  Paint one semantic tree as a terminal block, or refuse with one [err …] — running the SHARED semantic gate first, so a tree this renderer accepts and the web renderer rejects cannot exist.</p>
+</section><section id="fn-ux-tui-lines-of" class="fn">
+  <h3>ux-tui:lines-of</h3>
+  <p class="fn-sig"><code>[$ux-tui:lines-of]  ($t::any $opts::map) -> [sequence string]</code>  —  Paint a terminal tree to its lines — what the shell writes into a region of the screen.</p>
+</section><section id="fn-ux-tui-lower" class="fn">
+  <h3>ux-tui:lower</h3>
+  <p class="fn-sig"><code>[$ux-tui:lower]  ($el::any $ctx::map $opts::map) -> any</code>  —  Lower a semantic tree to the terminal tree — structure and content, no escape codes and no geometry.</p>
+</section><section id="fn-ux-tui-value-of" class="fn">
+  <h3>ux-tui:value-of</h3>
+  <p class="fn-sig"><code>[$ux-tui:value-of]  ($opts::map $name::string $dflt::string) -> string</code>  —  A control's edited value from the shell's overlay, or the tree's own.</p>
+</section><section id="fn-ux-tui-panel-stops" class="fn">
+  <h3>ux-tui:panel-stops</h3>
+  <p class="fn-sig"><code>[$ux-tui:panel-stops]  ($t::any) -> [sequence element]</code>  —  The ring positions that begin a new panel — the coarse movement scale. A flat ring puts every table row between the operator and the form below it, which is what makes a keyboard surface feel unnavigable however good each stop is.</p>
+</section><section id="fn-ux-tui-focusables" class="fn">
+  <h3>ux-tui:focusables</h3>
+  <p class="fn-sig"><code>[$ux-tui:focusables]  ($t::any) -> [sequence element]</code>  —  The focus ring in document order — derived from the tree rather than hand-listed, so it stays correct when the projection changes.</p>
+</section><section id="fn-ux-tui-focus-at" class="fn">
+  <h3>ux-tui:focus-at</h3>
+  <p class="fn-sig"><code>[$ux-tui:focus-at]  ($t::any $i::int) -> element | ()</code>  —  The focusable at a 1-based ring position, WRAPPING — a ring that clamps strands the last control.</p>
+</section><section id="fn-ux-tui-form-inputs" class="fn">
+  <h3>ux-tui:form-inputs</h3>
+  <p class="fn-sig"><code>[$ux-tui:form-inputs]  ($t::any $fid::string) -> [sequence element]</code>  —  Every input and hidden field under one form — what a submit collects, including the CSRF token, from the same tree the browser posts.</p>
+</section><section id="fn-ux-tui-base-theme" class="fn">
+  <h3>ux-tui:base-theme</h3>
+  <p class="fn-sig"><code>[$ux-tui:base-theme]  () -> element</code>  —  The pack's default terminal theme: one token per visual decision, values as SGR parameter strings.</p>
+</section><section id="fn-ux-tui-token-value-safe" class="fn">
+  <h3>ux-tui:token-value-safe</h3>
+  <p class="fn-sig"><code>[$ux-tui:token-value-safe]  ($v::string) -> bool</code>  —  Is a terminal token value safe — digits and semicolons only? An SGR parameter is tenant data reaching a control sequence, an injection surface exactly like a stylesheet.</p>
+</section><section id="fn-ux-tui-theme-refusals" class="fn">
+  <h3>ux-tui:theme-refusals</h3>
+  <p class="fn-sig"><code>[$ux-tui:theme-refusals]  ($theme::element) -> [sequence element]</code>  —  Every unsafe token value in one terminal theme document.</p>
+</section><section id="fn-ux-tui-editor-kind-of" class="fn">
+  <h3>ux-tui:editor-kind-of</h3>
+  <p class="fn-sig"><code>[$ux-tui:editor-kind-of]  ($kind::string) -> string</code>  —  Map a declared CX kind to this renderer's editor. Deliberately NOT the web mapping — kind states the type, never the widget — though money and decimal stay text for the same carrier reason.</p>
+</section><section id="fn-ux-tui-vis-len" class="fn">
+  <h3>ux-tui:vis-len</h3>
+  <p class="fn-sig"><code>[$ux-tui:vis-len]  ($s::string) -> int</code>  —  A string's VISIBLE width, with SGR sequences removed — every pad and border measures with this, because raw length counts escape bytes as columns and shears every table once colour is on.</p>
+</section><section id="fn-ux-tui-pad-vis" class="fn">
+  <h3>ux-tui:pad-vis</h3>
+  <p class="fn-sig"><code>[$ux-tui:pad-vis]  ($s::string $w::int) -> string</code>  —  Pad a possibly-styled string to a visible width.</p>
+</section><section id="fn-ux-tui-wrap" class="fn">
+  <h3>ux-tui:wrap</h3>
+  <p class="fn-sig"><code>[$ux-tui:wrap]  ($s::string $w::int) -> [sequence string]</code>  —  Word-wrap text to a width — a terminal has a hard right edge and no reflow engine, and the vocabulary never said how wide anything is.</p>
+</section><section id="fn-ux-tui-inline" class="fn">
+  <h3>ux-tui:inline</h3>
+  <p class="fn-sig"><code>[$ux-tui:inline]  ($t::any $opts::map) -> string</code>  —  An element's content as one line — the terminal analogue of inline flow, for leaves and runs of badges and links.</p>
+</section><section id="fn-ux-tui-content-of-tui" class="fn">
+  <h3>ux-tui:content-of-tui</h3>
+  <p class="fn-sig"><code>[$ux-tui:content-of-tui]  ($t::any) -> element</code>  —  Read the terminal tree back to the common content normal form — the TERMINAL side of the three-way equivalence assertion.</p>
+</section><section id="fn-ux-tui-content-repr-tui" class="fn">
+  <h3>ux-tui:content-repr-tui</h3>
+  <p class="fn-sig"><code>[$ux-tui:content-repr-tui]  ($el::any $ctx::map) -> string</code>  —  The canonical bytes the terminal rendering contributes to the equivalence assertion.</p>
+</section><section id="fn-ux-tui-alt-screen-on" class="fn">
+  <h3>ux-tui:alt-screen-on</h3>
+  <p class="fn-sig"><code>[$ux-tui:alt-screen-on]  () -> string</code>  —  Enter the alternate screen buffer and hide the cursor — a full-screen surface must not scroll the user's scrollback away.</p>
+</section><section id="fn-ux-tui-alt-screen-off" class="fn">
+  <h3>ux-tui:alt-screen-off</h3>
+  <p class="fn-sig"><code>[$ux-tui:alt-screen-off]  () -> string</code>  —  Restore the cursor and leave the alternate screen, putting the terminal back exactly as it was found.</p>
+</section><section id="fn-ux-tui-clear-home" class="fn">
+  <h3>ux-tui:clear-home</h3>
+  <p class="fn-sig"><code>[$ux-tui:clear-home]  () -> string</code>  —  Clear the screen and home the cursor — the start of every repaint.</p>
+</section><section id="fn-ux-tui-status-bar" class="fn">
+  <h3>ux-tui:status-bar</h3>
+  <p class="fn-sig"><code>[$ux-tui:status-bar]  ($keys::any $w::int $opts::map) -> string</code>  —  The footer keymap: bindings on screen, so nothing has to be memorized or documented elsewhere.</p>
+</section><section id="fn-ux-tui-sgr" class="fn">
+  <h3>ux-tui:sgr</h3>
+  <p class="fn-sig"><code>[$ux-tui:sgr]  ($code::string) -> string</code>  —  One SGR control sequence from its parameter string.</p>
+</section><section id="fn-ux-tui-esc" class="fn">
+  <h3>ux-tui:esc</h3>
+  <p class="fn-sig"><code>[$ux-tui:esc]  () -> string</code>  —  The ESC byte — CX string literals cannot encode it, so it comes from bytes.</p>
+</section><section id="fn-ux-tui-sgr-reset" class="fn">
+  <h3>ux-tui:sgr-reset</h3>
+  <p class="fn-sig"><code>[$ux-tui:sgr-reset]  () -> string</code>  —  The SGR reset sequence.</p>
+</section><section id="fn-ux-tui-style" class="fn">
+  <h3>ux-tui:style</h3>
+  <p class="fn-sig"><code>[$ux-tui:style]  ($s::string $theme::any $token::string $color::bool) -> string</code>  —  Wrap a string in one theme token's SGR, or leave it alone when colour is off.</p>
+</section><section id="fn-ux-tui-join-lines" class="fn">
+  <h3>ux-tui:join-lines</h3>
+  <p class="fn-sig"><code>[$ux-tui:join-lines]  ($ls::any) -> string</code>  —  Join a sequence of rendered lines with newlines into one screen string — a pure, total reduction; the empty sequence yields the empty string.</p>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>ux-tui</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

@@ -192,8 +192,20 @@ program evaluator and inherits its semantics (§3.8).
 | `cx lsp [--verbose]` | The CX language server on stdio. |
 | `cx store-serve --config PATH [--allow-*]` | Run the CX store service daemon. |
 | `cx store-health --url READY_URL` | Store readiness probe; exit 0 iff accepting. |
-| `cx store-token --id NAME [FLAGS]` | Mint a store bearer token + config stanza. |
 | `cx store-rotate-kek --url URL --encrypt-key-id OLD --new-key-id NEW` | Rotate a store key-encryption key. |
+| `cx store-mint-principal --id NAME --seed-file PATH --caps CLASSES [--for grant\|identity] [--force]` | Mint an XSP-AUTH principal offline; write the seed 0600 and print its `[grant …]` (or `[identity …]`) stanza. |
+
+`cx store-token` (mint a store bearer token + config stanza) was **retired**
+with the CSRP bearer/RBAC plane and is not in the registry in any profile.
+Store credentials are XSP-AUTH principals — `[xsp [grants …]]` is the only
+grant table and client identity rides the `xsp-did` / `xsp-seed-env`
+open-opts (see [`cxstore-grpc.md`](cxstore-grpc.md) §4) — and the
+`[auth …]` config section is a hard config error. Its **successor is
+`cx store-mint-principal`** (§3.9), which mints an identity rather than a
+credential: it never issues a bearer, never contacts a daemon, and grants
+nothing by itself. The retired word itself is kept answerable — `cx
+store-token` reports its own retirement and names this successor, rather
+than reading as an unknown subcommand or a missing file.
 
 ---
 
@@ -410,6 +422,77 @@ capability-neutral (it accepts no `--allow-*` flags and needs none).
 - **Exit codes:** 0 when at least one node matched; 1 when the match
   set is empty; 2 on error (usage, unreadable input, document or path
   parse error).
+
+### 3.9 `cx store-mint-principal`
+
+```
+cx store-mint-principal --id NAME --seed-file PATH --caps CLASSES
+                        [--for grant|identity] [--force]
+```
+
+The clean-state bootstrap for a deny-by-default store or fabric daemon
+(platform profile only): it mints one XSP-AUTH **principal** offline. It
+is not a credential issuer — the retired `cx store-token` minted a bearer
+that was itself authority, whereas this verb mints an *identity* that
+authorizes nothing until an operator grants it in config.
+
+- **Offline by construction.** No network access, no store access, no
+  daemon contact, no registration of any kind. The Ed25519 seed is
+  generated locally and the `did:key` is derived from it locally.
+- `--id NAME` names the principal and **derives** the client's seed
+  environment variable, `CX_XSP_SEED_<NAME>` (uppercased, `-` → `_`).
+  There is no second flag for the env var name. `NAME` must be the
+  **canonical** spelling of that variable: `[a-z0-9-]+`. Because the
+  derivation upper-cases and folds `-` to `_`, it is many-to-one over a
+  wider alphabet — `fleet-ops`, `fleet_ops`, `Fleet-Ops` and `FLEET_OPS`
+  all derive `CX_XSP_SEED_FLEET_OPS`, so principals minted under two of
+  those spellings would silently share one seed variable and only the
+  last exported would work. Restricting the accepted ids to the
+  canonical spelling makes the derivation **injective**, so no two
+  accepted ids can collide; a non-canonical `NAME` is a usage error
+  (exit 2) naming both the canonical id and the shared variable. The
+  verb keeps no record of past mints and needs none: the guarantee is a
+  property of the derivation, not of a registry.
+- `--seed-file PATH` receives the 32-byte seed as lowercase hex plus a
+  terminating LF. The file is written through a sibling temporary that is
+  chmod-ed `0600` while still empty and then renamed into place, so the
+  seed is never on disk at the ambient umask and a replaced seed is only
+  destroyed once its successor is fully written. The seed is never
+  written to stdout or stderr.
+- `--caps CLASSES` is the space-separated capability list stamped into
+  the printed grant row, validated against the same v1 grammar the
+  daemon config enforces (`read write delete admin peer`). It is
+  **required** for a grant row and has **no default**: the authority a
+  grant carries is an explicit operator choice at mint time, so a
+  missing `--caps` is a usage error (exit 2) naming the grammar. It is
+  **refused** with `--for identity`, whose row carries no `caps`
+  attribute.
+- `--for grant|identity` selects which daemon row `[config-stanza]`
+  carries; `grant` is the default. `--for identity` emits the daemon's
+  own responder row, `[xsp [identity did= seed-env=]]`, instead of a
+  grant row — the clean-state bootstrap needs both, and the identity row
+  is built from the same attribute list the daemon's config parser
+  validates it against, so the two cannot drift.
+- `--force` is required to replace an existing `--seed-file`; without it
+  an existing path is refused (exit 1), because overwriting a live seed
+  orphans any grant already naming its DID.
+- **Output** is deterministic. stdout carries exactly one canonical
+  `[xsp-principal id= for= did= seed-file= seed-env= …]` element whose
+  children are the two copy-paste sources: `[config-stanza [xsp …]]` for
+  the daemon config — `[grants [grant did=… caps=…]]` under `--for
+  grant`, `[identity did=… seed-env=…]` under `--for identity` — and
+  `[client-opts [map xsp-did=… xsp-seed-env=…]]` for the client's
+  open-opts. `for=` names the row a consumer is holding without
+  inspecting the children. Operator guidance goes to stderr.
+- **Exit codes:** 0 on a successful mint; 1 when the seed file cannot be
+  created, restricted, or written, or when it exists without `--force`;
+  2 on usage error (missing/unknown flag, malformed or non-canonical
+  `--id`, missing or unknown capability, `--caps` with `--for identity`,
+  unknown `--for` row).
+
+Config remains the sole authority: see
+[`cxstore-grpc.md §4`](cxstore-grpc.md) for the `[xsp [grants …]]` table
+and the `xsp-did` / `xsp-seed-env` client identity this verb feeds.
 
 ---
 

@@ -88,6 +88,14 @@ mut:
 	// A fold planned under an older generation abandons at commit: its source
 	// segments no longer exist (or belong to a different loaded state).
 	gen u64
+	// legacy_slot_packs — pack paths observed to still carry v0.15's zero
+	// hash-multicodec slots (RULED: CO-1, #974). Filled wherever pack indexes
+	// are already being read (load_objects / seed_index_scan), which is also
+	// where the reader's per-entry slot walk has just run — so the observation
+	// is free. Drained by the first durable write (flush_segment), which
+	// stamps those packs forward to 0x0012 in place. Cleared outright by
+	// compaction, which replaces every pack in the store.
+	legacy_slot_packs []string
 }
 
 // SegInfo — one live segment pack: its numeric file index and object count.
@@ -386,6 +394,42 @@ pub fn (b &PackObjectBackend) should_compact() bool {
 	return b.segs.len >= pack_compact_segments
 }
 
+// stamp_legacy_hash_slots migrates every observed v0.15-era pack forward,
+// rewriting its zero hash-multicodec slots to sha2-256 (0x0012) in place
+// (RULED: CO-1, #974 — see stamp_pack_hash_slots in pack.v for why in-place
+// is sound: the slot is covered by no CRC, hash, or signature).
+//
+// No-op — and no syscall — for a store with nothing to migrate, which is
+// every store this engine has ever written; the work is bounded by what the
+// index walk at open actually saw. A path that has since been folded or
+// compacted away is skipped, not an error: its objects were rewritten into a
+// current-format pack, which is the migration by another route.
+//
+// legacy_slot_packs is drained BEFORE the stamping so a mid-migration error
+// cannot make the next write retry a pack that already succeeded; the
+// migration is idempotent regardless, since a stamped slot simply no longer
+// matches the zero the walk looks for.
+pub fn (mut b PackObjectBackend) stamp_legacy_hash_slots() ! {
+	if b.legacy_slot_packs.len == 0 {
+		return
+	}
+	paths := b.legacy_slot_packs.clone()
+	b.legacy_slot_packs = []string{}
+	// The MRU reader (#662) may hold an mmap VIEW of a file about to be
+	// rewritten. The bytes it would see are the correct ones either way, but
+	// the reader is a cache and dropping it keeps the rule "a pack image is
+	// never mutated under an open view" intact.
+	b.drop_cached_reader()
+	for pp in paths {
+		if !os.exists(pp) {
+			continue
+		}
+		stamp_pack_hash_slots(pp) or {
+			return error('cxpack: hash-multicodec migration of ${pp} failed: ${err.msg()}')
+		}
+	}
+}
+
 // flush_segment writes everything staged since the last flush as one new segment
 // pack and marks those objects durable. Written BEFORE the refs layer records
 // them, so a crash between the two leaves unreferenced objects (reclaimed at
@@ -400,6 +444,11 @@ pub fn (mut b PackObjectBackend) flush_segment() ! {
 	if b.pending.len == 0 {
 		return
 	}
+	// RULED: CO-1 (#974) — this is the store's FIRST WRITE seam, so it is
+	// where a v0.15-era store stops being one. Stamping before the segment
+	// lands keeps the invariant "a store that has been written to since
+	// v0.16 carries no zero slots" true at every observable point.
+	b.stamp_legacy_hash_slots()!
 	os.mkdir_all(b.dir)!
 	seg := os.join_path(b.dir, b.seg_name(b.next_seg))
 	// #624: never expose a torn pack at a segment's final name — a kill
@@ -649,6 +698,10 @@ pub fn (mut b PackObjectBackend) write_compacted(payloads [][]u8) ! {
 	b.segs = []
 	b.next_seg = 0
 	b.gen++ // segment set replaced — abandon any in-flight fold plan
+	// RULED: CO-1 (#974) — compaction REPLACES every pack in the store with a
+	// freshly written one, so any v0.15-era zero slots are gone by construction;
+	// nothing is left to stamp.
+	b.legacy_slot_packs = []string{}
 	b.pending = []KeyedPayload{}
 	b.pending_set = map[string]bool{}
 }
@@ -696,6 +749,10 @@ pub fn (mut b PackObjectBackend) write_compacted_keyed(entries []KeyedPayload) !
 	b.segs = []
 	b.next_seg = 0
 	b.gen++ // segment set replaced — abandon any in-flight fold plan
+	// RULED: CO-1 (#974) — compaction REPLACES every pack in the store with a
+	// freshly written one, so any v0.15-era zero slots are gone by construction;
+	// nothing is left to stamp.
+	b.legacy_slot_packs = []string{}
 	b.pending = []KeyedPayload{}
 	b.pending_set = map[string]bool{}
 }
@@ -715,8 +772,14 @@ pub fn (mut b PackObjectBackend) load_objects() !map[string][]u8 {
 	mut ow := map[string]string{}
 	compacted := os.join_path(b.dir, pack_compacted_name)
 	mut segs := []SegInfo{}
+	mut legacy := []string{}
 	for pp in paths {
 		reader := open_pack(pp) or { return error('cxpack pack ${pp} unreadable: ${err.msg()}') }
+		// RULED: CO-1 (#974) — the reader has just walked every entry's
+		// multicodec slot; record a v0.15-era pack for the next write to stamp.
+		if reader.legacy_hash_slots > 0 {
+			legacy << pp
+		}
 		// #229 mode↔format check: a keyed (v2/encrypted) pack opened by a
 		// non-keyed backend means the store is encrypted but no encrypt-key-id was
 		// given; the reverse means a key was given for a plaintext store. Both are
@@ -758,6 +821,7 @@ pub fn (mut b PackObjectBackend) load_objects() !map[string][]u8 {
 	// deferred folds included); duplicate objects across a crash-interrupted
 	// fold pair are already deduped in `out`, and the next fold re-collapses.
 	b.segs = segs
+	b.legacy_slot_packs = legacy
 	b.gen++ // fresh segment set — abandon any in-flight fold plan
 	b.pending = []KeyedPayload{}
 	b.pending_set = map[string]bool{}
@@ -788,8 +852,13 @@ fn (mut b PackObjectBackend) seed_index_scan() ! {
 	mut ow := map[string]string{}
 	compacted := os.join_path(b.dir, pack_compacted_name)
 	mut segs := []SegInfo{}
+	mut legacy := []string{}
 	for pp in paths {
 		reader := open_pack(pp) or { return error('cxpack pack ${pp} unreadable: ${err.msg()}') }
+		// RULED: CO-1 (#974) — same free observation as load_objects.
+		if reader.legacy_hash_slots > 0 {
+			legacy << pp
+		}
 		if reader.keyed && !b.keyed {
 			reader.close()
 			return error('cxpack pack ${pp} is keyed (encrypted at rest) — reopen the store with its encrypt-key-id')
@@ -818,6 +887,7 @@ fn (mut b PackObjectBackend) seed_index_scan() ! {
 	b.obj_where = ow.move()
 	b.next_seg = max_seg + 1
 	b.segs = segs
+	b.legacy_slot_packs = legacy
 	b.gen++
 	b.pending = []KeyedPayload{}
 	b.pending_set = map[string]bool{}

@@ -265,6 +265,71 @@ static void test_null_safe_close(void) {
     PASS("test_null_safe_close");
 }
 
+/* #984 — the LIBRARY's version stamp, read off the BUILT artifact.
+ *
+ * vcx/Makefile's lib targets passed no version defines at all, so
+ * cx_version() answered the unstamped compile-time default in every build,
+ * release artifacts included; check_version_consistency proved cabi.v
+ * DERIVES from the define but nothing proved the define was ever PASSED.
+ * Only a test against a real libcx can: this one links the shipped library
+ * and reads the symbol.
+ *
+ * The expectation is restated here rather than imported, which is the point
+ * of a pin — the Makefile hands over its two derived inputs (VERSION and the
+ * #979/CO-4 release state, via `make print-CX_VERSION` / `print-CX_RELEASE`
+ * in the abi-c-test recipe: the ONE implementation of the release rule), and
+ * this file independently spells what the library must then report:
+ *
+ *     release  ->  X.Y.Z
+ *     dev      ->  X.Y.Z-dev
+ *
+ * The `+<commit>` build metadata the cx binary's headline carries is
+ * deliberately absent from the library (see cx.version_stamp) — semver
+ * ignores build metadata in precedence, and keeping it out keeps libcx a
+ * deterministic function of source + flags + VERSION + tag state.
+ */
+static void test_version_stamp(void) {
+    char *v = cx_version();
+    if (!v) FAIL("cx_version returned NULL");
+    if (v[0] == '\0') { cx_free(v); FAIL("cx_version returned empty string"); }
+
+    const char *want_version = getenv("CX_EXPECT_VERSION");
+    const char *want_state   = getenv("CX_EXPECT_RELEASE");
+
+    if (want_version && want_version[0] && want_state && want_state[0]) {
+        char want[128];
+        int n = snprintf(want, sizeof want, "%s%s", want_version,
+                         strcmp(want_state, "release") == 0 ? "" : "-dev");
+        if (n < 0 || (size_t)n >= sizeof want) {
+            cx_free(v);
+            FAIL("expected version stamp does not fit: '%s' / '%s'",
+                 want_version, want_state);
+        }
+        if (strcmp(v, want) != 0) {
+            char got[128];
+            snprintf(got, sizeof got, "%s", v);
+            cx_free(v);
+            FAIL("cx_version: expected '%s' (VERSION '%s', release state "
+                 "'%s'), got '%s' — libcx did not receive "
+                 "$(LIB_VERSION_DEFINES)", want, want_version, want_state, got);
+        }
+    } else {
+        /* Run outside `make abi-c-test`: no derived expectation to compare
+         * against, but the #984 bug shape is still detectable — an unstamped
+         * library reports the compile-time fallback verbatim. */
+        if (strncmp(v, "0.0.0-dev", 9) == 0) {
+            cx_free(v);
+            FAIL("cx_version reports the unstamped fallback — libcx carries "
+                 "no version stamp (VERSION_DEFINES not passed to the lib "
+                 "recipe; see #984)");
+        }
+        fprintf(stderr, "NOTE: CX_EXPECT_VERSION/CX_EXPECT_RELEASE unset — "
+                        "stamp presence checked, value not cross-checked\n");
+    }
+    cx_free(v);
+    PASS("test_version_stamp");
+}
+
 /* ── Tests: libcx_arrow (via dlopen) ──────────────────────────────────── */
 
 static void test_arrow_capability_and_version(void) {
@@ -431,6 +496,7 @@ int main(int argc, char **argv) {
     test_table_reader_bad_input();
     test_table_reader_writer_round_trip();
     test_null_safe_close();
+    test_version_stamp();
 
     /* schema validator surface */
     test_validate_happy_path();

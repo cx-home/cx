@@ -140,6 +140,35 @@ CXStore is organised in two **deployment** tiers — **Embedded** (in client
 process) and **Service** (server process). Both expose the same API and URI grammar;
 the Service tier additionally offers server-side query pushdown and the object wire.
 
+**One writer per local root — ENFORCED at `open`.** On a substrate with a local
+root (`file` in all three framings, `sqlite`, local-file `columnar`) the
+supported concurrent shape is **ONE writable handle + N READ-ONLY handles**, and
+this holds across processes as well as within one. Within a process, matching
+writable opens of one root return handles over the **same live store** (the #628
+same-root sharing rule; divergent at-rest options refuse `CXER1143`). Across
+processes there is no live store to share, so a **second writable `open` is
+REFUSED `CXER1143`**, naming the holder and the recovery path. Two independent
+writers on one root are unsound — they collide on segment numbering, and a
+columnar or flat-index writer discards the other's state wholesale — and the
+damage is invisible until a later `open` refuses `CXER1120` with an object or
+segment missing.
+
+**Read-only opens are exempt**, in both directions: they never write, so any
+number of them may coexist with the one writer, and they take nothing that
+another opener must wait for.
+
+The guard is an advisory lock on a sentinel at the root, held for the life of
+the writable handle and **released by the operating system when its holder
+exits** — including an abnormal exit. A crashed writer therefore never leaves a
+root unopenable; the sentinel's contents name the holder for the refusal text
+and are never the authority on whether the lock is held. A substrate that cannot
+honor advisory locks (some network mounts) is **unguarded and says so** on the
+first such open — never refused, which would make the root unusable for a
+limitation of its filesystem. `mem://` has no at-rest bytes to protect, and a
+`columnar` store over `s3` has no local root to key on (its sharing identity is
+endpoint + bucket + object key) — object-store concurrency is that tier's own
+contract.
+
 ### §5.1. Backend capabilities
 
 | Capability | Semantics |
@@ -972,7 +1001,7 @@ indexed backend.
 | `CXER1140` | `E_STORE_HANDLE_RACE` | concurrent access to one shared Store handle |
 | `CXER1141` | `E_STORE_ROTATION_UNSUPPORTED` | `rotate-kek` on a plaintext store or a substrate that cannot seal (§9.1) |
 | `CXER1142` | `E_STORE_ROTATION_FAILED` | rotation aborted fail-closed — unresolvable key-id or an envelope unwrapping under neither key (§9.1) |
-| `CXER1143` | `E_STORE_OPEN_CONFLICT` | a WRITABLE `open` on a root already open writable in-process with **different at-rest options** — close the live handle first or match its open options. (Same options → the open returns a second handle over the same live store, the #628 same-root sharing rule.) Shipped and test-pinned before this row existed; registered 2026-08-05 (audit C5). |
+| `CXER1143` | `E_STORE_OPEN_CONFLICT` | a WRITABLE `open` refused because the root is already open writable elsewhere (§5). **In-process:** with **different at-rest options** — close the live handle first or match its open options (same options → a second handle over the same live store, the #628 same-root sharing rule). **Cross-process:** any second writable open of a local root, whatever its options — the refusal names the holding process and the recovery path (close that handle / end that process, or open read-only). Read-only opens are exempt in both cases. Shipped and test-pinned before this row existed; registered 2026-08-05 (audit C5); cross-process arm added 2026-08-26 (#1005). |
 | `CXER1144` | `E_STORE_SUBJECT_UNSUPPORTED` | a subject-bearing put (`subject=`, §9.2) on a store that cannot honor the crypto-shred contract — plaintext at rest, a remote/wire handle, or no subject-key custody — fail-closed, never a plaintext fallback (stream 20, ruling L183). Also raised by the whole-store transfer verbs when custody or erasure attribution cannot ride the copy (§9.2): clone/migrate to a destination that cannot seal (or, for migrate, a columnar destination that persists no tombstones), and push of a subject-keyed source |
 | `CXER1145` | `E_STORE_SHREDDED` | a doc read whose whole-doc object is sealed under an ABSENT subject key AND covered by a journaled erase record (§9.2, audit M29) — the typed lawful-erasure finding, naming the shred-request; the same read WITHOUT a covering record stays the fail-closed unavailable/integrity error (never reported as lawful erasure; stream 20, ruling L181/L187) |
 

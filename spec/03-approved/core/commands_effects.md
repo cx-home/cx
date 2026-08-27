@@ -221,6 +221,43 @@ min); `pure`+`[effects]` static-contradiction negative; effect outside
 the declaration ⇒ loud error; propose-predicts-commit discriminator
 pair over `out-effects`.
 
+## §7.5 The err-at-boundary rule (RULED: CO-2)
+
+An `[err]` element is a first-class VALUE inside a program: collection
+literals carry it as a member (measured cells, confirmed by CO-2 — no cell
+of the path/value matrix moved), channels transit it (the supervise
+`([sup-note …], $err)` pair is load-bearing), bindings hold it, matching
+inspects it, pure functions serialize it (rendering an error to log it is
+legitimate). The rule is about **leaving**: an externalizing effect refuses
+to carry a document containing an `[err]` at any depth out of the program
+silently.
+
+- **Guarded families**: store document writes (`put-doc`, `put-doc-stream`,
+  `put-doc-text` — which stores a *parsed* document — and `modify-doc`,
+  whose action payload is the injection vehicle) and http response emission
+  (a handler result, whether a `[response]` envelope, a bare document, or a
+  bare `[err]` — the bare-err-as-200 shape is exactly the silent class).
+- **The refusal**: `cx-err:CXER0275 E_ERR_AT_BOUNDARY`, naming the first
+  contained err's code and its path. On the http family the refusal is a
+  loud 500; framework-built error wires do not pass through the guard and
+  stay as they are.
+- **The permission**: `errs=:permit` on the effect form — ONE spelling
+  everywhere: the optional trailing opts map on the store verbs
+  (`[$store:put-doc $s $doc {errs: :permit}]`), the attribute on
+  `[response]` / `[sse-subscribe]`. Externalizing a refusal is legal; it is
+  never accidental.
+- **Exempt by construction**: blob and string/bytes writes (bytes carry no
+  `[err]` to find; serializing a document to text is a pure act, not a
+  refusal point), channels, bindings, matching, formatting, and the
+  run-surface print (it is how errors are inspected; a top-level err
+  already exits nonzero). The originally-ruled "[out …]" family resolved
+  to no effect on the current surface (there is no `[out]` effect form);
+  recorded here so the ruling's scope stays honest.
+
+This closes the class where a generator reports success while its output
+carries refusals as data (`written=0 errors=25`, exit 0) and where a web
+client renders `[err]` into HTML — at the only honest place, the boundary.
+
 ## §8. Rulings ledger — RULED
 
 Letters 109–114 **ruled (a) 2026-08-05 under the standing acceptance

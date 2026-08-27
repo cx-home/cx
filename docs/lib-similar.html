@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,98 +143,87 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">similar</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-similar"><h1>similar</h1><p class="lede">Graded comparison as a generalization of exact equality: where = returns a boolean, the core ~ operator returns a score in [0,1] plus evidence, and a decision policy maps the score to :match / :review / :no-match bands. This module owns the operator's backing — the predicate constructor, string/phonetic/token/numeric/temporal scorers, and normalizers delegated to ft's tokenization pipeline. Constructs go graded by being handed a predicate: join, distinct, group-by, contains, sort, and validate accept one in their options map; a [similar …] result reads truthy in a boolean position iff band=:match. Thresholds are caller-supplied and never baked in.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-similar-predicate" class="fn">
-    <h3>similar:predicate</h3>
-    <p class="fn-sig"><code>[$similar:predicate]  -> element</code>  —  Build a similarity-predicate value from an options map: scorer, normalizers, per-field weights, decision cuts, tolerance/scale, and known-verdict resolutions.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/similar']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-similar-predicate" class="fn">
+  <h3>similar:predicate</h3>
+  <p class="fn-sig"><code>[$similar:predicate]  -> element</code>  —  Build a similarity-predicate value from an options map: scorer, normalizers, per-field weights, decision cuts, tolerance/scale, and known-verdict resolutions.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/similar']
 [$similar:score-of [~ "acme corp" "corp acme" [$similar:predicate {score: :token-set}]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>1.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-similar-score" class="fn">
-    <h3>similar:score</h3>
-    <p class="fn-sig"><code>[$similar:score]  -> float</code>  —  Apply one named scorer directly to a pair of values and return the raw score in [0,1], with no banding.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/similar']
+    </pre>
+    <pre class="sample-output">
+      <code>1.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-similar-score" class="fn">
+  <h3>similar:score</h3>
+  <p class="fn-sig"><code>[$similar:score]  -> float</code>  —  Apply one named scorer directly to a pair of values and return the raw score in [0,1], with no banding.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/similar']
 [$similar:score :levenshtein "flaw" "lawn"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>0.5</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-similar-similarity-to" class="fn">
-    <h3>similar:similarity-to</h3>
-    <p class="fn-sig"><code>[$similar:similarity-to]  -> element</code>  —  Build the sort key spec that ranks values by nearness to a reference — similarity is relational, so sort requires one (nearest first).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/similar']
+    </pre>
+    <pre class="sample-output">
+      <code>5.0e-1</code>
+    </pre>
+  </div>
+</section><section id="fn-similar-similarity-to" class="fn">
+  <h3>similar:similarity-to</h3>
+  <p class="fn-sig"><code>[$similar:similarity-to]  -> element</code>  —  Build the sort key spec that ranks values by nearness to a reference — similarity is relational, so sort requires one (nearest first).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/similar']
 [$sort ("acme corp", "globex", "acme inc") {by: [$similar:similarity-to "acme"]}]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>('acme inc', 'acme corp', globex)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-similar-score-of" class="fn">
-    <h3>similar:score-of</h3>
-    <p class="fn-sig"><code>[$similar:score-of]  -> float</code>  —  Read the score off a [similar …] comparison report.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/similar']
+    </pre>
+    <pre class="sample-output">
+      <code>('acme inc', 'acme corp', globex)</code>
+    </pre>
+  </div>
+</section><section id="fn-similar-score-of" class="fn">
+  <h3>similar:score-of</h3>
+  <p class="fn-sig"><code>[$similar:score-of]  -> float</code>  —  Read the score off a [similar …] comparison report.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/similar']
 [$similar:score-of [~ "acme" "acme"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>1.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-similar-band-of" class="fn">
-    <h3>similar:band-of</h3>
-    <p class="fn-sig"><code>[$similar:band-of]  -> any</code>  —  Read the decision band off a [similar …] comparison report — :match, :review, or :no-match (absent for a predicate built with no decide policy).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/similar']
+    </pre>
+    <pre class="sample-output">
+      <code>1.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-similar-band-of" class="fn">
+  <h3>similar:band-of</h3>
+  <p class="fn-sig"><code>[$similar:band-of]  -> any</code>  —  Read the decision band off a [similar …] comparison report — :match, :review, or :no-match (absent for a predicate built with no decide policy).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/similar']
 [$similar:band-of [~ "acme" "acme"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>:match</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>:match</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>similar</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

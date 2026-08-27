@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,1238 +143,999 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">math</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-math"><h1>math</h1><p class="lede">Numeric utilities over CX int and float scalar kinds. Covers basic arithmetic and rounding, powers/logs/roots, trigonometry and hyperbolics, statistics, bit operations, numeric predicates, number theory, special constants, and explicit modular arithmetic. Every function is pure. Real-valued functions return NaN on domain errors per IEEE 754 rather than raising, while int64 arithmetic is checked by default with <code>wrapping-*</code> as the opt-in modular escape hatch.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-math-abs" class="fn">
-    <h3>math:abs</h3>
-    <p class="fn-sig"><code>[$math:abs]  -> any</code>  —  Return the absolute value, preserving the operand's numeric kind.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-math-abs" class="fn">
+  <h3>math:abs</h3>
+  <p class="fn-sig"><code>[$math:abs]  -> any</code>  —  Return the absolute value, preserving the operand's numeric kind.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:abs -5]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>5</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-sign" class="fn">
-    <h3>math:sign</h3>
-    <p class="fn-sig"><code>[$math:sign]  -> int</code>  —  Return -1, 0, or 1 for the sign of a number.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>5</code>
+    </pre>
+  </div>
+</section><section id="fn-math-sign" class="fn">
+  <h3>math:sign</h3>
+  <p class="fn-sig"><code>[$math:sign]  -> int</code>  —  Return -1, 0, or 1 for the sign of a number.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:sign -7]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>-1</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-floor" class="fn">
-    <h3>math:floor</h3>
-    <p class="fn-sig"><code>[$math:floor]  -> int</code>  —  Round a float down to the nearest integer (toward negative infinity).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>-1</code>
+    </pre>
+  </div>
+</section><section id="fn-math-floor" class="fn">
+  <h3>math:floor</h3>
+  <p class="fn-sig"><code>[$math:floor]  -> int</code>  —  Round a float down to the nearest integer (toward negative infinity).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:floor 2.7]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-ceiling" class="fn">
-    <h3>math:ceiling</h3>
-    <p class="fn-sig"><code>[$math:ceiling]  -> int</code>  —  Round a float up to the nearest integer (toward positive infinity).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>2</code>
+    </pre>
+  </div>
+</section><section id="fn-math-ceiling" class="fn">
+  <h3>math:ceiling</h3>
+  <p class="fn-sig"><code>[$math:ceiling]  -> int</code>  —  Round a float up to the nearest integer (toward positive infinity).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:ceiling 2.1]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>3</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-round" class="fn">
-    <h3>math:round</h3>
-    <p class="fn-sig"><code>[$math:round]  -> int</code>  —  Round a float to the nearest integer using banker's rounding (half-to-even).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>3</code>
+    </pre>
+  </div>
+</section><section id="fn-math-round" class="fn">
+  <h3>math:round</h3>
+  <p class="fn-sig"><code>[$math:round]  -> int</code>  —  Round a float to the nearest integer using banker's rounding (half-to-even).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round 0.5e0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-round-half-up" class="fn">
-    <h3>math:round-half-up</h3>
-    <p class="fn-sig"><code>[$math:round-half-up]  -> int</code>  —  Round a float to the nearest integer, ties going half-away-from-zero.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-round-half-up" class="fn">
+  <h3>math:round-half-up</h3>
+  <p class="fn-sig"><code>[$math:round-half-up]  -> int</code>  —  Round a float to the nearest integer, ties going half-away-from-zero.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-half-up 0.5e0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>1</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-round-half-even" class="fn">
-    <h3>math:round-half-even</h3>
-    <p class="fn-sig"><code>[$math:round-half-even]  -> int</code>  —  Round a float to the nearest integer using half-to-even; explicit alias for round.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>1</code>
+    </pre>
+  </div>
+</section><section id="fn-math-round-half-even" class="fn">
+  <h3>math:round-half-even</h3>
+  <p class="fn-sig"><code>[$math:round-half-even]  -> int</code>  —  Round a float to the nearest integer using half-to-even; explicit alias for round.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-half-even 2.5e0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-round-to" class="fn">
-    <h3>math:round-to</h3>
-    <p class="fn-sig"><code>[$math:round-to]  -> float</code>  —  Round a float to the given number of decimal places, returning a float.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>2</code>
+    </pre>
+  </div>
+</section><section id="fn-math-round-to" class="fn">
+  <h3>math:round-to</h3>
+  <p class="fn-sig"><code>[$math:round-to]  -> float</code>  —  Round a float to the given number of decimal places, returning a float.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to 3.14159e0 2]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>3.14</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-truncate" class="fn">
-    <h3>math:truncate</h3>
-    <p class="fn-sig"><code>[$math:truncate]  -> int</code>  —  Truncate a float toward zero, discarding the fractional part.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>3.14e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-truncate" class="fn">
+  <h3>math:truncate</h3>
+  <p class="fn-sig"><code>[$math:truncate]  -> int</code>  —  Truncate a float toward zero, discarding the fractional part.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:truncate -2.9e0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>-2</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-max" class="fn">
-    <h3>math:max</h3>
-    <p class="fn-sig"><code>[$math:max]  -> any</code>  —  Return the largest value in a sequence.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>-2</code>
+    </pre>
+  </div>
+</section><section id="fn-math-max" class="fn">
+  <h3>math:max</h3>
+  <p class="fn-sig"><code>[$math:max]  -> any</code>  —  Return the largest value in a sequence.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:max (3, 7, 2, 9, 1)]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>9</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-min" class="fn">
-    <h3>math:min</h3>
-    <p class="fn-sig"><code>[$math:min]  -> any</code>  —  Return the smallest value in a sequence.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>9</code>
+    </pre>
+  </div>
+</section><section id="fn-math-min" class="fn">
+  <h3>math:min</h3>
+  <p class="fn-sig"><code>[$math:min]  -> any</code>  —  Return the smallest value in a sequence.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:min (3, 7, 2, 9, 1)]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>1</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-clamp" class="fn">
-    <h3>math:clamp</h3>
-    <p class="fn-sig"><code>[$math:clamp]  -> any</code>  —  Constrain a value to the inclusive range between lo and hi.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>1</code>
+    </pre>
+  </div>
+</section><section id="fn-math-clamp" class="fn">
+  <h3>math:clamp</h3>
+  <p class="fn-sig"><code>[$math:clamp]  -> any</code>  —  Constrain a value to the inclusive range between lo and hi.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:clamp 5 0 10]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>5</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-pow" class="fn">
-    <h3>math:pow</h3>
-    <p class="fn-sig"><code>[$math:pow]  -> float</code>  —  Raise base to the power of exp.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>5</code>
+    </pre>
+  </div>
+</section><section id="fn-math-pow" class="fn">
+  <h3>math:pow</h3>
+  <p class="fn-sig"><code>[$math:pow]  -> float</code>  —  Raise base to the power of exp.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:pow 2.0e0 1.0e1] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>1024.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-sqrt" class="fn">
-    <h3>math:sqrt</h3>
-    <p class="fn-sig"><code>[$math:sqrt]  -> float</code>  —  Return the square root; negative input yields NaN.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>1.024e3</code>
+    </pre>
+  </div>
+</section><section id="fn-math-sqrt" class="fn">
+  <h3>math:sqrt</h3>
+  <p class="fn-sig"><code>[$math:sqrt]  -> float</code>  —  Return the square root; negative input yields NaN.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:sqrt 1.6e1] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>4.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-cbrt" class="fn">
-    <h3>math:cbrt</h3>
-    <p class="fn-sig"><code>[$math:cbrt]  -> float</code>  —  Return the cube root, defined for negative input.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>4.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-cbrt" class="fn">
+  <h3>math:cbrt</h3>
+  <p class="fn-sig"><code>[$math:cbrt]  -> float</code>  —  Return the cube root, defined for negative input.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:cbrt 2.7e1] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>3.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-exp" class="fn">
-    <h3>math:exp</h3>
-    <p class="fn-sig"><code>[$math:exp]  -> float</code>  —  Return e raised to the power of x.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>3.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-exp" class="fn">
+  <h3>math:exp</h3>
+  <p class="fn-sig"><code>[$math:exp]  -> float</code>  —  Return e raised to the power of x.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:exp 0.0e0] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>1.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-log" class="fn">
-    <h3>math:log</h3>
-    <p class="fn-sig"><code>[$math:log]  -> float</code>  —  Return the natural (base-e) logarithm; non-positive input yields NaN.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>1.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-log" class="fn">
+  <h3>math:log</h3>
+  <p class="fn-sig"><code>[$math:log]  -> float</code>  —  Return the natural (base-e) logarithm; non-positive input yields NaN.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:log [$math:e]] 8]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>1.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-log2" class="fn">
-    <h3>math:log2</h3>
-    <p class="fn-sig"><code>[$math:log2]  -> float</code>  —  Return the base-2 logarithm; non-positive input yields NaN.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>1.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-log2" class="fn">
+  <h3>math:log2</h3>
+  <p class="fn-sig"><code>[$math:log2]  -> float</code>  —  Return the base-2 logarithm; non-positive input yields NaN.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:log2 1.024e3] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>10.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-log10" class="fn">
-    <h3>math:log10</h3>
-    <p class="fn-sig"><code>[$math:log10]  -> float</code>  —  Return the base-10 logarithm; non-positive input yields NaN.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>1.0e1</code>
+    </pre>
+  </div>
+</section><section id="fn-math-log10" class="fn">
+  <h3>math:log10</h3>
+  <p class="fn-sig"><code>[$math:log10]  -> float</code>  —  Return the base-10 logarithm; non-positive input yields NaN.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:log10 1.0e2] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-log-base" class="fn">
-    <h3>math:log-base</h3>
-    <p class="fn-sig"><code>[$math:log-base]  -> float</code>  —  Return the logarithm of x in an arbitrary base.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>2.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-log-base" class="fn">
+  <h3>math:log-base</h3>
+  <p class="fn-sig"><code>[$math:log-base]  -> float</code>  —  Return the logarithm of x in an arbitrary base.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:log-base 8.1e1 3.0e0] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>4.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-sin" class="fn">
-    <h3>math:sin</h3>
-    <p class="fn-sig"><code>[$math:sin]  -> float</code>  —  Return the sine of an angle in radians.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>4.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-sin" class="fn">
+  <h3>math:sin</h3>
+  <p class="fn-sig"><code>[$math:sin]  -> float</code>  —  Return the sine of an angle in radians.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:sin 0.0e0] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>0.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-cos" class="fn">
-    <h3>math:cos</h3>
-    <p class="fn-sig"><code>[$math:cos]  -> float</code>  —  Return the cosine of an angle in radians.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>0.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-cos" class="fn">
+  <h3>math:cos</h3>
+  <p class="fn-sig"><code>[$math:cos]  -> float</code>  —  Return the cosine of an angle in radians.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:cos 0.0e0] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>1.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-tan" class="fn">
-    <h3>math:tan</h3>
-    <p class="fn-sig"><code>[$math:tan]  -> float</code>  —  Return the tangent of an angle in radians.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>1.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-tan" class="fn">
+  <h3>math:tan</h3>
+  <p class="fn-sig"><code>[$math:tan]  -> float</code>  —  Return the tangent of an angle in radians.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:tan [$math:round-to [$math:pi] 15]] 8]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>0.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-asin" class="fn">
-    <h3>math:asin</h3>
-    <p class="fn-sig"><code>[$math:asin]  -> float</code>  —  Return the arcsine in radians; input outside -1..1 yields NaN.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>0.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-asin" class="fn">
+  <h3>math:asin</h3>
+  <p class="fn-sig"><code>[$math:asin]  -> float</code>  —  Return the arcsine in radians; input outside -1..1 yields NaN.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:asin 0.0e0] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>0.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-acos" class="fn">
-    <h3>math:acos</h3>
-    <p class="fn-sig"><code>[$math:acos]  -> float</code>  —  Return the arccosine in radians; input outside -1..1 yields NaN.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>0.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-acos" class="fn">
+  <h3>math:acos</h3>
+  <p class="fn-sig"><code>[$math:acos]  -> float</code>  —  Return the arccosine in radians; input outside -1..1 yields NaN.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:acos 1.0e0] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>0.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-atan" class="fn">
-    <h3>math:atan</h3>
-    <p class="fn-sig"><code>[$math:atan]  -> float</code>  —  Return the arctangent in radians.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>0.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-atan" class="fn">
+  <h3>math:atan</h3>
+  <p class="fn-sig"><code>[$math:atan]  -> float</code>  —  Return the arctangent in radians.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:atan 0.0e0] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>0.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-atan2" class="fn">
-    <h3>math:atan2</h3>
-    <p class="fn-sig"><code>[$math:atan2]  -> float</code>  —  Return the angle in radians of the point (x, y), respecting quadrant.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>0.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-atan2" class="fn">
+  <h3>math:atan2</h3>
+  <p class="fn-sig"><code>[$math:atan2]  -> float</code>  —  Return the angle in radians of the point (x, y), respecting quadrant.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:atan2 1.0e0 1.0e0] 8]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>0.78539816</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-sinh" class="fn">
-    <h3>math:sinh</h3>
-    <p class="fn-sig"><code>[$math:sinh]  -> float</code>  —  Return the hyperbolic sine of x.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>7.8539816e-1</code>
+    </pre>
+  </div>
+</section><section id="fn-math-sinh" class="fn">
+  <h3>math:sinh</h3>
+  <p class="fn-sig"><code>[$math:sinh]  -> float</code>  —  Return the hyperbolic sine of x.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:sinh 0.0e0] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>0.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-cosh" class="fn">
-    <h3>math:cosh</h3>
-    <p class="fn-sig"><code>[$math:cosh]  -> float</code>  —  Return the hyperbolic cosine of x.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>0.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-cosh" class="fn">
+  <h3>math:cosh</h3>
+  <p class="fn-sig"><code>[$math:cosh]  -> float</code>  —  Return the hyperbolic cosine of x.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:cosh 0.0e0] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>1.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-tanh" class="fn">
-    <h3>math:tanh</h3>
-    <p class="fn-sig"><code>[$math:tanh]  -> float</code>  —  Return the hyperbolic tangent of x.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>1.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-tanh" class="fn">
+  <h3>math:tanh</h3>
+  <p class="fn-sig"><code>[$math:tanh]  -> float</code>  —  Return the hyperbolic tangent of x.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:tanh 0.0e0] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>0.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-asinh" class="fn">
-    <h3>math:asinh</h3>
-    <p class="fn-sig"><code>[$math:asinh]  -> float</code>  —  Return the inverse hyperbolic sine of x.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>0.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-asinh" class="fn">
+  <h3>math:asinh</h3>
+  <p class="fn-sig"><code>[$math:asinh]  -> float</code>  —  Return the inverse hyperbolic sine of x.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:asinh 0.0e0] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>0.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-acosh" class="fn">
-    <h3>math:acosh</h3>
-    <p class="fn-sig"><code>[$math:acosh]  -> float</code>  —  Return the inverse hyperbolic cosine of x; input below 1 yields NaN.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>0.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-acosh" class="fn">
+  <h3>math:acosh</h3>
+  <p class="fn-sig"><code>[$math:acosh]  -> float</code>  —  Return the inverse hyperbolic cosine of x; input below 1 yields NaN.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:acosh 1.0e0] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>0.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-atanh" class="fn">
-    <h3>math:atanh</h3>
-    <p class="fn-sig"><code>[$math:atanh]  -> float</code>  —  Return the inverse hyperbolic tangent of x; input outside -1..1 yields NaN.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>0.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-atanh" class="fn">
+  <h3>math:atanh</h3>
+  <p class="fn-sig"><code>[$math:atanh]  -> float</code>  —  Return the inverse hyperbolic tangent of x; input outside -1..1 yields NaN.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:atanh 0.0e0] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>0.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-deg-to-rad" class="fn">
-    <h3>math:deg-to-rad</h3>
-    <p class="fn-sig"><code>[$math:deg-to-rad]  -> float</code>  —  Convert an angle from degrees to radians.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>0.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-deg-to-rad" class="fn">
+  <h3>math:deg-to-rad</h3>
+  <p class="fn-sig"><code>[$math:deg-to-rad]  -> float</code>  —  Convert an angle from degrees to radians.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:deg-to-rad 1.8e2] 8]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>3.14159265</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-rad-to-deg" class="fn">
-    <h3>math:rad-to-deg</h3>
-    <p class="fn-sig"><code>[$math:rad-to-deg]  -> float</code>  —  Convert an angle from radians to degrees.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>3.14159265e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-rad-to-deg" class="fn">
+  <h3>math:rad-to-deg</h3>
+  <p class="fn-sig"><code>[$math:rad-to-deg]  -> float</code>  —  Convert an angle from radians to degrees.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:rad-to-deg [$math:pi]] 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>180.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-sum" class="fn">
-    <h3>math:sum</h3>
-    <p class="fn-sig"><code>[$math:sum]  -> any</code>  —  Return the sum of a sequence of numbers.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>1.8e2</code>
+    </pre>
+  </div>
+</section><section id="fn-math-sum" class="fn">
+  <h3>math:sum</h3>
+  <p class="fn-sig"><code>[$math:sum]  -> any</code>  —  Return the sum of a sequence of numbers.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:sum (1, 2, 3, 4, 5)]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>15</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-product" class="fn">
-    <h3>math:product</h3>
-    <p class="fn-sig"><code>[$math:product]  -> any</code>  —  Return the product of a sequence of numbers.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>15</code>
+    </pre>
+  </div>
+</section><section id="fn-math-product" class="fn">
+  <h3>math:product</h3>
+  <p class="fn-sig"><code>[$math:product]  -> any</code>  —  Return the product of a sequence of numbers.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:product (1, 2, 3, 4, 5)]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>120</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-mean" class="fn">
-    <h3>math:mean</h3>
-    <p class="fn-sig"><code>[$math:mean]  -> float</code>  —  Return the arithmetic mean of a sequence; empty input raises.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>120</code>
+    </pre>
+  </div>
+</section><section id="fn-math-mean" class="fn">
+  <h3>math:mean</h3>
+  <p class="fn-sig"><code>[$math:mean]  -> float</code>  —  Return the arithmetic mean of a sequence; empty input raises.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:mean (2, 4, 6)] 1]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>4.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-median" class="fn">
-    <h3>math:median</h3>
-    <p class="fn-sig"><code>[$math:median]  -> float</code>  —  Return the median of a sequence; empty input raises.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>4.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-median" class="fn">
+  <h3>math:median</h3>
+  <p class="fn-sig"><code>[$math:median]  -> float</code>  —  Return the median of a sequence; empty input raises.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:median (3, 1, 2)] 1]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-mode" class="fn">
-    <h3>math:mode</h3>
-    <p class="fn-sig"><code>[$math:mode]  -> any</code>  —  Return the most-frequent value; ties resolve to the smallest tied value.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>2.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-mode" class="fn">
+  <h3>math:mode</h3>
+  <p class="fn-sig"><code>[$math:mode]  -> any</code>  —  Return the most-frequent value; ties resolve to the smallest tied value.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:mode (1, 2, 2, 3, 3, 3)]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>3</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-multimode" class="fn">
-    <h3>math:multimode</h3>
-    <p class="fn-sig"><code>[$math:multimode]  -> [sequence any]</code>  —  Return all values tied at the maximum frequency, sorted ascending.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>3</code>
+    </pre>
+  </div>
+</section><section id="fn-math-multimode" class="fn">
+  <h3>math:multimode</h3>
+  <p class="fn-sig"><code>[$math:multimode]  -> [sequence any]</code>  —  Return all values tied at the maximum frequency, sorted ascending.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:multimode (5, 5, 2, 2)]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(2, 5)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-stddev" class="fn">
-    <h3>math:stddev</h3>
-    <p class="fn-sig"><code>[$math:stddev]  -> float</code>  —  Return the sample standard deviation (N-1) of a sequence.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>(2, 5)</code>
+    </pre>
+  </div>
+</section><section id="fn-math-stddev" class="fn">
+  <h3>math:stddev</h3>
+  <p class="fn-sig"><code>[$math:stddev]  -> float</code>  —  Return the sample standard deviation (N-1) of a sequence.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:stddev (2, 4, 4, 4, 5, 5, 7, 9)] 4]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2.1381</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-variance" class="fn">
-    <h3>math:variance</h3>
-    <p class="fn-sig"><code>[$math:variance]  -> float</code>  —  Return the sample variance (N-1) of a sequence.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>2.1381e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-variance" class="fn">
+  <h3>math:variance</h3>
+  <p class="fn-sig"><code>[$math:variance]  -> float</code>  —  Return the sample variance (N-1) of a sequence.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:variance (2, 4, 4, 4, 5, 5, 7, 9)] 4]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>4.5714</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-stddev-pop" class="fn">
-    <h3>math:stddev-pop</h3>
-    <p class="fn-sig"><code>[$math:stddev-pop]  -> float</code>  —  Return the population standard deviation (N) of a sequence.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>4.5714e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-stddev-pop" class="fn">
+  <h3>math:stddev-pop</h3>
+  <p class="fn-sig"><code>[$math:stddev-pop]  -> float</code>  —  Return the population standard deviation (N) of a sequence.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:stddev-pop (2, 4, 4, 4, 5, 5, 7, 9)] 1]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-variance-pop" class="fn">
-    <h3>math:variance-pop</h3>
-    <p class="fn-sig"><code>[$math:variance-pop]  -> float</code>  —  Return the population variance (N) of a sequence.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>2.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-variance-pop" class="fn">
+  <h3>math:variance-pop</h3>
+  <p class="fn-sig"><code>[$math:variance-pop]  -> float</code>  —  Return the population variance (N) of a sequence.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:variance-pop (2, 4, 4, 4, 5, 5, 7, 9)] 1]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>4.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-percentile" class="fn">
-    <h3>math:percentile</h3>
-    <p class="fn-sig"><code>[$math:percentile]  -> float</code>  —  Return the p-th percentile of a sequence, with p in 0..100.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>4.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-percentile" class="fn">
+  <h3>math:percentile</h3>
+  <p class="fn-sig"><code>[$math:percentile]  -> float</code>  —  Return the p-th percentile of a sequence, with p in 0..100.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:percentile (1, 2, 3, 4, 5) 5.0e1] 1]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>3.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-quantile" class="fn">
-    <h3>math:quantile</h3>
-    <p class="fn-sig"><code>[$math:quantile]  -> float</code>  —  Return the q-th quantile of a sequence, with q in 0..1.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>3.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-quantile" class="fn">
+  <h3>math:quantile</h3>
+  <p class="fn-sig"><code>[$math:quantile]  -> float</code>  —  Return the q-th quantile of a sequence, with q in 0..1.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:quantile (1, 2, 3, 4, 5) 0.5e0] 1]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>3.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-correlation" class="fn">
-    <h3>math:correlation</h3>
-    <p class="fn-sig"><code>[$math:correlation]  -> float</code>  —  Return the Pearson correlation coefficient between two sequences.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>3.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-correlation" class="fn">
+  <h3>math:correlation</h3>
+  <p class="fn-sig"><code>[$math:correlation]  -> float</code>  —  Return the Pearson correlation coefficient between two sequences.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:correlation (1.0e0, 2.0e0, 3.0e0, 4.0e0, 5.0e0, 6.0e0, 7.0e0, 8.0e0, 9.0e0, 1.0e1) (2.0e0, 4.0e0, 6.0e0, 8.0e0, 1.0e1, 1.2e1, 1.4e1, 1.6e1, 1.8e1, 2.0e1)] 1]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>1.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-covariance" class="fn">
-    <h3>math:covariance</h3>
-    <p class="fn-sig"><code>[$math:covariance]  -> float</code>  —  Return the sample covariance (N-1) between two sequences.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>1.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-covariance" class="fn">
+  <h3>math:covariance</h3>
+  <p class="fn-sig"><code>[$math:covariance]  -> float</code>  —  Return the sample covariance (N-1) between two sequences.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:covariance (1.0e0, 2.0e0, 3.0e0, 4.0e0, 5.0e0) (2.0e0, 4.0e0, 6.0e0, 8.0e0, 1.0e1)] 1]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>5.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-bit-and" class="fn">
-    <h3>math:bit-and</h3>
-    <p class="fn-sig"><code>[$math:bit-and]  -> int</code>  —  Return the bitwise AND of two 64-bit integers.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>5.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-bit-and" class="fn">
+  <h3>math:bit-and</h3>
+  <p class="fn-sig"><code>[$math:bit-and]  -> int</code>  —  Return the bitwise AND of two 64-bit integers.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:bit-and 255 15]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>15</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-bit-or" class="fn">
-    <h3>math:bit-or</h3>
-    <p class="fn-sig"><code>[$math:bit-or]  -> int</code>  —  Return the bitwise OR of two 64-bit integers.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>15</code>
+    </pre>
+  </div>
+</section><section id="fn-math-bit-or" class="fn">
+  <h3>math:bit-or</h3>
+  <p class="fn-sig"><code>[$math:bit-or]  -> int</code>  —  Return the bitwise OR of two 64-bit integers.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:bit-or 240 15]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>255</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-bit-xor" class="fn">
-    <h3>math:bit-xor</h3>
-    <p class="fn-sig"><code>[$math:bit-xor]  -> int</code>  —  Return the bitwise XOR of two 64-bit integers.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>255</code>
+    </pre>
+  </div>
+</section><section id="fn-math-bit-xor" class="fn">
+  <h3>math:bit-xor</h3>
+  <p class="fn-sig"><code>[$math:bit-xor]  -> int</code>  —  Return the bitwise XOR of two 64-bit integers.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:bit-xor 255 15]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>240</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-bit-not" class="fn">
-    <h3>math:bit-not</h3>
-    <p class="fn-sig"><code>[$math:bit-not]  -> int</code>  —  Return the bitwise complement of a 64-bit integer.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>240</code>
+    </pre>
+  </div>
+</section><section id="fn-math-bit-not" class="fn">
+  <h3>math:bit-not</h3>
+  <p class="fn-sig"><code>[$math:bit-not]  -> int</code>  —  Return the bitwise complement of a 64-bit integer.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:bit-not 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>-1</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-bit-shift-left" class="fn">
-    <h3>math:bit-shift-left</h3>
-    <p class="fn-sig"><code>[$math:bit-shift-left]  -> int</code>  —  Shift bits left by n; count of 64 or more saturates to 0, negative count raises.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>-1</code>
+    </pre>
+  </div>
+</section><section id="fn-math-bit-shift-left" class="fn">
+  <h3>math:bit-shift-left</h3>
+  <p class="fn-sig"><code>[$math:bit-shift-left]  -> int</code>  —  Shift bits left by n; count of 64 or more saturates to 0, negative count raises.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:bit-shift-left 1 4]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>16</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-bit-shift-right" class="fn">
-    <h3>math:bit-shift-right</h3>
-    <p class="fn-sig"><code>[$math:bit-shift-right]  -> int</code>  —  Arithmetic (sign-extending) right shift by n; count of 64 or more saturates, negative count raises.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>16</code>
+    </pre>
+  </div>
+</section><section id="fn-math-bit-shift-right" class="fn">
+  <h3>math:bit-shift-right</h3>
+  <p class="fn-sig"><code>[$math:bit-shift-right]  -> int</code>  —  Arithmetic (sign-extending) right shift by n; count of 64 or more saturates, negative count raises.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:bit-shift-right -8 1]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>-4</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-popcount" class="fn">
-    <h3>math:popcount</h3>
-    <p class="fn-sig"><code>[$math:popcount]  -> int</code>  —  Count the set bits in a 64-bit integer.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>-4</code>
+    </pre>
+  </div>
+</section><section id="fn-math-popcount" class="fn">
+  <h3>math:popcount</h3>
+  <p class="fn-sig"><code>[$math:popcount]  -> int</code>  —  Count the set bits in a 64-bit integer.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:popcount 255]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>8</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-leading-zeros" class="fn">
-    <h3>math:leading-zeros</h3>
-    <p class="fn-sig"><code>[$math:leading-zeros]  -> int</code>  —  Count the leading zero bits in a 64-bit integer.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>8</code>
+    </pre>
+  </div>
+</section><section id="fn-math-leading-zeros" class="fn">
+  <h3>math:leading-zeros</h3>
+  <p class="fn-sig"><code>[$math:leading-zeros]  -> int</code>  —  Count the leading zero bits in a 64-bit integer.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:leading-zeros 1]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>63</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-trailing-zeros" class="fn">
-    <h3>math:trailing-zeros</h3>
-    <p class="fn-sig"><code>[$math:trailing-zeros]  -> int</code>  —  Count the trailing zero bits in a 64-bit integer.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>63</code>
+    </pre>
+  </div>
+</section><section id="fn-math-trailing-zeros" class="fn">
+  <h3>math:trailing-zeros</h3>
+  <p class="fn-sig"><code>[$math:trailing-zeros]  -> int</code>  —  Count the trailing zero bits in a 64-bit integer.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:trailing-zeros 8]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>3</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-is-nan" class="fn">
-    <h3>math:is-nan</h3>
-    <p class="fn-sig"><code>[$math:is-nan]  -> bool</code>  —  Report whether a value is IEEE 754 NaN.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>3</code>
+    </pre>
+  </div>
+</section><section id="fn-math-is-nan" class="fn">
+  <h3>math:is-nan</h3>
+  <p class="fn-sig"><code>[$math:is-nan]  -> bool</code>  —  Report whether a value is IEEE 754 NaN.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:is-nan [$math:log -1.0e0]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-is-infinite" class="fn">
-    <h3>math:is-infinite</h3>
-    <p class="fn-sig"><code>[$math:is-infinite]  -> bool</code>  —  Report whether a value is positive or negative infinity.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-math-is-infinite" class="fn">
+  <h3>math:is-infinite</h3>
+  <p class="fn-sig"><code>[$math:is-infinite]  -> bool</code>  —  Report whether a value is positive or negative infinity.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:is-infinite [$math:infinity]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-is-finite" class="fn">
-    <h3>math:is-finite</h3>
-    <p class="fn-sig"><code>[$math:is-finite]  -> bool</code>  —  Report whether a value is finite (not NaN or infinity).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-math-is-finite" class="fn">
+  <h3>math:is-finite</h3>
+  <p class="fn-sig"><code>[$math:is-finite]  -> bool</code>  —  Report whether a value is finite (not NaN or infinity).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:is-finite 3.5e0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-is-integer" class="fn">
-    <h3>math:is-integer</h3>
-    <p class="fn-sig"><code>[$math:is-integer]  -> bool</code>  —  Report whether a value has no fractional part.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-math-is-integer" class="fn">
+  <h3>math:is-integer</h3>
+  <p class="fn-sig"><code>[$math:is-integer]  -> bool</code>  —  Report whether a value has no fractional part.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:is-integer 4.0e0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-is-positive" class="fn">
-    <h3>math:is-positive</h3>
-    <p class="fn-sig"><code>[$math:is-positive]  -> bool</code>  —  Report whether a value is greater than zero.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-math-is-positive" class="fn">
+  <h3>math:is-positive</h3>
+  <p class="fn-sig"><code>[$math:is-positive]  -> bool</code>  —  Report whether a value is greater than zero.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:is-positive 3]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-is-negative" class="fn">
-    <h3>math:is-negative</h3>
-    <p class="fn-sig"><code>[$math:is-negative]  -> bool</code>  —  Report whether a value is less than zero.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-math-is-negative" class="fn">
+  <h3>math:is-negative</h3>
+  <p class="fn-sig"><code>[$math:is-negative]  -> bool</code>  —  Report whether a value is less than zero.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:is-negative -3]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-is-zero" class="fn">
-    <h3>math:is-zero</h3>
-    <p class="fn-sig"><code>[$math:is-zero]  -> bool</code>  —  Report whether a value is exactly zero.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-math-is-zero" class="fn">
+  <h3>math:is-zero</h3>
+  <p class="fn-sig"><code>[$math:is-zero]  -> bool</code>  —  Report whether a value is exactly zero.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:is-zero 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-gcd" class="fn">
-    <h3>math:gcd</h3>
-    <p class="fn-sig"><code>[$math:gcd]  -> int</code>  —  Return the greatest common divisor of two integers.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-math-gcd" class="fn">
+  <h3>math:gcd</h3>
+  <p class="fn-sig"><code>[$math:gcd]  -> int</code>  —  Return the greatest common divisor of two integers.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:gcd 12 18]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>6</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-lcm" class="fn">
-    <h3>math:lcm</h3>
-    <p class="fn-sig"><code>[$math:lcm]  -> int</code>  —  Return the least common multiple of two integers.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>6</code>
+    </pre>
+  </div>
+</section><section id="fn-math-lcm" class="fn">
+  <h3>math:lcm</h3>
+  <p class="fn-sig"><code>[$math:lcm]  -> int</code>  —  Return the least common multiple of two integers.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:lcm 4 6]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>12</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-is-prime" class="fn">
-    <h3>math:is-prime</h3>
-    <p class="fn-sig"><code>[$math:is-prime]  -> bool</code>  —  Report whether an integer is prime, exact across the full int64 range.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>12</code>
+    </pre>
+  </div>
+</section><section id="fn-math-is-prime" class="fn">
+  <h3>math:is-prime</h3>
+  <p class="fn-sig"><code>[$math:is-prime]  -> bool</code>  —  Report whether an integer is prime, exact across the full int64 range.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:is-prime 97]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-factorial" class="fn">
-    <h3>math:factorial</h3>
-    <p class="fn-sig"><code>[$math:factorial]  -> int</code>  —  Return n factorial; n greater than 20 overflows int64 and raises.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-math-factorial" class="fn">
+  <h3>math:factorial</h3>
+  <p class="fn-sig"><code>[$math:factorial]  -> int</code>  —  Return n factorial; n greater than 20 overflows int64 and raises.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:factorial 0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>1</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-pi" class="fn">
-    <h3>math:pi</h3>
-    <p class="fn-sig"><code>[$math:pi]  -> float</code>  —  Return the constant pi.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>1</code>
+    </pre>
+  </div>
+</section><section id="fn-math-pi" class="fn">
+  <h3>math:pi</h3>
+  <p class="fn-sig"><code>[$math:pi]  -> float</code>  —  Return the constant pi.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:tan [$math:round-to [$math:pi] 15]] 8]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>0.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-e" class="fn">
-    <h3>math:e</h3>
-    <p class="fn-sig"><code>[$math:e]  -> float</code>  —  Return Euler's number e.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>0.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-e" class="fn">
+  <h3>math:e</h3>
+  <p class="fn-sig"><code>[$math:e]  -> float</code>  —  Return Euler's number e.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:log [$math:e]] 8]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>1.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-tau" class="fn">
-    <h3>math:tau</h3>
-    <p class="fn-sig"><code>[$math:tau]  -> float</code>  —  Return the constant tau (2 pi).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>1.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-tau" class="fn">
+  <h3>math:tau</h3>
+  <p class="fn-sig"><code>[$math:tau]  -> float</code>  —  Return the constant tau (2 pi).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [/ [$math:tau] [$math:pi]] 8]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2.0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-golden" class="fn">
-    <h3>math:golden</h3>
-    <p class="fn-sig"><code>[$math:golden]  -> float</code>  —  Return the golden ratio (1 + sqrt 5) / 2.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>2.0e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-golden" class="fn">
+  <h3>math:golden</h3>
+  <p class="fn-sig"><code>[$math:golden]  -> float</code>  —  Return the golden ratio (1 + sqrt 5) / 2.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:round-to [$math:golden] 8]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>1.61803399</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-infinity" class="fn">
-    <h3>math:infinity</h3>
-    <p class="fn-sig"><code>[$math:infinity]  -> float</code>  —  Return positive IEEE 754 infinity.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>1.61803399e0</code>
+    </pre>
+  </div>
+</section><section id="fn-math-infinity" class="fn">
+  <h3>math:infinity</h3>
+  <p class="fn-sig"><code>[$math:infinity]  -> float</code>  —  Return positive IEEE 754 infinity.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:is-infinite [$math:infinity]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-nan" class="fn">
-    <h3>math:nan</h3>
-    <p class="fn-sig"><code>[$math:nan]  -> float</code>  —  Return an IEEE 754 NaN value.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-math-nan" class="fn">
+  <h3>math:nan</h3>
+  <p class="fn-sig"><code>[$math:nan]  -> float</code>  —  Return an IEEE 754 NaN value.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:is-nan [$math:nan]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-epsilon" class="fn">
-    <h3>math:epsilon</h3>
-    <p class="fn-sig"><code>[$math:epsilon]  -> float</code>  —  Return the float64 machine epsilon.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-math-epsilon" class="fn">
+  <h3>math:epsilon</h3>
+  <p class="fn-sig"><code>[$math:epsilon]  -> float</code>  —  Return the float64 machine epsilon.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:is-finite [$math:epsilon]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-wrapping-add" class="fn">
-    <h3>math:wrapping-add</h3>
-    <p class="fn-sig"><code>[$math:wrapping-add]  -> int</code>  —  Add two integers with two's-complement wraparound; never raises.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-math-wrapping-add" class="fn">
+  <h3>math:wrapping-add</h3>
+  <p class="fn-sig"><code>[$math:wrapping-add]  -> int</code>  —  Add two integers with two's-complement wraparound; never raises.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:wrapping-add 9223372036854775807 1]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>-9223372036854775808</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-wrapping-sub" class="fn">
-    <h3>math:wrapping-sub</h3>
-    <p class="fn-sig"><code>[$math:wrapping-sub]  -> int</code>  —  Subtract two integers with two's-complement wraparound; never raises.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>-9223372036854775808</code>
+    </pre>
+  </div>
+</section><section id="fn-math-wrapping-sub" class="fn">
+  <h3>math:wrapping-sub</h3>
+  <p class="fn-sig"><code>[$math:wrapping-sub]  -> int</code>  —  Subtract two integers with two's-complement wraparound; never raises.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:wrapping-sub -9223372036854775808 1]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>9223372036854775807</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-wrapping-mul" class="fn">
-    <h3>math:wrapping-mul</h3>
-    <p class="fn-sig"><code>[$math:wrapping-mul]  -> int</code>  —  Multiply two integers with two's-complement wraparound; never raises.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>9223372036854775807</code>
+    </pre>
+  </div>
+</section><section id="fn-math-wrapping-mul" class="fn">
+  <h3>math:wrapping-mul</h3>
+  <p class="fn-sig"><code>[$math:wrapping-mul]  -> int</code>  —  Multiply two integers with two's-complement wraparound; never raises.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:wrapping-mul 6 7]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>42</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-wrapping-pow" class="fn">
-    <h3>math:wrapping-pow</h3>
-    <p class="fn-sig"><code>[$math:wrapping-pow]  -> int</code>  —  Raise base to exp with two's-complement wraparound; never raises.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>42</code>
+    </pre>
+  </div>
+</section><section id="fn-math-wrapping-pow" class="fn">
+  <h3>math:wrapping-pow</h3>
+  <p class="fn-sig"><code>[$math:wrapping-pow]  -> int</code>  —  Raise base to exp with two's-complement wraparound; never raises.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 [$math:wrapping-pow 2 10]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>1024</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-math-div-decimal" class="fn">
-    <h3>math:div-decimal</h3>
-    <p class="fn-sig"><code>[$math:div-decimal]  -> any</code>  —  Decimal division under an explicit rounding context: the exact quotient rounded to precision fractional digits per mode (:half-up | :half-even | :down | :up) — the only way to divide a non-terminating decimal quotient; the bare [/ …] operator stays exact-or-CXER3002.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/math']
+    </pre>
+    <pre class="sample-output">
+      <code>1024</code>
+    </pre>
+  </div>
+</section><section id="fn-math-div-decimal" class="fn">
+  <h3>math:div-decimal</h3>
+  <p class="fn-sig"><code>[$math:div-decimal]  -> any</code>  —  Decimal division under an explicit rounding context: the exact quotient rounded to precision fractional digits per mode (:half-up | :half-even | :down | :up) — the only way to divide a non-terminating decimal quotient; the bare [/ …] operator stays exact-or-CXER3002.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/math']
 ([$math:div-decimal 1.00 3.0 {precision: 4 mode: :half-up}], [$math:div-decimal 1.0 8.0 {precision: 2 mode: :half-even}], [$math:div-decimal -10.0 3.0 {precision: 2 mode: :down}])</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(0.3333, 0.12, -3.33)</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>(0.3333, 0.12, -3.33)</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>math</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

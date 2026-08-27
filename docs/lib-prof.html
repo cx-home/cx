@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,301 +143,251 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">prof</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-prof"><h1>prof</h1><p class="lede">In-program profiling, callable directly from CX code. Provides timing measurement, memory snapshots, named counters, HDR histograms, structured trace events, and flamegraph emission — for the cases where a program measures itself and acts on the result. Timer, counter, histogram, and trace are the four primitives; all are impure because they observe or mutate process state.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-prof-time-fn" class="fn">
-    <h3>prof:time-fn</h3>
-    <p class="fn-sig"><code>[$prof:time-fn]  -> element</code>  —  Run a thunk and return a timing element carrying its elapsed time and return value.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/prof']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-prof-time-fn" class="fn">
+  <h3>prof:time-fn</h3>
+  <p class="fn-sig"><code>[$prof:time-fn]  -> element</code>  —  Run a thunk and return a timing element carrying its elapsed time and return value.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/prof']
 [$prof:time-fn "work" [?fn () 42]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-prof-now-ns" class="fn">
-    <h3>prof:now-ns</h3>
-    <p class="fn-sig"><code>[$prof:now-ns]  -> int</code>  —  Return a monotonic-clock reading in nanoseconds.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/prof']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-prof-now-ns" class="fn">
+  <h3>prof:now-ns</h3>
+  <p class="fn-sig"><code>[$prof:now-ns]  -> int</code>  —  Return a monotonic-clock reading in nanoseconds.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/prof']
 [$prof:now-ns]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-prof-now-cpu-ns" class="fn">
-    <h3>prof:now-cpu-ns</h3>
-    <p class="fn-sig"><code>[$prof:now-cpu-ns]  -> int</code>  —  Return the process CPU-time clock value in nanoseconds.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/prof']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-prof-now-cpu-ns" class="fn">
+  <h3>prof:now-cpu-ns</h3>
+  <p class="fn-sig"><code>[$prof:now-cpu-ns]  -> int</code>  —  Return the process CPU-time clock value in nanoseconds.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/prof']
 [$prof:now-cpu-ns]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-prof-mem-snapshot" class="fn">
-    <h3>prof:mem-snapshot</h3>
-    <p class="fn-sig"><code>[$prof:mem-snapshot]  -> element</code>  —  Capture current process memory state, always carrying rss-bytes and a timestamp.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/prof']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-prof-mem-snapshot" class="fn">
+  <h3>prof:mem-snapshot</h3>
+  <p class="fn-sig"><code>[$prof:mem-snapshot]  -> element</code>  —  Capture current process memory state, always carrying rss-bytes and a timestamp.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/prof']
 [?let [= $s [$prof:mem-snapshot]]
   [> $s@rss-bytes 0]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-prof-gc-trigger" class="fn">
-    <h3>prof:gc-trigger</h3>
-    <p class="fn-sig"><code>[$prof:gc-trigger]  -> null</code>  —  Request a garbage-collection cycle, best-effort; the underlying GC may decline.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/prof']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-prof-gc-trigger" class="fn">
+  <h3>prof:gc-trigger</h3>
+  <p class="fn-sig"><code>[$prof:gc-trigger]  -> null</code>  —  Request a garbage-collection cycle, best-effort; the underlying GC may decline.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/prof']
 [$prof:gc-trigger]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-prof-counter-inc" class="fn">
-    <h3>prof:counter-inc</h3>
-    <p class="fn-sig"><code>[$prof:counter-inc]  -> null</code>  —  Atomically add one to the named process-global counter.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/prof']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-prof-counter-inc" class="fn">
+  <h3>prof:counter-inc</h3>
+  <p class="fn-sig"><code>[$prof:counter-inc]  -> null</code>  —  Atomically add one to the named process-global counter.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/prof']
 [$prof:counter-inc "prof-007-hits"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-prof-counter-add" class="fn">
-    <h3>prof:counter-add</h3>
-    <p class="fn-sig"><code>[$prof:counter-add]  -> null</code>  —  Atomically add a delta to the named process-global counter.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/prof']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-prof-counter-add" class="fn">
+  <h3>prof:counter-add</h3>
+  <p class="fn-sig"><code>[$prof:counter-add]  -> null</code>  —  Atomically add a delta to the named process-global counter.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/prof']
 [?let [= $_ [$prof:counter-add "prof-009-bytes" 5]]
   [$prof:counter-get "prof-009-bytes"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>5</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-prof-counter-get" class="fn">
-    <h3>prof:counter-get</h3>
-    <p class="fn-sig"><code>[$prof:counter-get]  -> int</code>  —  Read the current value of the named counter.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/prof']
+    </pre>
+    <pre class="sample-output">
+      <code>5</code>
+    </pre>
+  </div>
+</section><section id="fn-prof-counter-get" class="fn">
+  <h3>prof:counter-get</h3>
+  <p class="fn-sig"><code>[$prof:counter-get]  -> int</code>  —  Read the current value of the named counter.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/prof']
 [?let [= $_ [$prof:counter-inc "prof-008-hits"]]
   [$prof:counter-get "prof-008-hits"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>1</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-prof-counter-reset" class="fn">
-    <h3>prof:counter-reset</h3>
-    <p class="fn-sig"><code>[$prof:counter-reset]  -> null</code>  —  Reset the named counter back to zero.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/prof']
+    </pre>
+    <pre class="sample-output">
+      <code>1</code>
+    </pre>
+  </div>
+</section><section id="fn-prof-counter-reset" class="fn">
+  <h3>prof:counter-reset</h3>
+  <p class="fn-sig"><code>[$prof:counter-reset]  -> null</code>  —  Reset the named counter back to zero.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/prof']
 [?let [= $_ [$prof:counter-add "prof-011-x" 9]] [= $__ [$prof:counter-reset "prof-011-x"]]
   [$prof:counter-get "prof-011-x"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>0</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-prof-counter-all" class="fn">
-    <h3>prof:counter-all</h3>
-    <p class="fn-sig"><code>[$prof:counter-all]  -> map</code>  —  Return a map of every counter name to its current value.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/prof']
+    </pre>
+    <pre class="sample-output">
+      <code>0</code>
+    </pre>
+  </div>
+</section><section id="fn-prof-counter-all" class="fn">
+  <h3>prof:counter-all</h3>
+  <p class="fn-sig"><code>[$prof:counter-all]  -> map</code>  —  Return a map of every counter name to its current value.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/prof']
 [?let [= $_ [$prof:counter-add "prof-012-only" 3]]
   [$prof:counter-all]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>{prof-012-only: 3}</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-prof-histogram-observe" class="fn">
-    <h3>prof:histogram-observe</h3>
-    <p class="fn-sig"><code>[$prof:histogram-observe]  -> null</code>  —  Record one observation into the named histogram, creating it on first observe.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/prof']
+    </pre>
+    <pre class="sample-output">
+      <code>{prof-012-only: 3}</code>
+    </pre>
+  </div>
+</section><section id="fn-prof-histogram-observe" class="fn">
+  <h3>prof:histogram-observe</h3>
+  <p class="fn-sig"><code>[$prof:histogram-observe]  -> null</code>  —  Record one observation into the named histogram, creating it on first observe.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/prof']
 [$prof:histogram-observe "prof-013-lat" 8.1e0]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-prof-histogram-stats" class="fn">
-    <h3>prof:histogram-stats</h3>
-    <p class="fn-sig"><code>[$prof:histogram-stats]  -> element</code>  —  Return count, percentiles, min, max, and mean for the named histogram.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/prof']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-prof-histogram-stats" class="fn">
+  <h3>prof:histogram-stats</h3>
+  <p class="fn-sig"><code>[$prof:histogram-stats]  -> element</code>  —  Return count, percentiles, min, max, and mean for the named histogram.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/prof']
 [?let [= $a [$prof:histogram-observe "prof-014-lat" 1.0e0]] [= $b [$prof:histogram-observe "prof-014-lat" 2.0e0]] [= $c [$prof:histogram-observe "prof-014-lat" 3.0e0]] [= $s [$prof:histogram-stats "prof-014-lat"]]
   $s@count]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>3</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-prof-histogram-reset" class="fn">
-    <h3>prof:histogram-reset</h3>
-    <p class="fn-sig"><code>[$prof:histogram-reset]  -> null</code>  —  Discard the named histogram's observations while keeping the name.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/prof']
+    </pre>
+    <pre class="sample-output">
+      <code>3</code>
+    </pre>
+  </div>
+</section><section id="fn-prof-histogram-reset" class="fn">
+  <h3>prof:histogram-reset</h3>
+  <p class="fn-sig"><code>[$prof:histogram-reset]  -> null</code>  —  Discard the named histogram's observations while keeping the name.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/prof']
 [?let [= $_ [$prof:histogram-observe "prof-016-lat" 5.0e0]]
   [$prof:histogram-reset "prof-016-lat"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-prof-trace" class="fn">
-    <h3>prof:trace</h3>
-    <p class="fn-sig"><code>[$prof:trace]  -> null</code>  —  Emit a structured trace event with the given fields to the buffer.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/prof']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-prof-trace" class="fn">
+  <h3>prof:trace</h3>
+  <p class="fn-sig"><code>[$prof:trace]  -> null</code>  —  Emit a structured trace event with the given fields to the buffer.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/prof']
 [$prof:trace "request" {request-id: "abc"}]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-prof-trace-flush" class="fn">
-    <h3>prof:trace-flush</h3>
-    <p class="fn-sig"><code>[$prof:trace-flush]  -> null</code>  —  Flush buffered trace events to the configured sink.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/prof']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-prof-trace-flush" class="fn">
+  <h3>prof:trace-flush</h3>
+  <p class="fn-sig"><code>[$prof:trace-flush]  -> null</code>  —  Flush buffered trace events to the configured sink.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/prof']
 [?let [= $_ [$prof:prof-configure {trace-sink: "none"}]]
   [$prof:trace-flush]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-prof-prof-configure" class="fn">
-    <h3>prof:prof-configure</h3>
-    <p class="fn-sig"><code>[$prof:prof-configure]  -> null</code>  —  Configure the trace sink, buffer size, and counter enablement.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/prof']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-prof-prof-configure" class="fn">
+  <h3>prof:prof-configure</h3>
+  <p class="fn-sig"><code>[$prof:prof-configure]  -> null</code>  —  Configure the trace sink, buffer size, and counter enablement.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/prof']
 [$prof:prof-configure {trace-sink: "none"}]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-prof-time-and-trace" class="fn">
-    <h3>prof:time-and-trace</h3>
-    <p class="fn-sig"><code>[$prof:time-and-trace]  -> element</code>  —  Time a thunk, emit a trace event with its duration, and return the timing element.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/prof']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-prof-time-and-trace" class="fn">
+  <h3>prof:time-and-trace</h3>
+  <p class="fn-sig"><code>[$prof:time-and-trace]  -> element</code>  —  Time a thunk, emit a trace event with its duration, and return the timing element.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/prof']
 [$prof:time-and-trace "work" [?fn () 42]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-prof-flamegraph-emit" class="fn">
-    <h3>prof:flamegraph-emit</h3>
-    <p class="fn-sig"><code>[$prof:flamegraph-emit]  -> string</code>  —  Fold buffered trace events into flamegraph.pl folded-stack output, returned or written to a path.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/prof']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-prof-flamegraph-emit" class="fn">
+  <h3>prof:flamegraph-emit</h3>
+  <p class="fn-sig"><code>[$prof:flamegraph-emit]  -> string</code>  —  Fold buffered trace events into flamegraph.pl folded-stack output, returned or written to a path.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/prof']
 [$prof:flamegraph-emit]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>''</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>''</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>prof</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

@@ -127,7 +127,11 @@ int cx_thread_register(void);
  */
 int cx_thread_unregister(void);
 
-/** Return the library version string (e.g. "0.5.0"). Caller must cx_free(). */
+/** Return the library version string — semver, e.g. "0.5.0". A build that is
+ *  not the release its version names carries the `-dev` PRE-RELEASE marker
+ *  ("0.5.0-dev"), which orders before the release it will become (#979 CO-4,
+ *  #984); the `+<commit>` build metadata the `cx` binary's `--version`
+ *  headline adds is not part of the library's stamp. Caller must cx_free(). */
 char* cx_version(void);
 
 /** Return the ABI version string (e.g. "2.0"). Bindings call this on
@@ -798,7 +802,11 @@ char* cx_code_eval_with_len
  *   NULL or ""     -> empty set (pure-only) — the spec default
  *   "all" / "*"    -> full grant (the --allow-all opt-out)
  *   "read,write,…" -> exactly the listed capabilities (least-privilege)
- *   "net=host:443" -> scoped grant (`cap=resource` is THE scope spelling)
+ *   "net=host:443" -> scoped grant (`cap=resource` is THE scope spelling;
+ *                     `net` is the ONE capability whose scope is enforced
+ *                     today — a `read=`/`write=`/`env=` suffix is a typed
+ *                     error rather than a silent blanket grant (#1059);
+ *                     real path/name scoping is cx-home/cx-private#1061)
  * An unknown capability name — or the retired `cap:resource` colon
  * spelling — is a typed error (cx-err:CXER0274) and NO set is installed;
  * the call returns the error without evaluating (#713/L114). A denied

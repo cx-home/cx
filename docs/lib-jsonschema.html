@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,43 +143,39 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">jsonschema</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-jsonschema"><h1>jsonschema</h1><p class="lede">Bundled cx-stdlib module.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-jsonschema-validate" class="fn">
-    <h3>jsonschema:validate</h3>
-    <p class="fn-sig"><code>[$jsonschema:validate]  -> element</code>  —  Validate a value against a JSON Schema 2020-12 (MCP subset), returning [ok] or [invalid [violation keyword= path= message=] …].</p>
-    
-  </section>
-  <section id="fn-jsonschema-is-valid" class="fn">
-    <h3>jsonschema:is-valid</h3>
-    <p class="fn-sig"><code>[$jsonschema:is-valid]  -> bool</code>  —  True when the value satisfies every supported keyword of the schema (no violations).</p>
-    
-  </section>
-  <section id="fn-jsonschema-violations" class="fn">
-    <h3>jsonschema:violations</h3>
-    <p class="fn-sig"><code>[$jsonschema:violations]  -> [sequence element]</code>  —  The [violation …] elements from a validate result — empty for an [ok] result.</p>
-    
-  </section>
-  <section id="fn-jsonschema-violation-paths" class="fn">
-    <h3>jsonschema:violation-paths</h3>
-    <p class="fn-sig"><code>[$jsonschema:violation-paths]  -> [sequence string]</code>  —  The JSON-pointer-style paths of each violation in a validate result.</p>
-    
-  </section>
-</section>
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-jsonschema-validate" class="fn">
+  <h3>jsonschema:validate</h3>
+  <p class="fn-sig"><code>[$jsonschema:validate]  -> element</code>  —  Validate a value against a JSON Schema 2020-12 (MCP subset), returning [ok] or [invalid [violation keyword= path= message=] …].</p>
+</section><section id="fn-jsonschema-is-valid" class="fn">
+  <h3>jsonschema:is-valid</h3>
+  <p class="fn-sig"><code>[$jsonschema:is-valid]  -> bool</code>  —  True when the value satisfies every supported keyword of the schema (no violations).</p>
+</section><section id="fn-jsonschema-violations" class="fn">
+  <h3>jsonschema:violations</h3>
+  <p class="fn-sig"><code>[$jsonschema:violations]  -> [sequence element]</code>  —  The [violation …] elements from a validate result — empty for an [ok] result.</p>
+</section><section id="fn-jsonschema-violation-paths" class="fn">
+  <h3>jsonschema:violation-paths</h3>
+  <p class="fn-sig"><code>[$jsonschema:violation-paths]  -> [sequence string]</code>  —  The JSON-pointer-style paths of each violation in a validate result.</p>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>jsonschema</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

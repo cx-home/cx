@@ -3,7 +3,7 @@
 ## Supported versions
 
 CX is **pre-1.0**. Only the latest released minor series — currently
-**0.16.x**, per the repo-root [`VERSION`](VERSION) file, which is the
+**0.17.x**, per the repo-root [`VERSION`](VERSION) file, which is the
 single source of truth for the release version — receives security
 fixes. Integration for the next minor happens on its `release/X.Y.0`
 branch (derived from `VERSION` — never named here, so this file cannot

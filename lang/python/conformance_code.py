@@ -106,6 +106,10 @@ SUPPORTED_FIXTURES = (
     # §6.5 P3 — numeric (2026-05-22)
     'program-builtin-avg',
     'program-builtin-abs-negative-int',
+    # #1010: the row this list used to name under `-float` tested a DECIMAL
+    # literal. Both kinds are now named and both are covered here, so the
+    # rename cannot quietly drop the decimal reading the list had.
+    'program-builtin-abs-negative-decimal',
     'program-builtin-abs-negative-float',
     'program-builtin-floor',
     'program-builtin-ceiling',

@@ -127,15 +127,33 @@ $ cx --allow-env home.cx
          `CXER0271` unless the program runs with
          `--allow-secret-reveal`."""]
     [note
-      """Grant scoping syntax such as `--allow-read=./data` or
-         `--allow-env=HOME` is accepted on the command line, but in the
-         current engine only the **net** grant enforces its scope
-         (next subsection). For every other capability the resource
-         suffix is carried, not yet enforced — the grant is
-         all-or-nothing per capability. Per-path and per-name
-         enforcement is specified (`spec/03-approved/core/security.md`, coarse-v1
-         scoping) and lands per domain; do not rely on a path suffix as
-         a security boundary today."""]]
+      """**`--allow-net` is the only grant that scopes.** A resource
+         suffix on `--allow-read`, `--allow-write` or `--allow-env` is
+         now a **usage error** — `cx --allow-read=./data prog.cx`
+         refuses at startup with exit 2, before the program is
+         evaluated, and names the flag, the suffix it would have
+         ignored, and the bare spelling that is accepted. Earlier
+         versions accepted the suffix, discarded it, and granted the
+         **blanket** capability, so a caller who typed the narrower
+         form silently got the wider authority; refusing is the
+         fail-closed answer until scoping actually exists. Write
+         `--allow-read` and mean it, or scope the one grant that can
+         be scoped."""]
+    [example lang=sh
+      """$ cx --allow-read=./data prog.cx"""]
+    [output
+      """cx: --allow-read=./data: read scoping is NOT IMPLEMENTED — the resource `./data` would be IGNORED and the grant would be BLANKET read authority over the whole filesystem, not the narrowing this spells (cx-home/cx-private#1059)
+  the accepted spelling is the bare grant:  --allow-read
+  it grants read over the whole filesystem — which is what the suffixed form has always done — so say it explicitly instead of appearing to narrow it
+  real per-path read scoping is tracked at cx-home/cx-private#1061
+  `--allow-net=host[:port]` is the one grant whose scope IS enforced today"""]
+    [body
+      """Per-path and per-name enforcement is specified
+         (`spec/03-approved/core/security.md`, coarse-v1 scoping) and
+         lands per domain. The remaining capabilities — `clock`,
+         `random`, `subprocess`, `eval`, `secret-reveal` — still accept
+         a suffix and still ignore it; do not read one as a
+         boundary."""]]
 
   [child id=caps-net n=16.3 title='Scoping the network grant'
     [body

@@ -42,11 +42,26 @@ pub const header_size = 64
 // 32-byte hash slot is self-describing. sha2-256 (0x12) is the registry's
 // required default and the only algorithm this engine implements; all 1.0
 // algorithms are 32-byte — a non-32-byte digest requires pack v3. Readers
-// FAIL CLOSED on any other code, including the pre-epoch zero (the I1 stamp
-// migrated the committed registry packs in place — the slot is covered by
-// no CRC, so the rewrite changed no hash, CRC, or signature). Must match
+// FAIL CLOSED on every code outside the accept set below. Must match
 // cx.cx_hash_registry — pinned by pack_multicodec_test.v.
 pub const pack_hash_mh_code = u16(0x12)
+
+// pack_hash_mh_code_legacy_zero — RULED: CO-1 (#974,
+// ledger/rulings_2026_08_25_0170_closeout.md). The slot was RESERVED before
+// the I1 epoch and v0.15's writer emitted a literal `0` into it. Zero
+// therefore MEANS sha2-256 for every pack that can legally exist: v0.15 had
+// exactly one hash algorithm, so no zero-slot pack anywhere is named by
+// anything else. Reading it as sha2-256 is not a dual-accept of two live
+// encodings — it is naming the one algorithm the byte always stood for. The
+// accept set is EXACTLY {0x0000, 0x0012}; every other code (including
+// registered-but-unimplemented ones like blake3 0x1e) still fails closed,
+// because for those the byte would be a claim the engine cannot verify.
+//
+// Zero is a READ-side compatibility code only: the writer never emits it,
+// and the first durable write to a store holding zero-slot entries stamps
+// them forward (stamp_pack_hash_slots below), so the zero era ends at the
+// first write rather than living on as a second encoding.
+pub const pack_hash_mh_code_legacy_zero = u16(0x0000)
 
 // entry_kind enum (pack_format.md)
 pub const kind_document = u8(0)
@@ -314,6 +329,70 @@ fn write_pack_entries(path string, keys [][]u8, blobs [][]u8, compress bool, fil
 
 fn C.fsync(fd int) int
 
+// ── forward-stamp migration (RULED: CO-1, #974) ───────────────────────
+
+// stamp_pack_hash_slots migrates a SEALED pack forward in place: every entry
+// whose hash-multicodec slot still reads v0.15's zero is rewritten to
+// sha2-256 (0x0012). Returns the number of slots stamped (0 when the pack is
+// already current — the case for every pack this engine wrote).
+//
+// In-place is sound because the slot is covered by NOTHING that names the
+// pack's contents. Verified against this file's four integrity computations:
+//
+//   header_crc32  — crc32.sum(data[..60]); the slot lives at entry+6, and
+//                   entries start at header_size (64). Outside.
+//   footer_crc32  — crc32.sum(footer[..len-4]); the slot is in the ENTRY
+//                   stream, which the footer only points AT. Outside.
+//   entry crc32   — crc32.sum(stored), the stored payload bytes at
+//                   entry+44..+44+plen. Outside (bytes 4..44 of an entry —
+//                   kind, flags, this slot, doc_hash, payload_length — are
+//                   covered by no checksum at all).
+//   doc_hash      — sha256 over the ORIGINAL payload, never over entry bytes.
+//
+// There is no signature anywhere in this module. entry_length is untouched,
+// so the entry chain and every footer offset stay valid. This is the same
+// property the I1 in-repo stamp migration of the committed registry packs
+// relied on.
+//
+// Crash-safe without a temp-file dance: each slot is one 2-byte positional
+// write, and BOTH the pre-state (0x0000) and the post-state (0x0012) are
+// accepted by the reader as sha2-256. Any interruption therefore leaves a
+// pack that opens and reads exactly as it did before — the migration is
+// idempotent and every intermediate state is legal. Rewriting the whole file
+// would be strictly worse: it would put a torn/truncated pack in the window
+// the atomic-rename paths (#302/#624) exist to prevent.
+pub fn stamp_pack_hash_slots(path string) !int {
+	data := os.read_bytes(path)!
+	r := parse_pack(data)!
+	if r.legacy_hash_slots == 0 {
+		return 0
+	}
+	mut slots := []u64{cap: r.legacy_hash_slots}
+	for i in 0 .. int(r.count) {
+		rec_off := r.index_off + i * 44
+		eoff := read_u64(data, rec_off + 32)
+		if read_u16(data, int(eoff) + 6) == pack_hash_mh_code_legacy_zero {
+			slots << eoff + 6
+		}
+	}
+	mut stamp := []u8{cap: 2}
+	put_u16(mut stamp, pack_hash_mh_code)
+	mut f := os.open_file(path, 'r+')!
+	for off in slots {
+		f.write_to(off, stamp) or {
+			f.close()
+			return error('cxstore: hash-multicodec stamp failed at offset ${off} in ${path}: ${err.msg()}')
+		}
+	}
+	// Durable-on-return, matching write_pack_entries: a migration that is
+	// acked but not on media would silently re-run (harmlessly) — but the
+	// contract here is the same power-loss durability the writer gives.
+	f.flush()
+	C.fsync(f.fd)
+	f.close()
+	return slots.len
+}
+
 // ── reader ────────────────────────────────────────────────────────────
 
 pub struct PackReader {
@@ -332,8 +411,14 @@ pub:
 	// Exactly one membership filter is populated per the footer's filter_kind;
 	// the other stays empty. r.maybe_has dispatches. Both empty (no/garbage
 	// filter) → maybe_has conservatively true (the index stays authoritative).
-	bloom Bloom      // populated for legacy (filter_kind == 0) packs
-	xor   XorFilter  // populated for xor8 (filter_kind == 1) packs
+	bloom Bloom     // populated for legacy (filter_kind == 0) packs
+	xor   XorFilter // populated for xor8 (filter_kind == 1) packs
+	// legacy_hash_slots — how many indexed entries still carry v0.15's zero
+	// hash-multicodec slot (RULED: CO-1, #974). Zero for every pack this
+	// engine has ever written. A non-zero count is the migration signal the
+	// write path reads: the owning backend records the path and the next
+	// durable write stamps those slots to 0x0012 via stamp_pack_hash_slots.
+	legacy_hash_slots int
 }
 
 // maybe_has returns false only if the object is DEFINITELY absent from this
@@ -400,6 +485,11 @@ fn parse_pack(data []u8) !PackReader {
 	// name an algorithm this engine implements — sha2-256 only. Fail closed
 	// at open on any other code (a pack hashed with an algorithm we cannot
 	// verify must error, never appear empty or self-verify vacuously).
+	// RULED: CO-1 (#974) — the accept set is exactly {0x0000, 0x0012}: the
+	// pre-epoch zero is v0.15's literal write of a then-RESERVED slot and
+	// means sha2-256 (see pack_hash_mh_code_legacy_zero). Counted, not just
+	// tolerated, so the first durable write can stamp those entries forward.
+	mut legacy_slots := 0
 	for i in 0 .. int(count) {
 		rec_off := footer_start + 4 + i * 44
 		eoff := read_u64(data, rec_off + 32)
@@ -407,7 +497,9 @@ fn parse_pack(data []u8) !PackReader {
 			return error('cxstore: pack index offset out of range (corrupt pack)')
 		}
 		code := read_u16(data, int(eoff) + 6)
-		if code != pack_hash_mh_code {
+		if code == pack_hash_mh_code_legacy_zero {
+			legacy_slots++
+		} else if code != pack_hash_mh_code {
 			return error('cxstore: unsupported hash multicodec 0x${code:04x} in pack entry (sha2-256 = 0x0012 is the only implemented algorithm)')
 		}
 	}
@@ -445,12 +537,13 @@ fn parse_pack(data []u8) !PackReader {
 		}
 	}
 	return PackReader{
-		data:      data
-		count:     count
-		index_off: footer_start + 4
-		keyed:     ver == pack_version_keyed
-		bloom:     bloom
-		xor:       xor
+		data:              data
+		count:             count
+		index_off:         footer_start + 4
+		keyed:             ver == pack_version_keyed
+		bloom:             bloom
+		xor:               xor
+		legacy_hash_slots: legacy_slots
 	}
 }
 

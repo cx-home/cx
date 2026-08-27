@@ -2,9 +2,10 @@ SHELL  := /bin/bash
 # Use the patched V from third_party/v/ which carries the
 # vlang/v#27178 (shared-lib GC thread-init) + #27179 (gc.h
 # standalone-C) fixes plus the macOS hardened-runtime libgc
-# source-compile bypass. Falls back to PATH-resolved `v` when
-# the submodule isn't present.
-V      := $(if $(wildcard $(CURDIR)/../third_party/v/v),$(CURDIR)/../third_party/v/v,v)
+# source-compile bypass. Falls back to PATH-resolved `v` ONLY under an explicit
+# CX_ALLOW_PATH_V=1 — see the refusal below (#1063).
+CX_V_PIN := $(CURDIR)/../third_party/v/v
+V      := $(if $(wildcard $(CX_V_PIN)),$(CX_V_PIN),v)
 TARGET := target
 
 # v0.9.0 — cx's DEFAULT memory model is architecture E (`-gc e`): the
@@ -142,15 +143,46 @@ $(TARGET):
 # rwx pages). Falls back to the workaround (PROD_CFLAGS only, no -prod)
 # when using a system V without the patches. Detected by checking for
 # our patched-V marker file.
-PROD_FLAGS := $(if $(wildcard $(CURDIR)/../third_party/v/v),-prod,)
+PROD_FLAGS := $(if $(wildcard $(CX_V_PIN)),-prod,)
 # P4 guard (evict_cx_from_v): third_party/v/v is the patched V that BOTH supplies
 # the -gc e/vgc runtime AND is what flips -prod on above. If it is absent the
-# build silently falls back to PATH `v` (line 7) with PROD_FLAGS empty — NO -prod
-# — so binaries run ~5x slower and may link an unpatched GC. That degradation is
-# easily mistaken for a real perf regression (see the worktree-prod-bench trap).
-# Warn LOUDLY rather than fail, since the no-prod fallback is a documented mode.
-ifeq ($(wildcard $(CURDIR)/../third_party/v/v),)
-$(warning *** [cx build] patched V NOT FOUND at third_party/v/v — falling back to PATH `v` with -prod SILENTLY DROPPED (≈5x slower, GC may be unpatched). This is NOT a code regression. Fix: `git submodule update --init --recursive third_party/v && $(MAKE) -C ../third_party/v`. In a git worktree, symlink the main checkout's third_party/v. ***)
+# build falls back to PATH `v` with PROD_FLAGS empty — NO -prod — so binaries run
+# ~5x slower and may link an unpatched GC. That degradation is easily mistaken
+# for a real perf regression (see the worktree-prod-bench trap).
+#
+# #1063 — that fallback now REFUSES. It used to warn and exit 0, and
+# warned-but-green means every consumer treats the build as good: `make` said
+# success, the artifact existed, and the flag-dropping substitution was visible
+# only to whoever read the scrollback. It hid the #994 -prod break for a day, and
+# it sent another agent chasing ghosts during #1059. The pinned-fork discipline
+# is load-bearing for red/green work — a build that quietly compiled with a
+# DIFFERENT compiler than the one under test cannot red-prove or green-prove
+# anything — so a fail-open here is the wrong direction by construction.
+#
+# CX_ALLOW_PATH_V=1 keeps the deliberate case available and degrades it to
+# exactly the old warn path: the mode is documented and occasionally wanted, it
+# just may not be reached BY DEFAULT or by accident.
+#
+# The refusal is a parse-time $(error), which is why it exempts goals that cannot
+# produce a binary: `clean` (the top-level `clean` recurses in here, and a
+# V-less tree must still be cleanable) and `print-%` (the release scripts ask the
+# Makefile which state it chose; provenance questions are answerable without a
+# compiler). Every other goal either compiles or runs the compiled cx, so every
+# other goal needs the pin.
+CX_V_FREE_GOALS := clean print-%
+CX_V_NEEDED := $(strip $(filter-out $(CX_V_FREE_GOALS),$(if $(MAKECMDGOALS),$(MAKECMDGOALS),all)))
+ifeq ($(wildcard $(CX_V_PIN)),)
+  ifeq ($(CX_ALLOW_PATH_V),1)
+$(warning *** [cx build] patched V NOT FOUND at third_party/v/v — CX_ALLOW_PATH_V=1 given, so falling back to PATH `v` with -prod DROPPED (≈5x slower, GC may be unpatched). This is NOT a code regression, and it is NOT the pinned compiler: do not red/green-prove anything against this build. ***)
+  else ifneq ($(CX_V_NEEDED),)
+$(error *** [cx build] patched V NOT FOUND at third_party/v/v — REFUSING to build with PATH `v`, which would silently drop -prod (≈5x slower) and may link an unpatched GC. Populate the pin: `git submodule update --init --recursive third_party/v && $(MAKE) -C ../third_party/v`. In a git worktree, symlink the main checkout's third_party/v (or clone --shared from .git/modules/third_party/v and check out the pinned sha). To build against PATH `v` DELIBERATELY: `make CX_ALLOW_PATH_V=1 $(CX_V_NEEDED)`. Refused goal(s): $(CX_V_NEEDED). ***)
+  else
+# print-%/clean proceed on a pin-less tree, but not SILENTLY: a release
+# script asking `print-V`/`print-PROD_FLAGS` here gets the degraded answers
+# (bare `v`, empty -prod), and an unremarked degraded answer to a provenance
+# question is the #1063 shape one hop removed.
+$(warning *** [cx build] patched V NOT FOUND at third_party/v/v — proceeding for $(if $(MAKECMDGOALS),$(MAKECMDGOALS),all) only; V/PROD_FLAGS answers describe the DEGRADED PATH-v fallback, not the pinned compiler ***)
+  endif
 endif
 # Quiet the V compiler's informational notices (-n) and warnings (-w) from the
 # build output — they're benign (unused stub params, signed-shift notices) and
@@ -196,7 +228,19 @@ CX_PACKS_OFF := -d cx_no_pack_io -d cx_no_pack_env -d cx_no_pack_process \
 # Makefile, and the V compiler binary itself. Used by the up-to-date
 # guards below; a path missed here is a STALE-BINARY hazard, so prefer
 # over-inclusion.
-BUILD_INPUT_DIRS := cmd cmd_data code cx platform transport deps testenv v.mod Makefile ../stdlib ../x ../docs/llm ../VERSION $(V)
+# `cli` and `arrow` joined the list with #984: cmd/ and cmd_data/ both import
+# `cli` (it is where the #979 version headline lives), and arrow/ is the
+# libcx_arrow input — so both were build inputs the guard did not watch. An edit
+# to vcx/cli/version_stamp.v changed no watched path and changed no define, so
+# the guard skipped the relink and handed back a binary built from the old
+# headline code: the stale-binary hazard this list exists to prevent.
+# `cxstore` joined with the v0.17.0 audit (version-literal-ok): 39 first-party
+# .v files imported by platform/ (store_erase, stdlib_store, store_cxpack,
+# store_objgraph, the sqlite backend) that neither guard clause could see — an
+# edit there shipped a STALE libcx under a green guard (cx recovered only when
+# CX_COMMIT happened to flip clean→dirty). Third roster shortfall (cli/arrow
+# were #984); deriving this list from actual imports is its own issue.
+BUILD_INPUT_DIRS := cmd cmd_data cli code cx cxstore arrow platform transport deps testenv v.mod Makefile ../stdlib ../x ../docs/llm ../VERSION $(V)
 
 # Up-to-date guard (#902's race, root-fixed): every target here is .PHONY,
 # so each recursive `$(MAKE) build-vcx` RELINKED the shipped cx/libcx
@@ -209,18 +253,287 @@ BUILD_INPUT_DIRS := cmd cmd_data code cx platform transport deps testenv v.mod M
 # build date) is unchanged, and no input is newer than the artifact.
 # A real source/define/compiler change still rebuilds — checked by find
 # -newer over BUILD_INPUT_DIRS, the same mechanism real file targets use.
+#
+# The identity clause carries CX_SRC_HASH (#1064) — the CONTENT of that same
+# input set. Read the two together: the mtime clause is the cheap check that
+# fires first, and the content field is what makes the SKIP arm's claim true
+# rather than merely plausible. Alone, `find -newer` cannot see an edit that
+# landed DURING the build it is checking, because that edit is older than the
+# artifact the build wrote; the argument and the measured escape are at the
+# CX_SRC_HASH variable. Do not remove either clause.
+#
+# BOTH arms announce themselves (#995). The guard used to echo only on the SKIP
+# path; the BUILD path identified itself with nothing, because the recipes are
+# written `@$(call UPTODATE_GUARD,…)` (no command echo) and V runs under
+# $(VQUIET) (`-n -w`, silent on success). A build log therefore showed an
+# IDENTICAL empty region whether the shipped artifact was served from cache or
+# relinked — measured on #984, where `make -C vcx lib` burned 109 s CPU on a
+# full -prod relink and printed not one line between make's Entering/Leaving.
+# That is not cosmetic: #902's guard exists to make "which build is under test"
+# a decision rather than a race, and a gate log that cannot answer "did this
+# relink?" cannot be used to check that the guard behaved — nor to read relink
+# frequency, now a measured cost input (see the LIB_VERSION_DEFINES block).
+#
+# The relink arm names WHICH clause failed, and for an identity mismatch it
+# names the differing FIELDS by name — argument (4) is the `|`-separated field
+# roster parallel to the build id in (2), so the log says `CX_RELEASE dev ->
+# true` rather than leaving the reader to diff two opaque strings. If the two
+# lists ever fall out of step the awk falls back to printing the raw id delta,
+# so drift degrades the message and never the verdict. One line per artifact,
+# so gate logs stay readable.
 define UPTODATE_GUARD
-	if [ -e "$(1)" ] && [ -f "$(1).buildid" ] && [ "$$(cat '$(1).buildid')" = "$(2)" ] \
-	   && [ -z "$$(find $(BUILD_INPUT_DIRS) -newer '$(1)' -print -quit 2>/dev/null)" ]; then \
+	rl_was=''; \
+	if [ ! -e "$(1)" ]; then \
+		rl_why="artifact absent"; \
+	elif [ ! -f "$(1).buildid" ]; then \
+		rl_why="no buildid stamp beside the artifact"; \
+	elif rl_was="$$(cat '$(1).buildid')"; [ "$$rl_was" != "$(2)" ]; then \
+		rl_why="build identity changed: $$(awk -v w="$$rl_was" -v n='$(2)' -v m='$(4)' 'BEGIN{ \
+			cw=split(w,W,"|"); cn=split(n,N,"|"); cm=split(m,M,"|"); \
+			if (cw!=cn || cn!=cm) { printf "was [%s] now [%s]", w, n; exit } \
+			o=""; \
+			for (i=1;i<=cn;i++) if (W[i]!=N[i]) \
+				o=o (o==""?"":"; ") M[i] " " (W[i]==""?"(empty)":W[i]) " -> " (N[i]==""?"(empty)":N[i]); \
+			printf "%s", (o==""?"(fields equal; id string differs)":o); }')"; \
+	elif rl_new="$$(find $(BUILD_INPUT_DIRS) -newer '$(1)' -print -quit 2>/dev/null)"; [ -n "$$rl_new" ]; then \
+		rl_why="input newer than artifact: $$rl_new"; \
+	else \
+		rl_why=''; \
+	fi; \
+	if [ -z "$$rl_why" ]; then \
 		echo "$(notdir $(1)): up to date (identity + inputs unchanged; relink skipped)"; \
 	else \
+		echo "$(notdir $(1)): relinking ($$rl_why)"; \
 		$(3) && printf '%s' "$(2)" > '$(1).buildid'; \
 	fi
 endef
 
-LIB_BUILD_ID := $(V)|$(PROD_FLAGS)|$(CX_GC)|$(CX_ENGINES)|$(CX_DFLAGS)|$(PROD_CFLAGS)|lib
+# ── Build-stamped version info ───────────────────────────────────────────────
+# Injected as V compile-time string defines, shown by `cx --version` and — since
+# #984 — reported by the C-ABI `cx_version()`. CX_VERSION is the single declared
+# source of truth: the repo-root VERSION file (the release tag is derived FROM
+# and checked AGAINST it; see scripts/bump_version.sh + the
+# check-version-consistency gate). CX_COMMIT is the build commit (distinguishes
+# dev builds); CX_RELEASE says whether this build IS the release VERSION names
+# (#979, below); CX_VFORK is the third_party/v gitlink; CX_GC_NAME is the active
+# collector. Each value is a single shell token.
+#
+# This block sits ABOVE the lib/cli targets because LIB_BUILD_ID and
+# CLI_BUILD_ID are immediate (`:=`) and must see the values.
+CX_VERSION    := $(shell cat $(CURDIR)/../VERSION 2>/dev/null || echo 0.0.0-dev)
+# -dirty suffix (#666): a stamp naming a commit that does not reproduce the
+# artifact is unfalsifiable — rev-parse is silent about uncommitted changes,
+# so a binary built from an edited tree claimed the clean commit. Any tracked
+# modification (the submodule gitlink counts in the parent's porcelain) marks
+# the stamp. Downstream pins (BOM record == checkout) depend on this.
+CX_DIRTY      := $(shell test -n "$$(git -C $(CURDIR)/.. status --porcelain --untracked-files=no 2>/dev/null)" && echo -dirty)
+CX_COMMIT     := $(addsuffix $(CX_DIRTY),$(shell git -C $(CURDIR)/.. rev-parse --short HEAD 2>/dev/null || echo unknown))
+CX_VFORK_DIRTY := $(shell test -n "$$(git -C $(CURDIR)/../third_party/v status --porcelain --untracked-files=no 2>/dev/null)" && echo -dirty)
+CX_VFORK      := $(addsuffix $(CX_VFORK_DIRTY),$(shell git -C $(CURDIR)/../third_party/v rev-parse --short HEAD 2>/dev/null || echo unknown))
+# Release provenance (#979, RULED: CO-4): release-ness DERIVES from git state
+# at build time. There is no second hand-maintained "is this a release" value —
+# VERSION + git only (the derive-don't-multiply rule). The headline claims
+# `cx v<VERSION>` ONLY when HEAD sits exactly at the ANNOTATED tag matching the
+# repo-root VERSION *and* the tree is clean; every other build stamps
+# `cx v<VERSION>-dev+<commit>`. That is not a cosmetic suffix: unreleased source
+# IS a semver PRE-RELEASE of VERSION, so it orders BEFORE the release it will
+# become, and a work-in-progress binary stops claiming a release that was never
+# cut (the whole point — the VERSION file flips to the next version at the
+# START of a line's development, so every build in between wore the release's
+# name).
+#
+# `git describe --exact-match` consults ANNOTATED tags only — exactly the shape
+# scripts/tag_release.sh creates — and --match pins the probe to THIS VERSION's
+# tag, so no other tag reachable in history can vouch for this build. The
+# clean-tree half reuses CX_DIRTY (#666), which already counts the third_party/v
+# gitlink.
+#
+# Off a git checkout (a source tarball; release_linux.sh's lean container copy,
+# which carries no .git) the probe is silent and the state is `dev` — the same
+# fail-honest direction as CX_COMMIT's `unknown`. The linux lane overrides
+# CX_RELEASE on the make command line the way it already overrides CX_COMMIT.
+CX_HEAD_TAG   := $(shell git -C $(CURDIR)/.. describe --exact-match --match 'v$(CX_VERSION)' HEAD 2>/dev/null)
+CX_RELEASE    := $(if $(CX_DIRTY),dev,$(if $(CX_HEAD_TAG),release,dev))
+CX_BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+CX_GC_NAME    := $(lastword $(CX_GC))
+
+# CX_PRIMER_HASH (#1009) — the CONTENT of the `cx primer` embed, as a build
+# identity field.
+#
+# vcx/cmd/primer.v carries `$embed_file('../../docs/llm/primer.md')`, so the
+# primer text is baked into the cli at COMPILE time. The guard's third clause
+# watches ../docs/llm through BUILD_INPUT_DIRS — but that clause compares
+# MTIMES, and an mtime ordering cannot see an in-flight build:
+#
+#   t0  `make build-vcx` starts; V reads primer.md (old text) into the embed
+#   t1  `make docs` rewrites docs/llm/primer.md          (primer.md mtime = t1)
+#   t2  the t0 build finishes and writes target/cx        (artifact mtime = t2)
+#
+# At t2 the artifact is NEWER than every input, and the define identity did not
+# move, so the next guard invocation reports "up to date" and serves a binary
+# carrying the PRE-t1 primer. Nothing downstream catches it: `make docs-check`
+# proves the FILE against its templates, never the EMBED, and only
+# release-verify's `cx primer | diff - docs/llm/primer.md` row compares the two
+# — a check that runs at cut time, not on the loop where this bit twice (#698).
+#
+# A content hash closes it because it is a function of the BYTES rather than of
+# a timestamp: the t0 build stamps the hash of the text it actually embedded, so
+# the moment primer.md's bytes change the stamped hash stops matching and the
+# guard relinks — no matter which order the mtimes landed in. (The reverse
+# skew — parse at t0, rewrite before V reads the file — stamps a hash that does
+# not match what was embedded either, so it forces one extra relink. Wrong in
+# the SAFE direction: this field can cost a relink, never skip a needed one.)
+#
+# Same class as #995's silent-relink finding and #984's unwatched-input finding:
+# a build input the guard could not see. Truncated to 16 hex (64 bits) to keep
+# the `|`-joined id readable in the guard's relink line; `absent` when the file
+# is missing (a docs-less source tree), which is itself a distinct identity.
+CX_PRIMER_MD   := $(CURDIR)/../docs/llm/primer.md
+CX_PRIMER_HASH := $(shell { shasum -a 256 '$(CX_PRIMER_MD)' 2>/dev/null || sha256sum '$(CX_PRIMER_MD)' 2>/dev/null || echo absent; } | cut -c1-16)
+
+# CX_SRC_HASH (#1064) — the CONTENT of the WHOLE build input set, as a build
+# identity field. This is the clause that makes the guard's green MEAN "this
+# artifact was built from exactly these bytes" rather than "this artifact is
+# younger than these bytes".
+#
+# The guard's third clause (`find $(BUILD_INPUT_DIRS) -newer $(1)`) compares
+# source mtimes against the mtime of the FINISHED artifact — and an edit that
+# lands WHILE the build is running is, by construction, OLDER than the artifact
+# that same build goes on to write:
+#
+#   t0  `make -C vcx cli` starts; V parses cmd/ (pre-edit bytes)
+#   t1  a cmd/ source is edited                    (source mtime = t1)
+#   t2  the link finishes, writes target/cx        (artifact mtime = t2 > t1)
+#
+# At t2 no input is newer than the artifact and the define identity has not
+# moved, so every later guard invocation reports "up to date" and keeps serving
+# a binary that does not contain the t1 edit. MEASURED (#1064 red-proof, this
+# Makefile, 2026-08-27): the build logged `cx: relinking (input newer than
+# artifact: cmd)` and exited 0, and the binary it produced carried a pre-t0 edit
+# to store_serve_d_cx_platform.v while MISSING the t1 edit to
+# fabric_serve_d_cx_platform.v — two files of the SAME module, one in, one out —
+# after which `make -C vcx cli` answered "up to date (relink skipped)" forever.
+# Only `rm -f target/cx` recovered. That is worse than a build failure: a fix
+# looks landed and is not, and nothing downstream contradicts it.
+#
+# No cache is involved — not V's `-usecache` (the build lane never passes it),
+# not the C objects. The stale layer is this guard. The fix is therefore here.
+#
+# It is the same mtime-blindness the CX_PRIMER_HASH block above argues for one
+# $embed_file input, and the answer is that argument generalised to every input:
+# a hash of the BYTES cannot be fooled by an mtime ordering. The hash is taken
+# at make PARSE time — before V reads anything — and stamped as part of the
+# build id, so both orderings resolve safely:
+#
+#   quiet build     the stamped hash equals the next invocation's hash
+#                   -> "up to date". Correct, and no extra relink.
+#   edit at t1      the stamped hash describes pre-edit bytes, the next
+#                   invocation hashes post-edit bytes -> RELINK. Escape closed.
+#   edit lands
+#   after the hash
+#   but before V
+#   reads the file  the stamped hash does not describe what V read either, so
+#                   the next invocation relinks once more. Wrong in the SAFE
+#                   direction: this field can COST a relink, never skip one.
+#
+# Cost: 79 ms, stable across runs, measured over the 452-file / ~17 MB input set
+# (V sources + the three $embed_file estates + the V binary) on the reference
+# machine — against the 40-100 s relink it guards. It adds no relink FREQUENCY
+# over the mtime clause in the quiet case, because a content change moves the
+# mtime too and the mtime clause was already relinking; it adds relinks exactly
+# where mtime lied. The mtime clause stays: it is cheaper, it fires first, and
+# nothing is gained by removing a check that never skips a needed relink.
+#
+# Fail-CLOSED in both degenerate directions. An unreadable/truncated tree hashes
+# a different file set, so the field stops matching a stamp made from the real
+# tree and the guard relinks. If the pipeline yields NOTHING at all (no sha tool
+# on PATH) the build REFUSES outright ($(error) below) — the earlier
+# `unhashable-<build date>` fallback claimed to differ per invocation, but the
+# degenerate PATH that kills both sha tools kills `date` too, leaving a
+# CONSTANT that matches its previous self: the fail-open shape this closes.
+#
+# Subsumption note: CX_PRIMER_HASH is now covered by this field (../docs/llm is
+# a BUILD_INPUT_DIR). It stays because it names the primer BY NAME on the relink
+# line, which is the diagnostic #1009 was filed for; this field can only say
+# "some input's bytes moved".
+CX_SHA256       := $(shell command -v shasum >/dev/null 2>&1 && echo 'shasum -a 256' || echo sha256sum)
+CX_SRC_HASH_RAW := $(shell find $(BUILD_INPUT_DIRS) -type f -exec $(CX_SHA256) {} + 2>/dev/null | LC_ALL=C sort | $(CX_SHA256) 2>/dev/null | cut -c1-16)
+# An unhashable tree is a hard refusal, not a synthetic stamp: the audited
+# fallback (`unhashable-$(CX_BUILD_DATE)`) claimed to differ per invocation,
+# but the same degenerate PATH that kills both sha tools kills `date` too,
+# and `unhashable-` is a CONSTANT that matches its previous self — the exact
+# fail-open the field exists to close. A tree that cannot be hashed cannot
+# be vouched for.
+ifeq ($(strip $(CX_SRC_HASH_RAW)),)
+# clean / print-% introspection may proceed unhashed; any building goal
+# (including the empty default) refuses. NONBUILD_GOALS is empty exactly
+# when goals were given and all are clean/print-%.
+NONBUILD_GOALS := $(if $(MAKECMDGOALS),$(filter-out clean print-%,$(MAKECMDGOALS)),build)
+ifeq ($(NONBUILD_GOALS),)
+CX_SRC_HASH := unhashable
+else
+$(error CX_SRC_HASH: no sha tool produced a hash over BUILD_INPUT_DIRS — refusing to build with an unverifiable input set (install shasum or sha256sum, or fix PATH))
+endif
+else
+CX_SRC_HASH := $(CX_SRC_HASH_RAW)
+endif
+
+# ── The stamp SPLIT (#984) ───────────────────────────────────────────────────
+# libcx received NO version defines at all until #984, so the C-ABI
+# `cx_version()` answered the unstamped `0.0.0-dev` in every build, release
+# artifacts included. The library now gets a stamp — but a NARROWER one than the
+# binaries, and the split is deliberate:
+#
+#   LIB_VERSION_DEFINES  version + release state.  Both change RARELY:
+#     CX_VERSION on a bump (which already relinks — ../VERSION is a
+#     BUILD_INPUT_DIR), CX_RELEASE only when a tag lands on, or leaves, a clean
+#     tree. Carrying them in LIB_BUILD_ID therefore costs ~one relink per cut,
+#     and it is REQUIRED: whatever an artifact stamps must be part of its build
+#     identity, or the up-to-date guard hands back a binary whose stamp lies.
+#
+#   CX_COMMIT / CX_BUILD_DATE / CX_GC_NAME / CX_VFORK  stay OFF the library.
+#     Not because tracking them is expensive to write, but because either
+#     branch of carrying the commit is wrong. Track it in LIB_BUILD_ID and the
+#     shipped -prod dylib relinks on every commit and every clean<->dirty
+#     transition — MEASURED at 1m36s wall / 94s CPU per relink on the reference
+#     machine (#984), imposed on commits that do not touch a single build input
+#     (a docs-only or ledger-only commit), and each relink reopens the #902
+#     window where a test lane dlopens a dylib mid-write. Leave it OUT of
+#     LIB_BUILD_ID and the guard serves a library stamped with a commit it was
+#     not built from — precisely the unfalsifiable stamp #666 and #979 exist to
+#     remove. The third way is to not make the claim: the ABI has no provenance
+#     surface (spec/abi.md §2.1 is version/abi-version/features — commit, build
+#     date, gc and V fork are `cx --version` lines and nothing else), semver
+#     ignores build metadata in precedence so `X.Y.Z-dev` orders identically to
+#     `X.Y.Z-dev+<commit>`, and omitting it keeps libcx a deterministic function
+#     of source + flags + VERSION + tag state. See cx.version_stamp in
+#     vcx/cx/cabi.v, which both surfaces compose through.
+LIB_VERSION_DEFINES := -d cx_version=$(CX_VERSION) -d cx_release=$(CX_RELEASE)
+VERSION_DEFINES := $(LIB_VERSION_DEFINES) -d cx_commit=$(CX_COMMIT) -d cx_build_date=$(CX_BUILD_DATE) -d cx_gc=$(CX_GC_NAME) -d cx_vfork=$(CX_VFORK)
+
+# print-<VAR> — read one derived build variable without building anything.
+# The release scripts and the provenance lane ask the Makefile which state it
+# chose instead of re-deriving it, so there is exactly ONE implementation of the
+# rule. Call it quietly, or `-C` brackets the value with Entering/Leaving lines:
+#   make -s --no-print-directory -C vcx print-CX_RELEASE
+print-%:
+	@echo '$($*)'
+
+# CX_VERSION|CX_RELEASE join the lib identity for the reason CX_RELEASE joins
+# CLI_BUILD_ID below: they are STAMPED INTO the artifact, so a build id that
+# ignored them would let the guard hand back a library claiming the wrong
+# version — or claiming a release from before the tag existed.
+#
+# CX_SRC_HASH joins it for the reason argued at the variable (#1064): without a
+# content field the guard's green means only "the artifact is younger than these
+# sources", which an edit landing mid-build defeats permanently.
+LIB_BUILD_ID := $(V)|$(PROD_FLAGS)|$(CX_GC)|$(CX_ENGINES)|$(CX_DFLAGS)|$(PROD_CFLAGS)|$(CX_VERSION)|$(CX_RELEASE)|$(CX_SRC_HASH)|lib
+# Field roster parallel to LIB_BUILD_ID (#995) — names the differing field on
+# the guard's relink line. Keep the two in step; a length mismatch degrades the
+# message to a raw id delta, it never changes the relink decision.
+LIB_BUILD_ID_FIELDS := V|PROD_FLAGS|CX_GC|CX_ENGINES|CX_DFLAGS|PROD_CFLAGS|CX_VERSION|CX_RELEASE|CX_SRC_HASH|kind
 lib: re2-shim $(TARGET)
-	@$(call UPTODATE_GUARD,$(LIB),$(LIB_BUILD_ID),$(V) $(VQUIET) $(PROD_FLAGS) $(CX_GC) $(CX_ENGINES) $(CX_DFLAGS) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB) platform/ && $(STRIP) $(LIB))
+	@$(call UPTODATE_GUARD,$(LIB),$(LIB_BUILD_ID),$(V) $(VQUIET) $(PROD_FLAGS) $(CX_GC) $(CX_ENGINES) $(CX_DFLAGS) $(LIB_VERSION_DEFINES) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB) platform/ && $(STRIP) $(LIB),$(LIB_BUILD_ID_FIELDS))
 
 # Unoptimised build for local development (faster compile, debuggable).
 # `-cc cc` (clang): tcc on macOS cannot compile the patched builtin's C11 atomics
@@ -243,7 +556,7 @@ CX_DFLAGS ?=
 LIB_DEV := $(TARGET)/$(basename $(LIB_NAME))-dev$(suffix $(LIB_NAME))
 
 lib-dev: re2-shim $(TARGET)
-	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_DFLAGS) -shared -o $(LIB_DEV) platform/
+	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_DFLAGS) $(LIB_VERSION_DEFINES) -shared -o $(LIB_DEV) platform/
 
 # ── Ring-0 artifacts (I2, partition spec §5): libcx-core + data-profile cx ──
 # libcx-core builds ONLY vcx/cx/ — the Ring-0 strict sink — so the shared
@@ -263,11 +576,11 @@ LIB_CORE := $(TARGET)/$(LIB_CORE_NAME)
 
 .PHONY: lib-core lib-core-dev cli-data cli-data-dev build-data build-data-dev
 lib-core: re2-shim $(TARGET)
-	$(V) $(VQUIET) $(PROD_FLAGS) $(CX_GC) $(CX_DFLAGS) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB_CORE) cx/
+	$(V) $(VQUIET) $(PROD_FLAGS) $(CX_GC) $(CX_DFLAGS) $(LIB_VERSION_DEFINES) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB_CORE) cx/
 	$(STRIP) $(LIB_CORE)
 
 lib-core-dev: re2-shim $(TARGET)
-	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_DFLAGS) -shared -o $(LIB_CORE) cx/
+	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_DFLAGS) $(LIB_VERSION_DEFINES) -shared -o $(LIB_CORE) cx/
 
 # data-profile cx (partition spec §4): one binary NAME (cx), profile-decided
 # verb set — parse/emit/convert/canonical/hash/eq/diff/validate (+ version),
@@ -307,12 +620,17 @@ check-prod:
 # advertised via libcx_arrow's own cx_arrow_features symbol — libcx
 # itself does not set bit 23. Module-level state requires
 # -enable-globals.
+# $(LIB_VERSION_DEFINES) here too (#984): arrow/ imports cx, so cabi.v's
+# `cx_version` export rides in libcx_arrow as well. `cx_arrow_version` is the
+# library's OWN independent version and is unaffected — but a second, unstamped
+# `cx_version` in a dlopen'd sibling is exactly the kind of symbol a consumer
+# resolves by accident, and it must not answer differently from libcx's.
 lib-arrow: $(TARGET)
-	$(V) $(VQUIET) -enable-globals $(CX_GC) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB_ARROW) arrow/
+	$(V) $(VQUIET) -enable-globals $(CX_GC) $(LIB_VERSION_DEFINES) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB_ARROW) arrow/
 	$(STRIP) $(LIB_ARROW)
 
 lib-arrow-dev: $(TARGET)
-	$(V) $(VQUIET) -cc cc -enable-globals $(CX_GC) -shared -o $(LIB_ARROW) arrow/
+	$(V) $(VQUIET) -cc cc -enable-globals $(CX_GC) $(LIB_VERSION_DEFINES) -shared -o $(LIB_ARROW) arrow/
 
 # ── Optional Apache Arrow FILE I/O: Parquet + Arrow IPC ("Phase C").
 # Gated `-d cx_arrow_files`; links libarrow/libparquet (which YOU supply — cx
@@ -346,11 +664,11 @@ $(ARROW_SHIM_LIB): $(ARROW_SHIM_SRC) arrow/shim/cx_arrow_shim.h | $(TARGET)
 	ar rcs $(ARROW_SHIM_LIB) $(TARGET)/cx_arrow_shim.o
 
 lib-arrow-files: arrow-shim $(TARGET)
-	$(ARROW_PC) $(V) $(VQUIET) -enable-globals $(CX_GC) -d cx_arrow_files -cflags "$(PROD_CFLAGS)" -shared -o $(LIB_ARROW) arrow/
+	$(ARROW_PC) $(V) $(VQUIET) -enable-globals $(CX_GC) -d cx_arrow_files $(LIB_VERSION_DEFINES) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB_ARROW) arrow/
 	$(STRIP) $(LIB_ARROW)
 
 lib-arrow-files-dev: arrow-shim $(TARGET)
-	$(ARROW_PC) $(V) $(VQUIET) -cc cc -enable-globals $(CX_GC) -d cx_arrow_files -shared -o $(LIB_ARROW) arrow/
+	$(ARROW_PC) $(V) $(VQUIET) -cc cc -enable-globals $(CX_GC) -d cx_arrow_files $(LIB_VERSION_DEFINES) -shared -o $(LIB_ARROW) arrow/
 
 # CLI binary — size-optimized (-Os via PROD_CFLAGS), NOT V `-prod`. `-prod`
 # turns warnings into errors, and the cmd/ semantic-token legend carries
@@ -363,32 +681,46 @@ lib-arrow-files-dev: arrow-shim $(TARGET)
 # globals (cx_region) + the vgc per-thread cache, and tcc on macOS cannot compile
 # `__thread` TLS ("';' expected (got 'bool')"). The upstream-V forward-port dropped
 # the old fork's TLS-patched tcc, so clang is required for any cx build.
-# Build-stamped version info, injected as V compile-time string defines and shown
-# by `cx --version`. CX_VERSION is the single declared source of truth — the
-# repo-root VERSION file (the release tag is derived FROM and checked AGAINST it;
-# see scripts/bump_version.sh + the check-version-consistency gate). CX_COMMIT is
-# the build commit (distinguishes dev builds); CX_VFORK is the third_party/v
-# gitlink; CX_GC_NAME is the active collector. Each value is a single shell token.
-CX_VERSION    := $(shell cat $(CURDIR)/../VERSION 2>/dev/null || echo 0.0.0-dev)
-# -dirty suffix (#666): a stamp naming a commit that does not reproduce the
-# artifact is unfalsifiable — rev-parse is silent about uncommitted changes,
-# so a binary built from an edited tree claimed the clean commit. Any tracked
-# modification (the submodule gitlink counts in the parent's porcelain) marks
-# the stamp. Downstream pins (BOM record == checkout) depend on this.
-CX_DIRTY      := $(shell test -n "$$(git -C $(CURDIR)/.. status --porcelain --untracked-files=no 2>/dev/null)" && echo -dirty)
-CX_COMMIT     := $(addsuffix $(CX_DIRTY),$(shell git -C $(CURDIR)/.. rev-parse --short HEAD 2>/dev/null || echo unknown))
-CX_VFORK_DIRTY := $(shell test -n "$$(git -C $(CURDIR)/../third_party/v status --porcelain --untracked-files=no 2>/dev/null)" && echo -dirty)
-CX_VFORK      := $(addsuffix $(CX_VFORK_DIRTY),$(shell git -C $(CURDIR)/../third_party/v rev-parse --short HEAD 2>/dev/null || echo unknown))
-CX_BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
-CX_GC_NAME    := $(lastword $(CX_GC))
-VERSION_DEFINES := -d cx_version=$(CX_VERSION) -d cx_commit=$(CX_COMMIT) -d cx_build_date=$(CX_BUILD_DATE) -d cx_gc=$(CX_GC_NAME) -d cx_vfork=$(CX_VFORK)
-
-CLI_BUILD_ID := $(V)|$(CX_GC)|$(CX_PROFILE_PLATFORM)|$(CX_ENGINES)|$(CX_DFLAGS)|$(PROD_CFLAGS)|$(CX_VERSION)|$(CX_COMMIT)|$(CX_GC_NAME)|$(CX_VFORK)|cli
+# (The build-stamped version block that feeds $(VERSION_DEFINES) moved ABOVE the
+# lib targets — libcx carries the stamp too since #984, and LIB_BUILD_ID is an
+# immediate `:=` that has to see the values.)
+#
+# CX_RELEASE joins the identity: the SAME commit builds to a different artifact
+# once its tag exists (tag_release.sh builds after tagging), so a build id that
+# ignored it would let the relink guard hand back the pre-tag `-dev+` binary.
+#
+# CX_PRIMER_HASH joins it for the mtime-blindness reason argued at the variable
+# (#1009): the primer text is an $embed_file input, so its BYTES are part of
+# what this artifact is, and only a content field can catch a rewrite that
+# raced an in-flight build.
+#
+# CX_SRC_HASH joins it for the same class of reason one step further out
+# (#1064): CX_PRIMER_HASH closed mtime-blindness for ONE $embed_file input,
+# while every .v source under BUILD_INPUT_DIRS carried the identical exposure —
+# an edit that lands mid-build is older than the artifact that build writes, so
+# the mtime clause can never see it again.
+CLI_BUILD_ID := $(V)|$(CX_GC)|$(CX_PROFILE_PLATFORM)|$(CX_ENGINES)|$(CX_DFLAGS)|$(PROD_CFLAGS)|$(CX_VERSION)|$(CX_COMMIT)|$(CX_RELEASE)|$(CX_GC_NAME)|$(CX_VFORK)|$(CX_PRIMER_HASH)|$(CX_SRC_HASH)|cli
+# Field roster parallel to CLI_BUILD_ID (#995) — see LIB_BUILD_ID_FIELDS.
+CLI_BUILD_ID_FIELDS := V|CX_GC|CX_PROFILE_PLATFORM|CX_ENGINES|CX_DFLAGS|PROD_CFLAGS|CX_VERSION|CX_COMMIT|CX_RELEASE|CX_GC_NAME|CX_VFORK|CX_PRIMER_HASH|CX_SRC_HASH|kind
 cli: re2-shim $(TARGET)
-	@$(call UPTODATE_GUARD,$(CLI),$(CLI_BUILD_ID),$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_PROFILE_PLATFORM) $(CX_ENGINES) $(CX_DFLAGS) $(VERSION_DEFINES) -cflags "$(PROD_CFLAGS)" -o $(CLI) cmd/ && $(STRIP) $(CLI))
+	@$(call UPTODATE_GUARD,$(CLI),$(CLI_BUILD_ID),$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_PROFILE_PLATFORM) $(CX_ENGINES) $(CX_DFLAGS) $(VERSION_DEFINES) -cflags "$(PROD_CFLAGS)" -o $(CLI) cmd/ && $(STRIP) $(CLI),$(CLI_BUILD_ID_FIELDS))
 
 # CLI binary — unoptimised dev build (faster compile, debuggable, unstripped)
+#
+# It writes $(CLI) — the SAME path the guarded `cli` recipe writes — but builds a
+# DIFFERENT artifact (no -Os/-DNDEBUG, unstripped). So it must INVALIDATE the
+# stamp (#1056): left in place, $(CLI).buildid still describes the `cli` build,
+# every clause of the guard passes, and the guard vouches for an artifact it did
+# not build — a dev binary served to a lane that asked for the shipped shape.
+# Deleting rather than stamping is the honest move: the id shape describes the
+# `cli` recipe's flags, and there is no true value of it for this artifact. The
+# rm runs FIRST, so an interrupted or failed dev build cannot leave a stamp
+# standing over a half-written binary either.
+#
+# Cost: the first guarded `cli` after any dev build relinks once. That is the
+# correct price — those two recipes genuinely produce different binaries.
 cli-dev: re2-shim $(TARGET)
+	rm -f $(CLI).buildid
 	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_PROFILE_PLATFORM) $(CX_ENGINES) $(VERSION_DEFINES) $(CX_DFLAGS) -o $(CLI) cmd/
 
 # ── §4 profile binaries + embed library (I4, #651/#516) ──────────────────────
@@ -427,12 +759,12 @@ cli-embed-dev: re2-shim $(TARGET)
 
 lib-embed: re2-shim $(TARGET)
 	mkdir -p $(TARGET)/profiles/embed
-	$(V) $(VQUIET) $(PROD_FLAGS) $(CX_GC) $(CX_PACKS_OFF) $(CX_DFLAGS) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB_EMBED) code/
+	$(V) $(VQUIET) $(PROD_FLAGS) $(CX_GC) $(CX_PACKS_OFF) $(CX_DFLAGS) $(LIB_VERSION_DEFINES) -cflags "$(PROD_CFLAGS)" -shared -o $(LIB_EMBED) code/
 	$(STRIP) $(LIB_EMBED)
 
 lib-embed-dev: re2-shim $(TARGET)
 	mkdir -p $(TARGET)/profiles/embed
-	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_PACKS_OFF) $(CX_DFLAGS) -shared -o $(LIB_EMBED) code/
+	$(V) $(VQUIET) -cc cc $(CX_GC) $(CX_PACKS_OFF) $(CX_DFLAGS) $(LIB_VERSION_DEFINES) -shared -o $(LIB_EMBED) code/
 
 # The full §4 matrix: data (I2) + embed + cli profiles; the platform profile
 # is the default `build` (target/cx + target/libcx.*).

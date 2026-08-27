@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,158 +143,135 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">html</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-html"><h1>html</h1><p class="lede">HTML as a first-class document format: parse, sanitize, serialize, and extract text. Lenient WHATWG HTML5 parsing turns real-world tag soup into an ordinary CXDM element tree, queryable with CXPath and transformable with <code>[?modify]</code> — there are no HTML-specific selectors. The sanitizer strips dangerous markup from attacker-controlled HTML via a conservative built-in policy or a customizable allowlist, the primary use being XSS-safe rendering of inbound email.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-html-parse" class="fn">
-    <h3>html:parse</h3>
-    <p class="fn-sig"><code>[$html:parse]  -> element</code>  —  Leniently parse an HTML document into a CXDM element tree, recovering from malformed markup.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/html']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-html-parse" class="fn">
+  <h3>html:parse</h3>
+  <p class="fn-sig"><code>[$html:parse]  -> element</code>  —  Leniently parse an HTML document into a CXDM element tree, recovering from malformed markup.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/html']
 [?let [= $doc [$html:parse "<a href=\"https://e.com\">x</a>"]] $doc/a@href]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'https://e.com'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-html-parse-fragment" class="fn">
-    <h3>html:parse-fragment</h3>
-    <p class="fn-sig"><code>[$html:parse-fragment]  -> [sequence element]</code>  —  Parse an HTML fragment into its top-level nodes, with no implied document wrapper.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/html']
+    </pre>
+    <pre class="sample-output">
+      <code>'https://e.com'</code>
+    </pre>
+  </div>
+</section><section id="fn-html-parse-fragment" class="fn">
+  <h3>html:parse-fragment</h3>
+  <p class="fn-sig"><code>[$html:parse-fragment]  -> [sequence element]</code>  —  Parse an HTML fragment into its top-level nodes, with no implied document wrapper.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/html']
 [$count [$html:parse-fragment "<li>a</li><li>b</li>"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-html-sanitize" class="fn">
-    <h3>html:sanitize</h3>
-    <p class="fn-sig"><code>[$html:sanitize]  -> string</code>  —  Strip dangerous markup from HTML using the built-in safe-default policy, returning clean HTML.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/html']
+    </pre>
+    <pre class="sample-output">
+      <code>2</code>
+    </pre>
+  </div>
+</section><section id="fn-html-sanitize" class="fn">
+  <h3>html:sanitize</h3>
+  <p class="fn-sig"><code>[$html:sanitize]  -> string</code>  —  Strip dangerous markup from HTML using the built-in safe-default policy, returning clean HTML.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/html']
 [$html:sanitize "<script>alert(1)</script><p>hi</p>"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'<p>hi</p>'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-html-sanitize-with-policy" class="fn">
-    <h3>html:sanitize-with-policy</h3>
-    <p class="fn-sig"><code>[$html:sanitize-with-policy]  -> string</code>  —  Sanitize HTML against a custom <code>[html-policy …]</code> allowlist layered over the safe default.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/html']
+    </pre>
+    <pre class="sample-output">
+      <code>'<p>hi</p>'</code>
+    </pre>
+  </div>
+</section><section id="fn-html-sanitize-with-policy" class="fn">
+  <h3>html:sanitize-with-policy</h3>
+  <p class="fn-sig"><code>[$html:sanitize-with-policy]  -> string</code>  —  Sanitize HTML against a custom <code>[html-policy …]</code> allowlist layered over the safe default.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/html']
 [$html:sanitize-with-policy "<script>x</script><p>hi</p>" [html-policy]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'<p>hi</p>'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-html-sanitize-tree" class="fn">
-    <h3>html:sanitize-tree</h3>
-    <p class="fn-sig"><code>[$html:sanitize-tree]  -> element</code>  —  Sanitize an already-parsed element tree with the safe-default policy, returning a tree.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/html']
+    </pre>
+    <pre class="sample-output">
+      <code>'<p>hi</p>'</code>
+    </pre>
+  </div>
+</section><section id="fn-html-sanitize-tree" class="fn">
+  <h3>html:sanitize-tree</h3>
+  <p class="fn-sig"><code>[$html:sanitize-tree]  -> element</code>  —  Sanitize an already-parsed element tree with the safe-default policy, returning a tree.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/html']
 [$html:serialize [$html:sanitize-tree [$html:parse "<script>x</script><p>hi</p>"]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'<p>hi</p>'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-html-sanitize-tree-with-policy" class="fn">
-    <h3>html:sanitize-tree-with-policy</h3>
-    <p class="fn-sig"><code>[$html:sanitize-tree-with-policy]  -> element</code>  —  Sanitize an already-parsed element tree against a custom <code>[html-policy …]</code>.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/html']
+    </pre>
+    <pre class="sample-output">
+      <code>'<p>hi</p>'</code>
+    </pre>
+  </div>
+</section><section id="fn-html-sanitize-tree-with-policy" class="fn">
+  <h3>html:sanitize-tree-with-policy</h3>
+  <p class="fn-sig"><code>[$html:sanitize-tree-with-policy]  -> element</code>  —  Sanitize an already-parsed element tree against a custom <code>[html-policy …]</code>.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/html']
 [$html:serialize [$html:sanitize-tree-with-policy [$html:parse "<p><img src=\"x\">hi</p>"] [html-policy [deny-tags img]]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'<p>hi</p>'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-html-serialize" class="fn">
-    <h3>html:serialize</h3>
-    <p class="fn-sig"><code>[$html:serialize]  -> string</code>  —  Serialize a CXDM element tree back to HTML5.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/html']
+    </pre>
+    <pre class="sample-output">
+      <code>'<p>hi</p>'</code>
+    </pre>
+  </div>
+</section><section id="fn-html-serialize" class="fn">
+  <h3>html:serialize</h3>
+  <p class="fn-sig"><code>[$html:serialize]  -> string</code>  —  Serialize a CXDM element tree back to HTML5.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/html']
 [$html:serialize [$html:sanitize-tree [$html:parse "<script>x</script><p>hi</p>"]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'<p>hi</p>'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-html-serialize-xhtml" class="fn">
-    <h3>html:serialize-xhtml</h3>
-    <p class="fn-sig"><code>[$html:serialize-xhtml]  -> string</code>  —  Serialize a CXDM element tree to XML-well-formed XHTML (void elements self-close).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/html']
+    </pre>
+    <pre class="sample-output">
+      <code>'<p>hi</p>'</code>
+    </pre>
+  </div>
+</section><section id="fn-html-serialize-xhtml" class="fn">
+  <h3>html:serialize-xhtml</h3>
+  <p class="fn-sig"><code>[$html:serialize-xhtml]  -> string</code>  —  Serialize a CXDM element tree to XML-well-formed XHTML (void elements self-close).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/html']
 [$html:extract-text [$html:parse [$html:serialize-xhtml [$html:parse "<p>hi</p>"]]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'hi'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-html-extract-text" class="fn">
-    <h3>html:extract-text</h3>
-    <p class="fn-sig"><code>[$html:extract-text]  -> string</code>  —  Strip all tags and decode entities to plain text, skipping script and style content.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/html']
+    </pre>
+    <pre class="sample-output">
+      <code>'hi'</code>
+    </pre>
+  </div>
+</section><section id="fn-html-extract-text" class="fn">
+  <h3>html:extract-text</h3>
+  <p class="fn-sig"><code>[$html:extract-text]  -> string</code>  —  Strip all tags and decode entities to plain text, skipping script and style content.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/html']
 [$html:extract-text [$html:parse "<p>a<p>b<li>c"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'a b c'</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>'a b c'</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>html</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,22 +143,20 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Schema and its evolution</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="schema-evolution">
   <h1>Schema and its evolution</h1>
-  
-    <section id="se-frame">
-      <h2>Schemas change; addresses do not</h2>
-      
-        <p>A schema is a CX document (authored in the same syntax it
+  <section id="se-frame">
+    <h2>Schemas change; addresses do not</h2>
+    <p>A schema is a CX document (authored in the same syntax it
          validates — see the schema material in <a class="xref" href="data-language.html">data</a>), so a schema
          has a content address like any other value. This section is
          about what happens when the schema <i>changes</i>: how CX decides
          whether the change is compatible, how two revisions are linked,
          and why evolution never rewrites anything.</p>
-        <p>The headline rule, and the answer to every migration-anxiety
+    <p>The headline rule, and the answer to every migration-anxiety
          question: <b>identity is schema-independent, and nothing is ever
          overwritten.</b> A value's address is computed from its canonical
          bytes — the schema in force does not participate — so evolving
@@ -167,12 +165,10 @@
          readings of old events, never an in-place rewrite. (What that
          looks like operationally — upcasting journals, migrating stored
          documents — is Ring 2's half: <a class="xref" href="event-evolution.html">event-evolution</a>.)</p>
-      
-    </section>
-    <section id="se-compat">
-      <h2>Compatibility you can compute</h2>
-      
-        <p>Whether schema v2 accepts everything schema v1 accepted is not
+  </section>
+  <section id="se-compat">
+    <h2>Compatibility you can compute</h2>
+    <p>Whether schema v2 accepts everything schema v1 accepted is not
          a matter of judgment — it is a <b>decidable, pure predicate</b>
          over the two declaration forms, and for every document valid
          under v1, validation under v2 yields <i>valid</i> or a <i>named
@@ -186,53 +182,47 @@
          (<code>--rename TYPE/OLD=NEW</code>), never guessed — a removed field
          plus an added same-shaped field is indistinguishable from a
          rename, and a guessed rename would silently move data.</p>
-        <p>The changes that are <b>safe within a schema line</b>:</p>
-        <ul>
-          
-            <li><b>Add a field with a default</b> — old documents validate;
+    <p>The changes that are <b>safe within a schema line</b>:</p>
+    <ul>
+      <li><b>Add a field with a default</b> — old documents validate;
               the default materializes at validation time.</li>
-            <li><b>Add an optional attribute</b> — old writers do not
+      <li><b>Add an optional attribute</b> — old writers do not
               produce it; old readers do not require it.</li>
-            <li><b>Add a new element type</b> — existing documents never
+      <li><b>Add a new element type</b> — existing documents never
               reference it.</li>
-            <li><b>Widen a constraint</b> — loosening a length bound or
+      <li><b>Widen a constraint</b> — loosening a length bound or
               widening an enum keeps every previously-valid document
               valid.</li>
-          
-        </ul>
-        <p>The changes that are <b>breaking</b>:</p>
-        <ul>
-          
-            <li><b>Renaming or removing a field</b> — breaks every reader
+    </ul>
+    <p>The changes that are <b>breaking</b>:</p>
+    <ul>
+      <li><b>Renaming or removing a field</b> — breaks every reader
               or consumer that names it.</li>
-            <li><b>Tightening a constraint</b> — narrowing an enum,
+      <li><b>Tightening a constraint</b> — narrowing an enum,
               lowering a bound, or making an optional field required
               turns existing-valid documents into errors.</li>
-            <li><b>Changing a type</b> — a string field becoming an int is
+      <li><b>Changing a type</b> — a string field becoming an int is
               a different value model, a hard break.</li>
-            <li><b>Adding a required field — even in open mode.</b> Open
+      <li><b>Adding a required field — even in open mode.</b> Open
               mode waives <i>undeclared</i> content, not declared
               requirements; a new <code>[req]</code> is a new obligation on every
               existing document, and the predicate says so.</li>
-          
-        </ul>
-        <p class="note">One subtlety for tool authors: a compatibility verdict is
+    </ul>
+    <p class="note">One subtlety for tool authors: a compatibility verdict is
          computed on the form a consumer actually validates against.
          A schema exported to JSON Schema is a lossy projection, so
          \"additive in CX\" does not automatically mean \"additive in
          the export\" — the verdict for exported consumers is computed
          on the exported form.</p>
-      
-    </section>
-    <section id="se-lineage">
-      <h2>Schema identity and lineage</h2>
-      
-        <p>A type's identity is <code>(element name, schema content-hash)</code> —
+  </section>
+  <section id="se-lineage">
+    <h2>Schema identity and lineage</h2>
+    <p>A type's identity is <code>(element name, schema content-hash)</code> —
          see <a class="xref" href="value-model.html">value-model</a>. It follows that <code>Order</code> under v1 and
          <code>Order</code> under v2 are <b>different type identities that happen to
          share a name</b>. Nothing intrinsic links them, because nothing
          intrinsic could without perturbing identity.</p>
-        <p>The link is an explicit, detached <b>lineage claim</b>: a Lane-2
+    <p>The link is an explicit, detached <b>lineage claim</b>: a Lane-2
          value naming the <code>from</code> schema address, the <code>to</code> schema
          address, the relation (<code>:additive</code>, <code>:narrowing</code>, <code>:split</code>,
          <code>:merge</code>), and — when one exists — the upcaster that carries
@@ -245,77 +235,69 @@
          ambiguous graph is rejected fail-closed at load, because two
          different upgrade paths for the same pair is two different
          meanings for the same data.</p>
-        <p>One rule keeps the whole scheme honest: a schema document that
+    <p>One rule keeps the whole scheme honest: a schema document that
          <b>anchors</b> a type identity (feeds a type-binding claim, a pair
          exchange, or any address-bound adoption) declares exactly one
          type. Multi-type schema documents remain legal for validation —
          but they cannot anchor identity, so editing one type in a
          shared file can never silently move another type's identity.</p>
-      
-    </section>
-    <section id="se-when">
-      <h2>What to do when, in one table</h2>
-      
-        <table>
-          <thead>
-            
-              <tr>
-                <th>You want to…</th>
-                <th>Do this</th>
-                <th>Where it is covered</th>
-              </tr>
-            
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>add a field, widen an enum</td>
-                <td><code>cx schema compat</code> confirms it is additive and derives the lineage claim; publish deploys it silently</td>
-                <td>this section</td>
-              </tr>
-              <tr>
-                <td>ship a breaking change</td>
-                <td>publish v2 as a new type identity + an authored lineage claim with an upcaster — the publish gate stops you until the claim exists</td>
-                <td>this section + <a class="xref" href="event-evolution.html">event-evolution</a></td>
-              </tr>
-              <tr>
-                <td>reread old journal events under v2</td>
-                <td>upcast at read time — journals are never rewritten</td>
-                <td><a class="xref" href="event-evolution.html">event-evolution</a></td>
-              </tr>
-              <tr>
-                <td>migrate stored documents</td>
-                <td>batch-migrate: new docs + ref advances; old docs stay addressable</td>
-                <td><a class="xref" href="event-evolution.html">event-evolution</a></td>
-              </tr>
-              <tr>
-                <td>assert a type at a trust boundary</td>
-                <td>exchange the (name, hash) pair; validate fail-closed</td>
-                <td><a class="xref" href="value-model.html">value-model</a></td>
-              </tr>
-            
-          </tbody>
-        </table>
-        <p>The division of labor between the halves: Ring 0 owns the
+  </section>
+  <section id="se-when">
+    <h2>What to do when, in one table</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>You want to…</th>
+          <th>Do this</th>
+          <th>Where it is covered</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>add a field, widen an enum</td>
+          <td><code>cx schema compat</code> confirms it is additive and derives the lineage claim; publish deploys it silently</td>
+          <td>this section</td>
+        </tr>
+        <tr>
+          <td>ship a breaking change</td>
+          <td>publish v2 as a new type identity + an authored lineage claim with an upcaster — the publish gate stops you until the claim exists</td>
+          <td>this section + <a class="xref" href="event-evolution.html">event-evolution</a></td>
+        </tr>
+        <tr>
+          <td>reread old journal events under v2</td>
+          <td>upcast at read time — journals are never rewritten</td>
+          <td><a class="xref" href="event-evolution.html">event-evolution</a></td>
+        </tr>
+        <tr>
+          <td>migrate stored documents</td>
+          <td>batch-migrate: new docs + ref advances; old docs stay addressable</td>
+          <td><a class="xref" href="event-evolution.html">event-evolution</a></td>
+        </tr>
+        <tr>
+          <td>assert a type at a trust boundary</td>
+          <td>exchange the (name, hash) pair; validate fail-closed</td>
+          <td><a class="xref" href="value-model.html">value-model</a></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>The division of labor between the halves: Ring 0 owns the
          <i>vocabulary</i> — what compatible means, what a lineage claim is,
          why addresses never move. Ring 2 owns the <i>machinery</i> — folds
          that upcast, snapshots that remember which fold produced them,
          and the honest failure when an entry no upcaster covers appears
          mid-replay.</p>
-      
-    </section>
-  
+  </section>
 </section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>Schema and its evolution</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

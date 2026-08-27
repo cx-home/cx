@@ -71,7 +71,7 @@
     [?let [= $double [?fn ($x) [* $x 2]]]
       [example
         [input (1, 2, 3)]
-        [output [?map (1, 2, 3) [using $double]]]]]]
+        [output [?splice [?map (1, 2, 3) [using $double]]]]]]]
 
   [# ─── §2. Module-scope functions via [?def] (§12.2) ─── #]
 
@@ -105,10 +105,12 @@
   [section title='iteration (pattern-generator — §7.5, document-wide search)'
     [# Document-wide search needs an input document; the [?match]
        boundary (§9.3) turns the no-document err into a hint. #]
-    [?match [?for [user $u]
+    [# The match RESULT is a sequence value, so it splices into the
+       section (R-A1 — a bare sequence as content refuses loudly). #]
+    [?splice [?match [?for [user $u]
               [yield [profile name=$u/@name email=$u/@email]]]
       [case [err $e] [needs-input-doc run-with='--data=examples/code-tour.input.cx']]
-      [case $v $v]]]
+      [case $v $v]]]]
 
   [section title='iteration with [where] + [= …] + [order-by]'
     [?for [in $u //user]
@@ -192,17 +194,17 @@
 
   [section title='cxpath — every axis worked'
     [examples
-      [self      //user[1]/self::user]
-      [child     //section/child::p]
-      [descendant //db/descendant::user]
-      [parent    //user[1]/parent::*]
-      [ancestor  //member[1]/ancestor::team]
-      [ancestor-or-self //user[1]/ancestor-or-self::*]
-      [following-sibling //user[1]/following-sibling::user]
-      [preceding-sibling //user[2]/preceding-sibling::user]
-      [following //user[1]/following::team]
-      [preceding //team/preceding::user]
-      [attribute //user[1]/attribute::*]]]
+      [self      [?splice //user[1]/self::user]]
+      [child     [?splice //section/child::p]]
+      [descendant [?splice //db/descendant::user]]
+      [parent    [?splice //user[1]/parent::*]]
+      [ancestor  [?splice //member[1]/ancestor::team]]
+      [ancestor-or-self [?splice //user[1]/ancestor-or-self::*]]
+      [following-sibling [?splice //user[1]/following-sibling::user]]
+      [preceding-sibling [?splice //user[2]/preceding-sibling::user]]
+      [following [?splice //user[1]/following::team]]
+      [preceding [?splice //team/preceding::user]]
+      [attribute [?splice //user[1]/attribute::*]]]]
 
   [# ─── §11. [expr] general predicate + $_ context (§5.5.2) ─── #]
 
@@ -211,22 +213,22 @@
        form brackets (one pair, never [[…]]). $_ is the candidate
        node; the operator-free notation atoms [N] / [@name] /
        [@!name] / [name] are the only terse forms (§5.5.2). #]
-    //user[= $_@active true]]
+    [?splice //user[= $_@active true]]]
 
   [section title='[expr] — fused connective over the $_ context'
     [# Nested subexpressions inside a fused body are ordinary
        fully-bracketed forms. #]
-    //user[and [$exists $_@active] [$exists $_@verified]]]
+    [?splice //user[and [$exists $_@active] [$exists $_@verified]]]]
 
   [section title='[expr] — nested predicate, $_ shadows innermost'
     [# Outer $_ is each team; inner $_ rebinds to each member. #]
-    //team[>= [$count $_/member[= $_/role "lead"]] 1]]
+    [?splice //team[>= [$count $_/member[= $_/role "lead"]] 1]]]
 
   [section title='[expr] — $_position / $_last (1-based)'
     [examples
-      [first-p   //section/p[1]]
-      [last-p    //section/p[= $_position $_last]]
-      [rows-2-to-10 //row[and [>= $_position 2] [<= $_position 10]]]]]
+      [first-p   [?splice //section/p[1]]]
+      [last-p    [?splice //section/p[= $_position $_last]]]
+      [rows-2-to-10 [?splice //row[and [>= $_position 2] [<= $_position 10]]]]]]
 
   [section title='[expr] — outer-scope reference across steps'
     [# $t carries the team into the member test after $_ has moved on.
@@ -281,12 +283,12 @@
   [# ─── §15. Services (§10.3) ─── #]
 
   [section title='http service + client round-trip'
-    [?let [= $svc [?http-service on=http port=18099 name="ping"
+    [?splice [?let [= $svc [?http-service on=http port=18099 name="ping"
                     [resource [get "/ping"]
                       [response status=200 [body "pong"]]]]]
           [= $client [?http-client target="cx-test://ping"]]
       [= $reply [$get $client "/ping"]]
-      ([?stop $svc], $reply)]]
+      ([?stop $svc], $reply)]]]
 
   [# ─── §16. Concurrency (§10.4) ─── #]
 
@@ -313,6 +315,6 @@
     [?let [= $f1 [?async [fetched src='a']]]
       [= $f2 [?async [fetched src='b']]]
       [= $f3 [?async [fetched src='c']]]
-      [gathered [?await-all ($f1, $f2, $f3)]]]]
+      [gathered [?splice [?await-all ($f1, $f2, $f3)]]]]]
 
 ]

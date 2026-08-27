@@ -1,7 +1,7 @@
-# Reference: the CX code language — v0.16.0
+# Reference: the CX code language — v0.17.0
 
 > **GENERATED.** Source: `docs-src/llm/reference-code-language.md.tmpl` + the
-> conformance corpus. Every output was re-recorded from the `cx` v0.16.0
+> conformance corpus. Every output was re-recorded from the `cx` v0.17.0
 > binary. Read `primer.md` first.
 
 Ring 1. A program is a document whose elements include directives. Directives
@@ -64,7 +64,7 @@ error: cx-err:CXER0001: [?if] expects [then …] / [else …] clause children af
 
 ```console
 $ cx prog.cx
-[out [ok ()]]
+[out [ok]]
 ```
 
 Truthiness is defined per type, not by coercion to boolean: zero and empty
@@ -423,6 +423,188 @@ separate template dialect.
 ```console
 $ cx prog.cx
 [teams [team name=alpha [member id=1 flagged=true]] [team name=beta [member id=2]]]
+```
+
+## Construction — what actually becomes a child
+
+This is the rule most likely to break a program written from priors, because
+every templating language you have seen splices a list into a slot silently.
+CX does not. **A non-empty sequence value never becomes element content.**
+Writing `[violations $vs]` where `$vs` is a sequence is refused loudly, and
+the diagnostic names the idiom you wanted:
+
+`input.cx`
+```cx
+[ignored]
+```
+
+`prog.cx`
+```cx
+[?let [= $vs ([violation kind=a], [violation kind=b])] [violations $vs]]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+error: cx-err:CXER0100: a sequence value (2 members) cannot be element content — adopt its members with [?splice EXPR] (in [violations …]; first member [violation …]; code.md §6.4.1, #847-1a)
+```
+
+`[?splice]` is that idiom. It grafts the members in as siblings, and the
+child axis then sees them:
+
+`input.cx`
+```cx
+[ignored]
+```
+
+`prog.cx`
+```cx
+[?let [= $vs ([violation kind=a], [violation kind=b])]
+ [?let [= $bag [violations [?splice $vs]]]
+  [$count $bag/violation]]]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+2
+```
+
+Auto-splicing was considered and rejected: it silently rewrites what the
+author wrote, and it makes `/*` depend on where a value came from. One loud,
+early refusal is the answer instead.
+
+### The four rules that follow from it
+
+**1. Directives contribute; values are adopted or refused.** `[?splice]` and
+`[?for]` in a multi-sibling slot are *multi-sibling contributors* — `[?for]`
+contributes one sibling per `[yield]`, which is its defined contribution, not
+a value being auto-spliced:
+
+`input.cx`
+```cx
+[ignored]
+```
+
+`prog.cx`
+```cx
+[?let [= $t [c [?for [in $x ('A', 'B')] [yield [x $x]]]]] [$count $t/x]]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+2
+```
+
+Everything else — a binding read, a call result, an `[?if]` / `[?let]` /
+`[?match]` result — contributes exactly *one* child, so one of those yielding
+a non-empty sequence refuses the same way. Conditional multi-contribution is
+spelled `[?splice [?if …]]`:
+
+`input.cx`
+```cx
+[ignored]
+```
+
+`prog.cx`
+```cx
+[?let [= $vs ([v k=1], [v k=2])] [c [?if [= 1 1] [then $vs]]]]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+error: cx-err:CXER0100: a sequence value (2 members) cannot be element content — adopt its members with [?splice EXPR] (in [c …]; first member [v …]; code.md §6.4.1, #847-1a)
+```
+
+**2. Dispatch consumes arguments; only plain construction refuses.** A
+bracketed form that *dispatches* — a `$`-head call, an operator head
+(`[= …]`, `[+ …]`), a closure call — takes an operand-produced sequence as an
+ARGUMENT, which is legal everywhere. An argument is not content:
+
+`input.cx`
+```cx
+[ignored]
+```
+
+`prog.cx`
+```cx
+[?let [= $doc [order [line qty=2 price=10] [line qty=1 price=20] [line qty=3 price=5]]]
+  [$sum $doc/line/@price]]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+35
+```
+
+The refusal applies only to a form that *is* plain element construction: a
+bare data head, a bare named-builtin head (named builtins are reached only as
+`[$name …]`), and always the computed-name `[?element …]` form.
+
+**3. Absence contributes nothing.** An item that evaluates to the empty
+sequence — an absent optional read, an empty comprehension — contributes no
+child at all. It is not adopted as a visible empty child:
+
+`input.cx`
+```cx
+[ignored]
+```
+
+`prog.cx`
+```cx
+[?let [= $u [user [tag 'a']]] [$count [c $u/nothing]/*]]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+0
+```
+
+**4. The loop carriers are exempt.** `[break …]` and `[continue …]` are the
+`[?loop]` protocol's *positional value carriers*, not documents. Every
+expression there contributes exactly one value: an absence rides as the empty
+sequence and a sequence rides whole — because the loop rebinds its declared
+bindings positionally, and a dropped or spliced value would silently shift
+every binding after it.
+
+`input.cx`
+```cx
+[ignored]
+```
+
+`prog.cx`
+```cx
+[?let [= $u [user [tag 'a']]]
+ [?loop [= $none $u/nothing] [= $seq ('x', 'y')] [= $n 0]
+   [?if [= $n 0]
+     [then [continue $u/nothing ('x', 'y') [+ $n 1]]]
+     [else [break [list [$count $none] [$count $seq] $n]]]]]]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+[list 0 2 1]
+```
+
+### Position, not value
+
+The discriminator is where a thing is written, not what it looks like — the
+same principle as the literal-`[err]` rule below. A **source-literal** paren
+sequence in element content is data, and keeps the data reading's navigation
+(`/name` opaque, `//` through, `/*` sees the sequence node):
+
+`input.cx`
+```cx
+[ignored]
+```
+
+`prog.cx`
+```cx
+[?let [= $t [pair ([v k=1], [v k=2])]]
+  [list [$count $t/v] [$count $t//v] [$count $t/*]]]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+[list 0 2 1]
 ```
 
 ## Errors

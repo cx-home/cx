@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,22 +143,20 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Code tooling</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="code-tooling">
   <h1>Code tooling</h1>
-  
-    <p>The working surface of the application author: run a program
+  <p>The working surface of the application author: run a program
        under an explicit grant set (<a class="xref" href="capabilities.html">capabilities</a>), lint it, debug it
        from the errors' own positions, draw it, and measure it. The
        purely data-shaped verbs (fmt, hash, diff, validate, …) live
        with Ring 0 in <a class="xref" href="data-tooling.html">data-tooling</a>; the full subcommand catalog is
        in <a class="xref" href="tooling.html">tooling</a>.</p>
-    <section id="cli-run-caps">
-      <h2>Running programs and capability flags</h2>
-      
-        <p><code>cx program.cx</code> evaluates a program. A separate data
+  <section id="cli-run-caps">
+    <h2>Running programs and capability flags</h2>
+    <p><code>cx program.cx</code> evaluates a program. A separate data
          input rides <code>--data=INPUT.cx</code> (or <code>--data=-</code> for stdin):
          the input is loaded via the data reading and bound as
          <code>$doc</code> / <code>$input</code> before evaluation, and the caller-supplied
@@ -170,24 +168,24 @@
          programs (code-tour, cxpath-tour, match-multi, modify-crud)
          run exactly this way (<code>cx examples/code-tour.cx
          --data=examples/code-tour.input.cx</code>).</p>
-        <p>Unknown flags on this surface are <b>hard usage errors</b>
+    <p>Unknown flags on this surface are <b>hard usage errors</b>
          (exit 2, naming the flag) — including misspelled
          <code>--allow-*</code> grants. Nothing on the run surface is silently
          ignored.</p>
-        <p>Effects are
+    <p>Effects are
          <b>deny-by-default</b>: a program that reads files, writes
          files, touches the network, reads environment variables,
          spawns subprocesses, or asks for randomness must be
          granted that capability explicitly on the command line
          (denied effect points raise the catchable capability
          error <code>CXER0271</code>):</p>
-        <pre>
-          <code class="language-sh">$ cx --data=orders.cx report.cx       # orders.cx binds as $doc
+    <pre>
+      <code class="language-sh">$ cx --data=orders.cx report.cx       # orders.cx binds as $doc
          $ cx --allow-read --allow-write build_site.cx
          $ cx --allow-net serve.cx
          $ cx --allow-common pipeline.cx       # the common working set</code>
-        </pre>
-        <p>The capability set: <code>--allow-read</code>, <code>--allow-write</code>,
+    </pre>
+    <p>The capability set: <code>--allow-read</code>, <code>--allow-write</code>,
          <code>--allow-net</code>, <code>--allow-env</code>, <code>--allow-clock</code>,
          <code>--allow-random</code>, <code>--allow-subprocess</code>, <code>--allow-eval</code>,
          <code>--allow-secret-reveal</code>. Two broad grants stand beside them:
@@ -196,121 +194,106 @@
          including it. Prefer <code>--allow-common</code> while exploring — it
          keeps <code>[?secret]</code> values sealed. See <a class="xref" href="capabilities.html#security">security</a> for the
          security model.</p>
-        <p>A <code>cx eval FILE</code> alias exists for the same action; prefer
+    <p>A <code>cx eval FILE</code> alias exists for the same action; prefer
          the plain <code>cx FILE</code> spelling — the alias adds nothing.</p>
-      
-    </section>
-    <section id="cli-lint">
-      <h2>cx lint</h2>
-      
-        <p>Style + correctness warnings. See <a class="xref" href="#lint">lint</a> for the rule
+  </section>
+  <section id="cli-lint">
+    <h2>cx lint</h2>
+    <p>Style + correctness warnings. See <a class="xref" href="#lint">lint</a> for the rule
          catalog. Flags: <code>--format=text|json|summary</code> (default
          <code>text</code>), <code>--fail-on=info|warn|error|none</code> (default
          <code>error</code>), <code>--disable=ID1,ID2</code> to suppress checks,
          <code>--only=ID</code> to run one.</p>
-        <pre>
-          <code class="language-sh">$ cx lint config.cx
+    <pre>
+      <code class="language-sh">$ cx lint config.cx
          $ cx lint --fail-on=warn --format=json config.cx
          $ cx lint --only=CX-L004 pipeline.cx</code>
-        </pre>
-      
-    </section>
-    <section id="lint">
-      <h2>Lint rules</h2>
-      
-        <p><code>cx lint</code> warns about issues a formatter can't or shouldn't
+    </pre>
+  </section>
+  <section id="lint">
+    <h2>Lint rules</h2>
+    <p><code>cx lint</code> warns about issues a formatter can't or shouldn't
          fix automatically. Lint and fmt are
          distinct: <code>cx fmt</code> <i>applies</i> safe transformations; <code>cx lint</code>
          <i>warns</i> about issues that need human judgement to fix. The
          two never overlap — if a check has a safe auto-fix, it
          belongs to <code>cx fmt</code>.</p>
-        <section id="lint-catalog">
-          <h3>Rule catalog</h3>
-          
-            <p>Seven lint checks are currently shipped:</p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>id</th>
-                    <th>severity</th>
-                    <th>name</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>CX-L001</td>
-                    <td>info</td>
-                    <td>comment-style consistency</td>
-                  </tr>
-                  <tr>
-                    <td>CX-L003</td>
-                    <td>warn</td>
-                    <td>unused anchor</td>
-                  </tr>
-                  <tr>
-                    <td>CX-L004</td>
-                    <td>error</td>
-                    <td>dangling alias / merge</td>
-                  </tr>
-                  <tr>
-                    <td>CX-L005</td>
-                    <td>warn</td>
-                    <td>deprecated v3.3→v3.4 pattern</td>
-                  </tr>
-                  <tr>
-                    <td>CX-L006</td>
-                    <td>info</td>
-                    <td>flatten nested single-binding [?let] staircases</td>
-                  </tr>
-                  <tr>
-                    <td>CX-L007</td>
-                    <td>warn</td>
-                    <td>aggregation over a simple field accessor</td>
-                  </tr>
-                  <tr>
-                    <td>CX-L008</td>
-                    <td>warn</td>
-                    <td>declared shape flow across [?pipe] stages</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <p>Each check has a normative ID, a default severity, and a
+    <section id="lint-catalog">
+      <h3>Rule catalog</h3>
+      <p>Seven lint checks are currently shipped:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>id</th>
+            <th>severity</th>
+            <th>name</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CX-L001</td>
+            <td>info</td>
+            <td>comment-style consistency</td>
+          </tr>
+          <tr>
+            <td>CX-L003</td>
+            <td>warn</td>
+            <td>unused anchor</td>
+          </tr>
+          <tr>
+            <td>CX-L004</td>
+            <td>error</td>
+            <td>dangling alias / merge</td>
+          </tr>
+          <tr>
+            <td>CX-L005</td>
+            <td>warn</td>
+            <td>deprecated v3.3→v3.4 pattern</td>
+          </tr>
+          <tr>
+            <td>CX-L006</td>
+            <td>info</td>
+            <td>flatten nested single-binding [?let] staircases</td>
+          </tr>
+          <tr>
+            <td>CX-L007</td>
+            <td>warn</td>
+            <td>aggregation over a simple field accessor</td>
+          </tr>
+          <tr>
+            <td>CX-L008</td>
+            <td>warn</td>
+            <td>declared shape flow across [?pipe] stages</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Each check has a normative ID, a default severity, and a
            documented rationale. Suppression directives and CLI flags accept the ID
            verbatim. <code>CX-L002</code> (type-annotation form consistency) was
            removed; its ID is retired, never reused.</p>
-          
-        </section>
-        <section id="lint-severity">
-          <h3>Severity levels</h3>
-          
-            <p>Three severity levels, normative names:</p>
-            <ul>
-              
-                <li><b><code>info</code></b> — stylistic drift. Doesn't affect
+    </section>
+    <section id="lint-severity">
+      <h3>Severity levels</h3>
+      <p>Three severity levels, normative names:</p>
+      <ul>
+        <li><b><code>info</code></b> — stylistic drift. Doesn't affect
                 correctness. Doesn't fail CI by default.</li>
-                <li><b><code>warn</code></b> — likely-bug. The code parses, but the
+        <li><b><code>warn</code></b> — likely-bug. The code parses, but the
                 result probably isn't what was intended. Fails CI
                 with <code>--fail-on=warn</code>.</li>
-                <li><b><code>error</code></b> — almost-certainly-bug. Document
+        <li><b><code>error</code></b> — almost-certainly-bug. Document
                 semantics are wrong. Fails CI by default
                 (<code>--fail-on=error</code>).</li>
-              
-            </ul>
-          
-        </section>
-        <section id="lint-config">
-          <h3>Configuration via .cxlint.cx</h3>
-          
-            <p>Per-project lint config lives in <code>.cxlint.cx</code> at the repo
+      </ul>
+    </section>
+    <section id="lint-config">
+      <h3>Configuration via .cxlint.cx</h3>
+      <p>Per-project lint config lives in <code>.cxlint.cx</code> at the repo
            root (or any ancestor directory of the linted file). The
            config file is CX-formatted — same parser, same schema,
            dogfooded all the way down.</p>
-            <pre>
-              <code class="language-cx">[# .cxlint.cx — repo-level lint config #]
+      <pre>
+        <code class="language-cx">[# .cxlint.cx — repo-level lint config #]
            [lint
              [# don't warn on unused anchors in this repo #]
              [disable check=CX-L003]
@@ -320,38 +303,34 @@
 
              [# treat dangling-alias as warn (not error) in this repo #]
              [severity check=CX-L004 level=warn]]</code>
-            </pre>
-            <p>A <code>[disable …]</code> applies repo-wide — there is no per-path
+      </pre>
+      <p>A <code>[disable …]</code> applies repo-wide — there is no per-path
            scoping. <code>cx lint --config=PATH</code> overrides auto-discovery,
            and <code>--no-config</code> skips config discovery entirely. Missing
            config file is not an error — defaults apply.</p>
-          
-        </section>
-        <section id="lint-suppress">
-          <h3>Per-element suppression</h3>
-          
-            <p>For one-off suppressions inside a document, use the
+    </section>
+    <section id="lint-suppress">
+      <h3>Per-element suppression</h3>
+      <p>For one-off suppressions inside a document, use the
            <code>[?cx lint-disable=...]</code> / <code>[?cx lint-enable=...]</code>
            directives. Scope is the enclosing element and its
            descendants.</p>
-            <pre>
-              <code class="language-cx">[?cx lint-disable=CX-L003]
+      <pre>
+        <code class="language-cx">[?cx lint-disable=CX-L003]
            [defaults &base host=localhost]   [# no L003 warning #]
            [?cx lint-enable=CX-L003]
 
            [# lint-disable=all suppresses every check #]
            [?cx lint-disable=all]
            [legacy-block ...]</code>
-            </pre>
-            <p class="note">Comma-separated lists accepted:
+      </pre>
+      <p class="note">Comma-separated lists accepted:
            <code>lint-disable=CX-L003,CX-L005</code>. <code>lint-disable=all</code> is the
            catch-all.</p>
-          
-        </section>
-        <section id="lint-cxls">
-          <h3>LSP-only diagnostic codes (CXLS\*)</h3>
-          
-            <p>The CXLS\\* codes (<a class="xref" href="tooling.html#lsp-diagnostics">lsp-diagnostics</a>) are surfaced only
+    </section>
+    <section id="lint-cxls">
+      <h3>LSP-only diagnostic codes (CXLS\*)</h3>
+      <p>The CXLS\\* codes (<a class="xref" href="tooling.html#lsp-diagnostics">lsp-diagnostics</a>) are surfaced only
            through the LSP and have no corresponding <code>cx lint</code>
            check. They live in the LSP because they need
            document-wide static analysis (cross-arm reachability,
@@ -360,26 +339,21 @@
            uses <code>[?cx lint-disable=CXLS001]</code> (same syntax as the
            CX-L\\* codes); CLI suppression is moot since <code>cx lint</code>
            doesn't emit them.</p>
-          
-        </section>
-        <section id="lint-custom">
-          <h3>Custom rule plugins (planned)</h3>
-          
-            <p>A plugin model for user-defined checks is planned
+    </section>
+    <section id="lint-custom">
+      <h3>Custom rule plugins (planned)</h3>
+      <p>A plugin model for user-defined checks is planned
            (previously rejected; the question is reopened in
            <a href="../../ROADMAP.md"><code>ROADMAP.md</code></a> "Later"). Currently,
            extending the check set means contributing a check to
            <code>vcx/cx/lint.v</code> upstream. Schema-violation checks are a
            separate path — they layer in automatically as the schema
            language gains rules.</p>
-          
-        </section>
-      
     </section>
-    <section id="cli-diagram">
-      <h2>cx diagram / code-diagram / code-tree</h2>
-      
-        <p>Visualization commands. <code>cx diagram FILE</code>
+  </section>
+  <section id="cli-diagram">
+    <h2>cx diagram / code-diagram / code-tree</h2>
+    <p>Visualization commands. <code>cx diagram FILE</code>
          renders a containment diagram
          (<code>--format=mermaid|svg|png</code>, <code>-o out.file</code>); <code>cx
          code-diagram FILE</code> renders a locked sequence-diagram view
@@ -396,97 +370,86 @@
          With the grant but no <code>dot</code> installed you get the
          dot-less envelope: a 1×1 placeholder that still carries
          the program source, so it still reverse-parses.</p>
-        <pre>
-          <code class="language-sh">$ cx diagram config.cx --format=mermaid
+    <pre>
+      <code class="language-sh">$ cx diagram config.cx --format=mermaid
          $ cx diagram config.cx --format=svg --allow-subprocess -o config.svg
          $ cx code-diagram pipeline.cx
          $ cx code-tree pipeline.cx</code>
-        </pre>
-      
-    </section>
-    <section id="diagnostics">
-      <h2>Diagnostics and debugging</h2>
-      
-        <p>When a CX program isn't doing what you expect, work the
+    </pre>
+  </section>
+  <section id="diagnostics">
+    <h2>Diagnostics and debugging</h2>
+    <p>When a CX program isn't doing what you expect, work the
          ladder: read the error value (every failure is a
          position-carrying <code>[err …]</code>), lint the file, visualize the
          program (<code>cx code-tree</code> / <code>cx code-diagram</code>), reach for the
          LSP if you want to drive from the editor, and capture a
          fixture (<code>conformance/code.cxd</code>) when you need a
          reproducible bug report.</p>
-        <section id="diag-trace">
-          <h3>Errors carry positions</h3>
-          
-            <p>Every parse or evaluation failure is a structured error
+    <section id="diag-trace">
+      <h3>Errors carry positions</h3>
+      <p>Every parse or evaluation failure is a structured error
            with a source position and a stable code — read it
            first. A raised error that reaches the top level prints
            as an <code>[err code=… message=…]</code> value; the message names
            the offending line:column and, for retired syntax, the
            current replacement form.</p>
-            <pre>
-              <code class="language-sh">$ cx broken.cx
+      <pre>
+        <code class="language-sh">$ cx broken.cx
            error: cx-err:CXER0100: parse: infix attribute comparison
            `[@active=…]` in a CXPath predicate is retired —
            predicates are homoiconic CX code; write the prefix
            operator form `[= $_@active …]` (code.md §5.5.2)
            at line 2:8</code>
-            </pre>
-          
-        </section>
-        <section id="diag-explain">
-          <h3>Visualize the program</h3>
-          
-            <p><code>cx code-tree FILE</code> renders the evaluation tree of a
+      </pre>
+    </section>
+    <section id="diag-explain">
+      <h3>Visualize the program</h3>
+      <p><code>cx code-tree FILE</code> renders the evaluation tree of a
            program — which directives nest where, what each binds.
            <code>cx code-diagram FILE</code> renders the locked
            sequence-diagram view (concurrency, channels, service
            interactions). <code>cx --ast FILE</code> shows the parsed shape
            when you suspect the parser saw something different from
            what you meant.</p>
-            <pre>
-              <code class="language-sh">$ cx code-tree pipeline.cx
+      <pre>
+        <code class="language-sh">$ cx code-tree pipeline.cx
            $ cx code-diagram workers.cx
            $ cx --ast pipeline.cx | jq '.elements[0]'</code>
-            </pre>
-          
-        </section>
-        <section id="diag-lsp">
-          <h3>LSP-driven debugging</h3>
-          
-            <p>The LSP surfaces diagnostics live in the editor —
+      </pre>
+    </section>
+    <section id="diag-lsp">
+      <h3>LSP-driven debugging</h3>
+      <p>The LSP surfaces diagnostics live in the editor —
            parse errors, lint findings, and hover documentation
            over directives and paths. See <a class="xref" href="tooling.html#lsp">lsp</a> for the shipped
            capability set.</p>
-          
-        </section>
-        <section id="diag-repl">
-          <h3>Interactive REPL</h3>
-          
-            <p>An interactive REPL is <b>planned</b>. Until it ships, the
+    </section>
+    <section id="diag-repl">
+      <h3>Interactive REPL</h3>
+      <p>An interactive REPL is <b>planned</b>. Until it ships, the
            equivalent is stdin evaluation with a quick shell
            wrapper — append each expression to the context document
            and pipe through <code>cx</code>:</p>
-            <pre>
-              <code class="language-sh"># Poor man's REPL
+      <pre>
+        <code class="language-sh"># Poor man's REPL
            while read -r line; do
              printf '%s\\n%s\\n' \"$(cat ctx.cx)\" \"$line\" | cx
            done</code>
-            </pre>
-          
-        </section>
-        <section id="diag-repro">
-          <h3>Reproducing a bug as a conformance fixture</h3>
-          
-            <p>When you find behaviour that differs from the spec or
+      </pre>
+    </section>
+    <section id="diag-repro">
+      <h3>Reproducing a bug as a conformance fixture</h3>
+      <p>When you find behaviour that differs from the spec or
            from another binding, the fastest way to land a fix is
            to drop a minimal repro into the conformance corpus.
            Fixtures under <code>conformance/*.cxd</code> are the normative
            contract — every binding runs them in CI.</p>
-            <p>Fixtures are CX documents — one <code>[case …]</code> element per
+      <p>Fixtures are CX documents — one <code>[case …]</code> element per
            repro, with the input document, the program, and the
            expected output as children:</p>
-            <pre>
-              <code class="language-cx">[case id=my-bug-id level=core
+      <pre>
+        <code class="language-cx">[case id=my-bug-id level=core
              [tags predicate my-area]
              [in-cx [#
            [doc [item id=1] [item id=2]]
@@ -497,48 +460,40 @@
              [out-text [#
            [item id=1]
            #]]]</code>
-            </pre>
-            <p>Drop the case into the corpus file that matches your
+      </pre>
+      <p>Drop the case into the corpus file that matches your
            area (e.g. <code>conformance/code.cxd</code> for evaluator bugs,
            <code>conformance/core.cxd</code> for data-layer bugs,
            <code>conformance/lint.cxd</code> for linter bugs), run
            <code>make test-vcx-suite</code>, watch it fail. Then fix the V
            core to make it pass.</p>
-          
-        </section>
-        <section id="diag-bug-report">
-          <h3>Filing a bug report</h3>
-          
-            <p>A good bug report has four pieces:</p>
-            <ul>
-              
-                <li><code>cx --version</code> output (build + commit line).</li>
-                <li>A minimal reproducer — ideally a <code>conformance/*.cxd</code>
+    </section>
+    <section id="diag-bug-report">
+      <h3>Filing a bug report</h3>
+      <p>A good bug report has four pieces:</p>
+      <ul>
+        <li><code>cx --version</code> output (build + commit line).</li>
+        <li>A minimal reproducer — ideally a <code>conformance/*.cxd</code>
                 case — that triggers the bad behaviour.</li>
-                <li>Expected output (what you think should happen).</li>
-                <li>Actual output (what does happen).</li>
-              
-            </ul>
-            <p>For LSP / editor bugs, also include the
+        <li>Expected output (what you think should happen).</li>
+        <li>Actual output (what does happen).</li>
+      </ul>
+      <p>For LSP / editor bugs, also include the
            <code>cx lsp --verbose 2&gt;...</code> log around the failing request
            and the editor's LSP trace setting (most editors expose
            "LSP: Toggle Trace" or similar).</p>
-          
-        </section>
-      
     </section>
-    <section id="profiling">
-      <h2>Profiling and benchmarking</h2>
-      
-        <p>CX ships a standard bench harness for the V core (runners
+  </section>
+  <section id="profiling">
+    <h2>Profiling and benchmarking</h2>
+    <p>CX ships a standard bench harness for the V core (runners
          under <code>vcx/tests/runners/</code>) and per-binding bench scripts
          that exercise the FFI path. Binding-level performance budgets
          are governed by the performance-SLA policy in
          <a href="../../spec/03-approved/process/governance.md"><code>spec/03-approved/process/governance.md §6</code></a>.</p>
-        <section id="profile-eval">
-          <h3>In-program profiling</h3>
-          
-            <p>No profiling CLI flag ships yet — but the in-program
+    <section id="profile-eval">
+      <h3>In-program profiling</h3>
+      <p>No profiling CLI flag ships yet — but the in-program
            profiler does: the bundled <code>cx-stdlib/prof</code> pack covers
            timing reads, named counters, HDR histograms, structured
            trace events, memory snapshots, and flamegraph emission,
@@ -546,15 +501,13 @@
            clock, so they need <code>--allow-clock</code>). For source-position
            debugging see <a class="xref" href="#diag-trace">diag-trace</a>; for structure,
            <code>cx code-tree</code>.</p>
-          
-        </section>
-        <section id="profile-bench">
-          <h3>Bench harness</h3>
-          
-            <p>The bench harness is V-native; runners live under
+    </section>
+    <section id="profile-bench">
+      <h3>Bench harness</h3>
+      <p>The bench harness is V-native; runners live under
            <code>vcx/tests/runners/</code>. Run individually:</p>
-            <pre>
-              <code class="language-sh">$ make bench-code-streaming   # streaming evaluator
+      <pre>
+        <code class="language-sh">$ make bench-code-streaming   # streaming evaluator
            $ make bench-code-pattern-compile   # pattern compile cost
            $ make bench-code-http        # http client perf
            $ make bench-code-soak        # long-running soak
@@ -564,8 +517,8 @@
            $ make bench-streaming        # data-streaming bench
            $ make bench-eval             # general eval cost
            $ make bench-json             # bench-report JSON (report generator, not a workload)</code>
-            </pre>
-            <p>Each bench prints a <b>multi-line human summary</b> (MB/s,
+      </pre>
+      <p>Each bench prints a <b>multi-line human summary</b> (MB/s,
            ops/sec, or latency percentiles, depending on the
            dimension). The machine-readable JSON is produced
            downstream: <code>make bench-json</code> runs the streaming bench and
@@ -575,36 +528,32 @@
            diffs two such reports for regressions.
            <code>make bench-code-gates</code> chains the three gate-tracked
            benches (pattern-compile, streaming, http).</p>
-          
-        </section>
-        <section id="profile-per-binding">
-          <h3>Per-binding bench</h3>
-          
-            <p>The per-binding bench shim is <code>bench_report.cx</code>. It drives
+    </section>
+    <section id="profile-per-binding">
+      <h3>Per-binding bench</h3>
+      <p>The per-binding bench shim is <code>bench_report.cx</code>. It drives
            every binding through a common harness and prints
            comparative numbers — per binding, the parse and stream
            medians on the common fixture, then a comparative table.
            Filters are <b>positional</b> binding names; the only flag is
            <code>--verbose</code>/<code>-v</code>, and any other flag is a hard error (exit 1)
            rather than a silent no-op:</p>
-            <pre>
-              <code class="language-sh">$ cx --allow-read --allow-write --allow-subprocess \
+      <pre>
+        <code class="language-sh">$ cx --allow-read --allow-write --allow-subprocess \
                 --allow-clock --allow-env bench_report.cx python go rust
            benchmarking python       ... parse=…ms  stream=…ms
            benchmarking go           ... parse=…ms  stream=…ms
            benchmarking rust         ... parse=…ms  stream=…ms</code>
-            </pre>
-            <p class="note">The Go shim's former crash on 1 MB+ inputs is fixed — the
+      </pre>
+      <p class="note">The Go shim's former crash on 1 MB+ inputs is fixed — the
            FFI call path now locks its goroutine to an OS thread and
            registers it with the CX runtime. Python's decoder ceiling
            is architectural (a pure-Python floor); a C extension is a
            planned future candidate.</p>
-          
-        </section>
-        <section id="profile-targets">
-          <h3>Regression tracking</h3>
-          
-            <p>Two tracking planes. The <b>binding-level budgets</b> —
+    </section>
+    <section id="profile-targets">
+      <h3>Regression tracking</h3>
+      <p>Two tracking planes. The <b>binding-level budgets</b> —
            <code>loads</code> and <code>select</code> latencies per input size — are
            normative in
            <a href="../../spec/03-approved/process/governance.md"><code>spec/03-approved/process/governance.md §6.1</code></a>:
@@ -616,26 +565,23 @@
            with a 200 MB/s line — honest status: the gate is not yet
            green (<code>[?for]</code> streaming sits at the ~200 MB/s line;
            <code>[?map]</code> last measured 129.2 MB/s).</p>
-            <p><code>cx diff</code> (1 MiB, 1% change), <code>cx lint</code> (1 MiB, all
+      <p><code>cx diff</code> (1 MiB, 1% change), <code>cx lint</code> (1 MiB, all
            checks), and <code>cx hash</code> (1 MiB) are tracked as unofficial
            interactive-latency targets; the governance SLA table does
            not cover them.</p>
-          
-        </section>
-      
     </section>
-  
+  </section>
 </section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>Code tooling</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

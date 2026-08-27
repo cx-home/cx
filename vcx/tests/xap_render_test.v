@@ -70,7 +70,8 @@ fn test_xap_single_render_path() {
 
 	// application/cx leg: canonical view-tree from comp.view over the live fold.
 	surface := curl('http://127.0.0.1:${port}/surface').trim_space()
-	expected := "[surface name=guestbook [panel [list ([item 'Ada'], [item 'Lin'])] [control :sign [label 'Sign'] [input :name]]]]"
+	// R-A1 migration: the view's items splice as direct children (2026-08-25).
+	expected := "[surface name=guestbook [panel [list [item 'Ada'] [item 'Lin']] [control :sign [label 'Sign'] [input :name]]]]"
 	assert surface == expected, 'application/cx render not derived from the view; got: ${surface}'
 
 	// text/html leg: the SAME view-tree → HTML (names from the view, not hand-built).

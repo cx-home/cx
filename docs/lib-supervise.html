@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,19 +143,22 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">supervise</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-supervise"><h1>supervise</h1><p class="lede">Restart policies over monitored workers: run a set of named children (each an arity-0 callable spawned as a worker) under a declared policy — strategy (:one-for-one, :one-for-all, :rest-for-one), restart intensity (max-restarts within a window), and per-child exponential backoff — restarting them when they die according to each child's restart type (:permanent, :transient, :temporary). Provides start, stop, dynamic start-child/stop-child, status snapshots, and an observable event stream of the supervisor's own acts. The supervision loop runs in an ordinary worker, so supervisors nest by composition: a give-up terminates the loop with CXER5094 and a parent supervisor monitoring it escalates by policy. Composes workers, monitors, fan-out channels, and sched timers; adds no new concurrency primitive and no capability.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-supervise-start" class="fn">
-    <h3>supervise:start</h3>
-    <p class="fn-sig"><code>[$supervise:start]  -> element</code>  —  Validate a policy and child specs, spawn the children and the supervision loop, and return the closeable [supervisor] handle.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/supervise' :as sup]
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-supervise-start" class="fn">
+  <h3>supervise:start</h3>
+  <p class="fn-sig"><code>[$supervise:start]  -> element</code>  —  Validate a policy and child specs, spawn the children and the supervision loop, and return the closeable [supervisor] handle.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/supervise' :as sup]
 [?let [= $c [?channel name="doc-sup-start" buffer=1]]
 [= $s [$sup:start [policy strategy=:one-for-one max-restarts=3]
         ([child name="a" [fn [?fn () [?receive from=$c]]]])]]
@@ -163,40 +166,34 @@
 [= $e [?receive from=$ev max=1 deadline=5000]]
 [= $_ [$sup:stop $s]]
 $e]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>([child-started name=a attempt=0])</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-supervise-stop" class="fn">
-    <h3>supervise:stop</h3>
-    <p class="fn-sig"><code>[$supervise:stop]  -> null</code>  —  Gracefully stop the supervisor: cancel children in reverse start order, each bounded by its shutdown, then stop the loop; idempotent.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/supervise' :as sup]
+    </pre>
+    <pre class="sample-output">
+      <code>([child-started name=a attempt=0])</code>
+    </pre>
+  </div>
+</section><section id="fn-supervise-stop" class="fn">
+  <h3>supervise:stop</h3>
+  <p class="fn-sig"><code>[$supervise:stop]  -> null</code>  —  Gracefully stop the supervisor: cancel children in reverse start order, each bounded by its shutdown, then stop the loop; idempotent.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/supervise' :as sup]
 [?let [= $c [?channel name="doc-sup-stop" buffer=1]]
 [= $s [$sup:start [policy strategy=:one-for-one max-restarts=3]
         ([child name="a" [fn [?fn () [?receive from=$c]]]])]]
 [= $r1 [$sup:stop $s]]
 [= $r2 [$sup:stop $s]]
 ($r1, $r2)]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(null, null)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-supervise-start-child" class="fn">
-    <h3>supervise:start-child</h3>
-    <p class="fn-sig"><code>[$supervise:start-child]  -> element</code>  —  Add and start a child under the running policy; it joins at the end of start order. Duplicate names refuse CXER5091.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/supervise' :as sup]
+    </pre>
+    <pre class="sample-output">
+      <code>(null, null)</code>
+    </pre>
+  </div>
+</section><section id="fn-supervise-start-child" class="fn">
+  <h3>supervise:start-child</h3>
+  <p class="fn-sig"><code>[$supervise:start-child]  -> element</code>  —  Add and start a child under the running policy; it joins at the end of start order. Duplicate names refuse CXER5091.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/supervise' :as sup]
 [?let [= $c [?channel name="doc-sup-sc" buffer=1]]
 [= $c2 [?channel name="doc-sup-sc2" buffer=1]]
 [= $s [$sup:start [policy strategy=:one-for-one max-restarts=3]
@@ -204,23 +201,19 @@ $e]</code>
 [= $kid [child name="b" [fn [?fn () [?receive from=$c2]]]]]
 [= $r [$sup:start-child $s $kid]]
 [= $st [$sup:status $s]]
-[= $rows [$first $st/*]]
 [= $_ [$sup:stop $s]]
-($r, [$count $rows])]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>([ok], 2)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-supervise-stop-child" class="fn">
-    <h3>supervise:stop-child</h3>
-    <p class="fn-sig"><code>[$supervise:stop-child]  -> bool</code>  —  Cancel (bounded by its shutdown) and REMOVE a child by name — true if it was present, false if unknown (a value; idempotent removal is normal).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/supervise' :as sup]
+($r, [$count $st/*])]</code>
+    </pre>
+    <pre class="sample-output">
+      <code>([ok], 2)</code>
+    </pre>
+  </div>
+</section><section id="fn-supervise-stop-child" class="fn">
+  <h3>supervise:stop-child</h3>
+  <p class="fn-sig"><code>[$supervise:stop-child]  -> bool</code>  —  Cancel (bounded by its shutdown) and REMOVE a child by name — true if it was present, false if unknown (a value; idempotent removal is normal).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/supervise' :as sup]
 [?let [= $c [?channel name="doc-sup-rc" buffer=1]]
 [= $s [$sup:start [policy strategy=:one-for-one max-restarts=3]
         ([child name="a" [fn [?fn () [?receive from=$c]]]])]]
@@ -228,40 +221,34 @@ $e]</code>
 [= $r2 [$sup:stop-child $s "a"]]
 [= $_ [$sup:stop $s]]
 ($r1, $r2)]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(true, false)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-supervise-status" class="fn">
-    <h3>supervise:status</h3>
-    <p class="fn-sig"><code>[$supervise:status]  -> element</code>  —  Read a [supervisor-status] snapshot — restarts-in-window plus each child's name, state (running|restarting|abandoned|stopped), and attempt count; stays readable after stop.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/supervise' :as sup]
+    </pre>
+    <pre class="sample-output">
+      <code>(true, false)</code>
+    </pre>
+  </div>
+</section><section id="fn-supervise-status" class="fn">
+  <h3>supervise:status</h3>
+  <p class="fn-sig"><code>[$supervise:status]  -> element</code>  —  Read a [supervisor-status] snapshot — restarts-in-window plus each child's name, state (running|restarting|abandoned|stopped), and attempt count; stays readable after stop.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/supervise' :as sup]
 [?let [= $c [?channel name="doc-sup-st" buffer=1]]
 [= $s [$sup:start [policy strategy=:one-for-one max-restarts=3]
         ([child name="a" [fn [?fn () [?receive from=$c]]]])]]
 [= $st [$sup:status $s]]
 [= $_ [$sup:stop $s]]
 $st]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[supervisor-status restarts-in-window=0 ([child name=a state=running attempts=0])]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-supervise-events" class="fn">
-    <h3>supervise:events</h3>
-    <p class="fn-sig"><code>[$supervise:events]  -> element</code>  —  Subscribe to the supervisor's own acts — child-started/child-exited/child-restarted/child-abandoned/gave-up — as a standard fan-out subscription replayed from the retained floor.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/supervise' :as sup]
+    </pre>
+    <pre class="sample-output">
+      <code>[supervisor-status restarts-in-window=0 [child name=a state=running attempts=0]]</code>
+    </pre>
+  </div>
+</section><section id="fn-supervise-events" class="fn">
+  <h3>supervise:events</h3>
+  <p class="fn-sig"><code>[$supervise:events]  -> element</code>  —  Subscribe to the supervisor's own acts — child-started/child-exited/child-restarted/child-abandoned/gave-up — as a standard fan-out subscription replayed from the retained floor.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/supervise' :as sup]
 [?let [= $c [?channel name="doc-sup-ev" buffer=4]]
 [= $s [$sup:start [policy strategy=:one-for-one max-restarts=3]
         ([child name="a" [fn [?fn () [?receive from=$c]]]])]]
@@ -271,24 +258,22 @@ $st]</code>
 [= $e1 [?receive from=$ev max=1 deadline=5000]]
 [= $_ [$sup:stop $s]]
 ($e0, $e1)]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(([child-started name=a attempt=0]), ([child-exited name=a reason=:done]))</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>(([child-started name=a attempt=0]), ([child-exited name=a reason=:done]))</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>supervise</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

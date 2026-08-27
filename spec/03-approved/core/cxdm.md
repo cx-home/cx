@@ -69,10 +69,17 @@ Items (Array, Map, Sequence-as-Item, Iterator). Path is structural —
 it is neither atom nor container; it evaluates to a Sequence and
 otherwise behaves as a first-class value.
 
-Sequence operations (§7) take Sequence and return Sequence; they do
-**not** implicitly descend into a container. Calling `count(arr)` on
-an Array is a type error; the user writes `count(items(arr))` to ask
-"how many items in this Array."
+Sequence operations (§7) take Sequence and return Sequence; the
+container-preserving operations do **not** implicitly descend into a
+container. The program-surface **aggregates** are the exception, ruled
+kind-total over the items view (R-A5, 2026-08-25, ruling record
+`ledger/matrix_2026_08_25_path_value_model.md`): `count` / `first` read
+a value's items — element / document → child items, Sequence / Array →
+members, Map → entries, scalar → itself (count 1), absence → 0, err
+propagates — so `count(arr)` answers the Array's item count directly.
+(The former sentence making `count(arr)` a type error contradicted both
+the shipped behavior and the field-read composition rule in the code
+spec, and was struck as reconciled under R-A5.)
 
 ### 2.2 Node
 

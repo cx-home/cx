@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,73 +143,57 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">jsonrpc</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-jsonrpc"><h1>jsonrpc</h1><p class="lede">Bundled cx-stdlib module.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-jsonrpc-request" class="fn">
-    <h3>jsonrpc:request</h3>
-    <p class="fn-sig"><code>[$jsonrpc:request]  -> map</code>  —  Build a JSON-RPC 2.0 request {jsonrpc:"2.0", id, method, params?} (params omitted when empty).</p>
-    
-  </section>
-  <section id="fn-jsonrpc-notification" class="fn">
-    <h3>jsonrpc:notification</h3>
-    <p class="fn-sig"><code>[$jsonrpc:notification]  -> map</code>  —  Build a JSON-RPC 2.0 notification {jsonrpc:"2.0", method, params?} — a request with no id (no response expected).</p>
-    
-  </section>
-  <section id="fn-jsonrpc-success" class="fn">
-    <h3>jsonrpc:success</h3>
-    <p class="fn-sig"><code>[$jsonrpc:success]  -> map</code>  —  Build a JSON-RPC 2.0 success response {jsonrpc:"2.0", id, result}.</p>
-    
-  </section>
-  <section id="fn-jsonrpc-error" class="fn">
-    <h3>jsonrpc:error</h3>
-    <p class="fn-sig"><code>[$jsonrpc:error]  -> map</code>  —  Build a JSON-RPC 2.0 error response {jsonrpc:"2.0", id, error:{code, message, data?}}.</p>
-    
-  </section>
-  <section id="fn-jsonrpc-error-for" class="fn">
-    <h3>jsonrpc:error-for</h3>
-    <p class="fn-sig"><code>[$jsonrpc:error-for]  -> map</code>  —  Build a standard error response for a named kind (parse-error/invalid-request/method-not-found/invalid-params/internal-error).</p>
-    
-  </section>
-  <section id="fn-jsonrpc-code" class="fn">
-    <h3>jsonrpc:code</h3>
-    <p class="fn-sig"><code>[$jsonrpc:code]  -> int</code>  —  The JSON-RPC 2.0 reserved error code for a named kind (-32700..-32603); unknown kinds map to internal-error (-32603).</p>
-    
-  </section>
-  <section id="fn-jsonrpc-message-for" class="fn">
-    <h3>jsonrpc:message-for</h3>
-    <p class="fn-sig"><code>[$jsonrpc:message-for]  -> string</code>  —  The canonical message string for a named JSON-RPC error kind.</p>
-    
-  </section>
-  <section id="fn-jsonrpc-classify" class="fn">
-    <h3>jsonrpc:classify</h3>
-    <p class="fn-sig"><code>[$jsonrpc:classify]  -> string</code>  —  Classify a JSON-RPC value by shape: request | notification | success | error | invalid.</p>
-    
-  </section>
-  <section id="fn-jsonrpc-is-valid" class="fn">
-    <h3>jsonrpc:is-valid</h3>
-    <p class="fn-sig"><code>[$jsonrpc:is-valid]  -> bool</code>  —  True when the value has jsonrpc:"2.0" and a recognized shape.</p>
-    
-  </section>
-  <section id="fn-jsonrpc-is-batch" class="fn">
-    <h3>jsonrpc:is-batch</h3>
-    <p class="fn-sig"><code>[$jsonrpc:is-batch]  -> bool</code>  —  True when the value is a sequence of JSON-RPC messages (its first item carries a jsonrpc member).</p>
-    
-  </section>
-</section>
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-jsonrpc-request" class="fn">
+  <h3>jsonrpc:request</h3>
+  <p class="fn-sig"><code>[$jsonrpc:request]  -> map</code>  —  Build a JSON-RPC 2.0 request {jsonrpc:"2.0", id, method, params?} (params omitted when empty).</p>
+</section><section id="fn-jsonrpc-notification" class="fn">
+  <h3>jsonrpc:notification</h3>
+  <p class="fn-sig"><code>[$jsonrpc:notification]  -> map</code>  —  Build a JSON-RPC 2.0 notification {jsonrpc:"2.0", method, params?} — a request with no id (no response expected).</p>
+</section><section id="fn-jsonrpc-success" class="fn">
+  <h3>jsonrpc:success</h3>
+  <p class="fn-sig"><code>[$jsonrpc:success]  -> map</code>  —  Build a JSON-RPC 2.0 success response {jsonrpc:"2.0", id, result}.</p>
+</section><section id="fn-jsonrpc-error" class="fn">
+  <h3>jsonrpc:error</h3>
+  <p class="fn-sig"><code>[$jsonrpc:error]  -> map</code>  —  Build a JSON-RPC 2.0 error response {jsonrpc:"2.0", id, error:{code, message, data?}}.</p>
+</section><section id="fn-jsonrpc-error-for" class="fn">
+  <h3>jsonrpc:error-for</h3>
+  <p class="fn-sig"><code>[$jsonrpc:error-for]  -> map</code>  —  Build a standard error response for a named kind (parse-error/invalid-request/method-not-found/invalid-params/internal-error).</p>
+</section><section id="fn-jsonrpc-code" class="fn">
+  <h3>jsonrpc:code</h3>
+  <p class="fn-sig"><code>[$jsonrpc:code]  -> int</code>  —  The JSON-RPC 2.0 reserved error code for a named kind (-32700..-32603); unknown kinds map to internal-error (-32603).</p>
+</section><section id="fn-jsonrpc-message-for" class="fn">
+  <h3>jsonrpc:message-for</h3>
+  <p class="fn-sig"><code>[$jsonrpc:message-for]  -> string</code>  —  The canonical message string for a named JSON-RPC error kind.</p>
+</section><section id="fn-jsonrpc-classify" class="fn">
+  <h3>jsonrpc:classify</h3>
+  <p class="fn-sig"><code>[$jsonrpc:classify]  -> string</code>  —  Classify a JSON-RPC value by shape: request | notification | success | error | invalid.</p>
+</section><section id="fn-jsonrpc-is-valid" class="fn">
+  <h3>jsonrpc:is-valid</h3>
+  <p class="fn-sig"><code>[$jsonrpc:is-valid]  -> bool</code>  —  True when the value has jsonrpc:"2.0" and a recognized shape.</p>
+</section><section id="fn-jsonrpc-is-batch" class="fn">
+  <h3>jsonrpc:is-batch</h3>
+  <p class="fn-sig"><code>[$jsonrpc:is-batch]  -> bool</code>  —  True when the value is a sequence of JSON-RPC messages (its first item carries a jsonrpc member).</p>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>jsonrpc</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

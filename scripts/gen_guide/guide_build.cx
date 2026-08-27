@@ -37,6 +37,9 @@
 [# cat: join string parts with no separator. #]
 [?def cat scope=public ($parts) [$strings:join $parts '']]
 
+[; asset cache-busting suffix (#953) — see copy-stamped-if below. ]
+[?def stamp scope=public ($path $ver) [$cat ($path, '?v=', $ver)]]
+
 [# parse-or-die: read + parse a source file; a parse failure names the
    file on stderr and exits 1. A failed section must never be silently
    dropped from the site (issue #425: 10 of 16 pages vanished with
@@ -374,7 +377,7 @@
     '<link rel="preconnect" href="https://fonts.googleapis.com">\n',
     '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n',
     '<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">\n',
-    '<link rel="stylesheet" href="style.css">\n</head>\n<body>\n',
+    '<link rel="stylesheet" href="', [$stamp 'style.css' $ver], '">\n</head>\n<body>\n',
     [$nav-html $metas $libfiles $active],
     '<header class="sheet-bar">\n',
     '  <div class="sb-left"><span class="sb-brand">CX · Reference guide</span>',
@@ -392,9 +395,9 @@
     '  <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>\n',
     '  <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>\n',
     '</footer>\n',
-    '<script src="highlight/highlight.js" defer></script>\n',
-    '<script src="search-index.js" defer></script>\n',
-    '<script src="search/search.js" defer></script>\n',
+    '<script src="', [$stamp 'highlight/highlight.js' $ver], '" defer></script>\n',
+    '<script src="', [$stamp 'search-index.js' $ver], '" defer></script>\n',
+    '<script src="', [$stamp 'search/search.js' $ver], '" defer></script>\n',
     '</body>\n</html>\n')]]
 
 [# ── [[anchor]] cross-reference resolution ───────────────────────────────
@@ -601,6 +604,34 @@
 [?def copy-if scope=public impure ($from $to)
   [?if [$io:exists $from] [then [$io:copy $from $to]] [else ()]]]
 
+[# ── asset cache-busting (#953) ───────────────────────────────────────────
+   A returning visitor loading the site across a deploy got the NEW page HTML
+   with their CACHED pre-release style.css: the sidebar styled from old rules
+   while the sheet-bar (newer markup) rendered as bare glued text. Nothing was
+   wrong with the server — the live bytes were diff-identical to the repo — and
+   a hard refresh cleared it, but every deploy re-opened that window for every
+   cached visitor.
+
+   So every LOCAL asset reference carries `?v=<VERSION>`. The version is
+   DERIVED from the repo-root VERSION file that $ver already reads, never
+   spelled a second time. Third-party references (Google Fonts) are left alone:
+   their URLs are already immutable-versioned and are not ours to stamp. The
+   mermaid renderer used to be in that category and no longer is — since #1007
+   it is a vendored local asset and gets stamped like every other one.
+
+   `stamp` is for hrefs this file emits. `copy-stamped-if` is for the static
+   playground page, which is copied verbatim and carries its own <head>: it
+   would otherwise be the one page still able to pair fresh HTML with a stale
+   sheet. #]
+
+[?def copy-stamped-if scope=public impure ($from $to $ver $assets)
+  [?if [not [$io:exists $from]] [then ()]
+    [else [?let [= $src [$io:read-file $from]]
+      [= $out [$fp:fold $assets $src [?fn ($acc $a)
+        [$strings:replace $acc [$cat ('"', $a, '"')]
+                               [$cat ('"', [$stamp $a $ver], '"')]]]]]
+      [$io:write-file $to $out]]]]]
+
 [# ── search index ─────────────────────────────────────────────────────────
    Mirrors the old inline-Python builder: per rendered page, drop
    aside/script/style, take the <h1> as the title, strip the rest to plain
@@ -753,9 +784,15 @@
           [then [p class="note" [$cat ('Experimental x/ tier — imported as cx-x/', $m,
             '. Bundled and gated in-tree like any other module, but EXEMPT from the frozen-surface stability promise (std-lib README, decision D3): a semver-breaking change is allowed here while the surface settles, and the frozen-surface canary never counts it. Pin behaviour you depend on with your own fixtures.')]]]
           [else '']]
-        [?if [$empty $fns]
-          [then [p class="note" """Per-function prose and examples are being migrated into this module. The public surface is specified in the module spec and exercised by the conformance fixtures."""]]
-          [else [?for [in $fd $fns] [yield [$fn-html $m $fd]]]]]]]]]]
+        [# R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. #]
+        [?splice [?if [$empty $fns]
+          [then ([p class="note" """Per-function prose and examples are being migrated into this module. The public surface is specified in the module spec and exercised by the conformance fixtures."""])]
+          [else [?for [in $fd $fns] [yield [$fn-html $m $fd]]]]]]]]]]]
 
 [# landing-row / render-landing RETIRED with `libraries.html` (#826 ruling
    3a): the packs are indexed per RING now, so the flat module index has no
@@ -919,6 +956,7 @@
     [$io:make-dirs [$cat ($out, '/highlight')]],
     [$io:make-dirs [$cat ($out, '/search')]],
     [$io:make-dirs [$cat ($out, '/playground')]],
+    [$io:make-dirs [$cat ($out, '/playground/vendor')]],
     [$io:copy [$cat ($gen, '/style.css')]              [$cat ($out, '/style.css')]],
     [$io:copy [$cat ($gen, '/highlight/highlight.js')] [$cat ($out, '/highlight/highlight.js')]],
     [$io:copy [$cat ($gen, '/search/search.js')]       [$cat ($out, '/search/search.js')]],
@@ -928,7 +966,28 @@
     [$copy-if [$cat ($gen, '/playground/playground.examples.js')] [$cat ($out, '/playground/playground.examples.js')]],
     [$copy-if [$cat ($gen, '/playground/playground.css')]         [$cat ($out, '/playground/playground.css')]],
     [$copy-if [$cat ($gen, '/playground/jspi_probe.html')]        [$cat ($out, '/playground/jspi_probe.html')]],
-    [$copy-if [$cat ($gen, '/playground/playground.html')] [$cat ($out, '/playground.html')]],
+    [; #1007 — the diagram renderer is a VENDORED asset, not a CDN <script>, so
+       the Graph pane works over file:// and offline like the rest of the page,
+       and the bytes that draw a reader's diagram move only by commit. Its MIT
+       license travels beside it, the way third_party/re2's does into every
+       release tarball. ]
+    [$copy-if [$cat ($gen, '/playground/vendor/mermaid.min.js')]
+              [$cat ($out, '/playground/vendor/mermaid.min.js')]],
+    [$copy-if [$cat ($gen, '/playground/vendor/LICENSE-mermaid.txt')]
+              [$cat ($out, '/playground/vendor/LICENSE-mermaid.txt')]],
+    [; #953 — the playground page carries its own <head>, so it is stamped on
+       the way out rather than copied verbatim. Its LOCAL assets only, which
+       since #1007 includes the vendored renderer: it is ours now, it changes
+       when the pin moves, and a visitor holding a cached 3 MB bundle from the
+       previous pin is exactly the stale-asset window ?v= exists to close. The
+       Google Fonts URLs are still left alone — already immutable-versioned and
+       not ours to rewrite. ]
+    [$copy-stamped-if [$cat ($gen, '/playground/playground.html')]
+                      [$cat ($out, '/playground.html')] $ver
+                      ('playground/playground.css', 'playground/playground.js',
+                       'playground/playground.examples.js', 'highlight/highlight.js',
+                       'playground/vendor/mermaid.min.js',
+                       'wasm/cxlib.js')],
     [$io:make-dirs [$cat ($out, '/wasm')]],
     [$copy-if 'dist/wasm/cxlib.js'            [$cat ($out, '/wasm/cxlib.js')]],
     [$copy-if 'dist/wasm/libcx-async.js'      [$cat ($out, '/wasm/libcx-async.js')]],

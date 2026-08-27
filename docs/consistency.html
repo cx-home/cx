@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,133 +143,119 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Consistency, in the words we use</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="consistency">
   <h1>Consistency, in the words we use</h1>
-  
-    <section id="cons-idea">
-      <h2>Declare what you need; the platform satisfies or refuses</h2>
-      
-        <p>Most systems document their consistency in prose and degrade it
+  <section id="cons-idea">
+    <h2>Declare what you need; the platform satisfies or refuses</h2>
+    <p>Most systems document their consistency in prose and degrade it
          in silence. CX inverts both halves: a program <b>declares</b> the
          guarantee a read or a session needs, in a closed vocabulary,
          and the platform either <b>satisfies the declaration or refuses
          loudly</b> — never approximates, never silently downgrades. An
          unknown token is a typed error, not an ignored option.</p>
-        <p>The enemy this design names is the <i>silent-wrong-answer class</i>:
+    <p>The enemy this design names is the <i>silent-wrong-answer class</i>:
          a read that used to be fresh quietly served from a stale
          cache, a resumed subscription that skipped entries nobody
          noticed, a replica answering as if it were the primary. Every
          one of those becomes either a declared-and-satisfied guarantee
          or a visible refusal naming the token and the surface that
          could not honor it.</p>
-      
-    </section>
-    <section id="cons-vocabulary">
-      <h2>The vocabulary</h2>
-      
-        <p>The tokens are a closed set. Each names one checkable property;
+  </section>
+  <section id="cons-vocabulary">
+    <h2>The vocabulary</h2>
+    <p>The tokens are a closed set. Each names one checkable property;
          the table says what satisfies it and what refuses it.</p>
-        <table>
-          <thead>
-            
-              <tr>
-                <th>Token</th>
-                <th>Guarantee</th>
-                <th>Satisfied by / refused by</th>
-              </tr>
-            
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td><code>:prefix-consistent</code></td>
-                <td>a committed per-stream prefix, never torn</td>
-                <td>any single-stream journal read / cross-stream compositions and surfaces that cannot prove it</td>
-              </tr>
-              <tr>
-                <td><code>:at-seq-pinned</code></td>
-                <td>this exact transaction position</td>
-                <td>replay, fold, and snapshot pins / a pin pruned past snapshot coverage</td>
-              </tr>
-              <tr>
-                <td><code>:at-head-set</code></td>
-                <td>a signed multi-stream cut — one position per stream</td>
-                <td>the snapshot substrate / it is a READ coordinate, never a commit primitive</td>
-              </tr>
-              <tr>
-                <td><code>:linearizable-ref</code></td>
-                <td>ref advances on this handle are compare-and-set only</td>
-                <td>expectation-carrying writes / makes expectation-less writes and force-moves errors on the declaring handle</td>
-              </tr>
-              <tr>
-                <td><code>:read-your-writes</code></td>
-                <td>this handle sees its own writes</td>
-                <td>a single handle on one daemon / caching layers and replicas</td>
-              </tr>
-              <tr>
-                <td><code>:monotonic-reads</code></td>
-                <td>no rewind on resume</td>
-                <td>checkable server-side against the cursor</td>
-              </tr>
-              <tr>
-                <td><code>:gapless</code></td>
-                <td>no skip on resume (distinct from monotonic)</td>
-                <td>refused when retention pruned past the resume point</td>
-              </tr>
-              <tr>
-                <td><code>:at-least-once</code></td>
-                <td>delivery class</td>
-                <td>the durable plane</td>
-              </tr>
-            
-          </tbody>
-        </table>
-        <p class="note">Deliberately <b>absent</b>: <code>snapshot-isolation</code>, <code>causal</code>, and
+    <table>
+      <thead>
+        <tr>
+          <th>Token</th>
+          <th>Guarantee</th>
+          <th>Satisfied by / refused by</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>:prefix-consistent</code></td>
+          <td>a committed per-stream prefix, never torn</td>
+          <td>any single-stream journal read / cross-stream compositions and surfaces that cannot prove it</td>
+        </tr>
+        <tr>
+          <td><code>:at-seq-pinned</code></td>
+          <td>this exact transaction position</td>
+          <td>replay, fold, and snapshot pins / a pin pruned past snapshot coverage</td>
+        </tr>
+        <tr>
+          <td><code>:at-head-set</code></td>
+          <td>a signed multi-stream cut — one position per stream</td>
+          <td>the snapshot substrate / it is a READ coordinate, never a commit primitive</td>
+        </tr>
+        <tr>
+          <td><code>:linearizable-ref</code></td>
+          <td>ref advances on this handle are compare-and-set only</td>
+          <td>expectation-carrying writes / makes expectation-less writes and force-moves errors on the declaring handle</td>
+        </tr>
+        <tr>
+          <td><code>:read-your-writes</code></td>
+          <td>this handle sees its own writes</td>
+          <td>a single handle on one daemon / caching layers and replicas</td>
+        </tr>
+        <tr>
+          <td><code>:monotonic-reads</code></td>
+          <td>no rewind on resume</td>
+          <td>checkable server-side against the cursor</td>
+        </tr>
+        <tr>
+          <td><code>:gapless</code></td>
+          <td>no skip on resume (distinct from monotonic)</td>
+          <td>refused when retention pruned past the resume point</td>
+        </tr>
+        <tr>
+          <td><code>:at-least-once</code></td>
+          <td>delivery class</td>
+          <td>the durable plane</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">Deliberately <b>absent</b>: <code>snapshot-isolation</code>, <code>causal</code>, and
          <code>eventual</code> are not in the set at all — admitting them as
          refusals would imply roadmap, and admitting them as accepted
          would be a lie. And <code>valid-at</code> is not a consistency token: it
          is the valid-time query parameter (<a class="xref" href="time.html">bitemporal</a>), and the two
          axes must not fuse.</p>
-      
-    </section>
-    <section id="cons-refusals">
-      <h2>Two refusals that teach</h2>
-      
-        <p>Two tokens exist so their refusals can point somewhere better:</p>
-        <ul>
-          
-            <li><code>:exactly-once</code> — <b>permanently refused</b>: no
+  </section>
+  <section id="cons-refusals">
+    <h2>Two refusals that teach</h2>
+    <p>Two tokens exist so their refusals can point somewhere better:</p>
+    <ul>
+      <li><code>:exactly-once</code> — <b>permanently refused</b>: no
               distributed substrate delivers it, and pretending is how
               double-charges happen. The refusal names the real answer:
               at-least-once delivery composed with declared idempotency
               at the effect boundary (<a class="xref" href="commands-effects.html">commands-effects</a>).</li>
-            <li><code>:serializable</code> — <b>refused with a pointer</b>: the
+      <li><code>:serializable</code> — <b>refused with a pointer</b>: the
               substrate offers no cross-stream commit coordination, and
               this vocabulary will not imply one. The refusal names the
               coordination design as the place where that either arrives
               or is rejected on principle.</li>
-          
-        </ul>
-        <p>This is the vocabulary's quiet thesis: <b>a guarantee you refuse
+    </ul>
+    <p>This is the vocabulary's quiet thesis: <b>a guarantee you refuse
          loudly is worth more than a guarantee you fake.</b> The refusal
          is documentation, delivered at the moment of need, naming the
          supported alternative.</p>
-      
-    </section>
-    <section id="cons-lattice">
-      <h2>A lattice, not a ladder</h2>
-      
-        <p>Incumbent intuition wants \"consistency levels\" on a dial from
+  </section>
+  <section id="cons-lattice">
+    <h2>A lattice, not a ladder</h2>
+    <p>Incumbent intuition wants \"consistency levels\" on a dial from
          weak to strong. This vocabulary is <b>independent conjuncts</b>:
          <code>prefix-consistent</code> and <code>read-your-writes</code> are incomparable —
          neither implies the other — and a declaration is a set, not a
          level. A refusal names the failing token and the failing
          stage, so widening a declaration tells you exactly what you
          just asked for that the surface cannot give.</p>
-        <p>The composition rules that follow from per-stream reality:
+    <p>The composition rules that follow from per-stream reality:
          <code>prefix-consistent</code> holds <b>per source</b> — a multi-stream read
          gets per-source prefixes and NO cross-source cut unless it
          declares <code>:at-head-set</code>, which supplies a signed cut of named
@@ -277,26 +263,22 @@
          across streams is coordination, a different problem owned by a
          different design — this vocabulary refuses to blur that
          line.</p>
-      
-    </section>
-    <section id="cons-attach">
-      <h2>Where declarations attach</h2>
-      
-        <p>Exactly two attachment points:</p>
-        <ul>
-          
-            <li><b>The handle floor</b> — store open options, journal
+  </section>
+  <section id="cons-attach">
+    <h2>Where declarations attach</h2>
+    <p>Exactly two attachment points:</p>
+    <ul>
+      <li><b>The handle floor</b> — store open options, journal
               open/attach, fabric subscribe, session establishment. The
               declaration is checked ONCE at declaration time against
               the surface's advertised guarantee set and refused at
               open; the advertisement is bound to the configuration
               generation, so a config reload cannot leave a cached
               advertisement lying about the new reality.</li>
-            <li><b>Per-read pins</b> — <code>at-seq</code>, a head-set, or a cursor on
+      <li><b>Per-read pins</b> — <code>at-seq</code>, a head-set, or a cursor on
               the read options.</li>
-          
-        </ul>
-        <p>Deliberately NOT an attachment point: definitions. A
+    </ul>
+    <p>Deliberately NOT an attachment point: definitions. A
          consistency need is a property of the <i>handle a value arrives
          through at runtime</i>, not of a function — a def-level clause
          would be either advisory (the house contradiction) or a
@@ -307,20 +289,18 @@
          <code>:monotonic-reads</code> — and must refuse <code>:read-your-writes</code> and
          <code>:linearizable-ref</code>, advertising its signed head-set and lag
          through status instead of pretending to be the primary.</p>
-      
-    </section>
-  
+  </section>
 </section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>Consistency, in the words we use</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,120 +143,117 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">format</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-format"><h1>format</h1><p class="lede">Emit CX values back to CX text in four forms: canonical, pretty, compact, and diff-friendly.
 
-   Canonical is the byte-stable hash preimage used for hashing, diffing, and content addressing; pretty is human-readable with indentation and wrapping; compact minimizes whitespace for transport; diff-friendly is a version-stable, one-element-per-line form for snapshots and version control. This is CX-to-CX text only — cross-format conversion lives in modules like json and csv. Every form round-trips: parsing the output is structurally equal to the original value.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
+   Canonical is the byte-stable hash preimage used for hashing, diffing, and content addressing; pretty is human-readable with indentation and wrapping; compact minimizes whitespace for transport; diff-friendly is a version-stable, one-element-per-line form for snapshots and version control. This is CX-to-CX text only — cross-format conversion lives in modules like json and csv. Every form round-trips: parsing the output is structurally equal to the original value.
+
+   Round-tripping means TYPES survive, not just characters. A non-string scalar is never quoted by any form: a decimal stays <code>score=1.5</code>, an atom keeps its sigil as <code>tier=:gold</code>, and a type with no self-evident lexical form keeps its glued annotation as <code>port::u16=8080</code>. Quoting any of those would re-parse it as a string and silently change the value's type.
+
+   Pretty and diff-friendly differ from canonical on exactly one point, deliberately: they ALWAYS quote a string, honoring the string-quote option, where canonical leaves a string bare whenever the bare form re-parses as that same string. So <code>[user name=alice]</code> emits <code>name=alice</code> in canonical and <code>name="alice"</code> in pretty. Both round-trip; pretty's choice keeps the string/non-string distinction visible to a human reader scanning indented output, which is the form's whole purpose. This is the only divergence between the two.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-format-canonical" class="fn">
-    <h3>format:canonical</h3>
-    <p class="fn-sig"><code>[$format:canonical]  -> string</code>  —  Emit the byte-stable canonical form of a value — the hash preimage for content addressing.</p>
-    
-  </section>
-  <section id="fn-format-pretty" class="fn">
-    <h3>format:pretty</h3>
-    <p class="fn-sig"><code>[$format:pretty]  -> string</code>  —  Emit a human-readable form with indentation and line wrapping; not version-stable.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/format']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-format-canonical" class="fn">
+  <h3>format:canonical</h3>
+  <p class="fn-sig"><code>[$format:canonical]  -> string</code>  —  Emit the byte-stable canonical form of a value — the hash preimage for content addressing.</p>
+</section><section id="fn-format-pretty" class="fn">
+  <h3>format:pretty</h3>
+  <p class="fn-sig"><code>[$format:pretty]  -> string</code>  —  Emit a human-readable form with indentation and line wrapping; not version-stable.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/format']
 [$format:pretty [user]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'[user]'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-format-compact" class="fn">
-    <h3>format:compact</h3>
-    <p class="fn-sig"><code>[$format:compact]  -> string</code>  —  Emit a minimum-whitespace form for transport over text channels.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/format']
+    </pre>
+    <pre class="sample-output">
+      <code>'[user]'</code>
+    </pre>
+  </div>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/format']
+[$format:pretty [user name=alice role="ops lead" age=41 active=true score=1.5]]</code>
+    </pre>
+    <pre class="sample-output">
+      <code>'[user name="alice" role="ops lead" age=41 active=true score=1.5]'</code>
+    </pre>
+  </div>
+</section><section id="fn-format-compact" class="fn">
+  <h3>format:compact</h3>
+  <p class="fn-sig"><code>[$format:compact]  -> string</code>  —  Emit a minimum-whitespace form for transport over text channels.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/format']
 [$format:compact [a [b [c]]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'[a [b [c]]]'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-format-pretty-with-opts" class="fn">
-    <h3>format:pretty-with-opts</h3>
-    <p class="fn-sig"><code>[$format:pretty-with-opts]  -> string</code>  —  Pretty-print with an options map controlling indent, line width, attribute sorting, and depth.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/format']
+    </pre>
+    <pre class="sample-output">
+      <code>'[a [b [c]]]'</code>
+    </pre>
+  </div>
+</section><section id="fn-format-pretty-with-opts" class="fn">
+  <h3>format:pretty-with-opts</h3>
+  <p class="fn-sig"><code>[$format:pretty-with-opts]  -> string</code>  —  Pretty-print with an options map controlling indent, line width, attribute sorting, and depth.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/format']
 [$format:pretty-with-opts [a [b [c]]] {indent: "    "}]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'[a\n    [b\n        [c]\n    ]\n]'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-format-canonical-with-context" class="fn">
-    <h3>format:canonical-with-context</h3>
-    <p class="fn-sig"><code>[$format:canonical-with-context]  -> element</code>  —  Emit the canonical text together with its derived hash, length, and token count.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/format']
+    </pre>
+    <pre class="sample-output">
+      <code>'[a\n    [b\n        [c]\n    ]\n]'</code>
+    </pre>
+  </div>
+</section><section id="fn-format-canonical-with-context" class="fn">
+  <h3>format:canonical-with-context</h3>
+  <p class="fn-sig"><code>[$format:canonical-with-context]  -> element</code>  —  Emit the canonical text together with its derived hash, length, and token count.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/format']
 [?let [= $r [$format:canonical-with-context [a 1]]] $r@length]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>5</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-format-diff-friendly" class="fn">
-    <h3>format:diff-friendly</h3>
-    <p class="fn-sig"><code>[$format:diff-friendly]  -> string</code>  —  Emit a version-stable, one-element-per-line form with sorted attributes for snapshots and diffs.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/format']
+    </pre>
+    <pre class="sample-output">
+      <code>5</code>
+    </pre>
+  </div>
+</section><section id="fn-format-diff-friendly" class="fn">
+  <h3>format:diff-friendly</h3>
+  <p class="fn-sig"><code>[$format:diff-friendly]  -> string</code>  —  Emit a version-stable, one-element-per-line form with sorted attributes for snapshots and diffs.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/format']
 [$format:diff-friendly [user role="admin" id="7"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'[user id="7" role="admin"]'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-format-emit-stream" class="fn">
-    <h3>format:emit-stream</h3>
-    <p class="fn-sig"><code>[$format:emit-stream]  -> [sequence string]</code>  —  Emit a value as a sequence of chunks whose concatenation equals pretty-with-opts.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/format']
+    </pre>
+    <pre class="sample-output">
+      <code>'[user id="7" role="admin"]'</code>
+    </pre>
+  </div>
+</section><section id="fn-format-emit-stream" class="fn">
+  <h3>format:emit-stream</h3>
+  <p class="fn-sig"><code>[$format:emit-stream]  -> [sequence string]</code>  —  Emit a value as a sequence of chunks whose concatenation equals pretty-with-opts.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/format']
 [$format:emit-stream [user] {}]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>('[user]')</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>('[user]')</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>format</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

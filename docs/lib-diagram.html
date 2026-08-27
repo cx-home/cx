@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,342 +143,283 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">diagram</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-diagram"><h1>diagram</h1><p class="lede"></p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-diagram-render-mermaid" class="fn">
-    <h3>diagram:render-mermaid</h3>
-    <p class="fn-sig"><code>[$diagram:render-mermaid]  -> string | err</code>  —  Render the engine-injected program image to Mermaid text (detail rung min|compact|full), refusing non-table top-level directives with CXER0281.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-diagram-render-mermaid" class="fn">
+  <h3>diagram:render-mermaid</h3>
+  <p class="fn-sig"><code>[$diagram:render-mermaid]  -> string | err</code>  —  Render the engine-injected program image to Mermaid text (detail rung min|compact|full), refusing non-table top-level directives with CXER0281.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
 [$diagram:extract-mermaid [$diagram:render-mermaid [greet] "[greet]" "min"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'[greet]'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-diagram-rules" class="fn">
-    <h3>diagram:rules</h3>
-    <p class="fn-sig"><code>[$diagram:rules]  -> element</code>  —  The sealed §10.1.2 render-rules table as data: rows, registry aliases, scaffolding, and nested-only emitters.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
+    </pre>
+    <pre class="sample-output">
+      <code>'[greet]'</code>
+    </pre>
+  </div>
+</section><section id="fn-diagram-rules" class="fn">
+  <h3>diagram:rules</h3>
+  <p class="fn-sig"><code>[$diagram:rules]  -> element</code>  —  The sealed §10.1.2 render-rules table as data: rows, registry aliases, scaffolding, and nested-only emitters.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
 [$count [?for [in $r [$diagram:rules]/*] [where [= [$name $r] "row"]] [yield $r]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>26</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-diagram-admitted" class="fn">
-    <h3>diagram:admitted</h3>
-    <p class="fn-sig"><code>[$diagram:admitted]  -> bool</code>  —  Whether a directive local name is admitted at top level (table rows, aliases, and scaffolding; nested-only emitters are not).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
+    </pre>
+    <pre class="sample-output">
+      <code>26</code>
+    </pre>
+  </div>
+</section><section id="fn-diagram-admitted" class="fn">
+  <h3>diagram:admitted</h3>
+  <p class="fn-sig"><code>[$diagram:admitted]  -> bool</code>  —  Whether a directive local name is admitted at top level (table rows, aliases, and scaffolding; nested-only emitters are not).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
 [$diagram:admitted "secret"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>false</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-diagram-extract-mermaid" class="fn">
-    <h3>diagram:extract-mermaid</h3>
-    <p class="fn-sig"><code>[$diagram:extract-mermaid]  -> string | err</code>  —  Recover the verbatim embedded CX source from a rendered Mermaid diagram.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
+    </pre>
+    <pre class="sample-output">
+      <code>false</code>
+    </pre>
+  </div>
+</section><section id="fn-diagram-extract-mermaid" class="fn">
+  <h3>diagram:extract-mermaid</h3>
+  <p class="fn-sig"><code>[$diagram:extract-mermaid]  -> string | err</code>  —  Recover the verbatim embedded CX source from a rendered Mermaid diagram.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
 [$diagram:extract-mermaid "%%cx:W3hd%%"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'[x]'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-diagram-extract-svg" class="fn">
-    <h3>diagram:extract-svg</h3>
-    <p class="fn-sig"><code>[$diagram:extract-svg]  -> string | err</code>  —  Recover the verbatim embedded CX source from an SVG rendering's <cx:source> metadata block.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
+    </pre>
+    <pre class="sample-output">
+      <code>'[x]'</code>
+    </pre>
+  </div>
+</section><section id="fn-diagram-extract-svg" class="fn">
+  <h3>diagram:extract-svg</h3>
+  <p class="fn-sig"><code>[$diagram:extract-svg]  -> string | err</code>  —  Recover the verbatim embedded CX source from an SVG rendering's <cx:source> metadata block.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
 [$diagram:extract-svg "<svg><metadata><cx:source>W3hd</cx:source></metadata></svg>"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'[x]'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-diagram-extract-png" class="fn">
-    <h3>diagram:extract-png</h3>
-    <p class="fn-sig"><code>[$diagram:extract-png]  -> string | err</code>  —  Recover the verbatim embedded CX source from a PNG rendering's cx-source tEXt chunk.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
+    </pre>
+    <pre class="sample-output">
+      <code>'[x]'</code>
+    </pre>
+  </div>
+</section><section id="fn-diagram-extract-png" class="fn">
+  <h3>diagram:extract-png</h3>
+  <p class="fn-sig"><code>[$diagram:extract-png]  -> string | err</code>  —  Recover the verbatim embedded CX source from a PNG rendering's cx-source tEXt chunk.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
 [?lib 'cx-stdlib/bytes' as=bytes]
 [?else [$diagram:extract-png [$bytes:from-base64 "iVBORw0KGgo="]] "no cx-source chunk"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'no cx-source chunk'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-diagram-render-dot" class="fn">
-    <h3>diagram:render-dot</h3>
-    <p class="fn-sig"><code>[$diagram:render-dot]  -> string</code>  —  Emit the DOT (graphviz) text for the engine-injected program image — the pure half of the SVG/PNG path.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
+    </pre>
+    <pre class="sample-output">
+      <code>'no cx-source chunk'</code>
+    </pre>
+  </div>
+</section><section id="fn-diagram-render-dot" class="fn">
+  <h3>diagram:render-dot</h3>
+  <p class="fn-sig"><code>[$diagram:render-dot]  -> string</code>  —  Emit the DOT (graphviz) text for the engine-injected program image — the pure half of the SVG/PNG path.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
 [?lib 'cx-stdlib/strings' as=strings]
 [$strings:contains [$diagram:render-dot [greet]] "digraph CX {"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-diagram-render-svg" class="fn">
-    <h3>diagram:render-svg</h3>
-    <p class="fn-sig"><code>[$diagram:render-svg]  -> string | err</code>  —  Render the program image to SVG through graphviz (subprocess capability, allowlist <code>dot</code>); without the capability or without <code>dot</code> on PATH the round-trip-preserving 1x1 envelope is returned instead.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-diagram-render-svg" class="fn">
+  <h3>diagram:render-svg</h3>
+  <p class="fn-sig"><code>[$diagram:render-svg]  -> string | err</code>  —  Render the program image to SVG through graphviz (subprocess capability, allowlist <code>dot</code>); without the capability or without <code>dot</code> on PATH the round-trip-preserving 1x1 envelope is returned instead.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
 [$diagram:extract-svg [$diagram:render-svg [greet] "[greet]"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'[greet]'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-diagram-render-png" class="fn">
-    <h3>diagram:render-png</h3>
-    <p class="fn-sig"><code>[$diagram:render-png]  -> bytes | err</code>  —  Render the program image to PNG through graphviz, splicing the source into a <code>cx-source</code> tEXt chunk; degrades to the 1x1 envelope when <code>dot</code> is unavailable.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
+    </pre>
+    <pre class="sample-output">
+      <code>'[greet]'</code>
+    </pre>
+  </div>
+</section><section id="fn-diagram-render-png" class="fn">
+  <h3>diagram:render-png</h3>
+  <p class="fn-sig"><code>[$diagram:render-png]  -> bytes | err</code>  —  Render the program image to PNG through graphviz, splicing the source into a <code>cx-source</code> tEXt chunk; degrades to the 1x1 envelope when <code>dot</code> is unavailable.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
 [$diagram:extract-png [$diagram:render-png [greet] "[greet]"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'[greet]'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-diagram-of-source" class="fn">
-    <h3>diagram:of-source</h3>
-    <p class="fn-sig"><code>[$diagram:of-source]  -> string | bytes | err</code>  —  Render CX SOURCE TEXT to a diagram in one call (format mermaid|dot|svg|png, detail rung defaulting to min): the program lift happens inside the module, and <code>cx diagram</code> renders through this same entry, so a CX caller and the CLI produce identical bytes.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
+    </pre>
+    <pre class="sample-output">
+      <code>'[greet]'</code>
+    </pre>
+  </div>
+</section><section id="fn-diagram-of-source" class="fn">
+  <h3>diagram:of-source</h3>
+  <p class="fn-sig"><code>[$diagram:of-source]  -> string | bytes | err</code>  —  Render CX SOURCE TEXT to a diagram in one call (format mermaid|dot|svg|png, detail rung defaulting to min): the program lift happens inside the module, and <code>cx diagram</code> renders through this same entry, so a CX caller and the CLI produce identical bytes.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
 [$diagram:extract-mermaid [$diagram:of-source "[greet]" "mermaid"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'[greet]'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-diagram-code-diagram" class="fn">
-    <h3>diagram:code-diagram</h3>
-    <p class="fn-sig"><code>[$diagram:code-diagram]  -> string | err</code>  —  The playground renderer: classify CX source text (data → ERD, sequence-shape code → SEQ, other code → CFG) and emit Mermaid at the requested level (min|compact|full).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
+    </pre>
+    <pre class="sample-output">
+      <code>'[greet]'</code>
+    </pre>
+  </div>
+</section><section id="fn-diagram-code-diagram" class="fn">
+  <h3>diagram:code-diagram</h3>
+  <p class="fn-sig"><code>[$diagram:code-diagram]  -> string | err</code>  —  The playground renderer: classify CX source text (data → ERD, sequence-shape code → SEQ, other code → CFG) and emit Mermaid at the requested level (min|compact|full).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
 [?lib 'cx-stdlib/strings' as=strings]
 [$strings:contains [$diagram:code-diagram "[user id=1]" "min"] "erDiagram"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-diagram-svg-envelope" class="fn">
-    <h3>diagram:svg-envelope</h3>
-    <p class="fn-sig"><code>[$diagram:svg-envelope]  -> string</code>  —  The dot-less SVG contract: a valid 1x1 SVG carrying only the embedded source, so the round trip holds on profiles without graphviz.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-diagram-svg-envelope" class="fn">
+  <h3>diagram:svg-envelope</h3>
+  <p class="fn-sig"><code>[$diagram:svg-envelope]  -> string</code>  —  The dot-less SVG contract: a valid 1x1 SVG carrying only the embedded source, so the round trip holds on profiles without graphviz.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
 [$diagram:extract-svg [$diagram:svg-envelope "[x]"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'[x]'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-diagram-png-envelope" class="fn">
-    <h3>diagram:png-envelope</h3>
-    <p class="fn-sig"><code>[$diagram:png-envelope]  -> bytes</code>  —  The dot-less PNG contract: a valid 1x1 PNG whose <code>cx-source</code> tEXt chunk carries the embedded source.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
+    </pre>
+    <pre class="sample-output">
+      <code>'[x]'</code>
+    </pre>
+  </div>
+</section><section id="fn-diagram-png-envelope" class="fn">
+  <h3>diagram:png-envelope</h3>
+  <p class="fn-sig"><code>[$diagram:png-envelope]  -> bytes</code>  —  The dot-less PNG contract: a valid 1x1 PNG whose <code>cx-source</code> tEXt chunk carries the embedded source.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
 [$diagram:extract-png [$diagram:png-envelope "[x]"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'[x]'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-diagram-inject-svg-metadata" class="fn">
-    <h3>diagram:inject-svg-metadata</h3>
-    <p class="fn-sig"><code>[$diagram:inject-svg-metadata]  -> string</code>  —  Splice a <code><metadata><cx:source></code> block carrying the base64 source into an SVG document (after its first <code>></code>, reproducing the shipped placement — DRW2-2).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
+    </pre>
+    <pre class="sample-output">
+      <code>'[x]'</code>
+    </pre>
+  </div>
+</section><section id="fn-diagram-inject-svg-metadata" class="fn">
+  <h3>diagram:inject-svg-metadata</h3>
+  <p class="fn-sig"><code>[$diagram:inject-svg-metadata]  -> string</code>  —  Splice a <code><metadata><cx:source></code> block carrying the base64 source into an SVG document (after its first <code>></code>, reproducing the shipped placement — DRW2-2).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
 [$diagram:extract-svg [$diagram:inject-svg-metadata "<svg></svg>" "[x]"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'[x]'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-diagram-inject-png-chunk" class="fn">
-    <h3>diagram:inject-png-chunk</h3>
-    <p class="fn-sig"><code>[$diagram:inject-png-chunk]  -> bytes</code>  —  Splice a <code>cx-source</code> tEXt chunk (with its CRC-32) into a PNG immediately after IHDR.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
+    </pre>
+    <pre class="sample-output">
+      <code>'[x]'</code>
+    </pre>
+  </div>
+</section><section id="fn-diagram-inject-png-chunk" class="fn">
+  <h3>diagram:inject-png-chunk</h3>
+  <p class="fn-sig"><code>[$diagram:inject-png-chunk]  -> bytes</code>  —  Splice a <code>cx-source</code> tEXt chunk (with its CRC-32) into a PNG immediately after IHDR.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
 [$diagram:extract-png [$diagram:inject-png-chunk [$diagram:png-envelope "[y]"] "[x]"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'[x]'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-diagram-crc32" class="fn">
-    <h3>diagram:crc32</h3>
-    <p class="fn-sig"><code>[$diagram:crc32]  -> int</code>  —  The PNG chunk CRC-32 (IEEE 802.3 polynomial) over a byte buffer — the checksum the tEXt splice writes.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
+    </pre>
+    <pre class="sample-output">
+      <code>'[x]'</code>
+    </pre>
+  </div>
+</section><section id="fn-diagram-crc32" class="fn">
+  <h3>diagram:crc32</h3>
+  <p class="fn-sig"><code>[$diagram:crc32]  -> int</code>  —  The PNG chunk CRC-32 (IEEE 802.3 polynomial) over a byte buffer — the checksum the tEXt splice writes.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
 [?lib 'cx-stdlib/bytes' as=bytes]
 [$diagram:crc32 [$bytes:from-string-utf8 "IEND"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2923585666</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-diagram-code-rules" class="fn">
-    <h3>diagram:code-rules</h3>
-    <p class="fn-sig"><code>[$diagram:code-rules]  -> element</code>  —  The sealed wave-3 rule table as data: the sequence triggers, the directives that break a CFG basic block, the SEQ inner-dispatch classes, and the ERD scalar-type map. The emitters read it, so the table IS the set.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
+    </pre>
+    <pre class="sample-output">
+      <code>2923585666</code>
+    </pre>
+  </div>
+</section><section id="fn-diagram-code-rules" class="fn">
+  <h3>diagram:code-rules</h3>
+  <p class="fn-sig"><code>[$diagram:code-rules]  -> element</code>  —  The sealed wave-3 rule table as data: the sequence triggers, the directives that break a CFG basic block, the SEQ inner-dispatch classes, and the ERD scalar-type map. The emitters read it, so the table IS the set.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
 [$count [?for [in $r [$diagram:code-rules]/*] [where [= [$name $r] "trigger"]] [yield $r]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>5</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-diagram-code-class" class="fn">
-    <h3>diagram:code-class</h3>
-    <p class="fn-sig"><code>[$diagram:code-class]  -> string</code>  —  The SEQ inner-dispatch class the playground renderer takes for a directive local name; <code>generic</code> (a <code>Note over WORKER</code> line) for a directive the table does not name.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
+    </pre>
+    <pre class="sample-output">
+      <code>5</code>
+    </pre>
+  </div>
+</section><section id="fn-diagram-code-class" class="fn">
+  <h3>diagram:code-class</h3>
+  <p class="fn-sig"><code>[$diagram:code-class]  -> string</code>  —  The SEQ inner-dispatch class the playground renderer takes for a directive local name; <code>generic</code> (a <code>Note over WORKER</code> line) for a directive the table does not name.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
 [$diagram:code-class "const"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'generic'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-diagram-effect-graph" class="fn">
-    <h3>diagram:effect-graph</h3>
-    <p class="fn-sig"><code>[$diagram:effect-graph]  -> string | err</code>  —  The EFFECT/CAPABILITY graph of a CX source (RULED: DGX-1): which of security.md §2's nine capabilities the program reaches, through which call path, and which only under a branch — at <code>min</code> (the verdict), <code>compact</code> (the paths) or <code>full</code> (uncharged effects, [?with-caps] denials, colour classes). What it cannot resolve statically — a dynamic [?eval], an unresolvable callee, a source-text hatch, an unreadable [?lib], a Ring-2 pack verb — renders as an explicit UNKNOWN edge, never omitted. Reachability is syntactic and the resource scope is never shown: it answers "it can read", not "it reads /etc/passwd".</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
+    </pre>
+    <pre class="sample-output">
+      <code>'generic'</code>
+    </pre>
+  </div>
+</section><section id="fn-diagram-effect-graph" class="fn">
+  <h3>diagram:effect-graph</h3>
+  <p class="fn-sig"><code>[$diagram:effect-graph]  -> string | err</code>  —  The EFFECT/CAPABILITY graph of a CX source (RULED: DGX-1): which of security.md §2's nine capabilities the program reaches, through which call path, and which only under a branch — at <code>min</code> (the verdict), <code>compact</code> (the paths) or <code>full</code> (uncharged effects, [?with-caps] denials, colour classes). What it cannot resolve statically — a dynamic [?eval], an unresolvable callee, a source-text hatch, an unreadable [?lib], a Ring-2 pack verb — renders as an explicit UNKNOWN edge, never omitted. Reachability is syntactic and the resource scope is never shown: it answers "it can read", not "it reads /etc/passwd".</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
 [$diagram:effect-graph "[?def double ($x) [* $x 2]]" "min"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'flowchart TD\n  prog(["program"])\n  nocap["no capability-charging effect reached"]\n  prog --> nocap'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-diagram-effect-rules" class="fn">
-    <h3>diagram:effect-rules</h3>
-    <p class="fn-sig"><code>[$diagram:effect-rules]  -> element</code>  —  The sealed effect-graph rule table as data: the nine-capability roster with its grant flags, the directive heads that charge a capability, the branch-arm carriers that make a reached effect conditional, and the opacity classes that must render as an unknown edge. The primitive→capability map is deliberately NOT here — it is read live from the engine, so this diagram cannot under-report a newly-gated effect point.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
+    </pre>
+    <pre class="sample-output">
+      <code>'flowchart TD\n  prog(["program"])\n  nocap["no capability-charging effect reached"]\n  prog --> nocap'</code>
+    </pre>
+  </div>
+</section><section id="fn-diagram-effect-rules" class="fn">
+  <h3>diagram:effect-rules</h3>
+  <p class="fn-sig"><code>[$diagram:effect-rules]  -> element</code>  —  The sealed effect-graph rule table as data: the nine-capability roster with its grant flags, the directive heads that charge a capability, the branch-arm carriers that make a reached effect conditional, and the opacity classes that must render as an unknown edge. The primitive→capability map is deliberately NOT here — it is read live from the engine, so this diagram cannot under-report a newly-gated effect point.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
 [$count [?for [in $r [$diagram:effect-rules]/*] [where [= [$name $r] "cap"]] [yield $r]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>9</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-diagram-effect-cap" class="fn">
-    <h3>diagram:effect-cap</h3>
-    <p class="fn-sig"><code>[$diagram:effect-cap]  -> string</code>  —  The capability a PRIMITIVE charges, read live from the engine's own closed effect-point table (security.md §2.1); the empty string for a primitive that charges nothing.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
+    </pre>
+    <pre class="sample-output">
+      <code>9</code>
+    </pre>
+  </div>
+</section><section id="fn-diagram-effect-cap" class="fn">
+  <h3>diagram:effect-cap</h3>
+  <p class="fn-sig"><code>[$diagram:effect-cap]  -> string</code>  —  The capability a PRIMITIVE charges, read live from the engine's own closed effect-point table (security.md §2.1); the empty string for a primitive that charges nothing.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/diagram' as=diagram]
 [$diagram:effect-cap "io-read-file"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'read'</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>'read'</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>diagram</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

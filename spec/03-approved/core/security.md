@@ -273,7 +273,7 @@ theorem. The full clause grammar and static rules live in `code.md`
 §12.2.7.
 
 ## §3 Granting + narrowing
-- **CLI (deny-by-default):** `cx FILE --allow-read=./data --allow-net=api.example.com:443 --allow-env=HOME`. No `--allow-*` ⇒ empty set (pure-only). `--allow-all` is an explicit opt-out for trusted local use.
+- **CLI (deny-by-default):** `cx FILE --allow-read --allow-net=api.example.com:443 --allow-env`. No `--allow-*` ⇒ empty set (pure-only). `--allow-all` is an explicit opt-out for trusted local use. Resource scoping is enforced for `--allow-net` (host:port) today; a resource suffix on `--allow-read` / `--allow-write` / `--allow-env` is REFUSED at startup rather than silently widened — scoped read/write/env grants are the target state of the path-scoping design item (#1061).
 - **Embedding / ABI:** the host passes a capability set to `cx_code_eval`/`cx:eval`; defaults to empty.
 - **Manifest declaration:** `cx.pkg` MAY declare the capabilities a module *requests* (`[capabilities [net api.example.com:443] [env …]]`); the host reviews/grants — a module never self-grants.
 - **In-program narrowing:** `[?with-caps [deny net] [deny subprocess] BODY]` drops capabilities for `BODY`'s dynamic extent (narrow-only; a `deny` cannot be undone inside `BODY`). Run untrusted sub-computations with a reduced set. Grammar `[167]`: ≥1 `[deny CAP (resource)?]` clause + one body expr; a malformed shape is `CXER0100`, and a denied effect at the effect point raises `CXER0271` (§4).

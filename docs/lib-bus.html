@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,191 +143,165 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">bus</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-bus"><h1>bus</h1><p class="lede">In-process publish/subscribe that delivers each published message to its matching subscribers synchronously and in a defined order. Subscribers attach a (pattern, handler) registration; messages are matched by topic atom, head name, or an arity-1 boolean predicate. A re-entrant FIFO emission queue drains every message a handler publishes during dispatch before the next externally-published message, keeping delivery deterministic and replayable. The bus has no socket, thread, or timer of its own and introduces no capability — every effect is performed by the handlers it invokes.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-bus-bus" class="fn">
-    <h3>bus:bus</h3>
-    <p class="fn-sig"><code>[$bus:bus]  -> element</code>  —  Construct a fresh in-process bus with no subscriptions.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/bus']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-bus-bus" class="fn">
+  <h3>bus:bus</h3>
+  <p class="fn-sig"><code>[$bus:bus]  -> element</code>  —  Construct a fresh in-process bus with no subscriptions.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/bus']
 [?with-open [$bus:bus] $b
   [?with-open [$bus:on $b :ping [?fn ($m) $m]] $s
     [?let [= $d [$bus:emit $b [do :ping]]] $d@delivered]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>1</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-bus-close" class="fn">
-    <h3>bus:close</h3>
-    <p class="fn-sig"><code>[$bus:close]  -> null</code>  —  Close the bus, cancelling every active subscription — idempotent, never raises.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/bus']
+    </pre>
+    <pre class="sample-output">
+      <code>1</code>
+    </pre>
+  </div>
+</section><section id="fn-bus-close" class="fn">
+  <h3>bus:close</h3>
+  <p class="fn-sig"><code>[$bus:close]  -> null</code>  —  Close the bus, cancelling every active subscription — idempotent, never raises.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/bus']
 [?let [= $b [$bus:bus]]
   [= $c [$bus:close $b]]
   [$bus:emit $b [do :t]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER4664</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-bus-on" class="fn">
-    <h3>bus:on</h3>
-    <p class="fn-sig"><code>[$bus:on]  -> element</code>  —  Register a handler to fire on every future message matching the pattern, returning a [subscription] handle.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/bus']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER4664</code>
+    </pre>
+  </div>
+</section><section id="fn-bus-on" class="fn">
+  <h3>bus:on</h3>
+  <p class="fn-sig"><code>[$bus:on]  -> element</code>  —  Register a handler to fire on every future message matching the pattern, returning a [subscription] handle.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/bus']
 [?with-open [$bus:bus] $b
   [?with-open [$bus:on $b :ping [?fn ($m) $m]] $s
     [?let [= $d [$bus:emit $b [do :ping]]] $d@delivered]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>1</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-bus-off" class="fn">
-    <h3>bus:off</h3>
-    <p class="fn-sig"><code>[$bus:off]  -> bool</code>  —  Cancel a subscription by handle or id — true if an active one was cancelled, false if already gone.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/bus']
+    </pre>
+    <pre class="sample-output">
+      <code>1</code>
+    </pre>
+  </div>
+</section><section id="fn-bus-off" class="fn">
+  <h3>bus:off</h3>
+  <p class="fn-sig"><code>[$bus:off]  -> bool</code>  —  Cancel a subscription by handle or id — true if an active one was cancelled, false if already gone.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/bus']
 [?with-open [$bus:bus] $b
   [?let [= $s [$bus:on $b :t [?fn ($m) $m]]]
     [$bus:off $b $s]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-bus-emit" class="fn">
-    <h3>bus:emit</h3>
-    <p class="fn-sig"><code>[$bus:emit]  -> element</code>  —  Publish a message and synchronously drive the full ordered dispatch, returning a [dispatch] summary value.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/bus']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-bus-emit" class="fn">
+  <h3>bus:emit</h3>
+  <p class="fn-sig"><code>[$bus:emit]  -> element</code>  —  Publish a message and synchronously drive the full ordered dispatch, returning a [dispatch] summary value.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/bus']
 [?with-open [$bus:bus] $b
   [?with-open [$bus:on $b :ping [?fn ($m) $m]] $s
     [?let [= $d [$bus:emit $b [do :ping]]] $d@delivered]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>1</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-bus-subscribers" class="fn">
-    <h3>bus:subscribers</h3>
-    <p class="fn-sig"><code>[$bus:subscribers]  -> [sequence element]</code>  —  List the active subscriptions in dispatch order, optionally filtered by a pattern.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/bus']
+    </pre>
+    <pre class="sample-output">
+      <code>1</code>
+    </pre>
+  </div>
+</section><section id="fn-bus-subscribers" class="fn">
+  <h3>bus:subscribers</h3>
+  <p class="fn-sig"><code>[$bus:subscribers]  -> [sequence element]</code>  —  List the active subscriptions in dispatch order, optionally filtered by a pattern.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/bus']
 [?with-open [$bus:bus] $b
   [?with-open [$bus:on $b :a [?fn ($m) $m]] $s1
     [?with-open [$bus:on $b :b [?fn ($m) $m]] $s2
       [$count [$bus:subscribers $b]]]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-bus-topics" class="fn">
-    <h3>bus:topics</h3>
-    <p class="fn-sig"><code>[$bus:topics]  -> [sequence element]</code>  —  List the distinct topic atoms currently subscribed, in first-appearance order.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/bus']
+    </pre>
+    <pre class="sample-output">
+      <code>2</code>
+    </pre>
+  </div>
+</section><section id="fn-bus-topics" class="fn">
+  <h3>bus:topics</h3>
+  <p class="fn-sig"><code>[$bus:topics]  -> [sequence element]</code>  —  List the distinct topic atoms currently subscribed, in first-appearance order.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/bus']
 [?with-open [$bus:bus] $b
   [?with-open [$bus:on $b :a [?fn ($m) $m]] $s1
     [?with-open [$bus:on $b :b [?fn ($m) $m]] $s2
       [$bus:topics $b]]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(:a, :b)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-bus-match" class="fn">
-    <h3>bus:match</h3>
-    <p class="fn-sig"><code>[$bus:match]  -> [sequence element]</code>  —  Report which subscriptions would fire for a message, in fire order, without firing them.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/bus']
+    </pre>
+    <pre class="sample-output">
+      <code>(:a, :b)</code>
+    </pre>
+  </div>
+</section><section id="fn-bus-match" class="fn">
+  <h3>bus:match</h3>
+  <p class="fn-sig"><code>[$bus:match]  -> [sequence element]</code>  —  Report which subscriptions would fire for a message, in fire order, without firing them.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/bus']
 [?with-open [$bus:bus] $b
   [?with-open [$bus:on $b :t [?fn ($m) $m]] $s
     [$count [$bus:match $b [do :t]]]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>1</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-bus-topic" class="fn">
-    <h3>bus:topic</h3>
-    <p class="fn-sig"><code>[$bus:topic]  -> element</code>  —  Compute a message's topic atom from its head and leading atom argument.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/bus']
+    </pre>
+    <pre class="sample-output">
+      <code>1</code>
+    </pre>
+  </div>
+</section><section id="fn-bus-topic" class="fn">
+  <h3>bus:topic</h3>
+  <p class="fn-sig"><code>[$bus:topic]  -> element</code>  —  Compute a message's topic atom from its head and leading atom argument.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/bus']
 [$bus:matches [do :refund] [?fn ($m) [= [$bus:topic $m] :refund]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-bus-matches" class="fn">
-    <h3>bus:matches</h3>
-    <p class="fn-sig"><code>[$bus:matches]  -> bool</code>  —  Report whether a message matches a pattern — the bare matcher.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/bus']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-bus-matches" class="fn">
+  <h3>bus:matches</h3>
+  <p class="fn-sig"><code>[$bus:matches]  -> bool</code>  —  Report whether a message matches a pattern — the bare matcher.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/bus']
 [$bus:matches [do :order.placed] :order.placed]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>bus</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

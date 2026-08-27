@@ -432,7 +432,7 @@ and is not duplicated here.
 | `CXER3700–CXER3719` | `cx-stdlib/crypto` (3700–3707 core primitives, 3702 reserved; 3708–3719 JWT/JWKS verify) | `spec/std-lib/crypto.md` |
 | `CXER3800–CXER3805` | `cx-stdlib/i18n` | `spec/std-lib/i18n.md` |
 | `CXER3900–CXER3902` | `cx-stdlib/html` | `spec/std-lib/html.md` |
-| `CXER4000–CXER4012` | `cx-stdlib/process` | `spec/std-lib/process.md` |
+| `CXER4000–CXER4013` | `cx-stdlib/process` | `spec/std-lib/process.md` |
 | `CXER4100–CXER4119` | `module-cx` | `spec/modules/cx.md` |
 | `CXER4200–CXER4209` | `module-sqlite` | `spec/modules/sqlite.md` |
 | `CXER4300–CXER4309` | `module-tree-sitter` | `spec/modules/tree-sitter.md` |

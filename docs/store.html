@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,13 +143,12 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">The store platform</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="store">
   <h1>The store platform</h1>
-  
-    <p>The CX Store is the platform's persistence spine: a
+  <p>The CX Store is the platform's persistence spine: a
        <b>content-addressed object store</b> behind one document API. The
        same code runs against an in-memory store, a file on disk, an
        SQLite file, an S3 bucket, or a production daemon — you pick the
@@ -161,27 +160,26 @@
        operator-depth documents live under <code>docs/dev/</code> in the
        repository (<code>store-embedded.md</code>, <code>store-service.md</code>,
        <code>store-management.md</code>, <code>store-security.md</code>).</p>
-    <section id="store-model">
-      <h2>Content addressing and identity</h2>
-      
-        <p>A document's ID <b>is</b> its content: the SHA-256 of its strict
+  <section id="store-model">
+    <h2>Content addressing and identity</h2>
+    <p>A document's ID <b>is</b> its content: the SHA-256 of its strict
          canonical bytes (see <a class="xref" href="identity.html#hash">hash</a>). That single decision buys the
          rest of the platform: identity is invariant across substrates,
          encodings, host bindings, and the wire, so replication is
          verifiable by construction and identical content stores
          exactly once — dedup is free, not a feature:</p>
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store' :as store]
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store' :as store]
 [?let [= $s [$store:open 'mem://']]
       [= $h [$store:put-doc $s [order [id 1] [amt 100]]]]
       [= $again [$store:put-doc $s [order [id 1] [amt 100]]]]
       [= $doc [$store:get-doc $s $h]]
   ([= $h $again], $doc)]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(true, [order [id 1] [amt 100]])</code>
-        </pre>
-        <p><code>get-doc</code> re-hashes after decode, so a corrupted object can
+    </pre>
+    <pre class="sample-output">
+      <code>(true, [order [id 1] [amt 100]])</code>
+    </pre>
+    <p><code>get-doc</code> re-hashes after decode, so a corrupted object can
          never come back as a silently wrong document — an integrity
          mismatch is the hard error <code>CXER1120</code>. Documents split by
          <b>identity rule</b>: a <i>structured</i> document (cx data) is keyed
@@ -194,87 +192,81 @@
          <code>[$cx:computation-id]</code> claim — an index, never a storage
          key — so alpha-equivalent definitions share one claim while
          each spelling keeps its own byte-exact address:</p>
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store' :as store]
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store' :as store]
 [?let [= $s [$store:open 'mem://']]
       [= $src '[?def double ($x) [* $x 2]]']
       [= $back [$store:get-blob $s [$store:put-blob $s $src]]]
   ([= $back $src],
    [= [$cx:computation-id '[?def double ($x) [* $x 2]]']
       [$cx:computation-id '[?def double ($n) [* $n 2]]']])]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(true, true)</code>
-        </pre>
-        <p>The substrate is chosen by the URL scheme at open time, and
+    </pre>
+    <pre class="sample-output">
+      <code>(true, true)</code>
+    </pre>
+    <p>The substrate is chosen by the URL scheme at open time, and
          every effectful substrate is capability-gated deny-by-default
          (see <a class="xref" href="capabilities.html">capabilities</a>):</p>
-        <table>
-          <thead>
-            
-              <tr>
-                <th>URL</th>
-                <th>substrate</th>
-                <th>grant needed</th>
-              </tr>
-            
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>mem://</td>
-                <td>in-process memory</td>
-                <td>none — capability-free</td>
-              </tr>
-              <tr>
-                <td>file:///path</td>
-                <td>local directory (pack format)</td>
-                <td>--allow-read / --allow-write</td>
-              </tr>
-              <tr>
-                <td>sqlite:///path.db</td>
-                <td>single SQLite file</td>
-                <td>--allow-read / --allow-write</td>
-              </tr>
-              <tr>
-                <td>s3://bucket/prefix</td>
-                <td>S3-compatible object storage</td>
-                <td>--allow-net</td>
-              </tr>
-              <tr>
-                <td>http(s):// · ftp:// · sftp://</td>
-                <td>remote backends</td>
-                <td>--allow-net</td>
-              </tr>
-              <tr>
-                <td>cx-store://name/ · cx-store+xsp://host:port/name/</td>
-                <td>the service daemon over THE store wire (next subsections)</td>
-                <td>--allow-net=host:port</td>
-              </tr>
-            
-          </tbody>
-        </table>
-        <p class="note">By default a store decomposes each document into a Merkle
+    <table>
+      <thead>
+        <tr>
+          <th>URL</th>
+          <th>substrate</th>
+          <th>grant needed</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>mem://</td>
+          <td>in-process memory</td>
+          <td>none — capability-free</td>
+        </tr>
+        <tr>
+          <td>file:///path</td>
+          <td>local directory (pack format)</td>
+          <td>--allow-read / --allow-write</td>
+        </tr>
+        <tr>
+          <td>sqlite:///path.db</td>
+          <td>single SQLite file</td>
+          <td>--allow-read / --allow-write</td>
+        </tr>
+        <tr>
+          <td>s3://bucket/prefix</td>
+          <td>S3-compatible object storage</td>
+          <td>--allow-net</td>
+        </tr>
+        <tr>
+          <td>http(s):// · ftp:// · sftp://</td>
+          <td>remote backends</td>
+          <td>--allow-net</td>
+        </tr>
+        <tr>
+          <td>cx-store://name/ · cx-store+xsp://host:port/name/</td>
+          <td>the service daemon over THE store wire (next subsections)</td>
+          <td>--allow-net=host:port</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">By default a store decomposes each document into a Merkle
          graph of shared subtree objects — identical subtrees across
          documents store once, a one-field edit re-stores only the path
          to the root, and <code>diff</code> skips identical subtrees in O(1). The
          alternative <code>document+</code> model (one object per doc, required
          for the columnar encodings) and the full URI axes are in the
          store spec and <code>docs/dev/store-embedded.md</code>.</p>
-      
-    </section>
-    <section id="store-embedded">
-      <h2>The embedded workflow</h2>
-      
-        <p><code>cx-stdlib/store</code> is the embedded tier — the store runs inside
+  </section>
+  <section id="store-embedded">
+    <h2>The embedded workflow</h2>
+    <p><code>cx-stdlib/store</code> is the embedded tier — the store runs inside
          your process. Documents are immutable; "the latest X" lives in
          a separate <b>alias layer</b> that maps names to hashes, which is
          the one mutable surface. Updating means storing a new document
          (or deriving one with <code>modify-doc</code>, which applies any
          <code>[?modify]</code> action server-side-shaped and returns the new
          hash) and re-pointing the name:</p>
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store' :as store]
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store' :as store]
 [?let [= $s [$store:open 'mem://']]
       [= $v1 [$store:put-doc $s [config [retries 3]]]]
       [= $v2 [$store:modify-doc $s $v1 [set-attr name=env value='prod']]]
@@ -282,36 +274,36 @@
   ([$store:get-doc $s [$store:get-alias $s 'main']],
    [$store:get-doc $s $v1],
    [$store:diff $s $v1 $v2])]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>([config env=prod [retries 3]], [config [retries 3]], [diff [change path='/config' kind=modified]])</code>
-        </pre>
-        <p>The original is untouched — history is free because nothing is
+    </pre>
+    <pre class="sample-output">
+      <code>([config env=prod [retries 3]], [config [retries 3]], [diff [change path='/config' kind=modified]])</code>
+    </pre>
+    <p>The original is untouched — history is free because nothing is
          ever overwritten. Across the whole corpus, <code>query</code> runs a
          CXPath selection over every held document:</p>
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store' :as store]
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store' :as store]
 [?let [= $s [$store:open 'mem://']]
       [= $h1 [$store:put-doc $s [invoice [total 120] [customer 'ada']]]]
       [= $h2 [$store:put-doc $s [invoice [total 80] [customer 'grace']]]]
   [$store:query $s '//total']]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>([result doc=sha2-256:e5b689fa494377cea041d4bf6496e28e97dd13a059aa4c22c75360fc7d0ceb30 source='mem://#//total' [total 120]], [result doc='sha2-256:89123d4330eda07c2dbeb3878cd1ca12760c1d19e37fdb634b4737bfc2784924' source='mem://#//total' [total 80]])</code>
-        </pre>
-        <p>Going durable is changing the URL — the same program against
+    </pre>
+    <pre class="sample-output">
+      <code>([result doc=sha2-256:e5b689fa494377cea041d4bf6496e28e97dd13a059aa4c22c75360fc7d0ceb30 source='mem://#//total' [total 120]], [result doc='sha2-256:89123d4330eda07c2dbeb3878cd1ca12760c1d19e37fdb634b4737bfc2784924' source='mem://#//total' [total 80]])</code>
+    </pre>
+    <p>Going durable is changing the URL — the same program against
          <code>file://</code> persists, and a reopen finds the store
          self-describing (options are declared at create, not repeated
          at open):</p>
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store' :as store]
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store' :as store]
 [?let [= $s [$store:open 'file:///tmp/notes-store']]
   [$store:put-doc $s [note [text 'durable']]]]</code>
-        </pre>
-        <pre>
-          <code class="language-sh">$ cx --allow-read --allow-write notes.cx</code>
-        </pre>
-        <p>Three habits worth forming from day one: open read paths
+    </pre>
+    <pre>
+      <code class="language-sh">$ cx --allow-read --allow-write notes.cx</code>
+    </pre>
+    <p>Three habits worth forming from day one: open read paths
          read-only (<code>[$store:open-opts URL [map read-only='true']]</code> —
          then only the <code>read</code> grant is ever requested, and a write
          raises <code>CXER1110</code>); treat a Store handle as <b>single-owner</b>
@@ -322,15 +314,13 @@
          <a class="xref" href="capabilities.html#caps-errors">caps-errors</a>). Streaming variants (<code>put-doc-stream</code>,
          <code>iter-docs</code>) keep memory bounded over any corpus size; the
          full surface is on the <code>store</code> module page.</p>
-      
-    </section>
-    <section id="store-porcelain">
-      <h2>Porcelain — introspect, branch, replicate</h2>
-      
-        <p>Over the content-addressed plumbing sits a deliberately
+  </section>
+  <section id="store-porcelain">
+    <h2>Porcelain — introspect, branch, replicate</h2>
+    <p>Over the content-addressed plumbing sits a deliberately
          git-shaped porcelain. Introspection and space reclamation:</p>
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store' :as store]
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store' :as store]
 [?let [= $s [$store:open 'mem://']]
       [= $h1 [$store:put-doc $s [doc [v 1]]]]
       [= $h2 [$store:put-doc $s [doc [v 2]]]]
@@ -338,60 +328,56 @@
       [= $st [$store:status $s]]
       [= $gcr [$store:gc $s]]
   ($st@docs, $gcr@reclaimed, [$count [$store:log $s]])]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(1, 4, 3)</code>
-        </pre>
-        <table>
-          <thead>
-            
-              <tr>
-                <th>verb</th>
-                <th>what it does</th>
-              </tr>
-            
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>status</td>
-                <td>held docs, distinct objects, dedup ratio, unflushed refs</td>
-              </tr>
-              <tr>
-                <td>log</td>
-                <td>the linear ref-log in per-ref advance order — every insert, retract, and ref/alias advance is one recorded epoch (a delete is an act in the history, not a disappearance)</td>
-              </tr>
-              <tr>
-                <td>prune / gc</td>
-                <td>reclaim objects no live ref reaches; gc adds durable compaction. A shared subtree survives the deletion of another doc — an object stays live while ANY ref reaches it</td>
-              </tr>
-              <tr>
-                <td>branch / branch-force</td>
-                <td>point a mutable named ref at a doc; a non-fast-forward move is refused (CXER1114, CAS-safe) unless forced</td>
-              </tr>
-              <tr>
-                <td>diff</td>
-                <td>structural diff by hash — identical subtrees are skipped, so cost is O(changed), not O(size)</td>
-              </tr>
-            
-          </tbody>
-        </table>
-        <p>Replication is the same idea pointed at two stores. Because
+    </pre>
+    <pre class="sample-output">
+      <code>(1, 4, 3)</code>
+    </pre>
+    <table>
+      <thead>
+        <tr>
+          <th>verb</th>
+          <th>what it does</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>status</td>
+          <td>held docs, distinct objects, dedup ratio, unflushed refs</td>
+        </tr>
+        <tr>
+          <td>log</td>
+          <td>the linear ref-log in per-ref advance order — every insert, retract, and ref/alias advance is one recorded epoch (a delete is an act in the history, not a disappearance)</td>
+        </tr>
+        <tr>
+          <td>prune / gc</td>
+          <td>reclaim objects no live ref reaches; gc adds durable compaction. A shared subtree survives the deletion of another doc — an object stays live while ANY ref reaches it</td>
+        </tr>
+        <tr>
+          <td>branch / branch-force</td>
+          <td>point a mutable named ref at a doc; a non-fast-forward move is refused (CXER1114, CAS-safe) unless forced</td>
+        </tr>
+        <tr>
+          <td>diff</td>
+          <td>structural diff by hash — identical subtrees are skipped, so cost is O(changed), not O(size)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Replication is the same idea pointed at two stores. Because
          identity is content, transfer is incremental (only missing
          objects move), idempotent, and conflict-free — no CAS is
          needed on doc keys:</p>
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store' :as store]
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store' :as store]
 [?let [= $laptop [$store:open 'mem://']]
       [= $h [$store:put-doc $laptop [doc [item 'hello']]]]
       [= $backup [$store:open 'mem://']]
       [= $r [$store:push $laptop $backup]]
   [$store:get-doc $backup $h]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[doc [item 'hello']]</code>
-        </pre>
-        <p><code>push</code>/<code>pull</code>/<code>fetch</code> are the git-shaped incremental verbs;
+    </pre>
+    <pre class="sample-output">
+      <code>[doc [item 'hello']]</code>
+    </pre>
+    <p><code>push</code>/<code>pull</code>/<code>fetch</code> are the git-shaped incremental verbs;
          <code>clone</code> is an object-identity copy into an empty destination;
          <code>migrate</code> copies every doc and alias losslessly across <b>any</b>
          axis change (substrate, model, encoding) with every
@@ -402,12 +388,10 @@
          playbook is in <code>docs/dev/store-management.md</code>. <code>merge</code> and
          <code>rebase</code> deliberately do not exist: the model keeps roots plus
          epoch-ordered refs, not a parent-linked commit graph.</p>
-      
-    </section>
-    <section id="store-service">
-      <h2>The service tier — cx store-serve</h2>
-      
-        <p>When the store must outlive one process or serve many, the
+  </section>
+  <section id="store-service">
+    <h2>The service tier — cx store-serve</h2>
+    <p>When the store must outlive one process or serve many, the
          <b>same</b> API, wire format, and content addressing move behind
          a purpose-built daemon: <code>cx store-serve</code> (also covered from
          the operator side in <a class="xref" href="operations.html#ops-store-daemon">ops-store-daemon</a>). It adds the
@@ -415,46 +399,46 @@
          observability, DoS fairness — and no storage smarts. The config is a CX document;
          one daemon mounts many named stores, each mount any embedded
          substrate URL:</p>
-        <pre>
-          <code class="language-cx">[cxstore-service
+    <pre>
+      <code class="language-cx">[cxstore-service
   [bind addr="127.0.0.1:18971"]
   [stores [store name="docs" url="mem://docs"]]]</code>
-        </pre>
-        <pre>
-          <code class="language-sh">$ cx store-serve --config svc.cx --allow-net=127.0.0.1:18971</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx store-serve: listening on tcp://127.0.0.1:18971 — 1 store(s): docs (mem://docs), 4 workers, auth OPEN — no [xsp [grants …]] configured, anonymous full access (configure grants for production)</code>
-        </pre>
-        <p>Config validation is <b>attr-exact</b>: an unknown attribute is a
+    </pre>
+    <pre>
+      <code class="language-sh">$ cx store-serve --config svc.cx --allow-net=127.0.0.1:18971</code>
+    </pre>
+    <pre class="sample-output">
+      <code>cx store-serve: listening on tcp://127.0.0.1:18971 — 1 store(s): docs (mem://docs), 4 workers, auth OPEN — no [xsp [grants …]] configured, anonymous full access (configure grants for production)</code>
+    </pre>
+    <p>Config validation is <b>attr-exact</b>: an unknown attribute is a
          startup error (<code>CXER1711</code>), never a silent drop. Liveness and
          readiness are plain HTTP, and the binary doubles as its own
          probe — <code>cx store-health</code> exits 0 iff the daemon reports
          accepting, which is what the Docker HEALTHCHECK and load
          balancers call:</p>
-        <pre>
-          <code class="language-sh">$ curl -s http://127.0.0.1:18971/cx-store/v1/health
+    <pre>
+      <code class="language-sh">$ curl -s http://127.0.0.1:18971/cx-store/v1/health
 [health [status "ok"]]
 $ curl -s http://127.0.0.1:18971/cx-store/v1/ready
 [ready [accepting true] [draining false]]
 $ cx store-health --url http://127.0.0.1:18971/cx-store/v1/ready && echo ready
 ready</code>
-        </pre>
-        <p>A client program is unchanged except for the URL — a
+    </pre>
+    <p>A client program is unchanged except for the URL — a
          <code>cx-store://</code> handle (the XSP store profile — THE store wire;
          <code>cx-store+xsp://</code> is the cleartext-dev sibling) is a named
          remote store with the identical API:</p>
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store' :as store]
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store' :as store]
 [?let [= $remote [$store:open 'cx-store+xsp://127.0.0.1:18971/docs/']]
       [= $h [$store:put-doc $remote [doc [title 'over the wire']]]]
   [$store:get-doc $remote $h]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>$ cx --allow-net=127.0.0.1:18971 wire.cx
+    </pre>
+    <pre class="sample-output">
+      <code>$ cx --allow-net=127.0.0.1:18971 wire.cx
 [doc [title 'over the wire']]</code>
-        </pre>
-        <p>Authority is XSP-AUTH, deny-by-default: a client presents a
+    </pre>
+    <p>Authority is XSP-AUTH, deny-by-default: a client presents a
          verifiable credential (a DID it holds, plus an optional
          delegation chain), and the daemon's <code>[xsp [grants …]]</code> table —
          principal-rooted delegations over the capability classes
@@ -463,7 +447,7 @@ ready</code>
          <code>[auth …]</code> config section are gone. A client names its
          identity through open-opts (<code>xsp-did</code> + <code>xsp-seed-env</code>); the
          seed never rides a URL.</p>
-        <p>Lifecycle: SIGTERM drains bounded and checkpoints every
+    <p>Lifecycle: SIGTERM drains bounded and checkpoints every
          mounted store; SIGHUP hot-reloads the reloadable config
          sections (tls, timeouts, limits, observability) with
          validate-then-swap, all-or-nothing (<code>CXER1712</code> names any
@@ -473,69 +457,59 @@ ready</code>
          systemd/Docker deployment artifacts under <code>tooling/cxstore/</code>
          are covered in <code>docs/dev/store-service.md</code> and
          <a class="xref" href="operations.html">operations</a>.</p>
-      
-    </section>
-    <section id="store-transports">
-      <h2>Transports — the store wire and the edge</h2>
-      
-        <p>The daemon serves the same store surface over two wires —
+  </section>
+  <section id="store-transports">
+    <h2>Transports — the store wire and the edge</h2>
+    <p>The daemon serves the same store surface over two wires —
          same ops, same semantics, same error codes:</p>
-        <table>
-          <thead>
-            
-              <tr>
-                <th>transport</th>
-                <th>client URL scheme</th>
-                <th>role</th>
-              </tr>
-            
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>XSP store profile</td>
-                <td>cx-store:// (TLS) · cx-store+xsp:// (cleartext dev)</td>
-                <td>THE CX-to-CX store wire (spec/03-approved/std-lib/store.md §6.4)</td>
-              </tr>
-              <tr>
-                <td>gRPC — HTTP/2 + protobuf</td>
-                <td>cx-store+grpc:// (TLS: cx-store+grpcs://)</td>
-                <td>the integration edge for gRPC-speaking systems — opt-in second listener ([grpc enabled=true addr=…]) with normative profile parity and per-call XSP-AUTH (spec/03-approved/misc/cxstore-grpc.md)</td>
-              </tr>
-            
-          </tbody>
-        </table>
-        <p>Only the scheme on <code>[$store:open]</code> changes — a client cannot
+    <table>
+      <thead>
+        <tr>
+          <th>transport</th>
+          <th>client URL scheme</th>
+          <th>role</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>XSP store profile</td>
+          <td>cx-store:// (TLS) · cx-store+xsp:// (cleartext dev)</td>
+          <td>THE CX-to-CX store wire (spec/03-approved/std-lib/store.md §6.4)</td>
+        </tr>
+        <tr>
+          <td>gRPC — HTTP/2 + protobuf</td>
+          <td>cx-store+grpc:// (TLS: cx-store+grpcs://)</td>
+          <td>the integration edge for gRPC-speaking systems — opt-in second listener ([grpc enabled=true addr=…]) with normative profile parity and per-call XSP-AUTH (spec/03-approved/misc/cxstore-grpc.md)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Only the scheme on <code>[$store:open]</code> changes — a client cannot
          tell the transports apart above the URL. Three runnable,
          self-contained recipes live in the repository under
          <code>examples/cxstore/</code>, each with a Makefile that starts the
          server, drives a client, and stops it (all three were run
          green against this branch-head binary):</p>
-        <ul>
-          
-            <li><code>client-server/</code> — a client over THE store wire: <code>cx
+    <ul>
+      <li><code>client-server/</code> — a client over THE store wire: <code>cx
               store-serve</code> holds a store and serves it over the XSP
               profile, and a client drives put/get/list/query through
               <code>cx-store+xsp://</code> — remoting is a URL change, not an API
               change.</li>
-            <li><code>grpc/</code> — the same surface over the integration edge: a
+      <li><code>grpc/</code> — the same surface over the integration edge: a
               daemon config exposing one store on a gRPC listener, and a
               client driving put/get/list/query/modify through
               <code>cx-store+grpc://</code>.</li>
-            <li><code>dir-sync/</code> — a directory tree of <code>.cxd</code> files gains
+      <li><code>dir-sync/</code> — a directory tree of <code>.cxd</code> files gains
               content addressing, dedup, history, and name-based lookup:
               <code>ingest.cx</code> walks and stores, <code>materialize.cx</code> writes the
               named tree back out, <code>watch.cx</code> keeps the store live off a
               real OS filesystem watch. Deliberately a recipe, not a
               subcommand — customization is editing CX.</li>
-          
-        </ul>
-      
-    </section>
-    <section id="store-security">
-      <h2>Security and encryption at rest</h2>
-      
-        <p>Store security is four independent fail-closed layers — host
+    </ul>
+  </section>
+  <section id="store-security">
+    <h2>Security and encryption at rest</h2>
+    <p>Store security is four independent fail-closed layers — host
          capabilities at the effect point (<a class="xref" href="capabilities.html">capabilities</a>),
          encryption at rest, service-tier grants/tenancy, and XAP-layer
          authority when a store backs a XAP (see
@@ -547,42 +521,42 @@ ready</code>
          the <b>plaintext</b> hash, so dedup, structural sharing, and
          replication are unchanged; only the bytes on the substrate are
          ciphertext:</p>
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store' :as store]
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store' :as store]
 [?let [= $s [$store:open-opts 'file:///tmp/sealed-store' [map encrypt-key-id='tenant-a']]]
       [= $h [$store:put-doc $s [secret-plan [step 'first']]]]
   [$store:get-doc $s $h]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>$ CX_STORE_KEK_tenant-a=<64 hex chars> cx --allow-read --allow-write --allow-env sealed.cx
+    </pre>
+    <pre class="sample-output">
+      <code>$ CX_STORE_KEK_tenant-a=<64 hex chars> cx --allow-read --allow-write --allow-env sealed.cx
 [secret-plan [step 'first']]</code>
-        </pre>
-        <p>Key material never lives in config files — the KEK arrives by
+    </pre>
+    <p>Key material never lives in config files — the KEK arrives by
          environment (<code>CX_STORE_KEK_&lt;id&gt;</code>). The mode is fixed at store
          creation and every mismatch is a hard error in both
          directions: an encrypted store opened without its key never
          appears empty or corrupt, encryption cannot be enabled in
          place on plaintext data, and a substrate that cannot seal
          refuses rather than degrading:</p>
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store' :as store]
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store' :as store]
 [$store:open-opts 'mem://' [map encrypt-key-id='tenant-a']]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[err code=cx-err:CXER1100 message='E_STORE_UNRESOLVED_BACKEND: encryption-at-rest (encrypt-key-id) is supported on the sealing substrates — `file://…` (pack, the default), `file://…?encoding=object-per-key`, `sqlite://…`, or `s3://…` (got scheme=mem); refusing to store plaintext for mem://']</code>
-        </pre>
-        <p>KEK rotation is a shipped operator verb: <code>cx store-rotate-kek</code>
+    </pre>
+    <pre class="sample-output">
+      <code>[err code=cx-err:CXER1100 message='E_STORE_UNRESOLVED_BACKEND: encryption-at-rest (encrypt-key-id) is supported on the sealing substrates — `file://…` (pack, the default), `file://…?encoding=object-per-key`, `sqlite://…`, or `s3://…` (got scheme=mem); refusing to store plaintext for mem://']</code>
+    </pre>
+    <p>KEK rotation is a shipped operator verb: <code>cx store-rotate-kek</code>
          re-wraps every envelope's data key under a new tenant KEK —
          payloads and content addresses untouched, atomic per object,
          resumable, fail-closed (the same operation is callable
          in-process as <code>[$store:rotate-kek]</code>):</p>
-        <pre class="sample-output">
-          <code>$ CX_STORE_KEK_tenant-a=… CX_STORE_KEK_tenant-b=… cx store-rotate-kek \
+    <pre class="sample-output">
+      <code>$ CX_STORE_KEK_tenant-a=… CX_STORE_KEK_tenant-b=… cx store-rotate-kek \
     --url file:///tmp/sealed-store --encrypt-key-id tenant-a --new-key-id tenant-b
 [rotation-report objects=5 rewrapped=5 already-current=0 from=tenant-a to=tenant-b]
 cx store-rotate-kek: 5 object(s) now under `tenant-b` (5 re-wrapped) — verify reads, then destroy the old KEK `tenant-a`.</code>
-        </pre>
-        <p>Service-tier grant authority and tenancy sit above this: the tenant
+    </pre>
+    <p>Service-tier grant authority and tenancy sit above this: the tenant
          boundary is <b>store-per-tenant</b>, so each tenant owns a
          separate dedup pool — a shared pool would let one tenant probe
          another's content by hash, and the design rejects that
@@ -590,12 +564,10 @@ cx store-rotate-kek: 5 object(s) now under `tenant-b` (5 re-wrapped) — verify 
          KMS seam, and the fail-closed inventory are in
          <code>docs/dev/store-security.md</code> and the security sections of the
          store and service-tier specs.</p>
-      
-    </section>
-    <section id="store-console">
-      <h2>The management console</h2>
-      
-        <p>Fleet-facing management has a UI: the store management
+  </section>
+  <section id="store-console">
+    <h2>The management console</h2>
+    <p>Fleet-facing management has a UI: the store management
          console, which lives in its <b>own repository</b>
          (<code>xap-store-console</code>) and is never embedded in the daemon. It
          is itself a XAP built from feature packages (the distribution
@@ -610,20 +582,18 @@ cx store-rotate-kek: 5 object(s) now under `tenant-b` (5 re-wrapped) — verify 
          operator walkthrough: <code>docs/dev/store-management.md</code>.
          Client identity is a DID presented over the wire (open-opts
          xsp-did/xsp-seed-env); operator authority rides [xsp [grants …]].</p>
-      
-    </section>
-  
+  </section>
 </section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>The store platform</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,23 +143,21 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Projected surfaces — the ux capability</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="ux-capability">
   <h1>Projected surfaces — the ux capability</h1>
-  
-    <p>You define commands and queries; the platform projects the
+  <p>You define commands and queries; the platform projects the
        interface. The ux capability is CX's third projection — the same
        <code>[?def]</code>s that serve the wire and the agent-tools face also
        produce forms, tables, and live regions, <b>derived at render time
        from the definitions themselves</b>. There is no UI manifest to
        drift, the same way there is no tool manifest to drift: when a
        command gains a parameter, its form gains a field.</p>
-    <section id="ux-three-projections">
-      <h2>One projection, many faces</h2>
-      
-        <p>Three entry points cover the surface. <code>[$ux:form]</code> projects a
+  <section id="ux-three-projections">
+    <h2>One projection, many faces</h2>
+    <p>Three entry points cover the surface. <code>[$ux:form]</code> projects a
        command's parameter schema into a complete form; <code>[$ux:table]</code>
        projects a query's row schema into a complete table;
        <code>[$ux:feed]</code> turns a live-modes subscription into a live region.
@@ -169,15 +167,15 @@
        fields from the param list, required-ness from the non-defaulted
        positionals, labels and help text from the same <code>[fn-doc]</code> /
        <code>[param-doc]</code> sources the tool descriptors consume.</p>
-        <pre>
-          <code class="language-cx">[?def place-order impure ($sku $qty)
+    <pre>
+      <code class="language-cx">[?def place-order impure ($sku $qty)
            [preconditions [in-stock $sku $qty]]
            [effects [write "orders"]]
            …body…]
 
          [$ux:form place-order]   [; param schema → a complete form ]</code>
-        </pre>
-        <p>Rules are enforced <b>once, at the command layer</b> — a refused
+    </pre>
+    <p>Rules are enforced <b>once, at the command layer</b> — a refused
        precondition renders as a form error from the <code>[err]</code> channel;
        the projection never restates a rule, so a rule can never be
        enforced differently in two places. Where the tools projection
@@ -185,12 +183,10 @@
        load-bearing), the ux projection degrades to name-derived labels
        — human-facing defaults are presentational, and quality gates
        measure them rather than refusals.</p>
-      
-    </section>
-    <section id="ux-vocabulary">
-      <h2>A closed semantic vocabulary</h2>
-      
-        <p>Projection emits <b>semantic elements</b> — <code>ux:card</code>,
+  </section>
+  <section id="ux-vocabulary">
+    <h2>A closed semantic vocabulary</h2>
+    <p>Projection emits <b>semantic elements</b> — <code>ux:card</code>,
        <code>ux:field</code>, <code>ux:table</code>, <code>ux:action</code>, <code>ux:facet</code>, <code>ux:status</code>,
        forty-five members in all — that assume no hover, no pointer,
        and no CSS-shaped layout. The set is closed and gate-enforced:
@@ -201,15 +197,15 @@
        existing member carries <b>and</b> every face can honor it natively
        — "the same thing with a different appearance" becomes a hint,
        never a member.</p>
-        <pre>
-          <code class="language-cx">[ux:card
+    <pre>
+      <code class="language-cx">[ux:card
            [ux:media src="/static/art/pan.svg" alt="A 24 cm sauté pan in graphite" kind=illustration]
            [ux:heading 'Farrow 24 cm sauté pan']
            [ux:field label='Price' format=money 68.00]
            [ux:action verb=add-to-cart label='Add to cart'
              [ux:param name=sku value='FK-0119']]]</code>
-        </pre>
-        <p>That value is the whole interface contract for a product card.
+    </pre>
+    <p>That value is the whole interface contract for a product card.
        Notice what it does <b>not</b> say: no widths, no colors, no
        columns, no click handlers. Presentation intent that varies by
        deployment rides <b>hint claims</b> keyed by (schema address, field
@@ -217,12 +213,10 @@
        labels per language — resolved through a four-level cascade
        (platform → vendor → tenant → surface), so a tenant can restyle
        a field everywhere it appears without touching a definition.</p>
-      
-    </section>
-    <section id="ux-two-faces">
-      <h2>Two faces, one tree</h2>
-      
-        <p>Renderers lower the same semantic tree and neither is
+  </section>
+  <section id="ux-two-faces">
+    <h2>Two faces, one tree</h2>
+    <p>Renderers lower the same semantic tree and neither is
        privileged. The <b>web face</b> lowers to HTML over a pinned
        hypermedia kernel — the emitter is the sole author of every
        kernel attribute, escaping is by construction (tree composition,
@@ -235,12 +229,10 @@
        affordances the web face offers is a mechanical
        keyboard-reachability test — accessibility as a fixture, not a
        review comment.</p>
-      
-    </section>
-    <section id="ux-writes">
-      <h2>Writes are intents; reads are places</h2>
-      
-        <p>Every state change is a <b>POST of an intent</b> to the composed
+  </section>
+  <section id="ux-writes">
+    <h2>Writes are intents; reads are places</h2>
+    <p>Every state change is a <b>POST of an intent</b> to the composed
        grammar's verb — the same wire agents use, with the same policy
        decision, the same journal append, the same refusal channel. An
        <code>[ux:action]</code> inside a collection item carries its parameters
@@ -253,12 +245,10 @@
        kernel absent every control still works as a plain form or link
        — full page loads instead of fragment swaps, and nothing
        else lost.</p>
-      
-    </section>
-    <section id="ux-authz">
-      <h2>What is shown is what is allowed</h2>
-      
-        <p>The emitter consults the <b>same authorization evaluator</b> as
+  </section>
+  <section id="ux-authz">
+    <h2>What is shown is what is allowed</h2>
+    <p>The emitter consults the <b>same authorization evaluator</b> as
        the wire and the tools face, per session, at render time — being
        shown and being allowed are one computation. Commands the actor
        cannot invoke are not emitted; unreadable fields are omitted by
@@ -267,12 +257,10 @@
        is a separate journaled command, not a rendering variant. A
        field masked on the web is masked in a tool result — one ruling,
        all surfaces.</p>
-      
-    </section>
-    <section id="ux-where-specified">
-      <h2>Where it is specified</h2>
-      
-        <p>The capability's normative home is the ux spec in the XAP spec
+  </section>
+  <section id="ux-where-specified">
+    <h2>Where it is specified</h2>
+    <p>The capability's normative home is the ux spec in the XAP spec
        set — the projection vocabulary, the keying regimes, the emitter
        contract, the session/authz rulings, and the accessibility
        clauses, each fixture-mapped. The semantic core lives in the
@@ -281,20 +269,18 @@
        refusal gate, and redaction against goldens. The pack is
        x-tier: bundled and gated in-tree, with its stability promise
        deliberately unfrozen until its go/kill review passes.</p>
-      
-    </section>
-  
+  </section>
 </section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>Projected surfaces — the ux capability</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

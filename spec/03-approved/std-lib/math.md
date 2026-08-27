@@ -210,11 +210,16 @@ Operations with NaN return NaN (IEEE 754). Comparisons with NaN return false. `i
 
 ### §4.3. Integer / float mixing
 
-Mixed-type ops promote to float. `[+ 1 2.5]` returns `3.5`. Statistical ops always return float regardless of input.
+Mixed-type ops promote to float. `[+ 1 2.5]` returns `3.5`. Statistical ops return float for int/float input; an exact-family operand refuses per §4.4.
 
 ### §4.4. Decimal support
 
-Cap bit 11 gates decimal-typed values. Currently basic ops (abs, +, -, *, /, comparison) on decimals; transcendentals (sqrt, log, exp, trig) on decimals raise `CXER3002 E_MATH_DECIMAL_NOT_SUPPORTED`. Decimal overflow raises `CXER3000`.
+Cap bit 11 gates decimal-typed values. This module is the FLOAT lane: a `$math:` verb whose computation runs in binary float refuses an exact-family (decimal / bigint) operand with `CXER3002 E_MATH_DECIMAL_NOT_SUPPORTED` — including operands reached inside a sequence argument (a statistical verb refuses a decimal item rather than skipping or converting it; RULED: CO-14/CO-18). Two named carve-outs answer exactly instead of refusing (measured at v0.17.0, the discipline shipped since I1 — version-literal-ok):
+
+- `$math:div-decimal`, which exists to take decimals as the explicit precision+mode division context;
+- the magnitude/integral verbs that share the core heads' exact implementation — `abs`, `floor`, `ceiling`, `min`, `max` — which answer on the exact lane exactly as their core spellings do (`[$math:abs 2.50]` is `2.50`; a bigint passes through).
+
+Every other verb refuses — including `sign`, `round`, `truncate`, `clamp`, and `gcd`, whose exact-lane delegation is an open design item, not a shipped behavior. Exact arithmetic lives on the core heads (`+ - * / % $div $idiv` and the aggregates) per the exact-family rules; `[cast]` is the only decimal↔float bridge. Decimal overflow raises `CXER3000`.
 
 ### §4.5. Bit-shift count out of range
 
@@ -226,7 +231,7 @@ Shift count ≥ 64 saturates per §3.5: `bit-shift-left` and logical right shift
 |---|---|---|
 | `CXER3000` | `E_MATH_OVERFLOW` | Checked operators `+` / `-` / `*` / `pow` on int64 overflow; `factorial(n > 20)`; decimal overflow |
 | `CXER3001` | `E_MATH_EMPTY_SEQUENCE` | Statistical functions on empty input |
-| `CXER3002` | `E_MATH_DECIMAL_NOT_SUPPORTED` | Transcendental ops on decimal |
+| `CXER3002` | `E_MATH_DECIMAL_NOT_SUPPORTED` | A float-lane `$math:` verb given an exact-family (decimal / bigint) operand — the carve-outs (`$math:div-decimal`; the core-head delegates `abs`/`floor`/`ceiling`/`min`/`max`) answer exactly instead (§4.4) |
 | `CXER3003` | `E_MATH_DOMAIN_ERROR` | Negative bit-shift count (§3.5 / §4.5) |
 
 ## §6. Conformance fixtures

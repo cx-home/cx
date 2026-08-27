@@ -71,7 +71,7 @@ Readers MUST verify `magic`, `version`, and `header_crc32` before trusting any o
 | 0 | 4 | `entry_length` | u32. Total entry size in bytes, including this 4-byte prefix |
 | 4 | 1 | `entry_kind` | u8. See enum below |
 | 5 | 1 | `entry_flags` | u8. See bits below |
-| 6 | 2 | `hash_code` | u16. Multicodec code of the algorithm naming `doc_hash` (sha2-256 = `0x0012`; I1 crypto-agility §4 — was `reserved`/zero pre-I1). Readers MUST fail closed on any code they do not implement; all 1.0 algorithms are 32-byte, and a non-32-byte digest requires a pack v3 |
+| 6 | 2 | `hash_code` | u16. Multicodec code of the algorithm naming `doc_hash` (sha2-256 = `0x0012`; I1 crypto-agility §4). Writers MUST emit `0x0012`. Readers MUST accept exactly `{0x0000, 0x0012}` and fail closed on every other code, including registered algorithms they do not implement. `0x0000` is the pre-I1 **reserved** value: packs written before the slot had a meaning carry a literal zero, and that era had only sha2-256, so zero names sha2-256 — read-compat only, never written (RULED: CO-1, #974). A reader that rewrites such a pack SHOULD stamp its zero slots to `0x0012` in place; the slot is covered by no CRC, digest, or signature, so the rewrite changes no other field. All 1.0 algorithms are 32-byte, and a non-32-byte digest requires a pack v3 |
 | 8 | 32 | `doc_hash` | Digest of the canonical ast_bin payload under the `hash_code` algorithm (sha2-256 in every shipped pack) |
 | 40 | 4 | `payload_length` | u32 |
 | 44 | `payload_length` | `payload` | ast_bin bytes |

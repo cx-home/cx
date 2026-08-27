@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,117 +143,103 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">fp</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-fp"><h1>fp</h1><p class="lede">Functional composition over the four value channels. A small closed protocol of six combinators — map, flat-map, pure, traverse, sequence, and fold — that dispatch on the head tag of the container value. A type is a functor when an instance is registered for its head tag (duck-typed; there is no static kind system). The built-in instances are sequence (Maybe and List in one: empty is None, a singleton is Some) and result ([ok]/[err], where flat-map is the railway short-circuit); user-defined tagged containers register their own arms.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-fp-map" class="fn">
-    <h3>fp:map</h3>
-    <p class="fn-sig"><code>[$fp:map]  -> any</code>  —  Apply a function inside the container, leaving its shape untouched (functor map).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/fp']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-fp-map" class="fn">
+  <h3>fp:map</h3>
+  <p class="fn-sig"><code>[$fp:map]  -> any</code>  —  Apply a function inside the container, leaving its shape untouched (functor map).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/fp']
 [?lib 'cx-stdlib/strings']
 [?def up ($s) [$strings:upper $s]]
 [$fp:map () $up]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>()</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-fp-flat-map" class="fn">
-    <h3>fp:flat-map</h3>
-    <p class="fn-sig"><code>[$fp:flat-map]  -> any</code>  —  Apply a container-returning function and remove one level of nesting (monad bind).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/fp']
+    </pre>
+    <pre class="sample-output">
+      <code>()</code>
+    </pre>
+  </div>
+</section><section id="fn-fp-flat-map" class="fn">
+  <h3>fp:flat-map</h3>
+  <p class="fn-sig"><code>[$fp:flat-map]  -> any</code>  —  Apply a container-returning function and remove one level of nesting (monad bind).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/fp']
 [?def dup ($x) ($x, $x)]
 [$fp:flat-map (1, 2) $dup]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(1, 1, 2, 2)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-fp-pure" class="fn">
-    <h3>fp:pure</h3>
-    <p class="fn-sig"><code>[$fp:pure]  -> any</code>  —  Lift a value into a container — the sequence instance by default, or the instance named by tag=.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/fp']
+    </pre>
+    <pre class="sample-output">
+      <code>(1, 1, 2, 2)</code>
+    </pre>
+  </div>
+</section><section id="fn-fp-pure" class="fn">
+  <h3>fp:pure</h3>
+  <p class="fn-sig"><code>[$fp:pure]  -> any</code>  —  Lift a value into a container — the sequence instance by default, or the instance named by tag=.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/fp']
 [$fp:pure 5]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(5)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-fp-fold" class="fn">
-    <h3>fp:fold</h3>
-    <p class="fn-sig"><code>[$fp:fold]  -> any</code>  —  Reduce a container to a single summary value from an initial accumulator.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/fp']
+    </pre>
+    <pre class="sample-output">
+      <code>(5)</code>
+    </pre>
+  </div>
+</section><section id="fn-fp-fold" class="fn">
+  <h3>fp:fold</h3>
+  <p class="fn-sig"><code>[$fp:fold]  -> any</code>  —  Reduce a container to a single summary value from an initial accumulator.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/fp']
 [?def add ($acc $x) [+ $acc $x]]
 [$fp:fold (1, 2, 3, 4) 0 $add]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>10</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-fp-sequence" class="fn">
-    <h3>fp:sequence</h3>
-    <p class="fn-sig"><code>[$fp:sequence]  -> any</code>  —  Turn a structure of containers inside-out, swapping the two layers (traverse with identity).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/fp']
+    </pre>
+    <pre class="sample-output">
+      <code>10</code>
+    </pre>
+  </div>
+</section><section id="fn-fp-sequence" class="fn">
+  <h3>fp:sequence</h3>
+  <p class="fn-sig"><code>[$fp:sequence]  -> any</code>  —  Turn a structure of containers inside-out, swapping the two layers (traverse with identity).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/fp']
 [$fp:sequence ([ok 1], [ok 2], [ok 3])]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[ok (1, 2, 3)]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-fp-traverse" class="fn">
-    <h3>fp:traverse</h3>
-    <p class="fn-sig"><code>[$fp:traverse]  -> any</code>  —  Map a container-returning function across a structure, swapping the two layers in the result.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/fp']
+    </pre>
+    <pre class="sample-output">
+      <code>[ok (1, 2, 3)]</code>
+    </pre>
+  </div>
+</section><section id="fn-fp-traverse" class="fn">
+  <h3>fp:traverse</h3>
+  <p class="fn-sig"><code>[$fp:traverse]  -> any</code>  —  Map a container-returning function across a structure, swapping the two layers in the result.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/fp']
 [$fp:traverse (1, 2, 3) [?fn ($x) [ok $x]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[ok (1, 2, 3)]</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>[ok (1, 2, 3)]</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>fp</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

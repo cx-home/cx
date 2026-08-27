@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,414 +143,340 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">mime</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-mime"><h1>mime</h1><p class="lede">MIME data-shape handling: a built-in extension-to-type registry, Content-Type and Content-Disposition parsing, multipart boundary generation, type classification, and Accept-header content negotiation. The registry covers ~200 common extensions offline and is extensible at runtime. The data-shape companion to cx-stdlib/url, composing with cx-stdlib/email for multipart messages.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-mime-type-for-extension" class="fn">
-    <h3>mime:type-for-extension</h3>
-    <p class="fn-sig"><code>[$mime:type-for-extension]  -> string</code>  —  Look up the canonical MIME type for a file extension (dot optional); 'application/octet-stream' if unknown.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-mime-type-for-extension" class="fn">
+  <h3>mime:type-for-extension</h3>
+  <p class="fn-sig"><code>[$mime:type-for-extension]  -> string</code>  —  Look up the canonical MIME type for a file extension (dot optional); 'application/octet-stream' if unknown.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$mime:type-for-extension ".txt"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'text/plain'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-extension-for-type" class="fn">
-    <h3>mime:extension-for-type</h3>
-    <p class="fn-sig"><code>[$mime:extension-for-type]  -> string</code>  —  Return the most common file extension for a MIME type; empty string if unknown.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>'text/plain'</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-extension-for-type" class="fn">
+  <h3>mime:extension-for-type</h3>
+  <p class="fn-sig"><code>[$mime:extension-for-type]  -> string</code>  —  Return the most common file extension for a MIME type; empty string if unknown.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$mime:extension-for-type "image/jpeg"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'.jpg'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-all-extensions-for-type" class="fn">
-    <h3>mime:all-extensions-for-type</h3>
-    <p class="fn-sig"><code>[$mime:all-extensions-for-type]  -> [sequence string]</code>  —  Return every known file extension for a MIME type.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>'.jpg'</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-all-extensions-for-type" class="fn">
+  <h3>mime:all-extensions-for-type</h3>
+  <p class="fn-sig"><code>[$mime:all-extensions-for-type]  -> [sequence string]</code>  —  Return every known file extension for a MIME type.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$count [$mime:all-extensions-for-type "image/jpeg"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-register-type" class="fn">
-    <h3>mime:register-type</h3>
-    <p class="fn-sig"><code>[$mime:register-type]  -> null</code>  —  Add one extension-to-type mapping to the process-wide registry, overriding any built-in.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>2</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-register-type" class="fn">
+  <h3>mime:register-type</h3>
+  <p class="fn-sig"><code>[$mime:register-type]  -> null</code>  —  Add one extension-to-type mapping to the process-wide registry, overriding any built-in.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [?let [= $_ [$mime:register-type ".avif" "image/avif"]] [$mime:type-for-extension ".avif"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'image/avif'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-load-mime-types" class="fn">
-    <h3>mime:load-mime-types</h3>
-    <p class="fn-sig"><code>[$mime:load-mime-types]  -> int</code>  —  Merge a mime.types file into the registry and return the count loaded; raises CXER2804 on a missing or malformed file.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>'image/avif'</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-load-mime-types" class="fn">
+  <h3>mime:load-mime-types</h3>
+  <p class="fn-sig"><code>[$mime:load-mime-types]  -> int</code>  —  Merge a mime.types file into the registry and return the count loaded; raises CXER2804 on a missing or malformed file.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$mime:load-mime-types "/no/such/mime.types/file/xyz"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER2804</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-parse-content-type" class="fn">
-    <h3>mime:parse-content-type</h3>
-    <p class="fn-sig"><code>[$mime:parse-content-type]  -> element</code>  —  Parse a Content-Type header into a [content-type] element; raises CXER2800 on parse failure.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER2804</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-parse-content-type" class="fn">
+  <h3>mime:parse-content-type</h3>
+  <p class="fn-sig"><code>[$mime:parse-content-type]  -> element</code>  —  Parse a Content-Type header into a [content-type] element; raises CXER2800 on parse failure.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [?let [= $p [$mime:parse-content-type "text/html; charset=utf-8"]] $p/@type]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'text'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-format-content-type" class="fn">
-    <h3>mime:format-content-type</h3>
-    <p class="fn-sig"><code>[$mime:format-content-type]  -> string</code>  —  Serialize a parsed content-type back to a header string, quoting values where required.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>'text'</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-format-content-type" class="fn">
+  <h3>mime:format-content-type</h3>
+  <p class="fn-sig"><code>[$mime:format-content-type]  -> string</code>  —  Serialize a parsed content-type back to a header string, quoting values where required.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$mime:format-content-type [$mime:parse-content-type "text/html"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'text/html'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-get-parameter" class="fn">
-    <h3>mime:get-parameter</h3>
-    <p class="fn-sig"><code>[$mime:get-parameter]  -> string</code>  —  Return a named parameter's value from a parsed content-type; empty string if absent.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>'text/html'</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-get-parameter" class="fn">
+  <h3>mime:get-parameter</h3>
+  <p class="fn-sig"><code>[$mime:get-parameter]  -> string</code>  —  Return a named parameter's value from a parsed content-type; empty string if absent.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$mime:get-parameter [$mime:parse-content-type "text/html; charset=\"UTF-8\""] "charset"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'UTF-8'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-parse-content-disposition" class="fn">
-    <h3>mime:parse-content-disposition</h3>
-    <p class="fn-sig"><code>[$mime:parse-content-disposition]  -> element</code>  —  Parse a Content-Disposition header into a [content-disposition] element; raises CXER2801 on parse failure.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>'UTF-8'</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-parse-content-disposition" class="fn">
+  <h3>mime:parse-content-disposition</h3>
+  <p class="fn-sig"><code>[$mime:parse-content-disposition]  -> element</code>  —  Parse a Content-Disposition header into a [content-disposition] element; raises CXER2801 on parse failure.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [?let [= $p [$mime:parse-content-disposition "attachment; filename=\"report.pdf\""]] $p/@type]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'attachment'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-format-content-disposition" class="fn">
-    <h3>mime:format-content-disposition</h3>
-    <p class="fn-sig"><code>[$mime:format-content-disposition]  -> string</code>  —  Serialize a parsed content-disposition, emitting an RFC 5987 filename* plus ASCII fallback for non-ASCII names.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>'attachment'</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-format-content-disposition" class="fn">
+  <h3>mime:format-content-disposition</h3>
+  <p class="fn-sig"><code>[$mime:format-content-disposition]  -> string</code>  —  Serialize a parsed content-disposition, emitting an RFC 5987 filename* plus ASCII fallback for non-ASCII names.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$mime:disposition-filename [$mime:parse-content-disposition [$mime:format-content-disposition [$mime:parse-content-disposition "attachment; filename=\"report.pdf\""]]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'report.pdf'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-disposition-filename" class="fn">
-    <h3>mime:disposition-filename</h3>
-    <p class="fn-sig"><code>[$mime:disposition-filename]  -> string</code>  —  Return the decoded filename, preferring filename* over filename; raises CXER2803 on a malformed filename*.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>'report.pdf'</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-disposition-filename" class="fn">
+  <h3>mime:disposition-filename</h3>
+  <p class="fn-sig"><code>[$mime:disposition-filename]  -> string</code>  —  Return the decoded filename, preferring filename* over filename; raises CXER2803 on a malformed filename*.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$mime:disposition-filename [$mime:parse-content-disposition "attachment; filename=\"report.pdf\""]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'report.pdf'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-multipart-boundary" class="fn">
-    <h3>mime:multipart-boundary</h3>
-    <p class="fn-sig"><code>[$mime:multipart-boundary]  -> string</code>  —  Generate a fresh 24-char multipart boundary ('=_Part_' prefix plus 17 random hex chars).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>'report.pdf'</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-multipart-boundary" class="fn">
+  <h3>mime:multipart-boundary</h3>
+  <p class="fn-sig"><code>[$mime:multipart-boundary]  -> string</code>  —  Generate a fresh 24-char multipart boundary ('=_Part_' prefix plus 17 random hex chars).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [?lib 'cx-stdlib/strings']
 [$strings:starts-with [$mime:multipart-boundary] "=_Part_"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-is-valid-boundary" class="fn">
-    <h3>mime:is-valid-boundary</h3>
-    <p class="fn-sig"><code>[$mime:is-valid-boundary]  -> bool</code>  —  Report whether a string is a valid multipart boundary per RFC 2046 (1-70 chars, restricted set).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-is-valid-boundary" class="fn">
+  <h3>mime:is-valid-boundary</h3>
+  <p class="fn-sig"><code>[$mime:is-valid-boundary]  -> bool</code>  —  Report whether a string is a valid multipart boundary per RFC 2046 (1-70 chars, restricted set).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$mime:is-valid-boundary "----=_Part_12345"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-is-text-type" class="fn">
-    <h3>mime:is-text-type</h3>
-    <p class="fn-sig"><code>[$mime:is-text-type]  -> bool</code>  —  Report whether a MIME type has the text top-level type.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-is-text-type" class="fn">
+  <h3>mime:is-text-type</h3>
+  <p class="fn-sig"><code>[$mime:is-text-type]  -> bool</code>  —  Report whether a MIME type has the text top-level type.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$mime:is-text-type "text/html"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-is-binary-type" class="fn">
-    <h3>mime:is-binary-type</h3>
-    <p class="fn-sig"><code>[$mime:is-binary-type]  -> bool</code>  —  Report whether a MIME type denotes binary (non-text) content.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-is-binary-type" class="fn">
+  <h3>mime:is-binary-type</h3>
+  <p class="fn-sig"><code>[$mime:is-binary-type]  -> bool</code>  —  Report whether a MIME type denotes binary (non-text) content.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$mime:is-binary-type "application/pdf"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-is-image-type" class="fn">
-    <h3>mime:is-image-type</h3>
-    <p class="fn-sig"><code>[$mime:is-image-type]  -> bool</code>  —  Report whether a MIME type has the image top-level type.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-is-image-type" class="fn">
+  <h3>mime:is-image-type</h3>
+  <p class="fn-sig"><code>[$mime:is-image-type]  -> bool</code>  —  Report whether a MIME type has the image top-level type.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$mime:is-image-type "image/svg+xml"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-is-audio-type" class="fn">
-    <h3>mime:is-audio-type</h3>
-    <p class="fn-sig"><code>[$mime:is-audio-type]  -> bool</code>  —  Report whether a MIME type has the audio top-level type.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-is-audio-type" class="fn">
+  <h3>mime:is-audio-type</h3>
+  <p class="fn-sig"><code>[$mime:is-audio-type]  -> bool</code>  —  Report whether a MIME type has the audio top-level type.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$mime:is-audio-type "audio/mpeg"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-is-video-type" class="fn">
-    <h3>mime:is-video-type</h3>
-    <p class="fn-sig"><code>[$mime:is-video-type]  -> bool</code>  —  Report whether a MIME type has the video top-level type.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-is-video-type" class="fn">
+  <h3>mime:is-video-type</h3>
+  <p class="fn-sig"><code>[$mime:is-video-type]  -> bool</code>  —  Report whether a MIME type has the video top-level type.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$mime:is-video-type "video/mp4"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-is-message-type" class="fn">
-    <h3>mime:is-message-type</h3>
-    <p class="fn-sig"><code>[$mime:is-message-type]  -> bool</code>  —  Report whether a MIME type has the message top-level type.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-is-message-type" class="fn">
+  <h3>mime:is-message-type</h3>
+  <p class="fn-sig"><code>[$mime:is-message-type]  -> bool</code>  —  Report whether a MIME type has the message top-level type.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$mime:is-message-type "message/rfc822"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-is-multipart-type" class="fn">
-    <h3>mime:is-multipart-type</h3>
-    <p class="fn-sig"><code>[$mime:is-multipart-type]  -> bool</code>  —  Report whether a MIME type has the multipart top-level type.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-is-multipart-type" class="fn">
+  <h3>mime:is-multipart-type</h3>
+  <p class="fn-sig"><code>[$mime:is-multipart-type]  -> bool</code>  —  Report whether a MIME type has the multipart top-level type.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$mime:is-multipart-type "multipart/mixed"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-is-application-type" class="fn">
-    <h3>mime:is-application-type</h3>
-    <p class="fn-sig"><code>[$mime:is-application-type]  -> bool</code>  —  Report whether a MIME type has the application top-level type.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-is-application-type" class="fn">
+  <h3>mime:is-application-type</h3>
+  <p class="fn-sig"><code>[$mime:is-application-type]  -> bool</code>  —  Report whether a MIME type has the application top-level type.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$mime:is-application-type "application/pdf"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-is-structured-syntax" class="fn">
-    <h3>mime:is-structured-syntax</h3>
-    <p class="fn-sig"><code>[$mime:is-structured-syntax]  -> string</code>  —  Return the structured-syntax suffix per RFC 6838 (svg+xml gives 'xml'); empty string if none.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-is-structured-syntax" class="fn">
+  <h3>mime:is-structured-syntax</h3>
+  <p class="fn-sig"><code>[$mime:is-structured-syntax]  -> string</code>  —  Return the structured-syntax suffix per RFC 6838 (svg+xml gives 'xml'); empty string if none.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$mime:is-structured-syntax "image/svg+xml"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'xml'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-charset-of" class="fn">
-    <h3>mime:charset-of</h3>
-    <p class="fn-sig"><code>[$mime:charset-of]  -> string</code>  —  Extract the charset parameter from a parsed content-type; empty string if absent.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>'xml'</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-charset-of" class="fn">
+  <h3>mime:charset-of</h3>
+  <p class="fn-sig"><code>[$mime:charset-of]  -> string</code>  —  Extract the charset parameter from a parsed content-type; empty string if absent.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$mime:charset-of [$mime:parse-content-type "text/html; charset=utf-8"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'utf-8'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-with-charset" class="fn">
-    <h3>mime:with-charset</h3>
-    <p class="fn-sig"><code>[$mime:with-charset]  -> element</code>  —  Return a new content-type element with the charset parameter set, replacing any existing.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>'utf-8'</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-with-charset" class="fn">
+  <h3>mime:with-charset</h3>
+  <p class="fn-sig"><code>[$mime:with-charset]  -> element</code>  —  Return a new content-type element with the charset parameter set, replacing any existing.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$mime:charset-of [$mime:with-charset [$mime:parse-content-type "text/html"] "iso-8859-1"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'iso-8859-1'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-parse-accept" class="fn">
-    <h3>mime:parse-accept</h3>
-    <p class="fn-sig"><code>[$mime:parse-accept]  -> [sequence element]</code>  —  Parse an Accept header into [accept] elements sorted by q-value then specificity.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>'iso-8859-1'</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-parse-accept" class="fn">
+  <h3>mime:parse-accept</h3>
+  <p class="fn-sig"><code>[$mime:parse-accept]  -> [sequence element]</code>  —  Parse an Accept header into [accept] elements sorted by q-value then specificity.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$count [$mime:parse-accept "text/html;q=0.9, */*;q=0.8"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-mime-match-accept" class="fn">
-    <h3>mime:match-accept</h3>
-    <p class="fn-sig"><code>[$mime:match-accept]  -> string</code>  —  Return the best-matching offered MIME type for an Accept header per RFC 7231; empty if none acceptable.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/mime']
+    </pre>
+    <pre class="sample-output">
+      <code>2</code>
+    </pre>
+  </div>
+</section><section id="fn-mime-match-accept" class="fn">
+  <h3>mime:match-accept</h3>
+  <p class="fn-sig"><code>[$mime:match-accept]  -> string</code>  —  Return the best-matching offered MIME type for an Accept header per RFC 7231; empty if none acceptable.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/mime']
 [$mime:match-accept "text/*;q=0.5, text/html;q=0.9" ["text/plain", "text/html"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'text/html'</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>'text/html'</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>mime</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

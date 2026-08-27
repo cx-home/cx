@@ -1439,14 +1439,68 @@ fn bytes_to_hex(bytes []u8) string {
 
 // ── Test runner ───────────────────────────────────────────────────────────────
 
+// is_program_eval_fixture reports whether a case is the PROGRAM-EVAL kind —
+// `[in-code …]` evaluated by an interpreter — rather than the DOCUMENT kind
+// this runner judges (`[in-cx …]` / `[in-xml …]` / … parsed, then checked
+// against out-ast / out-cx / out-hash-eq / …).
+//
+// This runner has NO evaluator. Handed an eval fixture it used to answer
+// anyway, and both answers were fiction (#1026): the `[in-cx …]` of such a
+// case is scaffolding (`[empty]`, `[ignored]`), so it PARSES, and then
+//   • a case with `[out-err …]` was scored against that parse — the parse
+//     succeeded, so every one reported "expected error …, but parse
+//     succeeded". That is the 25 authz reds: a runner artifact, not a defect.
+//   • a case without one had no section this runner checks, so it ran ZERO
+//     assertions and printed PASS. That is the worse half — 57 authz cases,
+//     plus 10 still sitting inside conform-all's own suites (extended.cxd,
+//     identity_hash.cxd) — green marks nobody earned.
+//
+// The fix is to answer NEITHER. These cases are counted and named as belonging
+// to another lane, never as passes; a suite made ENTIRELY of them is refused
+// outright by run_suite with a pointer to the lane that really runs it.
+fn is_program_eval_fixture(t Test) bool {
+	return 'in_code' in t.sections
+}
+
 fn run_suite(path string) bool {
 	tests := parse_suite(path)
 	mut pass := 0
 	mut fail := 0
 	mut skip := 0
 	mut advisory_red := 0
+	mut other_lane := 0
+
+	// Refuse a suite this runner cannot judge AT ALL, rather than printing a
+	// column of fictional results (#1026). Loud (exit 2, the setup-failure
+	// class) so it can never read as a lane that ran and was fine.
+	mut judgeable := 0
+	for t in tests {
+		if !is_program_eval_fixture(t) {
+			judgeable++
+		}
+	}
+	if tests.len > 0 && judgeable == 0 {
+		eprintln('${path}: REFUSED — every one of its ${tests.len} cases is a PROGRAM-EVAL')
+		eprintln('  fixture ([in-code …]), and conformance_run.v is the DOCUMENT lane: it')
+		eprintln('  parses [in-cx …] and checks out-ast / out-cx / out-hash-eq. It has no')
+		eprintln('  evaluator, so running this suite here would report vacuous passes and')
+		eprintln('  false [out-err …] reds (#1026) — not a verdict about the suite.')
+		eprintln('')
+		eprintln('  Run it through the lane that owns it:')
+		eprintln('      make -C vcx test-vcx-suite')
+		eprintln('  which reaches it via vcx/tests/code_eval_fixtures_test.v — the runner')
+		eprintln('  that actually evaluates [in-code …] under the gates.cxd policy.')
+		exit(2)
+	}
 
 	for t in tests {
+		if is_program_eval_fixture(t) {
+			// Not this lane's to judge — see is_program_eval_fixture. Named,
+			// not silently dropped: an unrunnable case must stay visible.
+			other_lane++
+			println('OTHER-LANE ${t.name} ([in-code …] — evaluated by code_eval_fixtures_test.v)')
+			continue
+		}
 		if t.pending != '' {
 			skip++
 			println('SKIP ${t.name} (pending: ${t.pending})')
@@ -1476,7 +1530,8 @@ fn run_suite(path string) bool {
 		}
 	}
 	adv := if advisory_red > 0 { ', ${advisory_red} advisory-red' } else { '' }
-	println('${path}: ${pass} passed, ${fail} failed, ${skip} skipped${adv}')
+	ol := if other_lane > 0 { ', ${other_lane} other-lane' } else { '' }
+	println('${path}: ${pass} passed, ${fail} failed, ${skip} skipped${adv}${ol}')
 	return fail == 0
 }
 

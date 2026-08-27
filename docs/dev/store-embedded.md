@@ -76,6 +76,16 @@ the exact flag (verified). Open read-only when read is all you need:
 A Store handle is **single-owner**: sharing one across `[par]` workers raises
 `CXER1140` — open a handle per worker.
 
+**One writer per local root.** A `file://`, `sqlite://` or local `columnar`
+root admits ONE writable handle plus any number of read-only ones — across
+processes as much as within one. A second writable open in the same process
+returns a handle over the same live store; a second writable open from
+**another process** is refused `CXER1143`, naming the holding pid and how to
+proceed. Two writers on one root corrupt it, and the damage only shows up at a
+later open. If you need many writers, run the service tier (one writer, N
+clients) or open read-only. A crashed writer releases the root immediately —
+the lock dies with the process, so nothing has to be cleaned up by hand.
+
 ## Object graph vs document model
 
 The default subtree model decomposes every doc into shared content-addressed
@@ -111,5 +121,5 @@ degrades to the doc-level `migrate`.
 
 `CXER1100` unknown/unbuilt backend · `CXER1101` unreachable · `CXER1110`
 read-only · `CXER1120` integrity mismatch · `CXER1121` not found · `CXER1130`
-closed handle · `CXER1140` handle race. Full table: the store spec's
-error-codes section.
+closed handle · `CXER1140` handle race · `CXER1143` open conflict (a second
+writable open of one root). Full table: the store spec's error-codes section.

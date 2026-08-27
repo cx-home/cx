@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,94 +143,85 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">authz</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-authz"><h1>authz</h1><p class="lede">The XAP authority model as data plus a single decision function. It represents principals, capabilities, attenuating/time-bounded/revocable delegations, and guardian grants gated behind incapacity-typed predicates, then decides authority at one point of enforcement: check/authorize answers whether an actor holds a capability over a slice in a tenant at the required assurance tier, returning a [permit] or [deny] value. Authority originates only from principals and can only attenuate down a delegation chain, so privilege escalation is structurally impossible. This is delegated authority — who authorized whom to do what — distinct from and AND-composed with the effect-permission capability system.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-authz-store" class="fn">
-    <h3>authz:store</h3>
-    <p class="fn-sig"><code>[$authz:store]  -> element</code>  —  Open an authority store — the trust-state handle for one tenant, taken by the persisting and live-read verbs.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/authz']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-authz-store" class="fn">
+  <h3>authz:store</h3>
+  <p class="fn-sig"><code>[$authz:store]  -> element</code>  —  Open an authority store — the trust-state handle for one tenant, taken by the persisting and live-read verbs.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
       [capabilities [refund-duplicate]] [over '/orders'] [assurance :t1] [signature sig-dana]]]]
   [$authz:check $az [authz-request [actor [agent ops-1]] [capability refund-duplicate] [slice '/orders/9'] [tenant acme]]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[permit rooted-principal=dana [delegation 'd-1'] [via 'd-1'] [tier :t1] [capability 'refund-duplicate']]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-authz-close" class="fn">
-    <h3>authz:close</h3>
-    <p class="fn-sig"><code>[$authz:close]  -> null</code>  —  Close an authority store — idempotent, never raises.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/authz']
+    </pre>
+    <pre class="sample-output">
+      <code>[permit rooted-principal=dana [delegation 'd-1'] [via 'd-1'] [tier :t1] [capability 'refund-duplicate']]</code>
+    </pre>
+  </div>
+</section><section id="fn-authz-close" class="fn">
+  <h3>authz:close</h3>
+  <p class="fn-sig"><code>[$authz:close]  -> null</code>  —  Close an authority store — idempotent, never raises.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $c [$authz:close $az]]
   [$authz:check $az [authz-request [actor [agent x]] [capability y] [tenant acme]]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER4712</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-authz-delegate" class="fn">
-    <h3>authz:delegate</h3>
-    <p class="fn-sig"><code>[$authz:delegate]  -> element</code>  —  Issue an ordinary delegation, enforcing attenuation — conveying more than the issuer holds raises CXER4703.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/authz']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER4712</code>
+    </pre>
+  </div>
+</section><section id="fn-authz-delegate" class="fn">
+  <h3>authz:delegate</h3>
+  <p class="fn-sig"><code>[$authz:delegate]  -> element</code>  —  Issue an ordinary delegation, enforcing attenuation — conveying more than the issuer holds raises CXER4703.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
       [capabilities [refund-duplicate]] [over '/orders'] [assurance :t1] [signature sig-dana]]]]
   [$authz:check $az [authz-request [actor [agent ops-1]] [capability refund-duplicate] [slice '/orders/9'] [tenant acme]]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[permit rooted-principal=dana [delegation 'd-1'] [via 'd-1'] [tier :t1] [capability 'refund-duplicate']]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-authz-revoke" class="fn">
-    <h3>authz:revoke</h3>
-    <p class="fn-sig"><code>[$authz:revoke]  -> element</code>  —  Revoke a delegation by id — idempotent; opts.cascade also revokes everything it sourced.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/authz']
+    </pre>
+    <pre class="sample-output">
+      <code>[permit rooted-principal=dana [delegation 'd-1'] [via 'd-1'] [tier :t1] [capability 'refund-duplicate']]</code>
+    </pre>
+  </div>
+</section><section id="fn-authz-revoke" class="fn">
+  <h3>authz:revoke</h3>
+  <p class="fn-sig"><code>[$authz:revoke]  -> element</code>  —  Revoke a delegation by id — idempotent; opts.cascade also revokes everything it sourced.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
       [capabilities [refund]] [over '/orders'] [assurance :t1] [signature s]]]]
   [= $r [$authz:revoke $az 'd-1']]
   [$authz:check $az [authz-request [actor [agent ops-1]] [capability refund] [slice '/orders/9'] [tenant acme]]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[deny actor=ops-1 [code 'cx-err:CXER4700'] [reason :no-grant] [capability 'refund'] [slice '/orders/9'] [tenant id=acme]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-authz-grant-guardian" class="fn">
-    <h3>authz:grant-guardian</h3>
-    <p class="fn-sig"><code>[$authz:grant-guardian]  -> element</code>  —  Issue a guardian grant after the full two-validator check, storing it dormant until its incapacity gate fires.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/authz']
+    </pre>
+    <pre class="sample-output">
+      <code>[deny actor=ops-1 [code 'cx-err:CXER4700'] [reason :no-grant] [capability 'refund'] [slice '/orders/9'] [tenant id=acme]]</code>
+    </pre>
+  </div>
+</section><section id="fn-authz-grant-guardian" class="fn">
+  <h3>authz:grant-guardian</h3>
+  <p class="fn-sig"><code>[$authz:grant-guardian]  -> element</code>  —  Issue a guardian grant after the full two-validator check, storing it dormant until its incapacity gate fires.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $g [$authz:grant-guardian $az
     [delegation g-1 [tenant acme] [mode :guardian] [from [principal admin]] [to [agent ops-1]]
@@ -239,206 +230,166 @@
       [assurance :t1] [signature sig-admin]]]]
   [$authz:check $az [authz-request [actor [agent ops-1]] [capability pause-gw] [tenant acme]]
     {with-context: [context [no-ack-within true] [charge-error-rate 0.2]]}]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[permit rooted-principal=admin [delegation 'g-1'] [via 'g-1'] [tier :t1] [capability 'pause-gw']]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-authz-check" class="fn">
-    <h3>authz:check</h3>
-    <p class="fn-sig"><code>[$authz:check]  -> element</code>  —  Decide an authorization request at the single PEP, returning a [permit] or [deny] value — always total.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/authz']
+    </pre>
+    <pre class="sample-output">
+      <code>[permit rooted-principal=admin [delegation 'g-1'] [via 'g-1'] [tier :t1] [capability 'pause-gw']]</code>
+    </pre>
+  </div>
+</section><section id="fn-authz-check" class="fn">
+  <h3>authz:check</h3>
+  <p class="fn-sig"><code>[$authz:check]  -> element</code>  —  Decide an authorization request at the single PEP, returning a [permit] or [deny] value — always total.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
       [capabilities [refund-duplicate]] [over '/orders'] [assurance :t1] [signature sig-dana]]]]
   [$authz:check $az [authz-request [actor [agent ops-1]] [capability refund-duplicate] [slice '/orders/9'] [tenant acme]]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[permit rooted-principal=dana [delegation 'd-1'] [via 'd-1'] [tier :t1] [capability 'refund-duplicate']]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-authz-authorize" class="fn">
-    <h3>authz:authorize</h3>
-    <p class="fn-sig"><code>[$authz:authorize]  -> element</code>  —  The strict alias of check — with raise-on-deny=true a [deny] becomes a raised CXER4700.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/authz']
+    </pre>
+    <pre class="sample-output">
+      <code>[permit rooted-principal=dana [delegation 'd-1'] [via 'd-1'] [tier :t1] [capability 'refund-duplicate']]</code>
+    </pre>
+  </div>
+</section><section id="fn-authz-authorize" class="fn">
+  <h3>authz:authorize</h3>
+  <p class="fn-sig"><code>[$authz:authorize]  -> element</code>  —  The strict alias of check — with raise-on-deny=true a [deny] becomes a raised CXER4700.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [$authz:authorize $az [authz-request [actor [agent x]] [capability y] [tenant acme]] {raise-on-deny: true}]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER4700</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-authz-find" class="fn">
-    <h3>authz:find</h3>
-    <p class="fn-sig"><code>[$authz:find]  -> element</code>  —  Look up a delegation by id — never-issued, revoked, or expired yields the absence channel.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/authz']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER4700</code>
+    </pre>
+  </div>
+</section><section id="fn-authz-find" class="fn">
+  <h3>authz:find</h3>
+  <p class="fn-sig"><code>[$authz:find]  -> element</code>  —  Look up a delegation by id — never-issued, revoked, or expired yields the absence channel.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
       [capabilities [refund]] [assurance :t1] [signature s]]]]
   [$authz:find $az 'd-1']]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[delegation id=d-1 mode=delegated state=active [tenant id=acme] [to [agent id=ops-1]] [from [principal id=dana]] [capabilities [refund]] [assurance :t1]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-authz-grants-of" class="fn">
-    <h3>authz:grants-of</h3>
-    <p class="fn-sig"><code>[$authz:grants-of]  -> [sequence element]</code>  —  List all currently-active delegations granted to an actor, in receive order.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/authz']
+    </pre>
+    <pre class="sample-output">
+      <code>[delegation id=d-1 mode=delegated state=active [tenant id=acme] [to [agent id=ops-1]] [from [principal id=dana]] [capabilities [refund]] [assurance :t1]]</code>
+    </pre>
+  </div>
+</section><section id="fn-authz-grants-of" class="fn">
+  <h3>authz:grants-of</h3>
+  <p class="fn-sig"><code>[$authz:grants-of]  -> [sequence element]</code>  —  List all currently-active delegations granted to an actor, in receive order.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
       [capabilities [refund]] [assurance :t1] [signature s]]]]
   [$authz:grants-of $az [agent ops-1]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>([delegation id=d-1 mode=delegated state=active [tenant id=acme] [to [agent id=ops-1]] [from [principal id=dana]] [capabilities [refund]] [assurance :t1]])</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-authz-predicate" class="fn">
-    <h3>authz:predicate</h3>
-    <p class="fn-sig"><code>[$authz:predicate]  -> element</code>  —  Look up a signed-library incapacity predicate by name@version — unknown yields the absence channel.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/authz']
+    </pre>
+    <pre class="sample-output">
+      <code>([delegation id=d-1 mode=delegated state=active [tenant id=acme] [to [agent id=ops-1]] [from [principal id=dana]] [capabilities [refund]] [assurance :t1]])</code>
+    </pre>
+  </div>
+</section><section id="fn-authz-predicate" class="fn">
+  <h3>authz:predicate</h3>
+  <p class="fn-sig"><code>[$authz:predicate]  -> element</code>  —  Look up a signed-library incapacity predicate by name@version — unknown yields the absence channel.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [$authz:predicate $az 'no-ack-within@v1']]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[predicate name=no-ack-within version=v1 [params [duration] [of]] [rationale 'a request was issued and no acknowledgement arrived within the window — truth depends on the elapsed clock + the absence of an ack event, never on the principal willing it; an ack the instant it arrives makes it false'] [signature 'bundled-library:no-ack-within@v1']]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-authz-predicates" class="fn">
-    <h3>authz:predicates</h3>
-    <p class="fn-sig"><code>[$authz:predicates]  -> [sequence element]</code>  —  List the whole signed incapacity-predicate library.</p>
-    
-  </section>
-  <section id="fn-authz-gate-wellformed" class="fn">
-    <h3>authz:gate-wellformed</h3>
-    <p class="fn-sig"><code>[$authz:gate-wellformed]  -> element</code>  —  Run the structural and semantic validators over a [gate …] without issuing, returning a [valid] or [invalid …] value.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/authz']
+    </pre>
+    <pre class="sample-output">
+      <code>[predicate name=no-ack-within version=v1 [params [duration] [of]] [rationale 'a request was issued and no acknowledgement arrived within the window — truth depends on the elapsed clock + the absence of an ack event, never on the principal willing it; an ack the instant it arrives makes it false'] [signature 'bundled-library:no-ack-within@v1']]</code>
+    </pre>
+  </div>
+</section><section id="fn-authz-predicates" class="fn">
+  <h3>authz:predicates</h3>
+  <p class="fn-sig"><code>[$authz:predicates]  -> [sequence element]</code>  —  List the whole signed incapacity-predicate library.</p>
+</section><section id="fn-authz-gate-wellformed" class="fn">
+  <h3>authz:gate-wellformed</h3>
+  <p class="fn-sig"><code>[$authz:gate-wellformed]  -> element</code>  —  Run the structural and semantic validators over a [gate …] without issuing, returning a [valid] or [invalid …] value.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/authz']
 [$authz:gate-wellformed [gate [all [incapacity [no-ack-within]] [state [gt '/x' 1]]]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[valid]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-authz-verify-tier" class="fn">
-    <h3>authz:verify-tier</h3>
-    <p class="fn-sig"><code>[$authz:verify-tier]  -> element</code>  —  Verify a grant's assurance tier via crypto — returns [verified …] or raises CXER4704.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/authz']
+    </pre>
+    <pre class="sample-output">
+      <code>[valid]</code>
+    </pre>
+  </div>
+</section><section id="fn-authz-verify-tier" class="fn">
+  <h3>authz:verify-tier</h3>
+  <p class="fn-sig"><code>[$authz:verify-tier]  -> element</code>  —  Verify a grant's assurance tier via crypto — returns [verified …] or raises CXER4704.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [$authz:verify-tier $az
     [delegation d [tenant acme] [from [principal dana]] [to [agent o]]
       [capabilities [x]] [assurance :t1] [signature sig-ok]] 't1']]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[verified [tier :t1]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-authz-effective" class="fn">
-    <h3>authz:effective</h3>
-    <p class="fn-sig"><code>[$authz:effective]  -> element</code>  —  Compute an actor's effective envelope — the most-restrictive intersection of individual and superior/managing/collective gates.</p>
-    
-  </section>
-  <section id="fn-authz-dry-run" class="fn">
-    <h3>authz:dry-run</h3>
-    <p class="fn-sig"><code>[$authz:dry-run]  -> element</code>  —  Run check over an explicit scenario with no journal write, returning the same [permit] or [deny] value.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/authz']
+    </pre>
+    <pre class="sample-output">
+      <code>[verified [tier :t1]]</code>
+    </pre>
+  </div>
+</section><section id="fn-authz-effective" class="fn">
+  <h3>authz:effective</h3>
+  <p class="fn-sig"><code>[$authz:effective]  -> element</code>  —  Compute an actor's effective envelope — the most-restrictive intersection of individual and superior/managing/collective gates.</p>
+</section><section id="fn-authz-dry-run" class="fn">
+  <h3>authz:dry-run</h3>
+  <p class="fn-sig"><code>[$authz:dry-run]  -> element</code>  —  Run check over an explicit scenario with no journal write, returning the same [permit] or [deny] value.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d [tenant acme] [from [principal dana]] [to [agent o]]
       [capabilities [x]] [over '/s'] [assurance :t1] [signature s]]]]
   [$authz:dry-run $az [authz-request [actor [agent o]] [capability x] [slice '/s/1'] [tenant acme]]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[permit rooted-principal=dana [delegation 'd'] [via 'd'] [tier :t1] [capability 'x']]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-authz-explain" class="fn">
-    <h3>authz:explain</h3>
-    <p class="fn-sig"><code>[$authz:explain]  -> element</code>  —  Turn a permit or deny into a readable [explanation …] — the authority chain or the first failing link.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/authz']
+    </pre>
+    <pre class="sample-output">
+      <code>[permit rooted-principal=dana [delegation 'd'] [via 'd'] [tier :t1] [capability 'x']]</code>
+    </pre>
+  </div>
+</section><section id="fn-authz-explain" class="fn">
+  <h3>authz:explain</h3>
+  <p class="fn-sig"><code>[$authz:explain]  -> element</code>  —  Turn a permit or deny into a readable [explanation …] — the authority chain or the first failing link.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
       [capabilities [refund]] [over '/orders'] [assurance :t1] [signature s]]]]
   [= $dec [$authz:check $az [authz-request [actor [agent ops-1]] [capability refund] [slice '/orders/9'] [tenant acme]]]]
   [$authz:explain $dec]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[explanation outcome=permit [accountable 'dana'] [authority-chain [step 'd-1']]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-authz-trace" class="fn">
-    <h3>authz:trace</h3>
-    <p class="fn-sig"><code>[$authz:trace]  -> [sequence element]</code>  —  Return the ordered policy-stack evaluation behind a decision — the deep-debug view behind explain.</p>
-    
-  </section>
-  <section id="fn-authz-meters" class="fn">
-    <h3>authz:meters</h3>
-    <p class="fn-sig"><code>[$authz:meters]  -> element</code>  —  Fold the bound journal's debit events into the [meters ...] snapshot check reads ({meters: ...}) — rate as token-bucket replay, count monotone, spend inside the current UTC-Z window; opts.now pins the fold instant. Needs the journal-bound (durable) tier.</p>
-    
-  </section>
-  <section id="fn-authz-debit" class="fn">
-    <h3>authz:debit</h3>
-    <p class="fn-sig"><code>[$authz:debit]  -> element</code>  —  Charge a delegation's meters at the commit point: re-checks headroom under the journal stream's commit lock, appends the authz-debited event, and returns a [debited ...] receipt — exhausted yields the CXER4713-carrying [deny ...] value and writes nothing. Refunds never credit back.</p>
-    
-  </section>
-  <section id="fn-authz-allocate" class="fn">
-    <h3>authz:allocate</h3>
-    <p class="fn-sig"><code>[$authz:allocate]  -> element</code>  —  Reserve an ESCROW ALLOCATION from a parent delegation's meter (stream 10, cross_stream_coordination §3): the reservation debits the parent chain AT ALLOCATION TIME under the parent's commit lock (an uncoverable reservation is the CXER4713 deny naming the failing conjunct — the global cap enforces here, never at a later cross-stream draw); window attribution pins at the reservation instant. Scope: count and spend ONLY — rate is a flow property (a reserved rate is unused capacity or double-counted flow) and refuses; a sub-delegation carrying rate meters it locally, un-escrowed. Allocation ids are single-use (reserve once, draw via debit {allocation: id}, expire).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store']
+    </pre>
+    <pre class="sample-output">
+      <code>[explanation outcome=permit [accountable 'dana'] [authority-chain [step 'd-1']]]</code>
+    </pre>
+  </div>
+</section><section id="fn-authz-trace" class="fn">
+  <h3>authz:trace</h3>
+  <p class="fn-sig"><code>[$authz:trace]  -> [sequence element]</code>  —  Return the ordered policy-stack evaluation behind a decision — the deep-debug view behind explain.</p>
+</section><section id="fn-authz-meters" class="fn">
+  <h3>authz:meters</h3>
+  <p class="fn-sig"><code>[$authz:meters]  -> element</code>  —  Fold the bound journal's debit events into the [meters ...] snapshot check reads ({meters: ...}) — rate as token-bucket replay, count monotone, spend inside the current UTC-Z window; opts.now pins the fold instant. Needs the journal-bound (durable) tier.</p>
+</section><section id="fn-authz-debit" class="fn">
+  <h3>authz:debit</h3>
+  <p class="fn-sig"><code>[$authz:debit]  -> element</code>  —  Charge a delegation's meters at the commit point: re-checks headroom under the journal stream's commit lock, appends the authz-debited event, and returns a [debited ...] receipt — exhausted yields the CXER4713-carrying [deny ...] value and writes nothing. Refunds never credit back.</p>
+</section><section id="fn-authz-allocate" class="fn">
+  <h3>authz:allocate</h3>
+  <p class="fn-sig"><code>[$authz:allocate]  -> element</code>  —  Reserve an ESCROW ALLOCATION from a parent delegation's meter (stream 10, cross_stream_coordination §3): the reservation debits the parent chain AT ALLOCATION TIME under the parent's commit lock (an uncoverable reservation is the CXER4713 deny naming the failing conjunct — the global cap enforces here, never at a later cross-stream draw); window attribution pins at the reservation instant. Scope: count and spend ONLY — rate is a flow property (a reserved rate is unused capacity or double-counted flow) and refuses; a sub-delegation carrying rate meters it locally, un-escrowed. Allocation ids are single-use (reserve once, draw via debit {allocation: id}, expire).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store']
 [?lib 'cx-stdlib/journal']
 [?lib 'cx-stdlib/authz']
 [?let
@@ -457,20 +408,17 @@
 [= $draw-late [$authz:debit $az "d-parent" {allocation: "esc-1" count: 1 at: "2026-08-12T11:05:00Z"}]]
 [= $after [$authz:allocate $az "esc-3" {from: "d-parent" spend: 70.0 currency: "USD" at: "2026-08-12T11:10:00Z"}]]
   [probe [reserved $a1] [rate $rate-refused] [over-reserve $over] [draw $draw1] [draw-over $draw-over] [expired $exp] [draw-late $draw-late] [reclaimed-then-ok $after]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[probe [reserved [allocated alloc=esc-1 from=d-parent count=4 spend=40.0 currency=USD]] [rate [code 'cx-err:CXER4711']] [over-reserve [deny [code 'cx-err:CXER4713'] [reason :budget-exhausted] [conjunct :spend] [delegation 'd-parent']]] [draw [debited id=d-parent alloc=esc-1 count=2 spend=15.0 currency=USD]] [draw-over [deny [code 'cx-err:CXER4713'] [reason :budget-exhausted] [conjunct :allocation-count] [delegation 'esc-1']]] [expired [allocation-expired alloc=esc-1 reclaimed-count=2 reclaimed-spend=25.0]] [draw-late [deny [code 'cx-err:CXER4713'] [reason :budget-exhausted] [conjunct :allocation-expired] [delegation 'esc-1']]] [reclaimed-then-ok [allocated alloc=esc-3 from=d-parent spend=70.0 currency=USD]]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-authz-allocation-expire" class="fn">
-    <h3>authz:allocation-expire</h3>
-    <p class="fn-sig"><code>[$authz:allocation-expire]  -> element</code>  —  Expire an allocation, reclaiming its UN-DRAWN remainder — visibly (reclaimed-count/reclaimed-spend) and WITHOUT replenishment: the un-drawn part never left the window's budget, so reclaiming it restores availability while spent budget stays monotone (the two rules compose). After expiry the parent's consumption for the allocation is exactly what was drawn; further draws against it deny naming :allocation-expired. Typically armed via a sched durable timer.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store']
+    </pre>
+    <pre class="sample-output">
+      <code>[probe [reserved [allocated alloc=esc-1 from=d-parent count=4 spend=4.0e1 currency=USD]] [rate [code 'cx-err:CXER4711']] [over-reserve [deny [code 'cx-err:CXER4713'] [reason :budget-exhausted] [conjunct :spend] [delegation 'd-parent']]] [draw [debited id=d-parent alloc=esc-1 count=2 spend=1.5e1 currency=USD]] [draw-over [deny [code 'cx-err:CXER4713'] [reason :budget-exhausted] [conjunct :allocation-count] [delegation 'esc-1']]] [expired [allocation-expired alloc=esc-1 reclaimed-count=2 reclaimed-spend=2.5e1]] [draw-late [deny [code 'cx-err:CXER4713'] [reason :budget-exhausted] [conjunct :allocation-expired] [delegation 'esc-1']]] [reclaimed-then-ok [allocated alloc=esc-3 from=d-parent spend=7.0e1 currency=USD]]]</code>
+    </pre>
+  </div>
+</section><section id="fn-authz-allocation-expire" class="fn">
+  <h3>authz:allocation-expire</h3>
+  <p class="fn-sig"><code>[$authz:allocation-expire]  -> element</code>  —  Expire an allocation, reclaiming its UN-DRAWN remainder — visibly (reclaimed-count/reclaimed-spend) and WITHOUT replenishment: the un-drawn part never left the window's budget, so reclaiming it restores availability while spent budget stays monotone (the two rules compose). After expiry the parent's consumption for the allocation is exactly what was drawn; further draws against it deny naming :allocation-expired. Typically armed via a sched durable timer.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store']
 [?lib 'cx-stdlib/journal']
 [?lib 'cx-stdlib/authz']
 [?let
@@ -489,39 +437,31 @@
 [= $draw-late [$authz:debit $az "d-parent" {allocation: "esc-1" count: 1 at: "2026-08-12T11:05:00Z"}]]
 [= $after [$authz:allocate $az "esc-3" {from: "d-parent" spend: 70.0 currency: "USD" at: "2026-08-12T11:10:00Z"}]]
   [probe [reserved $a1] [rate $rate-refused] [over-reserve $over] [draw $draw1] [draw-over $draw-over] [expired $exp] [draw-late $draw-late] [reclaimed-then-ok $after]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[probe [reserved [allocated alloc=esc-1 from=d-parent count=4 spend=40.0 currency=USD]] [rate [code 'cx-err:CXER4711']] [over-reserve [deny [code 'cx-err:CXER4713'] [reason :budget-exhausted] [conjunct :spend] [delegation 'd-parent']]] [draw [debited id=d-parent alloc=esc-1 count=2 spend=15.0 currency=USD]] [draw-over [deny [code 'cx-err:CXER4713'] [reason :budget-exhausted] [conjunct :allocation-count] [delegation 'esc-1']]] [expired [allocation-expired alloc=esc-1 reclaimed-count=2 reclaimed-spend=25.0]] [draw-late [deny [code 'cx-err:CXER4713'] [reason :budget-exhausted] [conjunct :allocation-expired] [delegation 'esc-1']]] [reclaimed-then-ok [allocated alloc=esc-3 from=d-parent spend=70.0 currency=USD]]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-authz-approve" class="fn">
-    <h3>authz:approve</h3>
-    <p class="fn-sig"><code>[$authz:approve]  -> element</code>  —  Mint the [approval ...] claim binding a proposal's Tier-1 ADDRESS (never a name or args — forgeable): opts.by names the principal, opts.tier the assurance tier, opts.signature the suite slot (mandatory; verifiers fail closed).</p>
-    
-  </section>
-  <section id="fn-authz-commit" class="fn">
-    <h3>authz:commit</h3>
-    <p class="fn-sig"><code>[$authz:commit]  -> element</code>  —  Dispose an approved proposal fail-closed: the proposal must re-hash to the approval's subject, the approval must verify per its tier, no propose-only link may ground the basis, requires cap: refs re-resolve, the presented command must match the approved def-text address, preconditions re-evaluate — then execute, debit under the commit lock, and journal the transition. Needs the journal-bound tier.</p>
-    
-  </section>
-  <section id="fn-authz-resolve-cap" class="fn">
-    <h3>authz:resolve-cap</h3>
-    <p class="fn-sig"><code>[$authz:resolve-cap]  -> element</code>  —  Resolve a cap:sha2-256 authority-artifact address against the LIVE registry view — the artifact must exist, be un-revoked, and un-expired; anything else is the fail-closed CXER4716 (a trust input that cannot be proven live is refused).</p>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>[probe [reserved [allocated alloc=esc-1 from=d-parent count=4 spend=4.0e1 currency=USD]] [rate [code 'cx-err:CXER4711']] [over-reserve [deny [code 'cx-err:CXER4713'] [reason :budget-exhausted] [conjunct :spend] [delegation 'd-parent']]] [draw [debited id=d-parent alloc=esc-1 count=2 spend=1.5e1 currency=USD]] [draw-over [deny [code 'cx-err:CXER4713'] [reason :budget-exhausted] [conjunct :allocation-count] [delegation 'esc-1']]] [expired [allocation-expired alloc=esc-1 reclaimed-count=2 reclaimed-spend=2.5e1]] [draw-late [deny [code 'cx-err:CXER4713'] [reason :budget-exhausted] [conjunct :allocation-expired] [delegation 'esc-1']]] [reclaimed-then-ok [allocated alloc=esc-3 from=d-parent spend=7.0e1 currency=USD]]]</code>
+    </pre>
+  </div>
+</section><section id="fn-authz-approve" class="fn">
+  <h3>authz:approve</h3>
+  <p class="fn-sig"><code>[$authz:approve]  -> element</code>  —  Mint the [approval ...] claim binding a proposal's Tier-1 ADDRESS (never a name or args — forgeable): opts.by names the principal, opts.tier the assurance tier, opts.signature the suite slot (mandatory; verifiers fail closed).</p>
+</section><section id="fn-authz-commit" class="fn">
+  <h3>authz:commit</h3>
+  <p class="fn-sig"><code>[$authz:commit]  -> element</code>  —  Dispose an approved proposal fail-closed: the proposal must re-hash to the approval's subject, the approval must verify per its tier, no propose-only link may ground the basis, requires cap: refs re-resolve, the presented command must match the approved def-text address, preconditions re-evaluate — then execute, debit under the commit lock, and journal the transition. Needs the journal-bound tier.</p>
+</section><section id="fn-authz-resolve-cap" class="fn">
+  <h3>authz:resolve-cap</h3>
+  <p class="fn-sig"><code>[$authz:resolve-cap]  -> element</code>  —  Resolve a cap:sha2-256 authority-artifact address against the LIVE registry view — the artifact must exist, be un-revoked, and un-expired; anything else is the fail-closed CXER4716 (a trust input that cannot be proven live is refused).</p>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>authz</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,13 +143,12 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Tooling</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="tooling">
   <h1>Tooling</h1>
-  
-    <p>The CX toolchain is one binary (<code>cx</code>) and a small fleet of editor
+  <p>The CX toolchain is one binary (<code>cx</code>) and a small fleet of editor
        integrations built on top of it. The binary is the same V codebase
        that backs <code>libcx</code> — every binding, every CI gate, and every
        editor talks to the same parser, the same canonicalizer, the same
@@ -162,10 +161,9 @@
        <a class="xref" href="data-tooling.html">data-tooling</a>, and the code verbs (running programs under
        grants, lint, diagnostics, diagrams, profiling) in
        <a class="xref" href="code-tooling.html">code-tooling</a>.</p>
-    <section id="cli">
-      <h2>The cx CLI</h2>
-      
-        <p><code>cx</code> is the one-stop command-line interface. It evaluates,
+  <section id="cli">
+    <h2>The cx CLI</h2>
+    <p><code>cx</code> is the one-stop command-line interface. It evaluates,
          formats, canonicalizes, hashes, compares, diffs, lints,
          validates, converts, and renders CX documents. Every
          subcommand is a thin shim over the same V core
@@ -175,7 +173,7 @@
          (scaffold/demo/lock, the language server); each working verb
          is documented in its ring — <a class="xref" href="data-tooling.html">data-tooling</a> for the Ring-0
          verbs, <a class="xref" href="code-tooling.html">code-tooling</a> for the Ring-1 ones.</p>
-        <p>The CLI follows a small handful of conventions. <b>Running a
+    <p>The CLI follows a small handful of conventions. <b>Running a
          file is the default action</b>: <code>cx program.cx</code> parses and
          evaluates it (a pure-data document evaluates to itself).
          Input comes from a file path or stdin; output goes to
@@ -185,142 +183,141 @@
          Subcommands that gate on severity (<code>cx lint</code>, <code>cx
          validate</code>) accept <code>--fail-on=THRESHOLD</code> to tighten the
          gate; default is <code>--fail-on=error</code>.</p>
-        <p>The CLI surface is exercised by the conformance corpora
+    <p>The CLI surface is exercised by the conformance corpora
          under <code>conformance/*.cxd</code> (lint, diff, schema-validate,
          delimited projections, …) run by <code>make test-vcx-suite</code> —
          the fixtures are the normative reference where this guide
          and the binary disagree.</p>
-        <section id="cli-overview">
-          <h3>Subcommand catalog</h3>
-          
-            <p>The full shipped set. <code>cx --help</code> lists every subcommand —
+    <section id="cli-overview">
+      <h3>Subcommand catalog</h3>
+      <p>The full shipped set. <code>cx --help</code> lists every subcommand —
            the catalog and the dispatch are generated from one
            table in <code>vcx/cmd/main.v</code>, so they cannot drift — and
            every subcommand answers <code>cx &lt;subcommand&gt; --help</code> with
            its own usage:</p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>command</th>
-                    <th>purpose</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>cx FILE</td>
-                    <td>Parse + evaluate a document / program (the default action)</td>
-                  </tr>
-                  <tr>
-                    <td>cx fmt FILE</td>
-                    <td>Lossless canonical formatter (preserves comments, anchors; normalizes whitespace/quoting)</td>
-                  </tr>
-                  <tr>
-                    <td>cx canonical FILE</td>
-                    <td>Strict canonical text (strips presentation; data-equivalent output)</td>
-                  </tr>
-                  <tr>
-                    <td>cx hash FILE</td>
-                    <td>SHA-256 hex of the strict-canonical bytes</td>
-                  </tr>
-                  <tr>
-                    <td>cx eq A B</td>
-                    <td>Exit 0 iff strict-canonical(A) == strict-canonical(B)</td>
-                  </tr>
-                  <tr>
-                    <td>cx diff A B</td>
-                    <td>Semantic diff over strict-canonical forms</td>
-                  </tr>
-                  <tr>
-                    <td>cx lint FILE</td>
-                    <td>Style + correctness warnings</td>
-                  </tr>
-                  <tr>
-                    <td>cx validate FILE --schema=S.cxs</td>
-                    <td>Schema validation</td>
-                  </tr>
-                  <tr>
-                    <td>cx table VERB</td>
-                    <td>Table API surface (info / dump / load)</td>
-                  </tr>
-                  <tr>
-                    <td>cx schema VERB</td>
-                    <td>Schema verb family — infer a .cxs from a corpus; export to JSON Schema</td>
-                  </tr>
-                  <tr>
-                    <td>cx tools VERB</td>
-                    <td>Agent-tool verb family — project command defs to MCP tool descriptors</td>
-                  </tr>
-                  <tr>
-                    <td>cx xap init NAME</td>
-                    <td>Scaffold a XAP project</td>
-                  </tr>
-                  <tr>
-                    <td>cx xap check-surface DIR</td>
-                    <td>Surface derivation check — every surface against the composed grammar + enabled features</td>
-                  </tr>
-                  <tr>
-                    <td>cx demo</td>
-                    <td>Self-contained showcase, no I/O, &lt; 1s</td>
-                  </tr>
-                  <tr>
-                    <td>cx scaffold KIND</td>
-                    <td>Typed, commented skeleton on stdout (config / data / doc / log / table)</td>
-                  </tr>
-                  <tr>
-                    <td>cx lock</td>
-                    <td>Generate / verify cx.lock from [?lib] directives</td>
-                  </tr>
-                  <tr>
-                    <td>cx lsp</td>
-                    <td>Language server on stdio</td>
-                  </tr>
-                  <tr>
-                    <td>cx diagram FILE</td>
-                    <td>Program/data containment diagram (mermaid / svg / png; svg and png need --allow-subprocess for graphviz)</td>
-                  </tr>
-                  <tr>
-                    <td>cx code-diagram FILE</td>
-                    <td>Sequence diagram of a CX program</td>
-                  </tr>
-                  <tr>
-                    <td>cx code-tree FILE</td>
-                    <td>Evaluation-tree rendering of a CX program</td>
-                  </tr>
-                  <tr>
-                    <td>cx store-serve</td>
-                    <td>Serve a cx-store (platform profile only)</td>
-                  </tr>
-                  <tr>
-                    <td>cx store-health</td>
-                    <td>Store health probe (platform profile only)</td>
-                  </tr>
-                  <tr>
-                    <td>cx store-rotate-kek</td>
-                    <td>Rotate the store key-encryption key (platform profile only)</td>
-                  </tr>
-                  <tr>
-                    <td>cx fabric-serve</td>
-                    <td>Serve a cx-fabric (platform profile only)</td>
-                  </tr>
-                  <tr>
-                    <td>cx eval FILE</td>
-                    <td>Alias of the default run action; prefer cx FILE</td>
-                  </tr>
-                  <tr>
-                    <td>cx select PATH FILE</td>
-                    <td>CXPath query over a document — matches in canonical CX, one per line</td>
-                  </tr>
-                  <tr>
-                    <td>cx version</td>
-                    <td>Version / build info (same output as -v / --version)</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <p>There is <b>no</b> <code>cx parse</code> / <code>cx convert</code> / <code>cx modify</code> /
+      <table>
+        <thead>
+          <tr>
+            <th>command</th>
+            <th>purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>cx FILE</td>
+            <td>Parse + evaluate a document / program (the default action)</td>
+          </tr>
+          <tr>
+            <td>cx fmt FILE</td>
+            <td>Lossless canonical formatter (preserves comments, anchors; normalizes whitespace/quoting)</td>
+          </tr>
+          <tr>
+            <td>cx canonical FILE</td>
+            <td>Strict canonical text (strips presentation; data-equivalent output)</td>
+          </tr>
+          <tr>
+            <td>cx hash FILE</td>
+            <td>SHA-256 hex of the strict-canonical bytes</td>
+          </tr>
+          <tr>
+            <td>cx eq A B</td>
+            <td>Exit 0 iff strict-canonical(A) == strict-canonical(B)</td>
+          </tr>
+          <tr>
+            <td>cx diff A B</td>
+            <td>Semantic diff over strict-canonical forms</td>
+          </tr>
+          <tr>
+            <td>cx lint FILE</td>
+            <td>Style + correctness warnings</td>
+          </tr>
+          <tr>
+            <td>cx validate FILE --schema=S.cxs</td>
+            <td>Schema validation</td>
+          </tr>
+          <tr>
+            <td>cx table VERB</td>
+            <td>Table API surface (info / dump / load)</td>
+          </tr>
+          <tr>
+            <td>cx schema VERB</td>
+            <td>Schema verb family — infer a .cxs from a corpus; export to JSON Schema</td>
+          </tr>
+          <tr>
+            <td>cx tools VERB</td>
+            <td>Agent-tool verb family — project command defs to MCP tool descriptors</td>
+          </tr>
+          <tr>
+            <td>cx xap init NAME</td>
+            <td>Scaffold a XAP project</td>
+          </tr>
+          <tr>
+            <td>cx xap check-surface DIR</td>
+            <td>Surface derivation check — every surface against the composed grammar + enabled features</td>
+          </tr>
+          <tr>
+            <td>cx demo</td>
+            <td>Self-contained showcase, no I/O, &lt; 1s</td>
+          </tr>
+          <tr>
+            <td>cx scaffold KIND</td>
+            <td>Typed, commented skeleton on stdout (config / data / doc / log / table)</td>
+          </tr>
+          <tr>
+            <td>cx lock</td>
+            <td>Generate / verify cx.lock from [?lib] directives</td>
+          </tr>
+          <tr>
+            <td>cx lsp</td>
+            <td>Language server on stdio</td>
+          </tr>
+          <tr>
+            <td>cx diagram FILE</td>
+            <td>Program/data containment diagram (mermaid / svg / png; svg and png need --allow-subprocess for graphviz)</td>
+          </tr>
+          <tr>
+            <td>cx code-diagram FILE</td>
+            <td>Sequence diagram of a CX program</td>
+          </tr>
+          <tr>
+            <td>cx code-tree FILE</td>
+            <td>Evaluation-tree rendering of a CX program</td>
+          </tr>
+          <tr>
+            <td>cx store-serve</td>
+            <td>Serve a cx-store (platform profile only)</td>
+          </tr>
+          <tr>
+            <td>cx store-health</td>
+            <td>Store health probe (platform profile only)</td>
+          </tr>
+          <tr>
+            <td>cx store-rotate-kek</td>
+            <td>Rotate the store key-encryption key (platform profile only)</td>
+          </tr>
+          <tr>
+            <td>cx store-mint-principal</td>
+            <td>Mint an XSP-AUTH principal offline — seed file + [grant …] stanza (platform profile only)</td>
+          </tr>
+          <tr>
+            <td>cx fabric-serve</td>
+            <td>Serve a cx-fabric (platform profile only)</td>
+          </tr>
+          <tr>
+            <td>cx eval FILE</td>
+            <td>Alias of the default run action; prefer cx FILE</td>
+          </tr>
+          <tr>
+            <td>cx select PATH FILE</td>
+            <td>CXPath query over a document — matches in canonical CX, one per line</td>
+          </tr>
+          <tr>
+            <td>cx version</td>
+            <td>Version / build info (same output as -v / --version)</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>There is <b>no</b> <code>cx parse</code> / <code>cx convert</code> / <code>cx modify</code> /
            <code>cx help</code> subcommand — parsing and
            conversion ride the projection flags below, updates are
            programs you run with <code>cx FILE</code>, and schema checking is
@@ -328,61 +325,53 @@
            validation). Ad-hoc selection has its own verb:
            <code>cx select 'PATH' [FILE]</code> evaluates one CXPath expression
            against a document (see below).</p>
-          
-        </section>
-        <section id="cli-scaffold">
-          <h3>cx scaffold / cx demo / cx lock</h3>
-          
-            <p><code>cx scaffold KIND</code> drops a typed, commented skeleton on
+    </section>
+    <section id="cli-scaffold">
+      <h3>cx scaffold / cx demo / cx lock</h3>
+      <p><code>cx scaffold KIND</code> drops a typed, commented skeleton on
            stdout — KIND ∈ <code>config</code>, <code>data</code>, <code>doc</code>, <code>log</code>, <code>table</code>.
            <code>cx demo</code> runs a self-contained showcase (typed
            round-trip, <code>[table[…]]</code> → CSV, a CX program) with no
            file I/O and no network. <code>cx lock</code> generates or
            verifies <code>cx.lock</code> from a project's <code>[?lib]</code> directives —
            <code>--check</code>, <code>--update NAME</code>, <code>--output PATH</code>.</p>
-            <pre>
-              <code class="language-sh">$ cx scaffold config > app.cx
+      <pre>
+        <code class="language-sh">$ cx scaffold config > app.cx
            $ cx demo
            $ cx lock --check</code>
-            </pre>
-          
-        </section>
-        <section id="cli-lsp">
-          <h3>cx lsp</h3>
-          
-            <p>Starts the language server on stdio (JSON-RPC 2.0 per
+      </pre>
+    </section>
+    <section id="cli-lsp">
+      <h3>cx lsp</h3>
+      <p>Starts the language server on stdio (JSON-RPC 2.0 per
            LSP 3.17). See <a class="xref" href="#lsp">lsp</a> for the
            capability surface. Editors spawn it on demand — see
            <a class="xref" href="#editors">editors</a>.</p>
-            <pre>
-              <code class="language-sh">$ cx lsp    # editor connects on stdio</code>
-            </pre>
-          
-        </section>
-      
+      <pre>
+        <code class="language-sh">$ cx lsp    # editor connects on stdio</code>
+      </pre>
     </section>
-    <section id="editors">
-      <h2>Editor integration</h2>
-      
-        <p>CX ships first-class editor support for VS Code, Neovim,
+  </section>
+  <section id="editors">
+    <h2>Editor integration</h2>
+    <p>CX ships first-class editor support for VS Code, Neovim,
          Helix, and any editor that speaks LSP. Three layers stack on
          top of the <code>cx</code> binary: TextMate grammar for display
          contexts, LSP for live editing intelligence, tree-sitter
          for structural / injection duty. See
          <a href="../../tooling/install/README.md"><code>tooling/install/README.md</code></a>
          for one-command install scripts.</p>
-        <section id="editor-vscode">
-          <h3>VS Code</h3>
-          
-            <p>The extension lives at <code>tooling/vscode/</code>. It bundles:
+    <section id="editor-vscode">
+      <h3>VS Code</h3>
+      <p>The extension lives at <code>tooling/vscode/</code>. It bundles:
            TextMate grammar (<code>syntaxes/cx.tmLanguage.json</code>), language
            configuration (brackets, comments), snippets
            (<code>snippets/cx.json</code>), and an LSP client that spawns
            <code>cx lsp</code> on demand. No prebuilt <code>.vsix</code> is committed —
            build one with <code>npm run package</code> in <code>tooling/vscode/</code>,
            then install it with <code>code --install-extension</code>.</p>
-            <pre>
-              <code class="language-sh"># Build and install locally
+      <pre>
+        <code class="language-sh"># Build and install locally
            cd tooling/vscode
            npm install
            npm run package        # produces cx-language.vsix
@@ -390,18 +379,16 @@
 
            # Or from the bundled installer
            bash tooling/install/install-vscode.sh</code>
-            </pre>
-            <p>The extension keys off <code>.cx</code>, <code>.cxs</code>, and <code>.cxd</code>
+      </pre>
+      <p>The extension keys off <code>.cx</code>, <code>.cxs</code>, and <code>.cxd</code>
            file extensions. LSP client config (server path, env vars,
            tracing) lives in the VS Code settings panel under "CX
            Language". A sample workspace settings file is at
            <a href="../../tooling/lsp/vscode.example.json"><code>tooling/lsp/vscode.example.json</code></a>.</p>
-          
-        </section>
-        <section id="editor-neovim">
-          <h3>Neovim</h3>
-          
-            <p>Neovim integration uses <code>nvim-treesitter</code> for structural
+    </section>
+    <section id="editor-neovim">
+      <h3>Neovim</h3>
+      <p>Neovim integration uses <code>nvim-treesitter</code> for structural
            highlighting + LSP via <code>nvim-lspconfig</code> (or the built-in
            LSP client on Neovim 0.11+). A sample config is at
            <a href="../../tooling/lsp/neovim.example.lua"><code>tooling/lsp/neovim.example.lua</code></a>;
@@ -411,30 +398,28 @@
            load-proof) and writes a lazy.nvim <code>dir =</code> spec pointing at
            the in-repo plugin root — LSP included via native
            <code>vim.lsp.config</code>.</p>
-            <pre>
-              <code class="language-sh"># One-shot install
+      <pre>
+        <code class="language-sh"># One-shot install
            bash tooling/install/install-nvim.sh
 
            # Manual: copy the example into init.lua
            cat tooling/lsp/neovim.example.lua >> ~/.config/nvim/init.lua</code>
-            </pre>
-            <p class="note">The tree-sitter grammar is installed via
+      </pre>
+      <p class="note">The tree-sitter grammar is installed via
            <code>:TSInstall cx</code> once the parser is available on the
            tree-sitter registry. Until then, the install script
            builds the parser locally from <code>tooling/tree-sitter-cx/</code>
            and links it into the Neovim parser-search path.</p>
-          
-        </section>
-        <section id="editor-helix">
-          <h3>Helix</h3>
-          
-            <p>Helix consumes the tree-sitter grammar directly and
+    </section>
+    <section id="editor-helix">
+      <h3>Helix</h3>
+      <p>Helix consumes the tree-sitter grammar directly and
            connects to <code>cx lsp</code> for diagnostics, hover, and
            completion. Drop the
            <a href="../../tooling/lsp/helix.example.toml"><code>tooling/lsp/helix.example.toml</code></a>
            snippet into your <code>~/.config/helix/languages.toml</code>.</p>
-            <pre>
-              <code class="language-toml"># ~/.config/helix/languages.toml
+      <pre>
+        <code class="language-toml"># ~/.config/helix/languages.toml
            &#91;&#91;language]]
            name = "cx"
            scope = "source.cx"
@@ -446,13 +431,11 @@
            [language-server.cx-lsp]
            command = "cx"
            args = ["lsp"]</code>
-            </pre>
-          
-        </section>
-        <section id="editor-intellij">
-          <h3>IntelliJ / JetBrains via LSP</h3>
-          
-            <p>JetBrains IDEs gain CX support through their generic LSP
+      </pre>
+    </section>
+    <section id="editor-intellij">
+      <h3>IntelliJ / JetBrains via LSP</h3>
+      <p>JetBrains IDEs gain CX support through their generic LSP
            plugin: install "LSP4IJ" (or the Ultimate-edition built-in
            LSP support on 2024.3+), and register <code>cx lsp</code> as the
            server for <code>*.cx</code>, <code>*.cxs</code>, <code>*.cxd</code>. TextMate
@@ -460,273 +443,245 @@
            <code>tooling/syntax/cx.tmLanguage.json</code> via the TextMate
            plugin. The setup is identical for Rider, GoLand,
            PyCharm, RustRover, and IDEA.</p>
-            <p class="note">A dedicated JetBrains plugin (richer than the LSP-only
+      <p class="note">A dedicated JetBrains plugin (richer than the LSP-only
            path) is planned; tracked in
            <a href="../../ROADMAP.md"><code>ROADMAP.md</code></a>.</p>
-          
-        </section>
-        <section id="editor-sublime">
-          <h3>Sublime / Zed / other LSP clients</h3>
-          
-            <p>Any editor that speaks LSP 3.17 over stdio can drive the
+    </section>
+    <section id="editor-sublime">
+      <h3>Sublime / Zed / other LSP clients</h3>
+      <p>Any editor that speaks LSP 3.17 over stdio can drive the
            CX language server. The minimal configuration is: file
            pattern <code>*.cx</code>, command <code>cx lsp</code>, transport stdio. The
            install scripts under <code>tooling/install/</code> cover the
            common cases; for anything else, the contract is just
            LSP.</p>
-          
-        </section>
-      
     </section>
-    <section id="lsp">
-      <h2>Language server (LSP)</h2>
-      
-        <p>The LSP server provides the same intelligence to every
+  </section>
+  <section id="lsp">
+    <h2>Language server (LSP)</h2>
+    <p>The LSP server provides the same intelligence to every
          editor that speaks LSP. Implementation: <code>vcx/cmd/lsp.v</code>
          plus <code>vcx/cmd/lsp_features.v</code>. Speaks JSON-RPC 2.0 over
          stdio; no separate binary, no port, no daemon. Run-time
          entry point is <code>cx lsp</code>.</p>
-        <section id="lsp-capabilities">
-          <h3>Capabilities</h3>
-          
-            <p>The server advertises the following capabilities in its
+    <section id="lsp-capabilities">
+      <h3>Capabilities</h3>
+      <p>The server advertises the following capabilities in its
            <code>initialize</code> response:</p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>method</th>
-                    <th>status</th>
-                    <th>notes</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>textDocument/didOpen / didChange / didClose</td>
-                    <td>shipped</td>
-                    <td>full document sync</td>
-                  </tr>
-                  <tr>
-                    <td>textDocument/publishDiagnostics</td>
-                    <td>shipped</td>
-                    <td>parse + lint + schema + CXLS static analysis</td>
-                  </tr>
-                  <tr>
-                    <td>textDocument/hover</td>
-                    <td>shipped</td>
-                    <td>element, attr, directive, CXPath</td>
-                  </tr>
-                  <tr>
-                    <td>textDocument/completion</td>
-                    <td>shipped</td>
-                    <td>triggers : / @ $</td>
-                  </tr>
-                  <tr>
-                    <td>textDocument/semanticTokens/full</td>
-                    <td>shipped</td>
-                    <td>12-token legend</td>
-                  </tr>
-                  <tr>
-                    <td>textDocument/formatting</td>
-                    <td>shipped</td>
-                    <td>lossless fmt</td>
-                  </tr>
-                  <tr>
-                    <td>textDocument/definition</td>
-                    <td>shipped</td>
-                    <td>cross-include and anchor</td>
-                  </tr>
-                  <tr>
-                    <td>textDocument/references</td>
-                    <td>shipped</td>
-                    <td>anchor + alias + merge</td>
-                  </tr>
-                  <tr>
-                    <td>textDocument/documentSymbol</td>
-                    <td>shipped</td>
-                    <td>outline of elements and directives</td>
-                  </tr>
-                  <tr>
-                    <td>textDocument/foldingRange</td>
-                    <td>shipped</td>
-                    <td>bracket-structured folding</td>
-                  </tr>
-                  <tr>
-                    <td>textDocument/selectionRange</td>
-                    <td>shipped</td>
-                    <td>structural expand-selection</td>
-                  </tr>
-                  <tr>
-                    <td>textDocument/codeLens</td>
-                    <td>shipped</td>
-                    <td>diagram preview per top-level directive</td>
-                  </tr>
-                  <tr>
-                    <td>textDocument/signatureHelp</td>
-                    <td>shipped</td>
-                    <td>directive arg slots</td>
-                  </tr>
-                  <tr>
-                    <td>textDocument/inlayHint</td>
-                    <td>shipped</td>
-                    <td>inferred types</td>
-                  </tr>
-                  <tr>
-                    <td>textDocument/rename</td>
-                    <td>shipped</td>
-                    <td>anchor / alias rename</td>
-                  </tr>
-                  <tr>
-                    <td>textDocument/codeAction</td>
-                    <td>advertised, empty</td>
-                    <td>capability advertised; the handler returns no actions yet</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <p>Implementation lives in <code>vcx/cmd/lsp_features.v</code>. The
+      <table>
+        <thead>
+          <tr>
+            <th>method</th>
+            <th>status</th>
+            <th>notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>textDocument/didOpen / didChange / didClose</td>
+            <td>shipped</td>
+            <td>full document sync</td>
+          </tr>
+          <tr>
+            <td>textDocument/publishDiagnostics</td>
+            <td>shipped</td>
+            <td>parse + lint + schema + CXLS static analysis</td>
+          </tr>
+          <tr>
+            <td>textDocument/hover</td>
+            <td>shipped</td>
+            <td>element, attr, directive, CXPath</td>
+          </tr>
+          <tr>
+            <td>textDocument/completion</td>
+            <td>shipped</td>
+            <td>triggers : / @ $</td>
+          </tr>
+          <tr>
+            <td>textDocument/semanticTokens/full</td>
+            <td>shipped</td>
+            <td>12-token legend</td>
+          </tr>
+          <tr>
+            <td>textDocument/formatting</td>
+            <td>shipped</td>
+            <td>lossless fmt</td>
+          </tr>
+          <tr>
+            <td>textDocument/definition</td>
+            <td>shipped</td>
+            <td>cross-include and anchor</td>
+          </tr>
+          <tr>
+            <td>textDocument/references</td>
+            <td>shipped</td>
+            <td>anchor + alias + merge</td>
+          </tr>
+          <tr>
+            <td>textDocument/documentSymbol</td>
+            <td>shipped</td>
+            <td>outline of elements and directives</td>
+          </tr>
+          <tr>
+            <td>textDocument/foldingRange</td>
+            <td>shipped</td>
+            <td>bracket-structured folding</td>
+          </tr>
+          <tr>
+            <td>textDocument/selectionRange</td>
+            <td>shipped</td>
+            <td>structural expand-selection</td>
+          </tr>
+          <tr>
+            <td>textDocument/codeLens</td>
+            <td>shipped</td>
+            <td>diagram preview per top-level directive</td>
+          </tr>
+          <tr>
+            <td>textDocument/signatureHelp</td>
+            <td>shipped</td>
+            <td>directive arg slots</td>
+          </tr>
+          <tr>
+            <td>textDocument/inlayHint</td>
+            <td>shipped</td>
+            <td>inferred types</td>
+          </tr>
+          <tr>
+            <td>textDocument/rename</td>
+            <td>shipped</td>
+            <td>anchor / alias rename</td>
+          </tr>
+          <tr>
+            <td>textDocument/codeAction</td>
+            <td>advertised, empty</td>
+            <td>capability advertised; the handler returns no actions yet</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Implementation lives in <code>vcx/cmd/lsp_features.v</code>. The
            CXLS001-004 diagnostic
            emitters per
            <a href="../../tooling/lsp/diagnostics.md"><code>tooling/lsp/diagnostics.md</code></a>.</p>
-          
-        </section>
-        <section id="lsp-diagnostics">
-          <h3>Diagnostic codes</h3>
-          
-            <p>Diagnostics flow from three sources, each with its own code
+    </section>
+    <section id="lsp-diagnostics">
+      <h3>Diagnostic codes</h3>
+      <p>Diagnostics flow from three sources, each with its own code
            prefix:</p>
-            <ul>
-              
-                <li><code>CXER</code> <b>prefix</b> — runtime / parse errors from the V core.
+      <ul>
+        <li><code>CXER</code> <b>prefix</b> — runtime / parse errors from the V core.
                 The namespace registry is
                 <a href="../../spec/03-approved/process/governance.md"><code>spec/03-approved/process/governance.md</code></a>
                 §9.6; the language-core sub-blocks live in
                 <a href="../../spec/03-approved/core/code.md"><code>spec/03-approved/core/code.md</code></a>
                 §9.4.</li>
-                <li><code>CX-L</code> <b>prefix</b> — lint findings from <code>cx_lint</code> (see
+        <li><code>CX-L</code> <b>prefix</b> — lint findings from <code>cx_lint</code> (see
                 <a class="xref" href="code-tooling.html#lint">lint</a>); same codes the CLI emits.</li>
-                <li><code>CXLS</code> <b>prefix</b> — LSP-only static-analysis diagnostics
+        <li><code>CXLS</code> <b>prefix</b> — LSP-only static-analysis diagnostics
                 that don't have a CLI surface. Currently shipped:</li>
-              
-            </ul>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>code</th>
-                    <th>severity</th>
-                    <th>trigger</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>CXLS001</td>
-                    <td>warning</td>
-                    <td>unreachable [?match] arm (after [else …] or [case _ …])</td>
-                  </tr>
-                  <tr>
-                    <td>CXLS002</td>
-                    <td>hint</td>
-                    <td>[?match] with no [else …] (silent () fallout)</td>
-                  </tr>
-                  <tr>
-                    <td>CXLS003</td>
-                    <td>hint</td>
-                    <td>sibling [case …] arms with similar [when …] predicates (consolidation suggestion)</td>
-                  </tr>
-                  <tr>
-                    <td>CXLS004</td>
-                    <td>error</td>
-                    <td>[?modify] [set-attr] / [delete-attr] on attribute-step path (compile-time mirror of CXER0100)</td>
-                  </tr>
-                  <tr>
-                    <td>CXLS005</td>
-                    <td>—</td>
-                    <td>retired ([par] now owns its width as a bounded worker pool)</td>
-                  </tr>
-                  <tr>
-                    <td>CXLS006</td>
-                    <td>hint</td>
-                    <td>unbounded comprehension — a [?for] over a generator with no bounding clause</td>
-                  </tr>
-                  <tr>
-                    <td>CXLS007</td>
-                    <td>hint</td>
-                    <td>ambiguous whitespace-separated quoted-string body</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-            <p>Codes are stable strings; editor configs may key off them
+      </ul>
+      <table>
+        <thead>
+          <tr>
+            <th>code</th>
+            <th>severity</th>
+            <th>trigger</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CXLS001</td>
+            <td>warning</td>
+            <td>unreachable [?match] arm (after [else …] or [case _ …])</td>
+          </tr>
+          <tr>
+            <td>CXLS002</td>
+            <td>hint</td>
+            <td>[?match] with no [else …] (silent () fallout)</td>
+          </tr>
+          <tr>
+            <td>CXLS003</td>
+            <td>hint</td>
+            <td>sibling [case …] arms with similar [when …] predicates (consolidation suggestion)</td>
+          </tr>
+          <tr>
+            <td>CXLS004</td>
+            <td>error</td>
+            <td>[?modify] [set-attr] / [delete-attr] on attribute-step path (compile-time mirror of CXER0100)</td>
+          </tr>
+          <tr>
+            <td>CXLS005</td>
+            <td>—</td>
+            <td>retired ([par] now owns its width as a bounded worker pool)</td>
+          </tr>
+          <tr>
+            <td>CXLS006</td>
+            <td>hint</td>
+            <td>unbounded comprehension — a [?for] over a generator with no bounding clause</td>
+          </tr>
+          <tr>
+            <td>CXLS007</td>
+            <td>hint</td>
+            <td>ambiguous whitespace-separated quoted-string body</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Codes are stable strings; editor configs may key off them
            to surface custom UI (e.g. fold a CXLS003 cluster into a
            single inlay). See
            <a href="../../tooling/lsp/diagnostics.md"><code>tooling/lsp/diagnostics.md</code></a>
            for the emit contracts.</p>
-          
-        </section>
-        <section id="lsp-hover">
-          <h3>Hover</h3>
-          
-            <p>Hover content depends on where the cursor sits:</p>
-            <ul>
-              
-                <li><b>Element name</b> — element-doc from the active
+    </section>
+    <section id="lsp-hover">
+      <h3>Hover</h3>
+      <p>Hover content depends on where the cursor sits:</p>
+      <ul>
+        <li><b>Element name</b> — element-doc from the active
                 schema (if any), attribute table, link to the schema
                 source line.</li>
-                <li><b>Attribute name</b> — type, default, schema source.</li>
-                <li><b>Directive name</b> — one-line synopsis + link to the
+        <li><b>Attribute name</b> — type, default, schema source.</li>
+        <li><b>Directive name</b> — one-line synopsis + link to the
                 directive page in this guide.</li>
-                <li><b>CXPath path expression</b> — resolved XPath
+        <li><b>CXPath path expression</b> — resolved XPath
                 production, live match-count against the current
                 document, axis-name doc.</li>
-                <li><b>Layer-2 host idiom</b> — desugared Layer-1 form
+        <li><b>Layer-2 host idiom</b> — desugared Layer-1 form
                 (Python comprehension, Go filter chain, Rust
                 iterator). Implementation calls
                 <code>cxlib.idioms.explain()</code>.</li>
-              
-            </ul>
-            <pre>
-              <code class="language-cx">[# Hovering '//section[2]/p[@lang=\"en\"]' shows: #]
+      </ul>
+      <pre>
+        <code class="language-cx">[# Hovering '//section[2]/p[@lang=\"en\"]' shows: #]
            [# /section[2]/p[@lang=\"en\"]                    #]
            [# → child::section[position()=2]/child::p[@lang=\"en\"] #]
            [# → matches 3 nodes in this document             #]
            [# → axis `child::` selects direct children (default) #]</code>
-            </pre>
-          
-        </section>
-        <section id="lsp-completion">
-          <h3>Completion</h3>
-          
-            <p>Completion triggers on <code>:</code>, <code>@</code>, <code>$</code>, and <code>/</code>. The trigger
+      </pre>
+    </section>
+    <section id="lsp-completion">
+      <h3>Completion</h3>
+      <p>Completion triggers on <code>:</code>, <code>@</code>, <code>$</code>, and <code>/</code>. The trigger
            character determines the candidate set:</p>
-            <ul>
-              
-                <li><code>:</code> — atom literals, type annotations (<code>::int</code>,
+      <ul>
+        <li><code>:</code> — atom literals, type annotations (<code>::int</code>,
                 <code>::string</code>, <code>::date</code>...), directive names (<code>[?for</code>,
                 <code>[?match</code>...), labeled-slot names inside an active
                 directive.</li>
-                <li><code>@</code> — attribute names from the schema or the
+        <li><code>@</code> — attribute names from the schema or the
                 live document.</li>
-                <li><code>$</code> — variable names from <code>[?let]</code> bindings in
+        <li><code>$</code> — variable names from <code>[?let]</code> bindings in
                 scope.</li>
-                <li><code>/</code> — CXPath axes + element names + node-kind
+        <li><code>/</code> — CXPath axes + element names + node-kind
                 tests.</li>
-              
-            </ul>
-            <p>All completion items carry <code>data.kind</code> so editors can
+      </ul>
+      <p>All completion items carry <code>data.kind</code> so editors can
            sort and group them. CXPath items are tagged
            <code>data.path_axis=true</code> per
            <a href="../../tooling/lsp/diagnostics.md"><code>tooling/lsp/diagnostics.md</code></a>.</p>
-          
-        </section>
-        <section id="lsp-codeactions">
-          <h3>Code actions</h3>
-          
-            <p>Code actions are quick-fixes the editor offers for
+    </section>
+    <section id="lsp-codeactions">
+      <h3>Code actions</h3>
+      <p>Code actions are quick-fixes the editor offers for
            diagnostics. The server <b>advertises</b> the codeAction
            capability but the handler currently returns an empty,
            well-formed list — no quick-fixes ship yet. Quick-fix
@@ -735,99 +690,91 @@
            unreachable <code>[?match]</code> arm for CXLS001, inserting an
            <code>[else …]</code> arm for CXLS002, anchor cleanups for the
            CX-L003 / CX-L004 lint findings).</p>
-            <p>Advertising the capability with an empty result keeps
+      <p>Advertising the capability with an empty result keeps
            editors from breaking while the recipes land; nothing an
            editor shows under "quick fix" today comes from the CX
            server.</p>
-          
-        </section>
-        <section id="lsp-semantic-tokens">
-          <h3>Semantic tokens</h3>
-          
-            <p>The LSP semanticTokens response is the <b>canonical
+    </section>
+    <section id="lsp-semantic-tokens">
+      <h3>Semantic tokens</h3>
+      <p>The LSP semanticTokens response is the <b>canonical
            highlighting source</b> for editors that consume it.
            The 12-token legend maps directly to TextMate scopes for
            cross-editor consistency:</p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>token</th>
-                    <th>example</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>namespace</td>
-                    <td>module prefixes (cx:, log:, fn:, …)</td>
-                  </tr>
-                  <tr>
-                    <td>keyword</td>
-                    <td>directive names ([?for], [?if], [?match]...)</td>
-                  </tr>
-                  <tr>
-                    <td>variable</td>
-                    <td>bound names ([= $x …], [in $x …])</td>
-                  </tr>
-                  <tr>
-                    <td>parameter</td>
-                    <td>labeled slot names (:caps, :policy, …)</td>
-                  </tr>
-                  <tr>
-                    <td>property</td>
-                    <td>attribute names</td>
-                  </tr>
-                  <tr>
-                    <td>string</td>
-                    <td>quoted string values</td>
-                  </tr>
-                  <tr>
-                    <td>number</td>
-                    <td>numeric scalars</td>
-                  </tr>
-                  <tr>
-                    <td>comment</td>
-                    <td># line comments and [; …] blocks</td>
-                  </tr>
-                  <tr>
-                    <td>operator</td>
-                    <td>|&gt;, =&gt;, ||, -&gt;, !, to</td>
-                  </tr>
-                  <tr>
-                    <td>decorator</td>
-                    <td>#id, &amp;anchor, *merge sigils</td>
-                  </tr>
-                  <tr>
-                    <td>enumMember</td>
-                    <td>atom literals (:paid, :active, …)</td>
-                  </tr>
-                  <tr>
-                    <td>function</td>
-                    <td>element / call head names</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-          
-        </section>
-        <section id="lsp-debugging">
-          <h3>Debugging the server</h3>
-          
-            <p>Run with <code>--verbose</code> and pipe stderr to a file to trace
+      <table>
+        <thead>
+          <tr>
+            <th>token</th>
+            <th>example</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>namespace</td>
+            <td>module prefixes (cx:, log:, fn:, …)</td>
+          </tr>
+          <tr>
+            <td>keyword</td>
+            <td>directive names ([?for], [?if], [?match]...)</td>
+          </tr>
+          <tr>
+            <td>variable</td>
+            <td>bound names ([= $x …], [in $x …])</td>
+          </tr>
+          <tr>
+            <td>parameter</td>
+            <td>labeled slot names (:caps, :policy, …)</td>
+          </tr>
+          <tr>
+            <td>property</td>
+            <td>attribute names</td>
+          </tr>
+          <tr>
+            <td>string</td>
+            <td>quoted string values</td>
+          </tr>
+          <tr>
+            <td>number</td>
+            <td>numeric scalars</td>
+          </tr>
+          <tr>
+            <td>comment</td>
+            <td># line comments and [; …] blocks</td>
+          </tr>
+          <tr>
+            <td>operator</td>
+            <td>|&gt;, =&gt;, ||, -&gt;, !, to</td>
+          </tr>
+          <tr>
+            <td>decorator</td>
+            <td>#id, &amp;anchor, *merge sigils</td>
+          </tr>
+          <tr>
+            <td>enumMember</td>
+            <td>atom literals (:paid, :active, …)</td>
+          </tr>
+          <tr>
+            <td>function</td>
+            <td>element / call head names</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+    <section id="lsp-debugging">
+      <h3>Debugging the server</h3>
+      <p>Run with <code>--verbose</code> and pipe stderr to a file to trace
            incoming methods. The server logs each request, its
            dispatch path, and timing.</p>
-            <pre>
-              <code class="language-sh">$ cx lsp --verbose 2>/tmp/cx-lsp.log
+      <pre>
+        <code class="language-sh">$ cx lsp --verbose 2>/tmp/cx-lsp.log
            $ tail -f /tmp/cx-lsp.log
            [lsp] initialize ← capabilities: hoverProvider=true, ...
            [lsp] textDocument/didOpen ← config.cx (1342 bytes)
            [lsp] textDocument/hover @ 12:8 → 'host' element-doc</code>
-            </pre>
-            <p>Smoke-test the JSON-RPC handshake without an editor:</p>
-            <pre>
-              <code class="language-sh">python3 - <<'EOF' | cx lsp
+      </pre>
+      <p>Smoke-test the JSON-RPC handshake without an editor:</p>
+      <pre>
+        <code class="language-sh">python3 - <<'EOF' | cx lsp
            import sys, json
            def msg(o):
                b = json.dumps(o)
@@ -836,24 +783,20 @@
            msg({\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"shutdown\"})
            msg({\"jsonrpc\":\"2.0\",\"method\":\"exit\"})
            EOF</code>
-            </pre>
-          
-        </section>
-      
+      </pre>
     </section>
-    <section id="tree-sitter">
-      <h2>Tree-sitter grammar</h2>
-      
-        <p><code>tooling/tree-sitter-cx/</code> is the tree-sitter grammar for CX.
+  </section>
+  <section id="tree-sitter">
+    <h2>Tree-sitter grammar</h2>
+    <p><code>tooling/tree-sitter-cx/</code> is the tree-sitter grammar for CX.
          Tree-sitter is scoped to <b>structural and embedded-language-
          injection duty</b> — element / attribute / scalar tokenisation
          + opaque-PI rendering of <code>[? ... ]</code> directives. Per-directive
          highlighting comes from the LSP semanticTokens, not from
          tree-sitter.</p>
-        <section id="ts-shape">
-          <h3>Grammar shape</h3>
-          
-            <p>The grammar (<code>grammar.js</code>) covers everything in
+    <section id="ts-shape">
+      <h3>Grammar shape</h3>
+      <p>The grammar (<code>grammar.js</code>) covers everything in
            <a href="../../spec/03-approved/formal/grammar.ebnf"><code>spec/03-approved/formal/grammar.ebnf</code></a> at the
            <b>structural</b> level: bracketed elements, attribute key=value
            pairs, scalar literals (string / int / float / bool / date /
@@ -865,145 +808,123 @@
            tokenised as a single opaque <code>(directive)</code> region; the
            internal labeled slots and bodies are not pre-parsed at
            the tree-sitter layer.</p>
-          
-        </section>
-        <section id="ts-queries">
-          <h3>Highlight + injection queries</h3>
-          
-            <p>Queries live in <code>tooling/tree-sitter-cx/queries/</code>:</p>
-            <ul>
-              
-                <li><code>highlights.scm</code> — structural scopes only
+    </section>
+    <section id="ts-queries">
+      <h3>Highlight + injection queries</h3>
+      <p>Queries live in <code>tooling/tree-sitter-cx/queries/</code>:</p>
+      <ul>
+        <li><code>highlights.scm</code> — structural scopes only
                 (element-name, attribute-name, string, number,
                 comment, directive-opaque). Per-directive interior
                 highlighting is delegated to LSP semanticTokens.</li>
-                <li><code>injections.scm</code> — embedded-language injection
+        <li><code>injections.scm</code> — embedded-language injection
                 for fenced code blocks (<code>[code lang='rust'
                 [| ... |]]</code>). Recognised injection languages:
                 <code>python</code>, <code>rust</code>, <code>go</code>, <code>js</code>, <code>ts</code>, <code>java</code>, <code>c</code>,
                 <code>cpp</code>, <code>csharp</code>, <code>ruby</code>, <code>swift</code>, <code>kotlin</code>, <code>sh</code>,
                 <code>sql</code>, <code>html</code>, <code>css</code>, <code>json</code>, <code>yaml</code>, <code>toml</code>,
                 <code>xml</code>, <code>markdown</code>.</li>
-              
-            </ul>
-            <p>These two are the only query files that ship. Indent and
+      </ul>
+      <p>These two are the only query files that ship. Indent and
            locals queries do not exist — auto-indent comes from the
            editor's bracket handling, and <code>[?let]</code> scope intelligence
            comes from the LSP, not from tree-sitter.</p>
-          
-        </section>
-        <section id="ts-regen">
-          <h3>Regenerating the parser</h3>
-          
-            <p>The committed <code>src/parser.c</code> is generated from
+    </section>
+    <section id="ts-regen">
+      <h3>Regenerating the parser</h3>
+      <p>The committed <code>src/parser.c</code> is generated from
            <code>grammar.js</code> by <code>tree-sitter generate</code>. The grammar
            directory carries its own Makefile;
            <code>make -C tooling/tree-sitter-cx install-nvim</code> builds the
            parser and links it into the Neovim parser-search
            path.</p>
-            <pre>
-              <code class="language-sh">$ cd tooling/tree-sitter-cx
+      <pre>
+        <code class="language-sh">$ cd tooling/tree-sitter-cx
            $ npm install
            $ npx tree-sitter generate         # regenerate src/parser.c
            $ npx tree-sitter test             # run grammar tests
            $ npx tree-sitter parse sample.cx  # smoke-test on a file</code>
-            </pre>
-            <p class="note">There is no repo-root make target and no CI gate pinning
+      </pre>
+      <p class="note">There is no repo-root make target and no CI gate pinning
            the committed <code>parser.c</code> to <code>grammar.js</code> — after editing
            the grammar, regenerate and commit <code>parser.c</code>
            yourself.</p>
-          
-        </section>
-      
     </section>
-    <section id="cookbook">
-      <h2>Cookbook — common recipes</h2>
-      
-        <p>Worked examples of CLI compositions that show up repeatedly
+  </section>
+  <section id="cookbook">
+    <h2>Cookbook — common recipes</h2>
+    <p>Worked examples of CLI compositions that show up repeatedly
          in real use. Pair-and-match — the CX CLI is designed to
          compose along the standard Unix pipe.</p>
-        <section id="recipe-convert">
-          <h3>Filter JSON, project to YAML</h3>
-          
-            <p>Read JSON, query / filter / transform via a CX program,
+    <section id="recipe-convert">
+      <h3>Filter JSON, project to YAML</h3>
+      <p>Read JSON, query / filter / transform via a CX program,
            project the result to YAML.</p>
-            <pre>
-              <code class="language-sh">$ cx --cx input.json > input.cx        # JSON in, CX out
+      <pre>
+        <code class="language-sh">$ cx --cx input.json > input.cx        # JSON in, CX out
            $ cat input.cx filter.cx | cx > result.cx
            $ cx --yaml result.cx                  # project to YAML</code>
-            </pre>
-            <p>The CX form is the pivot — every conversion is a
+      </pre>
+      <p>The CX form is the pivot — every conversion is a
            round-trip through the same AST. Appending a program to
            its data (<code>cat data.cx program.cx | cx</code>) evaluates the
            program against the preceding document.</p>
-          
-        </section>
-        <section id="recipe-validate">
-          <h3>Validate config before deploy</h3>
-          
-            <p>Strict-profile validation, JSON output for the CI
+    </section>
+    <section id="recipe-validate">
+      <h3>Validate config before deploy</h3>
+      <p>Strict-profile validation, JSON output for the CI
            summary.</p>
-            <pre>
-              <code class="language-sh">$ cx validate config.cx --schema=config.cxs --mode=strict --fail-on=warn \\
+      <pre>
+        <code class="language-sh">$ cx validate config.cx --schema=config.cxs --mode=strict --fail-on=warn \\
              && deploy.sh</code>
-            </pre>
-          
-        </section>
-        <section id="recipe-diff">
-          <h3>Semantic diff between two YAML files</h3>
-          
-            <p>Cross-format diff: read YAML on both sides, diff the
+      </pre>
+    </section>
+    <section id="recipe-diff">
+      <h3>Semantic diff between two YAML files</h3>
+      <p>Cross-format diff: read YAML on both sides, diff the
            canonical CX form.</p>
-            <pre>
-              <code class="language-sh">$ cx diff a.yaml b.yaml --format summary
+      <pre>
+        <code class="language-sh">$ cx diff a.yaml b.yaml --format summary
            3 attributes changed, 1 element added</code>
-            </pre>
-          
-        </section>
-        <section id="recipe-hash">
-          <h3>Content hash as cache key</h3>
-          
-            <p>Use the canonical-bytes hash as a cache key in a build
+      </pre>
+    </section>
+    <section id="recipe-hash">
+      <h3>Content hash as cache key</h3>
+      <p>Use the canonical-bytes hash as a cache key in a build
            pipeline. The hash is stable across formatting changes —
            reformatting <code>config.cx</code> will not bust the cache, but
            changing a value will.</p>
-            <pre>
-              <code class="language-sh">$ KEY=$(cx hash config.cx)
+      <pre>
+        <code class="language-sh">$ KEY=$(cx hash config.cx)
            $ test -f cache/$KEY.bin || compile config.cx > cache/$KEY.bin
            $ cp cache/$KEY.bin out.bin</code>
-            </pre>
-          
-        </section>
-        <section id="recipe-csv-parquet">
-          <h3>Convert CSV to Parquet via CX</h3>
-          
-            <p>Inspect and round-trip a columnar payload through the
+      </pre>
+    </section>
+    <section id="recipe-csv-parquet">
+      <h3>Convert CSV to Parquet via CX</h3>
+      <p>Inspect and round-trip a columnar payload through the
            Table API; Parquet / Arrow output rides the
            <code>libcx_arrow</code> bridge.</p>
-            <pre>
-              <code class="language-sh">$ cx table info data.cxcol
+      <pre>
+        <code class="language-sh">$ cx table info data.cxcol
            $ cx table dump data.cxcol --to=cx | head
            [# --to=parquet|arrow defers to the libcx_arrow bridge (Phase C) #]</code>
-            </pre>
-          
-        </section>
-        <section id="recipe-lint-tree">
-          <h3>Lint a whole tree before commit</h3>
-          
-            <p>Recursive lint pre-commit, with shared config.</p>
-            <pre>
-              <code class="language-sh">$ find . -name '*.cx' -print0 \\
+      </pre>
+    </section>
+    <section id="recipe-lint-tree">
+      <h3>Lint a whole tree before commit</h3>
+      <p>Recursive lint pre-commit, with shared config.</p>
+      <pre>
+        <code class="language-sh">$ find . -name '*.cx' -print0 \\
              | xargs -0 cx lint --format=summary --fail-on=warn</code>
-            </pre>
-          
-        </section>
-        <section id="recipe-docs">
-          <h3>Render the canonical guide</h3>
-          
-            <p>Build the canonical guide (this document) from sources.
+      </pre>
+    </section>
+    <section id="recipe-docs">
+      <h3>Render the canonical guide</h3>
+      <p>Build the canonical guide (this document) from sources.
            See <a class="xref" href="#docgen">docgen</a> for the pipeline.</p>
-            <pre>
-              <code class="language-sh">$ make docs
+      <pre>
+        <code class="language-sh">$ make docs
            # outputs into _docs_staging/
 
            $ make docs-diff
@@ -1011,52 +932,44 @@
 
            $ make docs-publish
            # copy staging → docs/</code>
-            </pre>
-          
-        </section>
-        <section id="recipe-ast-bin">
-          <h3>Inspect the AST</h3>
-          
-            <p>Read the JSON AST — useful when debugging how the parser
+      </pre>
+    </section>
+    <section id="recipe-ast-bin">
+      <h3>Inspect the AST</h3>
+      <p>Read the JSON AST — useful when debugging how the parser
            shaped a document.</p>
-            <pre>
-              <code class="language-sh">$ cx --ast doc.cx | jq '.name, (.items | length)'</code>
-            </pre>
-          
-        </section>
-        <section id="recipe-roundtrip">
-          <h3>Round-trip through every projection</h3>
-          
-            <p>Assert that a projection round-trip is data-lossless.
+      <pre>
+        <code class="language-sh">$ cx --ast doc.cx | jq '.name, (.items | length)'</code>
+      </pre>
+    </section>
+    <section id="recipe-roundtrip">
+      <h3>Round-trip through every projection</h3>
+      <p>Assert that a projection round-trip is data-lossless.
            <code>--lossless</code> XML carries per-value types, so the
            round-tripped document is strict-canonical-equal to the
            original — the identity contract from
            <a class="xref" href="identity.html#canon-cross-format">canon-cross-format</a> as a CI one-liner.</p>
-            <pre>
-              <code class="language-sh">$ cx --from=cx --to=xml --lossless doc.cx \\
+      <pre>
+        <code class="language-sh">$ cx --from=cx --to=xml --lossless doc.cx \\
              | cx --from=xml --to=cx - > back.cx
            $ cx eq doc.cx back.cx && echo lossless</code>
-            </pre>
-          
-        </section>
-      
+      </pre>
     </section>
-    <section id="build-integration">
-      <h2>Build-system integration</h2>
-      
-        <p><code>cx</code> is built to slot into the build system you already
+  </section>
+  <section id="build-integration">
+    <h2>Build-system integration</h2>
+    <p><code>cx</code> is built to slot into the build system you already
          have. The CLI returns conventional exit codes, reads/writes
          on stdio, and produces deterministic output — all the
          properties that let it compose with <code>make</code>, <code>cargo</code>, <code>npm</code>,
          <code>bazel</code>, and CI systems without surprises.</p>
-        <section id="build-make">
-          <h3>Make</h3>
-          
-            <p>A typical pattern: per-<code>.cxs</code> schema validation rule,
+    <section id="build-make">
+      <h3>Make</h3>
+      <p>A typical pattern: per-<code>.cxs</code> schema validation rule,
            gated <code>cx lint</code> lane, generated outputs as first-class
            targets.</p>
-            <pre>
-              <code class="language-makefile">CX        := cx
+      <pre>
+        <code class="language-makefile">CX        := cx
            CX_FILES  := $(shell find config -name '*.cx')
            CX_STAMPS := $(CX_FILES:.cx=.cx.valid)
 
@@ -1073,18 +986,16 @@
 
            .PHONY: check
            check: lint validate</code>
-            </pre>
-          
-        </section>
-        <section id="build-cargo">
-          <h3>Cargo (Rust build.rs)</h3>
-          
-            <p>Use <code>build.rs</code> to validate <code>.cxs</code>/<code>.cx</code> pairs at compile
+      </pre>
+    </section>
+    <section id="build-cargo">
+      <h3>Cargo (Rust build.rs)</h3>
+      <p>Use <code>build.rs</code> to validate <code>.cxs</code>/<code>.cx</code> pairs at compile
            time. (Schema-to-types codegen is planned design work with
            no CLI surface yet — when it lands, the same step would
            generate Rust types directly from the schema.)</p>
-            <pre>
-              <code class="language-rust">// build.rs
+      <pre>
+        <code class="language-rust">// build.rs
            use std::process::Command;
 
            fn main() {
@@ -1104,16 +1015,14 @@
 
                // Schema-to-types codegen: planned, no CLI surface yet.
            }</code>
-            </pre>
-          
-        </section>
-        <section id="build-npm">
-          <h3>npm scripts</h3>
-          
-            <p>Wire <code>cx validate</code> and <code>cx lint</code> into <code>package.json</code>
+      </pre>
+    </section>
+    <section id="build-npm">
+      <h3>npm scripts</h3>
+      <p>Wire <code>cx validate</code> and <code>cx lint</code> into <code>package.json</code>
            lifecycle scripts.</p>
-            <pre>
-              <code class="language-json">{
+      <pre>
+        <code class="language-json">{
              \"scripts\": {
                \"lint:cx\":     \"cx lint --fail-on=warn config/**/*.cx\",
                \"validate:cx\": \"cx validate config/app.cx --schema=config/app.cxs --mode=strict\",
@@ -1121,16 +1030,14 @@
                \"prebuild\":    \"npm run validate:cx\"
              }
            }</code>
-            </pre>
-          
-        </section>
-        <section id="build-bazel">
-          <h3>Bazel</h3>
-          
-            <p>A custom rule wrapping <code>cx validate</code> for hermetic builds.
+      </pre>
+    </section>
+    <section id="build-bazel">
+      <h3>Bazel</h3>
+      <p>A custom rule wrapping <code>cx validate</code> for hermetic builds.
            Sketch (treats validation as a generated stamp file):</p>
-            <pre>
-              <code class="language-python"># tools/cx.bzl
+      <pre>
+        <code class="language-python"># tools/cx.bzl
            def _cx_validate_impl(ctx):
                stamp = ctx.actions.declare_file(ctx.label.name + \".valid\")
                ctx.actions.run_shell(
@@ -1154,17 +1061,15 @@
                    \"schema\": attr.label(allow_single_file = [\".cxs\"]),
                },
            )</code>
-            </pre>
-          
-        </section>
-        <section id="build-ci-github">
-          <h3>GitHub Actions</h3>
-          
-            <p>Lint + validate as a PR gate. Reusable workflow that
+      </pre>
+    </section>
+    <section id="build-ci-github">
+      <h3>GitHub Actions</h3>
+      <p>Lint + validate as a PR gate. Reusable workflow that
            installs <code>cx</code> from the release artefacts, runs the
            toolchain, fails the PR on diagnostics.</p>
-            <pre>
-              <code class="language-yaml"># .github/workflows/cx.yml
+      <pre>
+        <code class="language-yaml"># .github/workflows/cx.yml
            name: CX checks
            on: [pull_request]
 
@@ -1195,18 +1100,16 @@
                      for f in $(git diff --name-only origin/${{ github.base_ref }} | grep '\\.cx$'); do
                        cx diff <(git show origin/${{ github.base_ref }}:\"$f\") \"$f\" --format summary
                      done</code>
-            </pre>
-            <p>Copy the snippet as a starting point — the scaffold kinds
+      </pre>
+      <p>Copy the snippet as a starting point — the scaffold kinds
            are data shapes (<code>config</code> / <code>data</code> / <code>doc</code> / <code>log</code> /
            <code>table</code>); there is no workflow scaffold.</p>
-          
-        </section>
-        <section id="build-ci-gitlab">
-          <h3>GitLab CI</h3>
-          
-            <p>Equivalent for GitLab CI:</p>
-            <pre>
-              <code class="language-yaml"># .gitlab-ci.yml — pin the image tag to the release you target
+    </section>
+    <section id="build-ci-gitlab">
+      <h3>GitLab CI</h3>
+      <p>Equivalent for GitLab CI:</p>
+      <pre>
+        <code class="language-yaml"># .gitlab-ci.yml — pin the image tag to the release you target
            cx:
              image: ghcr.io/cx-home/cx:latest
              script:
@@ -1215,18 +1118,16 @@
                - for f in config/**/*.cx; do cx validate \"$f\" --schema=config/schema.cxs --mode=strict; done
              rules:
                - if: $CI_PIPELINE_SOURCE == 'merge_request_event'</code>
-            </pre>
-          
-        </section>
-        <section id="build-pre-commit">
-          <h3>Pre-commit hooks</h3>
-          
-            <p>Wire a <code>cx fmt</code> drift check and <code>cx lint</code> into the
+      </pre>
+    </section>
+    <section id="build-pre-commit">
+      <h3>Pre-commit hooks</h3>
+      <p>Wire a <code>cx fmt</code> drift check and <code>cx lint</code> into the
            <a href="https://pre-commit.com/">pre-commit</a> framework. There is
            no <code>--check</code> flag on <code>cx fmt</code> — diff the formatter output
            against the file instead.</p>
-            <pre>
-              <code class="language-yaml"># .pre-commit-config.yaml
+      <pre>
+        <code class="language-yaml"># .pre-commit-config.yaml
            repos:
              - repo: local
                hooks:
@@ -1245,133 +1146,113 @@
                    entry: cx validate --schema=config/schema.cxs --mode=strict
                    language: system
                    files: '^config/.*\\.cx$'</code>
-            </pre>
-            <p class="note">Copy the snippet directly — there is no pre-commit
+      </pre>
+      <p class="note">Copy the snippet directly — there is no pre-commit
            scaffold kind (<code>cx scaffold</code> emits data shapes only).</p>
-          
-        </section>
-      
     </section>
-    <section id="docgen">
-      <h2>Doc-gen pipeline</h2>
-      
-        <p>The documentation site (and this canonical guide) is built
+  </section>
+  <section id="docgen">
+    <h2>Doc-gen pipeline</h2>
+    <p>The documentation site (and this canonical guide) is built
          from <code>.cxd</code>/<code>.cx</code> sources under <code>docs-src/</code> by a Make-driven
          pipeline at <code>scripts/gen_docs/</code>. The pipeline is itself
          dogfood — the inputs are CX, the templates are CX, the
          outputs are HTML rendered by running the generator with <code>cx</code>.</p>
-        <section id="docgen-make">
-          <h3>Make targets</h3>
-          
-            <p>The top-level Makefile splices <code>-include
+    <section id="docgen-make">
+      <h3>Make targets</h3>
+      <p>The top-level Makefile splices <code>-include
            scripts/gen_docs/docs.mk</code> to bring the doc targets into
            scope:</p>
-            <table>
-              <thead>
-                
-                  <tr>
-                    <th>target</th>
-                    <th>purpose</th>
-                  </tr>
-                
-              </thead>
-              <tbody>
-                
-                  <tr>
-                    <td>make docs</td>
-                    <td>build the site into _docs_staging/</td>
-                  </tr>
-                  <tr>
-                    <td>make docs-diff</td>
-                    <td>diff staging vs the live docs/ tree</td>
-                  </tr>
-                  <tr>
-                    <td>make docs-publish</td>
-                    <td>copy staging → docs/ with backup on divergence</td>
-                  </tr>
-                  <tr>
-                    <td>make docs-clean</td>
-                    <td>wipe _docs_staging/</td>
-                  </tr>
-                  <tr>
-                    <td>make docs-check</td>
-                    <td>broken-link + missing-anchor verification</td>
-                  </tr>
-                  <tr>
-                    <td>make docs-all</td>
-                    <td>docs + docs-check</td>
-                  </tr>
-                
-              </tbody>
-            </table>
-          
-        </section>
-        <section id="docgen-staging">
-          <h3>Staging vs live</h3>
-          
-            <p><code>make docs</code> writes to <code>_docs_staging/</code> (in <code>.gitignore</code>).
+      <table>
+        <thead>
+          <tr>
+            <th>target</th>
+            <th>purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>make docs</td>
+            <td>build the site into _docs_staging/</td>
+          </tr>
+          <tr>
+            <td>make docs-diff</td>
+            <td>diff staging vs the live docs/ tree</td>
+          </tr>
+          <tr>
+            <td>make docs-publish</td>
+            <td>copy staging → docs/ with backup on divergence</td>
+          </tr>
+          <tr>
+            <td>make docs-clean</td>
+            <td>wipe _docs_staging/</td>
+          </tr>
+          <tr>
+            <td>make docs-check</td>
+            <td>broken-link + missing-anchor verification</td>
+          </tr>
+          <tr>
+            <td>make docs-all</td>
+            <td>docs + docs-check</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+    <section id="docgen-staging">
+      <h3>Staging vs live</h3>
+      <p><code>make docs</code> writes to <code>_docs_staging/</code> (in <code>.gitignore</code>).
            The live tree at <code>docs/</code> is touched only by <code>make
            docs-publish</code>, which copies staging → live with a backup
            on any divergence. This separation means doc builds never
            dirty the working tree on incidental builds — only an
            explicit publish step lands changes.</p>
-          
-        </section>
-        <section id="docgen-canonical-guide">
-          <h3>The canonical guide</h3>
-          
-            <p>This document — the canonical CX guide — is built by
+    </section>
+    <section id="docgen-canonical-guide">
+      <h3>The canonical guide</h3>
+      <p>This document — the canonical CX guide — is built by
            <code>make docs-canonical-guide</code> from sources under
            <code>docs-src/canonical/sections/*.cxd</code>. The pipeline:</p>
-            <ul>
-              
-                <li>Reads <code>docs-src/canonical/manifest.cxd</code> for the
+      <ul>
+        <li>Reads <code>docs-src/canonical/manifest.cxd</code> for the
                 table of contents.</li>
-                <li>For each section file, runs <code>cx</code> against the
+        <li>For each section file, runs <code>cx</code> against the
                 rendering template, emitting an HTML fragment.</li>
-                <li>Concatenates fragments, threads the TOC, expands
+        <li>Concatenates fragments, threads the TOC, expands
                 <code>&#91;&#91;anchor]]</code> cross-links.</li>
-                <li>Runs the link-verifier — every <code>&#91;&#91;anchor]]</code> and
+        <li>Runs the link-verifier — every <code>&#91;&#91;anchor]]</code> and
                 every relative URL must resolve.</li>
-                <li>Writes to <code>_docs_staging/canonical-guide.html</code>.</li>
-              
-            </ul>
-            <p class="note">Broken links fail the build. <code>make docs-check</code> runs the
+        <li>Writes to <code>_docs_staging/canonical-guide.html</code>.</li>
+      </ul>
+      <p class="note">Broken links fail the build. <code>make docs-check</code> runs the
            verifier without the render — useful for fast iteration.</p>
-          
-        </section>
-        <section id="docgen-snippets">
-          <h3>Example snippets</h3>
-          
-            <p>Code examples in the doc sources can pull from
+    </section>
+    <section id="docgen-snippets">
+      <h3>Example snippets</h3>
+      <p>Code examples in the doc sources can pull from
            <code>conformance/*.cxd</code> fixtures so they can never drift from
            working code. The <code>{{EXAMPLE:fixture-id field}}</code> placeholder
            expands at doc-gen time:</p>
-            <pre>
-              <code class="language-cx">[example lang=cx
+      <pre>
+        <code class="language-cx">[example lang=cx
              '''{{EXAMPLE:cxpath-basic program}}''']
            [output
              '''{{EXAMPLE:cxpath-basic expected}}''']</code>
-            </pre>
-            <p>Outputs are re-recorded from the live <code>cx</code> binary, so
+      </pre>
+      <p>Outputs are re-recorded from the live <code>cx</code> binary, so
            the docs are always pinned to current behaviour. See
            <code>scripts/gen_docs/helpers/example_expand.cx</code> for the
            expander logic.</p>
-          
-        </section>
-      
     </section>
-    <section id="playground">
-      <h2>Playground</h2>
-      
-        <p>The CX playground is a browser-embeddable interactive
+  </section>
+  <section id="playground">
+    <h2>Playground</h2>
+    <p>The CX playground is a browser-embeddable interactive
          evaluator. It runs the same <code>libcx</code> core as the CLI,
          compiled to WebAssembly.
          No server round-trip — everything runs in the browser.</p>
-        <section id="playground-wasm">
-          <h3>WASM distribution</h3>
-          
-            <p>The wasm artifacts are the WASM build of the V core,
+    <section id="playground-wasm">
+      <h3>WASM distribution</h3>
+      <p>The wasm artifacts are the WASM build of the V core,
            exporting a <b>subset</b> of the C ABI: <code>cx_to_cx</code>,
            <code>cx_to_cx_compact</code>, <code>cx_to_json</code> / <code>cx_to_xml</code> /
            <code>cx_to_yaml</code> / <code>cx_to_toml</code>, <code>cx_to_ast_bin</code>,
@@ -1380,115 +1261,99 @@
            <code>cx_code_ast_json</code>, <code>cx_code_tree</code>, <code>cx_canonical</code>,
            <code>cx_hash</code>, <code>cx_free</code>, <code>cx_features</code>, and <code>cx_version</code>.
            The bridge layer lives at <code>scripts/wasm/cxlib.js</code>.</p>
-            <p>ABI capability bits the wasm advertises (per
+      <p>ABI capability bits the wasm advertises (per
            <a href="../../spec/03-approved/core/abi.md"><code>spec/03-approved/core/abi.md</code></a> §3):</p>
-            <ul>
-              
-                <li><b>Bit 31</b> — <code>_cx_code_diagram</code> (Mermaid
+      <ul>
+        <li><b>Bit 31</b> — <code>_cx_code_diagram</code> (Mermaid
                 diagram render).</li>
-                <li><b>Bit 32</b> — <code>_cx_code_tree</code> (interactive tree
+        <li><b>Bit 32</b> — <code>_cx_code_tree</code> (interactive tree
                 model for the output pane).</li>
-                <li>The earlier cap bits the runtime would otherwise
+        <li>The earlier cap bits the runtime would otherwise
                 advertise on native, for the symbols the wasm build
                 exports.</li>
-              
-            </ul>
-          
-        </section>
-        <section id="playground-component">
-          <h3>The <cx-diagram> web component</h3>
-          
-            <p><code>tooling/web/cx-diagram.js</code> is a self-contained
+      </ul>
+    </section>
+    <section id="playground-component">
+      <h3>The <cx-diagram> web component</h3>
+      <p><code>tooling/web/cx-diagram.js</code> is a self-contained
            web component that renders a CX document as a Mermaid
            containment diagram. Drop it into any page that loads
            the wasm build:</p>
-            <pre>
-              <code class="language-html"><script type=\"module\" src=\"/cxlib.js\"></script>
+      <pre>
+        <code class="language-html"><script type=\"module\" src=\"/cxlib.js\"></script>
            <script type=\"module\" src=\"/cx-diagram.js\"></script>
 
            <cx-diagram src=\"./users.cx\" max-depth=\"3\"></cx-diagram></code>
-            </pre>
-            <p>The component reads <code>src</code> (URL or inline <code>&lt;textarea&gt;</code>
+      </pre>
+      <p>The component reads <code>src</code> (URL or inline <code>&lt;textarea&gt;</code>
            content), calls <code>cxlib.code_diagram()</code> to produce
            Mermaid source, and hands the result to a bundled
            Mermaid renderer. Bidirectional selection: clicking a
            tree node in the output pane highlights the source
            span, and vice versa.</p>
-          
-        </section>
-        <section id="playground-tier">
-          <h3>Render tiers</h3>
-          
-            <p>Three tiers per the gate-17 design:</p>
-            <ul>
-              
-                <li><b>Tier 1</b> — browser-only Mermaid render. What the
+    </section>
+    <section id="playground-tier">
+      <h3>Render tiers</h3>
+      <p>Three tiers per the gate-17 design:</p>
+      <ul>
+        <li><b>Tier 1</b> — browser-only Mermaid render. What the
                 playground uses. No external service. Currently
                 shipped.</li>
-                <li><b>Tier 2</b> — an HTTP service that shells out to
+        <li><b>Tier 2</b> — an HTTP service that shells out to
                 graphviz for richer (DOT-based) renders. Designed
                 (the editor / CI integration story) but <b>not
                 shipped</b> — no service directory exists; the CLI's
                 graphviz hop (<code>cx diagram --format=svg|png
                 --allow-subprocess</code>) covers the richer-render need
                 locally.</li>
-                <li><b>Tier 3</b> — wasm-graphviz inline. Planned
+        <li><b>Tier 3</b> — wasm-graphviz inline. Planned
                 follow-up. Eliminates the Tier-2 service hop while
                 keeping the richer-render output quality.</li>
-              
-            </ul>
-            <p class="note">JSON and XML are <b>not</b> valid program sources for the
+      </ul>
+      <p class="note">JSON and XML are <b>not</b> valid program sources for the
            diagram — <code>_cx_code_diagram</code> accepts CX text only.
            Containment-only relationships, no FK inference. The
            conformance home for the diagram output is
            <code>conformance/code_diagram.cxd</code>.</p>
-          
-        </section>
-        <section id="playground-embed">
-          <h3>Embedding in a docs site</h3>
-          
-            <p>The minimum a host page needs:</p>
-            <ul>
-              
-                <li>A wasm build — <code>libcx-async.js</code> (single-file
+    </section>
+    <section id="playground-embed">
+      <h3>Embedding in a docs site</h3>
+      <p>The minimum a host page needs:</p>
+      <ul>
+        <li>A wasm build — <code>libcx-async.js</code> (single-file
                 Asyncify build, ~36 MB; works under file:// and any
                 static host) or <code>libcx-pthreads.js</code> +
                 <code>libcx-pthreads.wasm</code> (~30 MB wasm; needs
                 cross-origin isolation for real threads).</li>
-                <li><code>cxlib.js</code> — the host-side bridge (~26 KB), from
+        <li><code>cxlib.js</code> — the host-side bridge (~26 KB), from
                 <code>scripts/wasm/cxlib.js</code>.</li>
-                <li>Optionally the <code>cx-diagram.js</code> web component from
+        <li>Optionally the <code>cx-diagram.js</code> web component from
                 <code>tooling/web/</code>.</li>
-              
-            </ul>
-            <p>A demo page for the diagram component ships as
+      </ul>
+      <p>A demo page for the diagram component ships as
            <code>tooling/web/demo.html</code>; the full playground page (eval +
            diagram + tree) is generated into the guide from
            <code>scripts/gen_guide/playground/</code>. Any concept page that
            wants an inline interactive surface reuses the same
            components.</p>
-          
-        </section>
-      
     </section>
-    <section id="tooling-quickref">
-      <h2>Tooling quick references</h2>
-      
-        <p>Compact reference snippets for the CLI subcommand surface,
+  </section>
+  <section id="tooling-quickref">
+    <h2>Tooling quick references</h2>
+    <p>Compact reference snippets for the CLI subcommand surface,
          the editor installer scripts, the tree-sitter grammar
          workflow, and the conformance / fuzz / bench harnesses.
          The primary children above (§8.1-§8.12) carry the
          normative depth; this section is the at-a-glance
          summary.</p>
-        <section id="cli-quickref">
-          <h3>CLI quick reference</h3>
-          
-            <p>Every subcommand reads from a file or <code>-</code> (stdin) and
+    <section id="cli-quickref">
+      <h3>CLI quick reference</h3>
+      <p>Every subcommand reads from a file or <code>-</code> (stdin) and
            writes to stdout unless <code>--output FILE</code> is passed.
            Format is auto-detected from the extension or set
            explicitly with <code>--from FMT</code> / <code>--to FMT</code>.</p>
-            <pre>
-              <code class="language-shell"># Format conversion (one-shot).
+      <pre>
+        <code class="language-shell"># Format conversion (one-shot).
            cx --cx pizza.cx                 # canonical CX form
            cx --xml pizza.cx                # XML
            cx --json pizza.cx               # semantic JSON
@@ -1522,31 +1387,29 @@
 
            # Include resolution.
            cx --xml --include-root=./conf main.cx     # resolve [?cx include=…]</code>
-            </pre>
-            <p class="note"><b>Exit codes.</b> <code>0</code> = success (no diagnostics at or
+      </pre>
+      <p class="note"><b>Exit codes.</b> <code>0</code> = success (no diagnostics at or
            above the configured <code>--fail-on</code> threshold); <code>1</code> =
            diagnostics found (lint / validate) or comparison
            returned not-equal; <code>2</code> = I/O failure, schema load
            failure, or unrecoverable parse error.</p>
-          
-        </section>
-        <section id="editor-installers">
-          <h3>Editor installer scripts</h3>
-          
-            <p>The <code>tooling/install/</code> directory ships one shell script
+    </section>
+    <section id="editor-installers">
+      <h3>Editor installer scripts</h3>
+      <p>The <code>tooling/install/</code> directory ships one shell script
            per editor. Each script writes the editor config,
            registers the <code>cx lsp</code> server, and drops the
            syntax-highlighting plugin. The CX language server is
            built into the <code>cx</code> binary itself — no separate
            install.</p>
-            <pre>
-              <code class="language-shell">./tooling/install/install.sh           # interactive — detects editors on PATH
+      <pre>
+        <code class="language-shell">./tooling/install/install.sh           # interactive — detects editors on PATH
            ./tooling/install/install-vscode.sh    # VS Code only
            ./tooling/install/install-nvim.sh      # Neovim only
            ./tooling/install/install-lsp.sh       # LSP wiring only, no extension
            ./tooling/install/uninstall.sh         # remove everything</code>
-            </pre>
-            <p class="note"><b>VS Code</b> — extension at <code>tooling/vscode</code>;
+      </pre>
+      <p class="note"><b>VS Code</b> — extension at <code>tooling/vscode</code>;
            tree-sitter syntax + vscode-languageclient LSP harness;
            supports diagnostics, hover, format-on-save via <code>cx
            fmt</code>. <b>Neovim</b> — config under <code>tooling/neovim</code>;
@@ -1556,43 +1419,39 @@
            (LSP4IJ) drive <code>cx lsp</code> directly. Point the editor at
            the <code>cx</code> binary; register <code>.cx</code> / <code>.cxd</code> / <code>.cxs</code> as
            file types.</p>
-          
-        </section>
-        <section id="tree-sitter-workflow">
-          <h3>Tree-sitter grammar workflow</h3>
-          
-            <p>The tree-sitter grammar lives at
+    </section>
+    <section id="tree-sitter-workflow">
+      <h3>Tree-sitter grammar workflow</h3>
+      <p>The tree-sitter grammar lives at
            <code>tooling/tree-sitter-cx</code>. It is the source of syntax
            highlighting, code folding, structural selection, and
            lightweight static analysis in every editor. Prebuilt
            artifacts ship inside each editor extension; build
            from source for grammar work.</p>
-            <pre>
-              <code class="language-shell">cd tooling/tree-sitter-cx
+      <pre>
+        <code class="language-shell">cd tooling/tree-sitter-cx
            tree-sitter generate
            tree-sitter parse example.cx</code>
-            </pre>
-            <p class="note">Highlight and injection queries ship alongside the
+      </pre>
+      <p class="note">Highlight and injection queries ship alongside the
            grammar (<code>queries/highlights.scm</code> and
            <code>queries/injections.scm</code> — the only two). Indent, fold,
            and locals intelligence comes from the editor and the
            LSP, not from tree-sitter queries. Queries are versioned
            with the grammar; updates flow through editor extensions
            on each release.</p>
-          
-        </section>
-        <section id="conformance-fuzz-bench">
-          <h3>Conformance, fuzzing, benchmarks</h3>
-          
-            <p>The conformance suite at <code>conformance/*.cxd</code> is the
+    </section>
+    <section id="conformance-fuzz-bench">
+      <h3>Conformance, fuzzing, benchmarks</h3>
+      <p>The conformance suite at <code>conformance/*.cxd</code> is the
            cross-binding contract. Each fixture is a <code>[case id=…]</code>
            block declaring inputs (<code>[in-cx]</code>, <code>[in-code]</code>, <code>[call]</code>)
            and an expected output (<code>[out-text]</code> or <code>[out-err]</code>).
            Every binding implements a runner that walks the fixture
            set; a release is gated on byte-identical output across
            every binding.</p>
-            <pre>
-              <code class="language-shell"># Conformance.
+      <pre>
+        <code class="language-shell"># Conformance.
            make test            # all bindings, all suites
            make test-vcx        # V core conformance
            make test-rust       # Rust binding
@@ -1607,134 +1466,112 @@
            # Benchmarks — vcx/tests/runners/streaming_bench.v.
            make bench           # full bench harness
            make bench-json      # the same run as machine-readable JSON</code>
-            </pre>
-            <p class="note">Streaming throughput gate: the release gate requires a
+      </pre>
+      <p class="note">Streaming throughput gate: the release gate requires a
            ≥200 MB/s floor on the reference corpus. The gate is not
            green yet — <code>[?for]</code> streaming measures around the
            200 MB/s line and <code>[?map]</code> at 129.2 MB/s on the current
            tree; closing that gap is active work.</p>
-          
-        </section>
-      
     </section>
-    <section id="cookbook-extras">
-      <h2>Cookbook — additional recipes</h2>
-      
-        <p>Recipes carried forward from the pre-Phase-B docs
+  </section>
+  <section id="cookbook-extras">
+    <h2>Cookbook — additional recipes</h2>
+    <p>Recipes carried forward from the pre-Phase-B docs
          cookbook + showcase. The §8.7 children above (recipes
          §8.7.1-§8.7.9) cover the most common nine; this section
          adds 13 more focused recipes.</p>
-        <section id="recipe-extract">
-          <h3>Extract a single value</h3>
-          
-            <pre>
-              <code class="language-shell">echo '//server/@host' | cat config.cx - | cx</code>
-            </pre>
-            <p>Appending a query to its data and running the result
+    <section id="recipe-extract">
+      <h3>Extract a single value</h3>
+      <pre>
+        <code class="language-shell">echo '//server/@host' | cat config.cx - | cx</code>
+      </pre>
+      <p>Appending a query to its data and running the result
            through <code>cx</code> evaluates the query against the preceding
            document. The CXPath finds the <code>host</code> attribute of any
            <code>server</code> element at any depth.</p>
-          
-        </section>
-        <section id="recipe-filter">
-          <h3>Filter records by attribute</h3>
-          
-            <p>A one-line program filters by predicate — the CXPath
+    </section>
+    <section id="recipe-filter">
+      <h3>Filter records by attribute</h3>
+      <p>A one-line program filters by predicate — the CXPath
            predicate <code>//user[= $_@role 'admin']</code> selects only
            admins:</p>
-            <pre>
-              <code class="language-shell">echo \"[?for [in \$u //user[= \$_@role 'admin']] [yield \$u]]\" \\
+      <pre>
+        <code class="language-shell">echo \"[?for [in \$u //user[= \$_@role 'admin']] [yield \$u]]\" \\
              | cat users.cx - | cx</code>
-            </pre>
-          
-        </section>
-        <section id="recipe-count">
-          <h3>Count records</h3>
-          
-            <pre>
-              <code class="language-shell">echo '[$count //order]' | cat orders.cx - | cx</code>
-            </pre>
-          
-        </section>
-        <section id="recipe-generate-config">
-          <h3>Generate a config from a template</h3>
-          
-            <pre>
-              <code class="language-cx">[env host='db.example.com' port=5432 env='prod']
+      </pre>
+    </section>
+    <section id="recipe-count">
+      <h3>Count records</h3>
+      <pre>
+        <code class="language-shell">echo '[$count //order]' | cat orders.cx - | cx</code>
+      </pre>
+    </section>
+    <section id="recipe-generate-config">
+      <h3>Generate a config from a template</h3>
+      <pre>
+        <code class="language-cx">[env host='db.example.com' port=5432 env='prod']
            [?let [= $env [$first //env]]
              [server host=$env@host port=$env@port
                      workers=[?if [= $env@env 'prod'] [then 32] [else 4]]
                      cache=[?if [= $env@env 'prod'] [then '/var/cache/app']
                                                     [else '/tmp/cache']]]]</code>
-            </pre>
-            <pre>
-              <code class="language-shell">cat env.prod.cx server.tpl.cx | cx | tail -1 > server.cx
+      </pre>
+      <pre>
+        <code class="language-shell">cat env.prod.cx server.tpl.cx | cx | tail -1 > server.cx
            cx --toml server.cx > server.toml</code>
-            </pre>
-          
-        </section>
-        <section id="recipe-write-stream">
-          <h3>Write a stream</h3>
-          
-            <pre>
-              <code class="language-python">with cx.stream_writer(open("out.cx", "wb")) as w:
+      </pre>
+    </section>
+    <section id="recipe-write-stream">
+      <h3>Write a stream</h3>
+      <pre>
+        <code class="language-python">with cx.stream_writer(open("out.cx", "wb")) as w:
                for record in fetch_records():
                    w.write(record)</code>
-            </pre>
-          
-        </section>
-        <section id="recipe-compose-include">
-          <h3>Compose a document from files</h3>
-          
-            <pre>
-              <code class="language-cx">[server
+      </pre>
+    </section>
+    <section id="recipe-compose-include">
+      <h3>Compose a document from files</h3>
+      <pre>
+        <code class="language-cx">[server
              [?cx include=lib/defaults.cx]
              port=8080
              log-level=info]</code>
-            </pre>
-            <pre>
-              <code class="language-shell">cx --cx --include-root=./conf server.cx > resolved.cx</code>
-            </pre>
-          
-        </section>
-        <section id="recipe-render-template">
-          <h3>Render a template with includes</h3>
-          
-            <pre>
-              <code class="language-cx">[page
+      </pre>
+      <pre>
+        <code class="language-shell">cx --cx --include-root=./conf server.cx > resolved.cx</code>
+      </pre>
+    </section>
+    <section id="recipe-render-template">
+      <h3>Render a template with includes</h3>
+      <pre>
+        <code class="language-cx">[page
              [?cx include=partials/header.cx]
              [?for [in $item //order/line] [yield [li $item@sku]]]
              [?cx include=partials/footer.cx]]</code>
-            </pre>
-            <pre>
-              <code class="language-shell">cx --cx --include-root=./templates page.cx</code>
-            </pre>
-          
-        </section>
-        <section id="recipe-read-parquet">
-          <h3>Read a Parquet file into CX</h3>
-          
-            <pre>
-              <code class="language-shell">cx table load orders.parquet --to=cx > orders.cx</code>
-            </pre>
-          
-        </section>
-        <section id="recipe-anchor-merge">
-          <h3>Share defaults across records</h3>
-          
-            <pre>
-              <code class="language-cx">[defaults &shared timeout=30 retries=3]
+      </pre>
+      <pre>
+        <code class="language-shell">cx --cx --include-root=./templates page.cx</code>
+      </pre>
+    </section>
+    <section id="recipe-read-parquet">
+      <h3>Read a Parquet file into CX</h3>
+      <pre>
+        <code class="language-shell">cx table load orders.parquet --to=cx > orders.cx</code>
+      </pre>
+    </section>
+    <section id="recipe-anchor-merge">
+      <h3>Share defaults across records</h3>
+      <pre>
+        <code class="language-cx">[defaults &shared timeout=30 retries=3]
            [server *shared name=api]
            [server *shared name=worker retries=5]</code>
-            </pre>
-            <p><code>&amp;</code> declares an anchor; <code>*</code> merges from it. Local
+      </pre>
+      <p><code>&amp;</code> declares an anchor; <code>*</code> merges from it. Local
            fields override; missing ones inherit.</p>
-          
-        </section>
-        <section id="recipe-html-safe">
-          <h3>HTML-safe templating</h3>
-          
-            <p>There is <b>no</b> <code>[?cx output-target=html]</code> escaping mode —
+    </section>
+    <section id="recipe-html-safe">
+      <h3>HTML-safe templating</h3>
+      <p>There is <b>no</b> <code>[?cx output-target=html]</code> escaping mode —
            the key is <b>reserved and refused</b> (the pragma registry is
            closed; it once passed through inert while reading like an
            XSS defense). Until context-aware escaping ships, escape at
@@ -1742,57 +1579,51 @@
            <code>[$html:sanitize]</code> for untrusted markup, and
            <code>[$html:serialize]</code> for trees built as data — escaping by
            construction, never string concatenation.</p>
-            <pre>
-              <code class="language-cx">[?lib 'cx-stdlib/strings']
+      <pre>
+        <code class="language-cx">[?lib 'cx-stdlib/strings']
            [$strings:escape-html '<script>alert(1)</script>']</code>
-            </pre>
-          
-        </section>
-        <section id="recipe-log-structured">
-          <h3>Emit structured log records</h3>
-          
-            <pre>
-              <code class="language-cx">[?lib 'cx-stdlib/log']
+      </pre>
+    </section>
+    <section id="recipe-log-structured">
+      <h3>Emit structured log records</h3>
+      <pre>
+        <code class="language-cx">[?lib 'cx-stdlib/log']
            [$log:info 'sale' fields={pizza: 'Margherita', price: 12}]
            [$log:warn 'low-stock' fields={pizza: 'Diavola', stock: 2}]</code>
-            </pre>
-            <p>The <code>log</code> module emits structured records to stderr
+      </pre>
+      <p>The <code>log</code> module emits structured records to stderr
            (default) or a configured sink. Fields are a map;
            level is one of <code>trace</code> / <code>debug</code> / <code>info</code> / <code>warn</code> /
            <code>error</code>.</p>
-          
-        </section>
-        <section id="recipe-logfmt-parser">
-          <h3>Logfmt parser in CX code</h3>
-          
-            <p>Take a logfmt-style line of key=value records and
+    </section>
+    <section id="recipe-logfmt-parser">
+      <h3>Logfmt parser in CX code</h3>
+      <p>Take a logfmt-style line of key=value records and
            split it into structured CX.</p>
-            <pre>
-              <code class="language-text">ts=2026-05-20T18:42:00Z level=info request_id=abc123 msg=ok</code>
-            </pre>
-            <pre>
-              <code class="language-cx">[?lib 'cx-stdlib/strings']
+      <pre>
+        <code class="language-text">ts=2026-05-20T18:42:00Z level=info request_id=abc123 msg=ok</code>
+      </pre>
+      <pre>
+        <code class="language-cx">[?lib 'cx-stdlib/strings']
            [?let [= $input 'ts=2026-05-20T18:42:00Z level=info msg=ok']
              [event
                [?for [in $kv [$strings:split $input ' ']] [yield
                  [?let [= $pair [$strings:split $kv '=']]
                    [pair name=[$nth $pair 1] value=[$nth $pair 2]]]]]]]</code>
-            </pre>
-          
-        </section>
-        <section id="recipe-build-system">
-          <h3>Build system in CX</h3>
-          
-            <p>Targets, depends, run — declared in CX, evaluated by
+      </pre>
+    </section>
+    <section id="recipe-build-system">
+      <h3>Build system in CX</h3>
+      <p>Targets, depends, run — declared in CX, evaluated by
            a thirty-line CX code driver.</p>
-            <pre>
-              <code class="language-cx">[targets
+      <pre>
+        <code class="language-cx">[targets
              [target name=all  depends='lib bin']
              [target name=lib  depends='src/foo.o src/bar.o'  run='ar rcs lib.a src/foo.o src/bar.o']
              [target name=bin  depends='main.o lib'           run='cc -o bin main.o lib.a']]</code>
-            </pre>
-            <pre>
-              <code class="language-cx">[?lib 'cx-stdlib/strings']
+      </pre>
+      <pre>
+        <code class="language-cx">[?lib 'cx-stdlib/strings']
            [?lib 'cx-stdlib/process']
            [?def build impure ($name)
              [?for [in $t //target[= $_@name $name]] [yield
@@ -1802,21 +1633,17 @@
                   [then [$process:run ('sh', '-c', [$string $t@run])]]
                   [else ()]])]]]
            [$build 'all']</code>
-            </pre>
-          
-        </section>
-      
+      </pre>
     </section>
-    <section id="playground-detail">
-      <h2>Playground — visualize, offline, highlight</h2>
-      
-        <p>Deep-dive on the in-browser playground UI. Section §8.11 above frames the WASM / web
+  </section>
+  <section id="playground-detail">
+    <h2>Playground — visualize, offline, highlight</h2>
+    <p>Deep-dive on the in-browser playground UI. Section §8.11 above frames the WASM / web
          component / tier story; this section is the operator
          reference for the Tree / Graph / Source-diagram bridge.</p>
-        <section id="pg-how">
-          <h3>How it works</h3>
-          
-            <p>The playground runs entirely in the browser. Pick a
+    <section id="pg-how">
+      <h3>How it works</h3>
+      <p>The playground runs entirely in the browser. Pick a
            starter example from the dropdown, edit it in the
            Source pane, and the three output tabs underneath
            show the canonical CX form, the JSON projection, and
@@ -1825,23 +1652,21 @@
            — three data shapes (atom, nested element, whole-shop)
            and nine program snippets covering the
            directive surface.</p>
-          
-        </section>
-        <section id="pg-visualize">
-          <h3>Visualize</h3>
-          
-            <p>The Source pane carries a Diagram toggle in its
+    </section>
+    <section id="pg-visualize">
+      <h3>Visualize</h3>
+      <p>The Source pane carries a Diagram toggle in its
            header; the Output pane carries a Tree | Graph view
            toggle adjacent to the CX | JSON | XML projection
            tabs. Tree is the default for every
            fresh source — Graph is opt-in.</p>
-            <p>The Source-pane diagram renders the program as a
+      <p>The Source-pane diagram renders the program as a
            Mermaid graph in a sibling pane. The renderer runs
            entirely in the browser via the libcx wasm build — Mermaid text
            emitted by <code>cx_code_diagram</code>, then rendered to inline
            SVG by Mermaid.js. Zoom, fit-to-pane, and pan controls
            layer on top.</p>
-            <p>The Output-pane Tree view renders the parsed value as
+      <p>The Output-pane Tree view renders the parsed value as
            an interactive containment-only tree — folder icons
            for elements with body, file-text icons for prose
            leaves, tag and at-sign rows for elements and
@@ -1850,7 +1675,7 @@
            value?, loc:{start,end}, children?}</code> record per node.
            Search, count badges, and standard tree keyboard
            navigation come along for free.</p>
-            <p>The Output-pane Graph view auto-detects mode: sources whose top-level program contains at
+      <p>The Output-pane Graph view auto-detects mode: sources whose top-level program contains at
            least one <code>[?directive]</code> render as a Control-Flow
            Graph (basic blocks; diamonds for <code>[?if]</code>; dispatcher
            round-rects with per-arm edges for <code>[?match]</code>;
@@ -1860,7 +1685,7 @@
            per-instance cardinality inference (<code>||--o{</code> for
            repeating children, <code>||--||</code> for singletons). Every
            <code>[?def]</code> body is its own Mermaid sub-graph.</p>
-            <p class="note"><b>Bidirectional selection bridge</b>.
+      <p class="note"><b>Bidirectional selection bridge</b>.
            Click a tree node and the source-pane editor selects
            bytes <code>[loc.start, loc.end]</code> and scrolls them into
            view. Move the caret in the source pane and the tree
@@ -1868,24 +1693,34 @@
            containing node and scrolls/selects it. Visualizations
            re-render on Run only — no live debounce — to keep
            the playground predictable.</p>
-          
-        </section>
-        <section id="pg-offline">
-          <h3>Offline use</h3>
-          
-            <p>The browser playground is a static page. Clone the
+    </section>
+    <section id="pg-offline">
+      <h3>Offline use</h3>
+      <p>The browser playground is a static page. Clone the
            repo, render the guide with <code>make guide</code>, and serve
            <code>docs/guide/</code> from any HTTP server (or open via
            <code>file://</code>) — the playground works without an internet
            connection. The example corpus, the TypeScript
            bundle, and the CSS all live under
            <code>scripts/gen_guide/playground/</code>.</p>
-          
-        </section>
-        <section id="pg-highlight">
-          <h3>Syntax highlighting</h3>
-          
-            <p>Every code block on the guide is syntax-highlighted by
+      <p>That covers the diagrams too. Both halves of the page
+           are local: the wasm engine is built <code>SINGLE_FILE</code>, so
+           it carries its own <code>.wasm</code> inline, and the Mermaid
+           renderer is vendored at a pinned version under
+           <code>scripts/gen_guide/playground/vendor/</code> rather than
+           fetched from a CDN. Nothing on the page reaches the
+           network at load, so the Graph pane draws on a plane
+           or behind a filtering proxy exactly as it does
+           online — and the bytes that render a diagram move
+           only when the pin does, never under a released tag.</p>
+      <p class="note">The one remaining remote reference is the Google Fonts
+           stylesheet, shared with every other guide page. It
+           degrades cleanly: offline you get the local monospace
+           fallback and a fully working playground.</p>
+    </section>
+    <section id="pg-highlight">
+      <h3>Syntax highlighting</h3>
+      <p>Every code block on the guide is syntax-highlighted by
            a small in-house JS module at
            <code>scripts/gen_guide/highlight/</code>. It speaks the
            languages the docs actually use — <code>cx</code>, <code>shell</code>,
@@ -1895,22 +1730,19 @@
            The highlighter is regex-based, around 150 lines, no
            external library. The Playground panes use the same
            module on every Run.</p>
-          
-        </section>
-      
     </section>
-  
+  </section>
 </section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>Tooling</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

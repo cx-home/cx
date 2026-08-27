@@ -764,14 +764,122 @@ fn test_full_corpus_data_differential() {
 	// the PROGRAM reading of `['x'::int]` is its own deliberate surface (a
 	// slice literal), not a slot ascription. The parser change itself moved
 	// ZERO pre-existing rows (PROTO_CANON_OUT dumps byte-identical).
+	// 2026-08-25 (R-A1..R-A6, the path/value matrix): +8 total, +8 agree —
+	// the 28 new program-pvmatrix-* grid rows contribute 8 single-element
+	// in-cx documents that both readers accept identically (the rest use
+	// [ignored]/[empty] or multi-root shapes outside this bucket). No
+	// existing row moved category (diverge/cx_only/code_only/multi/
+	// both_reject all unchanged) — the R-A1 literal-paren-seq position rule
+	// exists precisely to keep the two readings agreeing on those bytes.
+	// 2026-08-25 (#976, the operator-head alphabet): +43 total = +40 diverge,
+	// +2 agree, +1 cx_only. Corpus growth only — NO pre-existing row changed
+	// category, which is the load-bearing claim: #976 widened the DATA
+	// parser's operator-head alphabet from seven glyphs to the evaluator's
+	// ruled twelve (adding `%` `~` and the two-char `!=` `<=` `>=`), and the
+	// only documents whose reading moved are ones that previously did not
+	// parse at all or stringified.
+	//   diverge +40 — 18 new operator_heads.cxd rows (oph-101..118, one per
+	//     head in the ruled set), the SAME 18 documents as code.cxd rows
+	//     (program-ophead-101..118, which pin that the DATA parser hands the
+	//     evaluator an ELEMENT rather than a stringified array), and 4 guard
+	//     rows (oph-403..406: the glued `[<=x]` / `[%x]` non-heads and the
+	//     empty `[<=]` / `[!=]` elements). Every one is the SAME mechanism
+	//     oph-010 already catalogues: both readings accept an operator-headed
+	//     input, the data reading yields the element and the program reading
+	//     EVALUATES it. That is the ruled data/program mode fork for operator
+	//     elements — homoiconicity working as specified, not a defect. Before
+	//     #976 these rows could not exist: `%`/`<=` stringified into the array
+	//     lane and `!=`/`>=`/`~` were rejected outright by the data reading.
+	//   agree +2 — oph-401/402, the declaration guards (`[!ENTITY …]` and the
+	//     `%`-carrying PE form). `!` still opens a DECLARATION unless it is
+	//     the delimited `!=` head, so both readings render these identically;
+	//     that is exactly what the guard is for.
+	//   cx_only +1 — oph-407 `[== 5 3]`. `==` is NOT in the ruled head set, so
+	//     the data reading keeps it in the array lane as the one-item string
+	//     and the program reading REJECTS it. The row pins that the widened
+	//     alphabet stayed CLOSED at the ruled set rather than swallowing every
+	//     glyph pair.
+	// 2026-08-26 (#983, the unterminated-head-at-EOF pin): +1 total, +1
+	// both_reject, every other bucket UNCHANGED. Corpus growth only — one new
+	// operator_heads.cxd row, oph-408 `[+` at end of input, and no
+	// pre-existing row moved category. (#983's other new row, oph-409, is a
+	// hash-PAIR case with in-a/in-b and no in_cx, so this census never sees
+	// it.)
+	//   both_reject +1 — oph-408. `op_head_delimited` counts EOF as a
+	//     delimiter, so `[+` is a delimited operator head and the DATA reading
+	//     dispatches it to the element lane, where it dies on the missing `]`
+	//     ("expected ']' got EOF"). The PROGRAM reading refuses the same bytes
+	//     for the same reason, so the row lands in both_reject rather than
+	//     diverge — which is itself the point of pinning it: an unterminated
+	//     head is not a place the two readings are allowed to drift.
+	//     Pre-#976 the data reading sent these bytes to the ARRAY lane
+	//     ("unterminated array literal") instead; both spellings exit rc=1, so
+	//     the route swap left no trace in this census. It has one now.
+	// 2026-08-26 (#1010, the float/decimal fixture renames): +5 total, +4 agree,
+	// +1 cx_only. The movement has TWO independent components, and only one of
+	// them is #1010's — measured separately by re-running this census with
+	// conformance/code.cxd reverted to d31607323, which returned
+	// total=886 cx_only=95 against a recorded baseline of 885/94:
+	//
+	//   +1 total, +1 cx_only — PRE-EXISTING, not #1010. c57d93a7c (#980) added
+	//     rows to conformance/fmt.cxd without updating this baseline, and one of
+	//     them, fmt-022-fail-closed-lane-returns-unterminated-text, is censused:
+	//     its in-cx is the UNTERMINATED text the fix is about, which the DATA
+	//     reading canonicalizes and the PROGRAM reading refuses -> cx_only. So
+	//     this gate has been red on release/0.17 since #980; the number below
+	//     un-reds it and names why.
+	//
+	//   +4 total, +4 agree — #1010. Of the 22 renames + 22 new e-exponent twins,
+	//     exactly four rows are censused at all; the rest carry `[empty]` or
+	//     `[ignored]` in-cx and are skipped by the filter above. The four:
+	//     program-cast-decimal-to-int-non-integral (the cast row split in two, so
+	//     its `[doc]` in-cx is now counted twice), program-if-float-103-typed-
+	//     attr-read, and program-cxpath-float-101/102 (the score-pairs doc with
+	//     `score=9.8e-1` in place of `score=0.98`). All four AGREE — verified per
+	//     row from a PROTO_CANON_OUT dump, cx hash == code hash on each, so the
+	//     float-literal attribute form is read identically by both engines just
+	//     as the decimal form is. No existing row moved category; diverge,
+	//     code_only, multi and both_reject are all unchanged.
+	// 2026-08-26 (#1019, the call-valued attribute pin): +4 total, +3 agree,
+	// +1 code_only. TWO independent components again, measured separately by
+	// re-running this census with `conformance/` checked out at af51c694b (the
+	// commit that last moved this baseline, #1010) against the SAME HEAD
+	// engine: that run is GREEN at 890/666, so every row below is corpus
+	// GROWTH and no pre-existing row moved category.
+	//
+	//   +3 total, +3 agree — PRE-EXISTING, not #1019. This gate has been red
+	//     on release/0.17 since #1016: three code.cxd rows landed after the
+	//     #1010 baseline without updating it, and all three carry a censused
+	//     plain-DATA in-cx doc. They are program-cast-decimal-to-int-integral
+	//     (#1016 — `[doc]`, the same trivial doc its non-integral twin
+	//     already contributes) and program-num-aggregate-co14-022-nodeset-
+	//     decimal-exact / -023-nodeset-mixed-refuses (#1046 — the
+	//     `[items [i v::decimal=…] …]` nodeset doc, twice). A `::decimal`
+	//     typed attribute is read identically by both engines, so all three
+	//     AGREE. The numbers below un-red the gate and name why.
+	//
+	//   +1 total, +1 code_only — #1019. core.cxd 041a-attr-value-call-
+	//     rejected, `[m x=[+ 1 2]]`. This is the one member of the 037-041
+	//     D2 scalar-only family whose two readings legitimately DISAGREE, and
+	//     that is the row's purpose: the PROGRAM reading evaluates the head
+	//     and binds the scalar it reduces to (`[m x=3]`, code.md §6.4.1 —
+	//     VALUE must reduce to a scalar at EVAL), while the DATA reading has
+	//     no evaluator and refuses the bracket opener at PARSE (lexicon §10
+	//     D2, cx-err:E211). DATA ⊆ PROGRAM (code.md §1.3), so program-accepts
+	//     / data-rejects is the CONTRACTED direction — code_only, not a
+	//     defect. Its 037-040 siblings sit in both_reject instead because a
+	//     paren/brace/bare-bracket value has no head to evaluate, so the
+	//     program reading has nothing to reduce either (the #466 paragraph
+	//     above records that move). Nothing else changed: diverge, cx_only,
+	//     multi and both_reject are all unchanged.
 	baseline := {
-		'total':       833
-		'agree':       652
-		'diverge':     29
-		'cx_only':     93
-		'code_only':   2
+		'total':       894
+		'agree':       669
+		'diverge':     69
+		'cx_only':     95
+		'code_only':   3
 		'multi':       29
-		'both_reject': 28
+		'both_reject': 29
 	}
 	got := {
 		'total':       total

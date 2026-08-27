@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,53 +143,45 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">vc</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-vc"><h1>vc</h1><p class="lede">Verifiable credentials: portable, signed, attenuating delegations that carry authority between DIDs and verify offline (the §22.2 delegation transport, counterpart to <code>did</code> for identity). An issuer signs a credential conveying a claim to a subject; a verifier checks its signature, validity window, and non-revocation; a holder presents it to a verifier; and revocation is recorded as an append-only journal whose events fold into a revoked set.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-vc-issue" class="fn">
-    <h3>vc:issue</h3>
-    <p class="fn-sig"><code>[$vc:issue]  -> element</code>  —  Sign a credential conveying a claim (a §22.2 delegation) from an issuer DID and key to a subject DID.</p>
-    
-  </section>
-  <section id="fn-vc-verify" class="fn">
-    <h3>vc:verify</h3>
-    <p class="fn-sig"><code>[$vc:verify]  -> element</code>  —  Check a credential's signature, validity window, and non-revocation as of a given time, returning a [vc-verification status=…] element.</p>
-    
-  </section>
-  <section id="fn-vc-valid" class="fn">
-    <h3>vc:valid</h3>
-    <p class="fn-sig"><code>[$vc:valid]  -> bool</code>  —  Convenience boolean over verify: true iff the credential's signature, validity window, and non-revocation all hold as of the given time.</p>
-    
-  </section>
-  <section id="fn-vc-present" class="fn">
-    <h3>vc:present</h3>
-    <p class="fn-sig"><code>[$vc:present]  -> element</code>  —  Package a verifiable credential for presentation to a verifier (holder proof-of-possession applied later).</p>
-    
-  </section>
-  <section id="fn-vc-revoke" class="fn">
-    <h3>vc:revoke</h3>
-    <p class="fn-sig"><code>[$vc:revoke]  -> element</code>  —  Append a revoke event for the given credential id to a revocation journal.</p>
-    
-  </section>
-  <section id="fn-vc-revoked-set" class="fn">
-    <h3>vc:revoked-set</h3>
-    <p class="fn-sig"><code>[$vc:revoked-set]  -> element</code>  —  Fold a revocation journal's events into the current set of revoked credential ids.</p>
-    
-  </section>
-</section>
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-vc-issue" class="fn">
+  <h3>vc:issue</h3>
+  <p class="fn-sig"><code>[$vc:issue]  -> element</code>  —  Sign a credential conveying a claim (a §22.2 delegation) from an issuer DID and key to a subject DID.</p>
+</section><section id="fn-vc-verify" class="fn">
+  <h3>vc:verify</h3>
+  <p class="fn-sig"><code>[$vc:verify]  -> element</code>  —  Check a credential's signature, validity window, and non-revocation as of a given time, returning a [vc-verification status=…] element.</p>
+</section><section id="fn-vc-valid" class="fn">
+  <h3>vc:valid</h3>
+  <p class="fn-sig"><code>[$vc:valid]  -> bool</code>  —  Convenience boolean over verify: true iff the credential's signature, validity window, and non-revocation all hold as of the given time.</p>
+</section><section id="fn-vc-present" class="fn">
+  <h3>vc:present</h3>
+  <p class="fn-sig"><code>[$vc:present]  -> element</code>  —  Package a verifiable credential for presentation to a verifier (holder proof-of-possession applied later).</p>
+</section><section id="fn-vc-revoke" class="fn">
+  <h3>vc:revoke</h3>
+  <p class="fn-sig"><code>[$vc:revoke]  -> element</code>  —  Append a revoke event for the given credential id to a revocation journal.</p>
+</section><section id="fn-vc-revoked-set" class="fn">
+  <h3>vc:revoked-set</h3>
+  <p class="fn-sig"><code>[$vc:revoked-set]  -> element</code>  —  Fold a revocation journal's events into the current set of revoked credential ids.</p>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>vc</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

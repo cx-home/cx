@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,293 +143,243 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">test</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-test"><h1>test</h1><p class="lede">Authoring primitives for unit-test-style programs written in CX: assertions, fixtures, lifecycle hooks, and structured reporting. This is the vocabulary you use when writing your own test programs, and is distinct from the conformance harness used to verify the spec. Failing assertions raise an error by default, or accumulate for end-of-run reporting under [$test:configure].</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-test-assert" class="fn">
-    <h3>test:assert</h3>
-    <p class="fn-sig"><code>[$test:assert]  -> null</code>  —  Fail the test if the predicate is false; an optional label appears in the failure message.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/test']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-test-assert" class="fn">
+  <h3>test:assert</h3>
+  <p class="fn-sig"><code>[$test:assert]  -> null</code>  —  Fail the test if the predicate is false; an optional label appears in the failure message.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/test']
 [$test:assert true]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-test-assert-equal" class="fn">
-    <h3>test:assert-equal</h3>
-    <p class="fn-sig"><code>[$test:assert-equal]  -> null</code>  —  Fail unless the two values are structurally equal (exact equality, including floats).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/test']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-test-assert-equal" class="fn">
+  <h3>test:assert-equal</h3>
+  <p class="fn-sig"><code>[$test:assert-equal]  -> null</code>  —  Fail unless the two values are structurally equal (exact equality, including floats).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/test']
 [$test:assert-equal 42 42]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-test-assert-not-equal" class="fn">
-    <h3>test:assert-not-equal</h3>
-    <p class="fn-sig"><code>[$test:assert-not-equal]  -> null</code>  —  Fail if the two values are structurally equal.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/test']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-test-assert-not-equal" class="fn">
+  <h3>test:assert-not-equal</h3>
+  <p class="fn-sig"><code>[$test:assert-not-equal]  -> null</code>  —  Fail if the two values are structurally equal.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/test']
 [$test:assert-not-equal 1 2]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-test-assert-shape" class="fn">
-    <h3>test:assert-shape</h3>
-    <p class="fn-sig"><code>[$test:assert-shape]  -> null</code>  —  Fail unless the value conforms to the given schema, via cx-stdlib/validate.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/test']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-test-assert-shape" class="fn">
+  <h3>test:assert-shape</h3>
+  <p class="fn-sig"><code>[$test:assert-shape]  -> null</code>  —  Fail unless the value conforms to the given schema, via cx-stdlib/validate.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/test']
 [$test:assert-shape [user [id 1] [name "Alice"]] [schema [field name="id" type="int" required=true] [field name="name" type="string" required=true]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-test-assert-throws" class="fn">
-    <h3>test:assert-throws</h3>
-    <p class="fn-sig"><code>[$test:assert-throws]  -> null</code>  —  Fail unless invoking the thunk raises an error with the expected code.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/test']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-test-assert-throws" class="fn">
+  <h3>test:assert-throws</h3>
+  <p class="fn-sig"><code>[$test:assert-throws]  -> null</code>  —  Fail unless invoking the thunk raises an error with the expected code.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/test']
 [$test:assert-throws [?fn () [$test:fail "boom"]] "CXER2200"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-test-assert-near" class="fn">
-    <h3>test:assert-near</h3>
-    <p class="fn-sig"><code>[$test:assert-near]  -> null</code>  —  Fail if the actual and expected floats differ by more than epsilon.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/test']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-test-assert-near" class="fn">
+  <h3>test:assert-near</h3>
+  <p class="fn-sig"><code>[$test:assert-near]  -> null</code>  —  Fail if the actual and expected floats differ by more than epsilon.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/test']
 [$test:assert-near 1.0001 1.0 0.001]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-test-assert-contains" class="fn">
-    <h3>test:assert-contains</h3>
-    <p class="fn-sig"><code>[$test:assert-contains]  -> null</code>  —  Fail unless the haystack contains the needle — substring, element membership, or map key.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/test']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-test-assert-contains" class="fn">
+  <h3>test:assert-contains</h3>
+  <p class="fn-sig"><code>[$test:assert-contains]  -> null</code>  —  Fail unless the haystack contains the needle — substring, element membership, or map key.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/test']
 [$test:assert-contains "hello world" "world"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-test-assert-match" class="fn">
-    <h3>test:assert-match</h3>
-    <p class="fn-sig"><code>[$test:assert-match]  -> null</code>  —  Fail unless the value matches the given CX pattern.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/test']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-test-assert-match" class="fn">
+  <h3>test:assert-match</h3>
+  <p class="fn-sig"><code>[$test:assert-match]  -> null</code>  —  Fail unless the value matches the given CX pattern.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/test']
 [$test:assert-match [user id=1] [user id=1]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-test-assert-snapshot" class="fn">
-    <h3>test:assert-snapshot</h3>
-    <p class="fn-sig"><code>[$test:assert-snapshot]  -> null</code>  —  Compare the value against a recorded snapshot, raising on divergence outside update mode.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/test']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-test-assert-snapshot" class="fn">
+  <h3>test:assert-snapshot</h3>
+  <p class="fn-sig"><code>[$test:assert-snapshot]  -> null</code>  —  Compare the value against a recorded snapshot, raising on divergence outside update mode.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/test']
 [$test:assert-snapshot [user id=1] $snapshot-key="user-shape"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER2203</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-test-fail" class="fn">
-    <h3>test:fail</h3>
-    <p class="fn-sig"><code>[$test:fail]  -> null</code>  —  Unconditionally fail the current test with a message.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/test']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER2203</code>
+    </pre>
+  </div>
+</section><section id="fn-test-fail" class="fn">
+  <h3>test:fail</h3>
+  <p class="fn-sig"><code>[$test:fail]  -> null</code>  —  Unconditionally fail the current test with a message.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/test']
 [$test:assert-throws [?fn () [$test:fail "boom"]] "CXER2200"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-test-skip" class="fn">
-    <h3>test:skip</h3>
-    <p class="fn-sig"><code>[$test:skip]  -> null</code>  —  Mark the current test skipped with a reason, reported separately from pass and fail.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/test']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-test-skip" class="fn">
+  <h3>test:skip</h3>
+  <p class="fn-sig"><code>[$test:skip]  -> null</code>  —  Mark the current test skipped with a reason, reported separately from pass and fail.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/test']
 [$test:skip "not on windows"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER2202</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-test-fixture" class="fn">
-    <h3>test:fixture</h3>
-    <p class="fn-sig"><code>[$test:fixture]  -> element</code>  —  Collect the body elements into a named sequence value for use as a test fixture.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/test']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER2202</code>
+    </pre>
+  </div>
+</section><section id="fn-test-fixture" class="fn">
+  <h3>test:fixture</h3>
+  <p class="fn-sig"><code>[$test:fixture]  -> element</code>  —  Collect the body elements into a named sequence value for use as a test fixture.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/test']
 [$count [$test:fixture "alice" [user id=1 email="alice@example.com" name="Alice"]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>1</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-test-fixture-load" class="fn">
-    <h3>test:fixture-load</h3>
-    <p class="fn-sig"><code>[$test:fixture-load]  -> any</code>  —  Load a fixture from a path resolved against the fixture directory or test-program location.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/test']
+    </pre>
+    <pre class="sample-output">
+      <code>1</code>
+    </pre>
+  </div>
+</section><section id="fn-test-fixture-load" class="fn">
+  <h3>test:fixture-load</h3>
+  <p class="fn-sig"><code>[$test:fixture-load]  -> any</code>  —  Load a fixture from a path resolved against the fixture directory or test-program location.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/test']
 [$test:fixture-load "fixtures/alice.cx"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-test-before-each" class="fn">
-    <h3>test:before-each</h3>
-    <p class="fn-sig"><code>[$test:before-each]  -> null</code>  —  Register a thunk to run before each test (or each parameterized case).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/test']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-test-before-each" class="fn">
+  <h3>test:before-each</h3>
+  <p class="fn-sig"><code>[$test:before-each]  -> null</code>  —  Register a thunk to run before each test (or each parameterized case).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/test']
 [$test:before-each [?fn () true]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-test-after-each" class="fn">
-    <h3>test:after-each</h3>
-    <p class="fn-sig"><code>[$test:after-each]  -> null</code>  —  Register a thunk to run after each test (or each parameterized case).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/test']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-test-after-each" class="fn">
+  <h3>test:after-each</h3>
+  <p class="fn-sig"><code>[$test:after-each]  -> null</code>  —  Register a thunk to run after each test (or each parameterized case).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/test']
 [$test:after-each [?fn () true]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-test-before-all" class="fn">
-    <h3>test:before-all</h3>
-    <p class="fn-sig"><code>[$test:before-all]  -> null</code>  —  Register a thunk to run once before any test in the module.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/test']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-test-before-all" class="fn">
+  <h3>test:before-all</h3>
+  <p class="fn-sig"><code>[$test:before-all]  -> null</code>  —  Register a thunk to run once before any test in the module.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/test']
 [$test:before-all [?fn () true]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-test-after-all" class="fn">
-    <h3>test:after-all</h3>
-    <p class="fn-sig"><code>[$test:after-all]  -> null</code>  —  Register a thunk to run once after all tests in the module.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/test']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-test-after-all" class="fn">
+  <h3>test:after-all</h3>
+  <p class="fn-sig"><code>[$test:after-all]  -> null</code>  —  Register a thunk to run once after all tests in the module.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/test']
 [$test:after-all [?fn () true]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-test-configure" class="fn">
-    <h3>test:configure</h3>
-    <p class="fn-sig"><code>[$test:configure]  -> null</code>  —  Set runner options — failure mode, reporter, and fixture or snapshot directories.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/test']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-test-configure" class="fn">
+  <h3>test:configure</h3>
+  <p class="fn-sig"><code>[$test:configure]  -> null</code>  —  Set runner options — failure mode, reporter, and fixture or snapshot directories.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/test']
 [$test:configure [map on-fail="collect"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>test</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

@@ -125,17 +125,24 @@ The config is startup-static **except** for an explicitly-classified hot subset;
 is credential and TLS-certificate rotation without a restart. Everything here is
 validate-then-swap, fail-closed — a failed reload NEVER degrades the running daemon.
 
-- **Hot-reloadable** (Appendix A marks every attr): the `[auth …]` section (static token
-  list, JWT/DID/OIDC provider settings), `[limits …]` (applied to the live limiter with
-  per-principal bucket/in-flight state preserved — a removed principal is denied by auth
-  before the limiter ever sees it), `[observability …]` (log format, OTel toggle/endpoint),
-  `[timeouts …]` (picked up by new connections), and the `[tls …]` **certificate/key/CA
-  contents** (re-read from their configured sources; new handshakes present the new
-  identity, existing TLS sessions are untouched).
+- **Hot-reloadable** (Appendix A classifies every section): `[xsp [grants …]]` — the operator
+  grant table, re-folded into every already-attached session, so a revocation takes effect at
+  that principal's NEXT call (#986) — `[limits …]` (applied to the live limiter with
+  per-principal bucket/in-flight state preserved — a principal the grant table no longer names
+  is denied by the PEP before the limiter ever sees it), `[observability …]` (log format, OTel
+  toggle/endpoint), `[timeouts …]` (picked up by new connections), and the `[tls …]`
+  **certificate/key/CA contents** (re-read from their configured sources; new handshakes
+  present the new identity, existing TLS sessions are untouched). The `[auth …]` section is
+  deliberately NOT in this list: the bearer/RBAC plane is retired (S3, RULED G2a) and
+  `[auth …]` is now a hard config error, so it has no reload class at all.
 - **Restart-required**: `[bind]`, `[grpc]` (enabled/addr), `[stores …]` (mount add/remove/
   modify — deliberately out of scope: live mount mutation drags in per-store in-flight
   drain, handle close, dedup-pool teardown, and encryption-key durability hazards; it stays
-  restart-only until a concrete need arrives, as its own issue), and `[workers]`.
+  restart-only until a concrete need arrives, as its own issue), `[workers]`, and every part
+  of `[xsp]` OTHER than `[grants]` — `addr`, `[identity]`, `[policy]`, `[limits]`, `[peers]`,
+  `[revocations]`: a bound listener cannot move its address or change its responder DID under
+  live sessions, so those refuse by name rather than reporting a success that did not happen
+  (#986).
 - **Triggers** (one shared implementation, one outcome log/metric): `SIGHUP` (host-trust,
   §Appendix B `ExecReload`) and the `admin`-gated CSRP/gRPC `config-reload` op
   (CSRP §3.13 — the op re-reads the daemon's own `--config` path; nothing on the wire
@@ -149,13 +156,21 @@ validate-then-swap, fail-closed — a failed reload NEVER degrades the running d
   under the config they started with. A no-change reload succeeds (`applied=false`).
 - **Secrets:** `${env:VAR}` resolves from the process environment, which CANNOT change
   post-start — env-injected secrets are therefore rotation-blind: a reload re-resolves them
-  to the same startup values. Rotating a secret via reload requires a **file-based source**
-  (TLS `cert=`/`key=`/`ca=` paths, JWT `key-path=`, static-token `secret-hash` in the config
-  file itself) — the file is re-read at reload. Appendix A's table marks which secret attrs
-  are file-rotatable.
-- **Auth swap semantics:** a token/grant removed by reload → the NEXT request presenting it
-  gets `401 CXER1702`; JWKS/did:web caches are rebuilt fresh with the new provider config
-  (stale keys never outlive the providers that fetched them).
+  to the same startup values. Rotating a secret via reload requires a **file-based source** —
+  the TLS `cert=`/`key=`/`ca=` paths, whose files are re-read at reload. (The retired
+  `[auth …]` plane's `key-path=`/`secret-hash` were the other file-rotatable secrets; nothing
+  replaced them, because the `[xsp]` responder identity is `seed-env=`-injected and so is
+  rotation-blind by construction — and restart-required in any case.) Appendix A's table
+  marks which secret attrs are file-rotatable.
+- **Grant swap semantics:** a grant removed by reload is enforced at the NEXT authority
+  decision, on sessions that are ALREADY attached — the profile listener re-folds the table
+  into every live session's basis under the listener lock (so an in-flight call sees the old
+  table or the new one, never a torn one), and the gRPC edge recompiles its basis per call.
+  Removal reaches DELEGATED authority too: config grants are the roots of the delegation
+  chain, so a credential presented under a removed grant stops conveying authority the moment
+  its root is gone — no credential is re-walked. Authority on a live session only ever
+  NARROWS across a reload; a widened posture (including dropping to the open posture) is
+  picked up at re-attach, never by widening a session in place (#986).
 - **Observability:** one structured log record per reload attempt (trigger, outcome,
   changed subsystems, diagnostic on refusal) + a `cxstore_config_reload_total{outcome}`
   counter (Appendix F.1). Readiness is unaffected by reload.
@@ -431,8 +446,14 @@ diagnostic (§2.2). Validation is **attr-exact**, not just section-exact: an unk
 startup error too — a config never parses while silently dropping a directive the
 operator wrote (fail-closed, §2.2).
 
-**Reload classification (§2.6)** — every section is explicitly hot or restart-required;
-a reload candidate differing in a restart-required attr is refused whole (`CXER1712`):
+**Reload classification (§2.6)** — every section a config can carry is explicitly hot or
+restart-required; a reload candidate differing in a restart-required attr is refused whole
+(`CXER1712`). A section is classified as a WHOLE unless the table splits it: `[xsp]` is the
+one split section, and the split is load-bearing — classifying it whole either way would
+re-create the defect the split closes (hot-whole would silently swallow an `addr` or
+`[identity]` edit; restart-whole would make revocation restart-only). There is no third
+state: a reload either applies a change or refuses it by name, never reports success over a
+section that did not move (#986):
 
 | Section | Reload class | Notes |
 |---|---|---|
@@ -441,10 +462,12 @@ a reload candidate differing in a restart-required attr is refused whole (`CXER1
 | `[grpc]` | **restart** | second listener lifecycle |
 | `[timeouts]` | **hot** | read-ms/idle-ms picked up by new connections; drain-ms by the next shutdown |
 | `[stores]` | **restart** | live mount mutation deliberately out of scope (§2.6) |
-| `[auth]` | **hot** | token/provider swap; removed credential 401s on next request; JWKS/did:web caches rebuilt |
+| `[auth]` | **retired** | the bearer/RBAC plane is gone (S3, RULED G2a) — `[auth …]` is a hard config error, not a reload class. Operator grants ride `[xsp [grants …]]` |
 | `[limits]` | **hot** | applied to the live limiter; per-principal buckets/in-flight preserved |
 | `[observability]` | **hot** | log format, OTel toggle/endpoint |
 | `[workers]` | **restart** | pool is sized at startup |
+| `[xsp [grants …]]` | **hot** | the grant table re-folds into every live session under the listener lock, so an in-flight call sees the old table or the new one, never a torn one. A revocation is live at the principal's NEXT call, and it reaches DELEGATED authority too: config grants are the chain roots, so dropping one breaks every credential attenuated from it. The gRPC edge compiles its basis per call and picks the change up the same way. A live session's authority only ever **narrows** — re-attach is what picks up a widened posture (#986) |
+| `[xsp]` (all else: `addr`, `[identity]`, `[policy]`, `[limits]`, `[peers]`, `[revocations]`) | **restart** | a bound listener cannot move its address or change its responder DID under live sessions; refused whole with `CXER1712` naming `[xsp]` and saying which half is hot (#986) |
 
 ## Appendix B — supervision templates
 

@@ -6,6 +6,12 @@ hover, CXPath path-context completion). Each fixture is a stand-alone
 `.cx` file the LSP server should produce a specific diagnostic /
 hover / completion response on.
 
+`probe.cx` is a **manual exploration driver** — it answers "what does the
+server say about this file at this position". It is deliberately not a gate.
+The gated pins live in `vcx/tests/lint_lsp_umbrella_test.v` (#996), which
+runs in `make test-vcx-suite`; a script that reads as coverage while gating
+nothing is the shape #1003 closed here.
+
 Run the manual driver against the built `cx` binary:
 
 ```sh
@@ -29,6 +35,14 @@ $PROBE completion tooling/lsp/tests/cxpath_completion_axis.cx 1 22
 #   attr_predicate position (right after `[`)
 $PROBE completion tooling/lsp/tests/cxpath_completion_predicate.cx 1 20
 ```
+
+Every invocation above is bounded: `probe.cx` gives each session a
+20-second budget and drives the server through files rather than pipes, so
+neither a wedged server nor a large response can hang it. That is not
+belt-and-braces — `textDocument/completion` on these fixtures answers with
+about 159 KB, well past a 64 KiB pipe buffer, and the pipe-based shape this
+script used before #1003 deadlocked on exactly that (and on any server that
+said more than 64 KiB on stderr, which nothing was draining).
 
 Fixtures exercise the full-AST path (`code.parse` walked by
 `vcx/cmd/lsp_match_diagnostics.v`) for CXLS001/002/003 + hover; the

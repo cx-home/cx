@@ -1,6 +1,6 @@
 # tooling/lsp/tests/probe.cx — probe `cx lsp` for diagnostics / hover /
 # completion on a source file via LSP stdio (#922 / PYE-5: probe.py
-# retires; this is its CX successor, JSON-RPC over child-process pipes).
+# retires; this is its CX successor).
 #
 #   cx --allow-read --allow-write --allow-subprocess tooling/lsp/tests/probe.cx \
 #     CXBIN OP FILE [LINE COL]
@@ -9,12 +9,38 @@
 #       hover       — print the hover result at LINE COL (0-based)
 #       completion  — print the completion result at LINE COL (0-based)
 #
-# One behavioral improvement over the Python: instead of sleeping 0.5s
-# and hoping every response arrived, the reader is protocol-driven — all
-# requests are written up front (shutdown last, id 99) and frames are
-# read until the shutdown response arrives; the server processes its
-# stdin sequentially, so everything published before shutdown is
-# collected deterministically.
+# This is a MANUAL exploration driver: it answers "what does the server say
+# about THIS file at THIS position", which the gated harness
+# (vcx/tests/lint_lsp_umbrella_test.v, #996) deliberately does not — that one
+# pins fixed cases. The fixtures beside this file are its usual subjects; see
+# README.md. Nothing gates on this script, and nothing should: a manual driver
+# that is also a gate is the vacuous-gate shape #1003 closed.
+#
+# ── Why FILES and no pipe at all (#1003) ──────────────────────────────
+#
+# The previous shape spawned `cx lsp`, wrote every request to the child's
+# stdin, then read frames off the child's stdout until the shutdown response.
+# It drained stdout and NEVER drained stderr — and `process/spawn` always
+# gives the child a stderr PIPE. A pipe holds 64 KiB. A server that says more
+# than that on stderr (`--verbose`, a panic backtrace, a runtime warning
+# storm) blocks in write(2) on a full stderr pipe while this script blocks in
+# read(2) on a stdout pipe the server can no longer reach: both processes idle
+# in S, forever, with no timeout anywhere. Measured on macOS: 65536 bytes of
+# child stderr completes, 65537 hangs.
+#
+# `process/run` is not the fix either. It drains BOTH streams, and its
+# `$timeout-ms` bounds the wait — but it drains them only after the child has
+# exited, so a child that fills either pipe first never gets to exit. It is
+# bounded, not safe: the session dies at the deadline and the response is lost.
+# That is not hypothetical here. `textDocument/completion` on the fixtures
+# beside this file answers with about 159 KB — two and a half pipe buffers.
+#
+# So the session uses no pipe at all: the request stream goes to a file, the
+# shell redirects the child's stdout and stderr to files, and this script
+# reads the files back afterwards. Files cannot fill. `$timeout-ms` still
+# bounds a server that wedges for its own reasons. This is the same pattern,
+# and the same reason, as the #996 harness (vcx/tests/lint_lsp_umbrella_test.v
+# lsph_run).
 #
 # All defs are strictly define-before-use.
 
@@ -35,6 +61,12 @@
   [?let [= $w [$cry $msg]] [$env:exit 2]]]
 [?def seq-flat scope=public ($xs) [$fp:flat-map $xs [?fn ($x) $x]]]
 
+# The wall-clock budget for one whole LSP session. A server that has not
+# finished answering a handful of requests inside this is wedged, and the
+# escalation in `process/run` is what makes that a REPORTED failure instead
+# of a hang.
+[?const SESSION-TIMEOUT-MS 20000]
+
 # ── LSP framing ───────────────────────────────────────────────────────
 
 [?def frame scope=public ($payload)
@@ -42,80 +74,105 @@
     [$cat ('Content-Length: ', [$string [$strings:length-bytes $body]],
            '\r\n\r\n', $body)]]]
 
-[?def send scope=public impure ($sin $payload)
-  [$io:write-string $sin [$frame $payload]]]
+# ── un-framing: the response stream is a STRING, not a live pipe ──────
+#
+# Byte offsets throughout: Content-Length counts BYTES, and a diagnostic
+# message carrying non-ASCII would desynchronise a rune-indexed scan.
 
-# read-headers: consume header lines up to the blank separator; return
-# the Content-Length seen (or -1 on EOF / no header within fuel).
-[?def read-headers scope=public impure ($h $len $fuel)
-  [?if [= $fuel 0] [then -1]
-    [else [?let [= $line [$io:read-line $h]]
-      [?if [= $line '']
-        [then $len]
-        [else [?if [$strings:starts-with $line 'Content-Length:']
-          [then [$read-headers $h
-                  [?else [$strings:to-int [$strings:trim
-                    [$strings:slice $line 15 [$strings:length $line]]]] -1]
-                  [- $fuel 1]]]
-          [else [$read-headers $h $len [- $fuel 1]]]]]]]]]]
+[?def header-length scope=public ($header)
+  [?let
+    [= $lines [$strings:split $header '\r\n']]
+    [= $hits [?for [in $l $lines]
+        [where [$strings:starts-with $l 'Content-Length:']]
+        [yield [?else [$strings:to-int [$strings:trim
+          [$strings:slice $l 15 [$strings:length $l]]]] -1]]]]
+    [?if [$empty $hits] [then -1] [else $hits[1]]]]]
 
-# read-exact: read exactly $need bytes (short reads accumulate; EOF stops).
-[?def read-exact scope=public impure ($h $need $acc)
-  [?if [<= $need 0] [then $acc]
-    [else [?let [= $chunk [$io:read-bytes $h $need]]
-      [?let [= $got [$bytes:length $chunk]]
-        [?if [= $got 0] [then $acc]
-          [else [$read-exact $h [- $need $got] [$bytes:concat ($acc, $chunk)]]]]]]]]]
-
-# read-message: one framed JSON-RPC message as a map; () on EOF/garbage.
-[?def read-message scope=public impure ($h)
-  [?let [= $len [$read-headers $h -1 100]]
-    [?if [< $len 1] [then ()]
+# split-frames: peel `Content-Length: N\r\n\r\n<N bytes>` off the front of
+# $rest until it no longer parses. $fuel bounds the walk; a stream that
+# outruns it is truncated rather than looped on.
+[?def split-frames scope=public ($rest $acc $fuel)
+  [?let
+    [= $sep [$bytes:find $rest [$bytes:from-string-utf8 '\r\n\r\n']]]
+    [= $len [?if [< $sep 0]
+        [then -1]
+        [else [$header-length
+          [$bytes:to-string-utf8 [$bytes:slice $rest 0 $sep]]]]]]
+    [= $start [+ $sep 4]]
+    [= $end [+ $start $len]]
+    [?if [or [= $fuel 0] [< $sep 0] [< $len 1] [> $end [$bytes:length $rest]]]
+      [then $acc]
       [else [?let
-        [= $body [$read-exact $h $len [$bytes:from-string-utf8 '']]]
-        [?if [< [$bytes:length $body] $len] [then ()]
-          [else [?match [$json:parse [$bytes:to-string-utf8 $body]]
+        [= $body [$bytes:to-string-utf8 [$bytes:slice $rest $start $end]]]
+        [= $msg [?match [$json:parse $body]
             [case [err $e] ()]
-            [else [$json:parse [$bytes:to-string-utf8 $body]]]]]]]]]]]
-
-# read-until-id: collect messages until one carries $want as its id.
-[?def read-until-id scope=public impure ($h $want $acc $fuel)
-  [?if [= $fuel 0] [then $acc]
-    [else [?let [= $m [$read-message $h]]
-      [?if [$empty $m] [then $acc]
-        [else [?let [= $acc2 [$seq-flat ($acc, $m)]]
-          [?if [= [?else $m.id -1] $want]
-            [then $acc2]
-            [else [$read-until-id $h $want $acc2 [- $fuel 1]]]]]]]]]]]
+            [else [$json:parse $body]]]]
+        [$split-frames [$bytes:slice $rest $end [$bytes:length $rest]]
+          [$seq-flat ($acc, $msg)] [- $fuel 1]]]]]]]
 
 # ── one LSP session ───────────────────────────────────────────────────
-# Spawns `CXBIN lsp`, opens FILE, sends the extra requests, shuts down
-# (id 99) and returns every message received up to the shutdown response.
+# Writes the whole request stream to a file (shutdown id 99, then `exit`, so
+# the server closes itself down), has the shell redirect all three of the
+# child's descriptors to files, and reads the response stream back. The server
+# processes its stdin sequentially, so everything published before the
+# shutdown response is collected deterministically — no sleeping, no partial
+# reads, and nothing that can fill.
+#
+# `exec` in the shell string matters: it makes `cx lsp` REPLACE the shell, so
+# `$timeout-ms`'s escalation targets the server itself rather than a wrapper
+# that would leave the real child behind. `$new-process-group=true` covers the
+# rest: without it the escalation signals one pid, and any grandchild the
+# server left behind survives, reparents to init, and keeps running — measured
+# once here against a wrapper server that forked a `sleep`.
+#
+# WHY STILL THE SHELL, after #1014 gave `spawn` per-stream dispositions
+# (process.md §3.2): the three-way redirect is only half of what this needs.
+# The other half is a WALL-CLOCK BUDGET with group escalation and a `timed-out`
+# flag to `$die` on — and that lives on `run` (§3.1 `$timeout-ms` / §4.5), not
+# on `spawn`. `spawn` + `wait-timeout` returns absence and kills nothing ("no
+# kill — caller decides", §3.2), so migrating would mean re-implementing
+# SIGTERM → grace → SIGKILL-the-group here, in a probe, one layer further from
+# the thing that already does it correctly. `run` has no file dispositions and
+# `$capture` does not reach files, so the shell's `< > 2>` is the shortest
+# honest spelling of "all three streams to files, under a killable budget".
+# NOT a workaround for the 64 KiB pipe class §4.3 names — that is exactly what
+# the redirect to files avoids, and it must stay avoided: `capture=:none` here
+# means there is no pipe of ours anywhere, so nothing can fill.
 
 [?def lsp-session scope=public impure ($cxbin $path $extras)
   [?let
     [= $text [?match [$io:read-file $path]
         [case [err $e] [$die [$cat ('probe: cannot read ', $path, ': ', $e@message)]]]
         [else [$io:read-file $path]]]]
-    [= $h [$process:spawn ($cxbin, 'lsp')]]
-    [= $sin [$process:stdin $h]]
-    [= $sout [$process:stdout $h]]
     [= $uri [$cat ('file://', $path)]]
-    [= $w1 [$send $sin [$jsonrpc:request 1 'initialize'
-        {processId: null, rootUri: null, capabilities: {}}]]]
-    [= $w2 [$send $sin [$jsonrpc:notification 'initialized' {}]]]
-    [= $w3 [$send $sin [$jsonrpc:notification 'textDocument/didOpen'
-        {textDocument: {uri: $uri, languageId: 'cx', version: 1, text: $text}}]]]
-    [= $w4 [?for [in $x $extras] [yield [$send $sin $x]]]]
-    [= $w5 [$send $sin [$jsonrpc:request 99 'shutdown' {}]]]
-    [= $w6 [$io:flush $sin]]
-    [= $msgs [$read-until-id $sout 99 () 200]]
-    [= $w7 [$send $sin [$jsonrpc:notification 'exit' {}]]]
-    [= $w8 [$io:flush $sin]]
-    [= $rc [$process:wait-timeout $h 3000]]
-    [= $k [?if [$empty $rc] [then [$process:kill $h]] [else ()]]]
-    [= $c [$process:close $h]]
-    $msgs]]
+    [= $requests [$seq-flat (
+        ([$jsonrpc:request 1 'initialize'
+            {processId: null, rootUri: null, capabilities: {}}],
+         [$jsonrpc:notification 'initialized' {}],
+         [$jsonrpc:notification 'textDocument/didOpen'
+            {textDocument: {uri: $uri, languageId: 'cx', version: 1, text: $text}}]),
+        $extras,
+        ([$jsonrpc:request 99 'shutdown' {}],
+         [$jsonrpc:notification 'exit' {}]))]]
+    [= $dir [$io:temp-dir 'cx-lsp-probe-']]
+    [= $in-f [$cat ($dir, '/in.bin')]]
+    [= $out-f [$cat ($dir, '/out.bin')]]
+    [= $err-f [$cat ($dir, '/err.log')]]
+    [= $wrote [$io:write-file $in-f
+        [$cat [?for [in $r $requests] [yield [$frame $r]]]]]]
+    [= $result [$process:run ('/bin/sh', '-c',
+        [$cat ("exec '", $cxbin, "' lsp < '", $in-f, "' > '", $out-f,
+               "' 2> '", $err-f, "'")])
+        timeout-ms=SESSION-TIMEOUT-MS capture=:none new-process-group=true]]
+    [= $serr [?match [$io:read-file $err-f] [case [err $e] ''] [else [$io:read-file $err-f]]]]
+    [= $raw [?match [$io:read-file $out-f] [case [err $e] ''] [else [$io:read-file $out-f]]]]
+    [= $swept [$io:remove-tree $dir]]
+    [= $wedged [?if [= [?else $result@timed-out false] true]
+        [then [$die [$cat ('probe: ', $cxbin, ' lsp did not finish inside ',
+                           [$string SESSION-TIMEOUT-MS], 'ms and was killed; stderr: ',
+                           $serr)]]]
+        [else ()]]]
+    [$split-frames [$bytes:from-string-utf8 $raw] () 2000]]]
 
 # result-of: the .result of the message with the given id; () if none.
 [?def result-of scope=public ($msgs $id)

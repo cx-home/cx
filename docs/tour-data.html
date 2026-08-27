@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,504 +143,406 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">50 Ways to Love Your CX Data</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="tour-data">
   <h1>50 Ways to Love Your CX Data</h1>
-  
-    <p>Fifty examples that walk through CX data — bare attributes
+  <p>Fifty examples that walk through CX data — bare attributes
        through anchors and merge, with stops at quoted strings,
        multi-line text, comments, collection literals, typed
        columns, and a final whole-shop document. Each step adds
        one shape; no shape requires anything the earlier ones do
        not already give you. The companion §15 covers
        directives.</p>
-    <section id="td-1">
-      <h2>1. The atom</h2>
-      
-        <p>Just <code>name=value</code>. In CX this is a valid document on its own — logfmt mode, intended for log lines and structured events.</p>
-        <pre>
-          <code class="language-cx">size=large</code>
-        </pre>
-      
-    </section>
-    <section id="td-2">
-      <h2>2. Several atoms — a one-line event</h2>
-      
-        <p>A whole log line — no brackets, no root, just attributes.</p>
-        <pre>
-          <code class="language-cx">time=2026-05-09T12:00:00Z level=INFO svc=oven pizza=Margherita</code>
-        </pre>
-      
-    </section>
-    <section id="td-3">
-      <h2>3. Empty element</h2>
-      
-        <p>Brackets give a name. Empty, but a thing.</p>
-        <pre>
-          <code class="language-cx">[pizza]</code>
-        </pre>
-      
-    </section>
-    <section id="td-4">
-      <h2>4. Element with one property</h2>
-      
-        <p>The atom from example 1, now attached to a pizza.</p>
-        <pre>
-          <code class="language-cx">[pizza size=large]</code>
-        </pre>
-      
-    </section>
-    <section id="td-5">
-      <h2>5. Several properties</h2>
-      
-        <p>Keep adding. No commas required between attrs.</p>
-        <pre>
-          <code class="language-cx">[pizza size=large crust=thin price=12]</code>
-        </pre>
-      
-    </section>
-    <section id="td-6">
-      <h2>6. Bare flag (no equals-value)</h2>
-      
-        <p>Presence means yes, absence means no — same idea as <code>--verbose</code> or HTML's <code>required</code>. Here, this pizza is controversial.</p>
-        <pre>
-          <code class="language-cx">[pizza name=Hawaiian controversial]</code>
-        </pre>
-      
-    </section>
-    <section id="td-7">
-      <h2>7. Explicit boolean values</h2>
-      
-        <p>When you want both polarities, write the word.</p>
-        <pre>
-          <code class="language-cx">[pizza vegan=true gluten-free=false]</code>
-        </pre>
-      
-    </section>
-    <section id="td-8">
-      <h2>8. Booleans are ordinary attributes</h2>
-      
-        <p>Booleans are ordinary attributes — <code>name=true</code> / <code>name=false</code>; the bare tokens auto-type as bool.</p>
-        <pre>
-          <code class="language-cx">[pizza vegan=true nuts=false gluten=false]</code>
-        </pre>
-      
-    </section>
-    <section id="td-9">
-      <h2>9. Numbers — int, decimal, negative, hex, underscores</h2>
-      
-        <p>All bare, all auto-typed. Underscores in numbers are readability sugar.</p>
-        <pre>
-          <code class="language-cx">[pizza price=12.50 discount=-2 ovens=4 mask=0xFF00FF batch=1_000_000]</code>
-        </pre>
-      
-    </section>
-    <section id="td-10">
-      <h2>10. Quoted — single quotes</h2>
-      
-        <p>Reads: attribute <code>name</code>, value is the string "BBQ Chicken".</p>
-        <pre>
-          <code class="language-cx">[pizza name='BBQ Chicken']</code>
-        </pre>
-      
-    </section>
-    <section id="td-11">
-      <h2>11. Quoted — double quotes</h2>
-      
-        <p>Pick the quote that does not appear in the value.</p>
-        <pre>
-          <code class="language-cx">[pizza name="Quattro Formaggi"]</code>
-        </pre>
-      
-    </section>
-    <section id="td-12">
-      <h2>12. Mix when the value has an apostrophe</h2>
-      
-        <p>Double-quote around an apostrophe; no escaping needed.</p>
-        <pre>
-          <code class="language-cx">[pizza name="Tony's Special"]</code>
-        </pre>
-      
-    </section>
-    <section id="td-13">
-      <h2>13. The empty string</h2>
-      
-        <p>Distinct from missing: the attribute is there, just empty.</p>
-        <pre>
-          <code class="language-cx">[pizza name=Mystery description=""]</code>
-        </pre>
-      
-    </section>
-    <section id="td-14">
-      <h2>14. Escape sequences inside quotes</h2>
-      
-        <p>Same family as C and JSON: <code>\\n</code>, <code>\\r</code>, <code>\\t</code>, <code>\\uXXXX</code>, <code>\\"</code>, <code>\\\\</code>.</p>
-        <pre>
-          <code class="language-cx">[pizza alert='Hot!\\nHandle with care.\\tCafé']</code>
-        </pre>
-      
-    </section>
-    <section id="td-15">
-      <h2>15. Entity references (XML-style)</h2>
-      
-        <p><code>&amp;amp;</code>, <code>&amp;lt;</code>, <code>&amp;gt;</code> are recognized in <b>body text</b> — they round-trip faithfully, and an <code>--xml</code> emit renders them as proper XML entities. In attribute values they are <b>not</b> decoded: the characters stay literal (and <code>--xml</code> escapes the ampersand a second time). For a literal <code>&amp;</code> or <code>&lt;</code> in an attribute, just write the character inside quotes.</p>
-        <pre>
-          <code class="language-cx">[note Cheese &amp; Pepper]</code>
-        </pre>
-      
-    </section>
-    <section id="td-16">
-      <h2>16. Null</h2>
-      
-        <p>A real null value, distinct from empty string or the word "null" as a string.</p>
-        <pre>
-          <code class="language-cx">[pizza discount=null reviewed=null]</code>
-        </pre>
-      
-    </section>
-    <section id="td-17">
-      <h2>17. Date and datetime literals</h2>
-      
-        <p>ISO 8601 shapes are auto-typed as date or datetime.</p>
-        <pre>
-          <code class="language-cx">[promo starts=2026-05-01 ends=2026-05-31 cutoff=2026-05-31T23:59:00Z]</code>
-        </pre>
-      
-    </section>
-    <section id="td-18">
-      <h2>18. Plain text body</h2>
-      
-        <p>After the name, the rest of the bracket is text.</p>
-        <pre>
-          <code class="language-cx">[motto Hand-tossed since 1987]</code>
-        </pre>
-      
-    </section>
-    <section id="td-19">
-      <h2>19. Attributes plus text body</h2>
-      
-        <p>Reads: element <code>pizza</code>, attribute <code>name=Margherita</code>, then text body "Classic since day one.".</p>
-        <pre>
-          <code class="language-cx">[pizza name=Margherita Classic since day one.]</code>
-        </pre>
-      
-    </section>
-    <section id="td-20">
-      <h2>20. Multi-line text — preserved as written</h2>
-      
-        <p>Whitespace and newlines inside a text body are kept literally.</p>
-        <pre>
-          <code class="language-cx">[description
+  <section id="td-1">
+    <h2>1. The atom</h2>
+    <p>Just <code>name=value</code>. In CX this is a valid document on its own — logfmt mode, intended for log lines and structured events.</p>
+    <pre>
+      <code class="language-cx">size=large</code>
+    </pre>
+  </section>
+  <section id="td-2">
+    <h2>2. Several atoms — a one-line event</h2>
+    <p>A whole log line — no brackets, no root, just attributes.</p>
+    <pre>
+      <code class="language-cx">time=2026-05-09T12:00:00Z level=INFO svc=oven pizza=Margherita</code>
+    </pre>
+  </section>
+  <section id="td-3">
+    <h2>3. Empty element</h2>
+    <p>Brackets give a name. Empty, but a thing.</p>
+    <pre>
+      <code class="language-cx">[pizza]</code>
+    </pre>
+  </section>
+  <section id="td-4">
+    <h2>4. Element with one property</h2>
+    <p>The atom from example 1, now attached to a pizza.</p>
+    <pre>
+      <code class="language-cx">[pizza size=large]</code>
+    </pre>
+  </section>
+  <section id="td-5">
+    <h2>5. Several properties</h2>
+    <p>Keep adding. No commas required between attrs.</p>
+    <pre>
+      <code class="language-cx">[pizza size=large crust=thin price=12]</code>
+    </pre>
+  </section>
+  <section id="td-6">
+    <h2>6. Bare flag (no equals-value)</h2>
+    <p>Presence means yes, absence means no — same idea as <code>--verbose</code> or HTML's <code>required</code>. Here, this pizza is controversial.</p>
+    <pre>
+      <code class="language-cx">[pizza name=Hawaiian controversial]</code>
+    </pre>
+  </section>
+  <section id="td-7">
+    <h2>7. Explicit boolean values</h2>
+    <p>When you want both polarities, write the word.</p>
+    <pre>
+      <code class="language-cx">[pizza vegan=true gluten-free=false]</code>
+    </pre>
+  </section>
+  <section id="td-8">
+    <h2>8. Booleans are ordinary attributes</h2>
+    <p>Booleans are ordinary attributes — <code>name=true</code> / <code>name=false</code>; the bare tokens auto-type as bool.</p>
+    <pre>
+      <code class="language-cx">[pizza vegan=true nuts=false gluten=false]</code>
+    </pre>
+  </section>
+  <section id="td-9">
+    <h2>9. Numbers — int, decimal, negative, hex, underscores</h2>
+    <p>All bare, all auto-typed. Underscores in numbers are readability sugar.</p>
+    <pre>
+      <code class="language-cx">[pizza price=12.50 discount=-2 ovens=4 mask=0xFF00FF batch=1_000_000]</code>
+    </pre>
+  </section>
+  <section id="td-10">
+    <h2>10. Quoted — single quotes</h2>
+    <p>Reads: attribute <code>name</code>, value is the string "BBQ Chicken".</p>
+    <pre>
+      <code class="language-cx">[pizza name='BBQ Chicken']</code>
+    </pre>
+  </section>
+  <section id="td-11">
+    <h2>11. Quoted — double quotes</h2>
+    <p>Pick the quote that does not appear in the value.</p>
+    <pre>
+      <code class="language-cx">[pizza name="Quattro Formaggi"]</code>
+    </pre>
+  </section>
+  <section id="td-12">
+    <h2>12. Mix when the value has an apostrophe</h2>
+    <p>Double-quote around an apostrophe; no escaping needed.</p>
+    <pre>
+      <code class="language-cx">[pizza name="Tony's Special"]</code>
+    </pre>
+  </section>
+  <section id="td-13">
+    <h2>13. The empty string</h2>
+    <p>Distinct from missing: the attribute is there, just empty.</p>
+    <pre>
+      <code class="language-cx">[pizza name=Mystery description=""]</code>
+    </pre>
+  </section>
+  <section id="td-14">
+    <h2>14. Escape sequences inside quotes</h2>
+    <p>Same family as C and JSON: <code>\\n</code>, <code>\\r</code>, <code>\\t</code>, <code>\\uXXXX</code>, <code>\\"</code>, <code>\\\\</code>.</p>
+    <pre>
+      <code class="language-cx">[pizza alert='Hot!\\nHandle with care.\\tCafé']</code>
+    </pre>
+  </section>
+  <section id="td-15">
+    <h2>15. Entity references (XML-style)</h2>
+    <p><code>&amp;amp;</code>, <code>&amp;lt;</code>, <code>&amp;gt;</code> are recognized in <b>body text</b> — they round-trip faithfully, and an <code>--xml</code> emit renders them as proper XML entities. In attribute values they are <b>not</b> decoded: the characters stay literal (and <code>--xml</code> escapes the ampersand a second time). For a literal <code>&amp;</code> or <code>&lt;</code> in an attribute, just write the character inside quotes.</p>
+    <pre>
+      <code class="language-cx">[note Cheese &amp; Pepper]</code>
+    </pre>
+  </section>
+  <section id="td-16">
+    <h2>16. Null</h2>
+    <p>A real null value, distinct from empty string or the word "null" as a string.</p>
+    <pre>
+      <code class="language-cx">[pizza discount=null reviewed=null]</code>
+    </pre>
+  </section>
+  <section id="td-17">
+    <h2>17. Date and datetime literals</h2>
+    <p>ISO 8601 shapes are auto-typed as date or datetime.</p>
+    <pre>
+      <code class="language-cx">[promo starts=2026-05-01 ends=2026-05-31 cutoff=2026-05-31T23:59:00Z]</code>
+    </pre>
+  </section>
+  <section id="td-18">
+    <h2>18. Plain text body</h2>
+    <p>After the name, the rest of the bracket is text.</p>
+    <pre>
+      <code class="language-cx">[motto Hand-tossed since 1987]</code>
+    </pre>
+  </section>
+  <section id="td-19">
+    <h2>19. Attributes plus text body</h2>
+    <p>Reads: element <code>pizza</code>, attribute <code>name=Margherita</code>, then text body "Classic since day one.".</p>
+    <pre>
+      <code class="language-cx">[pizza name=Margherita Classic since day one.]</code>
+    </pre>
+  </section>
+  <section id="td-20">
+    <h2>20. Multi-line text — preserved as written</h2>
+    <p>Whitespace and newlines inside a text body are kept literally.</p>
+    <pre>
+      <code class="language-cx">[description
            Stone-baked, hand-stretched,
            and ready in 90 seconds.]</code>
-        </pre>
-      
-    </section>
-    <section id="td-21">
-      <h2>21. Triple-quoted string</h2>
-      
-        <p>Three quotes open and close. Single and double quotes inside need no escaping. Common leading whitespace is stripped.</p>
-        <pre>
-          <code class="language-cx">[bio '''
+    </pre>
+  </section>
+  <section id="td-21">
+    <h2>21. Triple-quoted string</h2>
+    <p>Three quotes open and close. Single and double quotes inside need no escaping. Common leading whitespace is stripped.</p>
+    <pre>
+      <code class="language-cx">[bio '''
            Born in Naples, 1955.
            Started New Haven in 1987.
            Still on the line every Friday.
          ''']</code>
-        </pre>
-      
-    </section>
-    <section id="td-22">
-      <h2>22. Block content [| … |]</h2>
-      
-        <p>Like a text body, but indentation and newlines are kept verbatim; the block closes with <code>|]</code>. Unlike triple-quoted, inner elements such as <code>[em best]</code> are still real markup.</p>
-        <pre>
-          <code class="language-cx">[poem [|
+    </pre>
+  </section>
+  <section id="td-22">
+    <h2>22. Block content [| … |]</h2>
+    <p>Like a text body, but indentation and newlines are kept verbatim; the block closes with <code>|]</code>. Unlike triple-quoted, inner elements such as <code>[em best]</code> are still real markup.</p>
+    <pre>
+      <code class="language-cx">[poem [|
            Roses are red,
              violets are blue,
            the [em best] pizza
              is waiting for you.
          |]]</code>
-        </pre>
-      
-    </section>
-    <section id="td-23">
-      <h2>23. Raw text [# … #]</h2>
-      
-        <p>The CDATA of CX. Brackets, quotes, <code>&lt;</code>, <code>&gt;</code> — all literal characters. The terminator is <code>#]</code>.</p>
-        <pre>
-          <code class="language-cx">[snippet [# if (x < 10) { return "[pizza]"; } #]]</code>
-        </pre>
-      
-    </section>
-    <section id="td-24">
-      <h2>24. Embedded code in another language</h2>
-      
-        <p>Raw text is how you embed SQL, JS, or regex without escaping every quote.</p>
-        <pre>
-          <code class="language-cx">[query language=sql [#
+    </pre>
+  </section>
+  <section id="td-23">
+    <h2>23. Raw text [# … #]</h2>
+    <p>The CDATA of CX. Brackets, quotes, <code>&lt;</code>, <code>&gt;</code> — all literal characters. The terminator is <code>#]</code>.</p>
+    <pre>
+      <code class="language-cx">[snippet [# if (x < 10) { return "[pizza]"; } #]]</code>
+    </pre>
+  </section>
+  <section id="td-24">
+    <h2>24. Embedded code in another language</h2>
+    <p>Raw text is how you embed SQL, JS, or regex without escaping every quote.</p>
+    <pre>
+      <code class="language-cx">[query language=sql [#
            SELECT name, price FROM pizza
            WHERE price < 15 AND vegan = true;
          #]]</code>
-        </pre>
-      
-    </section>
-    <section id="td-25">
-      <h2>25. Line comment</h2>
-      
-        <p><code>#</code> comments out the rest of the line. Lives outside elements, like a script header.</p>
-        <pre>
-          <code class="language-cx"># weekend special — pulled Monday
+    </pre>
+  </section>
+  <section id="td-25">
+    <h2>25. Line comment</h2>
+    <p><code>#</code> comments out the rest of the line. Lives outside elements, like a script header.</p>
+    <pre>
+      <code class="language-cx"># weekend special — pulled Monday
          [pizza name=TruffleSpecial price=24]</code>
-        </pre>
-      
-    </section>
-    <section id="td-26">
-      <h2>26. Inline block comment</h2>
-      
-        <p>Element-shaped — fits inside brackets where <code>#</code> cannot reach.</p>
-        <pre>
-          <code class="language-cx">[pizza name=Diavola [; TODO confirm price ] price=14]</code>
-        </pre>
-      
-    </section>
-    <section id="td-27">
-      <h2>27. Multi-line block comment</h2>
-      
-        <p>Canonical for multi-line notes.</p>
-        <pre>
-          <code class="language-cx">[;
+    </pre>
+  </section>
+  <section id="td-26">
+    <h2>26. Inline block comment</h2>
+    <p>Element-shaped — fits inside brackets where <code>#</code> cannot reach.</p>
+    <pre>
+      <code class="language-cx">[pizza name=Diavola [; TODO confirm price ] price=14]</code>
+    </pre>
+  </section>
+  <section id="td-27">
+    <h2>27. Multi-line block comment</h2>
+    <p>Canonical for multi-line notes.</p>
+    <pre>
+      <code class="language-cx">[;
            Pricing review:
              - Diavola: bump to 16?
              - Hawaiian: hold at 14
          ]</code>
-        </pre>
-      
-    </section>
-    <section id="td-28">
-      <h2>28. When to use which</h2>
-      
-        <p><code>#</code> for line-scoped headers; <code>[; … ]</code> when the comment must nest inside an element or span lines. Not HTML's <code>&lt;!-- … --&gt;</code> — CX has its own.</p>
-        <pre>
-          <code class="language-cx"># top-of-file header
+    </pre>
+  </section>
+  <section id="td-28">
+    <h2>28. When to use which</h2>
+    <p><code>#</code> for line-scoped headers; <code>[; … ]</code> when the comment must nest inside an element or span lines. Not HTML's <code>&lt;!-- … --&gt;</code> — CX has its own.</p>
+    <pre>
+      <code class="language-cx"># top-of-file header
          [shop [; inline aside on this branch ] port=8080]</code>
-        </pre>
-      
-    </section>
-    <section id="td-29">
-      <h2>29. Nesting</h2>
-      
-        <p>Brackets inside brackets.</p>
-        <pre>
-          <code class="language-cx">[pizza name=Margherita [base tomato]]</code>
-        </pre>
-      
-    </section>
-    <section id="td-30">
-      <h2>30. Siblings</h2>
-      
-        <p>Same shape, side by side. No separators required.</p>
-        <pre>
-          <code class="language-cx">[pizza [topping cheese] [topping basil] [topping oil]]</code>
-        </pre>
-      
-    </section>
-    <section id="td-31">
-      <h2>31. Inline prose with markup</h2>
-      
-        <p>Prose and tags interleave freely. The same shapes you would write in HTML.</p>
-        <pre>
-          <code class="language-cx">[note Try the [b Margherita] — our [em best seller], hand-tossed [strong daily].]</code>
-        </pre>
-      
-    </section>
-    <section id="td-32">
-      <h2>32. A whole article — prose and data</h2>
-      
-        <p>Headings, paragraphs, links, emphasis — CX handles document text as cleanly as XML.</p>
-        <pre>
-          <code class="language-cx">[article
+    </pre>
+  </section>
+  <section id="td-29">
+    <h2>29. Nesting</h2>
+    <p>Brackets inside brackets.</p>
+    <pre>
+      <code class="language-cx">[pizza name=Margherita [base tomato]]</code>
+    </pre>
+  </section>
+  <section id="td-30">
+    <h2>30. Siblings</h2>
+    <p>Same shape, side by side. No separators required.</p>
+    <pre>
+      <code class="language-cx">[pizza [topping cheese] [topping basil] [topping oil]]</code>
+    </pre>
+  </section>
+  <section id="td-31">
+    <h2>31. Inline prose with markup</h2>
+    <p>Prose and tags interleave freely. The same shapes you would write in HTML.</p>
+    <pre>
+      <code class="language-cx">[note Try the [b Margherita] — our [em best seller], hand-tossed [strong daily].]</code>
+    </pre>
+  </section>
+  <section id="td-32">
+    <h2>32. A whole article — prose and data</h2>
+    <p>Headings, paragraphs, links, emphasis — CX handles document text as cleanly as XML.</p>
+    <pre>
+      <code class="language-cx">[article
            [h1 New Haven Story]
            [p Founded in [em 1987]. See the [a href=/menu menu].]
            [p Still [strong hand-tossing] every pie.]]</code>
-        </pre>
-      
-    </section>
-    <section id="td-33">
-      <h2>33. Deeper nesting — children with their own data</h2>
-      
-        <p>Each child carries its own attributes.</p>
-        <pre>
-          <code class="language-cx">[pizza name=Quattro
+    </pre>
+  </section>
+  <section id="td-33">
+    <h2>33. Deeper nesting — children with their own data</h2>
+    <p>Each child carries its own attributes.</p>
+    <pre>
+      <code class="language-cx">[pizza name=Quattro
            [topping cheese price=2]
            [topping ham    price=3]
            [topping olives price=2]]</code>
-        </pre>
-      
-    </section>
-    <section id="td-34">
-      <h2>34. Multiple top-level elements (no required root)</h2>
-      
-        <p>A document can be a flat list.</p>
-        <pre>
-          <code class="language-cx">[pizza name=Margherita]
+    </pre>
+  </section>
+  <section id="td-34">
+    <h2>34. Multiple top-level elements (no required root)</h2>
+    <p>A document can be a flat list.</p>
+    <pre>
+      <code class="language-cx">[pizza name=Margherita]
          [pizza name=Hawaiian]
          [pizza name=Diavola]</code>
-        </pre>
-      
-    </section>
-    <section id="td-35">
-      <h2>35. Multi-document file</h2>
-      
-        <p>One file, several independent documents. Same separator as YAML — three dashes on a line by themselves between documents.</p>
-      
-    </section>
-    <section id="td-36">
-      <h2>36. Sequence (a, b, c) — flat list</h2>
-      
-        <p>Reads: element <code>toppings</code>, body is the sequence of three strings.
+    </pre>
+  </section>
+  <section id="td-35">
+    <h2>35. Multi-document file</h2>
+    <p>One file, several independent documents. Same separator as YAML — three dashes on a line by themselves between documents.</p>
+  </section>
+  <section id="td-36">
+    <h2>36. Sequence (a, b, c) — flat list</h2>
+    <p>Reads: element <code>toppings</code>, body is the sequence of three strings.
        Collections live in a child element's body — attributes hold a single
        scalar, never a collection.</p>
-        <pre>
-          <code class="language-cx">[pizza [toppings (cheese, basil, oil)]]</code>
-        </pre>
-      
-    </section>
-    <section id="td-37">
-      <h2>37. Array [a, b, c] — nested list</h2>
-      
-        <p>Arrays preserve structure; sequences flatten. Use arrays when nesting matters.</p>
-        <pre>
-          <code class="language-cx">[grid [cells [1, 2, 3]]]</code>
-        </pre>
-      
-    </section>
-    <section id="td-38">
-      <h2>38. Nested arrays</h2>
-      
-        <p>A matrix is just an array of arrays.</p>
-        <pre>
-          <code class="language-cx">[board
+    <pre>
+      <code class="language-cx">[pizza [toppings (cheese, basil, oil)]]</code>
+    </pre>
+  </section>
+  <section id="td-37">
+    <h2>37. Array [a, b, c] — nested list</h2>
+    <p>Arrays preserve structure; sequences flatten. Use arrays when nesting matters.</p>
+    <pre>
+      <code class="language-cx">[grid [cells [1, 2, 3]]]</code>
+    </pre>
+  </section>
+  <section id="td-38">
+    <h2>38. Nested arrays</h2>
+    <p>A matrix is just an array of arrays.</p>
+    <pre>
+      <code class="language-cx">[board
            [cells &#91;&#91;1, 0, 1],
                    [0, 1, 0],
                    [1, 0, 1]]]]</code>
-        </pre>
-      
-    </section>
-    <section id="td-39">
-      <h2>39. Map {k: v} — named key to value</h2>
-      
-        <p>Reads: element <code>prices</code>, body is a map with three entries.</p>
-        <pre>
-          <code class="language-cx">[pizza [prices {small: 9, medium: 12, large: 15}]]</code>
-        </pre>
-      
-    </section>
-    <section id="td-40">
-      <h2>40. Collections in body position</h2>
-      
-        <p>Sequences, arrays, and maps can sit inside an element body too.</p>
-        <pre>
-          <code class="language-cx">[favorites
+    </pre>
+  </section>
+  <section id="td-39">
+    <h2>39. Map {k: v} — named key to value</h2>
+    <p>Reads: element <code>prices</code>, body is a map with three entries.</p>
+    <pre>
+      <code class="language-cx">[pizza [prices {small: 9, medium: 12, large: 15}]]</code>
+    </pre>
+  </section>
+  <section id="td-40">
+    <h2>40. Collections in body position</h2>
+    <p>Sequences, arrays, and maps can sit inside an element body too.</p>
+    <pre>
+      <code class="language-cx">[favorites
            (Margherita, Hawaiian, Diavola)]</code>
-        </pre>
-      
-    </section>
-    <section id="td-41">
-      <h2>41. Mixed-shape composition</h2>
-      
-        <p>Map of sequences, multi-line. Compose freely.</p>
-        <pre>
-          <code class="language-cx">[stats {
+    </pre>
+  </section>
+  <section id="td-41">
+    <h2>41. Mixed-shape composition</h2>
+    <p>Map of sequences, multi-line. Compose freely.</p>
+    <pre>
+      <code class="language-cx">[stats {
            monday: (12, 8, 14),
            tuesday: (10, 9, 11),
            wednesday: (15, 11, 18)
          }]</code>
-        </pre>
-      
-    </section>
-    <section id="td-42">
-      <h2>42. Explicit type annotation</h2>
-      
-        <p>A glued <code>::T</code> ascription on the name pins the body's type, overriding auto-typing.</p>
-        <pre>
-          <code class="language-cx">[count::int 42]
+    </pre>
+  </section>
+  <section id="td-42">
+    <h2>42. Explicit type annotation</h2>
+    <p>A glued <code>::T</code> ascription on the name pins the body's type, overriding auto-typing.</p>
+    <pre>
+      <code class="language-cx">[count::int 42]
          [ratio::decimal 3.14159]</code>
-        </pre>
-      
-    </section>
-    <section id="td-43">
-      <h2>43. Typed array as body</h2>
-      
-        <p><code>::int[]</code> for typed; <code>::[]</code> for inferred (string array here).</p>
-        <pre>
-          <code class="language-cx">[oven-temps::int[] 220 240 260 480]
+    </pre>
+  </section>
+  <section id="td-43">
+    <h2>43. Typed array as body</h2>
+    <p><code>::int[]</code> for typed; <code>::[]</code> for inferred (string array here).</p>
+    <pre>
+      <code class="language-cx">[oven-temps::int[] 220 240 260 480]
          [tags::[] cheap fast tasty]</code>
-        </pre>
-      
-    </section>
-    <section id="td-44">
-      <h2>44. Plain table — header plus rows</h2>
-      
-        <p>The <code>[table[…]]</code> block declares column names once. Each line below is a row.</p>
-        <pre>
-          <code class="language-cx">[menu [table[name size price]]
+    </pre>
+  </section>
+  <section id="td-44">
+    <h2>44. Plain table — header plus rows</h2>
+    <p>The <code>[table[…]]</code> block declares column names once. Each line below is a row.</p>
+    <pre>
+      <code class="language-cx">[menu [table[name size price]]
            Margherita medium 12
            Hawaiian   large  14
            Diavola    medium 13]</code>
-        </pre>
-      
-    </section>
-    <section id="td-45">
-      <h2>45. Typed columns</h2>
-      
-        <p>Each column can carry a colon-type. Cells parse accordingly.</p>
-        <pre>
-          <code class="language-cx">[orders [table[item::string qty::int paid::bool when::date]]
+    </pre>
+  </section>
+  <section id="td-45">
+    <h2>45. Typed columns</h2>
+    <p>Each column can carry a colon-type. Cells parse accordingly.</p>
+    <pre>
+      <code class="language-cx">[orders [table[item::string qty::int paid::bool when::date]]
            Margherita 2 true  2026-05-09
            Hawaiian   1 false 2026-05-09]</code>
-        </pre>
-      
-    </section>
-    <section id="td-46">
-      <h2>46. Quoted cells and nulls</h2>
-      
-        <p>Quote cells with spaces. <code>null</code> is a real null in the cell.</p>
-        <pre>
-          <code class="language-cx">[shifts [table[cook hours::int notes]]
+    </pre>
+  </section>
+  <section id="td-46">
+    <h2>46. Quoted cells and nulls</h2>
+    <p>Quote cells with spaces. <code>null</code> is a real null in the cell.</p>
+    <pre>
+      <code class="language-cx">[shifts [table[cook hours::int notes]]
            Pepe       8 morning
            Maria      6 'closing crew'
            'Jean-Luc' 4 null]</code>
-        </pre>
-      
-    </section>
-    <section id="td-47">
-      <h2>47. Anchor and alias</h2>
-      
-        <p><code>&amp;classic</code> <b>names</b> this element; <code>[*classic]</code> is an alias node referencing it. Which reading you get depends on the lane. The <b>lossless lanes</b> carry the reference as written: canonical CX emit prints <code>[*classic]</code> back out, and <code>--xml</code> marks it with a <code>cx:</code> attribute, so the document round-trips byte-faithfully. The <b>semantic lanes resolve it</b>: under <code>--json</code>/<code>--yaml</code>/<code>--csv</code> (any lossy projection) and inside a program's <code>$doc</code>, each alias expands to a deep copy of its anchor — the JSON of the example below carries two full Margheritas inside <code>menu</code>. <code>cx lint</code> (CX-L004) errors on a reference whose anchor does not exist, and a lossy projection of a dangling alias refuses outright.</p>
-        <pre>
-          <code class="language-cx">[pizza &classic name=Margherita price=12 [base tomato]]
+    </pre>
+  </section>
+  <section id="td-47">
+    <h2>47. Anchor and alias</h2>
+    <p><code>&amp;classic</code> <b>names</b> this element; <code>[*classic]</code> is an alias node referencing it. Which reading you get depends on the lane. The <b>lossless lanes</b> carry the reference as written: canonical CX emit prints <code>[*classic]</code> back out, and <code>--xml</code> marks it with a <code>cx:</code> attribute, so the document round-trips byte-faithfully. The <b>semantic lanes resolve it</b>: under <code>--json</code>/<code>--yaml</code>/<code>--csv</code> (any lossy projection) and inside a program's <code>$doc</code>, each alias expands to a deep copy of its anchor — the JSON of the example below carries two full Margheritas inside <code>menu</code>. <code>cx lint</code> (CX-L004) errors on a reference whose anchor does not exist, and a lossy projection of a dangling alias refuses outright.</p>
+    <pre>
+      <code class="language-cx">[pizza &classic name=Margherita price=12 [base tomato]]
          [menu [*classic] [*classic]]</code>
-        </pre>
-      
-    </section>
-    <section id="td-48">
-      <h2>48. Merge declaration</h2>
-      
-        <p><code>*classic</code> <b>declares</b> a merge from the anchor, with the element's own attrs as overrides. The same lane split as the alias: the lossless lanes keep the declaration as written — canonical emit prints <code>[pizza *classic …]</code>, <code>--xml</code> emits a <code>cx:merge="classic"</code> attribute — while the semantic lanes <b>apply</b> it: under a lossy projection or <code>$doc</code>, the second pizza inherits <code>name=Margherita price=12 [base tomato]</code> and its own attrs win on collision, so it comes out <code>name=ClassicXL size=large price=16</code> with the tomato base. CX-L004 checks the target anchor exists.</p>
-        <pre>
-          <code class="language-cx">[pizza &classic name=Margherita price=12 [base tomato]]
+    </pre>
+  </section>
+  <section id="td-48">
+    <h2>48. Merge declaration</h2>
+    <p><code>*classic</code> <b>declares</b> a merge from the anchor, with the element's own attrs as overrides. The same lane split as the alias: the lossless lanes keep the declaration as written — canonical emit prints <code>[pizza *classic …]</code>, <code>--xml</code> emits a <code>cx:merge="classic"</code> attribute — while the semantic lanes <b>apply</b> it: under a lossy projection or <code>$doc</code>, the second pizza inherits <code>name=Margherita price=12 [base tomato]</code> and its own attrs win on collision, so it comes out <code>name=ClassicXL size=large price=16</code> with the tomato base. CX-L004 checks the target anchor exists.</p>
+    <pre>
+      <code class="language-cx">[pizza &classic name=Margherita price=12 [base tomato]]
          [pizza *classic name=ClassicXL size=large price=16]</code>
-        </pre>
-      
-    </section>
-    <section id="td-49">
-      <h2>49. A recipe — prose, data, table, all together</h2>
-      
-        <p>Tabular ingredients, prose steps with inline markup, multi-line notes — all in one document, one syntax.</p>
-        <pre>
-          <code class="language-cx">[recipe name=Margherita serves=2
+    </pre>
+  </section>
+  <section id="td-49">
+    <h2>49. A recipe — prose, data, table, all together</h2>
+    <p>Tabular ingredients, prose steps with inline markup, multi-line notes — all in one document, one syntax.</p>
+    <pre>
+      <code class="language-cx">[recipe name=Margherita serves=2
            [ingredients [table[item amount::string]]
              flour      300g
              water      200ml
@@ -656,15 +558,13 @@
              A wetter dough gives a softer cornicione.
              Do not skip the cold rest.
            ''']]</code>
-        </pre>
-      
-    </section>
-    <section id="td-50">
-      <h2>50. The whole shop</h2>
-      
-        <p>XML decl, anchor, block comments, typed table, a merge declaration (carried on the lossless lanes, applied on the semantic ones — see 48), map and sequence children, triple-quoted text. One syntax, everywhere.</p>
-        <pre>
-          <code class="language-cx">[?xml version=1.0 encoding=UTF-8]
+    </pre>
+  </section>
+  <section id="td-50">
+    <h2>50. The whole shop</h2>
+    <p>XML decl, anchor, block comments, typed table, a merge declaration (carried on the lossless lanes, applied on the semantic ones — see 48), map and sequence children, triple-quoted text. One syntax, everywhere.</p>
+    <pre>
+      <code class="language-cx">[?xml version=1.0 encoding=UTF-8]
          [shop &flagship name='New Haven' port=8080 open=true
            [; opening hours ]
            [hours mon-fri=11-22 sat=12-23 sun=closed]
@@ -682,26 +582,24 @@
              Hand-tossed since 1987.
              Still tossing.
            ''']]</code>
-        </pre>
-      
-    </section>
-    <p class="note"><b>The arc.</b> Bare attribute → element → strings → text
+    </pre>
+  </section>
+  <p class="note"><b>The arc.</b> Bare attribute → element → strings → text
        bodies → comments → structure → collections → typed arrays
        → tables → anchors → the whole shop. Every step adds one
        shape; no shape requires anything the earlier ones do not
        already give you.</p>
-  
 </section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>50 Ways to Love Your CX Data</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

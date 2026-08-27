@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,188 +143,159 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">i18n</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-i18n"><h1>i18n</h1><p class="lede">The message and translation layer of CX's internationalization surface. Build, merge, and inspect message catalogs that map a key to per-locale ICU MessageFormat strings; resolve a key for a target locale through a fallback chain; and evaluate MessageFormat templates with interpolation, CLDR plurals, select, selectordinal, nested forms, and typed args. A locale's CLDR plural category for a number is also exposed. Depends one-way on cx-stdlib/locale for all number, date, and currency formatting; locale arguments are BCP 47 tags.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-i18n-catalog-from-map" class="fn">
-    <h3>i18n:catalog-from-map</h3>
-    <p class="fn-sig"><code>[$i18n:catalog-from-map]  -> element</code>  —  Build a catalog element from a map of key to per-locale MessageFormat strings.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/i18n']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-i18n-catalog-from-map" class="fn">
+  <h3>i18n:catalog-from-map</h3>
+  <p class="fn-sig"><code>[$i18n:catalog-from-map]  -> element</code>  —  Build a catalog element from a map of key to per-locale MessageFormat strings.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:catalog-locales [$i18n:catalog-from-map {"greeting": {"en": "Hello, {name}!", "fr": "Bonjour, {name} !"}}]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(en, fr)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-i18n-load-catalog" class="fn">
-    <h3>i18n:load-catalog</h3>
-    <p class="fn-sig"><code>[$i18n:load-catalog]  -> element</code>  —  Read a catalog from its on-disk CX-document form; requires the read capability.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/i18n']
+    </pre>
+    <pre class="sample-output">
+      <code>(en, fr)</code>
+    </pre>
+  </div>
+</section><section id="fn-i18n-load-catalog" class="fn">
+  <h3>i18n:load-catalog</h3>
+  <p class="fn-sig"><code>[$i18n:load-catalog]  -> element</code>  —  Read a catalog from its on-disk CX-document form; requires the read capability.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:load-catalog "conformance/data/i18n/messages.cx"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-i18n-catalog-merge" class="fn">
-    <h3>i18n:catalog-merge</h3>
-    <p class="fn-sig"><code>[$i18n:catalog-merge]  -> element</code>  —  Merge catalogs left-to-right, last-writer-wins.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/i18n']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-i18n-catalog-merge" class="fn">
+  <h3>i18n:catalog-merge</h3>
+  <p class="fn-sig"><code>[$i18n:catalog-merge]  -> element</code>  —  Merge catalogs left-to-right, last-writer-wins.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:message [$i18n:catalog-merge [$i18n:catalog-from-map {"k": {"en": "A"}}] [$i18n:catalog-from-map {"k": {"en": "B"}}]] "k" "en" {}]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>B</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-i18n-catalog-merge-seq" class="fn">
-    <h3>i18n:catalog-merge-seq</h3>
-    <p class="fn-sig"><code>[$i18n:catalog-merge-seq]  -> element</code>  —  Merge a runtime-assembled sequence of catalogs, last-writer-wins.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/i18n']
+    </pre>
+    <pre class="sample-output">
+      <code>B</code>
+    </pre>
+  </div>
+</section><section id="fn-i18n-catalog-merge-seq" class="fn">
+  <h3>i18n:catalog-merge-seq</h3>
+  <p class="fn-sig"><code>[$i18n:catalog-merge-seq]  -> element</code>  —  Merge a runtime-assembled sequence of catalogs, last-writer-wins.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:message [$i18n:catalog-merge-seq ([$i18n:catalog-from-map {"k": {"en": "A"}}], [$i18n:catalog-from-map {"k": {"en": "B"}}])] "k" "en" {}]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>B</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-i18n-catalog-locales" class="fn">
-    <h3>i18n:catalog-locales</h3>
-    <p class="fn-sig"><code>[$i18n:catalog-locales]  -> [sequence string]</code>  —  List the distinct locales present across a catalog's entries.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/i18n']
+    </pre>
+    <pre class="sample-output">
+      <code>B</code>
+    </pre>
+  </div>
+</section><section id="fn-i18n-catalog-locales" class="fn">
+  <h3>i18n:catalog-locales</h3>
+  <p class="fn-sig"><code>[$i18n:catalog-locales]  -> [sequence string]</code>  —  List the distinct locales present across a catalog's entries.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:catalog-locales [$i18n:catalog-from-map {"greeting": {"en": "Hello, {name}!", "fr": "Bonjour, {name} !"}}]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(en, fr)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-i18n-catalog-keys" class="fn">
-    <h3>i18n:catalog-keys</h3>
-    <p class="fn-sig"><code>[$i18n:catalog-keys]  -> [sequence string]</code>  —  List the message keys defined in a catalog.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/i18n']
+    </pre>
+    <pre class="sample-output">
+      <code>(en, fr)</code>
+    </pre>
+  </div>
+</section><section id="fn-i18n-catalog-keys" class="fn">
+  <h3>i18n:catalog-keys</h3>
+  <p class="fn-sig"><code>[$i18n:catalog-keys]  -> [sequence string]</code>  —  List the message keys defined in a catalog.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:catalog-keys [$i18n:catalog-from-map {"greeting": {"en": "Hello, {name}!"}, "farewell": {"en": "Bye, {name}!"}}]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>(greeting, farewell)</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-i18n-message" class="fn">
-    <h3>i18n:message</h3>
-    <p class="fn-sig"><code>[$i18n:message]  -> string</code>  —  Resolve a key for a locale through the fallback chain and evaluate it against args; raises on an unknown key.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/i18n']
+    </pre>
+    <pre class="sample-output">
+      <code>(greeting, farewell)</code>
+    </pre>
+  </div>
+</section><section id="fn-i18n-message" class="fn">
+  <h3>i18n:message</h3>
+  <p class="fn-sig"><code>[$i18n:message]  -> string</code>  —  Resolve a key for a locale through the fallback chain and evaluate it against args; raises on an unknown key.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:message [$i18n:catalog-from-map {"default": "en", "greeting": {"en": "Hello, {name}!"}}] "greeting" "de" {"name": "Ada"}]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>Hello, Ada!</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-i18n-message-or" class="fn">
-    <h3>i18n:message-or</h3>
-    <p class="fn-sig"><code>[$i18n:message-or]  -> string</code>  —  Like message, but evaluate the fallback string instead of raising on an unknown key.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/i18n']
+    </pre>
+    <pre class="sample-output">
+      <code>Hello, Ada!</code>
+    </pre>
+  </div>
+</section><section id="fn-i18n-message-or" class="fn">
+  <h3>i18n:message-or</h3>
+  <p class="fn-sig"><code>[$i18n:message-or]  -> string</code>  —  Like message, but evaluate the fallback string instead of raising on an unknown key.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:message-or [$i18n:catalog-from-map {"greeting": {"en": "Hi"}}] "missing.key" "en" {"name": "Ada"} "Hello, {name}!"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>Hello, Ada!</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-i18n-format-message" class="fn">
-    <h3>i18n:format-message</h3>
-    <p class="fn-sig"><code>[$i18n:format-message]  -> string</code>  —  Evaluate a MessageFormat string against args for a locale, with no catalog.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/i18n']
+    </pre>
+    <pre class="sample-output">
+      <code>Hello, Ada!</code>
+    </pre>
+  </div>
+</section><section id="fn-i18n-format-message" class="fn">
+  <h3>i18n:format-message</h3>
+  <p class="fn-sig"><code>[$i18n:format-message]  -> string</code>  —  Evaluate a MessageFormat string against args for a locale, with no catalog.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:format-message "{count, plural, =0 {no items} one {# item} other {# items}}" "en" {"count": 0}]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>no items</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-i18n-plural-category" class="fn">
-    <h3>i18n:plural-category</h3>
-    <p class="fn-sig"><code>[$i18n:plural-category]  -> atom</code>  —  Return the CLDR cardinal plural category for a number in a locale.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/i18n']
+    </pre>
+    <pre class="sample-output">
+      <code>no items</code>
+    </pre>
+  </div>
+</section><section id="fn-i18n-plural-category" class="fn">
+  <h3>i18n:plural-category</h3>
+  <p class="fn-sig"><code>[$i18n:plural-category]  -> atom</code>  —  Return the CLDR cardinal plural category for a number in a locale.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:plural-category 1 "en"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>:one</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-i18n-plural-category-ordinal" class="fn">
-    <h3>i18n:plural-category-ordinal</h3>
-    <p class="fn-sig"><code>[$i18n:plural-category-ordinal]  -> atom</code>  —  Return the CLDR ordinal plural category for a number in a locale.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/i18n']
+    </pre>
+    <pre class="sample-output">
+      <code>:one</code>
+    </pre>
+  </div>
+</section><section id="fn-i18n-plural-category-ordinal" class="fn">
+  <h3>i18n:plural-category-ordinal</h3>
+  <p class="fn-sig"><code>[$i18n:plural-category-ordinal]  -> atom</code>  —  Return the CLDR ordinal plural category for a number in a locale.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/i18n']
 [$i18n:plural-category-ordinal 1 "en"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>:one</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>:one</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>i18n</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

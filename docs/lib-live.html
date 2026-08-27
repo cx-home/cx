@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,192 +143,169 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">live</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-live"><h1>live</h1><p class="lede">The live modes over the one planar comprehension: the same quoted <code>[?for]</code> that runs once as a query is also a delta feed. <code>changes-since</code> is the stateless core — it takes the quoted comprehension, a <code>$bind</code> map (formal source names → open store/journal handles), and a head-set cursor, and answers <code>[changes [head-set …] ∂-frame…]</code>: the edit script that carries a consumer from its cursor to head, plus the new cursor. Within the incremental sub-fragment the ∂ set is exact (<code>[insert]</code>/<code>[retract]</code>/<code>[regroup]</code>); outside it the answer is the honest <code>[recompute reason=…]</code> marker followed by the full relation as inserts — and from the empty cursor <code>[head-set]</code> the exact ∂ is the full relation as inserts for every comprehension, which is why a one-time <code>[?for]</code> and <code>changes-since</code>-from-empty agree (the equivalence quartet, leg 1). <code>observe</code> is the live form of the same answer: it returns a delivery-contract subscription (<code>[live-sub …]</code> — rung reported, retention declared, closeable) whose every <code>[?receive]</code> delivers the next <code>[changes …]</code> batch from the consumer's own cursor — observe ≡ repeated <code>changes-since</code> driven by source advance (leg 2), a fault terminating the stream loud as the final frame. The maintained fold (<code>materialize</code>) and its poll-substrate companions (<code>advance</code>/<code>read</code>) land with their implementation wave per the pack spec.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-live-changes-since" class="fn">
-    <h3>live:changes-since</h3>
-    <p class="fn-sig"><code>[$live:changes-since]  -> element</code>  —  Answer the ∂ set from a head-set cursor to head over a quoted planar comprehension, plus the new cursor.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-live-changes-since" class="fn">
+  <h3>live:changes-since</h3>
+  <p class="fn-sig"><code>[$live:changes-since]  -> element</code>  —  Answer the ∂ set from a head-set cursor to head over a quoted planar comprehension, plus the new cursor.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store']
 [?lib 'cx-stdlib/live']
 [?let [= $s [$store:open "mem://live-doc"]]
 [= $h [$store:put-doc $s [order [region "west"] [amount 100]]]]
   [$live:changes-since [?quote [?for [in $o [$store:source $orders "//order"]] [yield $o]]] {orders: $s} [head-set]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[changes [head-set [s source=orders pos=1]] [insert pos=0 [order [region 'west'] [amount 100]]]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-live-observe" class="fn">
-    <h3>live:observe</h3>
-    <p class="fn-sig"><code>[$live:observe]  -> element</code>  —  Open a live ∂ subscription over a quoted planar comprehension: a delivery-contract handle whose receives deliver the [changes …] batches from the consumer's cursor to head.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store']
+    </pre>
+    <pre class="sample-output">
+      <code>[changes [head-set [s source=orders pos=1]] [insert pos=0 [order [region 'west'] [amount 100]]]]</code>
+    </pre>
+  </div>
+</section><section id="fn-live-observe" class="fn">
+  <h3>live:observe</h3>
+  <p class="fn-sig"><code>[$live:observe]  -> element</code>  —  Open a live ∂ subscription over a quoted planar comprehension: a delivery-contract handle whose receives deliver the [changes …] batches from the consumer's cursor to head.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store']
 [?lib 'cx-stdlib/live']
 [?let [= $s [$store:open "mem://live-obs-doc"]]
 [= $sub [$live:observe [?quote [?for [in $o [$store:source $orders "//order"]] [yield $o]]] {orders: $s} [head-set]]]
 [= $h [$store:put-doc $s [order id=1]]]
   [?receive from=$sub]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[changes [head-set [s source=orders pos=1]] [insert pos=0 [order id=1]]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-live-materialize" class="fn">
-    <h3>live:materialize</h3>
-    <p class="fn-sig"><code>[$live:materialize]  -> element</code>  —  Create (or re-attach to) a named, store-aliased, checkpointed fold of a quoted planar comprehension; the checkpoint is the durable cursor.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store']
+    </pre>
+    <pre class="sample-output">
+      <code>[changes [head-set [s source=orders pos=1]] [insert pos=0 [order id=1]]]</code>
+    </pre>
+  </div>
+</section><section id="fn-live-materialize" class="fn">
+  <h3>live:materialize</h3>
+  <p class="fn-sig"><code>[$live:materialize]  -> element</code>  —  Create (or re-attach to) a named, store-aliased, checkpointed fold of a quoted planar comprehension; the checkpoint is the durable cursor.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store']
 [?lib 'cx-stdlib/live']
 [?let [= $s [$store:open "mem://live-mat-src"]]
 [= $cs [$store:open "mem://live-mat-ckpt"]]
 [= $h [$store:put-doc $s [order region=west amount=100]]]
 [= $m [$live:materialize $cs [?quote [?for [in $o [$store:source $orders "//order"]] [group-by $o@region] [yield [rev region=$key n=$count]]]] {orders: $s} "rev-by-region"]]
   [$live:read $m]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[snapshot [head-set [s source=orders pos=1]] [rev region=west n=1]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-live-advance" class="fn">
-    <h3>live:advance</h3>
-    <p class="fn-sig"><code>[$live:advance]  -> element</code>  —  The maintenance tick: pull the fold's sources to head, apply the ∂ (or recompute loud), checkpoint, and CAS the alias forward.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store']
+    </pre>
+    <pre class="sample-output">
+      <code>[snapshot [head-set [s source=orders pos=1]] [rev region=west n=1]]</code>
+    </pre>
+  </div>
+</section><section id="fn-live-advance" class="fn">
+  <h3>live:advance</h3>
+  <p class="fn-sig"><code>[$live:advance]  -> element</code>  —  The maintenance tick: pull the fold's sources to head, apply the ∂ (or recompute loud), checkpoint, and CAS the alias forward.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store']
 [?lib 'cx-stdlib/live']
 [?let [= $s [$store:open "mem://live-adv-src"]]
 [= $cs [$store:open "mem://live-adv-ckpt"]]
 [= $m [$live:materialize $cs [?quote [?for [in $o [$store:source $orders "//order"]] [yield $o]]] {orders: $s} "orders-live"]]
 [= $h [$store:put-doc $s [order id=1]]]
   [$live:advance $m]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[advanced applied=1 recomputed=false [head-set [s source=orders pos=1]]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-live-read" class="fn">
-    <h3>live:read</h3>
-    <p class="fn-sig"><code>[$live:read]  -> element</code>  —  A point-in-time read of a materialization: the fold value carrying its head-set coordinate.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store']
+    </pre>
+    <pre class="sample-output">
+      <code>[advanced applied=1 recomputed=false [head-set [s source=orders pos=1]]]</code>
+    </pre>
+  </div>
+</section><section id="fn-live-read" class="fn">
+  <h3>live:read</h3>
+  <p class="fn-sig"><code>[$live:read]  -> element</code>  —  A point-in-time read of a materialization: the fold value carrying its head-set coordinate.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store']
 [?lib 'cx-stdlib/live']
 [?let [= $s [$store:open "mem://live-read-src"]]
 [= $cs [$store:open "mem://live-read-ckpt"]]
 [= $h1 [$store:put-doc $s [order id=1]]]
 [= $m [$live:materialize $cs [?quote [?for [in $o [$store:source $orders "//order"]] [yield $o]]] {orders: $s} "orders"]]
   [$live:read $m]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[snapshot [head-set [s source=orders pos=1]] [order id=1]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-live-lower" class="fn">
-    <h3>live:lower</h3>
-    <p class="fn-sig"><code>[$live:lower]  -> element</code>  —  The three-way ingest lowering ladder: JSON text becomes a wrapped [json …] value, CX-parseable text becomes its first element verbatim, anything else becomes the lossless [foreign …] wrapper — never a drop.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/live']
+    </pre>
+    <pre class="sample-output">
+      <code>[snapshot [head-set [s source=orders pos=1]] [order id=1]]</code>
+    </pre>
+  </div>
+</section><section id="fn-live-lower" class="fn">
+  <h3>live:lower</h3>
+  <p class="fn-sig"><code>[$live:lower]  -> element</code>  —  The three-way ingest lowering ladder: JSON text becomes a wrapped [json …] value, CX-parseable text becomes its first element verbatim, anything else becomes the lossless [foreign …] wrapper — never a drop.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/live']
 ([$live:lower "{\"sku\": \"A-1\", \"qty\": 2}"], [$live:lower "[order id=1]"], [$live:lower "plain text, not a record"])</code>
-        </pre>
-        <pre class="sample-output">
-          <code>([json {sku: A-1, qty: 2}], [order id=1], [foreign 'plain text, not a record'])</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-live-adapt-poll" class="fn">
-    <h3>live:adapt-poll</h3>
-    <p class="fn-sig"><code>[$live:adapt-poll]  -> element</code>  —  The :snapshot-diff floor adapter: owns a declared journal stream and, on every ingest tick, appends the source store's exact delta window as one atomic [ingested from= at= FRAME…] entry — the entry itself carries the resume token.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store']
+    </pre>
+    <pre class="sample-output">
+      <code>([json {sku: A-1, qty: 2}], [order id=1], [foreign 'plain text, not a record'])</code>
+    </pre>
+  </div>
+</section><section id="fn-live-adapt-poll" class="fn">
+  <h3>live:adapt-poll</h3>
+  <p class="fn-sig"><code>[$live:adapt-poll]  -> element</code>  —  The :snapshot-diff floor adapter: owns a declared journal stream and, on every ingest tick, appends the source store's exact delta window as one atomic [ingested from= at= FRAME…] entry — the entry itself carries the resume token.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store']
 [?lib 'cx-stdlib/live']
 [?let [= $db [$store:open "mem://live-poll-doc"]]
 [= $a [$live:adapt-poll "mem://live-poll-doc-j" "acme" "orders" $db [?quote [?for [in $r [$store:source $db2 "//order"]] [yield $r]]] "poll-1"]]
 [= $h1 [$store:put-doc $db [order id=1]]]
   [$live:ingest $a]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[ingested from=0 at=1 n=1]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-live-adapt-watch" class="fn">
-    <h3>live:adapt-watch</h3>
-    <p class="fn-sig"><code>[$live:adapt-watch]  -> element</code>  —  The :coalesced-rescan floor adapter: fs watch events between ticks; overflow — or the first tick — rescans the directory; files lower through the three-way ladder into the declared stream.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>[ingested from=0 at=1 n=1]</code>
+    </pre>
+  </div>
+</section><section id="fn-live-adapt-watch" class="fn">
+  <h3>live:adapt-watch</h3>
+  <p class="fn-sig"><code>[$live:adapt-watch]  -> element</code>  —  The :coalesced-rescan floor adapter: fs watch events between ticks; overflow — or the first tick — rescans the directory; files lower through the three-way ladder into the declared stream.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [?lib 'cx-stdlib/live']
 [?let [= $a [$live:adapt-watch "mem://live-watch-doc" "acme" "files" "/tmp/live-watch-doc-dir" "watch-1"]]
 [= $w1 [$io:write-file "/tmp/live-watch-doc-dir/a.json" "{\"sku\": \"A-1\"}"]]
   [$live:ingest $a]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[ingested rescan=true n=1]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-live-ingest" class="fn">
-    <h3>live:ingest</h3>
-    <p class="fn-sig"><code>[$live:ingest]  -> element</code>  —  The explicit adapter tick (sched cadence is the deployment driver): pull the adapter's pending window and append it to the declared stream; answers the tick summary.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/store']
+    </pre>
+    <pre class="sample-output">
+      <code>[ingested rescan=true n=1]</code>
+    </pre>
+  </div>
+</section><section id="fn-live-ingest" class="fn">
+  <h3>live:ingest</h3>
+  <p class="fn-sig"><code>[$live:ingest]  -> element</code>  —  The explicit adapter tick (sched cadence is the deployment driver): pull the adapter's pending window and append it to the declared stream; answers the tick summary.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/store']
 [?lib 'cx-stdlib/live']
 [?let [= $db [$store:open "mem://live-ingest-doc"]]
 [= $a [$live:adapt-poll "mem://live-ingest-doc-j" "acme" "orders" $db [?quote [?for [in $r [$store:source $db2 "//order"]] [yield $r]]] "poll-1"]]
 [= $h1 [$store:put-doc $db [order id=1]]]
 [= $t1 [$live:ingest $a]]
   [$live:ingest $a]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[ingested from=1 at=1 n=0]</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>[ingested from=1 at=1 n=0]</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>live</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

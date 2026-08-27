@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,201 +143,177 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Choosing a ring</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="choosing">
   <h1>Choosing a ring</h1>
-  
-    <section id="choose-task">
-      <h2>Start from what you want to do</h2>
-      
-        <p>Take the smallest ring that answers your question — you can
+  <section id="choose-task">
+    <h2>Start from what you want to do</h2>
+    <p>Take the smallest ring that answers your question — you can
          always move outward later, and nothing you wrote against a
          lower ring changes when you do, because the lower ring is
          unchanged by the higher one (see <a class="xref" href="rings.html">rings</a> for why that holds
          structurally).</p>
-        <table>
-          <thead>
-            
-              <tr>
-                <th>If you want to…</th>
-                <th>You need</th>
-              </tr>
-            
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>read, write, or convert CX documents</td>
-                <td>Ring 0</td>
-              </tr>
-              <tr>
-                <td>give data a stable identity, or diff two versions</td>
-                <td>Ring 0</td>
-              </tr>
-              <tr>
-                <td>validate against a schema</td>
-                <td>Ring 0</td>
-              </tr>
-              <tr>
-                <td>embed CX somewhere that must not run code</td>
-                <td>Ring 0</td>
-              </tr>
-              <tr>
-                <td>query, transform, or generate with programs</td>
-                <td>Ring 1</td>
-              </tr>
-              <tr>
-                <td>run a program with controlled access to files or the network</td>
-                <td>Ring 1</td>
-              </tr>
-              <tr>
-                <td>store data, keep history, or serve it</td>
-                <td>Ring 2</td>
-              </tr>
-              <tr>
-                <td>host an XAP feature</td>
-                <td>Ring 2</td>
-              </tr>
-              <tr>
-                <td>publish, discover, or install a feature</td>
-                <td>Ring 3</td>
-              </tr>
-              <tr>
-                <td>call CX from Go, Python, Rust, or V</td>
-                <td>Ring 3</td>
-              </tr>
-            
-          </tbody>
-        </table>
-        <p>If the table already answered you, jump to that ring's group in
+    <table>
+      <thead>
+        <tr>
+          <th>If you want to…</th>
+          <th>You need</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>read, write, or convert CX documents</td>
+          <td>Ring 0</td>
+        </tr>
+        <tr>
+          <td>give data a stable identity, or diff two versions</td>
+          <td>Ring 0</td>
+        </tr>
+        <tr>
+          <td>validate against a schema</td>
+          <td>Ring 0</td>
+        </tr>
+        <tr>
+          <td>embed CX somewhere that must not run code</td>
+          <td>Ring 0</td>
+        </tr>
+        <tr>
+          <td>query, transform, or generate with programs</td>
+          <td>Ring 1</td>
+        </tr>
+        <tr>
+          <td>run a program with controlled access to files or the network</td>
+          <td>Ring 1</td>
+        </tr>
+        <tr>
+          <td>store data, keep history, or serve it</td>
+          <td>Ring 2</td>
+        </tr>
+        <tr>
+          <td>host an XAP feature</td>
+          <td>Ring 2</td>
+        </tr>
+        <tr>
+          <td>publish, discover, or install a feature</td>
+          <td>Ring 3</td>
+        </tr>
+        <tr>
+          <td>call CX from Go, Python, Rust, or V</td>
+          <td>Ring 3</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>If the table already answered you, jump to that ring's group in
          the sidebar — each ring's pages open with what the ring is and
          end with the packs it gives you. If you recognize yourself in
          one of the four readers below, follow the path — each is
          ordered, each stop earns the next, and each ends in something
          you can do.</p>
-      
-    </section>
-    <section id="choose-evaluator">
-      <h2>The first-time evaluator</h2>
-      
-        <p><i>\"What is this, and is it for me?\"</i> — answerable without
+  </section>
+  <section id="choose-evaluator">
+    <h2>The first-time evaluator</h2>
+    <p><i>\"What is this, and is it for me?\"</i> — answerable without
          meeting a single directive:</p>
-        <ul>
-          
-            <li><a class="xref" href="intro.html">intro</a> — what CX is and what problem it refuses to
+    <ul>
+      <li><a class="xref" href="intro.html">intro</a> — what CX is and what problem it refuses to
               have.</li>
-            <li><a class="xref" href="rings.html">rings</a> — the shape of the system: four rings, one
+      <li><a class="xref" href="rings.html">rings</a> — the shape of the system: four rings, one
               import direction.</li>
-            <li><a class="xref" href="quickstart.html">quickstart</a> — the first five minutes; it runs inside
+      <li><a class="xref" href="quickstart.html">quickstart</a> — the first five minutes; it runs inside
               Ring 0 before it shows you anything that executes.</li>
-            <li><a class="xref" href="comparison.html">comparison</a> — CX against JSON, YAML, XML, Protocol
+      <li><a class="xref" href="comparison.html">comparison</a> — CX against JSON, YAML, XML, Protocol
               Buffers, and friends, in both directions.</li>
-          
-        </ul>
-        <p>You are done when you can say what CX would replace in your
+    </ul>
+    <p>You are done when you can say what CX would replace in your
          stack and which ring that replacement lives in. If the answer
          is \"nothing\", the comparison page will have told you that
          honestly.</p>
-      
-    </section>
-    <section id="choose-data-adopter">
-      <h2>The data-format adopter</h2>
-      
-        <p>You want the format — parse, validate, convert, hash, diff —
+  </section>
+  <section id="choose-data-adopter">
+    <h2>The data-format adopter</h2>
+    <p>You want the format — parse, validate, convert, hash, diff —
          and you never intend to run a program. Ring 0 is a complete
          product for you, and this path never asks you to understand
          the evaluator:</p>
-        <ul>
-          
-            <li><a class="xref" href="data-language.html">data</a> — the data language end to end: elements,
+    <ul>
+      <li><a class="xref" href="data-language.html">data</a> — the data language end to end: elements,
               scalars, collections, anchors.</li>
-            <li><a class="xref" href="value-model.html">value-model</a> — one value, one address: what identity
+      <li><a class="xref" href="value-model.html">value-model</a> — one value, one address: what identity
               buys you and what rides in the three lanes.</li>
-            <li><a class="xref" href="surfaces.html">surfaces</a> — projections to and from JSON, XML, YAML,
+      <li><a class="xref" href="surfaces.html">surfaces</a> — projections to and from JSON, XML, YAML,
               TOML, Markdown, and the binary forms.</li>
-            <li><a class="xref" href="identity.html">identity</a> — canonical form and hashing, the mechanics
+      <li><a class="xref" href="identity.html">identity</a> — canonical form and hashing, the mechanics
               under the promises.</li>
-            <li><a class="xref" href="schema.html">schema-evolution</a> — validation, computable
+      <li><a class="xref" href="schema.html">schema-evolution</a> — validation, computable
               compatibility, and what happens when schemas change.</li>
-            <li><a class="xref" href="tour-data.html">tour-data</a> — fifty worked data recipes; <a class="xref" href="analytics.html">analytics</a>
+      <li><a class="xref" href="tour-data.html">tour-data</a> — fifty worked data recipes; <a class="xref" href="analytics.html">analytics</a>
               for the columnar and bridge story.</li>
-          
-        </ul>
-        <p>You are done when <code>cx fmt</code>, <code>cx validate</code>, <code>cx hash</code>, and
+    </ul>
+    <p>You are done when <code>cx fmt</code>, <code>cx validate</code>, <code>cx hash</code>, and
          <code>cx diff</code> are in your build, and the Ring-0 pack index (on the
          ring's pages) tells you exactly which library surface you may
          lean on — and that <code>http</code> is not in it.</p>
-      
-    </section>
-    <section id="choose-app-author">
-      <h2>The application author</h2>
-      
-        <p>You want to build something that runs — programs first, then a
+  </section>
+  <section id="choose-app-author">
+    <h2>The application author</h2>
+    <p>You want to build something that runs — programs first, then a
          feature on the platform:</p>
-        <ul>
-          
-            <li><a class="xref" href="quickstart.html">quickstart</a> — the Ring-1 half: your first programs.</li>
-            <li><a class="xref" href="code.html">code</a> — the code language: directives, CXPath,
+    <ul>
+      <li><a class="xref" href="quickstart.html">quickstart</a> — the Ring-1 half: your first programs.</li>
+      <li><a class="xref" href="code.html">code</a> — the code language: directives, CXPath,
               patterns, errors as values.</li>
-            <li><a class="xref" href="capabilities.html">capabilities</a> — deny-by-default and the grant flags;
+      <li><a class="xref" href="capabilities.html">capabilities</a> — deny-by-default and the grant flags;
               read this before your first <code>--allow-*</code>.</li>
-            <li><a class="xref" href="computation-identity.html">computation-identity</a> and <a class="xref" href="commands-effects.html">commands-effects</a> — what
+      <li><a class="xref" href="computation-identity.html">computation-identity</a> and <a class="xref" href="commands-effects.html">commands-effects</a> — what
               makes results cacheable and effects auditable.</li>
-            <li><a class="xref" href="tour-programs.html">tour-programs</a> — fifty worked program recipes.</li>
-            <li><a class="xref" href="store.html">store</a> and <a class="xref" href="xap-distribution.html">xap-distribution</a> — when your program
+      <li><a class="xref" href="tour-programs.html">tour-programs</a> — fifty worked program recipes.</li>
+      <li><a class="xref" href="store.html">store</a> and <a class="xref" href="xap-distribution.html">xap-distribution</a> — when your program
               becomes a feature others install: authoring, hosting, and
               distribution.</li>
-          
-        </ul>
-        <p>The end-to-end worked story is the ORIEL reference surface — a
+    </ul>
+    <p>The end-to-end worked story is the ORIEL reference surface — a
          storefront with departments, baskets, checkout, and three
          renderers, built entirely from declarations. Its developer
          guide is <code>docs/dev/oriel-guide.md</code> (\"build a surface the ORIEL
          way\"), and the task-oriented developer set under <code>docs/dev/</code>
          walks authoring, consuming, and distributing features.</p>
-      
-    </section>
-    <section id="choose-operator">
-      <h2>The platform operator</h2>
-      
-        <p>You run the thing: stores, journals, services, upgrades.</p>
-        <ul>
-          
-            <li><a class="xref" href="store.html">store</a> — the store platform: content addressing,
+  </section>
+  <section id="choose-operator">
+    <h2>The platform operator</h2>
+    <p>You run the thing: stores, journals, services, upgrades.</p>
+    <ul>
+      <li><a class="xref" href="store.html">store</a> — the store platform: content addressing,
               refs, journals, folds.</li>
-            <li><a class="xref" href="time.html">bitemporal</a>, <a class="xref" href="consistency.html">consistency</a>, <a class="xref" href="event-evolution.html">event-evolution</a> —
+      <li><a class="xref" href="time.html">bitemporal</a>, <a class="xref" href="consistency.html">consistency</a>, <a class="xref" href="event-evolution.html">event-evolution</a> —
               the three contracts you operate under: two time axes,
               declared guarantees, and reading old events under new
               vocabulary.</li>
-            <li><a class="xref" href="operations.html">operations</a> — daemons, health, recovery, security
+      <li><a class="xref" href="operations.html">operations</a> — daemons, health, recovery, security
               posture; the operator reading order continues in
               <code>docs/dev/</code> (store service, management, security).</li>
-            <li><a class="xref" href="xap-distribution.html">xap-distribution</a> — the distribution machinery your
+      <li><a class="xref" href="xap-distribution.html">xap-distribution</a> — the distribution machinery your
               developers will ask you to operate.</li>
-          
-        </ul>
-        <p>You are done when you can answer, without opening a runbook:
+    </ul>
+    <p>You are done when you can answer, without opening a runbook:
          where is history kept (one journal, append-only), what does a
          correction do to an invoice already sent (nothing —
          <a class="xref" href="time.html">bitemporal</a>), and what happens when a consumer asks for a
          guarantee a replica cannot give (a loud refusal naming the
          token — <a class="xref" href="consistency.html">consistency</a>).</p>
-      
-    </section>
-  
+  </section>
 </section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>Choosing a ring</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

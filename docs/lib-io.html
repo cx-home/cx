@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,835 +143,677 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">io</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-io"><h1>io</h1><p class="lede">File and stream I/O — whole-file reads and writes, streaming handles, line iteration, filesystem queries, directory operations, globbing, tempfiles, and advisory file locking. Whole-file operations materialize content in memory; streaming handles and lazy iterators process arbitrary-size inputs with bounded memory. Path arguments resolve via cx-stdlib/path. Every function is impure and capability-gated: read or write access is checked at the effect point and denied by default.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-io-read-file" class="fn">
-    <h3>io:read-file</h3>
-    <p class="fn-sig"><code>[$io:read-file]  -> string</code>  —  Read an entire file as a UTF-8 string; raises on invalid UTF-8.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-io-read-file" class="fn">
+  <h3>io:read-file</h3>
+  <p class="fn-sig"><code>[$io:read-file]  -> string</code>  —  Read an entire file as a UTF-8 string; raises on invalid UTF-8.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:read-file "/var/log/app.log"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-read-file-bytes" class="fn">
-    <h3>io:read-file-bytes</h3>
-    <p class="fn-sig"><code>[$io:read-file-bytes]  -> bytes</code>  —  Read an entire file as raw bytes, with no encoding check.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-read-file-bytes" class="fn">
+  <h3>io:read-file-bytes</h3>
+  <p class="fn-sig"><code>[$io:read-file-bytes]  -> bytes</code>  —  Read an entire file as raw bytes, with no encoding check.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:read-file-bytes "/var/log/app.log"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-read-file-lines" class="fn">
-    <h3>io:read-file-lines</h3>
-    <p class="fn-sig"><code>[$io:read-file-lines]  -> [sequence string]</code>  —  Read an entire file as a sequence of lines.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-read-file-lines" class="fn">
+  <h3>io:read-file-lines</h3>
+  <p class="fn-sig"><code>[$io:read-file-lines]  -> [sequence string]</code>  —  Read an entire file as a sequence of lines.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:read-file-lines "/var/log/app.log"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-write-file" class="fn">
-    <h3>io:write-file</h3>
-    <p class="fn-sig"><code>[$io:write-file]  -> null</code>  —  Create or truncate a file and write a string; atomic via tempfile rename on POSIX.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-write-file" class="fn">
+  <h3>io:write-file</h3>
+  <p class="fn-sig"><code>[$io:write-file]  -> null</code>  —  Create or truncate a file and write a string; atomic via tempfile rename on POSIX.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:write-file "/tmp/out.txt" "hello"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-edit-file" class="fn">
-    <h3>io:edit-file</h3>
-    <p class="fn-sig"><code>[$io:edit-file]  -> null</code>  —  Surgical in-place file edit: read, replace <code>from</code> with <code>to</code> (it MUST occur exactly once, else [err cx-err:CXER2903] and no write), and write back. The in-CX equivalent of the harness Edit tool — needs both read and write capabilities.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-edit-file" class="fn">
+  <h3>io:edit-file</h3>
+  <p class="fn-sig"><code>[$io:edit-file]  -> null</code>  —  Surgical in-place file edit: read, replace <code>from</code> with <code>to</code> (it MUST occur exactly once, else [err cx-err:CXER2903] and no write), and write back. The in-CX equivalent of the harness Edit tool — needs both read and write capabilities.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:edit-file "/tmp/out.txt" "old" "new"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-write-file-bytes" class="fn">
-    <h3>io:write-file-bytes</h3>
-    <p class="fn-sig"><code>[$io:write-file-bytes]  -> null</code>  —  Create or truncate a file and write raw bytes.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/bytes']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-write-file-bytes" class="fn">
+  <h3>io:write-file-bytes</h3>
+  <p class="fn-sig"><code>[$io:write-file-bytes]  -> null</code>  —  Create or truncate a file and write raw bytes.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [?lib 'cx-stdlib/io']
 [$io:write-file-bytes "/tmp/out.bin" [$bytes:from-string-utf8 "hi"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-write-file-lines" class="fn">
-    <h3>io:write-file-lines</h3>
-    <p class="fn-sig"><code>[$io:write-file-lines]  -> null</code>  —  Create or truncate a file and write a sequence of lines.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-write-file-lines" class="fn">
+  <h3>io:write-file-lines</h3>
+  <p class="fn-sig"><code>[$io:write-file-lines]  -> null</code>  —  Create or truncate a file and write a sequence of lines.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:write-file-lines "/tmp/out.txt" ("a", "b", "c")]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-append-file" class="fn">
-    <h3>io:append-file</h3>
-    <p class="fn-sig"><code>[$io:append-file]  -> null</code>  —  Append a string to a file, creating it if absent.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-append-file" class="fn">
+  <h3>io:append-file</h3>
+  <p class="fn-sig"><code>[$io:append-file]  -> null</code>  —  Append a string to a file, creating it if absent.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:append-file "/tmp/out.txt" "more"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-append-file-bytes" class="fn">
-    <h3>io:append-file-bytes</h3>
-    <p class="fn-sig"><code>[$io:append-file-bytes]  -> null</code>  —  Append raw bytes to a file, creating it if absent.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/bytes']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-append-file-bytes" class="fn">
+  <h3>io:append-file-bytes</h3>
+  <p class="fn-sig"><code>[$io:append-file-bytes]  -> null</code>  —  Append raw bytes to a file, creating it if absent.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/bytes']
 [?lib 'cx-stdlib/io']
 [$io:append-file-bytes "/tmp/out.bin" [$bytes:from-string-utf8 "more"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-open" class="fn">
-    <h3>io:open</h3>
-    <p class="fn-sig"><code>[$io:open]  -> element</code>  —  Open a file in the given mode and return a stream handle.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-open" class="fn">
+  <h3>io:open</h3>
+  <p class="fn-sig"><code>[$io:open]  -> element</code>  —  Open a file in the given mode and return a stream handle.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:open "/var/log/app.log" "r"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-open-with-opts" class="fn">
-    <h3>io:open-with-opts</h3>
-    <p class="fn-sig"><code>[$io:open-with-opts]  -> element</code>  —  Open a file with an options map (mode, encoding, buffer size, line terminator, atomic) and return a stream handle.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-open-with-opts" class="fn">
+  <h3>io:open-with-opts</h3>
+  <p class="fn-sig"><code>[$io:open-with-opts]  -> element</code>  —  Open a file with an options map (mode, encoding, buffer size, line terminator, atomic) and return a stream handle.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:open-with-opts "/tmp/out.txt" [map mode="w" atomic=true]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-close" class="fn">
-    <h3>io:close</h3>
-    <p class="fn-sig"><code>[$io:close]  -> null</code>  —  Close a file handle; idempotent, so closing twice is safe.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-close" class="fn">
+  <h3>io:close</h3>
+  <p class="fn-sig"><code>[$io:close]  -> null</code>  —  Close a file handle; idempotent, so closing twice is safe.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:close [$io:open "/var/log/app.log" "r"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[granted-harness: open a real handle then close releases it]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-read-bytes" class="fn">
-    <h3>io:read-bytes</h3>
-    <p class="fn-sig"><code>[$io:read-bytes]  -> bytes</code>  —  Read up to n bytes from a stream handle.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>[granted-harness: open a real handle then close releases it]</code>
+    </pre>
+  </div>
+</section><section id="fn-io-read-bytes" class="fn">
+  <h3>io:read-bytes</h3>
+  <p class="fn-sig"><code>[$io:read-bytes]  -> bytes</code>  —  Read up to n bytes from a stream handle.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:read-bytes [$io:open "/var/log/app.log" "r"] 16]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-read-line" class="fn">
-    <h3>io:read-line</h3>
-    <p class="fn-sig"><code>[$io:read-line]  -> string</code>  —  Read one line from a stream handle, up to the line terminator; returns empty at EOF.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-read-line" class="fn">
+  <h3>io:read-line</h3>
+  <p class="fn-sig"><code>[$io:read-line]  -> string</code>  —  Read one line from a stream handle, up to the line terminator; returns empty at EOF.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:read-line [$io:open "/var/log/app.log" "r"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-read-all" class="fn">
-    <h3>io:read-all</h3>
-    <p class="fn-sig"><code>[$io:read-all]  -> string</code>  —  Read the remaining stream content as a string.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-read-all" class="fn">
+  <h3>io:read-all</h3>
+  <p class="fn-sig"><code>[$io:read-all]  -> string</code>  —  Read the remaining stream content as a string.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:read-all [$io:open "/var/log/app.log" "r"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-read-all-bytes" class="fn">
-    <h3>io:read-all-bytes</h3>
-    <p class="fn-sig"><code>[$io:read-all-bytes]  -> bytes</code>  —  Read the remaining stream content as raw bytes.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-read-all-bytes" class="fn">
+  <h3>io:read-all-bytes</h3>
+  <p class="fn-sig"><code>[$io:read-all-bytes]  -> bytes</code>  —  Read the remaining stream content as raw bytes.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:read-all-bytes [$io:open "/var/log/app.log" "r"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-write-bytes" class="fn">
-    <h3>io:write-bytes</h3>
-    <p class="fn-sig"><code>[$io:write-bytes]  -> null</code>  —  Write raw bytes to a stream handle.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-write-bytes" class="fn">
+  <h3>io:write-bytes</h3>
+  <p class="fn-sig"><code>[$io:write-bytes]  -> null</code>  —  Write raw bytes to a stream handle.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:write-bytes [$io:open "/tmp/out.bin" "w"] [$bytes:from-string "hi"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-write-string" class="fn">
-    <h3>io:write-string</h3>
-    <p class="fn-sig"><code>[$io:write-string]  -> null</code>  —  Write a string to a stream handle.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-write-string" class="fn">
+  <h3>io:write-string</h3>
+  <p class="fn-sig"><code>[$io:write-string]  -> null</code>  —  Write a string to a stream handle.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:write-string [$io:open "/tmp/out.txt" "w"] "hi"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-write-line" class="fn">
-    <h3>io:write-line</h3>
-    <p class="fn-sig"><code>[$io:write-line]  -> null</code>  —  Write a string followed by a line terminator to a stream handle.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-write-line" class="fn">
+  <h3>io:write-line</h3>
+  <p class="fn-sig"><code>[$io:write-line]  -> null</code>  —  Write a string followed by a line terminator to a stream handle.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:write-line [$io:open "/tmp/out.txt" "w"] "hi"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-flush" class="fn">
-    <h3>io:flush</h3>
-    <p class="fn-sig"><code>[$io:flush]  -> null</code>  —  Flush buffered writes on a stream handle to the underlying file.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-flush" class="fn">
+  <h3>io:flush</h3>
+  <p class="fn-sig"><code>[$io:flush]  -> null</code>  —  Flush buffered writes on a stream handle to the underlying file.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:flush [$io:open "/tmp/out.txt" "w"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-seek" class="fn">
-    <h3>io:seek</h3>
-    <p class="fn-sig"><code>[$io:seek]  -> null</code>  —  Move the stream position to an offset relative to start, current, or end.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-seek" class="fn">
+  <h3>io:seek</h3>
+  <p class="fn-sig"><code>[$io:seek]  -> null</code>  —  Move the stream position to an offset relative to start, current, or end.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:seek [$io:open "/var/log/app.log" "r"] 0 :start]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-tell" class="fn">
-    <h3>io:tell</h3>
-    <p class="fn-sig"><code>[$io:tell]  -> int</code>  —  Report the current byte offset of a stream handle.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-tell" class="fn">
+  <h3>io:tell</h3>
+  <p class="fn-sig"><code>[$io:tell]  -> int</code>  —  Report the current byte offset of a stream handle.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:tell [$io:open "/var/log/app.log" "r"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-is-eof" class="fn">
-    <h3>io:is-eof</h3>
-    <p class="fn-sig"><code>[$io:is-eof]  -> bool</code>  —  Report whether a stream handle has reached end of file.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-is-eof" class="fn">
+  <h3>io:is-eof</h3>
+  <p class="fn-sig"><code>[$io:is-eof]  -> bool</code>  —  Report whether a stream handle has reached end of file.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:is-eof [$io:open "/var/log/app.log" "r"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-line-iter" class="fn">
-    <h3>io:line-iter</h3>
-    <p class="fn-sig"><code>[$io:line-iter]  -> [iterator string]</code>  —  Return a lazy, memory-bounded iterator over a handle's lines; closes the handle on exhaustion.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-line-iter" class="fn">
+  <h3>io:line-iter</h3>
+  <p class="fn-sig"><code>[$io:line-iter]  -> [iterator string]</code>  —  Return a lazy, memory-bounded iterator over a handle's lines; closes the handle on exhaustion.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:line-iter [$io:open "/var/log/app.log" "r"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-exists" class="fn">
-    <h3>io:exists</h3>
-    <p class="fn-sig"><code>[$io:exists]  -> bool</code>  —  Report whether a path exists.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-exists" class="fn">
+  <h3>io:exists</h3>
+  <p class="fn-sig"><code>[$io:exists]  -> bool</code>  —  Report whether a path exists.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:exists "/var/log/app.log"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-is-file" class="fn">
-    <h3>io:is-file</h3>
-    <p class="fn-sig"><code>[$io:is-file]  -> bool</code>  —  Report whether a path is a regular file.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-is-file" class="fn">
+  <h3>io:is-file</h3>
+  <p class="fn-sig"><code>[$io:is-file]  -> bool</code>  —  Report whether a path is a regular file.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:is-file "/var/log/app.log"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-is-directory" class="fn">
-    <h3>io:is-directory</h3>
-    <p class="fn-sig"><code>[$io:is-directory]  -> bool</code>  —  Report whether a path is a directory.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-is-directory" class="fn">
+  <h3>io:is-directory</h3>
+  <p class="fn-sig"><code>[$io:is-directory]  -> bool</code>  —  Report whether a path is a directory.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:is-directory "/var/log"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-is-symlink" class="fn">
-    <h3>io:is-symlink</h3>
-    <p class="fn-sig"><code>[$io:is-symlink]  -> bool</code>  —  Report whether a path is a symbolic link, without following it.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-is-symlink" class="fn">
+  <h3>io:is-symlink</h3>
+  <p class="fn-sig"><code>[$io:is-symlink]  -> bool</code>  —  Report whether a path is a symbolic link, without following it.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:is-symlink "/var/log/app.log"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-stat" class="fn">
-    <h3>io:stat</h3>
-    <p class="fn-sig"><code>[$io:stat]  -> element</code>  —  Return a structured element of a path's size, type, timestamps, permissions, and ownership.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-stat" class="fn">
+  <h3>io:stat</h3>
+  <p class="fn-sig"><code>[$io:stat]  -> element</code>  —  Return a structured element of a path's size, type, timestamps, permissions, and ownership.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:stat "/var/log/app.log"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-size" class="fn">
-    <h3>io:size</h3>
-    <p class="fn-sig"><code>[$io:size]  -> int</code>  —  Return a file's size in bytes.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-size" class="fn">
+  <h3>io:size</h3>
+  <p class="fn-sig"><code>[$io:size]  -> int</code>  —  Return a file's size in bytes.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:size "/var/log/app.log"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-modified-time" class="fn">
-    <h3>io:modified-time</h3>
-    <p class="fn-sig"><code>[$io:modified-time]  -> datetime</code>  —  Return a path's last-modified timestamp.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-modified-time" class="fn">
+  <h3>io:modified-time</h3>
+  <p class="fn-sig"><code>[$io:modified-time]  -> datetime</code>  —  Return a path's last-modified timestamp.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:modified-time "/var/log/app.log"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-created-time" class="fn">
-    <h3>io:created-time</h3>
-    <p class="fn-sig"><code>[$io:created-time]  -> datetime</code>  —  Return a path's creation timestamp.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-created-time" class="fn">
+  <h3>io:created-time</h3>
+  <p class="fn-sig"><code>[$io:created-time]  -> datetime</code>  —  Return a path's creation timestamp.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:created-time "/var/log/app.log"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-list-dir" class="fn">
-    <h3>io:list-dir</h3>
-    <p class="fn-sig"><code>[$io:list-dir]  -> [sequence string]</code>  —  List the entries of a directory.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-list-dir" class="fn">
+  <h3>io:list-dir</h3>
+  <p class="fn-sig"><code>[$io:list-dir]  -> [sequence string]</code>  —  List the entries of a directory.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:list-dir "/var/log"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-make-dir" class="fn">
-    <h3>io:make-dir</h3>
-    <p class="fn-sig"><code>[$io:make-dir]  -> null</code>  —  Create a single directory.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-make-dir" class="fn">
+  <h3>io:make-dir</h3>
+  <p class="fn-sig"><code>[$io:make-dir]  -> null</code>  —  Create a single directory.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:make-dir "/tmp/newdir"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-make-dirs" class="fn">
-    <h3>io:make-dirs</h3>
-    <p class="fn-sig"><code>[$io:make-dirs]  -> null</code>  —  Create a directory and any missing intermediate directories.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-make-dirs" class="fn">
+  <h3>io:make-dirs</h3>
+  <p class="fn-sig"><code>[$io:make-dirs]  -> null</code>  —  Create a directory and any missing intermediate directories.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:make-dirs "/tmp/a/b/c"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-remove" class="fn">
-    <h3>io:remove</h3>
-    <p class="fn-sig"><code>[$io:remove]  -> null</code>  —  Remove a single file.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-remove" class="fn">
+  <h3>io:remove</h3>
+  <p class="fn-sig"><code>[$io:remove]  -> null</code>  —  Remove a single file.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:remove "/tmp/out.txt"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-remove-dir" class="fn">
-    <h3>io:remove-dir</h3>
-    <p class="fn-sig"><code>[$io:remove-dir]  -> null</code>  —  Remove an empty directory.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-remove-dir" class="fn">
+  <h3>io:remove-dir</h3>
+  <p class="fn-sig"><code>[$io:remove-dir]  -> null</code>  —  Remove an empty directory.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:remove-dir "/tmp/newdir"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-remove-tree" class="fn">
-    <h3>io:remove-tree</h3>
-    <p class="fn-sig"><code>[$io:remove-tree]  -> null</code>  —  Recursively delete a directory tree without following symlinks; refuses to delete a filesystem root.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-remove-tree" class="fn">
+  <h3>io:remove-tree</h3>
+  <p class="fn-sig"><code>[$io:remove-tree]  -> null</code>  —  Recursively delete a directory tree without following symlinks; refuses to delete a filesystem root.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:remove-tree "/tmp/a"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-rename" class="fn">
-    <h3>io:rename</h3>
-    <p class="fn-sig"><code>[$io:rename]  -> null</code>  —  Rename or move a path from one location to another.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-rename" class="fn">
+  <h3>io:rename</h3>
+  <p class="fn-sig"><code>[$io:rename]  -> null</code>  —  Rename or move a path from one location to another.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:rename "/tmp/a.txt" "/tmp/b.txt"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-copy" class="fn">
-    <h3>io:copy</h3>
-    <p class="fn-sig"><code>[$io:copy]  -> null</code>  —  Copy a single file to a destination path.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-copy" class="fn">
+  <h3>io:copy</h3>
+  <p class="fn-sig"><code>[$io:copy]  -> null</code>  —  Copy a single file to a destination path.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:copy "/tmp/a.txt" "/tmp/b.txt"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-copy-tree" class="fn">
-    <h3>io:copy-tree</h3>
-    <p class="fn-sig"><code>[$io:copy-tree]  -> null</code>  —  Recursively copy a directory tree to a destination path.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-copy-tree" class="fn">
+  <h3>io:copy-tree</h3>
+  <p class="fn-sig"><code>[$io:copy-tree]  -> null</code>  —  Recursively copy a directory tree to a destination path.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:copy-tree "/tmp/a" "/tmp/b"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-symlink" class="fn">
-    <h3>io:symlink</h3>
-    <p class="fn-sig"><code>[$io:symlink]  -> null</code>  —  Create a symbolic link pointing at a target.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-symlink" class="fn">
+  <h3>io:symlink</h3>
+  <p class="fn-sig"><code>[$io:symlink]  -> null</code>  —  Create a symbolic link pointing at a target.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:symlink "/tmp/target" "/tmp/link"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-readlink" class="fn">
-    <h3>io:readlink</h3>
-    <p class="fn-sig"><code>[$io:readlink]  -> string</code>  —  Return the target a symbolic link points to.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-readlink" class="fn">
+  <h3>io:readlink</h3>
+  <p class="fn-sig"><code>[$io:readlink]  -> string</code>  —  Return the target a symbolic link points to.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:readlink "/tmp/link"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-glob" class="fn">
-    <h3>io:glob</h3>
-    <p class="fn-sig"><code>[$io:glob]  -> [sequence string]</code>  —  Eagerly return all paths matching a glob pattern.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-glob" class="fn">
+  <h3>io:glob</h3>
+  <p class="fn-sig"><code>[$io:glob]  -> [sequence string]</code>  —  Eagerly return all paths matching a glob pattern.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:glob "/var/log/*.log"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-glob-iter" class="fn">
-    <h3>io:glob-iter</h3>
-    <p class="fn-sig"><code>[$io:glob-iter]  -> [iterator string]</code>  —  Lazily yield paths matching a glob pattern on demand.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-glob-iter" class="fn">
+  <h3>io:glob-iter</h3>
+  <p class="fn-sig"><code>[$io:glob-iter]  -> [iterator string]</code>  —  Lazily yield paths matching a glob pattern on demand.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:glob-iter "/var/log/*.log"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-walk" class="fn">
-    <h3>io:walk</h3>
-    <p class="fn-sig"><code>[$io:walk]  -> [iterator element]</code>  —  Lazily yield one dir-entry element per filesystem entry in recursive traversal order.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-walk" class="fn">
+  <h3>io:walk</h3>
+  <p class="fn-sig"><code>[$io:walk]  -> [iterator element]</code>  —  Lazily yield one dir-entry element per filesystem entry in recursive traversal order.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:walk "/var/log"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-temp-file" class="fn">
-    <h3>io:temp-file</h3>
-    <p class="fn-sig"><code>[$io:temp-file]  -> element</code>  —  Create a fresh open temp file handle that auto-deletes on close.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-temp-file" class="fn">
+  <h3>io:temp-file</h3>
+  <p class="fn-sig"><code>[$io:temp-file]  -> element</code>  —  Create a fresh open temp file handle that auto-deletes on close.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:temp-file "pre" ".txt"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-temp-dir" class="fn">
-    <h3>io:temp-dir</h3>
-    <p class="fn-sig"><code>[$io:temp-dir]  -> string</code>  —  Create a fresh empty temp directory and return its path; the caller cleans it up.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-temp-dir" class="fn">
+  <h3>io:temp-dir</h3>
+  <p class="fn-sig"><code>[$io:temp-dir]  -> string</code>  —  Create a fresh empty temp directory and return its path; the caller cleans it up.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:temp-dir "pre"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-system-temp-dir" class="fn">
-    <h3>io:system-temp-dir</h3>
-    <p class="fn-sig"><code>[$io:system-temp-dir]  -> string</code>  —  Return the operating system's temp directory path.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-system-temp-dir" class="fn">
+  <h3>io:system-temp-dir</h3>
+  <p class="fn-sig"><code>[$io:system-temp-dir]  -> string</code>  —  Return the operating system's temp directory path.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:system-temp-dir]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-lock" class="fn">
-    <h3>io:lock</h3>
-    <p class="fn-sig"><code>[$io:lock]  -> element</code>  —  Acquire a shared or exclusive advisory lock on a file handle.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-lock" class="fn">
+  <h3>io:lock</h3>
+  <p class="fn-sig"><code>[$io:lock]  -> element</code>  —  Acquire a shared or exclusive advisory lock on a file handle.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:lock [$io:open "/tmp/out.txt" "w"] :exclusive]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-unlock" class="fn">
-    <h3>io:unlock</h3>
-    <p class="fn-sig"><code>[$io:unlock]  -> null</code>  —  Release a lock held on a file handle.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-unlock" class="fn">
+  <h3>io:unlock</h3>
+  <p class="fn-sig"><code>[$io:unlock]  -> null</code>  —  Release a lock held on a file handle.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:unlock [$io:open "/tmp/out.txt" "w"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-watch" class="fn">
-    <h3>io:watch</h3>
-    <p class="fn-sig"><code>[$io:watch]  -> element</code>  —  Start a recursive OS filesystem watch (inotify / FSEvents) on a directory and return a watch handle. Real continuous notification, not polling.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-watch" class="fn">
+  <h3>io:watch</h3>
+  <p class="fn-sig"><code>[$io:watch]  -> element</code>  —  Start a recursive OS filesystem watch (inotify / FSEvents) on a directory and return a watch handle. Real continuous notification, not polling.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:watch "/tmp/project"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-watch-next" class="fn">
-    <h3>io:watch-next</h3>
-    <p class="fn-sig"><code>[$io:watch-next]  -> element</code>  —  Block until the next change under a watch handle and return [change path=… op=created|modified|deleted]. With an optional timeout (ms) returns absence on expiry. An [change op=overflow] means the OS dropped events under load — rescan the tree.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-watch-next" class="fn">
+  <h3>io:watch-next</h3>
+  <p class="fn-sig"><code>[$io:watch-next]  -> element</code>  —  Block until the next change under a watch handle and return [change path=… op=created|modified|deleted]. With an optional timeout (ms) returns absence on expiry. An [change op=overflow] means the OS dropped events under load — rescan the tree.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:watch-next [$io:watch "/tmp/project"] 1000]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-io-watch-close" class="fn">
-    <h3>io:watch-close</h3>
-    <p class="fn-sig"><code>[$io:watch-close]  -> null</code>  —  Tear down a watch handle and unblock any watch-next currently parked on it. Idempotent.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/io']
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section><section id="fn-io-watch-close" class="fn">
+  <h3>io:watch-close</h3>
+  <p class="fn-sig"><code>[$io:watch-close]  -> null</code>  —  Tear down a watch handle and unblock any watch-next currently parked on it. Idempotent.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/io']
 [$io:watch-close [$io:watch "/tmp/project"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>cx-err:CXER0271</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>cx-err:CXER0271</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>io</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

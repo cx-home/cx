@@ -272,10 +272,10 @@
      the adapter serves nothing; the exit CODE needs a cli.md ruling. ]
   [?if [$present $sse-box//lane-failed]
     [then [adapter-refused-to-start [?attr 'reason' 'lane-join-failed']
-            $sse-box//lane-failed $push-box//lane-failed]]
+            [?splice $sse-box//lane-failed] [?splice $push-box//lane-failed]]]
     [else [?if [$present $push-box//lane-failed]
       [then [adapter-refused-to-start [?attr 'reason' 'lane-join-failed']
-              $sse-box//lane-failed $push-box//lane-failed]]
+              [?splice $sse-box//lane-failed] [?splice $push-box//lane-failed]]]
       [else [?let
         [; serve returns immediately (block=false default; the reactor owns its
            own threads); the MAIN fiber is the fabric→egress pump — the fabric

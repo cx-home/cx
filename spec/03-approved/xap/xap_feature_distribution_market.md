@@ -545,7 +545,8 @@ The host owns everything every XAP would otherwise re-implement:
 2. **compose** — `[$xap:compose]` over the sealed spec layers (W1–W6 at load);
    the composed grammar is stored (alias `grammar`) and attached via
    `[$xap:run {grammar: …}]` — ρ + N-COMPOSE-2 exactly per the composition
-   spec's runtime integration.
+   spec's runtime integration — together with the document's **runtime
+   bindings** (§6.3.1).
 3. **govern** — translate the deployment's `[roles]` (rank-ordered) and each
    spec's `[governance]` grants, plus `[agents]` capabilities and
    autonomy-envelope allows, into runtime dials. Actor resolution is an OPTS
@@ -578,6 +579,130 @@ The host owns everything every XAP would otherwise re-implement:
 A XAP with no custom transport is therefore **zero server code**: deployment doc
 + published packages + a client. Deploying one more feature is: publish, add a
 pinned row, re-pin, restart — the host recomposes, re-gates, re-loads.
+
+#### §6.3.1. Runtime bindings — the durable plane is deployment DATA (normative; RULED: CO-9)
+
+A hosted XAP's durable plane is declared in the **deployment document**, not in
+the host's OPTS map. `[$xap:run]`'s `journal`, `sources`, `resolver` and
+`log-reduce` options (`xap.md` §3.1) each decide something about *this
+deployment* — where its history lives, what feeds it, how it surfaces, what it
+keeps — and "zero server code" above is only true if those decisions are data.
+The wiring layer is already where the composition spec puts the **deriver
+principals** (`xap_grammar_composition.md` §4.2); these are the same layer, not
+a new one.
+
+The bindings ride a `[runtime]` block, **one child per run option, each child
+named for its option key verbatim** — so the document and the opts map share one
+vocabulary, and the host **compiles** the document's data into exactly the
+values `[$xap:run]` accepts. There is **one validator**: the host turns
+attributes into map keys and never re-checks a run-option shape.
+
+```
+[runtime
+  [journal url='file:///var/acme/acts' stream=acts
+           checkpoint='file:///var/acme/ckpt' checkpoint-every=512]
+  [sources [source fabric='xsp://127.0.0.1:8447' stream=evidence
+            verb=record group=acme-xap actor='role:operator']]
+  [resolver [affinity component='orders/order-list' when='context[deadline]'
+             class=:orders.urgent rank=1]]
+  [log-reduce window=500 fn='orders:compact']]
+```
+
+- **`[journal …]`** — §3.1.1's binding map, attribute-for-attribute: `url=`
+  (**required**), `stream=` (default `acts`), `checkpoint=` /
+  `checkpoint-every=`, and — for an `xsp://` fabric — the client opts
+  (`tenant=`/`did=`/`seed=`/…) the same section calls "the map's remaining
+  keys". Without it a hosted XAP is in-process demo mode; with it the bound
+  stream **is** the runtime's journal and restart is a re-fold.
+- **`[sources [source …]]`** — §3.1.2's binding maps, one `[source]` row each
+  (the singular-inside-plural shape `[features [feature …]]` and
+  `[principals [role …]]` already use), attribute-for-attribute:
+  `fabric=`/`stream=`/`verb=`/`group=`, optional `pattern=`/`actor=`, plus the
+  fabric client opts. A `[sources]` block with no row is a **refusal**, never a
+  silent no-op.
+- **`[resolver …]`** — the two resolver kinds that *are* data (§3.1, §3.6):
+  `kind=scripted` (the default), and a rule set spelled as the `[affinity …]`
+  rows `[$xap:resolver-default]` validates. A **closure** resolver is code, not
+  deployment data, and stays on the direct `[$xap:run]` lane.
+- **`[log-reduce window= fn=]`** — §3.1's `{window: N, fn: <pure reducer>}`.
+  `fn=` names the reducer as data: a public def of a **pinned feature's** §1.2
+  contract module, spelled `<feature>:<def>`, registered by step 4 above — so
+  the compaction a deployment declares still travels inside a verified package.
+  Because a binding may name a contract def, **step 4 runs before step 2's
+  attach**.
+
+**Precedence (normative).** The document's `[principals [deriver …]]` rows,
+when present, **supersede** an OPTS `derivers:` key entirely — they are not
+merged. The composition spec §4.2 rule 1 places the deriver beside `[role]` and
+`[agent]` precisely so that "run assembly reads ONE block to know every actor";
+merging would make two. A superseded key is announced at boot — a dropped
+binding is never silent. With no `[deriver]` rows the OPTS key forwards
+unchanged (the direct-run parity path). The four `[runtime]` options have **no**
+OPTS spelling on a hosted XAP: naming one in `[$xap:host]` opts **refuses** at
+boot (`E_XAP_HOST_BINDING_MISPLACED`) rather than being accepted twice or
+dropped once.
+
+Every refusal in this section is **named and loud** at boot — an unknown
+`[runtime]` child, a `[journal]` without `url=`, an empty `[sources]`, a
+`kind=` the document cannot express, an `fn=` naming no loaded contract def.
+A binding the host cannot honor end to end must never boot a XAP that silently
+lacks it; that is the whole point of putting it in the document.
+
+**Boot ordering (normative; RULED: CO-9).** A `[sources]` binding's
+subscription **opens** at step 2, with the rest of run assembly, so that a bad
+binding refuses at boot rather than at first delivery. It **consumes** nothing
+until step 3's dials — and the `[host-auth]` map of §4.12, where present — are
+wired. Opening and consuming are two moments, and the deployment's authority
+sits between them: a pump that consumed earlier would meet a PEP that does not
+yet hold the deployment's grants, and `xap.md` §3.1.2's deny path is
+skip-and-ack. Every entry a bound stream already carries at boot therefore
+meets exactly the PEP that every later entry meets.
+
+A boot that **refuses** after run assembly consumes nothing at all. It never
+received, therefore never acked, therefore the group's committed offset is
+where that boot found it and every entry stays **redeliverable** to the next
+boot — and the binding it will not serve is announced, like every other
+refusal here. This is the whole in-window policy: a pre-arm entry is never
+skipped-and-acked, and a live group is never wedged, because there is no
+in-pump retry to wedge it.
+
+**Source tiers — which bindings ingest LIVE (normative; RULED: CO-9).** A
+`[source fabric=…]` row naming an `xsp://`/`xsps://` daemon is a **served-tier**
+subscription and ingests live: entries published at any time, from any process,
+arrive while the XAP runs. A row naming a **journal url** (`file://`, `mem://`,
+…) is an **embedded-tier** subscription over this process's own journal handle,
+and its reach is exactly that handle: it ingests every entry the bound stream
+carries when this process opens it, **and it does not observe entries another
+process appends afterwards** — the handle's view of the root is taken at open
+and advanced only by this process's own writes. That is a property of the
+substrate, not a gap in this surface, and it is not a defect to be fixed by
+polling harder.
+
+The reason is the durable substrate's **write discipline**. On a local root the
+supported cross-process shape is **one writer plus read-only readers**
+([`journal.md`](../std-lib/journal.md) §3.3: `head` makes no freshness claim
+"under a second writer — another process on a local root"; `head-fresh` is that
+read-only reader's re-resolve). A `[source]` binding is **required** to carry
+`group=`, because the runtime owns committed offsets
+([`xap.md`](xap.md) §3.1.2) — so the binding writes into that same root and is
+itself a **writer**. A producer in another process is therefore a *second*
+writer, and two independent writers on one local root collide: the second
+flush clobbers the first's segment, and the root stops opening at all. Live
+cross-process delivery is consequently **not available on the embedded tier at
+any price** — a reader taught to follow those appends would be following a
+store that is being destroyed. `xsp://` is where cross-process publishing is
+sound, because the `fabric-serve` daemon is the single sequencer for the
+streams it mounts ([`fabric.md`](fabric.md) §10) and the single writer of their
+root.
+
+Both tiers are legitimate and neither is refused — an embedded source binding
+is the ordinary shape for a single-process deployment, a fixture, or a replay.
+But a deployment that declared one while expecting live cross-process ingest is
+mis-wired in a way nothing else would reveal, so a hosted boot **announces the
+tier of every non-`xsp://` source binding** it compiles, naming the stream, the
+url, and the `xsp://` alternative. Consistent with this section's standing
+rule, a binding this host will honor only within its tier says so at boot
+rather than half-working in silence.
 
 ---
 

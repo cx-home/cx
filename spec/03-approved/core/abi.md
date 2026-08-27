@@ -354,7 +354,13 @@ char* cx_features(void); /* hex bitmask string, see §3 */
 char* cx_abi_version(void); /* "2.0" — distinct from cx_version */
 ```
 
-`cx_version` returns the library version (e.g., `"2.0.0"`).
+`cx_version` returns the library version stamp (RULED: CO-4): a build from a
+clean checkout of the annotated release tag matching the repo VERSION reports
+the bare version (e.g., `"2.0.0"`); every other build reports the `-dev`
+pre-release of it (e.g., `"2.0.0-dev"`). The build COMMIT is deliberately not
+claimed here — the ABI has no provenance surface, and a commit the library's
+build identity does not track would be an unfalsifiable stamp; `cx --version`
+is the provenance surface.
 `cx_abi_version` returns the ABI version (`"2.0"`) — bindings load this
 on initialization and refuse mismatched majors.
 `cx_features` returns a hex string encoding the capability bitmask; see

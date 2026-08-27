@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,420 +143,347 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">session</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-session"><h1>session</h1><p class="lede">The server-held (principal, tenant) session for a web app. A small, durable association between a verified external identity and a tenant-scoped principal — established by attach, looked up by of, and torn down by detach. One session can carry multiple concurrent clients (a human's browser and their agent mirror-attach to it) and survives the death of any individual client. The attach transports converge on one session model: Bearer tokens for agents and service clients, an opaque-session-id cookie (with synchronizer-token CSRF defense) for browsers, DID/XSP proofs for peers — and attach-guest for the proofless anonymous floor, minting the same cookie-carried session for pre-login state. It delegates all token verification to crypto and all transport to http, adding no cryptography or sockets of its own.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-session-attach" class="fn">
-    <h3>session:attach</h3>
-    <p class="fn-sig"><code>[$session:attach]  -> element</code>  —  Verify the request's Bearer token and mirror-attach a client to its (principal, tenant) session.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-session-attach" class="fn">
+  <h3>session:attach</h3>
+  <p class="fn-sig"><code>[$session:attach]  -> element</code>  —  Verify the request's Bearer token and mirror-attach a client to its (principal, tenant) session.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/time']
 [?let [= $s [$session:attach [request scheme="https" [headers [header name="Authorization" value="Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6InJzYS0xIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlIiwic3ViIjoidXNlci0xIiwiYXVkIjoibXktYXBpIiwiZXhwIjoxNzAwMDAzNjAwLCJuYmYiOjE2OTk5OTk5OTAsImlhdCI6MTY5OTk5OTk5MH0.e4bn1A_a5Q0_4IZxKWipmmrUCCdmNkiTUs071mBMtMVXb68RGPtV2FTR1nRWvM3Zw2XTMuBsk_Y1HPinat_2JQkm3s90lltrErpYOky6Nwm6ha57BxQ0Sg5kWxuQF5KhWUqHzePIVDTfkr0WeN591nDTDn6VuajLaHn2pjXBsaJ0reT6mh6v40UQcBW-yy-XOfrsMeGVj_qZd1UmlE81XN957rjPENcPpH2E1SHfVhu3fQP3QZapxtdMADgWmryw_z5O2lDIIWb7miT0siXRCDjVEhDzKH6Hsf1aUPcYx9x44o1B5OBpX6z1uM1SP0qaOZu6x26H0AbHj84nIISE1A"]]] {jwks: [$crypto:jwks-parse "{\"keys\":[{\"kid\":\"rsa-1\",\"kty\":\"RSA\",\"alg\":\"RS256\",\"n\":\"jdwwBcaMZQLoSNYGNEm3l03HIQqpRIv0eqLUNUCkyv7ysVw4i6vZgdYxcdU0D3kSvUCIjH-icqk4PCDx5AwkeNp55Nqt6wKXDv9TH5pr-Wc3BWmZ1sEOEwyN8QlI8_5EpY3i1w5tysDdeFuiR7BOjpkD49RZzF0YajmocsB4_jXoZcldVNCOChXAbEfOw-BtjFJRN0N3EksymF4azkey8Q3rX07sXkRHavRfAOnowH119RL1V-Xmk_DUX8wSR-2zdlp8FxitJWPgbMmnszsTgEQrThTwsuMrndqzJ_nQ7HTnuK2LXEFmFwXw9NADspq2ZnQmZiN7CXnEYG8WCApzxw\",\"e\":\"AQAB\"}]}"] tenant-claim: "aud" now: [$time:datetime 2023 11 14 22 13 20]}]] [$session:principal $s]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[principal id=user-1 [tenant id=my-api]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-attach-token" class="fn">
-    <h3>session:attach-token</h3>
-    <p class="fn-sig"><code>[$session:attach-token]  -> element</code>  —  Attach from a raw token rather than a request — the low-level path for channels and tests.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>[principal id=user-1 [tenant id=my-api]]</code>
+    </pre>
+  </div>
+</section><section id="fn-session-attach-token" class="fn">
+  <h3>session:attach-token</h3>
+  <p class="fn-sig"><code>[$session:attach-token]  -> element</code>  —  Attach from a raw token rather than a request — the low-level path for channels and tests.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/time']
 [?let [= $s [$session:attach-token "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzYS0xIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlIiwic3ViIjoidXNlci0xIiwiYXVkIjoibXktYXBpIiwiZXhwIjoxNzAwMDAzNjAwLCJuYmYiOjE2OTk5OTk5OTAsImlhdCI6MTY5OTk5OTk5MH0.e4bn1A_a5Q0_4IZxKWipmmrUCCdmNkiTUs071mBMtMVXb68RGPtV2FTR1nRWvM3Zw2XTMuBsk_Y1HPinat_2JQkm3s90lltrErpYOky6Nwm6ha57BxQ0Sg5kWxuQF5KhWUqHzePIVDTfkr0WeN591nDTDn6VuajLaHn2pjXBsaJ0reT6mh6v40UQcBW-yy-XOfrsMeGVj_qZd1UmlE81XN957rjPENcPpH2E1SHfVhu3fQP3QZapxtdMADgWmryw_z5O2lDIIWb7miT0siXRCDjVEhDzKH6Hsf1aUPcYx9x44o1B5OBpX6z1uM1SP0qaOZu6x26H0AbHj84nIISE1A" {jwks: [$crypto:jwks-parse "{\"keys\":[{\"kid\":\"rsa-1\",\"kty\":\"RSA\",\"alg\":\"RS256\",\"n\":\"jdwwBcaMZQLoSNYGNEm3l03HIQqpRIv0eqLUNUCkyv7ysVw4i6vZgdYxcdU0D3kSvUCIjH-icqk4PCDx5AwkeNp55Nqt6wKXDv9TH5pr-Wc3BWmZ1sEOEwyN8QlI8_5EpY3i1w5tysDdeFuiR7BOjpkD49RZzF0YajmocsB4_jXoZcldVNCOChXAbEfOw-BtjFJRN0N3EksymF4azkey8Q3rX07sXkRHavRfAOnowH119RL1V-Xmk_DUX8wSR-2zdlp8FxitJWPgbMmnszsTgEQrThTwsuMrndqzJ_nQ7HTnuK2LXEFmFwXw9NADspq2ZnQmZiN7CXnEYG8WCApzxw\",\"e\":\"AQAB\"}]}"] tenant-claim: "aud" now: [$time:datetime 2023 11 14 22 13 20]} {tls: true}]] [$session:tenant $s]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[tenant id=my-api]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-attach-did" class="fn">
-    <h3>session:attach-did</h3>
-    <p class="fn-sig"><code>[$session:attach-did]  -> element</code>  —  Attach by verifying a DID-signed challenge — bind a client to its (principal, tenant) session from a did, challenge, and signature.</p>
-    
-  </section>
-  <section id="fn-session-attach-cookie" class="fn">
-    <h3>session:attach-cookie</h3>
-    <p class="fn-sig"><code>[$session:attach-cookie]  -> element</code>  —  Attach the browser path — same verify pipeline, returning the session paired with Set-Cookie directives.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>[tenant id=my-api]</code>
+    </pre>
+  </div>
+</section><section id="fn-session-attach-did" class="fn">
+  <h3>session:attach-did</h3>
+  <p class="fn-sig"><code>[$session:attach-did]  -> element</code>  —  Attach by verifying a DID-signed challenge — bind a client to its (principal, tenant) session from a did, challenge, and signature.</p>
+</section><section id="fn-session-attach-cookie" class="fn">
+  <h3>session:attach-cookie</h3>
+  <p class="fn-sig"><code>[$session:attach-cookie]  -> element</code>  —  Attach the browser path — same verify pipeline, returning the session paired with Set-Cookie directives.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/time']
 [?let [= $pair [$session:attach-cookie [request scheme="https" [headers [header name="Authorization" value="Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6InJzYS0xIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlIiwic3ViIjoidXNlci0xIiwiYXVkIjoibXktYXBpIiwiZXhwIjoxNzAwMDAzNjAwLCJuYmYiOjE2OTk5OTk5OTAsImlhdCI6MTY5OTk5OTk5MH0.e4bn1A_a5Q0_4IZxKWipmmrUCCdmNkiTUs071mBMtMVXb68RGPtV2FTR1nRWvM3Zw2XTMuBsk_Y1HPinat_2JQkm3s90lltrErpYOky6Nwm6ha57BxQ0Sg5kWxuQF5KhWUqHzePIVDTfkr0WeN591nDTDn6VuajLaHn2pjXBsaJ0reT6mh6v40UQcBW-yy-XOfrsMeGVj_qZd1UmlE81XN957rjPENcPpH2E1SHfVhu3fQP3QZapxtdMADgWmryw_z5O2lDIIWb7miT0siXRCDjVEhDzKH6Hsf1aUPcYx9x44o1B5OBpX6z1uM1SP0qaOZu6x26H0AbHj84nIISE1A"]]] {jwks: [$crypto:jwks-parse "{\"keys\":[{\"kid\":\"rsa-1\",\"kty\":\"RSA\",\"alg\":\"RS256\",\"n\":\"jdwwBcaMZQLoSNYGNEm3l03HIQqpRIv0eqLUNUCkyv7ysVw4i6vZgdYxcdU0D3kSvUCIjH-icqk4PCDx5AwkeNp55Nqt6wKXDv9TH5pr-Wc3BWmZ1sEOEwyN8QlI8_5EpY3i1w5tysDdeFuiR7BOjpkD49RZzF0YajmocsB4_jXoZcldVNCOChXAbEfOw-BtjFJRN0N3EksymF4azkey8Q3rX07sXkRHavRfAOnowH119RL1V-Xmk_DUX8wSR-2zdlp8FxitJWPgbMmnszsTgEQrThTwsuMrndqzJ_nQ7HTnuK2LXEFmFwXw9NADspq2ZnQmZiN7CXnEYG8WCApzxw\",\"e\":\"AQAB\"}]}"] tenant-claim: "aud" now: [$time:datetime 2023 11 14 22 13 20]}]] [= $sc [$first [$tail $pair]]] [?let [= $cookie [$first $sc]] $cookie@name]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'__Host-cxsid'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-attach-xsp" class="fn">
-    <h3>session:attach-xsp</h3>
-    <p class="fn-sig"><code>[$session:attach-xsp]  -> element</code>  —  Attach from a completed XSP-AUTH handshake: verify M1/M2/M3, extract the proven principal (or the anonymous floor), honor the §4.9 attach selector, and return [xsp-attached [session …] [confirm [xsp-auth …]]].</p>
-    
-  </section>
-  <section id="fn-session-attach-guest" class="fn">
-    <h3>session:attach-guest</h3>
-    <p class="fn-sig"><code>[$session:attach-guest]  -> element</code>  —  Establish a session at the deployment's anonymous floor — no proof required, same cookie adapter and CSRF synchronizer; refuses with CXER4812 when the policy admits no floor, and the id remints on the login transition.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>'__Host-cxsid'</code>
+    </pre>
+  </div>
+</section><section id="fn-session-attach-xsp" class="fn">
+  <h3>session:attach-xsp</h3>
+  <p class="fn-sig"><code>[$session:attach-xsp]  -> element</code>  —  Attach from a completed XSP-AUTH handshake: verify M1/M2/M3, extract the proven principal (or the anonymous floor), honor the §4.9 attach selector, and return [xsp-attached [session …] [confirm [xsp-auth …]]].</p>
+</section><section id="fn-session-attach-guest" class="fn">
+  <h3>session:attach-guest</h3>
+  <p class="fn-sig"><code>[$session:attach-guest]  -> element</code>  —  Establish a session at the deployment's anonymous floor — no proof required, same cookie adapter and CSRF synchronizer; refuses with CXER4812 when the policy admits no floor, and the id remints on the login transition.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [?let [= $pair [$session:attach-guest [request scheme="https"] {anonymous-floor: "web-public" tenant: "shop"}]] [= $s [$first $pair]] [?let [= $p [$session:principal $s]] $p@id]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'web-public'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-list" class="fn">
-    <h3>session:list</h3>
-    <p class="fn-sig"><code>[$session:list]  -> element</code>  —  Enumerate every live session a (principal, tenant) holds on this XAP as a [sessions …] element, in id order (#24 multiplicity read).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>'web-public'</code>
+    </pre>
+  </div>
+</section><section id="fn-session-list" class="fn">
+  <h3>session:list</h3>
+  <p class="fn-sig"><code>[$session:list]  -> element</code>  —  Enumerate every live session a (principal, tenant) holds on this XAP as a [sessions …] element, in id order (#24 multiplicity read).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [$session:list "did:key:nobody" "acme"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[sessions]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-present-vc" class="fn">
-    <h3>session:present-vc</h3>
-    <p class="fn-sig"><code>[$session:present-vc]  -> element</code>  —  Verify a presented VC, bind its subject to the session principal (the handshake is the proof of possession), enforce same-tenant, and return its §22.2 delegation ready for the unchanged PEP.</p>
-    
-  </section>
-  <section id="fn-session-by-name" class="fn">
-    <h3>session:by-name</h3>
-    <p class="fn-sig"><code>[$session:by-name]  -> element</code>  —  Resolve a named independent session for a (principal, tenant), or absence when none.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>[sessions]</code>
+    </pre>
+  </div>
+</section><section id="fn-session-present-vc" class="fn">
+  <h3>session:present-vc</h3>
+  <p class="fn-sig"><code>[$session:present-vc]  -> element</code>  —  Verify a presented VC, bind its subject to the session principal (the handshake is the proof of possession), enforce same-tenant, and return its §22.2 delegation ready for the unchanged PEP.</p>
+</section><section id="fn-session-by-name" class="fn">
+  <h3>session:by-name</h3>
+  <p class="fn-sig"><code>[$session:by-name]  -> element</code>  —  Resolve a named independent session for a (principal, tenant), or absence when none.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [?else [$session:by-name "did:key:nobody" "acme" "watch"] "ABSENT"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'ABSENT'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-detach" class="fn">
-    <h3>session:detach</h3>
-    <p class="fn-sig"><code>[$session:detach]  -> null</code>  —  Tear down the whole session, releasing all clients and clearing any cookie; idempotent.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>'ABSENT'</code>
+    </pre>
+  </div>
+</section><section id="fn-session-detach" class="fn">
+  <h3>session:detach</h3>
+  <p class="fn-sig"><code>[$session:detach]  -> null</code>  —  Tear down the whole session, releasing all clients and clearing any cookie; idempotent.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/time']
 [?let [= $s [$session:attach-token "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzYS0xIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlIiwic3ViIjoidXNlci0xIiwiYXVkIjoibXktYXBpIiwiZXhwIjoxNzAwMDAzNjAwLCJuYmYiOjE2OTk5OTk5OTAsImlhdCI6MTY5OTk5OTk5MH0.e4bn1A_a5Q0_4IZxKWipmmrUCCdmNkiTUs071mBMtMVXb68RGPtV2FTR1nRWvM3Zw2XTMuBsk_Y1HPinat_2JQkm3s90lltrErpYOky6Nwm6ha57BxQ0Sg5kWxuQF5KhWUqHzePIVDTfkr0WeN591nDTDn6VuajLaHn2pjXBsaJ0reT6mh6v40UQcBW-yy-XOfrsMeGVj_qZd1UmlE81XN957rjPENcPpH2E1SHfVhu3fQP3QZapxtdMADgWmryw_z5O2lDIIWb7miT0siXRCDjVEhDzKH6Hsf1aUPcYx9x44o1B5OBpX6z1uM1SP0qaOZu6x26H0AbHj84nIISE1A" {jwks: [$crypto:jwks-parse "{\"keys\":[{\"kid\":\"rsa-1\",\"kty\":\"RSA\",\"alg\":\"RS256\",\"n\":\"jdwwBcaMZQLoSNYGNEm3l03HIQqpRIv0eqLUNUCkyv7ysVw4i6vZgdYxcdU0D3kSvUCIjH-icqk4PCDx5AwkeNp55Nqt6wKXDv9TH5pr-Wc3BWmZ1sEOEwyN8QlI8_5EpY3i1w5tysDdeFuiR7BOjpkD49RZzF0YajmocsB4_jXoZcldVNCOChXAbEfOw-BtjFJRN0N3EksymF4azkey8Q3rX07sXkRHavRfAOnowH119RL1V-Xmk_DUX8wSR-2zdlp8FxitJWPgbMmnszsTgEQrThTwsuMrndqzJ_nQ7HTnuK2LXEFmFwXw9NADspq2ZnQmZiN7CXnEYG8WCApzxw\",\"e\":\"AQAB\"}]}"] tenant-claim: "aud" now: [$time:datetime 2023 11 14 22 13 20]} {tls: true}]] [= $d1 [$session:detach $s]] [$session:detach $s]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-detach-client" class="fn">
-    <h3>session:detach-client</h3>
-    <p class="fn-sig"><code>[$session:detach-client]  -> element</code>  —  Remove one client; the session survives if others remain, and even at zero clients.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-session-detach-client" class="fn">
+  <h3>session:detach-client</h3>
+  <p class="fn-sig"><code>[$session:detach-client]  -> element</code>  —  Remove one client; the session survives if others remain, and even at zero clients.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/time']
 [?let [= $s [$session:attach-token "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzYS0xIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlIiwic3ViIjoidXNlci0xIiwiYXVkIjoibXktYXBpIiwiZXhwIjoxNzAwMDAzNjAwLCJuYmYiOjE2OTk5OTk5OTAsImlhdCI6MTY5OTk5OTk5MH0.e4bn1A_a5Q0_4IZxKWipmmrUCCdmNkiTUs071mBMtMVXb68RGPtV2FTR1nRWvM3Zw2XTMuBsk_Y1HPinat_2JQkm3s90lltrErpYOky6Nwm6ha57BxQ0Sg5kWxuQF5KhWUqHzePIVDTfkr0WeN591nDTDn6VuajLaHn2pjXBsaJ0reT6mh6v40UQcBW-yy-XOfrsMeGVj_qZd1UmlE81XN957rjPENcPpH2E1SHfVhu3fQP3QZapxtdMADgWmryw_z5O2lDIIWb7miT0siXRCDjVEhDzKH6Hsf1aUPcYx9x44o1B5OBpX6z1uM1SP0qaOZu6x26H0AbHj84nIISE1A" {jwks: [$crypto:jwks-parse "{\"keys\":[{\"kid\":\"rsa-1\",\"kty\":\"RSA\",\"alg\":\"RS256\",\"n\":\"jdwwBcaMZQLoSNYGNEm3l03HIQqpRIv0eqLUNUCkyv7ysVw4i6vZgdYxcdU0D3kSvUCIjH-icqk4PCDx5AwkeNp55Nqt6wKXDv9TH5pr-Wc3BWmZ1sEOEwyN8QlI8_5EpY3i1w5tysDdeFuiR7BOjpkD49RZzF0YajmocsB4_jXoZcldVNCOChXAbEfOw-BtjFJRN0N3EksymF4azkey8Q3rX07sXkRHavRfAOnowH119RL1V-Xmk_DUX8wSR-2zdlp8FxitJWPgbMmnszsTgEQrThTwsuMrndqzJ_nQ7HTnuK2LXEFmFwXw9NADspq2ZnQmZiN7CXnEYG8WCApzxw\",\"e\":\"AQAB\"}]}"] tenant-claim: "aud" now: [$time:datetime 2023 11 14 22 13 20]} {id: "c-x" tls: true}]] [= $s2 [$session:detach-client $s "c-x"]] [$session:valid $s2]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-touch" class="fn">
-    <h3>session:touch</h3>
-    <p class="fn-sig"><code>[$session:touch]  -> element</code>  —  Refresh a client's last-seen mark for heartbeat liveness; unknown client yields absence.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-session-touch" class="fn">
+  <h3>session:touch</h3>
+  <p class="fn-sig"><code>[$session:touch]  -> element</code>  —  Refresh a client's last-seen mark for heartbeat liveness; unknown client yields absence.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/time']
 [?let [= $s [$session:attach-token "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzYS0xIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlIiwic3ViIjoidXNlci0xIiwiYXVkIjoibXktYXBpIiwiZXhwIjoxNzAwMDAzNjAwLCJuYmYiOjE2OTk5OTk5OTAsImlhdCI6MTY5OTk5OTk5MH0.e4bn1A_a5Q0_4IZxKWipmmrUCCdmNkiTUs071mBMtMVXb68RGPtV2FTR1nRWvM3Zw2XTMuBsk_Y1HPinat_2JQkm3s90lltrErpYOky6Nwm6ha57BxQ0Sg5kWxuQF5KhWUqHzePIVDTfkr0WeN591nDTDn6VuajLaHn2pjXBsaJ0reT6mh6v40UQcBW-yy-XOfrsMeGVj_qZd1UmlE81XN957rjPENcPpH2E1SHfVhu3fQP3QZapxtdMADgWmryw_z5O2lDIIWb7miT0siXRCDjVEhDzKH6Hsf1aUPcYx9x44o1B5OBpX6z1uM1SP0qaOZu6x26H0AbHj84nIISE1A" {jwks: [$crypto:jwks-parse "{\"keys\":[{\"kid\":\"rsa-1\",\"kty\":\"RSA\",\"alg\":\"RS256\",\"n\":\"jdwwBcaMZQLoSNYGNEm3l03HIQqpRIv0eqLUNUCkyv7ysVw4i6vZgdYxcdU0D3kSvUCIjH-icqk4PCDx5AwkeNp55Nqt6wKXDv9TH5pr-Wc3BWmZ1sEOEwyN8QlI8_5EpY3i1w5tysDdeFuiR7BOjpkD49RZzF0YajmocsB4_jXoZcldVNCOChXAbEfOw-BtjFJRN0N3EksymF4azkey8Q3rX07sXkRHavRfAOnowH119RL1V-Xmk_DUX8wSR-2zdlp8FxitJWPgbMmnszsTgEQrThTwsuMrndqzJ_nQ7HTnuK2LXEFmFwXw9NADspq2ZnQmZiN7CXnEYG8WCApzxw\",\"e\":\"AQAB\"}]}"] tenant-claim: "aud" now: [$time:datetime 2023 11 14 22 13 20]} {tls: true}]] [?else [$session:touch $s "c-unknown"] "ABSENT"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'ABSENT'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-of" class="fn">
-    <h3>session:of</h3>
-    <p class="fn-sig"><code>[$session:of]  -> element</code>  —  Resolve the established session for a request or connection, or absence when none is attached.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>'ABSENT'</code>
+    </pre>
+  </div>
+</section><section id="fn-session-of" class="fn">
+  <h3>session:of</h3>
+  <p class="fn-sig"><code>[$session:of]  -> element</code>  —  Resolve the established session for a request or connection, or absence when none is attached.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [?else [$session:of [request scheme="https"]] "ABSENT"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'ABSENT'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-by-id" class="fn">
-    <h3>session:by-id</h3>
-    <p class="fn-sig"><code>[$session:by-id]  -> element</code>  —  Look up a session directly by its id, or absence when unknown.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>'ABSENT'</code>
+    </pre>
+  </div>
+</section><section id="fn-session-by-id" class="fn">
+  <h3>session:by-id</h3>
+  <p class="fn-sig"><code>[$session:by-id]  -> element</code>  —  Look up a session directly by its id, or absence when unknown.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [?else [$session:by-id "s-does-not-exist"] "ABSENT"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'ABSENT'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-by-client" class="fn">
-    <h3>session:by-client</h3>
-    <p class="fn-sig"><code>[$session:by-client]  -> element</code>  —  Look up the session owning a given client id, or absence when unknown.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>'ABSENT'</code>
+    </pre>
+  </div>
+</section><section id="fn-session-by-client" class="fn">
+  <h3>session:by-client</h3>
+  <p class="fn-sig"><code>[$session:by-client]  -> element</code>  —  Look up the session owning a given client id, or absence when unknown.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [?else [$session:by-client "c-nope"] "ABSENT"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'ABSENT'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-principal" class="fn">
-    <h3>session:principal</h3>
-    <p class="fn-sig"><code>[$session:principal]  -> element</code>  —  Return the session's bound principal — the actor-principal the authz PEP reads.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>'ABSENT'</code>
+    </pre>
+  </div>
+</section><section id="fn-session-principal" class="fn">
+  <h3>session:principal</h3>
+  <p class="fn-sig"><code>[$session:principal]  -> element</code>  —  Return the session's bound principal — the actor-principal the authz PEP reads.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/time']
 [?let [= $s [$session:attach [request scheme="https" [headers [header name="Authorization" value="Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6InJzYS0xIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlIiwic3ViIjoidXNlci0xIiwiYXVkIjoibXktYXBpIiwiZXhwIjoxNzAwMDAzNjAwLCJuYmYiOjE2OTk5OTk5OTAsImlhdCI6MTY5OTk5OTk5MH0.e4bn1A_a5Q0_4IZxKWipmmrUCCdmNkiTUs071mBMtMVXb68RGPtV2FTR1nRWvM3Zw2XTMuBsk_Y1HPinat_2JQkm3s90lltrErpYOky6Nwm6ha57BxQ0Sg5kWxuQF5KhWUqHzePIVDTfkr0WeN591nDTDn6VuajLaHn2pjXBsaJ0reT6mh6v40UQcBW-yy-XOfrsMeGVj_qZd1UmlE81XN957rjPENcPpH2E1SHfVhu3fQP3QZapxtdMADgWmryw_z5O2lDIIWb7miT0siXRCDjVEhDzKH6Hsf1aUPcYx9x44o1B5OBpX6z1uM1SP0qaOZu6x26H0AbHj84nIISE1A"]]] {jwks: [$crypto:jwks-parse "{\"keys\":[{\"kid\":\"rsa-1\",\"kty\":\"RSA\",\"alg\":\"RS256\",\"n\":\"jdwwBcaMZQLoSNYGNEm3l03HIQqpRIv0eqLUNUCkyv7ysVw4i6vZgdYxcdU0D3kSvUCIjH-icqk4PCDx5AwkeNp55Nqt6wKXDv9TH5pr-Wc3BWmZ1sEOEwyN8QlI8_5EpY3i1w5tysDdeFuiR7BOjpkD49RZzF0YajmocsB4_jXoZcldVNCOChXAbEfOw-BtjFJRN0N3EksymF4azkey8Q3rX07sXkRHavRfAOnowH119RL1V-Xmk_DUX8wSR-2zdlp8FxitJWPgbMmnszsTgEQrThTwsuMrndqzJ_nQ7HTnuK2LXEFmFwXw9NADspq2ZnQmZiN7CXnEYG8WCApzxw\",\"e\":\"AQAB\"}]}"] tenant-claim: "aud" now: [$time:datetime 2023 11 14 22 13 20]}]] [$session:principal $s]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[principal id=user-1 [tenant id=my-api]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-tenant" class="fn">
-    <h3>session:tenant</h3>
-    <p class="fn-sig"><code>[$session:tenant]  -> element</code>  —  Return the session's bound tenant — the hard-partition key.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>[principal id=user-1 [tenant id=my-api]]</code>
+    </pre>
+  </div>
+</section><section id="fn-session-tenant" class="fn">
+  <h3>session:tenant</h3>
+  <p class="fn-sig"><code>[$session:tenant]  -> element</code>  —  Return the session's bound tenant — the hard-partition key.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/time']
 [?let [= $s [$session:attach-token "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzYS0xIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlIiwic3ViIjoidXNlci0xIiwiYXVkIjoibXktYXBpIiwiZXhwIjoxNzAwMDAzNjAwLCJuYmYiOjE2OTk5OTk5OTAsImlhdCI6MTY5OTk5OTk5MH0.e4bn1A_a5Q0_4IZxKWipmmrUCCdmNkiTUs071mBMtMVXb68RGPtV2FTR1nRWvM3Zw2XTMuBsk_Y1HPinat_2JQkm3s90lltrErpYOky6Nwm6ha57BxQ0Sg5kWxuQF5KhWUqHzePIVDTfkr0WeN591nDTDn6VuajLaHn2pjXBsaJ0reT6mh6v40UQcBW-yy-XOfrsMeGVj_qZd1UmlE81XN957rjPENcPpH2E1SHfVhu3fQP3QZapxtdMADgWmryw_z5O2lDIIWb7miT0siXRCDjVEhDzKH6Hsf1aUPcYx9x44o1B5OBpX6z1uM1SP0qaOZu6x26H0AbHj84nIISE1A" {jwks: [$crypto:jwks-parse "{\"keys\":[{\"kid\":\"rsa-1\",\"kty\":\"RSA\",\"alg\":\"RS256\",\"n\":\"jdwwBcaMZQLoSNYGNEm3l03HIQqpRIv0eqLUNUCkyv7ysVw4i6vZgdYxcdU0D3kSvUCIjH-icqk4PCDx5AwkeNp55Nqt6wKXDv9TH5pr-Wc3BWmZ1sEOEwyN8QlI8_5EpY3i1w5tysDdeFuiR7BOjpkD49RZzF0YajmocsB4_jXoZcldVNCOChXAbEfOw-BtjFJRN0N3EksymF4azkey8Q3rX07sXkRHavRfAOnowH119RL1V-Xmk_DUX8wSR-2zdlp8FxitJWPgbMmnszsTgEQrThTwsuMrndqzJ_nQ7HTnuK2LXEFmFwXw9NADspq2ZnQmZiN7CXnEYG8WCApzxw\",\"e\":\"AQAB\"}]}"] tenant-claim: "aud" now: [$time:datetime 2023 11 14 22 13 20]} {tls: true}]] [$session:tenant $s]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[tenant id=my-api]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-clients" class="fn">
-    <h3>session:clients</h3>
-    <p class="fn-sig"><code>[$session:clients]  -> [sequence element]</code>  —  Return the session's attached clients in attach order; empty for a zero-client session.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>[tenant id=my-api]</code>
+    </pre>
+  </div>
+</section><section id="fn-session-clients" class="fn">
+  <h3>session:clients</h3>
+  <p class="fn-sig"><code>[$session:clients]  -> [sequence element]</code>  —  Return the session's attached clients in attach order; empty for a zero-client session.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/time']
 [?let [= $s1 [$session:attach-token "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzYS0xIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlIiwic3ViIjoidXNlci0xIiwiYXVkIjoibXktYXBpIiwiZXhwIjoxNzAwMDAzNjAwLCJuYmYiOjE2OTk5OTk5OTAsImlhdCI6MTY5OTk5OTk5MH0.e4bn1A_a5Q0_4IZxKWipmmrUCCdmNkiTUs071mBMtMVXb68RGPtV2FTR1nRWvM3Zw2XTMuBsk_Y1HPinat_2JQkm3s90lltrErpYOky6Nwm6ha57BxQ0Sg5kWxuQF5KhWUqHzePIVDTfkr0WeN591nDTDn6VuajLaHn2pjXBsaJ0reT6mh6v40UQcBW-yy-XOfrsMeGVj_qZd1UmlE81XN957rjPENcPpH2E1SHfVhu3fQP3QZapxtdMADgWmryw_z5O2lDIIWb7miT0siXRCDjVEhDzKH6Hsf1aUPcYx9x44o1B5OBpX6z1uM1SP0qaOZu6x26H0AbHj84nIISE1A" {jwks: [$crypto:jwks-parse "{\"keys\":[{\"kid\":\"rsa-1\",\"kty\":\"RSA\",\"alg\":\"RS256\",\"n\":\"jdwwBcaMZQLoSNYGNEm3l03HIQqpRIv0eqLUNUCkyv7ysVw4i6vZgdYxcdU0D3kSvUCIjH-icqk4PCDx5AwkeNp55Nqt6wKXDv9TH5pr-Wc3BWmZ1sEOEwyN8QlI8_5EpY3i1w5tysDdeFuiR7BOjpkD49RZzF0YajmocsB4_jXoZcldVNCOChXAbEfOw-BtjFJRN0N3EksymF4azkey8Q3rX07sXkRHavRfAOnowH119RL1V-Xmk_DUX8wSR-2zdlp8FxitJWPgbMmnszsTgEQrThTwsuMrndqzJ_nQ7HTnuK2LXEFmFwXw9NADspq2ZnQmZiN7CXnEYG8WCApzxw\",\"e\":\"AQAB\"}]}"] tenant-claim: "aud" now: [$time:datetime 2023 11 14 22 13 20]} {channel: "cx" tls: true}]] [= $s2 [$session:attach-token "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzYS0xIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlIiwic3ViIjoidXNlci0xIiwiYXVkIjoibXktYXBpIiwiZXhwIjoxNzAwMDAzNjAwLCJuYmYiOjE2OTk5OTk5OTAsImlhdCI6MTY5OTk5OTk5MH0.e4bn1A_a5Q0_4IZxKWipmmrUCCdmNkiTUs071mBMtMVXb68RGPtV2FTR1nRWvM3Zw2XTMuBsk_Y1HPinat_2JQkm3s90lltrErpYOky6Nwm6ha57BxQ0Sg5kWxuQF5KhWUqHzePIVDTfkr0WeN591nDTDn6VuajLaHn2pjXBsaJ0reT6mh6v40UQcBW-yy-XOfrsMeGVj_qZd1UmlE81XN957rjPENcPpH2E1SHfVhu3fQP3QZapxtdMADgWmryw_z5O2lDIIWb7miT0siXRCDjVEhDzKH6Hsf1aUPcYx9x44o1B5OBpX6z1uM1SP0qaOZu6x26H0AbHj84nIISE1A" {jwks: [$crypto:jwks-parse "{\"keys\":[{\"kid\":\"rsa-1\",\"kty\":\"RSA\",\"alg\":\"RS256\",\"n\":\"jdwwBcaMZQLoSNYGNEm3l03HIQqpRIv0eqLUNUCkyv7ysVw4i6vZgdYxcdU0D3kSvUCIjH-icqk4PCDx5AwkeNp55Nqt6wKXDv9TH5pr-Wc3BWmZ1sEOEwyN8QlI8_5EpY3i1w5tysDdeFuiR7BOjpkD49RZzF0YajmocsB4_jXoZcldVNCOChXAbEfOw-BtjFJRN0N3EksymF4azkey8Q3rX07sXkRHavRfAOnowH119RL1V-Xmk_DUX8wSR-2zdlp8FxitJWPgbMmnszsTgEQrThTwsuMrndqzJ_nQ7HTnuK2LXEFmFwXw9NADspq2ZnQmZiN7CXnEYG8WCApzxw\",\"e\":\"AQAB\"}]}"] tenant-claim: "aud" now: [$time:datetime 2023 11 14 22 13 20]} {channel: "http" tls: true}]] [$count [$session:clients $s2]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>2</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-valid" class="fn">
-    <h3>session:valid</h3>
-    <p class="fn-sig"><code>[$session:valid]  -> bool</code>  —  Report whether the session is attached and within its token validity window.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>2</code>
+    </pre>
+  </div>
+</section><section id="fn-session-valid" class="fn">
+  <h3>session:valid</h3>
+  <p class="fn-sig"><code>[$session:valid]  -> bool</code>  —  Report whether the session is attached and within its token validity window.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/time']
 [?let [= $s [$session:attach-token "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzYS0xIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlIiwic3ViIjoidXNlci0xIiwiYXVkIjoibXktYXBpIiwiZXhwIjoxNzAwMDAzNjAwLCJuYmYiOjE2OTk5OTk5OTAsImlhdCI6MTY5OTk5OTk5MH0.e4bn1A_a5Q0_4IZxKWipmmrUCCdmNkiTUs071mBMtMVXb68RGPtV2FTR1nRWvM3Zw2XTMuBsk_Y1HPinat_2JQkm3s90lltrErpYOky6Nwm6ha57BxQ0Sg5kWxuQF5KhWUqHzePIVDTfkr0WeN591nDTDn6VuajLaHn2pjXBsaJ0reT6mh6v40UQcBW-yy-XOfrsMeGVj_qZd1UmlE81XN957rjPENcPpH2E1SHfVhu3fQP3QZapxtdMADgWmryw_z5O2lDIIWb7miT0siXRCDjVEhDzKH6Hsf1aUPcYx9x44o1B5OBpX6z1uM1SP0qaOZu6x26H0AbHj84nIISE1A" {jwks: [$crypto:jwks-parse "{\"keys\":[{\"kid\":\"rsa-1\",\"kty\":\"RSA\",\"alg\":\"RS256\",\"n\":\"jdwwBcaMZQLoSNYGNEm3l03HIQqpRIv0eqLUNUCkyv7ysVw4i6vZgdYxcdU0D3kSvUCIjH-icqk4PCDx5AwkeNp55Nqt6wKXDv9TH5pr-Wc3BWmZ1sEOEwyN8QlI8_5EpY3i1w5tysDdeFuiR7BOjpkD49RZzF0YajmocsB4_jXoZcldVNCOChXAbEfOw-BtjFJRN0N3EksymF4azkey8Q3rX07sXkRHavRfAOnowH119RL1V-Xmk_DUX8wSR-2zdlp8FxitJWPgbMmnszsTgEQrThTwsuMrndqzJ_nQ7HTnuK2LXEFmFwXw9NADspq2ZnQmZiN7CXnEYG8WCApzxw\",\"e\":\"AQAB\"}]}"] tenant-claim: "aud" now: [$time:datetime 2023 11 14 22 13 20]} {tls: true}]] [$session:valid $s]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>true</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-claims" class="fn">
-    <h3>session:claims</h3>
-    <p class="fn-sig"><code>[$session:claims]  -> element</code>  —  Return the verified claim-set captured at attach; the raw token is never retained.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>true</code>
+    </pre>
+  </div>
+</section><section id="fn-session-claims" class="fn">
+  <h3>session:claims</h3>
+  <p class="fn-sig"><code>[$session:claims]  -> element</code>  —  Return the verified claim-set captured at attach; the raw token is never retained.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/time']
 [?let [= $s [$session:attach-token "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzYS0xIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlIiwic3ViIjoidXNlci0xIiwiYXVkIjoibXktYXBpIiwiZXhwIjoxNzAwMDAzNjAwLCJuYmYiOjE2OTk5OTk5OTAsImlhdCI6MTY5OTk5OTk5MH0.e4bn1A_a5Q0_4IZxKWipmmrUCCdmNkiTUs071mBMtMVXb68RGPtV2FTR1nRWvM3Zw2XTMuBsk_Y1HPinat_2JQkm3s90lltrErpYOky6Nwm6ha57BxQ0Sg5kWxuQF5KhWUqHzePIVDTfkr0WeN591nDTDn6VuajLaHn2pjXBsaJ0reT6mh6v40UQcBW-yy-XOfrsMeGVj_qZd1UmlE81XN957rjPENcPpH2E1SHfVhu3fQP3QZapxtdMADgWmryw_z5O2lDIIWb7miT0siXRCDjVEhDzKH6Hsf1aUPcYx9x44o1B5OBpX6z1uM1SP0qaOZu6x26H0AbHj84nIISE1A" {jwks: [$crypto:jwks-parse "{\"keys\":[{\"kid\":\"rsa-1\",\"kty\":\"RSA\",\"alg\":\"RS256\",\"n\":\"jdwwBcaMZQLoSNYGNEm3l03HIQqpRIv0eqLUNUCkyv7ysVw4i6vZgdYxcdU0D3kSvUCIjH-icqk4PCDx5AwkeNp55Nqt6wKXDv9TH5pr-Wc3BWmZ1sEOEwyN8QlI8_5EpY3i1w5tysDdeFuiR7BOjpkD49RZzF0YajmocsB4_jXoZcldVNCOChXAbEfOw-BtjFJRN0N3EksymF4azkey8Q3rX07sXkRHavRfAOnowH119RL1V-Xmk_DUX8wSR-2zdlp8FxitJWPgbMmnszsTgEQrThTwsuMrndqzJ_nQ7HTnuK2LXEFmFwXw9NADspq2ZnQmZiN7CXnEYG8WCApzxw\",\"e\":\"AQAB\"}]}"] tenant-claim: "aud" now: [$time:datetime 2023 11 14 22 13 20]} {tls: true}]] [$crypto:claim [$session:claims $s] "iss"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'https://idp.example'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-map-claims" class="fn">
-    <h3>session:map-claims</h3>
-    <p class="fn-sig"><code>[$session:map-claims]  -> element</code>  —  Map a verified claim-set to its (principal, tenant) — the pure transform attach runs internally.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>'https://idp.example'</code>
+    </pre>
+  </div>
+</section><section id="fn-session-map-claims" class="fn">
+  <h3>session:map-claims</h3>
+  <p class="fn-sig"><code>[$session:map-claims]  -> element</code>  —  Map a verified claim-set to its (principal, tenant) — the pure transform attach runs internally.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [$session:map-claims [claims tid="acme" sub="dana"] {}]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>[principal id=dana [tenant id=acme]]</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-from-cookie" class="fn">
-    <h3>session:from-cookie</h3>
-    <p class="fn-sig"><code>[$session:from-cookie]  -> element</code>  —  Resolve the session from the request's session-id cookie, or absence when none is live.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>[principal id=dana [tenant id=acme]]</code>
+    </pre>
+  </div>
+</section><section id="fn-session-from-cookie" class="fn">
+  <h3>session:from-cookie</h3>
+  <p class="fn-sig"><code>[$session:from-cookie]  -> element</code>  —  Resolve the session from the request's session-id cookie, or absence when none is live.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/time']
 [?lib 'cx-stdlib/strings']
 [?let [= $pair [$session:attach-cookie [request scheme="https" [headers [header name="Authorization" value="Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6InJzYS0xIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlIiwic3ViIjoidXNlci0xIiwiYXVkIjoibXktYXBpIiwiZXhwIjoxNzAwMDAzNjAwLCJuYmYiOjE2OTk5OTk5OTAsImlhdCI6MTY5OTk5OTk5MH0.e4bn1A_a5Q0_4IZxKWipmmrUCCdmNkiTUs071mBMtMVXb68RGPtV2FTR1nRWvM3Zw2XTMuBsk_Y1HPinat_2JQkm3s90lltrErpYOky6Nwm6ha57BxQ0Sg5kWxuQF5KhWUqHzePIVDTfkr0WeN591nDTDn6VuajLaHn2pjXBsaJ0reT6mh6v40UQcBW-yy-XOfrsMeGVj_qZd1UmlE81XN957rjPENcPpH2E1SHfVhu3fQP3QZapxtdMADgWmryw_z5O2lDIIWb7miT0siXRCDjVEhDzKH6Hsf1aUPcYx9x44o1B5OBpX6z1uM1SP0qaOZu6x26H0AbHj84nIISE1A"]]] {jwks: [$crypto:jwks-parse "{\"keys\":[{\"kid\":\"rsa-1\",\"kty\":\"RSA\",\"alg\":\"RS256\",\"n\":\"jdwwBcaMZQLoSNYGNEm3l03HIQqpRIv0eqLUNUCkyv7ysVw4i6vZgdYxcdU0D3kSvUCIjH-icqk4PCDx5AwkeNp55Nqt6wKXDv9TH5pr-Wc3BWmZ1sEOEwyN8QlI8_5EpY3i1w5tysDdeFuiR7BOjpkD49RZzF0YajmocsB4_jXoZcldVNCOChXAbEfOw-BtjFJRN0N3EksymF4azkey8Q3rX07sXkRHavRfAOnowH119RL1V-Xmk_DUX8wSR-2zdlp8FxitJWPgbMmnszsTgEQrThTwsuMrndqzJ_nQ7HTnuK2LXEFmFwXw9NADspq2ZnQmZiN7CXnEYG8WCApzxw\",\"e\":\"AQAB\"}]}"] tenant-claim: "aud" now: [$time:datetime 2023 11 14 22 13 20]}]] [= $s [$first $pair]] [= $cv [$strings:join ("__Host-cxsid=", $s@id) ""]] [= $req2 [request scheme="https" [headers [header name="Cookie" [?attr value $cv]]]]] [?let [= $p [$session:principal [$session:from-cookie $req2 {}]]] $p@id]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'user-1'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-set-cookie" class="fn">
-    <h3>session:set-cookie</h3>
-    <p class="fn-sig"><code>[$session:set-cookie]  -> element</code>  —  Produce the Set-Cookie directives for a session — the session cookie plus its CSRF companion.</p>
-    
-  </section>
-  <section id="fn-session-clear-cookie" class="fn">
-    <h3>session:clear-cookie</h3>
-    <p class="fn-sig"><code>[$session:clear-cookie]  -> element</code>  —  Produce a clearing Set-Cookie directive for the detach or expiry path.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>'user-1'</code>
+    </pre>
+  </div>
+</section><section id="fn-session-set-cookie" class="fn">
+  <h3>session:set-cookie</h3>
+  <p class="fn-sig"><code>[$session:set-cookie]  -> element</code>  —  Produce the Set-Cookie directives for a session — the session cookie plus its CSRF companion.</p>
+</section><section id="fn-session-clear-cookie" class="fn">
+  <h3>session:clear-cookie</h3>
+  <p class="fn-sig"><code>[$session:clear-cookie]  -> element</code>  —  Produce a clearing Set-Cookie directive for the detach or expiry path.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [?let [= $c [$first [$session:clear-cookie {}]]] $c@max-age]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'0'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-rotate" class="fn">
-    <h3>session:rotate</h3>
-    <p class="fn-sig"><code>[$session:rotate]  -> element</code>  —  Mint a fresh session id and CSRF token (fixation defense), leaving the binding unchanged.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>'0'</code>
+    </pre>
+  </div>
+</section><section id="fn-session-rotate" class="fn">
+  <h3>session:rotate</h3>
+  <p class="fn-sig"><code>[$session:rotate]  -> element</code>  —  Mint a fresh session id and CSRF token (fixation defense), leaving the binding unchanged.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/time']
 [?let [= $pair [$session:attach-cookie [request scheme="https" [headers [header name="Authorization" value="Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6InJzYS0xIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlIiwic3ViIjoidXNlci0xIiwiYXVkIjoibXktYXBpIiwiZXhwIjoxNzAwMDAzNjAwLCJuYmYiOjE2OTk5OTk5OTAsImlhdCI6MTY5OTk5OTk5MH0.e4bn1A_a5Q0_4IZxKWipmmrUCCdmNkiTUs071mBMtMVXb68RGPtV2FTR1nRWvM3Zw2XTMuBsk_Y1HPinat_2JQkm3s90lltrErpYOky6Nwm6ha57BxQ0Sg5kWxuQF5KhWUqHzePIVDTfkr0WeN591nDTDn6VuajLaHn2pjXBsaJ0reT6mh6v40UQcBW-yy-XOfrsMeGVj_qZd1UmlE81XN957rjPENcPpH2E1SHfVhu3fQP3QZapxtdMADgWmryw_z5O2lDIIWb7miT0siXRCDjVEhDzKH6Hsf1aUPcYx9x44o1B5OBpX6z1uM1SP0qaOZu6x26H0AbHj84nIISE1A"]]] {jwks: [$crypto:jwks-parse "{\"keys\":[{\"kid\":\"rsa-1\",\"kty\":\"RSA\",\"alg\":\"RS256\",\"n\":\"jdwwBcaMZQLoSNYGNEm3l03HIQqpRIv0eqLUNUCkyv7ysVw4i6vZgdYxcdU0D3kSvUCIjH-icqk4PCDx5AwkeNp55Nqt6wKXDv9TH5pr-Wc3BWmZ1sEOEwyN8QlI8_5EpY3i1w5tysDdeFuiR7BOjpkD49RZzF0YajmocsB4_jXoZcldVNCOChXAbEfOw-BtjFJRN0N3EksymF4azkey8Q3rX07sXkRHavRfAOnowH119RL1V-Xmk_DUX8wSR-2zdlp8FxitJWPgbMmnszsTgEQrThTwsuMrndqzJ_nQ7HTnuK2LXEFmFwXw9NADspq2ZnQmZiN7CXnEYG8WCApzxw\",\"e\":\"AQAB\"}]}"] tenant-claim: "aud" now: [$time:datetime 2023 11 14 22 13 20]}]] [= $s [$first $pair]] [= $r [$session:rotate $s]] [?let [= $p [$session:principal $r]] $p@id]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'user-1'</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-csrf-token" class="fn">
-    <h3>session:csrf-token</h3>
-    <p class="fn-sig"><code>[$session:csrf-token]  -> string</code>  —  Return the session's synchronizer CSRF token for the front-end to echo back.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>'user-1'</code>
+    </pre>
+  </div>
+</section><section id="fn-session-csrf-token" class="fn">
+  <h3>session:csrf-token</h3>
+  <p class="fn-sig"><code>[$session:csrf-token]  -> string</code>  —  Return the session's synchronizer CSRF token for the front-end to echo back.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/time']
 [?lib 'cx-stdlib/strings']
 [?let [= $pair [$session:attach-cookie [request scheme="https" [headers [header name="Authorization" value="Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6InJzYS0xIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlIiwic3ViIjoidXNlci0xIiwiYXVkIjoibXktYXBpIiwiZXhwIjoxNzAwMDAzNjAwLCJuYmYiOjE2OTk5OTk5OTAsImlhdCI6MTY5OTk5OTk5MH0.e4bn1A_a5Q0_4IZxKWipmmrUCCdmNkiTUs071mBMtMVXb68RGPtV2FTR1nRWvM3Zw2XTMuBsk_Y1HPinat_2JQkm3s90lltrErpYOky6Nwm6ha57BxQ0Sg5kWxuQF5KhWUqHzePIVDTfkr0WeN591nDTDn6VuajLaHn2pjXBsaJ0reT6mh6v40UQcBW-yy-XOfrsMeGVj_qZd1UmlE81XN957rjPENcPpH2E1SHfVhu3fQP3QZapxtdMADgWmryw_z5O2lDIIWb7miT0siXRCDjVEhDzKH6Hsf1aUPcYx9x44o1B5OBpX6z1uM1SP0qaOZu6x26H0AbHj84nIISE1A"]]] {jwks: [$crypto:jwks-parse "{\"keys\":[{\"kid\":\"rsa-1\",\"kty\":\"RSA\",\"alg\":\"RS256\",\"n\":\"jdwwBcaMZQLoSNYGNEm3l03HIQqpRIv0eqLUNUCkyv7ysVw4i6vZgdYxcdU0D3kSvUCIjH-icqk4PCDx5AwkeNp55Nqt6wKXDv9TH5pr-Wc3BWmZ1sEOEwyN8QlI8_5EpY3i1w5tysDdeFuiR7BOjpkD49RZzF0YajmocsB4_jXoZcldVNCOChXAbEfOw-BtjFJRN0N3EksymF4azkey8Q3rX07sXkRHavRfAOnowH119RL1V-Xmk_DUX8wSR-2zdlp8FxitJWPgbMmnszsTgEQrThTwsuMrndqzJ_nQ7HTnuK2LXEFmFwXw9NADspq2ZnQmZiN7CXnEYG8WCApzxw\",\"e\":\"AQAB\"}]}"] tenant-claim: "aud" now: [$time:datetime 2023 11 14 22 13 20]}]] [= $s [$first $pair]] [$strings:is-empty [$session:csrf-token $s]]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>false</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-session-csrf-verify" class="fn">
-    <h3>session:csrf-verify</h3>
-    <p class="fn-sig"><code>[$session:csrf-verify]  -> element</code>  —  Constant-time check the request's submitted CSRF token against the session's; a no-op pass for Bearer.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/session']
+    </pre>
+    <pre class="sample-output">
+      <code>false</code>
+    </pre>
+  </div>
+</section><section id="fn-session-csrf-verify" class="fn">
+  <h3>session:csrf-verify</h3>
+  <p class="fn-sig"><code>[$session:csrf-verify]  -> element</code>  —  Constant-time check the request's submitted CSRF token against the session's; a no-op pass for Bearer.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/session']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/time']
 [?let [= $pair [$session:attach-cookie [request scheme="https" [headers [header name="Authorization" value="Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6InJzYS0xIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlIiwic3ViIjoidXNlci0xIiwiYXVkIjoibXktYXBpIiwiZXhwIjoxNzAwMDAzNjAwLCJuYmYiOjE2OTk5OTk5OTAsImlhdCI6MTY5OTk5OTk5MH0.e4bn1A_a5Q0_4IZxKWipmmrUCCdmNkiTUs071mBMtMVXb68RGPtV2FTR1nRWvM3Zw2XTMuBsk_Y1HPinat_2JQkm3s90lltrErpYOky6Nwm6ha57BxQ0Sg5kWxuQF5KhWUqHzePIVDTfkr0WeN591nDTDn6VuajLaHn2pjXBsaJ0reT6mh6v40UQcBW-yy-XOfrsMeGVj_qZd1UmlE81XN957rjPENcPpH2E1SHfVhu3fQP3QZapxtdMADgWmryw_z5O2lDIIWb7miT0siXRCDjVEhDzKH6Hsf1aUPcYx9x44o1B5OBpX6z1uM1SP0qaOZu6x26H0AbHj84nIISE1A"]]] {jwks: [$crypto:jwks-parse "{\"keys\":[{\"kid\":\"rsa-1\",\"kty\":\"RSA\",\"alg\":\"RS256\",\"n\":\"jdwwBcaMZQLoSNYGNEm3l03HIQqpRIv0eqLUNUCkyv7ysVw4i6vZgdYxcdU0D3kSvUCIjH-icqk4PCDx5AwkeNp55Nqt6wKXDv9TH5pr-Wc3BWmZ1sEOEwyN8QlI8_5EpY3i1w5tysDdeFuiR7BOjpkD49RZzF0YajmocsB4_jXoZcldVNCOChXAbEfOw-BtjFJRN0N3EksymF4azkey8Q3rX07sXkRHavRfAOnowH119RL1V-Xmk_DUX8wSR-2zdlp8FxitJWPgbMmnszsTgEQrThTwsuMrndqzJ_nQ7HTnuK2LXEFmFwXw9NADspq2ZnQmZiN7CXnEYG8WCApzxw\",\"e\":\"AQAB\"}]}"] tenant-claim: "aud" now: [$time:datetime 2023 11 14 22 13 20]}]] [= $s [$first $pair]] [= $tok [$session:csrf-token $s]] [= $req2 [request scheme="https" [headers [header name="X-CSRF-Token" [?attr value $tok]]]]] [?let [= $res [$session:csrf-verify $req2 $s {}]] $res@state]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>'attached'</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>'attached'</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>session</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,16 +143,14 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">Migration</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="migration">
   <h1>Migration</h1>
-  
-    <section id="from-v07x">
-      <h2>The v0.8.0 reshape (the historical big break)</h2>
-      
-        <p>v0.8.0 is the pre-release API/format-stability boundary and
+  <section id="from-v07x">
+    <h2>The v0.8.0 reshape (the historical big break)</h2>
+    <p>v0.8.0 is the pre-release API/format-stability boundary and
          remains the one breaking migration in CX's history: releases
          since have been additive under that stability boundary, so
          migrating to the current release means crossing the v0.8.0
@@ -160,94 +158,86 @@
          time, so the renames below were applied directly across the
          codebase rather than shipped as user-facing tooling. This
          section is the reference for the shape of the changes.</p>
-        <p><b>Rename: programs → code.</b> Every internal <code>programs</code>
+    <p><b>Rename: programs → code.</b> Every internal <code>programs</code>
          reference becomes <code>code</code>. The brand
          layer ("CX is data and code") was renamed immediately on
          d-2026-05-22-01; the internal rename cascades through:</p>
-        <table>
-          <thead>
-            
-              <tr>
-                <th>was</th>
-                <th>is</th>
-              </tr>
-            
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>cx_program_eval</td>
-                <td>cx_code_eval</td>
-              </tr>
-              <tr>
-                <td>vcx/programs/</td>
-                <td>vcx/code/</td>
-              </tr>
-              <tr>
-                <td>spec/programs.md</td>
-                <td>spec/code.md</td>
-              </tr>
-              <tr>
-                <td>conformance/programs.txt</td>
-                <td>conformance/code.cxd (today’s CX-native suite)</td>
-              </tr>
-              <tr>
-                <td>_cx_program_diagram (wasm)</td>
-                <td>_cx_code_diagram (wasm)</td>
-              </tr>
-              <tr>
-                <td>--- in_cxl (fixture marker)</td>
-                <td>--- in_code (fixture marker)</td>
-              </tr>
-            
-          </tbody>
-        </table>
-        <p><b><code>[?find]</code> is retired.</b> <code>[?find]</code> was always sugar for
+    <table>
+      <thead>
+        <tr>
+          <th>was</th>
+          <th>is</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>cx_program_eval</td>
+          <td>cx_code_eval</td>
+        </tr>
+        <tr>
+          <td>vcx/programs/</td>
+          <td>vcx/code/</td>
+        </tr>
+        <tr>
+          <td>spec/programs.md</td>
+          <td>spec/code.md</td>
+        </tr>
+        <tr>
+          <td>conformance/programs.txt</td>
+          <td>conformance/code.cxd (today’s CX-native suite)</td>
+        </tr>
+        <tr>
+          <td>_cx_program_diagram (wasm)</td>
+          <td>_cx_code_diagram (wasm)</td>
+        </tr>
+        <tr>
+          <td>--- in_cxl (fixture marker)</td>
+          <td>--- in_code (fixture marker)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><b><code>[?find]</code> is retired.</b> <code>[?find]</code> was always sugar for
          <code>[?for]</code> over a pattern. The migration is one of two
          forms:</p>
-        <table>
-          <thead>
-            
-              <tr>
-                <th>was</th>
-                <th>is</th>
-              </tr>
-            
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>[?find [user $u] :yield $u]</td>
-                <td>//user  or  [?for [user $u] [yield $u]]</td>
-              </tr>
-              <tr>
-                <td>[?find [user @active=true $u] :yield $u]</td>
-                <td>//user[@active=true]</td>
-              </tr>
-              <tr>
-                <td>[?find [user [email $e]] :yield $e]</td>
-                <td>//user/email</td>
-              </tr>
-              <tr>
-                <td>count([?find [user @active=true $u] :yield $u])</td>
-                <td>[$count //user[@active=true]]</td>
-              </tr>
-            
-          </tbody>
-        </table>
-        <p><b>CXPath is now a value kind.</b> A path expression like <code>//user</code>
+    <table>
+      <thead>
+        <tr>
+          <th>was</th>
+          <th>is</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>[?find [user $u] :yield $u]</td>
+          <td>//user  or  [?for [user $u] [yield $u]]</td>
+        </tr>
+        <tr>
+          <td>[?find [user @active=true $u] :yield $u]</td>
+          <td>//user[@active=true]</td>
+        </tr>
+        <tr>
+          <td>[?find [user [email $e]] :yield $e]</td>
+          <td>//user/email</td>
+        </tr>
+        <tr>
+          <td>count([?find [user @active=true $u] :yield $u])</td>
+          <td>[$count //user[@active=true]]</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><b>CXPath is now a value kind.</b> A path expression like <code>//user</code>
          parses to a <code>cx.PathNode</code> value, evaluates to a sequence, and
          round-trips canonically as the terse form. The retired v0.7.0
          CXPath subset is replaced by XPath 3.1 alignment — see the
          path-expression sections of
          <a href="../../spec/03-approved/core/code.md"><code>spec/03-approved/core/code.md</code></a>.</p>
-        <p><b>Multi-arm <code>[?match]</code>.</b> <code>[?match]</code> now supports N arms
+    <p><b>Multi-arm <code>[?match]</code>.</b> <code>[?match]</code> now supports N arms
          with <code>[case …]</code> / <code>[when …]</code> /
          <code>[else …]</code> clause children, scalar literal patterns, <code>_</code>
          wildcard, and <code>[where …]</code> guards. The 2-arg form (single arm,
          raises <code>CXER0100</code> on miss) is preserved unchanged.</p>
-        <pre>
-          <code class="language-cx">[# v0.7.x — nested if chain (legacy slot form)                 #]
+    <pre>
+      <code class="language-cx">[# v0.7.x — nested if chain (legacy slot form)                 #]
          [?if (name($n) = 'prose') :then [p $n]
               :else [?if (name($n) = 'code') :then [pre $n]
                           :else ()]]
@@ -257,22 +247,22 @@
            [case [prose $p] [p $p]]
            [case [code $c]  [pre $c]]
            [else            ()]]</code>
-        </pre>
-        <p><b><code>[?modify]</code> is new.</b> There was no idiomatic update
+    </pre>
+    <p><b><code>[?modify]</code> is new.</b> There was no idiomatic update
          directive in v0.7.x — code had
          to rebuild via <code>[?for]</code>. v0.8.0 ships the eleven-action
          vocabulary (<code>[set V]</code> / <code>[delete]</code> / <code>[using F]</code> /
          <code>[rename N]</code> / <code>[set-attr N V]</code> / <code>[delete-attr N]</code> /
          <code>[append V]</code> / <code>[prepend V]</code> / <code>[insert-before V]</code> /
          <code>[insert-after V]</code> / <code>[replace V]</code>). See <a class="xref" href="code.html#modify">modify</a>.</p>
-        <p><b>Two-layer bindings.</b> See
+    <p><b>Two-layer bindings.</b> See
          <a href="../../spec/03-approved/misc/bindings.md"><code>spec/03-approved/misc/bindings.md</code></a>. Layer 1 is the
          canonical 16-method surface, identical across V/Python/Go/Rust.
          Layer 2 is opt-in host idiom packs (<code>cxlib.idioms</code> in Python,
          <code>cxlib/idioms</code> in Go, <code>cxlib::idioms</code> in Rust). v0.7.x had a
          single flat surface per binding; v0.8.0 codifies the
          separation. See <a class="xref" href="bindings.html">bindings</a>.</p>
-        <p><b>Binding scope reduced to four.</b> v0.8.0 ships only V
+    <p><b>Binding scope reduced to four.</b> v0.8.0 ships only V
          (native), Python, Go, Rust. The
          TypeScript, Java, C#, Ruby, Kotlin, and Swift bindings are
          moved to <code>lang/_archived/</code> (preserved, not deleted).
@@ -280,298 +270,262 @@
          contributions accepted but not blocked on. The make tests for
          archived bindings are no longer in the default <code>make test</code>
          target.</p>
-        <p class="note">The renames above are <b>mechanical</b> — they do not attempt to
+    <p class="note">The renames above are <b>mechanical</b> — they do not attempt to
          convert hand-rolled nested <code>[?if]</code> chains to multi-arm
          <code>[?match]</code> (that requires semantic understanding of what each
          branch tests). The conversion is straightforward by hand once
          you know the multi-arm form (see <a class="xref" href="code.html#match">match</a>).</p>
-      
-    </section>
-    <section id="from-xml">
-      <h2>From XML</h2>
-      
-        <p>XML is the closest projection to CX — same element / attribute /
+  </section>
+  <section id="from-xml">
+    <h2>From XML</h2>
+    <p>XML is the closest projection to CX — same element / attribute /
          body shape. Migration is one-shot:
          <code>cx --from=xml --to=cx input.xml &gt; input.cx</code>.</p>
-        <ul>
-          
-            <li><b>DOCTYPE / DTD</b> — drop. Use a CX schema (<code>.cxs</code>)
+    <ul>
+      <li><b>DOCTYPE / DTD</b> — drop. Use a CX schema (<code>.cxs</code>)
               instead. See <a class="xref" href="data-language.html#schema">schema</a>.</li>
-            <li><b>Namespaces</b> — <code>xmlns:*</code> declarations become CX
+      <li><b>Namespaces</b> — <code>xmlns:*</code> declarations become CX
               attributes on the root element; namespace-qualified
               element names use the same <code>prefix:name</code> form. See
               <a class="xref" href="data-language.html#namespaces">namespaces</a>.</li>
-            <li><b>CDATA</b> — projects to triple-quoted strings.</li>
-            <li><b>Processing instructions</b> — preserved as <code>[?pi …]</code>
+      <li><b>CDATA</b> — projects to triple-quoted strings.</li>
+      <li><b>Processing instructions</b> — preserved as <code>[?pi …]</code>
               elements; their bodies are opaque text.</li>
-            <li><b>XPath queries</b> — port to CXPath. The selection core
+      <li><b>XPath queries</b> — port to CXPath. The selection core
               is identical (see the path-expression sections of
               <a href="../../spec/03-approved/core/code.md"><code>spec/03-approved/core/code.md</code></a>);
               you drop XPath's <code>for</code>/<code>let</code>/<code>if</code>/<code>function</code> constructs
               in favor of the CX directives.</li>
-            <li><b>XSLT / XQuery transforms</b> — port to CX code. There
+      <li><b>XSLT / XQuery transforms</b> — port to CX code. There
               is no automated converter; the structural mapping is
               direct because the data model is the same.</li>
-          
-        </ul>
-      
-    </section>
-    <section id="from-json-yaml">
-      <h2>From JSON / YAML / TOML</h2>
-      
-        <p>These are projection formats. Migration is again one-shot:
+    </ul>
+  </section>
+  <section id="from-json-yaml">
+    <h2>From JSON / YAML / TOML</h2>
+    <p>These are projection formats. Migration is again one-shot:
          <code>cx --from=json --to=cx input.json &gt; input.cx</code>.</p>
-        <p>The projection rules are deterministic and reversible (see
+    <p>The projection rules are deterministic and reversible (see
          <a class="xref" href="surfaces.html#json">json</a>, <a class="xref" href="surfaces.html#yaml">yaml</a>, <a class="xref" href="surfaces.html#toml">toml</a>). What you gain on the CX side:</p>
-        <ul>
-          
-            <li><b>Comments.</b> JSON has none; YAML and TOML have ad-hoc
+    <ul>
+      <li><b>Comments.</b> JSON has none; YAML and TOML have ad-hoc
               comments. CX has structured <code>[; … ]</code> comments that
               survive <code>cx fmt</code> and round-trip across projections.</li>
-            <li><b>Schemas.</b> JSON Schema / YAML schemas are external
+      <li><b>Schemas.</b> JSON Schema / YAML schemas are external
               artifacts. CX schemas are first-class CX, in the same
               parser, with the same toolchain.</li>
-            <li><b>Queries.</b> JSONPath / <code>jq</code> / YAML query systems are
+      <li><b>Queries.</b> JSONPath / <code>jq</code> / YAML query systems are
               format-specific. CXPath works on any projected document
               regardless of source format.</li>
-            <li><b>Updates.</b> No idiomatic pure-functional update for
+      <li><b>Updates.</b> No idiomatic pure-functional update for
               JSON / YAML / TOML at the format level. <code>[?modify]</code>
               gives you one.</li>
-            <li><b>Identity.</b> Canonical JSON, JCS, and <code>jq -S</code> exist
+      <li><b>Identity.</b> Canonical JSON, JCS, and <code>jq -S</code> exist
               but are not universally adopted. CX has one canonical
               form built into every tool.</li>
-          
-        </ul>
-      
-    </section>
-    <section id="retired-surfaces">
-      <h2>Retired surfaces and replacements</h2>
-      
-        <p>Surfaces removed or renamed across v0.7.x → v0.8.0, with their
+    </ul>
+  </section>
+  <section id="retired-surfaces">
+    <h2>Retired surfaces and replacements</h2>
+    <p>Surfaces removed or renamed across v0.7.x → v0.8.0, with their
          replacement.</p>
-        <table>
-          <thead>
-            
-              <tr>
-                <th>retired</th>
-                <th>replacement</th>
-                <th>source</th>
-              </tr>
-            
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>[?find]</td>
-                <td>[?for] over pattern, or CXPath //name</td>
-                <td>CXPath value-kind alignment</td>
-              </tr>
-              <tr>
-                <td>[- comment -]</td>
-                <td>[; comment ]</td>
-                <td>lexer consolidation</td>
-              </tr>
-              <tr>
-                <td>:contains predicate hack</td>
-                <td>ancestor:: axis</td>
-                <td>CXPath value-kind alignment</td>
-              </tr>
-              <tr>
-                <td>:direct modifier hack</td>
-                <td>following-sibling:: axis</td>
-                <td>CXPath value-kind alignment</td>
-              </tr>
-              <tr>
-                <td>XPath general-comparison =</td>
-                <td>value-comparison only</td>
-                <td>CXPath value-kind alignment</td>
-              </tr>
-              <tr>
-                <td>cx_program_eval (C ABI)</td>
-                <td>cx_code_eval</td>
-                <td>programs → code rename</td>
-              </tr>
-              <tr>
-                <td>in_cxl (fixture marker)</td>
-                <td>in_code</td>
-                <td>programs → code rename</td>
-              </tr>
-              <tr>
-                <td>cxl-* playground starter ids</td>
-                <td>code-* starter ids</td>
-                <td>Phase 7.3</td>
-              </tr>
-              <tr>
-                <td>TypeScript / Java / C# / Ruby / Kotlin / Swift bindings</td>
-                <td>archived under lang/_archived/</td>
-                <td>d-2026-05-22-03</td>
-              </tr>
-              <tr>
-                <td>Layer-1-only flat binding surface</td>
-                <td>Layer 1 + Layer 2</td>
-                <td>d-2026-05-22-07</td>
-              </tr>
-            
-          </tbody>
-        </table>
-        <p class="note"><b>Archived bindings are not deleted.</b> Files move to
+    <table>
+      <thead>
+        <tr>
+          <th>retired</th>
+          <th>replacement</th>
+          <th>source</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>[?find]</td>
+          <td>[?for] over pattern, or CXPath //name</td>
+          <td>CXPath value-kind alignment</td>
+        </tr>
+        <tr>
+          <td>[- comment -]</td>
+          <td>[; comment ]</td>
+          <td>lexer consolidation</td>
+        </tr>
+        <tr>
+          <td>:contains predicate hack</td>
+          <td>ancestor:: axis</td>
+          <td>CXPath value-kind alignment</td>
+        </tr>
+        <tr>
+          <td>:direct modifier hack</td>
+          <td>following-sibling:: axis</td>
+          <td>CXPath value-kind alignment</td>
+        </tr>
+        <tr>
+          <td>XPath general-comparison =</td>
+          <td>value-comparison only</td>
+          <td>CXPath value-kind alignment</td>
+        </tr>
+        <tr>
+          <td>cx_program_eval (C ABI)</td>
+          <td>cx_code_eval</td>
+          <td>programs → code rename</td>
+        </tr>
+        <tr>
+          <td>in_cxl (fixture marker)</td>
+          <td>in_code</td>
+          <td>programs → code rename</td>
+        </tr>
+        <tr>
+          <td>cxl-* playground starter ids</td>
+          <td>code-* starter ids</td>
+          <td>Phase 7.3</td>
+        </tr>
+        <tr>
+          <td>TypeScript / Java / C# / Ruby / Kotlin / Swift bindings</td>
+          <td>archived under lang/_archived/</td>
+          <td>d-2026-05-22-03</td>
+        </tr>
+        <tr>
+          <td>Layer-1-only flat binding surface</td>
+          <td>Layer 1 + Layer 2</td>
+          <td>d-2026-05-22-07</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note"><b>Archived bindings are not deleted.</b> Files move to
          <code>lang/_archived/&lt;lang&gt;/</code> and remain in git history. The
          restoration path: each archived binding can return on opt-in
          once Layer 1 is stable. Community contributions are welcome
          on the archived path; they are not blocked on by the core
          team.</p>
-        <p><b>Doc-gen pipeline consolidated.</b> v0.8.0 ships a single
+    <p><b>Doc-gen pipeline consolidated.</b> v0.8.0 ships a single
          pre-publish documentation generator at
          <code>scripts/gen_guide/</code> rendering <code>docs-src/canonical/</code> into
          the multi-page guide at <code>docs/guide/</code> — eat-our-own-dog-food
          by running <code>cx</code> on every section. See <a class="xref" href="tooling.html#docgen">docgen</a> for the
          pipeline and [<code>make guide</code>] for the
          entry point.</p>
-      
-    </section>
-    <section id="extend-contribute">
-      <h2>Extend and contribute</h2>
-      
-        <p>CX is open to contribution at every layer. This subsection is
+  </section>
+  <section id="extend-contribute">
+    <h2>Extend and contribute</h2>
+    <p>CX is open to contribution at every layer. This subsection is
          the developer-facing how-to: filing issues, adding fixtures,
          proposing changes, shipping a binding, debugging a failure.</p>
-        <section id="file-bug">
-          <h3>Filing an issue</h3>
-          
-            <p>Issues live in the project tracker. Every report should
+    <section id="file-bug">
+      <h3>Filing an issue</h3>
+      <p>Issues live in the project tracker. Every report should
            include: minimal CX reproducer (one file), <code>cx --version</code>
            output, error code (e.g. CXER0100) + message, expected vs
            observed behaviour, and the workaround you used if any.
            For parse / canon / hash bugs, a 5-line CX snippet is
            usually enough; for evaluator bugs include the directive
            shape and the input doc.</p>
-          
-        </section>
-        <section id="add-fixture">
-          <h3>Adding a conformance fixture</h3>
-          
-            <p>The conformance suite is <code>conformance/*.cxd</code> files in
+    </section>
+    <section id="add-fixture">
+      <h3>Adding a conformance fixture</h3>
+      <p>The conformance suite is <code>conformance/*.cxd</code> files in
            per-feature buckets (code.cxd for directives, data_bin.cxd
            for binary wire, etc.) — CX-native suites of
            <code>[case id=…]</code> blocks with <code>[in-cx]</code> / <code>[in-code]</code> /
            <code>[call]</code> inputs and an <code>[out-text]</code> (or <code>[out-err]</code>)
            expectation. (The older <code>=== test:</code> / <code>--- in_cx</code> text
            form is legacy.) To add one:</p>
-            <ul>
-              
-                <li>Identify the right file (<code>code.cxd</code> for code-language
+      <ul>
+        <li>Identify the right file (<code>code.cxd</code> for code-language
                 features; <code>binding_api.cxd</code> for Layer-1 parity).</li>
-                <li>Add the fixture block following existing format.</li>
-                <li>Run the runner (<code>devbox run -- make test-vcx</code> for V
+        <li>Add the fixture block following existing format.</li>
+        <li>Run the runner (<code>devbox run -- make test-vcx</code> for V
                 conformance; <code>make test-binding-api-parity</code> for Layer-1
                 cross-binding).</li>
-                <li>If the runner errors on your fixture, the implementation
+        <li>If the runner errors on your fixture, the implementation
                 doesn't handle it — that's the bug; file it. If runner
                 green, your fixture is now a regression gate.</li>
-              
-            </ul>
-          
-        </section>
-        <section id="propose-change">
-          <h3>Proposing a design change</h3>
-          
-            <p>CX changes that affect the spec / ABI / surface are made by
+      </ul>
+    </section>
+    <section id="propose-change">
+      <h3>Proposing a design change</h3>
+      <p>CX changes that affect the spec / ABI / surface are made by
            editing the spec — the spec is the single source of truth.
            The workflow:</p>
-            <ul>
-              
-                <li><b>Draft</b> the change as an edit to the relevant spec
+      <ul>
+        <li><b>Draft</b> the change as an edit to the relevant spec
                 file under <code>spec/</code>, with was-vs-is tables, context,
                 the specific decisions, alternatives considered, and
                 conformance gates.</li>
-                <li><b>Review window</b> — submit for owner + community
+        <li><b>Review window</b> — submit for owner + community
                 review. Iterate the tables until reviewers can scan
                 the design in 2-3 minutes.</li>
-                <li><b>Ratify</b> — the reviewed edit graduates into
+        <li><b>Ratify</b> — the reviewed edit graduates into
                 <code>spec/03-approved/</code>.</li>
-                <li><b>Implement</b> — landing PRs cite the ratified spec
+        <li><b>Implement</b> — landing PRs cite the ratified spec
                 change. Its conformance gates block the next
                 release.</li>
-              
-            </ul>
-            <p>Keep spec edits scannable: lead with was-vs-is tables and
+      </ul>
+      <p>Keep spec edits scannable: lead with was-vs-is tables and
            keep the prose tight so reviewers can grasp the design
            quickly.</p>
-          
-        </section>
-        <section id="ship-binding">
-          <h3>Shipping a new binding</h3>
-          
-            <p>Contributing a binding for a language not currently in the
+    </section>
+    <section id="ship-binding">
+      <h3>Shipping a new binding</h3>
+      <p>Contributing a binding for a language not currently in the
            Tier-1 set (V / Python / Go / Rust):</p>
-            <ul>
-              
-                <li>Implement the 16-method Layer-1 surface
+      <ul>
+        <li>Implement the 16-method Layer-1 surface
                 (spec/03-approved/misc/bindings.md §2.1) — case-adjusted for host
                 conventions but otherwise identical.</li>
-                <li>FFI extern declarations against the C ABI symbols in
+        <li>FFI extern declarations against the C ABI symbols in
                 <code>include/cx.h</code>. Match the version's cap bits.</li>
-                <li>Call <code>cx_init()</code> once per process; call
+        <li>Call <code>cx_init()</code> once per process; call
                 <code>cx_thread_register()</code> at every FFI chokepoint (or
                 use a per-thread guard pattern).</li>
-                <li>Add a quickstart in <code>docs-src/canonical/sections/07-bindings.cxd</code>.</li>
-                <li>Wire conformance — your binding must pass
+        <li>Add a quickstart in <code>docs-src/canonical/sections/07-bindings.cxd</code>.</li>
+        <li>Wire conformance — your binding must pass
                 <code>conformance/binding_api.cxd</code> byte-identically (gate
                 28.6). The runner pattern lives at
                 <code>lang/python/conformance_code.py</code> /
                 <code>lang/go/cxlib/conformance_code_test.go</code> —
                 mirror in your language.</li>
-                <li>PR to <code>lang/&lt;your-name&gt;/cxlib/</code> with the binding code
+        <li>PR to <code>lang/&lt;your-name&gt;/cxlib/</code> with the binding code
                 plus the conformance harness.</li>
-              
-            </ul>
-            <p>For restoring an archived binding (TypeScript / Java / C# /
+      </ul>
+      <p>For restoring an archived binding (TypeScript / Java / C# /
            Ruby / Kotlin / Swift): see
            <code>lang/_archived/README.md</code> for the recipe.</p>
-          
-        </section>
-        <section id="debug-investigate">
-          <h3>Debugging an implementation</h3>
-          
-            <p>Reproducing and triaging a CX bug:</p>
-            <ul>
-              
-                <li><b>Reduce the repro.</b> Get to the smallest input that
+    </section>
+    <section id="debug-investigate">
+      <h3>Debugging an implementation</h3>
+      <p>Reproducing and triaging a CX bug:</p>
+      <ul>
+        <li><b>Reduce the repro.</b> Get to the smallest input that
                 triggers the failure (one CX file, ideally &lt; 20
                 lines).</li>
-                <li><b>Capture diagnostic output.</b> <code>cx code-tree repro.cx</code>
+        <li><b>Capture diagnostic output.</b> <code>cx code-tree repro.cx</code>
                 shows the parsed program tree with source spans;
                 <code>cx --ast repro.cx</code> dumps the full AST as JSON; and
                 <code>cx code-diagram repro.cx --level=min|compact|full</code>
                 renders the program's structure at increasing
                 detail.</li>
-                <li><b>Bisect</b> if the bug appeared between versions —
+        <li><b>Bisect</b> if the bug appeared between versions —
                 <code>git bisect run sh -c 'cx repro.cx; test $? = 0'</code>.</li>
-                <li><b>Check the conformance suite</b> — does a similar
+        <li><b>Check the conformance suite</b> — does a similar
                 fixture exist? If yes, what's different about yours?</li>
-                <li><b>File a fixture</b> alongside the bug report (see
+        <li><b>File a fixture</b> alongside the bug report (see
                 §<a class="xref" href="#add-fixture">add-fixture</a>) so the fix lands a regression gate.</li>
-              
-            </ul>
-            <p>For V-side debugging: the impl lives at <code>vcx/code/*.v</code>
+      </ul>
+      <p>For V-side debugging: the impl lives at <code>vcx/code/*.v</code>
            (post-rename, was <code>vcx/programs/</code>). Build with <code>devbox run
            -- make -C vcx build</code>; run unit tests with <code>make test-vcx</code>.</p>
-          
-        </section>
-      
     </section>
-  
+  </section>
 </section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>Migration</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

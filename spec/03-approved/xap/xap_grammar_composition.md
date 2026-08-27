@@ -198,6 +198,7 @@ component binding and append path — never a bypass.
 ```
 [principals
   [deriver name=detect produces='delayed-shipment/delay-alert'
+           reads='orders/order shipments/shipment'
            package='./detect.cx'
            doc='Joins orders past their promise with undelivered shipments.']]
 ```
@@ -208,7 +209,14 @@ component binding and append path — never a bypass.
    actor. `produces=` names exactly one qualified `derived=true` noun of
    the composed grammar (an unresolvable or non-derived target is a
    load-time refusal); a grammar may bind at most one deriver per derived
-   noun.
+   noun; `reads=` is the space-separated read set of rule 3 below.
+
+   *"ONE block" is a precedence rule, not only a reading convenience*
+   (RULED: CO-9): where a runtime also accepts deriver bindings as call
+   options — a deployment host assembling its own `[$xap:run]` opts — a
+   document carrying `[deriver]` rows **supersedes** that option outright
+   rather than merging with it, because a merge would make two blocks. See
+   `xap_feature_distribution_market.md` §6.3.1.
 2. **Derived nouns are deriver-reserved (W7).** No grammar verb may
    declare `[writes]` onto a derived noun — the compose gate refuses
    (`:w7`). A manual override is modeled as a **source noun the deriver

@@ -53,10 +53,23 @@
   // Compatibility: if root.createCxModule is already defined (e.g. a
   // host page that explicitly loaded a specific libcx-*.js via a
   // <script> tag before cxlib.js), use that directly + skip injection.
-  const detectedMode = (typeof root.crossOriginIsolated !== 'undefined'
-                        && root.crossOriginIsolated === true
-                        && typeof root.SharedArrayBuffer === 'function')
-                       ? 'pthreads' : 'async';
+  // JSPI capability gates the bundle CHOICE, before instantiation:
+  // libcx-async / libcx-pthreads are JSPI builds (-sASYNCIFY=2, #930)
+  // whose emscripten glue calls `new WebAssembly.Suspending(...)` at
+  // instantiation — on a host without the JSPI API (Safari; Firefox
+  // where flag-gated; node v22) they ABORT before any feature probe
+  // could run. Such hosts get libcx-sync: a plain (ASYNCIFY=0) bundle
+  // with the full recursion window but no wall-clock [?sleep]
+  // suspension — bare wall sleeps raise catchable CXER0270 per the
+  // wasmSetWallSleep contract; `[?sleep DUR mock]` works everywhere.
+  const jspiCapable = typeof WebAssembly !== 'undefined'
+                      && typeof WebAssembly.Suspending === 'function';
+  const detectedMode = !jspiCapable
+    ? 'sync'
+    : (typeof root.crossOriginIsolated !== 'undefined'
+       && root.crossOriginIsolated === true
+       && typeof root.SharedArrayBuffer === 'function')
+      ? 'pthreads' : 'async';
 
   function injectLoader() {
     return new Promise((resolve, reject) => {
@@ -67,7 +80,9 @@
       }
       const me = document.currentScript;
       const here = me ? me.src : new URL('cxlib.js', root.location.href).href;
-      const artifact = detectedMode === 'pthreads' ? 'libcx-pthreads.js' : 'libcx-async.js';
+      const artifact = detectedMode === 'pthreads' ? 'libcx-pthreads.js'
+                     : detectedMode === 'sync'     ? 'libcx-sync.js'
+                     : 'libcx-async.js';
       const url = new URL(artifact, here).href;
       const s = document.createElement('script');
       s.src = url;
@@ -80,6 +95,24 @@
 
   let M = null;
   let asyncifyAvailable = false;
+  // jspiMode — true when the loaded artifact was built with
+  // ASYNCIFY_MODE=2 (-sASYNCIFY=2, WebAssembly JS Promise Integration)
+  // AND the host implements the JSPI API. The build stamps
+  // Module.cxAsyncifyMode = 2 via --pre-js (scripts/wasm/
+  // jspi_mode_prejs.js); classic-Asyncify and plain artifacts never
+  // define it, so they keep the historic ccall {async:true} path.
+  // Detection must be a build stamp, not a WebAssembly.Suspending
+  // feature probe alone: a classic artifact in a JSPI-capable browser
+  // must stay on the classic path (promising-wrapping a classic-
+  // instrumented export bypasses the Asyncify unwind machinery).
+  let jspiMode = false;
+  // Lazily-created WebAssembly.promising wrappers around the RAW wasm
+  // exports (Module.wasmExports.*, exported via EXPORTED_RUNTIME_
+  // METHODS). The Module._-prefixed wrappers can be JS shims
+  // (createExportWrapper under assertions builds), which
+  // WebAssembly.promising rejects — always wrap the raw export.
+  let _jspiEval = null;       // cx_code_eval_with_len, promising-wrapped
+  let _jspiStreaming = null;  // cx_code_eval_streaming, promising-wrapped
   const ready = injectLoader().then(() => {
     const loader = root.createCxModule;
     if (typeof loader !== 'function') {
@@ -111,6 +144,12 @@
     if (asyncifyAvailable && typeof M._cx_wasm_set_wall_sleep === 'function') {
       M._cx_wasm_set_wall_sleep(1);
     }
+    jspiMode = asyncifyAvailable
+      && M.cxAsyncifyMode === 2
+      && typeof WebAssembly !== 'undefined'
+      && typeof WebAssembly.promising === 'function'
+      && M.wasmExports
+      && typeof M.wasmExports.cx_code_eval_with_len === 'function';
   });
 
   function pushBytes(s) {
@@ -161,13 +200,35 @@
   }
 
   // evalCodeAsyncInternal — Promise-aware variant for ASYNCIFY builds.
-  // Direct `M._cx_code_eval_with_len(...)` returns 0 even when the
-  // wasm suspends (Asyncify's resume machinery isn't wired into raw
-  // export calls without ccall's {async: true} option). ccall handles
-  // both the Asyncify suspend/resume bookkeeping and the int→string
+  //
+  // Classic-Asyncify artifacts (ASYNCIFY_MODE=1): direct
+  // `M._cx_code_eval_with_len(...)` returns 0 even when the wasm
+  // suspends (Asyncify's resume machinery isn't wired into raw export
+  // calls without ccall's {async: true} option). ccall handles both
+  // the Asyncify suspend/resume bookkeeping and the int→string
   // marshalling. Buffers are owned by ccall in this path.
+  //
+  // JSPI artifacts (ASYNCIFY_MODE=2): ccall {async:true} is classic
+  // plumbing and breaks (`TypeError: ret.then is not a function`,
+  // measured emcc 5.0.7) — instead wrap the RAW export with
+  // WebAssembly.promising and reuse the manual pointer plumbing from
+  // the sync evalCode. The engine suspends the wasm stack natively on
+  // [?sleep] and the wrapper resolves when the eval returns.
   async function evalCodeAsyncInternal(programSource, target, input) {
     if (!M) throw new Error('cxlib: not ready — await cxlib.ready first');
+    if (jspiMode) {
+      if (!_jspiEval) {
+        _jspiEval = WebAssembly.promising(M.wasmExports.cx_code_eval_with_len);
+      }
+      const prog = pushBytes(programSource);
+      const inp  = pushBytes(input || '');
+      const tgt  = pushBytes(target || 'cx');
+      const errPtrPtr = M._malloc(4); M.setValue(errPtrPtr, 0, 'i32');
+      try {
+        const res = await _jspiEval(inp.p, inp.n, prog.p, prog.n, tgt.p, errPtrPtr);
+        return pullErrOrThrow(errPtrPtr, res);
+      } finally { M._free(prog.p); M._free(inp.p); M._free(tgt.p); }
+    }
     const errPtrPtr = M._malloc(4); M.setValue(errPtrPtr, 0, 'i32');
     try {
       const resStr = await M.ccall(
@@ -375,12 +436,24 @@
     // false, the playground uses a Web Worker (HTTP) or falls back to
     // CXER0270 (file://).
     isAsyncify() { return asyncifyAvailable; },
+    // Reports whether the loaded wasm is a JSPI build (-sASYNCIFY=2,
+    // build stamp Module.cxAsyncifyMode=2) running in a JSPI-capable
+    // host. When true, the async eval lanes suspend natively via
+    // WebAssembly.promising wrappers (no Asyncify instrumentation —
+    // full recursion depth on sync exports), and a wall-clock
+    // [?sleep] reached through a plain SYNC export throws a
+    // JS-catchable SuspendError instead of suspending.
+    isJspi() { return jspiMode; },
     // reports which artifact loaded:
     //   'pthreads' — libcx-pthreads.{js,wasm} loaded; SAB enabled;
-    //                :par runs on real OS threads.
-    //   'async'    — libcx-async.js loaded; ASYNCIFY-only;
+    //                :par runs on real OS threads. JSPI host required.
+    //   'async'    — libcx-async.js loaded (JSPI build);
     //                :par produces correct output but doesn't
     //                accelerate (single-threaded eval).
+    //   'sync'     — libcx-sync.js loaded (plain build; the host lacks
+    //                the JSPI API — Safari, flag-gated Firefox, node).
+    //                Full recursion window; wall-clock [?sleep] raises
+    //                catchable CXER0270 (use [?sleep DUR mock]).
     // Set by the dual-loader bootstrap above based on host environment
     // detection (crossOriginIsolated + SAB). The playground UI banner
     // consumes this to communicate the parallelism story.
@@ -481,6 +554,17 @@
     if (asyncifyAvailable) {
       return evalCodeAsyncInternal(src, target || 'cx', input || '');
     }
+    // Non-suspending bundle (libcx-sync, or any plain build): resolve
+    // with the SYNC result directly. Bare wall-clock [?sleep] REFUSES
+    // here — the engine raises catchable CXER0270 pointing at
+    // `[?sleep DUR mock]` (wasmSetWallSleep stays OFF on non-asyncify
+    // builds). The Worker lane below is not taken: its script
+    // (playground/playground.worker.js) does not ship, so `new
+    // Worker(url)` 404s asynchronously and the init promise would
+    // hang — the sync fallback is the honest behavior.
+    if (!asyncifyAvailable) {
+      return cxlib.evalCode(src, target || 'cx', input || '');
+    }
     // Path 2: Web Worker (when available; file:// origin will fail).
     if (typeof Worker === 'undefined') {
       return cxlib.evalCode(src, target || 'cx', input || '');
@@ -525,11 +609,36 @@
     };
     const cbPtr = M.addFunction(cbFn, 'iiii');
     const errPtrPtr = M._malloc(4); M.setValue(errPtrPtr, 0, 'i32');
+    // user=1 signals CX_STREAM_UNBUFFERED — flush after every
+    // [?for] :yield emit instead of buffering 32 KiB. Playground
+    // demos want immediate per-yield visibility; the default
+    // throughput-tuned buffer threshold hides individual chunks.
+    if (jspiMode) {
+      // JSPI artifact: promising-wrapped raw export + the manual
+      // pointer plumbing from the sync evalCodeStreaming (ccall
+      // {async:true} breaks under JSPI — see evalCodeAsyncInternal).
+      if (!_jspiStreaming) {
+        _jspiStreaming = WebAssembly.promising(M.wasmExports.cx_code_eval_streaming);
+      }
+      const prog = pushBytes(programSource);
+      const inp  = pushBytes(input || '');
+      const tgt  = pushBytes(target || 'cx');
+      try {
+        await _jspiStreaming(inp.p, inp.n, prog.p, prog.n, tgt.p,
+                             cbPtr, 1, errPtrPtr);
+        const errPtr = M.getValue(errPtrPtr, 'i32');
+        if (errPtr) {
+          const msg = M.UTF8ToString(errPtr); M._cx_free(errPtr);
+          throwCx(msg);
+        }
+      } finally {
+        M._free(errPtrPtr);
+        M._free(prog.p); M._free(inp.p); M._free(tgt.p);
+        M.removeFunction(cbPtr);
+      }
+      return;
+    }
     try {
-      // Pass user=1 to signal CX_STREAM_UNBUFFERED — flush after every
-      // [?for] :yield emit instead of buffering 32 KiB. Playground
-      // demos want immediate per-yield visibility; the default
-      // throughput-tuned buffer threshold hides individual chunks.
       await M.ccall(
         'cx_code_eval_streaming',
         null,

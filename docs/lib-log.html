@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=0.17.0">
 </head>
 <body>
 <aside class="sidebar">
@@ -143,173 +143,147 @@
 </aside>
 <header class="sheet-bar">
   <div class="sb-left"><span class="sb-brand">CX · Reference guide</span><span class="sb-title">log</span></div>
-  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.16.0</span></div>
+  <div class="sb-right"><a href="playground.html">Playground</a><a href="downloads.html">Downloads</a><a href="about.html">About</a><span class="sb-rev">v0.17.0</span></div>
 </header>
 <main>
 <section id="lib-log"><h1>log</h1><p class="lede">Structured logging: leveled emit with arbitrary structured fields. Configurable sinks support single or multi-sink fan-out with optional async, rotation, and sampling. Dynamic contextual scopes attach fields automatically to every log call within their extent via the [?with-scope] directive. Each event is a record of level, message, timestamp, and a fields map.</p><![CDATA[ XD-1a: the experimental tier says so on every page it publishes. A
            reader who takes an x/ surface for a frozen one has been misled by
-           the page, not by their own inattention. ]]>
-  <section id="fn-log-debug" class="fn">
-    <h3>log:debug</h3>
-    <p class="fn-sig"><code>[$log:debug]  -> null</code>  —  Emit a log event at the :debug level (verbose internals, disabled by default).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/log']
+           the page, not by their own inattention. ]]><![CDATA[ R-A1 (#847-1a): the [?if]'s VALUE lands in content position, and a
+           [?for]-built sequence of fn sections is a sequence VALUE there — the
+           settled semantics refuse it; [?splice] is the syntactic adopter.
+           This was the one unmigrated site of the ~150-site cutover: it only
+           fires for a module with 2+ fn-docs, and the last full guide build
+           predated the final semantics wave. ]]><section id="fn-log-debug" class="fn">
+  <h3>log:debug</h3>
+  <p class="fn-sig"><code>[$log:debug]  -> null</code>  —  Emit a log event at the :debug level (verbose internals, disabled by default).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/log']
 [$log:debug "verbose internals"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-log-info" class="fn">
-    <h3>log:info</h3>
-    <p class="fn-sig"><code>[$log:info]  -> null</code>  —  Emit a log event at the :info level for normal operational milestones.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/log']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-log-info" class="fn">
+  <h3>log:info</h3>
+  <p class="fn-sig"><code>[$log:info]  -> null</code>  —  Emit a log event at the :info level for normal operational milestones.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/log']
 [$log:info "operational milestone"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-log-warn" class="fn">
-    <h3>log:warn</h3>
-    <p class="fn-sig"><code>[$log:warn]  -> null</code>  —  Emit a log event at the :warn level for recoverable problems.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/log']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-log-warn" class="fn">
+  <h3>log:warn</h3>
+  <p class="fn-sig"><code>[$log:warn]  -> null</code>  —  Emit a log event at the :warn level for recoverable problems.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/log']
 [$log:warn "recoverable problem"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-log-error" class="fn">
-    <h3>log:error</h3>
-    <p class="fn-sig"><code>[$log:error]  -> null</code>  —  Emit a log event at the :error level for failed operations.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/log']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-log-error" class="fn">
+  <h3>log:error</h3>
+  <p class="fn-sig"><code>[$log:error]  -> null</code>  —  Emit a log event at the :error level for failed operations.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/log']
 [$log:error "failed operation"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-log-fatal" class="fn">
-    <h3>log:fatal</h3>
-    <p class="fn-sig"><code>[$log:fatal]  -> null</code>  —  Emit a log event at the :fatal level; does not terminate the process (that is the application's job).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/log']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-log-fatal" class="fn">
+  <h3>log:fatal</h3>
+  <p class="fn-sig"><code>[$log:fatal]  -> null</code>  —  Emit a log event at the :fatal level; does not terminate the process (that is the application's job).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/log']
 [$log:fatal "unrecoverable"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-log-log" class="fn">
-    <h3>log:log</h3>
-    <p class="fn-sig"><code>[$log:log]  -> null</code>  —  Emit a log event at a level chosen programmatically from a level atom.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/log']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-log-log" class="fn">
+  <h3>log:log</h3>
+  <p class="fn-sig"><code>[$log:log]  -> null</code>  —  Emit a log event at a level chosen programmatically from a level atom.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/log']
 [$log:log :info "programmatic level"]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-log-current-scope" class="fn">
-    <h3>log:current-scope</h3>
-    <p class="fn-sig"><code>[$log:current-scope]  -> map</code>  —  Return the merged active scope context as a map (empty when no scope is active).</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/log']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-log-current-scope" class="fn">
+  <h3>log:current-scope</h3>
+  <p class="fn-sig"><code>[$log:current-scope]  -> map</code>  —  Return the merged active scope context as a map (empty when no scope is active).</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/log']
 [$log:current-scope]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>{}</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-log-configure" class="fn">
-    <h3>log:configure</h3>
-    <p class="fn-sig"><code>[$log:configure]  -> null</code>  —  Set the process-global logging config: minimum level, sinks, format, rotation, async, and sampling.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/log']
+    </pre>
+    <pre class="sample-output">
+      <code>{}</code>
+    </pre>
+  </div>
+</section><section id="fn-log-configure" class="fn">
+  <h3>log:configure</h3>
+  <p class="fn-sig"><code>[$log:configure]  -> null</code>  —  Set the process-global logging config: minimum level, sinks, format, rotation, async, and sampling.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/log']
 [$log:configure {level: :warn}]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-log-emit-raw" class="fn">
-    <h3>log:emit-raw</h3>
-    <p class="fn-sig"><code>[$log:emit-raw]  -> null</code>  —  Emit a pre-shaped record directly to the sink, bypassing formatting.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/log']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-log-emit-raw" class="fn">
+  <h3>log:emit-raw</h3>
+  <p class="fn-sig"><code>[$log:emit-raw]  -> null</code>  —  Emit a pre-shaped record directly to the sink, bypassing formatting.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/log']
 [$log:emit-raw [log-event level=:info message="pre-shaped"]]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>null</code>
-        </pre>
-      </div>
-    
-  </section>
-  <section id="fn-log-is-enabled" class="fn">
-    <h3>log:is-enabled</h3>
-    <p class="fn-sig"><code>[$log:is-enabled]  -> bool</code>  —  Report whether a level would produce output at some sink — a guard for expensive field construction.</p>
-    
-      <div class="example">
-        <pre>
-          <code class="language-cx">[?lib 'cx-stdlib/log']
+    </pre>
+    <pre class="sample-output">
+      <code>null</code>
+    </pre>
+  </div>
+</section><section id="fn-log-is-enabled" class="fn">
+  <h3>log:is-enabled</h3>
+  <p class="fn-sig"><code>[$log:is-enabled]  -> bool</code>  —  Report whether a level would produce output at some sink — a guard for expensive field construction.</p>
+  <div class="example">
+    <pre>
+      <code class="language-cx">[?lib 'cx-stdlib/log']
 [$log:is-enabled :debug]</code>
-        </pre>
-        <pre class="sample-output">
-          <code>false</code>
-        </pre>
-      </div>
-    
-  </section>
-</section>
+    </pre>
+    <pre class="sample-output">
+      <code>false</code>
+    </pre>
+  </div>
+</section></section>
 </main>
 <footer class="title-block">
   <div class="tb-cell tb-project"><span>Project</span><b>CX — one language, data format to platform</b></div>
   <div class="tb-cell"><span>Drawing</span><b>log</b></div>
-  <div class="tb-cell"><span>Rev</span><b>0.16.0</b></div>
+  <div class="tb-cell"><span>Rev</span><b>0.17.0</b></div>
   <div class="tb-cell"><span>Checked by</span><b class="tb-accent">The compiler</b></div>
   <div class="tb-cell"><span>Issued</span><b>cxhome.org</b></div>
 </footer>
-<script src="highlight/highlight.js" defer></script>
-<script src="search-index.js" defer></script>
-<script src="search/search.js" defer></script>
+<script src="highlight/highlight.js?v=0.17.0" defer></script>
+<script src="search-index.js?v=0.17.0" defer></script>
+<script src="search/search.js?v=0.17.0" defer></script>
 </body>
 </html>

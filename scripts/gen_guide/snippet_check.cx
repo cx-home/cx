@@ -97,6 +97,19 @@
                     [where [and [= $ex@lang 'cx'] [= $ex@check 'none']]]
                     [yield 1]]]]]]]]
 
+[; grant probe, fail-loud: ungranted, every effect below yields [err
+   CXER0271] that RESTS in its binding, and an err reaching [?if] runs
+   NEITHER branch — which is exactly how this gate once exited 2 with
+   ZERO output when its invocation put the permission flags after the
+   script path (script args, not grants). A denied write also cannot
+   cry (stderr needs --allow-write), so the ONLY loud channel an
+   ungranted program has is a TOP-LEVEL err — return one. ]
+[?match [$io:read-file 'VERSION']
+  [case [err $e]
+    [err code=$e@code message=[$cat ('snippet-check REFUSED: ', $e@message,
+      ' — this gate needs --allow-read --allow-write --allow-subprocess',
+      ' --allow-env BEFORE the script path')]]]
+  [else
 [?let
   [= $cxbin [$env:var-or-default 'CX_BIN' 'cx']]
   [= $tmpdir [$cat ([$env:var-or-default 'TMPDIR' '/tmp'], '/cx-snippet-check')]]
@@ -128,4 +141,4 @@
                  [$string $nfail], ' fail')]],
     [?if [> $nfail 0] [then [$env:exit 1]] [else ()]]
   )]
-  [?if false [then '']]]
+  [?if false [then '']]]]]
