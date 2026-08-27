@@ -61,7 +61,7 @@ endif
 ## tools/release-verify.sh's `cx primer == docs/llm/primer.md` row catches this
 ## otherwise — docs-check proves the FILE is fresh, never the EMBED.
 docs: $(DOCS_CX_DEP)
-	@$(DOCS_CX_BIN) $(DOCS_CAPS) $(DOCS_GEN)/primer_build.cx
+	@CX_BIN="$(DOCS_CX_BIN)" $(DOCS_CX_BIN) $(DOCS_CAPS) $(DOCS_GEN)/primer_build.cx
 	# #954: refresh the README's self-reported CX-share badge alongside the
 	# docs layer (Linguist can't count CX until tooling/linguist/ upstreams).
 	@$(DOCS_CX_BIN) --allow-read --allow-write --allow-subprocess scripts/lang_stats.cx
@@ -76,13 +76,13 @@ docs: $(DOCS_CX_DEP)
 ##                                   run `make docs` and commit the result in the
 ##                                   same change. (c): delete the file, or declare it.
 docs-check: $(DOCS_CX_DEP)
-	@$(DOCS_CX_BIN) $(DOCS_CAPS) $(DOCS_GEN)/primer_build.cx --check
+	@CX_BIN="$(DOCS_CX_BIN)" $(DOCS_CX_BIN) $(DOCS_CAPS) $(DOCS_GEN)/primer_build.cx --check
 
 ## docs-diff    Preview what `make docs` would change under docs/llm/.
 docs-diff: $(DOCS_CX_DEP)
 	@stage="$$(mktemp -d -t cxdocs-diff.XXXXXX)"; \
 	 cp -R $(DOCS_OUT) "$$stage/before" 2>/dev/null || mkdir -p "$$stage/before"; \
-	 $(DOCS_CX_BIN) $(DOCS_CAPS) $(DOCS_GEN)/primer_build.cx >/dev/null; \
+	 CX_BIN="$(DOCS_CX_BIN)" $(DOCS_CX_BIN) $(DOCS_CAPS) $(DOCS_GEN)/primer_build.cx >/dev/null; \
 	 diff -ruN "$$stage/before" $(DOCS_OUT) || true; \
 	 rm -rf "$$stage"
 
