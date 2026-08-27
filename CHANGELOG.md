@@ -13,6 +13,8 @@ version, library version).
 
 ## [Unreleased]
 
+## [0.17.0] — 2026-08-26
+
 ### Changed
 
 - **`cx --version`'s headline is a provenance claim, not an echo of the
@@ -1514,7 +1516,8 @@ wire formats, spec-normative grammar).
 - BREAKING: leading-zero integers are now strings (`02134` is a string, not int 2134).
 - BREAKING: binding `loads()` / `dumps()` preserve integer/float distinction via CXDB v1 (was JSON-coerced in v0.5).
 
-[Unreleased]: https://github.com/cx-home/cx/compare/v0.16.0...HEAD
+[Unreleased]: https://github.com/cx-home/cx/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/cx-home/cx/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/cx-home/cx/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/cx-home/cx/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/cx-home/cx/compare/v0.13.0...v0.14.0
