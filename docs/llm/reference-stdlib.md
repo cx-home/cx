@@ -1,4 +1,4 @@
-# Reference: the CX standard library — v0.16.0
+# Reference: the CX standard library — v0.17.0
 
 > **GENERATED.** Source: `docs-src/llm/reference-stdlib.md.tmpl` + the module
 > sources and the conformance corpus. The catalogs below are projected from

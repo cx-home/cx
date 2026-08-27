@@ -1,7 +1,7 @@
-# Reference: the platform and ecosystem rings — v0.16.0
+# Reference: the platform and ecosystem rings — v0.17.0
 
 > **GENERATED.** Source: `docs-src/llm/reference-platform.md.tmpl` + the
-> conformance corpus. Every output was re-recorded from the `cx` v0.16.0
+> conformance corpus. Every output was re-recorded from the `cx` v0.17.0
 > binary. Read `primer.md` first.
 
 ## Ring 2 — the platform
