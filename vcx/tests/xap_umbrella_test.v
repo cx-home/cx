@@ -3489,16 +3489,37 @@ fn test_archetype_rebless_is_deliberate() {
 
 // ── #867 §4.4 — granularity: the cohesion instrument over the estate ──────
 
+// xa_oriel_data — ORIEL's in-repo home. Its PUBLIC exposure is a separate
+// owner ruling (R9.3 / #869, default-private; publish.sh names it FORBIDDEN),
+// so a public clone legitimately has no such directory — ORIEL-dependent
+// assertions run only where the data lives, LOUDLY partial elsewhere.
+fn xa_oriel_data() string {
+	return os.real_path(os.join_path(os.dir(@FILE), '..', '..', 'spec', '03-approved', 'xap',
+		'demos', 'oriel', 'data'))
+}
+
+fn xa_oriel_present() bool {
+	return os.exists(os.join_path(xa_oriel_data(), 'oriel.feature.cxd'))
+}
+
 fn xa_coh_prog(extra string, body string) string {
 	d := xa_ref_dir()
-	w9 := os.real_path(os.join_path(os.dir(@FILE), '..', '..', 'spec', '03-approved', 'xap', 'demos', 'oriel', 'data'))
+	w9 := xa_oriel_data()
+	// The $x (ORIEL) binding is emitted only where the data exists: a missing
+	// file's err would rest in $x and then PROPAGATE out of any body touching
+	// it, turning the whole probe into the err (#853 position table) — which
+	// is how the v0.17.0 public-clone run red the W5-trio half too.
+	x_load := if xa_oriel_present() {
+		'      [= \$x [\$load "${w9}/oriel.feature.cxd"]]\n'
+	} else {
+		''
+	}
 	return "[?lib 'cx-xap' :as xap]\n[?lib 'cx-stdlib/io' :as io]\n[?lib 'cx-stdlib/cx' :as cx]\n" +
 		'[?def load impure [returns element] (\$p::string)\n' +
 		'  [?let [= \$d0 [\$cx:parse [\$io:read-file \$p]]] [\$first \$d0//feature]]]\n' +
 		'[?let [= \$o [\$load "${d}/orders.feature.cxd"]]\n' +
 		'      [= \$s [\$load "${d}/shipments.feature.cxd"]]\n' +
-		'      [= \$dd [\$load "${d}/delayed-shipment.feature.cxd"]]\n' +
-		'      [= \$x [\$load "${w9}/oriel.feature.cxd"]]\n' +
+		'      [= \$dd [\$load "${d}/delayed-shipment.feature.cxd"]]\n' + x_load +
 		'${extra}  ${body}]\n'
 }
 
@@ -3517,13 +3538,23 @@ fn xa_coh_run(extra string, body string) string {
 // fourteen act verbs, after-the-sale included — ONE component of 37 members
 // under the declared edges. The flagship's own gate evidence.
 fn test_cohesion_estate_is_whole() {
+	x_row := if xa_oriel_present() {
+		'       [x [\$string [?let [= \$r [\$xap:cohesion \$x]] \$r@components]]]'
+	} else {
+		''
+	}
 	out := xa_coh_run('', '[probe [o [\$string [?let [= \$r [\$xap:cohesion \$o]] \$r@components]]]\n' +
 		'       [s [\$string [?let [= \$r [\$xap:cohesion \$s]] \$r@components]]]\n' +
-		'       [d [\$string [?let [= \$r [\$xap:cohesion \$dd]] \$r@components]]]\n' +
-		'       [x [\$string [?let [= \$r [\$xap:cohesion \$x]] \$r@components]]]]')
+		'       [d [\$string [?let [= \$r [\$xap:cohesion \$dd]] \$r@components]]]\n' + x_row + ']')
 	assert out.contains("o '1'") && out.contains("s '1'") && out.contains("d '1'"),
 		'the W5 trio must each be one component: ${out}'
-	assert out.contains("x '1'"), 'ORIEL after-the-sale is ONE FEATURE (R8.11): ${out}'
+	if xa_oriel_present() {
+		assert out.contains("x '1'"), 'ORIEL after-the-sale is ONE FEATURE (R8.11): ${out}'
+	} else {
+		eprintln('PARTIAL: the R8.11 ORIEL-estate assertion needs spec/xap/demos/oriel, ' +
+			'which is default-private pending its own owner ruling (R9.3/#869) — ' +
+			'enforced in the private tree; the W5 trio was asserted above')
+	}
 }
 
 // The split advisor: remove the declared order.lines relationship and the
