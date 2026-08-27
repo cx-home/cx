@@ -1,10 +1,20 @@
 # area: parser_units
-vcx/tests/const_parser_test.v
-vcx/tests/def_parser_test.v
-vcx/tests/lib_parser_test.v
-vcx/tests/match_parser_test.v
-vcx/tests/path_parser_test.v
-vcx/tests/path_renderer_test.v
-vcx/tests/parser_agreement_289_test.v
-vcx/tests/parser_parity_test.v
-vcx/tests/program_emit_test.v
+#absorbed vcx/tests/const_parser_test.v
+#absorbed vcx/tests/def_parser_test.v
+#absorbed vcx/tests/lib_parser_test.v
+#absorbed vcx/tests/match_parser_test.v
+#absorbed vcx/tests/path_parser_test.v
+#absorbed vcx/tests/path_renderer_test.v
+#absorbed vcx/tests/parser_agreement_289_test.v
+#absorbed vcx/tests/parser_parity_test.v
+#absorbed vcx/tests/program_emit_test.v
+# ── #700 wave 1, 2026-08-24: the remaining standalone parser/lexer units.
+# NOT listed: code_parse_fixtures_test.v — named in scripts/publish_v.sh's
+# rsync --exclude list, so absorbing it would force the exclusion onto the
+# whole umbrella and drop the units above out of the cx-v package smoke test.
+#absorbed vcx/tests/code_lexer_test.v
+#absorbed vcx/tests/call_result_steps_test.v
+#absorbed vcx/tests/postfix_step_uniformity_test.v
+#absorbed vcx/tests/typed_attr_test.v
+#absorbed vcx/tests/bare_url_attr_value_test.v
+#absorbed vcx/tests/predicate_eval_test.v

@@ -50,6 +50,27 @@ A read-only store refuses writes rather than accepting and dropping them:
 
 {{EXAMPLE:store-ro-001-readonly-put block}}
 
+### Writes are an effect boundary — errors do not leave silently
+
+A store *document* write externalizes. It refuses to carry a document
+containing an `[err]` at any depth out of the program:
+
+{{EXAMPLE:store-err-boundary-001-put-doc-nested-err-refuses block}}
+
+The guarded verbs are `put-doc`, `put-doc-stream`, `put-doc-text` (it stores a
+*parsed* document) and `modify-doc` (its action payload is the injection
+vehicle). Blob and byte writes are exempt by construction — bytes carry no
+`[err]` to find. Storing a refusal *deliberately* is legal and explicit:
+
+{{EXAMPLE:store-err-boundary-002-put-doc-permit-externalizes block}}
+
+{{EXAMPLE:store-err-boundary-003-modify-action-err-refuses block}}
+
+The same rule governs HTTP response emission, with the refusal as a loud 500.
+`$journal:append` and `$fabric:emit` are deliberately **not** guarded: a
+journal is exactly where error events belong, and fabric emit is channel-shaped
+fan-out.
+
 ### The journal — history you can replay
 
 The journal is an append-only chain: each entry links the previous one, so
@@ -78,15 +99,89 @@ server (`scripts/gen_guide/guide_serve.cx`) is the worked example in-repo.
 Anything that dials or listens needs `--allow-net`, optionally scoped:
 `--allow-net=example.com:443`.
 
+### Identity and authority
+
+Two layers sit between a request and an effect, and they answer different
+questions. **Session** answers *who is this*. **Authz** answers *may they*.
+
+A session binds a `(principal, tenant)` pair for its whole life — the binding
+is immutable, and rebinding is a refusal, not an update. A deployment that
+admits an anonymous floor says so in its attach policy, and the floor is a
+*real* principal, not the absence of one:
+
+{{EXAMPLE:session-057-attach-guest-floor-binding block}}
+
+Refusal is the common case. Without a declared floor, a guest attach is a
+clean typed refusal naming the policy — deny-by-default all the way down:
+
+{{EXAMPLE:session-058-attach-guest-refused-without-floor block}}
+
+Authority is **delegated, attenuating, and rooted in a principal**. A permit
+names the chain it came through:
+
+{{EXAMPLE:authz-001-delegate-check-permit block}}
+
+A denial is a *value* carrying its reason, not an exception. There is no
+implicit grant anywhere:
+
+{{EXAMPLE:authz-002-check-deny-no-grant block}}
+
+{{EXAMPLE:authz-003-check-deny-out-of-slice block}}
+
+And the decision explains itself — the first failing link, by name, which is
+what makes an authority chain auditable rather than merely enforced:
+
+{{EXAMPLE:authz-031-explain-permit-chain block}}
+
+{{EXAMPLE:authz-032-explain-deny-first-link block}}
+
 ### Operating a platform
 
 ```console
 cx store-serve config.cx      # the store service daemon
 cx fabric-serve config.cx     # the fabric eventing daemon
+cx store-health URL           # readiness probe (exit 0 iff accepting)
+cx store-rotate-kek …         # rotate a key-encryption key
+cx store-mint-principal …     # mint an XSP-AUTH principal, offline
 ```
 
-Both take a CX configuration document. There is deliberately no supervisor
-integration in-repo: lifecycle is the operator's, explicitly.
+All take a CX configuration document or an explicit target. There is
+deliberately no supervisor integration in-repo: lifecycle is the operator's,
+explicitly.
+
+#### The clean-state bootstrap
+
+A daemon is deny-by-default, so a fresh deployment has nobody who may talk to
+it. The bootstrap is an **offline identity mint** — nothing transits a wire,
+no store is opened, and there is no trust-on-first-use step:
+
+```console
+cx store-mint-principal --id fleet-ops \
+    --seed-file ./secrets/fleet-ops.seed --caps "read write"
+```
+
+That generates an Ed25519 seed, derives its `did:key`, writes the seed at mode
+0600 (never to stdout), and prints two things: the `[grant …]` row for the
+daemon config's `[xsp [grants …]]` table, and the client's `xsp-did` /
+`xsp-seed-env` open-opts. The minted principal is **inert** until an operator
+splices that grant into the config — **config remains the sole authority**.
+
+`--for identity` prints the daemon's *own* `[xsp [identity did= seed-env=]]`
+responder row instead. `--caps` is required: the authority a grant carries is
+an explicit choice at mint time, with no default. The seed environment
+variable is *derived* from `--id` (`CX_XSP_SEED_<NAME>`, upper-cased with `-`
+folded to `_`), so an `--id` whose derivation would collide with another is
+refused by name rather than silently sharing one seed.
+
+The full arc is: **mint → splice the grant into the config → start the
+deny-by-default daemon → the client presents its DID.**
+
+#### Retired verbs answer for themselves
+
+`cx store-token` was retired at v0.16.0 — the bearer/RBAC plane is gone. It
+does not answer "unknown subcommand"; it names its own retirement and points
+at the replacement. If you recall a store verb that is not in `cx --help`,
+run it: the tool will tell you what replaced it.
 
 ## Ring 3 — the ecosystem
 
@@ -130,9 +225,43 @@ A XAP is the unit of packaged CX functionality — a *feature*, never an
 
 ```console
 cx xap init NAME              # scaffold a feature
-cx xap check-surface          # verify the declared surface
+cx xap check-surface DIR      # the surface derivation check
 cx lock                       # generate / verify cx.lock from [?lib] imports
 ```
+
+Feature grammars **compose**, and composition is an algebra with laws rather
+than a merge convention. Composing is commutative, associative, and
+idempotent, and the composed grammar has a Tier-1 hash that is the equality
+oracle:
+
+{{EXAMPLE:xap-compose-003-commutative block}}
+
+Names qualify on the way in, so two features may each own a `highlight`
+without collision:
+
+{{EXAMPLE:xap-compose-002-qualified-member block}}
+
+Composing *nothing* is a refusal, not a vacuous pass — a gate over the empty
+set has verified the empty set, which is the one failure mode that makes a
+gate worse than no gate:
+
+{{EXAMPLE:xap-compose-051-no-features-refuses block}}
+
+Distribution is seal → sign → publish → install, and **the transport is the
+store**. There is no separate package wire and no new protocol. A package
+tree is content-addressed, so entry order cannot change its identity:
+
+{{EXAMPLE:xap-dist-001-tree-canonical-order block}}
+
+…and every gate fails closed rather than sanitising:
+
+{{EXAMPLE:xap-dist-002-tree-traversal-path-rejected block}}
+
+{{EXAMPLE:xap-dist-003-tree-duplicate-path-rejected block}}
+
+**Building a production XAP end to end — composing features, authoring the
+deployment document, bootstrapping identity, hosting, and projecting a
+ux-web surface — is `playbook-xap.md`.** Read it before you write one.
 
 ### Language bindings
 

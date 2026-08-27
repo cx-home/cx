@@ -6,6 +6,12 @@
 //   173-182 functional composition (cx-stdlib/fp)
 // runnable:false marks an example that needs a wasm-unavailable capability
 // (net / subprocess / fs); it is exempt from the clean-run gate.
+// wasmUnsupported marks an example the SHIPPED wasm engine cannot reproduce
+// faithfully (#1033) — it refuses the program, or evaluates it to a different
+// value than native cx — carrying the reason the page shows the reader; the
+// set is pinned in both directions by `make test-playground-wasm-eval`.
+// noStableValue marks an example with NO single expected value (its native
+// result is a race); the sweep then requires only that it still evaluates.
 // Generator: scripts/gen_guide/playground/gen_examples.cx — re-run (or `make guide`)
 // after any syntax change; `--check` verifies this file without rewriting it.
 
@@ -406,10 +412,10 @@
       runnable: true,
     },
     "57-map-par-bulkhead": {
-      label: "[57] [?map \u2026 [par]] \u2014 bounded with [?bulkhead]",
-      input: "[?map (1, 2, 3, 4, 5, 6, 7, 8)\n  [using [?fn $n\n           [?bulkhead max-concurrent=2\n             [?let [= $_ [?sleep 100ms mock]]\n               [* $n $n]]]]]\n  [par]]",
-      note:  "**Introduces:** `[?bulkhead max-concurrent=N \u2026]` caps in-flight work. With 8 parallel items but a 2-slot bulkhead, the overflow returns `[err cx-err:CXER0152 'bulkhead saturated']` \u2014 backpressure surfaced as values.",
-      tags:  ["bulkhead", "eq", "fn", "let", "map", "mul", "parallel", "resilience", "sleep"],
+      label: "[57] [par N] bounds the width \u2014 [?bulkhead] isolates the failure",
+      input: "[?map (1, 2, 3, 4, 5, 6, 7, 8)\n  [using [?fn $shard\n           [?bulkhead max-concurrent=8\n             [?if [= $shard 5]\n               [then [err code=\"shard-offline\" shard=$shard]]\n               [else [* $shard $shard]]]]]]\n  [par 2]]",
+      note:  "**Introduces:** `[par N]` \u2014 the width bound. Since #94 **`[par]` owns its own concurrency**: `[par 2]` runs a two-worker pool over the eight shards (bare `[par]` defaults to `min(4, ncpu)`, `[par max]` uses `ncpu`). `[?bulkhead]` is *not* the fan-out limiter \u2014 that lint was retired \u2014 so the compartment here is sized to the whole batch (`max-concurrent=8`) and never sheds.\n\nWhat it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and that failure stays in shard 5's own slot. The other seven still return their squares and the batch completes \u2014 a failed compartment does not sink the ship. Output is always source order (\u00a77.3), so the result is the same every run and in the browser.\n\n**Why not show `CXER0152`?** A `[?bulkhead]` can only shed when two workers contend for the last permit, and *which* one loses is thread timing \u2014 a program with no single answer. `[?bulkhead]` is EXPERIMENTAL (spec/code.md \u00a710.2.6): its permit counter is a non-atomic read-modify-write, so under real contention the cap is not reliably enforced in either direction. For production load-shedding reach for `[?rate-limit]` (examples 96\u201397) or a buffered `[?channel]`.",
+      tags:  ["bulkhead", "eq", "fn", "if", "map", "mul", "parallel", "resilience"],
       runnable: true,
     },
     "58-par-shared-cb": {
@@ -505,9 +511,9 @@
     },
     "71-builtin-head-tail": {
       label: "[71] Sequence \u2014 head + tail",
-      input: "[?let [= $xs (10, 20, 30, 40)]\n  [list first=[$head $xs]\n    [rest [$tail $xs]]]]",
+      input: "[?let [= $xs (10, 20, 30, 40)]\n  [list first=[$head $xs]\n    [rest [?splice [$tail $xs]]]]]",
       note:  "**Introduces:** `[head xs]` (first element) + `[tail xs]` (everything after the first).",
-      tags:  ["eq", "let"],
+      tags:  ["eq", "let", "splice"],
       runnable: true,
     },
     "72-builtin-nth": {
@@ -593,6 +599,7 @@
       note:  "**Introduces:** `[?async EXPR]` returns a future handle. `[?await $f]` resolves it. Futures are lazy: the body runs on first await.",
       tags:  ["async", "await", "eq", "let"],
       runnable: true,
+      wasmUnsupported: "`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).",
     },
     "84-async-mock-sleep": {
       label: "[84] [?async] \u2014 mock sleep then resolve",
@@ -600,6 +607,7 @@
       note:  "**Introduces:** futures with internal mock-sleep. The future resolves in logical time.",
       tags:  ["async", "await", "eq", "let", "mock", "sleep"],
       runnable: true,
+      wasmUnsupported: "`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).",
     },
     "85-await-all": {
       label: "[85] [?await-all] \u2014 wait on every future",
@@ -607,6 +615,7 @@
       note:  "**Introduces:** `[?await-all (futures\u2026)]`. Waits on every future; returns the sequence of results (or aggregated CXER0240 err).",
       tags:  ["async", "await-all", "eq", "let", "mock", "sleep"],
       runnable: true,
+      wasmUnsupported: "`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).",
     },
     "86-await-any": {
       label: "[86] [?await-any] \u2014 first success wins",
@@ -614,6 +623,7 @@
       note:  "**Introduces:** `[?await-any]`. Returns the first successful future; ignores subsequent failures.",
       tags:  ["async", "await-any", "eq", "let"],
       runnable: true,
+      wasmUnsupported: "`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).",
     },
     "87-await-race": {
       label: "[87] [?await-race] \u2014 first to resolve wins",
@@ -621,6 +631,7 @@
       note:  "**Introduces:** `[?await-race]`. Returns the first future to resolve (success OR fail); cancels the losers.",
       tags:  ["async", "await-race", "eq", "let", "mock", "sleep"],
       runnable: true,
+      wasmUnsupported: "`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).",
     },
     "88-channel-basic": {
       label: "[88] [?channel] \u2014 buffered send / receive",
@@ -635,6 +646,7 @@
       note:  "**Introduces:** `[?worker name=S BODY]` \u2014 registers a worker. In the sequential substrate the body runs to completion synchronously.",
       tags:  ["worker"],
       runnable: true,
+      wasmUnsupported: "`[?worker]` spawns an OS thread; the playground's default single-threaded wasm build refuses it (`go code__run_worker_thread(): Not supported`).",
     },
     "90-cancel": {
       label: "[90] [?cancel] \u2014 abort a future",
@@ -642,6 +654,7 @@
       note:  "**Introduces:** `[?cancel $handle]`. Requests cancellation; future resolves to `[err :code \"cx-err:CXER0260\"]`.",
       tags:  ["async", "await", "cancel", "eq", "let", "mock", "sleep"],
       runnable: true,
+      wasmUnsupported: "`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).",
     },
     "91-retry-happy": {
       label: "[91] [?retry] \u2014 first try wins",
@@ -876,9 +889,9 @@
     },
     "124-sum-attr": {
       label: "[124] Aggregate \u2014 sum an attribute",
-      input: "[?let [= $doc [order\n                [line qty=2 price=10]\n                [line qty=1 price=20]\n                [line qty=3 price=5]]]\n  [sum $doc/line/@price]]",
-      note:  "**Pattern:** total of an attribute across all matches. **Uses:** `[sum $bind]` builtin in element-call form, attribute-axis path `/line/@price` on child axis (gap A fix: `$doc/line` enumerates every `line` child).",
-      tags:  ["builtin", "cxpath", "eq", "let", "sum"],
+      input: "[?let [= $doc [order\n                [line qty=2 price=10]\n                [line qty=1 price=20]\n                [line qty=3 price=5]]]\n  [$sum $doc/line/@price]]",
+      note:  "**Pattern:** total of an attribute across all matches. **Uses:** the `[$sum \u2026]` builtin call over the attribute-axis node-set `/line/@price` (`$doc/line` enumerates every `line` child). Named builtins are reached via the `$`-head call form \u2014 a bare `[sum \u2026]` is data construction (R-A1 migration 2026-08-25: the old spelling constructed a data element; this one computes).",
+      tags:  ["cxpath", "eq", "let"],
       runnable: true,
     },
     "125-min-max": {
@@ -1030,9 +1043,9 @@
     },
     "146-pivot-rows-to-attrs": {
       label: "[146] ETL \u2014 pivot (row-shape \u2192 attr-shape)",
-      input: "[?let [= $doc [stats\n                [m k=cpu  v=87]\n                [m k=mem  v=62]\n                [m k=disk v=44]]]\n  [snapshot\n    [cpu  $doc/m[= $_@k \"cpu\"]/@v]\n    [mem  $doc/m[= $_@k \"mem\"]/@v]\n    [disk $doc/m[= $_@k \"disk\"]/@v]]]",
-      note:  "**Pattern:** turn N rows-of-(k,v) into one element with N attributes. **Uses:** inline `$doc/m[= $_@k \u2026]/@v` per pivot key (child-axis fix from gap A makes the predicate-filtered path resolve directly \u2014 no intermediate `[?let]` chain needed). The terminal `/@v` materialises the attribute as a single-attr element (`[v 87]`), so output renders `cpu=\"[v 87]\"` etc.; to read the raw scalar `87`, bind the row first \u2014 `[?let [= $cpu $doc/m[@k=\"cpu\"]] $cpu@v]`. The shape still pivots skinny-tall \u2192 wide. (G4 closed.)",
-      tags:  ["cxpath", "eq", "let"],
+      input: "[?let [= $doc [stats\n                [m k=cpu  v=87]\n                [m k=mem  v=62]\n                [m k=disk v=44]]]\n  [snapshot\n    [cpu  [?splice $doc/m[= $_@k \"cpu\"]/@v]]\n    [mem  [?splice $doc/m[= $_@k \"mem\"]/@v]]\n    [disk [?splice $doc/m[= $_@k \"disk\"]/@v]]]]",
+      note:  "**Pattern:** turn N rows-of-(k,v) into one element with N attributes. **Uses:** inline `$doc/m[= $_@k \u2026]/@v` per pivot key, spliced into content with `[?splice \u2026]` (R-A1, 2026-08-25: a node-set in element content splices as direct children \u2014 a bare one refuses loudly). The terminal `/@v` materialises the attribute as a single-attr element (`[v 87]`), so each pivot slot carries `[v 87]` as a child; to read the raw scalar `87`, bind the row first \u2014 `[?let [= $cpu $doc/m[@k=\"cpu\"]] $cpu@v]`. The shape still pivots skinny-tall \u2192 wide. (G4 closed.)",
+      tags:  ["cxpath", "eq", "let", "splice"],
       runnable: true,
     },
     "147-unpivot": {
@@ -1058,9 +1071,9 @@
     },
     "150-join-by-key": {
       label: "[150] ETL \u2014 join two collections by attribute",
-      input: "[?let [= $orders [o-set\n                   [o id=1 user=\"A\" amt=100]\n                   [o id=2 user=\"B\" amt=200]\n                   [o id=3 user=\"A\" amt=50]]]\n  [?let [= $users [u-set\n                    [u name=\"A\" email=\"a@x.com\"]\n                    [u name=\"B\" email=\"b@x.com\"]]]\n    [?for [in $o $orders//o]\n      [yield [joined order-id=$o/@id amt=$o/@amt\n               [email $users//u[= $_@name $o/@user]/@email]]]]]]",
-      note:  "**Pattern:** inner-join two collections by a shared key \u2014 look up each order's user record by name and project the email. **Uses:** cross-binding inline predicate `[@name=$o/@user]` (gap C closed: the RHS now evaluates the path-bearing reference against the *outer* env, so `$o/@user` is the iterating row's key while `$users//u[\u2026]` does the lookup). Terminal `/@email` materialises the value as `[email \"\u2026\"]` (gap-D class \u2014 same `/@attr` materialisation shape as ex 146). The natural single-expression join is now the standard surface; the prior `[?match]` workaround is retired.",
-      tags:  ["cxpath", "descendant", "eq", "for", "let"],
+      input: "[?let [= $orders [o-set\n                   [o id=1 user=\"A\" amt=100]\n                   [o id=2 user=\"B\" amt=200]\n                   [o id=3 user=\"A\" amt=50]]]\n  [?let [= $users [u-set\n                    [u name=\"A\" email=\"a@x.com\"]\n                    [u name=\"B\" email=\"b@x.com\"]]]\n    [?for [in $o $orders//o]\n      [yield [joined order-id=$o/@id amt=$o/@amt\n               [email [?splice $users//u[= $_@name $o/@user]/@email]]]]]]]",
+      note:  "**Pattern:** inner-join two collections by a shared key \u2014 look up each order's user record by name and project the email. **Uses:** cross-binding inline predicate `[@name=$o/@user]` (gap C closed: the RHS now evaluates the path-bearing reference against the *outer* env, so `$o/@user` is the iterating row's key while `$users//u[\u2026]` does the lookup), spliced into content with `[?splice \u2026]` (R-A1, 2026-08-25). Terminal `/@email` materialises the value as `[email \"\u2026\"]` (same `/@attr` materialisation shape as ex 146). The natural single-expression join is now the standard surface; the prior `[?match]` workaround is retired.",
+      tags:  ["cxpath", "descendant", "eq", "for", "let", "splice"],
       runnable: true,
     },
     "151-range-by-stride": {
@@ -1136,9 +1149,10 @@
     "161-sequence-worker-top": {
       label: "[161] Sequence diagram \u2014 top-level `[?worker]`",
       input: "[?worker name=\"task\"\n  [?let [= $_ [?sleep 100ms :mock]]\n    [ok value=\"done\"]]]",
-      note:  "**Pattern:** background task as program entry-point. **Diagram:** because `[?worker]` sits at the top level the emitter switches to Mermaid `sequenceDiagram` instead of `flowchart TD` (per spec/code.md \u00a710.1.2). The worker becomes an actor lane with its body events as messages along that lane. Try wrapping the same body in `[?let [= $w [?worker \u2026]] $w]` and watch the diagram revert to a flowchart \u2014 `[?worker]` only steers the dialect when it's the outermost form.",
+      note:  "**Pattern:** background task as program entry-point. **Diagram:** because the program is sequence-shaped the emitter switches to Mermaid `sequenceDiagram` instead of `flowchart TD` (per spec/code.md \u00a710.1.2). The worker becomes an actor lane with its body events as messages along that lane. A trigger reached through a `[?let]` binding counts too \u2014 `[?let [= $w [?worker \u2026]] \u2026]` is still a sequence, since the binding only aliases the lane (examples 171-172 are that shape).",
       tags:  ["eq", "let", "mock", "sleep", "worker"],
       runnable: true,
+      wasmUnsupported: "`[?worker]` spawns an OS thread; the playground's default single-threaded wasm build refuses it (`go code__run_worker_thread(): Not supported`).",
     },
     "162-sequence-select-channels": {
       label: "[162] Sequence diagram \u2014 `[?select]` across channels",
@@ -1206,16 +1220,18 @@
     "171-seq-mid-producer-consumer": {
       label: "[171] Sequence \u2014 producer / consumer over a channel",
       input: "[?let [= $ch [?channel name=\"jobs\" buffer=4]]\n  [?let [= $prod [?worker name=\"producer\"\n                   [body [?let [= $_ [?for [in $i [$range 1 3]]\n                                       [yield [?send $i to=$ch]]]]\n                           [?close $ch]]]]]\n    [?let [= $cons [?worker name=\"consumer\"\n                     [body [?for [in $i [$range 1 3]]\n                             [yield [?receive from=$ch]]]]]]\n      [?let [= $_ [?wait-for worker=$prod]]\n        [?wait-for worker=$cons]]]]]",
-      note:  "**Pattern:** a `[?channel buffer=N]` with a `[?worker]` producer (`[?send X to=$ch]` then `[?close]`) and a consumer (`[?receive from=$ch]`), joined with `[?wait-for worker=\u2026]`. **Diagram:** top-level workers render as `sequenceDiagram` actors with channel arrows. **http mode:** under file:// the wasm runtime is single-threaded (workers interleave cooperatively); under `make guide-http` they run on real OS threads.",
+      note:  "**Pattern:** a `[?channel buffer=N]` with a `[?worker]` producer (`[?send X to=$ch]` then `[?close]`) and a consumer (`[?receive from=$ch]`), joined with `[?wait-for worker=\u2026]`. **Diagram:** the let-bound workers and channels render as `sequenceDiagram` actors with channel arrows. **Running it:** the playground's default wasm build has no threads, so this program does not run in the browser \u2014 see the banner. Under `make guide-http` (COOP/COEP) cxlib loads the pthreads build and the workers run on real OS threads.",
       tags:  ["channel", "close", "eq", "for", "let", "receive", "send", "wait-for", "worker"],
       runnable: true,
+      wasmUnsupported: "`[?worker]` spawns an OS thread; the playground's default single-threaded wasm build refuses it (`go code__run_worker_thread(): Not supported`).",
     },
     "172-seq-large-workers-with-backpressure": {
       label: "[172] Sequence \u2014 dispatcher + worker + collector",
       input: "[?let [= $jobs [?channel name=\"jobs\" buffer=8]]\n  [?let [= $results [?channel name=\"results\" buffer=16]]\n    [?let [= $d [?worker name=\"dispatcher\"\n                  [body [?let [= $_ [?for [in $j [$range 1 4]]\n                                      [yield [?send $j to=$jobs]]]]\n                          [?close $jobs]]]]]\n      [?let [= $w [?worker name=\"worker\"\n                    [body [?for [in $j [$range 1 4]]\n                            [yield [?send [processed value=[?receive from=$jobs]]\n                                     to=$results]]]]]]\n        [?let [= $_ [?wait-for worker=$d]]\n          [?for [in $k [$range 1 4]]\n            [yield [?receive from=$results]]]]]]]]",
-      note:  "**Pattern:** a two-stage pipeline across two channels \u2014 a dispatcher fans jobs into `jobs`, a worker transforms each into `[processed \u2026]` on `results`, and the main thread drains `results`. **Diagram:** multiple top-level workers + channels render as a `sequenceDiagram`. **http mode:** real parallelism (and true channel backpressure on the bounded buffers) only happens under `make guide-http`; file:// interleaves cooperatively.",
+      note:  "**Pattern:** a two-stage pipeline across two channels \u2014 a dispatcher fans jobs into `jobs`, a worker transforms each into `[processed \u2026]` on `results`, and the main thread drains `results`. **Diagram:** the let-bound workers and channels render as a `sequenceDiagram`. **Running it:** the playground's default wasm build has no threads, so this program does not run in the browser \u2014 see the banner. Real parallelism (and true channel backpressure on the bounded buffers) needs `make guide-http`, where cxlib loads the pthreads build.",
       tags:  ["channel", "close", "eq", "for", "let", "receive", "send", "wait-for", "worker"],
       runnable: true,
+      wasmUnsupported: "`[?worker]` spawns an OS thread; the playground's default single-threaded wasm build refuses it (`go code__run_worker_thread(): Not supported`).",
     },
     "173-fp-map": {
       label: "[173] fp \u2014 `[$fp:map]` (functor map)",

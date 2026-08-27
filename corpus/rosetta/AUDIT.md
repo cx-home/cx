@@ -1,79 +1,142 @@
 # Rosetta Corpus Audit
 
-This audit tracks which programs port cleanly to CX and
-which surface gaps each surfaced. Refresh per release boundary.
+This audit tracks which programs port cleanly to CX and which surface gaps each
+one surfaces. Refresh per release boundary.
 
-Initial seed: 5 of 20 programs (acceptance-criteria minimum five).
-Programs 03/04, 07–12, 14–20 still to write.
-Extension #21 added 2026-05-26 to close gate 47.7 — exercises
-the new `url` + `csv` + `validate` triad.
+The corpus is **adoption evidence** (RULED: VC-28) — the artifact that answers
+"can CX do ordinary things". It is therefore gated: `make corpus-audit` runs
+every program and fails on drift between a program's live status and the status
+recorded here, so this table cannot quietly become fiction again.
 
-Last revised: 2026-05-26 against `v0.8.0-dev` HEAD (post math-operator surface).
+Seed: 5 of 20 programs (acceptance-criteria minimum five). Programs 03/04,
+07–12, 14–20 still to write. Extension #21 added 2026-05-26 to close gate 47.7 —
+exercises the `http` + `csv` + `validate` triad.
+
+**Last revised: 2026-08-25 against `release/0.17`** — re-derived from
+measurement after all six programs were rewritten for the v0.8.0 surface.
+
+## What the 2026-08-25 re-derivation found, and why it was needed
+
+Every program in this corpus had been **unrunnable since the v0.8.0 homoiconic
+reshape**, and the table recorded two of them as `green`. `make corpus-audit`
+detects exactly that, correctly, and was wired into no lane — so nothing read
+it (#957).
+
+They were not stale by a syntax detail; they predated the reshape wholesale:
+retired infix `to` ranges (now refused by the `check-no-infix-range` gate), the
+`[?let $x = … :in body]` colon form, `:when`/`:yield`/`:using`/`:init` colon
+clauses, `[?fn ($a, $b)]` comma params, and `contains(a, b)` / `nth(x, 1)` /
+`count(…)` call-parens in a prefix Lisp-1 language.
+
+Five were rewritten and MEASURED green or workaround (rc=0 with the correct
+answer, not merely parsing) in the first pass; **#21 followed** once the same
+audit was re-run against a fresh binary and it was the one program still
+failing to parse. The old gap register described a surface that no longer
+exists and is retired below rather than carried forward as though still true.
+
+### The #21 tail (2026-08-25, second pass)
+
+The first pass left #21 alone on the reasoning that it was "legitimately
+blocked (pre-impl)". Two things were wrong with that. Its source still did not
+parse — a corpus program that cannot be read is not evidence of anything — and
+its recorded reason, that the `url`/`csv`/`validate` bodies were pending, had
+stopped being true: all three are `gate=enforced` in `conformance/gates.cxd`,
+impl complete. A shipped module recorded as pending is the same species of
+fiction as an unrunnable program recorded as green, and the gate could not see
+either, because a `blocked` row matches a non-zero exit whatever the cause.
+
+It is rewritten, it parses, and it is still `blocked` — now for the true
+reason, which is the capability boundary rather than a missing surface.
 
 | Program | Last-revised HEAD | Status | Gap count | Gaps / follow-ups |
 |---|---|---|---|---|
-| 01-fizzbuzz-shapes | post math-operator surface | green | 3 | math-operator surface closed `mod` builtin + math-builtin directive-form (resolved) · paren-expression ops (still NEW or fixture-recheck) · `[?def]` impl · multi-arg `[?fn]` apply (NEW) |
-| 02-log-parser | `74fe4f5b` | workaround | 3 | string-ops surface — `split`/`tokenize`/`format` (NEW; string-ops hypothesis confirmed) · `contains` directive form (NEW; same family as fizzbuzz #2) · atom-as-attribute-value friction (spec note) |
-| 05-rpn-calculator | `74fe4f5b` | blocked | 4 | `$path/child` empty-vs-CXER0001 (NEW or amend `spec/cxpath.md` §6) · predicate-context arithmetic on `last()` (extends CXPath predicate work) · multi-arg `[?fn]` re-confirm · no stack abstraction (note alongside `[?reduce]` companions) |
-| 06-bfs | `74fe4f5b` | workaround | 5 | `$bind/child` single-match (CONFIRMED in the gap register) · no `[?loop]` / `[?recur]` (NEW) · no mutable state (deliberate-gap note) · no set ops (NEW) · pattern destructure of `:key val` attribute style (spec note) |
-| 13-config-validator | `74fe4f5b` | green | 4 | `exists()` builtin missing (NEW; one-line) · `:where` outer-match modifier (spec clarification) · schema-path alternative (aligns with `spec/schema.md`) · `$bind/child` re-confirm |
-| 21-fetch-csv-validate | `e44de53c` | blocked (expected pre-impl) | 0 | url + csv + validate skeleton bodies pending — flips to green when Phase 3.x V impl ratifies the three companion specs |
+| 01-fizzbuzz-shapes | `release/0.17` 2026-08-25 | green | 0 | Clean on the current surface: `[$range 1 30]`, `[$mod]`, `[?match true [when …] [else …]]`. Yields shapes (atoms / the number), not text. |
+| 02-log-parser | `release/0.17` 2026-08-25 | workaround | 1 | Clean with `[$contains]` + `[?for [in $line $lines] [yield …]]`. Remaining gap: no `split` / `tokenize` / `format`, so the line is classified but not FIELD-parsed (timestamp / level / message stay inside one string). |
+| 05-rpn-calculator | `release/0.17` 2026-08-25 | green | 0 | Folds with `[?reduce … [using [?fn ($acc $tok) …]] [init …]]`, stack carried as a document. Both former constraints RETIRED by the Cluster A settlement (R-A1, 2026-08-25): a node-set in element content now splices — `[?splice $acc/*]` IS the push (new head + every existing item) — and the child axis reads the stack (`$acc/n`); the silent grouping envelope (#961) can no longer be constructed (a bare sequence as content refuses loudly, #847-1a). Re-measured: `[stack [n 35]]`, rc=0. |
+| 06-bfs | `release/0.17` 2026-08-25 | workaround | 1 | Graph-as-document: `$graph//edges` + a comprehension, no adjacency list built. Enumerates edges — as the original did. A true breadth-first TRAVERSAL (frontier queue, visited set) is not demonstrated; `[?def]` recursion exists on the current surface, so it is plausibly expressible now, but claiming so without writing it would be a guess. |
+| 13-config-validator | `release/0.17` 2026-08-25 | green | 0 | Clean: `[$count $config//port]` + `[$and]` + `[?match true …]`. Verified DISCRIMINATING, not vacuous: removing `[port 8080]` flips it to `:invalid`. |
+| 21-fetch-csv-validate | `release/0.17` 2026-08-25 | blocked | 0 | Rewritten for the v0.8.0 surface (it did not parse: retired `:scope` colon-slot on `[?def]`, and `[?http-client]` is a client-handle constructor, not a request form). Now `http` + `csv` + `validate`, all three `gate=enforced`. Blocked by the **capability boundary, not a surface gap**: the fetch needs `net`, the offline audit grants none, so `[$http:get]` refuses with `CXER0271` before any byte moves. The pipeline downstream of the fetch is measured working and discriminating — same three `[?def]`s over a literal CSV body return `1` from 3 rows. |
 
 ## Summary
 
-- **green**: 2 (#01 post math-operator surface, #13)
-- **workaround**: 2 (#02, #06)
-- **blocked**: 2 (#05, #21 — #21 expected pre-impl, not a surface gap)
+- **green**: 3 (#01 #05 #13) — no workarounds, correct output. #05 graduated
+  2026-08-25: the Cluster A settlement (R-A1) retired both of its gaps —
+  `[?splice]` in element content is the push idiom and the child axis reads
+  the stack; the #961 envelope is unconstructible.
+- **workaround**: 2 (#02 #06) — both RUN rc=0 with the correct answer, but
+  each leans on a documented gap: no `split`/`tokenize` (#02), reduced scope
+  versus a real traversal (#06)
+- **blocked**: 1 (#21 — the `net` capability the offline audit cannot grant,
+  not a surface gap)
 
-## Cross-program gap clusters (≥2 programs)
+**All six were `blocked` before this re-derivation** — every program in the
+corpus was unrunnable, while the table claimed two `green`. The move is
+6 unrunnable → 3 green + 2 running-with-known-gaps + 1 parsing-and-refusing
+at the capability boundary.
+
+A note on the classification, because the temptation runs the other way: a
+program that runs and prints the right answer is NOT automatically `green` here.
+`green` means no workaround was needed. Calling #02/#05/#06 green because they
+now produce correct output would re-create precisely the fiction this
+re-derivation removed — a table that reads better than the surface behaves. (I
+drafted it that way first; the sibling `.md` write-ups are what forced the
+correction, which is a point in favour of the detector reading them.)
+
+## Live cross-program gaps (2026-08-25)
 
 | Gap | Programs affected | Recommended action |
 |---|---|---|
-| ~~Math / arithmetic builtins (`mod`, `div`, `floor` directive form)~~ | ~~#01, #05~~ | **Closed 2026-05-26 by the math-operator surface.** `mod`/`div`/`idiv` builtins ship + directive-form dispatch closure for `floor`/`ceiling`/`round`/`abs`. #05 still blocked on other gaps (predicate-context arithmetic, etc.). |
-| Multi-arg `[?fn]` apply with non-trivial body | #01, #05 | New surface or extend `[?def]` / `[?reduce]` companions |
-| `$bind/child` single-match | #06, #13 | Already in the confirmed-gap register; awaiting a fix slot |
-| String ops surface (`split`, `tokenize`, `format`, regex-as-data) | #02 (#03 / #04 / #10 / #15 / #16 expected) | New surface (string-ops hypothesis) |
-| Paren-expression with operators (`$x > 4`, `$a + $b`) | #01 (potentially most programs) | Fixture-recheck or new surface — `conformance/code.txt:3495` currently parse-fails |
+| String field-parsing: `split` / `tokenize` / `format` | #02 (#03 / #04 / #10 / #15 / #16 expected) | Unchanged from the previous audit and still the biggest cross-program gap: a log line can be classified but not decomposed. |
+| Breadth-first traversal with a frontier | #06 | Probably expressible via `[?def]` recursion now; write it and find out rather than asserting either way. |
+| No live end-to-end run of the fetch leg | #21 | Not a surface gap — every stage is proven offline and composes. Needs a fixture HTTP server the audit can point at, plus a `net` grant, before the program can be measured green. |
 
-## Hypothesis-register probes (2026-05-26)
+Two rows left this table on 2026-08-25: #05's child-axis-vs-grouping row
+(**#961**) and its no-sequence-append row. Both were retired by the Cluster A
+settlement (R-A1) at the same time #05 graduated to `green`, but the table was
+not updated with the status row — so it went on recommending a `//n`→`/n`
+switch that had already been made. Recorded here because it is the same
+failure mode the whole re-derivation was about: one half of a document
+updated, the other half left asserting the old world.
 
-Direct probes of the confidence-ranked surface-completeness hypothesis register
-(probe-then-decide), not corpus programs. Each is WORKS (fixture
-added) / FIXED (cheap impl + fixture) / GAP (writeup + parked stub).
+## Retired: the 2026-05-26 gap register (v0.7.x surface)
 
-| # | Hypothesis | Verdict | Evidence / disposition |
-|---|---|---|---|
-| #33 | Map iteration `[?for $k, $v :in $m]` / `:keys` / `:values` | **GAP** | Two-binding generator does not parse (`CXER0100` on the comma); single-bind `$kv :in $m` binds the whole map, not entries — `iterate()` + `materialize_to_items()` have no `cx.MapNode` case. Crosses parser + a missing entry-iteration *protocol* + eval binding; over the 30-line cap. Parked as a map-iteration design item. |
-| #35 | `:order-by EXPR :desc` + multi-key | **WORKS** (desc) / **GAP** (then-by, with workaround) | `:desc` works — but the direction is a **bare ident** `desc` (`:order-by $u/@age desc`), NOT a colon-clause; `:desc` raises "unknown for-comprehension clause". Eval already honors `bc.direction == 'desc'` (`eval.v` ~5972) with a stable insertion sort. `:then-by` does NOT exist, but multi-key sort is fully expressible by **chaining `:order-by`** (sort secondary-key first; the stable sort preserves it within primary ties). Fixtures `program-order-by-desc-001`, `program-order-by-multikey-001`. |
-| #42 | Char-level string access `"hello"[0]` | **WORKS-AS-DESIGNED** | `$s[1]` returns the whole string and `$s[2:4]` is empty — strings are scalars, `iterate(scalar)` → 1-element seq, so `[]` does not do char access (intentional; not a gap). The blessed path is the `substring(s, start, len)` builtin (1-indexed, XPath `fn:substring` convention): `[substring $s 2 3]` → `"ell"`, `[substring $s 1 1]` → `"h"`. Documented + fixture `program-string-index-001`. |
+The previous table's gaps are retired because they were measured against the
+pre-reshape surface. Kept as history, not as findings:
 
-**Single most important gap for the next design cycle:** map entry
-iteration (#33). It blocks corpus program #10 (word-count,
-needs sort-by-count over a frequency map) and is the only one of the
-three probes requiring real design (a Map-entry iteration protocol /
-value-kind decision), not a doc note or a cheap flip.
+- *Math / arithmetic builtins* — already closed 2026-05-26 by the math-operator
+  surface; `[$mod]` is used by #01 and #05 today.
+- *Multi-arg `[?fn]` apply with non-trivial body* — **closed by measurement**:
+  #05's `[?fn ($acc $tok) …]` inside `[?reduce]` is exactly that, and works.
+- *`$bind/child` single-match* — superseded by the more precise #961 finding
+  above (grouping transparency, not single-match arity).
+- *Paren-expression with operators (`$x > 4`)* — void: the surface is prefix
+  Lisp-1 (`[> $x 4]`), so the shape that "parse-failed" is not a shape CX has.
+- *Atom-as-attribute-value friction* — void: attributes are `name=value`
+  (`level=:error`), which #02 and #06 use.
 
-**Surface-syntax footgun surfaced (worth a guide note):** the
-`:order-by` direction is a bare `asc`/`desc` ident, not `:asc`/`:desc`.
-Every other modifier in the for-comprehension is a colon-clause, so
-`:desc` reads natural and silently fails to parse. Candidate for a
-playground-cookbook clarification or accepting `:desc` as an alias.
+## Where the gate is wired
 
-## Acceptance-criteria status
+`corpus-audit` is in `TEST_TARGETS`, so both `make test` (the release gate) and
+`make test-no-parallel` run it. `scripts/test_changed.sh` carries a manifest row
+naming `corpus/*`, the ring lanes, and `scripts/corpus_audit.sh` as its inputs,
+so the development-loop entry point runs it whenever the corpus or the audit
+script moves. Wiring landed last, deliberately: wiring it while the corpus was
+red would have painted that red into `make test`.
 
-Re-checking the five acceptance criteria for the audit process:
+## Method note
 
-1. ☑ `corpus/rosetta/` exists with ≥5 programs + `.md` narratives.
-2. ☑ `corpus/rosetta/AUDIT.md` exists with per-program table (this file).
-3. ☑ ≥1 cross-reference doc exists (`spec/cross-ref/xpath-31.md`).
-4. ☑ ≥1 surface fix motivated by a corpus gap — the **math-operator
-   surface** was filed as the first deliverable from this audit cadence
-   and now ships; it closed `01-fizzbuzz-shapes` from blocked → green.
-5. ☑ Cadence reference carried into the next surface discussion — the
-   math-operator surface work references both this audit and the corpus
-   gap directly.
+Statuses here are MEASURED, never inferred: a program is `green` only when it
+runs rc=0 AND produces the expected value. #13 additionally carries a negative
+check (remove the port, expect `:invalid`), because a validator that answers
+`:valid` unconditionally passes a naive audit while proving nothing. #21
+carries the same discipline the other way: its pipeline is measured over a
+literal CSV body with a deliberately bad row, so "blocked on the fetch" is a
+statement about the capability boundary and not a cover for an unproven
+program.
 
-The acceptance criteria are met by the v0.8.0-dev cadence:
-the audit caught a gap on program #1, a fix was filed within the
-week, and it shipped before the next release boundary. The
-discovery instrument is working as designed.
+The detector's blind spot, recorded so the next reader does not trip on it: a
+`blocked` row matches ANY non-zero exit. Parse failure, capability refusal, and
+a genuine surface gap are indistinguishable to it. That is why #21 sat green in
+the gate for a full pass while its source did not parse. If a program is
+recorded `blocked`, the reason lives in this table and in the sibling `.md` —
+and the gate cannot check it for you.

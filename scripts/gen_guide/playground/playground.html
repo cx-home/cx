@@ -65,19 +65,43 @@
     </div>
   </section>
   <section class="cxp-pane cxp-viz-pane">
+    <!-- One control model (#992): the pane header carries only the axes
+         that apply to EVERYTHING it can draw — which subject, which
+         representation, and (since #1001) how much detail. Everything
+         that configures ONE representation lives inside that
+         representation's own panel, so a control is on screen exactly
+         when it does something.
+
+         Detail moved back up here at #1001. #992 had put it in the
+         graph bar because Detail was graph-only IN FACT: the Tree's
+         detail-aware branch read fields the tree contract does not
+         carry and never fired. Now that the Tree honours the rung, the
+         control governs both representations and belongs on the axis
+         header by this pane's own rule. -->
     <div class="cxp-pane-head">
       <span>VIEW</span>
       <span class="cxp-tabs cxp-subject-group" role="tablist"
             title="Choose the subject: the program you wrote, the value it produced, or both">
         <button class="cxp-subject-tab is-active" data-subject="source" type="button">Source</button>
         <button class="cxp-subject-tab"           data-subject="output" type="button">Output</button>
-        <button class="cxp-subject-tab"           data-subject="all"    type="button">All</button>
+        <button class="cxp-subject-tab"           data-subject="all"    type="button">Both</button>
       </span>
+      <span class="cxp-spacer"></span>
+      <!-- The option text is the bare rung, not "Detail: <rung>", and
+           that is MEASURED rather than a preference: at the View pane's
+           natural width (467px at a 1400px window) the header holds one
+           row only while this control is ≤85px, and "DETAIL: COMPACT"
+           is 129px. The long spelling re-stacked the header into two
+           ragged rows, which is the exact surface complaint PQ-5 bought
+           out. The rungs are the same vocabulary the CLI spells
+           `--detail`, the two groups beside this one are bare value
+           sets too, and the control names itself on hover. -->
       <select id="cxp-detail-select" class="cxp-detail-select"
-              title="Adjust how much detail nodes show (attributes, scalar bodies, values)">
-        <option value="min">Detail: min</option>
-        <option value="compact" selected>Detail: compact</option>
-        <option value="full">Detail: full</option>
+              aria-label="Detail level"
+              title="Detail — how much each Tree row and Graph box shows: attributes, scalar bodies, values">
+        <option value="min">min</option>
+        <option value="compact" selected>compact</option>
+        <option value="full">full</option>
       </select>
       <span class="cxp-tabs" role="tablist">
         <button class="cxp-viz-tab is-active" data-viz="tree"  type="button">Tree</button>
@@ -88,7 +112,15 @@
       <p class="cxp-viz-placeholder">Run a program to see its structural tree.</p>
     </div>
     <div id="cxp-viz-graph" class="cxp-viz-content">
-      <div class="cxp-graph-controls">
+      <!-- The graph's own controls. This strip is inside the graph
+           panel, so it is on screen only while a graph is. -->
+      <div class="cxp-graph-bar">
+        <span class="cxp-tabs" role="tablist"
+              title="Graph subject — Auto: the INFERRED SHAPE (one box per element NAME for data, control flow for code). Instance: one box per element OCCURRENCE, a table of its own attribute values.">
+          <button class="cxp-gview-tab is-active" data-gview="auto"     type="button">Auto</button>
+          <button class="cxp-gview-tab"           data-gview="instance" type="button">Instance</button>
+        </span>
+        <span class="cxp-spacer"></span>
         <button id="cxp-graph-zoom-out" class="cxp-mini-btn" type="button" title="Zoom out">−</button>
         <button id="cxp-graph-fit"      class="cxp-mini-btn" type="button" title="Reset zoom">⊙</button>
         <button id="cxp-graph-zoom-in"  class="cxp-mini-btn" type="button" title="Zoom in">+</button>
@@ -105,11 +137,17 @@
 <script src="wasm/cxlib.js" defer></script>
 <script src="playground/playground.examples.js" defer></script>
 <script src="highlight/highlight.js" defer></script>
-<!-- Mermaid via jsDelivr CDN. Works under HTTP and (in most modern
-     browsers) file://. We pull it async; the Graph tab shows the
-     raw Mermaid source until the lib finishes loading. -->
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"
-        crossorigin="anonymous" defer></script>
+<!-- Mermaid, VENDORED (#1007). This was a jsDelivr <script> against the
+     floating range `mermaid@10`, which meant two things: the Graph pane
+     needed the network — so §8.11.3's "works without an internet
+     connection" held for evaluation but not for diagrams — and the bytes
+     that drew a reader's diagram could change under an already-cut
+     release tag. The renderer now ships in the repo at a pinned version;
+     scripts/gen_guide/playground/vendor/README.md is the pin of record.
+     Same bundle the validity gate parses against, so gate and page
+     cannot drift apart. Ordered before playground.js and both `defer`,
+     so window.mermaid is present by the time the page initialises. -->
+<script src="playground/vendor/mermaid.min.js" defer></script>
 <script src="playground/playground.js" defer></script>
 </body>
 </html>

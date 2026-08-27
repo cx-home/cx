@@ -17,33 +17,58 @@ traversal, mutable-set-of-visited state, and recursive comprehension.
 
 ## Actual run
 
-Program (an honest reduction — *enumerate the edges*, since BFS itself is unwriteable in current CX surface):
+Program (a reduction — *enumerate the edges* rather than search them):
 
-```
-[?let $graph = [g
-  [edges from=A to=B] [edges from=A to=C]
-  [edges from=B to=D] [edges from=C to=D]
-  [edges from=D to=E]] :in
-  [?for [edges @from=$f @to=$t] :in $graph//edges :yield [edge $f $t]]]
+```cx
+[?let [= $graph [g
+                  [edges from=A to=B] [edges from=A to=C]
+                  [edges from=B to=D] [edges from=C to=D]
+                  [edges from=D to=E]]]
+  [?for [in $e $graph//edges]
+    [yield [edge $e@from $e@to]]]]
 ```
 
-Run: `devbox run -- ./vcx/target/cx eval corpus/rosetta/06-bfs.cx`
+Run: `vcx/target/cx corpus/rosetta/06-bfs.cx`
 
 Observed output:
 
 ```
-[edge "A" "B"]
-[edge "A" "C"]
-[edge "B" "D"]
-[edge "C" "D"]
-[edge "D" "E"]
+[edge 'A' 'B']
+[edge 'A' 'C']
+[edge 'B' 'D']
+[edge 'C' 'D']
+[edge 'D' 'E']
 ```
+
+**Status:** WORKAROUND (reduced scope; re-derived 2026-08-25, RULED: VC-28).
+Rewritten for the v0.8.0 surface: `$graph//edges` plus a comprehension binding
+`$e@from` / `$e@to`. Runs rc=0 and enumerates all five edges.
+
+Still reduced scope, as before: it returns the edge list, not a path from A to
+E. One thing HAS changed and is recorded rather than assumed — `[?def]`
+recursion exists on the current surface, so a frontier-based traversal is
+plausibly expressible now. It is not written here, and claiming it works
+without writing it would be a guess.
+
+## Historical (v0.7.x surface, superseded)
+
+Everything below this line describes the **pre-reshape** surface and is kept as
+a discovery trail, not as findings. Several of its claims are now false —
+`[?def]` recursion exists, `$bind/child` is not single-match, and its closing
+line ("today CX doesn't [have enough surface]") is contradicted by the current
+status above. `AUDIT.md` carries the retirement list and the live gap
+register; this section is history.
+
+What survives is the honest part: a frontier-based traversal is still not
+written here. That is recorded in the current status, not in the list below.
+
+### Status at the time
 
 **Status:** WORKAROUND (reduced scope). The program parses and runs,
 but the original BFS goal is unreachable: it returns the edge list,
 not a path from A to E. Multiple gaps compose to block the real BFS.
 
-## Workarounds used
+### Workarounds used
 
 | Idiomatic | Used | Reason |
 |---|---|---|
@@ -53,7 +78,7 @@ not a path from A to E. Multiple gaps compose to block the real BFS.
 | `[?reduce]` over a worklist | (impossible) | Two-arg `[?fn]` with non-trivial body doesn't work (confirmed in program #05) |
 | Set difference `visited - to-visit` | (impossible) | No set-difference builtin; "set operations" hypothesis listed Medium |
 
-## Open gap log
+### Open gap log
 
 Surface-completeness hypothesis confirmations:
 

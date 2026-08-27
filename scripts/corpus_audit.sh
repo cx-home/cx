@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Rosetta corpus cadence audit.
-# Iterates corpus/rosetta/NN-*.cx, runs each via vcx/target/cx eval,
+# Iterates corpus/rosetta/NN-*.cx, runs each via `vcx/target/cx <file>` (the
+# standing run surface — the legacy `cx eval` alias is never used, AGENTS.md
+# rule 4),
 # computes a live status, and compares against corpus/rosetta/AUDIT.md.
 # Exits 0 if every live status matches recorded; exits 1 on drift.
 set -u
@@ -21,8 +23,16 @@ recorded_pairs=$(awk -F'|' '
   }
 ' "$AUDIT_FILE")
 
+# Return the recorded STATUS only — the first token after the slug (#957).
+# This used to rejoin fields 2..NF, so a Status cell carrying a parenthetical
+# ("blocked (expected pre-impl)") round-tripped as text and could never equal a
+# bare live status: that row reported drift permanently, whatever the truth was.
+# The cell itself is fixed in AUDIT.md (annotations belong in the gaps column),
+# and taking one token here means the next annotation cannot silently
+# re-introduce a permanently-drifting row. A status is one word by construction:
+# green / workaround / blocked.
 lookup_recorded() {
-  printf '%s\n' "$recorded_pairs" | awk -v s="$1" '$1==s {for(i=2;i<=NF;i++) printf "%s%s", $i, (i<NF?" ":""); exit}'
+  printf '%s\n' "$recorded_pairs" | awk -v s="$1" '$1==s {print $2; exit}'
 }
 
 drift=0
@@ -38,7 +48,7 @@ for cx in "$CORPUS_DIR"/[0-9]*-*.cx; do
   if [ ! -f "$md" ]; then
     live="missing"; notes="no sibling .md"
   else
-    out=$("$CX_BIN" eval "$cx" 2>&1); rc=$?
+    out=$("$CX_BIN" "$cx" 2>&1); rc=$?
     md_status=$(grep -oE '^\*\*Status:\*\* [A-Z]+' "$md" | head -1 | awk '{print tolower($2)}')
     if [ "$rc" -ne 0 ]; then
       live="blocked"; notes="exit=$rc"

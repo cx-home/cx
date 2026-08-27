@@ -82,6 +82,25 @@ SDE="$(git log -1 --format=%ct)"
 # make vars override the := shell derivations and propagate to sub-makes).
 CX_COMMIT="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
 CX_VFORK="$(git -C third_party/v rev-parse --short HEAD 2>/dev/null || echo unknown)"
+# Release provenance (#979, RULED: CO-4) travels the same road, and for the
+# same reason: in the container `git describe` has nothing to describe, so an
+# un-passed CX_RELEASE would stamp every linux artifact `-dev+` even at the
+# tag. The value is READ FROM the Makefile rather than re-derived here — one
+# implementation of the rule (`make -C vcx print-CX_RELEASE`), evaluated on the
+# host, where the tag and the working tree actually are. This script is invoked
+# by release.sh BEFORE its merge-to-main step, so the host HEAD is the tagged
+# commit at this point.
+# --no-print-directory: `make -C` otherwise brackets the value with
+# Entering/Leaving lines. Only the two known states are accepted — a probe that
+# picked up noise must not silently decide a release artifact's provenance.
+CX_RELEASE="$(make -s --no-print-directory -C vcx print-CX_RELEASE 2>/dev/null | tail -1 | tr -d '[:space:]')"
+case "$CX_RELEASE" in release|dev) ;; *) CX_RELEASE="" ;; esac
+if [ -z "$CX_RELEASE" ]; then
+  CX_RELEASE=dev
+  echo "release_linux.sh: WARNING — could not read CX_RELEASE from vcx/Makefile;" >&2
+  echo "the linux artifacts will stamp themselves as a pre-release (-dev+)." >&2
+  echo "At a real cut the R2.2 gate below rejects that, which is the intent." >&2
+fi
 
 build_one() {
   local platform="$1" arch="$2"
@@ -92,6 +111,7 @@ build_one() {
   docker run --rm --platform "$platform" \
     -v "$ROOT:/src:ro" -v "$ROOT/dist:/out" \
     -e SOURCE_DATE_EPOCH="$SDE" \
+    -e R22_EXPECT_HEADLINE="${R22_EXPECT_HEADLINE:-}" \
     ubuntu:22.04 bash -euc '
       export DEBIAN_FRONTEND=noninteractive
       apt-get update -qq
@@ -105,7 +125,7 @@ build_one() {
         --exclude=vcx/target \
         --exclude=third_party/v/v \
         --exclude=third_party/re2/obj \
-        Makefile VERSION cx.pc.in include vcx stdlib x third_party scripts \
+        Makefile VERSION cx.pc.in include vcx stdlib x docs/llm third_party scripts \
         | tar xf - -C /build
       cd /build
       git config --global --add safe.directory "*"
@@ -113,7 +133,7 @@ build_one() {
       # copied tcc tree is on a detached HEAD, so the default network
       # refresh (git pull --rebase) would fail; the fork pins both anyway.
       make -C third_party/v local=1
-      make '"$BUILD_TARGET"' CX_COMMIT='"$CX_COMMIT"' CX_VFORK='"$CX_VFORK"'
+      make '"$BUILD_TARGET"' CX_COMMIT='"$CX_COMMIT"' CX_VFORK='"$CX_VFORK"' CX_RELEASE='"$CX_RELEASE"'
       T=linux-'"$arch"'
       mkdir -p "/tmp/$T"
       cp vcx/target/cx vcx/target/libcx.so include/cx.h "/tmp/$T/"
@@ -122,7 +142,7 @@ build_one() {
       ( cd "/tmp/$T" && tar czf "/out/public/cx-$T.tar.gz" cx cx.h libcx.so LICENSE-re2.txt )
       # I4 (#651/#516): the §4 profile tarballs (see release.sh phase 2 for
       # the composition rationale) — cx-<profile>-linux-<arch>.tar.gz.
-      make -C vcx '"$PROFILES_TARGET"' CX_COMMIT='"$CX_COMMIT"' CX_VFORK='"$CX_VFORK"'
+      make -C vcx '"$PROFILES_TARGET"' CX_COMMIT='"$CX_COMMIT"' CX_VFORK='"$CX_VFORK"' CX_RELEASE='"$CX_RELEASE"'
       for prof in data embed cli; do
         P="/tmp/prof-$prof"; mkdir -p "$P"
         cp "vcx/target/profiles/$prof/cx" "$P/"

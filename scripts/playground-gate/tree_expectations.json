@@ -1,0 +1,427 @@
+{
+  "_README": [
+    "PINNED EXPECTATIONS for the playground Tree pane gate (#1049).",
+    "Regenerate with: node scripts/test_playground_tree.mjs --pin",
+    "A regeneration is a CHANGE REQUEST: read the diff, and only commit it when",
+    "each moved number is one the Tree change intended. TD-1..TD-7 in",
+    "ledger/rulings_2026_08_26_playground_tree_detail_1001.md is the contract",
+    "these numbers hold; a diff that contradicts a TD rung is a defect, not a re-pin."
+  ],
+  "_fields": {
+    "rows": "total .cxt-node rows the Tree drew for the SOURCE subject",
+    "chips": "TD-2b — .cxt-attr-chip count (0 at min; capped at 2 at compact; all at full)",
+    "overflow": "TD-2b — the exact `(+K more attrs)` notes, in order (compact only)",
+    "names": "TD-2c — element/directive captions in order; a directive is `?` + name",
+    "inlineScalars": "TD-2a — lone scalar/text bodies ridden up onto their element row",
+    "leafRows": "TD-5 — nodes rendered as ONE row with no children container",
+    "rawWalkLabels": "TD-1 — MUST stay []: rows labelled with tree-contract keys = raw JSON walk",
+    "arrayRows": "TD-1 — MUST stay []: `array(N)` container rows = raw JSON walk",
+    "placeholder": "MUST stay \"\": a placeholder means the pane drew no tree at all"
+  },
+  "cases": [
+    {
+      "example": "04-boolean-scalars",
+      "why": "TD-1's own case: [user active=true verified=false admin=true blocked=false] drew SEVENTEEN rows under the dead branch, one under the fix, with Detail finally observable on it.",
+      "rungs": {
+        "min": {
+          "placeholder": "",
+          "rows": 1,
+          "chips": 0,
+          "overflow": [],
+          "names": [
+            "user"
+          ],
+          "inlineScalars": 0,
+          "leafRows": 0,
+          "rawWalkLabels": [],
+          "arrayRows": []
+        },
+        "compact": {
+          "placeholder": "",
+          "rows": 1,
+          "chips": 2,
+          "overflow": [
+            "(+2 more attrs)"
+          ],
+          "names": [
+            "user"
+          ],
+          "inlineScalars": 0,
+          "leafRows": 0,
+          "rawWalkLabels": [],
+          "arrayRows": []
+        },
+        "full": {
+          "placeholder": "",
+          "rows": 1,
+          "chips": 4,
+          "overflow": [],
+          "names": [
+            "user"
+          ],
+          "inlineScalars": 0,
+          "leafRows": 0,
+          "rawWalkLabels": [],
+          "arrayRows": []
+        }
+      }
+    },
+    {
+      "example": "109-rename-via-attr",
+      "why": "TD-2c — a [?element] whose name is a COMPUTED path, inside [?let]/[?for]/[yield]. Pins the `?name` directive spelling and the #1038 surface.",
+      "rungs": {
+        "min": {
+          "placeholder": "",
+          "rows": 14,
+          "chips": 0,
+          "overflow": [],
+          "names": [
+            "?let",
+            "=",
+            "doc",
+            "item",
+            "item",
+            "item",
+            "?for",
+            "in",
+            "yield",
+            "?element"
+          ],
+          "inlineScalars": 0,
+          "leafRows": 4,
+          "rawWalkLabels": [],
+          "arrayRows": []
+        },
+        "compact": {
+          "placeholder": "",
+          "rows": 13,
+          "chips": 7,
+          "overflow": [],
+          "names": [
+            "?let",
+            "=",
+            "doc",
+            "item",
+            "item",
+            "item",
+            "?for",
+            "in",
+            "yield",
+            "?element"
+          ],
+          "inlineScalars": 1,
+          "leafRows": 3,
+          "rawWalkLabels": [],
+          "arrayRows": []
+        },
+        "full": {
+          "placeholder": "",
+          "rows": 13,
+          "chips": 7,
+          "overflow": [],
+          "names": [
+            "?let",
+            "=",
+            "doc",
+            "item",
+            "item",
+            "item",
+            "?for",
+            "in",
+            "yield",
+            "?element"
+          ],
+          "inlineScalars": 1,
+          "leafRows": 3,
+          "rawWalkLabels": [],
+          "arrayRows": []
+        }
+      }
+    },
+    {
+      "example": "130-siblings",
+      "why": "text bodies and a multi-body element ([tags \"T1\" \"T2\"]) — TD-2a's lone-body rule and its NEGATIVE case in one tree.",
+      "rungs": {
+        "min": {
+          "placeholder": "",
+          "rows": 19,
+          "chips": 0,
+          "overflow": [],
+          "names": [
+            "?let",
+            "=",
+            "post",
+            "title",
+            "author",
+            "body",
+            "tags",
+            "?for",
+            "in",
+            "yield"
+          ],
+          "inlineScalars": 0,
+          "leafRows": 9,
+          "rawWalkLabels": [],
+          "arrayRows": []
+        },
+        "compact": {
+          "placeholder": "",
+          "rows": 15,
+          "chips": 0,
+          "overflow": [],
+          "names": [
+            "?let",
+            "=",
+            "post",
+            "title",
+            "author",
+            "body",
+            "tags",
+            "?for",
+            "in",
+            "yield"
+          ],
+          "inlineScalars": 4,
+          "leafRows": 5,
+          "rawWalkLabels": [],
+          "arrayRows": []
+        },
+        "full": {
+          "placeholder": "",
+          "rows": 15,
+          "chips": 0,
+          "overflow": [],
+          "names": [
+            "?let",
+            "=",
+            "post",
+            "title",
+            "author",
+            "body",
+            "tags",
+            "?for",
+            "in",
+            "yield"
+          ],
+          "inlineScalars": 4,
+          "leafRows": 5,
+          "rawWalkLabels": [],
+          "arrayRows": []
+        }
+      }
+    },
+    {
+      "example": "134-build-index",
+      "why": "TD-2c at depth — [?element] carrying an attribute whose VALUE is a nested [?if]/[then]/[else] directive tree.",
+      "rungs": {
+        "min": {
+          "placeholder": "",
+          "rows": 13,
+          "chips": 0,
+          "overflow": [],
+          "names": [
+            "?let",
+            "=",
+            "users",
+            "user",
+            "user",
+            "?for",
+            "in",
+            "yield",
+            "?element"
+          ],
+          "inlineScalars": 0,
+          "leafRows": 4,
+          "rawWalkLabels": [],
+          "arrayRows": []
+        },
+        "compact": {
+          "placeholder": "",
+          "rows": 12,
+          "chips": 5,
+          "overflow": [],
+          "names": [
+            "?let",
+            "=",
+            "users",
+            "user",
+            "user",
+            "?for",
+            "in",
+            "yield",
+            "?element"
+          ],
+          "inlineScalars": 1,
+          "leafRows": 3,
+          "rawWalkLabels": [],
+          "arrayRows": []
+        },
+        "full": {
+          "placeholder": "",
+          "rows": 12,
+          "chips": 5,
+          "overflow": [],
+          "names": [
+            "?let",
+            "=",
+            "users",
+            "user",
+            "user",
+            "?for",
+            "in",
+            "yield",
+            "?element"
+          ],
+          "inlineScalars": 1,
+          "leafRows": 3,
+          "rawWalkLabels": [],
+          "arrayRows": []
+        }
+      }
+    },
+    {
+      "example": "150-join-by-key",
+      "why": "TD-5's measured case: 36 rows at compact before the value-leaf rule, 24 after. Also the deepest nesting in the set.",
+      "rungs": {
+        "min": {
+          "placeholder": "",
+          "rows": 25,
+          "chips": 0,
+          "overflow": [],
+          "names": [
+            "?let",
+            "=",
+            "o-set",
+            "o",
+            "o",
+            "o",
+            "?let",
+            "=",
+            "u-set",
+            "u",
+            "u",
+            "?for",
+            "in",
+            "yield",
+            "joined",
+            "email",
+            "?splice",
+            "="
+          ],
+          "inlineScalars": 0,
+          "leafRows": 7,
+          "rawWalkLabels": [],
+          "arrayRows": []
+        },
+        "compact": {
+          "placeholder": "",
+          "rows": 24,
+          "chips": 12,
+          "overflow": [
+            "(+1 more attr)",
+            "(+1 more attr)",
+            "(+1 more attr)"
+          ],
+          "names": [
+            "?let",
+            "=",
+            "o-set",
+            "o",
+            "o",
+            "o",
+            "?let",
+            "=",
+            "u-set",
+            "u",
+            "u",
+            "?for",
+            "in",
+            "yield",
+            "joined",
+            "email",
+            "?splice",
+            "="
+          ],
+          "inlineScalars": 1,
+          "leafRows": 6,
+          "rawWalkLabels": [],
+          "arrayRows": []
+        },
+        "full": {
+          "placeholder": "",
+          "rows": 24,
+          "chips": 15,
+          "overflow": [],
+          "names": [
+            "?let",
+            "=",
+            "o-set",
+            "o",
+            "o",
+            "o",
+            "?let",
+            "=",
+            "u-set",
+            "u",
+            "u",
+            "?for",
+            "in",
+            "yield",
+            "joined",
+            "email",
+            "?splice",
+            "="
+          ],
+          "inlineScalars": 1,
+          "leafRows": 6,
+          "rawWalkLabels": [],
+          "arrayRows": []
+        }
+      }
+    }
+  ],
+  "bridge": {
+    "_why": "TD-3 / TD-6a — the chips carry the per-attribute click targets the verbose walk used to provide, verified in BOTH directions.",
+    "example": "04-boolean-scalars",
+    "rung": "full",
+    "forward": [
+      {
+        "chip": 0,
+        "half": "name",
+        "chipText": "@active=true",
+        "selected": "active",
+        "markedCount": 1
+      },
+      {
+        "chip": 0,
+        "half": "value",
+        "chipText": "@active=true",
+        "selected": "true",
+        "markedCount": 1
+      },
+      {
+        "chip": 3,
+        "half": "name",
+        "chipText": "@blocked=false",
+        "selected": "blocked",
+        "markedCount": 1
+      },
+      {
+        "chip": 3,
+        "half": "value",
+        "chipText": "@blocked=false",
+        "selected": "false",
+        "markedCount": 1
+      }
+    ],
+    "reverse": [
+      {
+        "token": "verified",
+        "occurrence": 0,
+        "markedText": "@verified",
+        "markedClass": "cxt-chip-k",
+        "markedCount": 1
+      }
+    ]
+  }
+}

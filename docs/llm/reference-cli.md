@@ -1,7 +1,7 @@
-# Reference: the `cx` command line — v0.16.0
+# Reference: the `cx` command line — v0.17.0
 
 > **GENERATED.** Source: `docs-src/llm/reference-cli.md.tmpl`. The help text
-> below is the v0.16.0 binary's own `--help`, captured at generation
+> below is the v0.17.0 binary's own `--help`, captured at generation
 > time — not a transcription. Read `primer.md` first.
 
 ## The one rule
@@ -134,7 +134,9 @@ Run flags (the default action; flags bind BEFORE the resource):
   Capabilities are deny-by-default (spec/core/security.md); grant explicitly:
     --allow-read --allow-write --allow-net --allow-env --allow-clock
     --allow-random --allow-subprocess --allow-eval --allow-secret-reveal --allow-common --allow-all
-    (--allow-net takes an optional scope: --allow-net=host[:port])
+    (--allow-net takes an optional scope: --allow-net=host[:port] — it is the
+     ONLY grant whose scope is enforced. A resource suffix on --allow-read /
+     --allow-write / --allow-env is a usage error, not a narrowing: #1059)
     --allow-common is the common working set WITHOUT secret-reveal;
     --allow-all additionally grants secret-reveal, which declassifies secrets.
 
@@ -155,51 +157,116 @@ Convert flags (the data reading; an explicit --from selects it):
   --include-root=DIR     resolve [?cx include=...] against DIR first
 
 Subcommands (`cx <subcommand> --help` for details):
-  fmt               Lossless canonical formatter (preserves comments/anchors).
-  canonical         Strict canonical text (strips presentation; data-equivalent).
-  schema            Schema verb family — infer a .cxs from a corpus; export to JSON Schema; classify compatibility.
-  tools             Agent-tool verb family — project command defs to MCP tool descriptors.
-  hash              SHA-256 hex of the strict-canonical bytes.
-  eq                Exit 0 iff strict-canonical(A) == strict-canonical(B).
-  diff              Semantic diff (walks the strict-canonical forms).
-  lint              Style + correctness warnings.
-  validate          Validate a document against a CX schema (.cxs).
-  eval              Evaluate a CX program (alias of the default run action; prefer `cx FILE`).
-  primer            Print the LLM onboarding primer for THIS binary (#938).
-  version           Version / build info (same output as -v / --version).
-  select            CXPath query over a document (matches in canonical CX).
-  diagram           Render a CX program as a diagram (mermaid/svg/png).
-  code-diagram      Mermaid diagram of a CX source (flowchart / erDiagram).
-  code-tree         Tree View JSON of a CX source.
-  table             Table API over [table[...]] blocks (info / dump / load).
-  scaffold          Typed, commented skeleton on stdout (config/data/doc/log/table).
-  xap               XAP project tooling — scaffold (`init`) and check (`check-surface`).
-  demo              Self-contained showcase (no file I/O, no network, < 1s).
-  lock              Generate / verify cx.lock from [?lib] directives.
-  lsp               Language server (LSP) on stdio.
-  store-serve       Run the CX store service daemon from a config.
-  fabric-serve      Run the CX fabric eventing daemon from a config.
-  store-health      Store readiness probe (exit 0 iff accepting).
-  store-rotate-kek  Rotate a store key-encryption key (re-wrap envelopes).
+  fmt                  Lossless canonical formatter (preserves comments/anchors).
+  canonical            Strict canonical text (strips presentation; data-equivalent).
+  schema               Schema verb family — infer a .cxs from a corpus; export to JSON Schema; classify compatibility.
+  tools                Agent-tool verb family — project command defs to MCP tool descriptors.
+  hash                 SHA-256 hex of the strict-canonical bytes.
+  eq                   Exit 0 iff strict-canonical(A) == strict-canonical(B).
+  diff                 Semantic diff (walks the strict-canonical forms).
+  lint                 Style + correctness warnings.
+  validate             Validate a document against a CX schema (.cxs).
+  eval                 Evaluate a CX program (alias of the default run action; prefer `cx FILE`).
+  primer               Print the LLM onboarding primer for THIS binary (#938).
+  version              Version / build info (same output as -v / --version).
+  select               CXPath query over a document (matches in canonical CX).
+  diagram              Render a CX program as a diagram (mermaid/svg/png).
+  code-diagram         Mermaid diagram of a CX source (flowchart / erDiagram).
+  code-tree            Tree View JSON of a CX source.
+  table                Table API over [table[...]] blocks (info / dump / load).
+  scaffold             Typed, commented skeleton on stdout (config/data/doc/log/table).
+  xap                  XAP project tooling — scaffold (`init`) and check (`check-surface`).
+  demo                 Self-contained showcase (no file I/O, no network, < 1s).
+  lock                 Generate / verify cx.lock from [?lib] directives.
+  lsp                  Language server (LSP) on stdio.
+  store-serve          Run the CX store service daemon from a config.
+  fabric-serve         Run the CX fabric eventing daemon from a config.
+  store-health         Store readiness probe (exit 0 iff accepting).
+  store-rotate-kek     Rotate a store key-encryption key (re-wrap envelopes).
+  store-mint-principal Mint an XSP-AUTH principal offline (seed file + [grant …] stanza).
 ```
 
-## The verbs you will actually reach for
+## The verbs, by what you are trying to do
+
+The `--help` capture above is the complete list. This is the same set sorted
+by intent.
+
+**Run and inspect**
 
 | Command | Use it for |
 |---|---|
 | `cx FILE.cx` | run a program, or print a document's canonical form |
 | `cx -e 'PROG'` | a one-liner |
+| `cx demo` | a self-contained showcase, no I/O, under a second |
+| `cx primer` | this documentation set's primer, for the installed binary |
+| `cx version` | version and build info (same as `-v` / `--version`) |
+
+**Identity, shape, and correctness**
+
+| Command | Use it for |
+|---|---|
 | `cx fmt FILE` | lossless format (keeps comments and anchors) |
 | `cx canonical FILE` | strict canonical text — what identity is defined over |
 | `cx hash FILE` | SHA-256 of the strict-canonical bytes |
 | `cx eq A B` / `cx diff A B` | semantic equality / semantic diff |
 | `cx lint FILE` | style and correctness findings |
 | `cx validate FILE --schema=S.cxs` | schema check |
+| `cx schema infer` / `export` / … | derive a `.cxs`, project it to JSON Schema, classify compatibility |
 | `cx select 'PATH' FILE` | one CXPath query, no program |
 | `cx --from=json --to=cx f.json` | the convert surface |
-| `cx code-diagram FILE` | Mermaid of a program (or `--view=effects` for its capability graph) |
-| `cx primer` | this documentation set's primer, for the installed binary |
-| `cx demo` | a self-contained showcase, no I/O, under a second |
+| `cx table info` / `dump` / `load` | the `[table[…]]` API |
+| `cx scaffold KIND` | a typed, commented skeleton on stdout |
+
+**Understand a program**
+
+| Command | Use it for |
+|---|---|
+| `cx code-diagram FILE` | Mermaid of a program (`--view=effects` for its capability graph) |
+| `cx code-tree FILE` | Tree View JSON of a source |
+| `cx diagram FILE` | render a program as mermaid / svg / png |
+| `cx tools export MODULE.cx` | project command defs to MCP tool descriptors |
+| `cx lsp` | the language server, on stdio |
+
+**Build and ship a feature**
+
+| Command | Use it for |
+|---|---|
+| `cx xap init NAME` | scaffold a feature |
+| `cx xap check-surface DIR` | the surface derivation check |
+| `cx lock` | generate / verify `cx.lock` from `[?lib]` imports |
+
+**Operate a platform** (the platform profile)
+
+| Command | Use it for |
+|---|---|
+| `cx store-serve config.cx` | the store service daemon |
+| `cx fabric-serve config.cx` | the fabric eventing daemon |
+| `cx store-health URL` | readiness probe — exit 0 iff accepting |
+| `cx store-rotate-kek …` | rotate a key-encryption key (re-wrap envelopes) |
+| `cx store-mint-principal …` | mint an XSP-AUTH principal offline — the clean-state bootstrap |
+
+`reference-platform.md` has the bootstrap walkthrough; `playbook-xap.md` has
+the whole arc from feature grammar to hosted surface.
+
+## What the version string tells you
+
+Release-ness is **derived**, never hand-maintained. `cx --version` prints
+`cx vX.Y.Z` only when the binary was built from a clean tree at exactly the
+annotated release tag matching the repo's `VERSION`. Anything else prints
+`cx vX.Y.Z-dev+<commit>` — semantically a pre-release of `X.Y.Z`, which is
+what unreleased source is. If you are reporting a bug, the `-dev+` suffix is
+the part that matters.
+
+## A retired verb tells you what replaced it
+
+A verb that once existed and no longer does answers with **its own
+retirement**, never with "unknown subcommand". `cx store-token`, retired at
+v0.16.0, is the current example — it says the bearer/RBAC plane is gone, that
+store credentials are now XSP-AUTH principals granted in the daemon config,
+and which verb mints one. Retirement entries are kept indefinitely.
+
+So if a verb you remember is missing from `--help`, **run it** rather than
+guessing at a replacement. The tool knows what happened to it.
 
 ## Capability grants
 
@@ -228,13 +295,26 @@ Grant the narrowest thing that works. `--allow-net` takes a scope; the others
 are all-or-nothing, which is a reason to prefer `--allow-read` over
 `--allow-common` in anything automated.
 
+`--allow-net` is the *only* grant that scopes. A resource suffix on
+`--allow-read`, `--allow-write` or `--allow-env` is a **usage error** (exit 2,
+before evaluation) naming the flag, the ignored suffix, and the bare spelling
+that is accepted — earlier versions took the suffix, discarded it, and granted
+the blanket capability, so the narrower-looking spelling silently bought wider
+authority. Real per-path/per-name scoping is unimplemented.
+
 ## Exit codes
 
 | Code | Meaning |
 |---|---|
 | 0 | success |
-| 1 | the program produced an error value, or a check found findings |
+| 1 | the program's TOP-LEVEL result is an `[err]`, or a check found findings |
 | 2 | usage error — an unknown flag, a missing file, a bad invocation |
+
+Exit 1 is about the **top-level** result only (R5.13). An `[err]` nested
+inside a collection is ordinary data — it renders and the run exits 0. Do not
+read the exit status as a refusal contract: refusal at a boundary is
+`CXER0275` (store / http), raised at the boundary, independent of how the
+process exits.
 
 Unknown flags are hard errors. Nothing is ignored, which is why a typo'd
 grant fails loudly *before* the file but silently *after* it.

@@ -1,0 +1,41 @@
+# area: diagram
+# The diagram lane family (#700 wave 1, 2026-08-24): near-pure-compile lanes
+# (~2,200 CPU-s of compile for ~12 s of work in the v0.16.0 record run).
+#
+# NOT listed, on purpose:
+#   code_diagram_roundtrip_test.v — named in scripts/publish_v.sh's rsync
+#     --exclude list (it reads @VMODROOT/../stdlib/diagram.cx, which escapes
+#     the relocated cx-v package). Absorbing it would force that exclusion
+#     onto the whole umbrella and drop every lane below out of the cx-v
+#     package smoke test.
+#
+# SPEC-CITATION DEBT (measured 2026-08-24): approved spec cites six of the
+# files below BY PATH — spec/03-approved/std-lib/diagram.md:135, :154, :300,
+# :332, :364, :514, :861. Those citations go stale here. They are NOT trued
+# in this change: repointing approved-spec prose is a spec edit, VC-3's
+# mechanical-truing list does not name them, and the spec-freeze gate classes
+# spec/* as normative. This matches the precedent the 2026-08-10 wave of this
+# issue set — approved spec already cites identity_tier2_code_test.v,
+# identity_tier2_program_test.v, stdlib_skeleton_test.v,
+# stdlib_xap_pep_test.v, codec_surface_test.v, http_sse_test.v and
+# store_csrp_test.v, none of which have existed since that wave. One
+# authorization can true the whole set at once; until then the debt is
+# recorded here rather than hidden.
+#absorbed vcx/tests/code_diagram_golden_test.v
+#absorbed vcx/tests/code_diagram_completeness_gate_test.v
+#absorbed vcx/tests/diagram_completeness_gate_test.v
+#absorbed vcx/tests/diagram_effect_completeness_gate_test.v
+#absorbed vcx/tests/diagram_effect_golden_test.v
+#absorbed vcx/tests/diagram_mermaid_golden_test.v
+#absorbed vcx/tests/diagram_vector_golden_test.v
+#absorbed vcx/tests/diagram_bench_gate_test.v
+#absorbed vcx/tests/diagram_of_source_test.v
+#absorbed vcx/tests/examples_diagram_gate_test.v
+#
+# ── #1012, 2026-08-26: the rows above were folded in by `apply`, which
+# (unlike `absorb`) never rewrote the manifest — so they sat here as LIVE
+# rows naming originals that were removed at the merge. Marked as the
+# history they always were. Absorption is one-way: the umbrella owns
+# these bodies, and any fix made to the umbrella since exists only there.
+# Restoring an original to regenerate is refused by name —
+# `scripts/consolidate_tests.sh audit <area>`.

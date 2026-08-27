@@ -1,0 +1,177 @@
+[# scripts/v_fork_register.cxd — the V fork DIVERGENCE REGISTER.
+
+   CX builds against a permanent fork of the V compiler (cx-home/v), not
+   upstream vlang/v. This file is the register of that divergence: the
+   upstream commit the patch series sits on, the reason each patch FAMILY
+   exists, and one row per fork commit assigning it to a family.
+
+   It is a CONTROL file, not documentation. `make check-v-fork`
+   (scripts/check_v_fork_patches.cx) compares this register against the
+   actual commit set in third_party/v and fails when the two disagree in
+   EITHER direction:
+
+     - a fork commit with no row here          -> UNDOCUMENTED divergence
+     - a row here with no matching fork commit -> STALE register entry
+
+   Deliberately absent: the commit SUBJECT. Subjects live in git and the
+   gate prints them; duplicating them here would create a second copy to
+   drift. What a maintainer writes down is the WHY, and the why lives on
+   the family, not the commit.
+
+   ## Maintenance posture (RULED: VC-1)
+
+   The fork is permanent. It is not a staging area for patches on their way
+   upstream, and the gate no longer treats an unmerged upstream patch as a
+   pending state to be resolved. Two upstream issues were tracked that way
+   until 2026-08-24 (vlang/v#27178, vlang/v#27179); both closed without
+   merging, and the campaign audit then found that upstream 0.5.2 already
+   carries both changes by another route, so neither is fork divergence at
+   all. The tracked rows retired with the expectation.
+
+   ## Adding a patch
+
+   1. Land the commit on cx-home/v-cx-patches and move the submodule pin.
+   2. Add a `[patch sha=<full-40-char-sha> family=<id>]` row below.
+   3. If no family fits, add a `[family]` element with a `reason=` that
+      says why CX carries it permanently and what would retire it. An
+      empty reason fails the gate — the reason IS the documentation.
+
+   ## Rebasing onto a newer upstream V
+
+   Every SHA changes, so the whole register goes red at once. That is the
+   intent: a rebase is the moment the entire inventory must be
+   re-confirmed, not silently carried. Update `upstream-base` and
+   regenerate the rows from
+   `git -C third_party/v log --no-merges --reverse --format=%H <base>..HEAD`.
+#]
+
+[v-fork-register
+  submodule-path='third_party/v'
+  upstream-base=7647ce1c6fad63b5578bc07883139906de74b2f8
+  upstream-base-label='vlang/v 0.5.2 — commit "V 0.5.2 changelog", 2026-07-13, an ancestor of vlang/v master'
+
+  [family id=vgc
+    reason='Architecture-E memory management: the Perceus reference-counting front line plus the precise stop-the-world vgc backstop, which is the DEFAULT collector for ordinary C-backend programs. CX depends on precise collection and on RSS tracking the recent working set; bundled Boehm delivers neither. Upstream V has no architecture E and no plan for one, so this family retires only if upstream adopts a precise collector.']
+
+  [family id=gc-e-cgen
+    reason='Codegen correctness under -gc e and Perceus: generated free functions, option and result element frees, eager-drop soundness for aliased call results, thread-return-box pinning across exit-to-join, and the markused interaction that keeps a map-free program from retaining map internals. Inseparable from the vgc family — the collector is only sound if cgen emits the frees it assumes. Retires with vgc.']
+
+  [family id=usecache
+    reason='Soundness of -usecache and build-module: compiler-identity cache salt, no cross-translation-unit tentative definitions, type-table validation of cached module layers before linking, deterministic embed_file resolution and embedded-asset invalidation. The failure mode of this class is SILENT MISCOMPILATION (cx-private #151, #520, #855, #864), and CX build times depend on the cache being usable. Retires when upstream V carries equivalent validation.']
+
+  [family id=net
+    reason='vlib/net capabilities the CX transports require: DTLS-over-UDP with HelloVerifyRequest cookies (the marine NMEA feed is UDP), min and max TLS protocol-version bounds, in-protocol close_notify, runtime server-identity certificate rotation, and explicit isize conversion at the C.sendto boundary. Upstream V has no DTLS wrapper. Retires only if upstream grows one.']
+
+  [family id=cgen
+    reason='General codegen capability and performance that is independent of the GC: honoring thread_local on a __global, direct indexed stores for the in-place reuse map, and forwarding a propagating call result directly when the callee result type is the function own type. CX-agnostic and upstreamable in principle; carried because the upstream path did not take them.']
+
+  [family id=libgc
+    reason='Handling of the bundled Boehm libgc amalgamation: thread-local allocation flipped ON, and parallel mark capped to a single marker on macOS. Non-E builds and the macOS hardened runtime both depend on this; the vendored amalgamation is upstream V own copy, so the patch has to live in the fork.']
+
+  [family id=build-toolchain
+    reason='Build reproducibility and fork safety: pinned vc bootstrap, tccbin and macports-legacy-support fetches; C-error bug reports made opt-in because a fork must not phone home; -gc e on macOS resolving straight to the system cc because tcc has no Mach-O thread-local storage; and v up refusing to rebase this patched fork by default. These exist BECAUSE the fork is a fork — they cannot be upstreamed and are permanent by construction.']
+
+  [family id=vlib
+    reason='Assorted vlib correctness the fork carries: os execute_capture using the public spawn.h rather than private posix_spawn externs, sync panicking loudly when a pthread lock or unlock fails instead of guarding nothing, map value_ptr for a by-ref get with one probe and no value copy, and db.redis handling the RESP3 null reply. Each is CX-agnostic and upstreamable in principle.']
+
+  [family id=diag
+    reason='Gated diagnostic probes and localizers, all off by default and behind -d flags: the sweep-while-live oracle, closure and holder watches, the vgc_verify rootfinder, the stack-base helper. They cost nothing when off and they are the instrumentation every vgc soundness investigation has started from (cx-private #57, #58, #63, #145). Permanent for as long as the collector is.']
+
+  [family id=docs
+    reason='Source comments made host-agnostic. The fork must not name the downstream sponsor or CX-specific context in its own source — the PB and CX company boundary. Permanent: it is a property of the fork being a separate public repository.']
+
+  [family id=bench
+    reason='bench/parallel-alloc drivers moved into per-program subdirectories so v test works over that directory again. Carried because the allocator benchmarks in that tree are the measurement harness for the vgc family.']
+
+  [patch sha=06ad7981133ed078bfb311cd5b92c4ce5de8cfc4 family=libgc]
+  [patch sha=1877171d9b61d660bd3ec67cc9797945f1a4e3d5 family=cgen]
+  [patch sha=b1349b9dcabbcfeffd23ed515f6e70b0334feb00 family=net]
+  [patch sha=264f265386a1c486580c16d0123556407f834aab family=libgc]
+  [patch sha=9ca3f5d6432b3df212fe892091c060f99e09655e family=vgc]
+  [patch sha=f5259dce6498c8ac0018d732e98c41702ba5472b family=vlib]
+  [patch sha=77ee9dccccb5f49e42e484f9e0f12e129a59933e family=vgc]
+  [patch sha=e1c44e67e7a49aa97f9a15f7524043a820d5e488 family=gc-e-cgen]
+  [patch sha=ef535b685c12630e4d1a9b098f7ad8f61f0dbb74 family=docs]
+  [patch sha=c3a43577f31440211d3064b0f05728fe39936873 family=gc-e-cgen]
+  [patch sha=439cf1c72c635c638745c684c379a460da41dd64 family=cgen]
+  [patch sha=77444d72dd226e879a60828adf0e7239b6b3d231 family=diag]
+  [patch sha=8129933d5e3c6562c72cfa675f80f193bdf176ba family=vgc]
+  [patch sha=06611866f3df88c039b99f9ce2c8744ab6dce092 family=vgc]
+  [patch sha=e387ce8fb6627c4b8bffce33fbae5c8b48056a3d family=vgc]
+  [patch sha=dca26e1c6d2aa29c5e269e4d5982255702e0a5a2 family=gc-e-cgen]
+  [patch sha=110b20b7c5d701af124830560025eeb16957bd18 family=vgc]
+  [patch sha=7acadefe3c338db2a1bbd765f361a8d0ee193b2b family=build-toolchain]
+  [patch sha=63460988a6222783083d2699fb74789ebabcbbcb family=vgc]
+  [patch sha=3016eaf8fa93001505a8746ddfd923b69b8cd81f family=vgc]
+  [patch sha=903138736b2fe7bad6ef0bdcc2ab97deff94d06d family=vgc]
+  [patch sha=ddae5a98fe58a6d7f57ea2dacbcd4cd46e8f1714 family=vgc]
+  [patch sha=e08667bc5db64b2fe9013e7293a2ce991a090187 family=vgc]
+  [patch sha=6bdeb4ba22b78f4e9537f01916e6f59bcc2fed17 family=vgc]
+  [patch sha=41985eeae2e92f8754c122f89b7d438d10cb2c0a family=docs]
+  [patch sha=68d94a0929511b2dd184b851f649fdacf7d40671 family=gc-e-cgen]
+  [patch sha=39c49eb974f32c0ba50b3c6f30881558ce4ff91e family=gc-e-cgen]
+  [patch sha=08a1fb9f5565f3f54ae148e60b0e0e6a3ed8ca55 family=vgc]
+  [patch sha=6e5cc2663e0434693e2ae7277befb280834a7882 family=vgc]
+  [patch sha=16f22da579a820f9b00433b1014c6bd5daf2a3c4 family=vgc]
+  [patch sha=91ea25a3cd8eb996842d5801ad251ef53ba78eaf family=diag]
+  [patch sha=c98f1c16b9b6161e871d8cb84847e8ab637644db family=vgc]
+  [patch sha=40e47e19d4c87a37695d95c92f2215197a44e245 family=vgc]
+  [patch sha=42de2875777a023264158dc88bcd90711906794e family=vgc]
+  [patch sha=bdb74989949467048aaf26f28b3a8bfeeded944e family=vgc]
+  [patch sha=ae3305b2ac61f0340e7cf68d8967eae04f83312f family=vlib]
+  [patch sha=34b16d08f1cf34ed7089b5f7a8f1c4e808fb8491 family=net]
+  [patch sha=8ef4b952efa5c46eb8e0a91e48aa83db39629a95 family=net]
+  [patch sha=536795af23bbb115bb41eaf6867833e7c023e1c9 family=vgc]
+  [patch sha=71e3fd63d3722b52c81e819650b26a0aebda0a5d family=diag]
+  [patch sha=5f37b37f6517fd52b1346cdef18b7706e6267d62 family=diag]
+  [patch sha=de72995a98df58b62232af8033b861f4065dba5c family=diag]
+  [patch sha=e77c17035c0c339a2b892ae5d76ebf84ca8d4ab5 family=diag]
+  [patch sha=bd8bf570dc02a8ddcd549e71c9c2ef90e934e5e3 family=diag]
+  [patch sha=f6569e4a561dcd6cbefe410cae06498263aa79d5 family=diag]
+  [patch sha=a0f8e801b4c8cf5e82691b2bc90ab66f1a7d4b93 family=vgc]
+  [patch sha=641238bb56643b10bb3859890a63762b5fd5cbee family=usecache]
+  [patch sha=c4f4472c8acf15077e93c364cb415105606a9863 family=usecache]
+  [patch sha=b323faed334515eb049447f888509dbd87e70b35 family=vgc]
+  [patch sha=b71e23a0b8aa2833db4199a137a2d9d84191b422 family=usecache]
+  [patch sha=da7da2c00804c8483bbe65a7ac41978c0933ea2d family=vgc]
+  [patch sha=7b830994353dbdbf1d0caccf9858ca2d8bef0430 family=usecache]
+  [patch sha=de703f301ff747570df23d5c46bf13f68dd8c9c8 family=usecache]
+  [patch sha=9b13a8f00894a22d2f63389c208d4635dc2c14bd family=vgc]
+  [patch sha=43bd82f69fb15e6df388a7a9bcab20bbb5c9d731 family=gc-e-cgen]
+  [patch sha=4862bd62c9fc12957019434ff655807448275ea3 family=net]
+  [patch sha=ceeb1a9ba483884de4d9ec3d38f40fa9dabfe825 family=vgc]
+  [patch sha=ad7ec6ead31fa9f6bffae98f1b0c9d073e06a155 family=vgc]
+  [patch sha=06a6240e54366b24f7247af5bd83bdf354835e9a family=vgc]
+  [patch sha=d05bf350596e8b7cad27ba2381d0400045dbc8fb family=vlib]
+  [patch sha=53afa05288df0001987ccfbe44a3e4e052d37430 family=vgc]
+  [patch sha=189733931855f88c54e718187c4ee9d2dedc3c9d family=bench]
+  [patch sha=ee75f964c1f3f12d67fb806ad90c1202cca61c3d family=cgen]
+  [patch sha=168a3213f4485ccd19e305428b18e78983810891 family=vlib]
+  [patch sha=89c2760cf0d241318297ee0c4b18038ff19fef38 family=gc-e-cgen]
+  [patch sha=d45dc001da5121fbd7053c72637117ec56dc6e05 family=build-toolchain]
+  [patch sha=9fffc564ee63d1eede71b4b5fa07330050b346ee family=vgc]
+  [patch sha=65673a95955ac7deac2321019d0e562fdf63c2a2 family=vgc]
+  [patch sha=85a057bed798ecb84c95ec64df744a103bfb05e9 family=vgc]
+  [patch sha=4ddce74a71074e51bc7728ba880a68592e64555d family=vgc]
+  [patch sha=ca8bdea22dd04e0b6b9e729e84002e328cb23098 family=build-toolchain]
+  [patch sha=6242f2e3b4ca6fadc4d282f0bae9fc6258eed05c family=build-toolchain]
+  [patch sha=2f7032e4ac8716f88f95070ff4b56116a05cf099 family=usecache]
+  [patch sha=84fa25a4b9da91185d7291b7abc01eb0c29767b3 family=vgc]
+  [patch sha=3ce4f3d0d79d85cd767f9e806629e5fec2c04f38 family=build-toolchain]
+  [patch sha=8ff327d8e22a98f958c3221191baa92088ba1f05 family=vgc]
+  [patch sha=768996cc2672524567fcf91a9f58cc42e0e51080 family=vgc]
+  [patch sha=a8a7024f808a5ce93383fde9a1364f9380000ec8 family=vgc]
+  [patch sha=aa29638acc3dc92ef35c0ec8a63db6b26ee4cea1 family=gc-e-cgen]
+  [patch sha=c386a897a9f6c16971385f49b2fb32db601d498e family=net]
+  [patch sha=66db1dae8a2730572c0718a231c291bd27cfbbc5 family=vgc]
+  [patch sha=ed712669b4b58f0dad62738948f3b2b2dea60e38 family=usecache]
+  [patch sha=b3d0da670daf4dba21a2b5dd12afd3e9f9d910bd family=usecache]
+  [patch sha=c0703d1d75563083b436515980c0464061eb9e7e family=vgc]
+  [patch sha=ed62a0154a06c33f626656728f8030e2ff4d9cdb family=usecache]
+  [patch sha=6ee9d443aeeb0d52b56d37f938cb0e869be0777c family=usecache]
+  [patch sha=dc5c87ec6ab215096b55be3935776488c014b882 family=usecache]
+  [patch sha=46f1be51d58b0a4daf9efdb33febd4d067fdad1e family=usecache]
+  [patch sha=a2898599f3f0d6130a9d8ada8f11a25369130ac2 family=vgc]
+  [patch sha=c3fc9c9670db968fb1202ec1c70cdca2b41df79c family=vlib]
+  [patch sha=cf25c48308b64f6bbcbf6a18148e8b24a68d9608 family=usecache]
+]

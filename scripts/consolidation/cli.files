@@ -1,8 +1,15 @@
 # area: cli
-vcx/tests/cli_demo_test.v
-vcx/tests/cli_help_test.v
-vcx/tests/scaffold_cli_test.v
-vcx/tests/tooling_test.v
-vcx/tests/cx_lang_test.v
-vcx/tests/term_test.v
-vcx/tests/directive_args_test.v
+#absorbed vcx/tests/cli_demo_test.v
+#absorbed vcx/tests/cli_help_test.v
+#absorbed vcx/tests/scaffold_cli_test.v
+#absorbed vcx/tests/tooling_test.v
+#absorbed vcx/tests/cx_lang_test.v
+#absorbed vcx/tests/term_test.v
+#absorbed vcx/tests/directive_args_test.v
+# ── #700 wave 1, 2026-08-24.
+# NOT listed: cli_default_eval_test.v and cx_lock_cli_test.v — both named
+# in scripts/publish_v.sh's rsync --exclude list, so absorbing either would
+# force the exclusion onto the whole umbrella and drop the 93 CLI test fns
+# above out of the cx-v package smoke test.
+#absorbed vcx/tests/cli_select_test.v
+#absorbed vcx/tests/cli_run_surface_test.v

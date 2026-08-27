@@ -170,7 +170,7 @@ ready"""]
          binary tells you which one it carries:"""]
     [output
       """$ cx --version
-cx vX.Y.Z             [# the repo VERSION, stamped at build #]
+cx vX.Y.Z             [# a RELEASE build — see below #]
   profile  platform
   commit   3ed9ade5
   built    2026-08-20T05:52:49Z
@@ -178,6 +178,27 @@ cx vX.Y.Z             [# the repo VERSION, stamped at build #]
   V fork   b3d0da670
   engines  sqlite redis
   features (none)"""]
+    [body
+      """The headline is a **provenance claim**, not an echo of a version
+         file. A binary reports the bare `cx vX.Y.Z` only when it was
+         built from a clean checkout of the annotated release tag; every
+         other build — yours, a CI build, a build from an edited tree —
+         reports a pre-release of that version, with the build commit as
+         metadata:"""]
+    [output
+      """$ cx --version
+cx vX.Y.Z-dev+3ed9ade5
+  profile  platform
+  commit   3ed9ade5
+  ..."""]
+    [body
+      """`-dev+<commit>` orders **before** the release it will become, so
+         a version comparison against a shipped release answers correctly,
+         and a work-in-progress binary can never be mistaken for the
+         release whose number it carries. An edited tree marks both
+         lines: `cx vX.Y.Z-dev+3ed9ade5-dirty`. What decides is git state
+         at build time — the release version itself still comes from the
+         one source of truth, the repo's `VERSION` file."""]
     [body
       """Mode `e` — the shipped default — is a two-layer design:
          precise reference counting (Perceus) reclaims most values

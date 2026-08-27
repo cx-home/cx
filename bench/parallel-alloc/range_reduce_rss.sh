@@ -7,6 +7,7 @@
 # Usage:  range_reduce_rss.sh <cx-binary> [N ...]      (default N: 400000 4000000)
 # Runs programs with `cx <file>` (default path) — NEVER `cx eval`.
 set -u
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 BIN="${1:?usage: range_reduce_rss.sh <cx-binary> [N ...]}"
 shift || true
 SIZES=("$@"); [ "${#SIZES[@]}" -eq 0 ] && SIZES=(400000 4000000)
@@ -16,22 +17,35 @@ mkdir -p "$WK"
 # macOS /usr/bin/time -l prints "maximum resident set size" in bytes.
 rss_mb() { awk '/maximum resident set size/{printf "%.0f", $1/1048576}'; }
 
+# Timing is CX, not python (#943): the three `python3 -c` calls this replaces —
+# two time.time() reads and an int((e-s)*1000) — were utility Python that
+# survived the #922 eradication under the awk/sed/shell carve-out, and Python is
+# banned for all tooling outside the lang/python binding surface. `date` cannot
+# stand in: ms resolution needs GNU `date +%s%N` or bash 5's $EPOCHREALTIME, and
+# macOS outside devbox has neither. measure.cx times with cx-stdlib/time's
+# monotonic-now (nanosecond, monotonic — the right clock, where time.time() was
+# wall-clock and can step). It also owns the best-of-3 selection, so the RSS
+# reported is the RSS OF THE RUN WHOSE TIME IS REPORTED: it writes that run's
+# stderr — the `/usr/bin/time -l` report — to MEASURE_STDERR, and rss_mb (awk,
+# not python) reads it from there. The driver is $BIN itself, already a cx
+# binary, so this adds no new dependency.
 measure() { # <label> <file>  -> best-of-3 ms + peak RSS MB of the best run
-  local label="$1" f="$2" b=999999999 bestrss=0 i s e ms rss tf
-  for i in 1 2 3; do
-    tf="$WK/time.$$"
-    s=$(python3 -c 'import time;print(time.time())')
-    { /usr/bin/time -l "$BIN" "$f" >/dev/null; } 2>"$tf"
-    e=$(python3 -c 'import time;print(time.time())')
-    ms=$(python3 -c "print(int(($e-$s)*1000))")
-    rss=$(rss_mb <"$tf")
-    if [ "$ms" -lt "$b" ]; then b=$ms; bestrss=$rss; fi
-  done
-  printf '%-22s %9sms  peakRSS %7sMB\n' "$label" "$b" "$bestrss"
+  local label="$1" f="$2" tf ms
+  tf="$WK/time.$$"
+  ms=$(MEASURE_RUNS=3 MEASURE_STDERR="$tf" "$BIN" \
+        --allow-subprocess --allow-clock --allow-env --allow-write \
+        "$ROOT/bench/parallel-alloc/measure.cx" /usr/bin/time -l "$BIN" "$f")
+  printf '%-22s %9sms  peakRSS %7sMB\n' "$label" "$ms" "$(rss_mb <"$tf")"
 }
 
 for N in "${SIZES[@]}"; do
-  sum=$(python3 -c "print($N*($N+1)//2)")  # sum 0..N inclusive (note: range is 0..N here)
+  # sum 0..N inclusive (note: range is 0..N here). Shell arithmetic, not python
+  # (#943): bash arithmetic is 64-bit (intmax_t), and the largest value this
+  # probe produces is N=4000000 -> 8000002000000, six orders of magnitude inside
+  # that. `(N+1)` is always even for even N, and `N*(N+1)` for odd N, so the
+  # halving is exact — no truncation to hide, which is why python's `//` had
+  # nothing to add.
+  sum=$(( N * (N + 1) / 2 ))
   printf '[?to-sequence [?map (1,2,3,4,5,6,7,8) [using [?fn $x [?reduce [$range 0 %s] [using [?fn ($a $b) [+ $a $b]]] [init 0]]]]]]\n' "$N" > "$WK/serial_$N.cx"
   printf '[?to-sequence [?map (1,2,3,4,5,6,7,8) [using [?fn $x [?reduce [$range 0 %s] [using [?fn ($a $b) [+ $a $b]]] [init 0]]]] [par]]]\n' "$N" > "$WK/par_$N.cx"
   # correctness (single fold value, repeated x8)

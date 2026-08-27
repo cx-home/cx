@@ -87,6 +87,7 @@
         [tr [td 'cx store-serve'] [td 'Serve a cx-store (platform profile only)']]
         [tr [td 'cx store-health'] [td 'Store health probe (platform profile only)']]
         [tr [td 'cx store-rotate-kek'] [td 'Rotate the store key-encryption key (platform profile only)']]
+        [tr [td 'cx store-mint-principal'] [td 'Mint an XSP-AUTH principal offline — seed file + [grant …] stanza (platform profile only)']]
         [tr [td 'cx fabric-serve'] [td 'Serve a cx-fabric (platform profile only)']]
         [tr [td 'cx eval FILE'] [td 'Alias of the default run action; prefer cx FILE']]
         [tr [td 'cx select PATH FILE'] [td 'CXPath query over a document — matches in canonical CX, one per line']]
@@ -1330,7 +1331,23 @@
            `file://`) — the playground works without an internet
            connection. The example corpus, the TypeScript
            bundle, and the CSS all live under
-           `scripts/gen_guide/playground/`."""]]
+           `scripts/gen_guide/playground/`."""]
+      [body
+        """That covers the diagrams too. Both halves of the page
+           are local: the wasm engine is built `SINGLE_FILE`, so
+           it carries its own `.wasm` inline, and the Mermaid
+           renderer is vendored at a pinned version under
+           `scripts/gen_guide/playground/vendor/` rather than
+           fetched from a CDN. Nothing on the page reaches the
+           network at load, so the Graph pane draws on a plane
+           or behind a filtering proxy exactly as it does
+           online — and the bytes that render a diagram move
+           only when the pin does, never under a released tag."""]
+      [note
+        """The one remaining remote reference is the Google Fonts
+           stylesheet, shared with every other guide page. It
+           degrades cleanly: offline you get the local monospace
+           fallback and a fully working playground."""]]
 
     [child id=pg-highlight n='8.11.4' title='Syntax highlighting'
       [body

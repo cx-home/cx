@@ -537,6 +537,40 @@
 [?def one-line scope=public ($s)
   [$strings:trim [$strings:replace [$strings:replace $s "\n" " "] "  " " "]]]
 
+# entry-line: one llms.txt row.
+[?def entry-line scope=public ($base $d)
+  [$concat "- [" [$string $d@title] "](" $base [$string $d@out] "): "
+           [$one-line [$string $d@summary]]]]
+
+# section-block: one `## Heading` plus every entry whose `section=` names it,
+# in manifest order. A heading with no entries emits nothing, so retiring the
+# last document of a section does not leave an empty heading behind.
+[?def section-block scope=public ($base $docs $key $heading)
+  [?let [= $rows [?for [in $d $docs]
+                   [where [= [$string $d@section] $key]]
+                   [yield [$entry-line $base $d]]]]
+    [?if [$empty $rows]
+      [then ""]
+      [else [$concat "## " $heading "\n\n" [$strings:join $rows "\n"] "\n"]]]]]
+
+# The section vocabulary is CLOSED — an [output] naming a section not in this
+# list is a hard failure rather than a document that silently vanishes from
+# the index (the index IS the discovery surface; a file missing from it is
+# a file nobody loads).
+[?const SECTION-KEYS ("start", "build", "reference")]
+
+[?def check-sections scope=public impure ($docs)
+  [?let [= $bad [?for [in $d $docs]
+                  [where [not [$member SECTION-KEYS [$string $d@section]]]]
+                  [yield [$concat "    " [$string $d@id] " -> section='"
+                                  [$string $d@section] "'"]]]]
+    [?if [$empty $bad]
+      [then 0]
+      [else [$die [$concat "unknown section= on [output] entr(ies); the "
+                           "llms.txt index has no heading to file them under:\n"
+                           [$strings:join $bad "\n"]
+                           "\n  valid: " [$strings:join SECTION-KEYS " "]]]]]]]
+
 [?def render-llms-txt scope=public ($version $base $root $tagline $docs)
   [$strings:join (
     [$concat "# CX " $version],
@@ -548,20 +582,9 @@
              "every file below is a conformance fixture whose output was "
              "re-recorded from the v" $version " binary."],
     "",
-    "## Start here",
-    "",
-    [$strings:join [?for [in $d $docs]
-      [where [= [$string $d@id] "primer"]]
-      [yield [$concat "- [" [$string $d@title] "](" $base [$string $d@out] "): "
-                      [$one-line [$string $d@summary]]]]] "\n"],
-    "",
-    "## Reference",
-    "",
-    [$strings:join [?for [in $d $docs]
-      [where [not [= [$string $d@id] "primer"]]]
-      [yield [$concat "- [" [$string $d@title] "](" $base [$string $d@out] "): "
-                      [$one-line [$string $d@summary]]]]] "\n"],
-    "",
+    [$section-block $base $docs "start" "Start here"],
+    [$section-block $base $docs "build" "Building something"],
+    [$section-block $base $docs "reference" "Reference"],
     "## Optional",
     "",
     [$concat "- [Everything above, concatenated](" $root "llms-full.txt): "
@@ -596,6 +619,33 @@
   [$fp:fold $docs 0
     [?fn ($a $d) [+ $a [$strings:length [$map:get $bodies [$string $d@id]]]]]]]
 
+# declared-outputs: every basename `make docs` is responsible for — one per
+# [output] entry, plus the two llmstxt.org files the generator always emits.
+[?def declared-outputs scope=public ($docs)
+  [$cat-seqs ([?for [in $d $docs] [yield [$string $d@out]]],
+              ("llms.txt", "llms-full.txt"))]]
+
+# orphans: files under OUT-DIR that no manifest entry claims.
+#
+# The freshness contract above covers every document the manifest DECLARES.
+# It cannot see one it does not know about — and a retired or renamed output
+# leaves exactly that: a file still committed, still published by
+# scripts/publish.sh, still linked from wherever it was linked, and never
+# again regenerated or drift-checked. That is a stale primer with the gate
+# green, which is the one failure this layer exists to make impossible. So
+# the SET OF FILES is part of what the gate checks, not just their bytes.
+#
+# Retiring a document therefore means deleting the file in the same change
+# that drops its [output] entry.
+[?def orphans scope=public impure ($docs)
+  [?let [= $decl [$declared-outputs $docs]]
+    [?for [in $f [$io:glob [$concat OUT-DIR "/*"]]]
+      [= $b [$path:basename $f]]
+      [where [not [$member $decl $b]]]
+      [yield [$concat "  ORPHAN: " $f " — present under " OUT-DIR
+                      "/ but declared by no [output] entry in "
+                      SRC-DIR "/manifest.cxd. Delete it, or declare it."]]]]]
+
 [?def write-or-check scope=public impure ($check $path $body)
   [?if $check
     [then [?let [= $old [?if [$io:is-file $path] [then [$io:read-file $path]] [else "absent"]]]
@@ -628,11 +678,13 @@
       [where [= [?else [$name $k] ""] "output"]]
       [yield [docref id=[$string $k@id] out=[$string $k@out]
                      template=[$string $k@template] title=[$string $k@title]
+                     section=[$string [?else $k@section 'reference']]
                      summary=[$strings:join [?for [in $s $k/*]
                        [where [= [?else [$name $s] ""] "summary"]]
                        [yield [$normalize [$raw-of $s]]]] ""]]]]]
 
   [= $_s1 [?if [$empty $docs] [then [$die "manifest declares no [output] entries"]] [else 0]]]
+  [= $_s2 [$check-sections $docs]]
   [= $index [$load-index $suites]]
 
   # every template's text, read once
@@ -665,7 +717,8 @@
 
   [= $d2 [$write-or-check $check [$path:join OUT-DIR "llms.txt"] $llms]]
   [= $d3 [$write-or-check $check [$path:join OUT-DIR "llms-full.txt"] $llms-full]]
-  [= $all-drifts [?for [in $m ($drifts, ($d2, $d3))] [in $x $m]
+  [= $orphaned [$orphans $docs]]
+  [= $all-drifts [?for [in $m ($drifts, ($d2, $d3), $orphaned)] [in $x $m]
                    [where [not [= $x ""]]] [yield $x]]]
 
   [= $chars [$total-chars $docs $bodies]]
@@ -673,9 +726,11 @@
 
   [?if [not [$empty $all-drifts]]
     [then [?let
-      [= $_h [$cry [$concat "docs-check: docs/llm/ is STALE — "
-                            [$string [$count $all-drifts]] " file(s) differ from a fresh "
-                            "generation. Run `make docs` and commit the result."]]]
+      [= $_h [$cry [$concat "docs-check: " OUT-DIR "/ does not match the manifest — "
+                            [$string [$count $all-drifts]] " file(s). A DRIFT line means "
+                            "the committed bytes differ from a fresh generation: run "
+                            "`make docs` and commit the result. An ORPHAN line means a "
+                            "file no [output] entry claims: delete it, or declare it."]]]
       [= $_b [$cry [$strings:join $all-drifts "\n"]]]
       [$env:exit 1]]]
     [else [?let

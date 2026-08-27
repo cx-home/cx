@@ -4,13 +4,17 @@
 #
 # Runs on the maintainer's local machine when the release branch is merged to
 # main and the gate is green. Performs:
-#   1. Sanity: on main, working tree clean, tag does not exist
-#   2. Bump version strings (VERSION + manifests via bump_version.sh)
-#   3. Build libcx + cli
+#   1. Sanity: on the release branch, working tree clean, tag does not exist
 #   4. Run `make test`  (the authoritative gate — all TEST_TARGETS)
 #   5. Run `make verify-doc-links`
-#   6. Create git tag
+#   2. Bump version strings (VERSION + manifests via bump_version.sh)
+#   3. Commit the bump, CREATE THE ANNOTATED TAG on it, then build libcx + cli
+#      and verify the artifact's provenance stamp (#666, #979/CO-4 — the tag
+#      must exist BEFORE the build, because the build derives release-ness
+#      from HEAD-at-the-tag; a failure after tagging deletes the tag)
 #   7. Print push instructions (does NOT push automatically)
+#
+# (The step NUMBERS are historical — the list above is the execution order.)
 #
 # With --dry-run: exercises step 1 (sanity), confirms steps 4/5 targets
 # exist (without running them — heavy + may flake on dev branches),
@@ -83,7 +87,12 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 # all name one commit. vX.Y.Z (any Z) cuts from release/X.Y.0 — patch releases
 # ride the same branch.
 CUR_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-EXPECT_BRANCH="release/${VERSION%.*}.0"
+# #666 topology as renamed 2026-08-24: the branch tracks a minor LINE
+# (release/0.17), not one release — matching release.sh's own derivation.
+# The old release/X.Y.0 spelling here would hard-fail every cut from the
+# renamed line while release.sh passed its own check (found by CO-4's
+# release-ordering audit, #979).
+EXPECT_BRANCH="release/${VERSION%.*}"
 if [[ $DRY_RUN -eq 0 ]]; then
     if [[ "$CUR_BRANCH" != "$EXPECT_BRANCH" ]]; then
         fail "Not on $EXPECT_BRANCH (currently on $CUR_BRANCH); v$VERSION cuts from its release branch (#666)."
@@ -129,7 +138,10 @@ else
     # threw away everything else, so the actual red was unidentifiable
     # from the run that found it. Digest on failure: the make error lines
     # plus a pointer to the full log.
-    TAG_TEST_LOG="$(mktemp /tmp/tag-release-make-test.XXXXXX.log)"
+    # BSD mktemp only expands TRAILING Xs — a suffixed template is taken
+    # literally, so a second run collides on the literal name. Trailing Xs
+    # work on both BSD and GNU.
+    TAG_TEST_LOG="$(mktemp /tmp/tag-release-make-test.log.XXXXXX)"
     note "full 'make test' log: $TAG_TEST_LOG"
     if ! make test > "$TAG_TEST_LOG" 2>&1; then
         grep -E "make(\[[0-9]+\])?: \*\*\*|FAIL|Error" "$TAG_TEST_LOG" | tail -20
@@ -167,18 +179,29 @@ else
     vcx/target/cx --allow-read --allow-write scripts/check_version_consistency.cx || fail "version inconsistent after bump"
 fi
 
-# -- Step 3: commit the bump, THEN rebuild (#666) ---------------------
+# -- Step 3: commit the bump, TAG it, THEN rebuild (#666, #979) -------
 #
-# ORDER IS LOAD-BEARING: the build stamps CX_COMMIT from HEAD and CX_VERSION
-# from the VERSION file. Building while the bump sat uncommitted stamped the
-# NEW version against the PRE-bump commit — an artifact whose provenance
-# claim could not both be true (`cx version` said v0.15.0 @ a commit whose
-# VERSION file said 0.14.0), and rev-parse is silent about the dirty tree
-# that would have explained it. Committing first makes the stamped commit
-# the SAME commit the tag points at: the artifact reproduces from its tag.
+# ORDER IS LOAD-BEARING, in two steps.
+#
+# (#666) The build stamps CX_COMMIT from HEAD and CX_VERSION from the VERSION
+# file. Building while the bump sat uncommitted stamped the NEW version against
+# the PRE-bump commit — an artifact whose provenance claim could not both be
+# true (`cx version` said v0.15.0 @ a commit whose VERSION file said 0.14.0),
+# and rev-parse is silent about the dirty tree that would have explained it.
+# Committing first makes the stamped commit the SAME commit the tag points at:
+# the artifact reproduces from its tag.
+#
+# (#979, RULED: CO-4) The build now also stamps RELEASE-NESS, derived from
+# whether HEAD sits at the annotated tag matching VERSION with a clean tree. So
+# the tag must EXIST BEFORE THE BUILD, or the release artifacts stamp
+# themselves `-dev+<commit>` — correctly, since at that moment they were not
+# built from a tagged commit. The tag therefore moves ahead of the build, and
+# the provenance gate below (which now demands the bare `cx vX.Y.Z` headline)
+# is what proves the derivation fired. A failure after tagging deletes the tag:
+# it is local until release.sh's push phase, so the cut stays re-runnable.
 
 if [[ $DRY_RUN -eq 1 ]]; then
-    echo "[dry-run] would commit version bump, then run: make build-vcx"
+    echo "[dry-run] would commit version bump, create the annotated tag $TAG on it, then run: make build-vcx"
 else
     note "committing version bump"
     # Stage every file bump_version.sh just stamped. The tree was verified clean
@@ -189,39 +212,56 @@ else
     git add -u 2>/dev/null || true
     git commit -m "chore(release): bump version strings to $VERSION" || true
 
-    note "rebuilding libcx + cli"
-    make build-vcx
+    # -- Step 3b: tag the bump commit, BEFORE the build (#979/CO-4) ----
+    #
+    # Both tag shapes are ANNOTATED (`-s` is annotated + signed); the CO-4
+    # derivation probes with `git describe --exact-match`, which consults
+    # annotated tags only, so a lightweight tag here would silently produce
+    # `-dev+` release artifacts.
+    TAG_MSG="CX $TAG release. See RELEASE_NOTES_${TAG//\./_}.md for full release notes."
+    if git config --get user.signingkey >/dev/null 2>&1 && gpg --list-secret-keys >/dev/null 2>&1; then
+        note "creating signed tag $TAG on the bump commit (before the build — CO-4)"
+        git tag -s "$TAG" -m "$TAG_MSG" || fail "could not create tag $TAG"
+    else
+        note "no GPG signing key configured — creating an annotated (unsigned) tag $TAG on the bump commit (matches the prior CX tags)"
+        git tag -a "$TAG" -m "$TAG_MSG" || fail "could not create tag $TAG"
+    fi
+    # From here on, any failure must not leave a tag pointing at an
+    # unreleasable tree: the tag is local until release.sh pushes it, so
+    # dropping it keeps the cut re-runnable from a clean state.
+    untag_and_fail() { git tag -d "$TAG" >/dev/null 2>&1 || true; fail "$@"; }
 
-    # Provenance gate (#666): the binary we just built must self-report
-    # exactly this version at exactly this (clean) commit — the check that
-    # would have caught the mis-stamp. `cx version` is the contract surface
-    # downstream BOMs pin on, so assert on its output, not on build inputs.
+    note "rebuilding libcx + cli (at the tag — the artifacts stamp as the release)"
+    make build-vcx || untag_and_fail "make build-vcx failed"
+
+    # Provenance gate (#666, extended by #979/CO-4): the binary we just built
+    # must self-report exactly this version at exactly this (clean) commit —
+    # the check that would have caught the mis-stamp. `cx version` is the
+    # contract surface downstream BOMs pin on, so assert on its output, not on
+    # build inputs.
+    #
+    # Under CO-4 this stopped being a formality: the bare `cx vX.Y.Z` headline
+    # is now REACHABLE ONLY from a clean checkout of the tagged commit, so a
+    # `-dev+` here is a real finding (tag missing, tree dirty, stale binary,
+    # tag/VERSION mismatch) rather than a cosmetic one. Naming the actual
+    # headline in the failure text is what makes it diagnosable.
     STAMP="$(vcx/target/cx version 2>/dev/null || vcx/target/cx -v)"
+    HEADLINE="$(echo "$STAMP" | head -1)"
     WANT_COMMIT="$(git rev-parse --short HEAD)"
-    echo "$STAMP" | grep -q "cx v$VERSION\$" \
-        || fail "provenance stamp: binary reports '$(echo "$STAMP" | head -1)', expected 'cx v$VERSION'"
+    [[ "$HEADLINE" == "cx v$VERSION" ]] \
+        || untag_and_fail "provenance stamp: binary reports '$HEADLINE', expected exactly 'cx v$VERSION' (a '-dev+' headline means the build did not see HEAD at an annotated $TAG with a clean tree — RULED: CO-4)"
     echo "$STAMP" | grep -qE "commit[[:space:]]+$WANT_COMMIT\$" \
-        || fail "provenance stamp: binary's commit is not clean '$WANT_COMMIT' — got: $(echo "$STAMP" | grep commit)"
-    note "provenance stamp verified: cx v$VERSION @ $WANT_COMMIT (clean)"
+        || untag_and_fail "provenance stamp: binary's commit is not clean '$WANT_COMMIT' — got: $(echo "$STAMP" | grep commit)"
+    note "provenance stamp verified: cx v$VERSION @ $WANT_COMMIT (clean, at $TAG)"
 fi
 
-# -- Step 6: tag (skipped on dry-run) ---------------------------------
+# -- Step 6: report (the tag was created in step 3b) ------------------
 
 if [[ $DRY_RUN -eq 1 ]]; then
-    echo "[dry-run] would create signed tag $TAG"
     echo "[dry-run] would print push instructions"
     echo
     echo "[dry-run] all checks passed — real tag would proceed cleanly."
     exit 0
-fi
-
-TAG_MSG="CX $TAG release. See RELEASE_NOTES_${TAG//\./_}.md for full release notes."
-if git config --get user.signingkey >/dev/null 2>&1 && gpg --list-secret-keys >/dev/null 2>&1; then
-    note "creating signed tag"
-    git tag -s "$TAG" -m "$TAG_MSG"
-else
-    note "no GPG signing key configured — creating an annotated (unsigned) tag (matches the prior CX tags, e.g. v0.8.0/v0.10.0)"
-    git tag -a "$TAG" -m "$TAG_MSG"
 fi
 
 echo

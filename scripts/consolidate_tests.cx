@@ -45,8 +45,17 @@
 # bytes.
 #
 # -- Interface (env vars; `cx FILE` takes no program argv, cli.md §3) --
-#   MANIFEST  path to the area manifest: one input .v path per line,
-#             blank lines and #-comment lines ignored     (required)
+#   MANIFEST  path to the ROSTER the merge reads: one input .v path per
+#             line, blank lines and #-comment lines ignored (required).
+#             The wrapper feeds a RESOLVED roster here (in `absorb` mode
+#             that is the live umbrella plus the manifest's pending rows),
+#             not necessarily the committed manifest.
+#   MANIFEST_LABEL
+#             the path stamped into the umbrella's `// Manifest:` header
+#             line. Defaults to MANIFEST. It exists so the header names
+#             the COMMITTED manifest even when the roster is a scratch
+#             file — a mktemp path in the header would break the
+#             wrapper's byte-identical idempotency gate.  (optional)
 #   OUT       output path for the umbrella file -- MUST be outside the
 #             input files' directory (the wrapper moves it in after the
 #             equivalence gate)                           (required)
@@ -148,6 +157,7 @@
 [?let [= $manifest [?else [$env:var "MANIFEST"] ""]]
       [= $out-path [?else [$env:var "OUT"]      ""]]
       [= $area     [?else [$env:var "AREA"]     ""]]
+      [= $label    [?else [$env:var "MANIFEST_LABEL"] ""]]
 
   [?if [or [= $manifest ""] [= $out-path ""] [= $area ""]]
     [then
@@ -520,7 +530,7 @@
               "// helper dedupe only; the V compiler is the name-collision oracle). Fewer test\n"
               "// files = fewer whole-module-graph compiles (V compilation was 99% of the gate).\n"
               "// Regenerate: scripts/consolidate_tests.sh gen " $area "\n"
-              "// Manifest:   " $manifest "\n\n"]]
+              "// Manifest:   " [?if [= $label ""] [then $manifest] [else $label]] "\n\n"]]
 
           [= $out-text
             [$concat $header

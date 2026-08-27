@@ -19,11 +19,43 @@ order so that hashing and diffing are stable.
 
 ## Scalars and auto-typing
 
-Bare tokens are typed on read. `true`/`false` are booleans, integer and
-float literals are numbers, `null` is the explicit null, and anything else
-is an atom. Quoting suppresses all of it and gives you a string.
+Bare tokens are typed on read. `true`/`false` are booleans, integers are
+ints, fractions are **decimals**, `null` is the explicit null, and anything
+else is an atom. Quoting suppresses all of it and gives you a string.
 
 {{EXAMPLE:028-bool-scalar-autotype block}}
+
+### Decimal and float are two kinds, and the literal decides
+
+A bare fraction is a **decimal**: exact, base-10, arbitrary precision. A
+float arises only from an `e`-exponent literal (`1.5e0`), a `::float`
+annotation, `[cast … :float]`, division (`[/ …]`), `[$avg …]`, and the
+float-returning `math` functions.
+
+```
+1.5        decimal        1.5e0      float
+19.99      decimal        [/ 7 2]    float
+[* 2 1.5]  decimal        [$avg …]   float
+```
+
+They do not mix in arithmetic — `[cast]` is the only bridge — and they are
+distinct to identity: the two spell different canonical bytes, hash
+differently, and `[$eq]` says `false`. `primer.md` §2 carries the worked
+refusal.
+
+**The float image is exponent form.** A float's canonical image is Ryū
+exponent notation (`3.5e0`, `1.024e3`) in every position, attribute and body
+alike; a decimal's image is the fraction as written (`1.5` stays `1.5`,
+`25.00` stays `25.00`); and a `date` / `datetime` **attribute** value renders
+bare. That asymmetry is deliberate and load-bearing — it is what makes the
+canonical form *bijective*, so a fraction written without an exponent reads
+back as a decimal and never as a float.
+
+> Images in this pack are re-recorded from the binary that generated the
+> page, and the canonical-image repair (`RULED: CO-12`) is landing across the
+> emitters. If a float example here still shows a bare image, that binary
+> predates the repair — `cx canonical` on the binary you are running is
+> always the authority, and this page is regenerated against it.
 
 A value that must survive as text — a version number, an id with dots, a URL
 — has to be quoted, and the canonical form keeps the quotes:
@@ -54,6 +86,37 @@ A `ns:name` head or attribute is namespaced. Namespaces are part of identity:
 two documents differing only in prefix binding are not equal.
 
 {{EXAMPLE:018-namespaces block}}
+
+## Operator-headed elements
+
+A **delimited** operator glyph in head position names an element. The head set
+is the evaluator's, and it is closed at eighteen names, twelve of them glyphs:
+
+```
+one-char   +  *  -  /  %  =  <  >  ~
+two-char   != <= >=
+```
+
+"Delimited" means the glyph is followed by whitespace or `]`. So `[% 7 3]` is
+an element named `%`, and the data reading keeps it that way:
+
+{{EXAMPLE:oph-105-percent-alphabet block}}
+
+{{EXAMPLE:oph-107-not-equals-alphabet block}}
+
+Two guard rails matter, because both used to be soundness holes rather than
+formatting warts:
+
+* **Out-of-set glyphs are not heads.** `**` and `==` are absent from the ruled
+  set, so `[== 5 3]` stays in the array lane and canonicalizes as the string
+  `'== 5 3'` — deliberately, and pinned.
+* **Glued continuations are not heads.** `[-1, 2]` is an array with a negative
+  number, `[*n]` is an alias reference, `[<=x]` is an array item. Only the
+  delimited glyph dispatches to the element lane.
+
+Getting this wrong is not cosmetic: before the alphabet was closed, `[<= 5 3]`
+canonicalized into the very bytes of `['<= 5 3']` and shared its content
+address — two documents the evaluator reads differently at one address.
 
 ## Anchors and references (identity)
 
@@ -103,6 +166,30 @@ cx diff a.cx b.cx        # semantic diff over the canonical forms
 
 `cx fmt` and `cx canonical` are different tools on purpose: `fmt` is what you
 run on source, `canonical` is what identity is defined over.
+
+### CX has two equality notions, and they are not the same notion
+
+This trips up anyone who assumes a language has one `==`. Both of these are
+deliberate, and neither may drift into the other:
+
+| Notion | Reached by | What it does |
+|---|---|---|
+| **Value equality** | `[$eq a b]`, `[= a b]`, `[?match]`, `[$distinct]` | Compares under the atomization policy: an element with single scalar content compares as that value, and a scalar compares against the string of its image |
+| **Identity** | `cx canonical`, `cx hash`, `cx eq`, store handles | Type-faithful over the strict-canonical bytes: it distinguishes exactly the pairs value equality merges |
+
+So a decimal attribute and the string of its image compare *equal* as values,
+by design:
+
+{{EXAMPLE:program-eq-021-two-equality-notions block}}
+
+…while `cx hash` mints them distinct addresses. Pick the notion you meant. If
+you are asking "is this the same document" — for caching, deduplication, or a
+content address — you want identity, not `[$eq]`.
+
+Canonical serialization is **bijective**: every scalar kind has a
+type-faithful image in every position, so `parse(canonical(v))` returns the
+same typed value. That is what lets a content address stand for a value rather
+than merely for its text.
 
 ## Schemas
 

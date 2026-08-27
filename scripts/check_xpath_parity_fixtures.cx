@@ -1,0 +1,455 @@
+# scripts/check_xpath_parity_fixtures.cx — gate 28.5a, the CX-side XPath 3.1
+# alignment lane.  RULED: VC-7 (#945).
+#
+# WHAT THIS ROW IS.  Gate 28.5 used to be one row that claimed to compare
+# `cx` against Saxon-HE 12 in Docker, and had never run once.  VC-7 split it:
+#
+#   28.5a  (THIS lane)  the CX side — every case in
+#          conformance/xpath_31_parity.cxd is evaluated by THIS TREE's `cx`
+#          and graded against an expectation DERIVED from that same binary.
+#          No Docker, no network, no third-party image.  In TEST_TARGETS.
+#   28.5b  (manual)     the Saxon-HE cross-check.  Stays operator-run;
+#          scripts/test_xpath_parity.sh holds the recipe and the reason.
+#
+# The two rows read the SAME `[input-xml]` body, so the manual row can never
+# drift onto a different document than the lane grades.
+#
+# WHAT A CASE ASSERTS.  Per `[tag]`:
+#
+#   xpath31-parity      `cx select` emits exactly `[out-text]` (canonical CX,
+#                       byte-exact once the payload envelope's leading and
+#                       trailing newline are stripped) and exits 0 for a
+#                       non-empty expectation / 1 for an empty one — the
+#                       misc/cli.md `cx select` exit contract.
+#
+#   xpath31-divergence  CX and XPath 3.1 differ here, in the recorded way.
+#                       Two shapes, declared by which section the case
+#                       carries:
+#                         [out-err]  — CX REFUSES: exit 2 and the recorded
+#                            cx-err:CXERNNNN code on stderr.  Exit 0 means the
+#                            engines converged and the case tests nothing;
+#                            exit 1 (empty match set) means CX ACCEPTED the
+#                            expression, a different claim from refusing it,
+#                            so it fails too.
+#                         [out-text] — CX ACCEPTS but produces a different
+#                            result; graded exactly like a parity case.
+#                       On refusals the assertion is on the CODE, never the
+#                       message text: misc/cli.md makes message text
+#                       explicitly unstable across patch versions while CXER
+#                       codes carry the error-code stability policy.  A gate
+#                       that reds on a reworded diagnostic mints false
+#                       verdicts, which is the whole subject of #945.
+#
+# THE PIPELINE.  Two stdin-fed subprocess stages, no temp files:
+#   1. `cx --from=xml --to=cx`   `[input-xml]` -> canonical CX
+#   2. `cx select PATH -`        the CXPath expression over that document
+# Stage 1 exists because `cx select` reads a CX document, not XML.  The
+# original runner fed it XML and would have failed on every case.
+#
+# GATE POLICY.  conformance/gates.cxd, suite `xpath-31-parity`, resolved the
+# way vcx/tests/code_eval_fixtures_test.v::load_gate_policy resolves it:
+#   per-case gate= > per-suite default= > [gate-policy default=] > enforced
+# `enforced` failures block; `advisory` failures report; `pending`/`skip` are
+# not run.  The row is LIVE policy, not decoration — a MISSING row is exit 2,
+# because a lane whose tier is invisible is the defect class #945 filed.
+#
+# The manifest is read through `cx select /gate-policy` rather than
+# `[$cx:parse]` on the file.  Measured 2026-08-24: `[$cx:parse]` on a document
+# whose FIRST top-level node is a `[# … #]` comment returns that comment node,
+# so `/*` over it raises CXER0001 "path step on non-element value".
+# gates.cxd opens with such a comment; xpath_31_parity.cxd does not.  Routing
+# through `cx select` sidesteps it and needs no change to the manifest's
+# formatting.
+#
+# AN ALL-SKIP RUN IS A FAILURE (the RULED: PYE-6 rule, carried from
+# scripts/check_code_diagram_fixtures.cx).  Zero passes proves nothing, and
+# 28.5 is the gate that read green for months while proving nothing.  An
+# empty --filter selection fails for the same reason.
+#
+# Exit codes:
+#   0  every graded case passed (and at least one did)
+#   1  an enforced case FAILED or ERRORED, or nothing passed
+#   2  missing prerequisite: fixture or manifest absent/malformed, no
+#      gates.cxd row for this suite, or no cx binary (#929: THIS tree's build
+#      or an explicit CX_BIN; PATH is never searched)
+#
+# Run:  cx --allow-read --allow-write --allow-env --allow-subprocess \
+#         scripts/check_xpath_parity_fixtures.cx \
+#         [--filter RX] [--fixtures FILE.cxd] [--verbose]
+# (--allow-write is for the report on stdout: io:write-line to a std stream
+#  needs the write capability.  The lane creates no files.)
+# (or:  make test-xpath-parity-cx)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/fp'      as=fp]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?def die2 scope=public impure ($msg)
+  [?let [= $_e [$cry $msg]] [$env:exit 2]]]
+
+[?def member scope=public ($seq $x)
+  [> [$count [?for [in $s $seq] [where [= $s $x]] [yield $s]]] 0]]
+
+[?def rx-is-match scope=public ($m)
+  [?match $m [case [no-match] false] [else true]]]
+
+[?def one-line scope=public ($s)
+  [?let [= $t [$strings:trim $s]]
+        [= $ls [$strings:split-lines $t]]
+    [?if [= [$count $ls] 0] [then ""] [else [$strings:trim [$first $ls]]]]]]
+
+# ── fixture-body projection ──────────────────────────────────────────
+# raw-of / normalize: the same `[# … #]` payload recovery the other CX
+# fixture harnesses use (see scripts/check_code_diagram_fixtures.cx).
+[?def raw-of scope=public ($rt)
+  [?let [= $s [$cx:serialize $rt]]
+        [= $i [$strings:find $s "[#"]]
+        [= $j [$strings:rfind $s "#]"]]
+    [?if [or [< $i 0] [< $j 0] [< $j $i]]
+      [then ""]
+      [else [$strings:slice $s [+ $i 2] $j]]]]]
+
+[?def normalize scope=public ($raw)
+  [?let [= $a [?if [$starts-with $raw "\n"]
+                [then [$strings:slice $raw 1 [$strings:length $raw]]]
+                [else $raw]]]
+    [?if [$ends-with $a "\n"]
+      [then [$strings:slice $a 0 [- [$strings:length $a] 1]]]
+      [else $a]]]]
+
+# body-of: the normalized payload of the child named $nm ("" when absent).
+[?def body-of scope=public ($c $nm)
+  [$strings:join [?for [in $k $c/*]
+    [where [= [?else [$name $k] ""] $nm]]
+    [yield [$normalize [$raw-of $k]]]] ""]]
+
+[?def has-child scope=public ($c $nm)
+  [> [$count [?for [in $k $c/*]
+       [where [= [?else [$name $k] ""] $nm]] [yield 1]]] 0]]
+
+[?def parse-case scope=public ($c)
+  {id:           [$string [?else $c@id ""]],
+   gate:         [$string [?else $c@gate ""]],
+   tag:          [$strings:trim [$body-of $c "tag"]],
+   input-xml:    [$body-of $c "input-xml"],
+   path:         [$strings:trim [$body-of $c "path"]],
+   out-text:     [$body-of $c "out-text"],
+   has-out-text: [$has-child $c "out-text"],
+   out-err:      [$strings:trim [$body-of $c "out-err"]],
+   has-out-err:  [$has-child $c "out-err"]}]
+
+# ── subprocess plumbing ──────────────────────────────────────────────
+# Every stage is a read-only `cx` invocation over ~100 bytes of input and
+# takes ~70 ms unloaded (measured).  The budget is nonetheless generous and
+# a spawn failure or timeout is RETRIED ONCE, because this lane shares a
+# machine with parallel V builds and a transient spawn stall under load is a
+# FALSE verdict — the flake class the release-record work has been closing
+# out.  A stage that fails twice still reds, loudly, with "(retried once)"
+# in the message, so a genuine hang is not swallowed.
+# Override the budget with CX_XPATH_LANE_TIMEOUT_MS.
+[?def stage-budget scope=public impure ()
+  [?let [= $raw [$strings:trim [?else [$env:var "CX_XPATH_LANE_TIMEOUT_MS"] ""]]]
+        [= $n [?if [= $raw ""] [then 60000] [else [cast $raw :int]]]]
+    [?match $n [case [err $e] 60000] [else [?if [> $n 0] [then $n] [else 60000]]]]]]
+
+[?def spawn-once scope=public impure ($binpath $args $stdin $budget)
+  [?let [= $argv [$fp:flat-map (($binpath), $args) [?fn ($x) $x]]]
+        [= $r [$process:run $argv stdin=$stdin timeout-ms=$budget]]
+    [?match $r
+      [case [err $e]
+        [inv ok=false code=-1 stdout=""
+             stderr=[$concat "spawn failed: " [$string $e@message]]]]
+      [else [?if $r@timed-out
+        [then [inv ok=false code=-1 stdout=""
+                   stderr=[$concat "timed out after " [$string $budget]
+                     " ms (override with CX_XPATH_LANE_TIMEOUT_MS)"]]]
+        [else [inv ok=true code=$r@exit-code
+                   stdout=[$string $r@stdout] stderr=[$string $r@stderr]]]]]]]]
+
+[?def spawn-cx scope=public impure ($binpath $args $stdin)
+  [?let [= $budget [$stage-budget]]
+        [= $first [$spawn-once $binpath $args $stdin $budget]]
+    [?if $first@ok
+      [then $first]
+      [else [?let [= $again [$spawn-once $binpath $args $stdin $budget]]
+        [?if $again@ok
+          [then $again]
+          [else [inv ok=false code=-1 stdout=""
+                  stderr=[$concat [$string $again@stderr] " (retried once; "
+                    "first attempt: " [$string $first@stderr] ")"]]]]]]]]]
+
+# stage 1 — `cx select` reads a CX document, not XML.
+[?def xml-to-cx scope=public impure ($binpath $xml)
+  [$spawn-cx $binpath ("--from=xml", "--to=cx") $xml]]
+
+# stage 2 — the expression under test.
+[?def cx-select scope=public impure ($binpath $pathexpr $cxdoc)
+  [$spawn-cx $binpath ("select", $pathexpr, "-") $cxdoc]]
+
+[?def trim-trailing-nl scope=public ($s) [$strings:trim-end-chars $s "\n"]]
+
+# ── gate policy ──────────────────────────────────────────────────────
+# Resolution order, matching the V runner's load_gate_policy:
+#   per-case gate= > per-suite default= > [gate-policy default=] > enforced
+[?def load-tiers scope=public impure ($binpath $gates-path $suite)
+  [?let [= $r [$spawn-cx $binpath ("select", "/gate-policy", $gates-path) ""]]
+    [?if [or [not $r@ok] [not [= $r@code 0]]]
+      [then {found: false, suite-default: "", policy-default: "",
+             err: [$concat "cx select /gate-policy over " $gates-path
+                           " failed: " [$one-line [$string $r@stderr]]]}]
+      [else [$tiers-of [$cx:parse [$string $r@stdout]] $suite]]]]]
+
+[?def tiers-of scope=public ($gp $suite)
+  [?match $gp
+    [case [err $e]
+      {found: false, suite-default: "", policy-default: "",
+       err: [$concat "gate manifest did not re-parse: " [$string $e@message]]}]
+    [else
+      [?let [= $pd [$string [?else $gp@default ""]]]
+            [= $ss [?for [in $s $gp/*]
+                     [where [and [= [?else [$name $s] ""] "suite"]
+                                 [= [$string [?else $s@name ""]] $suite]]]
+                     [yield $s]]]
+        [?if [= [$count $ss] 0]
+          [then {found: false, suite-default: "", policy-default: $pd, err: ""}]
+          [else {found: true,
+                 suite-default: [$string [?else [$first $ss]@default ""]],
+                 policy-default: $pd, err: ""}]]]]]]
+
+[?def effective-gate scope=public ($case-gate $tiers)
+  [?let [= $sd [$string [$map:get $tiers "suite-default"]]]
+        [= $pd [$string [$map:get $tiers "policy-default"]]]
+    [?if [not [= $case-gate ""]] [then $case-gate]
+      [else [?if [not [= $sd ""]] [then $sd]
+        [else [?if [not [= $pd ""]] [then $pd] [else "enforced"]]]]]]]]
+
+# ── binary discovery (#929: THIS tree's build or CX_BIN; no PATH) ────
+[?def executable-file scope=public impure ($p)
+  [?if [not [$io:is-file $p]] [then false]
+    [else [?let [= $perms [$string [?else [$io:stat $p]@permissions ""]]]
+      [or [= $perms ""] [$strings:contains $perms "x"]]]]]]
+
+[?def locate-cx scope=public impure ($root)
+  [?let [= $envbin [$strings:trim [?else [$env:var "CX_BIN"] ""]]]
+    [?if [not [= $envbin ""]]
+      [then [?if [$executable-file $envbin]
+        [then [bin ok=true path=$envbin reason="CX_BIN"]]
+        [else [bin ok=false path=""
+                reason=[$concat "CX_BIN=" $envbin " is not an executable file"]]]]]
+      [else
+        [?let [= $cands ([$path:join $root "dist/bin/cx"],
+                         [$path:join $root "vcx/target/cx"],
+                         [$path:join $root "vcx/cx"])]
+              [= $hits [?for [in $c $cands] [where [$executable-file $c]] [yield $c]]]
+          [?if [= [$count $hits] 0]
+            [then [bin ok=false path=""
+              reason=[$concat "no cx binary in this tree — looked at "
+                [$strings:join $cands ", "]
+                ". Build it (devbox run -- make build-vcx) or point CX_BIN at "
+                "the build to grade. PATH is deliberately NOT searched: an "
+                "installed cx is not this tree."]]]
+            [else [bin ok=true path=[$first $hits] reason="tree build"]]]]]]]]
+
+# ── guards (each returns true or exits 2) ────────────────────────────
+[?def need-file scope=public impure ($p $what)
+  [?if [$io:is-file $p] [then true]
+    [else [$die2 [$concat "error: " $what " not found: " $p]]]]]
+
+[?def need-bin scope=public impure ($binary)
+  [?if $binary@ok [then true]
+    [else [$die2 [$concat "error: cx binary unavailable: "
+                          [$string $binary@reason]]]]]]
+
+[?def need-tier scope=public impure ($tiers $suite)
+  [?if [$map:get $tiers "found"] [then true]
+    [else [$die2 [$concat "error: "
+      [?if [= [$string [$map:get $tiers "err"]] ""]
+        [then [$concat "conformance/gates.cxd has no [suite name=" $suite
+                "] row — this lane's gate tier is unset, so its verdict would"
+                " depend on an invisible default. Add the row (see gate 28.5a"
+                " in conformance/GATE_REGISTER.md)."]]
+        [else [$string [$map:get $tiers "err"]]]]]]]]]
+
+[?def need-suite scope=public impure ($doc $p)
+  [?match $doc
+    [case [err $e]
+      [$die2 [$concat "error: malformed fixture file " $p ": "
+                      [$string $e@message]]]]
+    [else true]]]
+
+# ── per-case grading ─────────────────────────────────────────────────
+[?def grade-parity scope=public ($id $fx $sel)
+  [?let [= $want [$map:get $fx "out-text"]]
+        [= $got [$trim-trailing-nl [$string $sel@stdout]]]
+        [= $code $sel@code]
+        [= $want-code [?if [= $want ""] [then 1] [else 0]]]
+    [?if [not [= $got $want]]
+      [then [res id=$id status="FAIL"
+              detail=[$concat "`cx select` output differs from the recorded"
+                " canonical CX | got: " [$one-line $got]
+                " | want: " [$one-line $want]
+                [?if [= [$strings:trim [$string $sel@stderr]] ""] [then ""]
+                  [else [$concat " | stderr: "
+                          [$one-line [$string $sel@stderr]]]]]]]]
+      [else [?if [not [= $code $want-code]]
+        [then [res id=$id status="FAIL"
+                detail=[$concat "output matched but `cx select` exited "
+                  [$string $code] ", expected " [$string $want-code]
+                  " (misc/cli.md: 0 = at least one match, 1 = empty match set)"]]]
+        [else [res id=$id status="PASS" detail=""]]]]]]]
+
+[?def grade-refusal scope=public ($id $fx $sel)
+  [?let [= $want [$map:get $fx "out-err"]]
+        [= $code $sel@code]
+        [= $err [$string $sel@stderr]]
+    [?if [= $code 0]
+      [then [res id=$id status="FAIL"
+              detail=[$concat "CX ACCEPTED an expression it must refuse"
+                " (exit 0) — the engines converged and the recorded"
+                " divergence is gone | stdout: "
+                [$one-line [$string $sel@stdout]]]]]
+      [else [?if [not [= $code 2]]
+        [then [res id=$id status="FAIL"
+                detail=[$concat "expected a refusal (exit 2) but got exit "
+                  [$string $code]
+                  [?if [= $code 1]
+                    [then [$concat " — exit 1 is an EMPTY MATCH SET, so the"
+                            " expression was accepted, not refused"]]
+                    [else ""]]
+                  " | stderr: " [$one-line $err]]]]
+        [else [?if [not [$strings:contains $err $want]]
+          [then [res id=$id status="FAIL"
+                  detail=[$concat "refused with exit 2 but the wrong error"
+                    " code | want: " $want " | stderr: " [$one-line $err]]]]
+          [else [res id=$id status="PASS" detail=""]]]]]]]]]
+
+[?def grade scope=public ($fx $sel)
+  [?let [= $id [$map:get $fx "id"]]
+        [= $tag [$map:get $fx "tag"]]
+    [?if [= $tag "xpath31-parity"]
+      [then [?if [$map:get $fx "has-out-text"]
+        [then [$grade-parity $id $fx $sel]]
+        [else [res id=$id status="ERROR"
+                detail="xpath31-parity case has no [out-text] section"]]]]
+      [else [?if [= $tag "xpath31-divergence"]
+        [then [?if [$map:get $fx "has-out-err"]
+          [then [$grade-refusal $id $fx $sel]]
+          [else [?if [$map:get $fx "has-out-text"]
+            [then [$grade-parity $id $fx $sel]]
+            [else [res id=$id status="ERROR"
+                    detail=[$concat "xpath31-divergence case carries neither"
+                      " [out-err] (CX refuses) nor [out-text] (CX accepts with"
+                      " a different result) — the divergence shape is"
+                      " undeclared"]]]]]]]
+        [else [res id=$id status="ERROR"
+                detail=[$concat "unknown [tag]: '" $tag "' — expected"
+                  " xpath31-parity or xpath31-divergence"]]]]]]]]
+
+[?def run-case scope=public impure ($fx $binpath)
+  [?let [= $id [$map:get $fx "id"]]
+        [= $conv [$xml-to-cx $binpath
+                   [$concat [$map:get $fx "input-xml"] "\n"]]]
+    [?if [or [not $conv@ok] [not [= $conv@code 0]]]
+      [then [res id=$id status="ERROR"
+              detail=[$concat "stage 1 (cx --from=xml --to=cx) failed: "
+                [$one-line [$string $conv@stderr]]]]]
+      [else [?let [= $sel [$cx-select $binpath [$map:get $fx "path"]
+                            [$string $conv@stdout]]]
+        [?if [not $sel@ok]
+          [then [res id=$id status="ERROR"
+                  detail=[$concat "stage 2 (cx select) did not run: "
+                    [$one-line [$string $sel@stderr]]]]]
+          [else [$grade $fx $sel]]]]]]]]
+
+[?def report-line scope=public impure ($r $verbose)
+  [?let [= $status [$string $r@status]]
+    [?if [or $verbose [not [= $status "PASS"]]]
+      [then [$say [$concat $status " " [$string $r@id]
+        [?if [= [$string [?else $r@detail ""]] ""] [then ""]
+          [else [$concat ": " [$string $r@detail]]]]]]]
+      [else true]]]]
+
+# ── main ─────────────────────────────────────────────────────────────
+[?let
+  [= $args [$env:parse-args [argspec
+    [flag name="filter" type=string default=""]
+    [flag name="fixtures" type=string default=""]
+    [flag name="verbose" short="v" type=bool]]]]
+  [= $filter [$string [?else [$env:flag $args "filter"] ""]]]
+  [= $verbose [$env:flag $args "verbose"]]
+  [= $root [$path:dirname [$path:dirname [$path:absolute [$nth [$env:argv] 1]]]]]
+  [= $fx-flag [$string [?else [$env:flag $args "fixtures"] ""]]]
+  [= $fix-path [?if [= $fx-flag ""]
+    [then [$path:join $root "conformance/xpath_31_parity.cxd"]]
+    [else $fx-flag]]]
+  [= $gates-path [$path:join $root "conformance/gates.cxd"]]
+  [= $_g1 [$need-file $fix-path "fixture file"]]
+  [= $_g2 [$need-file $gates-path "gate manifest"]]
+  [= $binary [$locate-cx $root]]
+  [= $_g3 [$need-bin $binary]]
+  [= $binpath [$string $binary@path]]
+  [= $tiers [$load-tiers $binpath $gates-path "xpath-31-parity"]]
+  [= $_g4 [$need-tier $tiers "xpath-31-parity"]]
+  [= $doc [$cx:parse [$io:read-file $fix-path]]]
+  [= $_g5 [$need-suite $doc $fix-path]]
+  [= $all [?for [in $c $doc/*]
+    [where [= [?else [$name $c] ""] "case"]]
+    [yield [$parse-case $c]]]]
+  [= $selected [?if [= $filter ""] [then $all]
+    [else [?let [= $frx [$re:compile $filter]]
+      [?for [in $f $all]
+        [where [$rx-is-match [$re:find $frx [$map:get $f "id"]]]]
+        [yield $f]]]]]]
+  [= $graded [?for [in $f $selected]
+    [yield [?if [$member ('skip','pending')
+                  [$effective-gate [$map:get $f "gate"] $tiers]]
+      [then {gate: [$effective-gate [$map:get $f "gate"] $tiers],
+             r: [res id=[$map:get $f "id"] status="SKIP"
+                  detail=[$concat "gate="
+                    [$effective-gate [$map:get $f "gate"] $tiers]]]}]
+      [else {gate: [$effective-gate [$map:get $f "gate"] $tiers],
+             r: [$run-case $f $binpath]}]]]]]
+  [= $n-pass [$count [?for [in $g $graded]
+    [where [= [$string [$map:get $g "r"]@status] "PASS"]] [yield 1]]]]
+  [= $n-skip [$count [?for [in $g $graded]
+    [where [= [$string [$map:get $g "r"]@status] "SKIP"]] [yield 1]]]]
+  [= $blocking [?for [in $g $graded]
+    [where [and [$member ('FAIL','ERROR') [$string [$map:get $g "r"]@status]]
+                [= [$map:get $g "gate"] "enforced"]]]
+    [yield [$map:get $g "r"]]]]
+  [= $advisory [?for [in $g $graded]
+    [where [and [$member ('FAIL','ERROR') [$string [$map:get $g "r"]@status]]
+                [not [= [$map:get $g "gate"] "enforced"]]]]
+    [yield [$map:get $g "r"]]]]
+  [= $total [$count $graded]]
+  [= $n-fail [$count $blocking]]
+  [= $n-adv [$count $advisory]]
+  [= $_lines [?for [in $g $graded]
+    [yield [$report-line [$map:get $g "r"] $verbose]]]]
+  [= $_adv [?if [= $n-adv 0] [then true]
+    [else [$say [$concat [$string $n-adv]
+      " advisory failure(s) — reported, NOT blocking (gates.cxd tier)"]]]]]
+  [= $_sum [$say [$concat
+    "gate 28.5a (CXPath / XPath 3.1 alignment, CX side): "
+    [$string $n-pass] " passed, " [$string $n-fail] " failed, "
+    [$string $n-adv] " advisory, " [$string $n-skip] " skipped, of "
+    [$string $total] " case(s)"]]]
+  [= $_zero [?if [> $n-pass 0] [then true]
+    [else [$cry [?if [= $total 0]
+      [then [$concat "error: no case selected — a gate run that examines"
+             " nothing cannot pass (the RULED: PYE-6 rule)"]]
+      [else [$concat "error: " [$string $n-skip] " of " [$string $total]
+             " case(s) skipped and NONE passed — the gate proved nothing"
+             " (the RULED: PYE-6 rule)"]]]]]]]
+  [?if [or [> $n-fail 0] [= $n-pass 0]]
+    [then [$env:exit 1]]
+    [else [$env:exit 0]]]]

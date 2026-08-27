@@ -456,18 +456,76 @@
             [or [$strings:contains $s [$concat "failed to open file \"" $subcommand "\""]]
                 [$strings:contains $s [$concat "error reading file " $subcommand]]]]]]]
 
+# ── the emitter budget (#1002) ───────────────────────────────────────
+# Five `full-code-cfg-*` fixtures sat permanently red here on
+# `timeout: 10s emitter budget exceeded`, and the cause was NOT this
+# budget being tight: [$process:run] captured stdout into a pipe it did
+# not read until after its wait loop, so a render bigger than the pipe
+# blocked in write() and burned the whole budget. Fixed at the source —
+# vcx/code/stdlib_process_notd_cx_no_pack_process.v drains both streams
+# while the child runs — and the measurement that pinned it is recorded
+# there: all 52 renders take 0.08 s, and the five that died are exactly
+# the five whose output exceeds 512 bytes.
+#
+# The budget stays, because a genuine hang must not wedge the gate
+# forever. It is GENEROUS rather than tight: 60 s against a measured
+# 0.08 s render is a 700x margin, so it cannot be tripped by a machine
+# running parallel builds — a tight wall-clock budget measures the
+# MACHINE, not the fixture, and five red rows that mean "the machine was
+# busy" teach a reader that this gate's red is normal.
+#
+# A spawn failure or timeout is additionally RETRIED ONCE, loudly, for
+# the residual spawn-level stall under load: the discipline
+# scripts/check_xpath_parity_fixtures.cx already runs, and the
+# TRANSIENT-flake precedent at
+# vcx/tests/runners/extraction_gate/cli/extraction_gate_cli.v:139. A
+# real hang is REPRODUCIBLE — it exhausts both attempts and still reds,
+# carrying "(retried once)", so nothing is swallowed.
+# Override the budget with CX_DIAGRAM_LANE_TIMEOUT_MS.
+[?def emitter-budget scope=public impure ()
+  [?let [= $raw [$strings:trim [?else [$env:var "CX_DIAGRAM_LANE_TIMEOUT_MS"] ""]]]
+        [= $n [?if [= $raw ""] [then 60000] [else [cast $raw :int]]]]
+    [?match $n [case [err $e] 60000] [else [?if [> $n 0] [then $n] [else 60000]]]]]]
+
+# emit-once carries `ran` separately from `ok`: `ok` is the emitter's own
+# verdict (exit 0), while `ran` says the emitter REACHED a verdict at all.
+# Only a spawn failure or a timeout is worth a second attempt; a nonzero
+# exit is a deterministic answer and retrying it would just hide it.
+[?def emit-once scope=public impure ($argv $source $budget)
+  [?let [= $r [$process:run $argv stdin=$source timeout-ms=$budget]]
+    [?match $r
+      [case [err $e] [inv ran=false ok=false stdout=""
+                          stderr=[$concat "spawn: " [$string $e@message]]]]
+      [else [?if $r@timed-out
+        [then [inv ran=false ok=false stdout=""
+                    stderr=[$concat "timeout: " [$string $budget]
+                      "ms emitter budget exceeded (override with "
+                      "CX_DIAGRAM_LANE_TIMEOUT_MS)"]]]
+        [else [inv ran=true ok=[= $r@exit-code 0]
+                   stdout=[$string $r@stdout] stderr=[$string $r@stderr]]]]]]]]
+
 [?def invoke-emitter scope=public impure ($binpath $subcommand $source $level)
   [?let [= $argv [$cat-seqs (
           ($binpath, $subcommand),
           [?if [= $level ""] [then ()] [else ([$concat "--level=" $level])]],
           ("-"))]]
-        [= $r [$process:run $argv stdin=$source timeout-ms=10000]]
-    [?match $r
-      [case [err $e] [inv ok=false stdout="" stderr=[$concat "spawn: " [$string $e@message]]]]
-      [else [?if $r@timed-out
-        [then [inv ok=false stdout="" stderr="timeout: 10s emitter budget exceeded"]]
-        [else [inv ok=[= $r@exit-code 0]
-                   stdout=[$string $r@stdout] stderr=[$string $r@stderr]]]]]]]]
+        [= $budget [$emitter-budget]]
+        [= $first [$emit-once $argv $source $budget]]
+    [?if $first@ran
+      [then $first]
+      [else
+        [?let [= $again [$emit-once $argv $source $budget]]
+          [?if $again@ran
+            [then [?let [= $_w [$cry [$concat
+                    "TRANSIENT " $subcommand ": first attempt never reached a "
+                    "verdict (" [$strings:trim [$string $first@stderr]]
+                    "); the retry did — a spawn-level stall under load, not a "
+                    "fixture defect (#1002)"]]]
+              $again]]
+            [else [inv ran=false ok=false stdout=""
+                    stderr=[$concat [$strings:trim [$string $again@stderr]]
+                      " (retried once; first attempt: "
+                      [$strings:trim [$string $first@stderr]] ")"]]]]]]]]]
 
 # ── per-fixture runner ───────────────────────────────────────────────
 # run-tree-compare: JSON-parse both sides, validate the actual tree

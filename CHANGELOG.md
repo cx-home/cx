@@ -13,7 +13,92 @@ version, library version).
 
 ## [Unreleased]
 
-Nothing yet.
+## [0.17.0] — 2026-08-27
+
+### Changed
+
+- **`cx --version`'s headline is a provenance claim, not an echo of the
+  VERSION file (#979, RULED: CO-4).** Release-ness is now DERIVED from git
+  state at build time: HEAD exactly at the annotated tag matching the
+  repo-root `VERSION`, plus a clean tree, stamps `cx v0.17.0`; every other
+  build stamps `cx v0.17.0-dev+<commit>` (`…-dirty` when the tree was
+  edited). Before this, the headline reported the VERSION file
+  unconditionally — and `VERSION` flips to the coming release at the *start*
+  of a line's development, so every build between two cuts claimed a release
+  that had not been cut, on the very line downstream BOMs and installers pin
+  on. `-dev+<commit>` is a semver **pre-release** of `VERSION`, which is what
+  unreleased source is: it orders before the release it will become. No
+  second hand-maintained switch was added — `VERSION` plus git state decide,
+  and `make -C vcx print-CX_RELEASE` reads back the single implementation.
+  The `commit` / `-dirty` (#666) / `V fork` lines are unchanged.
+  The release lane moved with the semantics: `scripts/tag_release.sh` creates
+  the annotated tag **before** `make build-vcx` (a build that precedes its
+  own tag cannot be at it) and its provenance gate now demands the bare
+  `cx vX.Y.Z` headline; `scripts/release.sh` performs every artifact build —
+  platform, the three §4 profiles, and the dockerized linux lane — at the
+  tagged commit, with the merge to `main` moved after them (phase 2c),
+  because being on `main` puts HEAD off the tag. The R2.2 profile gate
+  enforces the expected headline on every staged tarball.
+
+- **The exact lane's integral narrowing is saturation-free, and the int-only
+  lane's overflow cells refuse (v0.17.0 release audit).** `$idiv`, `$floor`,
+  `$ceiling`, `$round` answered a clamped `i64.max` for every integral result
+  in `(i64.max, 2^64)` — `strconv.parse_int` saturates instead of erroring —
+  and the band now answers bigint (L44's no-silent-saturation rule). The
+  int-only lane stays CHECKED like the heads: `$div`/`$idiv`/`$abs` cells
+  whose result leaves i64 (`MIN ÷ -1`, `|MIN|`) refuse `CXER3000` (was:
+  saturated/wrapped, silently), and int ÷ int division computes in i64,
+  never through f64 (quotients past 2⁵³ were float-rounded to the wrong
+  integer with exit 0). Conformance pins the band, the refusal cells, and
+  the divmod identity inside the band.
+
+- **An unenforceable grant scope refuses on the C-ABI surface too
+  (#1059).** `caps_apply_spec` — the grant parser behind
+  `cx_code_eval_caps` and every embedder — dropped a
+  `read=`/`write=`/`env=` suffix on the floor and installed the BLANKET
+  grant, the same fail-open the five CLI parse sites had; it now returns
+  the typed `CXER0274` refusal naming #1061, and `include/cx.h` states the
+  one enforced scope (`net=host[:port]`). The journal's internal store
+  writes carry `errs=:permit` per CO-8's ruled exemption (an error event is
+  a first-class record), which the CO-2 store guard had been defeating from
+  the plumbing — err-carrying events append and fabric-publish green,
+  pinned in both suites.
+
+### Errata — v0.16.0 release notes
+
+- **The removal of `cx store-token` was omitted from the 0.16.0 notes
+  (#968).** The verb was deleted at the stream-4 S3 demolition
+  (`abaea9b9b`, RULED: R4.4-a / G1a / G2a) together with the whole CSRP
+  bearer/RBAC plane, and shipped removed in 0.16.0 — but it appears under
+  neither Changed nor Migration there. Stated now: `cx store-token` is gone
+  from every profile, the `[auth …]` config section is a hard config error,
+  and store credentials are XSP-AUTH principals — an ed25519 DID supplied
+  through the `xsp-did` / `xsp-seed-env` open-opts, authorized by the
+  `[xsp [grants …]]` table (grants present ⇒ deny-by-default). No shipped
+  `cx` verb mints a seed or emits a `[grants …]` stanza, so a
+  deny-by-default deployment provisions its first principal out of band;
+  the successor bootstrap is under design (#969). The approved CLI and
+  store-management-console specs are trued to match.
+
+- **"stored documents … are unchanged" was wrong for cxpack stores written
+  by v0.15 (#974).** The 0.16.0 Migration section says "Nothing else: cx
+  source, schemas, stored documents, and wire formats are unchanged". The
+  at-rest pack format did move: `8fafb76fa` (I1 crypto-agility §4, L34) gave
+  the formerly-RESERVED u16 at pack-entry offset 6 a meaning — the hash
+  multicodec — and made readers fail closed on anything but sha2-256
+  (`0x0012`). v0.15's writer had been emitting a literal `0` into that slot
+  while it was still reserved, so from 0.16.0 every v0.15-written store
+  refused to open with `unsupported hash multicodec 0x0000`. That is a
+  stored-format break, and it shipped announced as the opposite.
+  **Fixed in this cycle (RULED: CO-1)**: readers accept exactly `{0x0000,
+  0x0012}` — zero is read as the sha2-256 it always implicitly was, since
+  v0.15 had no other hash algorithm to name — and every other code still
+  fails closed. The first durable write to a store holding zero slots stamps
+  them forward to `0x0012` in place, so no operator action is required: open
+  the store and publish. A committed v0.15-shaped fixture
+  (`vcx/tests/testdata/v015_pack_compat/`) pins open, read, and republish
+  forever. The published 0.16.0 release notes are a separate artifact and
+  are not rewritten.
 
 ## [0.16.0] — 2026-08-20
 
@@ -1455,7 +1540,8 @@ wire formats, spec-normative grammar).
 - BREAKING: leading-zero integers are now strings (`02134` is a string, not int 2134).
 - BREAKING: binding `loads()` / `dumps()` preserve integer/float distinction via CXDB v1 (was JSON-coerced in v0.5).
 
-[Unreleased]: https://github.com/cx-home/cx/compare/v0.16.0...HEAD
+[Unreleased]: https://github.com/cx-home/cx/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/cx-home/cx/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/cx-home/cx/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/cx-home/cx/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/cx-home/cx/compare/v0.13.0...v0.14.0

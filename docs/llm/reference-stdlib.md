@@ -1,4 +1,4 @@
-# Reference: the CX standard library — v0.16.0
+# Reference: the CX standard library — v0.17.0
 
 > **GENERATED.** Source: `docs-src/llm/reference-stdlib.md.tmpl` + the module
 > sources and the conformance corpus. The catalogs below are projected from
@@ -11,12 +11,17 @@
 `[?lib 'cx-stdlib/strings' as=str]` renames it. `[?lib 'cx-x/tools' as=tools]`
 imports from the experimental tier, and says so in the import line.
 
-Two tiers:
+Three import prefixes:
 
 * **`cx-stdlib/…`** — the frozen standard set. Stable surface.
 * **`cx-x/…`** — experimental. Bundled and conformance-gated, but exempt from
   the stability promise. If you are writing code meant to last, prefer the
   standard tier.
+* **`cx-xap`** — the XAP orchestrator, imported as a whole package
+  (`[?lib 'cx-xap' :as xap]`), **not** as `cx-stdlib/xap`. It layers *above*
+  the standard library and adds no authority, transport, or markup logic of
+  its own. It appears in the standard-tier table below because it is bundled
+  from the same directory; its import line is the exception.
 
 A call is `[$module:fn args…]`. The `$` is not optional stylistically — it is
 the assertion that this is a call rather than an element you are building
@@ -249,6 +254,63 @@ $ cx prog.cx
 42
 ```
 
+### `format` — four renderings, all of them faithful
+
+`canonical`, `compact`, `pretty` and `diff-friendly` are four *renderings* of
+one value, and every one of them round-trips: parsing the output gives back a
+structurally equal value.
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/format']
+[?let [= $w [user active=true age=41 name=alice role="ops lead" score=1.5 tier=:gold [s "text"] [i 7] [d 2.50] [b false] [a :ok]]]
+  [$eq [$format:canonical [$cx:parse [$format:pretty $w]]] [$format:canonical $w]]]
+```
+
+```console
+$ cx prog.cx
+true
+```
+
+That is a guarantee about **types**, not just text. `pretty` never quotes a
+non-string scalar — a decimal stays a decimal, an atom keeps its `:` sigil, a
+glued type annotation survives:
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/format']
+[$format:pretty [u tier=:gold]]
+```
+
+```console
+$ cx prog.cx
+'[u tier=:gold]'
+```
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/format']
+[$format:pretty [u port::u16=8080 t=100ms]]
+```
+
+```console
+$ cx prog.cx
+'[u port::u16=8080 t::duration=100ms]'
+```
+
+There is exactly one deliberate divergence between the forms: `pretty` always
+quotes a string, while `canonical` leaves it bare whenever the bare image
+re-parses as that same string. Both round-trip.
+
+Which one to reach for:
+
+| Form | Use it for |
+|---|---|
+| `canonical` | identity — hashing, addressing, equality. Never for display |
+| `compact` | the same bytes, minimised |
+| `pretty` | reading and debugging. **Not version-stable — never snapshot-test it** |
+| `diff-friendly` | review diffs; sorts attributes |
+
 ### `cx` — CX reflecting on CX
 
 `[$cx:parse]`, `[$cx:serialize]`, `[$cx:ast]`, `[$cx:from-format]`. This is
@@ -263,6 +325,49 @@ this file.
 ```console
 $ cx prog.cx
 1
+```
+
+### `log` — structured context, not string prefixes
+
+Log context is a **scope**, entered with `[?with-scope]` and read back as a
+map. Nesting overrides key by key, and the scope is restored on exit — which
+is what makes a request id ride an entire call tree without being threaded
+through every signature:
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/log']
+[?with-scope {request-id: "r1"}
+  [$log:current-scope]]
+```
+
+```console
+$ cx prog.cx
+{request-id: r1}
+```
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/log']
+[?with-scope {request-id: "outer"}
+  [?with-scope {request-id: "inner"}
+    [$log:current-scope]]]
+```
+
+```console
+$ cx prog.cx
+{request-id: inner}
+```
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/log']
+[$log:current-scope]
+```
+
+```console
+$ cx prog.cx
+{}
 ```
 
 ### `time` — typed instants, refused nonsense

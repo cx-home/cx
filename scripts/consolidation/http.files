@@ -1,13 +1,21 @@
 # area: http
-vcx/tests/http_chunked_stream_test.v
-vcx/tests/http_client_timeout_test.v
-vcx/tests/http_concurrent_sse_test.v
-vcx/tests/http_handler_no_respond_test.v
-vcx/tests/http_picoev_engine_test.v
-vcx/tests/http_query_params_test.v
-vcx/tests/http_reactor_rss_bound_test.v
-vcx/tests/http_request_env_isolation_test.v
-vcx/tests/http_split_body_test.v
-vcx/tests/http_sse_headers_test.v
-vcx/tests/http_sse_peer_rst_survival_test.v
-vcx/tests/http_sse_test.v
+#absorbed vcx/tests/http_chunked_stream_test.v
+#absorbed vcx/tests/http_client_timeout_test.v
+#absorbed vcx/tests/http_concurrent_sse_test.v
+#absorbed vcx/tests/http_handler_no_respond_test.v
+#absorbed vcx/tests/http_picoev_engine_test.v
+#absorbed vcx/tests/http_query_params_test.v
+#absorbed vcx/tests/http_reactor_rss_bound_test.v
+#absorbed vcx/tests/http_request_env_isolation_test.v
+#absorbed vcx/tests/http_split_body_test.v
+#absorbed vcx/tests/http_sse_headers_test.v
+#absorbed vcx/tests/http_sse_peer_rst_survival_test.v
+#absorbed vcx/tests/http_sse_test.v
+#
+# ── #1012, 2026-08-26: the rows above were folded in by `apply`, which
+# (unlike `absorb`) never rewrote the manifest — so they sat here as LIVE
+# rows naming originals that were removed at the merge. Marked as the
+# history they always were. Absorption is one-way: the umbrella owns
+# these bodies, and any fix made to the umbrella since exists only there.
+# Restoring an original to regenerate is refused by name —
+# `scripts/consolidate_tests.sh audit <area>`.

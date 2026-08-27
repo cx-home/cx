@@ -1,22 +1,30 @@
 # area: eval_semantics
-vcx/tests/match_eval_test.v
-vcx/tests/modify_eval_test.v
-vcx/tests/predicate_expr_test.v
-vcx/tests/eval_budget_test.v
-vcx/tests/eval_data_fallback_test.v
-vcx/tests/eval_stack_guard_test.v
-vcx/tests/scoping_lexical_test.v
-vcx/tests/closure_escape_test.v
-vcx/tests/recursive_def_dispatch_test.v
-vcx/tests/purity_checker_test.v
-vcx/tests/visibility_test.v
-vcx/tests/dispatcher_integration_test.v
-vcx/tests/z79g_dispatcher_test.v
-vcx/tests/meta_test.v
-vcx/tests/defenses_test.v
-vcx/tests/secret_redaction_test.v
-vcx/tests/random_streams_test.v
-vcx/tests/effect_alignment_test.v
-vcx/tests/pereference_test.v
-vcx/tests/type_strict_validator_test.v
-vcx/tests/schema_collections_test.v
+#absorbed vcx/tests/match_eval_test.v
+#absorbed vcx/tests/modify_eval_test.v
+#absorbed vcx/tests/predicate_expr_test.v
+#absorbed vcx/tests/eval_budget_test.v
+#absorbed vcx/tests/eval_data_fallback_test.v
+#absorbed vcx/tests/eval_stack_guard_test.v
+#absorbed vcx/tests/scoping_lexical_test.v
+#absorbed vcx/tests/closure_escape_test.v
+#absorbed vcx/tests/recursive_def_dispatch_test.v
+#absorbed vcx/tests/purity_checker_test.v
+#absorbed vcx/tests/visibility_test.v
+#absorbed vcx/tests/dispatcher_integration_test.v
+#absorbed vcx/tests/z79g_dispatcher_test.v
+#absorbed vcx/tests/meta_test.v
+#absorbed vcx/tests/defenses_test.v
+#absorbed vcx/tests/secret_redaction_test.v
+#absorbed vcx/tests/random_streams_test.v
+#absorbed vcx/tests/effect_alignment_test.v
+#absorbed vcx/tests/pereference_test.v
+#absorbed vcx/tests/type_strict_validator_test.v
+#absorbed vcx/tests/schema_collections_test.v
+#
+# ── #1012, 2026-08-26: the rows above were folded in by `apply`, which
+# (unlike `absorb`) never rewrote the manifest — so they sat here as LIVE
+# rows naming originals that were removed at the merge. Marked as the
+# history they always were. Absorption is one-way: the umbrella owns
+# these bodies, and any fix made to the umbrella since exists only there.
+# Restoring an original to regenerate is refused by name —
+# `scripts/consolidate_tests.sh audit <area>`.

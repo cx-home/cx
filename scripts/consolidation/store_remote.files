@@ -1,9 +1,17 @@
 # area: store_remote
-vcx/tests/store_ftp_test.v
-vcx/tests/store_sftp_test.v
-vcx/tests/store_s3_minio_test.v
-vcx/tests/store_grpc_client_test.v
-vcx/tests/store_serve_tls_test.v
-vcx/tests/store_tls_rotation_test.v
-vcx/tests/store_xsp_client_test.v
-vcx/tests/store_xsp_serve_test.v
+#absorbed vcx/tests/store_ftp_test.v
+#absorbed vcx/tests/store_sftp_test.v
+#absorbed vcx/tests/store_s3_minio_test.v
+#absorbed vcx/tests/store_grpc_client_test.v
+#absorbed vcx/tests/store_serve_tls_test.v
+#absorbed vcx/tests/store_tls_rotation_test.v
+#absorbed vcx/tests/store_xsp_client_test.v
+#absorbed vcx/tests/store_xsp_serve_test.v
+#
+# ── #1012, 2026-08-26: the rows above were folded in by `apply`, which
+# (unlike `absorb`) never rewrote the manifest — so they sat here as LIVE
+# rows naming originals that were removed at the merge. Marked as the
+# history they always were. Absorption is one-way: the umbrella owns
+# these bodies, and any fix made to the umbrella since exists only there.
+# Restoring an original to regenerate is refused by name —
+# `scripts/consolidate_tests.sh audit <area>`.

@@ -7,16 +7,19 @@
 #   1. it parses (well-formed CX);
 #   2. every gate= AND default= value — bare, single- or double-quoted —
 #      is in the enum {enforced, advisory, pending, skip};
-#   3. every [suite name=S] names a KNOWN suite (code, stdlib, packages);
-#      an unknown/typo'd suite name used to skip all module-row validation
-#      under it silently (#721, M36);
+#   3. every [suite name=S] names a KNOWN suite (code, stdlib, packages,
+#      xpath-31-parity); an unknown/typo'd suite name used to skip all
+#      module-row validation under it silently (#721, M36);
 #   4. every [module name=X] row resolves to a real fixture, per its
 #      enclosing [suite name=S] block:
-#        S=stdlib   -> conformance/stdlib/X.cxd
-#        S=packages -> packages/X/X.test.cxd
-#        S=code     -> (no module rows; the suite default governs code.cxd)
+#        S=stdlib          -> conformance/stdlib/X.cxd
+#        S=packages        -> packages/X/X.test.cxd
+#        S=code            -> (no module rows; the suite default governs code.cxd)
+#        S=xpath-31-parity -> (no module rows; the suite default governs
+#                              conformance/xpath_31_parity.cxd — RULED: VC-7, #945)
 #
-# The runtime consumer (vcx/tests/code_eval_fixtures_test.v) is
+# The runtime consumers (vcx/tests/code_eval_fixtures_test.v for code/stdlib/
+# packages; scripts/check_xpath_parity_fixtures.cx for xpath-31-parity) are
 # deny-by-default, so a typo'd VALUE fails closed there — but a typo'd
 # SUITE or MODULE name silently drops policy rows, which only this gate
 # can catch.
@@ -28,7 +31,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GATES="$ROOT/conformance/gates.cxd"
 CXBIN="${CX_BIN:-$ROOT/vcx/target/cx}"
 
-KNOWN_SUITES="code stdlib packages"
+KNOWN_SUITES="code stdlib packages xpath-31-parity"
 
 fail=0
 
@@ -86,6 +89,18 @@ while IFS= read -r line; do
       echo "GATE-UNKNOWN-SUITE: [suite name=$cur_suite] is not a known suite {${KNOWN_SUITES// /, }} — every module row under it would be silently unvalidated AND silently unconsumed by the runner"
       fail=1
     fi
+    # (4b) A single-file suite (no module rows) governs ONE fixture; that
+    # fixture must exist. #945's whole class was a policy/runner reference
+    # to a file the tree no longer had under that name.
+    case "$cur_suite" in
+      code)            sf="conformance/code.cxd" ;;
+      xpath-31-parity) sf="conformance/xpath_31_parity.cxd" ;;
+      *)               sf="" ;;
+    esac
+    if [ -n "$sf" ] && [ ! -f "$ROOT/$sf" ]; then
+      echo "GATE-DANGLING: suite '$cur_suite' governs $sf, which does not exist"
+      fail=1
+    fi
   fi
   if printf '%s\n' "$line" | grep -qE '\[module name='; then
     mod="$(printf '%s\n' "$line" | sed -E "s/.*\[module name=('[^']*'|\"[^\"]*\"|[A-Za-z0-9_-]+).*/\1/; s/^'(.*)'$/\1/; s/^\"(.*)\"$/\1/")"
@@ -93,6 +108,7 @@ while IFS= read -r line; do
       stdlib)   [ -f "$ROOT/conformance/stdlib/$mod.cxd" ] || { echo "GATE-DANGLING: stdlib module '$mod' has no conformance/stdlib/$mod.cxd"; fail=1; } ;;
       packages) [ -f "$ROOT/packages/$mod/$mod.test.cxd" ] || { echo "GATE-DANGLING: packages module '$mod' has no packages/$mod/$mod.test.cxd"; fail=1; } ;;
       code)     echo "GATE-UNEXPECTED: module row '$mod' under suite 'code' (code.cxd uses the suite default, no module rows)"; fail=1 ;;
+      xpath-31-parity) echo "GATE-UNEXPECTED: module row '$mod' under suite 'xpath-31-parity' (xpath_31_parity.cxd uses the suite default, no module rows)"; fail=1 ;;
       "")       echo "GATE-ORPHAN: module row '$mod' with no enclosing [suite]"; fail=1 ;;
       *)        echo "GATE-ORPHAN: module row '$mod' under unknown suite '$cur_suite'"; fail=1 ;;
     esac
@@ -103,5 +119,5 @@ if [ "$fail" -ne 0 ]; then
   echo "gates_manifest_gate: FAILED"
   exit 1
 fi
-echo "gates_manifest_gate: OK — gates.cxd parses, every gate=/default= is in-enum, every suite is known, every module row resolves to a real fixture."
+echo "gates_manifest_gate: OK — gates.cxd parses, every gate=/default= is in-enum, every suite is known, every single-file suite's fixture exists, every module row resolves to a real fixture."
 exit 0

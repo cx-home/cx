@@ -1,7 +1,22 @@
+[; Evaluate an RPN expression by folding over the token sequence, carrying the
+   stack as a DOCUMENT ([stack [n …] [n …]]) rather than an opaque list — so the
+   intermediate state is inspectable data at every step.
+   3 4 + 5 * = 35.
+   Rewritten for the v0.8.0 surface (RULED: VC-28); the original was pre-reshape
+   (`:using`/`:init`/`:case`/`:yield` colon clauses, `[?fn ($a, $b)]` comma
+   params, `nth(x, 1)` call-parens).
+
+   R-A1 migration (2026-08-25, the Cluster A settlement): a node-set placed in
+   element content is spliced — `[?splice $acc/*]` pushes the existing stack
+   items as direct children — so the child axis reads the stack and the former
+   descendant-axis workaround (#961) is retired. `$acc/*` (not `$acc/n`) feeds
+   the push because a wildcard read never field-collapses; `$acc/n` reads are
+   fine as operands (a one-item field collapses to its scalar, which arithmetic
+   accepts; a multi-item match stays a node-set, which `$nth` indexes). ]
 [?reduce (3, 4, :plus, 5, :times)
-  :using [?fn ($acc, $tok)
+  [using [?fn ($acc $tok)
     [?match $tok
-      :case :plus  :yield [stack [n [+ nth($acc/n, 1) nth($acc/n, 2)]]]
-      :case :times :yield [stack [n [* nth($acc/n, 1) nth($acc/n, 2)]]]
-      :case $v     :yield [stack [n $v] $acc/n]]]
-  :init [stack]]
+      [case :plus [stack [n [+ [$nth $acc/n 1] [$nth $acc/n 2]]]]]
+      [case :times [stack [n [* [$nth $acc/n 1] [$nth $acc/n 2]]]]]
+      [else [stack [n $tok] [?splice $acc/*]]]]]]
+  [init [stack]]]

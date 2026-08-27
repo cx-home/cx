@@ -1,0 +1,12 @@
+{
+  "name": "cx-playground-gate",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Dev-only dependencies for scripts/test_playground_mermaid.mjs — the gate that parses every diagram the playground can emit. mermaid is deliberately NOT listed here (#1007): the gate loads scripts/gen_guide/playground/vendor/mermaid.min.js, the very bundle playground.html's <script> points at, so gate and page are one pinned artifact instead of two pins that drift. An npm entry for mermaid would reintroduce exactly that drift. jsdom is all that is left — it supplies the document mermaid's parser reaches for.",
+  "scripts": {
+    "gate": "node ../test_playground_mermaid.mjs"
+  },
+  "dependencies": {
+    "jsdom": "^24.0.0"
+  }
+}

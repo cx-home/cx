@@ -1,7 +1,7 @@
 # scripts/stdlib_catalog_gate.cx -- stdlib catalog drift gate.
 #
 # Eat-our-own-dog-food: this gate is written entirely in CX and runs
-# under `cx eval`. It verifies ONE invariant about the standard-library
+# as `cx <file>`. It verifies ONE invariant about the standard-library
 # catalog, whose single source of truth is the [module-meta ...] block
 # fenced near the top of each spec under spec/03-approved/std-lib/*.md:
 #
@@ -36,7 +36,8 @@
 #
 # Capabilities: glob / read-file need `read`; write-line needs `write`;
 # the env standard streams + exit are ambient (never gated, env.md §7).
-# Run via:  vcx/target/cx eval --allow-all scripts/stdlib_catalog_gate.cx
+# Run via:  vcx/target/cx --allow-all scripts/stdlib_catalog_gate.cx
+# (flags bind BEFORE the file — everything after the file is program args.)
 # (or:      make stdlib-catalog-gate)
 
 [?lib 'cx-stdlib/io'      as=io]

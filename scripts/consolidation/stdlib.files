@@ -1,10 +1,22 @@
 # area: stdlib
-vcx/tests/stdlib_base58_test.v
-vcx/tests/stdlib_did_test.v
-vcx/tests/stdlib_session_did_test.v
-vcx/tests/stdlib_skeleton_test.v
-vcx/tests/stdlib_vc_test.v
-vcx/tests/stdlib_xap_coord_test.v
-vcx/tests/stdlib_xap_pep_test.v
-vcx/tests/stdlib_xsp_test.v
-vcx/tests/vc_roundtrip_test.v
+#absorbed vcx/tests/stdlib_base58_test.v
+#absorbed vcx/tests/stdlib_did_test.v
+#absorbed vcx/tests/stdlib_session_did_test.v
+#absorbed vcx/tests/stdlib_skeleton_test.v
+#absorbed vcx/tests/stdlib_vc_test.v
+#absorbed vcx/tests/stdlib_xap_coord_test.v
+#absorbed vcx/tests/stdlib_xap_pep_test.v
+#absorbed vcx/tests/stdlib_xsp_test.v
+#absorbed vcx/tests/vc_roundtrip_test.v
+# ── #700 wave 1, 2026-08-24.
+# SPEC-CITATION DEBT: spec/03-approved/std-lib/supervise.md:13 and :359 cite
+# stdlib_supervise_test.v by path; not trued here (see diagram.files).
+# ISOLATION: stdlib_supervise_test.v drives supervise in-process with
+# FIXED-NAME channels (vlane-never / vlane-never2 / vlane-ok2). Those names
+# are unique inside this umbrella's process (checked at absorb time), and the
+# file already ran several of them in one process before the merge. If this
+# umbrella ever flakes under -j load, the #951 supervise note-transit family
+# is the first suspect and the mitigation is SUITE_SERIAL_RETRY membership,
+# not un-merging.
+#absorbed vcx/tests/stdlib_session_guest_test.v
+#absorbed vcx/tests/stdlib_supervise_test.v
