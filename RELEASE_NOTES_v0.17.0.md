@@ -13,7 +13,10 @@ an ordinary value in-process, by the frozen matrix, and program output may
 carry it with exit 0 — the boundary, not the exit status, is the contract). Alongside the semantics, this
 is the first release shaped by real downstream deployment feedback: every
 reported defect was verified, ruled, and repaired, most of them deeper than
-reported.
+reported. **116 issues were closed between the v0.16.0 and v0.17.0 tags** —
+the close-out campaign's full docket (every open bug ≥951 and issue ≥826,
+the downstream deployment reports, and what the pre-tag adversarial audit
+found on top), each close carrying red-proof evidence on the issue.
 
 **Two classes of deliberate movement to know before upgrading:** the
 sequence-content rule (a sequence value cannot be element content — adopt it
