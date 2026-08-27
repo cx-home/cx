@@ -134,7 +134,9 @@ Run flags (the default action; flags bind BEFORE the resource):
   Capabilities are deny-by-default (spec/core/security.md); grant explicitly:
     --allow-read --allow-write --allow-net --allow-env --allow-clock
     --allow-random --allow-subprocess --allow-eval --allow-secret-reveal --allow-common --allow-all
-    (--allow-net takes an optional scope: --allow-net=host[:port])
+    (--allow-net takes an optional scope: --allow-net=host[:port] — it is the
+     ONLY grant whose scope is enforced. A resource suffix on --allow-read /
+     --allow-write / --allow-env is a usage error, not a narrowing: #1059)
     --allow-common is the common working set WITHOUT secret-reveal;
     --allow-all additionally grants secret-reveal, which declassifies secrets.
 
@@ -293,13 +295,26 @@ Grant the narrowest thing that works. `--allow-net` takes a scope; the others
 are all-or-nothing, which is a reason to prefer `--allow-read` over
 `--allow-common` in anything automated.
 
+`--allow-net` is the *only* grant that scopes. A resource suffix on
+`--allow-read`, `--allow-write` or `--allow-env` is a **usage error** (exit 2,
+before evaluation) naming the flag, the ignored suffix, and the bare spelling
+that is accepted — earlier versions took the suffix, discarded it, and granted
+the blanket capability, so the narrower-looking spelling silently bought wider
+authority. Real per-path/per-name scoping is unimplemented.
+
 ## Exit codes
 
 | Code | Meaning |
 |---|---|
 | 0 | success |
-| 1 | the program produced an error value, or a check found findings |
+| 1 | the program's TOP-LEVEL result is an `[err]`, or a check found findings |
 | 2 | usage error — an unknown flag, a missing file, a bad invocation |
+
+Exit 1 is about the **top-level** result only (R5.13). An `[err]` nested
+inside a collection is ordinary data — it renders and the run exits 0. Do not
+read the exit status as a refusal contract: refusal at a boundary is
+`CXER0275` (store / http), raised at the boundary, independent of how the
+process exits.
 
 Unknown flags are hard errors. Nothing is ignored, which is why a typo'd
 grant fails loudly *before* the file but silently *after* it.

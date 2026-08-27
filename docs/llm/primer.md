@@ -1347,7 +1347,10 @@ $ cx prog.cx
 
 `--allow-common` is everything except `secret-reveal`; `--allow-all` includes
 it and therefore declassifies secrets. `--allow-net` takes an optional scope
-(`--allow-net=example.com:443`). Grant the narrowest thing that works.
+(`--allow-net=example.com:443`) and is the **only** grant that scopes — a
+resource suffix on `--allow-read`, `--allow-write` or `--allow-env` is a usage
+error (exit 2, before evaluation), not a narrowing. Grant the narrowest thing
+that works.
 
 `env:argv` and `env:parse-args` are **ungated** — reading your own arguments
 is not an effect.
