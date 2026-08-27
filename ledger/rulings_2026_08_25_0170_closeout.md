@@ -377,6 +377,21 @@ DEFERRED until its measurements are re-taken against the released
 cx v0.17.0 binary; nothing publishes to the mirror without a further owner
 letter.
 
+### CO-20 (owner "a" + "that's all we need for nvim as well", 2026-08-27,
+post-release) — editor distribution WITHOUT registry accounts
+
+The owner declines creating/maintaining external tooling accounts. RULED:
+(i) **VS Code**: the packaged `cx-language-<v>.vsix` is a RELEASE ASSET —
+attached to both GitHub releases at each cut, with the one-command install
+(`code --install-extension`) documented. release.sh Phase 7 uploads it; that
+attach SATISFIES the VC-10 editor-distribution gate (the obligation is
+distribution, and this distributes) — Marketplace/Open VSX publish remains
+optional behind owner-minted tokens whenever the owner wants the reach.
+(ii) **nvim-treesitter**: the in-repo `tooling/neovim` path is the supported
+install route; the registry PR rides the standing owner-approved weekly retry
+(zero maintenance) and nothing else — no Matrix outreach, no account chase.
+#954 Linguist unchanged (its own eligibility hold governs).
+
 ## Execution notes from the 2026-08-27 pre-tag adversarial audit (Fable)
 
 ### CO-8 execution note — the exemption was defeated by its own plumbing
