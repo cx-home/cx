@@ -1,0 +1,16 @@
+[; package.cxd ⊢ spec/03-approved/xap/xap_schemas/package.cxs — the gtin
+   manifest DRAFT (§2). hash= and [signature] are absent by design: seal fills
+   hash= from the stored content tree and sign fills [signature] over it
+   (§6.1 pkg-seal / pkg-sign); the registry publish flow (distribution §4.1)
+   produces the sealed+signed artifact from this draft. The exports listing is
+   the library's surface — verified against the code at install (§1.1). ]
+[package name=gtin version=0.1.0 kind=library
+ [summary 'GS1 GTIN check-digit codec: check-digit, parse, render, valid']
+ [publisher did=did:key:z6MkfiKbd8ooGkQX37b6TxRfskAHgneXQSF1mZyUyH6fDC2j name='cx-home internal']
+ [exports
+  [def name=gtin/check-digit doc='GS1 mod-10 check digit of a 7/11/12/13-digit body, one-character string']
+  [def name=gtin/parse doc='GTIN string to [gtin kind= body= check=] or [gtin-error …] value']
+  [def name=gtin/render doc='digit body to the full check-digit-appended GTIN string']
+  [def name=gtin/valid doc='true iff the string parses as a check-clean GTIN']]
+ [compatibility toolchain=0.12.0]
+ [license-terms ref=internal]]

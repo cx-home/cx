@@ -1,0 +1,116 @@
+[test-suite name=gtin
+  [doc [#
+Acceptance fixtures for the gtin codec — the kind=library reference package
+(distribution spec §1.1 reference case; §1: "acceptance fixtures (requirements
+are the tests)"; successor to the relocated wire-protocol codec, #727). Run by
+the packages-suite runner (vcx/tests) with the repo root as process CWD — the
+[?lib] path below is repo-root-relative, exactly how `cx <file>` resolves it
+from the repo root.
+
+Failures are structured VALUES ([gtin-error reason=…]): a library owns no CXER
+error band and raises nothing of its own (N-DIST-2 posture — no authority, no
+governance surface).
+
+Vectors are canonical GS1 examples: 6291041500213 (GTIN-13),
+4006381333931 (EAN-13), 96385074 (GTIN-8).
+#]]
+
+  [case id=gtin-001-check-digit level=core
+   [tags gtin check-digit]
+   [in-cx [# [empty] #]]
+   [in-code [#
+[?lib './packages/gtin/gtin.cx' :as gtin]
+[$gtin:check-digit "629104150021"]
+#]]
+   [out-text [#
+'3'
+#]]
+  ]
+
+  [case id=gtin-002-parse level=core
+   [tags gtin parse]
+   [in-cx [# [empty] #]]
+   [in-code [#
+[?lib './packages/gtin/gtin.cx' :as gtin]
+[$gtin:parse "6291041500213"]
+#]]
+   [out-text [#
+[gtin kind=gtin-13 body='629104150021' check='3']
+#]]
+  ]
+
+  [case id=gtin-003-parse-check-mismatch-is-a-value level=core
+   [tags gtin parse error-value]
+   [in-cx [# [empty] #]]
+   [in-code [#
+[?lib './packages/gtin/gtin.cx' :as gtin]
+[$gtin:parse "6291041500214"]
+#]]
+   [out-text [#
+[gtin-error reason=check-mismatch expected='3' actual='4']
+#]]
+  ]
+
+  [case id=gtin-004-parse-non-digit level=core
+   [tags gtin parse error-value]
+   [in-cx [# [empty] #]]
+   [in-code [#
+[?lib './packages/gtin/gtin.cx' :as gtin]
+[$gtin:parse "62910415002x3"]
+#]]
+   [out-text [#
+[gtin-error reason=non-digit]
+#]]
+  ]
+
+  [case id=gtin-005-parse-bad-length level=core
+   [tags gtin parse error-value]
+   [in-cx [# [empty] #]]
+   [in-code [#
+[?lib './packages/gtin/gtin.cx' :as gtin]
+[$gtin:parse "12345"]
+#]]
+   [out-text [#
+[gtin-error reason=bad-length]
+#]]
+  ]
+
+  [case id=gtin-006-render-parse-roundtrip level=core
+   [tags gtin render roundtrip]
+   [in-cx [# [empty] #]]
+   [in-code [#
+[?lib './packages/gtin/gtin.cx' :as gtin]
+[$gtin:parse [$gtin:render "400638133393"]]
+#]]
+   [out-text [#
+[gtin kind=gtin-13 body='400638133393' check='1']
+#]]
+  ]
+
+  [case id=gtin-007-render-gtin8 level=core
+   [tags gtin render]
+   [in-cx [# [empty] #]]
+   [in-code [#
+[?lib './packages/gtin/gtin.cx' :as gtin]
+[$gtin:render "9638507"]
+#]]
+   [out-text [#
+'96385074'
+#]]
+  ]
+
+  [case id=gtin-008-valid level=core
+   [tags gtin valid]
+   [in-cx [# [empty] #]]
+   [in-code [#
+[?lib './packages/gtin/gtin.cx' :as gtin]
+[?let [= $a [$gtin:valid "6291041500213"]]
+ [?let [= $b [$gtin:valid "6291041500214"]]
+  [?let [= $c [$gtin:valid "12ab"]]
+   ($a, $b, $c)]]]
+#]]
+   [out-text [#
+(true, false, false)
+#]]
+  ]
+]

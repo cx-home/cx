@@ -1,0 +1,66 @@
+[; reference/shop/shop.surface — the MATERIALIZATION layer.
+   A `*.surface.cxd` is DERIVED: it binds verbs and views that the features
+   already declared to MEDIA and lays them out. It never redeclares an
+   intent. If a control names an intent no feature declares, the surface is
+   wrong — not the feature.
+
+   The point worth seeing here is that one intent DISTRIBUTES across a
+   COMBINATION of media at once, and the same intent can be triggered
+   differently on each: `delayed-shipment/escalate` is a button on screen
+   and a spoken phrase on audio. Same verb, same journal entry, same
+   authority check — different trigger.
+
+   DECLARED, not happening. A surface distributes; it does not render. Each
+   medium needs its own client, and only the screen one exists
+   (`reference/shop-web-client/`) — the serve path has no audio handling at
+   all. That is the intended shape (N-CLIENT-2: the XAP exposes the surface
+   as data and clients materialize it), but do not read the audio rows below
+   as something you can currently hear. ]
+[surface name=shop-console xap=shop version="1"
+ [summary 'The fulfilment console: the order book, the shipment board, and the delay queue that sits between them.']
+
+ [media
+  [medium name=screen kind=visual primary=true]
+  [medium name=audio kind=speech]]
+
+ [panels
+  [panel name=order-book feature=orders kind=view
+   [layout region=left mode=separate]
+   [materialize on=screen as=table trigger=always priority=peripheral]
+   [shows 'order.id order.customer order.placed-at order.promised-at order.total']]
+
+  [panel name=shipment-board feature=shipments kind=view
+   [layout region=centre mode=separate]
+   [materialize on=screen as=table trigger=always priority=peripheral]
+   [shows 'shipment.id shipment.for-order shipment.carrier shipment.state shipment.shipped-at']]
+
+  [panel name=delay-queue feature=delayed-shipment kind=alert
+   [layout region=right mode=stacked]
+   [; the composite's panel is the one that materializes across BOTH media —
+      it is the only thing here worth interrupting someone for. ]
+   [materialize on=screen as=highlight trigger=threat emphasis=strong priority=foreground]
+   [materialize on=audio as=tone trigger=threat priority=peripheral]
+   [shows 'delay-alert.for-order delay-alert.customer delay-alert.overdue-by delay-alert.carrier']]]
+
+ [controls
+  [; each control names an intent DECLARED in a feature — never a new one. ]
+  [control intent=orders/place-order
+   [materialize on=screen as=form]]
+  [control intent=orders/cancel-order
+   [materialize on=screen as=button]]
+  [control intent=shipments/ship
+   [materialize on=screen as=button]]
+  [control intent=delayed-shipment/review
+   [materialize on=screen as=tap]
+   [materialize on=audio as=say]]
+  [control intent=delayed-shipment/escalate
+   [; one intent, two triggers, one authority decision. ]
+   [materialize on=screen as=button emphasis=strong]
+   [materialize on=audio as=say]]]
+
+ [clients
+  [; agent-parity: the expediter attaches to the SAME surface a human does.
+     It is not a side channel with its own privileges — what it may do is
+     decided by the dial in shop.xap.cxd, not by giving it another door. ]
+  [client kind=human attach=independent]
+  [client kind=agent attach=mirrored]]]

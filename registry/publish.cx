@@ -1,0 +1,49 @@
+[; registry/publish.cx — the stage-1 publish program (distribution spec §4.1),
+   pure CX over the cx-xap pkg-* surface. Env-driven:
+
+     CX_PKG_DIR      package source directory (e.g. packages/gtin)
+     CX_PKG_NAME     published name           (e.g. gtin)
+     CX_PKG_VERSION  published version        (e.g. 0.1.0)
+     CX_REGISTRY     registry store dir       (default registry/store)
+
+   Seals every file in the directory EXCEPT package.cxd (the manifest sits
+   BESIDE the hashed content tree — the tag-object pattern), signs over the
+   Tier-1 hash with the publisher key from registry/keys/cx-home.cxd, publishes
+   the name@version alias (immutable once released, CXER4887), and re-verifies
+   the published artifact end-to-end. Run from the repo root:
+
+     CX_PKG_DIR=packages/gtin CX_PKG_NAME=gtin CX_PKG_VERSION=0.1.0 \
+       make registry-publish
+]
+[?lib 'cx-xap'           :as xap]
+[?lib 'cx-stdlib/store'  :as store]
+[?lib 'cx-stdlib/io'     :as io]
+[?lib 'cx-stdlib/path'   :as path]
+[?lib 'cx-stdlib/env'    :as env]
+[?lib 'cx-stdlib/bytes'  :as bytes]
+
+[?let [= $dir [$env:var "CX_PKG_DIR"]]
+ [?let [= $name [$env:var "CX_PKG_NAME"]]
+  [?let [= $version [$env:var "CX_PKG_VERSION"]]
+   [?let [= $reg [$env:var-or-default "CX_REGISTRY" "registry/store"]]
+    [?let [= $keydoc [$cx-parse [$io:read-file "registry/keys/cx-home.cxd"]]]
+     [?let [= $pubid $keydoc//publisher]
+      [?let [= $seed [$bytes:from-hex $pubid@seed]]
+       [?let [= $mdoc [$cx-parse [$io:read-file [$path:join $dir "package.cxd"]]]]
+        [?let [= $draft $mdoc//package]
+         [?let [= $entries [?for [in $f [$io:list-dir $dir]]
+                            [where [$not [= $f "package.cxd"]]]
+                            [yield [?element "entry" [?attr "path" $f]
+                                     [$io:read-file [$path:join $dir $f]]]]]]
+          [?let [= $s [$store:open [$concat "file://" [$path:absolute $reg]]]]
+           [?let [= $tree [$xap:pkg-tree $entries]]
+            [?let [= $sealed [$xap:pkg-seal $s $tree $draft]]
+             [?let [= $signed [$xap:pkg-sign [$store:get-doc $s $sealed@manifest] $seed]]
+              [?let [= $mh [$store:put-doc $s $signed]]
+               [?let [= $pub [$xap:pkg-publish $s $name $version $mh]]
+                [?let [= $v [$xap:pkg-verify $s [$concat $name "@" $version]]]
+                 [?element "publish-result"
+                   [?attr "alias"    $pub@alias]
+                   [?attr "manifest" $pub@manifest]
+                   [?attr "hash"     $v@hash]
+                   [?attr "status"   $v@status]]]]]]]]]]]]]]]]]]]

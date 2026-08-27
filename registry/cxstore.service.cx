@@ -1,0 +1,19 @@
+[; Stage-2 served registry (distribution spec §4.2): the SAME registry/store
+   the git repo carries, re-hosted behind the CSRP daemon. Artifacts, hashes,
+   and signatures are unchanged — serving is a re-host, never a re-package.
+   The git repo remains origin-of-truth; the service is a head.
+
+   Run from the repo root:  make registry-serve
+   (or: cx store-serve --config registry/cxstore.service.cx --allow-net)
+
+   Loopback + anonymous by default — this is the INTERNAL registry; configure
+   [auth …] + [tls …] before exposing beyond the trust domain. ;]
+[cxstore-service
+  [bind addr="127.0.0.1:8460"]
+  [stores
+    [store name="registry" url="file://registry/store"]]
+  [auth
+    [static]]
+  [observability
+    [log format="cx"]]
+  [workers query-pool=4]]

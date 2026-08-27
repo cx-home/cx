@@ -1,0 +1,27 @@
+[; reference/archetypes/vendor-endorsement — INSTANCE binding #2 (#866, §4.3).
+
+   A marketplace derives vendor endorsements from the SAME archetype — the
+   genuinely different second instantiation the graduation bar (R8.10) asks
+   for: different tenant, different composing surface, non-overlapping uses
+   neighborhood, not a second skin of the shop. Here revoke IS offered
+   (endorsements are withdrawable by design), an expiry concern is added,
+   and nothing is tightened. Same immutable base, same pin discipline. ]
+[instance name=vendor-endorsement version="1"
+ of='sha2-256:06788943d6de1a05bab8deb98d60e63da515c5d3b1c1a959ff57bbcdaef01705'
+ [summary 'Professional endorsements of vendors — the attestation machine in a trust marketplace.']
+ [rename noun=attestation label='Endorsement']
+ [rename field=attestation/subject label='Vendor']
+ [rename field=attestation/author label='Endorser']
+ [rename verb=approve label='Countersign']
+ [rename verb=revoke label='Withdraw endorsement']
+ [add on=attestation [field name=expires type=instant label='Expires' doc='an endorsement is a dated professional claim']]
+ [add [verb name=renew effect=act scope=shared consequence=reversible
+        [summary 'Extend an endorsement before it lapses — a fresh accountable act.']
+        [intent [do :renew [id] [expires]]]
+        [writes attestation]]]
+ [select
+  [offer verb=attest]
+  [offer verb=approve]
+  [offer verb=revoke]
+  [offer verb=renew]
+  [offer verb=list-attestations]]]

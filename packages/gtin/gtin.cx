@@ -1,0 +1,90 @@
+[; gtin — GS1 GTIN check-digit codec: the kind=library reference package
+   (spec/02-working/xap_feature_distribution_market.md §1.1 reference case;
+   successor to the relocated wire-protocol codec, #727 — same shape:
+   check-digit/parse/render/valid). Plain CX code — no grammar, no
+   governance surface, no authority (N-DIST-2): it executes under the
+   requiring feature's grants. Failures are structured VALUES
+   ([gtin-error reason=…]) — a library owns no CXER error band. M5 commerce
+   domain: GTIN-8/12/13/14 are the barcode identities on order line items. ]
+
+[?lib 'cx-stdlib/strings' :as strings]
+[?lib 'cx-stdlib/bytes'   :as bytes]
+[?lib 'cx-stdlib/fp'      :as fp]
+
+[; all-digits — true iff $s is non-empty and every byte is ASCII 0-9. ]
+[?def all-digits pure [returns bool] ($s::string)
+  [?let [= $bs [$bytes:from-string-utf8 $s]]
+   [?let [= $n [$bytes:length $bs]]
+    [?if [= $n 0]
+     [then false]
+     [else [$fp:fold [$range 0 [- $n 1]] true
+             [?fn ($acc $i)
+               [?let [= $b [$bytes:at $bs $i]]
+                [and $acc [and [>= $b 48] [<= $b 57]]]]]]]]]]]
+
+[; check-digit — the GS1 mod-10 check digit for a body of 7/11/12/13 digits
+   (a GTIN-8/12/13/14 without its final digit). Weights 3 and 1 alternate
+   from the RIGHTMOST body digit (rightmost weighs 3). Returns the digit as
+   a one-character string, or a [gtin-error reason=…] value on a non-digit
+   or wrong-length body. ]
+[?def check-digit scope=public pure [returns any] ($body::string)
+  [?if [$not [all-digits $body]]
+   [then [?element "gtin-error" [?attr "reason" "non-digit"]]]
+   [else
+    [?let [= $bs [$bytes:from-string-utf8 $body]]
+     [?let [= $n [$bytes:length $bs]]
+      [?if [$not [or [= $n 7] [or [= $n 11] [or [= $n 12] [= $n 13]]]]]
+       [then [?element "gtin-error" [?attr "reason" "bad-length"]]]
+       [else
+        [?let [= $sum [$fp:fold [$range 1 $n] 0
+                        [?fn ($acc $i)
+                          [?let [= $d [- [$bytes:at $bs [- $n $i]] 48]]
+                           [?let [= $w [?if [= [% $i 2] 1] [then 3] [else 1]]]
+                            [+ $acc [* $d $w]]]]]]]
+         [$strings:slice "0123456789"
+           [% [- 10 [% $sum 10]] 10]
+           [+ [% [- 10 [% $sum 10]] 10] 1]]]]]]]]]]
+
+[; parse — a full GTIN string → [gtin kind=gtin-8|gtin-12|gtin-13|gtin-14
+   body=… check=…] when the check digit verifies, else a [gtin-error
+   reason=…] value (non-digit | bad-length | check-mismatch). ]
+[?def parse scope=public pure [returns element] ($s::string)
+  [?let [= $t [$strings:trim $s]]
+   [?if [$not [all-digits $t]]
+    [then [?element "gtin-error" [?attr "reason" "non-digit"]]]
+    [else
+     [?let [= $n [$strings:length $t]]
+      [?if [$not [or [= $n 8] [or [= $n 12] [or [= $n 13] [= $n 14]]]]]
+       [then [?element "gtin-error" [?attr "reason" "bad-length"]]]
+       [else
+        [?let [= $body  [$strings:slice $t 0 [- $n 1]]]
+         [?let [= $given [$strings:slice $t [- $n 1] $n]]
+          [?let [= $want [check-digit $body]]
+           [?if [= $want $given]
+            [then [?element "gtin"
+                    [?attr "kind" [$concat "gtin-" $n]]
+                    [?attr "body" $body]
+                    [?attr "check" $given]]]
+            [else [?element "gtin-error"
+                    [?attr "reason" "check-mismatch"]
+                    [?attr "expected" $want]
+                    [?attr "actual" $given]]]]]]]]]]]]]]
+
+[; render — a digit body (7/11/12/13 digits) → the full GTIN string with
+   its computed check digit appended, or the [gtin-error …] value
+   (validity re-checked up front so the concat leg only ever sees the
+   one-character success string). ]
+[?def render scope=public pure [returns any] ($body::string)
+  [?if [$not [all-digits $body]]
+   [then [?element "gtin-error" [?attr "reason" "non-digit"]]]
+   [else
+    [?let [= $n [$strings:length $body]]
+     [?if [$not [or [= $n 7] [or [= $n 11] [or [= $n 12] [= $n 13]]]]]
+      [then [?element "gtin-error" [?attr "reason" "bad-length"]]]
+      [else [$concat $body [check-digit $body]]]]]]]]
+
+[; valid — true iff the string parses as a check-clean GTIN. An error
+   value carries reason=; a clean parse carries none. ]
+[?def valid scope=public pure [returns bool] ($s::string)
+  [?let [= $r [parse $s]]
+   [= [$count $r/@reason] 0]]]

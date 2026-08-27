@@ -1,0 +1,18 @@
+[; market/catalog — discovery + publication surface of the market XAP
+   (distribution spec §5): publishes are committed intents, search is grammar
+   search, yank is attestation-issuing (§8 — never remote reach-in, N-DIST-1). ]
+[feature name=catalog
+ [nouns
+  [noun name=package [field name=name type=text] [field name=version type=text] [field name=manifest type=hash]]
+  [noun name=release [field name=alias type=text] [field name=manifest type=hash]]
+  [noun name=publisher [field name=did type=did]]
+  [noun name=attestation [field name=about type=hash] [field name=kind type=text]]
+  [noun name=bundle [field name=name type=text] [field name=version type=text]]]
+ [verbs
+  [verb name=publish effect=act scope=shared consequence=reversible [intent [do :publish]] [writes release]]
+  [verb name=yank effect=act scope=shared consequence=reversible [intent [do :yank]] [writes attestation]]
+  [verb name=search effect=observe [intent [do :search]] [reads package]]]
+ [requirements
+  [requirement kind=functional as=publisher traces=publish [want 'to publish a release'] [so 'consumers can discover it']]
+  [requirement kind=functional as=publisher traces=yank [want 'to mark a release as not-to-be-adopted'] [so 'consumers are warned without reach-in']]
+  [requirement kind=functional as=consumer traces=search [want 'to search grammars and listings'] [so 'I find features by what they let me say']]]]

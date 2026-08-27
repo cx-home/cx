@@ -1,0 +1,111 @@
+[; reference/shop/delayed-shipment — COMPOSITE feature.
+   The point of the reference app: a feature nobody authored the data for.
+   It joins `orders` and `shipments` over the shared `order-id` KEY and the
+   shared `time` FRAME, and derives an alert noun that exists in neither
+   base — the delay is a relationship between two features, so it can only
+   live above both.
+
+   W5 (derived-reference existence) is what makes the WIRING honest: the
+   names in `uses` and in the derived verb's `[constituents …]` must resolve
+   inside the composed grammar. Enable this feature without `orders` and the
+   gate refuses it rather than producing a grammar with a dangling join.
+
+   `[from …]` IS CHECKED TOO, as of #840. It is a list of qualified noun
+   references, one per string item, and W5 requires each to resolve to a noun
+   of the composed grammar — so `[from 'orders/order' 'shipments/shipment']`
+   below is load-bearing, not a note. Name a noun in a feature that is not
+   enabled and the gate refuses the composite.
+
+   THE JOIN IS COMPUTED BY A DECLARED DERIVER (#865, R8.1/§4.2) — never by
+   the engine, and never by a grammar verb. `[from …]` says what
+   `delay-alert` is derived FROM; the `detect` deriver (declared in
+   shop.xap.cxd's [principals], implemented by detect.cx) reads exactly
+   those sources and emits the noun's events as `actor: deriver:detect`.
+   No join algebra is committed: the join lives as ordinary CX inside the
+   deriver. The join this noun means is:
+
+     orders/order JOIN shipments/shipment
+       ON    orders/order.id = shipments/shipment.for-order
+       WHERE shipments/shipment.delivered-at IS ABSENT
+         AND orders/order.promised-at BEFORE now
+
+   W7 (derived-noun write exclusivity) keeps this the ONLY producer: a
+   grammar verb declaring [writes delay-alert] refuses at compose, and a
+   runtime whose grammar carries this noun refuses assembly (CXER4875)
+   until a deriver is bound.
+
+   N-COMPOSE-2 rides the derived verb. `escalate` invokes
+   `shipments/ship`'s neighbourhood of authority through its constituents,
+   so the PEP admits it only for a principal holding the CONSTITUENT
+   grants — granting the wrapper's own name conveys nothing. That is what
+   stops a composite from laundering authority. ]
+[feature name=delayed-shipment version="1" kind=composite
+ [summary 'Alerts when a shipment has not moved by the time the order was promised.']
+
+ [uses features='orders shipments']
+
+ [frames
+  [use frame=time]]
+ [keys
+  [key name=order-id via=for-order]]
+
+ [nouns
+  [noun name=delay-alert derived=true
+   [summary 'One order whose promise has passed with no delivery — derived, never sourced.']
+   [field name=for-order type=text]
+   [field name=customer type=text]
+   [field name=promised-at type=instant]
+   [field name=shipped-at type=instant]
+   [field name=carrier type=text]
+   [field name=overdue-by type=duration]
+   [from 'orders/order' 'shipments/shipment']]]
+
+ [verbs
+  [verb name=review effect=observe
+   [summary 'Look at the current delay alerts.']
+   [intent [do :review]]
+   [reads delay-alert]]
+  [verb name=escalate effect=act scope=shared consequence=irreversible
+   [summary 'Escalate a delayed shipment: re-dispatch and tell the customer. DERIVED — its authority is its constituents.']
+   [intent [do :escalate [for-order]]]
+   [reads delay-alert]
+   [writes shipment]
+   [constituents 'shipments/ship orders/cancel-order']]]
+
+ [; WHERE `raise-alert` WENT (#865, R8.2). This feature used to carry a
+    `raise-alert` act verb as the derived noun's hand-rolled producer — the
+    workaround the #840 close said stays until derivation was ruled. It was
+    ruled: a derived noun is DERIVER-RESERVED. The producer is now the
+    `detect` deriver declared in shop.xap.cxd and implemented by detect.cx,
+    committing as `actor: deriver:detect` through [$xap:derive]; W7 refuses
+    any grammar verb that tries to [writes] this noun again. A manual
+    override, if one is ever wanted, is a SOURCE noun the deriver folds
+    (listed in [from …]) — attributable input, never a write verb. ]
+ [; THE CROSS-FEATURE RULES LIVE HERE, not in the bases. `shipments` may not
+    say "ship only after orders/place-order" — that reaches outside its own
+    grammar and W4 refuses it (see the note in shipments.feature.cxd). This
+    feature MAY say it, because `uses` puts both bases inside its reach.
+    That is the composition model's whole shape: features stay independent,
+    and the relationships between them are themselves a feature. ]
+ [rules
+  [rule name=ship-after-place kind=ordering verb=shipments/ship after=orders/place-order
+   [statement 'A shipment can only be dispatched for an order that was placed.']]
+  [rule name=escalate-after-ship kind=ordering verb=delayed-shipment/escalate after=shipments/ship
+   [statement 'A delay can only be escalated after the shipment it concerns was dispatched.']]
+  [rule name=alert-needs-promise kind=validity
+   [statement 'A delay alert MUST NOT be raised for an order that carries no promised-at.']]]
+
+ [requirements
+  [requirement kind=functional as=fulfilment traces=review
+   [want 'to see which shipments are overdue against what we promised']
+   [so 'I can act before the customer has to ask']
+   [acceptance 'delay-alert is present in the composed grammar as a derived noun']]
+  [requirement kind=functional as=fulfilment traces=escalate
+   [want 'to escalate an overdue shipment']
+   [so 'the customer gets the goods or their money back']
+   [acceptance 'escalate derives effect=act, scope=shared and consequence=irreversible from its constituents']
+   [acceptance 'a principal granted only delayed-shipment/escalate is REFUSED — the denial names the constituent']
+   [acceptance 'a principal granted shipments/ship and orders/cancel-order is admitted']]
+  [requirement kind=domain level=must traces=escalate
+   [statement 'A composite MUST NOT weaken the effect signature it derives from its constituents.']
+   [acceptance 'declaring escalate as effect=observe is rejected as a W5-class violation']]]]

@@ -1,0 +1,179 @@
+[; reference/shop-web-client/serve.cx — the client's server.
+
+     CX_SHOP_PORT=8770 cx --allow-read --allow-write --allow-env \
+       --allow-net=127.0.0.1:8770 reference/shop-web-client/serve.cx
+
+   A SEPARATE application from the shop (N-CLIENT-2). It pulls the shop's
+   surface as data and materializes it into one medium — HTML — and the shop
+   knows nothing about it.
+
+   The views below are the only thing in this whole reference that is
+   presentation. Note what they are NOT: they do not decide what may be
+   said (the features do), who may say it (the PEP does), or what a term
+   means (rho does). A view turns a folded state slice into markup. That is
+   the entire job, and keeping it out of the XAP is what lets a CLI, a TUI,
+   an agent and this browser all drive the same surface.
+
+   The server is `[$xap:serve]`, which already speaks hypermedia: it splices
+   `{{surface:NAME}}` mounts into the shell, answers `GET /surface` with the
+   same surface as application/cx for agent parity, serves `/static/<f>`,
+   and routes `POST /intent/<verb>` through the cascade — refusing any verb
+   outside the declared vocabulary with 403 before anything commits.
+
+   TWO ENGINE LIMITS THIS CLIENT RAN INTO, both filed rather than worked
+   around, and both visible in the shape of this file:
+
+   1. A CONTROL RENDERS ONLY ONE INPUT. `xap_html_control` overwrites its
+      field for each `[input …]`, so only the LAST survives — a verb taking
+      more than one slot cannot be driven from the web medium. The controls
+      below therefore take one slot each, and the views default the rest
+      with `[?else]`.
+   2. THE INTENT ROUTE EMITS ANONYMOUSLY. It passes an empty opts map, so
+      there is no actor — and a journal-BOUND runtime refuses anonymous
+      appends (correctly: no anonymous entries in an audit log). So this
+      runtime is deliberately UNBOUND: the fold is real and in-process, but
+      nothing commits durably. Attributed commits over the web want
+      `[$xap:host]`, which carries auth; bare `serve` has no way to say who
+      is asking. ]
+
+[?lib 'cx-xap' :as xap]
+[?lib 'cx-stdlib/io' :as io]
+[?lib 'cx-stdlib/cx' :as cx]
+[?lib 'cx-stdlib/env' :as env]
+
+[; the join, as a def — see reference/shop/detect.cx for why it exists ]
+[?lib 'cx-stdlib/time' :as time]
+
+[?def delays-in scope=public pure [returns [sequence element]] ($orders $shipments $now)
+  [?for [in $o $orders]
+    [; past its promise — `[$time:is-before]`, not `[<]`: ordered comparison
+       is strict-numeric and refuses a date string outright, which is the
+       right refusal and the wrong operator here. ]
+    [where [$time:is-before [$concat '' $o/promised-at] $now]]
+    [; … and no shipment for it has been delivered. `[$count]` over the
+       matching-and-delivered set is the join: zero means still outstanding. ]
+    [where [= [$count [?for [in $s $shipments]
+                        [where [= [$concat '' $s/for-order] [$concat '' $o/id]]]
+                        [where [not [= [$concat '' $s/delivered-at] '']]]
+                        [yield $s]]] 0]]
+    [yield [alert [for-order [$concat '' $o/id]]
+                  [customer [$concat '' $o/customer]]
+                  [promised-at [$concat '' $o/promised-at]]]]]]
+
+
+[; ── the components, now WITH views ────────────────────────────────────
+   `cascade.cx` declared the same three components without views, because
+   it only needed the fold. A client needs the view too — same component,
+   the presentation half filled in. ]
+
+[$xap:component orders
+  {bind: "/order"
+   emits: ([do :place-order [id :string] [customer :string] [promised-at :string]],
+           [do :cancel-order [id :string]])
+   view: [?fn ($os)
+           [panel
+             [; [?else] on every field: a view folds over records that may be
+                partial, and it is not a view's job to refuse them. Here the
+                web form can only supply ONE slot (see the header note), so a
+                record posted from the browser genuinely has no id. ]
+             [list [?for [in $o $os]
+                     [yield [item [$concat [?else $o/id '(unassigned)'] ' — '
+                                           [?else $o/customer '(anonymous)']]]]]]
+             [control :place-order [label 'Place order'] [input :customer]]]]
+   working-panel: :none}]
+
+[$xap:component shipments
+  {bind: "/shipment"
+   emits: ([do :ship [id :string] [for-order :string] [carrier :string]
+                     [delivered-at :string]])
+   view: [?fn ($ss)
+           [panel
+             [list [?for [in $s $ss]
+                     [yield [item [$concat [?else $s/id '(unassigned)'] ' → '
+                                           [?else $s/for-order '?'] ' ('
+                                           [?else $s/carrier '?'] ')']]]]]
+             [control :ship [label 'Dispatch'] [input :for-order]]]]
+   working-panel: :none}]
+
+[$xap:component delayed-shipment
+  {bind: "/delay-alert"
+   emits: ([do :escalate [for-order :string]])
+   view: [?fn ($as)
+           [panel
+             [list [?for [in $a $as]
+                     [yield [item [$concat [?else $a/for-order '?'] ' — '
+                                           [?else $a/customer '?']
+                                           ' promised ' [?else $a/promised-at '?']]]]]]
+             [; the affordance is rendered for everyone; the PEP decides.
+                An expediter at dial=floor sees this button and is refused
+                by the constituent check when it posts. ]
+             [control :escalate [label 'Escalate']
+               [input :for-order]]]]
+   working-panel: :none}]
+
+[?let
+  [= $dir  [?else [$env:var 'CX_SHOP_DIR'] 'reference/shop']]
+  [= $port [?else [$env:var 'CX_SHOP_PORT'] '8770']]
+  [= $shell 'reference/shop-web-client/shell']
+
+  [; compose the shop's grammar — the client pins the SAME grammar the
+     runtime enforces, so a control it renders and a verb the PEP checks
+     cannot drift apart. ]
+  [; `!` guards the BINDING — an err navigates to the EMPTY node-set
+     (code.md §6.2), so an unguarded read would serve a surface composed
+     from no features at all. ]
+  [= $od [$cx:parse [$io:read-file [$concat $dir '/orders.feature.cxd']]!]]
+  [= $sd [$cx:parse [$io:read-file [$concat $dir '/shipments.feature.cxd']]!]]
+  [= $dd [$cx:parse [$io:read-file [$concat $dir '/delayed-shipment.feature.cxd']]!]]
+  [= $o  [$first [?for [in $n $od//feature] [yield $n]]]]
+  [= $s  [$first [?for [in $n $sd//feature] [yield $n]]]]
+  [= $d  [$first [?for [in $n $dd//feature] [yield $n]]]]
+  [= $g  [$xap:compose $o $s $d]]
+
+  [; the deriver binding is part of run ASSEMBLY (#865, §4.2): a grammar
+     carrying a derived noun refuses to assemble until its producer is
+     bound, and the declared reads must sit inside the noun's [from …]. ]
+  [= $rt [$xap:run {tenant: "shop" grammar: $g
+                    derivers: ({name: "detect"
+                                produces: "delayed-shipment/delay-alert"
+                                reads: ("orders/order", "shipments/shipment")})}]]
+
+  [; ── seed ────────────────────────────────────────────────────────────
+     o-1 was promised in the past and its shipment never delivered — that is
+     the delay. o-2 is promised far out, so it is fine. o-3 was promised in
+     the past but DID deliver, so it is fine too. Three orders, exactly one
+     delay: enough for the join to be doing real work rather than echoing. ]
+  [= $_1 [$xap:emit $rt [do :place-order [id "o-1"] [customer "ada"]
+                                         [promised-at "2026-08-01"]]
+                        {actor: "principal:fulfilment"}]]
+  [= $_2 [$xap:emit $rt [do :place-order [id "o-2"] [customer "grace"]
+                                         [promised-at "2099-01-01"]]
+                        {actor: "principal:fulfilment"}]]
+  [= $_3 [$xap:emit $rt [do :place-order [id "o-3"] [customer "linus"]
+                                         [promised-at "2026-08-02"]]
+                        {actor: "principal:fulfilment"}]]
+  [= $_4 [$xap:emit $rt [do :ship [id "s-1"] [for-order "o-1"] [carrier "acme"]
+                                  [delivered-at ""]]
+                        {actor: "principal:fulfilment"}]]
+  [= $_5 [$xap:emit $rt [do :ship [id "s-3"] [for-order "o-3"] [carrier "acme"]
+                                  [delivered-at "2026-08-03"]]
+                        {actor: "principal:fulfilment"}]]
+
+  [; ── the deriver runs the join `[from …]` describes (#865, §4.2) ───────
+     detect is the derived noun's declared producer. Each delay the join
+     finds is committed through [$xap:derive] as actor deriver:detect —
+     the ordinary append/fold path, attributable on the journal, and the
+     only way anything reaches /delay-alert (W7 retired the write verb). ]
+  [= $alerts [$delays-in [$xap:state $rt "/order"] [$xap:state $rt "/shipment"] "2026-08-17"]]
+  [= $_6 [?for [in $a $alerts]
+           [yield [$xap:derive $rt {deriver: "detect"
+                                    noun: "delayed-shipment/delay-alert"
+                                    record: [delay-alert
+                                              [for-order [$concat '' $a/for-order]]
+                                              [customer [$concat '' $a/customer]]
+                                              [promised-at [$concat '' $a/promised-at]]]}]]]]
+
+  [$xap:serve [$concat 'http://127.0.0.1:' $port]
+    {runtime: $rt
+     tenant: "shop"
+     shell: $shell}]]

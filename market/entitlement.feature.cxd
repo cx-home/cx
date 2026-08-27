@@ -1,0 +1,15 @@
+[; market/entitlement — license issuance/verification surface of the market
+   XAP (distribution spec §5): a license is an attenuating VC; issuance and
+   revocation are committed intents (auditable), verification is offline. ]
+[feature name=entitlement
+ [nouns
+  [noun name=license [field name=vc-id type=text] [field name=package type=text] [field name=holder type=did]]
+  [noun name=grant-record [field name=license type=text] [field name=at type=instant]]]
+ [verbs
+  [verb name=issue-license effect=act scope=shared consequence=reversible [intent [do :issue-license]] [writes license]]
+  [verb name=revoke-license effect=act scope=shared consequence=reversible [intent [do :revoke-license]] [writes license]]
+  [verb name=verify effect=observe [intent [do :verify]] [reads license]]]
+ [requirements
+  [requirement kind=functional as=market-operator traces=issue-license [want 'to issue an entitlement VC'] [so 'a purchase becomes a verifiable right to enable']]
+  [requirement kind=functional as=market-operator traces=revoke-license [want 'to issue a revocation'] [so 'reversals are contractual and journaled, never mechanical seizure']]
+  [requirement kind=functional as=consumer traces=verify [want 'to verify an entitlement offline'] [so 'a vessel mid-passage keeps its rights']]]]

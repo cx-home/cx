@@ -1,0 +1,46 @@
+[; reference/shop/detect.cx — the DECLARED DERIVER (#865, R8.1/§4.2).
+
+   `delayed-shipment.feature.cxd` declares
+
+     [from 'orders/order' 'shipments/shipment']
+
+   which since #840 IS checked (W5), and which since #865 is also the READ
+   ENVELOPE of this file: shop.xap.cxd binds `detect` as the derived noun's
+   one producer, and run assembly refuses a deriver whose declared reads
+   escape that [from …] set. The join itself stays ordinary CX — no join
+   algebra is committed by the spec:
+
+     ON    orders/order.id = shipments/shipment.for-order
+     WHERE shipments/shipment.delivered-at IS ABSENT
+       AND orders/order.promised-at BEFORE now
+
+   `delays-in` below computes it over the folded state of the two bases —
+   what a real deployment runs on a timer or from a change feed — and the
+   host records each result through
+
+     [$xap:derive $rt {deriver: "detect",
+                       noun: "delayed-shipment/delay-alert",
+                       record: [delay-alert for-order=… customer=… promised-at=…]}]
+
+   committing as `actor: deriver:detect` on the journal. This file was
+   born as the #840 workaround feeding a hand-rolled `raise-alert` verb;
+   #865 promoted it to the declared role and W7 retired the verb — the
+   derivation is now the noun's ONLY producer, and it is attributable. ]
+
+[?lib 'cx-stdlib/time' :as time]
+
+[?def delays-in scope=public pure [returns [sequence element]] ($orders $shipments $now)
+  [?for [in $o $orders]
+    [; past its promise — `[$time:is-before]`, not `[<]`: ordered comparison
+       is strict-numeric and refuses a date string outright, which is the
+       right refusal and the wrong operator here. ]
+    [where [$time:is-before [$concat '' $o/promised-at] $now]]
+    [; … and no shipment for it has been delivered. `[$count]` over the
+       matching-and-delivered set is the join: zero means still outstanding. ]
+    [where [= [$count [?for [in $s $shipments]
+                        [where [= [$concat '' $s/for-order] [$concat '' $o/id]]]
+                        [where [not [= [$concat '' $s/delivered-at] '']]]
+                        [yield $s]]] 0]]
+    [yield [alert [for-order [$concat '' $o/id]]
+                  [customer [$concat '' $o/customer]]
+                  [promised-at [$concat '' $o/promised-at]]]]]]

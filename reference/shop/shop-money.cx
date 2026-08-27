@@ -1,0 +1,48 @@
+[; reference/shop/shop-money — the kind=library package.
+
+   A library holds CODE and no authority. The distribution spec is explicit
+   (N-DIST-2): a `kind=library` package MUST NOT declare `[needs]`, and
+   installing one issues no grants — enabling is granting, and there is
+   nothing here to enable. It is exactly what it looks like: shared
+   functions, pinned by content hash into the closure of whatever requires
+   them.
+
+   The shop's features format money in more than one place, so it lives
+   here rather than being copied into each. `orders` requires it; the
+   install pipeline resolves the pin transitively and records it under
+   [libraries] in the deployment document. ]
+
+[; Both defs are EXERCISED by the packaging test, not merely published.
+   They were not, at first: the original `format-money` called
+   `[$format:decimal …]`, which does not exist — `cx-stdlib/format` offers
+   canonical / pretty / compact / diff-friendly and no such verb. It sailed
+   through seal + publish + install anyway, because the exports gate checks
+   that each exported def is PRESENT in the packaged code, never that the
+   code runs. A library can therefore be published broken. Worth knowing,
+   and worth a test that calls the things it ships. ]
+
+[; MONEY IS A DECIMAL, END TO END (#1017). `19.99` is not a float — a bare
+   fixed-point fraction autotypes as `decimal` (cxdm.md, the 2b ruling), and
+   floats spell themselves with an exponent (`1.999e1`), so the two kinds are
+   telling you apart on sight. `total-of` declares `[returns decimal]` and
+   every step below keeps it: `[*]` folds the exact family with digit
+   arithmetic, and so does `[$sum]`. Nothing here rounds, and nothing bridges
+   to f64 — `[cast]` is the only decimal↔float bridge there is.
+
+   That invariant was BROKEN once, silently, and it is worth knowing how.
+   `[$sum]` classified its operands by the shape of their runtime payload
+   instead of by their kind; a decimal carries its base-10 image as a string,
+   so every decimal fell through to the numeric-string arm and got f64-parsed.
+   This library kept declaring `decimal` and started returning `4.448e1`.
+
+   Two things let it pass. The declared `[returns]` contract is only checked
+   under `--strict` (dev-strict / prod-silent, code.md §12.7.6), and no lane
+   ran this reference strictly. And a float total LOOKED fine until float
+   images became exponent-form — the kind was wrong long before it was
+   visible. Declare the kind, and pin the kind: an image is a hint. ]
+
+[?def format-money scope=public pure [returns string] ($amount::decimal $currency::string)
+  [$concat $currency ' ' [$concat '' $amount]]]
+
+[?def total-of scope=public pure [returns decimal] ($lines)
+  [$sum [?for [in $l $lines] [yield [* $l@qty $l@unit]]]]]

@@ -253,7 +253,13 @@ fn test_headline_rebless_scope() {
 		}
 	}
 
-	out := os.join_path(conformance_dir2(), '..', '_gate_evidence', 'cxparse_headline_rebless_scope.md')
+	// _gate_evidence/ is deliberately unpublished (allowlist), so a fresh
+	// PUBLIC clone has no such directory and this write was the suite's one
+	// public-clone panic (v0.17.0 §11 catch, version-literal-ok). The report
+	// is evidence, not a gate: create the dir wherever the test runs.
+	ev_dir := os.join_path(conformance_dir2(), '..', '_gate_evidence')
+	os.mkdir_all(ev_dir) or { panic('cannot create evidence dir: ${err}') }
+	out := os.join_path(ev_dir, 'cxparse_headline_rebless_scope.md')
 	os.write_file(out, r.join('\n')) or { panic('cannot write scope report: ${err}') }
 	assert true
 }

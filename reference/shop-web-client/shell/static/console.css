@@ -1,0 +1,14 @@
+body{font:15px/1.5 system-ui,sans-serif;margin:0;background:#f7f7f8;color:#111}
+header,footer{padding:1rem 1.5rem}
+header h1{margin:0;font-size:1.25rem}
+.who{margin:.25rem 0 0;color:#555;font-size:.9rem}
+.console{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;padding:0 1.5rem}
+.pane{background:#fff;border:1px solid #e3e3e6;border-radius:8px;padding:1rem}
+.pane h2{margin:0 0 .5rem;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:#666}
+.pane.alerts{border-color:#e0b4b4}
+ul{margin:0;padding-left:1.1rem}
+form{margin-top:.75rem;display:flex;gap:.4rem;flex-wrap:wrap}
+input{border:1px solid #ccc;border-radius:4px;padding:.3rem .4rem;font:inherit;min-width:6rem}
+button{border:0;border-radius:4px;padding:.35rem .7rem;background:#2f6feb;color:#fff;font:inherit;cursor:pointer}
+footer p{color:#666;font-size:.85rem}
+code{background:#eceef1;padding:.1rem .3rem;border-radius:3px}

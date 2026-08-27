@@ -1,0 +1,67 @@
+[; reference/shop-web-client/client.cxd — the CLIENT SPEC, the fourth
+   document kind alongside feature / xap / surface.
+
+   THIS IS A SEPARATE PROJECT, and the separation is the point (N-CLIENT-2,
+   xap.md §16.1). A XAP never embeds its renderer: it exposes the
+   medium-agnostic surface as DATA, and each client that materializes that
+   surface into a medium is its own application with its own spec. That is
+   why this directory sits beside `reference/shop/` rather than inside it —
+   the same surface data drives a CLI, a TUI, an agent, and this web client
+   with no change to the shop at all.
+
+   It also keeps agent-parity honest. The expediter in `shop.xap.cxd`
+   attaches to the SAME surface a person does, over the same shell. It is
+   not a side channel with its own privileges — what it may do is decided by
+   the dial, not by giving it a different door. If the renderer lived inside
+   the XAP, one medium would be baked in and that parity would be gone.
+
+   WEB CLIENT DEFAULT = HTMX, minimal-JS-by-exception. The server renders
+   HTML from the surface data; the browser is a generic hypermedia client.
+   Live cadence is hypermedia-native — `hx-trigger="every Ns"` per pane —
+   and no JavaScript is added without an explicit, named, contained reason.
+   This client has none.
+
+   THE SCHEMA. `client.cxd ⊢ client.cxs` (authoring process §3.1;
+   distribution spec §1 lists it as the client kind's spec layer) —
+   authored under #846 at `spec/03-approved/xap/xap_schemas/client.cxs`,
+   and this document validates against it like every other layer:
+
+     cx validate --schema=spec/03-approved/xap/xap_schemas/client.cxs \
+       reference/shop-web-client/client.cxd
+
+   The `kind=client` install gate remains structural (parses + `[client …]`
+   root) until the schema search path graduates the schemas physically into
+   the toolchain — authoring-process §7 tracks that. ]
+[client name=shop-web version="1"
+ [summary 'A hypermedia client for the shop console: server-rendered CX → HTML, no JavaScript.']
+
+ [; which XAP this attaches to, and over which surface. The client does not
+    get to choose what exists — it materializes what the surface declares. ]
+ [attaches xap=shop surface=shop-console]
+
+ [medium name=screen kind=visual
+  doc='This client materializes the screen medium only. The surface also declares audio; a speech client would be its own project, attaching to the same surface.']
+
+ [shell dir='shell'
+  doc='The document shell. Each {{surface:NAME}} mount is spliced by the server; the panels the surface declares land inside it.']
+
+ [; per-pane live cadence, hypermedia-native. The features declare their own
+    simulation cadence (default-interval-ms); this is the client's polling
+    counterpart for the panes that want it. ]
+ [panes
+  [pane panel=order-book refresh='every 5s']
+  [pane panel=shipment-board refresh='every 5s']
+  [pane panel=delay-queue refresh='every 2s'
+   doc='The alert pane polls fastest — it is the one the surface marks foreground.']]
+
+ [; controls map to intents the FEATURES declared. The client never invents
+    one: POST /intent/<verb> refuses any verb outside the runtime's declared
+    emits vocabulary with a 403. ]
+ [controls
+  [control intent=orders/place-order as=form]
+  [control intent=shipments/ship as=button]
+  [control intent=delayed-shipment/escalate as=button
+   doc='Rendered for everyone; ADMITTED only for a principal holding the constituent grants. The client shows the affordance, the PEP decides — a button is not authority.']]
+
+ [javascript policy=none
+  doc='Minimal-JS-by-exception, and this client takes no exception. Every interaction here is expressible as hypermedia.']]

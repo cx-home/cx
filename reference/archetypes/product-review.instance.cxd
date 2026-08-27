@@ -1,0 +1,27 @@
+[; reference/archetypes/product-review — INSTANCE binding #1 (#866, §4.3).
+
+   A shop derives its product-review feature from the attestation archetype:
+   meaning-in-context is the tenant's (RENAME presentation), a retail concern
+   is added (verified-buyer), approval is made irreversible (TIGHTEN — a
+   published review is a publication), and revoke is deliberately not
+   offered to shoppers (SELECT, with the why on the record). Nothing
+   inherited is repurposed or loosened — the gate holds that, not this
+   comment. of= pins the archetype's exact Tier-1 address: edit the
+   archetype and this binding refuses until it is re-blessed deliberately. ]
+[instance name=product-review version="1"
+ of='sha2-256:06788943d6de1a05bab8deb98d60e63da515c5d3b1c1a959ff57bbcdaef01705'
+ [summary 'Customer reviews of products — the attestation machine wearing retail words.']
+ [rename noun=attestation label='Review' doc='One customer review of one product.']
+ [rename field=attestation/subject label='Product']
+ [rename field=attestation/author label='Reviewer']
+ [rename field=attestation/statement label='Review text']
+ [rename verb=attest label='Write a review']
+ [add on=attestation [field name=verified-buyer type=bool label='Verified buyer' doc='the reviewer bought the thing']]
+ [add [rule name=review-needs-purchase kind=validity
+        [statement 'A verified-buyer review MUST cite an order that contains the product.']]]
+ [tighten verb=approve consequence=irreversible]
+ [select
+  [offer verb=attest]
+  [offer verb=approve]
+  [offer verb=list-attestations]
+  [not-offered verb=revoke why='Published reviews are withdrawn by support under the takedown policy, never by a storefront control.']]]

@@ -1,0 +1,81 @@
+[; reference/shop/orders — BASE feature.
+   One of the two bases the composite `delayed-shipment` joins over. It
+   registers the `order-id` KEY and the `time` FRAME; `shipments` registers
+   onto the same key with the same type, which is what W2 checks.
+
+   It also owns a bare verb `highlight`, deliberately shared with
+   `shipments/highlight` — see the ambiguity note in shipments.feature.cxd. ]
+[feature name=orders version="1"
+ [summary 'Orders placed by a customer, and their lines.']
+
+ [frames
+  [use frame=time via=placed-at]]
+ [keys
+  [key name=order-id via=id]]
+
+ [nouns
+  [noun name=order
+   [summary 'One placed order.']
+   [field name=id type=text doc='the order identifier — the shared key']
+   [field name=customer type=text]
+   [field name=placed-at type=instant doc='the time-frame coordinate']
+   [field name=promised-at type=instant doc='when the customer was told it would arrive']
+   [field name=total type=decimal]
+   [; §4.4/R8.9 — the DECLARED relationship: `order-id` on line was a
+      naming convention only, which left `line` edge-less and this feature
+      two components under the cohesion gate (the disclosed consequence,
+      ruled with eyes open). Sub-noun typing is the model fix. ]
+   [field name=lines type=line repeats=true doc='the order lines — this order owns them']]
+  [noun name=line
+   [field name=order-id type=text]
+   [field name=sku type=text]
+   [field name=qty type=int]]]
+
+ [verbs
+  [verb name=place-order effect=act scope=shared consequence=reversible
+   [summary 'Place an order. The committed intent is the order of record.']
+   [intent [do :place-order [id] [customer] [promised-at]]]
+   [writes order]]
+  [verb name=cancel-order effect=act scope=shared consequence=reversible
+   [intent [do :cancel-order [id]]]
+   [writes order]]
+  [verb name=list-orders effect=observe
+   [intent [do :list-orders]]
+   [reads order]]
+  [verb name=highlight effect=observe
+   [summary 'Draw attention to orders on the surface. Shares its bare term with shipments/highlight — the deliberate ambiguity pair.']
+   [intent [do :highlight]]
+   [reads order]]]
+
+ [rules
+  [rule name=promise-after-placement kind=validity
+   [statement 'An order MUST NOT be promised for a time before it was placed.']]
+  [rule name=cancel-after-place kind=ordering verb=orders/cancel-order after=orders/place-order
+   [statement 'An order can only be cancelled after it has been placed.']]]
+
+ [governance
+  [grant verb=place-order to=customer]
+  [grant verb=cancel-order to=customer]]
+
+ [requirements
+  [requirement kind=functional as=customer traces=place-order
+   [want 'to place an order']
+   [so 'the shop owes me goods against a record we both hold']
+   [acceptance 'a placed order appears in [$xap:state] under /order']
+   [acceptance 'the commit is a journal entry carrying the qualified intent orders/place-order']]
+  [requirement kind=functional as=customer traces=cancel-order
+   [want 'to cancel an order I placed']
+   [so 'I am not billed for something I no longer want']
+   [acceptance 'cancel-order before place-order is refused by the ordering rule']]
+  [requirement kind=functional as=staff traces=list-orders
+   [want 'to see the orders'] [so 'I can work them']
+   [acceptance 'list-orders reads the order noun and commits nothing']]]
+
+ [source
+  [gateway name=shop-api kind=api priority=1]
+  [reading field=placed-at failover=on-fail
+   [sensor name=api-clock priority=1 via=shop-api]]]
+
+ [simulation default-interval-ms=2000 enabled="true"
+  [param name=order-rate type=int default="3" min="0" max="100"
+   doc='simulated orders per interval']]]

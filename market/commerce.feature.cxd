@@ -1,0 +1,24 @@
+[; market/commerce — settlement seam of the market XAP (distribution spec
+   §5.2): order → settlement → issue-license is a journaled choreography;
+   payment PROVIDERS are source adapters (gateways) feeding the settlement
+   noun — swapping a rail touches no grammar above the seam, and the consuming
+   runtime never sees payment data at all. ]
+[feature name=commerce
+ [uses features=entitlement]
+ [nouns
+  [noun name=order [field name=id type=text] [field name=package type=text] [field name=buyer type=did]]
+  [noun name=settlement [field name=order type=text] [field name=rail type=text] [field name=amount type=text]]
+  [noun name=price [field name=package type=text] [field name=amount type=text]]]
+ [verbs
+  [verb name=quote effect=observe [intent [do :quote]] [reads price]]
+  [verb name=place-order effect=act scope=shared consequence=reversible [intent [do :place-order]] [writes order]]
+  [verb name=record-settlement effect=act scope=shared consequence=reversible [intent [do :record-settlement]] [writes settlement]]
+  [verb name=fulfil effect=act scope=shared consequence=reversible
+   [intent [do :fulfil]]
+   [constituents 'entitlement/issue-license']
+   [reads settlement]]]
+ [requirements
+  [requirement kind=functional as=buyer traces=quote [want 'to see a price'] [so 'I can decide']]
+  [requirement kind=functional as=buyer traces=place-order [want 'to place an order'] [so 'purchase intent is committed']]
+  [requirement kind=functional as=payment-gateway traces=record-settlement [want 'to record a settlement'] [so 'payment facts are journaled evidence']]
+  [requirement kind=functional as=market-operator traces=fulfil [want 'to fulfil a settled order'] [so 'settlement turns into a license, atomically attributable']]]]

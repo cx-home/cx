@@ -1,0 +1,69 @@
+<!doctype html>
+<!--
+  The document shell. Each surface mount below names a registered component;
+  the server splices that component's rendered view in its place, and records
+  the mount's tag and id so htmx swaps land back in the same box.
+
+  (The mount syntax is deliberately NOT spelled out in this comment: the
+  splicer scans the whole file, so writing a placeholder here — even inside
+  an HTML comment — makes it try to resolve a component by that name and
+  refuse with E_XAP_SHELL_SURFACE_UNKNOWN. Refusing loudly is right; it just
+  also applies to prose about itself.)
+
+  This file is the client's ONLY presentation asset. There is no JavaScript
+  of our own and no build step — htmx is one script tag, the server sends
+  HTML, and the browser is a generic hypermedia client. Live cadence is per
+  pane, declared in client.cxd and expressed here as hx-trigger.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>shop console</title>
+  <!-- htmx 1.9.10, VENDORED (static/PROVENANCE.md carries source + sha256).
+       Served off /static, so the page swaps with no network at all. The
+       shipped demo and `cx xap init --client` use the CDN tag instead — a
+       generated project has no vendored copy to point at. -->
+  <script src="/static/htmx.min.js"></script>
+  <link rel="stylesheet" href="/static/console.css">
+</head>
+<body>
+  <header>
+    <h1>shop console</h1>
+    <p class="who">
+      Signed in as <strong>fulfilment</strong>.
+      The <em>expediter</em> agent attaches to this same surface — what it may
+      do is decided by its dial, not by a different door.
+    </p>
+  </header>
+
+  <main class="console">
+    <section class="pane orders" hx-get="/order" hx-trigger="every 5s" hx-swap="outerHTML">
+      <h2>order book</h2>
+      <div id="orders-mount">{{surface:orders}}</div>
+    </section>
+
+    <section class="pane shipments" hx-get="/shipment" hx-trigger="every 5s" hx-swap="outerHTML">
+      <h2>shipment board</h2>
+      <div id="shipments-mount">{{surface:shipments}}</div>
+    </section>
+
+    <!--
+      The alert pane polls fastest: the surface marks delay-queue foreground,
+      and this is the hypermedia expression of that priority.
+    -->
+    <section class="pane alerts" hx-get="/delay-alert" hx-trigger="every 2s" hx-swap="outerHTML">
+      <h2>delay queue</h2>
+      <div id="delay-mount">{{surface:delayed-shipment}}</div>
+    </section>
+  </main>
+
+  <footer>
+    <p>
+      Every button here posts to <code>/intent/&lt;verb&gt;</code>. A verb outside
+      the runtime's declared vocabulary is refused with 403 before anything
+      commits — the client renders affordances, the PEP decides authority.
+    </p>
+  </footer>
+</body>
+</html>

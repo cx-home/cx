@@ -1,0 +1,92 @@
+[; reference/shop/shipments — BASE feature.
+   The second base. It registers onto the SAME `order-id` key as `orders`,
+   with the same `text` type — that agreement is exactly what W2 (key
+   compatibility) checks, and it is what makes the composite's join legal.
+   It registers the same `time` frame via its own field.
+
+   THE DELIBERATE AMBIGUITY PAIR. `shipments/highlight` and
+   `orders/highlight` share the bare term `highlight`. Composing both is
+   legal — W1 only requires FEATURE names to be distinct, and qualified
+   names keep the two verbs apart (§2). What the pair buys is a live
+   demonstration of rho: `[do highlight]` with both features enabled is
+   NOT a guess, it is an `[!ambiguous-verb]` VALUE listing both candidates,
+   which the composer must turn into a prompt (§5 step 4). It is also the
+   N-COMPOSE-1 witness: enabling `shipments` after `orders` cannot make an
+   utterance that meant `orders/highlight` silently mean something else. ]
+[feature name=shipments version="1"
+ [summary 'Shipments dispatched against orders, and their tracking state.']
+
+ [frames
+  [use frame=time via=shipped-at]]
+ [keys
+  [key name=order-id via=for-order]]
+
+ [nouns
+  [noun name=shipment
+   [summary 'One dispatch against one order.']
+   [field name=id type=text]
+   [field name=for-order type=text doc='the shared key — same name and type as orders/order.id']
+   [field name=carrier type=text]
+   [field name=shipped-at type=instant doc='the time-frame coordinate']
+   [field name=delivered-at type=instant]
+   [field name=state type=text]]]
+
+ [verbs
+  [verb name=ship effect=act scope=shared consequence=irreversible
+   [summary 'Dispatch a shipment. Irreversible: goods leave the building.']
+   [intent [do :ship [id] [for-order] [carrier] [delivered-at]]]
+   [writes shipment]]
+  [verb name=track effect=observe
+   [intent [do :track]]
+   [reads shipment]]
+  [verb name=highlight effect=observe
+   [summary 'Draw attention to shipments. The other half of the ambiguity pair — see the header.']
+   [intent [do :highlight]]
+   [reads shipment]]]
+
+ [; NO CROSS-FEATURE RULES HERE, and the reason is worth reading.
+    "A shipment can only be dispatched for an order that was placed" is a
+    true statement about this domain, and it does NOT belong in this file.
+    A base feature is independent: it may not name another feature's verbs,
+    because doing so would mean `shipments` could not be enabled without
+    `orders` — the coupling the composition model exists to prevent.
+
+    The gate enforces it. Writing
+      [rule name=ship-after-place kind=ordering verb=shipments/ship
+            after=orders/place-order …]
+    here is refused by W4 with
+      [conflict code=:w4 at='shipments/ship-after-place'
+       detail='rule target "orders/place-order" reaches outside
+               shipments's grammar and its uses set']
+    A relationship between two features lives ABOVE both of them, in a
+    composite that declares `uses` — see delayed-shipment.feature.cxd,
+    which carries exactly this rule and passes. ]
+ [rules
+  [rule name=delivered-after-shipped kind=validity
+   [statement 'A shipment MUST NOT be delivered before it was shipped.']]]
+
+ [governance
+  [grant verb=ship to=fulfilment]]
+
+ [requirements
+  [requirement kind=functional as=fulfilment traces=ship
+   [want 'to dispatch a shipment against an order']
+   [so 'the customer receives the goods']
+   [acceptance 'ship is irreversible and commits a qualified shipments/ship intent']]
+  [requirement kind=functional as=customer traces=track
+   [want 'to track my shipment'] [so 'I know where it is']
+   [acceptance 'track reads the shipment noun and commits nothing']]
+  [requirement kind=domain level=must traces=ship
+   [statement 'A shipment MUST reference an order that exists.']
+   [acceptance 'the dependency rule resolves against the composed grammar']]]
+
+ [source
+  [gateway name=carrier-a kind=vendor-a priority=1]
+  [gateway name=carrier-b kind=vendor-b priority=2]
+  [reading field=state failover=on-stale
+   [sensor name=carrier-a-events priority=1 via=carrier-a]
+   [sensor name=carrier-b-poll priority=2 via=carrier-b]]]
+
+ [simulation default-interval-ms=2000 enabled="true"
+  [param name=late-fraction type=decimal default="0.2" min="0" max="1"
+   doc='fraction of simulated shipments that run late']]]

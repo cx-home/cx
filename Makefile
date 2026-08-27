@@ -47,23 +47,45 @@ build-dev: v-toolchain
 ##              `-cc cc`: V's bundled tcc cannot compile the patched builtin
 ##              (C11 atomics / @[thread_local]) — same flags the private
 ##              test gate uses. `-gc e` is cx's shipped memory model.
-# A handful of real-socket lanes are load-flaky ONLY under full -j
-# parallelism (ephemeral-port/deadline contention). On a suite failure,
-# those enumerated lanes get one serial retry — any other failure, or a
-# serial failure here, still fails the build.
+# A handful of lanes are load-flaky ONLY under full -j parallelism:
+# real-socket contention (ephemeral-port/deadline races), plus the
+# characterized supervise note/terminal load race in code_eval_fixtures.
+# On a suite failure, the retry re-runs exactly the lanes that FAILED,
+# and only when every one of them is on this roster — any off-roster
+# failure, or a failure on the serial re-run, fails the build.
+# (The previous recipe re-ran the roster REGARDLESS of what failed and
+# adopted the retry's exit status, so a non-roster failure was masked
+# whenever the four roster lanes passed quietly — measured doing exactly
+# that on three real failures. The comment above it claimed otherwise.)
 SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                 vcx/tests/net_dtls_test.v \
                 vcx/tests/net_real_socket_test.v \
-                vcx/tests/a2a_real_test.v
+                vcx/tests/a2a_real_test.v \
+                vcx/tests/http_h2_serve_test.v \
+                vcx/tests/code_eval_fixtures_test.v
 
 # `-d cx_db_sqlite -d cx_db_redis` — the default build carries these DB
 # engines (see vcx/Makefile CX_ENGINES), so the suite compiles with the same
 # gates: the engine tests and the engine-dependent conformance fixtures
 # (conformance/stdlib/db.cxd) run against what `make build` actually ships.
 test: build-dev conform
-	@$(V) -cc cc -gc e -d cx_db_sqlite -d cx_db_redis test vcx/tests/ || { \
-	  echo "── suite failed under -j; serial retry of the known real-socket contention lanes ──"; \
-	  $(V) -cc cc -gc e -d cx_db_sqlite -d cx_db_redis test $(SERIAL_RETRY); }
+	@log=$$(mktemp -t cx-test-log.XXXXXX); \
+	( $(V) -cc cc -gc e -d cx_db_sqlite -d cx_db_redis test vcx/tests/ 2>&1; echo $$? > "$$log.rc" ) | tee "$$log"; \
+	rc=$$(cat "$$log.rc"); rm -f "$$log.rc"; \
+	if [ "$$rc" = "0" ]; then rm -f "$$log"; exit 0; fi; \
+	failed=$$(grep -E '^FAIL ' "$$log" | grep -oE '[^ ]*vcx/tests/[a-z0-9_]+_test\.v' | sed 's|.*/vcx/tests/|vcx/tests/|' | sort -u); \
+	rm -f "$$log"; \
+	if [ -z "$$failed" ]; then \
+	  echo "── suite failed with no FAIL line (compile error or crash) — no retry applies ──"; exit 1; \
+	fi; \
+	for f in $$failed; do \
+	  case " $(SERIAL_RETRY) " in \
+	    *" $$f "*) ;; \
+	    *) echo "── $$f FAILED and is not a known load-flaky lane — the failure stands ──"; exit 1 ;; \
+	  esac; \
+	done; \
+	echo "── suite failed under -j; serial retry of the FAILED known-flaky lane(s): $$failed ──"; \
+	$(V) -cc cc -gc e -d cx_db_sqlite -d cx_db_redis test $$failed
 
 ## conform      Run the conformance corpus against the built cx binary.
 conform: build

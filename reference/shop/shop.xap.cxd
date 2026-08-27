@@ -1,0 +1,54 @@
+[; reference/shop/shop.xap — the WIRING layer.
+   A `*.xap.cxd` does not declare grammar; the features already did. It
+   enables them into one runtime, names who has authority, declares the
+   agent and its dial, and says how the thing is packaged. Per-verb grants
+   live in the features — this file is the layer above them.
+
+   Enabling all three is what makes `[do highlight]` ambiguous. That is the
+   intended state of this reference app, not an oversight: it is the
+   surface on which the disambiguation prompt is demonstrated. ]
+[xap name=shop version="1"
+ [summary 'A small shop: orders, shipments, and the delay alerts that live between them.']
+
+ [features
+  [feature name=orders package='./orders.feature.cxd']
+  [feature name=shipments package='./shipments.feature.cxd']
+  [feature name=delayed-shipment package='./delayed-shipment.feature.cxd']]
+
+ [principals
+  [role name=customer authority=own-orders features='orders shipments'
+   doc='Places and cancels their own orders; tracks their own shipments.']
+  [role name=fulfilment authority=operations features='*'
+   doc='Dispatches shipments and works the delay queue. The final human authority for escalation.']
+  [agent name=expediter
+   doc='Watches the delay queue and proposes escalations. It never escalates on its own — see the dial below.']
+  [deriver name=detect produces='delayed-shipment/delay-alert' package='./detect.cx'
+   reads='orders/order shipments/shipment'
+   doc='The ONE producer of the derived noun (#865, §4.2): joins orders past their promise with undelivered shipments and records each as actor deriver:detect. reads= is that bound, declared: it must resolve inside the [from …] envelope of the noun it produces, and run assembly checks it.']]
+
+ [deployment model=in-process role=app
+  doc='In-process CX packages. The features are acquired from a store as kind=feature packages; the shared money formatting comes from one kind=library package.'
+  [remote name=house uri='cx-store://localhost:7777/shop' priority=1]]
+
+ [surfacing default=peripheral
+  context-inputs='focus principal queue-depth'
+  doc='Delay alerts sit peripheral until the queue crosses the threshold; only then may the Radar raise one to foreground.']
+
+ [governance
+  [authority role=fulfilment
+   doc='Escalation is a human decision. The agent proposes; fulfilment disposes.']
+  [agent-default name=expediter dial=floor
+   doc='THE DIAL, at its floor. The expediter may observe and PROPOSE, never act — so delayed-shipment/escalate (act, irreversible) is out of its reach by construction, not by convention. Raising this dial is the single explicit act that widens what the agent may do.']]
+
+ [requirements
+  [requirement kind=domain level=must
+   [statement 'The agent MUST NOT commit an irreversible verb at dial=floor.']
+   [acceptance 'the expediter emitting delayed-shipment/escalate is refused at the PEP']
+   [acceptance 'the same emit by fulfilment, holding the constituent grants, is admitted']]
+  [requirement kind=quality level=must
+   [statement 'Every admitted act MUST appear in the journal as a qualified intent.']
+   [acceptance 'a bare [do highlight] never reaches the journal — it is resolved or refused first']]
+  [requirement kind=domain level=must
+   [statement 'Enabling a feature MUST NOT silently change what an existing utterance means (N-COMPOSE-1).']
+   [acceptance 'with orders alone, [do highlight] resolves to orders/highlight']
+   [acceptance 'with shipments also enabled, the same utterance yields an ambiguity value LISTING orders/highlight — never shipments/highlight silently']]]]

@@ -1,0 +1,9 @@
+[; cx-home internal publisher identity (distribution spec §3 / §4.1).
+   did:key — the ed25519 public key IS the identity; `seed` is the private
+   signing seed (hex), committed BY DESIGN at registry stage 1: this repo is
+   one trust domain and repo permission is publish permission. Market-grade
+   custody (stage 3+) moves the seed out of the repo without changing the DID
+   or any existing signature. See registry/README.md. ]
+[publisher did=did:key:z6MkfiKbd8ooGkQX37b6TxRfskAHgneXQSF1mZyUyH6fDC2j
+ name='cx-home internal'
+ seed='2cec63e17594a8bddf0d10f6d7c1f5c87458f37d94225d6c519c693d00cbbb34']

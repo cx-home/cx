@@ -1,0 +1,136 @@
+[; reference/shop/cascade.cx — the COMMITTED CASCADE, end to end.
+
+     cx --allow-read --allow-write reference/shop/cascade.cx
+
+   The three authored layers say what the shop can mean. This says what
+   happens when someone means it: PEP -> journal append -> ordered bus, and
+   state is the FOLD of the committed stream, never a variable someone
+   assigned.
+
+   Four things it demonstrates that no amount of prose settles:
+
+   1. The PEP decides BEFORE the append. A refusal commits nothing — the
+      fold afterwards proves it, because a refused intent leaves no trace to
+      fold.
+   2. A composite cannot launder authority. `delayed-shipment/escalate` is
+      derived over `shipments/ship` and `orders/cancel-order`, so the agent
+      is admitted only when it holds the CONSTITUENT grants. Granting the
+      wrapper's own name conveys nothing — and the denial names the
+      constituent, not the wrapper.
+   3. The dial IS delegation issuance. Raising it is one explicit,
+      revocable act; revoking flips the same emit back to refused.
+   4. State survives the process. A fresh runtime over the same journal
+      binding re-folds at boot — see the sibling script cascade-restart.cx.
+
+   Components are the runtime half of a feature: `bind` is the state route,
+   `emits` is the intent shape, and `reduce` is the fold. The FEATURE says
+   what may be said; the COMPONENT says what saying it does. ]
+
+[?lib 'cx-xap' :as xap]
+[?lib 'cx-stdlib/io' :as io]
+[?lib 'cx-stdlib/cx' :as cx]
+
+[; ── the runtime half of the three features ───────────────────────────── ]
+
+[$xap:component orders
+  {bind: "/order"
+   emits: ([do :place-order [id :string] [customer :string]],
+           [do :cancel-order [id :string]])
+   working-panel: :none}]
+
+[$xap:component shipments
+  {bind: "/shipment"
+   emits: ([do :ship [id :string] [for-order :string] [carrier :string]])
+   working-panel: :none}]
+
+[$xap:component delayed-shipment
+  {bind: "/delay-alert"
+   emits: ([do :escalate [for-order :string]])
+   working-panel: :none}]
+
+[?let [= $dir 'reference/shop']
+  [; `!` guards the BINDING — see compose.cx. An unguarded read decays to the
+     empty node-set at `//feature` and composes green over nothing. ]
+  [?let [= $od [$cx:parse [$io:read-file [$concat $dir '/orders.feature.cxd']]!]]
+        [= $sd [$cx:parse [$io:read-file [$concat $dir '/shipments.feature.cxd']]!]]
+        [= $dd [$cx:parse [$io:read-file [$concat $dir '/delayed-shipment.feature.cxd']]!]]
+    [?let [= $o [$first [?for [in $n $od//feature] [yield $n]]]]
+          [= $s [$first [?for [in $n $sd//feature] [yield $n]]]]
+          [= $d [$first [?for [in $n $dd//feature] [yield $n]]]]
+      [?let [= $g [$xap:compose $o $s $d]]
+        [?let [= $rt [$xap:run {tenant: "shop"
+                                journal: {url: "mem://shop", stream: "acts"}
+                                grammar: $g}]]
+
+          [; ── 1. the human principal is the root of the chain ──────────
+             fulfilment holds final authority (shop.xap.cxd), so its acts
+             are admitted without any delegation and commit as QUALIFIED
+             intents — the grammar is attached, so what reaches the journal
+             is `orders/place-order`, never the bare term. ]
+          [?let [= $p1 [$xap:emit $rt [do :place-order [id "o-1"] [customer "ada"]]
+                                      {actor: "principal:fulfilment"}]]
+                [= $p2 [$xap:emit $rt [do :place-order [id "o-2"] [customer "grace"]]
+                                      {actor: "principal:fulfilment"}]]
+                [= $s1 [$xap:emit $rt [do :ship [id "s-1"] [for-order "o-1"] [carrier "acme"]]
+                                      {actor: "principal:fulfilment"}]]
+
+            [; ── 2. the agent at dial=floor ─────────────────────────────
+               No delegation has been issued yet, so the expediter may not
+               commit. The refusal names a CONSTITUENT of the composite —
+               that is N-COMPOSE-2: authority is decided over the leaf
+               grants, so the wrapper's name is not a thing you can hold. ]
+            [?let [= $refused [$xap:emit $rt [do :escalate [for-order "o-1"]]
+                                             {actor: "agent:expediter"}]]
+
+              [; ── 3. raise the dial — one explicit, revocable act ───────
+                 Two delegations, one per constituent. Granting the
+                 wrapper would convey nothing, which is the point. ]
+              [?let [= $dial-ship [$xap:dial $rt [from id="principal:fulfilment"]
+                                                 [to id="agent:expediter"]
+                                                 [scope 'shipments/ship'] [setting :semi-auto]]]
+                    [= $dial-cancel [$xap:dial $rt [from id="principal:fulfilment"]
+                                                   [to id="agent:expediter"]
+                                                   [scope 'orders/cancel-order'] [setting :semi-auto]]]
+                [?let [= $admitted [$xap:emit $rt [do :escalate [for-order "o-1"]]
+                                                  {actor: "agent:expediter"}]]
+                      [; bound HERE, before the revoke below. why-allowed is a
+                         LIVE query over the authority store, so asking it
+                         inside the output element would ask it after the
+                         revoke had already landed and get `false` for an
+                         emit that was admitted. ]
+                      [= $why [$xap:why-allowed $rt [do :escalate [for-order "o-1"]]
+                                                    {actor: "agent:expediter"}]]
+
+                  [; ── 4. revoke — absence is the revocation ────────────── ]
+                  [?let [= $rev [$xap:revoke $rt "d-dial-shipments/ship"]]
+                    [?let [= $after-revoke [$xap:emit $rt [do :escalate [for-order "o-2"]]
+                                                          {actor: "agent:expediter"}]]
+
+                      [shop-cascade
+                        [committed-by-the-principal
+                          [orders [$count [$xap:state $rt "/order"]]]
+                          [shipments [$count [$xap:state $rt "/shipment"]]]]
+
+                        [; the composite's emit, at each stage of authority ]
+                        [agent-at-floor
+                          [refused-before-the-dial $refused]]
+                        [agent-after-the-dial
+                          [admitted $admitted]
+                          [why-allowed $why]]
+                        [agent-after-revoke
+                          [revoked $rev]
+                          [refused-again $after-revoke]]
+
+                        [; state is the FOLD of the committed stream. The two
+                           refusals above appended nothing, so they cannot
+                           appear here — that is how "the PEP decides before
+                           the append" is observable rather than asserted.
+
+                           NOTE what this counts: ESCALATE COMMITS on the
+                           /delay-alert route, not delay alerts. The derived
+                           `delay-alert` noun is grammar — nothing computes
+                           its `[from …]` join (see #840), so no engine
+                           produces alert records. Counting commits is the
+                           honest reading of this number. ]
+                        [state-is-the-fold
+                          [escalate-commits [$count [$xap:state $rt "/delay-alert"]]]]]]]]]]]]]]]]

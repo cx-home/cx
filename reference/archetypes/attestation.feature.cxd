@@ -1,0 +1,66 @@
+[; reference/archetypes/attestation — the ARCHETYPE (#866, composition spec §4.3).
+
+   A catalog vendor's product: the universal "someone states something about
+   a subject, and a second act makes it visible" machine — ORIEL's review
+   flow, a vendor endorsement, a compliance sign-off are all this machine
+   wearing domain words. It ships IMMUTABLE and content-addressed; a tenant
+   derives a feature from it with an [instance …] binding (⊢ instance.cxs)
+   whose of= pins THIS document's Tier-1 address. The two sibling
+   *.instance.cxd files are the two genuinely different instantiations the
+   graduation bar (R8.10) asks for; the umbrella tests re-derive the pin, so
+   editing this file without re-blessing both bindings fails loudly.
+
+   The refinement contract in one sentence: an instance may RENAME
+   presentation, ADD, TIGHTEN, and SELECT — it may never repurpose an
+   inherited name or loosen an inherited signature, and removal cannot be
+   spelled. That is what keeps N customers from becoming N forks. ]
+[feature name=attestation version="1"
+ [summary 'A statement about a subject, made visible only by a second, accountable act.']
+
+ [nouns
+  [noun name=attestation
+   [summary 'One statement about one subject, by one author.']
+   [field name=id type=text doc='the attestation identifier']
+   [field name=subject type=text label='Subject' doc='what the statement is about']
+   [field name=author type=text label='Author']
+   [field name=statement type=text label='Statement' doc='the words themselves']
+   [field name=at type=instant label='Made at']
+   [field name=visible type=bool label='Visible' doc='true only after the approving act']]]
+
+ [verbs
+  [verb name=attest effect=act scope=shared consequence=reversible
+   [summary 'Make a statement about a subject. Not yet visible: approval is a second act.']
+   [intent [do :attest [subject] [statement]]]
+   [writes attestation]]
+  [verb name=approve effect=act scope=shared consequence=reversible
+   [summary 'The second act: an accountable actor makes the statement visible.']
+   [intent [do :approve [id]]]
+   [writes attestation]]
+  [verb name=revoke effect=act scope=shared consequence=reversible
+   [summary 'Withdraw a visible statement, on the record.']
+   [intent [do :revoke [id]]]
+   [writes attestation]]
+  [verb name=list-attestations effect=observe
+   [intent [do :list-attestations [subject]]]
+   [reads attestation]]]
+
+ [rules
+  [rule name=approve-after-attest kind=ordering verb=attestation/approve after=attestation/attest
+   [statement 'A statement can only be made visible after it was made.']]
+  [rule name=statement-not-empty kind=validity
+   [statement 'An attestation MUST carry a non-empty statement.']]]
+
+ [governance
+  [grant verb=attest to=member]
+  [grant verb=approve to=steward]
+  [grant verb=revoke to=steward]]
+
+ [requirements
+  [requirement kind=functional as=member traces=attest
+   [want 'to state something about a subject']
+   [so 'the record carries what I actually said']
+   [acceptance 'an attested statement appears with visible=false until approved']]
+  [requirement kind=functional as=steward traces=approve
+   [want 'to make a statement visible by my own act']
+   [so 'visibility is attributable, never automatic']
+   [acceptance 'approve flips visible and the journal carries both acts']]]]

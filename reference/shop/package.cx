@@ -1,0 +1,123 @@
+[; reference/shop/package.cx — SEAL, PUBLISH, INSTALL.
+
+     CX_SHOP_REG=/tmp/shop-reg cx --allow-read --allow-write --allow-env \
+       --allow-random reference/shop/package.cx
+
+   The three features and one shared library go through the real
+   distribution engine: sealed into content-addressed trees, signed from day
+   one, published to a store, then INSTALLED into the shop's deployment
+   document.
+
+   The install is the part worth watching. It is not a copy — it is a
+   fail-closed pipeline (distribution spec §6 steps 4-6): fetch, verify the
+   signature chain, then a PER-KIND GATE. For `kind=feature` that gate is
+   W1-W6 over the installing XAP's enabled set UNION the candidate — the
+   same compose gate `compose.cx` runs, now standing between a package and
+   the runtime. A feature that would conflict with what is already enabled
+   cannot be installed, and the refusal carries the [conflict …] set.
+
+   For `kind=library` the gate is the exports surface: every def the
+   manifest exports must be present in the packaged code. A library holds no
+   authority — it MUST NOT declare [needs], and installing it issues no
+   grants (N-DIST-2). Enabling IS granting, and there is nothing here to
+   enable.
+
+   `orders` requires the library, so the install resolves the pin
+   transitively and records it hash-pinned in the returned deployment
+   document — the §7 lockfile view.
+
+   NOTE the flat [?let]. Bindings are sequential — a later one sees the
+   earlier ones — so a pipeline like this needs no nesting at all. The first
+   draft of this file cascaded seventeen deep and failed to parse on a
+   bracket nobody could count. ]
+
+[?lib 'cx-xap' :as xap]
+[?lib 'cx-stdlib/io' :as io]
+[?lib 'cx-stdlib/cx' :as cx]
+[?lib 'cx-stdlib/env' :as env]
+[?lib 'cx-stdlib/store' :as store]
+[?lib 'cx-stdlib/crypto' :as crypto]
+[?lib 'cx-stdlib/did' :as did]
+
+[?def entry-of scope=public ($path $text)
+  [?element 'entry' [?attr 'path' $path] $text]]
+
+[?let
+  [= $dir [?else [$env:var 'CX_SHOP_DIR'] 'reference/shop']]
+  [= $reg [?else [$env:var 'CX_SHOP_REG'] '/tmp/cx-shop-registry']]
+  [= $s   [$store:open [$concat 'file://' $reg]]]
+  [= $kp  [$crypto:ed25519-keypair]]
+  [= $pub [$did:key-create $kp@public]]
+
+  [; ── the library — code, no authority ──────────────────────────────── ]
+  [= $lib-sealed [$xap:pkg-seal $s
+      [; `!` guards the BINDING — an unguarded read would SEAL an err value
+         into the package payload as if it were content. ]
+      [$xap:pkg-tree [$entry-of 'shop-money.cx'
+                                [$io:read-file [$concat $dir '/shop-money.cx']]!]]
+      [?element 'package' [?attr 'name' 'shop-money'] [?attr 'version' '1.0.0']
+                          [?attr 'kind' 'library']
+        [?element 'publisher' [?attr 'did' $pub]]
+        [?element 'exports'
+          [?element 'def' [?attr 'name' 'shop-money/format-money']]
+          [?element 'def' [?attr 'name' 'shop-money/total-of']]]]]]
+  [= $lib-pub [$xap:pkg-publish $s 'shop-money' '1.0.0'
+      [$store:put-doc $s [$xap:pkg-sign [$store:get-doc $s $lib-sealed@manifest]
+                                        $kp@private]]]]
+
+  [; ── the three features — spec-only trees ───────────────────────────
+     No code entry, so no [exports] is required (§1.2: a spec-only feature
+     passes the exports check untouched). `orders` declares its dependency
+     on the library. ]
+  [= $ord-sealed [$xap:pkg-seal $s
+      [$xap:pkg-tree [$entry-of 'orders.feature.cxd'
+                                [$io:read-file [$concat $dir '/orders.feature.cxd']]!]]
+      [?element 'package' [?attr 'name' 'orders'] [?attr 'version' '1.0.0']
+                          [?attr 'kind' 'feature']
+        [?element 'publisher' [?attr 'did' $pub]]
+        [?element 'requires'
+          [?element 'require' [?attr 'library' 'shop-money'] [?attr 'versions' '1.0.0']]]]]]
+  [= $ord-pub [$xap:pkg-publish $s 'orders' '1.0.0'
+      [$store:put-doc $s [$xap:pkg-sign [$store:get-doc $s $ord-sealed@manifest]
+                                        $kp@private]]]]
+
+  [= $shp-sealed [$xap:pkg-seal $s
+      [$xap:pkg-tree [$entry-of 'shipments.feature.cxd'
+                                [$io:read-file [$concat $dir '/shipments.feature.cxd']]!]]
+      [?element 'package' [?attr 'name' 'shipments'] [?attr 'version' '1.0.0']
+                          [?attr 'kind' 'feature']
+        [?element 'publisher' [?attr 'did' $pub]]]]]
+  [= $shp-pub [$xap:pkg-publish $s 'shipments' '1.0.0'
+      [$store:put-doc $s [$xap:pkg-sign [$store:get-doc $s $shp-sealed@manifest]
+                                        $kp@private]]]]
+
+  [= $dly-sealed [$xap:pkg-seal $s
+      [$xap:pkg-tree [$entry-of 'delayed-shipment.feature.cxd'
+                                [$io:read-file [$concat $dir '/delayed-shipment.feature.cxd']]!]]
+      [?element 'package' [?attr 'name' 'delayed-shipment'] [?attr 'version' '1.0.0']
+                          [?attr 'kind' 'feature']
+        [?element 'publisher' [?attr 'did' $pub]]]]]
+  [= $dly-pub [$xap:pkg-publish $s 'delayed-shipment' '1.0.0'
+      [$store:put-doc $s [$xap:pkg-sign [$store:get-doc $s $dly-sealed@manifest]
+                                        $kp@private]]]]
+
+  [; ── INSTALL — the per-kind gate stands here ────────────────────────
+     Chained: each install returns the UPDATED deployment document, which
+     the next installs against — so the W1-W6 gate for `delayed-shipment`
+     runs against a XAP that already has `orders` and `shipments` enabled,
+     exactly as it would in the field. ]
+  [; `!` guards the BINDING — see compose.cx. ]
+  [= $xd [$cx:parse [$io:read-file [$concat $dir '/shop.xap.cxd']]!]]
+  [= $x0 [$first [?for [in $n $xd//xap] [yield $n]]]]
+  [= $i1 [$xap:pkg-install $x0 $s 'orders@1.0.0']]
+  [= $i2 [$xap:pkg-install $i1 $s 'shipments@1.0.0']]
+  [= $i3 [$xap:pkg-install $i2 $s 'delayed-shipment@1.0.0']]
+
+  [shop-packaging
+    [published
+      [library $lib-pub]
+      [features [orders $ord-pub] [shipments $shp-pub] [delayed-shipment $dly-pub]]]
+    [catalog [$xap:pkg-catalog $s {}]]
+    [; the installed deployment document: features pinned by hash, and the
+       library resolved transitively beneath them (the §7 lockfile view) ]
+    [installed $i3]]]

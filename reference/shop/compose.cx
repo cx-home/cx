@@ -1,0 +1,53 @@
+[; reference/shop/compose.cx — compose the reference app and show what the
+   gate produced. Run it:
+
+     cx --allow-read reference/shop/compose.cx
+
+   NOTE the `//feature` descendant step. Each spec file opens with a
+   `[; … ]` block comment, so the CHILD step `/feature` selects NOTHING and
+   compose would silently receive zero features — which composes to the
+   empty grammar and reports ok=true. A vacuous pass is the one failure
+   mode of this script worth guarding against. ]
+[?lib 'cx-xap' :as xap]
+[?lib 'cx-stdlib/io' :as io]
+[?lib 'cx-stdlib/cx' :as cx]
+
+[?let [= $dir 'reference/shop']
+  [; Postfix `!` on each read is load-bearing. Navigating an err yields the
+     EMPTY node-set, not the err (code.md §6.2, normative), so an unreadable
+     input would reach `//feature` as a document with no features and compose
+     to the identity grammar — a green gate over nothing. §6.2's own remedy is
+     `guard the BINDING, not the query`. ]
+  [?let [= $od [$cx:parse [$io:read-file [$concat $dir '/orders.feature.cxd']]!]]
+        [= $sd [$cx:parse [$io:read-file [$concat $dir '/shipments.feature.cxd']]!]]
+        [= $dd [$cx:parse [$io:read-file [$concat $dir '/delayed-shipment.feature.cxd']]!]]
+    [?let [= $o [$first [?for [in $n $od//feature] [yield $n]]]]
+          [= $s [$first [?for [in $n $sd//feature] [yield $n]]]]
+          [= $d [$first [?for [in $n $dd//feature] [yield $n]]]]
+      [?let [= $g [$xap:compose $o $s $d]]
+            [= $g1 [$xap:compose $o]]
+        [shop-reference-app
+          [; the gate, both faces ]
+          [gate [$xap:compose-report $o $s $d]]
+          [grammar verbs=[$count $g//verb] nouns=[$count $g//noun]
+                   hash=[$xap:grammar-hash $g]]
+
+          [; rho — the whole of §5 over the deliberate `highlight` pair ]
+          [resolution
+            [unique-owner [$xap:resolve $g 'ship']]
+            [qualified-wins [$xap:resolve $g 'orders/highlight']]
+            [ambiguous-is-a-value [$xap:resolve $g 'highlight']]
+            [unknown-is-a-value [$xap:resolve $g 'teleport']]]
+
+          [; N-COMPOSE-1 — before/after: enabling a feature may only ever
+             turn a resolution into a prompt that still lists the old answer ]
+          [no-silent-rebinding
+            [with-orders-alone [$xap:resolve $g1 'highlight']]
+            [with-shipments-too [$xap:resolve $g 'highlight']]]
+
+          [; the derived verb's signature is a FLOOR, taken from its
+             constituents rather than declared ]
+          [derived-signature
+            [?for [in $v $g//verb]
+              [where [= $v@name 'delayed-shipment/escalate']]
+              [yield $v]]]]]]]]
