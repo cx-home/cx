@@ -1,6 +1,6 @@
 # CX v0.17.0 — Release Notes
 
-**Date:** 2026-08-26
+**Date:** 2026-08-27
 **Tag:** `v0.17.0`
 
 The **settlement** release. v0.16.0 stated what CX *is* — four rings with a
@@ -169,9 +169,12 @@ canonicalization soundness. Both are listed under Migration.
   read. Three new browser-driven gates hold the line: every example
   evaluates in the READER's wasm engine (ten that cannot are marked with
   reason and remedy instead of failing raw), the Tree renders per rung
-  against pinned expectations, and the code_tree walker's arity now matches
-  the parser exactly — a prose run is one Text node, apostrophes don't
-  unbalance bodies, and top-level prose stopped splitting per token.
+  against pinned expectations, and the code_tree walker's arity agrees with
+  the parser on the repaired lanes — a prose run is one Text node, an
+  apostrophe at token start doesn't unbalance a body, and top-level prose
+  stopped splitting per token (the walker's remaining divergences — the
+  comma lane, comment/raw-span awareness in its bracket scanner — are
+  tracked, not claimed).
   The oriel flagship gains the field-
   registry desk (one form driving the live wire, drive-step pinned), and
   the storefront's language bar stops reporting the runtime as Verilog.
@@ -181,7 +184,9 @@ canonicalization soundness. Both are listed under Migration.
 - A sequence value in element-content position refuses (`CXER0100`, the
   `#847-1a` diagnostic) — adopt with `[?splice]`. Loop carriers exempt.
 - Externalizing effects refuse documents containing `[err]` (`CXER0275`)
-  unless `errs=:permit`; bare-err handler results are 500s, not 200s.
+  unless `errs=:permit`; bare-err handler results are 500s, not 200s. The
+  journal and fabric are ruled EXEMPT — an error event is a first-class
+  record, so err-carrying events append and publish green (pinned).
 - The store write verbs (`put-doc`, `put-doc-stream`, `put-doc-text`,
   `modify-doc`) grow an optional trailing opts map — backward-compatible.
 - `[$eq]` is documented and pinned as VALUE equality (compare atomizes);
@@ -200,6 +205,18 @@ canonicalization soundness. Both are listed under Migration.
   (was: silent float promotion, or silent decimal *drops* in `$math:`
   statistical verbs); `[$avg]` over decimals returns a decimal; exact
   division that cannot terminate refuses naming `$math:div-decimal`.
+- The exact lane's integral narrowing is saturation-free: `$idiv`, `$floor`,
+  `$ceiling`, `$round` answered a clamped `i64.max` for every result in
+  `(i64.max, 2^64)` — the band now answers bigint. The int-only lane stays
+  CHECKED: `$div`/`$idiv`/`$abs` cells whose result leaves i64 (`MIN ÷ -1`,
+  `|MIN|`) refuse `CXER3000` like the checked heads (was: saturated or
+  wrapped values, silently), and int ÷ int computes in i64, never through
+  f64 (quotients past 2⁵³ were float-rounded to the wrong integer).
+- A `--allow-read=`/`--allow-write=`/`--allow-env=` scope suffix — an
+  authority the engine cannot enforce — refuses loudly at startup on every
+  CLI parse site AND on the C-ABI grant spec (`cx_code_eval_caps`), instead
+  of silently granting blanket authority; `--allow-net=host[:port]` remains
+  the one enforced scope (real path/name scoping is #1061).
 - `run`/`spawn`/`pipeline` honor `$encoding` (`"utf-8"` validates, `:bytes`
   returns bytes, anything else refuses — previously accepted and ignored);
   `run`'s `$capture` takes the full per-stream disposition vocabulary;

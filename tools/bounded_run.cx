@@ -36,15 +36,16 @@
 # EOF and the call blocks PAST ITS OWN DEADLINE. Measured: a 60000ms
 # budget still running at 5m07s; a 3000ms budget still running at 2m07s.
 #
-# Neither documented escape works, because on the `run` path both are spec
-# clauses with no implementation (read in
-# vcx/code/stdlib_process_notd_cx_no_pack_process.v):
+# HISTORY: when this tool was written, neither documented escape worked on
+# the `run` path (capture=:none was never read -- stdout was ALWAYS a pipe --
+# and new-process-group was spawn-only). Both were implemented in the v0.17.0
+# process wave (#1023 dispositions; the measured notes below are kept for the
+# archaeology, not as current behavior):
 #   * `capture=:none` (process.md section 3.1: "uncaptured streams inherit the
-#     parent's") -- arg [7] is never read; set_redirect_stdio() is
-#     unconditional, so stdout is ALWAYS a pipe.
+#     parent's") -- now honored (v0.17.0 audit re-measured it inheriting).
 #   * `new-process-group=true` (section 4.5: "the escalation targets the whole
-#     group") -- use_pgroup is set on the `spawn` path only, never on `run`.
-#     Measured: the surviving grandchild carried the PARENT cx process's
+#     group") -- the original defect: use_pgroup was spawn-path only.
+#     Measured then: the surviving grandchild carried the PARENT cx process's
 #     own PGID, so there was no separate group to escalate to.
 # Reported as a runtime defect rather than worked around here: the
 # alternatives (spawn + kill-group, reading stdout after the wait) trade
@@ -54,9 +55,10 @@
 # The gate's actual subject, `cx demo`, spawns no grandchild, so the bound
 # is real for it -- and strictly better than the unbounded row it replaces.
 #
-# NOTE on the discriminator (measured): a child killed at timeout reports
-# exit-code 0, so `timed-out` -- not the exit code -- is the only reliable
-# signal that the budget blew. Check it FIRST.
+# NOTE on the discriminator: `timed-out` is checked FIRST because it names
+# the budget blowing unambiguously. (Historical: pre-#1034 a killed child
+# reported exit-code 0, making timed-out the ONLY signal; a force-killed
+# child now reports 128+signum, but timed-out remains the honest check.)
 
 [?lib 'cx-stdlib/process' as=process]
 [?lib 'cx-stdlib/io'      as=io]

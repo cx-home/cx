@@ -13,7 +13,7 @@ version, library version).
 
 ## [Unreleased]
 
-## [0.17.0] — 2026-08-26
+## [0.17.0] — 2026-08-27
 
 ### Changed
 
@@ -39,6 +39,30 @@ version, library version).
   tagged commit, with the merge to `main` moved after them (phase 2c),
   because being on `main` puts HEAD off the tag. The R2.2 profile gate
   enforces the expected headline on every staged tarball.
+
+- **The exact lane's integral narrowing is saturation-free, and the int-only
+  lane's overflow cells refuse (v0.17.0 release audit).** `$idiv`, `$floor`,
+  `$ceiling`, `$round` answered a clamped `i64.max` for every integral result
+  in `(i64.max, 2^64)` — `strconv.parse_int` saturates instead of erroring —
+  and the band now answers bigint (L44's no-silent-saturation rule). The
+  int-only lane stays CHECKED like the heads: `$div`/`$idiv`/`$abs` cells
+  whose result leaves i64 (`MIN ÷ -1`, `|MIN|`) refuse `CXER3000` (was:
+  saturated/wrapped, silently), and int ÷ int division computes in i64,
+  never through f64 (quotients past 2⁵³ were float-rounded to the wrong
+  integer with exit 0). Conformance pins the band, the refusal cells, and
+  the divmod identity inside the band.
+
+- **An unenforceable grant scope refuses on the C-ABI surface too
+  (#1059).** `caps_apply_spec` — the grant parser behind
+  `cx_code_eval_caps` and every embedder — dropped a
+  `read=`/`write=`/`env=` suffix on the floor and installed the BLANKET
+  grant, the same fail-open the five CLI parse sites had; it now returns
+  the typed `CXER0274` refusal naming #1061, and `include/cx.h` states the
+  one enforced scope (`net=host[:port]`). The journal's internal store
+  writes carry `errs=:permit` per CO-8's ruled exemption (an error event is
+  a first-class record), which the CO-2 store guard had been defeating from
+  the plumbing — err-carrying events append and fabric-publish green,
+  pinned in both suites.
 
 ### Errata — v0.16.0 release notes
 

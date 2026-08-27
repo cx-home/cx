@@ -376,3 +376,49 @@ CXER0275 discipline applied opt-in to the process result) is RULED IN as a
 DEFERRED until its measurements are re-taken against the released
 cx v0.17.0 binary; nothing publishes to the mirror without a further owner
 letter.
+
+## Execution notes from the 2026-08-27 pre-tag adversarial audit (Fable)
+
+### CO-8 execution note — the exemption was defeated by its own plumbing
+
+Measured at 9a9ba3c4c: `$journal:append` and `$fabric:publish` refused
+CXER0275 on an event carrying an [err] at rest — the journal's ONE internal
+store write funnel (jrn_store_put_doc_err → store-put-doc, fabric rides it)
+carried no errs=:permit, so the CO-2 store guard fired where CO-8 rules the
+exemption. Fixed at the funnel (the permit is the journal family's, stated
+once); the CO-8 pins CO-8 promised "with the next fixture-touching commit"
+(and which no commit had delivered) land with the fix: journal-160 +
+fabric-040, both with the err in a RESTING position (map value as element
+content), because a BARE err argument propagates per the frozen #853
+position table before append is ever reached — the general rule, not this
+exemption, and the reason the pins are shaped as they are.
+
+### CO-18 execution note — the authorized sentence overclaimed; corrected to
+the measured roster
+
+CO-18's object was "state the family-wide exact-kind discipline the impl
+HAS HAD since I1". Measured at 9a9ba3c4c, that discipline has FIVE exact
+carve-outs, not one: abs/floor/ceiling/min/max share the core heads' exact
+implementation and answer exactly ([$math:abs 2.50] = 2.50 — four of them
+green-pinned in math.cxd since I1), while sign/round/truncate/clamp/gcd and
+the statistical verbs refuse CXER3002. math.md §4.4/§5 are corrected to
+state that roster (the delegating five named; their siblings' exact-lane
+delegation named an OPEN item, never a shipped behavior) — executing
+CO-18's object over the measured truth rather than truing the impl down to
+an unmeasured sentence (capability regression) or shipping spec prose the
+repo's own green pins contradict. Owner may override.
+
+### CO-17 execution note (band) — the narrowing helper saturated
+
+The "int while it fits i64, bigint past it" convention was implemented on
+strconv.parse_int, which SATURATES out-of-range input instead of erroring:
+every integral image in (i64.max, 2^64) came back a clamped i64.max —
+$idiv, $floor, $ceiling, $round; co17-013's operand sat one binade above
+the band, so the suite was green. Fixed by round-trip narrowing
+(exact_int_or_bigint); the band is pinned. With it, the int-only lane's
+overflow cells join the checked discipline the heads already carry
+([$div MIN -1], [$idiv MIN -1], [$abs MIN] → CXER3000; int ÷ int computes
+in i64, never through f64 — quotients past 2^53 were float-rounded to the
+WRONG integer with exit 0), and code.md's "equal wherever they answer"
+sentence gains its measured qualifier (over exact-family operands;
+div-co17-009 already pinned the int-row divergence the sentence denied).
