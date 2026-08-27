@@ -360,3 +360,19 @@ explicit division context); exact arithmetic lives on the CORE heads per L44.
 §4.4's "basic ops on decimals" sentence and §4.3's "statistical ops always
 return float regardless of input" both fall to that pass; the §5 CXER3002 row
 follows. Edits carry RULED: CO-18.
+
+### CO-19 (release-eve letters, owner "1a 2a 3a 4a", 2026-08-27)
+
+(1a) The two approved-spec grant examples the #1059 refusal contradicts are
+AUTHORIZED to correct: security.md §3's invocation and journal.md's
+--allow-write example move to bare flags, with the scoped form explicitly
+named as the TARGET STATE of #1061 (real path scoping) — never silently
+dropped. Edits carry RULED: CO-19. (2a) The external registrations (#954
+Linguist, #958 nvim-treesitter/mason) are AUTHORIZED for submission
+immediately after the v0.17.0 GitHub release is live — the standing owner
+stop-point is hereby exercised, not bypassed. (3a) #1062 (--errs=refuse:
+CXER0275 discipline applied opt-in to the process result) is RULED IN as a
+0.18 design item. (4a) #1060 (the sponsor-side comparison publication) is
+DEFERRED until its measurements are re-taken against the released
+cx v0.17.0 binary; nothing publishes to the mirror without a further owner
+letter.
