@@ -138,7 +138,10 @@ else
     # threw away everything else, so the actual red was unidentifiable
     # from the run that found it. Digest on failure: the make error lines
     # plus a pointer to the full log.
-    TAG_TEST_LOG="$(mktemp /tmp/tag-release-make-test.XXXXXX.log)"
+    # BSD mktemp only expands TRAILING Xs — a suffixed template is taken
+    # literally, so a second run collides on the literal name. Trailing Xs
+    # work on both BSD and GNU.
+    TAG_TEST_LOG="$(mktemp /tmp/tag-release-make-test.log.XXXXXX)"
     note "full 'make test' log: $TAG_TEST_LOG"
     if ! make test > "$TAG_TEST_LOG" 2>&1; then
         grep -E "make(\[[0-9]+\])?: \*\*\*|FAIL|Error" "$TAG_TEST_LOG" | tail -20
