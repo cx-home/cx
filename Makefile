@@ -1088,7 +1088,18 @@ test:
 	# target/cx while sibling lanes were exec'ing it (the v0.16.0 cut's
 	# 'Exec format error' / empty-output-rc-0 class; see the guard's note).
 	@$(MAKE) build-vcx
-	@$(MAKE) -j$(TEST_JOBS) $(OUTPUT_SYNC) $(TEST_TARGETS)
+	# test-profile-gate runs SERIALLY AFTER the -j storm, not inside it:
+	# sup-011's #951 load-race is near-deterministic under gate-wide -j
+	# saturation (red on tag takes 4/5/6 THROUGH the #1054 fresh-child
+	# re-grade, which inherits the same storm), and green on a quiet box —
+	# the same measured fact that put code_eval_fixtures on the
+	# SUITE_SERIAL_RETRY roster ("red 3x across gates only under -j load").
+	# The Makefile-level serial retries work precisely because they run
+	# after the storm drains; the profile gate gets the same quiet context.
+	# Nothing is masked: a deterministic failure still reds the serial run,
+	# and the runner's classifier + named re-grade govern inside it.
+	@$(MAKE) -j$(TEST_JOBS) $(OUTPUT_SYNC) $(filter-out test-profile-gate,$(TEST_TARGETS))
+	@$(MAKE) test-profile-gate
 
 # Sequential fallback — useful for debugging output-order issues, sanitizer
 # runs that want low concurrency, or environments where `-j` parallelism
