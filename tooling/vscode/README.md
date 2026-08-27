@@ -107,6 +107,20 @@ Format-on-save needs no CX-specific knob — enable the built-in
 | `CX: Restart Language Server` | Reload after editing settings |
 | `CX: Show Server Version` | Confirm which `cx` is running |
 
+## Install from a release (the supported route)
+
+Every CX release attaches the packaged extension to its GitHub release
+(RULED: CO-20 — the vsix is a release asset; no marketplace account is
+required on either side). Download `cx-language-<version>.vsix` from
+https://github.com/cx-home/cx/releases/latest and:
+
+```sh
+code --install-extension cx-language-<version>.vsix
+```
+
+Marketplace / Open VSX listings are optional extras that fire only when
+the owner exports `VSCE_PAT` / `OVSX_PAT` at release time.
+
 ## Build & package
 
 Packaging is local via `npm run package` (there is no publishing

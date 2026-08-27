@@ -85,7 +85,7 @@ Exactly one of the two per row; a row with both, or neither, fails.
 
 | submission | submitted-for | deferred |
 |---|---|---|
-| nvim-treesitter | — | branch READY on the fork (eptx/nvim-treesitter `add-cx-parser`, pinned to mirror ee8fffb54; their own check-parsers/check-queries/ts_query_ls all green; PR body staged in scratch + reproducible from the branch) — BLOCKED UPSTREAM: the repo has GitHub interaction limits set to collaborators-only (the compare page says so verbatim; measured: zero non-maintainer PRs since 2026-07, so it is standing, not a 24h window). Not a token or account problem — no outsider can open a PR by ANY route until they lift it. Retry `gh pr create -R nvim-treesitter/nvim-treesitter --head eptx:add-cx-parser` periodically, or ask in their Matrix room (#nvim-treesitter:matrix.org, their documented channel) for a maintainer to take the branch. Meanwhile the in-repo `{ dir = '…/cx/tooling/neovim' }` path serves users — the registry entry is reach, not function. |
+| nvim-treesitter | — | RULED: CO-20 (owner, 2026-08-27) — the in-repo `{ dir = '…/cx/tooling/neovim' }` path is the SUPPORTED install route; the registry entry is reach, not function, and rides the standing weekly retry ONLY (scripts/retry_nvim_treesitter_pr.sh, owner-approved crontab — upstream has collaborators-only interaction limits standing since 2026-07). Branch stays READY on eptx/nvim-treesitter `add-cx-parser` (their own check-parsers/check-queries/ts_query_ls all green; body at tooling/tree-sitter-cx/nvim_pr_body.md). No Matrix outreach, no account chase. When the retry lands the PR, flip this row to submitted-for. |
 | mason | 0.17.0 | — |
 
 When a submission lands, replace its `deferred` cell with `—` and put the
