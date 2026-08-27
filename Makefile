@@ -1516,6 +1516,16 @@ RETRY_REASON_CASE = case "$$rel" in \
 	    reason="NO REASON DECLARED for this lane -- retried anyway; declare it in RETRY_REASON_CASE in the Makefile" ;; \
 	esac
 
+# The profile gate grades the SAME supervise fixtures as
+# code_eval_fixtures_test.v but is not a `v test` lane, so no roster above
+# reaches it — and on 2026-08-26 the #951 flake reddened the v0.17.0 tag run
+# from profile_gate[cli] alone. The identical contract (classified, named,
+# once-only serial re-grade; a re-failure stays red) lives INSIDE that
+# runner, in vcx/tests/runners/profile_gate/profile_gate.v — see
+# is_951_family / retry_reason / serial_regrade there, and the
+# classifier_self_check that pins the class against the real tag-run
+# mismatch text so it cannot silently widen into a blanket (#1054).
+
 # The cache-free class is NO LONGER A RETRY — it is a DIAGNOSTIC that never
 # changes the verdict (#700 wave 2 part ii). It was written when the -usecache
 # key was unsound by reputation, so "cache-free green proves the artifact" was
