@@ -132,3 +132,50 @@ seam-needs-live-consumer), extractall-in-zip (the codec/transport split).
 - Wiring roster (traced via csv): `stdlib/zip.cx`, `vcx/code/stdlib_zip.v`,
   `stdlib_dispatch.v` chain line, `stdlib_bundle.v` embed + match arm,
   `vcx/tests/stdlib_umbrella_test.v` module roster.
+
+## Z-8 execution record (stage 2, 2026-08-28)
+
+Stage 1 (Z-8.4, the dynamic-Huffman emitter) landed at 00b93a373 with the
+V fork at 1307c75f75. Stage 2 closes Z-8.1/8.2/8.3 and adds the emitter's
+gated pins. What the work forced, beyond what Z-8 anticipated:
+
+- **The 0xFFFF ENTRY-COUNT sentinel is not treated as a sentinel on read.**
+  §6 emits EOCD64 only ABOVE 65535 entries, so an archive of exactly 65535
+  writes 0xFFFF legitimately with no zip64 structure. Refusing on the count
+  would refuse a valid archive. The unambiguous 0xFFFFFFFF size/offset
+  fields keep the CXER5200 sentinel-without-structure rule; a bare 0xFFFF
+  count is read as a literal 65535 and fails the central-directory walk
+  structurally — which is how zip-019 lands on CXER5200 with no special
+  case.
+- **A declared entry count is bounded BEFORE it is preallocated.** The
+  first cut wrote `[]ZipDirEntry{cap: n_total}`, so a hostile 22-byte
+  archive claiming 65535 entries — or a zip64 one claiming millions —
+  charged the process that allocation before failing. Every CD record is
+  at least its 46-byte header, so `n_total > cd_size / 46` is structural
+  and is now refused first. Pinned by
+  test_zip_impossible_entry_count_refused_before_allocating.
+- **`mode` is the unix mode WORD, stored verbatim** — not "permission
+  bits" as Z-8.2 loosely put it. Interop measurement: Info-ZIP writes the
+  full `st_mode` (0o100755 = 33261, file-type bits included), so masking
+  to permissions on read would destroy the regular-file/directory/symlink
+  distinction an io-layer extractor needs — the one zip-slip hygiene turns
+  on. `pack` synthesizes no file type either; what goes in comes out.
+  spec §2 now says this outright, and zip-032 pins the full word.
+- **§9's refusal bullet contradicted §5** (CXER5201 vs CXER5200 for the
+  zip64 sentinel), left over from stage 1. §5 is normative and correct;
+  §9 was corrected, not the other way round.
+- **The fixed-vs-dynamic ORDER cannot be pinned from the cx side** — the
+  fixed emitter is private to the V fork's `compress.deflate`. The order
+  pin lives in the fork's own suite (where both emitters are visible) and
+  the cx lane pins the size the codec actually emits for a recorded
+  payload, so a silent fall-back to fixed is caught by a gate either way.
+  §9 says which pin lives where.
+- A pre-existing §5/§8 divergence surfaced and was FILED, not silently
+  fixed: a missing or out-of-window EOCD raises CXER5200 where the spec
+  says CXER5201 (#1100, prio:low, with the a/b/c decision stated).
+
+Interop re-verified at stage 2 (both directions, live): system `unzip -t`
+clean on a cx-packed archive; a cx-packed `mode: 493` entry extracts as
+`-rwxr-xr-x`; cx reads Info-ZIP's archive comment, its full mode word, and
+a real `zip -fz` **zip64** archive (EOCD64 + locator + 0x0001 extras) —
+listing and extracting both entries.
