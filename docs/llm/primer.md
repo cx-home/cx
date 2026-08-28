@@ -1411,6 +1411,7 @@ assistant makes with a young language is inventing a plausible module name.
 | `vc` | Verifiable credentials: portable, signed, attenuating delegations that carry authority between DIDs and verify offline (the §22.2 delegation transport, counterpart to `did` for identity). |
 | `xap` | The XAP orchestrator — the experience layer at the top of the CX web    stack. |
 | `xsp` | The XAP Stream Protocol frame codec — a self-describing, self-delimiting frame [version · type · stream-id · principal-DID · flags · len · payload] that carries XAP over any transport. |
+| `zip` | Zip archive codec over the CX bytes scalar kind. |
 
 ### Experimental tier — `[?lib 'cx-x/<name>']`
 
