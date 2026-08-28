@@ -74,6 +74,9 @@
   [family id=vlib
     reason='Assorted vlib correctness the fork carries: os execute_capture using the public spawn.h rather than private posix_spawn externs, sync panicking loudly when a pthread lock or unlock fails instead of guarding nothing, map value_ptr for a by-ref get with one probe and no value copy, and db.redis handling the RESP3 null reply. Each is CX-agnostic and upstreamable in principle.']
 
+  [family id=compress
+    reason='The dynamic-Huffman block emitter for compress.deflate. Upstream V emits fixed-Huffman blocks only, which costs roughly 35% of the achievable ratio on literal-dominated input (measured 2000 raw: fixed 1943, dynamic 1241) — and that emitter is what cx-stdlib/zip and bytes:gzip-compress ship to a customer. The fork adds a canonical-Huffman table builder and an RFC 1951 3.2.7 dynamic header over the EXISTING LZ77 tokenizer, so every entry point emits the smaller of fixed/dynamic from one tokenize pass and stays a pure function of its input (which is what cx-stdlib/zip determinism rests on). CX-agnostic and upstreamable in principle; retires the day upstream V carries a dynamic emitter.']
+
   [family id=diag
     reason='Gated diagnostic probes and localizers, all off by default and behind -d flags: the sweep-while-live oracle, closure and holder watches, the vgc_verify rootfinder, the stack-base helper. They cost nothing when off and they are the instrumentation every vgc soundness investigation has started from (cx-private #57, #58, #63, #145). Permanent for as long as the collector is.']
 
@@ -174,4 +177,6 @@
   [patch sha=a2898599f3f0d6130a9d8ada8f11a25369130ac2 family=vgc]
   [patch sha=c3fc9c9670db968fb1202ec1c70cdca2b41df79c family=vlib]
   [patch sha=cf25c48308b64f6bbcbf6a18148e8b24a68d9608 family=usecache]
+  [patch sha=1307c75f75cc58cb0a2b772370f46640f8595e3f family=compress]
+  [patch sha=f3a75eb9dd44bdef3a57cad304b9c125f7a7b000 family=compress]
 ]
