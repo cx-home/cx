@@ -22,4 +22,4 @@
 # these bodies, and any fix made to the umbrella since exists only there.
 # Restoring an original to regenerate is refused by name —
 # `scripts/consolidate_tests.sh audit <area>`.
-vcx/code/stdlib_crypto_sign_test.v
+#absorbed vcx/code/stdlib_crypto_sign_test.v
