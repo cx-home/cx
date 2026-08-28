@@ -88,6 +88,41 @@ reverses the letter, not the process.
   lifts ratio without surface change.
 - (b) Vendor miniz/szip — rejected: new C dependency for ratio only.
 
+## Z-8 — Python-parity wave (owner "1a", 2026-08-28) (RULED: Z-8 = a)
+
+Owner directive: full parity review demanded ("don't cut corners and
+partially implement"); the four NON-WORTHLESS gaps were lettered and the
+owner ruled (a) = close all four this cycle:
+
+- **Z-8.1 zip64 READ** (+ the write half that is reachable): EOCD64
+  locator/record, 0xFFFF/0xFFFFFFFF sentinel resolution through the
+  0x0001 extra field. Write side: the bytes-scalar 2^32-1 archive ceiling
+  means sizes/offsets always fit zip32 — only the >65535 ENTRY-COUNT case
+  is reachable, and it now emits EOCD64 instead of refusing (spec §6
+  ceiling narrowed accordingly). A single entry whose payload exceeds the
+  bytes ceiling still refuses CXER5205 at decode (cannot materialize).
+- **Z-8.2 mode bits**: pack accepts optional `mode` (int, unix bits);
+  when present, version-made-by = unix(3)/20 and external-attrs carry
+  mode<<16; when ABSENT the emitted bytes are byte-identical to v1
+  (golden pin survives — determinism §4 stays a pure function of input).
+  unpack/entries report `mode` when a unix made-by carries nonzero bits.
+- **Z-8.3 archive + member comment READ**: new pure verb `comment`
+  (archive-level; '' when none); entries maps gain a `comment` key.
+  Comments are advisory metadata — non-UTF-8 comment bytes decode
+  LOSSILY (U+FFFD), never refuse an archive over a comment. Write side
+  stays none (determinism; no consumer).
+- **Z-8.4 dynamic-Huffman deflate emitter** — in the V fork's
+  compress.deflate (V-only, upstreamable per standing rule), reusing the
+  existing LZ77 tokenizer + canonical-Huffman builder; per-entry the
+  emitter keeps store-wins semantics (smallest of store/fixed/dynamic),
+  so §4 determinism and the store-wins fixture hold unchanged.
+
+RULED WORTHLESS, permanently refused (recorded so the refusals are
+decisions, not gaps): ZipCrypto read (cryptographically broken; loud
+CXER5201 is the correct posture), bzip2/lzma entry methods (#1088's
+decision space), append/streaming modes (no live consumer —
+seam-needs-live-consumer), extractall-in-zip (the codec/transport split).
+
 ## Execution notes
 
 - Spec lands at `spec/03-approved/std-lib/zip.md` + README index row, the
