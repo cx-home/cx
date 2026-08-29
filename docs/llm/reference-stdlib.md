@@ -81,6 +81,7 @@ $ cx prog.cx
 | `store` | A content-addressed object store with URL-dispatched backends. |
 | `strings` | String inspection, search, and transformation for general text work. |
 | `supervise` | Restart policies over monitored workers: run a set of named children (each an arity-0 callable spawned as a worker) under a declared policy — strategy (:one-for-one, :one-for-all, :rest-for-one), restart intensity (max-restarts within a window), and per-child exponential backoff — restarting them when they die according to each child's restart type (:permanent, :transient, :temporary). |
+| `tar` | Tar archive codec over the CX bytes scalar kind. |
 | `test` | Authoring primitives for unit-test-style programs written in CX: assertions, fixtures, lifecycle hooks, and structured reporting. |
 | `time` | Dates, datetimes, durations, and instants, with wall-clock and monotonic time sources. |
 | `url` | RFC 3986 and WHATWG-URL-aligned URL parsing, building, and component encoding. |
