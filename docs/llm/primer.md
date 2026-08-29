@@ -1392,6 +1392,7 @@ assistant makes with a young language is inventing a plausible module name.
 | `math` | Numeric utilities over CX int and float scalar kinds. |
 | `mime` | MIME data-shape handling: a built-in extension-to-type registry, Content-Type and Content-Disposition parsing, multipart boundary generation, type classification, and Accept-header content negotiation. |
 | `net` | Transport-level (L4) networking: opening and accepting stream connections (TCP, Unix-stream, TLS), exchanging datagrams (UDP, Unix-datagram, DTLS), name resolution, and TLS upgrade or termination. |
+| `oidc` | The OpenID Connect relying party: the login half of enterprise SSO. |
 | `path` | Filesystem path manipulation — splitting, joining, normalizing, and comparing OS paths. |
 | `process` | Run child processes: spawn them, capture their output, stream their stdio, connect them into pipelines, deliver signals, manage process groups, and drive pseudo-terminals. |
 | `prof` | In-program profiling, callable directly from CX code. |
