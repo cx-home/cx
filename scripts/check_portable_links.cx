@@ -1,0 +1,117 @@
+[; scripts/check_portable_links.cx -- the macOS artifact portability gate (#1102).
+
+   WHY THIS EXISTS. The shipped v0.17.0 macOS artifacts carried an absolute
+   load path into the BUILD MACHINE's Nix store:
+
+     /nix/store/<hash>-sqlite-3.53.3/lib/libsqlite3.dylib
+
+   with no LC_RPATH fallback, so on any other machine dyld failed before
+   main -- every subcommand, not just the sqlite ones. The same artifacts
+   carried an absolute build path as libcx.dylib's OWN install name, which
+   every consumer linking against it would have baked into their binary.
+
+   scripts/portable_links.sh repairs both at link time. This gate is the
+   half that matters more: it makes the CLASS impossible to reintroduce
+   rather than fixing the instance. Two invariants, per shipped Mach-O:
+
+     1. every DEPENDENCY load path resolves under /usr/lib or /System --
+        the directories macOS itself guarantees on every machine;
+     2. every dylib's OWN install name is @rpath/<basename> -- the
+        redistributable spelling.
+
+   Scope is what a release SHIPS. Test-only artifacts (libcx_sftp_test,
+   the -nc core variant, libcx_arrow) are deliberately excluded: they link
+   Homebrew openssl/libssh2/re2 by design and never leave this machine.
+
+   Linux links by soname and is unaffected -- measured, zero /nix/store
+   strings in the linux tarball -- so this reports SKIP there rather than
+   pretending to have checked something. ]
+
+[?lib 'cx-stdlib/io']
+[?lib 'cx-stdlib/env']
+[?lib 'cx-stdlib/process']
+[?lib 'cx-stdlib/strings']
+[?lib 'cx-stdlib/array']
+
+[?def path-of scope=private pure [returns string] ($line::string)
+  [$first [$strings:split [$strings:trim $line] " "]]]
+
+[; otool prints "<file>:" as a header line; every other non-empty line is a
+   load path. Filtering by CONTENT rather than by index keeps this correct
+   whether or not the artifact is a dylib (whose second line is its own id). ]
+[?def load-paths scope=private pure [returns [sequence string]] ($out::string)
+  [?for [in $l [$strings:split-lines $out]]
+        [= $t [$strings:trim $l]]
+        [where [$and [$not [= $t ""]] [$not [$strings:ends-with $t ":"]]]]
+    [yield [$path-of $t]]]]
+
+[?def is-portable scope=private pure [returns bool] ($p::string)
+  [$or [$not [$strings:starts-with $p "/"]]
+       [$or [$strings:starts-with $p "/usr/lib/"]
+            [$strings:starts-with $p "/System/"]]]]
+
+[; One artifact's findings as a STRING, empty when it is clean.
+   The per-artifact work lives in a def rather than in the caller's
+   comprehension: a nested [?for] inside a [?for] BINDING CLAUSE does not
+   behave, and an earlier cut of this gate reported a FALSE GREEN because
+   of it. Keeping the outer comprehension flat is what makes this legible
+   AND correct. The two otool outputs are passed in so this stays pure. ]
+[?def findings-for scope=private pure [returns string] ($art::string $id-out::string $dep-out::string)
+  [?let [= $id [$first [$load-paths $id-out]]]
+        [= $is-dylib [$strings:ends-with $art ".dylib"]]
+        [= $want [$concat "@rpath/" [$last [$strings:split $art "/"]]]]
+        [= $deps [$strings:join
+                   [?for [in $p [$load-paths $dep-out]]
+                         [where [$and [$not [$is-portable $p]]
+                                      [$not [$and $is-dylib [= $p $id]]]]]
+                     [yield [$concat "  " $art " loads " $p]]]
+                   "\n"]]
+        [= $id-bad [?if [$and $is-dylib [$not [= $id $want]]]
+                     [then [$concat "  " $art " has install name " $id
+                                    " -- a redistributable dylib needs " $want]]
+                     [else ""]]]
+    [?if [= $deps ""]
+      [then $id-bad]
+      [else [?if [= $id-bad ""] [then $deps] [else [$concat $deps "\n" $id-bad]]]]]]]
+
+[?let
+  [; Exactly what a release SHIPS. Test-only artifacts (libcx_sftp_test, the
+     -nc core variant, libcx_arrow) are deliberately out of scope: they link
+     Homebrew openssl/libssh2/re2 by design and never leave this machine. ]
+  [= $candidates [$array:flatten (
+      [$io:glob "vcx/target/cx"],
+      [$io:glob "vcx/target/libcx.dylib"],
+      [$io:glob "vcx/target/profiles/*/cx"],
+      [$io:glob "vcx/target/profiles/*/libcx.dylib"])]]
+  [= $artifacts [?for [in $a $candidates] [where [$io:exists $a]] [yield $a]]]
+  [= $mach-o [$io:exists "/usr/bin/otool"]]
+
+  [?if [$or [$not $mach-o] [= [$count $artifacts] 0]]
+    [then
+      [?let [= $why [?if [$not $mach-o]
+                      [then "otool is absent -- not a Mach-O platform (linux links by soname)"]
+                      [else "no built artifacts under vcx/target (run make build-vcx first)"]]]
+            [= $_ [$io:write-line [$env:stdout] [$concat "check-portable-links: SKIP -- " $why]]]
+        [$env:exit 0]]]
+    [else
+      [?let
+        [= $report [$strings:join
+                     [?for [in $art $artifacts]
+                           [= $r [$findings-for $art
+                                   [$process:run ("otool", "-D", $art)]@stdout
+                                   [$process:run ("otool", "-L", $art)]@stdout]]
+                           [where [$not [= $r ""]]]
+                       [yield $r]]
+                     "\n"]]
+        [?if [= $report ""]
+          [then
+            [?let [= $_ [$io:write-line [$env:stdout]
+                          [$concat "check-portable-links OK -- " [$count $artifacts]
+                            " shipped Mach-O artifact(s): every dependency resolves under /usr/lib or /System, every dylib id is @rpath."]]]
+              [$env:exit 0]]]
+          [else
+            [?let [= $_ [$io:write-line [$env:stderr]
+                          [$concat "check-portable-links FAILED -- these artifacts will not load off this machine (#1102):\n" $report
+                            "\n  scripts/portable_links.sh repairs this at link time; a path it cannot repoint is refused there on purpose."]]]
+              [$env:exit 1]]]]]]]
+]

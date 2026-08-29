@@ -498,6 +498,18 @@ test-playground-tree:
 # without a current spec. The gate is itself written in CX (dog-food) and
 # run as `cx <file>`; its nonzero exit on drift propagates through make.
 # Override the binary with CX_BIN=path (default vcx/target/cx).
+# macOS artifact portability gate (#1102) — CX-native, run as `cx <file>`.
+# Every SHIPPED Mach-O must load only from /usr/lib and /System, and every
+# dylib must carry an @rpath install name. The shipped v0.17.0 artifacts
+# carried an absolute /nix/store path from the BUILD MACHINE and died in
+# dyld before main on anything else; scripts/portable_links.sh repairs that
+# at link time, and this is what stops it coming back. SKIPs off macOS,
+# where linking is by soname.
+.PHONY: check-portable-links
+check-portable-links: CX_BIN ?= $(CURDIR)/vcx/target/cx
+check-portable-links: build-vcx
+	@"$(CX_BIN)" --allow-all scripts/check_portable_links.cx
+
 .PHONY: stdlib-catalog-gate
 stdlib-catalog-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
 stdlib-catalog-gate: build-vcx
@@ -623,7 +635,7 @@ release-verify:
 # lang/_archived/ in v0.8.0; their test targets are no longer wired into
 # `test`. Restoration is community opt-in once the Layer-1 16-method
 # surface stabilizes (spec/bindings.md §6).
-TEST_TARGETS := abi-c-test check-v-fork check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx corpus-audit
+TEST_TARGETS := abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx corpus-audit
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS lanes whose
@@ -1338,7 +1350,34 @@ test-rust-arrow-conformance: build-vcx build-lib-arrow
 # #743-battery unwired-gate class; and the per-suite `conform`
 # aggregate fan-out OOM-killed the parallel union with 27 concurrent
 # `v run` compiles). The Arrow lane rides its own runner/target.
-test-vcx: build-vcx-dev test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx
+# ── the cheap consistency gates, folded into the development lane (#1101) ──
+#
+# WHY. `make test-vcx` is what sessions and handoff notes call "the exit
+# gate", but it is a strict SUBSET of `make test`. Two gates sat RED on
+# release/0.18 and survived a release-branch cut because of that:
+# guide-check (since #1078 — two zip [fn-doc] examples never backed by a
+# fixture) and check-v-fork (since the dynamic-Huffman fork commit).
+#
+# These six cost seconds each next to the V compiles, so there is no reason
+# a development lane should skip them. They run against the DEV binary
+# test-vcx already built — depending on build-vcx here would drag a whole
+# prod relink into the fast lane, which is the cost that kept them out.
+#
+# The expensive gates stay in `make test` alone: test-profile-gate (which
+# caught two of the three defects in the #1090 lane), check-prod-build,
+# docs-check, and the language-binding lanes. test-vcx is a BETTER subset
+# now, not the full matrix — a wave still exits on `make test`.
+.PHONY: test-vcx-gates
+test-vcx-gates: CX_BIN ?= $(CURDIR)/vcx/target/cx
+test-vcx-gates: build-vcx-dev
+	@"$(CX_BIN)" --allow-all scripts/check_v_fork_patches.cx
+	@"$(CX_BIN)" --allow-all scripts/check_portable_links.cx
+	@"$(CX_BIN)" --allow-all scripts/gen_guide/stdlib_docs_check.cx
+	@"$(CX_BIN)" --allow-all scripts/gen_guide/directive_docs_check.cx
+	@"$(CX_BIN)" --allow-all scripts/stdlib_catalog_gate.cx
+	@bash scripts/cxer_registry_report.sh --strict
+
+test-vcx: build-vcx-dev test-vcx-gates test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx
 	$(MAKE) -C vcx conform-all
 	$(MAKE) -C vcx conform-fmt
 	$(MAKE) -C vcx conform-data-bin-arrow
