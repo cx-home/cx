@@ -23,3 +23,4 @@
 # Restoring an original to regenerate is refused by name —
 # `scripts/consolidate_tests.sh audit <area>`.
 #absorbed vcx/code/stdlib_crypto_sign_test.v
+#absorbed vcx/code/stdlib_tar_test.v
