@@ -82,7 +82,11 @@ every column's parse lane, so it is not a per-cell divergence.)
   cannot carry them). csv/html/url absent from the writer: csv's row
   streaming lives in the chunked-table ABI; html/url have no
   document-stream shape. Justified by spec; extend only via abi.md.
-- **D13: UNJUSTIFIED — filed.** codec.md §6 says "the ABI / language
+- **D13: was UNJUSTIFIED — now RULED (CR-8 = a BY OWNER 2026-08-30,
+  #1133):** one registry-generic ABI conversion entry; the bespoke
+  families are frozen legacy sugar, documented as such, never extended.
+  Original register entry kept below for the record.
+  codec.md §6 says "the ABI / language
   bindings expose the registry, not bespoke `cx_X_to_Y` functions"; the
   shipped ABI is the inverse: bespoke N×M families for cx/xml/json/yaml/
   toml/csv, and NOTHING for md/html/url. abi.md documents the families as

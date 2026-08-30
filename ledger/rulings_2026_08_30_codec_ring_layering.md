@@ -222,6 +222,27 @@ rationale ("no evaluator"). Two separable pieces:
   who can parse/validate but not fmt/lint the same text has to install
   the full CLI for a capability their artifact already contains.
 
+## CR-8 — the ABI conversion surface (#1133) (RULED: CR-8 = a, BY OWNER 2026-08-30)
+
+Matrix row D13, the one UNJUSTIFIED divergence the matrix surfaced:
+codec.md §6 says the ABI exposes the registry, not bespoke `cx_X_to_Y`
+functions; the shipped ABI is the inverse, and md/html/url have no ABI
+conversion path at all.
+
+- (a) **TAKEN (owner, in-session)** — ONE registry-generic ABI entry
+  (from-name + to-name + payload → converted text; a bytes variant if the
+  binary codecs warrant it) resolving through codec_lookup/convert_by_name,
+  serving every current and future codec including overlay-registered
+  ones. The bespoke families are FROZEN legacy sugar: kept (ABI freeze,
+  partition §8), documented as legacy in abi.md, never extended to new
+  formats. codec.md §6 is amended to state exactly that split. md/html/url
+  become ABI-reachable through the generic entry with zero new bespoke
+  symbols.
+- (b) Bless the families and add md/html/url families — rejected:
+  perpetuates the N×M growth this drift class comes from.
+- (c) Leave and note — rejected: leaves three registry codecs unreachable
+  from every binding.
+
 ## Execution order
 
 Rulings (this file + the audit) land first, alone. Then, each with its
@@ -243,6 +264,12 @@ issue and `RULED:` token where a spec is touched:
    text for what stays absent + partition §2/§4 corrections (RULED: CR-7)
    + gate refusal-roster updates. Sequenced after CR-3's cmd_data touches
    to avoid file conflicts.
-8. Filed: #1131 (R2.2 lib-load follow-up), #1132 (wasm split, prio:low).
+8. CR-8 (ruled a): the registry-generic ABI conversion entry + codec.md §6
+   amendment + abi.md legacy-sugar framing (#1133) — sequenced after CR-3's
+   cabi.v/cx.h/baseline touches (same files).
+9. Filed: #1131 (R2.2 lib-load follow-up), #1132 (wasm split, prio:low).
+10. NEXT SESSION (owner-scheduled 2026-08-30): the #1119 representation
+   design session — Fable 5, design-first per the model policy. Scope
+   pinned on the issue.
 
 Exit gate: full `make test`, verdict from the log.
