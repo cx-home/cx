@@ -1542,7 +1542,8 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/net_real_socket_test.v \
                       vcx/tests/a2a_real_test.v \
                       vcx/tests/http_h2_serve_test.v \
-                      vcx/tests/code_eval_fixtures_test.v
+                      vcx/tests/code_eval_fixtures_test.v \
+                      vcx/tests/process_pty_test.v
 
 # The retry ROSTERS above say WHICH lanes get a serial retry. This says WHY,
 # PER LANE. The emitted line used to read "serial retry (known real-socket
@@ -1559,6 +1560,8 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
 RETRY_REASON_CASE = case "$$rel" in \
 	  vcx/tests/code_eval_fixtures_test.v) \
 	    reason="\#951 supervise note/terminal load-race under -j compile storms; green 25/25 and 80/80 in isolation" ;; \
+	  vcx/tests/process_pty_test.v) \
+	    reason="\#1125 pty master read races under the -j12 suite storm (empty child output); green in isolation and in the prior full run" ;; \
 	  vcx/tests/net_udp_read_deadline_test.v|vcx/tests/net_dtls_test.v|vcx/tests/net_real_socket_test.v|vcx/tests/a2a_real_test.v|vcx/tests/http_h2_serve_test.v) \
 	    reason="real-socket contention: ephemeral-port / deadline race under -j" ;; \
 	  vcx/platform/store_admin_plane_test.v|vcx/platform/store_grpc_live_test.v|vcx/platform/store_lazy_load_test.v) \
