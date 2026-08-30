@@ -198,6 +198,31 @@ Audit F14: 18MB JSON → 2.0GB RSS (112×), 15MB XML → 765MB (~50×);
 - (c) Implement streaming codec parse now — rejected: no consumer at the
   head of the queue; the enterprise SSO campaign is.
 
+## TF-6 — LATE RECORD (R5.0): the two spec touches that rode the fix commits
+
+Recorded 2026-08-30 AFTER the commits, when the spec-freeze gate flagged
+them — the gate is right and this is the R5.0 late record, Class S shape
+(work expressly authorized, `RULED:` token omitted from the messages),
+flagged for owner review like every agent-authored adjudication. The two
+pushed commits are adjudicated in `scripts/spec_freeze_gate.sh` rather than
+rewritten (shared branch history).
+
+- **2f55cec8c (#1106)** — `limits.md` §2 gains a row recording that the
+  codec parsers now carry the nesting guard. This is EXECUTION of the ruled
+  guard class (LIM-1 table, #876): the audit classified extending the
+  existing ruled guard to the codec parsers as parity needing no new
+  ruling, and the row edit makes the spec say what ships — the direction
+  the spec already promises (§1 frames the whole parse surface as guarded).
+  No new guard class (LIM-2 untouched).
+- **b3fe049c5 (#1107)** — `conversions.md` §3.1: the entity-reference row
+  splits into predefined-decode vs custom-preserved, and an
+  attribute-value-normalization paragraph lands. The owner's session
+  directive expressly authorized fixing #1107 without a further ruling;
+  the prior row described the defective behavior the fix removes, and
+  leaving it standing would be a known-false normative claim (the same
+  reasoning as TF-1(a1)). The XML 1.0 §3.3.3 semantics are the fix's
+  contract, pinned by conv-039..043 and the re-pinned xml.cxd 009/018.
+
 ## Execution order
 
 Rulings (this file) land first, alone. Execution stays with the issues:

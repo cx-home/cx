@@ -66,6 +66,8 @@ efd780b17b6c5511f6a5d3fd16fee549a4fd614d #777-catch-up — R6.2 batch; illustrat
 5a6ae8438b78782faa52f32c550b5ab5f16aaca6 #726-init — R6.2 batch; authoring-process §7 status row riding the feature commit, no recorded ruling — Class M
 c6caa75609a7e12f0b7a4b60426032be4488fa62 #726-reference — R6.2 batch; spec pointers repointed at the landed app riding the app commit, no recorded ruling — Class M
 c21515cb5766f09c1f48247e4e2c42bb4b5591fd #826-proposal — R6.2 batch; the proposal + its rendered demo, approval later given as R5.4 — Class M
+2f55cec8c85ee0ebc8bec527834901903347b331 #1106 — limits.md §2 row recording the codec-parser nesting guard: execution of the ruled LIM-1 guard class (#876), spec made to say what ships; token omitted; recorded LATE per R5.0 in ledger/rulings_2026_08_30_text_format_surface.md TF-6 — Class S. NOTE: adjudication authored by the agent that made the miss; flagged for owner review.
+b3fe049c59177ede2dd2bcf7219050981e3cb7d9 #1107 — conversions.md §3.1 entity/attr-normalization rows aligned to the owner-authorized fix (session directive 2026-08-30); the prior row described the defect; token omitted; recorded LATE per R5.0 in ledger/rulings_2026_08_30_text_format_surface.md TF-6 — Class S. NOTE: adjudication authored by the agent that made the miss; flagged for owner review.
 "
 
 is_normative_spec() {
