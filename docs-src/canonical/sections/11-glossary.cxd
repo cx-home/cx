@@ -529,10 +529,13 @@
   [child id=g-quotes title='quotes (single / double / triple)'
     [body
       """Three string forms: single-quoted `'…'` (escapes
-         supported), double-quoted `"…"` (same), and triple-quoted
-         `'''…'''` or `"""…"""` (multiline, whitespace-preserving,
-         no escape needed for the other quote characters). See
-         [[strings]]."""]]
+         supported), double-quoted `"…"` (same), and triple-quoted —
+         three of either quote character, opened and closed the same
+         way — which is multiline and whitespace-preserving and needs
+         no escape for the other quote characters. (The triple form is
+         described rather than spelled here: writing it literally
+         would close this very string. See [[strings]] for the
+         spelling.)"""]]
 
   [child id=g-regex title='regex'
     [body
