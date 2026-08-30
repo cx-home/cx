@@ -1401,6 +1401,7 @@ assistant makes with a young language is inventing a plausible module name.
 | `random` | Two distinct randomness facilities, kept cleanly separated so PRNG output can never accidentally stand in for crypto. |
 | `re` | Regular expressions backed by the RE2 engine, guaranteeing linear-time matching against any input with no catastrophic backtracking. |
 | `sched` | Scheduled events and timers on the event loop. |
+| `scim` | SCIM 2.0 provisioning semantics — the PROVISIONING half of enterprise SSO, counterpart to cx-stdlib/oidc's login half. |
 | `session` | The server-held (principal, tenant) session for a web app. |
 | `similar` | Graded comparison as a generalization of exact equality: where = returns a boolean, the core ~ operator returns a score in [0,1] plus evidence, and a decision policy maps the score to :match / :review / :no-match bands. |
 | `store` | A content-addressed object store with URL-dispatched backends. |
@@ -2860,6 +2861,7 @@ $ cx prog.cx
 | `random` | Two distinct randomness facilities, kept cleanly separated so PRNG output can never accidentally stand in for crypto. |
 | `re` | Regular expressions backed by the RE2 engine, guaranteeing linear-time matching against any input with no catastrophic backtracking. |
 | `sched` | Scheduled events and timers on the event loop. |
+| `scim` | SCIM 2.0 provisioning semantics — the PROVISIONING half of enterprise SSO, counterpart to cx-stdlib/oidc's login half. |
 | `session` | The server-held (principal, tenant) session for a web app. |
 | `similar` | Graded comparison as a generalization of exact equality: where = returns a boolean, the core ~ operator returns a score in [0,1] plus evidence, and a decision policy maps the score to :match / :review / :no-match bands. |
 | `store` | A content-addressed object store with URL-dispatched backends. |
