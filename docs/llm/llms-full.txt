@@ -3328,9 +3328,9 @@ Run flags (the default action; flags bind BEFORE the resource):
 
 Convert flags (the data reading; an explicit --from selects it):
   cx --from=FMT [--to=FMT] [--compact] [--lossless] [--include-root=DIR] [FILE]
-    --from: cx|xml|json|yaml|toml|md|csv|tsv|psv
+    --from: cx|xml|json|yaml|toml|md|csv|tsv|psv|html|url
             (.xml/.json/.yaml/.toml/.md files auto-detect their format)
-    --to:   cx|xml|json|yaml|toml|md|csv|tsv|psv
+    --to:   cx|xml|json|yaml|toml|md|csv|tsv|psv|html|url
   Projection shorthands: --ast --cx --xml --json --yaml --toml --md --csv
                          --tsv --psv --cxcol
   --compact              minimised output
