@@ -229,6 +229,30 @@ state never made ring-aware:
 | Embed-profile libcx vs monolith: all Ring-2 pack dispatch (~250 verbs, 6 directives, sub-ops, `pkg:` resolver) absent, empty-registry refusal fallthrough | platform_init.v → ring2_register.v, ring_registry.v:98 | CHOSEN & pack-gated — **no data-plane leak found** |
 | `codec_parse_opt_keys`/`codec_emit_opt_keys` are hardcoded match arms (codec.v:~640) — overlay-registered codecs can never gain a `-with-opts` verb | registry-vs-hardcode drift, same file | INCIDENTAL (not artifact divergence; same drift class) |
 
+## §4a. The per-format picture (owner-requested appendix)
+
+One row per format; `→` marks what this wave changes (CR-1/CR-5):
+
+| Format | Registry entry | Parse core | Emit core | Ring-1 module (layer 2) | lossless | Data profile | Refusal location |
+|---|---|---|---|---|---|---|---|
+| cx | base | R0 | R0 | `cx:` always-on | yes | full | ✅ line:col |
+| xml | base | R0 | R0 | none (synthesized + with-opts) | yes | full | ✅ line:col |
+| json | base emit-only → base complete | R1 → R0 | R0 | json.md (pretty/stream/opts) | yes | emit-only → full | ❌ → ✅ line:col |
+| yaml | base | R0 | R0 | none | yes | full | ✅ line:col |
+| toml | base | R0 | R0 | none | no (refuses by name) | full | ❌ → ✅ line:col |
+| md | base | R0 | R0 | none (lossy per D-B) | no | full | ◐ |
+| csv/tsv/psv | base (dialects) | R0 delimited.v | R0 | csv.md — deliberately DIFFERENT impl (§8.2 ruled dual surface) | no | full | ✅ row |
+| html | overlay → base | R1 → R0 | R1 → R0 | html.md (sanitize/extract-text) | no | absent → full | ✅ |
+| url | overlay → base | R1 → R0 | R1 → R0 | url.md (query/join/idn) | no | absent → full | ✅ |
+| cxcol/data-bin/ast | base | R0 bytes-only | R0 bytes-only | none (binary) | n/a | full | n/a |
+
+Post-wave invariants the table encodes: every codec half in the base
+table (overlay = extension seam only, #1130-watched); module presence is
+the TF-3 verb-richness axis and moves for no format; csv is the one
+ruled two-implementation format; TF-9's code+class+location holds in
+every lane with a natural unit (md residual ◐). tar/zip/mime/geo are
+correctly absent: stdlib packs, not codecs, promised to no profile.
+
 ## §5. Q4 — the vacuous-pass hole (#1127)
 
 conformance_run.v:299-320: the input-format dispatch is a hand-maintained
@@ -284,9 +308,9 @@ Two structural observations beyond the missing branch:
 | #1126 | ruled here (CR-1/CR-2); execution this wave |
 | #1127 | ruled here (CR-4); execution this wave |
 | #1128 | ruled here (CR-5); json half rides CR-1's rework, toml half is mechanical |
-| NEW: cx_features false capability claim in libcx-core | file (bug, area:cx-lang, prio:high) — direction ruled in CR-6, execution this wave per the prio:high standing policy |
-| NEW: registry-parity record in the extraction gate | file (bug/test, area:cx-lang) — ruled in CR-3, execution this wave |
-| NEW: R2.2 release gate never loads the staged library (PGC-1 residue) | file (design, area:cx-lang) — direction in CR-3, execution deferred to the release lane (touches the blocking cut gate; not this wave) |
-| NEW: data-profile CLI refusal rationale + hardcoded help prose | rides CR-3's execution (registry-derived list lifted to cli/) |
-| OPEN LETTER (not auto-ruled): should fmt/lint/code-tree join the data profile's verb set now that all three impls are Ring-0? | surface expansion on a shipped profile — owner call, posed in the session summary |
-| NEW: wasm control-surface split across the ring line | file (design, area:cx-lang, prio:low) |
+| #1129 (filed): cx_features false capability claim in libcx-core | bug, area:cx-lang, prio:high — direction ruled in CR-6, execution this wave per the prio:high standing policy |
+| #1130 (filed): registry-parity record in the extraction gate | bug, area:cx-lang, prio:medium — ruled in CR-3, execution this wave |
+| #1131 (filed): R2.2 release gate never loads the staged library (PGC-1 residue) | design, area:cx-lang, prio:medium — direction in CR-3, execution deferred to the release lane (touches the blocking cut gate; not this wave) |
+| data-profile CLI refusal rationale + hardcoded help prose | rides CR-3's execution (#1130 — registry-derived list lifted to cli/) |
+| OPEN LETTER (not auto-ruled): should fmt/lint/code-tree join the data profile's verb set now that all three impls are Ring-0? | surface expansion on a shipped profile — owner call, posed in the session summary (CR-7) |
+| #1132 (filed): wasm control-surface split across the ring line | design, area:cx-lang, prio:low |

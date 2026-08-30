@@ -184,7 +184,18 @@ this wave.
   makes it load-bearing for every binding; "advisory" is a euphemism for
   false.
 
-## CR-7 — OPEN LETTER (not auto-ruled): the data profile's verb set
+## CR-7 — the data profile's verb set (RULED: CR-7 = a, BY OWNER 2026-08-30)
+
+Posed as an open letter (surface expansion on a shipped profile is a
+product call, not a defect); the owner ruled **(a)** in-session: fmt, lint,
+and code-tree join the data profile's verb set. All three are pure Ring-0
+implementations; cannot-execute is untouched; the library/CLI asymmetry on
+code-tree disappears. Execution notes: `fmt --migrate-predicates` reaches
+the code layer and is NOT part of the data profile — the flag refuses
+naming the profile; partition §4's verb table and §2's stale fmt/lint
+sentence are corrected with the RULED token; the profile/extraction-gate
+refusal rosters that list these verbs as absent are updated in the same
+change. Original letter text below for the record.
 
 fmt, lint, and code-tree are pure Ring-0 implementations today (audit §4;
 partition §2's "fmt/lint are Ring-1" is stale), libcx-core already EXPORTS
@@ -221,14 +232,17 @@ issue and `RULED:` token where a spec is touched:
 2. CR-4: runner dispatch + in-json fixtures + conversions.cxd comment
    (#1127) — after 1 (the runner needs the Ring-0 parser).
 3. CR-3: inventory ABI + probe record + digest re-bless + CLI-lane list
-   derivation + cmd_data prose/rationale fix (new issue).
+   derivation + cmd_data prose/rationale fix (#1130).
 4. CR-5(toml): TReader positions (#1128-toml).
-5. CR-6: per-build mask + agreement attestation (new issue, prio:high).
+5. CR-6: per-build mask + agreement attestation (#1129, prio:high).
 6. Spec touches, each with RULED: token: cx_partition.md §2 (Ring-0
    content wording: codec text cores; fmt/lint sentence per CR-7's ruled
    half), json.md §5 (position in the error shape), abi.md §3 (core-build
    mask statement).
-7. File: R2.2 lib-load follow-up, wasm-split (prio:low), CR-7 letter in
-   the tracker if unanswered.
+7. CR-7 (ruled a): fmt/lint/code-tree wired into cmd_data + honest refusal
+   text for what stays absent + partition §2/§4 corrections (RULED: CR-7)
+   + gate refusal-roster updates. Sequenced after CR-3's cmd_data touches
+   to avoid file conflicts.
+8. Filed: #1131 (R2.2 lib-load follow-up), #1132 (wasm split, prio:low).
 
 Exit gate: full `make test`, verdict from the log.
