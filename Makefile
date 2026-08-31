@@ -870,11 +870,21 @@ spec-freeze-gate:
 #     libcx.dylib and the one from libcx-core.dylib must be BYTE-IDENTICAL
 #     (`cmp`). Errors are records too, so error-text identity is asserted.
 #     One artifact per process — the GC-carrying dylibs never co-load.
+#     Before the corpus walk it also records `cx_codec_inventory` — the
+#     artifact's OWN codec registry (RULED: CR-3, #1130) — so a registry
+#     that differs between the two libraries reds the `cmp` with ZERO
+#     fixtures required, and VERIFIES (per artifact, not in the compared
+#     transcript) that every symbol-gated cx_features bit is set exactly
+#     when its symbol is exported (RULED: CR-6, #1129 — the two masks now
+#     legitimately differ, so the assertion is truthfulness, not equality).
 #     Vacuous-pass defense (audit F-15 / remediation R3.8): the probe
 #     enforces the case-count floor below AND refuses any zero-record
-#     Ring-0 case that is not an intentional exclusion. The only
-#     intentional exclusions are the md-input cases (no md surface in the
-#     C ABI) — the CLI lane covers those via --from=md.
+#     Ring-0 case that is not an intentional exclusion. Intentional
+#     exclusion is DERIVED from the probe's own battery table: a case whose
+#     input format has no ABI battery (md, html, url — the C ABI carries no
+#     cx_md_*/cx_html_*/cx_url_* family) cannot be driven here and is
+#     covered by the CLI lane and the cx-only conformance runner. Every
+#     format that HAS a battery keeps the full zero-record check.
 #   CLI lane — vcx/tests/runners/extraction_gate/cli/ runs monolith cx and
 #     data-profile cx over the shared surface (verbs + EXPLICIT --from=
 #     convert; the bare-FILE run-vs-data reading is a ruled profile
@@ -907,12 +917,37 @@ EXTRACTION_GATE_FLOOR := 1564
 # with inherited stdio so it never blocks reading a child's pipe.
 #
 # MEASURED 2026-08-25, same binary, cleared scratch: serial 721 s, --jobs=8
-# 103 s (7.0x), and both produce the IDENTICAL verdict digest
-# 07de4e13ae9706744c68b8207c712a33d8c21da662e10cce554ba64fe5f91a0e over the same
-# 1,838 cases / 10,579 pairs. That digest prints in the OK line on every run: if
-# it moves, the lane compared a different set and the change is wrong — do not
-# re-bless it (a moved digest is how a hollow gate looks green; measured once
-# already, 271 comparisons reading a stale fixture).
+# 103 s (7.0x), and both produce the IDENTICAL verdict digest over the same
+# case set — which is what that measurement was FOR: proving the sharded mode
+# and the serial mode reach the same verdict.
+#
+# LAST DELIBERATE MEASUREMENT: 2026-08-30, digest
+# c59db6df923cbe46cbaca261fe761896b7359e2d9508deca821be915d725aa41 over 2,081
+# Ring-0 cases / 11,755 invocation pairs. It moved from
+# 07de4e13ae9706744c68b8207c712a33d8c21da662e10cce554ba64fe5f91a0e (1,838
+# cases / 10,579 pairs, 2026-08-25) because the corpus legitimately GREW twice
+# in the #1126 codec/Ring campaign: the first `[in-json …]` cases (conv-052..055,
+# RULED: CR-4 #1127 — json input was ungradeable before the reader became
+# Ring-0) and then the first `[in-html …]`/`[in-url …]` cases (conv-056..059,
+# the D21 corpus floor). The html/url pair add no CLI comparisons — this lane's
+# input map drives xml/json/yaml/toml/md — so the digest is unchanged between
+# those two waves.
+#
+# WHAT THIS NUMBER IS, AND IS NOT. It is ADVISORY DOCUMENTATION of the last
+# deliberate measurement, not the enforcement. Enforcement is the comparison
+# itself: every invocation pair must agree on stdout+stderr+rc, and the ABI
+# lane's two transcripts must be byte-identical under `cmp`. Those fail on a
+# real divergence whatever this comment says.
+#
+# The digest's JOB is to make a change in WHAT IS COMPARED visible. It prints
+# in the OK line on every run, so when it moves you owe an account of why:
+# name the cases or comparisons added or removed, and update the block above
+# with the new digest, the pair count, the date, and the reason. A moved digest
+# with no such account is the failure mode to fear (a hollow gate looks green;
+# measured once already, 271 comparisons reading a stale fixture). A moved
+# digest WITH one is ordinary corpus growth — and a comment that forbids ever
+# re-blessing turns into false authority the moment the corpus grows, which is
+# exactly what happened between 2026-08-25 and now.
 EXTRACTION_GATE_JOBS ?= 8
 LIBCX_ART      := vcx/target/$(LIB_NAME).$(if $(filter Darwin,$(shell uname -s)),dylib,so)
 LIBCX_CORE_ART := vcx/target/libcx-core.$(if $(filter Darwin,$(shell uname -s)),dylib,so)

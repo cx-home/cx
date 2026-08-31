@@ -40,7 +40,7 @@ pre-wave state stays readable.
 | D18 | Typing policy | native | lexical + `cx:attr-types` | strict, never synthesizes | 1.2-core subset | native | n/a | lane autotypes / module never | verbatim text | components as strings | schema-driven |
 | D19 | Dialect pinned where | grammar | conversions §2.1 (XML 1.0+NS) | json.md (RFC 8259 strict) | TF-2 stmt (1.2 core, CX subset) | conversions §6.1 (TOML 1.0) | conversions §7 (subset, D-B) | csv.md (RFC 4180+dialects) | html.md (WHATWG-lenient) | url.md (3986 + WHATWG) | data-bin.md/ast-bin.md |
 | D20 | Data profile / libcx-core | full | full | emit-only → full | full | full | full | full | absent → full | absent → full | full |
-| D21 | Corpus `in-*` cases | 1916 | 47 | **0 → W5 adds** | 49 | 18 | 5 | 5+1+1 | **0 → W5 adds** | **0 → W5 adds** | binary lanes |
+| D21 | Corpus `in-*` cases | 1916 | 47 | **0 → 4** | 49 | 18 | 5 | 5+1+1 | **0 → 2** | **0 → 2** | binary lanes |
 | D22 | Open defects | — | #1104 dup attrs | — | — | — | — | — | — | — | — |
 
 (D22 note: #1119, the 112×/50× in-memory representation cost, is
@@ -137,8 +137,14 @@ every column's parse lane, so it is not a per-cell divergence.)
 - **D21:** the corpus floor was never stated per codec, which is how
   D21.JSON=0 stayed invisible (#1126/#1127). New rule, this file: **every
   codec with a text parse half carries at least one `in-<fmt>` corpus
-  case** — W5 adds json/html/url; the registry-driven runner (CR-4)
-  refuses unknown sections, closing both directions.
+  case**; the registry-driven runner (CR-4) refuses unknown sections,
+  closing both directions. **SATISFIED for every column as of W5/W6:**
+  json = conv-052..055 (W5), html = conv-056/057, url = conv-058/059
+  (W6). The html/url pair are intentional exclusions from the extraction
+  gate's C-ABI probe (no `cx_html_*`/`cx_url_*` family exists, as with md);
+  the probe derives that from its own battery table now instead of a
+  hardcoded `in_md` literal, and their cross-artifact assertion is carried
+  by the `cx_codec_inventory` record (#1130) rather than by a fixture.
 - **D22:** #1104 remains the one format-local open defect; every other
   audit defect (#1105–#1118, #1120) is closed.
 
