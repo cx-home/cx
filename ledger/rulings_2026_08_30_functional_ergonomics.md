@@ -129,6 +129,45 @@ lettered options before any impl.
 
 ---
 
+## FE-7 — one canonical result image (RULED: FE-7 = a, BY OWNER 2026-08-31; #1148)
+
+Added to the packet after the W2 exit gate surfaced the split. Two result
+printers existed by documented design: `render_canonical` (the §11.1a
+EV-RESULT-IMAGE — canonical spelling, quotes only where required) and the
+programs renderer behind CLI stdout (task #43, 2026-05-23 — preserves the
+quoted-string surface). Both bijective, measured: both spellings of a
+quote-optional string reparse to one value, one `cx canonical`, one hash.
+The corpus is graded against BOTH producers by different lanes, so any
+fixture pinning a quote-optional position fails exactly one lane whatever
+the author writes — held for 20,000+ fixtures by accident until #1144 W2.
+
+- (a) **TAKEN (owner) — the EV-RESULT-IMAGE (canonical spelling) is the ONE
+  result image from every producer: CLI, streaming, ABI, in-process.**
+  Presentation variants may exist only as explicit opt-in flags above it,
+  never as a different default spelling. The value model already decided
+  this (semantic_value_model.md: one value, one identity, one meaning
+  everywhere); quote preservation carries no value-level information, and
+  source-faithfulness has its principled home in `cx fmt` (CR-9's
+  program-faithful formatter), not in the value image. **The task-#43
+  convention is SUPERSEDED by this ruling** — right for its moment
+  (visual round-trip in early eval output), overtaken by the orthogonality
+  standard and the SaaS-on-CX premise under which programs and pipelines
+  consume CLI output against hashes and goldens. #1148's landmine class
+  disappears by construction.
+- (b) Value-compare the bin lane — rejected: weakens the gate to protect
+  the seam.
+- (c) Authoring-time fence in check-code-fixtures — rejected: fences the
+  seam forever and pays a per-fixture check in perpetuity to preserve a
+  presentation nicety; institutionalizes the split (a) removes.
+
+Execution: the campaign's closing wave (after W3/W4) — repoint the
+programs renderer's divergent arms at the canonical spelling, both CLI
+paths moving together (eval_and_print's byte-equivalence contract holds),
+differ + full corpus catch every consequence mechanically, every moved pin
+re-blessed deliberately, the render.v task-#43 comments rewritten to cite
+this ruling. Streaming and one-shot must stay byte-identical to each other
+throughout.
+
 ## Refusals register (summary)
 
 | Refused | Grounds |
