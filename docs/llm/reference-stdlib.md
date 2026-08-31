@@ -236,8 +236,7 @@ variants that make a pipeline total rather than partial.
 `prog.cx`
 ```cx
 [?lib 'cx-stdlib/fp']
-[?def inc ($x) [+ $x 1]]
-[$fp:map (1, 2, 3) $inc]
+[$fp:map (1, 2, 3) [+ _ 1]]
 ```
 
 ```console

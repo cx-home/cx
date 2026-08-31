@@ -15,6 +15,16 @@ exercises the `http` + `csv` + `validate` triad.
 **Last revised: 2026-08-25 against `release/0.17`** — re-derived from
 measurement after all six programs were rewritten for the v0.8.0 surface.
 
+**Re-run 2026-08-31 against `release/0.18`** (ergonomics campaign #1144 W4):
+all six programs re-run unchanged, every live status matches the table below.
+No program carried a pre-campaign workaround shape for the campaign's idioms
+to retire — the sweep's findings, including why the op-table idiom does not
+apply to `05-rpn-calculator`'s atom token stream, are recorded in
+`05-rpn-calculator.md` under "Post-campaign re-derivation". The idiom swaps
+the campaign *did* find live in the teaching corpus landed in
+`conformance/llm/antipatterns.cxd`, `conformance/stdlib/fp.cxd` and
+`conformance/stdlib/array.cxd`.
+
 ## What the 2026-08-25 re-derivation found, and why it was needed
 
 Every program in this corpus had been **unrunnable since the v0.8.0 homoiconic

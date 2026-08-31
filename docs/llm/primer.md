@@ -828,8 +828,285 @@ $ cx --data=input.cx prog.cx
 :other
 ```
 
-Reach for `[?match]` when you are taking a value *apart*. For a plain scalar
-branch a flat `[?if]` chain is both clearer and far cheaper — see §9.
+### Destructure in one line — single-arm `[?match]`
+
+Drop the arm keywords and `[?match]` takes one pattern and one body:
+`[?match SUBJECT PATTERN BODY]`. This is the **destructure-or-refuse** bind —
+the pattern is the whole contract, and a shape that does not fit is a loud
+refusal, never a silent skip. The full pattern grammar applies here, rest
+marker included:
+
+`input.cx`
+```cx
+[doc]
+```
+
+`prog.cx`
+```cx
+[?def apply-op ($stack $op)
+  [?match $stack ($b, $a, *$rest) [yield [$op $a $b]]]]
+[$apply-op (3, 4, 9) [?fn ($x $y) [+ $x $y]]]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+7
+```
+
+The refuse half is the point. A stack too short to take apart stops the
+program instead of computing something from absent operands:
+
+`input.cx`
+```cx
+[doc]
+```
+
+`prog.cx`
+```cx
+[?def apply-op ($stack $op)
+  [?match $stack ($b, $a, *$rest) [yield [$op $a $b]]]]
+[$apply-op (3) [?fn ($x $y) [+ $x $y]]]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+error: cx-err:CXER0100: [?match] no match for value (single-arm form)
+```
+
+Reach for `[?match]` when you are taking a value *apart*, and for the
+multi-arm form when you genuinely have several shapes to tell apart. **On
+cost:** a structural single-arm destructure runs at parity with the
+hand-written bind chain, and so do bind-free multi-arm arms (scalar literals,
+the wildcard) against a flat `[?if]` chain — neither is worth rewriting for
+speed. The one hot-path shape that still bites is a *wide* dispatch over
+**element patterns**, once per node of a document: see §9.
+
+### Callable values — one rule at every site
+
+A **callable value** is one of exactly five things:
+
+| Kind | Written |
+|---|---|
+| a `[?def]` value | `double` or `$double` |
+| a `[?fn]` value | `[?fn ($x) …]` |
+| a partial | `[$f 5 _]` |
+| an operator value | `[+ _ _]`, `[cast _ :int]` |
+| a builtin | `$upper`, `$floor` |
+
+All five are **bindable**, **passable** and **applicable** at the same sites.
+So there is no adapter lambda to write and no second spelling of an operator
+to learn: a `_` hole in an operator form makes that operator the value, and
+the holes show its arity.
+
+`input.cx`
+```cx
+[doc]
+```
+
+`prog.cx`
+```cx
+[?let [= $f [+ _ 1]] [$f 41]]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+42
+```
+
+`input.cx`
+```cx
+[doc]
+```
+
+`prog.cx`
+```cx
+[?let [= $add [+ _ _]] [$add 2 3]]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+5
+```
+
+Which is what makes an **operator table** ordinary data — build the map, look
+the operator up by a runtime token, apply it:
+
+`input.cx`
+```cx
+[doc]
+```
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/map']
+[?let [= $ops {'+': [+ _ _], '-': [- _ _], '*': [* _ _]}]
+  [?let [= $k '*']
+    [?let [= $f [$map:get $ops $k]] [$f 6 7]]]]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+42
+```
+
+A `[using …]` clause, and every higher-order std-lib parameter, takes the
+operator value directly. (A data value in one of those slots is refused for
+*callability* — `cx-err:CXER0106` — and the diagnostic lists all five kinds,
+never one of them.)
+
+`input.cx`
+```cx
+[doc]
+```
+
+`prog.cx`
+```cx
+[?reduce (1, 2, 3, 4) [using [+ _ _]] [init 0]]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+10
+```
+
+### Look a key up with a computed key
+
+Two reads answer a map entry whose key is only known at run time. They differ
+in **one** thing — what a miss does — and that is how you choose:
+
+`[$map:get $m $k]` answers the **absence channel** on a miss, so `[?else]`
+supplies the default. This is the read the operator table above uses:
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/map']
+[?let [= $m {'+': plus, '-': minus}] [= $k '-'] [$map:get $m $k]]
+```
+
+```console
+$ cx prog.cx
+minus
+```
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/map']
+[?let [= $m {'+': plus}] [= $k 'zz']
+  ([$map:get $m $k], [?else [$map:get $m $k] :default])]
+```
+
+```console
+$ cx prog.cx
+((), :default)
+```
+
+`$m.$k` — the path step with a computed name — reads the same entry and
+**fails loud** on a miss. Take it where an absent key is a bug at that line:
+
+`input.cx`
+```cx
+[ignored]
+```
+
+`prog.cx`
+```cx
+[?let [= $m {'+': plus}] [= $k 'zz'] $m.$k]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+error: cx-err:CXER0001: no member (string) "zz"
+```
+
+`input.cx`
+```cx
+[ignored]
+```
+
+`prog.cx`
+```cx
+[?let [= $m {'+': plus}] [= $k 'zz'] [?else $m.$k :default]]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+:default
+```
+
+A non-scalar key is refused by both rather than quietly missing.
+
+### Read your own arguments, and turn text into values
+
+`[$env:argv]` is your own argument vector, in the `[resource, …args]` shape —
+**ungated**, because reading your own arguments is not an effect. It hands you
+**strings**, and there is no `[$parse]` verb: three routes take the text to a
+value, and they differ by what a bad input does.
+
+| Route | Bad input |
+|---|---|
+| `type=` on an `[argspec]` flag — the value arrives already typed | refuses `cx-err:CXER2502`, naming the flag the user typed |
+| `[cast $v :int]` — the language's single coercion path | refuses `cx-err:CXER0290` |
+| `[$strings:to-number $v]` | **absence**, so `[?else]` supplies a default |
+
+Declare the flag and let `parse-args` do the coercion — then the refusal can
+name the flag, which no later `cast` can:
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/env']
+[?let [= $spec [argspec [flag name=verbose short=v type=bool] [flag name=limit short=n type=int default=100]]]
+  [= $parsed [$env-parse-args $spec ("prog", "--verbose", "--limit", "10")]]
+  [$env:flag $parsed "limit"]]
+```
+
+```console
+$ cx prog.cx
+10
+```
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/env']
+[?let [= $spec [argspec [flag name=limit short=n type=int]]]
+  [$env-parse-args $spec ("prog", "--limit", "notanint")]]
+```
+
+```console
+$ cx prog.cx
+[err code=cx-err:CXER2502 message='E_ENV_FLAG_TYPE_MISMATCH: notanint is not a valid int']
+```
+
+In production the argv sequence those two pass explicitly is `[$env:argv]`.
+For a value that did not come from a declared flag, `cast` is the coercion:
+
+`input.cx`
+```cx
+[doc]
+```
+
+`prog.cx`
+```cx
+[cast "42" :int]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+42
+```
+
+And where a non-numeric input is an ordinary case rather than an error, take
+the absence-signalling route and coalesce:
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/strings']
+[?else [$strings:to-number "3.07abc"] "not-a-number"]
+```
+
+```console
+$ cx prog.cx
+'not-a-number'
+```
 
 ### Define with `[?def]`
 
@@ -1485,8 +1762,7 @@ $ cx prog.cx
 `prog.cx`
 ```cx
 [?lib 'cx-stdlib/fp']
-[?def inc ($x) [+ $x 1]]
-[$fp:map (1, 2, 3) $inc]
+[$fp:map (1, 2, 3) [+ _ 1]]
 ```
 
 ```console
@@ -1647,13 +1923,23 @@ $ cx prog.cx
 
 #### A wide [?match] on a per-node hot path
 
-`[?match]` is a pattern-matching dispatch, not a switch statement: every arm
-carries a pattern that must be compiled and tried. Measured on ARM, one
-`[?match]` call costs ~20-45us against ~2us for the equivalent flat
-`[?if]`/`[=]` chain — ~500x, which is invisible in a script and ruinous once
-it runs once per node of a document. Reach for `[?match]` when you are
-destructuring; reach for a flat `[?if]` chain when you are choosing a branch
-on a scalar. The pair below proves the rewrite is output-preserving.
+`[?match]` is a pattern-matching dispatch, not a switch statement, and what
+an arm COSTS depends on what its pattern binds. Bind-free arms — scalar
+literals, the wildcard — are at PARITY with the equivalent flat
+`[?if]`/`[=]` chain (measured ~0.96x on a 40-arm literal table), and a
+structural single-arm destructure runs at 0.94-0.98x of a hand-written flat
+bind chain, so neither is worth rewriting for speed. Arms carrying a BINDING
+pattern are the remaining hot-path shape: an element pattern, a `$bind`, a
+collection pattern each pay a per-arm environment rollback whose cost scales
+with the PROGRAM (how much is in scope), not with the pattern — so a wide
+element-pattern dispatch run once per node of a document gets dramatically
+more expensive as the program grows around it, which is the trap. The rule:
+reach for `[?match]` to take a value APART; on a per-node branch over element
+shapes, dispatch on the head name with a flat `[?if]` chain. The pair below
+proves that rewrite is output-preserving. (Historic note for anyone holding
+older numbers: the "~500x / ~20-45us per arm" figure this entry used to quote
+was retired by the dispatch work in cx-private #850, #1094 and #1139 — it no
+longer describes any shape.)
 
 **Do not write this:**
 
@@ -1736,6 +2022,84 @@ $ cx -e '[+ 1 2]'
 ```
 
 <sub>Fixtures: `ap-cx-eval-inline-wrong` / `ap-cx-eval-inline-right` in `conformance/llm/antipatterns.cxd`</sub>
+
+#### Wrapping an operator in a [?fn] to pass it somewhere
+
+A `[?fn]` whose entire body is one application of one operator to its own
+parameters is an ADAPTER — it exists only because the operator could not be
+named as a value. It can be: a hole-bearing operator form IS the operator's
+value (`[+ _ _]` binary, `[+ _ 1]` unary), accepted at every site a callable
+goes — a `[using …]` clause, a higher-order std-lib parameter, an argument, a
+map entry. Nothing stands between the operator and the slot, the arity is
+visible in the holes, and the same value goes in an operator table
+(`{'+': [+ _ _], '-': [- _ _]}`) that a runtime token can look up. The two
+forms below are output-identical; the adapter is pure ceremony.
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[?reduce (1, 2, 3, 4) [using [?fn ($a $b) [+ $a $b]]] [init 0]]
+```
+
+```console
+$ cx prog.cx
+10
+```
+
+**Write this:** The operator value itself
+
+`prog.cx`
+```cx
+[?reduce (1, 2, 3, 4) [using [+ _ _]] [init 0]]
+```
+
+```console
+$ cx prog.cx
+10
+```
+
+<sub>Fixtures: `ap-adapter-lambda-wrong` / `ap-adapter-lambda-right` in `conformance/llm/antipatterns.cxd`</sub>
+
+#### Multi-arm [?match] with one real arm and an else that re-raises
+
+This is the shape you write when you want "destructure it or fail", and the
+only match form you know is the multi-arm one: one `[case]` doing the work,
+one `[else]` inventing an error code for the shape that did not fit. The
+single-arm form is exactly that, built in — `[?match SUBJECT PATTERN BODY]`
+takes the full pattern grammar (sequence, array, map, element, rest `*$name`,
+type tests) and a miss is the language's own loud NO_MATCH refusal, so the
+bespoke error code and its wording stop being yours to maintain. One line,
+and the pattern is still the whole contract. Reach for the multi-arm form
+when you genuinely have SEVERAL shapes to dispatch between.
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[?match (3, 4, 9)
+  [case ($b, $a, *$rest) [+ $a $b]]
+  [else [err code='bad-stack' message='need at least two operands']]]
+```
+
+```console
+$ cx prog.cx
+7
+```
+
+**Write this:** Single-arm [?match] — destructure or refuse
+
+`prog.cx`
+```cx
+[?match (3, 4, 9) ($b, $a, *$rest) [yield [+ $a $b]]]
+```
+
+```console
+$ cx prog.cx
+7
+```
+
+<sub>Fixtures: `ap-match-else-rethrow-wrong` / `ap-match-else-rethrow-right` in `conformance/llm/antipatterns.cxd`</sub>
 
 ### One more, from the language itself
 

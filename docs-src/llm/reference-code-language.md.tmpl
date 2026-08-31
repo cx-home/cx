@@ -46,17 +46,34 @@ order. `[when …]` adds a predicate arm, `[where …]` guards a case.
 
 {{EXAMPLE:program-match-multi-006-where-guard block}}
 
-A single-arm match with no `[else]` that does not match RAISES rather than
-returning empty — matching is a claim, and a failed claim is an error:
+A match with one `[case]` arm and no `[else]` that does not match RAISES
+rather than returning empty — matching is a claim, and a failed claim is an
+error:
 
 {{EXAMPLE:program-match-multi-009-single-arm-no-match-raises block}}
+
+Dropping the arm keywords entirely gives the **single-arm** form —
+`[?match SUBJECT PATTERN BODY]` — which takes the full pattern grammar and is
+the destructure-or-refuse bind:
+
+{{EXAMPLE:program-match-single-025-destructure-or-refuse-idiom block}}
 
 ## Comprehensions
 
 `[?for]` is the one iteration directive: `[in $x SOURCE]` clauses (more than
 one nests), `[where]` filters, `[group-by]` partitions and binds `$count` and
-`$group`, `[order-by]` sorts, `[yield]` emits. Patterns in the source
-position bind by shape.
+`$group`, `[order-by]` sorts, `[yield]` emits. The bind position takes the
+**full pattern grammar** — sequence, array, map, element, typed binds, rest
+`*$name` — so key/value iteration needs no index arithmetic:
+
+{{EXAMPLE:program-for-pattern-025-for-map-pairs-idiom block}}
+
+A bind-form pattern that an item does not fit **refuses**, naming the item's
+ordinal — it is never a silent skip, because a skip is silent data loss.
+(Element patterns keep their search semantics and still skip: they are a
+claim about which nodes to visit, not about every item's shape.)
+
+{{EXAMPLE:program-for-pattern-002-seq-miss-refuses block}}
 
 {{EXAMPLE:program-for-002-active-emails block}}
 

@@ -108,8 +108,9 @@ $ cx --data=input.cx prog.cx
 :adult
 ```
 
-A single-arm match with no `[else]` that does not match RAISES rather than
-returning empty — matching is a claim, and a failed claim is an error:
+A match with one `[case]` arm and no `[else]` that does not match RAISES
+rather than returning empty — matching is a claim, and a failed claim is an
+error:
 
 `input.cx`
 ```cx
@@ -126,12 +127,69 @@ $ cx --data=input.cx prog.cx
 error: cx-err:CXER0100: [?match] no match for value (single-arm form)
 ```
 
+Dropping the arm keywords entirely gives the **single-arm** form —
+`[?match SUBJECT PATTERN BODY]` — which takes the full pattern grammar and is
+the destructure-or-refuse bind:
+
+`input.cx`
+```cx
+[doc]
+```
+
+`prog.cx`
+```cx
+[?def apply-op ($stack $op)
+  [?match $stack ($b, $a, *$rest) [yield [$op $a $b]]]]
+[$apply-op (3, 4, 9) [?fn ($x $y) [+ $x $y]]]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+7
+```
+
 ## Comprehensions
 
 `[?for]` is the one iteration directive: `[in $x SOURCE]` clauses (more than
 one nests), `[where]` filters, `[group-by]` partitions and binds `$count` and
-`$group`, `[order-by]` sorts, `[yield]` emits. Patterns in the source
-position bind by shape.
+`$group`, `[order-by]` sorts, `[yield]` emits. The bind position takes the
+**full pattern grammar** — sequence, array, map, element, typed binds, rest
+`*$name` — so key/value iteration needs no index arithmetic:
+
+`input.cx`
+```cx
+[doc]
+```
+
+`prog.cx`
+```cx
+[?for-map [in ($k, $v) (("a", 1), ("b", 2))] [yield-map $k [* $v 10]]]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+{a: 10, b: 20}
+```
+
+A bind-form pattern that an item does not fit **refuses**, naming the item's
+ordinal — it is never a silent skip, because a skip is silent data loss.
+(Element patterns keep their search semantics and still skip: they are a
+claim about which nodes to visit, not about every item's shape.)
+
+`input.cx`
+```cx
+[doc]
+```
+
+`prog.cx`
+```cx
+[?for [in ($k, $v) (("a", 1), ("b"))] [yield $k]]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+error: cx-err:CXER0100: [?for] generator pattern does not match item 2 (NO_MATCH): `[in PATTERN SRC]` is a destructuring BIND — every item of SRC must fit the pattern. To keep only the items that fit, filter by shape with [where] or a [?match] in the yield body (code.md §7.5)
+```
 
 `input.cx`
 ```cx

@@ -198,13 +198,23 @@ three nested `[?let]`s is a rewrite an assistant should never emit.
   [title [#A wide [?match] on a per-node hot path#]]
   [tags match if dispatch performance antipattern 938]
   [why [#
-`[?match]` is a pattern-matching dispatch, not a switch statement: every arm
-carries a pattern that must be compiled and tried. Measured on ARM, one
-`[?match]` call costs ~20-45us against ~2us for the equivalent flat
-`[?if]`/`[=]` chain — ~500x, which is invisible in a script and ruinous once
-it runs once per node of a document. Reach for `[?match]` when you are
-destructuring; reach for a flat `[?if]` chain when you are choosing a branch
-on a scalar. The pair below proves the rewrite is output-preserving.
+`[?match]` is a pattern-matching dispatch, not a switch statement, and what
+an arm COSTS depends on what its pattern binds. Bind-free arms — scalar
+literals, the wildcard — are at PARITY with the equivalent flat
+`[?if]`/`[=]` chain (measured ~0.96x on a 40-arm literal table), and a
+structural single-arm destructure runs at 0.94-0.98x of a hand-written flat
+bind chain, so neither is worth rewriting for speed. Arms carrying a BINDING
+pattern are the remaining hot-path shape: an element pattern, a `$bind`, a
+collection pattern each pay a per-arm environment rollback whose cost scales
+with the PROGRAM (how much is in scope), not with the pattern — so a wide
+element-pattern dispatch run once per node of a document gets dramatically
+more expensive as the program grows around it, which is the trap. The rule:
+reach for `[?match]` to take a value APART; on a per-node branch over element
+shapes, dispatch on the head name with a flat `[?if]` chain. The pair below
+proves that rewrite is output-preserving. (Historic note for anyone holding
+older numbers: the "~500x / ~20-45us per arm" figure this entry used to quote
+was retired by the dispatch work in cx-private #850, #1094 and #1139 — it no
+longer describes any shape.)
 #]]
   [in-cx [#
 [empty]
@@ -340,6 +350,94 @@ into a money column — which is precisely the class this rule exists to close.
 #]]
   [out-text [#
 [total 25.00]
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── A7. an adapter lambda in front of an operator ─────────────────── ]
+
+ [case id=ap-adapter-lambda-wrong level=core
+  [title [#Wrapping an operator in a [?fn] to pass it somewhere#]]
+  [tags callable operator-hole higher-order antipattern 1144 fe-1]
+  [why [#
+A `[?fn]` whose entire body is one application of one operator to its own
+parameters is an ADAPTER — it exists only because the operator could not be
+named as a value. It can be: a hole-bearing operator form IS the operator's
+value (`[+ _ _]` binary, `[+ _ 1]` unary), accepted at every site a callable
+goes — a `[using …]` clause, a higher-order std-lib parameter, an argument, a
+map entry. Nothing stands between the operator and the slot, the arity is
+visible in the holes, and the same value goes in an operator table
+(`{'+': [+ _ _], '-': [- _ _]}`) that a runtime token can look up. The two
+forms below are output-identical; the adapter is pure ceremony.
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?reduce (1, 2, 3, 4) [using [?fn ($a $b) [+ $a $b]]] [init 0]]
+#]]
+  [out-text [#
+10
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [case id=ap-adapter-lambda-right level=core
+  [title [#The operator value itself#]]
+  [tags callable operator-hole higher-order 1144 fe-1]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?reduce (1, 2, 3, 4) [using [+ _ _]] [init 0]]
+#]]
+  [out-text [#
+10
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [; ── A8. a hand-rolled else-arm around one real pattern ────────────── ]
+
+ [case id=ap-match-else-rethrow-wrong level=core
+  [title [#Multi-arm [?match] with one real arm and an else that re-raises#]]
+  [tags match single-arm destructure antipattern 1144 fe-2]
+  [why [#
+This is the shape you write when you want "destructure it or fail", and the
+only match form you know is the multi-arm one: one `[case]` doing the work,
+one `[else]` inventing an error code for the shape that did not fit. The
+single-arm form is exactly that, built in — `[?match SUBJECT PATTERN BODY]`
+takes the full pattern grammar (sequence, array, map, element, rest `*$name`,
+type tests) and a miss is the language's own loud NO_MATCH refusal, so the
+bespoke error code and its wording stop being yours to maintain. One line,
+and the pattern is still the whole contract. Reach for the multi-arm form
+when you genuinely have SEVERAL shapes to dispatch between.
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?match (3, 4, 9)
+  [case ($b, $a, *$rest) [+ $a $b]]
+  [else [err code='bad-stack' message='need at least two operands']]]
+#]]
+  [out-text [#
+7
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [case id=ap-match-else-rethrow-right level=core
+  [title [#Single-arm [?match] — destructure or refuse#]]
+  [tags match single-arm destructure 1144 fe-2]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?match (3, 4, 9) ($b, $a, *$rest) [yield [+ $a $b]]]
+#]]
+  [out-text [#
+7
 #]]
   [exit-code [#0#]]
  ]

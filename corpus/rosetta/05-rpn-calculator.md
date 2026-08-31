@@ -43,6 +43,32 @@ Also closed earlier by the VC-28 rewrite: the "multi-arg `[?fn]` apply
 with a non-trivial body" gap — `[?fn ($acc $tok) …]` inside `[?reduce]`
 is exactly that, and it works.
 
+### Post-campaign re-derivation (2026-08-31, ergonomics campaign #1144 W4)
+
+Re-run unchanged against the campaign's binary: `[stack [n 35]]`, rc=0. The
+program is **deliberately not refreshed**, and the measurement is the reason
+rather than a preference:
+
+1. **No adapter lambda to retire.** `[?fn ($acc $tok) …]` here is a genuine
+   two-parameter fold step with a dispatch body, not a one-application
+   wrapper standing in front of an operator — so the operator-value form
+   (`[+ _ _]`) has nothing to replace. Where an adapter *does* stand in front
+   of an operator, the corpus now carries the swap as an anti-pattern pair
+   (`ap-adapter-lambda-*` in `conformance/llm/antipatterns.cxd`).
+2. **The op-table idiom cannot be keyed by this token stream.** An operator
+   table is a map, and an **atom is not an admissible key scalar** (cxdm
+   §2.6) — measured: `[$map:put {} :plus [+ _ _]]` refuses with
+   "KEY must be an admissible key scalar". The token stream here is atoms
+   (`:plus` / `:times`), so an op-table rewrite would have to interpose
+   `[cast $tok :string]` on every lookup: one form longer, one concept wider,
+   for no gain. A token stream that is already text (`'+'` / `'*'`) is where
+   the op table pays, and `program-ophole-006-op-table-end-to-end` in
+   `conformance/code.cxd` is that program end to end.
+3. **The stack is a document on purpose.** The `[?match]` arms read it through
+   the child axis; that inspectable-intermediate-state rationale is this
+   program's whole contribution to the corpus, and a sequence-stack variant
+   would teach the opposite lesson under the same number.
+
 ## Historical (v0.7.x surface, superseded)
 
 Everything below this line describes the **pre-reshape** surface and is kept as

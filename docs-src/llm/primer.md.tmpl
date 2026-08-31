@@ -307,8 +307,112 @@ wildcard, and `[else]` is the fallback.
 
 {{EXAMPLE:program-match-multi-007-wildcard block}}
 
-Reach for `[?match]` when you are taking a value *apart*. For a plain scalar
-branch a flat `[?if]` chain is both clearer and far cheaper — see §9.
+### Destructure in one line — single-arm `[?match]`
+
+Drop the arm keywords and `[?match]` takes one pattern and one body:
+`[?match SUBJECT PATTERN BODY]`. This is the **destructure-or-refuse** bind —
+the pattern is the whole contract, and a shape that does not fit is a loud
+refusal, never a silent skip. The full pattern grammar applies here, rest
+marker included:
+
+{{EXAMPLE:program-match-single-025-destructure-or-refuse-idiom block}}
+
+The refuse half is the point. A stack too short to take apart stops the
+program instead of computing something from absent operands:
+
+{{EXAMPLE:program-match-single-026-destructure-or-refuse-refuses block}}
+
+Reach for `[?match]` when you are taking a value *apart*, and for the
+multi-arm form when you genuinely have several shapes to tell apart. **On
+cost:** a structural single-arm destructure runs at parity with the
+hand-written bind chain, and so do bind-free multi-arm arms (scalar literals,
+the wildcard) against a flat `[?if]` chain — neither is worth rewriting for
+speed. The one hot-path shape that still bites is a *wide* dispatch over
+**element patterns**, once per node of a document: see §9.
+
+### Callable values — one rule at every site
+
+A **callable value** is one of exactly five things:
+
+| Kind | Written |
+|---|---|
+| a `[?def]` value | `double` or `$double` |
+| a `[?fn]` value | `[?fn ($x) …]` |
+| a partial | `[$f 5 _]` |
+| an operator value | `[+ _ _]`, `[cast _ :int]` |
+| a builtin | `$upper`, `$floor` |
+
+All five are **bindable**, **passable** and **applicable** at the same sites.
+So there is no adapter lambda to write and no second spelling of an operator
+to learn: a `_` hole in an operator form makes that operator the value, and
+the holes show its arity.
+
+{{EXAMPLE:program-ophole-001-unary-partial-value block}}
+
+{{EXAMPLE:program-ophole-002-binary-operator-value block}}
+
+Which is what makes an **operator table** ordinary data — build the map, look
+the operator up by a runtime token, apply it:
+
+{{EXAMPLE:program-ophole-006-op-table-end-to-end block}}
+
+A `[using …]` clause, and every higher-order std-lib parameter, takes the
+operator value directly. (A data value in one of those slots is refused for
+*callability* — `cx-err:CXER0106` — and the diagnostic lists all five kinds,
+never one of them.)
+
+{{EXAMPLE:program-ophole-009-reduce-using block}}
+
+### Look a key up with a computed key
+
+Two reads answer a map entry whose key is only known at run time. They differ
+in **one** thing — what a miss does — and that is how you choose:
+
+`[$map:get $m $k]` answers the **absence channel** on a miss, so `[?else]`
+supplies the default. This is the read the operator table above uses:
+
+{{EXAMPLE:map-013-get-computed-key block}}
+
+{{EXAMPLE:map-014-get-computed-key-miss-composes-with-else block}}
+
+`$m.$k` — the path step with a computed name — reads the same entry and
+**fails loud** on a miss. Take it where an absent key is a bug at that line:
+
+{{EXAMPLE:program-computed-step-006-member-miss-fails-loud block}}
+
+{{EXAMPLE:program-computed-step-007-member-miss-else-recovers block}}
+
+A non-scalar key is refused by both rather than quietly missing.
+
+### Read your own arguments, and turn text into values
+
+`[$env:argv]` is your own argument vector, in the `[resource, …args]` shape —
+**ungated**, because reading your own arguments is not an effect. It hands you
+**strings**, and there is no `[$parse]` verb: three routes take the text to a
+value, and they differ by what a bad input does.
+
+| Route | Bad input |
+|---|---|
+| `type=` on an `[argspec]` flag — the value arrives already typed | refuses `cx-err:CXER2502`, naming the flag the user typed |
+| `[cast $v :int]` — the language's single coercion path | refuses `cx-err:CXER0290` |
+| `[$strings:to-number $v]` | **absence**, so `[?else]` supplies a default |
+
+Declare the flag and let `parse-args` do the coercion — then the refusal can
+name the flag, which no later `cast` can:
+
+{{EXAMPLE:env-013-parse-long-value-int block}}
+
+{{EXAMPLE:env-023-parse-flag-type-mismatch block}}
+
+In production the argv sequence those two pass explicitly is `[$env:argv]`.
+For a value that did not come from a declared flag, `cast` is the coercion:
+
+{{EXAMPLE:program-cast-string-to-int block}}
+
+And where a non-numeric input is an ordinary case rather than an error, take
+the absence-signalling route and coalesce:
+
+{{EXAMPLE:strings-094-to-number-else-coalesce block}}
 
 ### Define with `[?def]`
 
@@ -593,6 +697,10 @@ actually see — not a description of it.
 {{PAIR:ap-wide-match-hot-path-wrong ap-wide-match-hot-path-right}}
 
 {{PAIR:ap-cx-eval-inline-wrong ap-cx-eval-inline-right}}
+
+{{PAIR:ap-adapter-lambda-wrong ap-adapter-lambda-right}}
+
+{{PAIR:ap-match-else-rethrow-wrong ap-match-else-rethrow-right}}
 
 ### One more, from the language itself
 
