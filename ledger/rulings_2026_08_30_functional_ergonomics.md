@@ -2,8 +2,8 @@
 
 **Status: PROPOSED — owner acceptance of the FE letters is required before W1
 execution begins.** Filed together with the campaign issue set (label
-`ergonomics campaign`; the umbrella issue is the scoreboard). Rulings recorded
-before work per the #832 process rule.
+`ergonomics campaign`; umbrella/scoreboard **#1144**; members #1135–#1143).
+Rulings recorded before work per the #832 process rule.
 
 **Origin.** An ergonomics evaluation (2026-08-30, Fable session) audited a
 five-item improvement proposal against the approved spec, the formal grammar,
@@ -143,19 +143,20 @@ lettered options before any impl.
 
 ## Campaign plan
 
-Waves (exit = full `make test`, per the standing exit-gate rule):
+Waves (exit = full `make test`, per the standing exit-gate rule); umbrella
+scoreboard #1144:
 
-- **W1** (defect-class truing): I1 shadowing bug, I2 = FE-2(a), I3 = FE-1(a),
-  I4 probe (FE-6).
-- **W2**: I5 destructuring fast path (perf — structural single-arm match
-  lowers to flat binds, byte-identical results), I6 (uncoded non-callable err
-  + FE-4(a) param parity), I8 riders (`[using]`/CXER0106 parity, `::function`
-  stdlib signatures, CXER0291 message).
-- **W3** (ruled extensions): I7 = FE-3(a); FE-6 design+impl if the probe
+- **W1** (defect-class truing): #1135 shadowing bug (prio:high), #1136 =
+  FE-2(a), #1137 = FE-1(a), #1138 probe (FE-6).
+- **W2**: #1139 destructuring fast path (perf — structural single-arm match
+  lowers to flat binds, byte-identical results), #1140 (uncoded non-callable
+  err + FE-4(a) param parity), #1142 riders (`[using]`/CXER0106 parity,
+  `::function` stdlib signatures, CXER0291 message).
+- **W3** (ruled extensions): #1141 = FE-3(a); #1138 design+impl if the probe
   found a gap.
-- **W4** (delivery): I9 discoverability (primer `argv`/`cast` example, env.md
-  cross-refs) + corpus/rosetta/antipatterns/fp refresh to the post-campaign
-  idiom.
+- **W4** (delivery): #1142 spec truing + #1143 discoverability (primer
+  `argv`/`cast` example, env.md cross-refs) + corpus/rosetta/antipatterns/fp
+  refresh to the post-campaign idiom.
 
 Evidence base: live-probe transcripts and spec citations recorded in the
 member issues; key divergences verified against `cx v0.17.0` @ 9dcd2297c.
