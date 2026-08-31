@@ -939,6 +939,25 @@ EXTRACTION_GATE_FLOOR := 1564
 # set are untouched — a digest that had MOVED here would have meant an
 # unintended CLI-surface change and was the thing to check for.
 #
+# MOVED, 2026-08-31, ergonomics BUG WAVE (#1144 umbrella): digest
+# 322753e91b685e71b8680ad6951d850f34cca6f58890a83577fe42e55b79f8b2 over 2,251
+# Ring-0 cases / 12,763 invocation pairs, from c59db6df… (2,081 / 11,755). The
+# account, because a moved digest owes one:
+#   • #1104 added THREE `[in-xml …]` cases (conv-060 duplicate-attribute
+#     position, conv-061 the reserved `cx:`/`xml:` names, conv-062 the
+#     Namespaces-spec boundary that still parses). This lane's input map drives
+#     xml, so all three add CLI comparisons — and the first two are REFUSALS,
+#     which is the class this lane most wants pinned across profiles.
+#   • The rest of the case growth is the wave's `[in-code …]` corpus (#1145
+#     strict array/map kinds, #1146 the callable kind × site matrix, #1147 the
+#     emit-boundary lanes). Those are program-eval cases, so they raise the
+#     Ring-0 census the probe counts without adding CLI comparisons.
+#   • ABI lane: 2,251 cases through both artifacts, transcripts byte-identical
+#     (6,240,317 bytes), ABI-excluded still 0 — the direction that set is
+#     allowed to move.
+# No comparison was REMOVED. The floor (1564) is untouched: it is a minimum,
+# and this wave only added cases.
+#
 # The ABI lane's own numbers DID move, deliberately: the probe's md/html/url
 # battery (`cx_convert`, 2 targets per case) plus one fixture-independent
 # unknown-format refusal record put 19 new records in each transcript, and the
@@ -1431,6 +1450,11 @@ test-vcx: build-vcx-dev test-vcx-gates test-vcx-suite test-vcx-code test-vcx-cmd
 	$(MAKE) -C vcx conform-all
 	$(MAKE) -C vcx conform-fmt
 	$(MAKE) -C vcx conform-data-bin-arrow
+	# #1134 — see the test-vcx-conform block below. diff.cxd / lint.cxd left
+	# conform-all's suite list (34 vacuous PASSes) and are graded by their own
+	# runner here, which no `make test` lane reached before.
+	$(MAKE) -C vcx conform-diff
+	$(MAKE) -C vcx conform-lint
 	# RULED: R5.8 (#860) — the corpus/spec agreement gates run IN THIS LANE now.
 	# Both were in TEST_TARGETS but not a test-vcx dependency, so a green full
 	# `make test-vcx` never executed them: check-code-spec-consistency sat red
@@ -1462,11 +1486,24 @@ test-vcx: build-vcx-dev test-vcx-gates test-vcx-suite test-vcx-code test-vcx-cmd
 #
 # `test-vcx` itself is UNCHANGED and stays the human entry point: `make
 # test-vcx` still runs everything the V side owns in one command.
+#
+# #1134 — conform-diff / conform-lint are lane members now. conform-all's
+# runner used to list diff.cxd / lint.cxd and print PASS for all 34 of their
+# cases WITHOUT running them (it has no branch for their assertion shape), so
+# this lane's count included 34 fictions. Dropping the suites from that list
+# made the count honest and revealed the other half of the defect: the runner
+# that DOES grade them — tests/runners/diff_lint/diff_lint_conform.v, reached
+# only through `make -C vcx conform` — was in no `make test` lane at all
+# (`conform` is invoked by `conform-vcx`, which is not in TEST_TARGETS). The
+# vacuous count was therefore standing in for the real gate. Both halves land
+# together: the fiction is gone AND the two suites are graded here.
 .PHONY: test-vcx-conform
 test-vcx-conform: build-vcx-dev
 	$(MAKE) -C vcx conform-all
 	$(MAKE) -C vcx conform-fmt
 	$(MAKE) -C vcx conform-data-bin-arrow
+	$(MAKE) -C vcx conform-diff
+	$(MAKE) -C vcx conform-lint
 
 # Convenience wrapper: run the full V suite ONCE, stream live output to a
 # log, then print a digest of just the FAIL lines + per-file counts + the

@@ -132,7 +132,7 @@ counted.
 | Lane | Runner | Make target |
 |------|--------|-------------|
 | Format/document families | `vcx/tests/runners/conformance/conformance_run.v` | `make -C vcx conform` (per-family: `conform-core`, `conform-xml`, …) |
-| diff/lint families | `vcx/tests/runners/diff_lint/diff_lint_conform.v` | `conform-diff`, `conform-lint` |
+| diff/lint families | `vcx/tests/runners/diff_lint/diff_lint_conform.v` — the ONLY runner for `diff.cxd` / `lint.cxd` (#1134: they left `conformance_run.v`'s suite list, where their assertion shape had no branch and all 34 cases printed PASS unrun) | `conform-diff`, `conform-lint` — both in `make test-vcx-conform` |
 | streaming-write family | `vcx/tests/runners/streaming_write/streaming_write_run.v` | `conform-streaming-write` |
 | code.cxd parse lane (Ring 0) | `vcx/tests/code_parse_fixtures_test.v` | `make test-vcx-suite` |
 | code.cxd + stdlib eval lanes (Ring 1+) | `vcx/tests/code_eval_fixtures_test.v` | `make test-vcx-suite` |

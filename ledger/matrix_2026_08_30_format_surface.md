@@ -40,8 +40,8 @@ pre-wave state stays readable.
 | D18 | Typing policy | native | lexical + `cx:attr-types` | strict, never synthesizes | 1.2-core subset | native | n/a | lane autotypes / module never | verbatim text | components as strings | schema-driven |
 | D19 | Dialect pinned where | grammar | conversions §2.1 (XML 1.0+NS) | json.md (RFC 8259 strict) | TF-2 stmt (1.2 core, CX subset) | conversions §6.1 (TOML 1.0) | conversions §7 (subset, D-B) | csv.md (RFC 4180+dialects) | html.md (WHATWG-lenient) | url.md (3986 + WHATWG) | data-bin.md/ast-bin.md |
 | D20 | Data profile / libcx-core | full | full | emit-only → full | full | full | full | full | absent → full | absent → full | full |
-| D21 | Corpus `in-*` cases | 1916 | 47 | **0 → 4** | 49 | 18 | 5 | 5+1+1 | **0 → 2** | **0 → 2** | binary lanes |
-| D22 | Open defects | — | #1104 dup attrs | — | — | — | — | — | — | — | — |
+| D21 | Corpus `in-*` cases | 1916 | 47 → **50** | **0 → 4** | 49 | 18 | 5 | 5+1+1 | **0 → 2** | **0 → 2** | binary lanes |
+| D22 | Open defects | — | — | — | — | — | — | — | — | — | — |
 
 (D22 note: #1119, the 112×/50× in-memory representation cost, is
 cross-format — it is the top-priority open item by TF-10 and applies to
@@ -155,8 +155,13 @@ every column's parse lane, so it is not a per-cell divergence.)
   `cx_convert` entry gave md/html/url an ABI path with zero new bespoke
   symbols, the probe drives all three through it, and the gate's
   ABI-excluded count is **9 → 0** — the intentional-exclusion set is empty.
-- **D22:** #1104 remains the one format-local open defect; every other
-  audit defect (#1105–#1118, #1120) is closed.
+- **D22:** EMPTY. #1104 (xml duplicate attribute names accepted) was the
+  last format-local open defect; it is closed — the reader refuses a
+  repeated attribute name as MALFORMED (#1100) with its one refusal shape,
+  and the D21 xml count moves 47 → 50 with the three `in-xml` cases that
+  pin it (conv-060 position, conv-061 reserved names, conv-062 the
+  Namespaces-spec boundary that still parses). Every other audit defect
+  (#1105–#1118, #1120) was already closed.
 
 ## Maintenance rule
 
