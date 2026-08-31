@@ -168,7 +168,7 @@ Unicode tables — so this is not the answer a byte-oriented library gives:
 
 ```console
 $ cx prog.cx
-'STRASSE'
+STRASSE
 ```
 
 For byte-level work use `bytes`; for patterns use `re`.

@@ -230,11 +230,11 @@ longer describes any shape.)
 [?for [in $n ([leaf], [twig], [branch], [trunk], [root])] [yield [$kind-of $n]]]
 #]]
   [out-text [#
-'leaf'
-'twig'
-'branch'
-'trunk'
-'other'
+leaf
+twig
+branch
+trunk
+other
 #]]
   [exit-code [#0#]]
  ]
@@ -256,11 +256,11 @@ longer describes any shape.)
 [?for [in $n ([leaf], [twig], [branch], [trunk], [root])] [yield [$kind-of $n]]]
 #]]
   [out-text [#
-'leaf'
-'twig'
-'branch'
-'trunk'
-'other'
+leaf
+twig
+branch
+trunk
+other
 #]]
   [exit-code [#0#]]
  ]

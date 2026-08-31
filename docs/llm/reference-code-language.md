@@ -83,7 +83,7 @@ match set is falsy — which is what makes the existence idiom work:
 
 ```console
 $ cx --data=input.cx prog.cx
-'on'
+on
 ```
 
 ## Pattern matching

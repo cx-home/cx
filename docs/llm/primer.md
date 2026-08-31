@@ -632,9 +632,9 @@ $ cx --data=input.cx prog.cx
 
 ```console
 $ cx --data=input.cx prog.cx
-'C'
-'B'
-'A'
+C
+B
+A
 ```
 
 `input.cx`
@@ -766,7 +766,7 @@ falsy. That last one is what makes the existence idiom read naturally:
 
 ```console
 $ cx --data=input.cx prog.cx
-'on'
+on
 ```
 
 ### Destructure with `[?match]`
@@ -1105,7 +1105,7 @@ the absence-signalling route and coalesce:
 
 ```console
 $ cx prog.cx
-'not-a-number'
+not-a-number
 ```
 
 ### Define with `[?def]`
@@ -1185,7 +1185,7 @@ and says so in the import line. `as=` renames.
 
 ```console
 $ cx prog.cx
-'HELLO'
+HELLO
 ```
 
 `prog.cx`
@@ -1957,11 +1957,11 @@ longer describes any shape.)
 
 ```console
 $ cx prog.cx
-'leaf'
-'twig'
-'branch'
-'trunk'
-'other'
+leaf
+twig
+branch
+trunk
+other
 ```
 
 **Write this:** A flat [?if] chain on the same dispatch
@@ -1980,11 +1980,11 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-'leaf'
-'twig'
-'branch'
-'trunk'
-'other'
+leaf
+twig
+branch
+trunk
+other
 ```
 
 <sub>Fixtures: `ap-wide-match-hot-path-wrong` / `ap-wide-match-hot-path-right` in `conformance/llm/antipatterns.cxd`</sub>

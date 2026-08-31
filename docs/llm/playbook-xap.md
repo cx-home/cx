@@ -350,7 +350,7 @@ one owner it resolves:
 
 ```console
 $ cx prog.cx
-'ais/track'
+ais/track
 ```
 
 A qualified term bypasses resolution entirely:
@@ -374,7 +374,7 @@ A qualified term bypasses resolution entirely:
 
 ```console
 $ cx prog.cx
-'chart/highlight'
+chart/highlight
 ```
 
 And ambiguity is **a value listing the candidates — never a guess**:
@@ -1223,7 +1223,7 @@ session's whole life. An anonymous floor is a real principal:
 
 ```console
 $ cx prog.cx
-'web-public'
+web-public
 ```
 
 …and a deployment that declares no floor refuses cleanly, naming the policy:
@@ -1660,9 +1660,9 @@ and a reused address is a refusal rather than a silent disambiguation:
 
 ```console
 $ cx prog.cx
-'cx-b9aa0e4902fe6a43'
-'cx-70c02252bf05598f'
-'cx-25ff65bbcc985af2'
+cx-b9aa0e4902fe6a43
+cx-70c02252bf05598f
+cx-25ff65bbcc985af2
 ```
 
 `prog.cx`

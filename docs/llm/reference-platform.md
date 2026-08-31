@@ -263,7 +263,7 @@ admits an anonymous floor says so in its attach policy, and the floor is a
 
 ```console
 $ cx prog.cx
-'web-public'
+web-public
 ```
 
 Refusal is the common case. Without a declared floor, a guest attach is a
