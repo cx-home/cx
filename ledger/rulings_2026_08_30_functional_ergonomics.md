@@ -1,7 +1,9 @@
 # Rulings 2026-08-30 — functional/structural ergonomics campaign (FE)
 
-**Status: PROPOSED — owner acceptance of the FE letters is required before W1
-execution begins.** Filed together with the campaign issue set (label
+**Status: RULED — FE-1..FE-6 accepted (a) BY OWNER 2026-08-30 (letter
+acceptance "1a"; FE-6 remains conditional on the #1138 probe, its design
+letters return to the owner only if the probe finds a gap).** W1 execution is
+unblocked. Filed together with the campaign issue set (label
 `ergonomics campaign`; umbrella/scoreboard **#1144**; members #1135–#1143).
 Rulings recorded before work per the #832 process rule.
 
