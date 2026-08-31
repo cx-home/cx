@@ -35,8 +35,8 @@ pre-wave state stays readable.
 | D13 | ABI conversion family | yes (`cx_to_*`) | yes | yes | yes | yes | **none** | yes (+delimited) | **none** | **none** | yes |
 | D14 | Error band | CXER01xx | CXER0100+`XML —` | CXER31xx | CXER0100+`YAML —` | CXER0100+`TOML —` | CXER0100 | CXER15xx | CXER39xx | CXER14xx | decode refusals |
 | D15 | Refusal location | line:col | line:col | none → line:col | line:col | none → line:col | ◐ | row | ✅ | ✅ | n/a |
-| D16 | Nesting guard | 64 | 64 (shared) | **100** | 64 (shared) | 64 (shared) | n/a (flat) | n/a (rows) | **unverified** | n/a | 64 |
-| D17 | §0.4 encoding boundary | yes | yes | yes | yes | yes | yes | yes | **verify at move** | **verify at move** | n/a |
+| D16 | Nesting guard | 64 | 64 (shared) | **100** | 64 (shared) | 64 (shared) | n/a (flat) | n/a (rows) | unverified → 64 (shared) | n/a | 64 |
+| D17 | §0.4 encoding boundary | yes | yes | yes | yes | yes | yes | yes | verify at move → yes | verify at move → yes | n/a |
 | D18 | Typing policy | native | lexical + `cx:attr-types` | strict, never synthesizes | 1.2-core subset | native | n/a | lane autotypes / module never | verbatim text | components as strings | schema-driven |
 | D19 | Dialect pinned where | grammar | conversions §2.1 (XML 1.0+NS) | json.md (RFC 8259 strict) | TF-2 stmt (1.2 core, CX subset) | conversions §6.1 (TOML 1.0) | conversions §7 (subset, D-B) | csv.md (RFC 4180+dialects) | html.md (WHATWG-lenient) | url.md (3986 + WHATWG) | data-bin.md/ast-bin.md |
 | D20 | Data profile / libcx-core | full | full | emit-only → full | full | full | full | full | absent → full | absent → full | full |
@@ -103,9 +103,35 @@ every column's parse lane, so it is not a per-cell divergence.)
 - **D16:** 64 is the shared ruled bound (#1106) — JSON's 100 predates it,
   is spec'd (json.md §4) and caller-configurable, with a named refusal.
   Divergent-but-documented; RECORDED as a harmonization candidate, not
-  unjustified. **HTML's guard is UNVERIFIED — added to the W2 move brief:
-  the moved parser must carry the shared bound or prove immunity.**
-- **D17/D18/D19:** typing and dialect are per-format BY NATURE — the
+  unjustified. **HTML: RESOLVED at the W2 move — the cell now reads 64
+  (shared).** Probed on the pre-move binary, verbatim: a 50 000-deep
+  `<div>` document through `cx --from=html --to=cx` was `RC=139`
+  (SIGSEGV); so was depth 20 000 to `cx`, `html` AND `json`; depth 5 000
+  to `html` was `RC=0`. The verdict is NOT "the parser recurses" — the
+  tokenizer is a byte loop and the tree builder keeps an EXPLICIT frame
+  stack, which is why depth 5 000 serialized fine. It is the #1106 hole
+  one step removed: a reader that accepts unbounded nesting from
+  untrusted input hands every recursive CONSUMER of the tree (the cx /
+  json / html emitters) a stack-overflow vector, and `--from=html` is the
+  untrusted-input surface. So the guard sits in the reader, at the frame
+  push, on the shared bound. Refusal, in html's own band per D14:
+  `cx-err:CXER3900 E_HTML_PARSE_FAILED: element nesting exceeds limit
+  (64)` — the same band-local shape JSON's depth refusal takes
+  (CXER3101), not the `CXER0100 PARSE_ERROR: <FMT>` form xml/yaml/toml
+  use. **Open sync: `limits.md` §2's codec-parser row names only
+  XML/YAML/TOML and states the CXER0100 shape; it needs html added and
+  the band-local shape noted (json's row has the same unstated
+  divergence). Spec edit — NOT taken in this wave; it needs the owner's
+  authorization and a `RULED:` token.**
+- **D17:** RESOLVED at the W2 move. Both cores already routed their input
+  through the ONE §0.4 boundary (`cx.codec_text_boundary`) before reading
+  a byte — html and url were marked "verify at move" because nothing
+  PINNED it, not because it was suspected absent. Verified and pinned:
+  `test_text_codecs_refuse_a_utf16_bom` now covers the whole text-codec
+  row (xml, yaml, toml, json, md, html, url), asserting both that the
+  refusal names the ENCODING and that it names the policy it enforces.
+  Row uniform.
+- **D18/D19:** typing and dialect are per-format BY NATURE — the
   uniformity requirement is that each be PINNED normatively somewhere,
   and post-campaign every column is. Justified.
 - **D21:** the corpus floor was never stated per codec, which is how
