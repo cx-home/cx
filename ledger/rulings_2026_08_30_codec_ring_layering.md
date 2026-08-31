@@ -243,7 +243,44 @@ conversion path at all.
 - (c) Leave and note — rejected: leaves three registry codecs unreachable
   from every binding.
 
-## Execution order
+## CR-9 — the fmt cone is Ring-0; the ABI cx_fmt tells the truth
+(RULED: CR-9 = a, standing-acceptance record 2026-08-30)
+
+Surfaced by CR-7's execution STOP. The `fmt` VERB is backed by Ring-1's
+`code.fmt_source` (program_fmt.v — the program-faithful, fail-closed
+formatter of #118/#391/#967/#980), NOT by Ring-0's `cx_text_fmt`, which
+its own header says rewrites program surface. Measured: 133/256 real CX
+sources in the checkout format to DIFFERENT bytes between the two, +3
+with differing rc. And pre-existing: the ABI `cx_fmt` (both artifacts)
+dispatches to `cx_text_fmt` while the CLI `cx fmt` uses `fmt_source` —
+the monolith's own CLI and ABI disagree on the majority of the corpus, a
+shipped false symbol of exactly the class CR-6 just removed for the mask.
+
+- (a) **TAKEN — the fmt cone moves to Ring-0 (CR-1 shape) and everything
+  points at it.** program_emit.v + program_fmt.v (+ the ~30 cx-only lines
+  of api.v they need) are verified `cx`+`strings`-only — an EMITTER of
+  program forms, which partition §2 already places beside the never-forked
+  grammar; cannot-execute is untouched. All three CR-7 verbs then mount in
+  the data profile with byte-identical meaning; `fmt --migrate-predicates`
+  AND `--collapse-lets` (both genuinely Ring-1) refuse rc=2 naming the
+  profile; and the ABI `cx_fmt` repoints to `fmt_source` in the same
+  change — for data documents the behavior is unchanged (fmt_source wraps
+  the data formatter as a lane), for program documents it stops corrupting
+  them, so the repoint is a defect fix, not a break.
+- (b) Ship lint+code-tree, defer fmt — rejected: a partial CR-7 needing a
+  deferral authorization, and the data profile's "normalize CX text" story
+  ships without normalize.
+- (c) Data-profile fmt = cx_text_fmt, rule it a profile difference —
+  rejected on the measurement: majority-of-corpus divergence, program
+  corruption in the profile pitched at untrusted input, and a fresh
+  instance of the silent-divergence class CR-3 exists to catch.
+
+Verified against the long-term-best bar under the standing
+letter-acceptance ruling (2026-08-05); posted for owner review with this
+record. Consequential correction: the partition §2 sentence landed at
+b7454bff2 ("the text fmt and lint cores") described cx_text_fmt and was
+imprecise for the fmt VERB — after this move it becomes exactly true; the
+§2/§4 wording is finalized in the CR-7/CR-9 spec commit.
 
 Rulings (this file + the audit) land first, alone. Then, each with its
 issue and `RULED:` token where a spec is touched:
