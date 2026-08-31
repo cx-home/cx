@@ -933,6 +933,21 @@ EXTRACTION_GATE_FLOOR := 1564
 # input map drives xml/json/yaml/toml/md — so the digest is unchanged between
 # those two waves.
 #
+# STILL c59db6df… AFTER CR-8 (2026-08-30, #1133), MEASURED: 2,081 cases /
+# 11,755 pairs, unchanged. CR-8 added the registry-generic `cx_convert` ABI
+# entry; it touches the ABI lane only, and this lane's input map and comparison
+# set are untouched — a digest that had MOVED here would have meant an
+# unintended CLI-surface change and was the thing to check for.
+#
+# The ABI lane's own numbers DID move, deliberately: the probe's md/html/url
+# battery (`cx_convert`, 2 targets per case) plus one fixture-independent
+# unknown-format refusal record put 19 new records in each transcript, and the
+# cmp'd transcript grew 5,816,561 → 5,819,181 bytes (+2,620). The number that
+# matters is the other one printed on that line: ABI-excluded fell 9 → 0. Those
+# 9 were the md/html/url cases the bespoke `cx_X_to_Y` families could not reach;
+# the intentional-exclusion set is now EMPTY, and it should only ever move in
+# that direction.
+#
 # WHAT THIS NUMBER IS, AND IS NOT. It is ADVISORY DOCUMENTATION of the last
 # deliberate measurement, not the enforcement. Enforcement is the comparison
 # itself: every invocation pair must agree on stdout+stderr+rc, and the ABI

@@ -83,8 +83,14 @@ every column's parse lane, so it is not a per-cell divergence.)
   streaming lives in the chunked-table ABI; html/url have no
   document-stream shape. Justified by spec; extend only via abi.md.
 - **D13: was UNJUSTIFIED — now RULED (CR-8 = a BY OWNER 2026-08-30,
-  #1133):** one registry-generic ABI conversion entry; the bespoke
-  families are frozen legacy sugar, documented as such, never extended.
+  #1133) and LANDED (W8):** one registry-generic ABI conversion entry;
+  the bespoke families are frozen legacy sugar, documented as such, never
+  extended. **Read the row this way now:** the cells below describe the
+  frozen FAMILIES, which are permanently as shown; ABI REACH is uniform —
+  `cx_convert(src, from, to)` resolves any registry name in the loaded
+  artifact, so md/html/url (and any future or overlay-registered codec)
+  are reachable from every binding with no new symbols. The row stays as a
+  record of what the families cover, and it may never grow a cell.
   Original register entry kept below for the record.
   codec.md §6 says "the ABI / language
   bindings expose the registry, not bespoke `cx_X_to_Y` functions"; the
@@ -140,11 +146,15 @@ every column's parse lane, so it is not a per-cell divergence.)
   case**; the registry-driven runner (CR-4) refuses unknown sections,
   closing both directions. **SATISFIED for every column as of W5/W6:**
   json = conv-052..055 (W5), html = conv-056/057, url = conv-058/059
-  (W6). The html/url pair are intentional exclusions from the extraction
+  (W6). The html/url pair WERE intentional exclusions from the extraction
   gate's C-ABI probe (no `cx_html_*`/`cx_url_*` family exists, as with md);
   the probe derives that from its own battery table now instead of a
-  hardcoded `in_md` literal, and their cross-artifact assertion is carried
-  by the `cx_codec_inventory` record (#1130) rather than by a fixture.
+  hardcoded `in_md` literal, and their cross-artifact assertion rested on
+  the `cx_codec_inventory` record (#1130) rather than on a fixture. **W8
+  (CR-8, #1133) closed the exclusion the registry-shaped way:** the generic
+  `cx_convert` entry gave md/html/url an ABI path with zero new bespoke
+  symbols, the probe drives all three through it, and the gate's
+  ABI-excluded count is **9 → 0** — the intentional-exclusion set is empty.
 - **D22:** #1104 remains the one format-local open defect; every other
   audit defect (#1105–#1118, #1120) is closed.
 
