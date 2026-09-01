@@ -101,8 +101,19 @@
 [?def normalize scope=public ($raw)
   [?let [= $a [?if [$starts-with $raw "\n"]
                 [then [$strings:slice $raw 2 [$strings:length $raw]]] [else $raw]]]
+        [; #1177: strip exactly ONE trailing newline. The end is
+           length-derived, NOT find-sourced, so it does not move: the
+           1-based inclusive range 1..len-1 covers the same text the
+           0-based half-open range 0..len-1 did.
+
+           The migration decremented it because $a is ALSO the name of a
+           find result further down this file, and the tool's
+           find-sourced set is per-FILE and name-based. It dropped two
+           characters instead of one, which truncated every declared
+           suite name — stdlib/validate became stdlib/validat — and the
+           docs build failed on the missing file. ]
         [= $b [?if [$ends-with $a "\n"]
-                [then [$strings:slice $a 1 [- [- [$strings:length $a] 1] 1]]] [else $a]]]
+                [then [$strings:slice $a 1 [- [$strings:length $a] 1]]] [else $a]]]
     [?if [$strings:contains $b "\n"] [then $b] [else [$strings:trim $b]]]]]
 
 [?def member scope=public ($seq $x)
