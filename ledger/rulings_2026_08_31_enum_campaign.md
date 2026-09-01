@@ -126,9 +126,13 @@ first two are load-bearing for EN-1's scope:
   reference).** Load-time resolution order for `[of TypeName]` and the §5.4
   `[:TypeName …]` guard alike: (1) the module's `[?cx schema=…]` directive —
   which becomes a real directive under the program reading (loaded at module
-  load, never a value; D2's echo is abolished), same path rules as §13; then
-  (2) the module's `cx.lock` `[schemas]` pins (§13.3, name → hash → content,
-  fail-closed). The RUNTIME registry (`register-schema`) is deliberately
+  load, never a value; D2's echo is abolished), same path rules as §13 —
+  **or its inline twin `[?cx schema-inline …]` (§13.1), likewise admitted in
+  the program reading, so a single-file program can declare its closed set
+  inline with no external artifact** (this is what keeps R2's refusal of a
+  nominal `[?enum]` honest: in-program closed-set declaration must not carry
+  file-management friction); then (2) the module's `cx.lock` `[schemas]` pins
+  (§13.3, name → hash → content, fail-closed). The RUNTIME registry (`register-schema`) is deliberately
   EXCLUDED from load-time scope — load-time meaning may not depend on
   runtime mutation order. Unresolvable type name, no schema in scope, or an
   ambiguous name across in-scope schemas → `cx-err:CXER0100` at program load,
@@ -292,7 +296,7 @@ triggers, so they stop being re-litigated. This section IS the deliverable;
 | # | Refused | Grounds | Reopen trigger |
 |---|---|---|---|
 | R1 | **Ordinals / int-backed enums** | Identity is the VALUE (semantic_value_model.md); an ordinal is a representation leaking into meaning — inserting a member renumbers the world (canonical identity + wire breakage by construction), and a wire int that means a name is the data-world poison the atom kind exists to end. Atoms deliberately carry no total order (cxdm D4). | None — posture. Ordering needs are explicit: an `int` field or an explicit order list in user space. |
-| R2 | **Nominal program-layer `[?enum]` declaration** | A SECOND closed-set mechanism beside schema — the two-producers pattern two campaigns were spent killing — and it stops at the language border, negating the thesis (the set must travel with the data). EN-1's `[of]` gives the program layer the same authoring value by CONSUMING schema. | None foreseen; any future need routes through schema. |
+| R2 | **Nominal program-layer `[?enum]` declaration** | A SECOND closed-set mechanism beside schema — the two-producers pattern two campaigns were spent killing — and it stops at the language border, negating the thesis (the set must travel with the data). EN-1's `[of]` gives the program layer the same authoring value by CONSUMING schema, and P1's inline form (`[?cx schema-inline …]` in the program reading) removes the file-management friction that would otherwise make this refusal a tax on single-file programs. | None foreseen; any future need routes through schema. |
 | R3 | **Atom map keys** | cxdm §2.6 stands: one-colon adjacency hazard, plain-projection collision, bareword sugar is string-first (grounds written into cxdm by EN-4). Superseded by EN-2's `[keys]` closure — the actual need was a closed key SET, not a key kind. Refusal codes: token-level CXER0100 at the literal, CXERMAP-BADKEY at value-level sites (D3; W1 rider names both consistently). | None. |
 | R4 | **`::T` → schema-type channel** (opening [157] KindName to schema names) | EN-1(c): the `::` kind-test / `:` schema-type partition is the load-bearing disambiguation ([140g]/[157]/[126b]); opening it makes every `::` site registry-dependent and collides the namespaces. | None — EN-1(a) is the channel. |
 | R5 | **Member-order comparisons** (sortable atoms; `<` over enum members by declared position) | Declared order is DOCUMENT order — EN-3 round-trips it for enumeration — never a comparison order; positional comparison is R1's ordinal wearing a different coat. cxdm §5.5 stands (atoms unordered). | None. |
