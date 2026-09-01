@@ -380,6 +380,43 @@ but not in exact numeric value when canonical formatting changes.
 The CXER namespace allocations registry — the single source of truth
 for which subsystem owns which range — lives at §9.6.
 
+### 9.5b Content-address stability
+
+**RULED: AD-3** (issue #1183, `ledger/rulings_2026_09_01_adoption_campaign.md`).
+
+Tier-1 content addresses — and every pin derived from one: a package
+manifest's `hash=`, an instance binding's `of=`, a `code:` address, an
+adopter's stored references — are **stable across PATCH versions**.
+
+- **Through 1.0**, a MINOR version MAY move addresses, but ONLY as a
+  **declared canonicalization repair**. Silent movement is a defect, not a
+  release note.
+- **After 1.0**, moving an address requires a MAJOR version bump.
+
+A canonicalization repair is a soundness fix and must stay cheap to ship;
+what makes it safe is that it carries its own migration, mechanically:
+
+1. **A machine-readable declaration in the release artifact** —
+   `[address-migration release=X.Y.Z [class name=… detail=… ]…]`, one
+   `[class]` per document class whose canonical bytes moved (for the
+   v0.17.0 repair those were: documents carrying any of five operator
+   heads, floats, or date/datetime attribute values). Naming the classes as
+   DATA is what lets an adopter test their own corpus instead of reasoning
+   about prose.
+2. **A re-derivation command** — `cx address recheck`, which takes a set of
+   stored pins plus the tree they point into and reports each as
+   `resolved`, `moved to=<new address>`, or `unresolved`. Exit 0 when every
+   pin resolves, 1 when any moved or is unresolved, 2 on usage/load
+   failure — the `cx schema compat` convention.
+
+The failure this closes is specific: a stale `of=` refuses with `CXER4879`,
+which is the mechanism working, so an address that MOVED is indistinguishable
+from a pin that is legitimately stale. The declaration plus the command are
+what tell the two apart.
+
+Conformance pairs a document in a moved class with one outside it, so the
+class boundary is testable rather than described.
+
 ### 9.6 CXER namespace allocations (canonical registry)
 
 The `cx-err:CXERnnnn` wire-code namespace is partitioned across the spec
@@ -443,7 +480,7 @@ and is not duplicated here.
 | `CXER4650–CXER4699` | `cx-stdlib/bus` (in-process pub/sub, ordered dispatch — `E_BUS_*`) | `spec/03-approved/std-lib/bus.md` |
 | `CXER4700–CXER4799` | `cx-stdlib/authz` (authorization / trust model — `E_AUTHZ_*`) | `spec/03-approved/std-lib/authz.md` |
 | `CXER4800–CXER4849` | `cx-stdlib/session` (`(principal, tenant)` sessions — `E_SESSION_*`) | `spec/03-approved/std-lib/session.md` |
-| `CXER4850–CXER4889` | `cx-xap` subsystem (`E_XAP_*`: xap host/runtime + compose surface 4850–4879; xap-dist 4880–4889). Registered 2026-08-05 — xap.md §8's original 4850–4949 proposal is amended in place: 4890–4949 yielded (see the similar island and fabric rows below; audit C5) | `spec/03-approved/xap/xap.md` §8 |
+| `CXER4850–CXER4889` | `cx-xap` subsystem (`E_XAP_*`: xap host/runtime + compose surface 4850–4879; xap-dist 4880–4889). **4864 `E_XAP_VERB_NOT_OFFERED`** allocated 2026-09-01 (issue #1181, RULED: AD-1, `ledger/rulings_2026_09_01_adoption_campaign.md`) — ρ refuses a verb an instance binding's SELECT withdrew, carrying the authored `why=`; deliberately distinct from 4872 `E_XAP_VERB_UNKNOWN` because "this deployment does not offer it" and "no such verb" are different facts and only the first is authored to be shown. 4865–4869 remain free. Registered 2026-08-05 — xap.md §8's original 4850–4949 proposal is amended in place: 4890–4949 yielded (see the similar island and fabric rows below; audit C5) | `spec/03-approved/xap/xap.md` §8 |
 | `CXER4890–CXER4899` | `cx-xap` distribution — the package schema-evolution seam (`E_XAP_PKG_SCHEMA_REINTERPRETS` 4890, `E_XAP_PKG_COVERAGE_GAP` 4891; RULED: SEA-1, `ledger/rulings_2026_08_20_schema_evolution_automation.md`; 4892–4899 reserved for this seam). Registered 2026-08-20 (RULED: UOM-1 rider r3 — the codes shipped with SEA-1 without their registry row; this re-occupies the head of the 4890–4949 gap yielded 2026-08-05, below the similar island at 4900) | `spec/03-approved/xap/xap_feature_distribution_market.md` §9 error table |
 | `CXER4900–CXER4901` | `cx-stdlib/similar` (island: shipped inside the pre-amendment xap proposal; regularized by the 2026-08-05 xap.md §8 yield — the 4900/4901 collision that triggered audit C5) | `spec/std-lib/similar.md` §7 |
 | `CXER4920–CXER4949` | `cx-stdlib/fabric` (`E_FABRIC_*`) | `spec/std-lib/fabric.md` |
