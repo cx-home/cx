@@ -1,7 +1,9 @@
 # Rulings 2026-08-31 — EN enum campaign (the world-class enum story)
 
-**Status: PROPOSED — EN-1..EN-5 recommendations recorded before code, awaiting
-owner letters.** Umbrella/scoreboard **#1153**; members EN-1..EN-5 =
+**Status: RULED — EN-1..EN-5 accepted (a) BY OWNER 2026-08-31 (letter
+acceptance "1a 2a 3a 4a 5a"; all pins P1–P17 and the R1–R6 refusals register
+adopted as written).** W1 execution is unblocked; #1158 (EN-5) closes on this
+acceptance. Umbrella/scoreboard **#1153**; members EN-1..EN-5 =
 **#1154–#1158** (label `enum campaign`). Owner-accepted campaign 2026-08-31,
 sequenced NEXT after #1144 closed and BEFORE #1119. Rulings recorded before
 work per the #832 process rule; format mirrors
