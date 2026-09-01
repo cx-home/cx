@@ -1,10 +1,11 @@
 # Rulings 2026-09-01 — adoption campaign (AD): the vendor↔adopter seam
 
-**Status: PROPOSED — AD-1..AD-8 await owner acceptance. No execution before
-the letters are ruled.** Rulings recorded before work per the #832 process
-rule. Campaign label `adoption campaign`; umbrella/scoreboard **#1188**;
-members **#1181–#1186** (admission of #1161/#1162 is AD-8). Target release
-**v0.18**; work lands on `release/0.18`.
+**Status: RULED — AD-1..AD-8 accepted (a) BY OWNER 2026-09-01 (letter
+acceptance "all a"). W1 execution is unblocked; #1161 and #1162 are ADMITTED
+to the campaign per AD-8.** Rulings recorded before work per the #832
+process rule. Campaign label `adoption campaign`; umbrella/scoreboard
+**#1188**; members **#1181–#1186 + #1161, #1162, #1189**. Target release **v0.18**;
+work lands on `release/0.18`. Commits reference `(RULED: AD-n)`.
 
 **Origin.** Six reports filed 2026-09-01 from a downstream deployment
 adopting archetype instantiation and feature distribution, all probed
@@ -84,7 +85,7 @@ the ruling, ahead of implementation, per the registry invariant.
 
 ## AD-1 — `[selection …]` binds every consumption point, through the one PEP (#1181)
 
-**Recommended: (a).**
+**RULED: (a)** — owner acceptance 2026-09-01 ("all a").
 
 - **(a) Selection is normative on the effective document and is consulted at
   the ONE place that already gates every face: the PEP.** §8.2 already
@@ -130,7 +131,7 @@ fine-grained-refusal precedent).
 
 ## AD-2 — contract evolution gets the SEA-1 treatment (#1182)
 
-**Recommended: (a).**
+**RULED: (a)** — owner acceptance 2026-09-01 ("all a").
 
 - **(a) A contract classifier in the shape `cx schema compat` already
   establishes, wired into publish exactly where SEA-1 wired the schema one.**
@@ -171,7 +172,7 @@ depend on it.
 
 ## AD-3 — content addresses: a stated promise, declared migrations, and a re-derivation command (#1183)
 
-**Recommended: (a).**
+**RULED: (a)** — owner acceptance 2026-09-01 ("all a").
 
 - **(a) governance.md gains §9.5b beside the error-code promise, in the same
   shape:** content addresses (Tier-1 document addresses, and everything
@@ -204,7 +205,7 @@ soundness repair safe to ship, and both halves are small.
 
 ## AD-4 — planned supersession is an ATTESTATION, not a manifest element (#1184)
 
-**Recommended: (a).**
+**RULED: (a)** — owner acceptance 2026-09-01 ("all a").
 
 - **(a) A `deprecate` attestation at the market, in the yank shape:**
   `[deprecated since=<version> successor=pkg:<name> effective=<date>
@@ -233,7 +234,7 @@ introduces no new trust primitive (§9 absence 3 holds: it is a VC).
 
 ## AD-5 — declarative process is #789's vocabulary, projected at the XAP layer — never a second one (#1185)
 
-**Recommended: (a).**
+**RULED: (a)** — owner acceptance 2026-09-01 ("all a").
 
 - **(a) #1185 is the XAP-facing half of #789** ("general workflow on the saga
   substrate — flows-as-documents"), not a new capability. ONE vocabulary and
@@ -271,7 +272,7 @@ retained as the XAP-surface member) plus the one-sentence `xap.md` truing —
 
 ## AD-6 — per-tenant fields are tenant DATA, and never enter the composed grammar (#1186)
 
-**Recommended: (a).**
+**RULED: (a)** — owner acceptance 2026-09-01 ("all a").
 
 - **(a) A declared extension surface at the SCHEMA layer, defined once, with
   the tenant's field definitions carried as tenant data** — subject, name,
@@ -312,7 +313,7 @@ second mechanism later would be the (c) outcome by another route.
 
 ## AD-7 — v0.18 campaign scope: four land whole, one lands as a capability, one lands as design
 
-**Recommended: (a).**
+**RULED: (a)** — owner acceptance 2026-09-01 ("all a").
 
 - **(a) Wave plan.** W1 — AD-1 (#1181): the truing + `CXER4864` + the
   surface-gate half + fixtures; AD-3 (#1183): the governance §9.5b statement
@@ -335,7 +336,7 @@ second mechanism later would be the (c) outcome by another route.
 
 ## AD-8 — admit #1161 and #1162 to the campaign
 
-**Recommended: (a).**
+**RULED: (a)** — owner acceptance 2026-09-01 ("all a").
 
 - **(a) Admit both.** They are the same adopter's audit, the same seam, and
   the same section: #1161 (the two approved specs disagree on whether `of=`
@@ -355,6 +356,73 @@ Tier-1 hash is exactly the `of=` pin" sentences OR correct `CXER4879`);
 #1162 is a capability question (does the refinement contract get an
 implementation slot, or is instantiation contract-level by design and said
 so?) and would carry its own letter.
+
+
+## AD-9 — a first-party feature library, and the register of what must NOT be a feature (#1189)
+
+**Status: PROPOSED** — filed 2026-09-01 after the AD-1..AD-8 acceptance, on
+the owner's direction that CX needs a home for a standard feature set.
+
+**Recommended: (a) for the home, with the register committed as normative
+text either way.**
+
+CX ships a MODULE library (`cx-stdlib/*`, `cx-x/*`) and the MECHANISM for
+distributing feature packages (seal/sign/publish/verify/gate/enable — all
+implemented). It ships no FEATURE library. Three first-party features exist
+(`market/catalog`, `market/entitlement`, `market/commerce`) but they were
+authored to make the market a XAP, and no place in the tree says "this is
+the standard set".
+
+**The register is half the deliverable.** A downstream adopter's domain
+inventory (2026-09-01, same audit as #1181–#1186) sorted the operational
+concerns of line-of-business software and the striking result was how much
+is ALREADY the platform's: audit is the journal, discovery is grammar
+search, reporting is readouts (`ux.md` §2.2), deployment is pins + the
+compose gate + `adopt-base`, evolution is the compat predicate, erasure is
+`erasure_compliance`, identity/entitlement/notification/localization/
+rendering/crypto/observability are all shipped modules. Without that
+register stated, adopters rebuild the platform as features — and a "roles"
+feature is worse than duplication, because it moves enforcement off the PEP
+where `authz` and the dial already hold it. #1185 and #1186 are recorded in
+the register on the platform side, per AD-5 and AD-6: neither is a feature
+package.
+
+**Home — the full option space (#1077 discipline: price the structure before
+proposing it):**
+
+- **(a) `features/` inside cx-private**, published through the existing
+  stage-1 registry (`registry/`, a store-layout git repo per §4.1). Zero new
+  infrastructure, dogfoods the shipped publish path, and consumers pin
+  hashes so the location is invisible to them. Graduates to its own repo
+  when the set has an external publisher cadence. **Recommended** — it is
+  the reversible choice, and the distribution model makes the reversal free.
+- **(b) A new repo `cx-features` now.** Cleanest gate boundary; costs a
+  second CI surface, a second release cadence, and a pin relationship whose
+  conflict cost is already on the record
+  ([[project_submodule_pin_pr_conflicts]]). Correct LATER, on cadence
+  evidence, not on aesthetics.
+- **(c) In the public mirror `cx-home/cx`.** REFUSED: the mirror is
+  publish-allowlist OUTPUT, never a source of truth.
+
+**The #866 boundary, which must be ruled either way.** The standing owner
+ruling at #866's filing: CX ships the MECHANISM; third parties ship
+catalogs. Proposed line, checkable and consistent with the register: CX
+ships features that are **pure platform semantics** (admin, identity,
+retention, notify, ops, catalog, entitlement, commerce) and NEVER features
+carrying **domain vocabulary**, which stay third-party. An archetype catalog
+remains third-party under this line.
+
+**Membership, in priority order:** `admin` (tenants, principals, grants,
+installed pins, dials — every deployment writes it today), then `identity`,
+`retention`, `ops`, `notify`; `catalog`/`entitlement`/`commerce` re-home as
+the first members. Each ships as an ordinary sealed package — no privileged
+status, no compose-gate bypass, and no grants a third-party package would
+not get (N-DIST-2).
+
+**Sequencing:** AD-9 is design-and-register in this campaign; authoring the
+members is a follow-on wave sized on the ruled membership. It does not block
+W1–W5.
+
 
 ---
 
@@ -376,6 +444,10 @@ so?) and would carry its own letter.
   express in-XAP automation without bloating — i.e. the refusal is reopened
   by evidence from the ONE vocabulary, never by convenience.
 - **An untyped per-feature extension blob** (AD-6(c)). Trigger: none.
+- **The standard feature set in the public mirror** (AD-9(c)). Trigger:
+  none — the mirror is publish output.
+- **A first-party feature carrying DOMAIN vocabulary** (AD-9's #866 line).
+  Trigger: an owner ruling moving the mechanism/catalog boundary itself.
 - **Per-tenant fields via the archetype binding as the intended path**
   (AD-6(b)). Trigger: AD-6(a) proving unimplementable at the schema layer,
   with the finding recorded.
