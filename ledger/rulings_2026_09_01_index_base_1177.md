@@ -164,3 +164,87 @@ Write the parser-driven migration tool FIRST; classify each site as
 (a) literal start → successor, (b) expression start → wrap, (c) start
 already sourced from a `find` → leave alone. Category (c) is the one a
 careless pass gets wrong, and it is invisible in the diff.
+
+---
+
+## What the migration actually missed (recorded 2026-09-01, post-execution)
+
+The wave note above predicted category (c) — a start already sourced from
+a `find` — as "the one a careless pass gets wrong, and it is invisible in
+the diff." That prediction was right about the *mechanism* and wrong about
+the *location*. Every real defect found after the tool ran was on the END
+of a range, or outside the tool's field of view entirely. Recorded here so
+the next index-space change starts from the true list.
+
+### The tool's six categories were sound; its BLIND SPOTS were not
+
+**B1 — a length-derived end must NOT move.** `cd-erd-raw-attr` sliced
+`[$str-length k]` as an exclusive end; decrementing it dropped the last
+character of every raw attribute name. The rule is exact and worth
+stating once: under `[a,b)` ≡ `[a+1,b]`, an end that was `length` STAYS
+`length`. Only a *find-sourced* end decrements, because the find result
+itself moved. Two different ends, two opposite rules, identical spelling
+in the source.
+
+**B2 — a LET-BOUND length hides from a guard rewrite.** Guards written
+inline against `[$str-length $s]` were migrated `>=` → `>`. Guards
+written against `[= $len [$str-length $s]]` were not. Three loops in
+`diagram.cx` kept a 0-based guard while their tail slices were
+decremented — two halves of one decision, applied inconsistently. In
+1-based inclusive the last valid position IS `$len`: the guard is `>` and
+the end is `$len`. Any future pass must resolve bindings, not match text.
+
+**B3 — an exclusive bound returned by a HELPER.** `cd-ident-end` and
+`cd-match-close` return "first position past the thing". The tool bumped
+the start and left the end, shifting the whole range by one. A helper
+that returns an exclusive bound is a find in disguise; the tool knows the
+find FAMILY, not user code that re-exports a bound under a new name.
+
+**B4 — a value that is already a migrated position.** `inject-svg-metadata`
+got `[+ [+ $end 1] 1]`: the start rule fired on an expression that was
+already 1-based. Double-bumps are mechanically detectable — `[+ [+ $x 1] 1]`
+— and a future tool should refuse to emit one.
+
+**B5 — an entire scanner the tool could not see.** The worst case was not
+a mis-rewrite but a NON-rewrite.
+`scripts/compile_binding_api_fixtures.cx` threads its position through its
+own `ch` / `skip` / `ident-end` helpers, so no known index argument ever
+appeared and the file was passed over whole — seed `[$parse-expr $src 0]`,
+five `[< $i [$strings:length …]]` validity tests, and a header still
+reading "0-based, mirroring the Python". The general shape: **a file that
+defines its own indexing vocabulary is invisible to a rewriter keyed on
+the stdlib's.** The detector that works is not the call site but the
+BASE — a literal `0` seeding a position parameter.
+
+### The gates did not carry the weight
+
+Of the five defects above, the conformance corpus caught exactly the two
+in the ERD path. The rest were found by reading the diff of one file end
+to end and probing the uncovered paths by hand:
+
+- `[?match]` arm rewriting has **no fixture**. It was broken outright —
+  `[case` scanned as `"ase "`, so no arm was ever rewritten — and the
+  suite stayed green. Verified afterwards against its documented contract
+  by direct probe.
+- The SVG carrier needs graphviz, so it is **not exercised**. Verified by
+  an inject → extract round-trip on both a normal and a self-closing root.
+- `test-binding-api-parity` is **vacuously green** (#1180): it reported
+  51/51 on a compiler emitting `"ops": ,` — malformed JSON, zero
+  operations — because all four bindings received the same nothing and
+  agreed on it. The numbers are byte-identical before and after the fix.
+
+The lesson is not "write more fixtures." It is that a mechanical rewrite
+over a whole corpus is only as trustworthy as the WEAKEST covered path,
+and the covered set must be established BEFORE the rewrite, not assumed
+from a green gate afterwards.
+
+### Rules for the next index-space change
+
+1. An end that is `length`-derived stays; an end that is find-derived
+   decrements. Classify ends separately from starts.
+2. Resolve let-bindings before rewriting guards.
+3. Treat a helper returning an exclusive bound as a find.
+4. Refuse to emit `[+ [+ $x 1] 1]`; it always means the rule fired twice.
+5. Detect 0-based scanners by their SEED (a literal `0` flowing into a
+   position parameter), not by their call sites.
+6. Enumerate the uncovered paths first, and probe each one by hand.
