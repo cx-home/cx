@@ -144,7 +144,28 @@ if ! "$CX_BIN" --allow-read --allow-write "$COMPILER" "$FIXTURES" \
     exit 2
 fi
 
+# #1180: the compiled stream must be USABLE before parity means anything.
+# This lane once reported 51/51 green on a compiler emitting `"ops": ,` —
+# malformed JSON with zero operations. Every driver failed to parse it,
+# exited 2 and printed nothing; four empty strings compare equal, so the
+# comparison below scored every fixture a pass. The numbers were identical
+# before and after the compiler was repaired. Parity of nothing is still
+# parity, so the stream is validated first (RULED: PYE-6 — a run that
+# proved nothing must not report success).
+if ! "$CX_BIN" --allow-read --allow-write --allow-env \
+        "$ROOT/scripts/check_binding_api_jsonl.cx" "$JSONL" "$FIXTURES"; then
+    echo "error: the compiled fixture stream is unusable — see above" >&2
+    exit 2
+fi
+
 TOTAL=$(wc -l < "$JSONL" | tr -d ' ')
+if [[ "$TOTAL" -eq 0 ]]; then
+    # Defence in depth: with TOTAL=0 the loop below never executes, so
+    # PASS/FAIL/UNSUPPORTED all stay 0 and the script falls through to
+    # "green". An empty run is a failure, never a pass.
+    echo "error: no fixtures to run — an empty comparison is not parity" >&2
+    exit 2
+fi
 echo "[binding-api] running $TOTAL fixtures × 4 bindings..."
 echo
 
@@ -174,10 +195,28 @@ while IFS= read -r json_line; do
     # [a-z0-9-] — sed reads it without a JSON parser (and without Python).
     id=$(printf '%s' "$json_line" | sed -n 's/^{"id": "\([^"]*\)".*/\1/p')
 
-    py_out=$(printf '%s' "$json_line" | python3 "$PY_DRIVER" 2>/dev/null)
-    go_out=$(printf '%s' "$json_line" | "$GO_DRIVER" 2>/dev/null)
-    rs_out=$(printf '%s' "$json_line" | "$RUST_DRIVER" 2>/dev/null)
-    v_out=$(printf '%s' "$json_line" | "$V_DRIVER" 2>/dev/null)
+    py_out=$(printf '%s' "$json_line" | python3 "$PY_DRIVER" 2>/dev/null); py_rc=$?
+    go_out=$(printf '%s' "$json_line" | "$GO_DRIVER" 2>/dev/null);        go_rc=$?
+    rs_out=$(printf '%s' "$json_line" | "$RUST_DRIVER" 2>/dev/null);      rs_rc=$?
+    v_out=$(printf '%s' "$json_line" | "$V_DRIVER" 2>/dev/null);          v_rc=$?
+
+    # #1180: a driver that FAILED has not agreed with anything — it has
+    # merely printed nothing, and four silences compare equal. The exit
+    # status used to be discarded here, which is what let a completely
+    # broken compiler score full marks: every driver exited 2 on the
+    # malformed stream and the harness read four empty strings as unanimity.
+    #
+    # The exit STATUS is the discriminator, not the empty output. An empty
+    # stdout with exit 0 is a legitimate answer — `select-all-empty-result`
+    # and `find-all-no-match` are fixtures whose correct result IS the empty
+    # set, and rejecting empty output outright fails them.
+    if [[ $py_rc -ne 0 || $go_rc -ne 0 || $rs_rc -ne 0 || $v_rc -ne 0 ]]; then
+        FAIL=$((FAIL + 1))
+        FAIL_IDS+=("$id")
+        printf '  FAIL    %s  (driver exit: py=%d go=%d rs=%d v=%d)\n' \
+               "$id" "$py_rc" "$go_rc" "$rs_rc" "$v_rc"
+        continue
+    fi
 
     # All four must agree byte-for-byte.
     if [[ "$py_out" == "$go_out" && "$go_out" == "$rs_out" && "$rs_out" == "$v_out" ]]; then

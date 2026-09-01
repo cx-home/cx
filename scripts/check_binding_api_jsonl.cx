@@ -1,0 +1,125 @@
+# scripts/check_binding_api_jsonl.cx — validate the compiled binding-api
+# fixture stream BEFORE the parity harness compares drivers on it (#1180).
+#
+# WHY THIS EXISTS. `test-binding-api-parity` claims that four bindings
+# (python / go / v / rust) AGREE. That claim is vacuous when they all
+# receive nothing: during the #1177 index-base migration the compiler was
+# left 0-based while `cx-stdlib/strings` moved to 1-based, and it emitted
+#
+#     {"id": "...", "ops": , "unsupported": , ...}
+#
+# — malformed JSON carrying ZERO operations. Every driver failed to parse
+# it, exited 2, and printed nothing; four empty strings compare equal, so
+# the harness scored 51/51 and reported green. The numbers were
+# byte-identical before and after the compiler was fixed. Parity of
+# nothing is still parity.
+#
+# The rule this enforces is already RULED for the sibling gate — PYE-6
+# (ledger/rulings_2026_08_22_python_eradication.md): "an all-SKIP run is a
+# FAILURE. Zero passes means the gate proved nothing, and a gate that
+# proves nothing must not report success." The binding-api lane had the
+# same hole and no equivalent guard. This is that guard.
+#
+# What it checks, per line:
+#   - the line parses as JSON at all;
+#   - `id` is a non-empty string;
+#   - `in_cx` is present (the fixture's subject document);
+#   - `ops` is present AND NOT null — the operation under test. A null
+#     `ops` is the exact shape the broken compiler produced, and it is
+#     never legitimate: every fixture in binding_api.cxd describes an
+#     operation.
+# And over the whole stream: at least one record, and the record count
+# matches the number of `[case …]` fixtures in the .cxd, so a compiler
+# that silently drops fixtures is caught too.
+#
+# Exit codes:
+#   0  every record well-formed and the count matches
+#   1  a malformed / empty-ops record, or a count mismatch
+#   2  missing prerequisite (file not found, unreadable)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/json'    as=json]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+# key-fault: "" when the key is present and non-null, else why not.
+# `map:get` yields absence for a missing key and a null for a
+# present-but-null one; both are failures, with distinct messages so the
+# diagnosis does not need a by-hand re-read of the stream.
+[?def key-fault scope=public ($rec $key)
+  [?let [= $v [$map:get $rec $key]]
+    [?if [not [$present $v]]
+      [then [$concat "missing `" $key "`"]]
+      [else [?if [= [$string $v] "null"]
+        [then [$concat "`" $key "` is null"]]
+        [else ""]]]]]]
+
+# line-fault: "" when the record is usable, else the first fault found.
+[?def line-fault scope=public ($line)
+  [?let [= $parsed [$json:parse $line]]
+    [?match $parsed
+      [case [err $e] [$concat "not valid JSON — " [$string $e@message]]]
+      [else
+        [?let
+          [= $idf [$key-fault $parsed "id"]]
+          [= $inf [$key-fault $parsed "in_cx"]]
+          [= $opf [$key-fault $parsed "ops"]]
+          [?if [not [= $idf ""]] [then $idf]
+            [else [?if [not [= $inf ""]] [then $inf]
+              [else [?if [not [= $opf ""]]
+                [then [$concat $opf " — every binding_api fixture describes an operation, so a null `ops` means the compiler produced no work for the drivers to compare (#1180)"]]
+                [else ""]]]]]]]]]]]
+
+[?def fixture-count scope=public impure ($path)
+  [?let [= $suite [$cx:parse [$io:read-file $path]]]
+    [?match $suite
+      [case [err $e] -1]
+      [else [$count [?for [in $c $suite/*]
+              [where [= [?else [$name $c] ""] "case"]]
+              [yield 1]]]]]]]
+
+# ── main ─────────────────────────────────────────────────────────────
+[?let
+  [= $argv [$env:argv]]
+  [= $jsonl [?if [< [$count $argv] 3] [then ""] [else [$string $argv[2]]]]]
+  [= $fixtures [?if [< [$count $argv] 3] [then ""] [else [$string $argv[3]]]]]
+  [?if [or [= $jsonl ""] [= $fixtures ""]]
+    [then [?let [= $_u [$cry "usage: check_binding_api_jsonl.cx JSONL FIXTURES.cxd"]] [$env:exit 2]]]
+    [else [?if [not [$io:is-file $jsonl]]
+      [then [?let [= $_e [$cry [$concat "error: JSONL not found: " $jsonl]]] [$env:exit 2]]]
+      [else [?if [not [$io:is-file $fixtures]]
+        [then [?let [= $_e2 [$cry [$concat "error: fixture file not found: " $fixtures]]] [$env:exit 2]]]
+        [else
+          [?let
+            [= $lines [?for [in $l [$strings:split-lines [$io:read-file $jsonl]]]
+                [where [not [= [$strings:trim $l] ""]]]
+                [yield $l]]]
+            [= $n [$count $lines]]
+            [= $want [$fixture-count $fixtures]]
+            [= $faults [?for [in $i [$range 1 $n]]
+                [where [not [= [$line-fault [$nth $lines $i]] ""]]]
+                [yield [$concat "  line " [$string $i] ": " [$line-fault [$nth $lines $i]]]]]]
+            [; RULED: PYE-6 — a run that compared nothing has proved nothing,
+               and a gate that proves nothing must not report success. ]
+            [?if [= $n 0]
+              [then [?let
+                [= $_a [$cry "error: the fixture compiler produced NO records — the parity comparison would have nothing to compare, and four drivers agreeing on nothing is not parity (#1180, RULED: PYE-6)"]]
+                [$env:exit 1]]]
+              [else [?if [> [$count $faults] 0]
+                [then [?let
+                  [= $_b [$cry [$concat "error: " [$string [$count $faults]] " of " [$string $n] " compiled records are unusable:"]]]
+                  [= $_c [?for [in $f $faults] [yield [$cry $f]]]]
+                  [= $_d [$cry "the drivers would each fail to parse these and print nothing; four empty outputs compare EQUAL, which the harness would score as parity (#1180)"]]
+                  [$env:exit 1]]]
+                [else [?if [and [> $want 0] [not [= $n $want]]]
+                  [then [?let
+                    [= $_e3 [$cry [$concat "error: compiled " [$string $n] " records but " $fixtures " declares " [$string $want] " fixtures — the compiler dropped fixtures silently (#1180)"]]]
+                    [$env:exit 1]]]
+                  [else [?let
+                    [= $_ok [$say [$concat "[binding-api] compiled stream validated: " [$string $n] " records, all carrying operations"]]]
+                    [$env:exit 0]]]]]]]]]]]]]]]]
