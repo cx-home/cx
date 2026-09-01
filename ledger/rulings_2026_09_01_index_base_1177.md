@@ -93,3 +93,74 @@ verbs (`strings:find|slice|rfind|at|find-from|find-all`, `re:find|group`)
 ## Status
 
 Ledger record written 2026-09-01. **W1 not yet started.**
+
+---
+
+## W1 LANDED 2026-09-01 @ 9990c0fad — the normative statements
+
+`code.md` §D4 governing line (+ `bytes` named as the sole exception),
+`strings.md` §2 origin sentence + §3.1 / §3.2, `re.md` §4.2 / §4.3.
+verify-doc-blocks 739/0.
+
+**The spec now LEADS the engine.** That is the deliberate spec-first
+order, but it is also the exact "grammar/spec ahead of engine" shape this
+repo keeps finding as a defect (the D1 pattern), so it is recorded here
+rather than left latent: #1177 stays OPEN tracking W2–W4, and the gap is
+this file plus that issue, not a surprise for a later audit.
+
+## W2 ATTEMPTED and REVERTED 2026-09-01 — with the findings that matter
+
+The `strings` implementation change was written, built, and measured,
+then **reverted deliberately** rather than landed half-done. What it
+bought is the evidence below; the tree is back to a consistent state and
+the full corpus is green.
+
+### The measured red-proof (the ruling's constraint 3, discharged)
+
+```
+'héllo-WORLD'  (ONE multi-byte)  re start=7  compose -> 'WORLD'   PASSES BY COINCIDENCE
+'héllö-WORLD'  (TWO multi-byte)  re start=8  compose -> 'ORLD'    WRONG
+```
+
+Confirmed live. Any fixture for this using one multi-byte character is a
+VACUOUS PASS and must be rejected as evidence.
+
+### The migration is NOT a blanket +1 — the two rules that make it per-site
+
+1. **Only the START moves; END expressions are UNCHANGED.** 0-based
+   half-open `[a, b)` covers exactly the characters of 1-based inclusive
+   `[a+1, b]`. Verified: old `slice(s, 0, 3)` and new `slice(s, 1, 3)`
+   both yield `'hel'`. So `slice($s, 0, [$strings:length $s])` becomes
+   `slice($s, 1, [$strings:length $s])` — the length expression is
+   already right.
+2. **A `find` result threaded into a `slice` start needs NO edit.** Both
+   origins move together, so the composition is invariant. Verified:
+   `slice($s, find($s,'l'), length($s))` yields `'llo'` before and after.
+
+A blanket `+1` over index arguments would therefore CORRUPT exactly the
+compositions the ruling exists to make correct. This is why the
+parser-driven migration is mandatory and a textual one is refused.
+
+### Measured surface
+
+- **217** `.cx` index-bearing call sites: 143 `slice`/`at`, 74
+  `find`/`rfind`.
+- Of 136 `slice` sites, only **23** carry literal index arguments; **113**
+  carry expressions (`[+ $i 1]`, `[$strings:length $l]`, `[- $w 1]`,
+  `[$min 160 …]`). The rewrite cannot be lexical.
+- **31 fixtures** break on the `strings` change alone: 25 stdlib (10 in
+  `diagram.cxd`) and 6 package (`gtin`, where an inclusive-end `slice`
+  returned `'23'` for an expected `'3'` — a check-digit, i.e. a silently
+  wrong VALUE, not a crash).
+
+### Recommended wave shape for the next session
+
+- **W2** = `strings` impl + its fixtures + its call sites, ONE commit
+  (cutover, no dual-accept).
+- **W3** = `re` impl + fixtures + call sites, ONE commit.
+- **W4** = the oriel `tui.cx:1364` hand-reconciliation revisit.
+
+Write the parser-driven migration tool FIRST; classify each site as
+(a) literal start → successor, (b) expression start → wrap, (c) start
+already sourced from a `find` → leave alone. Category (c) is the one a
+careless pass gets wrong, and it is invisible in the diff.
