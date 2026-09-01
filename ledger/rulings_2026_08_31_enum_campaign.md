@@ -144,9 +144,10 @@ first two are load-bearing for EN-1's scope:
   element-variant `[ref …]`s. An unguarded `[case]` scalar-literal arm covers
   the equal member; an unguarded element pattern / `[:TypeName]` guard covers
   its variant; `[else]`, unguarded `_`, and unguarded bind-only `$x` are
-  catch-alls satisfying coverage. Guarded arms (`[where …]`) never contribute
-  (a guard can fail). Non-enumerable types get coverage only via catch-all,
-  and the finding says so.
+  catch-alls satisfying coverage. Guarded arms (`[where …]`) and `[when …]`
+  arms never contribute (a predicate can fail — coverage is structural).
+  Non-enumerable types get coverage only via catch-all, and the finding says
+  so.
 - **P3 — the dual check.** Missing members are reported BY NAME; a `[case]`
   literal NOT in the resolved set is reported as unreachable/alien BY NAME
   (the misspelled-member class — `:not-fuond` is caught at lint, today it
@@ -304,6 +305,112 @@ triggers, so they stop being re-litigated. This section IS the deliverable;
 
 ---
 
+## Worked syntax (normative shapes once ruled; fixtures pin the exact spellings)
+
+```cx
+# ops.cx — a single-file program; the closed set declared inline (P1's
+# schema-inline twin), no external artifact
+[?cx schema-inline
+  [?cx-schema of=job mode=strict]
+  [type status::atom [enum :ok :err :pending]]]
+
+[?def classify scope=public ($s::atom)
+  [?match $s [of status]
+    [case :ok      'done']
+    [case :err     'failed']
+    [case :pending 'waiting']]]
+```
+
+- Exhaustive as written: lint is silent. Remove the `:pending` arm →
+  `cx lint`: *[?match] over [of status] misses :pending* (member BY NAME,
+  schema named by content-hash). Under `--strict`: load-time refusal.
+- Misspell an arm (`[case :not-fuond …]`) → the P3 dual check: *arm
+  :not-fuond is not a member of status — unreachable*.
+- Runtime out-of-set (`[classify :gone]`, e.g. a widened-upstream value
+  against this pinned schema) → raised `cx-err` carrying S007 in canonical
+  spelling: *[of status]: value :gone not in [enum :ok :err :pending]*.
+- File-based twins: `[?cx schema=./types.cxs]`, or `cx lock --pin-schema
+  jobtypes=./types.cxs` with no directive at all.
+
+```cx
+# EN-2 — schema side ([keys] is ordinary schema vocabulary, data reading)
+[type optable::[map string int]
+  [keys [enum plus minus times]]]            # subset-closed: keys ⊆ set
+
+[type flags::[map string bool]
+  [keys [enum read write exec] [req]]]       # total: the honest EnumMap
+
+[type headers::[map string string]
+  [keys [pattern '^x-'] [len 3 40]]]         # closure by predicate
+```
+
+- `{plus: 1, div: 9}` against `optable` → S007 at KEY `'div'` (the wrapped
+  clause's own code, key locus). `{read: true}` against `flags` → S021
+  naming the absent members `write`, `exec`.
+
+```cx
+# EN-3 — member enumeration, declared order
+[?lib 'validate']
+[enum-values 'jobtypes' 'status']            # → (:ok, :err, :pending)
+```
+
+## Ring placement (partition §2 conformance)
+
+The partition charter already places the lint core and schema language +
+validation in **Ring 0**; EN conforms rather than negotiates:
+
+| Piece | Ring | Grounds / consequence |
+|---|---|---|
+| `[of]` parse, AST node, ast-bin tag, canonical render + `cx fmt` round-trip (P13) | **0** | code forms are data; canonical identity of code lives in Ring 0 |
+| Exhaustiveness checker — the P2/P3 dual check | **0** (lint core) | a pure function of (parsed AST, resolved schema bytes); NO evaluator import. Consequence: the `data` profile gets exhaustiveness feedback with no evaluator — editors/CI on untrusted input included |
+| `[keys]` schema vocabulary + validation, S021, §16.5 compat rows, export/infer projections (P14) | **0** | schema language + validation are Ring-0 by charter (`schema_validate.v` and siblings already live there) |
+| P1 module-load schema resolution, registry binding, `--strict` refusal wiring | **1** | the module loader (code.md §12 lane); resolution I/O never enters Ring 0 — the checker takes resolved schema BYTES as input (P17) |
+| P4 membership refusal, P5 err-capture ordering, P6 fall-through | **1** | evaluator. The VERDICT comes from the Ring-0 validator; the err VALUE is built in Ring 1 via mk_err — never construct err values in Ring 0 (the #1126 trap, on record) |
+| `enum-values` (EN-3) | **1** | stdlib `validate` module over the Ring-0 schema reader |
+| tree-sitter / LSP / vscode grammar sync; primer | tooling / docs | W4 |
+
+## Cross-cutting pins (added on the owner's completeness pass, 2026-08-31)
+
+- **P13 — the Tier-1 identity surface moves as one unit.** `[of]` is new
+  program syntax: grammar [136] + the OfClause production, the AST node,
+  an `ast-bin.md` tag, the canonical renderer, `cx fmt` round-trip
+  (program-faithful, CR-9), and code-identity coverage land TOGETHER in W2
+  with round-trip fixtures (parse → canonical → reparse → hash-stable).
+  `[keys]` needs none of this — a schema is an ordinary data document; its
+  vocabulary is elements, not syntax.
+- **P14 — schema-tooling projections of `[keys]`.** `cx schema export` (and
+  `jsonschema.md`'s mapping) projects `[keys [enum …]]` to JSON Schema
+  `propertyNames`/`enum` and `[req]` totality to `required`; clauses with no
+  faithful JSON Schema image refuse loudly at export naming the clause
+  (never a silent drop). `cx schema infer` NEVER emits `[keys]` (inference
+  stays conservative; closure is an authored claim). `compat` per P11.
+- **P15 — program schema scope is resolution-only, and may be plural.** A
+  program module may carry multiple `[?cx schema=…]` / `[?cx schema-inline]`
+  directives; the in-scope set is their union plus lockfile pins, ambiguity
+  fail-closed per P1. (The data-document single-directive rule S009 is
+  unchanged — it governs the data reading.) Scope feeds TYPE RESOLUTION
+  (`[of]`, the §5.4 guard) only: it never auto-validates `$doc`/data roots —
+  validation stays an explicit act (`cx validate`, `validate-against`), and
+  the `--schema` CLI flag remains a validate-surface flag with no effect on
+  program scope.
+- **P16 — `[enum]` payload hygiene.** Duplicate members and an empty member
+  list in any `[enum …]` (value position or inside `[keys]`) are schema-load
+  errors (S-code assigned at impl from the free span). The spec is silent on
+  both today; W1 specifies and red-proves them.
+- **P17 — lint degrades loudly offline.** The Ring-0 checker receives
+  resolved schema bytes from the CLI/loader lane. When lint cannot resolve
+  an `[of]` type (no file access, missing pin), the finding degrades to an
+  info-level *unresolvable — exhaustiveness not checked* on that match,
+  never silence; at RUN time the same condition is P1's hard load refusal.
+- **Non-obligations, named:** `[of]` does not change `[?match]`'s §6.5.0
+  purity classification (the membership test is a pure function of a
+  load-resolved, hash-pinned schema) or its §7.8 planar membership;
+  `[keys]` implies no wire/data-bin change (validation only — columnar
+  dict-encoding exploitation of closed key sets is a future candidate,
+  #1119-adjacent, not this campaign).
+
+---
+
 ## Sequencing against #1119 (the umbrella's standing question, answered at ruling time)
 
 Owner ordered EN before the #1119 representation campaign (2026-08-31). The
@@ -340,24 +447,33 @@ scoreboard on #1153):
   (name the literal atom-key site CXERMAP-BADKEY; S-code messages render
   values in canonical spelling).
 - **W2** (the machinery wave): EN-1 (#1154) — P1 schema-scope channel
-  (program-reading `[?cx schema=…]` + lockfile pins, D2's value-echo
-  abolished), the `[of]` clause ([136] + parser), P4 membership refusal,
-  P2/P3 exhaustiveness in lint + `--strict`, P6 fall-through, AND the §5.4
+  (program-reading `[?cx schema=…]` + `schema-inline` + lockfile pins, D2's
+  value-echo abolished), the `[of]` clause with its FULL identity surface
+  (P13: grammar/AST/ast-bin/canonical/fmt/code-identity as one unit), P4
+  membership refusal, P2/P3 exhaustiveness in the Ring-0 lint core +
+  `--strict` (P17 offline degrade), P6 fall-through, AND the §5.4
   `[:TypeName]` guard truing (D1) — the guard shares P1's machinery and
   leaving it dead beside a live `[of]` would be a partial impl. Red-proven
-  fixtures per pin, both polarities.
+  fixtures per pin, both polarities. TRAP (from #1144): syntax expectations
+  live in six places — fixtures, stdlib fn-docs, docs, V tests, and the
+  python + rust binding tests; sweep all six.
 - **W3** (stdlib): EN-3 `enum-values` (#1156) — declared-order round-trip
   fixture, resolution-failure and not-an-enum refusal fixtures.
+- **W1 addendum** (P14/P16 riders in the same schema/validator lane):
+  `[keys]` export/infer projections + `[enum]` payload hygiene.
 - **W4** (delivery): EN-4(ii) primer one-pager (#1157 closes) +
-  corpus/rosetta/antipatterns refresh to the post-campaign idiom + umbrella
-  close.
+  corpus/rosetta/antipatterns refresh to the post-campaign idiom + tooling
+  grammar sync (tree-sitter-cx, LSP, vscode — `[of]`/`[keys]` highlighting
+  and completions) + umbrella close.
 
 Spec surfaces touched (each edit lands in its wave WITH the RULED token,
 under the no-spec-edits-without-authorization rule — this packet is the
-authorization once accepted): `code.md` §5.4 + §8.2, `grammar.ebnf` [136] +
-the OfClause production, `schema.md` §7 catalog + §12 codes (S021) + §16.5
-rows, `cxdm.md` §2.6 note, `validate.md` §3 + §5, `cli.md` §3.5 lint IDs,
-primer.
+authorization once accepted): `code.md` §5.4 + §8.2 (+ a §6.5.0 purity note),
+`grammar.ebnf` [136] + the OfClause production, `ast.md` + `ast-bin.md`
+(OfClause node + tag, P13), `canonical.md`/`formatting.md` round-trip rows,
+`schema.md` §7 catalog + §12 codes (S021 + P16 hygiene) + §14/§16 export-infer
+projections + §16.5 rows, `cxdm.md` §2.6 note, `validate.md` §3 + §5,
+`jsonschema.md` `[keys]` mapping (P14), `cli.md` §3.5 lint IDs, primer.
 
 Evidence base: probe transcripts in the Audit-deltas section above and on
 #1153; divergences verified against `cx v0.17.0` (shipped) at repo
