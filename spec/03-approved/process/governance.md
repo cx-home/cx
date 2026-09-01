@@ -404,7 +404,7 @@ and is not duplicated here.
 | `CXER1300–CXER1306` | `cx-stdlib/email` | `spec/std-lib/email.md` |
 | `CXER1400–CXER1403` | `cx-stdlib/url` | `spec/std-lib/url.md` |
 | `CXER1500, 1502–1504` | `cx-stdlib/csv` (1501 reserved) | `spec/std-lib/csv.md` §5 |
-| `CXER1600–CXER1605` | `cx-stdlib/validate` | `spec/std-lib/validate.md` §6 |
+| `CXER1600–CXER1609` | `cx-stdlib/validate` (1600–1605 shipped earlier; 1606 `E_VALIDATE_NOT_AN_ENUM` added 2026-09-01 with `enum-values`, RULED: EN-3 #1156 — a resolved type carrying no `[enum …]` is a CATEGORY error, distinct from a malformed schema (1603, which would blame a well-formed one) and from an unknown `type=` (1601); the block was extended from 1605 to 1609 rather than reusing a code, since jsonschema starts at 1610 and the four spare numbers sit in validate's own neighborhood; 1607–1609 reserved) | `spec/std-lib/validate.md` §6 |
 | `CXER1610–CXER1619` | `cx-stdlib/jsonschema` (1610 shipped; rest reserved) | `spec/std-lib/jsonschema.md` |
 | `CXER1700–CXER1712` | CXStore Remote Protocol (CSRP) — `E_CSRP_*`. **RESERVED (retired, never reused) as of stream-4 S3 (2026-08-08, #676): the CSRP data plane is deleted; the store wire is the XSP store profile (`CXER50xx`) with the gRPC edge. The op contracts these codes named carried forward to the profile; the codes themselves are not reissued.** `CXER1704` was already a TOMBSTONE (I1 row 15 / audit M21): ref-conflict unifies on `CXER1114 E_STORE_REF_CONFLICT`. Historical: `spec/misc/cxstore-remote-protocol.md` (retired) | — |
 | `CXER1720` | CSRP integrity mismatch (`E_CSRP_INTEGRITY_MISMATCH`) | `spec/misc/cxstore-remote-protocol.md` |
