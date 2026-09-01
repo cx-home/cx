@@ -632,3 +632,64 @@ arbitrary middle.
 Refused: (b) name→type lookup only — cannot discriminate where two types
 share an element name, where the type is scalar, or where the shape is
 anonymous, so it cannot satisfy P2's "covers its variant"; (a) as above.
+
+---
+
+## Execution record — W2/W3/W4 (2026-09-01)
+
+Recorded at close-out so the packet carries what actually shipped, not
+only what was ruled.
+
+| Wave | Delivered | Commits |
+|---|---|---|
+| **W1** | EN-2 `[keys …]`, S021/S022, EN-4(i) cxdm note, riders D3/D4 | `abcec6518` |
+| **W2** | EN-1 `[of]` + P1/P15 scope + P2/P3/P17 CX-L009 + D1/A3 guard + A1 (#1163) | `dd604824b`, `aef963323`, `7e66819c6` |
+| **W3** | EN-3 `enum-values`, CXER1606 | `ae2b8e723`, `c195641be` |
+| **W1 add.** | P14/P16 — **already complete** in W1 + A1; verified, nothing added | — |
+| **W4** | tooling sync (`[of]` in tree-sitter/vscode), CXLS002 suppression, EN-4(ii) primer, antipattern pair | `133a5c2bf`, `ea31c4205`, `f3d1b471d` |
+
+### Deviations from the packet, with grounds
+
+- **CXER1606 is a NEW code.** EN-3 said "a code from the validate block
+  (CXER1600–1605, assigned at impl)". That block is fully allocated and
+  none of the six is honest for "the resolved type declares no
+  `[enum]`": the schema is not malformed (1603 would blame a well-formed
+  one) and it is not an unknown `type=` (1601). Validate's registry block
+  was extended to 1600–1609 instead of overloading a code — jsonschema
+  starts at 1610, so the spare numbers sit in validate's own
+  neighborhood.
+- **The EN-4(ii) primer cites three fixtures, not eight.** The primer
+  generator can only cite fixtures with a recorded `[out-*]`;
+  `schema_validate.cxd` records `[expect-codes]`. The schema-side claims
+  (S007 spelling, A1's S005 boundary, S021 totality) are prose naming
+  their S-code and spec section. Fabricating an unpinned output block to
+  look fixture-backed would be worse than prose that says where the rule
+  lives.
+- **`[of]`'s P7 placement rules are NOT modelled in tree-sitter.**
+  Syntactic enforcement there would make a half-typed `[?match [of …]`
+  fail to parse mid-keystroke. The LSP is authoritative for P7.
+
+### Defects found by the campaign's own gates (all fixed in-wave)
+
+1. **The module-load pass had ONE live consumer.** Scope install was
+   wired into `eval_code` (the CLI's door); the C ABI, bindings and the
+   in-process fixture runner all enter through `code.eval`. `[of]` and
+   the §5.4 guard worked on the CLI and were dead everywhere else. **Five
+   fixtures went red and two more passed VACUOUSLY** — the expected error
+   code, produced for the wrong reason. Lesson worth keeping: when a new
+   construct's negative fixtures pass, check the error is the one you
+   meant.
+2. **The type guard never compared the element NAME**, so `[note id='7']`
+   matched `[:job]` whenever their shapes coincided — a discrimination
+   failure in the construct whose only job is discrimination.
+3. **CXLS002 became false.** The LSP hint says a match without `[else]`
+   "silently yields ()", which `[of]` makes untrue — and its advice would
+   silence CX-L009, since `[else]` is the opt-OUT of exhaustiveness.
+   Suppressed under `[of]`; that surface now has its first tests.
+
+### Found and filed, not fixed here
+
+- **#1179** — `CXLS001`'s duplicate-pattern detection does not fire for
+  scalar-literal `[case]` arms, with or without `[of]`. Found by
+  asserting that it DID work; the probe is on the issue. Pre-existing,
+  outside ruled scope.
