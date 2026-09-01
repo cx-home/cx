@@ -441,4 +441,57 @@ when you genuinely have SEVERAL shapes to dispatch between.
 #]]
   [exit-code [#0#]]
  ]
+
+ [case id=ap-open-string-dispatch-wrong level=core
+  [title [#Dispatching a closed set as bare strings, with [else] as the safety net#]]
+  [tags match enum schema of antipattern 1154 en-1]
+  [why [#
+The set is closed in your head and open in the program. Nothing declares the
+members, so nothing can check them: a misspelled arm never matches and never
+complains, a member you forgot lands in `[else]`, and a value the upstream
+producer added last week is indistinguishable from one you decided to ignore.
+The `[else]` arm is doing two unrelated jobs at once — handling the cases you
+chose not to enumerate, and swallowing the ones you did not know about.
+
+Below, `:pending` is a real member the author simply forgot. It is reported as
+`unknown`, at exit 0, forever. Declare the set in a schema and say what the
+scrutinee ranges over (`[of TypeName]`): `cx lint` then names the missing
+member, an out-of-set value refuses loudly at the boundary, and `[else]`
+returns to meaning only "I deliberately do not enumerate the rest".
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?match 'pending'
+  [case 'ok'  'done']
+  [case 'err' 'failed']
+  [else 'unknown']]
+#]]
+  [out-text [#
+unknown
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [case id=ap-open-string-dispatch-right level=core
+  [title [#[?match … [of TypeName]] — the closed set declared where it travels#]]
+  [tags match enum schema of 1154 en-1]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?cx schema-inline
+  [schema of=job]
+  [type status::atom [enum :ok :err :pending]]]
+[?match :pending [of status]
+  [case :ok      'done']
+  [case :err     'failed']
+  [case :pending 'waiting']]
+#]]
+  [out-text [#
+waiting
+#]]
+  [exit-code [#0#]]
+ ]
 ]

@@ -2222,6 +2222,56 @@ $ cx prog.cx
 
 <sub>Fixtures: `ap-match-else-rethrow-wrong` / `ap-match-else-rethrow-right` in `conformance/llm/antipatterns.cxd`</sub>
 
+#### Dispatching a closed set as bare strings, with [else] as the safety net
+
+The set is closed in your head and open in the program. Nothing declares the
+members, so nothing can check them: a misspelled arm never matches and never
+complains, a member you forgot lands in `[else]`, and a value the upstream
+producer added last week is indistinguishable from one you decided to ignore.
+The `[else]` arm is doing two unrelated jobs at once — handling the cases you
+chose not to enumerate, and swallowing the ones you did not know about.
+
+Below, `:pending` is a real member the author simply forgot. It is reported as
+`unknown`, at exit 0, forever. Declare the set in a schema and say what the
+scrutinee ranges over (`[of TypeName]`): `cx lint` then names the missing
+member, an out-of-set value refuses loudly at the boundary, and `[else]`
+returns to meaning only "I deliberately do not enumerate the rest".
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[?match 'pending'
+  [case 'ok'  'done']
+  [case 'err' 'failed']
+  [else 'unknown']]
+```
+
+```console
+$ cx prog.cx
+unknown
+```
+
+**Write this:** [?match … [of TypeName]] — the closed set declared where it travels
+
+`prog.cx`
+```cx
+[?cx schema-inline
+  [schema of=job]
+  [type status::atom [enum :ok :err :pending]]]
+[?match :pending [of status]
+  [case :ok      'done']
+  [case :err     'failed']
+  [case :pending 'waiting']]
+```
+
+```console
+$ cx prog.cx
+waiting
+```
+
+<sub>Fixtures: `ap-open-string-dispatch-wrong` / `ap-open-string-dispatch-right` in `conformance/llm/antipatterns.cxd`</sub>
+
 ### One more, from the language itself
 
 `[?if]` requires its clause names. A bare positional branch is refused rather
