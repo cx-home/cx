@@ -504,3 +504,131 @@ Evidence base: probe transcripts in the Audit-deltas section above and on
    entries (R1–R3) — keeps the register minimal but leaves R4–R6 to be
    re-litigated later, which is what the register exists to prevent.
    Reply `5a`.
+
+---
+
+## W2 adjudications — A1/A2/A3, RULED BY OWNER 2026-08-31 (letters `1d 2c 3c`)
+
+Three questions surfaced at W2 implementation that the packet's pins did
+not settle. Recorded here BEFORE code per the #832 process rule. All
+three were re-checked against the long-term bar before posting (the
+`feedback_recheck_recommendations_before_posting` discipline); **two of
+the three first-pass recommendations were WRONG and were corrected on
+that re-check** — the correction grounds are recorded with each, because
+the failure mode they illustrate is the one the discipline exists to
+catch: a campaign whose theme is "closed sets, strict kinds" pulls every
+recommendation toward strictness, including where strictness is the
+worse engineering answer.
+
+### A1 — #1163: kind enforcement lives in the TYPE CHECK, not in membership. RULED (d).
+
+**Measured before ruling** (dev build @ abcec6518): `[type doc::atom
+[enum :ok :err :pending]]` validates the STRING body `[doc 'ok']` clean,
+RC=0 — R6's refused bridging, live. Two independent causes:
+`scalar_value_matches_type` has no `atom` arm (falls to
+`else { return true }`), and `check_enum` compares string FORMS only,
+kind-blind. Also measured: a mixed-kind payload `[enum :ok 'err' 3]`
+loads clean (no hygiene check), and an `[enum …]` with no declared
+`::kind` is legal and admits both kinds.
+
+**Ruled (d):**
+
+1. `scalar_value_matches_type` gains `atom` and `null` arms and becomes
+   kind-aware in BOTH directions — an atom value fails a `::string`
+   declaration exactly as a string value fails `::atom`; `null` joins
+   `is_scalar_kind`.
+2. A **mixed-kind `[enum …]` payload is a schema-load error (S022)** —
+   the third member of P16's already-ruled hygiene family (duplicate
+   member, empty member list), on P16's own grounds.
+3. An `[enum …]` in a position with **no declared `::kind` takes its
+   kind from its (now provably uniform) payload**.
+4. `check_enum` stays string-comparing — sound, because by the time it
+   runs both sides are known to be the same kind.
+
+**Grounds.** The first-pass recommendation was (a) — make `check_enum`
+kind-aware TOO. That was wrong: it puts the kind test in two places, the
+declared-type check AND membership. (d) puts it in one and leaves
+`[enum]` a pure set-membership constraint over an already-kind-correct
+domain — the same factoring EN-2 chose deliberately for `[keys]`
+("reuses the entire constraint catalog instead of an enum-only
+bolt-on"). Orthogonality is the standing surface objective and (a)
+violated it. (d) additionally moves the mixed-kind error to schema
+LOAD — the author's desk — rather than validate time, and it needs no
+change to the kind-erased member storage that #1163 flags: the erasure
+stops mattering once the domain is provably uniform.
+
+Refused: (b) declared-kind half only — leaves the bridge live wherever
+the enum's position kind is not independently pinned; (c) defer —
+leaves the ruled R6 register and the engine in open contradiction, which
+is what a refusals register exists to prevent.
+
+**Why this is load-bearing for P4.** Without (d), a string `'ok'` passes
+`[of status]`'s membership test, then matches no `[case :ok]` arm (rule
+8 is type-strict), and lands on P6's NO_MATCH refusal — the validator
+declaring valid a value the eliminator provably cannot handle. P4's
+soundness claim is only true with A1 in place.
+
+### A2 — the program reading adopts the data reading's closed `[?cx]` registry. RULED (c).
+
+**Measured before ruling:** the data reading enforces a CLOSED pragma
+registry — `include | schema | version | lint-disable | lint-enable`
+(`vcx/cx/parser.v` `cx_pragma_registry`, grammar [34], ruling CXP-1
+2026-08-20) — and refuses an unknown key hard. The program reading
+enforces neither the closure nor directive-ness: `[?cx schema=…]` AND
+`[?cx lint-disable=L001]` both echo verbatim into the result image
+(D2, both halves).
+
+**Ruled (c):** the program reading adopts CXP-1's registry wholesale.
+All five known keys become real load-time directives (no echo); an
+unknown key refuses at program load exactly as it does in the data
+reading. D2's value-echo is abolished for the registry as a whole, not
+for `schema=` alone.
+
+**Grounds.** The first-pass recommendation was (a) — abolish the echo
+for `schema=`/`schema-inline` only, on scope-discipline grounds. That
+was wrong. (a) ships a program reading in which `[?cx schema]` is a
+directive and `[?cx include]` is a value: one syntactic form reading two
+ways by key name. That is precisely the UNIFORM defect this packet's own
+R4 refuses ("makes every `::` site registry-dependent"), and it was
+chosen out of caution rather than merit. (c) is not an invented scope
+extension — it makes the program reading conform to a policy CX already
+wrote down and already enforces on the other side of the same syntax.
+(b) (no echo, no closure) is the half-measure: the two readings still
+disagree.
+
+**Rider (found while probing, not a separate ruling):** `schema-inline`
+is referenced by `schema.md` §13.1 but is **absent from
+`cx_pragma_registry`**, so P1's inline twin is unreachable in EITHER
+reading today. W2 adds it to the registry in both readings; without
+that, R2's refusal of a nominal `[?enum]` is not honest, because the
+single-file inline path P1 promises does not exist.
+
+### A3 — the §5.4 `[:TypeName]` guard tests SHAPE, not validity. RULED (c).
+
+**Ruled (c):** the guard fires iff the element matches the named type's
+declared SHAPE (element name + declared structure). Constraint clauses
+(`[enum]`, `[range]`, `[pattern]`, `[len]`, …) are NOT run by the guard.
+
+**Grounds.** The first-pass recommendation was (a) — full validation
+semantics, through the same ONE validator P4 calls, on consistency-with-
+`[of]` grounds. That was wrong, and the refutation is inside the ruled
+packet: **P2 says a `[:TypeName]` guard covers its variant for
+exhaustiveness, and two sentences later says guarded arms never
+contribute because "a predicate can fail — coverage is structural."**
+Those two sentences are consistent only if `[:T]` is structural. Under
+(a) the guard CAN fail, so P2's own coverage rule would be incoherent.
+(a) also carries a bad live failure mode: `[case [:Job $j]]` silently
+skips a malformed job — the author's job-handler declines exactly when
+the job is broken, and `[:T]` guards are usable without `[of]`, so P4
+does not cover for it.
+
+`[of]` and `[:T]` are not the same test wearing two spellings: `[of]`
+asks "is this scrutinee a member of the declared type" (membership, P4,
+the full validator); `[:T]` asks "WHICH variant is this" (discrimination).
+The shape/constraint line is the one `schema.md` already draws between
+§4 (algebraic body shapes) and §7 (the constraint catalog); it is not an
+arbitrary middle.
+
+Refused: (b) name→type lookup only — cannot discriminate where two types
+share an element name, where the type is scalar, or where the shape is
+anonymous, so it cannot satisfy P2's "covers its variant"; (a) as above.

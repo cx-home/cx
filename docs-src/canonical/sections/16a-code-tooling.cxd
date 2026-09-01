@@ -94,7 +94,8 @@
         [tr [td 'CX-L005'] [td 'warn'] [td 'deprecated v3.3→v3.4 pattern']]
         [tr [td 'CX-L006'] [td 'info'] [td 'flatten nested single-binding [?let] staircases']]
         [tr [td 'CX-L007'] [td 'warn'] [td 'aggregation over a simple field accessor']]
-        [tr [td 'CX-L008'] [td 'warn'] [td 'declared shape flow across [?pipe] stages']]]
+        [tr [td 'CX-L008'] [td 'warn'] [td 'declared shape flow across [?pipe] stages']]
+        [tr [td 'CX-L009'] [td 'warn'] [td '[?match] exhaustiveness over an [of TypeName] closed set']]]
 
       [body
         """Each check has a normative ID, a default severity, and a
