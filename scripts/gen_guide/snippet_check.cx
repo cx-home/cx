@@ -45,7 +45,7 @@
 [?def first-line scope=public ($s)
   [?let [= $t [$strings:trim $s]]
         [= $i [$strings:find $t '\n']]
-    [?if [< $i 0] [then $t] [else [$strings:slice $t 0 $i]]]]]
+    [?if [not [$present $i]] [then $t] [else [$strings:slice $t 1 [- $i 1]]]]]]
 
 [; text-of: the [example]'s single text child. ]
 [?def text-of scope=public ($ex)

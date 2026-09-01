@@ -130,10 +130,10 @@
         [?for [in $p [$tail $parts]]
           [yield
             [?let [= $end [$strings:find $p '</code>']]
-              [?if [< $end 0]
+              [?if [not [$present $end]]
                 [then [$cat ('<code', $p)]]
                 [else [$cat ('<code',
-                             [$strings:slice $p 0 [+ $end 7]],
+                             [$strings:slice $p 1 [- [+ $end 7] 1]],
                              [$md-emph [$strings:slice $p [+ $end 7] [$strings:length $p]]])]]]]]]
         ''])]]]
 
@@ -155,10 +155,10 @@
         [?for [in $p [$tail $parts]]
           [yield
             [?let [= $end [$strings:find $p '</code>']]
-              [?if [< $end 0]
+              [?if [not [$present $end]]
                 [then [$cat ('<code', $p)]]
                 [else [$cat ('<code',
-                             [$strings:slice $p 0 [+ $end 7]],
+                             [$strings:slice $p 1 [- [+ $end 7] 1]],
                              [$md-ticks [$strings:slice $p [+ $end 7] [$strings:length $p]]])]]]]]]
         ''])]]]
 
@@ -421,10 +421,10 @@
         [?for [in $p [$tail $parts]]
           [yield
             [?let [= $end [$strings:find $p '</code>']]
-              [?if [< $end 0]
+              [?if [not [$present $end]]
                 [then [$cat ('<code', $p)]]
                 [else [$cat ('<code',
-                             [$strings:replace [$strings:slice $p 0 [+ $end 7]] '[[' '&#91;&#91;'],
+                             [$strings:replace [$strings:slice $p 1 [- [+ $end 7] 1]] '[[' '&#91;&#91;'],
                              [$strings:slice $p [+ $end 7] [$strings:length $p]])]]]]]]
         ''])]]]
 
@@ -644,7 +644,7 @@
     [$re:replace [$re:compile '(?s)<script[^>]*>.*?</script>']
       [$re:replace [$re:compile '(?s)<aside[^>]*>.*?</aside>'] $h ' '] ' '] ' ']]
 [?def cap4000 scope=public ($s)
-  [?if [> [$strings:length $s] 4000] [then [$strings:slice $s 0 4000]] [else $s]]]
+  [?if [> [$strings:length $s] 4000] [then [$strings:slice $s 1 4000]] [else $s]]]
 [?def search-entry scope=public impure ($f)
   [?let [= $slug [$strings:replace [$strings:slice $f [+ [$strings:rfind $f '/'] 1] [$strings:length $f]] '.html' '']]
         [= $clean [$strip-blocks [$io:read-file $f]]]
@@ -718,7 +718,7 @@
 [# first-sentence: the lede for the module index. #]
 [?def first-sentence scope=public ($s)
   [?let [= $i [$strings:find $s '. ']]
-    [?if [< $i 0] [then $s] [else [$strings:slice $s 0 [+ $i 1]]]]]]
+    [?if [not [$present $i]] [then $s] [else [$strings:slice $s 1 [- [+ $i 1] 1]]]]]]
 
 [# fn-html: one [fn-doc] → its HTML block (built directly so [$xml:emit]
    spreads the per-example [?for]; a constructed guide-[section] navigated via

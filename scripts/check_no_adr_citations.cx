@@ -195,7 +195,7 @@
                       [where [$matched [$re:find $citation-rx $line]]]
                       [= $trimmed [$strings:trim-end $line]]
                       [= $shown [?if [> [$strings:length $trimmed] 120]
-                                  [then [$strings:slice $trimmed 0 120]]
+                                  [then [$strings:slice $trimmed 1 120]]
                                   [else $trimmed]]]
                       [yield [$cat ($f, ":", [$string $i], ": ", $shown)]]]]]]]]]]
 

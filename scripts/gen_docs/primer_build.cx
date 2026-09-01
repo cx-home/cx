@@ -92,17 +92,17 @@
   [?let [= $s [$cx:serialize $rt]]
         [= $i [$strings:find $s "[#"]]
         [= $j [$strings:rfind $s "#]"]]
-    [?if [or [< $i 0] [< $j 0] [< $j $i]]
+    [?if [or [not [$present $i]] [not [$present $j]] [< $j $i]]
       [then ""]
-      [else [$strings:slice $s [+ $i 2] $j]]]]]
+      [else [$strings:slice $s [+ $i 2] [- $j 1]]]]]]
 
 # normalize: the fixture-loader rule — strip ONE leading and ONE trailing
 # newline (the [# ⏎ … ⏎ #] layout newlines), then any inline padding.
 [?def normalize scope=public ($raw)
   [?let [= $a [?if [$starts-with $raw "\n"]
-                [then [$strings:slice $raw 1 [$strings:length $raw]]] [else $raw]]]
+                [then [$strings:slice $raw 2 [$strings:length $raw]]] [else $raw]]]
         [= $b [?if [$ends-with $a "\n"]
-                [then [$strings:slice $a 0 [- [$strings:length $a] 1]]] [else $a]]]
+                [then [$strings:slice $a 1 [- [- [$strings:length $a] 1] 1]]] [else $a]]]
     [?if [$strings:contains $b "\n"] [then $b] [else [$strings:trim $b]]]]]
 
 [?def member scope=public ($seq $x)
@@ -366,7 +366,7 @@
 [?def first-sentence scope=public ($s)
   [?let [= $flat [$strings:replace [$strings:trim $s] "\n" " "]]
         [= $i [$strings:find $flat ". "]]
-    [?if [< $i 0] [then $flat] [else [$strings:slice $flat 0 [+ $i 1]]]]]]
+    [?if [not [$present $i]] [then $flat] [else [$strings:slice $flat 1 [- [+ $i 1] 1]]]]]]
 
 # module-rows: a markdown table body over a bundle glob, projected from each
 # module's own [module-doc][scope] prose. Generated — never a hand-kept list,
@@ -375,16 +375,16 @@
   [$strings:join [?for [in $f [$io:glob $glob]]
     [= $txt [$io:read-file $f]]
     [= $i [$strings:find $txt "[module-doc"]]
-    [where [>= $i 0]]
+    [where [$present $i]]
     [= $rest [$strings:slice $txt $i [$strings:length $txt]]]
     [= $a [$strings:find $rest '[scope """']]
-    [where [>= $a 0]]
+    [where [$present $a]]
     [= $from [+ $a 10]]
     [= $tail [$strings:slice $rest $from [$strings:length $rest]]]
     [= $b [$strings:find $tail '"""']]
-    [where [>= $b 0]]
+    [where [$present $b]]
     [yield [$concat "| `" [$path:stem $f] "` | "
-                    [$first-sentence [$strings:slice $tail 0 $b]] " |"]]] "\n"]]
+                    [$first-sentence [$strings:slice $tail 1 [- $b 1]]] " |"]]] "\n"]]
 
 # directive-rows: the NORMATIVE directive registry, projected from the spec's
 # own §4.1 table. The primer must not carry a hand-kept directive list — a
@@ -456,13 +456,13 @@
 
 # expand-example / expand-pair: the two fixture-citing directives.
 [?def expand-example scope=public impure ($parts $index $replays $where)
-  [?let [= $id [$strings:slice [$first $parts] 8 [$strings:length [$first $parts]]]]
+  [?let [= $id [$strings:slice [$first $parts] 9 [$strings:length [$first $parts]]]]
         [= $field [?if [>= [$count $parts] 2] [then [$nth $parts 2]] [else 'block']]]
         [= $sec [$lookup $index $id $where]]
     [$render-field $field $sec [$map:get $replays $id] $where]]]
 
 [?def expand-pair scope=public impure ($parts $index $replays $where)
-  [?let [= $wid [$strings:slice [$first $parts] 5 [$strings:length [$first $parts]]]]
+  [?let [= $wid [$strings:slice [$first $parts] 6 [$strings:length [$first $parts]]]]
         [= $rid [?if [>= [$count $parts] 2] [then [$nth $parts 2]]
                   [else [$die [$concat "PAIR needs two ids in " $where]]]]]
     [$render-pair $wid [$lookup $index $wid $where] [$map:get $replays $wid]
@@ -478,7 +478,7 @@
       [when [= $kind "CXHELP"]  [$cx-help $cxbin]]
       [when [= $kind "DIRECTIVES"] [$directive-rows]]
       [when [$strings:starts-with $kind "MODULES:"]
-        [$module-rows [$concat [$strings:slice $kind 8 [$strings:length $kind]] "/*.cx"]]]
+        [$module-rows [$concat [$strings:slice $kind 9 [$strings:length $kind]] "/*.cx"]]]
       [when [$strings:starts-with $kind "EXAMPLE:"]
         [$expand-example $parts $index $replays $where]]
       [when [$strings:starts-with $kind "PAIR:"]
@@ -496,10 +496,10 @@
       [$strings:join [?for [in $i [$range 2 $n]]
         [= $ch [$nth $chunks $i]]
         [= $j [$strings:find $ch "}}"]]
-        [yield [?if [< $j 0]
+        [yield [?if [not [$present $j]]
           [then [$die [$concat "unclosed '{{' in " $where]]]
           [else [$concat
-            [$expand-one [$strings:slice $ch 0 $j] $index $replays $version $cxbin $where]
+            [$expand-one [$strings:slice $ch 1 [- $j 1]] $index $replays $version $cxbin $where]
             [$strings:slice $ch [+ $j 2] [$strings:length $ch]]]]]]] ""]) ""]]]
 
 # refs-of-directive: the fixture ids ONE `{{…}}` body cites. `EXAMPLE:` cites
@@ -509,12 +509,12 @@
   [?let [= $parts [$strings:split-whitespace $body]]
         [= $kind [?if [$empty $parts] [then ""] [else [$first $parts]]]]
     [?if [$strings:starts-with $kind "EXAMPLE:"]
-      [then ([$strings:slice $kind 8 [$strings:length $kind]],)]
+      [then ([$strings:slice $kind 9 [$strings:length $kind]],)]
       [else [?if [$strings:starts-with $kind "PAIR:"]
         [then [?if [>= [$count $parts] 2]
-                [then ([$strings:slice $kind 5 [$strings:length $kind]],
+                [then ([$strings:slice $kind 6 [$strings:length $kind]],
                        [$nth $parts 2])]
-                [else ([$strings:slice $kind 5 [$strings:length $kind]],)]]]
+                [else ([$strings:slice $kind 6 [$strings:length $kind]],)]]]
         [else ()]]]]]]
 
 # refs-in: every fixture id a template cites (so only those get replayed).
@@ -524,8 +524,8 @@
     [?for [in $i [$range 2 $n]]
       [= $ch [$nth $chunks $i]]
       [= $j [$strings:find $ch "}}"]]
-      [where [>= $j 0]]
-      [in $id [$refs-of-directive [$strings:slice $ch 0 $j]]]
+      [where [$present $j]]
+      [in $id [$refs-of-directive [$strings:slice $ch 1 [- $j 1]]]]
       [yield $id]]]]
 
 # ── the llmstxt.org index ───────────────────────────────────────────────

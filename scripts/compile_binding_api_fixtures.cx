@@ -454,9 +454,9 @@
 
 [?def normalize scope=public ($s)
   [?let [= $a [?if [$strings:starts-with $s '\n']
-                [then [$strings:slice $s 1 [$strings:length $s]]] [else $s]]]
+                [then [$strings:slice $s 2 [$strings:length $s]]] [else $s]]]
     [?if [$strings:ends-with $a '\n']
-      [then [$strings:slice $a 0 [- [$strings:length $a] 1]]] [else $a]]]]
+      [then [$strings:slice $a 1 [- [$strings:length $a] 1]]] [else $a]]]]
 
 # strip-drop-edges: drop leading/trailing blank + '#'-banner lines from a
 # section body — the former flush() normalization the Python preserved.

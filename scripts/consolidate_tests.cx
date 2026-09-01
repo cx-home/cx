@@ -142,10 +142,10 @@
 # `import X { a, b }`: the module head and the brace-list body. Only
 # called on lines carrying both braces.
 [?def sel-mod scope=private pure [returns string] ($l::string)
-  [$strings:trim [$strings:slice $l 7 [$strings:find $l "{"]]]]
+  [$strings:trim [$strings:slice $l 8 [- [$strings:find $l "{"] 1]]]]
 
 [?def sel-members scope=private pure [returns string] ($l::string)
-  [$strings:slice $l [+ [$strings:find $l "{"] 1] [$strings:find $l "}"]]]
+  [$strings:slice $l [+ [$strings:find $l "{"] 1] [- [$strings:find $l "}"] 1]]]
 
 # The chunk fence: joins chunk lists for storage + byte-identical
 # membership tests. A V source chunk would have to contain this exact
@@ -224,12 +224,12 @@
                             [?for [in $j [$range [+ $i 1] [- $close 1]]]
                               [= $mraw [$strings:trim $rlines[$j]]]
                               [= $m [?if [$strings:ends-with $mraw ","]
-                                      [then [$strings:trim [$strings:slice $mraw 0 [- [$strings:length $mraw] 1]]]]
+                                      [then [$strings:trim [$strings:slice $mraw 1 [- [$strings:length $mraw] 1]]]]
                                       [else $mraw]]]
                               [where [not [= $m ""]]]
                               [yield $m]]]
                           [= $head [$strings:trim-end
-                            [$strings:slice [$strings:trim-end $l] 0
+                            [$strings:slice [$strings:trim-end $l] 1
                               [- [$strings:length [$strings:trim-end $l]] 1]]]]
                       [$concat $head " { " [$strings:join $mems ", "] " }"]]]]]]]
           [= $n [$count $lines]]
@@ -321,7 +321,7 @@
             [where [$strings:starts-with $l "fn test_"]]
             [= $paren [$strings:find $l "("]]
             [where [> $paren 3]]
-            [yield [$strings:slice $l 3 $paren]]]]]
+            [yield [$strings:slice $l 4 [- $paren 1]]]]]]
       [= $dup-test-names
         [$distinct
           [?for [in $i [$range 2 [$count $all-test-names]]]
@@ -340,7 +340,7 @@
             [in $k [$strings:split [$string $p@keys] [fence]]]
             [where [not [= $k ""]]]
             [= $l1 [?let [= $kls [$strings:split $k "\n"]] $kls[1]]]
-            [= $l1x [?if [$strings:starts-with $l1 "pub "] [then [$strings:slice $l1 4 [$strings:length $l1]]] [else $l1]]]
+            [= $l1x [?if [$strings:starts-with $l1 "pub "] [then [$strings:slice $l1 5 [$strings:length $l1]]] [else $l1]]]
             [= $is-named
               [or [$strings:starts-with $l1x "fn "]
                   [$strings:starts-with $l1x "struct "]
@@ -356,7 +356,7 @@
               [$sort
                 [?for [in $x ($sp, $par, $br)] [where [>= $x 0]] [yield $x]]]]
             [= $end [?if [= [$count $cands] 0] [then [$strings:length $rest]] [else $cands[1]]]]
-            [= $nm [$strings:slice $rest 0 $end]]
+            [= $nm [$strings:slice $rest 1 $end]]
             [where [not [$strings:starts-with $nm "test_"]]]
             [yield [$concat $nm [fence] $k [fence] [$string $p@file]]]]]]
       [= $conflicts
@@ -441,9 +441,9 @@
                   [= $is-sel [and [$strings:contains $l "{"] [$strings:contains $l "}"]]]
                   [= $base
                     [?if [$strings:ends-with $l " as _"]
-                      [then [$strings:slice $l 0 [- [$strings:length $l] 5]]]
+                      [then [$strings:slice $l 1 [- [$strings:length $l] 5]]]
                       [else $l]]]
-                  [= $base-mod [$strings:slice $base 7 [$strings:length $base]]]
+                  [= $base-mod [$strings:slice $base 8 [$strings:length $base]]]
                   [= $plain-sub
                     [and [not $is-sel]
                          [not [$strings:contains $base-mod " "]]

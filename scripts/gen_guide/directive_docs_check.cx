@@ -52,7 +52,7 @@
       [= $reg-from [$strings:slice $codemd
                      [$strings:find $codemd "### §4.1 Directive registry"]
                      [$strings:length $codemd]]]
-      [= $reg-tbl [$strings:slice $reg-from 0 [$strings:find $reg-from "### §4.2"]]]
+      [= $reg-tbl [$strings:slice $reg-from 1 [- [$strings:find $reg-from "### §4.2"] 1]]]
       [= $regrx [$reg-rx]]
       [= $uniq
         [?for [in $rm [$re:find-all $regrx $reg-tbl]] [yield [$re:group $rm 1]]]]

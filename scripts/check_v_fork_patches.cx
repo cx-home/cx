@@ -56,7 +56,7 @@
     [yield $l]]]
 
 # short: 10-char sha prefix for human output.
-[?def short scope=public ($sha) [$strings:slice $sha 0 10]]
+[?def short scope=public ($sha) [$strings:slice $sha 1 10]]
 
 # subject-for: the commit subject of $sha, read out of the `<sha>\t<subject>`
 # rows git produced. The subject is deliberately NOT stored in the register

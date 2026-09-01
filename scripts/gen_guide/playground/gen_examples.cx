@@ -84,10 +84,10 @@
 [?const HEXDIGITS '0123456789abcdef']
 
 [?def hex4 scope=public ($cp)
-  [$cat ([$strings:at HEXDIGITS [$mod [$idiv $cp 4096] 16]],
-         [$strings:at HEXDIGITS [$mod [$idiv $cp 256] 16]],
-         [$strings:at HEXDIGITS [$mod [$idiv $cp 16] 16]],
-         [$strings:at HEXDIGITS [$mod $cp 16]])]]
+  [$cat ([$strings:at HEXDIGITS [+ [$mod [$idiv $cp 4096] 16] 1]],
+         [$strings:at HEXDIGITS [+ [$mod [$idiv $cp 256] 16] 1]],
+         [$strings:at HEXDIGITS [+ [$mod [$idiv $cp 16] 16] 1]],
+         [$strings:at HEXDIGITS [+ [$mod $cp 16] 1]])]]
 
 [?def uesc scope=public ($cp)
   [?if [< $cp 65536]
@@ -242,9 +242,9 @@
 # strip-edges: the loader rule — one leading and one trailing newline.
 [?def strip-edges scope=public ($s)
   [?let [= $a [?if [$strings:starts-with $s '\n']
-                 [then [$strings:slice $s 1 [$strings:length $s]]] [else $s]]]
+                 [then [$strings:slice $s 2 [$strings:length $s]]] [else $s]]]
     [?if [$strings:ends-with $a '\n']
-      [then [$strings:slice $a 0 [- [$strings:length $a] 1]]]
+      [then [$strings:slice $a 1 [- [$strings:length $a] 1]]]
       [else $a]]]]
 
 [?def attr-of scope=public ($el $name)
@@ -640,7 +640,7 @@
                      [?if $check [then 'verify'] [else 'write']], ' ===')]],
         [?for [in $x $fails] [yield
           [$cry [$cat ('FAIL  ', [$strings:pad-end [$string $x@key] 40 ' '], ' ',
-                       [$strings:slice [$string $x@msg] 0 160])]]]],
+                       [$strings:slice [$string $x@msg] 1 160])]]]],
         [$env:exit 1])]
       [else ()]],
     [?if $check

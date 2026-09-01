@@ -129,7 +129,7 @@
 # head-chars: Python's s[:n] — never over-slices a short string.
 [?def head-chars scope=public ($s $n)
   [?let [= $len [$strings:length $s]]
-    [$strings:slice $s 0 [?if [< $len $n] [then $len] [else $n]]]]]
+    [$strings:slice $s 1 [?if [< $len $n] [then $len] [else $n]]]]]
 
 [?const DASH '  —  ']
 

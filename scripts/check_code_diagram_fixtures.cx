@@ -63,19 +63,19 @@
   [?let [= $s [$cx:serialize $rt]]
         [= $i [$strings:find $s "[#"]]
         [= $j [$strings:rfind $s "#]"]]
-    [?if [or [< $i 0] [< $j 0] [< $j $i]]
+    [?if [or [not [$present $i]] [not [$present $j]] [< $j $i]]
       [then ""]
-      [else [$strings:slice $s [+ $i 2] $j]]]]]
+      [else [$strings:slice $s [+ $i 2] [- $j 1]]]]]]
 [?def normalize scope=public ($raw)
-  [?let [= $a [?if [$starts-with $raw "\n"] [then [$strings:slice $raw 1 [$strings:length $raw]]] [else $raw]]]
-    [?if [$ends-with $a "\n"] [then [$strings:slice $a 0 [- [$strings:length $a] 1]]] [else $a]]]]
+  [?let [= $a [?if [$starts-with $raw "\n"] [then [$strings:slice $raw 2 [$strings:length $raw]]] [else $raw]]]
+    [?if [$ends-with $a "\n"] [then [$strings:slice $a 1 [- [$strings:length $a] 1]]] [else $a]]]]
 [?def parse-meta scope=public ($body)
   [$fp:fold [$strings:split-lines $body] {}
     [?fn ($acc $line)
       [?let [= $i [$strings:find $line ":"]]
-        [?if [< $i 0] [then $acc]
+        [?if [not [$present $i]] [then $acc]
           [else [$map:put $acc
-                  [$strings:trim [$strings:slice $line 0 $i]]
+                  [$strings:trim [$strings:slice $line 1 [- $i 1]]]
                   [$strings:trim [$strings:slice $line [+ $i 1] [$strings:length $line]]]]]]]]]]
 
 # clamp: reproduce the section-end truncation — stop at a bare `---`

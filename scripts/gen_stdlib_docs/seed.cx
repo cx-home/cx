@@ -35,7 +35,7 @@
         [= $i [+ [$strings:find $s '[#'] 2]]
         [= $rest [$strings:slice $s $i [$strings:length $s]]]
         [= $j [$strings:find $rest '#]']]
-    [$strings:trim [$strings:slice $rest 0 $j]]]]
+    [$strings:trim [$strings:slice $rest 1 [- $j 1]]]]]
 
 [# purity of a function from its (unwrapped) signature line. #]
 [?def purity-of scope=public ($sig)
@@ -50,9 +50,9 @@
         [= $i [+ [$strings:find $t '[;'] 2]]
         [= $rest [$strings:slice $t $i [$strings:length $t]]]
         [= $j [$strings:find $rest ']']]
-        [= $raw [$strings:trim [$strings:slice $rest 0 $j]]]
+        [= $raw [$strings:trim [$strings:slice $rest 1 [- $j 1]]]]
         [= $dash [$strings:find $raw '— ']]
-    [?if [< $dash 0] [then $raw]
+    [?if [not [$present $dash]] [then $raw]
       [else [$strings:trim [$strings:slice $raw [+ $dash 4] [$strings:length $raw]]]]]]]
 
 [# tq-unsafe: can this string NOT be wrapped in a raw triple-quoted payload?
@@ -62,8 +62,8 @@
    the example is skipped (signature still documents the function). #]
 [?def tq-unsafe scope=public ($s)
   [?if [>= [$strings:find $s '"""'] 0] [then true]
-    [else [?if [= [$strings:slice $s 0 1] '"'] [then true]
-      [else [= [$strings:slice $s [- [$strings:length $s] 1] [$strings:length $s]] '"']]]]]]
+    [else [?if [= [$strings:slice $s 1 1] '"'] [then true]
+      [else [= [$strings:slice $s [+ [- [$strings:length $s] 1] 1] [$strings:length $s]] '"']]]]]]
 [?def has-tq scope=public ($a $b)
   [?if [$tq-unsafe $a] [then true] [else [$tq-unsafe $b]]]]
 

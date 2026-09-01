@@ -59,9 +59,9 @@
 [; loader rule: strip ONE leading and ONE trailing newline. ]
 [?def normalize scope=public ($s)
   [?let [= $a [?if [$strings:starts-with $s '\n']
-                [then [$strings:slice $s 1 [$strings:length $s]]] [else $s]]]
+                [then [$strings:slice $s 2 [$strings:length $s]]] [else $s]]]
     [?if [$strings:ends-with $a '\n']
-      [then [$strings:slice $a 0 [- [$strings:length $a] 1]]] [else $a]]]]
+      [then [$strings:slice $a 1 [- [$strings:length $a] 1]]] [else $a]]]]
 
 [; comma-joined atom names from [expect-codes [:A :B]] — ':A' -> 'A'. ]
 [?def atom-csv scope=public ($el)
@@ -70,7 +70,7 @@
     [$strings:join
       [?for [in $a $v]
         [yield [?if [$strings:starts-with [$string $a] ':']
-          [then [$strings:slice [$string $a] 1 [$strings:length [$string $a]]]]
+          [then [$strings:slice [$string $a] 2 [$strings:length [$string $a]]]]
           [else [$string $a]]]]]
       ',']]]
 

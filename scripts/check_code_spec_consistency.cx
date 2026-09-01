@@ -226,7 +226,7 @@
 [?def names-in-block scope=public ($lines $i0 $sep $stop-blank)
   [?let [= $l0 [$nth $lines $i0]]
         [= $cut [$strings:find $l0 $sep]]
-        [= $head [?if [< $cut 0] [then ""]
+        [= $head [?if [not [$present $cut]] [then ""]
           [else [$strings:slice $l0 [+ $cut [$strings:length $sep]]
                                     [$strings:length $l0]]]]]
         [= $n [$count $lines]]

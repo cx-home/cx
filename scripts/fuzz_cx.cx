@@ -231,8 +231,8 @@
 # lifted from it rather than re-formatted.
 [?def stamp scope=public impure ()
   [?let [= $iso [$string [$time:now]]]
-        [= $d [$strings:replace [$strings:slice $iso 0 10] '-' '']]
-        [= $t [$strings:replace [$strings:slice $iso 11 19] ':' '']]
+        [= $d [$strings:replace [$strings:slice $iso 1 10] '-' '']]
+        [= $t [$strings:replace [$strings:slice $iso 12 19] ':' '']]
     [$cat ($d, '-', $t)]]]
 
 # save-finding: write the input plus a sidecar report, and answer the path.
@@ -244,7 +244,7 @@
 # input — a deliberate divergence, and the only one in the file protocol.
 [?def save-finding scope=public impure ($input $target $info)
   [?let [= $s [$bytes:to-string-utf8-lossy $input]]
-        [= $tag [$strings:slice [$hash:sha256-hex $s] 0 8]]
+        [= $tag [$strings:slice [$hash:sha256-hex $s] 1 8]]
         [= $base [$cat (CRASH-DIR, '/', [$stamp], '-', $target, '-', $tag)]]
         [= $_d [$io:make-dirs CRASH-DIR]]
         [= $_b [$io:write-file-bytes [$cat ($base, '.bin')] $input]]

@@ -75,7 +75,7 @@
 
 [; UTC timestamp %Y-%m-%dT%H:%M:%SZ — iso8601 truncated to seconds. ]
 [?def run-id scope=public impure ()
-  [$cat ([$strings:slice [$time:format-iso8601 [$time:utc-now]] 0 19], 'Z')]]
+  [$cat ([$strings:slice [$time:format-iso8601 [$time:utc-now]] 1 19], 'Z')]]
 
 [; Run `make bench-streaming`, parse `buffered : N ms` / `streaming : N ms`. ]
 [?def run-streaming-bench scope=public impure ()
@@ -129,7 +129,7 @@
              [$die 'could not parse bench-eval output; see stdout above'])]
       [else ()]]]
     [= $seen [?for [in $k [$map:keys $out]]
-               [yield [$strings:slice $k 5 [$strings:length $k]]]]]
+               [yield [$strings:slice $k 6 [$strings:length $k]]]]]
     [= $missing [$sort [?for [in $k T1_EXPECTED_KEYS]
                   [where [not [$present [?for [in $s $seen] [where [= $s $k]] [yield 1]]]]]
                   [yield $k]]]]
