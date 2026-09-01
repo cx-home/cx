@@ -883,6 +883,125 @@ the wildcard) against a flat `[?if]` chain — neither is worth rewriting for
 speed. The one hot-path shape that still bites is a *wide* dispatch over
 **element patterns**, once per node of a document: see §9.
 
+### Enums in CX — the closed set travels with the data
+
+CX has no `enum` keyword, and that is the point. A closed set is declared in
+the **schema**, which is an artifact that travels — so the same set is enforced
+in the store, on the wire, in every binding, in the validator, and in `[?match]`.
+Rust's exhaustiveness stops at Rust's border. Protobuf's enum stops at
+deserialization. CX's does not stop.
+
+**The member values are atoms.** An atom is a tag-shaped scalar, spelled
+`:name` — the thing a symbol is for. It carries no ordinal and no order, so
+inserting a member cannot renumber the world.
+
+**`[enum …]` in a schema closes the set.** An out-of-set value is `S007`, and
+the diagnostic names the value in canonical spelling — `:gone`, not `'gone'`,
+because those are different values (`schema.md` §10.3).
+
+`:ok` and `'ok'` are distinct values in distinct kinds with no coercion between
+them, so a string does **not** satisfy an atom-declared enum: it is `S005`, a
+kind mismatch, before membership is even asked (`schema.md` §7.4). `cast` is
+the one bridge, and it is always explicit.
+
+**`[?match]` eliminates the set, and `[of TypeName]` tells it which set.**
+Name the schema in scope, then declare what the scrutinee ranges over:
+
+`input.cx`
+```cx
+[doc]
+```
+
+`prog.cx`
+```cx
+[?cx schema-inline
+  [schema of=job]
+  [type status::atom [enum :ok :err :pending]]]
+[?match :ok [of status]
+  [case :ok 'done']
+  [case :err 'failed']
+  [case :pending 'waiting']]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+done
+```
+
+That buys three things a hand-rolled dispatch cannot have:
+
+1. **`cx lint` reports coverage by name.** Drop the `:pending` arm and it says
+   *misses :pending*. Misspell one — `[case :not-fuond …]` — and it says
+   *arm :not-fuond is not a member of status — unreachable*. That second class
+   used to fail in perfect silence, because a misspelled atom simply never
+   matches. Under `--strict` both become load-time refusals.
+2. **An out-of-set value refuses at the boundary, loudly**, carrying the S-code
+   and the value in canonical spelling. This is what makes the coverage claim
+   sound rather than advisory — no unexpected value can thread the arms the
+   linter just proved complete.
+3. **No silent fall-through.** A `[of]` match that claims nothing refuses:
+
+`input.cx`
+```cx
+[doc]
+```
+
+`prog.cx`
+```cx
+[?cx schema-inline
+  [schema of=job]
+  [type status::atom [enum :ok :err :pending]]]
+[?match :pending [of status]
+  [case :ok 'done']
+  [case :err 'failed']]
+```
+
+```console
+$ cx --data=input.cx prog.cx
+error: cx-err:CXER0100: [?match] [of status]: no arm claimed :pending — a match over a declared-closed type has no silent fall-through; add the missing [case …] arm or an explicit [else] (code.md §8.2)
+```
+
+`[else …]` is the opt-out, and writing one is how you say you meant it.
+
+**Evolution composes.** Widening an enum upstream turns a previously exhaustive
+match into a named-gap report at the next lint; narrowing is refused with the
+member named (`schema.md` §16.5). An out-of-set value arriving at a
+pinned-older match refuses at the `[of]` boundary — the protobuf unknown-value
+problem, answered loudly and by name instead of with a silent default.
+
+**Closed KEY sets, too.** `[keys …]` closes the key domain of a map — the
+honest `Record`/`EnumMap`. `[keys [enum …]]` alone is subset-closed; add
+`[req]` and every member must be present — `S021` names the absent member
+(`schema.md` §7.2):
+
+```cx
+[type flags::[map string bool] [keys [enum read write exec] [req]]]
+```
+
+**Ask a schema for its members** with one verb, in declared order and
+kind-faithful — atoms come back as atoms, so a member feeds `[case :ok …]`
+directly:
+
+`prog.cx`
+```cx
+[?lib 'cx-stdlib/validate']
+[?let [= $h [$validate:register-schema 'Jobs' "[schema of=job]
+[type status::atom [enum :ok :err :pending]]"]]
+  [$validate:enum-values 'Jobs' 'status']]
+```
+
+```console
+$ cx prog.cx
+(:ok, :err, :pending)
+```
+
+**What CX deliberately does not have:** ordinal / int-backed enums (identity is
+the value; an ordinal renumbers the world when you insert a member), a
+program-layer `enum` declaration separate from schema (it would stop at the
+language border, which defeats the whole point — declare it inline with
+`[?cx schema-inline …]` instead), sortable members, and any implicit
+atom↔string bridging.
+
 ### Callable values — one rule at every site
 
 A **callable value** is one of exactly five things:
