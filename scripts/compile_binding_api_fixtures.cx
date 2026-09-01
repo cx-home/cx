@@ -98,10 +98,10 @@
                    [$strings:join [?for [in $x $v] [yield [$py-json $x]]] ', '],
                    ']')]]]]]]]]]]]]
 
-# ── character helpers (0-based, mirroring the Python) ────────────────────────
+# ── character helpers (1-based inclusive, RULED: #1177) ────────────────────────
 
 [?def ch scope=public ($s $i)
-  [?if [< $i [$strings:length $s]] [then [$strings:at $s $i]] [else '']]]
+  [?if [<= $i [$strings:length $s]] [then [$strings:at $s $i]] [else '']]]
 
 [?def is-ident-char scope=public ($c)
   [?if [= $c ''] [then false]
@@ -124,7 +124,7 @@
 
 [?def snippet scope=public ($src $pos $n)
   [?let [= $len [$strings:length $src]]
-        [= $end [?if [> [+ $pos $n] $len] [then $len] [else [+ $pos $n]]]]
+        [= $end [?if [> [- [+ $pos $n] 1] $len] [then $len] [else [- [+ $pos $n] 1]]]]
     [?if [> $pos $len] [then ''] [else [$strings:slice $src $pos $end]]]]]
 
 # ── parser result helpers ────────────────────────────────────────────────────
@@ -139,7 +139,7 @@
 
 # skip: advance over whitespace.
 [?def skip scope=public ($src $pos)
-  [?if [and [< $pos [$strings:length $src]]
+  [?if [and [<= $pos [$strings:length $src]]
             [$strings:is-whitespace [$ch $src $pos]]]
     [then [$skip $src [+ $pos 1]]]
     [else $pos]]]
@@ -160,7 +160,7 @@
       [else $r]]]]
 
 [?def at-eof scope=public ($src $pos)
-  [?if [< [$skip $src $pos] [$strings:length $src]] [then false] [else true]]]
+  [?if [<= [$skip $src $pos] [$strings:length $src]] [then false] [else true]]]
 
 # read-ident-end: scan ident chars from $i.
 [?def ident-end scope=public ($src $i)
@@ -173,16 +173,16 @@
         [= $e [$ident-end $src $p]]
     [?if [= $e $p]
       [then [$perr [$cat ('expected identifier at pos ', [$string $p])]]]
-      [else [$ok $e [$strings:slice $src $p $e]]]]]]
+      [else [$ok $e [$strings:slice $src $p [- $e 1]]]]]]]
 
 # read-string-scan: from $i (inside the quotes), accumulate until closing
 # quote; handles the four escapes plus pass-through, like the Python.
 [?def read-string-scan scope=public ($src $i $quote $acc)
-  [?if [not [< $i [$strings:length $src]]]
+  [?if [not [<= $i [$strings:length $src]]]
     [then [$perr 'unterminated string']]
     [else
       [?let [= $c [$ch $src $i]]
-        [?if [and [= $c '\\'] [< [+ $i 1] [$strings:length $src]]]
+        [?if [and [= $c '\\'] [<= [+ $i 1] [$strings:length $src]]]
           [then
             [?let [= $nxt [$ch $src [+ $i 1]]]
                   [= $decoded [?match $nxt
@@ -207,7 +207,7 @@
   [?let [= $start $pos]
         [= $p [?if [= [$ch $src $pos] '-'] [then [+ $pos 1]] [else $pos]]]
         [= $e [$number-end $src $p]]
-    [$ok $e [$strings:slice $src $start $e]]]]
+    [$ok $e [$strings:slice $src $start [- $e 1]]]]]
 
 # kw-at: keyword at pos with no ident char after it.
 [?def kw-at scope=public ($src $pos $kw)
@@ -428,7 +428,7 @@
             [else [$chain-loop $src [$r-pos $p] [$r-node $p]]]]]]]]]
 
 [?def parse-call scope=public ($src)
-  [?let [= $r [$parse-expr $src 0]]
+  [?let [= $r [$parse-expr $src 1]]
     [?if [$is-perr $r] [then $r]
       [else
         [?if [$at-eof $src [$r-pos $r]]
