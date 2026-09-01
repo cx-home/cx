@@ -45,15 +45,21 @@ the validator insert `status=stocked` there before validating).
 
 ```sh
 $ cx validate examples/validate/inventory.bad.cx --schema=examples/validate/inventory.cxs
-examples/validate/inventory.bad.cx:0:0: error: S005: attribute 'qty' on <item>: type mismatch (declared :int, got :string = 'lots')
-examples/validate/inventory.bad.cx:0:0: error: S007: attribute 'status' on <item>: value 'misplaced' not in :enum [stocked,low,discontinued]
-examples/validate/inventory.bad.cx:0:0: error: S002: missing required attribute 'sku' on <item>
+examples/validate/inventory.bad.cx:9:4: error: S005: attribute 'qty' on <item>: type mismatch (declared :int, got :string = 'lots')
+examples/validate/inventory.bad.cx:10:4: error: S007: attribute 'status' on <item>: value 'misplaced' not in [enum 'stocked' 'low' 'discontinued']
+examples/validate/inventory.bad.cx:11:4: error: S002: missing required attribute 'sku' on <item>
 $ echo $?
 1
 ```
 
 One run, all three diagnostics reported (the validator does not stop at
 the first error), exit `1`.
+
+Every value in a diagnostic is spelled the way CX spells it
+(`schema.md` §10.3): `'misplaced'` is quoted because it is a string, an
+atom would read `:misplaced`, and a number reads bare. The two are
+different values in different kinds, so a message that rendered them
+alike could not be acted on.
 
 ## Useful flags
 

@@ -13,6 +13,62 @@ version, library version).
 
 ## [Unreleased]
 
+### Added
+
+- **Closed-key maps: the schema `[keys CLAUSE…]` constraint wrapper
+  (#1155, RULED: EN-2).** A `[map K V]` declaration closes its VALUE
+  domain through `V`; `[keys …]` applies the same `§7` catalog to its
+  **KEY** domain — `[type optable::[map string int] [keys [enum plus
+  minus times]]]`. Wrapped clauses fire their own codes against the key
+  (`S007` enum, `S008` pattern, `S006` range, `S018` len) with the key
+  locus in the message, so the wrapper mints nothing for the domain
+  tests. `[req]` beside a `[keys]`-level `[enum]` makes the key set
+  **total** — every declared member must be present — and the one new
+  validation code, **`S021`**, names the absent members; without it the
+  set is subset-closed. This is the answer to the enum-keyed table the
+  `EnumMap` / TS-`Record` lineages expect: **close the key SET, do not
+  mint a key kind**, so closed-key tables arrive over the existing seven
+  key kinds (`cxdm.md` §2.6), travel with the schema, and carry §16.5
+  evolution. `cx schema export` projects the closure onto JSON Schema
+  `propertyNames` / `required`, and refuses loudly — naming the clause —
+  for `[keys [range …]]`, which has no faithful image (a JSON property
+  name is a string). `cx schema infer` never emits `[keys]`: closure is
+  an authored claim, not a corpus observation.
+- **`[enum …]` payload hygiene, `S022` (RULED: EN-2 P16).** A duplicate
+  member and an empty member list — in value position or inside
+  `[keys]` — are schema-load errors. Both are authoring slips with no
+  meaning to preserve; an empty `[enum]` is a refusal written as a
+  constraint.
+
+### Fixed
+
+- **An out-of-set atom BODY validated clean (#1155).** `atom` was
+  missing from the validator's scalar-shape set, so every clause on an
+  atom-typed body — `[type status::atom [enum :ok :err :pending]]`, the
+  enum campaign's own worked shape — was skipped outright, while the
+  identical constraint in ATTRIBUTE position reported `S007`. The attr
+  half was repaired long ago (fixtures `sv-060`/`sv-061`); the body half
+  had no fixture and stayed dead.
+- **`::[enum :ok :err]` was read as a STRING domain.** The ascription
+  spelling of an enum forced its kind to `string`, so it reported `S005`
+  against the very atoms it enumerated — the two spellings of one
+  constraint disagreed. The ascription's kind is now inferred from its
+  members (atom / int / bool / string).
+- **Diagnostics render values in canonical spelling (schema.md §10.3).**
+  An atom now reads `:gone` and a string `'gone'`; numbers, booleans and
+  the temporal kinds read bare. They are distinct values in distinct
+  kinds (`cxdm.md` §5.1, no coercion) and only one of them is ever in an
+  atom enum's domain, so a message that rendered both as `'gone'` could
+  not be acted on. Declared member lists render as the clause the author
+  wrote — `[enum :ok :err :pending]`, not the retired `:enum [a,b,c]`
+  flag spelling — and the same for `[pattern …]`.
+- **The atom-map-key refusal is named in BOTH readings.** `{:name: 1}`
+  answered `cx-err:CXERMAP-BADKEY` in the data reading but a generic
+  "expected map key (…), got ':'" in the program reading. One
+  prohibition (`cxdm.md` §2.6) now answers with one name. `cxdm.md` §2.6
+  also gained the rationale note for that prohibition — the five grounds
+  recorded so the question is asked once (RULED: EN-4).
+
 ## [0.17.0] — 2026-08-27
 
 ### Changed
