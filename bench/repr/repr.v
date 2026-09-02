@@ -135,37 +135,38 @@ mut:
 }
 
 fn (mut c Counts) scalar(v cx.ScalarValue, dt cx.ScalarType) {
-	match v {
-		i64 { c.scalar_int++ }
-		f64 { c.scalar_float++ }
-		bool { c.scalar_bool++ }
-		cx.NullValue { c.scalar_null++ }
-		string {
+	match v.kind() {
+		.int_kind { c.scalar_int++ }
+		.float_kind { c.scalar_float++ }
+		.bool_kind { c.scalar_bool++ }
+		.null_kind { c.scalar_null++ }
+		.string_kind {
 			if dt == .string_type {
 				c.scalar_str++
 			} else {
 				c.scalar_other++
 			}
-			c.value_bytes += v.len
+			c.value_bytes += v.string_value().len
 		}
 	}
 }
 
 fn (mut c Counts) walk(n cx.Node) {
-	match n {
-		cx.Element {
+	match n.kind() {
+		.element {
+			e := n.element()
 			c.elements++
-			c.name_bytes += n.name.len
-			if !isnil(n.meta) {
+			c.name_bytes += e.name.len
+			if !isnil(e.meta) {
 				c.elem_meta++
 			}
-			if n.attrs.len == 0 {
+			if e.attrs.len == 0 {
 				c.empty_attrs++
 			}
-			if n.items.len == 0 {
+			if e.items.len == 0 {
 				c.empty_items++
 			}
-			for a in n.attrs {
+			for a in e.attrs {
 				c.attrs++
 				c.name_bytes += a.name.len
 				if !isnil(a.meta) {
@@ -173,42 +174,46 @@ fn (mut c Counts) walk(n cx.Node) {
 				}
 				c.scalar(a.value, .string_type)
 			}
-			for it in n.items {
+			for it in e.items {
 				c.walk(it)
 			}
 		}
-		cx.ScalarNode {
-			c.scalar(n.value, n.data_type)
+		.scalar_node {
+			c.scalar(n.scalar_value(), n.scalar_kind())
 		}
-		cx.TextNode {
+		.text_node {
 			c.text++
-			c.value_bytes += n.value.len
+			c.value_bytes += n.text_node().value.len
 		}
-		cx.MapNode {
+		.map_node {
+			m := n.map_node()
 			c.map_nodes++
-			for e in n.entries {
+			for e in m.entries {
 				c.map_entries++
 				kv := e.key_value
-				if kv is string {
-					c.name_bytes += kv.len
+				if kv.is_string() {
+					c.name_bytes += kv.string_value().len
 				}
 				c.walk(e.value)
 			}
 		}
-		cx.ArrayNode {
+		.array_node {
+			a := n.array_node()
 			c.array_nodes++
-			for it in n.items {
+			for it in a.items {
 				c.walk(it)
 			}
 		}
-		cx.SequenceNode {
+		.sequence_node {
+			s := n.sequence_node()
 			c.seq_nodes++
-			for it in n.items {
+			for it in s.items {
 				c.walk(it)
 			}
 		}
-		cx.DocumentNode {
-			for it in n.elements {
+		.document_node {
+			d := n.document_node()
+			for it in d.elements {
 				c.walk(it)
 			}
 		}
