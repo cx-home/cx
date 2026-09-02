@@ -90,19 +90,29 @@ fi
 # by exactly one retained copy of the input (README.md, "what the instrument
 # can and cannot see"), and the shipped build is the one the campaign's RSS
 # bar is measured on.
+#
+# STALENESS IS BY CONTENT HASH, NOT MTIME. The obvious check — "is any
+# vcx/cx/*.v newer than the binary" — is wrong for the one workflow this guard
+# exists to serve. `git checkout` of an OLDER commit writes only the files that
+# differ, so a bisect step can leave every input older than a binary built from
+# a later tree and the guard then measures code that is not checked out. That
+# is not hypothetical: bisecting the #1201 XML regression reported the SAME
+# ratio for all seven candidate commits, including ones that provably differ,
+# until the build was forced. A guard that can silently measure the wrong tree
+# is worth less than no guard. Hashing the inputs costs ~30 ms and cannot lie.
 mkdir -p "$BUILD"
+STAMP="$BUILD/inputs.sha"
+inputs_hash="$(cat "$HERE/repr.v" "$V" "$REPO"/vcx/cx/*.v 2>/dev/null | shasum -a 256 | cut -d' ' -f1)"
 stale=0
 if [[ ! -x "$BIN" ]]; then
   stale=1
-else
-  newer="$(find "$REPO/vcx/cx" -name '*.v' -newer "$BIN" -print -quit)"
-  if [[ -n "$newer" || "$HERE/repr.v" -nt "$BIN" || "$V" -nt "$BIN" ]]; then
-    stale=1
-  fi
+elif [[ ! -f "$STAMP" || "$(cat "$STAMP")" != "$inputs_hash" ]]; then
+  stale=1
 fi
 if [[ "$stale" == "1" ]]; then
   echo "bench/repr: building the driver (v -gc e -prod over the cx module)…"
   "$V" -path "@vlib|@vmodules|$REPO/vcx" -gc e -enable-globals -prod -o "$BIN" "$HERE/repr.v"
+  printf '%s' "$inputs_hash" > "$STAMP"
 fi
 
 # ── measure ─────────────────────────────────────────────────────────────────
