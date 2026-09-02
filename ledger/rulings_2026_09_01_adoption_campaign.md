@@ -486,3 +486,73 @@ touch the same §4.3 paragraphs, so they land together.
 - **Per-tenant fields via the archetype binding as the intended path**
   (AD-6(b)). Trigger: AD-6(a) proving unimplementable at the schema layer,
   with the finding recorded.
+
+---
+
+## AD-5 execution record — the reconciled design (W5, #1185 / #789)
+
+**RULED: AD-5(a).** The v0.18 deliverable is the reconciled DESIGN plus the
+`xap.md` truing — explicitly NOT the runner generalization, which is ~1.5
+streams and whose vocabulary must settle at stream 10's exit review (AD-7).
+
+### What was reconciled
+
+#1185 asked for declarative process at the XAP layer. It is not a new
+capability: it is the XAP-facing half of #789 ("general workflow on the saga
+substrate — flows-as-documents"). ONE vocabulary, ONE substrate — #789's
+flow-as-document over the stateless saga runner.
+
+What the XAP layer CONTRIBUTES are four properties #1185 names and #789 does
+not yet pin. They are recorded here as design items #789 must carry, because
+each one is a thing that goes wrong quietly if a XAP grows its own process
+engine privately:
+
+**X1 — actions may only name verbs in the composed grammar.** A flow step is
+not free text and not an arbitrary callable; it names a verb the composition
+already carries. A definition that names anything else is not a runtime
+failure, it is an invalid document.
+
+**X2 — authority is the CONSTITUENTS'.** An action is admitted only if the
+actor could have emitted that verb DIRECTLY, at the same PEP, exactly as
+N-COMPOSE-2 already requires for derived verbs. This is the property most
+likely to be got wrong in a private implementation, and it is the one that
+keeps a flow definition from becoming a privilege-escalation path: without
+it, "the workflow did it" becomes a way to do what you could not do yourself.
+
+**X3 — the `dial=` vocabulary governs execution**, with irreversible actions
+floored at approval. The dial already exists and already means this; a flow
+does not get a second, softer setting.
+
+**X4 — refusals are VALUES.** A definition naming a verb the grammar no
+longer carries refuses at VALIDATION, in the `[!compose-conflict]` shape —
+not at 3am in a running flow. This is the same posture as every other
+compose-time gate: the failure surfaces where someone can act on it.
+
+### Why not two vocabularies (AD-5(b), refused)
+
+Two ways to say one thing is the orthogonality defect the project exists to
+avoid, and #789 item 2 already names the failure mode by name: BPMN — a
+vocabulary that bloats into an unauditable programming language. The
+discipline boundary is the make-or-break item in that design. Opening a
+second front loses it before it is drawn.
+
+### Why not "application territory" (AD-5(c), refused)
+
+Every part is already in the tree — `sched`, journal, folds, cascade,
+`authz`, the dial. So "application territory" does not mean adopters are
+free; it means every adopter assembles the same thing from the same parts,
+privately, in code. That is where variance goes to die, and it renders to no
+face.
+
+### Delivered in v0.18
+
+- These four properties recorded as design items #789 carries, with #1185
+  retained as the XAP-surface member of that design.
+- `xap.md` §13's ~95 % line gains one sentence pointing at the vocabulary, so
+  the claim stops reading as uncovered.
+
+### NOT delivered in v0.18, deliberately
+
+The runner generalization. #789 is ~1.5 streams on its own and its vocabulary
+settles at stream 10's exit review; forcing it into this campaign is how the
+BPMN failure mode gets in (AD-7(b), refused).
