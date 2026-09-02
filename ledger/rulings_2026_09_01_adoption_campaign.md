@@ -422,6 +422,41 @@ not get (N-DIST-2).
 **Sequencing:** AD-9 is design-and-register in this campaign; authoring the
 members is a follow-on wave sized on the ruled membership. It does not block
 W1–W5.
+## AD-10 — instantiation is CONTRACT-LEVEL by design, and an unservable `[add]` refuses (#1162)
+
+**RULED: (a)** — owner acceptance 2026-09-01 ("2a"). This is the letter AD-8
+said #1162 would carry.
+
+- **(a) State that instantiation is contract-level by design, and make the
+  surface REFUSE an `[add]`ed verb that no implementation can serve.** An
+  instance binding refines a CONTRACT: it selects, narrows and renames what
+  the archetype already implements. It does not carry code, and nothing in
+  §4.3 ever gave it a slot to carry code in. The defect is therefore not a
+  missing capability but a missing refusal — today an `[add]`ed verb composes
+  green and admits, and the first evidence anything is wrong is an `apply`
+  that cannot dispatch, at runtime, in the adopter's deployment.
+- **(b) Give the refinement contract an implementation slot.** REFUSED as
+  this release's answer: it makes instances carry code, which is a materially
+  larger surface — versioning, purity, capability attribution and content
+  addressing all acquire a second home — and it would be adopted before a
+  single adopter has asked to write an instance-local implementation. It
+  stays available; see the refusals register for its trigger.
+
+**Why (a) is long-term best.** It is the same shape #1181/AD-1 was just ruled
+into, and for the same reason: a DECLARATION THAT BINDS NOTHING becomes a
+refusal, not a new capability. #1181's `[selection]` was read by nothing;
+#1162's `[add]` is servable by nothing. In both, the honest fix is that the
+composer says so at compose time instead of the deployment discovering it.
+Ruling (b) here would answer two adjacent reports about the same paragraph in
+two different shapes, which is exactly what AD-8 admitted them together to
+avoid.
+
+**Note on sequencing.** #1161 rules what `of=` PINS (the document or the
+package); AD-10 rules what an instance may DO. The two are independent and
+touch the same §4.3 paragraphs, so they land together.
+
+---
+
 
 
 ---
