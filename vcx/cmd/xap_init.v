@@ -63,12 +63,16 @@ fn run_xap(args []string) {
 		}
 		exit(if args.len == 0 { 2 } else { 0 })
 	}
+	if args[0] == 'compat' {
+		run_xap_compat(args[1..])
+		return
+	}
 	if args[0] == 'check-surface' {
 		run_xap_check_surface(args[1..])
 		return
 	}
 	if args[0] != 'init' {
-		xap_init_die('unknown action `${args[0]}` — actions: init, check-surface')
+		xap_init_die('unknown action `${args[0]}` — actions: init, check-surface, compat')
 	}
 	if args.len < 2 {
 		xap_init_die('missing NAME')
