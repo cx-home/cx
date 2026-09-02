@@ -13,3 +13,4 @@
 # above out of the cx-v package smoke test.
 #absorbed vcx/tests/cli_select_test.v
 #absorbed vcx/tests/cli_run_surface_test.v
+#absorbed vcx/tests/cli_address_recheck_test.v
