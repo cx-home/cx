@@ -64,5 +64,5 @@ which #1190 §2 names and which only a vocabulary can address.
    typo from a deliberate private ruler without re-deriving the composition.
 3. Fixtured both ways: two features meeting at one key report nothing; the
    one-character-apart pair reports both keys.
-4. The deferred items get their own issue, cross-referenced here, so the
+4. The deferred items get their own issue (#1199, filed 2026-09-02), cross-referenced here, so the
    scope is parked rather than lost.
