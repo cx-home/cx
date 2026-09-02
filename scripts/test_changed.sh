@@ -174,6 +174,9 @@ lane_globs() {
     # binary and fails on drift from AUDIT.md, so it depends on the corpus AND
     # on anything that changes the binary's behaviour.
     corpus-audit)                  echo "corpus/* $RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/corpus_audit.sh" ;;
+    # bench/repr (#1119 W1) compiles the `cx` module as SOURCE and measures the
+    # live tree it builds, so it depends on Ring 0 and on nothing above it.
+    repr-guard)                    echo 'vcx/cx/* vcx/v.mod third_party/* bench/repr/*' ;;
     *)                             echo '' ;; # unknown lane → ALWAYS RUN
   esac
 }

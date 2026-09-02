@@ -106,3 +106,10 @@ bench/current.json
 
 # campaign working notes — agent briefs, not shipped surface
 .campaign/
+
+# bench/repr (#1119 W1) — the guard's build output and its generated corpora.
+# The corpora are a pure function of the record index (bench/repr/repr.v), so
+# they are reproduced on demand rather than committed; run.sh deletes them
+# unless CX_REPR_KEEP=1.
+bench/repr/.build/
+bench/repr/_corpus/

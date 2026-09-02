@@ -644,7 +644,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx test-binding-api-parity corpus-audit
+TEST_TARGETS := abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS lanes whose
@@ -2458,6 +2458,24 @@ bench-code-modify-sharing: build-vcx
 .PHONY: corpus-audit
 corpus-audit: build-vcx
 	@bash scripts/corpus_audit.sh
+
+
+# ── REPR GUARD (#1119 W1, RULED: RP-5) — the CXDM live-memory ratchet ────────
+# Parses a ~2 MB corpus per lane (json / xml / cx) through the `cx` module,
+# forces a collection with the tree still reachable, and asserts
+# live bytes ÷ input bytes against a bound pinned to today's measurement with
+# headroom. A RATIO, never a time and never an absolute byte count, so the
+# verdict holds on a loaded machine and on other hardware — measured identical
+# under eight saturating CPU burners. ~0.6 s once the driver is built; the
+# driver rebuilds only when vcx/cx, bench/repr/repr.v, or the pinned V moves.
+#
+# It is in TEST_TARGETS because it is the measurement instrument the rest of
+# the representation campaign is judged by: W5-W7 each re-pin these bounds
+# DOWNWARD at their exit, and a wave that makes the tree bigger has to red this
+# lane before it can land. Contract + the numbers: bench/repr/README.md.
+.PHONY: repr-guard
+repr-guard:
+	@bench/repr/run.sh
 
 # ── Clean ──────────────────────────────────────────────────────────────────────
 
