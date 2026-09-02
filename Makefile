@@ -2473,8 +2473,14 @@ corpus-audit: build-vcx
 # the representation campaign is judged by: W5-W7 each re-pin these bounds
 # DOWNWARD at their exit, and a wave that makes the tree bigger has to red this
 # lane before it can land. Contract + the numbers: bench/repr/README.md.
+#
+# `repr-guard` depends on `build-vcx` for one reason: the driver links the same
+# vendored RE2 static archive the CLI does (`third_party/re2/obj/libre2.a`), so
+# the lane's prerequisites ARE build-vcx's. Free inside `make test` (the serial
+# pre-build already ran), and it is what makes `make repr-guard` work in a fresh
+# worktree, where that archive does not exist yet.
 .PHONY: repr-guard
-repr-guard:
+repr-guard: build-vcx
 	@bench/repr/run.sh
 
 # ── Clean ──────────────────────────────────────────────────────────────────────

@@ -13,6 +13,12 @@ CX_REPR_RECORDS=8000 bench/repr/run.sh
 
 In `TEST_TARGETS`, so it runs in every `make test`.
 
+`make repr-guard` depends on `build-vcx`: the driver links the same vendored
+RE2 static archive (`third_party/re2/obj/libre2.a`) the CLI does. Calling
+`run.sh` directly in a fresh worktree therefore needs that archive and the
+pinned V first — `git submodule update --init third_party/re2 third_party/v`
+and a `make -C vcx re2-shim` (or just `make repr-guard`, which does it).
+
 ## What it asserts
 
 Per lane, on a ~2 MB corpus of the same logical data in three surfaces:
