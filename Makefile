@@ -644,7 +644,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard
+TEST_TARGETS := abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS lanes whose
@@ -1865,6 +1865,51 @@ test-vcx-code: build-vcx-dev check-serial-retry-rosters
 test-vcx-cxstore: build-vcx-dev
 	@$(V) -cc cc $(CX_GC) test vcx/cxstore/*_test.v
 
+# The in-module Ring-0 test roster (#1209). Listed EXPLICITLY, never globbed:
+# vcx/cx/parser_multidoc_test.v segfaults under the shipped `-gc e` model
+# (module-internal-test-only RC double-free of the multi-doc Document tree;
+# production paths and external-linkage tests are green) — that exclusion is
+# #737, and it is why this cannot be `test vcx/cx/`.
+#
+# An explicit list with no guard ROTS: between I2 and #1209 three tests were
+# added here and named by no lane, so they ran nowhere for months — including
+# name_pool_contract_test.v, which is #1178's parser-quadratic contract. The
+# roster is a variable and `check-inmodule-test-roster` now fails on any
+# vcx/cx/*_test.v that is in neither list, so the next addition cannot be
+# forgotten silently. Delete both lists and glob the directory when #737 closes.
+CX_INMODULE_TESTS := vcx/cx/anchor_resolve_test.v vcx/cx/atom_test.v vcx/cx/token_golden_test.v vcx/cx/version_stamp_test.v vcx/cx/html_url_codec_test.v vcx/cx/span_jump_test.v vcx/cx/feature_compat_test.v vcx/cx/name_pool_contract_test.v vcx/cx/schema_extensions_test.v
+CX_INMODULE_TESTS_EXCLUDED := vcx/cx/parser_multidoc_test.v
+
+.PHONY: check-inmodule-test-roster
+check-inmodule-test-roster:
+	@missing=""; \
+	for t in $(CX_INMODULE_TESTS) $(CX_INMODULE_TESTS_EXCLUDED); do \
+	  [ -f "$$t" ] || missing="$$missing $$t"; \
+	done; \
+	if [ -n "$$missing" ]; then \
+	  echo "check-inmodule-test-roster: roster names file(s) that do not exist —"; \
+	  for t in $$missing; do echo "    $$t"; done; \
+	  echo "  fix CX_INMODULE_TESTS / CX_INMODULE_TESTS_EXCLUDED in Makefile."; \
+	  exit 1; \
+	fi; \
+	unlisted=""; \
+	for f in vcx/cx/*_test.v; do \
+	  case " $(CX_INMODULE_TESTS) $(CX_INMODULE_TESTS_EXCLUDED) " in \
+	    *" $$f "*) ;; \
+	    *) unlisted="$$unlisted $$f" ;; \
+	  esac; \
+	done; \
+	if [ -n "$$unlisted" ]; then \
+	  echo "check-inmodule-test-roster: in-module test(s) that NO lane runs —"; \
+	  for f in $$unlisted; do echo "    $$f"; done; \
+	  echo "  \`v test\` only runs what it is given, so a vcx/cx/*_test.v missing"; \
+	  echo "  from CX_INMODULE_TESTS executes nowhere and guards nothing (#1209)."; \
+	  echo "  Add it to CX_INMODULE_TESTS, or to CX_INMODULE_TESTS_EXCLUDED with"; \
+	  echo "  the issue that owns the exclusion."; \
+	  exit 1; \
+	fi; \
+	echo "check-inmodule-test-roster OK — every vcx/cx/*_test.v is run or explicitly excluded"
+
 # White-box unit tests INSIDE the Ring-0 `cx` module (vcx/cx/*_test.v) plus
 # the `fixtures` test-support module (vcx/fixtures/ — the corpus loader,
 # moved out of shipped libcx at I2). These lanes ran NOWHERE before I2:
@@ -1878,7 +1923,7 @@ test-vcx-cxstore: build-vcx-dev
 # closes.
 .PHONY: test-vcx-cx
 test-vcx-cx: build-vcx-dev
-	@$(V) -cc cc $(CX_GC) test vcx/cx/anchor_resolve_test.v vcx/cx/atom_test.v vcx/cx/token_golden_test.v vcx/cx/version_stamp_test.v vcx/cx/html_url_codec_test.v vcx/cx/span_jump_test.v
+	@$(V) -cc cc $(CX_GC) test $(CX_INMODULE_TESTS)
 	@$(V) -cc cc $(CX_GC) test vcx/fixtures/
 
 # White-box unit tests that live INSIDE the CLI module (vcx/cmd/*_test.v) —
