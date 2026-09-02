@@ -41,11 +41,12 @@ fn run_xap_check_surface(args []string) {
 		println('Usage: cx xap check-surface [DIR]')
 		println('')
 		println('Checks that every *.surface.cxd in DIR is a faithful DERIVATION of')
-		println('the xap + feature specs beside it — three classes the shape schema')
+		println('the xap + feature specs beside it — four classes the shape schema')
 		println('cannot see:')
 		println('  :unenabled-feature  a panel instances a feature the xap never enables')
 		println('  :unknown-intent     a control names an intent no feature declares')
 		println('  :unknown-field      a shown noun.field does not exist on the feature')
+		println('  :unservable-verb    a route offers a verb no <feature>.cx module can serve')
 		println('')
 		println('Reports like the compose gate\'s tooling face — ok= plus EVERY problem.')
 		println('Exit: 0 clean, 1 any problem, 2 usage / not a XAP project directory.')
@@ -62,6 +63,7 @@ fn run_xap_check_surface(args []string) {
 	mut features := []string{}
 	mut xaps := []string{}
 	mut surfaces := []string{}
+	mut modules := []string{}
 	for e in entries {
 		if e.ends_with('.feature.cxd') {
 			features << os.join_path(dir, e)
@@ -69,6 +71,12 @@ fn run_xap_check_surface(args []string) {
 			xaps << os.join_path(dir, e)
 		} else if e.ends_with('.surface.cxd') {
 			surfaces << os.join_path(dir, e)
+		} else if e.ends_with('.cx') {
+			// #1162 (RULED: AD-10, letter a) — behaviour travels with a
+			// feature as `<feature>.cx` exporting `apply`, and DISPATCH IS BY
+			// FEATURE NAME (market §1.2). So the set of module basenames in
+			// this directory IS the set of feature names anything can serve.
+			modules << e#[..e.len - 3]
 		}
 	}
 	features.sort()
@@ -96,7 +104,7 @@ fn run_xap_check_surface(args []string) {
 	mut any_problem := false
 	for sp in surfaces {
 		xap_check_surface_path_ok(sp)
-		prog := xap_check_surface_program(xaps[0], sp, features)
+		prog := xap_check_surface_program(xaps[0], sp, features, modules)
 		out := code.eval_code('', prog, 'cx') or {
 			// the `!`-guarded reads name the failing FILE; a project whose
 			// inputs do not resolve must FAIL, never report over nothing
@@ -126,7 +134,7 @@ fn xap_check_surface_path_ok(p string) {
 // reference/shop/check-surface.cx (#726), generalized: file paths are
 // spliced by the CLI instead of hard-coded, and the feature count is
 // whatever the project holds.
-fn xap_check_surface_program(xap_path string, surface_path string, feature_paths []string) string {
+fn xap_check_surface_program(xap_path string, surface_path string, feature_paths []string, modules []string) string {
 	mut b := []string{}
 	b << "[?lib 'cx-xap' :as xap]"
 	b << "[?lib 'cx-stdlib/io' :as io]"
@@ -190,7 +198,33 @@ fn xap_check_surface_program(xap_path string, surface_path string, feature_paths
 	b << '                          \$tok]]]'
 	b << '            [yield [problem kind=:unknown-field panel=\$p@name shows=\$tok]]]]'
 	b << ''
-	b << '        [?let [= \$problems [?for [in \$s (\$bad-panels, \$bad-controls, \$bad-shows)]'
+	b << '        [; 4 — a route may only OFFER a verb something can serve (#1162,'
+	b << '           RULED: AD-10). Behaviour travels with a feature as'
+	b << '           `<feature>.cx` exporting `apply`, and dispatch is BY FEATURE NAME'
+	b << '           (market §1.2), so a qualified verb is servable exactly when a'
+	b << '           module of that feature name is present beside the specs.'
+	b << ''
+	b << '           This catches BOTH halves of the report. An [add]ed verb on an'
+	b << '           instance is servable by nothing — the refinement contract has no'
+	b << '           slot for code. And an instance RENAMED `derived` is served by'
+	b << '           nothing either when the only module present is `base.cx`, which'
+	b << '           the report calls the milder version of the same problem.'
+	b << ''
+	b << '           At the SURFACE, not at instantiate: §4.3 admits ADD of new verbs'
+	b << '           as one of its four refinement operations, so an instance may'
+	b << '           still DECLARE one. What may not happen is a surface OFFERING it,'
+	b << '           because that is where the promise becomes a route a caller can'
+	b << '           reach. ]'
+	mods_seq := if modules.len == 0 { '()' } else { "('" + modules.join("', '") + "')" }
+	b << '        [= \$servable ${mods_seq}]'
+	b << '        [= \$bad-verbs'
+	b << '          [?for [in \$o \$surface//offer]'
+	b << "            [where [not [\$exists [?for [in \$m \$servable]"
+	b << "                                   [where [= \$m [\$first [\$strings:split [\$concat '' \$o@verb] '/']]]]"
+	b << '                                   [yield \$m]]]]]'
+	b << "            [yield [problem kind=:unservable-verb verb=\$o@verb]]]]"
+	b << ''
+	b << '        [?let [= \$problems [?for [in \$s (\$bad-panels, \$bad-controls, \$bad-shows, \$bad-verbs)]'
 	b << '                                 [in \$p \$s] [yield \$p]]]'
 	// R-A1 (2026-08-25): the problem rows splice as direct children.
 	b << '          [surface-check surface=\$surface@name xap=\$surface@xap'
