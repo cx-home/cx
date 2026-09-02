@@ -3937,6 +3937,7 @@ Subcommands (`cx <subcommand> --help` for details):
   canonical            Strict canonical text (strips presentation; data-equivalent).
   schema               Schema verb family — infer a .cxs from a corpus; export to JSON Schema; classify compatibility.
   tools                Agent-tool verb family — project command defs to MCP tool descriptors.
+  address              Content-address stability drill — re-derive stored pins against a tree.
   hash                 SHA-256 hex of the strict-canonical bytes.
   eq                   Exit 0 iff strict-canonical(A) == strict-canonical(B).
   diff                 Semantic diff (walks the strict-canonical forms).
