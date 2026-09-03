@@ -244,3 +244,24 @@ parent is the template"), and `-d cx_frame_poison` over the suite.
   dispatch is small. The per-derivation allocation — one `Frame` plus one `locals` map per `[?let]` body
   and per `[?for]` item — is therefore the W2b target: a frame with a small inline locals array (Q1a's
   ≤ 8) removes the map allocation; pooling the Frame removes the other. Measure both against this table.
+
+## Execution record — W4, #1237 and the Q3 audit (2026-09-03)
+
+- The multi-arm `[?match]` loop tries `structural_match` on every binding-capable `[case]` arm before
+  `match_arm_pattern` (eval.v): a miss skips the arm with no frame (the general matcher's own
+  short-circuit verdict), a hit derives one child frame for the binds and the `:where` / `:yield`,
+  `.not_applicable` falls through to the general matcher unchanged. Path-case arms, `:when`, `:else`
+  and the #1094 bind-free arms are untouched. `CX_MATCH_NO_FASTPATH=1` disarms it as before, and
+  `test_match_multiarm_fastpath_byte_identity` (code_eval_fixtures_test.v) runs every `[case` fixture
+  armed and disarmed in one process, byte-compared on both channels — the single-arm gate's shape,
+  selected structurally, with a floor of 20 fixtures.
+- Measured (-O0, W2 → W4): `[?for]` 50k + 4-arm `[?match]`, 0 extra bindings 2.11 s → 0.89 s; with 300
+  visible bindings 28.7 s → 1.10 s (26×); `[?for]` 200k + 6-arm `[?match]`, thin 6.83 s → 2.86 s; the
+  same with five libs loaded 345 s → 2.92 s (118× — the closures-table clone per arm was the whole
+  cost). Ten probe programs byte-identical between the W2 and W4 binaries.
+- Q3 audit (deletes are frame-local under the chain): after W1 every binding delete in the tree is
+  `bind_delete` or the else-arm of `bind_restore`, and the only callers of `bind_delete` are the
+  accessors themselves — every one of the evaluator's 18 pre-W1 `bindings.delete` calls was a
+  save/restore else-arm, and platform / cmd / tests have none. No site deletes a parent's binding;
+  no tombstone is needed. The audit is empty by construction and stays so as long as W1's rule holds
+  (no direct map access outside matcher.v's seam).
