@@ -1,6 +1,6 @@
 # Rulings 2026-09-03 — #1236 flat frames: every derived frame copies the enclosing bindings map
 
-**Status: PROPOSED 2026-09-03 — awaiting the owner's letters on Q1–Q4.**
+**Status: RULED (1a, 2a, 3a, 4a) by the owner, 2026-09-03 — "(a) on all four, start W1".**
 
 ## The finding
 
