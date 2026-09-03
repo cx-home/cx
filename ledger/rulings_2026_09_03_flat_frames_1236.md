@@ -265,3 +265,39 @@ parent is the template"), and `-d cx_frame_poison` over the suite.
   save/restore else-arm, and platform / cmd / tests have none. No site deletes a parent's binding;
   no tombstone is needed. The audit is empty by construction and stays so as long as W1's rule holds
   (no direct map access outside matcher.v's seam).
+
+## Execution notes — W3 design (#1235, the free-variable capture)
+
+**Rule.** A `[?fn]` captures the VALUES of its body's FREE names at creation (EV-CLOSURE-CAP, capture
+by snapshot) — today `snapshot_bindings` flattens the whole frame chain. W3 computes the body's free
+names once at creation (`fn_free_names(body, params)`, a walk over the program AST) and captures only
+those that are bound at that moment; a name that is free in the body but unbound at creation is not
+captured (today it is not in the snapshot either, so the call-time miss is unchanged).
+
+**The walk.** Names are referenced by `ProgramBinding.name` (`$x`, incl. the base of a path / slice
+access and `ProgramSliceAccess.binding`), by a `ProgramCall.name` when it is not a known builtin /
+directive head (a call on a bound fn value `[$f …]` / `[f …]` resolves through the frame), and by path
+steps with a `computed_name` that is itself a node. The walk recurses through every child position:
+`ProgramCall.args`, `ProgramDirective.slots[].value`, `ProgramForComp.clauses[].source/expr` +
+`yield`/`yield_value`, `ProgramLiteral.items/slots[].value/attrs[].value/name_expr`,
+`ProgramPattern.attrs[].value/body`, `ProgramPathPredicate.attr_value/body`, `SliceAxis.start/stop/step`,
+and every `path []ProgramPathStep` (their predicates' `attr_value` / `body`). Names BOUND inside the body
+shadow: the lambda's own params, a nested `[?fn]`'s params, `[?let]` binds, `[?for]` clause binds,
+pattern binds (`ProgramPatternHead.bind`, `ProgramBinding` inside a pattern, `(bind $x)` step
+annotations, `[case]` arm binds) — a reference to a name after it is bound inside the body is not
+free. The walk is conservative on shadowing: it treats a name as free if ANY reference to it could
+precede its inner binding (per-body set, no flow analysis) — capturing an extra name is harmless
+(today every name is captured), missing one is the only error.
+
+**The fallback.** A body that can evaluate DATA AS CODE against the current frame cannot have its
+free names computed: a call whose head resolves to the `cx-stdlib/cx` members that parse and run
+program text (`select`, `propose`, the command commit path), or a `[?with-scope]`-dynamic read that
+consults bindings by name at runtime, captures the WHOLE frame as today. The classifier is a closed
+list in one place; anything not on it is walked. `$_`, `$_position`, `$_last` and `$doc` / `$input`
+follow the same rule as any other name (captured when referenced and bound).
+
+**Exit bar.** Byte-identical extraction; the EV-CLOSURE-CAP `[?loop]` rebinding fixtures unchanged; a
+differ (`CX_FN_CAPTURE_ALL=1`, ProgramState flag read once in new_env like the #1139 hook) runs every
+fixture whose program contains `[?fn` armed and disarmed in one process, byte-compared on both
+channels, floor = the fn family's size; microbench: lambda-per-row over 200k rows under 300 visible
+bindings, before / after.
