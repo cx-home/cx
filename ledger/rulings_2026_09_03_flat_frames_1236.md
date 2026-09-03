@@ -319,3 +319,24 @@ bindings, before / after.
 - Measured (-O0, W4 → W3): `[?for]` 200k rows, one `[?fn]` created and applied per row — 0 extra
   bindings 2.98 s → 2.63 s; with 300 visible bindings 58.2 s → 2.67 s (22×; the lambda-per-row shape
   is now within 2 % of its thin cost).
+
+## Execution record — W2b, the small inline locals and the Frame pool (2026-09-03)
+
+- `Frame` carries eight inline slots (`k [8]string`, `v [8]cx.Node`, `n`) and promotes every entry into
+  its `locals` map on the ninth binding; a constructor-supplied map (a thread root, a deep clone) is the
+  promoted form from the start. The two forms never coexist. The #36 pool now holds FRAMES
+  (`borrow_frame` / `return_frame`, matcher.v): a closure call frame and the streamed-input item frame
+  are reused whole, reset on return; `-d cx_frame_poison` resets without pooling, so an escaped alias
+  still reads an empty frame — the escape detector keeps its meaning, and its unit test moved with it.
+- Proof: extraction 13,165 pairs / c776d42f unchanged; thirteen probe programs byte-identical between
+  the W3 and W2b binaries.
+- Measured, W3 → W2b. At -O0 (dev) the result is MIXED — `[?fn]`-per-row −13 %, 6-arm `[?match]`
+  −10 %, but `[?for]`+`[?let]` and 4-arm `[?match]` +13 % (a Frame with eight inline slots is heavier
+  to allocate and zero than an empty map, and the linear key compares are calls at -O0). At -Os (the
+  shipped optimisation level) it is a consistent 3–5 % win on every shape: `[?for]`+`[?let]` 200k
+  0.270 → 0.261 s, the same under 300 bindings 0.275 → 0.263 s, 4-arm `[?match]` 50k 0.171 → 0.166 s,
+  lambda-per-row 200k 0.462 → 0.440 s, 6-arm `[?match]` 200k 0.532 → 0.508 s, five libs loaded
+  0.275 → 0.263 s. Taken on the -Os numbers; the -O0 regression is recorded so the dev-gate timings
+  are read against it.
+- For scale, the same -Os binary runs the 300-binding `[?for]`+`[?let]` shape in 0.26 s that the
+  pre-#1236 dev tree took 55.9 s over — the campaign's four waves plus the optimiser.
