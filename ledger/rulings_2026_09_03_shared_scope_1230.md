@@ -34,3 +34,43 @@ never reds even unlocked); it becomes the pin here.
 - Pin: the growing module_table hammer attached to #1230 (seven threads importing math/array or
   map/fp with none imported at the top level; clean run `(0, 0, 0, 0, 0, 0, 0)`), red-proven
   against the tree before the copy, plus a `[?def]`-in-a-body variant.
+
+## Execution record (2026-09-03, the wave that landed 1a)
+
+- **Red-proof against the pre-change tree (fcab2e97e, every #1229 registry locked, Scope still shared).**
+  The issue's hammer (math/array | map/fp, none imported at top level): 0 of 20 and 5 of 20 red here
+  (2 of 20 on the owner's runs — the Scope grows only in each thread's first round, so the window is
+  narrow). A rotating-import variant (a ring of twenty defs, each importing a different stdlib module
+  and calling the next, so every thread grows the Scope twenty times per lap): 19 of 20 and 18 of 20
+  red — SIGSEGV in vmemcpy / fast_string_eq / build_param_call_env / invoke_partial_l, SIGBUS,
+  `[ham-1 'h1' 299]` rendered as data, "partial application over-applied", "unbound variable $w", a
+  false CXER0216. A `[?def]`-in-a-body variant (twelve workers plus main, four hundred distinct defs
+  each, every one called through a top-level def): 10 of 10 red (six workers × 150 defs: 5 of 20;
+  six × 800: 13 of 20). All three: 0 of 20 on the fixed tree. Pinned as the umbrella's `#1230` section.
+- **A second reader the finding did not name.** Copying the Scope at spawn removes the WORKER-side
+  writes, but a top-level callable's call env ALIASES its defining scope's maps (build_param_call_env,
+  build_param_call_env_record, invoke_positional_l), and a top-level def's defining scope is the ROOT
+  Scope — so a body calling one read the root maps while the MAIN thread wrote them (a top-level
+  `[?def]` / `[?lib]` / `[?const]` after the spawn, or a `[?lib]` inside a def main runs; the ring
+  hammer reds on exactly this). Mechanism: each copy records its `parent`, and the three call-env
+  builders substitute the executing thread's Scope for a defining scope that is an ancestor of it
+  (`MatchEnv.call_scope_of`) — one pointer compare per spawn depth, no lock, nothing on
+  lookup_closure. Rewriting every carrier of a defining_scope pointer at spawn (the closures maps,
+  the Closures riding on `[?fn]` sentinel values, their captured_bindings, parked iterator closures)
+  was rejected as a whole-world walk. This stays inside 1a: the copy is the snapshot, and the
+  substitution is what makes the snapshot the body's world. Copy-on-first-write on the worker side
+  was rejected on soundness, not cost: a worker that still aliases the root maps until its first
+  write is exactly the reader the main thread races.
+- **Clone cost (2,000 spawns of `[+ 1 1]`, same-state builds, interleaved).** Dev (-O0): a root
+  Scope holding twenty stdlib modules (~1,100 public members) 1.18 s → 1.61 s, ~215 µs per spawn;
+  an empty Scope 0.99 s → 1.10 s. At -Os: the heavy shape +1.5 G instructions over 2,000 spawns
+  (~750 k per spawn, the two map clones); the empty-Scope shape and `cx --version` are
+  cycle-identical. The dev-binary +10 ms boot delta (117 → 127 ms, identical instruction counts,
+  +9 % cycles) is an -O0 code-layout artefact, not work: it vanishes at -Os.
+- **Behaviour change recorded** in code.md's `[?worker]` and `[?async]` sections ("Lexical-scope
+  capture-at-spawn"). Pinned: a sibling def's body no longer resolves a body's `[?def]` / `[?lib]`
+  (it answered 6 / 5 / 4 on the shared Scope); a body sees every def and lambda made before the
+  spawn, its own defs and imports, and a nested body sees the outer body's defs.
+- **Observation → #1232.** A body's `[?lib]` still registers the module ALIAS program-wide
+  (module_table is a ProgramState registry), so main's `[$math:abs]` after the body answers CXER0216
+  "non-exported member" rather than "not imported". Members are body-scoped; the alias is not.
