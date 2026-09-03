@@ -301,3 +301,21 @@ differ (`CX_FN_CAPTURE_ALL=1`, ProgramState flag read once in new_env like the #
 fixture whose program contains `[?fn` armed and disarmed in one process, byte-compared on both
 channels, floor = the fn family's size; microbench: lambda-per-row over 200k rows under 300 visible
 bindings, before / after.
+
+## Execution record — W3, #1235 (2026-09-03)
+
+- `fn_capture.v`: `fn_capture(body, params, env)` walks the lambda body once at creation over every
+  program-AST child position (bindings, call heads, directive slots, for-comp clauses and yields,
+  literal items / slots / attrs / name-exprs, pattern attrs and bodies, path-step predicates and
+  computed names, slice axes) and snapshots the referenced names that are bound at that moment;
+  parameters are excluded, inner binders are not subtracted (over-capture is harmless, and it is what
+  the whole-frame snapshot did). A call head whose module alias resolves to `cx-stdlib/cx` (the members
+  that parse and run program text) makes the body capture the whole frame as before.
+  `CX_FN_CAPTURE_ALL=1` (ProgramState.fn_capture_all) disarms the narrowing for the differ.
+- Gate: `test_fn_capture_byte_identity` (code_eval_fixtures_test.v) runs every `[?fn` fixture with
+  free-name capture and with the whole-frame snapshot in one process, byte-compared on both channels
+  (floor 30). Extraction 13,165 pairs / c776d42f unchanged. Twelve probe programs byte-identical
+  between the W4 and W3 binaries; the disarm flag reproduces the old path's output.
+- Measured (-O0, W4 → W3): `[?for]` 200k rows, one `[?fn]` created and applied per row — 0 extra
+  bindings 2.98 s → 2.63 s; with 300 visible bindings 58.2 s → 2.67 s (22×; the lambda-per-row shape
+  is now within 2 % of its thin cost).
