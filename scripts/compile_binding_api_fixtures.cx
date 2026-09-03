@@ -68,12 +68,11 @@
 # py-json: render a compiled value (nested maps in insertion order, arrays,
 # strings, bools, null) with Python json.dumps default separators.
 #
-# MEASURED (2026-08-23, vcx/target/cx at this commit): a map literal and an
-# array literal both evaluate to an ELEMENT, not to a MapNode / ArrayNode —
-# so the `::map` / `::array` value-kind tests of code.md §12.7 never fire on
-# a literal-constructed collection (`[case $_::map …]` falls to `[else]`).
-# The collections are discriminated by their marker element name instead:
-# `__cx_map__` for maps, `__cx_arr__` / the bare seq marker for arrays.
+# RULED: RP-3 (#1206) — a map literal IS a Map value, so `[case $m::map …]`
+# discriminates it directly. It used to evaluate to a `__cx_map__` marker
+# ELEMENT, which is why this walker had to compare `[$name $v]` against the
+# internal marker name: the `::map` value-kind test of code.md §12.7 never
+# fired on a literal-constructed collection. One carrier, one test.
 [?def py-json scope=public ($v)
   [?if [= $v null] [then 'null']
   [else [?if [= $v true] [then 'true']
@@ -83,20 +82,18 @@
       [case $s::string [$jstr $s]]
       [case $i::int [$string $i]]
       [case $f::float [$string $f]]
+      [case $m::map
+        [$cat ('{',
+               [$strings:join
+                 [?for [in $k [$map:keys $m]]
+                   [yield [$cat ([$jstr [$string $k]], ': ',
+                                 [$py-json [?else [$map:get $m $k] null]])]]]
+                 ', '],
+               '}')]]
       [else
-        [?if [= [$string [$name $v]] '__cx_map__']
-          [then
-            [$cat ('{',
-                   [$strings:join
-                     [?for [in $k [$map:keys $v]]
-                       [yield [$cat ([$jstr [$string $k]], ': ',
-                                     [$py-json [?else [$map:get $v $k] null]])]]]
-                     ', '],
-                   '}')]]
-          [else
-            [$cat ('[',
-                   [$strings:join [?for [in $x $v] [yield [$py-json $x]]] ', '],
-                   ']')]]]]]]]]]]]]
+        [$cat ('[',
+               [$strings:join [?for [in $x $v] [yield [$py-json $x]]] ', '],
+               ']')]]]]]]]]]]
 
 # ── character helpers (1-based inclusive, RULED: #1177) ────────────────────────
 
