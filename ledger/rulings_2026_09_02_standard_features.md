@@ -2,8 +2,9 @@
 
 **Status: SF-1 and SF-6 RULED BY OWNER 2026-09-02 (the home, with a name
 change; and the spec pointer). SF-2..SF-5 recorded under the standing
-letter-acceptance rule, re-verified against the long-term-best bar. ALL SIX
-RULED.** Rulings recorded before work per the #832 process rule. Issue **#1189** (campaign
+letter-acceptance rule, re-verified against the long-term-best bar. SF-7 (the
+scope of `retention`) RULED BY OWNER 2026-09-03. ALL SEVEN RULED.**
+Rulings recorded before work per the #832 process rule. Issue **#1189** (campaign
 member of the closed adoption campaign #1188, letter **AD-9**) stays in
 cx-private and remains the contract; the feature content is built in a new
 repository.
@@ -158,6 +159,49 @@ three lanes, red-proven at authoring:
 The last lane is the SF-4 refusal given teeth: the register's reason for
 leaving the three where they are is now a gate, not a paragraph.
 
+## SF-7 — `retention`'s scope: it carries a sweep that actually erases
+
+**RULED: (a), by owner, 2026-09-03 ("a").** `retention` is not
+declaration-only. It carries `run-sweep` — an act verb, `consequence=irreversible`,
+the set's first — which resolves the subjects a policy has made due and calls
+the SHIPPED `erase-subject` command per subject, writing a journaled run record.
+
+**Why (a) is long-term best.** #1189's own words are "policies as data, WITH
+journaled runs". The mechanics are callable today, so declaration-only would
+leave the hard half — resolving due-ness, ordering the sweep, reporting what a
+hold refused — for every adopter to build, which is precisely the duplication
+the register exists to stop. A policy nothing acts on is also a seam with no
+live consumer, which the standing rule says we do not ship.
+
+**Measured before the ruling, on `cx v0.17.0`:**
+
+- `journal:erase-subject`, `journal:legal-holds` and `journal:shred-generation`
+  ship and are callable; a journal ATTACHES to an ordinary store handle.
+- A full erase cycle returns a `[shred-report …]` and leaves the attributed
+  `[erased … at= authority= actor= shred-request=]` tombstone on the value
+  channel.
+- Hold-beats-shred works exactly as `erasure_compliance` §8 states: a signed
+  `[legal-hold]` journaled to `cx:legal-hold` makes `erase-subject` refuse
+  `CXER4621` naming the hold's seq, signer and scope, while an unheld subject
+  in the same store shreds.
+- Constraints for the implementation: `mem://` REFUSES a subject-bearing
+  payload (`CXER1144` — the store must be opened with `encrypt-key-id`, whose
+  KEK comes from `CX_STORE_KEK_<id>`), and a `nonce=` under 16 bytes is
+  refused (`CXER4619`).
+- The `$t` parameter of the §1.2 readout contract is a MONOTONIC float in
+  seconds (`time.sys_mono_now()/1e9`), not a wall-clock instant — it cannot
+  carry the retention clock. Wall time comes from `time:now`; the sweep takes
+  an `at=` on the intent so a run is "as of" a stated instant.
+
+**The hold noun is OBSERVED, and this is the load-bearing part of the letter.**
+A hold row written into the feature's own store would NOT bind the shredder:
+`erase-subject` pins the hold-stream head and re-checks it under the writing
+commit lock, and consults nothing else. Such a row would read as "this data is
+protected" while the shred proceeded. It is the most dangerous parallel table
+the standard set could contain, and it is refused BY CONSTRUCTION — there is no
+hold-writing verb, and the sweep does not re-check holds itself either: it
+reports what the command refused.
+
 ---
 
 ## Refusals register — do not re-propose without the named trigger
@@ -170,6 +214,13 @@ leaving the three where they are is now a gate, not a paragraph.
 - **A self-asserted first-party marker in `package.cxs`** (SF-5). Trigger: a
   catalog requirement that a signature genuinely cannot serve — named, not
   anticipated.
+- **`retention` as a declaration-only feature** (SF-7(b)). Trigger: the shipped
+  `erase-subject` command ceasing to be callable from a feature module — not
+  caution about irreversibility, which is what the dial and the compose gate
+  are for.
+- **A hold noun written by `retention`** (SF-7). Trigger: NONE. `erase-subject`
+  consults the `cx:legal-hold` stream and nothing else; a hold this feature
+  wrote would not bind, and would read as protection while the shred proceeded.
 - **A submodule pin between cx-standard-features and cx-private** (SF-1).
   Trigger: the vendored schemas proving insufficient in practice, measured on
   a real drift incident.
