@@ -223,3 +223,22 @@ ratio versus core count — before estimating.
 running it alone or via `test-changed`, and the work produced the verdict-digest
 instrument plus two correctness finds (a path-dependent digest, and 271
 comparisons reading a stale fixture — a green gate testing nothing).
+
+---
+
+## CORRECTION (2026-09-03) — D3's cause was a FLAG, not a toolchain (#1227)
+
+D3 recorded the 4x devbox/host gap and closed it as a toolchain swap. The gap
+was never diagnosed. It is the nixpkgs clang wrapper's `fortify` hardening
+prepending `-O2` to every compile that carries no `-O` — i.e. every V dev
+build. Same generated C, same nix clang: 22.3 s default vs 3.6 s with
+`fortify`/`fortify3` filtered out of `NIX_HARDENING_ENABLE`; host clang 2.8 s.
+`-prod` builds pass their own `-O` and win. Fix is inside devbox (Makefile
+export, no dependency change), so VC-22's constraint holds. This is N2 — the
+"reduce CPU work" lever this register said did not exist. Ruling and the
+measured gate result: `ledger/rulings_2026_09_03_gate_hardening_1227.md`.
+
+**Method note:** D3 measured a gap and stopped. The 4-minute step it skipped
+was compiling ONE identical file both ways with `-###` — the same "phase-split
+before optimising" rule this register already records, applied one level
+down: a slow COMPILER is not a cost model either; split it by flag.

@@ -28,6 +28,20 @@
 # documented degraded fallback). Mirrors vcx/Makefile's `V := …/third_party/v/v`.
 export PATH := $(CURDIR)/third_party/v:$(PATH)
 
+# #1227 — the nixpkgs clang wrapper's `fortify` hardening PREPENDS -O2 to any
+# compile that carries no -O of its own. V's dev builds carry none, so under
+# devbox every non-prod build here (the `v test` lanes, the *-dev libraries,
+# the harness runners) was a full -O2 optimisation of a multi-MB generated TU:
+# 22.3 s vs 3.6 s on the SAME generated file with fortify off — the undiagnosed
+# cause of dead-end D3 in ledger/dead_ends_700_test_duration.md. -prod builds
+# pass -O3/-Os explicitly and an explicit -O wins, so they are unaffected; the
+# linux lane (plain gcc) was already -O0. Same compiler, same nix store, same
+# lockfile — one flag. Guarded on the variable being DEFINED so a non-nix shell
+# is untouched (to the wrapper an EMPTY value means "all hardening off").
+ifneq ($(origin NIX_HARDENING_ENABLE),undefined)
+export NIX_HARDENING_ENABLE := $(filter-out fortify fortify3,$(NIX_HARDENING_ENABLE))
+endif
+
 # Explicit handle on the patched V toolchain. The PATH export above is meant to
 # make a bare `v` resolve to third_party/v/v, but `v test` recipes have been
 # observed re-resolving to the system V (e.g. /usr/local/bin/v) — under which
