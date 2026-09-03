@@ -140,3 +140,68 @@ and it is invisible in the thin fixtures the conformance corpus is made of.
 - Proof of byte-identity: the extraction gate's 13,165 invocation pairs and verdict digest, the
   full `make test`, and a local diff of twelve probe/hammer/bench programs (0 differ) between the
   pre-W1 and W1 binaries.
+
+## Execution notes — W2 design (2026-09-03, before the edits)
+
+**The Frame.** `MatchEnv.bindings` becomes `frame &Frame` where
+
+```
+@[heap] struct Frame {
+    locals map[string]cx.Node   // what THIS frame bound (params, let-binds, the for item)
+    parent &Frame               // the frame this one was derived from; nil at a root
+    scope  &Scope               // a ROOT frame's backing: the defining Scope's consts (nil elsewhere)
+}
+```
+
+Lookup (`bind_get` / `bind_has` / `bind_ptr`) walks `locals` → `parent` … → the root's `scope.bindings`
+(read through the Scope POINTER, not a copied map header — strictly better than today's
+`bindings_shared` alias, which copies the header and relies on the owner frame being suspended).
+`bind_set` writes `locals` (shadowing). `bind_delete` removes from `locals` only (Q3a); `bind_restore`
+with `had == false` is that delete — a name saved from a PARENT and restored is re-set in locals to
+the same value, observably identical. `bind_snapshot` / `bind_names` / `bind_count` walk leaf-first
+and skip names already seen. `bindings_shared` and `cow_bindings` are RETIRED: a request template or a
+defining scope is simply the parent (or the root's scope), and every write is frame-local by
+construction. The ≤ 8-locals small-array form of Q1(a) is taken as a second step inside W2 once the
+map-backed chain is byte-identical (measure, then swap the `locals` representation behind the same
+accessors — W2a chain, W2b small locals).
+
+**Derivation.** `clone_frame_sharing_closures()` / `clone_sharing_closures()` / `clone_frame_into()`
+return a CHILD frame (`Frame{ parent: e.frame }`, fresh or pooled `locals`) — the copy loop goes. The
+deep `clone()` is used by holders that OUTLIVE the deriving extent (error-hook frames, the `[?with-scope]`
+restore, error-path snapshots) and by nothing on a hot path: it FLATTENS (`bind_snapshot()` into a fresh
+root frame, `parent: nil`). The three call-env builders (`build_param_call_env`, `_record`,
+`invoke_positional_l`) build `Frame{ parent: nil, scope: ds, locals: <pooled or fresh> }` — the
+defining scope is the root; `use_alias` and the `bindings_shared` branch go; the #36 pool keeps
+handing out the `locals` map and `return_frame_map` keeps clearing it (and `-d cx_frame_poison`
+keeps its meaning: a frame whose pooled `locals` was cleared under a live alias reads empty).
+
+**Flatten points (Q2a) — where a frame crosses an extent.** (1) Thread boundary: `run_worker_thread`,
+`run_future_thread`, `run_task_thread`, the four par_eval pool workers — take `bind_snapshot()` into a
+fresh root frame (#1230's copy gathers the chain); `TaskRecord.bindings_snapshot` and
+`FutureRecord.bindings_snapshot` stay flat maps. (2) Closure capture: `snapshot_bindings` → `bind_snapshot()`
+(the free-variable narrowing is #1235, W3). (3) Buffered `[?for]` frames across a barrier
+(`collect_frames`, `KeyedFrame`): they are CHILD frames of the clause env, which is alive for the whole
+comprehension, so no flatten is needed — the parent chain is heap-allocated and reference-kept; the
+pooled `locals` maps belong to CALL frames and to `streamed_input_emit`'s per-item frame only, both of
+which return their map after the body that could have derived a child has finished. The three
+long-lived holders — `ErrorHookFrame.env` (built by `env.clone()` → flat root), `DgcCache.env` (built
+once from `new_env()`, a root) and `KeyedFrame.frame` (within the extent) — are covered by those rules.
+
+**Seam sites (the one-file promise, kept to the seam).** matcher.v: the struct, `new_env`, the
+accessors, the three derivation helpers, `match_pattern`'s synthesised env. eval.v: the three call-env
+builders, `run_worker_thread`, `run_task_thread` (scheduler.v), `ensure_module_scope`'s `cenv`,
+`snapshot_bindings`, the two `-d cx_envcheck` probes (they take the address of the frame's `locals`).
+async.v `run_future_thread`; iter_pull.v's two pull envs (no bindings → an empty root); par_eval.v's
+four workers (flatten at the hand-off: `env.bind_snapshot()` replaces the whole-map pass). Nothing
+else changes — W1 made every other site an accessor call.
+
+**Semantics that must not move (the discriminators).** A child frame now SEES a later write to its
+parent where a flat copy would not have. Every derivation site was checked for a parent written while a
+child is live and later read through the child: `[?let]` / `[?loop]` / `[?with-scope]` / `[?recur]`
+bodies run to completion before the parent is written again; the `[?for]` clause env is not written
+while `next` frames exist (the `:let` clause writes the CHILD); speculative `[?match]` arm envs are
+discarded on miss and adopted on hit; the save/restore idiom writes and restores the SAME env its body
+runs in. The proof is the exit bar, not this paragraph: the extraction gate's 13,165 pairs and digest
+c776d42f, the corpus under both `CX_MATCH_NO_FASTPATH` settings, the `[?loop]` rebinding fixture
+(EV-CLOSURE-CAP), `http_request_env_isolation_test.v` (the #317 template rule, now "a request frame's
+parent is the template"), and `-d cx_frame_poison` over the suite.
