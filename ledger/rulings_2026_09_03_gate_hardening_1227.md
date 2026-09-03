@@ -147,3 +147,36 @@ optimiser-sensitive code (#1219 is the live example; `-prod` ships -Os).
 Options: (a) one optimised lane stays in the gate — the profile gate's cli/embed
 profiles at -Os are the natural candidate (they execute ~3,800 fixtures through
 real binaries); (b) a pre-cut -Os pass in release-verify only; (c) none.
+
+## (b) measured — `-parallel-cc` on the serial -prod prewarm
+
+The prewarm (`make -C vcx build`, libcx.dylib -prod + cx -Os) is **171 s on one
+core** while 11 idle. Built into scratch with an isolated `VTMP`:
+
+| artifact | serial | `-parallel-cc` (12 TUs) | link |
+|---|---|---|---|
+| libcx.dylib (-prod -shared) | 88 s | **28 s** wall / 172 CPU-s | **FAILS** |
+| cx (-Os) | 82 s | **24 s** wall / 143 CPU-s | **FAILS** |
+
+The C stage parallelises 3x. The link fails on **5,032 duplicate symbols**, all
+from five *definition-includes* — C implementation files a V module pulls in
+with `#include "x.c"`: `zstd.c` (4,800+ symbols, vlib/compress/zstd), and cx's
+own `cx_pty.c`, `cx_term.c`, `cx_stack_guard.c`, `cx_iowatch_darwin.c`. V's
+parallel_cc puts everything before the first function into the shared `out.h`,
+so each amalgamation is compiled once per split TU. The fork's cgen already
+classifies these includes (the `is_def_include` owner rule that made -usecache
+sound, #864); parallel_cc has no equivalent. Fixing it properly means a fork
+patch: emit each module's definition-includes into ONE split TU and place that
+module's functions in the same TU (other modules call the owner's V wrappers,
+the invariant -usecache already relies on). Linker "multiply defined" flags are
+NOT an option — N4 in the register removed exactly that masking on linux.
+
+Ceiling if fixed: ~120 s off the serial head, ~8% of a 1,485 s gate.
+
+**The larger serial chunk is the profile gate tail (~430 s at -O0), and its
+reason for being serial is gone.** `60b78b270` (2026-08-27) moved it out of the
+storm because sup-011's "load race" reddened tag takes 4/5/6 — that race was
+#1228, fixed above. The move was a gate-hygiene fix, not a recorded ruling.
+Returning the profile gate to the storm is a two-line Makefile revert worth
+~400 s of wall (est. 1,485 → ~1,050-1,100 s), and it would expose #1219 more
+often, which is where that defect should be found. Posed to the owner below.
