@@ -1,9 +1,9 @@
 # Rulings 2026-09-02 — the standard feature set (SF)
 
-**Status: SF-1 RULED BY OWNER 2026-09-02 (the home, with a name change).
-SF-2..SF-5 recorded under the standing letter-acceptance rule, re-verified
-against the long-term-best bar; SF-6 is OPEN and owner-gated.** Rulings
-recorded before work per the #832 process rule. Issue **#1189** (campaign
+**Status: SF-1 and SF-6 RULED BY OWNER 2026-09-02 (the home, with a name
+change; and the spec pointer). SF-2..SF-5 recorded under the standing
+letter-acceptance rule, re-verified against the long-term-best bar. ALL SIX
+RULED.** Rulings recorded before work per the #832 process rule. Issue **#1189** (campaign
 member of the closed adoption campaign #1188, letter **AD-9**) stays in
 cx-private and remains the contract; the feature content is built in a new
 repository.
@@ -71,7 +71,7 @@ AD-9 proposed committing it as normative text in
 `xap_feature_distribution_market.md` beside §9's deliberate absences. That is
 still the right *normative* home for a one-line pointer, but restating the
 table in two places is a drift source of exactly the kind this set's own gate
-refuses. **SF-6 (below) is the owner-gated letter for the spec pointer.**
+refuses. **SF-6 (below) rules that pointer, and it is now applied.**
 
 ## SF-4 — membership, and the three `market/` features
 
@@ -133,24 +133,30 @@ reusing cx-private's `cx-home internal` key: a consumer can then pin an
 attestation policy on the standard set without also trusting every internal
 cx-private package.
 
-## SF-6 — OPEN, owner-gated: the spec pointer
+## SF-6 — the spec pointer
 
-**PROPOSED — needs owner authorization (G3; spec edits are ruling-gated and
-`spec/03-approved/` graduation is owner-only).**
+**RULED: (a), by owner, 2026-09-02 ("1a").** Applied to
+`spec/03-approved/xap/xap_feature_distribution_market.md` §9 (*what this spec
+deliberately does not introduce*) as a tenth entry: this spec ships the
+MECHANISM; the standard feature set is authored and published elsewhere under
+its own publisher DID with no privileged status, and the register of concerns
+that are platform and therefore must NOT be features lives with that set —
+beside §9's list and for the same reason.
 
-Add to `spec/03-approved/xap/xap_feature_distribution_market.md` §9 (*what
-this spec deliberately does not introduce*) a tenth entry pointing at the
-register and the boundary line, so the spec states the absence and names where
-the register is kept:
+**The entry is made CHECKABLE, because §9's own preamble requires it.** §9
+opens "Each a checkable absence", and an organizational statement that no
+gate asserts would have quietly weakened that sentence for the other nine.
+`scripts/check_xap_dist_absences.cx` (`make check-xap-dist-absences`) gains
+three lanes, red-proven at authoring:
 
-> 10. **No first-party feature library in this repository** — the standard
->     feature set is published from `cx-standard-features` under its own
->     publisher DID (SF-1/SF-5), and the register of concerns that are
->     platform and therefore must NOT be features is that repo's
->     `REGISTER.md` (SF-3). The three `market/` features are §5's worked
->     case, not members of that set (SF-4).
+| lane | refuses | why |
+|---|---|---|
+| root feature library | a `features/` tree at the repo root | the set drifting back into cx-private is exactly what SF-1 ruled against |
+| `market/` extra | a fourth `*.feature.cxd` under `market/` | a fourth member would make `market/` the de-facto standard set without anyone deciding it should be |
+| `market/` gone | any of `catalog` / `commerce` / `entitlement` missing | conformance `xap-dist` 039–044 read them BY PATH; removing one deletes the §5 worked case (SF-4) |
 
-Recorded as PROPOSED, not applied. No `spec/` file is touched by this packet.
+The last lane is the SF-4 refusal given teeth: the register's reason for
+leaving the three where they are is now a gate, not a paragraph.
 
 ---
 
