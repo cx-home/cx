@@ -274,3 +274,120 @@ implementation, QoI under L86.
 - **W8 (#1207)** — exit: RP-5 measurement on the audit corpora, Stage-0 profile
   re-run (#1176 trigger), ratchet re-pinned, RP-6 trigger evaluated,
   campaign closed on #1119.
+
+## RP-3 execution amendment — two behaviour changes RATIFIED, one deviation ratified (owner, 2026-09-02)
+
+RP-3(a) was recorded with the acceptance test "canonical bytes cannot move …
+the extraction gate's byte-identical transcript and the ~2,700-case corpus must
+stay green". Executing it surfaced two places where the envelope had been
+HIDING a difference rather than expressing one. The owner ratified both as
+corrections rather than requiring the old behaviour be restored.
+
+### 1. A parsed JSON object no longer compares equal to a same-shaped CX literal with a NUMERIC key
+
+    [= [$json:parse '{"7":1}'] {7: 1}]      was true, is now false
+
+A JSON key is a STRING by definition (json.md §2). The CX literal `{7: 1}` has an
+INTEGER key. Kind-exact identity (#925/#927) is already the corpus's rule
+everywhere else, so `false` is the answer that rule gives.
+
+The old `true` was an artefact of the carrier: the envelope stored every key as an
+Element NAME — a string — so the int-keyed literal and the string-keyed parse
+converged on the same shape before anything compared them. Removing the envelope
+removes the conflation. This was never pinned by a fixture, which is why the
+corpus stayed green through the change; that is a coverage gap the wave's new
+`json-044…` fixtures close, not authorization the wave inherited.
+
+### 2. A number-shaped STRING key now renders quoted in the eval display lane
+
+Converging it on the conversion lane's existing rule. The envelope carried a
+second, separate key rule (`cx_emit_envelope_map_key`) precisely because its keys
+were element names; with one carrier there is one rule, and that function is
+deleted.
+
+**Both are behaviour changes, and the ruling's letter forbade them.** They are
+ratified because in each case the OLD behaviour was the carrier leaking into
+semantics — the exact defect RP-3 exists to remove — and because the corpus now
+pins the new answer explicitly. Recorded here so neither reads later as drift.
+
+### 3. `map_node_view` is KEPT, narrowed — deviation ratified
+
+RP-3(a) said to delete it. It survives ONLY as the CXPath engine's transient
+navigation adapter, exactly parallel to the existing `doc_node_view`
+(DocumentNode) and `eval_directive_view`. **No value is held in that shape at
+rest** — every map at rest is a `MapNode` — so it costs nothing in memory, which
+is the quantity RP-3 was about. Retiring it means giving the path engine native
+map arms for `/name`, `/*`, `//` and the doc-order index: a path-engine redesign
+with ZERO memory payoff. Out of scope for this campaign; if it is ever wanted it
+is its own letter.
+
+### Measured
+
+    lane   pre-campaign   after RP-1+RP-4   after RP-3   total
+    json      18.779           17.271          7.571     -59.7%
+    xml       15.316            7.942          7.942     -48.1%
+    cx        10.348            7.580          7.580     -26.7%
+
+The json lane's census is the whole argument: **160,001 Elements -> 1**, replaced
+by 32,000 MapNodes and 128,000 inline MapEntries. One envelope per record PLUS one
+per field, each 96 B and each owning a 16-byte block for an `attrs` array it never
+used — ~18 MB of a 35 MB lane was carrier, not data.
+
+## W8 — the exit measurement (RP-5), and the bar is MISSED
+
+Measured on release/0.18 + RP-3, 300k-record audit corpora, `--from=X --to=X`,
+default pacing — the recipe RP-5(a)(i) names.
+
+| lane | input | live | live x | peak RSS | RSS x | bar |
+|---|---|---|---|---|---|---|
+| json | 19.05 MB | 149 MB | 7.84 | 1,142 MB | **62.9** | <= 8 |
+| xml | 19.95 MB | 180 MB | 9.02 | 900 MB | **47.4** | <= 8 |
+
+**The campaign's representation work is done and it worked.** Live memory, which
+is what the ratchet guards and what RP-1/RP-3/RP-4 could move:
+
+| lane | live before | live after | reduction |
+|---|---|---|---|
+| json | 18.779x | 7.571x | **2.48x** |
+| xml | 15.316x | 7.942x | **1.93x** |
+| cx | 10.348x | 7.580x | **1.36x** |
+
+Peak RSS improved far less — json 102x -> 62.9x (1.6x), xml 58x -> 47.4x (1.3x).
+
+### The attribution RP-5 requires
+
+RP-5 says a miss must be attributed BY MEASUREMENT to pacer vs representation.
+Measured, and it is neither:
+
+| stage | peak RSS | x input |
+|---|---|---|
+| live representation | 149 MB | 7.84 |
+| parse only | 356 MB | 19.6 |
+| parse + emit | 1,142 MB | 62.9 |
+
+**Emit is 786 MB — 69% of peak RSS.** `VGC_GCTRACE=1` shows `goal` is exactly
+`2 x marked` every cycle (the pacer follows its policy precisely), `marked` peaks
+at 645 MB against a 149 MB live tree (~500 MB is the emit path's materialised
+semantic copy), and `trimmed=0KB` in all 10 cycles while `pool` reaches 565 MB.
+
+### Consequences, ruled by the evidence
+
+1. **The bar cannot be met by representation work.** The live term is 7.84x —
+   already AT the bar. Zero live bytes would still leave ~1 GB resident.
+2. **RP-6 DOES NOT FIRE.** Its trigger is "the RSS bar missed on the
+   REPRESENTATION half". The representation half did not miss. RP-6 would shrink
+   the 149 MB term and cannot touch the 786 MB emit term or the 565 MB pool.
+3. **TF-5's streaming trigger IS met.** TF-5 ruled the 32-event model in with
+   implementation "demand-triggered by the first consumer whose documents break
+   the whole-document model". This measurement is that consumer: the exit bar is
+   unreachable while emit materialises a second copy of the document.
+4. The residue is tracked as **#1226**, ranked: emit projection (786 MB) >
+   span-pool never trimmed (565 MB) > parse-side pacing (the smallest term).
+
+### Honest note on the instrument
+
+W1 built a ratchet on LIVE bytes and it did its job — it caught a +37,936 B
+regression the extraction gate could not see. But the campaign's bar is RSS, and
+RSS went unmeasured until W8. Had both been measured at W1, the emit path would
+have been identified as the dominant term before RP-1 was designed. **A guard
+should measure the quantity the bar names.**

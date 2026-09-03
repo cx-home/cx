@@ -36,7 +36,7 @@ RECORDS="${CX_REPR_RECORDS:-32000}"
 # AttributeMeta allocations, 12.29 MB, removed from the xml lane).
 #
 #   lane   measured   bound   what the headroom buys
-#   json   17.271     19.20   one input copy (+1.0) then +5%
+#   json    7.571      9.00   one input copy (+1.0) then +5%
 #   xml     7.942      9.40   same
 #   cx      7.576-7.580   9.00  same
 #
@@ -57,7 +57,7 @@ RECORDS="${CX_REPR_RECORDS:-32000}"
 # measurement in README.md and in the #1119 wave row. A bound is never raised
 # without a ruling — the ratchet is not loosened to accommodate a regression.
 LANES=(json xml cx)
-BOUND_json=19.20
+BOUND_json=9.00
 BOUND_xml=9.40
 BOUND_cx=9.00
 
