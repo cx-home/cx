@@ -205,3 +205,42 @@ runs in. The proof is the exit bar, not this paragraph: the extraction gate's 13
 c776d42f, the corpus under both `CX_MATCH_NO_FASTPATH` settings, the `[?loop]` rebinding fixture
 (EV-CLOSURE-CAP), `http_request_env_isolation_test.v` (the #317 template rule, now "a request frame's
 parent is the template"), and `-d cx_frame_poison` over the suite.
+
+## Execution record — W2, the chain (2026-09-03)
+
+- `MatchEnv.bindings` is gone; `MatchEnv.frame &Frame` is the parent-pointer chain
+  (`Frame{ locals, parent, scope }`, matcher.v). The three derivation helpers return a CHILD frame;
+  the deep `clone()` flattens (`bind_snapshot()` into a fresh root); the three call-env builders
+  build a root frame over the defining Scope (`Frame{ scope: ds, locals: <pooled or fresh> }`) — the
+  #333 alias, the #341 alias-vs-pool hybrid, `bindings_shared` and `cow_bindings()` are retired. The
+  #317 request-template alias in platform (services listener, xap host, xap serve push/poll envs)
+  became `Frame{ parent: &Frame{ locals: <template map> } }` — a child of a root over the template,
+  which is the #317 rule stated directly: writes land in the request's own locals, the template is
+  never written. Thread boundaries (`run_worker_thread`, `run_future_thread`, `run_task_thread`, the
+  par_eval pool workers) take a flat root (`bind_snapshot()` at the hand-off); `snapshot_bindings`
+  is `bind_snapshot()`. The `-d cx_envcheck` probes take the address of the leaf's `locals`.
+- Proof: extraction 13,165 pairs / verdict digest c776d42f (unchanged from #1229 and W1), the full
+  `make test`, thirteen probe / hammer / bench programs byte-identical between the W1 and W2 binaries.
+- Measured (-O0 dev binary, same machine, one run each; W1 = flat copy, W2 = chain):
+
+  | shape | W1 | W2 |
+  |---|---|---|
+  | `[?for]` 200k + `[?let]` per item, 0 extra bindings | 1.71 s | 1.32 s |
+  | the same, 300 visible bindings | 55.9 s | 1.53 s (37×; within 16 % of thin) |
+  | `[?for]` 50k + 4-arm `[?match]`, 0 extra | 2.21 s | 2.16 s |
+  | the same, 300 visible bindings | 73.4 s | 29.4 s (2.5×) |
+  | `[?for]` 200k + 6-arm `[?match]`, thin | 8.53 s | 6.95 s |
+  | `[?for]`+`[?let]`, five libs loaded | 1.68 s | 1.37 s |
+
+  The `[?match]` residual at 300 bindings is the general matcher's deep `env.clone()` per collection
+  sub-pattern (it flattens the chain AND copies the closures table) — #1237's site, not the frame
+  copy; the fast path (#1139) does not reach binding arms in the multi-arm loop yet.
+- W2b (the ≤ 8-locals small array of Q1a) is deferred to a measurement: with the copy gone the
+  thin `[?for]`+`[?let]` item costs ~6.6 µs, and a profile decides whether the locals map is what is
+  left in it.
+  Profile of that thin shape on W2 (`sample`, 4 s, -O0): leaf self-time is ~30 % allocation and GC
+  (`vgc_span_alloc_obj`, `vgc_shade`, `vgc_scan_range`, memmove / memset / `vgc_malloc_*`), ~10 % map
+  operations (`map_get_and_set`, `map_key_to_index`, wyhash, `fast_string_eq`), and the evaluator's own
+  dispatch is small. The per-derivation allocation — one `Frame` plus one `locals` map per `[?let]` body
+  and per `[?for]` item — is therefore the W2b target: a frame with a small inline locals array (Q1a's
+  ≤ 8) removes the map allocation; pooling the Frame removes the other. Measure both against this table.
