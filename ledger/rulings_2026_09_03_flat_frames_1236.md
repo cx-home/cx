@@ -117,3 +117,26 @@ into a dozen locals under a program with a few dozen top-level lets, inside a `[
 `:let` clauses, copies the whole set on every clause of every item. At 32× the flat copy is not a
 constant factor on the evaluator — it is the evaluator's cost on any shape with a non-trivial frame,
 and it is invisible in the thin fixtures the conformance corpus is made of.
+
+## Execution record — W1, the accessors (2026-09-03)
+
+- Accessors on `MatchEnv` (matcher.v, `// ── source: #1236 W1`): `bind_get / bind_has / bind_ptr /
+  bind_set / bind_delete / bind_save / bind_restore / bind_snapshot / bind_names / bind_count` and
+  the `BindSave` record. `bind_set`, `bind_delete` and `bind_restore` fold the `cow_bindings()` guard
+  the write sites carried by hand (20 of the 23 explicit calls in eval.v went away; the three kept
+  are deliberate bulk pre-realisations ahead of a loop). `bind_save` / `bind_restore` name the
+  save-then-restore-or-delete idiom the path walkers and the predicate loops spelled out at 46
+  lines — every one of eval.v's 18 `bindings.delete` calls was the else-arm of that idiom, so no
+  standalone delete of a frame binding exists in the evaluator (Q3's audit starts from zero).
+- Rewritten: eval.v (124 sites → 20 get, 3 has, 2 ptr, 64 set, 11 save, 18 restore, 6 snapshot),
+  matcher.v (8 outside the seam), api.v, select.v, stdlib_cx.v, planar_query.v,
+  dynamic_construction.v, diagram_cx_seam.v, planar_delta.v, async.v (25 together), and the four
+  test files that reach into an env (35 sites). Left as the representation seam, by design: the
+  `MatchEnv{ bindings: … }` literals, `cow_bindings`'s own body, the copy loops in `clone()` /
+  `clone_sharing_closures()` / `clone_frame_into()`, the two `-d cx_envcheck` probes that take the
+  map's address, and par_eval's whole-map hand-off to pool workers (W3's flatten point).
+  `Scope.bindings`, `Closure.captured_bindings`, `PredicateEvalContext.bindings` are other structs
+  and untouched.
+- Proof of byte-identity: the extraction gate's 13,165 invocation pairs and verdict digest, the
+  full `make test`, and a local diff of twelve probe/hammer/bench programs (0 differ) between the
+  pre-W1 and W1 binaries.
