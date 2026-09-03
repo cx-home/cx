@@ -42,11 +42,15 @@ reason: RSS is pacer- and platform-dependent.
 
 ## The ratchet
 
+Re-pinned at W5+W6 (RP-5): the RP-1 flip and RP-4's inline attribute type. From
+the pre-campaign baseline of 18.779 / 15.316 / 10.348 that is **-8.0% json,
+-48.1% xml, -26.8% cx**.
+
 | lane | measured (2026-09-02) | bound | carrier under test |
 |---|---|---|---|
-| json | 18.779× | 20.80 | the `__cx_map__` envelope — an `Element` per field |
-| xml | 15.316× | 17.20 | `Element` + `Attribute` (+ `AttributeMeta` on 96k of 128k) |
-| cx | 10.348–10.352× | 12.00 | `MapNode` / `MapEntry` |
+| json | 17.271× | 19.20 | the `__cx_map__` envelope — an `Element` per field (RP-3 still to come) |
+| xml | 7.942× | 9.40 | `Element` + `Attribute`; `AttributeMeta` retired by RP-4 |
+| cx | 7.576–7.580× | 9.00 | `MapNode` / `MapEntry` |
 
 Bounds are pinned at **measured + 1.0, then +5%** (see "what the instrument can
 and cannot see" for what the +1.0 buys). They are a **ratchet**: every wave that

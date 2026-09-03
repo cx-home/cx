@@ -30,12 +30,15 @@ RECORDS="${CX_REPR_RECORDS:-32000}"
 # ── the ratchet ─────────────────────────────────────────────────────────────
 #
 # live bytes (vgc `marked` after a forced collect, minus the input string and
-# the runtime's own live set) ÷ input bytes. Pinned 2026-09-02 at W1 (RP-5).
+# the runtime's own live set) ÷ input bytes. RE-PINNED 2026-09-02 at W5+W6
+# (RP-5): the RP-1 flip (Node and ScalarValue are 24-byte structs, scalars
+# inline, zero allocations per value) and RP-4's inline attribute type (96,000
+# AttributeMeta allocations, 12.29 MB, removed from the xml lane).
 #
 #   lane   measured   bound   what the headroom buys
-#   json   18.779     20.80   one input copy (+1.0) then +5%
-#   xml    15.316     17.20   same
-#   cx     10.348-10.352   12.00  same
+#   json   17.271     19.20   one input copy (+1.0) then +5%
+#   xml     7.942      9.40   same
+#   cx      7.576-7.580   9.00  same
 #
 # Measured on darwin-arm64 with the `-prod` driver at 32,000 records. Run-to-run
 # the reading is all but exact: over six clean runs the json and xml lanes were
@@ -54,9 +57,9 @@ RECORDS="${CX_REPR_RECORDS:-32000}"
 # measurement in README.md and in the #1119 wave row. A bound is never raised
 # without a ruling — the ratchet is not loosened to accommodate a regression.
 LANES=(json xml cx)
-BOUND_json=20.80
-BOUND_xml=17.20
-BOUND_cx=12.00
+BOUND_json=19.20
+BOUND_xml=9.40
+BOUND_cx=9.00
 
 # repin_slack — how far under its bound a lane may sit before the runner says
 # so. Advisory, NOT a failure: an improvement must not red somebody else's
