@@ -1,7 +1,6 @@
 # Rulings 2026-09-04 — #1217 the UX projection reaches feature verbs (VF)
 
-**Status: PROPOSED 2026-09-04 (Fable, the #1265 campaign session; the owner's
-2026-09-04 directive: run the campaign through, best long-term decision).**
+**Status: VF-1 RULED (a) 2026-09-04 under the owner's standing letter-acceptance rule and the 2026-09-04 directive (run the campaign through; best long-term decision) — re-verified: one projection, one entry, dispatch on the value's kind, eight in-tree call sites to cut over, no external users. Proposed first (239fcd2de), ruled in the following commit; OWNER VETO by letter stands open because (a) retires the #787 W5 public verb `ux:feature-form`.**
 Recorded BEFORE any spec text. Ruling id `1217-VF-1`. Needed by #1265 W3:
 the `by=:principal` human-task step renders "the act's projected form"
 (`flow.md` §4.6), and at the XAP face a step's act IS a composed-grammar
