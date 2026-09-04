@@ -1,5 +1,13 @@
 {
   "benchmarks": {
+    "convert.json_300k_arenas": {
+      "median": 9.0,
+      "unit": "arenas"
+    },
+    "convert.json_300k_ms": {
+      "median": 1105.569,
+      "unit": "ms"
+    },
     "eval.flwor.count": {
       "median": 19.661,
       "unit": "ms"

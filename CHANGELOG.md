@@ -161,6 +161,25 @@ version, library version).
 
 ### Fixed
 
+- **`--from=json --to=json` peak RSS on a 19 MB / 300k-record document:
+  1,181 MB → 685 MB (#1226 re-measurement after #1208 + #1242).** The two
+  post-parse passes on the JSON codec path — `apply_cx_type_sidecar` and
+  `apply_lossless_structure` — rebuilt every Map, Array and Element on the
+  way out even when nothing below carried a `cx:type` sidecar or a reserved
+  `$…` / `cx:…` key, so the parse held up to three copies of the 144 MB tree
+  live at once (`marked` peaked at 383 MB against a 144 MB tree; the pacer's
+  2× goal then committed 16 arenas). Both walks are now identity-preserving
+  (the RP-3 `flatten_node` rule): untouched subtrees come back as the very
+  node that went in; rewritten ones are built exactly as before. `marked`
+  now peaks at ~185 MB (tree + input + the streamed output). The emit lane
+  was already streaming (#1242) and adds ~34 MB live. The remaining gap to
+  the RP-5 ≤8× bar is pacer policy (goal = 2 × marked) and the span pool,
+  which never trims on a monotone build-up — reduced to cx-home/v#6
+  (mirror #1295): coalescing restamps `pool_gen`, so a growing free region
+  never ages past the trim gate. The perf ratchet gains
+  `convert.json_300k_arenas` (peak committed arenas from the vgc trace) and
+  `convert.json_300k_ms` so the parse-side copies cannot return unnoticed.
+
 - **`cx fmt` was a 26 s / 3.3 GB outlier on a 1.37 MB document (#1281).**
   `fmt_source` fingerprinted the program AST for the #400 meaning-
   preservation check by rendering it through V's generated debug `.str()`
