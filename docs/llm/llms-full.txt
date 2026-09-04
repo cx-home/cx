@@ -3955,6 +3955,7 @@ Subcommands (`cx <subcommand> --help` for details):
   table                Table API over [table[...]] blocks (info / dump / load).
   scaffold             Typed, commented skeleton on stdout (config/data/doc/log/table).
   xap                  XAP project tooling — scaffold (`init`) and check (`check-surface`).
+  flow                 Local profile of cx-stdlib/flow (run / validate / simulate / status).
   demo                 Self-contained showcase (no file I/O, no network, < 1s).
   lock                 Generate / verify cx.lock from [?lib] directives.
   lsp                  Language server (LSP) on stdio.
@@ -4013,6 +4014,8 @@ by intent.
 | `cx xap init NAME` | scaffold a feature |
 | `cx xap check-surface DIR` | the surface derivation check |
 | `cx lock` | generate / verify `cx.lock` from `[?lib]` imports |
+| `cx flow run FLOW.cx --env ENV.cx` | run a flow document over a journal — build, release and authoring flows from a checkout, no engine to start |
+| `cx flow validate` / `simulate` / `status` | check a flow document, run the runner law over a supplied result table, read a run record back |
 
 **Operate a platform** (the platform profile)
 
