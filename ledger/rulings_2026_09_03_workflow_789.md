@@ -1,10 +1,11 @@
 # Rulings 2026-09-03 — #789 general workflow on the saga substrate (WF)
 
-**Status: PROPOSED — WF-0..WF-14 await owner letters.** Recorded BEFORE any
-spec text per the #832 process rule; the spec draft (`spec/02-working/flow.md`)
-is authored only after the letters are ruled, and graduation stays owner-only
-(G3). Branch `design/789-workflow`; nothing here touches `release/0.18`.
-Ruling ids `789-WF-n<letter>`.
+**Status: RULED (a) on WF-0..WF-14 BY OWNER 2026-09-03 ("all a — draft the
+spec").** Recorded BEFORE any spec text per the #832 process rule; the spec
+draft `spec/02-working/flow.md` is authored under these rulings and carries
+`RULED: WF-n` tokens; graduation stays owner-only (G3). Branch
+`design/789-workflow`; nothing here touches `release/0.18`. Ruling ids
+`789-WF-0a … 789-WF-14a`.
 
 **The bar (owner, 2026-09-03, this session).** *A world-class workflow engine
 that matches and exceeds the engines of the major application and SaaS
