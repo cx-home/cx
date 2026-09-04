@@ -58,6 +58,13 @@ version, library version).
   per call under `[?with-scope]` (#1245); string-carried scalar images
   (atoms always; short dates / decimals / bigints / bytes / durations /
   periods) are interned per parse (#1247). All byte-identical.
+- **The CX, XML and Markdown emitters write into one `strings.Builder`
+  (#1242 B).** The per-level `[]string` + `join` accumulators are gone;
+  byte-identical across 3,448 in-tree pairs and the extraction gate. The
+  deep-nesting shape was quadratic in joins: on a 90-deep 4.5 MB corpus
+  `--to=cx` is −30 % wall and −50 % peak RSS, `--to=md` −28 % / −49 %;
+  the flat 20 MB corpus (parse-bound) drops ~7 % peak. Plain `cx fmt`
+  does not ride these emitters — its own outlier is #1281.
 - **`bench/repr` re-pinned to measured +5 %** (json 7.95, xml 8.35, cx
   8.00, new `cxel` lane 16.30): the `+1.0` headroom for a retained input
   copy is gone with #1208 — the `-prod` and `-O2` drivers now agree
