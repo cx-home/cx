@@ -2,7 +2,9 @@
 
 **Status: RULED (a) on WF-0..WF-14 BY OWNER 2026-09-03 ("all a — draft the
 spec"); WF-15..WF-16 RULED (a) BY OWNER 2026-09-03 ("all a") on the
-store-requirement and dogfood questions raised after the draft.** Recorded BEFORE any spec text per the #832 process rule; the spec
+store-requirement and dogfood questions raised after the draft; WF-17
+(visualization + the design tool) RULED (a) 2026-09-03 under the standing
+letter-acceptance rule on the owner's directive.** Recorded BEFORE any spec text per the #832 process rule; the spec
 draft `spec/02-working/flow.md` is authored under these rulings and carries
 `RULED: WF-n` tokens; graduation stays owner-only (G3). Branch
 `design/789-workflow`; nothing here touches `release/0.18`. Ruling ids
@@ -717,6 +719,70 @@ design-and-implement process?
   not choreography.
 - **(c) no dogfood flows.** Rejected: eat our own dog food; and the three
   named flows exercise every letter above on real work.
+
+## WF-17 — visualization and the visual / agent-assisted design tool (the bar: ease of design) — RULED: (a)
+
+**Owner directive (2026-09-03):** *a flow of course needs to be easily
+visualized and at some point have a visual design / agent-assisted tool.*
+Recorded as (a) under the standing letter-acceptance rule on that directive,
+re-verified against the long-term bar; the owner may override by letter.
+
+- **(a) RULED — ONE derived canonical picture, overlays for runs and fleets
+  on the same picture, and the design tool as a #787 STUDIO PLANE — never a
+  separate application.** (1) **The picture is derived and total.** The
+  closed vocabulary has a fixed picture, and the spec states the LAYOUT
+  RULES normatively so every implementation draws the same diagram from the
+  same document: steps as nodes in document order; `branch` as parallel
+  lanes with a join bar; `map` as a stacked lane annotated with the set and
+  `max-parallel=`/`tolerate=`; guards as labeled edges; the pivot as a marked
+  node dividing the compensable half from the forward-only half; the
+  performer as a node badge (runner / principal / agent / peer, with `to=`);
+  deadlines and ladders as clock marks. Rendered through `diagram` (SVG and
+  the text form); every drawn element carries the document address of what
+  it draws (the #787 fragment-identity protocol) — which is what makes the
+  picture selectable, and therefore editable. Totality is a gate: every
+  valid document has a picture; a picture element with no document address
+  is a defect. (2) **Overlays.** The RUN overlay paints the record onto the
+  picture — status per step, elapsed, who holds a pending step, child-run
+  counts — live via SSE from `status`; the FLEET overlay paints a flow
+  version's runs onto it — where runs stall, cycle time per step, decline
+  rates — process intelligence on the same picture the author drew. (3)
+  **The design tool is a #787 studio plane.** The flow canvas is a surface;
+  selection-as-context applies; drag/drop and the agent emit the SAME
+  journaled edit commands on the flow DOCUMENT (`flow:add-step`,
+  `flow:move`, `flow:set`, `flow:wrap` in `branch`/`map`, `flow:remove` —
+  the ux command discipline: partial-document semantics, inverse pairs,
+  refusals as values); `validate` runs on every edit (an unresolved act
+  draws red, with the refusal); `simulate` animates a path on the canvas;
+  propose/approve on the document is design review with a rendered diff.
+  R1 of #787 stands: the studio adds POINTING, nothing is expressible there
+  that the document cannot say. (4) **Agent-assisted authoring modes:**
+  draft from a brief over the composed grammar; the decision-tree walk
+  ("which acts need approval, above what amount?") presenting rendered
+  VARIANTS; explain a flow in prose from the document; review — missing
+  compensators before the pivot, unguarded irreversible acts, a deadline
+  with no ladder; generate fixtures through `simulate`. The agent's edits
+  are proposals under the dial. (5) **Sequencing and gates.** The picture
+  and the run/fleet overlays land with the fleet wave (they are projections
+  of data); the studio plane lands after #787's framework exit (its studio
+  stream, DP2/DP3) as a named landing with its own go/kill; gates: picture
+  totality, the round-trip (document → picture → selection → edit →
+  document, byte-identical on a no-op), and studio parity (every edit the
+  canvas makes is one the text form can make). (6) **Registered option,
+  trigger-gated, not scheduled:** BPMN 2.0 import into the closed vocabulary
+  where expressible, refusing the rest as values with the register's
+  reason — a migration path for adopters with Camunda-class models; trigger
+  = an adopter with such an estate. **What it DELETES:** nothing.
+  **Strongest counter:** normative layout rules over-specify presentation.
+  **Answer:** a picture two tools draw differently is not a shared artifact
+  for review; the rules bind topology and marks, not theme — tokens still
+  cascade.
+- **(b) a standalone flow designer application with its own renderer and
+  editor.** REFUSED: a second editor for a document the studio already
+  edits; #787 C4 (never an "app") and R1 (text-first) apply verbatim.
+- **(c) visualization only, no editing.** Rejected: the directive names a
+  design tool, and once selection exists the edit commands are the cheap
+  part.
 
 ---
 
