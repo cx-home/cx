@@ -164,6 +164,28 @@ else
     [[ ${PIPESTATUS[0]} -eq 0 ]] || fail "make verify-doc-links failed"
 fi
 
+# -- Step 4b: perf ratchet (#1249, RULED: 1249-Q1a) --------------------
+#
+# Measure, then compare against the committed floor at the STRICT 10%
+# threshold. A regression aborts the cut exactly like a red gate. On green the
+# fresh measurement becomes the new floor: bench/current.json is copied over
+# bench/baseline.json (tracked), which the bump's `git add -u` then carries
+# into the bump commit — every cut re-pins the ratchet to its own number.
+
+note "running 'make perf-ratchet'"
+if [[ $DRY_RUN -eq 1 ]]; then
+    if have_target perf-ratchet; then
+        echo "[dry-run] target 'make perf-ratchet' declared in Makefile; skipping execution"
+    else
+        fail "make perf-ratchet target missing"
+    fi
+else
+    make perf-ratchet 2>&1 | tail -30
+    [[ ${PIPESTATUS[0]} -eq 0 ]] || fail "make perf-ratchet failed — a benchmark regressed past 10% of the previous cut (bench/baseline.json); fix or rule before cutting"
+    cp bench/current.json bench/baseline.json
+    note "perf ratchet green — bench/baseline.json re-pinned to this cut's measurement"
+fi
+
 # -- Step 2: version bump (skipped on dry-run) ------------------------
 
 if [[ $DRY_RUN -eq 1 ]]; then
