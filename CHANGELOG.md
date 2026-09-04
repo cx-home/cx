@@ -161,6 +161,21 @@ version, library version).
 
 ### Fixed
 
+- **A default-pure `[?def]` calling an impure sibling is refused `CXER0233`
+  by either call spelling, whichever of the two is declared first (#1288).**
+  The def-time purity check was built over the def under check alone, so a
+  call to a sibling — `[$bump $x]`, or the bareword head `[bump $x]` that
+  dispatches as the same call (#55) — resolved to no def and no builtin and
+  classified as pure; the walker did not record bareword heads at all. The
+  check now sees every `[?def]` declaration of the program block (parsed
+  once, before any is evaluated, so a sibling declared LATER counts) plus
+  the closures already registered, and records a bareword head resolved
+  against the defs ONLY — a bare `[now $x]` stays the data element it is
+  (named builtins are reached only via `[$name …]`, code.md §6.5), so a pure
+  def that builds an element named like an impure builtin is still accepted.
+  Seven `program-purity-sibling-*` fixtures. Module defs remain unchecked
+  by the loader — filed as #1298.
+
 - **`--from=json --to=json` peak RSS on a 19 MB / 300k-record document:
   1,181 MB → 685 MB (#1226 re-measurement after #1208 + #1242).** The two
   post-parse passes on the JSON codec path — `apply_cx_type_sidecar` and
