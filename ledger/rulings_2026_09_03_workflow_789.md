@@ -1,7 +1,8 @@
 # Rulings 2026-09-03 — #789 general workflow on the saga substrate (WF)
 
 **Status: RULED (a) on WF-0..WF-14 BY OWNER 2026-09-03 ("all a — draft the
-spec").** Recorded BEFORE any spec text per the #832 process rule; the spec
+spec"); WF-15..WF-16 RULED (a) BY OWNER 2026-09-03 ("all a") on the
+store-requirement and dogfood questions raised after the draft.** Recorded BEFORE any spec text per the #832 process rule; the spec
 draft `spec/02-working/flow.md` is authored under these rulings and carries
 `RULED: WF-n` tokens; graduation stays owner-only (G3). Branch
 `design/789-workflow`; nothing here touches `release/0.18`. Ruling ids
@@ -662,6 +663,60 @@ admission, not new words; every letter below is checked against them.
   performance and scale; an unmeasured claim is authority dressing.
 - **(c) hard targets set now, before measurement.** Rejected: numbers
   without a measurement behind them are the thing rule 10 forbids.
+
+## WF-15 — does a flow require a store? the local profile (the bar: simple and quick) — RULED: (a)
+
+**Owner question (2026-09-03):** does a flow always require a cx store? Are
+there simple flows — Makefile-like, the release/publish process, the XAP
+design-and-implement process?
+
+- **(a) RULED — a JOURNAL is required, a served store is not.** The record is
+  the state (WF-11), so something must hold it; but the store is a LIBRARY
+  with `mem://`, `file://`, sqlite and remote backends, and nothing in the
+  design needs a daemon. The spec gains a **local profile**: `cx flow run
+  FILE [args…]` defaults to a `file://.cx/flow/` journal in the working
+  directory (resume after an interrupt for free — a property make lacks),
+  `--ephemeral` uses `mem://` (process-lifetime, for one-shot scripts and
+  tests), `--journal URL` points a run at a fleet store. The CLI is a thin
+  wrapper over `start` / `advance` / `status`; it adds no semantics.
+  `validate` and `simulate` need no journal at all. **What it DELETES:**
+  nothing. **Strongest counter:** a local journal directory is one more
+  artifact in a repo. **Answer:** it is the run's audit trail, gitignored
+  like a build directory, and it is what makes an interrupted release lane
+  resumable at the step it stopped.
+- **(b) a store-less mode holding the record in memory outside the journal
+  API.** REFUSED: a second state mechanism; `mem://` already gives the
+  ephemeral case through the one mechanism.
+- **(c) require a served store.** Rejected: kills the simple end of the
+  scale story the bar names.
+
+## WF-16 — dogfood flows, and the make-style dependency question — RULED: (a)
+
+- **(a) RULED — three dogfood flows are the implementation campaign's first
+  fixtures, and the vocabulary does NOT grow for make.** The flows: (1) the
+  **release/publish lane** (`release-process.md`, `scripts/publish.sh`) —
+  build → full gate → cut approval (`:principal`) → tag (the pivot) →
+  publish mirrors (forward-only, idempotent) → announce; this is #734's
+  CI/CD profile as a flow. (2) the **XAP authoring process**
+  (`xap_authoring_process.md`) — brief → grammar draft (`:agent`) → compose
+  gate → fixtures (`:agent`) → implement → `check-surface` → review
+  (`:principal`) → publish; the whole performer axis dogfooded. (3) a **repo
+  build/gate flow** — the Makefile-shaped case, `map` over lanes with
+  `max-parallel=`, guards on lane results. Make's DAG is DATA-flow (a target
+  depends on inputs); ordering, guards and `map` cover the choreography, and
+  "skip if unchanged" is a COMMAND property — `[idempotent]` with a key
+  derived over the inputs' content addresses (sound, where mtime is not) —
+  whose named landing is #734's hermetic step executor (enforced
+  input/output manifests, identity-keyed step caching). **What it DELETES:**
+  nothing. **Strongest counter:** a build flow without `inputs=`/`outputs=`
+  will feel weaker than make. **Answer:** the words would duplicate
+  computation identity inside choreography — the growth rule's second test
+  fails — and the executor gives sound caching that make's timestamps cannot.
+- **(b) add `depends-on=` / `inputs=` / `outputs=` words.** REFUSED under the
+  WF-2 growth rule: a command expresses it, and it is computation identity,
+  not choreography.
+- **(c) no dogfood flows.** Rejected: eat our own dog food; and the three
+  named flows exercise every letter above on real work.
 
 ---
 
