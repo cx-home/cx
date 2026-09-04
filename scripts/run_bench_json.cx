@@ -150,6 +150,46 @@
       [else ()]]]
     $out]]
 
+[; Run `make bench-code-streaming` (gate 15, #804) and parse each shape's
+   `mean input throughput : N MB/s` under its `shape NAME : …` header into
+   `code_streaming.<name>_mbps`. HIGHER is better — compare_bench inverts the
+   ratio for a `_mbps` key (#1249, RULED: 1249-Q1a): this is the number the
+   I5 audit found unmeasured for eight releases. ]
+[?def run-code-streaming-bench scope=public impure ()
+  [?let
+    [= $r [$process:run ('make', 'bench-code-streaming')]]
+    [; The bench exits 2 when ITS OWN gate-15 verdict is red (the ≥ 200 MB/s
+       floor — #804's open map shape). That verdict is data here: the ratchet
+       compares against the previous cut, so the numbers are read regardless
+       and only an UNPARSEABLE run dies. ]
+    [= $_note [?if [not [= $r@exit-code 0]]
+      [then [$cry [$cat ('note: bench-code-streaming exited ', [$string $r@exit-code],
+                         ' (its own gate-15 verdict); throughput rows still read')]]]
+      [else ()]]]
+    [= $rx-shape [$re:compile '^\\s+shape\\s+(?P<name>[A-Za-z0-9_-]+)\\s+:']]
+    [= $rx-mean [$re:compile '^\\s+mean input throughput\\s+:\\s+(?P<mbps>[\\d.]+)\\s+MB/s']]
+    [= $lines [$strings:split [$string $r@stdout] '\n']]
+    [= $folded
+      [$fp:fold $lines {shape: '', out: {}} [?fn ($acc $line)
+        [?let
+          [= $ms [$re:find $rx-shape $line]]
+          [= $mm [$re:find $rx-mean $line]]
+          [?if [$matched $ms]
+            [then {shape: [$re:group-named $ms 'name'], out: $acc.out}]
+            [else [?if [and [$matched $mm] [not [= $acc.shape '']]]
+              [then {shape: '',
+                     out: [$map:put $acc.out
+                            [$cat ('code_streaming.', [$strings:replace $acc.shape '-' '_'], '_mbps')]
+                            {median: [?else [$strings:to-float [$re:group-named $mm 'mbps']] 0.0e0],
+                             unit: 'MB/s'}]}]
+              [else $acc]]]]]]]]
+    [= $out $folded.out]
+    [= $_empty [?if [= [$map:size $out] 0]
+      [then ([$cry [$string $r@stdout]],
+             [$die 'could not parse bench-code-streaming output (no `shape … :` + `mean input throughput` pairs); see stdout above'])]
+      [else ()]]]
+    $out]]
+
 [?let
   [= $args [?fallback [$env:parse-args ARG_SPEC]
              [recover-with ([$cry 'usage: run_bench_json.cx [-o FILE] [--include-eval]'],
@@ -159,7 +199,7 @@
   [= $output [?if [= $output-raw null] [then ''] [else $output-raw]]]
   [= $include-eval [?else [$env:flag $args 'include-eval'] false]]
 
-  [= $streaming [$run-streaming-bench]]
+  [= $streaming [$map:merge ([$run-streaming-bench], [$run-code-streaming-bench])]]
   [= $benchmarks [?if $include-eval
     [then [$map:merge ($streaming, [$run-eval-features-bench])]]
     [else $streaming]]]
