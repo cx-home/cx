@@ -173,7 +173,7 @@ the owner may veto it by letter.
 ## CA-3 — the run's input record — RECOMMENDED: (a)
 
 - **(a) RECOMMENDED — child form throughout: the flow declares
-  `[args [sku ::string] [qty ::int]…]` (the `.cxs` declaration forms, as
+  `[args [sku::string] [qty::int]…]` (the `.cxs` declaration forms, as
   drafted), `start` takes the record as `[args [sku "88"] [qty 1]…]`
   (`$args::element`), the record pins it verbatim, and `cx flow run FILE
   --sku=88 --qty=1` builds that element.** Then `$args/sku` in a `when=`
