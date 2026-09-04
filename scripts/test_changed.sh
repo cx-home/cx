@@ -97,6 +97,7 @@ lane_globs() {
     # vcx/tests/ is `module main` importing code + platform + cx + fixtures.
     test-vcx-suite)                echo "$RING_LIB vcx/tests/* $RING_SUP conformance/* stdlib/* x/*" ;;
     # #1216: the serial wall-clock lane — the binary-driving closure plus its own dir.
+    check-conformance-coverage)    echo 'conformance/* scripts/check_conformance_coverage.sh vcx/tests/runners/conformance/*' ;;
     test-vcx-timing)               echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED vcx/timing/*" ;;
     # vcx/cmd compiles with -d cx_platform, so it carries the full closure.
     test-vcx-cmd)                  echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP conformance/* stdlib/* x/*" ;;
