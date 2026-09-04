@@ -120,6 +120,14 @@
     [where [> [$count [?for [in $t $reg-shas] [where [= $t $s]] [yield $t]]] 1]]
     [yield [$short $s]]]]
 
+  # #1214: a gitlink with NO checkout (a git worktree) has no fork to inventory;
+  # `git -C $sub rev-parse HEAD` would answer the SUPERPROJECT's HEAD and the
+  # ancestry test below would red for a reason that is not the tree's. That
+  # is an environment fault (exit 2), stated as such.
+  [= $_gitdir [?if [not [$io:exists [$cat ($sub, '/.git')]]]
+    [then [?let [= $_m [$cry [$cat ('check-v-fork: environment fault — ', $sub, ' is not a populated submodule here (a git worktree?); run the gate in the checkout that has it')]]]
+                [$env:exit 2]]]
+    [else ()]]]
   # ── the fork as it actually is ────────────────────────────────────────
   [= $head [$strings:trim [$run-git ('git', '-C', $sub, 'rev-parse', 'HEAD') 'rev-parse']]]
   [= $gitlink-raw [$run-git ('git', 'ls-tree', 'HEAD', $sub) 'ls-tree']]

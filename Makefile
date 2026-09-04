@@ -342,9 +342,20 @@ verify-doc-blocks: build-vcx
 # it under continue-on-error, so it could never fail anything). This one is
 # OFFLINE and deterministic, which is what earns it a place in TEST_TARGETS.
 .PHONY: check-v-fork
+# #1214: in a git WORKTREE third_party/v is a gitlink with no checkout (the
+# worktree recipe symlinks only the built v binary), so the fork check has no
+# submodule to inventory — it used to run the ancestry test against the
+# SUPERPROJECT's HEAD and red every worktree gate with a bogus verdict, and
+# under -j that red truncated the lanes after it. The register is a property
+# of the TREE (the same pin every worktree shares), proven in the checkout
+# that has the submodule populated; in a worktree the lane says so and passes.
 check-v-fork: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-v-fork: build-vcx
-	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess scripts/check_v_fork_patches.cx
+	@if [ ! -e third_party/v/.git ]; then \
+	  echo "check-v-fork: SKIP — third_party/v is not a populated submodule here (a worktree); the fork register is proven in the main checkout"; \
+	else \
+	  "$(CX_BIN)" --allow-read --allow-write --allow-subprocess scripts/check_v_fork_patches.cx; \
+	fi
 
 # V module-cache soundness gate (#700 wave 2, VC-23) — adversarial proof of
 # the -usecache key: for every input that can change a cached object's bytes,
