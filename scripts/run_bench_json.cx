@@ -36,6 +36,7 @@
 [?lib 'cx-stdlib/re'      as=re]
 [?lib 'cx-stdlib/time'    as=time]
 [?lib 'cx-stdlib/fp'      as=fp]
+[?lib 'cx-stdlib/math'    as=math]
 
 [?def cat scope=public ($parts) [$strings:join $parts '']]
 [?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
@@ -190,6 +191,77 @@
       [else ()]]]
     $out]]
 
+[; #1281 — `cx fmt` on a generated 8,000-record document (~1.4 MB): the
+   standalone formatter was a 26 s / 3.3 GB outlier against ~1 s for
+   `--from=cx --to=cx` on the same bytes, because its structural fingerprint
+   rendered the whole program AST through V's debug `.str()`. Median wall
+   time of five runs of the built binary, so the ratchet holds the fix. The
+   document is written under a temp dir and removed. ]
+[?def fmt-bench-doc scope=public ()
+  [$cat ('[records\n',
+         [$strings:join [?for [in $i [$range 1 8000]]
+           [yield [$cat ('  [rec id=', [$string $i], ' name="Customer ', [$string $i],
+                         '" email="user', [$string $i], '@example.com" total=',
+                         [$string [* $i 7]], '.50 status=on-time [note "Line one of the note for record ',
+                         [$string $i], '"] [tags [tag a] [tag b] [tag c]]]')]]] '\n'],
+         '\n]\n')]]
+
+[?def run-fmt-bench scope=public impure ()
+  [?let
+    [= $dir [$io:temp-dir 'cx-bench-fmt']]
+    [= $path [$cat ($dir, '/records-8k.cx')]]
+    [= $_w [$io:write-file $path [$fmt-bench-doc]]]
+    [= $samples [?for [in $i [$range 1 5]]
+      [= $t0 [$time:monotonic-now]]
+      [= $r [$process:run ('vcx/target/cx', 'fmt', $path)]]
+      [= $t1 [$time:monotonic-now]]
+      [where [= $r@exit-code 0]]
+      [yield [/ [- $t1 $t0] 1000000.0e0]]]]
+    [= $_rm ([$io:remove $path], [$io:remove-dir $dir])]
+    [?if [< [$count $samples] 5]
+      [then [$die 'cx fmt failed on the 8k-record bench document — the tooling.fmt_8k_ms row cannot be measured']]
+      [else {'tooling.fmt_8k_ms': {median: [$math:median $samples], unit: 'ms'}}]]]]
+
+[; #1226 — `--from=json --to=json` on the bench/repr JSON corpus shape at
+   300,000 records (19 MB): the parse-side passes used to hold up to three
+   copies of the 144 MB tree live at once and the pacer committed 16 arenas
+   (1.18 GB peak RSS). Two rows: wall time, and the PEAK COMMITTED ARENAS read
+   from the vgc trace (`arenas=N` on the last cycle — arenas are never
+   released, so the last value is the high-water mark; 64 MB each). Arenas are
+   the platform-independent proxy for peak RSS the ratchet can hold to. The
+   corpus is a pure function of the record index (bench/repr/repr.v gen_json),
+   written under a temp dir and removed. ]
+[?def convert-bench-doc scope=public ()
+  [$cat ('[',
+         [$strings:join [?for [in $i [$range 0 299999]]
+           [= $id [+ 100000 $i]]
+           [yield [$cat ('{"id":', [$string $id], ',"name":"user-', [$string $id], '","active":',
+                         [?if [= [% $i 2] 0] [then 'true'] [else 'false']],
+                         ',"score":', [$string [+ 100 [% $i 900]]], '.5}')]]] ','],
+         ']')]]
+
+[?def trace-peak-arenas scope=public ($trace::string)
+  [?let [= $rx [$re:compile 'arenas=(\\d+)']]
+        [= $vals [?for [in $m [$re:find-all $rx $trace]] [yield [?else [$strings:to-number [$re:group $m 1]] 0]]]]
+    [?if [$exists $vals] [then [$math:max $vals]] [else 0]]]]
+
+[?def run-convert-bench scope=public impure ()
+  [?let
+    [= $dir [$io:temp-dir 'cx-bench-convert']]
+    [= $path [$cat ($dir, '/records-300k.json')]]
+    [= $_w [$io:write-file $path [$convert-bench-doc]]]
+    [= $runs [?for [in $i [$range 1 3]]
+      [= $t0 [$time:monotonic-now]]
+      [= $r [$process:run ('vcx/target/cx', '--from=json', '--to=json', $path) env=[map VGC_GCTRACE="1"] capture=:stderr]]
+      [= $t1 [$time:monotonic-now]]
+      [where [= $r@exit-code 0]]
+      [yield {ms: [/ [- $t1 $t0] 1000000.0e0], arenas: [$trace-peak-arenas [$string $r@stderr]]}]]]
+    [= $_rm ([$io:remove $path], [$io:remove-dir $dir])]
+    [?if [< [$count $runs] 3]
+      [then [$die 'cx --from=json --to=json failed on the 300k-record bench document — the convert.json_300k rows cannot be measured']]
+      [else {'convert.json_300k_ms': {median: [$math:median [?for [in $x $runs] [yield $x.ms]]], unit: 'ms'},
+             'convert.json_300k_arenas': {median: [$math:median [?for [in $x $runs] [yield $x.arenas]]], unit: 'arenas'}}]]]]
+
 [?let
   [= $args [?fallback [$env:parse-args ARG_SPEC]
              [recover-with ([$cry 'usage: run_bench_json.cx [-o FILE] [--include-eval]'],
@@ -199,7 +271,7 @@
   [= $output [?if [= $output-raw null] [then ''] [else $output-raw]]]
   [= $include-eval [?else [$env:flag $args 'include-eval'] false]]
 
-  [= $streaming [$map:merge ([$run-streaming-bench], [$run-code-streaming-bench])]]
+  [= $streaming [$map:merge ([$run-streaming-bench], [$run-code-streaming-bench], [$run-fmt-bench], [$run-convert-bench])]]
   [= $benchmarks [?if $include-eval
     [then [$map:merge ($streaming, [$run-eval-features-bench])]]
     [else $streaming]]]

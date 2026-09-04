@@ -15,6 +15,30 @@ version, library version).
 
 ### Added
 
+- **The noun-level `[views]` declaration — sort, facet, default order and
+  hidden-by-default as compose-checked CLAUSES, never verbs (#1285, RULED:
+  VG-1; ledger/rulings_2026_09_04_view_grammar.md).** Sorting, filtering,
+  faceting and paging have no effect and commit nothing; they are the
+  comprehension's clauses (`[where]` / `[order-by]` / `[group-by]` /
+  `[yield]`) applied to a noun, the third part of speech beside verb and
+  noun. A noun may now declare what those clauses may do over it:
+  `[views [sort field=…] [facet field=…] [default-order field=… dir=…]
+  [hidden field=…]]` (xap_grammar_composition.md §4.5, feature.cxs). The
+  compose gate gains **W8** (unknown field, default order not sortable,
+  facet over a sub-noun, a field twice in one role — every arm reported);
+  the composed grammar carries `[views]` verbatim; `[$xap:instantiate]`
+  accepts `[add on=NOUN [views …]]`. `cx-x/ux` consumes it: `[$ux:table]`
+  omits `[hidden]` fields unless the `order` hint names them, and
+  `sort-of` / `facet-of` / `ordered-by` / `sort-fields` / `facet-fields` /
+  `hidden-fields` derive the P0-60/61/62 controls from the declaration.
+  **Adopter note — additive.** A noun with no `[views]` composes and
+  renders exactly as before. A feature that pages or sorts a noun declares
+  `[views]` on it; the gate names the noun and field when a declaration is
+  wrong. A feature that implemented sort or filter as INTENTS migrates them
+  to queries (cutover-first, no dual-accept): an effectful "sort" verb was
+  never a verb. `show=disabled` stays authorization; `[hidden]` and the
+  `view`/`order` hints are presentation; the two never share a word.
+
 - **`cx-stdlib/saml` — the SAML 2.0 service-provider verify core (#1091,
   RULED: S-0…S-9).** `verify` takes the raw XML octets and the IdP's public
   keys and returns **the verified subtree** — never a boolean beside a
@@ -136,6 +160,39 @@ version, library version).
   authoring and client guides follow.
 
 ### Fixed
+
+- **`--from=json --to=json` peak RSS on a 19 MB / 300k-record document:
+  1,181 MB → 685 MB (#1226 re-measurement after #1208 + #1242).** The two
+  post-parse passes on the JSON codec path — `apply_cx_type_sidecar` and
+  `apply_lossless_structure` — rebuilt every Map, Array and Element on the
+  way out even when nothing below carried a `cx:type` sidecar or a reserved
+  `$…` / `cx:…` key, so the parse held up to three copies of the 144 MB tree
+  live at once (`marked` peaked at 383 MB against a 144 MB tree; the pacer's
+  2× goal then committed 16 arenas). Both walks are now identity-preserving
+  (the RP-3 `flatten_node` rule): untouched subtrees come back as the very
+  node that went in; rewritten ones are built exactly as before. `marked`
+  now peaks at ~185 MB (tree + input + the streamed output). The emit lane
+  was already streaming (#1242) and adds ~34 MB live. The remaining gap to
+  the RP-5 ≤8× bar is pacer policy (goal = 2 × marked) and the span pool,
+  which never trims on a monotone build-up — reduced to cx-home/v#6
+  (mirror #1295): coalescing restamps `pool_gen`, so a growing free region
+  never ages past the trim gate. The perf ratchet gains
+  `convert.json_300k_arenas` (peak committed arenas from the vgc trace) and
+  `convert.json_300k_ms` so the parse-side copies cannot return unnoticed.
+
+- **`cx fmt` was a 26 s / 3.3 GB outlier on a 1.37 MB document (#1281).**
+  `fmt_source` fingerprinted the program AST for the #400 meaning-
+  preservation check by rendering it through V's generated debug `.str()`
+  and byte-scanning positions out — a field-named dump of every node, twice
+  per format (~1.5 GB of text each). The fingerprint is now a compact
+  tagged writer over the same fields (positions excluded), every text is
+  parsed once per lane, and the data reading is parsed once for both the
+  candidate and the comment inventory. Same 26 s file: **0.60 s / 494 MB**
+  (44× faster, 6.7× less memory), byte-identical output, fmt.cxd 22/22,
+  idempotence unchanged. Against `--from=cx --to=cx` on the same bytes it
+  is now 3.2× (was 26×); the residual is three necessary program parses
+  (source, data candidate, round-trip proof). The perf ratchet gains a
+  `tooling.fmt_8k_ms` row so the outlier cannot return unnoticed.
 
 - **Pattern head-bind `[NAME$x]` captures the whole element (#1172, RULED:
   1172-Q1a).** The glued form is the head-bind for a Name head, as `*$x` /
