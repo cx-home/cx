@@ -58,6 +58,13 @@ copy is gone (see below). json 7.569 → 7.95, xml 7.941 → 8.35, cx 7.577–7.
 16.325 before the per-parse scalar intern pool; what remains is one `AttributeMeta` record per autotyped
 attribute (128k of them), which is its own representation issue.
 
+Re-pinned 2026-09-04 (#1275): `cxel` 15.507 → **7.600**, bound 8.00. Those 128k `AttributeMeta` records
+each held the attribute's type NAME as a string (`atom`, `date`, `duration`, `int`) — one 112-byte
+allocation per autotyped attribute, more than half the lane's live set, saying what `Attribute`'s inline
+`has_dtype` / `dtype` (RP-4) already say. `new_attribute` now routes every round-tripping name inline
+through `set_data_type`'s guard; only a sized numeric (`u16`, `f32`, …) or a namespaced attribute still
+pools. The census reads `attr_meta=0`, and the four lanes now sit together at 7.57–7.94×.
+
 Bounds are pinned at **measured + 1.0, then +5%** (see "what the instrument can
 and cannot see" for what the +1.0 buys). They are a **ratchet**: every wave that
 improves a lane re-pins its bound DOWNWARD in `run.sh` in the same commit that

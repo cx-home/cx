@@ -39,16 +39,24 @@ RECORDS="${CX_REPR_RECORDS:-32000}"
 #   json    7.569      7.95   +5% (a different compiler or platform)
 #   xml     7.941      8.35   same
 #   cx      7.577-7.588   8.00  same
-#   cxel   15.507     16.30   same — the element lane with atom / date / duration
-#                             attribute columns (#1247); 16.325 before the
-#                             per-parse scalar pool, 128k AttributeMeta records
-#                             (one per autotyped attribute) carry the rest
+#   cxel    7.600      8.00   same — the element lane with atom / date / duration
+#                             attribute columns (#1247); 15.507 before #1275
+#                             retired the 128k AttributeMeta records (one per
+#                             autotyped attribute; the type name rides inline)
 #
 # RE-PINNED 2026-09-04 (#1208, #1247): the `+1.0` for one conservatively
 # retained input copy is GONE — codec_text_boundary and the parser entries no
 # longer copy the input, and the `-prod` / `-cflags -O2` drivers now agree
 # BYTE-FOR-BYTE on json and xml at 32k (7.569 / 7.941 both) where they used to
 # differ by exactly one input. Bounds are measured +5%.
+#
+# RE-PINNED 2026-09-04 (#1275): the `cxel` lane 15.507 → 7.600. Every autotyped
+# attribute carried an AttributeMeta record holding its type NAME as a string —
+# 128,000 records on this corpus, more than half the lane's live set — to say
+# what the inline `has_dtype` / `dtype` already say. `new_attribute` now routes
+# a round-tripping name inline through `set_data_type`'s guard (the sized
+# numerics and the namespace fields still pool); the census reads attr_meta=0
+# and the lane sits with the other three at ~7.6×.
 #
 # Measured on darwin-arm64 with the `-prod` driver at 32,000 records. Run-to-run
 # the reading is all but exact: over six clean runs the json and xml lanes were
@@ -70,7 +78,7 @@ LANES=(json xml cx cxel)
 BOUND_json=7.95
 BOUND_xml=8.35
 BOUND_cx=8.00
-BOUND_cxel=16.30
+BOUND_cxel=8.00
 
 # repin_slack — how far under its bound a lane may sit before the runner says
 # so. Advisory, NOT a failure: an improvement must not red somebody else's
