@@ -1,6 +1,6 @@
 # Rulings 2026-09-03 — #1228 follow-up 2: the monitor batch `[?receive]` with nothing collected
 
-**Status: RULED (a) by the owner, 2026-09-03 ("a").**
+**Status: RULED (a) by the owner, 2026-09-03 ("a"). Ruling id: 1228-Q1a.**
 
 ## The finding
 
