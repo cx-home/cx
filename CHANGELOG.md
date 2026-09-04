@@ -15,6 +15,23 @@ version, library version).
 
 ### Added
 
+- **`cx-stdlib/saml` — the SAML 2.0 service-provider verify core (#1091,
+  RULED: S-0…S-9).** `verify` takes the raw XML octets and the IdP's public
+  keys and returns **the verified subtree** — never a boolean beside a
+  document — so no caller can hold a "valid" answer and read a different
+  node, which is what every signature-wrapping variant exploits;
+  `assertion` checks the `Response` envelope and selects the one covered
+  `Assertion`; `validate` checks `Issuer`, `Conditions` and bearer
+  `SubjectConfirmation` against `opts.now`; `attributes` / `name-id` read
+  every text node with comments elided, which defeats the comment-
+  truncation class. The module reads XML itself (the core importer is
+  data-oriented and not infoset-faithful), canonicalizes exclusively,
+  refuses SHA-1 and every transform beyond enveloped-signature + exclusive
+  C14N, never consults `KeyInfo`, holds no state and reads no clock.
+  `CXER5400–5411`. The 81-case corpus (every XSW family, transform abuse,
+  well-formedness, each code) was written before the verifier and its
+  canonical octets are pinned against libxml2, not against the module.
+
 - **A perf ratchet in the release cut (#1249, RULED: 1249-Q1a).**
   `make perf-ratchet` measures (`bench-json`, now including gate 15's
   `[?for]`/`[?map]` MB/s) and compares against the committed
