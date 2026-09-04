@@ -88,7 +88,7 @@ the stdlib module pattern (`sched.cx`, `journal.cx`: thin `[?def]`s over
 ## PB-5 — the `[timer-fired …]` event shape — RULED (a)
 
 - **(a) RULED — `[timer-fired run=<id> step=<name> at=<instant>]`**, the
-  `sched` timer's `$ev`; the timer is named `flow:<id>:<step>` so `sched
+  `sched` timer's `$ev`; the timer is named `<run id>:<step>` (the run id already carries the `flow:` token — PB-3 — so it appears once) so `sched
   restore` re-arms it after a restart (§6). A `[timer-fired]` naming a step
   no longer `:running`/`:pending` is a no-op (the record decides — §4.2).
 
