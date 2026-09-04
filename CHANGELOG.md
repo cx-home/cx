@@ -40,7 +40,67 @@ version, library version).
   meaning to preserve; an empty `[enum]` is a refusal written as a
   constraint.
 
+### Changed
+
+- **The feature runtime contract takes the deployment context `$host`, not a
+  bare store handle (#1210, RULED: HC-1 —
+  `ledger/rulings_2026_09_04_host_context_1210.md`).** A feature used to
+  receive a store handle and a clock tick and NOTHING naming the deployment:
+  not the tenant, not the journal its cascade commits to. Both were known to
+  the host and kept there, so a feature that owned its fold had to open a
+  journal from an environment variable and re-state the tenant with nothing
+  checking agreement. The §1.2 entry points now take ONE deployment-context
+  element in the position the store handle held — `readout ($host $t)` ·
+  `readout ($host $t $actor)` · `apply ($verb $intent $host)` ·
+  `simulate ($host $t $params)` — where
+  `[host tenant='acme' [store <handle>] [journal <handle> stream='acts']]`:
+  `tenant=` is the deployment's tenant NAMED in the value, `[store …]` is the
+  same capability-scoped handle as before (`[$first $host/store]`), and
+  `[journal …]` is the deployment's bound act chain — the journal handle the
+  runtime itself commits through, so a feature folds the tenant's own chain
+  (`$journal:fold` / `since` / `head`) and appends to it, re-opening nothing.
+  The journal child is ABSENT when the deployment declares no
+  `[runtime [journal …]]` binding (guard with `[$present $host/journal]`),
+  and absent with a loud boot notice when that binding is a served `xsp://`
+  fabric, whose chain lives in the daemon. Arity is untouched (the 2/3-param
+  readout lens still selects by arity) and the context grows by a child, so
+  the next deployment resource costs no signature change. **Cutover-first, no
+  dual-accept:** the argument's KIND changed, and no static check can catch a
+  module built against the old contract (same arity, parameter names are
+  irrelevant) — it receives an element where it expects a store handle and
+  fails at its first store call. Feature packages published against toolchain
+  0.17.0 or earlier must be republished for this contract; a package's
+  `compatibility` floor is what declares the toolchain it validates against.
+- **XAP deployment host: `POST /intent` takes the ACT, and journals it whole
+  (#1260, RULED: CA-1/CA-4 — `ledger/rulings_2026_09_03_canonical_act_form_1260.md`).**
+  There is one act form at every boundary: `[do 'ns/verb' [field value]…]`,
+  the form the in-process `emit` and the web bridge already journal. The
+  host's body is now that act, bare or inside the wire envelope `[event
+  actor=? focus=? [do …]]` (envelope facts, never fields); the host resolves
+  the head through ρ (focus from the envelope), appends the qualified act
+  WITH its fields, and hands a feature's contract `apply` the committed
+  `[do …]` element itself — the same value, the same Tier-1 address. Before
+  this change the host journaled `[do 'ns/verb']` with every field dropped
+  (a host-committed act could not be replayed from the journal) and handed
+  `apply` a re-shaped `[intent verb= field=…]` attribute element. That body
+  is retired cutover-first: posting it answers `ok=false
+  reason=intent-form-retired` naming the canonical form; a claimed `actor=`
+  that differs from a proven principal is refused (the old `role=` claim was
+  silently ignored). Modules read a field as a child, `$intent/<field>`.
+  Distribution spec §1.2 / §6.3 and `xap.md` §3.4 carry the rule; the
+  authoring and client guides follow.
+
 ### Fixed
+
+- **A bare def name in value position inside a function body is the callable, not a
+  nullary call (#1231; code.md §12.2.3).** `[?def cm ($az $p $ap) [$authz:commit $az $p $ap
+  approve-order …]]` handed `approve-order` to the commit as a VALUE at top level but
+  INVOKED it inside the body — so a `[requires-at]`-pinned command refused `CXER4951`
+  from a def body (the admission the commit recorded was never the one the invoke
+  check saw: it saw the call's result), and an unpinned command executed its effect at
+  `cx:propose` time. The evaluator now resolves a bare user/module def name in value
+  position to the function reference in every frame; `$name` reads identically; the
+  bracketed zero-argument `[f]` stays the call. Pinned by `cmd-029` and `authz-090`.
 
 - **An out-of-set atom BODY validated clean (#1155).** `atom` was
   missing from the validator's scalar-shape set, so every clause on an

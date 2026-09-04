@@ -129,14 +129,31 @@
          the policy check admits the intent), and optionally
          `simulate`. A minimal complete module:"""]
     [example lang=cx
-      """[?def readout scope=public impure ($store $t)
-  [readout title='Notes' [kv k='count' v='0']]]
-[?def apply scope=public impure ($verb $intent $store)
+      """[?def readout scope=public impure ($host $t)
+  [readout title='Notes' tenant=$host@tenant [kv k='count' v='0']]]
+[?def apply scope=public impure ($verb $intent $host)
   [?if [= $verb 'notes/add-note']
     [then $verb]
     [else [refused reason='no apply for this verb']]]]"""]
     [body
-      """`apply` may refuse on domain policy by returning
+      """`$host` is the **deployment context** — one value naming the
+         deployment the feature runs in:
+         `[host tenant='acme' [store <handle>] [journal <handle>
+         stream='acts']]` (#1210). `$host@tenant` is the tenant a feature
+         acts under (never re-stated from an environment variable),
+         `[$first $host/store]` the capability-scoped working store, and
+         `[$first $host/journal]` the deployment's act chain — the same
+         journal the runtime commits to, so a feature owns its own fold
+         instead of opening one. The journal child is ABSENT when the
+         deployment declares no journal binding: guard with
+         `[$present $host/journal]` (the presence test — `$exists` asks
+         content arity)."""]
+    [body
+      """`$intent` is the committed act itself — `[do 'notes/add-note'
+         [text '…']]`, the very value the journal appended — so a field
+         reads as a child, `$intent/text`, never through a re-shaped copy
+         (one act form at every boundary, #1260). `apply` may refuse on
+         domain policy by returning
          `[refused reason=…]` — the policy layer admitted the *verb*,
          the feature refused the *values*; two layers, both visible.
          `scope=public` is what a module exports, and the package
