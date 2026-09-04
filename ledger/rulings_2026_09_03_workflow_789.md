@@ -795,7 +795,8 @@ re-verified against the long-term bar; the owner may override by letter.
 | #1217 | projecting a feature verb (the `:principal` human-task form) | the approval case needs nothing; the form case rides its fix |
 | #1231 | bareword command admission inside def bodies | fix before W1; by-name resolution must take the `$cmd`-as-value path |
 | #728 component 2 | the connector SDK — external-system steps | a connector call is a command step; not this design |
-| decision tables | a pure evaluator over a table document (the DMN counterpart) | files as its own issue at spec time (WF-13) |
+| #1266 decision tables | a pure evaluator over a table document (the DMN counterpart) | filed 2026-09-03 as the WF-13 named landing |
+| #1265 | the implementation campaign umbrella (WF-9 waves, amended by WF-15..WF-17) | filed 2026-09-03; opens when the owner schedules the campaign |
 
 ## Execution notes (for the spec draft, once ruled)
 
