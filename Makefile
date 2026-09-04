@@ -2589,6 +2589,28 @@ corpus-audit: build-vcx
 repr-guard: build-vcx
 	@bench/repr/run.sh
 
+# ── bench-flow: the cx-stdlib/flow performance and scale lane ────────────────
+#
+# §9 of spec/03-approved/std-lib/flow.md (RULED: WF-14), #1265 W1 packet C.
+# Floors are set from the first measurement and ratcheted like bench/repr:
+# ledger/bench_flow_first_measurement_2026_09_04.md records the numbers, the
+# machine and the binary; bench/flow/run.sh carries the floors they set.
+#
+# DELIBERATELY NOT IN TEST_TARGETS. Half its rows are wall-clock durations
+# (transitions/s, latencies, a map's wall time), and `make test` runs its
+# targets under `-j` — a duration floor there reds on a busy machine rather
+# than on a regression, which is how a gate stops being believed. bench/repr
+# earns its TEST_TARGETS seat because its quantity is a RATIO of live bytes.
+# The load-insensitive halves of this lane ARE gated in `make test`: the two
+# per-item COUNT rows are pinned exactly in conformance/stdlib/flow.cxd
+# (flow-040), and the racing-advancer count in vcx/tests/flow_umbrella_test.v.
+# Run this target deliberately — before a release, and at every #1265 wave
+# exit, whose ledger row re-pins what it improved. Contract + numbers:
+# bench/flow/README.md.
+.PHONY: bench-flow
+bench-flow: build-vcx-dev
+	@bench/flow/run.sh
+
 # ── Clean ──────────────────────────────────────────────────────────────────────
 
 clean:

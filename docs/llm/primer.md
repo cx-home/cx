@@ -1771,6 +1771,7 @@ assistant makes with a young language is inventing a plausible module name.
 | `email` | Parse and build RFC 5322 + MIME multipart email messages. |
 | `env` | Expose process-level metadata to CX code: environment variables, command-line arguments, and process identity. |
 | `fabric` | Platform-level eventing over the shipped primitives: one subscribe/emit surface with an explicit durability axis. |
+| `flow` | General workflow on the saga substrate: flows as documents, runs as journaled records, and a runner that is a pure function rather than an engine. |
 | `format` | Emit CX values back to CX text in four forms: canonical, pretty, compact, and diff-friendly. |
 | `fp` | Functional composition over the four value channels. |
 | `ft` | In-program fulltext search with structured ranking and snippet generation. |
