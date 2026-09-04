@@ -790,7 +790,7 @@ re-verified against the long-term bar; the owner may override by letter.
 
 | issue | what it decides for this design | posture |
 |---|---|---|
-| #1260 | the canonical act form a step's `do=` + args take | adopt whatever it rules; the flow prefers the child form the wire already journals and mints no third spelling |
+| #1260 | the canonical act form a step's act takes | **RULED (a) 2026-09-03** — `rulings_2026_09_03_canonical_act_form_1260.md`: the child form `[do 'ns/verb' [field value]…]` at every boundary (CA-1); a step carries the act as its `[do …]` child, amending WF-1's `do=` + `[args …]` sketch (CA-2); the run's `[args …]` record is child form (CA-3); the host cutover's sequencing (CA-4) is the owner's |
 | #1210 | how a XAP-layer runner receives the tenant's journal | the flow module needs option 1 there (a journal handle beside the store) for W3+ |
 | #1217 | projecting a feature verb (the `:principal` human-task form) | the approval case needs nothing; the form case rides its fix |
 | #1231 | bareword command admission inside def bodies | fix before W1; by-name resolution must take the `$cmd`-as-value path |

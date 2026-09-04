@@ -1,7 +1,15 @@
 # Rulings 2026-09-03 — #1260 the canonical act form (CA)
 
-**Status: PROPOSED 2026-09-03 (Fable ruling session on `design/789-workflow`).**
-Recorded BEFORE any spec text per the #832 process rule. Nothing here edits
+**Status: CA-1, CA-2, CA-3 RULED (a) 2026-09-03 under the owner's standing
+letter-acceptance rule (2026-08-05: "accept all recommendations if they are
+the best long term for cx"; the owner's 2026-09-03 instruction to proceed
+autonomously); each re-verified against the world-class bar before recording
+(one form, document-native, replayable from the record, general over
+non-scalar fields). CA-2 amends WF-1's indicative `do=` + `[args …]` sketch
+and is flagged to the owner for veto by letter. CA-4 (sequencing the host
+cutover) is a scheduling decision and stays OPEN to the owner.** Proposed
+and recorded BEFORE any spec text per the #832 process rule (commit
+209f53fe6, then ruled and the draft flipped in the following commit). Nothing here edits
 `spec/03-approved/`; the edit map at the end lands with the implementation,
 ruling-gated. The one working draft that adopts the ruling is
 `spec/02-working/flow.md` (its §13 G3 item "#1260 ruled and the `[args …]`
