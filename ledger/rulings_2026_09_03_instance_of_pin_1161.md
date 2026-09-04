@@ -1,6 +1,6 @@
 # Rulings 2026-09-03 — #1161 what an instance's `of=` pins: the archetype document or the package
 
-**Status: PROPOSED 2026-09-03 — awaiting the owner's letter on Q1.**
+**Status: RULED (a) by the owner, 2026-09-03 ("a"). Ruling id: 1161-Q1a.**
 
 ## The finding
 
