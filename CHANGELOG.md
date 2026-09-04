@@ -180,6 +180,32 @@ version, library version).
   `convert.json_300k_arenas` (peak committed arenas from the vgc trace) and
   `convert.json_300k_ms` so the parse-side copies cannot return unnoticed.
 
+- **The `cxel` live-memory lane 15.507× → 7.600× — an autotyped attribute no
+  longer allocates an `AttributeMeta` to hold its type name (#1275).** Every
+  parser that types an attribute (the CX element reader, logfmt, the binary
+  and event readers, the AST-JSON reader) hands the type NAME to
+  `new_attribute` through `AttributeMeta{ data_type: … }`, and `new_attribute`
+  pooled it verbatim: 128,000 records of 112 bytes on the 32k-record element
+  corpus — more than half the lane's live set — to say what `Attribute`'s
+  inline `has_dtype` / `dtype` (RP-4) already say. `new_attribute` now routes
+  the name through `set_data_type`'s round-trip guard, so `int`, `atom`,
+  `date`, `duration`, … ride in the 56-byte `Attribute`; only a sized numeric
+  (`u16`, `f32`, …) or a namespaced attribute still pools, and a namespaced
+  attribute keeps its type inline too. `data_type()` answers the same string
+  as before and the CX⇄XML `cx:attr-types` round-trip is unchanged. The
+  `bench/repr` ratchet re-pins `BOUND_cxel` 16.30 → 8.00; the census reads
+  `attr_meta=0`.
+
+- **`bench/xap/commit_latency.cx` reported p50 = p99 = 9999999 while min /
+  avg / max were sane (#1279).** The threshold bucketer walked a fixed ladder
+  of µs thresholds and answered its own sentinel whenever the rank it needed
+  fell between rungs, so the harness quoted a sentinel for a percentile that
+  provably sat under the top bucket — identically on the pre- and post-change
+  binaries of the #1246 measurement, which is how it was caught. Percentiles
+  are now read off the sorted samples at the 1-based rank ⌈p·n⌉, and the row
+  refuses itself (exit 3, no `[bench-row …]`) unless min ≤ p50 ≤ p99 ≤ max.
+  The `SIZING.md` publish-p50 column re-quotes on the next `make bench-xap`.
+
 - **`cx fmt` was a 26 s / 3.3 GB outlier on a 1.37 MB document (#1281).**
   `fmt_source` fingerprinted the program AST for the #400 meaning-
   preservation check by rendering it through V's generated debug `.str()`
