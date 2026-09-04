@@ -1192,12 +1192,11 @@ test:
 	# target/cx while sibling lanes were exec'ing it (the v0.16.0 cut's
 	# 'Exec format error' / empty-output-rc-0 class; see the guard's note).
 	@$(MAKE) build-vcx
-	# test-profile-gate runs SERIALLY AFTER the -j storm, not inside it:
-	# sup-011's #951 load-race is near-deterministic under gate-wide -j
-	# saturation (red on tag takes 4/5/6 THROUGH the #1054 fresh-child
-	# re-grade, which inherits the same storm), and green on a quiet box —
-	# the same measured fact that put code_eval_fixtures on the
-	# SUITE_SERIAL_RETRY roster ("red 3x across gates only under -j load").
+	# test-profile-gate runs SERIALLY AFTER the -j storm, not inside it. The
+	# original reason (sup-011's "#951 load-race" under gate-wide -j) is gone
+	# with #1228 — that was a deterministic evaluator defect, fixed — so the
+	# serial tail now rests on the build-vcx relink guard above alone; folding
+	# the profile gate back into the storm is #1227's measured call, not this one.
 	# The Makefile-level serial retries work precisely because they run
 	# after the storm drains; the profile gate gets the same quiet context.
 	# Nothing is masked: a deterministic failure still reds the serial run,
@@ -1641,25 +1640,24 @@ skip-ledger-reset:
 #     #971 removed the muldefs mask; the retry stays as defense-in-depth
 #     until a measured run justifies removing it);
 #   • anything else → a real failure, no retry, gate stays red.
-#   • code_eval_fixtures_test.v joined 2026-08-23 for the #951 supervise
-#     load-race family (sup-011/sup-012: a note/terminal lost or starved
-#     only under full-parallel compile storms — measured green 25/25 and
-#     80/80 in isolation, red 3× across gates only under -j12 load, root
-#     tracked on #951). The serial retry keeps the same honesty contract:
-#     a deterministic eval regression re-fails it and the gate stays red.
+#   • code_eval_fixtures_test.v was on this roster 2026-08-23 → 2026-09-03 for
+#     the "#951 supervise load-race" — which #1228 showed was a deterministic
+#     evaluator defect (a monitor [?receive] ignoring deadline=), fixed at
+#     6e80897b0; six full gates after the fix retried nothing, so the entry is
+#     RETIRED. A red there is a real failure again.
 SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/net_dtls_test.v \
                       vcx/tests/net_real_socket_test.v \
                       vcx/tests/a2a_real_test.v \
                       vcx/tests/http_h2_serve_test.v \
-                      vcx/tests/code_eval_fixtures_test.v \
                       vcx/tests/process_pty_test.v
 
 # The retry ROSTERS above say WHICH lanes get a serial retry. This says WHY,
 # PER LANE. The emitted line used to read "serial retry (known real-socket
 # contention lane)" for every lane in either roster, which became a false
-# statement the moment code_eval_fixtures_test.v joined on 2026-08-23: its cause
-# is the #951 supervise note/terminal load-race, and it holds no socket. A log
+# statement the moment code_eval_fixtures_test.v joined on 2026-08-23 (its cause
+# was then believed to be a supervise load-race — retired with #1228 — and it
+# held no socket) and stays false while process_pty_test.v is on it. A log
 # line that asserts a single cause for a heterogeneous roster sends whoever
 # reads it after a red gate looking in the wrong place.
 #
@@ -1668,8 +1666,6 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
 # load-bearing and is not weakened here — but the log says the reason is
 # undeclared instead of inventing one.
 RETRY_REASON_CASE = case "$$rel" in \
-	  vcx/tests/code_eval_fixtures_test.v) \
-	    reason="\#951 supervise note/terminal load-race under -j compile storms; green 25/25 and 80/80 in isolation" ;; \
 	  vcx/tests/process_pty_test.v) \
 	    reason="\#1125 pty master read races under the -j12 suite storm (empty child output); green in isolation and in the prior full run" ;; \
 	  vcx/tests/net_udp_read_deadline_test.v|vcx/tests/net_dtls_test.v|vcx/tests/net_real_socket_test.v|vcx/tests/a2a_real_test.v|vcx/tests/http_h2_serve_test.v) \
@@ -1682,13 +1678,10 @@ RETRY_REASON_CASE = case "$$rel" in \
 
 # The profile gate grades the SAME supervise fixtures as
 # code_eval_fixtures_test.v but is not a `v test` lane, so no roster above
-# reaches it — and on 2026-08-26 the #951 flake reddened the v0.17.0 tag run
-# from profile_gate[cli] alone. The identical contract (classified, named,
-# once-only serial re-grade; a re-failure stays red) lives INSIDE that
-# runner, in vcx/tests/runners/profile_gate/profile_gate.v — see
-# is_951_family / retry_reason / serial_regrade there, and the
-# classifier_self_check that pins the class against the real tag-run
-# mismatch text so it cannot silently widen into a blanket (#1054).
+# reaches it. It used to carry its own serial re-grade class (#1054) for the
+# "#951 supervise load-race"; #1228 showed that race was a deterministic
+# evaluator defect and fixed it, and the class was RETIRED with #1228 — the
+# runner reports every failure once and stays red.
 
 # The cache-free class is NO LONGER A RETRY — it is a DIAGNOSTIC that never
 # changes the verdict (#700 wave 2 part ii). It was written when the -usecache
@@ -1711,13 +1704,13 @@ RETRY_REASON_CASE = case "$$rel" in \
 # is the diagnosis — but `st` is never cleared by it:
 #   cache-free PASSES  → GATE ESCAPE, loud, red, with the capture recipe;
 #   cache-free FAILS   → an ordinary real failure, red.
-# The serial-retry (socket / #951) class is untouched and still flips its
+# The serial-retry (socket / pty) class is untouched and still flips its
 # verdict: those lanes hold real sockets and their flakiness is environmental,
 # not a statement about compiler correctness.
 # NOTE for editors: this is a make VARIABLE, so a bare `#` starts a make
 # comment and silently truncates the line it is on (measured while writing
 # this: the banner became `GATE ESCAPE (`). Issue numbers here must be
-# written `\#700`, the same idiom RETRY_REASON_CASE above uses for `\#951`.
+# written `\#700`, the same idiom RETRY_REASON_CASE above uses for `\#1125`.
 CACHE_ESCAPE_PROBE = \
 	echo "──── cache-free DIAGNOSTIC (verdict stays red; classifying): $$rel ────"; \
 	if $(V) -cc cc $(CX_GC) $(CX_ENGINES) test "$$rel"; then \
@@ -1737,7 +1730,8 @@ CACHE_ESCAPE_PROBE = \
 # row naming a file that no longer exists matches nothing and silently
 # disables its retry class — the class stops applying and the gate looks
 # unchanged. That is the vacuous-gate failure mode, and here it would
-# disable the mitigation currently absorbing the #951 supervise load-race.
+# disable a mitigation while the gate looks unchanged (it absorbed the
+# "#951 supervise load-race" for five months — a defect, #1228, not noise).
 # Consolidation (#700) deletes lane files by design, so this is now a live
 # hazard rather than a theoretical one: assert every roster row exists,
 # before the suite runs.
@@ -1798,7 +1792,7 @@ test-vcx-suite: build-vcx-dev check-serial-retry-rosters skip-ledger-reset
 	      esac; \
 	    done; \
 	    if [ $$st -eq 0 ]; then \
-	      echo "──── every failed lane green on its classified SERIAL retry (socket / #951 load-race lanes) ────"; \
+	      echo "──── every failed lane green on its classified SERIAL retry (socket / pty lanes) ────"; \
 	    fi; \
 	  fi; \
 	fi; \
@@ -1862,7 +1856,7 @@ test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	      esac; \
 	    done; \
 	    if [ $$st -eq 0 ]; then \
-	      echo "──── every failed lane green on its classified SERIAL retry (socket / #951 load-race lanes) ────"; \
+	      echo "──── every failed lane green on its classified SERIAL retry (socket / pty lanes) ────"; \
 	    fi; \
 	  fi; \
 	fi; exit $$st
