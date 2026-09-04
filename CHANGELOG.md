@@ -161,6 +161,20 @@ version, library version).
 
 ### Fixed
 
+- **`cx fmt` was a 26 s / 3.3 GB outlier on a 1.37 MB document (#1281).**
+  `fmt_source` fingerprinted the program AST for the #400 meaning-
+  preservation check by rendering it through V's generated debug `.str()`
+  and byte-scanning positions out — a field-named dump of every node, twice
+  per format (~1.5 GB of text each). The fingerprint is now a compact
+  tagged writer over the same fields (positions excluded), every text is
+  parsed once per lane, and the data reading is parsed once for both the
+  candidate and the comment inventory. Same 26 s file: **0.60 s / 494 MB**
+  (44× faster, 6.7× less memory), byte-identical output, fmt.cxd 22/22,
+  idempotence unchanged. Against `--from=cx --to=cx` on the same bytes it
+  is now 3.2× (was 26×); the residual is three necessary program parses
+  (source, data candidate, round-trip proof). The perf ratchet gains a
+  `tooling.fmt_8k_ms` row so the outlier cannot return unnoticed.
+
 - **Pattern head-bind `[NAME$x]` captures the whole element (#1172, RULED:
   1172-Q1a).** The glued form is the head-bind for a Name head, as `*$x` /
   `:T$x` already were: name tested, `$x` = the matched element,

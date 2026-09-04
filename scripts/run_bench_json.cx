@@ -36,6 +36,7 @@
 [?lib 'cx-stdlib/re'      as=re]
 [?lib 'cx-stdlib/time'    as=time]
 [?lib 'cx-stdlib/fp'      as=fp]
+[?lib 'cx-stdlib/math'    as=math]
 
 [?def cat scope=public ($parts) [$strings:join $parts '']]
 [?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
@@ -190,6 +191,37 @@
       [else ()]]]
     $out]]
 
+[; #1281 — `cx fmt` on a generated 8,000-record document (~1.4 MB): the
+   standalone formatter was a 26 s / 3.3 GB outlier against ~1 s for
+   `--from=cx --to=cx` on the same bytes, because its structural fingerprint
+   rendered the whole program AST through V's debug `.str()`. Median wall
+   time of five runs of the built binary, so the ratchet holds the fix. The
+   document is written under a temp dir and removed. ]
+[?def fmt-bench-doc scope=public ()
+  [$cat ('[records\n',
+         [$strings:join [?for [in $i [$range 1 8000]]
+           [yield [$cat ('  [rec id=', [$string $i], ' name="Customer ', [$string $i],
+                         '" email="user', [$string $i], '@example.com" total=',
+                         [$string [* $i 7]], '.50 status=on-time [note "Line one of the note for record ',
+                         [$string $i], '"] [tags [tag a] [tag b] [tag c]]]')]]] '\n'],
+         '\n]\n')]]
+
+[?def run-fmt-bench scope=public impure ()
+  [?let
+    [= $dir [$io:temp-dir 'cx-bench-fmt']]
+    [= $path [$cat ($dir, '/records-8k.cx')]]
+    [= $_w [$io:write-file $path [$fmt-bench-doc]]]
+    [= $samples [?for [in $i [$range 1 5]]
+      [= $t0 [$time:monotonic-now]]
+      [= $r [$process:run ('vcx/target/cx', 'fmt', $path)]]
+      [= $t1 [$time:monotonic-now]]
+      [where [= $r@exit-code 0]]
+      [yield [/ [- $t1 $t0] 1000000.0e0]]]]
+    [= $_rm ([$io:remove $path], [$io:remove-dir $dir])]
+    [?if [< [$count $samples] 5]
+      [then [$die 'cx fmt failed on the 8k-record bench document — the tooling.fmt_8k_ms row cannot be measured']]
+      [else {'tooling.fmt_8k_ms': {median: [$math:median $samples], unit: 'ms'}}]]]]
+
 [?let
   [= $args [?fallback [$env:parse-args ARG_SPEC]
              [recover-with ([$cry 'usage: run_bench_json.cx [-o FILE] [--include-eval]'],
@@ -199,7 +231,7 @@
   [= $output [?if [= $output-raw null] [then ''] [else $output-raw]]]
   [= $include-eval [?else [$env:flag $args 'include-eval'] false]]
 
-  [= $streaming [$map:merge ([$run-streaming-bench], [$run-code-streaming-bench])]]
+  [= $streaming [$map:merge ([$run-streaming-bench], [$run-code-streaming-bench], [$run-fmt-bench])]]
   [= $benchmarks [?if $include-eval
     [then [$map:merge ($streaming, [$run-eval-features-bench])]]
     [else $streaming]]]

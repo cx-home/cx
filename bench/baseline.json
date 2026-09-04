@@ -47,6 +47,10 @@
     "streaming.streaming_ms": {
       "median": 92.0,
       "unit": "ms"
+    },
+    "tooling.fmt_8k_ms": {
+      "median": 645.551,
+      "unit": "ms"
     }
   },
   "cx_commit": "88f6bea6",
