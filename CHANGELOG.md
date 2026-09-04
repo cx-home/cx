@@ -42,6 +42,16 @@ version, library version).
 
 ### Fixed
 
+- **A bare def name in value position inside a function body is the callable, not a
+  nullary call (#1231; code.md §12.2.3).** `[?def cm ($az $p $ap) [$authz:commit $az $p $ap
+  approve-order …]]` handed `approve-order` to the commit as a VALUE at top level but
+  INVOKED it inside the body — so a `[requires-at]`-pinned command refused `CXER4951`
+  from a def body (the admission the commit recorded was never the one the invoke
+  check saw: it saw the call's result), and an unpinned command executed its effect at
+  `cx:propose` time. The evaluator now resolves a bare user/module def name in value
+  position to the function reference in every frame; `$name` reads identically; the
+  bracketed zero-argument `[f]` stays the call. Pinned by `cmd-029` and `authz-090`.
+
 - **An out-of-set atom BODY validated clean (#1155).** `atom` was
   missing from the validator's scalar-shape set, so every clause on an
   atom-typed body — `[type status::atom [enum :ok :err :pending]]`, the
