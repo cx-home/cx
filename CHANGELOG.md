@@ -15,6 +15,13 @@ version, library version).
 
 ### Added
 
+- **A perf ratchet in the release cut (#1249, RULED: 1249-Q1a).**
+  `make perf-ratchet` measures (`bench-json`, now including gate 15's
+  `[?for]`/`[?map]` MB/s) and compares against the committed
+  `bench/baseline.json` at 10 %; `tag_release.sh` aborts the cut on a
+  regression and re-pins the baseline on green (release-process.md §2,
+  phase 1b).
+
 - **Closed-key maps: the schema `[keys CLAUSE…]` constraint wrapper
   (#1155, RULED: EN-2).** A `[map K V]` declaration closes its VALUE
   domain through `V`; `[keys …]` applies the same `§7` catalog to its
@@ -41,6 +48,20 @@ version, library version).
   constraint.
 
 ### Changed
+
+- **Evaluator hot paths (perf):** map key lookup compares keys without
+  formatting them, and `[$map:get]` / `[$map:contains]` walk the carrier
+  directly — int-keyed probes 3.5×, string-keyed 2.6× (#1240; the wide-map
+  hash index is an open owner question, 1240-Q1); parameter defaults are
+  parsed once at `[?def]` (#1243); `+ - *` classify their operands in one
+  pass (#1244); call envs alias the dynamic context instead of cloning it
+  per call under `[?with-scope]` (#1245); string-carried scalar images
+  (atoms always; short dates / decimals / bigints / bytes / durations /
+  periods) are interned per parse (#1247). All byte-identical.
+- **`bench/repr` re-pinned to measured +5 %** (json 7.95, xml 8.35, cx
+  8.00, new `cxel` lane 16.30): the `+1.0` headroom for a retained input
+  copy is gone with #1208 — the `-prod` and `-O2` drivers now agree
+  byte-for-byte.
 
 - **The feature runtime contract takes the deployment context `$host`, not a
   bare store handle (#1210, RULED: HC-1 —
@@ -91,6 +112,45 @@ version, library version).
   authoring and client guides follow.
 
 ### Fixed
+
+- **Pattern head-bind `[NAME$x]` captures the whole element (#1172, RULED:
+  1172-Q1a).** The glued form is the head-bind for a Name head, as `*$x` /
+  `:T$x` already were: name tested, `$x` = the matched element,
+  unconditionally; the spaced `[NAME $x]` keeps rule 5's auto-unwrap. The
+  false `[NAME * $x]` sentence and the "where supported by the parser"
+  hedge are gone; §5.1 defines the head-bind; grammar [126a] splits the
+  Name head. A head-bind with a body still matches its body.
+- **Quoted patterns keep their binding markers (#1149).** `*$r` and
+  `$n::T` survive `[?quote]` → `[?eval]`: the codec writes the markers and
+  a marked binding rides the `<cx:expr>` hatch, read back by
+  `cx.parse_pattern_binding`.
+- **`[?splice E]` adopts members inside `(…)` and `[…]` literals (#1223)**,
+  as code.md §6.4.3's table says.
+- **The code-tree walker and the parser's bracket skipper consume `#` line
+  comments, `[; …]` block comments and `[# … #]` raw spans (#1067).** A `]`
+  in a comment no longer closes an element early; an odd quote or bracket
+  in one no longer stubs it `unbalanced` (conformance/code.cxd projected as
+  nothing).
+- **code-diagram mints each def's node-id namespace from its ordinal and
+  sanitized name (#1066, RULED: 1066-Q1a).** Two defs sharing an initial no
+  longer share ids and lose bodies; the def-bearing goldens moved under the
+  DR-8 mini-ruling.
+- **All-int `/` chains fold exactly in i64 (#1072)** while each step
+  divides exactly; the f64 fold rounded operands past 2^53.
+- **`[proc-result]` reads the real wait status (#1073)**: `signaled` is
+  WIFSIGNALED (a normal `exit 143` is not a signal) and `signal` names the
+  delivering signal — the §2.3 attribute that was never emitted. **A
+  timed-out pipeline reports every declared stage (#1075, RULED:
+  1075-Q1a)**: a stage the deadline stopped before it started reads
+  `exit-code=null timed-out=true`.
+- **The text boundaries validate UTF-8 through a no-copy view (#1208).**
+  `codec_text_boundary` and the parser entries copied the whole input into
+  a `[]u8` (twice at the codec boundary) just to index it.
+- **Gate hygiene:** the wall-clock assertions moved to a serial timing lane
+  that `make test` runs after the -j storm (#1216); every conformance suite
+  is claimed by a named lane (`check-conformance-coverage`, #1212); the xap
+  umbrella serves a per-run copy of `registry/store` so it no longer races
+  the xap-dist fixtures for the single-writer lock (#1274).
 
 - **A bare def name in value position inside a function body is the callable, not a
   nullary call (#1231; code.md §12.2.3).** `[?def cm ($az $p $ap) [$authz:commit $az $p $ap
