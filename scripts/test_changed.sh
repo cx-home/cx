@@ -80,7 +80,10 @@ lane_globs() {
     test-rust)                     echo "$RING_LIB $RING_SUP include/* lang/*" ;;
     test-go)                       echo "$RING_LIB $RING_SUP include/* lang/*" ;;
     test-v)                        echo "$RING_LIB $RING_SUP lang/v/*" ;;
-    check-prod-build)              echo "$RING_LIB $RING_SUP stdlib/* x/*" ;;
+    # #1212: -prod REJECTS shapes build-dev accepts (a reference stored into a
+    # value slot), and every test-vcx-* lane builds -dev — so the ~2 s prod
+    # checker runs on EVERY changed set, never gated behind a glob.
+    check-prod-build)              echo '*' ;;
     # ── the five ring test lanes (VC-22: TEST_TARGETS names them
     # individually now; the old single `test-vcx` row could only ever say
     # "something under vcx/ moved", which selected all five) ──
@@ -93,6 +96,8 @@ lane_globs() {
     test-vcx-code)                 echo "$RING_LIB $RING_SUP conformance/* stdlib/* x/*" ;;
     # vcx/tests/ is `module main` importing code + platform + cx + fixtures.
     test-vcx-suite)                echo "$RING_LIB vcx/tests/* $RING_SUP conformance/* stdlib/* x/*" ;;
+    # #1216: the serial wall-clock lane — the binary-driving closure plus its own dir.
+    test-vcx-timing)               echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED vcx/timing/*" ;;
     # vcx/cmd compiles with -d cx_platform, so it carries the full closure.
     test-vcx-cmd)                  echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP conformance/* stdlib/* x/*" ;;
     # the conformance aggregates drive the built cx binary over the corpus.
