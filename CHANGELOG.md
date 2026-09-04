@@ -15,6 +15,30 @@ version, library version).
 
 ### Added
 
+- **The noun-level `[views]` declaration — sort, facet, default order and
+  hidden-by-default as compose-checked CLAUSES, never verbs (#1285, RULED:
+  VG-1; ledger/rulings_2026_09_04_view_grammar.md).** Sorting, filtering,
+  faceting and paging have no effect and commit nothing; they are the
+  comprehension's clauses (`[where]` / `[order-by]` / `[group-by]` /
+  `[yield]`) applied to a noun, the third part of speech beside verb and
+  noun. A noun may now declare what those clauses may do over it:
+  `[views [sort field=…] [facet field=…] [default-order field=… dir=…]
+  [hidden field=…]]` (xap_grammar_composition.md §4.5, feature.cxs). The
+  compose gate gains **W8** (unknown field, default order not sortable,
+  facet over a sub-noun, a field twice in one role — every arm reported);
+  the composed grammar carries `[views]` verbatim; `[$xap:instantiate]`
+  accepts `[add on=NOUN [views …]]`. `cx-x/ux` consumes it: `[$ux:table]`
+  omits `[hidden]` fields unless the `order` hint names them, and
+  `sort-of` / `facet-of` / `ordered-by` / `sort-fields` / `facet-fields` /
+  `hidden-fields` derive the P0-60/61/62 controls from the declaration.
+  **Adopter note — additive.** A noun with no `[views]` composes and
+  renders exactly as before. A feature that pages or sorts a noun declares
+  `[views]` on it; the gate names the noun and field when a declaration is
+  wrong. A feature that implemented sort or filter as INTENTS migrates them
+  to queries (cutover-first, no dual-accept): an effectful "sort" verb was
+  never a verb. `show=disabled` stays authorization; `[hidden]` and the
+  `view`/`order` hints are presentation; the two never share a word.
+
 - **`cx-stdlib/saml` — the SAML 2.0 service-provider verify core (#1091,
   RULED: S-0…S-9).** `verify` takes the raw XML octets and the IdP's public
   keys and returns **the verified subtree** — never a boolean beside a
