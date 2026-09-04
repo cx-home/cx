@@ -6,13 +6,14 @@ the best long term for cx"; the owner's 2026-09-03 instruction to proceed
 autonomously); each re-verified against the world-class bar before recording
 (one form, document-native, replayable from the record, general over
 non-scalar fields). CA-2 amends WF-1's indicative `do=` + `[args …]` sketch
-and is flagged to the owner for veto by letter. CA-4 (sequencing the host
-cutover) is a scheduling decision and stays OPEN to the owner.** Proposed
+and was flagged to the owner for veto by letter — not vetoed. CA-4
+(sequencing the host cutover) RULED (a) BY THE OWNER 2026-09-03 ("1a"):
+#1260 gets its own landing ahead of #1265, cutover-first.** Proposed
 and recorded BEFORE any spec text per the #832 process rule (commit
 209f53fe6, then ruled and the draft flipped in the following commit). Nothing here edits
 `spec/03-approved/`; the edit map at the end lands with the implementation,
 ruling-gated. The one working draft that adopts the ruling is
-`spec/02-working/flow.md` (its §13 G3 item "#1260 ruled and the `[args …]`
+`spec/03-approved/std-lib/flow.md` (its §13 G3 item "#1260 ruled and the `[args …]`
 form flipped"). Ruling ids `1260-CA-1 … 1260-CA-4`.
 
 **Inputs read.** #1260 (the filing: one act, two spellings — `[do 'verb'
@@ -179,7 +180,7 @@ the owner may veto it by letter.
   fixture that starts a run and the record it produces would differ in
   spelling.
 
-## CA-4 — sequencing the host cutover (OWNER decision; not auto-ruled)
+## CA-4 — sequencing the host cutover — RULED (a) BY OWNER 2026-09-03
 
 Fact 1 is a shipped soundness defect in `cx-xap`'s deployment host, not a
 workflow-track item: today no host-committed act can be replayed from the

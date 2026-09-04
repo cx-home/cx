@@ -5,7 +5,7 @@ spec"); WF-15..WF-16 RULED (a) BY OWNER 2026-09-03 ("all a") on the
 store-requirement and dogfood questions raised after the draft; WF-17
 (visualization + the design tool) RULED (a) 2026-09-03 under the standing
 letter-acceptance rule on the owner's directive.** Recorded BEFORE any spec text per the #832 process rule; the spec
-draft `spec/02-working/flow.md` is authored under these rulings and carries
+draft `spec/03-approved/std-lib/flow.md` is authored under these rulings and carries
 `RULED: WF-n` tokens; graduation stays owner-only (G3). Branch
 `design/789-workflow`; nothing here touches `release/0.18`. Ruling ids
 `789-WF-0a … 789-WF-14a`.
@@ -167,7 +167,7 @@ admission, not new words; every letter below is checked against them.
   for exactly this surface; if the tail proves short at spec time the draft
   claims the next free hundred block instead and says so. Spec home:
   `spec/03-approved/std-lib/flow.md` at graduation, drafted at
-  `spec/02-working/flow.md`; `xap.md` §13/§14.2 and `journal.md` retarget by
+  `spec/03-approved/std-lib/flow.md`; `xap.md` §13/§14.2 and `journal.md` retarget by
   section title. **What it DELETES:** the `saga-*` verb names and the
   `saga-def` / `saga` heads — fixtures `journal-139/140/141` re-pin, the two
   `journal.md` signature lines move, one `xap.md` §14.2 sentence retargets,
@@ -474,7 +474,7 @@ admission, not new words; every letter below is checked against them.
 ## WF-9 — sequencing; what this track delivers now — RECOMMENDED: (a)
 
 - **(a) RECOMMENDED — design only now; the runner generalization is its own
-  campaign.** This record; then, once ruled, the `spec/02-working/flow.md`
+  campaign.** This record; then, once ruled, the `spec/03-approved/std-lib/flow.md`
   draft (the closed vocabulary with its applicability matrix, the runner
   law, the record and transition shapes, the refusals register, the
   competitive matrix as the readiness bar, the performance gates, the corpus
