@@ -1,7 +1,11 @@
 # Rulings 2026-09-04 — #1210 the host hands a feature its context: tenant, store AND journal (HC)
 
-**Status: PROPOSED 2026-09-04 (Fable, the #1265 campaign session; the owner's
-2026-09-04 directive: run the campaign through, best long-term decision).**
+**Status: HC-1 RULED (a) 2026-09-04 under the owner's standing
+letter-acceptance rule and the 2026-09-04 directive (run the campaign
+through; best long-term decision) — re-verified against the bar: one
+context value, extensible without signature churn, names the tenant,
+re-opens nothing, mirrors the deployment document's own `[runtime …]`
+shape. Proposed first (847115750), ruled in the following commit.**
 Recorded BEFORE any spec text. WF-9 (owner, "all a") already chose the
 DIRECTION: "#1210 option 1 — a journal handle beside the store — for W3+".
 This record decides the SHAPE. Ruling ids `1210-HC-1`.
@@ -87,8 +91,4 @@ no sanctioned handle to append through.
 | `cx-home/cx-standard-features` — admin, identity, notify, ops, retention | 0.2.0: `($st …)` → `($host …)`, `load`/`save` helpers read `$host/store`; republish through the same machinery; REGISTER.md gains the line "the host context is the platform's" |
 | fixtures | a feature reading `$host@tenant` and folding `$host/journal` (positive); a deployment with no journal binding — `$host/journal` is absence, the feature answers a value (negative); the old bare-store module refused at install/boot naming the contract change |
 
-**Refusal to fabricate:** a `[host]` element carrying handles is an ORDINARY
-CX element whose children are the shipped handle values; if the engine
-cannot carry a store/journal handle as an element child and read it back
-through `$host/store` intact, the implementing wave STOPS and reports —
-it does not re-open handles inside the feature.
+**Verified 2026-09-04 (probe against the release binary):** a `[host tenant="acme" [store $s] [journal $j stream="acts"]]` element carries the shipped store and journal handles as ordinary children; `[$first $host/store]` puts and gets a document, `[$first $host/journal]` appends (seq 1), `$host@tenant` reads `acme`, and `$host/sched` is absence (count 0). Nothing is re-opened inside the feature.
