@@ -669,7 +669,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster
+TEST_TARGETS := test-vcx-timing check-conformance-coverage abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS lanes whose
@@ -1212,8 +1212,15 @@ test:
 	# after the storm drains; the profile gate gets the same quiet context.
 	# Nothing is masked: a deterministic failure still reds the serial run,
 	# and the runner's classifier + named re-grade govern inside it.
-	@$(MAKE) -j$(TEST_JOBS) $(OUTPUT_SYNC) $(filter-out test-profile-gate,$(TEST_TARGETS))
+	@$(MAKE) -j$(TEST_JOBS) $(OUTPUT_SYNC) $(filter-out test-profile-gate test-vcx-timing,$(TEST_TARGETS))
 	@$(MAKE) test-profile-gate
+	# #1216: the WALL-CLOCK assertions (the #1055 boot budget, the #816 try-send /
+	# try-receive upper bounds) run serially AFTER the storm too — they are
+	# properties of the binary, not of the box's load, and inside the -j
+	# umbrellas they red on eight of nine gates in one day while measuring
+	# 113 ms alone. Lower bounds ("timeout= actually waits") stay in the
+	# umbrellas: load can only ADD time.
+	@$(MAKE) test-vcx-timing
 
 # Sequential fallback — useful for debugging output-order issues, sanitizer
 # runs that want low concurrency, or environments where `-j` parallelism
@@ -1531,7 +1538,14 @@ test-vcx: build-vcx-dev test-vcx-gates test-vcx-suite test-vcx-code test-vcx-cmd
 # vacuous count was therefore standing in for the real gate. Both halves land
 # together: the fiction is gone AND the two suites are graded here.
 .PHONY: test-vcx-conform
+# #1212: this is the DOCUMENT lane — conform-all's runner refuses [in-code …]
+# fixtures by design (#1134), so conformance/code.cxd (the largest corpus) and
+# conformance/stdlib/*.cxd are graded by test-vcx-code's eval lane and the
+# profile gate, diff/lint by their own runner below, and every other suite by a
+# named lane. check-conformance-coverage (in TEST_TARGETS) asserts that map on
+# every gate; the banner says it so a green here is read for what it covers.
 test-vcx-conform: build-vcx-dev
+	@echo "test-vcx-conform covers the DOCUMENT suites (conform-all's list) + fmt + data-bin-arrow + diff + lint; code.cxd and stdlib/*.cxd are the eval lane's (test-vcx-code, test-profile-gate) — see check-conformance-coverage"
 	$(MAKE) -C vcx conform-all
 	$(MAKE) -C vcx conform-fmt
 	$(MAKE) -C vcx conform-data-bin-arrow
@@ -1772,6 +1786,22 @@ check-serial-retry-rosters:
 .PHONY: check-consolidation-manifests
 check-consolidation-manifests:
 	@scripts/consolidate_tests.sh audit all
+
+# ── #1212: every conformance suite is claimed by a named lane ────────────────
+.PHONY: check-conformance-coverage
+check-conformance-coverage:
+	@bash scripts/check_conformance_coverage.sh
+
+# ── #1216: the wall-clock lane ──────────────────────────────────────────────
+# vcx/timing/*_test.v hold the assertions whose SUBJECT is elapsed time (boot
+# budget, zero-wait polls). They sit BESIDE vcx/tests/ because `v test <dir>`
+# recurses into every subdirectory except `testdata`, and they run serially
+# from the `test:` tail after the -j fan-out drains — the same quiet context
+# the profile gate gets. A red here is a real regression: nothing else is
+# running. Not in the -j union (filtered out in `test:`); `test-no-parallel`
+# runs it in TEST_TARGETS order.
+test-vcx-timing: build-vcx-dev
+	@$(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/timing/
 
 test-vcx-suite: build-vcx-dev check-serial-retry-rosters skip-ledger-reset
 	@log=vcx/target/test-suite-run.log; stf=vcx/target/test-suite-status; \
