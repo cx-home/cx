@@ -36,9 +36,19 @@ RECORDS="${CX_REPR_RECORDS:-32000}"
 # AttributeMeta allocations, 12.29 MB, removed from the xml lane).
 #
 #   lane   measured   bound   what the headroom buys
-#   json    7.571      9.00   one input copy (+1.0) then +5%
-#   xml     7.942      9.40   same
-#   cx      7.576-7.580   9.00  same
+#   json    7.569      7.95   +5% (a different compiler or platform)
+#   xml     7.941      8.35   same
+#   cx      7.577-7.588   8.00  same
+#   cxel   15.507     16.30   same — the element lane with atom / date / duration
+#                             attribute columns (#1247); 16.325 before the
+#                             per-parse scalar pool, 128k AttributeMeta records
+#                             (one per autotyped attribute) carry the rest
+#
+# RE-PINNED 2026-09-04 (#1208, #1247): the `+1.0` for one conservatively
+# retained input copy is GONE — codec_text_boundary and the parser entries no
+# longer copy the input, and the `-prod` / `-cflags -O2` drivers now agree
+# BYTE-FOR-BYTE on json and xml at 32k (7.569 / 7.941 both) where they used to
+# differ by exactly one input. Bounds are measured +5%.
 #
 # Measured on darwin-arm64 with the `-prod` driver at 32,000 records. Run-to-run
 # the reading is all but exact: over six clean runs the json and xml lanes were
@@ -56,10 +66,11 @@ RECORDS="${CX_REPR_RECORDS:-32000}"
 # BLOCK in the same commit that lands the improvement, and records the new
 # measurement in README.md and in the #1119 wave row. A bound is never raised
 # without a ruling — the ratchet is not loosened to accommodate a regression.
-LANES=(json xml cx)
-BOUND_json=9.00
-BOUND_xml=9.40
-BOUND_cx=9.00
+LANES=(json xml cx cxel)
+BOUND_json=7.95
+BOUND_xml=8.35
+BOUND_cx=8.00
+BOUND_cxel=16.30
 
 # repin_slack — how far under its bound a lane may sit before the runner says
 # so. Advisory, NOT a failure: an improvement must not red somebody else's
