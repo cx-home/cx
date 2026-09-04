@@ -42,6 +42,35 @@ version, library version).
 
 ### Changed
 
+- **The feature runtime contract takes the deployment context `$host`, not a
+  bare store handle (#1210, RULED: HC-1 —
+  `ledger/rulings_2026_09_04_host_context_1210.md`).** A feature used to
+  receive a store handle and a clock tick and NOTHING naming the deployment:
+  not the tenant, not the journal its cascade commits to. Both were known to
+  the host and kept there, so a feature that owned its fold had to open a
+  journal from an environment variable and re-state the tenant with nothing
+  checking agreement. The §1.2 entry points now take ONE deployment-context
+  element in the position the store handle held — `readout ($host $t)` ·
+  `readout ($host $t $actor)` · `apply ($verb $intent $host)` ·
+  `simulate ($host $t $params)` — where
+  `[host tenant='acme' [store <handle>] [journal <handle> stream='acts']]`:
+  `tenant=` is the deployment's tenant NAMED in the value, `[store …]` is the
+  same capability-scoped handle as before (`[$first $host/store]`), and
+  `[journal …]` is the deployment's bound act chain — the journal handle the
+  runtime itself commits through, so a feature folds the tenant's own chain
+  (`$journal:fold` / `since` / `head`) and appends to it, re-opening nothing.
+  The journal child is ABSENT when the deployment declares no
+  `[runtime [journal …]]` binding (guard with `[$present $host/journal]`),
+  and absent with a loud boot notice when that binding is a served `xsp://`
+  fabric, whose chain lives in the daemon. Arity is untouched (the 2/3-param
+  readout lens still selects by arity) and the context grows by a child, so
+  the next deployment resource costs no signature change. **Cutover-first, no
+  dual-accept:** the argument's KIND changed, and no static check can catch a
+  module built against the old contract (same arity, parameter names are
+  irrelevant) — it receives an element where it expects a store handle and
+  fails at its first store call. Feature packages published against toolchain
+  0.17.0 or earlier must be republished for this contract; a package's
+  `compatibility` floor is what declares the toolchain it validates against.
 - **XAP deployment host: `POST /intent` takes the ACT, and journals it whole
   (#1260, RULED: CA-1/CA-4 — `ledger/rulings_2026_09_03_canonical_act_form_1260.md`).**
   There is one act form at every boundary: `[do 'ns/verb' [field value]…]`,
