@@ -605,6 +605,18 @@ bench-compare:
 	  $(or $(CURRENT),bench/current.json) \
 	  $(if $(STRICT),--strict,)
 
+# #1249 (RULED: 1249-Q1a) — the perf RATCHET the release cut runs after the
+# gate: measure (bench-json → bench/current.json) and compare against the
+# committed floor (bench/baseline.json) at the STRICT 10% threshold. Red
+# aborts the cut like a red gate; on green tag_release.sh promotes
+# bench/current.json to bench/baseline.json in the bump commit, so every cut
+# re-pins the floor to its own measurement. Wall-clock and machine-bound, so
+# NOT a TEST_TARGETS member — a decision instrument the cut invokes.
+.PHONY: perf-ratchet
+perf-ratchet: build-vcx
+	@"$(CURDIR)/vcx/target/cx" --allow-read --allow-write --allow-subprocess --allow-clock scripts/run_bench_json.cx -o bench/current.json
+	@$(MAKE) bench-compare STRICT=1 CX_BIN=$(CURDIR)/vcx/target/cx
+
 # Documentation hygiene — every relative markdown link resolves.
 # Source markdown lives in docs-src/ (docs/ is the GENERATED HTML guide /
 # Pages site, which has no .md files — pointing the check there made the
