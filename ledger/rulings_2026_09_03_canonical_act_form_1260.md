@@ -54,12 +54,18 @@ Two facts the filing did not have:
 
 1. **The host path drops the fields from the record.** `xap_host_intent`
    journals `do_el := [do 'ns/verb']` — the qualified head ALONE — and hands
-   `apply` the B1 element with the fields. Fixture `xap-dist` line 1010 shows
-   it: `[event actor=principal:dana [do 'commerce/place-order']]`, no id, no
-   lines, no amount. A host-committed act is therefore **unreplayable from
-   the journal**: the record says who and which verb, never what. The
-   filing's "translation is where a field is dropped without a refusal" is
-   not a risk on this path; it is the shipped behaviour, for every field.
+   `apply` the B1 element with the fields
+   (`stdlib_xap_host_notd_wasm32_emcc.v`: `do_el := xap_elem('do', [],
+   [xap_str(qualified)])`, then `invoke_closure(apply, [qualified,
+   cx.mk_element(intent), h.store])`). A host-committed act is therefore
+   **unreplayable from the journal**: the record says who and which verb,
+   never what. The filing's "translation is where a field is dropped without
+   a refusal" is not a risk on this path; it is the shipped behaviour, for
+   every field. (Correction 2026-09-03: an earlier revision cited fixture
+   `xap-dist-040` line 1010 as evidence; that fixture emits `[do
+   :place-order]` in-process with no fields in its INPUT, so it shows
+   nothing about the host. No host test or fixture pins the journaled act's
+   fields today — the CA-4 landing adds that pin.)
 2. **Attributes cannot carry an act in general.** `cxdm.md` §2.4: attributes
    are scalar-only (E211 refuses a node-valued attribute). An act whose
    field is a list (order lines), a record (an address), a `[bounds …]`
