@@ -10,11 +10,11 @@ and was flagged to the owner for veto by letter — not vetoed. CA-4
 (sequencing the host cutover) RULED (a) BY THE OWNER 2026-09-03 ("1a"):
 #1260 gets its own landing ahead of #1265, cutover-first.** Proposed
 and recorded BEFORE any spec text per the #832 process rule (commit
-209f53fe6, then ruled and the draft flipped in the following commit). Nothing here edits
-`spec/03-approved/`; the edit map at the end lands with the implementation,
-ruling-gated. The one working draft that adopts the ruling is
-`spec/03-approved/std-lib/flow.md` (its §13 G3 item "#1260 ruled and the `[args …]`
-form flipped"). Ruling ids `1260-CA-1 … 1260-CA-4`.
+209f53fe6, then ruled and the draft flipped in the following commit). The
+edit map at the end lands with the CA-4 implementation landing,
+ruling-gated. The flow spec adopted the ruling before its G3 and graduated
+the same day: `spec/03-approved/std-lib/flow.md` (its §13 item "#1260 ruled
+and the `[args …]` form flipped"). Ruling ids `1260-CA-1 … 1260-CA-4`.
 
 **Inputs read.** #1260 (the filing: one act, two spellings — `[do 'verb'
 [field …]]` on the wire, `[intent verb= field=]` at the module boundary);

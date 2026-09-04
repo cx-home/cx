@@ -5,8 +5,9 @@ spec"); WF-15..WF-16 RULED (a) BY OWNER 2026-09-03 ("all a") on the
 store-requirement and dogfood questions raised after the draft; WF-17
 (visualization + the design tool) RULED (a) 2026-09-03 under the standing
 letter-acceptance rule on the owner's directive.** Recorded BEFORE any spec text per the #832 process rule; the spec
-draft `spec/03-approved/std-lib/flow.md` is authored under these rulings and carries
-`RULED: WF-n` tokens; graduation stays owner-only (G3). Branch
+`spec/03-approved/std-lib/flow.md` is authored under these rulings and carries
+`RULED: WF-n` tokens; GRADUATED by the owner (G3, "2a") 2026-09-03 after
+#1260 CA-1..CA-4 were ruled. Branch
 `design/789-workflow`; nothing here touches `release/0.18`. Ruling ids
 `789-WF-0a … 789-WF-14a`.
 
