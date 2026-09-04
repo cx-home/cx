@@ -136,7 +136,11 @@
     [then $verb]
     [else [refused reason='no apply for this verb']]]]"""]
     [body
-      """`apply` may refuse on domain policy by returning
+      """`$intent` is the committed act itself — `[do 'notes/add-note'
+         [text '…']]`, the very value the journal appended — so a field
+         reads as a child, `$intent/text`, never through a re-shaped copy
+         (one act form at every boundary, #1260). `apply` may refuse on
+         domain policy by returning
          `[refused reason=…]` — the policy layer admitted the *verb*,
          the feature refused the *values*; two layers, both visible.
          `scope=public` is what a module exports, and the package

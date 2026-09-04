@@ -40,6 +40,27 @@ version, library version).
   meaning to preserve; an empty `[enum]` is a refusal written as a
   constraint.
 
+### Changed
+
+- **XAP deployment host: `POST /intent` takes the ACT, and journals it whole
+  (#1260, RULED: CA-1/CA-4 — `ledger/rulings_2026_09_03_canonical_act_form_1260.md`).**
+  There is one act form at every boundary: `[do 'ns/verb' [field value]…]`,
+  the form the in-process `emit` and the web bridge already journal. The
+  host's body is now that act, bare or inside the wire envelope `[event
+  actor=? focus=? [do …]]` (envelope facts, never fields); the host resolves
+  the head through ρ (focus from the envelope), appends the qualified act
+  WITH its fields, and hands a feature's contract `apply` the committed
+  `[do …]` element itself — the same value, the same Tier-1 address. Before
+  this change the host journaled `[do 'ns/verb']` with every field dropped
+  (a host-committed act could not be replayed from the journal) and handed
+  `apply` a re-shaped `[intent verb= field=…]` attribute element. That body
+  is retired cutover-first: posting it answers `ok=false
+  reason=intent-form-retired` naming the canonical form; a claimed `actor=`
+  that differs from a proven principal is refused (the old `role=` claim was
+  silently ignored). Modules read a field as a child, `$intent/<field>`.
+  Distribution spec §1.2 / §6.3 and `xap.md` §3.4 carry the rule; the
+  authoring and client guides follow.
+
 ### Fixed
 
 - **An out-of-set atom BODY validated clean (#1155).** `atom` was
