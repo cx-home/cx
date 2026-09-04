@@ -74,3 +74,14 @@ never reds even unlocked); it becomes the pin here.
 - **Observation → #1232.** A body's `[?lib]` still registers the module ALIAS program-wide
   (module_table is a ProgramState registry), so main's `[$math:abs]` after the body answers CXER0216
   "non-exported member" rather than "not imported". Members are body-scoped; the alias is not.
+
+## Addendum — #1232 (2026-09-03)
+
+The observation above became #1232 and is fixed with the #1228 follow-up commit: `module_member_visibility_error`
+(eval.v) now answers CXER0216 only when the named member EXISTS AND IS PRIVATE. Its comment used to argue
+"a public member would already have dispatched as a closure" — true while alias and members were registered
+together, false once a body's `[?lib]` registers its members in the body's own Scope copy while the alias
+stays in the program-wide module_table. A public member of an aliased module that this frame never imported
+now falls through to the ordinary undefined call (`no callable "math:abs"`), which is the truthful answer;
+the module alias itself stays program-wide (it is the loader's cache, not a scope). The #1230 pin asserts the
+exact new answer.
