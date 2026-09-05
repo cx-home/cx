@@ -208,3 +208,84 @@ answers a `[ux:form]` with one `ux:input` per declared field, `type=` mapped to 
 `doc=` carried; over a composed grammar, every verb the composition carries; a verb the
 grammar does not carry still refuses `ux-no-such-command`; the `[?def]` command projection
 byte-identical to today. Spec `x/ux.md` §3.1 under `RULED: 1217-Q1`.
+
+---
+
+## #1269 — implementation record, 2026-09-05 (RULED: 1269 (a), landed)
+
+`vcx/platform/stdlib_xsp.v`: `codec_emit_bytes_node('data-bin', …)` /
+`codec_parse_bytes_node('data-bin', …)` → `'ast'` (the registered name of the ast-bin
+codec, `vcx/cx/codec.v`). Two call sites; the frame layout, the flags bit and the text
+lane are untouched.
+
+### Measured — the cutover is strictly better on every payload shape tested
+
+| payload | data-bin (before) | ast-bin (after) |
+|---|---|---|
+| `[do 'a/b' [key 'speed'] [n 1] [nested [x 'y']]]` | `[do _='a/b' key=speed n=1 [nested x=y]]` | round-trips exactly |
+| `[do 'door/unlock' [note 'front'] [items [i 1] [i 2]]]` (the #1260 act form) | children collapsed to attributes | round-trips exactly |
+| `{a: 1, b: 'two'}` | `[a 1][b two]` — flattened to child elements | `{a: 1, b: two}` |
+| `42` | `[_ 42]` — wrapped | `42` |
+| bytes-valued attributes | preserved | preserved |
+
+Maps and scalars were NOT in the issue's scope and were also being mangled; both are
+fixed by the same change.
+
+### The consumer that depended on the lossiness — and the correction it forces
+
+`vcx/tests/xap_umbrella_test.v`'s XSP-AUTH helper read `$m2/@eph` and `$m2/@nonce` on a
+DECODED message. Those fields are written as CHILDREN (`[eph …]`, `[nonce …]`); they were
+readable on the ATTRIBUTE axis only because data-bin's `0x50` projection had collapsed
+them. Post-cutover the child axis is correct and `$m2/eph` yields the bytes directly
+(measured). One line changed; the V implementation of `xsp:auth-*` never used the
+attribute axis, so nothing else moved.
+
+**This is the part the ruling under-stated.** It said "cutover, not dual-accept: frames
+are in-flight only, nothing persists one, and both ends ship in one binary" — true, and
+sufficient for the WIRE. It did not say that a consumer may have been written against the
+collapsed shape. Nothing persisted a frame, but a reader had encoded the loss into its
+navigation. The lesson generalizes: a codec cutover's blast radius includes every reader
+whose paths were shaped by the old codec's defects, and those do not appear in a search
+for persisted artifacts.
+
+### Verified
+
+`xap_umbrella_test` (the XSP-AUTH mutual-attach handshake end to end),
+`platform_store_wire_umbrella_test`, `platform_netwire_umbrella_test`,
+`fabric_umbrella_test`: all green. Fixture `xsp-024-binary-payload-round-trips-a-cx-element`
+in `conformance/stdlib/xsp.cxd`. Spec: `xsp.md` §1, §2 (frame table + flags bit), §3 and
+the §4 error row updated under `RULED: 1269`.
+
+### The blast radius was FIVE consumers, not one — and the ruling under-stated it twice
+
+The implementation record above named one: a test helper's `/@eph`. Running the stdlib
+conformance corpus (which the V umbrella lanes do not cover) found four more, and they
+sharpen the lesson rather than repeat it:
+
+| consumer | depended on | corrected to |
+|---|---|---|
+| `xap_umbrella_test` XSP-AUTH helper | `$m2/@eph`, `$m2/@nonce` | child axis |
+| `xsp-auth-017` | `[$first $decoded/payload]` naming the message | `[$first $decoded/payload/*]` |
+| `xsp-auth-024` | the attr-form M2 (`$m2c/@eph`) | child axis |
+| `xsp-auth-030` | `$m1-rt/@offer-features` | child axis |
+| `xsp-016` | `[payload 2]` decoding as `[_ 2]`, so `/payload/*` found a child | `[$first $cfr/payload]` |
+
+**Two of these fixtures existed to PIN the lossiness.** `xsp-auth-024`'s own doc said the
+frame's "data-bin decode atomizes the single-scalar handshake fields … into attributes"
+and pinned that `auth-prove` / `auth-finish` read the attr-form messages exactly as the
+fresh child-form ones. `xsp-auth-030` said the offer fields are single-scalar "precisely
+so they atomize across the data-bin frame round trip". Both notes are now false, and the
+property each was protecting is strictly stronger after the cutover: a decoded message is
+BYTE-IDENTICAL to the fresh one (`[= $m1 $rt]` → `true`, measured), so there is only one
+form to read.
+
+**What this says about reading a fixture failure.** A corpus can encode a defect as an
+invariant, in prose, with a rationale that reads as a design argument. `xsp-auth-030`'s
+"precisely so they atomize" is indistinguishable in tone from a real ruling. The only way
+to tell them apart is to ask what the case is REALLY protecting — here, "the signed bytes
+do not move between fresh and decoded forms" — and check whether the change preserves
+THAT. It does, more strongly.
+
+**And the process miss:** the V umbrella lanes were green while four conformance fixtures
+were red. Running `code_eval_fixtures_test.v` (the stdlib corpus) is not optional for a
+codec change; the umbrellas exercise the wire, the corpus exercises the CX-level reads.
