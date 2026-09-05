@@ -58,3 +58,114 @@ evaluator comprehension carrying them keeps today's behavior exactly.
   err fires on a frame the hoisted σ would have dropped still fires.
 - The rewrite report is reachable for an ordinary comprehension the same way it is for a
   planar one (the honest-reporting obligation, L96): a declined move names its reason.
+
+---
+
+## Implementation record — 2026-09-05, and a correction to the issue's OWN measure
+
+`eval_for_comp` now runs `planar_place_filters` over its clause list before expanding
+frames, gated by the same `planar_established_total`. Re-entry is bounded because
+placement is idempotent: a σ already at its earliest admissible position does not move,
+so the recursive call finds the same order and falls through. A comprehension with fewer
+than two clauses, or with no `[filter]`, skips the pass entirely.
+
+### Measured, same predicate, same binary flags, n = 1000 × 1000
+
+| | user seconds |
+|---|---|
+| pass disabled | **1.79** |
+| pass enabled | **0.18** |
+
+Identical answer. ~10×, and it is the whole product that stops being built.
+
+### The issue's "Measure" section is wrong, and this is worth recording
+
+#1250 asks for the win to be shown on "a two-generator join with a selective equality
+predicate". **σ-pushdown can never speed that up.** A join predicate `[= $x@k $y@k]`
+depends on BOTH generators, so the dependency floor in `planar_place_filters` stops it at
+the inner generator — correctly. Measured: 1.71 s at n=1000 → 6.28 s at n=2000 before the
+change, and unchanged after. Making a join fast is a HASH JOIN, a different optimization
+against a different plan operator; it is not what L96's σ-pushdown is.
+
+What σ-placement actually buys is a filter depending on a SUBSET of the generators, written
+after the generators it does not need — which is how people write them, since the clause
+order follows the reading order rather than the dependency order.
+
+### The admissibility boundary, measured
+
+| predicate | proven total? | placement | n=1000×1000 |
+|---|---|---|---|
+| `[= $x@k 5]` | yes | hoisted | 0.18 s |
+| `[< $x@k 10]` | no — strict ordered comparison is unproven without shape inference | declined | 2.02 s |
+| `[$strings:contains $x@n 'zz']` | no — a call is total only inside a closed allow-list | declined | 7.17 s |
+| `[= $x@k $y@k]` | yes, but depends on both generators | dependency floor | 6.28 s @ n=2000 |
+
+The call rule is **fail-closed**, which is the property that matters: an impure predicate
+cannot be hoisted, so effect counts and effect ORDER are preserved by construction rather
+than by a check someone has to remember to write.
+
+Fixture: `program-for-sigma-placement-1250` in `conformance/code.cxd` pins the observable
+property — the late-written filter and the hand-hoisted one answer the same items in the
+same order — plus the declined rows and the join.
+
+---
+
+## RULING (a) IS WITHDRAWN — 2026-09-05. Reusing the planar pass is UNSOUND on the evaluator's surface
+
+The implementation above was written, measured, and **reverted the same day**. The
+measurements stand; the ruling does not.
+
+### What broke
+
+`conformance/code.cxd` `program-for-pattern-023-where-does-not-rescue`:
+
+```cx
+[?for [in ($k, $v) (("a", 1), ("b"))] [where [= $k "a"]] [yield $k]]
+```
+
+Expected `CXER0100: [?for] generator pattern does not match item 2`. With the pass wired
+in: **`CXER0001: unbound variable $k`** — the σ was hoisted ABOVE the generator that binds
+`$k`, so the predicate ran before the destructuring bind.
+
+### Why, and why it invalidates the ruling's central argument
+
+`planar_place_filters` computes a generator's bound names from `cj.bind` plus
+`planar_pattern_binds(pex, …)` **when `cj.expr` is a `cx.ProgramPattern`**. A sequence
+destructuring pattern `($k, $v)` is not a `ProgramPattern` — it is a `ProgramLiteral` of
+kind `sequence_lit` holding `ProgramBinding`s. So the generator reports NO binds, the
+dependency check sees nothing to depend on, and the filter crosses a generator it depends
+on.
+
+The ruling's whole case was "reuse the existing analysis rather than write a second one,
+because two implementations would eventually disagree about totality". That argument
+assumed the pass is *complete* over the surface it is applied to. It is not: it was
+written for planar MEMBERS, a restricted subset in which destructuring generators do not
+occur, and its dependency analysis silently under-approximates on the full comprehension
+grammar. An under-approximating dependency check does not decline — it moves things it
+should not.
+
+A second, unexplained symptom in the same gate: `scripts/gen_guide/stdlib_docs_check.cx`
+hung for an hour with the pass wired in, taking the `-j` jobserver with it. Not diagnosed,
+because the revert removes it — but it means the bind-collection hole is not known to be
+the ONLY assumption the restricted subset licensed.
+
+### What a correct #1250 now has to do
+
+1. **Audit `planar_place_filters` and `planar_established_total` against the FULL
+   `[?for]` grammar**, not the planar subset — every generator pattern shape (sequence,
+   array and map destructuring, typed binds, rest binds, `[in PATTERN SRC]`), every clause
+   kind the evaluator admits, and termination.
+2. Only then decide reuse-vs-separate. The reuse argument survives only if the audit
+   closes; if the two surfaces genuinely need different analyses, that is what the ruling
+   should say.
+3. Keep the measurements below — they are the reason to do the work at all, and they also
+   correct the issue's own success criterion.
+
+**The measurements that stand** (same predicate, same flags, n = 1000 × 1000): a
+provably-total filter that depends only on the outer generator went **1.79 s → 0.18 s**
+when hoisted, and the answer was identical. A join predicate `[= $x@k $y@k]` is unaffected
+and always will be — it depends on both generators, so σ-pushdown can never speed it up,
+which makes the issue's stated measure ("a two-generator join with a selective equality
+predicate") the wrong one. The decline boundary measured correctly for `[< …]` (ordered
+comparison unproven) and for a module call (calls are total only inside a closed
+allow-list, so an impure predicate is fail-closed against hoisting).
