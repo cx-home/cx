@@ -146,11 +146,11 @@ version, library version).
   - **Fields on the composed grammar** (§4.8): a `[noun]` entry now carries
     its `[field]`s verbatim and in declaration order, its feature's
     `[types]`, `identity=` (which DEFAULTS to the field the feature's sole
-    key registration names on that noun) and `label-field=` (the one field a
+    key registration names on that noun) and `known-by=` (the one field a
     surface shows when it can show one), beside the `[views]` it already
     carried. An `observe` verb may declare `answers=law` — the readout a
     governance surface offers without hard-coding a verb name (at most one
-    per feature). **W15** refuses an `identity=`/`label-field=` naming no
+    per feature). **W15** refuses an `identity=`/`known-by=` naming no
     field, a second `answers=law`, and `answers=law` on a non-observe verb.
     An identity that cannot default because two registrations name the noun
     is a compose-report **`[note code=:identity-ambiguous]`** — a report, not
@@ -177,9 +177,13 @@ version, library version).
   resolutions no longer composes green. The cutover is one pass, no
   dual-accept — the tree's own domain quantities (`did`, `hash`, `money`,
   `mmsi`, `knots`, `deg`, `nm`, `minutes`) are now declared `[types]`, and
-  `string`/`duration` are spelled `text`/`interval`. `label=` is NOT the new
-  field-naming attribute: it stays the display name §4.3's `[rename]` writes,
-  and the new one is `label-field=`.
+  `string`/`duration` are spelled `text`/`interval`. `label=` is NOT the
+  field-naming attribute: it stays the display name §4.3's `[rename]` writes.
+  The field a surface shows when it can show only one is **`known-by=`** — a
+  spelling no reader can mistake for a display string, and one that pairs with
+  `identity=` so the two teach the difference they turn on: the system
+  ADDRESSES a record by its `identity`, a person RECOGNIZES it by its
+  `known-by`.
 
 - **The noun-level `[views]` declaration — sort, facet, default order and
   hidden-by-default as compose-checked CLAUSES, never verbs (#1285, RULED:
