@@ -207,6 +207,31 @@ version, library version).
 
 ### Fixed
 
+- **Module defs are purity-checked at load (#1298).** The static purity check
+  (code.md §6.5.x / D11 — a `pure` def, explicit or default, whose body calls
+  a known-impure def or primitive refuses `CXER0233` at definition) ran for
+  PROGRAM-level `[?def]`s only. `load_module` parsed every `[?def]` and never
+  called the checker; `ensure_module_scope` turned those defs into closures
+  carrying the DECLARED purity without inferring anything from the body. So a
+  module could declare a default-pure def that called an impure sibling, load,
+  and export it as a pure member — and every consumer that relies on the label
+  (`journal fold` / `snapshot` reducers, `validate`, `simulate`, the
+  `[returns …]`-pure surfaces) trusted a claim the engine had never checked.
+  The same text at the top level was refused: a guarantee that depended on
+  where the author put the def. Module bodies are the LARGER surface — the
+  stdlib and every `[?lib]` import — and they were the unchecked one.
+
+  The loader now runs the checker after Pass 1 (declarations registered) and
+  the `[?lib]` recursion (imports resolved), because both are inputs: a
+  sibling call resolves against the module's own defs — by either spelling,
+  `[$name …]` and the bareword head `[name …]` (#1288's rule) — and a
+  module-qualified call into an import classifies through the IMPORTED
+  module's declared purity. A violation refuses the module at load with
+  `cx-err:CXER0233` naming the def and the callee; `check_all` walks the defs
+  in sorted order so the refusal is the same one on every run. Declaring an
+  impure member is not itself a violation — only a pure label contradicting
+  its body is. No shipped stdlib module changed: they were already consistent.
+
 - **A default-pure `[?def]` calling an impure sibling is refused `CXER0233`
   by either call spelling, whichever of the two is declared first (#1288).**
   The def-time purity check was built over the def under check alone, so a
