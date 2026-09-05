@@ -15,6 +15,52 @@ version, library version).
 
 ### Added
 
+- **The feature grammar carries its nouns' FIELDS, their TYPES, and the
+  valid-time axis — wave A of the constraint grammar (#1307, #1303, #1193,
+  #1306; RULED: 1308-CG-7 / CG-3 / CG-6,
+  ledger/rulings_2026_09_05_constraint_grammar_1308.md).** The composed
+  grammar named the nouns and carried nothing of what they hold, so a served
+  grammar was not sufficient for a surface and every client re-read the
+  feature documents the grammar was the projection of. Three declarations
+  close that, and one of them closes a silent hole beside it:
+  - **Fields on the composed grammar** (§4.8): a `[noun]` entry now carries
+    its `[field]`s verbatim and in declaration order, its feature's
+    `[types]`, `identity=` (which DEFAULTS to the field the feature's sole
+    key registration names on that noun) and `label-field=` (the one field a
+    surface shows when it can show one), beside the `[views]` it already
+    carried. An `observe` verb may declare `answers=law` — the readout a
+    governance surface offers without hard-coding a verb name (at most one
+    per feature). **W15** refuses an `identity=`/`label-field=` naming no
+    field, a second `answers=law`, and `answers=law` on a non-observe verb.
+    An identity that cannot default because two registrations name the noun
+    is a compose-report **`[note code=:identity-ambiguous]`** — a report, not
+    a violation: `ok=` is untouched.
+  - **`type=` resolves** (§4.6): a field's type is a member of the closed
+    grammar scalar set (`text`, `prose`, `int`, `decimal`, `bool`, `instant`,
+    `interval`, `geo-point`, `ref`), a SIBLING noun, or a name declared in
+    the feature's new `[types]` element — which holds `core/schema.md` type
+    declarations verbatim (`[type money::decimal [min 0] [unit currency]]`).
+    Anything else is **W11**. At the one pre-commit enforcement point (§4.9 —
+    after the PEP admits, before anything is appended, the position a
+    module's `apply` occupies under `[$xap:host]`) an intent field whose
+    value the declared type does not admit refuses **`cx-err:CXER4867`
+    E_XAP_FIELD_TYPE** naming field, type and value, with nothing appended.
+    A `[$xap:component]` runtime holds this law too — it held none before.
+  - **The valid-time axis** (§4.7): `[field … axis=valid-from|valid-to]`
+    gives `core/bitemporal.md` L115's half-open interval ONE spelling instead
+    of one per vocabulary. **W14** refuses a non-`instant` axis field, two
+    fields on one axis value, and half a pair.
+
+  **Adopters.** Additive for every sealed contract *except* `type=`, which was
+  free text and is now closed: a feature whose fields all resolve composes to
+  the same grammar plus its fields, and a `type=` outside the three
+  resolutions no longer composes green. The cutover is one pass, no
+  dual-accept — the tree's own domain quantities (`did`, `hash`, `money`,
+  `mmsi`, `knots`, `deg`, `nm`, `minutes`) are now declared `[types]`, and
+  `string`/`duration` are spelled `text`/`interval`. `label=` is NOT the new
+  field-naming attribute: it stays the display name §4.3's `[rename]` writes,
+  and the new one is `label-field=`.
+
 - **The noun-level `[views]` declaration — sort, facet, default order and
   hidden-by-default as compose-checked CLAUSES, never verbs (#1285, RULED:
   VG-1; ledger/rulings_2026_09_04_view_grammar.md).** Sorting, filtering,
