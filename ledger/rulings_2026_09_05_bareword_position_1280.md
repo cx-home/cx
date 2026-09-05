@@ -1,152 +1,113 @@
-# Ruling record — #1280: BOTH readings are load-bearing. Neither Q1 nor Q2 is ruled; the diagnostic is fixed instead (2026-09-05)
+# Ruling record — #1280: not a semantics question. Two bare spellings, both with a canonical `$` form that already works (2026-09-05)
 
-Issue: #1280 (bug, area:cx-lang, prio:medium). Spec: `core/code.md` §6.4.1 (element
-construction), §6.3 / §6.5 (calls), §1.3 (the data / program reading), §9.2 (CXER0291);
-`x/run.md` §4.1 (the closures-in-data registry pattern).
-Engine: `vcx/code/eval.v` (`all_items_are_expr_position`, the D1 arm),
-`vcx/code/dynamic_construction.v` (`eval_dc_body_items`), `vcx/cx/codec.v` (the
-CXER0291 advice).
+Issue: #1280 (bug, area:cx-lang, prio:medium). Spec: `core/code.md` §6.3 (the canonical
+call form), §6.3b (callable values), §6.5, §12.2.3 (bare-name references), §9.2 (CXER0291).
+Engine: `vcx/cx/codec.v` (the ONE CXER0291 advice string).
 
-**This record is mostly a refutation of its own first two rulings.** I ruled both
-letters, implemented both, and the tree refuted both — each with a specified,
-documented counterexample. That is the useful content, so it is recorded in full
-rather than summarized away.
+## Correcting this record
 
-## What is actually happening (the report's mechanism is wrong)
+**An earlier version of this file recorded two open owner letters. Both were false
+dilemmas and are withdrawn.** They were built by reasoning from the issue's framing and
+from engine spot-checks, without asking the one question that settles it: *does the
+canonical `$` spelling already do what the reporter wanted?* It does. The withdrawn
+letters, and the two "counterexamples" I built them on, are recorded below because the
+mistake is more instructive than the ruling.
 
-Nothing serializes sibling arguments. Measured on `6ebbe8743`:
+## What is actually happening
 
-| program (with `[?def cmd impure [effects] ($a='') [did a=$a]]` in scope) | answer |
+The report's program has TWO non-canonical spellings, and each one does something the
+author did not intend:
+
+```cx
+[?def t3 ($n $f $d) …]
+[?def cmd impure [effects] ($a='') …]
+[t3 1 cmd [do 'x' [a 1]]]        ; → CXER0291
+```
+
+1. **`t3` in head position.** A bareword head CONSTRUCTS a data element (§6.5: "a
+   word-named built-in is reachable ONLY via `[$name …]`; the bare form `[name …]` is
+   data-element construction … even when `name` matches a built-in"; §12.2.3 repeats it
+   for head position). `[$t3 …]` is the canonical call (§6.3: "The canonical CX call form
+   is the head-dispatch element `[$fn args…]`").
+2. **`cmd` in value position.** A bare def name is a REFERENCE to the callable
+   (§6.3b's callable-value table: "the definition's name in value position, bare
+   (`double`) or sigilled (`$double`)"), so the callable is adopted as a data child and
+   has no data image when the document reaches the output (§9.2).
+
+**Measured on the landed binary:**
+
+| program | answer |
 |---|---|
-| `[t3 1 cmd 7]` | `1` — `t3` is CALLED |
-| `[t3 1 8 [do 'x' [a 1]]]` | `[t3 1 8 [do 'x' [a 1]]]` — a DATA element; `t3` is not called |
-| `[t3 1 cmd [do 'x' [a 1]]]` | **CXER0291** |
-| `[wrapper cmd]` (no element sibling, `wrapper` is not a def) | **CXER0291** |
-| `[wrapper notadef [a 1]]` | `[wrapper 'notadef' [a 1]]` |
+| `[t3 1 cmd [do 'x' [a 1]]]` — what the report wrote | CXER0291 |
+| `[$t3 1 $cmd [do 'x' [a 1]]]` — the canonical form | **`[seen n=1 [do 'x' [a 1]]]`** ✅ |
 
-Two independent rules meet, and their product is the refusal:
+The intended call already worked. There was nothing to rule.
 
-1. `all_items_are_expr_position` treats a **plain bareword element child** as proof
-   that the body is a DATA element body (#59 / #858 lineage), so a def-named head does
-   not dispatch when one is present — row 2.
-2. **D1 (#1231)**: a bare reference to a user callable is its VALUE. So `cmd` in that
-   now-data body evaluates to the callable, is adopted as a child, and refuses at the
-   serialization boundary (§9.2) — row 4 shows this half alone, with no def-named head.
+## 1280-Q3 — RULED: the DIAGNOSTIC names the sigil
 
-## Q1 — "the head decides" — REFUTED by `stdlib/diagram.cx`
+`CXER0291`'s advice said only "APPLY it and return its RESULT", which is why the report
+concluded that construction had serialized a sibling argument. It now names both bare
+spellings and their `$` forms, which is what §12.2.3 already prefers ("`$name` is the form
+to prefer in new code, since it reads the same in every position"):
 
-Ruled (a), implemented (a plain bareword element child stops vetoing when the head
-names a user def), and:
+> …Two bare spellings adopt a callable by accident: a bare def NAME in value position is a
+> reference to it (§6.3b) — write `'name'` for the data word — and a bareword HEAD
+> constructs a data element rather than calling (§6.5), so `[f a b]` builds `[f …]` while
+> `[$f a b]` calls `f`. Prefer the `$` form in both positions (§12.2.3).
 
-```cx
-[?def code-rules scope=public pure [returns element] ()
-  [code-rules
-    [trigger directive=worker rule="Actor lane; …"]
-    [seq directive=send class=send rule="worker ->>+ channel : payload"]]]
-```
+**DELETES: nothing.** Same code, same class, same semantics — the teaching half only, in
+the same spirit as #1142 rider 5, which authored the first sentence.
 
-**A def whose body constructs a data element with the def's OWN name** — the
-self-named-constructor idiom, and `cx-x/diagram`'s public `code-rules` verb is written
-exactly this way. Under (a) the inner `[code-rules …]` is a recursive call with
-thirty-odd element arguments. Measured: `cx code-diagram` degenerated from
-`i{"if $x"} / t["'big'"] / i -- "true" --> t / i -- "false" --> e` to a single generic
-`b["[?if]"]`, and nine tests in `vcx/tests/code_units_umbrella_test.v` went red (the
-CFG diamond, the match dispatcher, the modify block, the ERD attribute rows, the
-recursion back-edge). **The construction gate is the only thing that lets one name be
-both a def and a constructor**, and this tree uses that.
+## The two withdrawn letters, and why each was wrong
 
-## Q2 — "a bare word in a data body is the data word" — REFUTED by `run.md` §4.1
+Recorded because both errors are the same error, and it is worth being able to recognize
+it next time.
 
-Ruled (a), implemented (a bare implicit reference to a user def in element-body
-position becomes the data word), and:
+### Withdrawn Q1 — "a def-named head is a call whatever its arguments' kinds"
 
-```cx
-[?def greet-tool scope=public pure [returns string] ($name::string) [$concat "hi " $name]]
-[?let [= $reg ([tool name=greet greet-tool], [tool name=shout shout-tool])]
-  [reg [a [?splice [$dispatch $reg "greet" "dana"]]] …]]
-```
+I ruled (a), implemented it, and `stdlib/diagram.cx` broke: `code-rules` is a def whose
+body constructs a data element of its own name, so the inner `[code-rules …]` became a
+recursive call (nine tests red, `cx code-diagram` degenerate). I recorded that as proof
+that the construction gate was load-bearing and escalated.
 
-`[tool name=greet greet-tool]` stores a **closure in data on purpose** — this is
-`run.md` §4.1's post-#45 registry pattern, "closures stored in DATA elements, retrieved
-by name predicate, invoked cross-scope", pinned by
-`conformance/stdlib/run.cxd` `run-008-closures-in-data-registry-dispatch`. Under Q2 the
-registry holds strings, and the fixture answers
-`E_OPERAND_KIND: call head $r is bound to absence` twice instead of `hi dana` /
-`HI dana`. My record claimed Q2 "DELETES nothing else"; **that claim was false.**
+**It proves no such thing.** `[$code-rules]` works — measured. The self-named constructor
+is fine under any reading; what broke was one *spelling* inside diagram.cx, and diagram.cx
+is written in the spelling §12.2.3 deprecates. The gate is not protecting a capability; it
+is implementing §6.5, which already says a bareword head constructs.
 
-## The shape of the real question
+### Withdrawn Q2 — "a bare word in an element body is the data word"
 
-A bare def name in an element body is EITHER the data word — so `[wrapper cmd]` is
-stable against an unrelated `[?def cmd …]`, and §1.3's data/program seam holds — OR the
-callable — so a registry can hold closures. **One rule cannot give both**, and each
-reading is already specified and already relied on:
+I ruled (a), implemented it, `run-008-closures-in-data-registry-dispatch` broke, and I
+recorded `run.md` §4.1's closures-in-data registry as a capability that reading would
+delete.
 
-| reading | what it buys | what it costs |
-|---|---|---|
-| data word (Q2 a) | `[wrapper cmd]` means one thing whatever defs exist; the §1.3 seam | `run.md` §4.1's registry pattern, and the `[$run:invoke]` idiom around it |
-| callable (status quo) | closures in data, cross-scope dispatch | a def declaration changes an unrelated document, and the failure is CXER0291 at the output |
+**That was false, and one test would have shown it.** The same fixture program with
+`$greet-tool` / `$shout-tool` instead of the bare names answers
+`[reg [a 'hi dana'] [b 'HI dana'] [miss]]` — byte-identical to the fixture's own
+`out-text`. The registry pattern depends on a callable being ADOPTABLE INTO DATA, which is
+unaffected by how the callable is spelled. I mistook "the fixture uses this spelling" for
+"the pattern requires this spelling".
 
-## RULED, and landed: fix the DIAGNOSTIC — it changes no surface and is what the report actually cost
+### The test that collapses both
 
-The reporter's loss was not the semantics; it was that the message sent them to the
-wrong place. `CXER0291`'s advice said "APPLY it and return its RESULT", so they
-concluded the construction path had serialized a sibling argument. The advice now names
-both readings that produced the value (`vcx/cx/codec.v`, the ONE CXER0291 advice string,
-so every boundary gets it):
+**Write it with `$`. If it works, the bare form was a spelling, not a capability.**
 
-> …If it came from a BARE def name in an element body, that is a closure-in-data
-> reference (run.md §4.1): quote it (`'name'`) for the data word, and note that a
-> bareword element child makes the enclosing form a data CONSTRUCTION, not a call —
-> bind it first (`[?let [= $d [child …]] [head … $d]]`) if you meant to call.
+Both times it works. A fixture failing when a spelling is removed says the fixture uses
+that spelling — nothing more — until the canonical spelling is tried.
 
-**DELETES: nothing.** The code, the symbolic class, and every semantic stay exactly as
-they were; this is the teaching half only, in the same spirit as #1142 rider 5 which
-authored the first sentence. Both open letters below are unaffected by it — whichever
-lands, the sentence stays true.
+## What genuinely remains, and it is NOT this issue
 
-## Q1 — OPEN, owner's letter
-
-- **(a) The head decides.** A def-named head is a call whatever kinds its arguments are.
-  **DELETES:** the self-named-constructor idiom, and every data element whose head
-  collides with a def name and whose body carries element children — here at minimum
-  `cx-x/diagram`'s public `code-rules` verb, whose returned element name
-  `code_diagram_completeness_gate_test.v` also diffs, so the fix is a rename of the def
-  or the element, both shipped-surface changes.
-- **(b) recommended — the body decides (status quo).** A plain bareword element child
-  stays proof of a data element body; a caller wanting an element-literal argument binds
-  it first. **DELETES:** nothing. §6.5's uniformity is real, but the gate is not
-  arbitrary, and the improved diagnostic now says so at the point of confusion.
-- (c) the head decides except when a child's head equals the outer head. Rejected: a
-  rule about one coincidence that still breaks every other collision.
-- (d) one namespace for def names and data element names, so the collision is a declared
-  conflict at load. Loud and uniform, much the largest change, and it is #1311's
-  question one level up.
-
-## Q2 — OPEN, owner's letter
-
-- **(a) the data word wins.** **DELETES:** `run.md` §4.1's registry pattern and the
-  `run-008` fixture; every closure-in-data site respells as an explicit binding
-  (`[?let [= $g greet-tool] [tool name=greet $g]]` — which still works, because a
-  binding read is a value position).
-- **(b) recommended — the callable wins (status quo) + the landed diagnostic.**
-  **DELETES:** nothing. The action-at-a-distance remains real, but it now announces
-  itself in a message that names both readings, and the surface that would be spent
-  fixing it is one the language documents and uses.
-- (c) make the two positions syntactically distinct — a marker that spells
-  "closure-in-data" explicitly, freeing the bare word to be the data word.
-  **DELETES:** nothing immediately, but it SPENDS a sigil or a keyword on a distinction
-  the language has so far kept implicit, and it puts `run.md` §4.1's whole corpus on a
-  cutover. Worth considering only together with #1311, whose binding half has the same
-  shape.
-
-Recommendation on both: **(b)** — because in each case the evidence that the current
-reading is load-bearing came from the tree's own dog-fooded code, and the actual cost to
-the reporter is now paid off by the diagnostic.
+- **#1311** — a bare word in a data body also resolves against a **binding**
+  (`[?let [= $x 5] [wrapper x]]` → `[wrapper 5]`). Unlike the def case, this is specified
+  NOWHERE: §6.3b covers bare *def* references only, and a grep of `code.md` finds no bare
+  binding reference. That is a spec gap, and its letters live on that issue.
+- **A cleanup, not blocking:** §12.2.3 prefers `$name` and §6.3b still admits the bare
+  form. Retiring the two bare spellings is a real corpus cutover, worth its own campaign,
+  and nothing depends on it.
 
 ## Exit (what landed)
 
-`conformance/code.cxd` `cmd-030` and `cmd-031` pin TODAY's answers across both
-questions — the argument-kind asymmetry, the self-named constructor, the bare word in a
-data body, the attribute/body disagreement, and the bracketed call — so whichever way
-Q1 and Q2 land, the evidence is in the corpus and the change is visible as a fixture
-diff. `run-008` and `stdlib/diagram.cx` untouched.
+`conformance/code.cxd` `cmd-030` and `cmd-031` pin today's answers — the construction /
+call contrast at the head, the bare def reference in a body, the attribute reading of the
+same word, and the `$` forms that do what the reporter wanted. `run-008` and
+`stdlib/diagram.cx` untouched.
