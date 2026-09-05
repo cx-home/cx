@@ -15,6 +15,47 @@ version, library version).
 
 ### Added
 
+- **A derived noun carries its own `[fold]` — wave D of the constraint grammar
+  (#1305; RULED: 1308-CG-5,
+  ledger/rulings_2026_09_05_constraint_grammar_1308.md).** §4.2 made a derived
+  noun deriver-reserved: computed by a component bound in the wiring. That is
+  right when the derivation is a program and wrong when it is a QUERY — and a
+  readout is almost always a query. A composed XAP could not have a readout
+  family without shipping a component per readout (behavior travelling as
+  code), and the `[$xap:component]` path could not run it even then. A
+  `derived=true` noun may now carry the derivation itself, as a planar
+  comprehension over its own `[from …]` sources:
+
+  ```
+  [noun name=by-region derived=true
+    [field name=region type=text] [field name=orders type=int]
+    [from 'orders/order']
+    [fold "[?for [in $o 'orders/order'] [group-by $o/region]
+            [yield [by-region region=$key orders=[$count $group]]]]"]]
+  ```
+
+  `[?for]` stays THE comprehension — no query surface is added. **W13** holds
+  the comprehension's generator sources to the noun's `[from …]` set
+  (provenance is the read-authority envelope), holds it PURE (a fold is
+  recomputed on read, so an effect inside it would run on every read), holds
+  every `[yield]` to the noun's own name carrying only its declared fields, and
+  refuses a `[fold]` on a noun that is not `derived=true`. Run assembly stops
+  raising **`CXER4875`** for a folded noun — it has a producer, and the
+  producer is the declaration — and the slice is **recomputed from its
+  sources' current slices on read**, deterministically. A `[deriver]` bound in
+  the wiring still overrides the fold: one noun, one producer, and the wiring
+  has the last word.
+
+  Additive: a derived noun without a `[fold]` keeps `CXER4875` exactly as §4.2
+  states it, and nothing about `[from …]`, W5 or W7 changes.
+
+  Landing this closes the #1308 campaign (waves A–D). The planar layer gains
+  two static-extraction surfaces it was already specified to have —
+  `planar_comprehension_shape` (a comprehension's literal sources and yield
+  shapes) and `planar_bind_literal_sources` (rewriting a host-resolved literal
+  source into a binding) — both structural, both usable by any host that
+  resolves names rather than values.
+
 - **The bitemporal read — `[$xap:state RT PATH {at-seq: N, valid-at: T}]` —
   wave C of the constraint grammar (#1306; RULED: 1308-CG-6,
   ledger/rulings_2026_09_05_constraint_grammar_1308.md).** Wave A gave the
