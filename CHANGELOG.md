@@ -15,6 +15,57 @@ version, library version).
 
 ### Added
 
+- **A grammar's own laws no longer follow their caller — the grammar-expression
+  environment (RULED: GE-0..GE-3,
+  ledger/rulings_2026_09_05_grammar_expression_env.md).** A rule's `[check]`
+  (§4.9a) and a derived noun's `[fold]` (§4.12) evaluated in the `cx:eval`
+  sandbox, which installs THE CALLER's `[?lib]` set as a non-widening
+  allow-list. That is right for `cx:eval`, where the caller is the author of
+  the fragment, and wrong for a grammar, where the author is the FEATURE and
+  the caller is whoever emitted the intent. Measured on the shipped tree: the
+  same feature, the same law, **admitted or refused depending on whether the
+  emitting program happened to `[?lib] 'cx-stdlib/strings'`** — and it failed
+  in the loud direction, refusing every intent, which reads as "checks are
+  broken". §4.9's whole claim is that a module and a grammar rule refuse the
+  same intent for the same reason; a law whose meaning follows its caller does
+  not meet it.
+
+  The environment is now **fixed by the grammar** (new §4.9b): the expression's
+  own bindings, the built-in operators, and exactly `cx-stdlib/strings`,
+  `cx-stdlib/math` and `cx-stdlib/re`, pre-imported under their canonical
+  prefixes with no import line to write. One definition covers `[check]` and
+  `[fold]` alike — they share the code path, and describing it twice is how
+  they would drift. A call to any other module is a **compose** conflict (W10 /
+  W13), so the author meets it when the grammar is gated rather than the
+  adopter once per intent; `CXER4113` is unreachable from a grammar expression.
+
+  **Why these three, and how the list grows.** Every member declares no impure
+  def — a property #1298 made VERIFIED rather than trusted, since the module
+  loader now runs the purity checker over each module's defs and its resolved
+  imports. Purity is necessary and not sufficient: `zip` and `tar` are pure and
+  would put decompression on a commit path, `diagram` is pure and has 559
+  members, and the protocol vocabularies have no business in a law about a
+  record's values. A module joins the list **by ruling, with the case that
+  motivated it** — never because it happens to be pure. Nothing is
+  HTTPS-resolved and nothing is author-named, so a law carries no supply chain;
+  `re` is RE2, so matching stays linear-time in a path that runs once per
+  intent.
+
+  **Adopters.** A `[check]` or `[fold]` that today calls a module and happens to
+  work — because the calling program imported it — becomes a compose refusal.
+  Nothing in this tree did (the landed fixtures are builtins-only), but it is a
+  real cutover and it is the point: a law that worked by coincidence was not
+  working. What newly becomes possible is the larger half — textual laws are
+  expressible **on the component path**, which has no module `apply` to fall
+  back on.
+
+  Ruled in the same pass and NOT built (RULED: DF-1/DF-2,
+  ledger/rulings_2026_09_05_computed_fields.md): the grammar does not COMPUTE
+  field values. A value is supplied by the caller and checked by the grammar. A
+  URL-safe slug needs no new surface — it is a pattern-typed field plus
+  `identity=`, computed once at creation by the caller precisely because an
+  identity must be stable.
+
 - **A derived noun carries its own `[fold]` — wave D of the constraint grammar
   (#1305; RULED: 1308-CG-5,
   ledger/rulings_2026_09_05_constraint_grammar_1308.md).** §4.2 made a derived
