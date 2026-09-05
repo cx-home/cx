@@ -200,10 +200,16 @@ implementation, QoI under L86.
 
 ## RP-5 — the exit bar and the guard (RULED: RP-5 = a)
 
-- (a) **TAKEN — two-part bar.** (i) **Campaign exit:** peak RSS ≤ 8× input
-  on the audit corpora (JSON records, XML attribute records; `--from=X
-  --to=X`, default pacing) — the owner's proposed number, kept: admission
-  is RSS. (ii) **Regression guard, committed and in `make test`:** a
+- (a) **TAKEN — two-part bar.** (i) **Campaign exit — RE-BASED 2026-09-05,
+  see `ledger/rulings_2026_09_05_rp5_bar_1226.md`:** peak RSS ÷ **LIVE at
+  parse peak** ≤ 2.5× on the audit corpora (JSON records, XML attribute
+  records; `--from=X --to=X`, default pacing). The original number — peak
+  RSS ≤ 8× input — is RETIRED: #1226 measured the live tree alone at 7.6×
+  input, so under vgc's documented 2×-marked goal the floor was ≈15× input
+  and the bar was unreachable by construction, conflating representation
+  density (RP-6's concern) with collector policy (the pacer's). The
+  re-based bar measures only what the runtime controls; it reads 3.7×
+  (json) / 4.6× (xml) today and stays RED until cx-home/v#6 lands. (ii) **Regression guard, committed and in `make test`:** a
   `bench/repr` lane (V driver over `cx` + a runner script) asserting the
   LIVE multiplier (bytes marked after a forced collect ÷ input bytes) per
   lane against a bound — a RATIO, so it holds on any machine; a ~2 MB
