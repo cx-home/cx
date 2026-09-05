@@ -135,8 +135,15 @@ a call": with it, the same typo fails loud and names itself.
  ]
 
  [case id=ap-bare-head-typo-right level=core
-  [title [#The $ call sigil fails loud on the same typo#]]
-  [tags call sigil typo 938]
+  [title [#The $ call sigil fails loud on the same typo — and names the candidate#]]
+  [tags call sigil typo did-you-mean 938 1058]
+  [why [#
+The `$` sigil turns the typo into a refusal, and since #1058 T1.5 the refusal
+also names the CANDIDATE: the def table is the closed set the resolver just
+searched, so `greeet` is one edit from `greet` and the message says so. The
+suggestion is deliberately conservative — a name far from everything gets none,
+because a wrong suggestion sends the reader to check a name they never wrote.
+#]]
   [in-cx [#
 [empty]
 #]]
@@ -145,7 +152,7 @@ a call": with it, the same typo fails loud and names itself.
 [$greeet "world"]
 #]]
   [out-text [#
-[err code=user-undefined message='no callable "greeet"']
+[err code=user-undefined message='no callable "greeet" — did you mean `greet`?']
 #]]
   [exit-code [#1#]]
  ]

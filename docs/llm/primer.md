@@ -1990,7 +1990,7 @@ $ cx prog.cx
 [greeet 'world']
 ```
 
-**Write this:** The $ call sigil fails loud on the same typo
+**Write this:** The $ call sigil fails loud on the same typo — and names the candidate
 
 `prog.cx`
 ```cx
@@ -2000,7 +2000,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[err code=user-undefined message='no callable "greeet"']
+[err code=user-undefined message='no callable "greeet" — did you mean `greet`?']
 ```
 
 <sub>Fixtures: `ap-bare-head-typo-wrong` / `ap-bare-head-typo-right` in `conformance/llm/antipatterns.cxd`</sub>
