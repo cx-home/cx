@@ -15,6 +15,61 @@ version, library version).
 
 ### Added
 
+- **The grammar's laws are EVALUATED — wave B of the constraint grammar
+  (#1302, #1301, #1304; RULED: 1308-CG-2 / CG-1 / CG-4,
+  ledger/rulings_2026_09_05_constraint_grammar_1308.md).** A `[rule]` carried
+  a prose `[statement]` and nothing evaluated it: every law a downstream
+  vocabulary claimed was enforced by a module's `apply` under `[$xap:host]` or
+  by nobody, and a `[$xap:component]` runtime held no law at all. Three
+  declarations now run at the ONE pre-commit enforcement point §4.9 opened —
+  after the PEP admits, before anything is appended, the position `apply`
+  occupies under the host — so a module and a grammar rule refuse the same
+  intent at the same moment, and **nothing is appended** on a refusal:
+  - **`[check 'SOURCE']`** (§4.9a) — the law itself, as a PURE cx predicate
+    over `$intent`, `$row` (the identity's merged record, absent when the
+    identity is new) and, at `scope=fold`, `$slice`. Purity is checked at
+    compose by the shipped checker (**W10**), which is what lets the runtime
+    evaluate it WITHOUT the `eval` capability: that capability gates running
+    arbitrary data as code, and a predicate the gate has proved pure is not
+    that. A false answer refuses **`cx-err:CXER4865` E_XAP_RULE_REFUSED**
+    naming the rule and carrying its `[statement]`; an `[err]` answer refuses
+    the same way with the cause, because a law that cannot decide has not
+    admitted anything. `nouns=` is required beside a `[check]`. The predicate
+    is source text — the treatment a `[?def]` body already gets — because an
+    unquoted expression is CONTENT in a document and is EVALUATED on the spot
+    in a program literal; a quoted body is the one spelling that means the
+    same thing in both positions.
+  - **`kind=cardinality`** (§4.10) — the enum member that had been in the
+    rule-kind vocabulary since it was written, read by nothing. `of=` names
+    the group of sibling-noun-typed alternatives, `min=`/`max=` bound how many
+    one record may fill (**W9**), a second alternative refuses
+    **`cx-err:CXER4866` E_XAP_CARDINALITY** naming what is present, and a
+    `[facet]` over the GROUP is admitted where §4.5's "never a sub-noun" arm
+    refuses it — a group has values to count, namely the alternatives' names.
+  - **`[transition field= from= to=]`** on an act verb (§4.11) — the state
+    machine every vocabulary hand-rolls. **W12** holds the field to an
+    enum-typed field of a noun the verb `[writes]` and every state to a member
+    of that enum; ordering between two transitioning verbs is DERIVED and a
+    hand-written `kind=ordering` rule contradicting it is a W4 conflict; a
+    state with no outgoing transition is a compose-report
+    `[note code=:terminal-state]` with `ok=true`. At the point, a record whose
+    state is not in `from` refuses **`cx-err:CXER4868` E_XAP_TRANSITION**
+    naming actual and allowed; a NEW identity admits only the enum's initial
+    (first-declared) state; and the runtime **writes `to`** onto the committed
+    record, so an intent carrying a different value for that field is refused
+    rather than silently overwritten.
+
+  **Adopters.** Additive throughout except the cardinality rule: a
+  `kind=cardinality` without `of=`/`min=`/`max=` no longer composes green, and
+  the only such rule in the tree was #1301's own probe. A prose-only rule stays
+  runtime-class documentation exactly as §4 says — declaring is what buys the
+  enforcement, and a contract sealed under a prose law becomes enforced only
+  when it declares one, which is a re-publish under SEA-1. One behavior change
+  worth naming: with a grammar attached and no component claiming a verb, the
+  fold now routes by the verb's written NOUN (`/<noun>`) instead of falling
+  back to an arbitrary bound component's bind — a rule that reads a row and a
+  fold that writes one have to agree about where the row is.
+
 - **The feature grammar carries its nouns' FIELDS, their TYPES, and the
   valid-time axis — wave A of the constraint grammar (#1307, #1303, #1193,
   #1306; RULED: 1308-CG-7 / CG-3 / CG-6,
