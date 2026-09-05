@@ -347,3 +347,60 @@ the verb designator as a SCALAR at index 0; `[verb [field …]]` names the verb 
 ELEMENT and puts a field at index 0. A check that skips index 0 unconditionally misreads
 the second shape and refuses the verb name as a field. Any future implementation must key
 on "every ELEMENT item is a field, every scalar is the designator", not on position.
+
+---
+
+## #1272 — RE-SCOPED 2026-09-05, not implemented. The floor has nothing to hold
+
+Ruling (a) — `pkg-seal` writes the floor, `pkg-install` refuses below it, reusing `CXER4884`
+rather than minting a code — stands. It cannot be built yet, and the reason is the same
+class as #1268's.
+
+**Verified:** `pkg-seal` writes only `hash=` onto the draft; nothing in
+`vcx/platform/stdlib_xap_dist.v` reads or writes `compatibility`. The issue's premise holds
+exactly.
+
+**The blocker:** distribution §2 specifies the block as *"the XAP spec revision + toolchain
+floor the package validates against"*, and **there is no XAP spec revision**. A search of
+`spec/` and `vcx/` finds no revision identifier, no constant, nothing `pkg-seal` could
+write and nothing `pkg-install` could compare. The ruling said "pkg-seal writes the
+toolchain version and the §1.2 contract revision it validated against" — the first half
+exists (the repo `VERSION`); the second does not.
+
+**So #1272's real first question is one the ruling did not ask:** what IS the §1.2 contract
+revision — an integer bumped by hand, the spec document's own revision, the release
+version, a content hash of the contract's normative text? — and **who bumps it, on what
+rule?** That identifier constrains every future contract change and is a shipped surface in
+its own right; inventing it as a side effect of wiring a floor check would be the wrong way
+to acquire it.
+
+The toolchain-floor half could be built alone (the repo VERSION is real), but it does not
+answer this issue: #1210's contract change is what the floor must catch, and a toolchain
+version only catches it when a contract change happens to coincide with a release boundary.
+A floor that is right by coincidence is worse than an inert one, because it reads as
+enforcement.
+
+---
+
+## The pattern across step 5, stated once
+
+Three of the five step-5 rulings assumed an artifact that does not exist, and each cost an
+implementation attempt to discover:
+
+| ruling | assumed | actually |
+|---|---|---|
+| #1250 | `planar_place_filters` is complete over `[?for]` | written for the planar SUBSET; under-approximates dependencies on the full grammar |
+| #1268 | the admission point can read the declared parameter list | the `[intent]` clause was validated for presence and DISCARDED |
+| #1272 | a §1.2 contract revision exists to write into the floor | no revision identifier exists anywhere |
+
+**What separated these from #1269, which landed clean:** #1269's premise was verified
+EMPIRICALLY before the ruling — the round-trip loss was reproduced, `binary=true`'s
+consumers were grepped. The other three were reasoned from issue text and spec text, both
+of which describe what SHOULD be there. A spec sentence is not evidence that the thing it
+describes is implemented; N-COMPOSE-7 asserts the parameter list "exposes exactly (a, b) to
+a consumer" and no consumer could see it.
+
+**The rule for the remaining two (#1271, #1217):** verify the artifacts the ruling depends
+on exist, by running something, before writing any code. Both premises HAVE been verified
+that way — #1271's absence is stated in `stdlib_xap.v:172` and #1217's refusal was
+reproduced — and #1217's prerequisite (the parameter list) has now landed.
