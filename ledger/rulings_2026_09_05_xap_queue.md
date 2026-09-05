@@ -289,3 +289,61 @@ THAT. It does, more strongly.
 **And the process miss:** the V umbrella lanes were green while four conformance fixtures
 were red. Running `code_eval_fixtures_test.v` (the stdlib corpus) is not optional for a
 codec change; the umbrellas exercise the wire, the corpus exercises the CX-level reads.
+
+---
+
+## #1268 — RE-SCOPED 2026-09-05. The prerequisite landed; the admission check did not
+
+Ruling (b) — refuse extras, tolerate missing — is unchanged and still right. What changed
+is the estimate of what it takes, and the estimate was wrong twice over.
+
+### What landed: the parameter list now REACHES the grammar (the prerequisite)
+
+`XapGVerb` had no field for the `[intent [do :v [a] [b]]]` parameter list. The clause was
+required and validated for PRESENCE — `xap_gc_child(ve, 'intent') or { error }` — and then
+**discarded**. So N-COMPOSE-7's own claim, that the list "exposes exactly `(a, b)` to a
+consumer, in that order", was true of NO consumer reading the composed grammar. Both
+things that need it — the PEP's act admission (#1268) and the UX projection of a feature
+verb (#1217) — had to infer arity from the written noun, which is the inference
+N-COMPOSE-7 exists to replace.
+
+Now: `v.params` is parsed from the clause, and the composed verb entry carries
+`[params 'a b']` in EMISSION order (never sorted — unlike `[writes]`, the order IS the
+declaration). A bare `[intent [do :v]]` emits NO `[params]` child, so a consumer can tell
+the documented fallback ("ask the written noun") from "takes nothing", which the clause
+itself cannot express. `xap_gc_verb_params` returns `?[]string` for exactly that reason.
+
+Verified: `[verb name='door/unlock' … [writes 'door/door'] [params 'note']]`.
+
+**This unblocks #1217**, which needs the same list.
+
+### What did NOT land, and why — the act shape is more varied than the ruling assumed
+
+The admission check was written, wired at the §4.9 point (before types / transitions /
+cardinality / checks, since a field the grammar cannot account for makes those questions
+meaningless), and reverted. Three findings, each from a measurement:
+
+1. **The toy door relied on undeclared fields**, exactly as #1268 said — `stuck` / `jam`.
+   Declaring them in its `[intent]` is correct and is kept.
+2. **`id` was undeclared too.** The spec's own N-COMPOSE-7 example
+   (`[do :place-order [id] [customer] [promised-at]]`) includes the identity field, so
+   declaring it is right. Kept.
+3. **The blocker: a SOURCE-PUMP-ingested act does not carry the declared parameters.**
+   A fabric event `[unlock [id "…"]]` reaches the emit path as an intent whose single
+   field is an element NAMED AFTER THE VERB — the pump passes the source event through
+   rather than mapping it onto the parameter list. Under the check every pump-ingested
+   act is refused, and `test_xap_host_arms_source_pumps_only_after_authority` fails with
+   three pre-seeded entries never ingesting.
+
+Item 3 is not a bug in the check. It is a real question the ruling did not ask: **is a
+pump-ingested act subject to N-COMPOSE-7's list, and if so, whose job is the mapping?**
+Either the source dial maps the event onto the declared parameters (the honest answer, and
+it makes the pump's contract explicit), or ingested acts are exempt and the exemption is
+stated. Deciding that is #1268's remaining work, and it is pump/dial design rather than an
+admission check.
+
+Also found on the way: the act form is not one shape. `[do 'ns/verb' [field …]]` carries
+the verb designator as a SCALAR at index 0; `[verb [field …]]` names the verb on the
+ELEMENT and puts a field at index 0. A check that skips index 0 unconditionally misreads
+the second shape and refuses the verb name as a field. Any future implementation must key
+on "every ELEMENT item is a field, every scalar is the designator", not on position.
