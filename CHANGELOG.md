@@ -15,6 +15,30 @@ version, library version).
 
 ### Added
 
+- **The bitemporal read — `[$xap:state RT PATH {at-seq: N, valid-at: T}]` —
+  wave C of the constraint grammar (#1306; RULED: 1308-CG-6,
+  ledger/rulings_2026_09_05_constraint_grammar_1308.md).** Wave A gave the
+  valid-time axis one spelling (`[field … axis=valid-from|valid-to]`); this is
+  the read that uses it, in `core/bitemporal.md`'s own names. `at-seq: N` folds
+  the slice to a journal point (a compaction summary has no seq of its own and
+  is kept at every N — a read never sees less than what compaction already made
+  permanent). `valid-at: T` keeps the records whose half-open `[from, to)`
+  contains `T`, with an ABSENT `valid-to` as the open end, reading the axis
+  field NAMES off the attached grammar so a noun that declares no axis is
+  filtered by nothing rather than guessed at. Given together the two axes
+  INTERSECT, which is the bitemporal question itself: what did we believe at
+  journal point N about what was true at T. **`as-of` is not minted** — L118
+  names this read `{at-seq, valid-at}`, and one spelling for one thing is why
+  the axis is in the grammar rather than in each vocabulary.
+
+  Filed out of this wave, with a corrected premise: **#1310** — the xap fold
+  does not consume the journal's `[supersedes]` correction taxonomy, so a
+  corrected record still shows in the xap read while the journal read has
+  already dropped it. The CG-6 ruling deferred that fold on the ground that
+  the taxonomy was "unshipped in `stdlib_journal.v`"; it had in fact shipped
+  at 3b7ae5b01, and the real remaining work is the XAP fold's, not stream 8's.
+  The ruling's outcome stands; its stated reason did not survive contact.
+
 - **The grammar's laws are EVALUATED — wave B of the constraint grammar
   (#1302, #1301, #1304; RULED: 1308-CG-2 / CG-1 / CG-4,
   ledger/rulings_2026_09_05_constraint_grammar_1308.md).** A `[rule]` carried
