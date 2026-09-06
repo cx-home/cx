@@ -185,3 +185,19 @@ already is.
 restore reports nothing; nothing fires), `:coalesce`, `:fire-all` (fires once,
 carrying the ORIGINAL instant), and **nothing stated** (fires — a-i's new
 default). Plus `sched-022`'s persisted intent.
+
+**Migration, stated because it is a real behavior change and not only a
+default change.** Before SK-2 the arm path persisted `on-missed 'skip'` into
+every one-shot intent *including* the ones whose caller named no policy —
+`sch_parse_opts` defaulted the field and `sch_persist_intent` wrote it
+unconditionally. So a journal written before SK-2 carries an explicit `'skip'`
+that nobody chose, and SK-2 reads it as a deliberate skip and DROPS that
+one-shot at restore where the old code fired it (at the boot instant). Two
+things make this acceptable rather than a silent regression: the drop is
+recorded in both the report and the journal, so it is observable rather than
+invisible; and the only in-tree durable one-shot callers are `flow`, which pins
+`:fire-all` explicitly (`stdlib/flow.cx:2488`, unaffected), and `sched.cx`'s own
+`restore` doc example, which arms ten minutes ahead and restores immediately.
+CX has no external users, so no journal outside this tree exists to migrate.
+The alternative — treating a persisted `'skip'` on a one-shot as "probably not
+chosen" and firing anyway — would make the field unreadable forever.
