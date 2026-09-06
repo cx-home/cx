@@ -88,3 +88,116 @@ and a one-shot always fires once.
 rung timers stays — under this ruling it is belt-and-braces rather than
 load-bearing, and it stays because flow should not depend on another
 module's default for a liveness guarantee it makes in its own spec.
+
+---
+
+# SK-2 — 2026-09-06, the OWNER REVISED SK-1 (asked "is (a) the best long term?")
+
+**Status: SK-1's conclusion is WITHDRAWN. `1324-SK-2` RULED (a) by the owner
+("1a") on the question SK-1's revision exposed.** SK-1's text above is kept
+verbatim, not rewritten, so the record shows what it got wrong.
+
+## What SK-1 got wrong
+
+1. **It argued as if flow depended on it. Flow does not.** `789-WF-27a`
+   already pins `on-missed: :fire-all` explicitly on every flow timer
+   (`stdlib/flow.cx:2488`, verified). So SK-1 changed nothing for the one
+   consumer whose liveness it invoked as justification — its whole reach was
+   over callers who had asked for something *else*. Overriding an explicit
+   choice on the grounds that the choice is probably a mistake is not a
+   language surface's job.
+2. **It collapsed the policy axis.** Under SK-1 all three `on-missed` values
+   mean the same thing for a one-shot, so there is no way left to say "if this
+   is late it is worthless". That class is real and is not a deadline: a sale
+   that opens at noon and closes at 13:00, a cache warm, a notice that only
+   makes sense while the reader is still on the page. SK-1 answered this with
+   "write the staleness check in the callback" — which is the reasoning that
+   shipped the retry storm (#1331): pushing a safety obligation onto every
+   caller. It holds for flow, whose callback is `advance` and re-derives run
+   state, and does not hold for an arbitrary callable.
+3. **It mistook the harm.** What is intolerable is the SILENCE, not the
+   not-firing — and firing is not the only cure for silence. The harm actually
+   observed in #1322 came from a **default nobody chose** (`sch_parse_opts`
+   defaults `on_missed: skip` for every kind), not from `:skip`'s semantics.
+   SK-1 fixed the semantics and left the default alone, which is backwards.
+
+## SK-2 — RULED: (a), three parts
+
+- **(a-i) `on-missed` absent on a durable ONE-SHOT (`after` / `at`) defaults
+  to `:fire-all`; a recurrence keeps `:skip` as its default, unchanged.** A
+  recurrence has a next occurrence to skip to and a one-shot does not, and the
+  common durable one-shot is a deadline — escalate, expire, cancel, charge —
+  where late beats never. Reusing `:fire-all` rather than inventing a value
+  keeps the axis closed (for one occurrence `:fire-all` and `:coalesce` are the
+  same thing, because there is one occurrence, not because they were merged).
+- **(a-ii) `:skip` keeps its meaning on a one-shot: the timer is NOT armed.**
+  §2.5's parenthetical STANDS. SK-1's strike of it is withdrawn.
+- **(a-iii) A one-shot dropped under `:skip` is RECORDED, never silent.** Two
+  places, both required:
+  - a named row in the restore report — a `[dropped [drop name= kind=
+    deadline=]…]` block, the exact shape and posture of the existing
+    `[orphaned [orphan name=…]]` finding (`sched.md` §3.2, "a finding, never
+    silently dropped");
+  - **and the intent is closed in the journal** with `status 'dropped'`.
+    Without that append the same intent is still `pending` at the next boot,
+    so every subsequent restore re-drops and re-reports it and the report
+    never converges. A drop is terminal for that intent, which is exactly what
+    §3.3's fire/cancel/terminal appends already record.
+
+**What it DELETES:** SK-1's strike of §2.5's parenthetical; and sched's
+uniform `:skip` default at a one-shot arm — a persisted intent for an
+`after`/`at` that stated nothing now records `fire-all`.
+**What it does NOT change:** flow (its `:fire-all` pin is explicit, so its
+restore fixtures are untouched); `:coalesce` / `:fire-all` semantics; the
+recurrence default; the CXER band.
+
+**Why `dropped=` is NOT a fourth count on the report.** `skipped=` keeps
+counting occurrences that did not fire, and the drop lands in it. The
+reader's question is *which* timer is gone forever, which the named block
+answers; a fourth count attribute would move every existing `[restore-report
+rearmed= skipped= orphaned=]` expectation in `sched.cxd` and `flow.cxd` for no
+information gain. The block is emitted only when non-empty, as `[orphaned …]`
+already is.
+
+## Verified against the code before ruling (sites, not prose)
+
+- `sch_parse_opts` defaults `on_missed: sch_miss_skip` for every kind
+  (`vcx/code/stdlib_sched_notd_cx_no_pack_sched.v:365`) and the arm path
+  persists `t.on_missed` unconditionally (`:689`), so a persisted intent
+  always names a policy and the restore-time fallback (`:1247`) reaches only
+  journals written before this change. The default therefore has to move at
+  the ARM site, per kind — not at restore.
+- `sch_rearm_intent` arms a past one-shot at `r.virtual_now` under `:skip`
+  (`:1265`). So today it fires — **and it fires stamped with the BOOT instant,
+  losing the original.** That second half is a defect on `789-WF-27a`'s own
+  terms and SK-1 never noticed it; under SK-2 it disappears, because the only
+  arms left keep the persisted deadline.
+- No current fixture has a past one-shot at restore: `sched-023`…`027` all arm
+  ten minutes ahead and restore immediately. That is why the divergence
+  survived, and it is why the fixture is the deliverable.
+- Blast radius outside the new cases is one line: `sched-022`'s expected
+  journal entry carries `[on-missed 'skip']` for an `after` that stated
+  nothing, so it becomes `'fire-all'` and the payload and entry hashes move
+  with it.
+
+**Gate.** A durable one-shot plus a restart across its deadline, under each of:
+`:skip` (not armed; named in `[dropped …]`; the intent closed so a SECOND
+restore reports nothing; nothing fires), `:coalesce`, `:fire-all` (fires once,
+carrying the ORIGINAL instant), and **nothing stated** (fires — a-i's new
+default). Plus `sched-022`'s persisted intent.
+
+**Migration, stated because it is a real behavior change and not only a
+default change.** Before SK-2 the arm path persisted `on-missed 'skip'` into
+every one-shot intent *including* the ones whose caller named no policy —
+`sch_parse_opts` defaulted the field and `sch_persist_intent` wrote it
+unconditionally. So a journal written before SK-2 carries an explicit `'skip'`
+that nobody chose, and SK-2 reads it as a deliberate skip and DROPS that
+one-shot at restore where the old code fired it (at the boot instant). Two
+things make this acceptable rather than a silent regression: the drop is
+recorded in both the report and the journal, so it is observable rather than
+invisible; and the only in-tree durable one-shot callers are `flow`, which pins
+`:fire-all` explicitly (`stdlib/flow.cx:2488`, unaffected), and `sched.cx`'s own
+`restore` doc example, which arms ten minutes ahead and restores immediately.
+CX has no external users, so no journal outside this tree exists to migrate.
+The alternative — treating a persisted `'skip'` on a one-shot as "probably not
+chosen" and firing anyway — would make the field unreadable forever.
