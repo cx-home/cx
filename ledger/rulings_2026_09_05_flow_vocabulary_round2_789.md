@@ -472,3 +472,53 @@ authority — and not computation.
 **Codes:** the band's tail is now fully spent but for one. `CXER4969` is the
 last reserved code in `CXER4950–4969`; a further coordination code needs a
 governance §9.6 band extension, and that is a deliberate brake on round three.
+
+## WF-20 consequence, found in implementation (2026-09-06) — `1265-PV-1`
+
+**Recorded here rather than as a new letter, because it is what WF-20 (a)
+already means once followed through.** The round-2 vocabulary packet found
+it while implementing `needs=`, and it is a soundness bug the ruling would
+have shipped.
+
+**§4.7's compensability check was reading DOCUMENT order.** That was correct
+while document order WAS the total order. `needs=` separates them:
+
+```cx
+[step name="a" [do 'x/act']]                       # compensable
+[step name="p" pivot=true needs="a" [do 'x/act']]
+[step name="q" needs="a" [do 'x/plain']]           # NOT compensable
+```
+
+`q` follows the pivot in the text, so a document-order check asks nothing of
+it — but `q` waits on `a`, not on `p`, so it can be `:done` while `p` is in
+flight (an offered pivot in W3; a parked one under `simulate` today). If `p`
+fails, §4.8 compensates from the current position, reaches a `:done` step
+with no `[compensates]` pairing, marks it `:uncompensatable` and puts the
+run in `:conflict` — **the exact outcome §4.7 exists to make impossible
+before anything runs.**
+
+**The rule: "before the pivot" is the WAIT relation's own.** A construct is
+AFTER the pivot exactly when the pivot is in its transitive wait set;
+everything else is before it and owes a compensator. The closure costs ONE
+left-to-right sweep per container, because WF-20 requires a `needs=` name to
+refer only to a PRECEDING sibling — the property chosen to make cycles
+unrepresentable is what makes this computable in one pass, which is a second
+argument for it that was not in the original letter. The recursion follows
+the pivot into the construct holding it, so a `map` body pivot keeps §4.7's
+reading. With no `needs=` in a document, the set is the document-order
+prefix construct for construct, exactly as before — so no existing flow
+changes meaning.
+
+**What it DELETES:** the reading of §4.7 that document order answers "which
+steps run before the pivot". Nothing else; `pivot=` and the refusal code are
+unchanged, and the refusal now names which relation it means and names the
+fix (add the pivot to the step's `needs=` if it should run after it).
+
+**Method note.** This is the first defect this campaign found in the
+*consequences* of a ruling rather than in its premises. The premise checks
+this session added — a spec sentence is not evidence, a normative example is
+not evidence — would not have caught it: §4.7's sentence was true when
+written and every example parsed. What caught it was implementing the ruling
+against the existing check and noticing the two disagreed. That is an
+argument for landing rulings into code sooner rather than accumulating
+them.
