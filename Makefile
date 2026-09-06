@@ -1190,14 +1190,14 @@ sync-tmlanguage:
 #     make registry-publish
 .PHONY: registry-publish
 registry-publish: build-vcx-dev
-	@vcx/target/cx --allow-all registry/publish.cx
+	@vcx/target/cx-dev --allow-all registry/publish.cx
 
 # Stage-2 served registry (distribution spec §4.2): the SAME store, re-hosted
 # behind the CSRP daemon on loopback. Consumers open
 # cx-store+http://127.0.0.1:8460/registry/ — hashes/signatures unchanged.
 .PHONY: registry-serve
 registry-serve: build-vcx-dev
-	@vcx/target/cx store-serve --config registry/cxstore.service.cx --allow-net=127.0.0.1:8460
+	@vcx/target/cx-dev store-serve --config registry/cxstore.service.cx --allow-net=127.0.0.1:8460
 
 # Default parallelism: detected core count, override with `make test TEST_JOBS=N`.
 # Measured speedup on a warm build: ~10× wall-clock vs sequential (342s → 33s).
@@ -1214,6 +1214,12 @@ test:
 	# skips the relink — without this, concurrent sub-makes RELINKED
 	# target/cx while sibling lanes were exec'ing it (the v0.16.0 cut's
 	# 'Exec format error' / empty-output-rc-0 class; see the guard's note).
+	#
+	# This covers the PROD half only. The dev half — nine `test-vcx-*` lanes
+	# whose `build-vcx-dev` prerequisite runs inside the storm — used to write
+	# that SAME target/cx and clobber it back (#1312); it now writes
+	# target/cx-dev, so the two halves no longer share a mutable artifact and
+	# this pre-build is sufficient on its own.
 	@$(MAKE) build-vcx
 	# test-profile-gate runs SERIALLY AFTER the -j storm, not inside it. The
 	# original reason (sup-011's "#951 load-race" under gate-wide -j) is gone

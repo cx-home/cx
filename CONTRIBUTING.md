@@ -101,8 +101,12 @@ adjacent, `make conform` must pass before you push.
 ### Bare / out-of-tree checkouts and lane skips
 
 Many `vcx/tests/` lanes (the http/net/xap/store service lanes) exec the
-built CLI at `vcx/target/cx`. The one setup step a fresh checkout needs
-before invoking `v test` directly is:
+built CLI. They resolve it through `testenv.cx_bin()`, which prefers the
+dev artifact `vcx/target/cx-dev` and falls back to the shipped
+`vcx/target/cx` — two paths since #1312, because `make test` runs dev and
+prod lanes in one `-j` storm and a single shared path let them clobber
+each other. The one setup step a fresh checkout needs before invoking
+`v test` directly is:
 
 ```sh
 make build-vcx-dev
