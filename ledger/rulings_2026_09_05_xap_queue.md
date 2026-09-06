@@ -404,3 +404,59 @@ a consumer" and no consumer could see it.
 on exist, by running something, before writing any code. Both premises HAVE been verified
 that way — #1271's absence is stated in `stdlib_xap.v:172` and #1217's refusal was
 reproduced — and #1217's prerequisite (the parameter list) has now landed.
+
+---
+
+## #1217 — CORRECTED 2026-09-05. Item 1 already existed; the real defect was item 2
+
+My ruling said "implement items 1 and 2, item 3 is subsumed". **Item 1 was already
+implemented** and had been since 2026-08-17. This is the fourth step-5 ruling to assume an
+artifact's state without checking it — and the first where the artifact was already THERE.
+
+**`[$ux:feature-form FEATURE VERB OPTS]` is public and does exactly what item 1 asks.**
+Measured on `cx xap init`'s own scaffold:
+
+```
+[ux:form verb=register [ux:heading level=2 'Register']
+  [ux:input name=id label=Id kind=text value='' help='the shared key']
+  [ux:input name=name label=Name kind=text value='']
+  [ux:input name=registered-at label='Registered at' kind=instant value='']
+  [ux:submit label=Register]]
+```
+
+Fields from the written noun, `help=` from its `doc=`, title degrading by name — the
+projection the issue asks to be built. `intent-params` (RULED: DP1 4b, owner 2026-08-17)
+already reads the declared parameter list in preference to the noun's fields, precisely
+because projecting the noun OVER-OFFERS.
+
+### The real defect: that ruling held for one artifact and silently failed for the other
+
+Composition keeps the parameter names but drops the `[intent [do :v [a] [b]]]` clause that
+held them — and since #1268 carries them as `[params 'a b']` instead. `intent-params` read
+only the feature-document spelling, so **every composed verb answered absence** and the
+projection fell back to the noun. Measured, same verb, two artifacts:
+
+| read from | inputs offered |
+|---|---|
+| the feature document | `id`, `name` |
+| the composed grammar | `id`, `name`, **`registered-at`** |
+
+`registered-at` is server-stamped; the verb declares `(id, name)`. DP1 4b's over-offering
+defect, alive on the composed path the whole time — and invisible until #1268 put `[params]`
+on composed verbs, because before that there was nothing for a corrected reader to find.
+
+Fix: `intent-params` reads both spellings. Fixture
+`ux-083-composed-grammar-projects-the-declared-parameters` pins PARITY rather than either
+answer — a client reading the composition and a tool reading the contract must not disagree
+about what a verb takes.
+
+### What remains on #1217, re-scoped
+
+- **Item 2 is now correct** for `feature-form`. What is NOT done is routing: `[$ux:form]`
+  (source + verb) still answers `ux-no-such-command` for a feature source, and nothing
+  tells the adopter that `feature-form` is the entry point for the other declaration
+  system. That is the issue's item 3, which I ruled "subsumed" on the strength of item 1
+  being unbuilt — it was not, so item 3 is the remaining work, and it is a routing/
+  discoverability question, not a projection one.
+- `feature-form` already answers `ux-no-such-verb`, distinct from `ux-no-such-command`, so
+  half of item 3's ask exists too.
