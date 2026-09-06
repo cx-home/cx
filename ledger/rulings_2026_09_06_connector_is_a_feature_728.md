@@ -32,7 +32,7 @@ was checked against the tree.
 | A command def is a `[?def]` with an `[effects]` clause; `[idempotent]` and `[compensates NAME]` are sibling clauses | `commands_effects.md` §2 | spec text; clauses exist in the parser |
 | flow.md §4.1: a step's `[do 'ns/verb']` head resolves through the module tree to a command def in a program, and through ρ over the composed grammar to a verb in a XAP | `flow.md` §4.1, §3 (`$env` is the resolver) | spec text; the flow resolver is NOT implemented — `CXER4953` appears only in spec and ledger |
 | `cx flow serve` "has no tenants, no surfaces, no cascade and no composed grammar"; it resolves acts through `[env …]`, a module tree | `flow.md` §4.23 (RULED: WF-28) | spec text |
-| The flow's `attempts=` is refused on a step whose resolved command declares no `[idempotent]` | `flow.md` §8 `CXER4952` row (RULED: WF-23) | spec text |
+| The flow's `attempts=` is refused on a step whose resolved command declares no `[idempotent]` | `flow.md` §8 `CXER4952` row and §4.8 (RULED: WF-26; WF-18 for the `until` bound) | spec text |
 | #747 already names two adapter kinds (declarative connector, coded bridge) and says the host must schedule ONE unit; #735 says "the contract is the interface either way; the declarative form is the default, not the only citizen" | issues #747, #735 | tracker |
 | The live adapter contract: foreign events become canonical CX at the boundary, on a DECLARED guarantee rung (`:complete-ordered` / `:coalesced-rescan` / `:snapshot-diff`), into a single-writer adapter stream | `live.md` §8 | spec text |
 | The connector inventory's five additions: connector document + engine, pagination, `client_credentials`, declarative signing, `Retry-After`; and its "must be ruled" items 3 (document shape) and 5 (ingestion time) | `design/728/connector_target_inventory_2026_09_06.md` | this branch |
@@ -158,9 +158,16 @@ the runner — which is the portability the ladder exists to deliver.
   `[effects]` is the `apply` def's declared `[effects]` (checked and
   enforced, L110 — the projection can neither widen nor hide what the code
   does); its `[idempotent]` and `[compensates …]` come from the verb, which
-  means **`[verb]` gains `idempotent::bool` and `compensates::string`** in
-  `feature.cxs`, mirroring the command clauses. This last is load-bearing,
-  not cosmetic: WF-23 refuses `attempts=` on a step whose resolved command
+  means **`[verb]` gains `idempotent::bool`, and carries `compensates::string`
+  as PW-1 already ruled it** (`ledger/rulings_2026_09_04_flow_w3_performers_1265.md`,
+  2026-09-04: an OPTIONAL attribute naming the compensating verb, carried
+  onto the composed grammar, compose-gated, read by flow's XAP-face resolver
+  into the row's `compensates=`; its `feature.cxs` / `grammar.cxs` edit-map
+  rows had not been executed and are executed with this packet), mirroring
+  the command clauses. *(Correction 2026-09-06, from the vocabulary session:
+  this text first presented `compensates=` as new and cited WF-23 for the
+  `attempts=` gate; the gate is WF-26, WF-23 is the notify rung.)* This is load-bearing,
+  not cosmetic: WF-26 refuses `attempts=` on a step whose resolved command
   declares no `[idempotent]`, so without it EVERY connector verb is
   retry-unsafe and every connector step refuses `attempts=`. `$store` is the
   environment's store binding: the deployment store on the host, and on the
@@ -208,6 +215,37 @@ the runner — which is the portability the ladder exists to deliver.
 - **(b) a runtime read of the vendor's OpenAPI URL.** REFUSED: unpinnable and
   unsignable; a grammar that changes under a running deployment defeats the
   compose gate and every W-check that was green at boot.
+
+### CK-4b — ingestion NEVER infers `idempotent=` — RULED: (a) under the standing letter-acceptance rule (owner veto open)
+
+Raised by the vocabulary session after reading CK-1 … CK-6: CK-4 lists what
+ingestion produces and says nothing about `idempotent=`, yet under CK-3 that
+attribute becomes the projected def's `[idempotent]`, and WF-26 admits
+`attempts=` ONLY on a command that declares it — `commands_effects.md` is
+deny-by-default, an undeclared command is retry-unsafe. So `idempotent=` on a
+connector verb is what authorizes a flow runner to re-send a remote call.
+
+- **(a) RULED — ingestion emits NO `idempotent=`; it emits an AUTHORING TODO
+  per verb, the posture CK-4 already takes for undetectable pagination.** A
+  human who has read the vendor's documentation (an idempotency-key header,
+  a documented safe retry) sets the attribute; the claim rests on a person,
+  not on an HTTP method name. Deny-by-default is intact: every ingested verb
+  refuses `attempts=` until someone declares it safe, and WF-26 needs no
+  second notion of a declared-versus-inferred `[idempotent]`. **What it
+  DELETES:** any method-based inference in the ingester; the possibility of
+  a generated connector carrying an idempotency claim nobody made.
+  **Strongest counter:** this kills the rung-4 retry/DLQ path for exactly
+  the connectors ingestion is meant to make cheap. **Answer:** it defers it
+  by one attribute per verb, set once by the connector's author; the
+  alternative is a flow re-POSTing a charge because RFC 9110 calls PUT
+  idempotent and the endpoint disagrees.
+- **(b) infer from the HTTP method (GET/PUT/DELETE idempotent per RFC 9110).**
+  REFUSED: true of the protocol, frequently false of the endpoint — PUTs that
+  allocate, charge or increment are ordinary. The gate would be checking a
+  box the ingester ticked from a method name.
+- **(c) infer, and teach WF-26 to distinguish declared from inferred.**
+  REFUSED: a second notion inside a safety gate, invented to rescue an
+  inference (b) already shows is unsound.
 
 ## CK-5 — where the engine lives — RULED: (a)
 
