@@ -168,9 +168,12 @@ the runner — which is the portability the ladder exists to deliver.
   is not an `act` verb of the same composition, and §4.7's `CXER4954`
   consumer, remain W3's and are unimplemented, so the attribute is live and
   unchecked at the XAP face until W3 lands — marked as such on both schema
-  rows. On the program face the projected def's `[compensates NAME]` is
-  checked at module load by the shipped `command_compensates_check`,
-  `vcx/code/command_contract.v`), mirroring the command clauses. *(Correction 2026-09-06, from the vocabulary session:
+  rows. On the program face the SHIPPED `command_compensates_check`
+  (`vcx/code/command_contract.v`, `CXER0239`) WILL cover the projected def's
+  `[compensates NAME]` the moment CK-3's projection lands — the projection
+  itself is UNIMPLEMENTED, so nothing is checked there today; CK-3's
+  implementation inherits that check and owes no new work on the program
+  face), mirroring the command clauses. *(Correction 2026-09-06, from the vocabulary session:
   this text first presented `compensates=` as new and cited WF-23 for the
   `attempts=` gate; the gate is WF-26, WF-23 is the notify rung.)* This is load-bearing,
   not cosmetic: WF-26 refuses `attempts=` on a step whose resolved command
