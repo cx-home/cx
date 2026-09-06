@@ -124,12 +124,22 @@ fn flow_cli_read(path string, what string) string {
 // ── the resolver, built from ENV.cx's module tree ────────────────────────────
 
 // FlowCliAct is one resolver row: the act NAME a `[do …]` head may carry, the
-// def's Tier-1 text address, its `[compensates]` pairing ('' = none) and the
-// callable expression the driver program binds.
+// def's Tier-1 text address, its `[compensates]` pairing ('' = none), whether
+// it declares `[idempotent]`, and the callable expression the driver program
+// binds.
+//
+// The row is the projection of exactly those def properties a flow's STATIC
+// checks need (RULED: 789-WF-38a), and it grows when a static check needs
+// one: `compensates` for §4.7's pre-pivot compensability check, `idempotent`
+// for §4.8's `attempts=` gate. `idempotent` is the BOOLEAN alone — the
+// clause's optional `[window DUR]` (`DefNode.idem_window`) is a RUNTIME dedup
+// horizon, and no static flow check reads it, so it stays off the row until
+// one does.
 struct FlowCliAct {
 	name        string
 	resolved    string
 	compensates string
+	idempotent  bool
 	callable    string
 }
 
@@ -153,6 +163,7 @@ fn flow_cli_local_act(span string) ?FlowCliAct {
 		name:        d.name
 		resolved:    flow_cli_tier1(span)
 		compensates: d.compensates
+		idempotent:  d.is_idempotent
 		callable:    '\$${d.name}'
 	}
 }
@@ -187,6 +198,7 @@ fn flow_cli_module_acts(span string, mut table code.ModuleTable) []FlowCliAct {
 			name:        '${prefix}/${name}'
 			resolved:    flow_cli_tier1(d.source or { span })
 			compensates: comp
+			idempotent:  d.is_idempotent
 			callable:    '\$${prefix}:${name}'
 		}
 	}
@@ -230,7 +242,15 @@ fn flow_cli_env_scan(path string) ([]string, []FlowCliAct) {
 
 // flow_cli_resolver renders the `[resolver [act …]…]` element (flow.md §4.1 —
 // the executing environment's ONE resolver; the rows are the same
-// `[act name= resolved=]` shape `validate` answers with).
+// `[act name= resolved= idempotent=?]` shape `validate` answers with).
+//
+// `compensates=` and `idempotent=` are emitted ONLY when the def declares the
+// clause: an ABSENT field means the def declares none, so a resolver row that
+// carries no `idempotent=` is NOT idempotent (RULED: 789-WF-38a), which is
+// `commands_effects.md`'s deny-by-default posture. Both sit ahead of the
+// `[fn …]` child on purpose — `cx` ends an element's attribute list at the
+// first content token, so an attribute written after the child would be
+// invisible to every read.
 fn flow_cli_resolver(acts []FlowCliAct) string {
 	mut b := []string{}
 	b << '[resolver'
@@ -238,6 +258,9 @@ fn flow_cli_resolver(acts []FlowCliAct) string {
 		mut row := "  [act name='${a.name}' resolved='${a.resolved}'"
 		if a.compensates != '' {
 			row += " compensates='${a.compensates}'"
+		}
+		if a.idempotent {
+			row += ' idempotent=true'
 		}
 		row += ' [fn ${a.callable}]]'
 		b << row
