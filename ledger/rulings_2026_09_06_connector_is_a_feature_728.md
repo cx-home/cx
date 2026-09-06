@@ -163,8 +163,14 @@ the runner — which is the portability the ladder exists to deliver.
   2026-09-04: an OPTIONAL attribute naming the compensating verb, carried
   onto the composed grammar, compose-gated, read by flow's XAP-face resolver
   into the row's `compensates=`; its `feature.cxs` / `grammar.cxs` edit-map
-  rows had not been executed and are executed with this packet), mirroring
-  the command clauses. *(Correction 2026-09-06, from the vocabulary session:
+  rows are W3-GATED — scheduled, not missed — and are executed EARLY with this
+  packet, SCHEMA ONLY: PW-1's compose-gate refusal of a pairing whose target
+  is not an `act` verb of the same composition, and §4.7's `CXER4954`
+  consumer, remain W3's and are unimplemented, so the attribute is live and
+  unchecked at the XAP face until W3 lands — marked as such on both schema
+  rows. On the program face the projected def's `[compensates NAME]` is
+  checked at module load by the shipped `command_compensates_check`,
+  `vcx/code/command_contract.v`), mirroring the command clauses. *(Correction 2026-09-06, from the vocabulary session:
   this text first presented `compensates=` as new and cited WF-23 for the
   `attempts=` gate; the gate is WF-26, WF-23 is the notify rung.)* This is load-bearing,
   not cosmetic: WF-26 refuses `attempts=` on a step whose resolved command
