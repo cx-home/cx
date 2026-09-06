@@ -1,7 +1,6 @@
 # Rulings 2026-09-06 — #728 component 2: a connector is a feature (CK-1 … CK-6)
 
-**Status: PROPOSED.** Recorded BEFORE any spec text, on the WF pattern: each
-item is a letter with what it DELETES; (a) is the recommendation. Ruling ids,
+**Status: RULED — CK-1 … CK-6 (a), owner 2026-09-06 ("all a on CK-1..CK-6").** Proposed first (0e20e24b7), ruled in the following commit; the edit map below is EXECUTED in that commit. Each item is a letter with what it DELETES. Ruling ids,
 in full so each greps literally: `728-CK-1` `728-CK-2` `728-CK-3` `728-CK-4`
 `728-CK-5` `728-CK-6`. Branch `design/789-workflow`. Owner directive
 2026-09-06 ("1a"): record the unification as a ruling packet rather than an
@@ -57,9 +56,9 @@ generally — and until it is, a connector reached from `cx flow serve` and the
 same connector reached from the XAP host are two different resolved things,
 which makes the one-law gate unbuildable across faces. CK-3 is that ruling.
 
-## CK-1 — what a connector IS — RECOMMENDED: (a)
+## CK-1 — what a connector IS — RULED: (a)
 
-- **(a) RECOMMENDED — a connector is a FEATURE PACKAGE (`kind=feature`, §1.1),
+- **(a) RULED — a connector is a FEATURE PACKAGE (`kind=feature`, §1.1),
   never a fourth package kind and never a standalone connector-definition
   document.** Its grammar is the external system's nouns and verbs
   (`stripe/charge`, `stripe/create-charge`); its `[source]` stack names how
@@ -97,9 +96,9 @@ which makes the one-law gate unbuildable across faces. CK-3 is that ruling.
   carries no grammar and can hold no authority, and a connector's verbs must
   sit on the PEP with an effect signature like every act.
 
-## CK-2 — where the transport declaration lives — RECOMMENDED: (a)
+## CK-2 — where the transport declaration lives — RULED: (a)
 
-- **(a) RECOMMENDED — the EXISTING `[source]` stack, extended; never a new
+- **(a) RULED — the EXISTING `[source]` stack, extended; never a new
   block.** A `[gateway kind=…]` row already names a transport by open kind
   with `priority=`; it gains the engine's per-transport NEEDS as attributes
   — the auth scheme (naming a secret-handle capability, #728-6, never a
@@ -140,7 +139,7 @@ which makes the one-law gate unbuildable across faces. CK-3 is that ruling.
   (§6.3.1); it cannot declare which gateways a feature HAS, because compose
   and the adopter's narrowing read the feature.
 
-## CK-3 — one road to a verb from both faces — RECOMMENDED: (a)
+## CK-3 — one road to a verb from both faces — RULED: (a)
 
 **The fact.** The host registers `<feature>:apply`. A program loading the
 same package through `[?lib 'pkg:…']` sees `apply` and `readout`, not one
@@ -149,7 +148,7 @@ to a COMMAND DEF. So today, under `cx flow serve` with `[env]`, that head
 resolves to nothing, and the same flow that runs on the host cannot run on
 the runner — which is the portability the ladder exists to deliver.
 
-- **(a) RECOMMENDED — loading a feature package as a MODULE projects ONE
+- **(a) RULED — loading a feature package as a MODULE projects ONE
   command def per grammar verb; the projection is the loader's, defined
   once, and is what BOTH faces resolve to.** For each `[verb name=v …]`
   whose `[intent [do :v [p1] [p2]…]]` names its parameters (N-COMPOSE-7), the
@@ -189,9 +188,9 @@ the runner — which is the portability the ladder exists to deliver.
   ruled the runner has neither, deliberately — that is what keeps a make
   replacement from adopting the XAP model. (c) is a second host.
 
-## CK-4 — OpenAPI ingestion: what it produces, and when — RECOMMENDED: (a)
+## CK-4 — OpenAPI ingestion: what it produces, and when — RULED: (a)
 
-- **(a) RECOMMENDED — a BUILD-TIME pure transform, OpenAPI document → feature
+- **(a) RULED — a BUILD-TIME pure transform, OpenAPI document → feature
   package, published like any feature and treated as an ARCHETYPE the
   adopter narrows with `instance of=`.** Paths and operations become verbs
   with N-COMPOSE-7 parameter lists; schemas become nouns; the servers block
@@ -210,9 +209,9 @@ the runner — which is the portability the ladder exists to deliver.
   unsignable; a grammar that changes under a running deployment defeats the
   compose gate and every W-check that was green at boot.
 
-## CK-5 — where the engine lives — RECOMMENDED: (a)
+## CK-5 — where the engine lives — RULED: (a)
 
-- **(a) RECOMMENDED — a LIBRARY package, `cx-connector`, that a connector
+- **(a) RULED — a LIBRARY package, `cx-connector`, that a connector
   feature `requires`.** N-DIST-2 applies verbatim: the library holds no
   authority and runs under the REQUIRING feature's granted slice. It
   executes a `[gateway]` declaration: builds and signs requests, walks
@@ -241,12 +240,12 @@ the runner — which is the portability the ladder exists to deliver.
 - **(c) the engine inside each connector package.** REFUSED: N copies of one
   library, each re-verified, each drifting.
 
-## CK-6 — a connector feature does NOT depend on flow — RECOMMENDED: (a)
+## CK-6 — a connector feature does NOT depend on flow — RULED: (a)
 
 Asked by the owner mid-packet: "are all system adapter features dependent on
 cx flow or not?"
 
-- **(a) RECOMMENDED — NO, and the direction is ruled so nothing later
+- **(a) RULED — NO, and the direction is ruled so nothing later
   reverses it.** A connector feature's verbs are emitted by ANY emitter — a
   control on a surface, an agent, a binding, a flow step — through the one
   PEP; its `[source]` ingestion runs on the host's or runner's cadence with
@@ -266,7 +265,7 @@ cx flow or not?"
   them).** REFUSED: a read-only rung-1 connector feeding a dashboard would
   then require a workflow engine it never calls.
 
-## What this packet changes elsewhere (edit map — executed WHEN RULED, not now)
+## What this packet changes elsewhere (edit map — EXECUTED with the ruling, commit following 0e20e24b7)
 
 | Where | Change |
 |---|---|
