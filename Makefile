@@ -681,7 +681,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := test-vcx-timing check-conformance-coverage abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster
+TEST_TARGETS := test-vcx-timing check-conformance-coverage abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate flow-vocabulary-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS lanes whose
@@ -815,6 +815,26 @@ check-effect-alignment: build-vcx
 check-code-spec-consistency: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-code-spec-consistency: build-vcx
 	@"$(CX_BIN)" --allow-read --allow-write scripts/check_code_spec_consistency.cx > /dev/null && echo "check-code-spec-consistency OK — gates 1-3 + no-impl-anchor + no-dangling-decision green (run the script directly for the JSON report)"
+
+# ── flow-vocabulary-gate (#1323) — the REFUSAL PROSE gate that was missing.
+# check-code-spec-consistency compares signatures and stdlib-catalog-gate
+# compares catalog rows; neither reads a refusal's REASON. So vocabulary
+# round 2 (RULED: WF-18 … WF-26) landed in flow.md §2.3 ahead of its
+# implementation and three shipped refusals in stdlib/flow.cx went on
+# reciting rules the spec had withdrawn ON THE SAME BRANCH, while five more
+# admitted tokens fell through to the generic unknown-attribute sweep naming
+# no landing at all — and nothing was red. This is that red: it reads §2.3's
+# word table and the module's four refusal/pending tables and holds (A) no
+# word §2.3 ADMITS is refused from the register by a row that never cited
+# the ruling admitting it, (B) no admitted word the module does not yet
+# implement refuses in silence, (C) every pending refusal names its landing
+# (cites its WF- ruling and says "not yet implemented" — the shape the W3
+# performer-axis refusal already uses). It also fails when its own inputs
+# do not parse, so it cannot go green over nothing.
+.PHONY: flow-vocabulary-gate
+flow-vocabulary-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
+flow-vocabulary-gate: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/flow_vocabulary_gate.cx
 
 # ── check-code-fixtures (gate 4; repaired + wired by the #805 gate-truth
 # batch — it was RED and in no lane, so no stream gate ever ran it). The
