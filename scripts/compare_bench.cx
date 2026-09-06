@@ -138,7 +138,12 @@
                 [= $cf [* $c 1.0e0]]
                 [; b=0 would be inf in the Python; measured medians are never 0,
                    and a 0 baseline with any current regresses. ]
-                [= $ratio [?if [= $bf 0.0e0] [then 1.0e10] [else [/ $cf $bf]]]]
+                [; a `_mbps` key is a THROUGHPUT — higher is better (#1249): the
+                   ratio inverts so a slowdown still reads > 1. ]
+                [= $higher-better [$strings:ends-with $key '_mbps']]
+                [= $ratio [?if $higher-better
+                  [then [?if [= $cf 0.0e0] [then 1.0e10] [else [/ $bf $cf]]]]
+                  [else [?if [= $bf 0.0e0] [then 1.0e10] [else [/ $cf $bf]]]]]]
                 [= $delta [* [- $ratio 1.0e0] 100.0e0]]
                 [= $badge [?if [> $ratio $threshold] [then 'REGRES']
                   [else [?if [< $ratio 0.9e0] [then 'FASTER'] [else 'OK    ']]]]]

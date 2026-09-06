@@ -52,6 +52,19 @@ the pre-campaign baseline of 18.779 / 15.316 / 10.348 that is **-8.0% json,
 | xml | 7.942× | 9.40 | `Element` + `Attribute`; `AttributeMeta` retired by RP-4 |
 | cx | 7.576–7.580× | 9.00 | `MapNode` / `MapEntry` |
 
+Re-pinned 2026-09-04 (#1208 + #1247): bounds are **measured +5 %** — the `+1.0` for a retained input
+copy is gone (see below). json 7.569 → 7.95, xml 7.941 → 8.35, cx 7.577–7.588 → 8.00, and the new
+`cxel` lane (an element corpus with atom / date / duration attribute columns) 15.507 → 16.30 — it read
+16.325 before the per-parse scalar intern pool; what remains is one `AttributeMeta` record per autotyped
+attribute (128k of them), which is its own representation issue.
+
+Re-pinned 2026-09-04 (#1275): `cxel` 15.507 → **7.600**, bound 8.00. Those 128k `AttributeMeta` records
+each held the attribute's type NAME as a string (`atom`, `date`, `duration`, `int`) — one 112-byte
+allocation per autotyped attribute, more than half the lane's live set, saying what `Attribute`'s inline
+`has_dtype` / `dtype` (RP-4) already say. `new_attribute` now routes every round-tripping name inline
+through `set_data_type`'s guard; only a sized numeric (`u16`, `f32`, …) or a namespaced attribute still
+pools. The census reads `attr_meta=0`, and the four lanes now sit together at 7.57–7.94×.
+
 Bounds are pinned at **measured + 1.0, then +5%** (see "what the instrument can
 and cannot see" for what the +1.0 buys). They are a **ratchet**: every wave that
 improves a lane re-pins its bound DOWNWARD in `run.sh` in the same commit that
@@ -128,6 +141,12 @@ or a spill in a live frame, which nothing portable can scrub. Hence `+1.0` of
 absolute headroom on every bound. The transient itself is a parser-side leak of
 the RP-4 family and is tracked separately as #1208 for W6 — it is not what this guard
 measures, and the guard must not be sensitive to it.
+
+**Update 2026-09-04 — #1208 landed and the disagreement is gone.** With the copies removed
+(`validate_utf8_str` over a no-copy view; the BOM sniff indexes the string), the `-prod` and
+`-cflags -O2` drivers report the SAME live bytes on json and xml at 32k records (7.569 / 7.941 both)
+and differ on cx by 0.011× (one small transient, the 0.03% class above). The `+1.0` therefore no longer
+buys anything and the bounds were re-pinned to measured +5 %.
 
 `-prod` is the build the guard uses, for the reason gates 14/15/16 carry it
 (#835): the driver compiles the `cx` module as SOURCE, so a dev build would be

@@ -15,6 +15,275 @@ version, library version).
 
 ### Added
 
+- **A grammar's own laws no longer follow their caller — the grammar-expression
+  environment (RULED: GE-0..GE-3,
+  ledger/rulings_2026_09_05_grammar_expression_env.md).** A rule's `[check]`
+  (§4.9a) and a derived noun's `[fold]` (§4.12) evaluated in the `cx:eval`
+  sandbox, which installs THE CALLER's `[?lib]` set as a non-widening
+  allow-list. That is right for `cx:eval`, where the caller is the author of
+  the fragment, and wrong for a grammar, where the author is the FEATURE and
+  the caller is whoever emitted the intent. Measured on the shipped tree: the
+  same feature, the same law, **admitted or refused depending on whether the
+  emitting program happened to `[?lib] 'cx-stdlib/strings'`** — and it failed
+  in the loud direction, refusing every intent, which reads as "checks are
+  broken". §4.9's whole claim is that a module and a grammar rule refuse the
+  same intent for the same reason; a law whose meaning follows its caller does
+  not meet it.
+
+  The environment is now **fixed by the grammar** (new §4.9b): the expression's
+  own bindings, the built-in operators, and exactly `cx-stdlib/strings`,
+  `cx-stdlib/math` and `cx-stdlib/re`, pre-imported under their canonical
+  prefixes with no import line to write. One definition covers `[check]` and
+  `[fold]` alike — they share the code path, and describing it twice is how
+  they would drift. A call to any other module is a **compose** conflict (W10 /
+  W13), so the author meets it when the grammar is gated rather than the
+  adopter once per intent; `CXER4113` is unreachable from a grammar expression.
+
+  **Why these three, and how the list grows.** Every member declares no impure
+  def — a property #1298 made VERIFIED rather than trusted, since the module
+  loader now runs the purity checker over each module's defs and its resolved
+  imports. Purity is necessary and not sufficient: `zip` and `tar` are pure and
+  would put decompression on a commit path, `diagram` is pure and has 559
+  members, and the protocol vocabularies have no business in a law about a
+  record's values. A module joins the list **by ruling, with the case that
+  motivated it** — never because it happens to be pure. Nothing is
+  HTTPS-resolved and nothing is author-named, so a law carries no supply chain;
+  `re` is RE2, so matching stays linear-time in a path that runs once per
+  intent.
+
+  **Adopters.** A `[check]` or `[fold]` that today calls a module and happens to
+  work — because the calling program imported it — becomes a compose refusal.
+  Nothing in this tree did (the landed fixtures are builtins-only), but it is a
+  real cutover and it is the point: a law that worked by coincidence was not
+  working. What newly becomes possible is the larger half — textual laws are
+  expressible **on the component path**, which has no module `apply` to fall
+  back on.
+
+  Ruled in the same pass and NOT built (RULED: DF-1/DF-2,
+  ledger/rulings_2026_09_05_computed_fields.md): the grammar does not COMPUTE
+  field values. A value is supplied by the caller and checked by the grammar. A
+  URL-safe slug needs no new surface — it is a pattern-typed field plus
+  `identity=`, computed once at creation by the caller precisely because an
+  identity must be stable.
+
+- **A derived noun carries its own `[fold]` — wave D of the constraint grammar
+  (#1305; RULED: 1308-CG-5,
+  ledger/rulings_2026_09_05_constraint_grammar_1308.md).** §4.2 made a derived
+  noun deriver-reserved: computed by a component bound in the wiring. That is
+  right when the derivation is a program and wrong when it is a QUERY — and a
+  readout is almost always a query. A composed XAP could not have a readout
+  family without shipping a component per readout (behavior travelling as
+  code), and the `[$xap:component]` path could not run it even then. A
+  `derived=true` noun may now carry the derivation itself, as a planar
+  comprehension over its own `[from …]` sources:
+
+  ```
+  [noun name=by-region derived=true
+    [field name=region type=text] [field name=orders type=int]
+    [from 'orders/order']
+    [fold "[?for [in $o 'orders/order'] [group-by $o/region]
+            [yield [by-region region=$key orders=[$count $group]]]]"]]
+  ```
+
+  `[?for]` stays THE comprehension — no query surface is added. **W13** holds
+  the comprehension's generator sources to the noun's `[from …]` set
+  (provenance is the read-authority envelope), holds it PURE (a fold is
+  recomputed on read, so an effect inside it would run on every read), holds
+  every `[yield]` to the noun's own name carrying only its declared fields, and
+  refuses a `[fold]` on a noun that is not `derived=true`. Run assembly stops
+  raising **`CXER4875`** for a folded noun — it has a producer, and the
+  producer is the declaration — and the slice is **recomputed from its
+  sources' current slices on read**, deterministically. A `[deriver]` bound in
+  the wiring still overrides the fold: one noun, one producer, and the wiring
+  has the last word.
+
+  Additive: a derived noun without a `[fold]` keeps `CXER4875` exactly as §4.2
+  states it, and nothing about `[from …]`, W5 or W7 changes.
+
+  Landing this closes the #1308 campaign (waves A–D). The planar layer gains
+  two static-extraction surfaces it was already specified to have —
+  `planar_comprehension_shape` (a comprehension's literal sources and yield
+  shapes) and `planar_bind_literal_sources` (rewriting a host-resolved literal
+  source into a binding) — both structural, both usable by any host that
+  resolves names rather than values.
+
+- **The bitemporal read — `[$xap:state RT PATH {at-seq: N, valid-at: T}]` —
+  wave C of the constraint grammar (#1306; RULED: 1308-CG-6,
+  ledger/rulings_2026_09_05_constraint_grammar_1308.md).** Wave A gave the
+  valid-time axis one spelling (`[field … axis=valid-from|valid-to]`); this is
+  the read that uses it, in `core/bitemporal.md`'s own names. `at-seq: N` folds
+  the slice to a journal point (a compaction summary has no seq of its own and
+  is kept at every N — a read never sees less than what compaction already made
+  permanent). `valid-at: T` keeps the records whose half-open `[from, to)`
+  contains `T`, with an ABSENT `valid-to` as the open end, reading the axis
+  field NAMES off the attached grammar so a noun that declares no axis is
+  filtered by nothing rather than guessed at. Given together the two axes
+  INTERSECT, which is the bitemporal question itself: what did we believe at
+  journal point N about what was true at T. **`as-of` is not minted** — L118
+  names this read `{at-seq, valid-at}`, and one spelling for one thing is why
+  the axis is in the grammar rather than in each vocabulary.
+
+  Filed out of this wave, with a corrected premise: **#1310** — the xap fold
+  does not consume the journal's `[supersedes]` correction taxonomy, so a
+  corrected record still shows in the xap read while the journal read has
+  already dropped it. The CG-6 ruling deferred that fold on the ground that
+  the taxonomy was "unshipped in `stdlib_journal.v`"; it had in fact shipped
+  at 3b7ae5b01, and the real remaining work is the XAP fold's, not stream 8's.
+  The ruling's outcome stands; its stated reason did not survive contact.
+
+- **The grammar's laws are EVALUATED — wave B of the constraint grammar
+  (#1302, #1301, #1304; RULED: 1308-CG-2 / CG-1 / CG-4,
+  ledger/rulings_2026_09_05_constraint_grammar_1308.md).** A `[rule]` carried
+  a prose `[statement]` and nothing evaluated it: every law a downstream
+  vocabulary claimed was enforced by a module's `apply` under `[$xap:host]` or
+  by nobody, and a `[$xap:component]` runtime held no law at all. Three
+  declarations now run at the ONE pre-commit enforcement point §4.9 opened —
+  after the PEP admits, before anything is appended, the position `apply`
+  occupies under the host — so a module and a grammar rule refuse the same
+  intent at the same moment, and **nothing is appended** on a refusal:
+  - **`[check 'SOURCE']`** (§4.9a) — the law itself, as a PURE cx predicate
+    over `$intent`, `$row` (the identity's merged record, absent when the
+    identity is new) and, at `scope=fold`, `$slice`. Purity is checked at
+    compose by the shipped checker (**W10**), which is what lets the runtime
+    evaluate it WITHOUT the `eval` capability: that capability gates running
+    arbitrary data as code, and a predicate the gate has proved pure is not
+    that. A false answer refuses **`cx-err:CXER4865` E_XAP_RULE_REFUSED**
+    naming the rule and carrying its `[statement]`; an `[err]` answer refuses
+    the same way with the cause, because a law that cannot decide has not
+    admitted anything. `nouns=` is required beside a `[check]`. The predicate
+    is source text — the treatment a `[?def]` body already gets — because an
+    unquoted expression is CONTENT in a document and is EVALUATED on the spot
+    in a program literal; a quoted body is the one spelling that means the
+    same thing in both positions.
+  - **`kind=cardinality`** (§4.10) — the enum member that had been in the
+    rule-kind vocabulary since it was written, read by nothing. `of=` names
+    the group of sibling-noun-typed alternatives, `min=`/`max=` bound how many
+    one record may fill (**W9**), a second alternative refuses
+    **`cx-err:CXER4866` E_XAP_CARDINALITY** naming what is present, and a
+    `[facet]` over the GROUP is admitted where §4.5's "never a sub-noun" arm
+    refuses it — a group has values to count, namely the alternatives' names.
+  - **`[transition field= from= to=]`** on an act verb (§4.11) — the state
+    machine every vocabulary hand-rolls. **W12** holds the field to an
+    enum-typed field of a noun the verb `[writes]` and every state to a member
+    of that enum; ordering between two transitioning verbs is DERIVED and a
+    hand-written `kind=ordering` rule contradicting it is a W4 conflict; a
+    state with no outgoing transition is a compose-report
+    `[note code=:terminal-state]` with `ok=true`. At the point, a record whose
+    state is not in `from` refuses **`cx-err:CXER4868` E_XAP_TRANSITION**
+    naming actual and allowed; a NEW identity admits only the enum's initial
+    (first-declared) state; and the runtime **writes `to`** onto the committed
+    record, so an intent carrying a different value for that field is refused
+    rather than silently overwritten.
+
+  **Adopters.** Additive throughout except the cardinality rule: a
+  `kind=cardinality` without `of=`/`min=`/`max=` no longer composes green, and
+  the only such rule in the tree was #1301's own probe. A prose-only rule stays
+  runtime-class documentation exactly as §4 says — declaring is what buys the
+  enforcement, and a contract sealed under a prose law becomes enforced only
+  when it declares one, which is a re-publish under SEA-1. One behavior change
+  worth naming: with a grammar attached and no component claiming a verb, the
+  fold now routes by the verb's written NOUN (`/<noun>`) instead of falling
+  back to an arbitrary bound component's bind — a rule that reads a row and a
+  fold that writes one have to agree about where the row is.
+
+- **The feature grammar carries its nouns' FIELDS, their TYPES, and the
+  valid-time axis — wave A of the constraint grammar (#1307, #1303, #1193,
+  #1306; RULED: 1308-CG-7 / CG-3 / CG-6,
+  ledger/rulings_2026_09_05_constraint_grammar_1308.md).** The composed
+  grammar named the nouns and carried nothing of what they hold, so a served
+  grammar was not sufficient for a surface and every client re-read the
+  feature documents the grammar was the projection of. Three declarations
+  close that, and one of them closes a silent hole beside it:
+  - **Fields on the composed grammar** (§4.8): a `[noun]` entry now carries
+    its `[field]`s verbatim and in declaration order, its feature's
+    `[types]`, `identity=` (which DEFAULTS to the field the feature's sole
+    key registration names on that noun) and `known-by=` (the one field a
+    surface shows when it can show one), beside the `[views]` it already
+    carried. An `observe` verb may declare `answers=law` — the readout a
+    governance surface offers without hard-coding a verb name (at most one
+    per feature). **W15** refuses an `identity=`/`known-by=` naming no
+    field, a second `answers=law`, and `answers=law` on a non-observe verb.
+    An identity that cannot default because two registrations name the noun
+    is a compose-report **`[note code=:identity-ambiguous]`** — a report, not
+    a violation: `ok=` is untouched.
+  - **`type=` resolves** (§4.6): a field's type is a member of the closed
+    grammar scalar set (`text`, `prose`, `int`, `decimal`, `bool`, `instant`,
+    `interval`, `geo-point`, `ref`), a SIBLING noun, or a name declared in
+    the feature's new `[types]` element — which holds `core/schema.md` type
+    declarations verbatim (`[type money::decimal [min 0] [unit currency]]`).
+    Anything else is **W11**. At the one pre-commit enforcement point (§4.9 —
+    after the PEP admits, before anything is appended, the position a
+    module's `apply` occupies under `[$xap:host]`) an intent field whose
+    value the declared type does not admit refuses **`cx-err:CXER4867`
+    E_XAP_FIELD_TYPE** naming field, type and value, with nothing appended.
+    A `[$xap:component]` runtime holds this law too — it held none before.
+  - **The valid-time axis** (§4.7): `[field … axis=valid-from|valid-to]`
+    gives `core/bitemporal.md` L115's half-open interval ONE spelling instead
+    of one per vocabulary. **W14** refuses a non-`instant` axis field, two
+    fields on one axis value, and half a pair.
+
+  **Adopters.** Additive for every sealed contract *except* `type=`, which was
+  free text and is now closed: a feature whose fields all resolve composes to
+  the same grammar plus its fields, and a `type=` outside the three
+  resolutions no longer composes green. The cutover is one pass, no
+  dual-accept — the tree's own domain quantities (`did`, `hash`, `money`,
+  `mmsi`, `knots`, `deg`, `nm`, `minutes`) are now declared `[types]`, and
+  `string`/`duration` are spelled `text`/`interval`. `label=` is NOT the
+  field-naming attribute: it stays the display name §4.3's `[rename]` writes.
+  The field a surface shows when it can show only one is **`known-by=`** — a
+  spelling no reader can mistake for a display string, and one that pairs with
+  `identity=` so the two teach the difference they turn on: the system
+  ADDRESSES a record by its `identity`, a person RECOGNIZES it by its
+  `known-by`.
+
+- **The noun-level `[views]` declaration — sort, facet, default order and
+  hidden-by-default as compose-checked CLAUSES, never verbs (#1285, RULED:
+  VG-1; ledger/rulings_2026_09_04_view_grammar.md).** Sorting, filtering,
+  faceting and paging have no effect and commit nothing; they are the
+  comprehension's clauses (`[where]` / `[order-by]` / `[group-by]` /
+  `[yield]`) applied to a noun, the third part of speech beside verb and
+  noun. A noun may now declare what those clauses may do over it:
+  `[views [sort field=…] [facet field=…] [default-order field=… dir=…]
+  [hidden field=…]]` (xap_grammar_composition.md §4.5, feature.cxs). The
+  compose gate gains **W8** (unknown field, default order not sortable,
+  facet over a sub-noun, a field twice in one role — every arm reported);
+  the composed grammar carries `[views]` verbatim; `[$xap:instantiate]`
+  accepts `[add on=NOUN [views …]]`. `cx-x/ux` consumes it: `[$ux:table]`
+  omits `[hidden]` fields unless the `order` hint names them, and
+  `sort-of` / `facet-of` / `ordered-by` / `sort-fields` / `facet-fields` /
+  `hidden-fields` derive the P0-60/61/62 controls from the declaration.
+  **Adopter note — additive.** A noun with no `[views]` composes and
+  renders exactly as before. A feature that pages or sorts a noun declares
+  `[views]` on it; the gate names the noun and field when a declaration is
+  wrong. A feature that implemented sort or filter as INTENTS migrates them
+  to queries (cutover-first, no dual-accept): an effectful "sort" verb was
+  never a verb. `show=disabled` stays authorization; `[hidden]` and the
+  `view`/`order` hints are presentation; the two never share a word.
+
+- **`cx-stdlib/saml` — the SAML 2.0 service-provider verify core (#1091,
+  RULED: S-0…S-9).** `verify` takes the raw XML octets and the IdP's public
+  keys and returns **the verified subtree** — never a boolean beside a
+  document — so no caller can hold a "valid" answer and read a different
+  node, which is what every signature-wrapping variant exploits;
+  `assertion` checks the `Response` envelope and selects the one covered
+  `Assertion`; `validate` checks `Issuer`, `Conditions` and bearer
+  `SubjectConfirmation` against `opts.now`; `attributes` / `name-id` read
+  every text node with comments elided, which defeats the comment-
+  truncation class. The module reads XML itself (the core importer is
+  data-oriented and not infoset-faithful), canonicalizes exclusively,
+  refuses SHA-1 and every transform beyond enveloped-signature + exclusive
+  C14N, never consults `KeyInfo`, holds no state and reads no clock.
+  `CXER5400–5411`. The 81-case corpus (every XSW family, transform abuse,
+  well-formedness, each code) was written before the verifier and its
+  canonical octets are pinned against libxml2, not against the module.
+
+- **A perf ratchet in the release cut (#1249, RULED: 1249-Q1a).**
+  `make perf-ratchet` measures (`bench-json`, now including gate 15's
+  `[?for]`/`[?map]` MB/s) and compares against the committed
+  `bench/baseline.json` at 10 %; `tag_release.sh` aborts the cut on a
+  regression and re-pins the baseline on green (release-process.md §2,
+  phase 1b).
+
 - **Closed-key maps: the schema `[keys CLAUSE…]` constraint wrapper
   (#1155, RULED: EN-2).** A `[map K V]` declaration closes its VALUE
   domain through `V`; `[keys …]` applies the same `§7` catalog to its
@@ -41,6 +310,27 @@ version, library version).
   constraint.
 
 ### Changed
+
+- **Evaluator hot paths (perf):** map key lookup compares keys without
+  formatting them, and `[$map:get]` / `[$map:contains]` walk the carrier
+  directly — int-keyed probes 3.5×, string-keyed 2.6× (#1240; the wide-map
+  hash index is an open owner question, 1240-Q1); parameter defaults are
+  parsed once at `[?def]` (#1243); `+ - *` classify their operands in one
+  pass (#1244); call envs alias the dynamic context instead of cloning it
+  per call under `[?with-scope]` (#1245); string-carried scalar images
+  (atoms always; short dates / decimals / bigints / bytes / durations /
+  periods) are interned per parse (#1247). All byte-identical.
+- **The CX, XML and Markdown emitters write into one `strings.Builder`
+  (#1242 B).** The per-level `[]string` + `join` accumulators are gone;
+  byte-identical across 3,448 in-tree pairs and the extraction gate. The
+  deep-nesting shape was quadratic in joins: on a 90-deep 4.5 MB corpus
+  `--to=cx` is −30 % wall and −50 % peak RSS, `--to=md` −28 % / −49 %;
+  the flat 20 MB corpus (parse-bound) drops ~7 % peak. Plain `cx fmt`
+  does not ride these emitters — its own outlier is #1281.
+- **`bench/repr` re-pinned to measured +5 %** (json 7.95, xml 8.35, cx
+  8.00, new `cxel` lane 16.30): the `+1.0` headroom for a retained input
+  copy is gone with #1208 — the `-prod` and `-O2` drivers now agree
+  byte-for-byte.
 
 - **The feature runtime contract takes the deployment context `$host`, not a
   bare store handle (#1210, RULED: HC-1 —
@@ -91,6 +381,144 @@ version, library version).
   authoring and client guides follow.
 
 ### Fixed
+
+- **Module defs are purity-checked at load (#1298).** The static purity check
+  (code.md §6.5.x / D11 — a `pure` def, explicit or default, whose body calls
+  a known-impure def or primitive refuses `CXER0233` at definition) ran for
+  PROGRAM-level `[?def]`s only. `load_module` parsed every `[?def]` and never
+  called the checker; `ensure_module_scope` turned those defs into closures
+  carrying the DECLARED purity without inferring anything from the body. So a
+  module could declare a default-pure def that called an impure sibling, load,
+  and export it as a pure member — and every consumer that relies on the label
+  (`journal fold` / `snapshot` reducers, `validate`, `simulate`, the
+  `[returns …]`-pure surfaces) trusted a claim the engine had never checked.
+  The same text at the top level was refused: a guarantee that depended on
+  where the author put the def. Module bodies are the LARGER surface — the
+  stdlib and every `[?lib]` import — and they were the unchecked one.
+
+  The loader now runs the checker after Pass 1 (declarations registered) and
+  the `[?lib]` recursion (imports resolved), because both are inputs: a
+  sibling call resolves against the module's own defs — by either spelling,
+  `[$name …]` and the bareword head `[name …]` (#1288's rule) — and a
+  module-qualified call into an import classifies through the IMPORTED
+  module's declared purity. A violation refuses the module at load with
+  `cx-err:CXER0233` naming the def and the callee; `check_all` walks the defs
+  in sorted order so the refusal is the same one on every run. Declaring an
+  impure member is not itself a violation — only a pure label contradicting
+  its body is. No shipped stdlib module changed: they were already consistent.
+
+- **A default-pure `[?def]` calling an impure sibling is refused `CXER0233`
+  by either call spelling, whichever of the two is declared first (#1288).**
+  The def-time purity check was built over the def under check alone, so a
+  call to a sibling — `[$bump $x]`, or the bareword head `[bump $x]` that
+  dispatches as the same call (#55) — resolved to no def and no builtin and
+  classified as pure; the walker did not record bareword heads at all. The
+  check now sees every `[?def]` declaration of the program block (parsed
+  once, before any is evaluated, so a sibling declared LATER counts) plus
+  the closures already registered, and records a bareword head resolved
+  against the defs ONLY — a bare `[now $x]` stays the data element it is
+  (named builtins are reached only via `[$name …]`, code.md §6.5), so a pure
+  def that builds an element named like an impure builtin is still accepted.
+  Seven `program-purity-sibling-*` fixtures. Module defs remain unchecked
+  by the loader — filed as #1298.
+
+- **`--from=json --to=json` peak RSS on a 19 MB / 300k-record document:
+  1,181 MB → 685 MB (#1226 re-measurement after #1208 + #1242).** The two
+  post-parse passes on the JSON codec path — `apply_cx_type_sidecar` and
+  `apply_lossless_structure` — rebuilt every Map, Array and Element on the
+  way out even when nothing below carried a `cx:type` sidecar or a reserved
+  `$…` / `cx:…` key, so the parse held up to three copies of the 144 MB tree
+  live at once (`marked` peaked at 383 MB against a 144 MB tree; the pacer's
+  2× goal then committed 16 arenas). Both walks are now identity-preserving
+  (the RP-3 `flatten_node` rule): untouched subtrees come back as the very
+  node that went in; rewritten ones are built exactly as before. `marked`
+  now peaks at ~185 MB (tree + input + the streamed output). The emit lane
+  was already streaming (#1242) and adds ~34 MB live. The remaining gap to
+  the RP-5 ≤8× bar is pacer policy (goal = 2 × marked) and the span pool,
+  which never trims on a monotone build-up — reduced to cx-home/v#6
+  (mirror #1295): coalescing restamps `pool_gen`, so a growing free region
+  never ages past the trim gate. The perf ratchet gains
+  `convert.json_300k_arenas` (peak committed arenas from the vgc trace) and
+  `convert.json_300k_ms` so the parse-side copies cannot return unnoticed.
+
+- **The `cxel` live-memory lane 15.507× → 7.600× — an autotyped attribute no
+  longer allocates an `AttributeMeta` to hold its type name (#1275).** Every
+  parser that types an attribute (the CX element reader, logfmt, the binary
+  and event readers, the AST-JSON reader) hands the type NAME to
+  `new_attribute` through `AttributeMeta{ data_type: … }`, and `new_attribute`
+  pooled it verbatim: 128,000 records of 112 bytes on the 32k-record element
+  corpus — more than half the lane's live set — to say what `Attribute`'s
+  inline `has_dtype` / `dtype` (RP-4) already say. `new_attribute` now routes
+  the name through `set_data_type`'s round-trip guard, so `int`, `atom`,
+  `date`, `duration`, … ride in the 56-byte `Attribute`; only a sized numeric
+  (`u16`, `f32`, …) or a namespaced attribute still pools, and a namespaced
+  attribute keeps its type inline too. `data_type()` answers the same string
+  as before and the CX⇄XML `cx:attr-types` round-trip is unchanged. The
+  `bench/repr` ratchet re-pins `BOUND_cxel` 16.30 → 8.00; the census reads
+  `attr_meta=0`.
+
+- **`bench/xap/commit_latency.cx` reported p50 = p99 = 9999999 while min /
+  avg / max were sane (#1279).** The threshold bucketer walked a fixed ladder
+  of µs thresholds and answered its own sentinel whenever the rank it needed
+  fell between rungs, so the harness quoted a sentinel for a percentile that
+  provably sat under the top bucket — identically on the pre- and post-change
+  binaries of the #1246 measurement, which is how it was caught. Percentiles
+  are now read off the sorted samples at the 1-based rank ⌈p·n⌉, and the row
+  refuses itself (exit 3, no `[bench-row …]`) unless min ≤ p50 ≤ p99 ≤ max.
+  The `SIZING.md` publish-p50 column re-quotes on the next `make bench-xap`.
+
+- **`cx fmt` was a 26 s / 3.3 GB outlier on a 1.37 MB document (#1281).**
+  `fmt_source` fingerprinted the program AST for the #400 meaning-
+  preservation check by rendering it through V's generated debug `.str()`
+  and byte-scanning positions out — a field-named dump of every node, twice
+  per format (~1.5 GB of text each). The fingerprint is now a compact
+  tagged writer over the same fields (positions excluded), every text is
+  parsed once per lane, and the data reading is parsed once for both the
+  candidate and the comment inventory. Same 26 s file: **0.60 s / 494 MB**
+  (44× faster, 6.7× less memory), byte-identical output, fmt.cxd 22/22,
+  idempotence unchanged. Against `--from=cx --to=cx` on the same bytes it
+  is now 3.2× (was 26×); the residual is three necessary program parses
+  (source, data candidate, round-trip proof). The perf ratchet gains a
+  `tooling.fmt_8k_ms` row so the outlier cannot return unnoticed.
+
+- **Pattern head-bind `[NAME$x]` captures the whole element (#1172, RULED:
+  1172-Q1a).** The glued form is the head-bind for a Name head, as `*$x` /
+  `:T$x` already were: name tested, `$x` = the matched element,
+  unconditionally; the spaced `[NAME $x]` keeps rule 5's auto-unwrap. The
+  false `[NAME * $x]` sentence and the "where supported by the parser"
+  hedge are gone; §5.1 defines the head-bind; grammar [126a] splits the
+  Name head. A head-bind with a body still matches its body.
+- **Quoted patterns keep their binding markers (#1149).** `*$r` and
+  `$n::T` survive `[?quote]` → `[?eval]`: the codec writes the markers and
+  a marked binding rides the `<cx:expr>` hatch, read back by
+  `cx.parse_pattern_binding`.
+- **`[?splice E]` adopts members inside `(…)` and `[…]` literals (#1223)**,
+  as code.md §6.4.3's table says.
+- **The code-tree walker and the parser's bracket skipper consume `#` line
+  comments, `[; …]` block comments and `[# … #]` raw spans (#1067).** A `]`
+  in a comment no longer closes an element early; an odd quote or bracket
+  in one no longer stubs it `unbalanced` (conformance/code.cxd projected as
+  nothing).
+- **code-diagram mints each def's node-id namespace from its ordinal and
+  sanitized name (#1066, RULED: 1066-Q1a).** Two defs sharing an initial no
+  longer share ids and lose bodies; the def-bearing goldens moved under the
+  DR-8 mini-ruling.
+- **All-int `/` chains fold exactly in i64 (#1072)** while each step
+  divides exactly; the f64 fold rounded operands past 2^53.
+- **`[proc-result]` reads the real wait status (#1073)**: `signaled` is
+  WIFSIGNALED (a normal `exit 143` is not a signal) and `signal` names the
+  delivering signal — the §2.3 attribute that was never emitted. **A
+  timed-out pipeline reports every declared stage (#1075, RULED:
+  1075-Q1a)**: a stage the deadline stopped before it started reads
+  `exit-code=null timed-out=true`.
+- **The text boundaries validate UTF-8 through a no-copy view (#1208).**
+  `codec_text_boundary` and the parser entries copied the whole input into
+  a `[]u8` (twice at the codec boundary) just to index it.
+- **Gate hygiene:** the wall-clock assertions moved to a serial timing lane
+  that `make test` runs after the -j storm (#1216); every conformance suite
+  is claimed by a named lane (`check-conformance-coverage`, #1212); the xap
+  umbrella serves a per-run copy of `registry/store` so it no longer races
+  the xap-dist fixtures for the single-writer lock (#1274).
 
 - **A bare def name in value position inside a function body is the callable, not a
   nullary call (#1231; code.md §12.2.3).** `[?def cm ($az $p $ap) [$authz:commit $az $p $ap

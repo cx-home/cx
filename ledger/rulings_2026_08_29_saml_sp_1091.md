@@ -119,3 +119,108 @@ Sequencing within the campaign is the owner's call. The recommendation is
 after #1092 SCIM: an enterprise feels missing provisioning on day one
 (every joiner and leaver manual), and feels missing SAML only if its IdP
 mandates it.
+
+---
+
+# Amendments — recorded 2026-08-30, before implementation
+
+Implementation began after #1092 SCIM landed, per the sequencing
+recommendation above. Reading the substrate before writing the verifier
+turned up one fact the ruling did not anticipate, and it changes the shape
+of the work. Recorded here BEFORE the spec, per `ledger/` discipline.
+
+## S-8 — the verifier parses XML ITSELF; `cx.parse_xml` is not infoset-faithful
+
+S-3 and S-4 assume a tree whose canonicalization reproduces the bytes the
+IdP signed. `cx.parse_xml` does not provide one. It is a **data-oriented
+importer** — the right thing for the codec lanes it serves, and the wrong
+thing to hang XML-DSig on. Measured on `release/0.18` @ 2550c768a:
+
+- **Ignorable whitespace is STRIPPED.** An element with child elements has
+  its whitespace-only text nodes filtered out (`xml_parser.v`, the
+  `items.filter(...)` at the tail of the content loop). Inter-element
+  whitespace is part of the canonical octet stream; dropping it changes
+  the digest. This one is decisive on its own.
+- **Text runs are autotyped.** A lone text run that parses as a number or
+  bool becomes a typed scalar via `try_autotype(tv.trim_space())`.
+- **Duplicate attribute names are ACCEPTED.** `<a ID="1" ID="2"/>` parses
+  clean (exit 0). XML 1.0 §3.1 makes that ill-formed, and it is one of the
+  attack classes S-2 requires. Filed separately against the core parser;
+  the module does not wait on it. (Record, 2026-09-04: that filing was
+  #1104, closed 2026-08-31 at d50a460d1 — the core reader refuses
+  duplicates too now. S-9 stands regardless: well-formedness is this
+  module's own decision, not an inherited one.)
+
+What is GOOD, and why the CXDM is still the right home: attribute ORDER is
+preserved, mixed content is preserved, comments survive as nodes (the
+`NameID` truncation class is expressible — a comment splits the text into
+two nodes, which is exactly the attack), entity refs are preserved as
+`EntityRefNode` rather than eagerly flattened, and `resolve_namespaces`
+already populates expanded names on elements AND attributes.
+
+**Ruled:** `cx-stdlib/saml` carries its own infoset-faithful XML reader,
+module-local, producing ordinary `cx.Element` values. Rejected
+alternatives, with reasons:
+
+- *Add a lossless mode to `cx.parse_xml`.* Rejected. That parser feeds
+  every codec lane and the Tier-1 canonical image; autotyping and
+  ignorable-whitespace stripping are deliberate CX data-model semantics,
+  not bugs, and the canonical XML image is owner-ruled identity territory.
+  Changing it to serve one module would put the whole codec surface at
+  risk for a benefit only this module collects.
+- *Verify over raw byte offsets.* Rejected: still needs a faithful parse
+  to find the subtree, and it forfeits S-3 (there would be no verified
+  NODE to return, only a byte range).
+
+This does NOT weaken S-3. The reader emits `cx.Element` values, so `verify`
+still returns a path-addressable verified subtree in the one document
+model, and assertion validation still consumes only what `verify` returned.
+The invariant is a property of the module's representation, and the module
+now owns that representation end to end — which is the same argument S-0
+makes for owning the surface at all: concentrate the hazard in one pinned,
+fixture-covered place.
+
+Scope effect, stated plainly: the module grows an XML reader it would not
+otherwise need. That is a real cost and it is the honest one — a verifier
+built on a tree that does not reproduce the signed bytes would pass its
+own fixtures and fail against every real IdP.
+
+## S-9 — well-formedness violations are the module's own refusal
+
+Following from S-8: the reader REFUSES what XML 1.0 makes ill-formed
+rather than inheriting the core parser's tolerance — duplicate attribute
+names first among them, since S-2 lists duplicate `ID` as an attack class.
+Under the #1100 rule these are the sender's fault: malformed, not
+unsupported.
+
+---
+
+# Implementation record — 2026-09-04, at the spec commit
+
+Recorded when the `status=new` spec was committed ahead of the
+implementation, so the per-code registration and the stated authority rule
+are on file before any verify code exists. None of these is a new ruling;
+each executes one above.
+
+- **S-7 per-code rows.** `5400–5408` as drafted, plus `5409 E_SAML_STATUS`
+  (the IdP's own non-`Success` `Status`, surfaced verbatim), `5410
+  E_SAML_ISSUER_MISMATCH` and `5411 E_SAML_UNSUPPORTED` (XML Encryption and
+  non-`bearer` confirmation — valid SAML v1 declines, named rather than
+  read past). `5412–5499` reserved. The three follow the #1100 blame split
+  the band was allocated under; `5409`/`5410` are the SAML counterparts of
+  oidc's `5303`/`5301`.
+- **S-2 "which is authoritative" is a stated rule** (saml.md §4.2): a
+  signature is admitted only as a child of the document element or of a
+  top-level `Assertion`, must be enveloped in its own parent, every
+  signature present must verify, and an `Assertion` outside the verified
+  subtree is a refusal, not inert content. The fixture arms in §8 pin each
+  clause.
+- **S-1(b) "Response/Assertion validation"** is drawn as two verbs: the
+  `Response` envelope (`Status`, `Issuer`, `InResponseTo`, `Destination`)
+  in `assertion`, the assertion's own claims (`Issuer`, `Conditions`,
+  `bearer` `SubjectConfirmation`) in `validate`. An unsigned `Response`'s
+  envelope is unsigned data and is not read.
+- **S-3 wording corrected.** The draft claimed a caller *cannot* hold an
+  unverified assertion; the core XML reader makes that untrue. The spec now
+  says what is true: this module never PRODUCES one, and the class it
+  closes is the IdP-side document as adversary.

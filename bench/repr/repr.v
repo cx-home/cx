@@ -17,8 +17,8 @@
 // bytes: the guard has to hold on a loaded machine and on other hardware
 // (RP-5(a)(ii); (c) — an RSS-shaped bound — was rejected for exactly that).
 //
-// Usage:  repr gen <json|xml|cx> <corpus-path> [records]   — write the corpus
-//         repr <json|xml|cx> <corpus-path> [records]       — measure it
+// Usage:  repr gen <json|xml|cx|cxel> <corpus-path> [records]   — write the corpus
+//         repr <json|xml|cx|cxel> <corpus-path> [records]       — measure it
 //
 // The two are SEPARATE PROCESSES on purpose; main() says why. Build, bounds and
 // verdict live in run.sh — this driver only measures.
@@ -94,12 +94,37 @@ fn gen_cx(n int) string {
 	return b.str()
 }
 
+// gen_cxel is the ELEMENT lane with string-carried scalar columns (#1247):
+// every record carries an atom column of four distinct values, a date
+// column of 365 distinct images and a duration column of twelve — the
+// shapes RP-4's name interning did not reach, each occurrence its own heap
+// copy until the per-parse scalar pool. Attribute values ride the parser's
+// attribute autotype; the body item rides the body autotype.
+fn two(n int) string {
+	return if n < 10 { '0${n}' } else { '${n}' }
+}
+
+fn gen_cxel(n int) string {
+	statuses := ['active', 'paused', 'closed', 'trial']
+	mut b := strings.new_builder(n * 80)
+	b.write_string('[records\n')
+	for i in 0 .. n {
+		id := 100000 + i
+		day := i % 365
+		b.write_string('  [rec id=${id} status=:${statuses[i % 4]} since=2026-${two((day / 31) % 12 + 1)}-${two(day % 28 + 1)} ttl=${(i % 12) + 1}h :${statuses[(i + 1) % 4]}]\n')
+	}
+	b.write_string(']\n')
+	return b.str()
+}
+
+
 fn generate(lane string, n int) string {
 	return match lane {
 		'json' { gen_json(n) }
 		'xml' { gen_xml(n) }
 		'cx' { gen_cx(n) }
-		else { panic('unknown lane `${lane}` (want json|xml|cx)') }
+		'cxel' { gen_cxel(n) }
+		else { panic('unknown lane `${lane}` (want json|xml|cx|cxel)') }
 	}
 }
 
@@ -232,12 +257,12 @@ fn parse_lane(lane string, src string) []cx.Node {
 			doc := cx.parse_xml(src) or { panic(err) }
 			return doc.elements
 		}
-		'cx' {
+		'cx', 'cxel' {
 			doc := cx.parse(src) or { panic(err) }
 			return doc.elements
 		}
 		else {
-			panic('unknown lane `${lane}` (want json|xml|cx)')
+			panic('unknown lane `${lane}` (want json|xml|cx|cxel)')
 		}
 	}
 }
@@ -253,8 +278,8 @@ fn live_bytes() u64 {
 
 fn main() {
 	if os.args.len < 3 {
-		eprintln('usage: repr gen <json|xml|cx> <corpus-path> [records]   # write the corpus')
-		eprintln('       repr <json|xml|cx> <corpus-path> [records]       # measure it')
+		eprintln('usage: repr gen <json|xml|cx|cxel> <corpus-path> [records]   # write the corpus')
+		eprintln('       repr <json|xml|cx|cxel> <corpus-path> [records]       # measure it')
 		exit(2)
 	}
 
@@ -270,7 +295,7 @@ fn main() {
 	// cannot see"). The residual one input copy is the ratchet's headroom.
 	if os.args[1] == 'gen' {
 		if os.args.len < 4 {
-			eprintln('usage: repr gen <json|xml|cx> <corpus-path> [records]')
+			eprintln('usage: repr gen <json|xml|cx|cxel> <corpus-path> [records]')
 			exit(2)
 		}
 		lane := os.args[2]

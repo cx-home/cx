@@ -605,6 +605,18 @@ bench-compare:
 	  $(or $(CURRENT),bench/current.json) \
 	  $(if $(STRICT),--strict,)
 
+# #1249 (RULED: 1249-Q1a) — the perf RATCHET the release cut runs after the
+# gate: measure (bench-json → bench/current.json) and compare against the
+# committed floor (bench/baseline.json) at the STRICT 10% threshold. Red
+# aborts the cut like a red gate; on green tag_release.sh promotes
+# bench/current.json to bench/baseline.json in the bump commit, so every cut
+# re-pins the floor to its own measurement. Wall-clock and machine-bound, so
+# NOT a TEST_TARGETS member — a decision instrument the cut invokes.
+.PHONY: perf-ratchet
+perf-ratchet: build-vcx
+	@"$(CURDIR)/vcx/target/cx" --allow-read --allow-write --allow-subprocess --allow-clock scripts/run_bench_json.cx -o bench/current.json
+	@$(MAKE) bench-compare STRICT=1 CX_BIN=$(CURDIR)/vcx/target/cx
+
 # Documentation hygiene — every relative markdown link resolves.
 # Source markdown lives in docs-src/ (docs/ is the GENERATED HTML guide /
 # Pages site, which has no .md files — pointing the check there made the
@@ -1178,14 +1190,14 @@ sync-tmlanguage:
 #     make registry-publish
 .PHONY: registry-publish
 registry-publish: build-vcx-dev
-	@vcx/target/cx --allow-all registry/publish.cx
+	@vcx/target/cx-dev --allow-all registry/publish.cx
 
 # Stage-2 served registry (distribution spec §4.2): the SAME store, re-hosted
 # behind the CSRP daemon on loopback. Consumers open
 # cx-store+http://127.0.0.1:8460/registry/ — hashes/signatures unchanged.
 .PHONY: registry-serve
 registry-serve: build-vcx-dev
-	@vcx/target/cx store-serve --config registry/cxstore.service.cx --allow-net=127.0.0.1:8460
+	@vcx/target/cx-dev store-serve --config registry/cxstore.service.cx --allow-net=127.0.0.1:8460
 
 # Default parallelism: detected core count, override with `make test TEST_JOBS=N`.
 # Measured speedup on a warm build: ~10× wall-clock vs sequential (342s → 33s).
@@ -1202,6 +1214,12 @@ test:
 	# skips the relink — without this, concurrent sub-makes RELINKED
 	# target/cx while sibling lanes were exec'ing it (the v0.16.0 cut's
 	# 'Exec format error' / empty-output-rc-0 class; see the guard's note).
+	#
+	# This covers the PROD half only. The dev half — nine `test-vcx-*` lanes
+	# whose `build-vcx-dev` prerequisite runs inside the storm — used to write
+	# that SAME target/cx and clobber it back (#1312); it now writes
+	# target/cx-dev, so the two halves no longer share a mutable artifact and
+	# this pre-build is sufficient on its own.
 	@$(MAKE) build-vcx
 	# test-profile-gate runs SERIALLY AFTER the -j storm, not inside it. The
 	# original reason (sup-011's "#951 load-race" under gate-wide -j) is gone
@@ -1926,7 +1944,7 @@ test-vcx-cxstore: build-vcx-dev
 # roster is a variable and `check-inmodule-test-roster` now fails on any
 # vcx/cx/*_test.v that is in neither list, so the next addition cannot be
 # forgotten silently. Delete both lists and glob the directory when #737 closes.
-CX_INMODULE_TESTS := vcx/cx/anchor_resolve_test.v vcx/cx/atom_test.v vcx/cx/token_golden_test.v vcx/cx/version_stamp_test.v vcx/cx/html_url_codec_test.v vcx/cx/span_jump_test.v vcx/cx/feature_compat_test.v vcx/cx/name_pool_contract_test.v vcx/cx/schema_extensions_test.v vcx/cx/node_api_test.v
+CX_INMODULE_TESTS := vcx/cx/anchor_resolve_test.v vcx/cx/numeric_exact_fast_test.v vcx/cx/atom_test.v vcx/cx/token_golden_test.v vcx/cx/version_stamp_test.v vcx/cx/html_url_codec_test.v vcx/cx/span_jump_test.v vcx/cx/feature_compat_test.v vcx/cx/name_pool_contract_test.v vcx/cx/schema_extensions_test.v vcx/cx/node_api_test.v
 CX_INMODULE_TESTS_EXCLUDED := vcx/cx/parser_multidoc_test.v
 
 .PHONY: check-inmodule-test-roster

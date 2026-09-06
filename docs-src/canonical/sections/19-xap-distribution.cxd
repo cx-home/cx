@@ -102,7 +102,7 @@
     [example lang=cx check=none
       """[feature name=notes version='0.1.0'
   [summary 'A shared notebook']
-  [nouns [noun name=note [field name=text type=string]]]
+  [nouns [noun name=note [field name=text type=text]]]
   [verbs
     [verb name=list-notes effect=observe scope=local consequence=none
       [intent [do :list-notes]] [reads note]]
