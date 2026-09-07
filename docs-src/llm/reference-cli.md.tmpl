@@ -150,8 +150,26 @@ authority. Real per-path/per-name scoping is unimplemented.
 | 1 | the program's TOP-LEVEL result is an `[err]`, or a check found findings |
 | 2 | usage error — an unknown flag, a missing file, a bad invocation |
 
-Exit 1 is about the **top-level** result only (R5.13). An `[err]` nested
-inside a collection is ordinary data — it renders and the run exits 0. Do not
+Exit 1 is about the **top-level** result (R5.13). Two readings of "nested"
+answer differently, and the difference is not a wrinkle — it is the contract:
+
+- A top-level **collection** — a sequence, array or map — whose members carry
+  an `[err]` IS a result that carries an err, so
+  `[?for [in $n (1)] [yield [/ $n 0]]]` exits 1 (#1058 T1.1). This paragraph
+  claimed the opposite until T1.1 landed, which is precisely the soundness bug
+  T1.1 fixed: `[?for]` and `[?map]` COLLECT errs, so that shape is the most
+  common result in the language.
+- An `[err]` resting inside an **element** exits 0 — `[wrapper [err …]]`, and
+  equally one contributed into an element body by `[?splice]` or `[?for]`. That
+  is ruled (CO-2, #975): err-as-value composition is load-bearing, and the
+  guard sits at the EFFECT boundary instead — `[$store:put-doc]` on a document
+  carrying one refuses with `CXER0275`.
+- A **source-literal** `[err …]` as the program's own top-level form exits 0:
+  it is data echoing itself, not a computed refusal (code.md §6.4.1's position
+  rule — the discriminator is POSITION, not value).
+
+On exit 1 the run also names the first err on STDERR; STDOUT is unchanged,
+because the rendered err is still the program's answer. Do not
 read the exit status as a refusal contract: refusal at a boundary is
 `CXER0275` (store / http), raised at the boundary, independent of how the
 process exits.
