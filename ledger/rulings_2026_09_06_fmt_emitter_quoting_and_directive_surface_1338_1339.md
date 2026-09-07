@@ -98,12 +98,45 @@ In the generic path a labeled slot can ONLY originate from the attribute branch
 special form's own pre-pass (`[?eval]`'s `context`/`opts`, `[?match]`'s
 `case`/`where`). So the generic inverse is unambiguous.
 
-**RULED: the generic path emits `label=value`.** The value goes through
-`emit_program_node` unchanged, which is shape-safe: a bare attribute value
-parses to `str_val='http'` with `src=''`, and a re-parsed quoted `'http'` has
-`src == str_val`; under #1328's rule both fingerprint as `shape_str('')`, so
-the round trip is stable either way. A number-shaped bare run keeps failing
-closed, as `conformance/fmt.cxd` fmt-008 requires.
+**RULED: the generic path emits `label=value`.**
+
+CORRECTION, recorded 2026-09-06 after implementing: this record first said "the
+value goes through `emit_program_node` unchanged". That is NOT what shipped, and
+the difference is load-bearing, so the ruling is restated here rather than left
+to be inferred from the code.
+
+A plain string literal is emitted BARE exactly when `bare_run_is_lone_ident`
+says the parser will read it back bare — the parser's own predicate, the one its
+attribute branch uses to produce a `string_lit` from a bare run. Everything else
+(numbers, calls, nested forms) goes through `emit_program_node`, which renders
+from its own fields; routing a number through the attribute-string path would
+strip the `src` spelling a `::T` coercion reads.
+
+Two measurements forced that shape, in order:
+
+1. Sending the value through `emit_program_node` unchanged quoted it —
+   `on='http'` — which FAILS `conformance/fmt.cxd`'s §1 purity check. That
+   check compares `cx_text_canonical` across a format, and the DATA reading of
+   a `[?directive]` is VERBATIM: `on=http`, `on='http'` and `on="http"` each
+   canonicalize to themselves, inner whitespace included. Quoting is visible
+   there even when the program reading is identical.
+2. Reusing `cx_quote_attr_if_needed` — the DATA emitter's attribute rule — was
+   also wrong. It is tuned for the data tokenizer, so it returns `http://host`
+   bare, after which the PROGRAM lexer reads `:` then `//` and raises
+   "expected identifier after ':' in atom literal" (examples/code-tour.cx).
+   Two tokenizers, two bare-safety rules; the program emitter must use the
+   program one.
+
+Shape-safety holds either way: a bare attribute value parses to
+`str_val='http'` with `src=''`, and a re-parsed quoted `'http'` has
+`src == str_val`; under #1328's rule both fingerprint as `shape_str('')`. A
+number-shaped bare run keeps failing closed, as fmt-008 requires.
+
+Because the §1 purity check cannot be satisfied for a directive's attribute run
+at all, the end-to-end conformance case for this was DROPPED and the property is
+asserted in `vcx/cx/directive_emit_surface_test.v` against
+`program_node_to_source` directly — the right level, since the defect was in the
+emitter rather than in lane selection.
 
 **RULED: `[?str]` gets its inverse map.** `parse_str_body` requires a single
 string-literal argument and reshapes it into alternating `[lit …]` / `[hole …]`
