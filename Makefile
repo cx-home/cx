@@ -123,13 +123,70 @@ all: build
 # and are not wired into build or test targets.
 build: build-vcx build-rust build-go
 
-build-vcx:
+
+# ── Gate lock (#1339 follow-up, owner-authorized 2026-09-06) ─────────────────
+#
+# "No builds anywhere while a gate runs" was a standing rule and it was broken
+# on 2026-09-06 by a session that had NO WAY TO KNOW a gate was running: two
+# `make build-vcx` runs in sibling worktrees landed inside a full `make test`,
+# which then deadlocked. Etiquette cannot carry a machine-wide invariant across
+# independent sessions, so this makes it mechanical.
+#
+# MACHINE-wide, not repo-wide, deliberately: every worktree shares one V
+# toolchain and one CPU budget, so a build in ANY of them perturbs a gate in
+# ANY other. /tmp is the only location all of them agree on.
+#
+# The lock records the owning PID. `make test` exports CX_GATE_OWNER, which
+# recursive sub-makes INHERIT — that is what lets the gate's own hundreds of
+# `build-vcx` calls through while blocking every build from outside it. No
+# ancestry walk needed.
+#
+# Fails OPEN on anything it cannot establish (unreadable lock, dead owner):
+# a lock bug that blocks every build in every worktree would be worse than the
+# problem it solves. Override with CX_GATE_LOCK_OVERRIDE=1.
+CX_GATE_LOCK := /tmp/cx-gate.lock
+
+.PHONY: gate-lock-status
+gate-lock-status:
+	@if [ -f "$(CX_GATE_LOCK)" ]; then \
+	  owner=$$(sed -n 1p "$(CX_GATE_LOCK)" 2>/dev/null); \
+	  where=$$(sed -n 2p "$(CX_GATE_LOCK)" 2>/dev/null); \
+	  if kill -0 "$$owner" 2>/dev/null; then \
+	    echo "gate-lock: HELD by pid $$owner in $$where"; \
+	  else \
+	    echo "gate-lock: stale (pid $$owner gone) — next build clears it"; \
+	  fi; \
+	else \
+	  echo "gate-lock: free"; \
+	fi
+
+# check-gate-lock refuses a build that would land inside somebody else's gate.
+.PHONY: check-gate-lock
+check-gate-lock:
+	@if [ -n "$(CX_GATE_LOCK_OVERRIDE)" ]; then exit 0; fi; \
+	if [ ! -f "$(CX_GATE_LOCK)" ]; then exit 0; fi; \
+	owner=$$(sed -n 1p "$(CX_GATE_LOCK)" 2>/dev/null); \
+	where=$$(sed -n 2p "$(CX_GATE_LOCK)" 2>/dev/null); \
+	if [ -z "$$owner" ]; then exit 0; fi; \
+	if [ "$$owner" = "$(CX_GATE_OWNER)" ]; then exit 0; fi; \
+	if ! kill -0 "$$owner" 2>/dev/null; then \
+	  rm -f "$(CX_GATE_LOCK)" 2>/dev/null || true; \
+	  echo "check-gate-lock: cleared a stale lock (pid $$owner gone)"; \
+	  exit 0; \
+	fi; \
+	echo "check-gate-lock: a FULL GATE is running (pid $$owner, $$where)."; \
+	echo "  Building now perturbs it — the http/pty lanes red under concurrent"; \
+	echo "  load and a -j storm can deadlock. Wait for it, or if you are certain"; \
+	echo "  it is dead:  make gate-lock-status   /   CX_GATE_LOCK_OVERRIDE=1 make <target>"; \
+	exit 1
+
+build-vcx: check-gate-lock
 	$(MAKE) -C vcx build
 
 # Unoptimised dev build of libcx + cx (no -prod/-Os). Functionally
 # identical for tests but compiles far faster; the test path depends on
 # this instead of the -prod `build-vcx`. Shipped artifacts use `build-vcx`.
-build-vcx-dev:
+build-vcx-dev: check-gate-lock
 	$(MAKE) -C vcx build-dev CX_DFLAGS='$(CX_DFLAGS)'
 
 # v0.7.5 — build libcx.wasm + libcx.js (emscripten
@@ -1250,7 +1307,22 @@ TEST_JOBS ?= $(shell sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 
 # --output-sync needs GNU make >= 4.0 (Apple ships 3.81); pass it only
 # when the running make advertises the feature.
 OUTPUT_SYNC := $(if $(filter output-sync,$(.FEATURES)),--output-sync=target,)
+test: export CX_GATE_OWNER := $(shell echo $$PPID)
 test:
+	# Take the machine-wide gate lock. Released by the last line of this
+	# recipe on a normal finish; a KILLED gate leaves the file behind, and
+	# that is handled by check-gate-lock's stale detection (`kill -0` on the
+	# recorded pid) rather than by a trap — each recipe line runs in its own
+	# shell, so a trap here would not cover the lines below it.
+	@if [ -f "$(CX_GATE_LOCK)" ]; then \
+	  o=$$(sed -n 1p "$(CX_GATE_LOCK)" 2>/dev/null); \
+	  if [ -n "$$o" ] && kill -0 "$$o" 2>/dev/null && [ "$$o" != "$(CX_GATE_OWNER)" ]; then \
+	    echo "make test: another gate holds the lock (pid $$o) — refusing to run two gates at once."; \
+	    echo "  make gate-lock-status"; \
+	    exit 1; \
+	  fi; \
+	fi; \
+	printf '%s\n%s\n' "$(CX_GATE_OWNER)" "$(CURDIR)" > "$(CX_GATE_LOCK)"
 	# Serial pre-build BEFORE the parallel fan-out: every lane's recursive
 	# `$(MAKE) build-vcx` then hits the vcx Makefile's up-to-date guard and
 	# skips the relink — without this, concurrent sub-makes RELINKED
@@ -1281,6 +1353,7 @@ test:
 	# 113 ms alone. Lower bounds ("timeout= actually waits") stay in the
 	# umbrellas: load can only ADD time.
 	@$(MAKE) test-vcx-timing
+	@rm -f "$(CX_GATE_LOCK)"
 
 # Sequential fallback — useful for debugging output-order issues, sanitizer
 # runs that want low concurrency, or environments where `-j` parallelism
