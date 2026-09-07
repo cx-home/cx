@@ -1344,7 +1344,7 @@ test:
 	# after the storm drains; the profile gate gets the same quiet context.
 	# Nothing is masked: a deterministic failure still reds the serial run,
 	# and the runner's classifier + named re-grade govern inside it.
-	@$(MAKE) -j$(TEST_JOBS) $(OUTPUT_SYNC) $(filter-out test-profile-gate test-vcx-timing,$(TEST_TARGETS))
+	@$(MAKE) -j$(TEST_JOBS) $(OUTPUT_SYNC) $(filter-out test-profile-gate test-vcx-timing test-code-diagram,$(TEST_TARGETS))
 	@$(MAKE) test-profile-gate
 	# #1216: the WALL-CLOCK assertions (the #1055 boot budget, the #816 try-send /
 	# try-receive upper bounds) run serially AFTER the storm too — they are
@@ -1353,6 +1353,17 @@ test:
 	# 113 ms alone. Lower bounds ("timeout= actually waits") stay in the
 	# umbrellas: load can only ADD time.
 	@$(MAKE) test-vcx-timing
+	# #1345 — test-code-diagram carries a 60 s wall-clock EMITTER budget, so it
+	# belongs in the same serial tail for the same reason. Measured 2026-09-06,
+	# same commit and binary: inside the -j12 storm `erd-001-empty` — the EMPTY
+	# diagram case — blew the 60 s budget twice and errored; the whole 52-case
+	# lane runs 52/52 in 4.6 s alone. Taking over a minute on the empty case
+	# while the full lane finishes in five seconds is starvation, not work.
+	#
+	# An absolute budget that only holds on an idle box is not a property of the
+	# binary, which is exactly what #1216 concluded for the two lanes above; this
+	# one was simply missed when they moved.
+	@$(MAKE) test-code-diagram
 	@rm -f "$(CX_GATE_LOCK)"
 
 # Sequential fallback — useful for debugging output-order issues, sanitizer
