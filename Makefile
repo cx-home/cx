@@ -51,6 +51,28 @@ endif
 # back to a bare `v` when the submodule binary isn't built yet.
 V := $(if $(wildcard $(CURDIR)/third_party/v/v),$(CURDIR)/third_party/v/v,v)
 
+# #1344 — CLOSE THE JOBSERVER BEFORE RUNNING A TEST BINARY.
+#
+# Under `-j`, make hands its jobserver pipe to every recipe as fds 3/4 (plus
+# dups 5/6), and ANYTHING a recipe spawns inherits them. The process tests
+# background `sh -c 'sleep 3600'` as their hung-child fixture and the http
+# lanes background `cx-dev` servers; when one outlives its lane it keeps the
+# jobserver open, and the next parallel make in the gate blocks at make's exit
+# -- alive, 0% CPU, no children, no output, no timeout. It reads as a slow
+# suite. Measured 2026-09-06: a full gate sat wedged AFTER `vcx/tests` had
+# reported 62/62 green; profile_gate.v records a 3.5-hour instance.
+#
+# Verified with a toy Makefile: a backgrounded child inheriting the fds wedges
+# `make -j4` even with its stdout on /dev/null and every target already built;
+# the SAME leak with fds 3-6 closed completes rc=0. Closing them is a complete
+# fix, not a mitigation -- the child may still leak, it just cannot hold make
+# hostage.
+#
+# ONLY for recipes that run a test BINARY. A recipe that invokes a sub-make
+# must KEEP fds 3/4, or that make drops to -j1 with "jobserver unavailable"
+# and the parallel build silently serializes.
+JS_CLOSE := exec 3<&- 4<&- 5<&- 6<&- 2>/dev/null || true;
+
 CONFORMANCE_CORE := conformance/core.cxd
 CONFORMANCE_EXT := conformance/extended.cxd
 CONFORMANCE_XML := conformance/xml.cxd
@@ -1839,10 +1861,10 @@ check-conformance-coverage:
 # running. Not in the -j union (filtered out in `test:`); `test-no-parallel`
 # runs it in TEST_TARGETS order.
 test-vcx-timing: build-vcx-dev
-	@$(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/timing/
+	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/timing/
 
 test-vcx-suite: build-vcx-dev check-serial-retry-rosters skip-ledger-reset
-	@log=vcx/target/test-suite-run.log; stf=vcx/target/test-suite-status; \
+	@$(JS_CLOSE) log=vcx/target/test-suite-run.log; stf=vcx/target/test-suite-status; \
 	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/tests/ 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
@@ -1906,7 +1928,7 @@ CODE_SERIAL_RETRY := vcx/platform/store_admin_plane_test.v \
 # store/journal/grpc/service subjects moved). One lane runs both.
 .PHONY: test-vcx-code
 test-vcx-code: build-vcx-dev check-serial-retry-rosters
-	@log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
+	@$(JS_CLOSE) log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
 	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/code/ vcx/platform/ 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
