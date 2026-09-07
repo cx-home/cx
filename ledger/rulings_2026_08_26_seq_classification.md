@@ -147,3 +147,114 @@ green.
   `cx code-diagram` reaches the renderer through
   `code_diagram_with_level`, which is live and which this change does
   not touch.
+
+## SEQ-3 — a CALLED `[?def]` body reaches the sequence lane
+
+**Supersedes exactly one sentence of SEQ-2**, and nothing else:
+
+> "Nothing else in the dispatch moves: `[?def]` bodies still do not flip
+> it."
+
+That clause was written to fence SEQ-2's scope, not to settle the
+question on its merits. The merits were never argued. #1069 item 1
+argues them.
+
+**The complaint.** The same program written two ways renders two
+different diagram KINDS:
+
+```
+[?let [= $ch [?channel name="jobs"]]
+  [?worker name="producer" [body [?send 1 to=$ch]]]]
+                                                  -> sequenceDiagram
+
+[?def run [?let [= $ch [?channel name="jobs"]]
+  [?worker name="producer" [body [?send 1 to=$ch]]]]]
+[$run]
+                                                  -> flowchart TD
+```
+
+`cd-program-is-sequence` folds `cd-node-is-trigger` over `cd-stmts` —
+top-level statements only. `cd-node-is-trigger` descends a `[?let]`'s
+slot values (SEQ-2) and a `cx:block`'s items, and stops at a `[?def]`.
+Wrapping a program in a def therefore hides every trigger in it. A
+refactor that changes nothing about what the program DOES changes what
+the diagram IS, which is the orthogonality bar this repo treats as a
+fundamental surface objective.
+
+**Why the naive fix is worse than the bug.** Forcing SEQ on a
+def-wrapped program with a classifier-only change yields, measured:
+
+```
+sequenceDiagram
+  participant forceseq
+  participant main
+  Note over main : [?def]
+```
+
+The SEQ emitter has no `[?def]` arm, so the whole program collapses to
+one note. Classifier and emitter have to move together — the same
+dispatch/emitter divergence SEQ-2 and #1069 item 2 each closed one
+level down.
+
+**Adjudication: (a).** Classification descends into the body of a def
+that is CALLED from a top-level form, transitively. An uncalled def is
+invisible to both classifier and emitter. Emission inlines the called
+def's body at each call site in program order.
+
+Rejected alternatives, on the record:
+
+- **(b) inline every def, called or not.** Simpler — no call graph, no
+  fixed point. Measured, a dead def's `[?worker]` acquires a lane and a
+  message the program never sends, and the shared lane's activation
+  bookkeeping shifts (`->>+` becomes `->>`) because a phantom
+  participant enters the ordering. A diagram showing messages that
+  cannot happen is worse than one showing the wrong kind, and it is a
+  lie the reader cannot detect.
+- **(c) draw each def as its own region, the call as an entry into it**
+  (mermaid `box` / `rect`). The faithful end state, and where the
+  renderer should eventually land. Rejected FOR NOW as the wrong first
+  step: a substantial emitter change that MOVES existing renders (every
+  def-bearing CFG program gains grouping). It is not in tension with
+  (a) — (a)'s inline set is exactly the set (c) would draw as regions,
+  so (c) layers over the same reachability later.
+- **(d) keep the ruled behaviour, close item 1 wontfix.** Rejected. The
+  gap is real, prio:low is about urgency not correctness, and leaving
+  it means every future reader of SEQ-2 re-derives this argument.
+
+### Sub-rulings
+
+- **SEQ-3.1** — reachability is transitive from top-level call sites,
+  computed with the call graph the module ALREADY has (`cd-callees`,
+  used by the CFG call-graph rung). A def called only from another
+  unreachable def stays unreachable. Reusing that walk is not merely
+  economy: #1058 T1.1 needed edits in six independent places because
+  each had reimplemented one predicate, and a second reachability walk
+  here would start the same debt.
+- **SEQ-3.2** — a def called N times inlines N times, in program order.
+  The sequence reading is a trace; two calls are two occurrences.
+- **SEQ-3.3** — a def already on the inline PATH is not re-entered. It
+  emits a recursion note and stops. This is the termination rule; there
+  is no other.
+- **SEQ-3.4** — an uncalled def contributes nothing to classification
+  or emission. The diagram is a picture of behaviour, and dead code has
+  none. A top-level `[?def]` statement itself contributes nothing
+  either — it is a declaration, and the `Note over main : [?def]` the
+  emitter produces for one today is the collapse this ruling exists to
+  remove.
+
+### Gate
+
+- `pin-seq-def-wrapped-worker-channel` renders byte-identically to
+  `seq-002-worker-channel-pair`. That equality IS the fix: it is the
+  orthogonality claim stated as a fixture.
+- `pin-seq-uncalled-def-contributes-nothing` — a top-level trigger plus
+  an uncalled def holding a second worker renders exactly the
+  top-level-only diagram.
+- `pin-seq-def-called-twice` — two call sites, two message occurrences,
+  in order.
+- `pin-seq-recursive-def` — terminates, and the note names the
+  recursion.
+- Every pre-existing golden byte-identical, re-derived with
+  `vcx/tools/regen_code_diagram_golden` **from the repo root** (it
+  resolves `conformance/code_diagram.cxd` relative to cwd and panics
+  otherwise).
