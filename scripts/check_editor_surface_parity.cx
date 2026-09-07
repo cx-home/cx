@@ -1,0 +1,247 @@
+# scripts/check_editor_surface_parity.cx — editor-surface parity gate (#1171).
+#
+# Eat-our-own-dog-food: written entirely in CX, run as `cx <file>`.
+#
+# THE INVARIANT. For every directive in the registry
+# (`vcx/cx/program_tokens.v`'s `directive_names`) and every editor surface
+# column, the CHECKED-IN register `tooling/EDITOR_SURFACE_PARITY.md` and the
+# surface itself agree — in BOTH directions:
+#
+#   cell says `yes`   but the surface lacks the name   -> RED
+#   surface has it    but the cell says `defer:`       -> RED
+#
+# The second direction is the one that matters over time: it forces paying the
+# debt down to update the register, so the register can only shrink and can
+# never quietly drift into being a list of lies.
+#
+# The row SET is derived too. A directive in `directive_names` with no row is
+# red — that is the arm that stops a NEW directive from joining the debt
+# silently, which is exactly how "the v0.14→v0.18 surface has no coverage"
+# happened without anything going red.
+#
+# Same shape as `check-inmodule-test-roster` (#1209) and
+# `check-build-input-roster` (#1065): derive at gate time, compare to a
+# checked-in roster, and REFUSE TO VOUCH when a derivation produces nothing.
+# `vcx/Makefile:597` is the line that idiom comes from — a derivation that
+# silently yields the empty set would make every check pass over nothing.
+#
+# TWO SURFACES HAVE NO COLUMN ON PURPOSE — tree-sitter and the Neovim
+# vim-syntax both match a GENERIC directive region, so a presence column would
+# read 80/80 forever, including for directives that do not exist. That is the
+# vacuous-gate failure mode this repo has already paid for twice
+# (verify-playground-examples; test-binding-api-parity #1180). The register's
+# header records the reasoning; the Neovim surface gets the one honest
+# mechanical check available instead (every registry name matches the region's
+# head character class).
+#
+# Capabilities: read only. Run via:
+#   vcx/target/cx --allow-read scripts/check_editor_surface_parity.cx
+# (or: make check-editor-surface-parity)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?const REGISTER 'tooling/EDITOR_SURFACE_PARITY.md']
+[?const TOKENS   'vcx/cx/program_tokens.v']
+[?const LSP      'vcx/cmd/lsp_content.v']
+[?const TMLANG   'tooling/vscode/syntaxes/cx.tmLanguage.json']
+[?const SNIPPETS 'tooling/vscode/snippets/cx.json']
+[?const VIM      'tooling/neovim/syntax/cx.vim']
+
+# `cx` is the real [?cx …] self-host head and is not in directive_names, so it
+# is an allowed non-registry key. `include` is NOT exempt: the completion set
+# is registry-derived, so an `include` entry is unreachable dead surface.
+# Non-registry keys allowed by name, each with its reason:
+#   `cx`      the real [?cx …] self-host head, not an eval-time directive
+#   `include` a DATA-document parse-time head; hover fires on what the author
+#             TYPED, and telling someone who typed `[?include` in a code
+#             program that the spelling is `[?cx include …]` is the most
+#             useful thing hover can say there. A SNIPPET keyed on it would be
+#             dead surface, because the completion set is registry-derived —
+#             so `include` is exempt for hover and help, and NOT for snippets.
+[?const EXEMPT-KEY 'cx']
+[?const EXEMPT-DOC 'include']
+[?const VIM-HEAD-CLASS "\\[?\\%([a-z][a-z0-9-]*\\|=\\)"]
+
+[?def has scope=public pure [returns bool] ($xs::any $x::string)
+  [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+# vs-covers — a VS Code snippet prefix covers a directive when it IS the name
+# or is a `<name>-variant` of it (`def-pure`, `match-when`, `modify-append`).
+[?def vs-covers scope=public pure [returns bool] ($ps::any $nm::string)
+  [> [$count [?for [in $p $ps]
+      [where [or [= $p $nm] [$strings:starts-with $p [$concat $nm '-']]]]
+      [yield 1]]] 0]]
+
+# disagree — one violation line, saying WHICH direction broke.
+[?def disagree scope=public pure [returns string] ($nm::string $col::string $cell::string $covered::bool)
+  [?if $covered
+    [then [$concat '  ' $nm ' / ' $col ": the surface COVERS it but the register says '" $cell "' — pay the debt down in the register"]]
+    [else [$concat '  ' $nm ' / ' $col ": the register says 'yes' but the surface does NOT cover it"]]]]
+
+# after / before — the text after / before the FIRST occurrence of a marker.
+# Local helpers, the same pair scripts/flow_vocabulary_gate.cx defines: there
+# is no `strings:after` / `strings:before` in the stdlib.
+[?def after scope=public pure [returns string] ($text::string $marker::string)
+  [?let [= $ps [$strings:split-limit $text $marker 2]]
+    [?if [> [$count $ps] 1] [then $ps[2]] [else ""]]]]
+
+[?def before scope=public pure [returns string] ($text::string $marker::string)
+  [?let [= $ps [$strings:split-limit $text $marker 2]]
+    [?if [> [$count $ps] 0] [then $ps[1]] [else ""]]]]
+
+# section — the text between two markers, so a map's keys are read from that
+# map and not from the whole file.
+[?def section scope=public pure [returns string] ($src::string $open::string $close::string)
+  [?let [= $a [$after $src $open]]
+    [?if [$strings:contains $a $close]
+      [then [$before $a $close]]
+      [else $a]]]]
+
+# names-in — every `'name':` map key in a section, `?` prefix tolerated.
+[?def names-in scope=public pure [returns any] ($src::string)
+  [?to-sequence [?for [in $m [$re:find-all [$re:compile "'[?]?([a-z][a-z0-9-]*)':"] $src]]
+    [yield [$re:group $m 1]]]]]
+
+# registry — directive_names, comment lines excluded. The const's own body
+# carries a `[?try …]` tombstone inside a comment, so a naive read of the
+# whole const would resurrect a RETIRED head; the marker pair below stops at
+# the closing bracket line and the `//` strip removes the tombstone.
+[?def registry scope=public pure [returns any] ($src::string)
+  [?let
+    [= $sect [$section $src "pub const directive_names = [" "\n]"]]
+    [= $clean [$strings:join
+      [?for [in $ln [$strings:split-lines $sect]]
+        [yield [?if [$strings:contains $ln "//"] [then [$before $ln "//"]] [else $ln]]]]
+      "\n"]]
+    [?to-sequence [?for [in $m [$re:find-all [$re:compile "'([a-z][a-z0-9-]*)'"] $clean]]
+      [yield [$re:group $m 1]]]]]]
+
+[?def main scope=public impure [effects [read] [write]] [returns any] ()
+ [?let
+  [= $tok-src  [$io:read-file TOKENS]]
+  [= $lsp-src  [$io:read-file LSP]]
+  [= $tm-src   [$io:read-file TMLANG]]
+  [= $sn-src   [$io:read-file SNIPPETS]]
+  [= $vim-src  [$io:read-file VIM]]
+  [= $reg-src  [$io:read-file REGISTER]]
+
+  [= $reg [$registry $tok-src]]
+
+  # ── per-surface derivations ─────────────────────────────────────────
+  [= $hover  [$names-in [$section $lsp-src "const directive_docs = {" "\n}"]]]
+  [= $help   [$names-in [$section $lsp-src "fn directive_help() map[string]string {" "\n}"]]]
+  [= $snip   [$names-in [$section $lsp-src "fn completion_snippet_for" "\n}"]]]
+  # The UNION of every `keyword.control.*.cx` alternation, not just the one
+  # entry that carries them today: `match` and `modify` have their own
+  # repository entries (:5224, :5281) and are ALSO in the main alternation, so
+  # a future refactor moving a name into its own entry must not read as a
+  # regression. Anchored on `name` immediately followed by `match`, which is
+  # what distinguishes an alternation entry from the three capture-group
+  # entries that share the scope name.
+  [= $tm-alt [$strings:join
+    [?for [in $m [$re:find-all
+        [$re:compile "\"keyword\\.control\\.[a-z.-]+\\.cx\", \"match\": \"\\\\\\\\b\\(([^)]+)\\)"] $tm-src]]
+      [yield [$re:group $m 1]]] "|"]]
+  [= $tm     [?to-sequence [?for [in $m [$re:find-all [$re:compile "([a-z][a-z0-9-]*)"] $tm-alt]] [yield [$re:group $m 1]]]]]
+  [= $vs     [?to-sequence [?for [in $m [$re:find-all [$re:compile "\"prefix\": \"[?]([a-z][a-z0-9-]*)\"" ] $sn-src]] [yield [$re:group $m 1]]]]]
+
+  # ── the register's rows ─────────────────────────────────────────────
+  [= $rows [?to-sequence [?for [in $m [$re:find-all
+      [$re:compile "\\|\\s`([a-z][a-z0-9-]*)`\\s\\|\\s([^|]+)\\|\\s([^|]+)\\|\\s([^|]+)\\|\\s([^|]+)\\|\\s([^|]+)\\|"] $reg-src]]
+    [yield [row nm=[$re:group $m 1]
+                hover=[$strings:trim [$re:group $m 2]]
+                help=[$strings:trim [$re:group $m 3]]
+                snippet=[$strings:trim [$re:group $m 4]]
+                tmlang=[$strings:trim [$re:group $m 5]]
+                vscode=[$strings:trim [$re:group $m 6]]]]]]]
+
+  # ── REFUSE TO VOUCH ─────────────────────────────────────────────────
+  # A derivation that yields nothing makes its whole column pass over
+  # nothing. Each of these has a real way to break: a renamed const, a
+  # retitled map, a restructured grammar file. `vcx/Makefile:597` is where
+  # this idiom comes from.
+  [= $vac-reg   [?if [= [$count $reg] 0]   [then 1] [else 0]]]
+  [= $vac-hover [?if [= [$count $hover] 0] [then 1] [else 0]]]
+  [= $vac-help  [?if [= [$count $help] 0]  [then 1] [else 0]]]
+  [= $vac-snip  [?if [= [$count $snip] 0]  [then 1] [else 0]]]
+  [= $vac-tm    [?if [= [$count $tm] 0]    [then 1] [else 0]]]
+  [= $vac-vs    [?if [= [$count $vs] 0]    [then 1] [else 0]]]
+  [= $vac-rows  [?if [= [$count $rows] 0]  [then 1] [else 0]]]
+  [= $n-vacuous [+ $vac-reg [+ $vac-hover [+ $vac-help [+ $vac-snip
+                  [+ $vac-tm [+ $vac-vs $vac-rows]]]]]]]
+
+  # ── row-set parity ──────────────────────────────────────────────────
+  [= $row-names [?to-sequence [?for [in $r $rows] [yield [$string $r@nm]]]]]
+  [= $unrostered [?to-sequence [?for [in $d $reg]
+    [where [not [$has $row-names $d]]]
+    [yield [$concat '  NO ROW for registry directive `' $d '` — a new directive must not join the debt silently']]]]]
+  [= $stale-rows [?to-sequence [?for [in $r $rows]
+    [where [not [$has $reg [$string $r@nm]]]]
+    [yield [$concat '  STALE ROW `' [$string $r@nm] '` — not a registry directive any more']]]]]
+
+  # ── per-column, BOTH directions ─────────────────────────────────────
+  [= $bad-hover [?to-sequence [?for [in $r $rows] [where [$has $reg [$string $r@nm]]]
+    [where [not [= [= [$string $r@hover] 'yes'] [$has $hover [$string $r@nm]]]]]
+    [yield [$disagree [$string $r@nm] 'hover' [$string $r@hover] [$has $hover [$string $r@nm]]]]]]]
+  [= $bad-help [?to-sequence [?for [in $r $rows] [where [$has $reg [$string $r@nm]]]
+    [where [not [= [= [$string $r@help] 'yes'] [$has $help [$string $r@nm]]]]]
+    [yield [$disagree [$string $r@nm] 'help' [$string $r@help] [$has $help [$string $r@nm]]]]]]]
+  [= $bad-snip [?to-sequence [?for [in $r $rows] [where [$has $reg [$string $r@nm]]]
+    [where [not [= [= [$string $r@snippet] 'yes'] [$has $snip [$string $r@nm]]]]]
+    [yield [$disagree [$string $r@nm] 'snippet' [$string $r@snippet] [$has $snip [$string $r@nm]]]]]]]
+  [= $bad-tm [?to-sequence [?for [in $r $rows] [where [$has $reg [$string $r@nm]]]
+    [where [not [= [= [$string $r@tmlang] 'yes'] [$has $tm [$string $r@nm]]]]]
+    [yield [$disagree [$string $r@nm] 'tmlang' [$string $r@tmlang] [$has $tm [$string $r@nm]]]]]]]
+  [= $bad-vs [?to-sequence [?for [in $r $rows] [where [$has $reg [$string $r@nm]]]
+    [where [not [= [= [$string $r@vscode] 'yes'] [$vs-covers $vs [$string $r@nm]]]]]
+    [yield [$disagree [$string $r@nm] 'vscode' [$string $r@vscode] [$vs-covers $vs [$string $r@nm]]]]]]]
+
+  # ── phantom keys (only the `cx` self-host head is exempt) ───────────
+  [= $ph-hover [?to-sequence [?for [in $k $hover] [where [not [$has $reg $k]]] [where [not [= $k EXEMPT-KEY]]] [where [not [= $k EXEMPT-DOC]]]
+    [yield [$concat '  phantom key `' $k '` in directive_docs — not a registry directive']]]]]
+  [= $ph-help [?to-sequence [?for [in $k $help] [where [not [$has $reg $k]]] [where [not [= $k EXEMPT-KEY]]] [where [not [= $k EXEMPT-DOC]]]
+    [yield [$concat '  phantom key `' $k '` in directive_help() — not a registry directive']]]]]
+  [= $ph-snip [?to-sequence [?for [in $k $snip] [where [not [$has $reg $k]]] [where [not [= $k EXEMPT-KEY]]]
+    [yield [$concat '  phantom key `' $k '` in completion_snippet_for — not a registry directive']]]]]
+
+  # ── the Neovim head class: narrow, but not vacuous ──────────────────
+  [= $vim-bad [?if [$strings:contains $vim-src VIM-HEAD-CLASS]
+    [then ()]
+    [else ('  neovim: the cxPI region head class moved — every registry name must still match [a-z][a-z0-9-]*')]]]
+
+  [= $n-bad [+ [$count $unrostered] [+ [$count $stale-rows]
+              [+ [$count $bad-hover] [+ [$count $bad-help] [+ [$count $bad-snip]
+              [+ [$count $bad-tm] [+ [$count $bad-vs]
+              [+ [$count $ph-hover] [+ [$count $ph-help] [+ [$count $ph-snip]
+                 [$count $vim-bad]]]]]]]]]]]]
+
+  [= $out [?if [> [+ $n-vacuous $n-bad] 0] [then [$env:stderr]] [else [$env:stdout]]]]
+
+  [?if [> $n-vacuous 0]
+    [then [?let
+      [= $w [$io:write-line $out [$str-format "check-editor-surface-parity: VACUOUS — a derivation produced NOTHING (registry {}, hover {}, help {}, snippet {}, tmlang {}, vscode {}, register rows {}); refusing to vouch" ([$count $reg], [$count $hover], [$count $help], [$count $snip], [$count $tm], [$count $vs], [$count $rows])]]]
+      [$env:exit 1]]]
+    [else [?if [> $n-bad 0]
+      [then [?let
+        [= $w0 [$io:write-line $out 'check-editor-surface-parity: the register and the surfaces DISAGREE']]
+        [= $w1 [?for [in $l $unrostered] [yield [$io:write-line $out $l]]]]
+        [= $w2 [?for [in $l $stale-rows] [yield [$io:write-line $out $l]]]]
+        [= $w3 [?for [in $l $bad-hover]  [yield [$io:write-line $out $l]]]]
+        [= $w4 [?for [in $l $bad-help]   [yield [$io:write-line $out $l]]]]
+        [= $w5 [?for [in $l $bad-snip]   [yield [$io:write-line $out $l]]]]
+        [= $w6 [?for [in $l $bad-tm]     [yield [$io:write-line $out $l]]]]
+        [= $w7 [?for [in $l $bad-vs]     [yield [$io:write-line $out $l]]]]
+        [= $w8 [?for [in $l $ph-hover]   [yield [$io:write-line $out $l]]]]
+        [= $w9 [?for [in $l $ph-help]    [yield [$io:write-line $out $l]]]]
+        [= $wa [?for [in $l $ph-snip]    [yield [$io:write-line $out $l]]]]
+        [= $wb [?for [in $l $vim-bad]    [yield [$io:write-line $out $l]]]]
+        [= $wc [$io:write-line $out [$concat '  (' REGISTER ' is the register; it may only SHRINK)']]]
+        [$env:exit 1]]]
+      [else [?let
+        [= $w [$io:write-line $out [$str-format "check-editor-surface-parity OK — {} registry directive(s) x 5 column(s) agree with the register; covered: hover {}, help {}, snippet {}, tmlang {}, vscode {}" ([$count $reg], [$count [?for [in $d $reg] [where [$has $hover $d]] [yield 1]]], [$count [?for [in $d $reg] [where [$has $help $d]] [yield 1]]], [$count [?for [in $d $reg] [where [$has $snip $d]] [yield 1]]], [$count [?for [in $d $reg] [where [$has $tm $d]] [yield 1]]], [$count [?for [in $d $reg] [where [$vs-covers $vs $d]] [yield 1]]])]]]
+        [$env:exit 0]]]]]]]]
+
+[$main]

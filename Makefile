@@ -799,7 +799,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness test-vcx-timing check-conformance-coverage abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate flow-vocabulary-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster
+TEST_TARGETS := check-vcache-soundness test-vcx-timing check-conformance-coverage abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate flow-vocabulary-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS lanes whose
@@ -1316,6 +1316,28 @@ check-tmlanguage-sync:
 	@cmp -s tooling/vscode/syntaxes/cx.tmLanguage.json tooling/syntax/cx.tmLanguage.json \
 		|| { echo "check-tmlanguage-sync: tooling/syntax/cx.tmLanguage.json has drifted from the canonical tooling/vscode/syntaxes/cx.tmLanguage.json — run 'make sync-tmlanguage'"; exit 1; }
 	@echo "check-tmlanguage-sync: OK — tooling/syntax copy is byte-identical to the canonical vscode grammar"
+
+# check-editor-surface-parity (#1171) — the editor surfaces vs the directive
+# registry, held by a checked-in register that may only SHRINK.
+#
+# `tooling/EDITOR_SURFACE_PARITY.md` carries one row per registry directive and
+# one cell per surface column, each `yes` or `defer: #1171`. The gate re-derives
+# every column from the surface itself and fails on ANY disagreement in BOTH
+# directions — a `yes` the surface lacks, AND coverage the register still
+# defers, which is what forces paying the debt down to update the register.
+#
+# Same shape as check-inmodule-test-roster (#1209) / check-build-input-roster
+# (#1065), including their load-bearing arm: a derivation that produces NOTHING
+# refuses to vouch rather than passing over an empty set.
+#
+# Two surfaces deliberately have NO column — tree-sitter and the Neovim
+# vim-syntax both match a generic directive region, so a presence column would
+# read 80/80 forever including for directives that do not exist. The register's
+# header records that reasoning; the gate substitutes the one honest mechanical
+# check available for Neovim (the head character class).
+.PHONY: check-editor-surface-parity
+check-editor-surface-parity: build-vcx-dev
+	@vcx/target/cx-dev --allow-read --allow-write scripts/check_editor_surface_parity.cx
 
 .PHONY: sync-tmlanguage
 sync-tmlanguage:
