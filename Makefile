@@ -71,6 +71,26 @@ V := $(if $(wildcard $(CURDIR)/third_party/v/v),$(CURDIR)/third_party/v/v,v)
 # ONLY for recipes that run a test BINARY. A recipe that invokes a sub-make
 # must KEEP fds 3/4, or that make drops to -j1 with "jobserver unavailable"
 # and the parallel build silently serializes.
+# JS_CLOSE — close GNU make's jobserver descriptors before running a TEST
+# BINARY, so a child the test leaks cannot hold them.
+#
+# #1344 established the mechanism: fd INHERITANCE ALONE is sufficient to wedge
+# a later parallel make at 0% CPU with no children and no timeout — no lost
+# token, no killed job and no stray signal are needed. #1057 is the same wedge
+# on the FAILURE path, and it reproduces in 40 seconds with a four-line toy: a
+# `-j4` make with one failing lane plus one leaked fd-inheriting child hangs on
+# "Waiting for unfinished jobs...." until a timeout kills it, while the
+# identical toy with these fds closed exits 2 promptly with the real red.
+# Measured 2026-09-07, both directions.
+#
+# NEVER put this on a recipe that invokes a SUB-MAKE: that make would drop to
+# -j1 with "jobserver unavailable" and the parallel build would silently
+# serialize.
+#
+# Applied to every lane that runs a test binary, not only the three that had a
+# known leak, because the wedge's victim is the NEXT make rather than the lane
+# that leaked — so "this lane has no server fixture today" is not a property
+# worth betting a 90-minute gate on.
 JS_CLOSE := exec 3<&- 4<&- 5<&- 6<&- 2>/dev/null || true;
 
 CONFORMANCE_CORE := conformance/core.cxd
@@ -882,7 +902,7 @@ check-null-absence-conflation:
 # umbrella — the named target retargets to the umbrella like its siblings.)
 .PHONY: check-effect-alignment
 check-effect-alignment: build-vcx
-	@$(V) -cc cc $(CX_GC) test vcx/tests/eval_semantics_umbrella_test.v
+	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) test vcx/tests/eval_semantics_umbrella_test.v
 
 # ── check-code-spec-consistency (#707 item 4 / code.md §11.4.1 gates 1-3 +
 # the clean-room no-impl-anchor / no-dangling-decision checks). The tool
@@ -1163,11 +1183,11 @@ test-extraction-gate: build-vcx
 # NEW corpus defs are added (never to absorb a move).
 .PHONY: address-baseline-gate
 address-baseline-gate:
-	@$(V) $(VFLAGS_VCX) run vcx/tests/runners/address_baseline/address_baseline.v
+	@$(JS_CLOSE) $(V) $(VFLAGS_VCX) run vcx/tests/runners/address_baseline/address_baseline.v
 
 .PHONY: address-baseline-capture
 address-baseline-capture:
-	@$(V) $(VFLAGS_VCX) run vcx/tests/runners/address_baseline/address_baseline.v --capture
+	@$(JS_CLOSE) $(V) $(VFLAGS_VCX) run vcx/tests/runners/address_baseline/address_baseline.v --capture
 
 .PHONY: abi-gc-gate
 # #902 — depends on the SHIPPED library (build-vcx), not build-vcx-dev.
@@ -2056,7 +2076,7 @@ test-vcx-code: build-vcx-dev check-serial-retry-rosters
 # the live sqlite store backend is vcx/code/store_sqlite_d_cxstore_sqlite.v.)
 .PHONY: test-vcx-cxstore
 test-vcx-cxstore: build-vcx-dev
-	@$(V) -cc cc $(CX_GC) test vcx/cxstore/*_test.v
+	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) test vcx/cxstore/*_test.v
 
 # The in-module Ring-0 test roster (#1209). Listed EXPLICITLY, never globbed:
 # vcx/cx/parser_multidoc_test.v segfaults under the shipped `-gc e` model
@@ -2116,8 +2136,8 @@ check-inmodule-test-roster:
 # closes.
 .PHONY: test-vcx-cx
 test-vcx-cx: build-vcx-dev
-	@$(V) -cc cc $(CX_GC) test $(CX_INMODULE_TESTS)
-	@$(V) -cc cc $(CX_GC) test vcx/fixtures/
+	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) test $(CX_INMODULE_TESTS)
+	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) test vcx/fixtures/
 
 # White-box unit tests that live INSIDE the CLI module (vcx/cmd/*_test.v) —
 # they assert on the cmd module's own constants (e.g. the `cx scaffold`
@@ -2137,7 +2157,7 @@ test-vcx-cx: build-vcx-dev
 # pushdown symbols) is precisely a provenance failure that part (i)'s manifests
 # now make impossible, and if it recurs the gate needs a probe, not a retry.
 test-vcx-cmd: build-vcx-dev
-	@log=vcx/target/test-cmd-run.log; stf=vcx/target/test-cmd-status; \
+	@$(JS_CLOSE) log=vcx/target/test-cmd-run.log; stf=vcx/target/test-cmd-status; \
 	{ $(V) -cc cc $(CX_GC) -d cx_platform $(CX_ENGINES) $(CX_CACHE) test vcx/cmd/ 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
@@ -2174,7 +2194,7 @@ else
 endif
 .PHONY: test-vcx-columnar
 test-vcx-columnar: build-vcx-dev skip-ledger-reset
-	@if ! PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" pkg-config --exists arrow parquet 2>/dev/null; then \
+	@$(JS_CLOSE) if ! PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" pkg-config --exists arrow parquet 2>/dev/null; then \
 	  line="SKIP test-vcx-columnar: Apache Arrow/Parquet not discoverable via pkg-config (absent prerequisite, #318 — brew install apache-arrow / apt libarrow-dev libparquet-dev)"; \
 	  echo "$$line"; mkdir -p $(CX_SKIP_DIR); echo "$$line" > $(call CX_SKIP_FILE,test-vcx-columnar); \
 	else \
@@ -2238,7 +2258,7 @@ else
 endif
 .PHONY: test-vcx-sqlite
 test-vcx-sqlite: build-vcx-dev skip-ledger-reset
-	@if ! PKG_CONFIG_PATH="$(SQLITE_PKGCONFIG):$$PKG_CONFIG_PATH" pkg-config --exists sqlite3 2>/dev/null; then \
+	@$(JS_CLOSE) if ! PKG_CONFIG_PATH="$(SQLITE_PKGCONFIG):$$PKG_CONFIG_PATH" pkg-config --exists sqlite3 2>/dev/null; then \
 	  line="SKIP test-vcx-sqlite: libsqlite3 development headers not discoverable via pkg-config (absent prerequisite, #318 — brew install sqlite / apt libsqlite3-dev)"; \
 	  echo "$$line"; mkdir -p $(CX_SKIP_DIR); echo "$$line" > $(call CX_SKIP_FILE,test-vcx-sqlite); \
 	else \
