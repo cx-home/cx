@@ -222,3 +222,113 @@ here, and this record does not claim `cx fmt` is fixed.
   lives in the DATA lane, not the program lane. `cx fmt` oscillates on it in a
   stable 2-cycle (2924 ↔ 2917 bytes) and never converges, violating
   `formatting.md` §7. Filed as #1319 with a delta-debugged 103-byte repro.
+
+---
+
+## 1058-T1.2 IMPLEMENTED (2026-09-07) — measured, and two rules the record did not anticipate
+
+Landed as `vcx/cx/program_layout.v` plus a span table on the emitter. The
+design held: `program_node_to_source` is the same emitter with recording OFF
+and returns the flat buffer, so it is byte-identical to its pre-layout self by
+construction — no oracle moved, no `cx:expr` value moved, and no test was
+needed to establish it.
+
+**One hook, not a width parameter through thirty helpers.** Every recursive
+descent in the emitter passes through `emit_program_node`, so recording the
+buffer offset on the way in and out of that ONE function yields every node's
+byte range in pre-order together with its enclosing node. The emitter's
+signatures changed once (`strings.Builder` -> `Emitter`, a wrapper carrying the
+same three methods plus the table), so the 132 call sites and 241 write
+statements are untouched.
+
+**A span is a LAYOUT UNIT, not a ProgramNode — and this is what made the
+difference between "the layout works on some files" and "the layout works."**
+Recording only nodes left `[?for]` and `[?match]` unbreakable, because their
+clauses are not nodes: the parser flattens them into labeled-slot runs and
+`ProgramForClause` structs, so the gap between two clauses reads `] [where [`
+— not whitespace — and the layout could find no break site. First measurement
+with nodes only: `registry/publish.cx` 1183 -> 175 columns but still 175.
+With clause spans (`[in …]`, `[where …]`, `[yield …]`, `[case …]`,
+`[when …]`, `[else …]`, `[?modify]` actions, `[?eval]` clauses, and every
+`name=value` attribute, whose inter-value gap is ` name=`): 81.
+
+### RULE 1, second half — an unbreakable head that already overflows is NOT broken
+
+Not in the original record, and it is a correction to a real regression the
+first implementation caused. `stdlib/journal.cx` is a file of one-line
+`[?def]`s whose VERBATIM clause region (1318-A: `DefNode` models `requires` /
+`effects` / `returns` as source bytes) is already 130 columns. Breaking the
+body's three arguments onto three further lines bought 15 columns and added 60
+lines — in one file. So: a form is flat when it fits, AND when its own head
+region does not fit, because then no break below it can help. One over-wide
+line is the honest rendering of content a ruling declares unbreakable.
+
+### The comma is the one separator carried across a break
+
+Also not anticipated. The first cut broke only pure-whitespace gaps, on the
+argument that whitespace for whitespace cannot change how text re-parses — and
+that left the corpus's longest lines untouched, because a `(…)` sequence
+literal is how CX spells a STATEMENT SEQUENCE: `[else ([$cry …], [?for …],
+[$cry …])]` is a block, not a data aggregate. Measured: one 300-column
+`[else (…)]` in `scripts/check_editor_distribution.cx`. A comma is a token, so
+a line may end on one; with `(A,` / `[1,` that file's widest line went
+300 -> 94.
+
+The remaining boundary is the MAP literal, whose inter-value gap is
+`, key: `. Breaking there means deciding where a map ENTRY may break, which
+1058-T1.2-b already answers differently and deliberately for the data lane.
+Declared boundary, pinned by a test, not an omission.
+
+### Measured over all 259 `.cx` outside `third_party/` and `fixtures/bench/`
+
+| | before | after |
+|---|---|---|
+| files whose `cx fmt` output moved | — | **87** |
+| files whose WIDEST line narrowed | — | **83** |
+| files whose widest line got wider | — | **0** |
+| columns removed from widest lines | — | **20,180** |
+| files with any line > 80 | 213 | 198 |
+| lines > 80 across the corpus | 9,357 | **9,869** |
+| `cx fmt` errors | 5 | 5 (same files) |
+| comment loss | 0 | 0 |
+| non-idempotent | 0 | 0 |
+
+**The one number that got worse is reported because it is real, and it is not
+a regression.** Over-80 LINES rose by 512 while over-80 FILES fell by 15,
+because a 3,000-column `[fn-doc …]` in `stdlib/journal.cx` becomes fifteen
+lines of which most still hold an 800-character embedded example string. Of
+that file's 141 remaining over-80 lines, 101 contain a 60+ character string
+literal and the rest are `[?def]` verbatim clause regions. Both are the
+declared exception ("except where a single unbreakable token does"), so the
+count is a consequence of splitting monster lines, not of laying them out
+badly. Widest-line-per-file is the metric that answers rule 4, and it improved
+in 83 files and worsened in none.
+
+Biggest movers, widest line before -> after: `scripts/check_editor_distribution.cx`
+1279 -> 94, `registry/publish.cx` 1183 -> 81, `vcx/tests/soundness/workers8.cx`
+983 -> 116, `packages/gtin/gtin.cx` 743 -> 96, `corpus/rosetta/02-log-parser.cx`
+419 -> 77.
+
+### `cx fmt --help` corrected, and cli.md §3.1 is now the odd one out
+
+The help text claimed the formatter "preserves … authorial structure", which
+#1058 T1.2 flagged. It was already false — and `formatting.md` §2/§3 is why:
+the `canonical` profile IS `indent=spaces=2 children=wrap=80 max-width=80`,
+and `idiomatic` is the profile whose layout axes preserve author layout. So
+this work is spec CONFORMANCE, not a surface change; the help now says so.
+`spec/03-approved/misc/cli.md` §3.1 still carries the same sentence and
+therefore still contradicts `formatting.md` §2 — raised as a question, NOT
+edited here (no spec edits during an implementation phase).
+
+### Conformance
+
+`conformance/fmt.cxd` 27/0. `fmt-013` re-recorded (its one-line form is 93
+columns; the paren pairs the case is about are untouched) and two cases added:
+`fmt-026` pins rules 2 and 3 (hang, indent+2, glued closers), `fmt-027` pins
+rule 1's second half. The runner asserts §1 purity and §7 idempotence on every
+case, so both new cases are also fixed-point pins.
+
+`vcx/cx/program_layout_test.v` and `vcx/cx/program_emit_head_ascription_test.v`
+are registered in `CX_INMODULE_TESTS` — `v test` runs only what it is given,
+and an unlisted `vcx/cx/*_test.v` guards nothing (#1209). The roster gate
+catches it, but adding the file and the roster entry together is the habit.
