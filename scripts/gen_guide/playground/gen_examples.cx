@@ -326,6 +326,11 @@
 # still be read back. 4 MiB is ~4000x the largest current example and far
 # past anything the playground could put on screen, so exceeding it means
 # the example is wrong, not that the cap is tight.
+[?const NL '\n']
+[?const ERR-OPEN '[err ']
+[?const SEQ-ERR-OPEN '([err ']
+[?const SEQ-ERR-MID ', [err ']
+
 [?const CAPTURE-CAP 4194304]
 
 # ── the per-example bound: CALIBRATED, never a wall-clock constant ────
@@ -433,7 +438,26 @@
         [= $msg [?if [= [$strings:trim $out] '']
             [then [$strings:trim $errout]] [else [$strings:trim $out]]]]
         [= $runnable [not [$strings:contains $combined 'CXER0271']]]
-        [= $err-value-result [$strings:starts-with [$strings:trim-start $out] '[err']]
+        # An err value ANYWHERE in the result means the program produced one,
+        # so a nonzero rc is expected. #1058 T1.1 made that true of SEQUENCES
+        # too, and `starts-with` cannot see them: `[?for]` / `[?map]` COLLECT
+        # errs so the output starts with `(`, and the run surface renders each
+        # top-level result on its own line so a multi-line output carries its
+        # err on a later one. Both shapes hit the `rc != 0 && !err-value` arm:
+        #   57-map-par-bulkhead   (1, 4, 9, 16, [err code=shard-offline …], …)
+        #   97-rate-limit-over    [ok i=1] / [ok i=2] / [err …CXER0151…]
+        # Same predicate the profile gate's binary lane needed
+        # (expectation_carries_err) — T1.1's rule has several graders and they
+        # have to agree.
+        [= $err-lines [?for [in $l [$strings:split $out NL]]
+            [where [$strings:starts-with [$strings:trim $l] ERR-OPEN]]
+            [yield $l]]]
+        # An err can sit ANYWHERE in the sequence, not just first —
+        # 57-map-par-bulkhead is `(1, 4, 9, 16, [err …], 36, 49, 64)`, so the
+        # `([err ` prefix does not match and `, [err ` is needed too.
+        [= $err-value-result [or [not [$empty $err-lines]]
+                                 [or [$strings:contains $out SEQ-ERR-OPEN]
+                                     [$strings:contains $out SEQ-ERR-MID]]]]
         [?if $over
           [then [res status='fail' runnable=true ms=$ms
                  msg=[$cat ('output too large: ', [$string [+ $osz $esz]],
