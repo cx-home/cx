@@ -65,7 +65,7 @@
       [table
         [tr [th 'command'] [th 'purpose']]
         [tr [td 'cx FILE'] [td 'Parse + evaluate a document / program (the default action)']]
-        [tr [td 'cx fmt FILE'] [td 'Lossless canonical formatter (preserves comments, anchors; normalizes whitespace/quoting)']]
+        [tr [td 'cx fmt FILE'] [td 'Lossless canonical formatter (preserves comments, anchors; normalizes whitespace, quoting and layout to the canonical profile: indent 2, max width 80)']]
         [tr [td 'cx canonical FILE'] [td 'Strict canonical text (strips presentation; data-equivalent output)']]
         [tr [td 'cx hash FILE'] [td 'SHA-256 hex of the strict-canonical bytes']]
         [tr [td 'cx eq A B'] [td 'Exit 0 iff strict-canonical(A) == strict-canonical(B)']]
