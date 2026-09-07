@@ -99,10 +99,34 @@ make test-changed-dry the same selection, printed and not run
 make docs             regenerate the LLM layer after changing a cited fixture
 make docs-check       the drift gate; fails if the layer is stale
 make guide            the human-facing documentation site
+scripts/gate.sh       run a gate detached and ALWAYS write a verdict marker
 ```
 
 Targeted lanes are the development loop; the full matrix is the exit gate.
 [`CONTRIBUTING.md`](CONTRIBUTING.md) has the rest.
+
+**Run a long gate through `scripts/gate.sh`, not through a hand-typed
+wrapper.** The idiom everyone reaches for —
+
+```
+nohup sh -c 'make test ; echo GATE-EXIT=$?' > gate.log 2>&1 &
+```
+
+writes no marker if the WRAPPER is killed, so an
+`until grep -q GATE-EXIT= gate.log` waiter polls forever; #1333 found three
+such waiters alive three hours after their gate had died. `scripts/gate.sh`
+writes the marker from a `trap ... EXIT`, so it is unconditional, and it
+signals make's whole process group on the way out instead of orphaning the
+gate:
+
+```
+nohup scripts/gate.sh > /dev/null 2>&1 &                      # or a target
+until grep -q 'GATE-EXIT=' vcx/target/gate.log; do sleep 30; done
+```
+
+`GATE-EXIT=0` passed, `2` a real red, `130`/`143`/`129` interrupted /
+terminated / hung up, `70` the wrapper died before make returned. Read the
+verdict FROM THE LOG — a piped gate loses the per-lane summaries.
 
 ### The development loop
 
