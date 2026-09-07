@@ -467,6 +467,25 @@ check-v-fork: build-vcx
 # and before widening -usecache to more lanes — it proves the COMPILER, not
 # the tree, so it is not in the default TEST_TARGETS ring. Audit + evidence:
 # ledger/audit_2026_08_24_vcache_key_soundness.md.
+# IN THE GATE MATRIX since #1337, and FIRST in TEST_TARGETS. The gate already
+# existed and already went red on the invalidation class — `sound=10 red=6` on
+# the worktree that filed #1337 — but nothing in the matrix ran it, so a stale
+# cache surfaced as `address-baseline-gate` dying on an undeclared
+# `string_runes` on a branch that adds no `.runes()` call anywhere. A
+# prio:high landing was held for a full verification cycle to establish that a
+# red gate was a toolchain artifact.
+#
+# Ordered first deliberately: the point is that a stale cache NAMES ITSELF
+# before another lane fails on a symbol that has nothing to do with the
+# change under test. 81 s against a ~90-minute matrix.
+#
+# This is #1337 ask 2, taken at its second option ("or add
+# check-vcache-soundness to the gate matrix so the real cause is named
+# first"). The first option — give every `$(V) run` gate the
+# CACHE_ESCAPE_PROBE reclassifier — was NOT taken, and the reason is that
+# `VFLAGS_VCX` carries no `-usecache`, so a "cache-free re-run" of those gates
+# would differ from the cached run in nothing and the classifier would print a
+# verdict it had not earned.
 .PHONY: check-vcache-soundness
 check-vcache-soundness:
 	@log=vcx/target/vcache-soundness.log; \
@@ -780,7 +799,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := test-vcx-timing check-conformance-coverage abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate flow-vocabulary-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster
+TEST_TARGETS := check-vcache-soundness test-vcx-timing check-conformance-coverage abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate flow-vocabulary-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS lanes whose
@@ -2092,6 +2111,16 @@ test-vcx-cxstore: build-vcx-dev
 # forgotten silently. Delete both lists and glob the directory when #737 closes.
 CX_INMODULE_TESTS := vcx/cx/program_layout_test.v vcx/cx/program_emit_head_ascription_test.v vcx/cx/directive_emit_surface_test.v vcx/cx/anchor_resolve_test.v vcx/cx/numeric_exact_fast_test.v vcx/cx/atom_test.v vcx/cx/token_golden_test.v vcx/cx/version_stamp_test.v vcx/cx/html_url_codec_test.v vcx/cx/span_jump_test.v vcx/cx/feature_compat_test.v vcx/cx/name_pool_contract_test.v vcx/cx/schema_extensions_test.v vcx/cx/node_api_test.v
 CX_INMODULE_TESTS_EXCLUDED := vcx/cx/parser_multidoc_test.v
+
+# check-build-input-roster (#1065) — forwards to vcx/, where the per-artifact
+# input rosters live. It proves each guard watches every module its artifact
+# actually compiles, re-derived from `v -print-v-files` under that artifact's
+# own defines. Same shape as the roster gate below (#1209): a hand-maintained
+# list is one import away from being wrong, and here the failure is a STALE
+# BINARY under a green guard, which has escaped twice.
+.PHONY: check-build-input-roster
+check-build-input-roster:
+	@$(MAKE) -C vcx check-build-input-roster
 
 .PHONY: check-inmodule-test-roster
 check-inmodule-test-roster:
