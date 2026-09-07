@@ -37,5 +37,20 @@ for a in libcx_re2_shim.a libcx_arrow_shim.a; do
 	[ -f "$MAIN/vcx/target/$a" ] && link "$MAIN/vcx/target/$a" "$W/vcx/target/$a"
 done
 
+# The linked paths must never be committable. `git add -A` in a worktree
+# captures whatever the tree contains, and these symlinks are part of it —
+# committing them replaces the real submodule checkouts with self-referential
+# links the moment the branch merges. That happened: a3fb74ef3 / ffc0a6072 took
+# out third_party/v and third_party/re2 in the main checkout and broke every
+# `v` on the box.
+#
+# `.git/info/exclude` CANNOT prevent it — that only governs UNTRACKED paths,
+# and these are tracked gitlinks, so replacing one with a symlink is a TYPE
+# CHANGE which `git add -A` stages as `T` regardless. Measured: with the paths
+# excluded, `git add -A` still staged both. `--skip-worktree` is the mechanism
+# that actually works: git stops looking at the working-tree version of the
+# path, so no `add` can pick the symlink up.
+git -C "$W" update-index --skip-worktree third_party/v third_party/re2 2>/dev/null || true
+
 printf 'wave worktree ready: %s  (branch %s)\n' "$W" "$BRANCH"
 printf 'build check:  cd %s && devbox run -- sh -c "cd vcx && v -cc cc -gc e test cx/atom_test.v"\n' "$W"
