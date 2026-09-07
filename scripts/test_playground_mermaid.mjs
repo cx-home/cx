@@ -270,6 +270,56 @@ const VIEWS    = ['auto', 'instance'];
 
 // Mirrors renderGraphNow()'s pre-parse normalisation exactly, so the
 // gate parses the same bytes the pane does.
+// structuralFaults — what `mermaid.parse` cannot tell you.
+//
+// Returns a list of human-readable faults, empty when the diagram is sound.
+// Two checks, each anchored to a defect that shipped through the parse-only
+// version of this gate:
+//
+//   DANGLING TARGET  every id on an edge must be DECLARED by a node
+//                    statement somewhere in the diagram. mermaid invents an
+//                    empty box instead of complaining (#1068).
+//   DUPLICATE ID     no id may be declared twice with different labels.
+//                    mermaid keeps the last silently (#1349).
+//
+// Deliberately conservative: it only looks at flowchart node/edge syntax and
+// ignores sequence/ER diagrams entirely, because those have no id-declaration
+// grammar to check and a false failure here would be worse than the gap.
+function structuralFaults(body) {
+  const faults = [];
+  const lines = body.split('\n').map((l) => l.trim());
+  if (!/^(flowchart|graph)\b/.test(lines[0] || '')) return faults; // CFG only
+
+  // A node DECLARATION carries a shape: id[...] id(...) id{{...}} id(((...)))
+  const declared = new Map();
+  const declRe = /^([A-Za-z_][A-Za-z0-9_]*)\s*(\[|\(|\{)/;
+  for (const l of lines) {
+    const m = l.match(declRe);
+    if (!m) continue;
+    const id = m[1];
+    if (id === 'subgraph' || id === 'end' || id === 'flowchart' || id === 'graph') continue;
+    const label = l.slice(m[1].length);
+    if (declared.has(id) && declared.get(id) !== label) {
+      faults.push(`DUPLICATE node id \`${id}\` declared twice with different labels — mermaid keeps the last`);
+    }
+    declared.set(id, label);
+  }
+
+  // An EDGE mentions two ids around an arrow. Covers -->, -.->, ---, -- "x" -->
+  // and the dotted labelled form -. "x" .->
+  const edgeRe = /^([A-Za-z_][A-Za-z0-9_]*)\s*(?:-[-.].*?)?(?:--&gt;|-->|\.-&gt;|\.->|---)\s*([A-Za-z_][A-Za-z0-9_]*)/;
+  for (const l of lines) {
+    const m = l.match(edgeRe);
+    if (!m) continue;
+    for (const id of [m[1], m[2]]) {
+      if (!declared.has(id)) {
+        faults.push(`DANGLING edge target \`${id}\` — no node declares it; mermaid would auto-create an empty box`);
+      }
+    }
+  }
+  return [...new Set(faults)];
+}
+
 function normalise(src) {
   let body = String(src || '').replace(/^%%cx:[^\n]*\n?/m, '').trim();
   return body.replace(/^```mermaid\s*/, '').replace(/```\s*$/, '').trim();
@@ -331,6 +381,28 @@ for (const key of keys) {
         if (!body) { empty++; continue; }
         try {
           await mermaid.parse(body);
+          // PARSING IS NOT ENOUGH, and three shipped defects proved it.
+          // mermaid AUTO-DECLARES any id it meets on an edge, and silently
+          // keeps the LAST of two declarations sharing an id — so a diagram
+          // whose edges point at nodes that do not exist, or whose nodes
+          // collide, parses perfectly and renders wrongly. This gate was
+          // parse-only, so it was vacuous for that whole class:
+          //   #1068  a `resolves` bridge pointed at a PHANTOM node (the
+          //          target was the literal string "lb"); 58 of 182 examples
+          //          rendered a wrong bridge, 1 of them dangling.
+          //   #1349  `lh`/`lb` are minted as a constant per scope, so nested
+          //          for-comprehensions collide on one id and mermaid keeps
+          //          the last — reproducing the `lt --> lt` self-edge #1036
+          //          had already fixed one construct over.
+          //   #1350  a golden left stale by the regen tool, invisible here.
+          const structural = structuralFaults(body);
+          if (structural.length > 0) {
+            fail++;
+            const msg = structural.slice(0, 3).join(' | ');
+            failures.push({ label, msg, body });
+            console.log(`FAIL  ${label}\n      ${msg}`);
+            continue;
+          }
           pass++;
           if (VERBOSE) console.log(`PASS  ${label}`);
         } catch (e) {
