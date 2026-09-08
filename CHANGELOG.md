@@ -15,6 +15,32 @@ version, library version).
 
 ### Added
 
+- **`attempts=` on a flow `[step]` — a bounded re-attempt of a FAILED act,
+  gated on the command's own `[idempotent]` declaration (#1314; RULED:
+  789-WF-26a).** §2.3's word table has carried `attempts=` since vocabulary
+  round 2 while `validate` refused it as unimplemented, so the only spelling
+  for a flaky external act was "make it idempotent and re-run the courier".
+  A step may now carry `attempts=N`: a failed act with the bound unspent
+  records `:retrying attempt=K` and is re-offered, and the failure path opens
+  only on exhaustion, where a second `:failed` transition carries
+  `reason=:attempts-exhausted` so the record distinguishes "the act failed"
+  from "the act failed N times". `attempt=K` rides the step row and
+  `:retrying` joins §2.2's closed status set. **The gate is the command's,
+  not the flow's:** `validate` admits `attempts=` only where the resolved
+  resolver row says `idempotent=true`, and refuses `CXER4952` NAMING THE
+  VERB otherwise — absence is a negative disposition (RULED: 789-WF-38a),
+  deny-by-default, because an ungated re-attempt would let a document
+  authorize a double charge. The test reads the row's VALUE rather than its
+  existence, which is what lets a dry run's `idempotent='unresolved:'`
+  sentinel stand the gate down instead of inheriting a fabricated `true`.
+  The WAIT between attempts (`every=`) is NOT part of this and stays
+  refused: §6 and RULED: 1265-PB-5 name every flow timer `<run id>:<step>`,
+  which `sched` treats as the registry identity, so a step carrying both a
+  `deadline=` and a re-attempt wait would silently lose its deadline — a
+  ruling, tracked on #1314, and one that already applies to a `deadline=`
+  beside a W3 escalation rung. Until then `attempts=` re-offers on the next
+  drive, which is WF-26's own stated default.
+
 - **A feature name is ONE segment; `/` is the qualification separator and is
   therefore taken (#1191; RULED: 1191-a).** `feature.cxs` accepted any string
   as a feature name, so a feature named `pb/store` validated, composed and
