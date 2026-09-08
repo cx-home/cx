@@ -144,3 +144,51 @@ very ruling establishes. The live-paint face is therefore the XAP host's
 `GET /stream` (`1316-b4`), and the CLI answers when it stops. The gap —
 that a CLI program has no ungranted line-out — is drafted as **`1316-c2`**
 on the issue.
+
+---
+
+# RULED: 1316-b4 — the run overlay rides the EXISTING host `GET /stream`
+
+Ruled by the owner + Fable at 2026-09-08 19:55 ET, RECASTING worker B's
+question 4, which was mis-premised in both directions:
+
+1. §4.17 does not say "rides the host's `/stream` face" — it says "live via
+   an SSE feed from `status`". The `/stream`-face wording is
+   `design/789/scaling_ladder_2026_09_05.md`, a design doc.
+2. `GET /stream` **exists** on the XAP host
+   (`vcx/platform/stdlib_xap_host_notd_wasm32_emcc.v:48` header, `:872`
+   handler) — a held-open SSE feed fanning one named `event: <feature>`
+   frame per admitted act to every subscriber. The grep that concluded
+   "does not exist" ran over `stdlib_xap.v`, the wrong file.
+
+**Ruled (a):** on each run transition the host fans out ONE named frame on
+the existing `/stream`, carrying the run id and that transition's `1316-b1`
+overlay rows. The event name is pinned by the implementer's fixture and MUST
+NOT collide with a feature name. The #647 discipline applies unchanged: the
+broadcast is a CHANGE SIGNAL (run id, node id, status); anything
+principal-bearing is read from `status` under the subscriber's own proof.
+
+**Spec text (landed here):** §4.17's overlay sentence gains the XAP-face
+carriage, the change-signal discipline, and the pointer to `1316-b3` for the
+non-host case.
+
+## Implementation is SEQUENCED BEHIND #1313's `1313-c`, and this is measured
+
+The ruling's parenthetical is "the host (which embeds the runner — RULED:
+1313-c)". **`1313-c` is ruled and NOT landed**, and its own text says so: it
+"lands in RULED pieces: (i) re-arm + safepoint + boot fixture; (ii)
+`schedule` + `intent`; (iii) `webhook` + `fold`", and it records that "today
+`xap_host` parks in a bare sleep and no timer can fire".
+
+Measured at this commit: `vcx/platform/stdlib_xap_host_notd_wasm32_emcc.v`
+contains **no occurrence of `flow`** at all, and across `vcx/platform/` the
+only file naming `cx-stdlib/flow` is `ring2_register.v` (the act seam). So
+there is no run inside the host, and therefore no transition to fan out.
+
+**Nothing frame-shaped is landed here on purpose.** A pusher wired to no
+caller is a seam with no live consumer — a partial implementation by this
+repo's own rule — and it would be worse than nothing, because the fixture
+pinning the event name would pass while the mechanism it names never fires.
+`1316-b4`'s code lands with, or immediately after, `1313-c` piece (ii),
+which is what first puts a run inside the host. Recorded on #1354 rather
+than filed as a new issue: the dependency is an open, ruled item.
