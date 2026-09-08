@@ -1,7 +1,7 @@
 # CX
 
 [![Version](https://img.shields.io/badge/version-v0.17.0-blue.svg)](#status)
-[![CX](https://img.shields.io/badge/CX-35.0%25_of_source-1a1a17.svg)](#status)
+[![CX](https://img.shields.io/badge/CX-34.9%25_of_source-1a1a17.svg)](#status)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-cx--home.github.io%2Fcx-brightgreen.svg)](https://cx-home.github.io/cx/)
 [![Status](https://img.shields.io/badge/status-pre--1.0_experimental-orange.svg)](#status)
