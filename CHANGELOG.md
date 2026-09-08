@@ -15,6 +15,32 @@ version, library version).
 
 ### Added
 
+- **One `[$ux:form]` reaches BOTH of cx's declaration systems (#1217; RULED:
+  1217-VF-1).** cx declares commands two ways — a `[?def]` with an `[effects]`
+  clause, and a XAP feature grammar's `[verb …]` over the `[noun …]` it
+  `[writes]` — and the UX projection reached only the first. `cx xap init`
+  scaffolds the second, so an adopter who followed cx's own scaffold end to end
+  handed `[$ux:form]` a correct verb name from a correct contract and got
+  `ux-no-such-command`, which reads as a typo. The capability was not missing;
+  it was a SECOND public entry, `ux:feature-form` (#787 W5), that nothing
+  pointed at — two entries for one projection, forcing every caller to know
+  which declaration system produced its verb before it could pick one.
+  `[$ux:form SOURCE VERB OPTS]` now dispatches on what the source IS: a string
+  is module source text and takes P0-17's path unchanged; a `[feature …]` or a
+  composed `[grammar …]` element takes the grammar path, resolving a qualified
+  verb through the composition. `ux:feature-form` is retired cutover-first with
+  no alias (twelve call sites in-tree; cx has no external users). Its refusals
+  are told apart as values — `ux-no-such-command`, `ux-not-a-command` (the def
+  exists and declares no `[effects]`, previously indistinguishable from a
+  typo), `ux-no-such-verb`, `ux-verb-observe`, `ux-source-unreadable` (which
+  had been leaking `CXER0100 cx:ast: SOURCE must be a string`, naming an
+  internal helper the caller never called). `ux-verb-observe` is a behaviour
+  fix and not only a diagnostic: an `observe` verb projected a form with a
+  SUBMIT BUTTON and no inputs, offering a write on a verb that declares it
+  reads. New normative claim **P0-129**; pinned by
+  `ux-122-one-entry-projects-both-declaration-systems` and
+  `ux-123-form-tells-its-refusals-apart`.
+
 - **`cx-stdlib/flow` §3 says which of its verbs answer, and a gate holds it
   (#1327; RULED: 1327-a).** §3 declared seventeen public verbs while the
   module registered six, and nothing was red: `flow-vocabulary-gate` reads
