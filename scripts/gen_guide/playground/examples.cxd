@@ -219,16 +219,15 @@ line 3''']
  ]
 
  [ex key=17-let-nested
-  [label [#[17] [?let] — nested bindings#]]
+  [label [#[17] [?let] — one flat binding list#]]
   [src [#
-[?let [= $price 12]
-  [?let [= $qty 3]
-    [order
-      subtotal=[* $price $qty]
-      tax=[* [* $price $qty] 0.08]]]]
+[?let [= $price 12] [= $qty 3] [= $subtotal [* $price $qty]]
+  [order
+    subtotal=$subtotal
+    tax=[* $subtotal 0.08]]]
 #]]
   [note [#
-**Introduces:** nested `[?let]` chains build local scopes. `[* $price $qty]` is the multiplication directive — CX's arithmetic uses the same `[? …]` bracket shape as every other op.
+**Introduces:** `[?let]` takes ALL its bindings in ONE flat list, and each one can read the ones before it (§8.5) — so `$subtotal` is computed once from `$price` and `$qty` and then used twice, instead of `[* $price $qty]` being written out again. A nested `[?let]` inside another is for a genuinely different scope, not for a second binding; reaching for the cascade is a Scheme habit (#361) and the flat form is the CX spelling. `[* $price $qty]` is the multiplication directive — CX's arithmetic uses the same `[? …]` bracket shape as every other op.
 #]]
  ]
 
@@ -245,12 +244,11 @@ line 3''']
  [ex key=19-arith-mixed
   [label [#[19] Arithmetic — sub / mul / div#]]
   [src [#
-[?let [= $x 10]
-  [?let [= $y 3]
-    [stats
-      sum=[+ $x $y]
-      diff=[- $x $y]
-      prod=[* $x $y]]]]
+[?let [= $x 10] [= $y 3]
+  [stats
+    sum=[+ $x $y]
+    diff=[- $x $y]
+    prod=[* $x $y]]]
 #]]
   [note [#
 **Introduces:** `[-]` (subtract) and `[*]` (multiply). All arithmetic is prefix-form.
@@ -819,10 +817,10 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
                 [user id=1 name=Alice banned=false]
                 [user id=2 name=Bob   banned=true]
                 [user id=3 name=Carol banned=false]]]
-  [?let [= $clean [?modify $doc //user[= $_@banned true]
-                    [delete]]]
-    [?modify $clean //user
-      [set-attr role "member"]]]]
+      [= $clean [?modify $doc //user[= $_@banned true]
+                  [delete]]]
+  [?modify $clean //user
+    [set-attr role "member"]]]
 #]]
   [note [#
 **Introduces:** composing multiple `[?modify]` steps with `[?let]`. First delete banned users, then set `role=member` on the survivors.
@@ -1081,9 +1079,9 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
   [src [#
 [?let [= $fast [?async [?let [= $_ [?sleep 100ms mock]]
                          [ok value='a']]]]
-  [?let [= $slow [?async [?let [= $_ [?sleep 400ms mock]]
-                           [ok value='b']]]]
-    [?await-all ($fast, $slow)]]]
+      [= $slow [?async [?let [= $_ [?sleep 400ms mock]]
+                         [ok value='b']]]]
+  [?await-all ($fast, $slow)]]
 #]]
   [note [#
 **Introduces:** `[?await-all (futures…)]`. Waits on every future; returns the sequence of results (or aggregated CXER0240 err).
@@ -1095,8 +1093,8 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
   [label [#[86] [?await-any] — first success wins#]]
   [src [#
 [?let [= $broken [?async [err code="down"]]]
-  [?let [= $good [?async [ok value='survivor']]]
-    [?await-any ($broken, $good)]]]
+      [= $good [?async [ok value='survivor']]]
+  [?await-any ($broken, $good)]]
 #]]
   [note [#
 **Introduces:** `[?await-any]`. Returns the first successful future; ignores subsequent failures.
@@ -1109,9 +1107,9 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
   [src [#
 [?let [= $fast [?async [?let [= $_ [?sleep 100ms mock]]
                          [ok value='fast']]]]
-  [?let [= $slow [?async [?let [= $_ [?sleep 500ms mock]]
-                           [ok value='slow']]]]
-    [?await-race ($fast, $slow)]]]
+      [= $slow [?async [?let [= $_ [?sleep 500ms mock]]
+                         [ok value='slow']]]]
+  [?await-race ($fast, $slow)]]
 #]]
   [note [#
 **Introduces:** `[?await-race]`. Returns the first future to resolve (success OR fail); cancels the losers.
@@ -1123,8 +1121,8 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
   [label [#[88] [?channel] — buffered send / receive#]]
   [src [#
 [?let [= $ch [?channel name="c" buffer=4]]
-  [?let [= $_ [?send 42 to=$ch]]
-    [?receive from=$ch]]]
+      [= $_ [?send 42 to=$ch]]
+  [?receive from=$ch]]
 #]]
   [note [#
 **Introduces:** `[?channel :name S :buffer N]` is a typed FIFO queue. `[?send V :to $ch]` enqueues; `[?receive :from $ch]` dequeues. (Note: directives use `:slot value` syntax; the `name=value` attribute form is for element construction.)
@@ -1148,8 +1146,8 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
   [src [#
 [?let [= $f [?async [?let [= $_ [?sleep 1s mock]]
                       [ok value='never']]]]
-  [?let [= $_ [?cancel $f]]
-    [?await $f]]]
+      [= $_ [?cancel $f]]
+  [?await $f]]
 #]]
   [note [#
 **Introduces:** `[?cancel $handle]`. Requests cancellation; future resolves to `[err :code "cx-err:CXER0260"]`.
@@ -1948,13 +1946,13 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
               [row a=1 b=2 c=3]
               [row a=4 b=5 c=6]
               [row a=7 b=8 c=9]]]
-  [?let [= $r1 $m/row[1]]
-    [?let [= $r2 $m/row[2]]
-      [?let [= $r3 $m/row[3]]
-        [transposed
-          [col k=a [val $r1@a] [val $r2@a] [val $r3@a]]
-          [col k=b [val $r1@b] [val $r2@b] [val $r3@b]]
-          [col k=c [val $r1@c] [val $r2@c] [val $r3@c]]]]]]]
+      [= $r1 $m/row[1]]
+      [= $r2 $m/row[2]]
+      [= $r3 $m/row[3]]
+  [transposed
+    [col k=a [val $r1@a] [val $r2@a] [val $r3@a]]
+    [col k=b [val $r1@b] [val $r2@b] [val $r3@b]]
+    [col k=c [val $r1@c] [val $r2@c] [val $r3@c]]]]
 #]]
   [note [#
 **Pattern:** transpose a fixed-shape 2D table. **Uses:** position predicates `[1]`/`[2]`/`[3]` (G3 closed) on the child axis `$m/row[N]` (gap A: child axis now returns every match — picking row N by position rather than getting the first row regardless). For arbitrary dimensions, lazy `[?zip]` is the right tool.
@@ -1985,12 +1983,12 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
                    [o id=1 user="A" amt=100]
                    [o id=2 user="B" amt=200]
                    [o id=3 user="A" amt=50]]]
-  [?let [= $users [u-set
-                    [u name="A" email="a@x.com"]
-                    [u name="B" email="b@x.com"]]]
-    [?for [in $o $orders//o]
-      [yield [joined order-id=$o/@id amt=$o/@amt
-               [?splice $users//u[= $_@name $o/@user]/@email]]]]]]
+      [= $users [u-set
+                  [u name="A" email="a@x.com"]
+                  [u name="B" email="b@x.com"]]]
+  [?for [in $o $orders//o]
+    [yield [joined order-id=$o/@id amt=$o/@amt
+             [?splice $users//u[= $_@name $o/@user]/@email]]]]]
 #]]
   [note [#
 **Pattern:** inner-join two collections by a shared key — look up each order's user record by name and project the email. **Uses:** cross-binding inline predicate `[@name=$o/@user]` (gap C closed: the RHS now evaluates the path-bearing reference against the *outer* env, so `$o/@user` is the iterating row's key while `$users//u[…]` does the lookup), spliced into content with `[?splice …]` (R-A1, 2026-08-25). Terminal `/@email` materialises the value as `[email "…"]` (same `/@attr` materialisation shape as ex 146). The natural single-expression join is now the standard surface; the prior `[?match]` workaround is retired.
