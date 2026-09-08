@@ -929,22 +929,102 @@ $ cx prog.cx
 Read the output: two contracts, one implementation. That is §0's sentence,
 executed.
 
-### 6.2 What does not exist yet — do not build against it
+### 6.2 The grammar-plane preflight, and what still does not exist
 
-Stated plainly, because a document that implies a mechanism is worse than one
-that admits a gap:
+**The grammar plane has a per-refinement preflight** (RULED: 1255-a).
+`[$xap:instantiate-preflight ARCHETYPE BINDING]` is the same gate
+`[$xap:instantiate]` enforces, read rather than applied: it answers
+`[instantiate-preflight ok=<bool> …]` with one `[refinement status=… at=…
+detail=…]` per refinement of the binding, in binding order, where `status=` is
+`clean`, `refused` — carrying that refinement's own code, `CXER4877`/`4878`/
+`4879` — or `redundant`, meaning the archetype already holds that floor, so a
+re-bless may drop the line. It never refuses what the gate decides, and
+**`ok=false` exactly when `instantiate` would raise**: both faces run the one
+validation pass, so the agreement law holds by construction rather than by two
+edits kept in step — the same law `compose-report` and `compose` hold on the
+composition side.
 
-- **There is no grammar-plane preflight.** The surface plane classifies every
-  replayed command as clean / drifted / refused (§4). The grammar plane is
-  **all-or-nothing per instance**: re-bless either produces an effective
-  document or refuses (§3). There is no per-refinement report telling a vendor
-  *which* tenants' bindings a candidate v2 would break and *on which
-  refinement* — the thing §4 gives the surface plane. `xap-dist-051`'s publish
-  lineage check is adjacent but different: it diffs schema history at publish,
-  not tenant bindings per tenant.
-- **No prescribed fleet upgrade order.** `ux.md:1962` says the preflight runs
-  fleet-wide before release; nothing states in what order an adopter should
-  then move tenants.
+A stale `of=` pin is itself reported as a refusal, and the refinements are
+classified **anyway**. That combination is the point: a candidate v2 presents a
+stale pin to *every* tenant binding, so a preflight that refused there would
+lose the fleet at the first tenant. Instead a vendor asks which of a fleet's
+bindings the candidate would break, and on which refinement, and gets an answer
+per tenant:
+
+`prog.cx`
+```cx
+[?lib 'cx-xap' :as xap]
+[?lib 'cx-stdlib/hash' :as hash]
+[?lib 'cx-stdlib/bytes' :as bytes]
+[?let [= $v1
+  [feature name=thing version="1"
+   [nouns [noun name=thing [field name=id type=text] [field name=label type=text]]]
+   [verbs [verb name=create effect=act scope=shared consequence=reversible
+           [intent [do :create]] [writes thing]]]
+   [requirements [requirement kind=functional as=operator traces=create
+                  [want 'to create a thing'] [so 'it exists in the record']]]]]
+ [= $v2
+  [feature name=thing version="2"
+   [nouns [noun name=thing [field name=id type=text] [field name=label type=text]]]
+   [verbs [verb name=create effect=act scope=shared consequence=irreversible
+           [intent [do :create]] [writes thing]]]
+   [requirements [requirement kind=functional as=operator traces=create
+                  [want 'to create a thing'] [so 'it exists in the record']]]]]
+ [= $pin1 [$concat "sha2-256:" [$bytes:to-hex [$hash:sha256-string [$cx:canonical $v1]]]]]
+ [= $r [$xap:instantiate-preflight $v2 [instance name=asset of=$pin1 [tighten verb=create consequence=reversible]]]]
+ [probe [ok [$string $r@ok]]
+        [codes [?for [in $x $r//refinement] [yield [$string $x@code]]]]]]
+```
+
+```console
+$ cx prog.cx
+[probe [ok 'false'] [codes 'cx-err:CXER4879' 'cx-err:CXER4878']]
+```
+
+Two refusals from one binding is also what totality means here: `instantiate`
+raises the first refusal's code and sentence — unchanged, which is why no
+existing fixture moved — and now names the rest instead of dropping them
+(`xap-compose-137`). The three statuses against the same v1/v2 pair are
+`xap-compose-133` (refused, with its code), `134` (redundant — the tighten the
+vendor made the floor) and `135` (clean, both faces agreeing):
+
+`prog.cx`
+```cx
+[?lib 'cx-xap' :as xap]
+[?lib 'cx-stdlib/hash' :as hash]
+[?lib 'cx-stdlib/bytes' :as bytes]
+[?let [= $v1
+  [feature name=thing version="1"
+   [nouns [noun name=thing [field name=id type=text] [field name=label type=text]]]
+   [verbs [verb name=create effect=act scope=shared consequence=reversible
+           [intent [do :create]] [writes thing]]]
+   [requirements [requirement kind=functional as=operator traces=create
+                  [want 'to create a thing'] [so 'it exists in the record']]]]]
+ [= $pin1 [$concat "sha2-256:" [$bytes:to-hex [$hash:sha256-string [$cx:canonical $v1]]]]]
+ [= $r [$xap:instantiate-preflight $v1 [instance name=asset of=$pin1 [tighten verb=create consequence=reversible]]]]
+ [probe [ok [$string $r@ok]]
+        [st [?for [in $x $r//refinement] [yield [$string $x@status]]]]]]
+```
+
+```console
+$ cx prog.cx
+[probe [ok 'true'] [st 'redundant']]
+```
+
+The fleet-level command that walks a tenant list and calls this per tenant
+(`cx xap preflight --to <addr>`) is its consumer and is **not built yet**;
+this verb is what it will be built on.
+
+**The order in which an adopter then moves their tenants is deliberately
+unprescribed** (RULED: 1255-b, `ux.md` §19.3). CX supplies the facts — this
+per-tenant classification, and pins that move independently — and the adopter
+supplies the policy. A canary-first fleet, a smallest-blast-radius-first fleet
+and an all-at-once fleet are all expressible with the same facts; prescribing
+one would make a release-management opinion normative for everyone.
+
+What still does not exist, stated plainly, because a document that implies a
+mechanism is worse than one that admits a gap:
+
 - **The surface-plane fleet mechanics have no conformance fixture.**
   `adopt-base`, the `fold(base, commands)` replay, tenant pins and the allow
   document are spec prose plus the ORIEL demo
@@ -976,4 +1056,5 @@ and §4.13 (the grammar plane),
 `spec/03-approved/xap/xap_feature_distribution_market.md` §1 (packages and
 pins), and `spec/03-approved/xap/xap_schemas/instance.cxs` (the binding
 vocabulary). The rulings behind the refusals: AD-10 (#1162) and 1161-Q1a in
-`ledger/`.
+`ledger/`; the preflight and the unprescribed rollout order are 1255-a and
+1255-b (`ledger/rulings_2026_09_08_grammar_plane_preflight_1255.md`).
