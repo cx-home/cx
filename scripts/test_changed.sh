@@ -162,6 +162,9 @@ lane_globs() {
     test-profile-gate)             echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED vcx/tests/runners/profile_gate/* conformance/*" ;;
     check-code-spec-consistency)   echo 'spec/* vcx/code/*' ;;
     stdlib-catalog-gate)           echo 'stdlib/* vcx/* docs-src/*' ;;
+    # the dogfood documents, the gate that reads them, and everything that can
+    # move the vocabulary or the two subcommands it drives them through.
+    flow-dogfood-gate)             echo 'flows/* scripts/flow_dogfood_gate.cx stdlib/flow.cx vcx/cmd/* vcx/code/* vcx/cx/* spec/03-approved/std-lib/flow.md' ;;
     address-baseline-gate)         echo "$RING_LIB $RING_SUP vcx/tests/runners/address_baseline/* conformance/*" ;;
     # #700 wave 1 (2026-08-24): five TEST_TARGETS lanes had no row and so
     # always ran. Each row is the lane's actual input surface, over-including
