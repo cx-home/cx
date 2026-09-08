@@ -24,7 +24,10 @@ while :; do
 		# missed firing: slot minutes A=04 B=24 C=44 (+jitter); check at slot+25 .. slot+70
 		case $w in A) slot=4;; B) slot=24;; C) slot=44;; esac
 		m=$(( (10#$min - slot + 60) % 60 ))
-		if [ "$m" -ge 25 ] && [ "$m" -le 30 ]; then
+		# a run that outlives its hour makes the app skip the next firing — that is not a miss;
+		# only flag when the worker's last word was "run exit" and no new run started.
+		case "$txt" in *"run exit"*) idle=1;; *) idle=0;; esac
+		if [ "$idle" -eq 1 ] && [ "$m" -ge 25 ] && [ "$m" -le 30 ]; then
 			start=$(grep -E "  (worker )?$w: run start" vcx/target/campaign.status | tail -1 | cut -c1-20)
 			sa=$(age_min "$start")
 			[ "$sa" -gt 70 ] && emit "missed-$w-$(date +%H)" "MISSED worker $w: no 'run start' in the last ${sa}m (slot :$slot)"
