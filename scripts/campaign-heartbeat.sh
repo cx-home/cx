@@ -68,9 +68,14 @@ while true; do
   # the longest-running repo process under any Claude session (the thing that would be hung)
   proc=$(longest_proc)
   [ -z "$proc" ] && proc="idle"
+  slotd=${CX_BUILD_SLOT:-"$HOME/git-repos/cx/.build-slot"}
+  if [ -d "$slotd" ]; then
+    st=$(date -j -u -f '%Y-%m-%dT%H:%M:%SZ' "$(cat "$slotd/since" 2>/dev/null)" +%s 2>/dev/null || echo "$now")
+    slot="slot $(cut -c1-30 "$slotd/cmd" 2>/dev/null) $(( (now - st) / 60 ))m @$(basename "$(cat "$slotd/cwd" 2>/dev/null)")"
+  else slot="slot free"; fi
   gate=$(sh scripts/gate-status.sh 2>/dev/null | awk '/^state/ {print $2; exit}'); [ -z "$gate" ] && gate="-"
   n=$(gh issue view 1354 -R cx-home/cx-private --json comments --jq '.comments|length' 2>/dev/null || echo '?')
-  line=$(printf '%s  %s | %s | %s | gate %s | #1354 %s comments' "$(date +%H:%M)" "$run" "$note" "$proc" "$gate" "$n")
+  line=$(printf '%s  %s | %s | %s | %s | gate %s | #1354 %s comments' "$(date +%H:%M)" "$run" "$note" "$proc" "$slot" "$gate" "$n")
   echo "$line"
   echo "$line" >> vcx/target/campaign.heartbeat
   write_html "$line" "$now"
