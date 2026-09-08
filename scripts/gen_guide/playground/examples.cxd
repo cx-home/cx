@@ -1150,7 +1150,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
   [?await $f]]
 #]]
   [note [#
-**Introduces:** `[?cancel $handle]`. Requests cancellation; future resolves to `[err :code "cx-err:CXER0260"]`.
+**Introduces:** `[?cancel $handle]`. Requests cancellation; the future then resolves to `[err code=cx-err:CXER0260 message='operation cancelled']`.
 #]]
   [wasm-unsupported [#`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).#]]
  ]
@@ -1232,7 +1232,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
            [ok i=$i]]]]
 #]]
   [note [#
-**Introduces:** over-limit behaviour. After `max=N` admits, further calls return `[err :code "cx-err:CXER0151" :retry-after DUR]`.
+**Introduces:** over-limit behaviour. After `max=N` admits, further calls return `[err code=cx-err:CXER0151 message='rate limit exceeded' retry-after=1s]`.
 #]]
  ]
 
@@ -1544,7 +1544,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
     [yield $h/@user]]]
 #]]
   [note [#
-**Pattern:** unique values of a derived key. **Uses:** `[group-by]` clause — each distinct key appears once. Different from `[distinct $xs]` (which dedupes scalars); this groups elements by an extracted attribute.
+**Pattern:** unique values of a derived key. **Uses:** `[group-by]` clause — each distinct key appears once. Different from `[$distinct $xs]` (which dedupes scalars); this groups elements by an extracted attribute.
 #]]
  ]
 
@@ -1972,7 +1972,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
     eu=[$sum $doc//o[= $_@region "EU"]/@amt]]]
 #]]
   [note [#
-**Pattern:** SQL's `GROUP BY region, SUM(amt)` shape. **Uses:** inline predicates `[= $_@region "US"]`, `[sum …]` builtin per group. (Generalizes when groups are known up-front; arbitrary-key group-aggregate awaits.)
+**Pattern:** SQL's `GROUP BY region, SUM(amt)` shape. **Uses:** inline predicates `[= $_@region "US"]` and the `[$sum …]` builtin per group. This spelling needs the groups known up-front; for an ARBITRARY key, example 126 folds each group with the `[group-by]` clause and example 195 does it with the `[?group-by]` combinator — both ship.
 #]]
  ]
 
@@ -2084,7 +2084,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
   $xs[::-1]]
 #]]
   [note [#
-**Pattern:** reverse a sequence in one move. **Uses:** open start/stop + step `-1`. Walks the receiver backwards from the last element to the first inclusive (reverse-stride convention). Equivalent to `[reverse $xs]` but more direct when you're already in slice territory.
+**Pattern:** reverse a sequence in one move. **Uses:** open start/stop + step `-1`. Walks the receiver backwards from the last element to the first inclusive (reverse-stride convention). Equivalent to `[$reverse $xs]` but more direct when you're already in slice territory.
 #]]
  ]
 
@@ -2503,7 +2503,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
     present-missing=[$present $doc/nope]]]
 #]]
   [note [#
-**Introduces:** `[$present PATH]` — the reason the predicate exists. `[$count]` answers how many CHILDREN a step's result has, so on a childless element it answers `0` — and every "did this step match" test written with `[$count]` was therefore wrong on a leaf. `[$empty]` is `[empty]`: it MATCHED, `[$present]` says `true`, and `[$count]` still says `0`. For a step that matches nothing, `[$present]` says `false`.
+**Introduces:** `[$present PATH]` — the reason the predicate exists. `[$count]` answers how many CHILDREN a step's result has, so on a childless element it answers `0`, and every "did this step match" test written with `[$count]` was therefore wrong on a leaf. The `[empty]` element below has no children: the step MATCHED it, so `[$present]` says `true` while `[$count]` still says `0`. For a step that matches nothing at all, `[$present]` says `false`.
 #]]
  ]
 
