@@ -21,17 +21,9 @@ while :; do
 		[ -z "$last" ] && continue
 		ts=$(echo "$last" | cut -c1-20); txt=$(echo "$last" | cut -c23-90); a=$(age_min "$ts")
 		case "$txt" in *"run exit"*) ;; *) [ "$a" -ge 35 ] && emit "silent-$w-$ts" "SILENT worker $w: ${a}m since \"$txt\"";; esac
-		# missed firing: slot minutes A=04 B=24 C=44 (+jitter); check at slot+25 .. slot+70
-		case $w in A) slot=4;; B) slot=24;; C) slot=44;; esac
-		m=$(( (10#$min - slot + 60) % 60 ))
-		# a run that outlives its hour makes the app skip the next firing — that is not a miss;
-		# only flag when the worker's last word was "run exit" and no new run started.
-		case "$txt" in *"run exit"*) idle=1;; *) idle=0;; esac
-		if [ "$idle" -eq 1 ] && [ "$m" -ge 25 ] && [ "$m" -le 30 ]; then
-			start=$(grep -E "  (worker )?$w: run start" vcx/target/campaign.status | tail -1 | cut -c1-20)
-			sa=$(age_min "$start")
-			[ "$sa" -gt 70 ] && emit "missed-$w-$(date +%H)" "MISSED worker $w: no 'run start' in the last ${sa}m (slot :$slot)"
-		fi
+		# missed firing: the worker's last word was "run exit" and nothing has been heard since for
+		# longer than a firing interval (+10 min jitter/warm-up). A run that outlives its hour is not a miss.
+		case "$txt" in *"run exit"*) [ "$a" -ge 70 ] && emit "missed-$w-$ts" "MISSED worker $w: last note was run exit ${a}m ago, no new run";; esac
 	done
 	v=$(grep -o 'GATE-EXIT=[0-9]*' vcx/target/gate.log 2>/dev/null | tail -1); st=$(grep -m1 '^gate: started' vcx/target/gate.log 2>/dev/null | cut -c15-)
 	[ "$v" = "GATE-EXIT=2" ] && emit "red-$st" "RED gate started $st: $v; $(grep -c '^FAIL' vcx/target/gate.log) FAIL line(s): $(grep '^FAIL' vcx/target/gate.log | head -2 | cut -c1-80 | tr '\n' ';')"
