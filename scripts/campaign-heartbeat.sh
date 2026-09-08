@@ -7,8 +7,30 @@
 #   20:31  run ALIVE 2m | notes 1m "make test-changed #1190" | make test-changed 4m @cx-1190-solitary-note | gate FINISHED | #1354 3 comments
 #
 # Every field degrades to a plain word when its source is absent. Read-only.
+#
+# Besides stdout, each tick APPENDS the line to vcx/target/campaign.heartbeat and
+# rewrites vcx/target/campaign-status.html — a self-refreshing page (open it in
+# the app's Browser pane via file://) that shows the last 40 lines newest-first
+# and turns red if the writer itself has stopped. No model, no tokens: it is a
+# detached shell loop. `cat vcx/target/campaign-heartbeat.pid` names it.
 root=$(cd "$(dirname "$0")/.." && pwd); cd "$root" || exit 1
 every=${1:-60}
+write_html() {
+  # $1 = current line, $2 = epoch seconds it was written
+  esc() { sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g'; }
+  cur=$(printf '%s' "$1" | esc)
+  cls=ok; case "$1" in *HUNG?*|*STALE*) cls=bad;; esac
+  {
+    printf '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="%s"><title>cx campaign</title>\n' "$every"
+    printf '<style>body{margin:0;padding:14px 18px;background:#111;color:#ddd;font:13px/1.5 ui-monospace,Menlo,monospace}'
+    printf 'h1{font-size:15px;margin:0 0 10px;font-weight:600}.ok{color:#8fd18f}.bad{color:#ff7b72}.dead{color:#ff7b72;font-weight:700}'
+    printf '.age{color:#888;font-weight:400}pre{margin:12px 0 0;color:#999;white-space:pre-wrap}</style>\n'
+    printf '<h1 class="%s">%s <span class="age" id="age"></span></h1>\n' "$cls" "$cur"
+    printf '<div id="dead" class="dead" hidden>WATCHER STOPPED — no heartbeat for over %s s. The campaign run may still be alive; the feed is not.</div>\n' "$((every*3))"
+    printf '<pre>'; tail -40 vcx/target/campaign.heartbeat | tail -r 2>/dev/null | esc; printf '</pre>\n'
+    printf '<script>var w=%s*1000,e=%s*1000;function t(){var a=Date.now()-w;document.getElementById("age").textContent="written "+Math.round(a/1000)+"s ago";document.getElementById("dead").hidden=a<3*e}t();setInterval(t,1000)</script>\n' "$2" "$every"
+  } > vcx/target/campaign-status.html.tmp && mv vcx/target/campaign-status.html.tmp vcx/target/campaign-status.html
+}
 longest_proc() {
   for cl in $(ps -eo pid,command | awk '/claude-code\/[0-9.]+\/claude\.app\/Contents\/MacOS\/claude/ && !/awk/ {print $1}'); do
     for sh in $(ps -eo pid,ppid | awk -v p="$cl" '$2==p {print $1}'); do
@@ -24,6 +46,7 @@ longest_proc() {
     done
   done | sort -t'|' -k1,1nr | head -1 | awk -F'|' 'NF==3 { flag=""; if ($1>=25 && $2 !~ /gate.sh|make test$/) flag=" HUNG?"; printf "%s %dm @%s%s", $2, $1, $3, flag }'
 }
+echo $$ > vcx/target/campaign-heartbeat.pid
 while true; do
   now=$(date +%s)
   # run liveness from the age-based lock
@@ -42,6 +65,9 @@ while true; do
   [ -z "$proc" ] && proc="idle"
   gate=$(sh scripts/gate-status.sh 2>/dev/null | awk '/^state/ {print $2; exit}'); [ -z "$gate" ] && gate="-"
   n=$(gh issue view 1354 -R cx-home/cx-private --json comments --jq '.comments|length' 2>/dev/null || echo '?')
-  printf '%s  %s | %s | %s | gate %s | #1354 %s comments\n' "$(date +%H:%M)" "$run" "$note" "$proc" "$gate" "$n"
+  line=$(printf '%s  %s | %s | %s | gate %s | #1354 %s comments' "$(date +%H:%M)" "$run" "$note" "$proc" "$gate" "$n")
+  echo "$line"
+  echo "$line" >> vcx/target/campaign.heartbeat
+  write_html "$line" "$now"
   sleep "$every"
 done
