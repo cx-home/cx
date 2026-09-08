@@ -668,7 +668,21 @@ fn flow_cli_run(o FlowCliOpts) {
 		// shape that hides a failure, and an operator whose deadline just
 		// fired should be able to see why.
 		'[= \$rearmed [\$cxflow:rearm \$j ${flow_cli_opts_map(o, '', true)}]]',
-		'[= \$lg [\$cxlog:info [\$cx:emit \$rearmed]]]',
+		// AND THE EMPTY REPORT IS SILENT. `[= $lg [$cxlog:info …]]`
+		// unconditionally made every clean `cx flow run` write to stderr, which
+		// the CLI surface fixture forbids in as many words ("a clean run wrote
+		// to stderr") — and it is right: a report that says nothing happened is
+		// noise on every invocation, while a report naming a timer that fired
+		// is the one thing an operator needs. The test is on the TEXT, not on
+		// the attributes: `$rearmed` is an `[err …]` value when the guard
+		// refuses, and reading an attribute off an err travels the failure
+		// channel (#853's propagation positions), which would turn a visible
+		// refusal into the run's own. Emitting it first keeps a refusal LOUD —
+		// it is not the all-zero string, so it is logged.
+		'[= \$rep [\$cx:emit \$rearmed]]',
+		'[= \$lg [?if [= \$rep "[restore-report rearmed=0 skipped=0 orphaned=0]"]',
+		'           [then ()]',
+		'           [else [\$cxlog:info \$rep]]]]',
 		'[= \$a ${args_src}]',
 		'  [\$cxflow:start \$j \$fl \$a ${flow_cli_opts_map(o, flow_cli_nonce(args_src), true)}]]',
 	].join('\n')
