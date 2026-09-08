@@ -15,6 +15,29 @@ version, library version).
 
 ### Added
 
+- **A feature name is ONE segment; `/` is the qualification separator and is
+  therefore taken (#1191; RULED: 1191-a).** `feature.cxs` accepted any string
+  as a feature name, so a feature named `pb/store` validated, composed and
+  qualified its members correctly — `pb/store/make`, `pb/store/r` — and then
+  refused EVERY ordering rule in itself at W4, whichever way the target was
+  written, because the rule-target scope check read the head of the FIRST
+  slash as the owner. A feature with no ordering rules worked perfectly with
+  a slashed name; add one rule months later and the refusal named the rule,
+  not the naming choice made at the start, and the fix was to rename the
+  feature and with it every verb and noun it qualifies. `/` now refuses in
+  two places: by `[pattern]` in `feature.cxs`, so `cx validate` names it at
+  authoring time, and as a `:w1` conflict at compose, so a `[feature]` value
+  built by hand cannot smuggle one in. The refusal names the convention —
+  publisher qualification uses `.`, `pb.store`, which nothing in the
+  composition algebra splits on — so the fix is learnable from the
+  diagnostic. Verb and noun names carry the same pattern: a qualified name is
+  `<feature>/<member>` and `a/b/c` cannot be split without already knowing
+  the feature set, which is a property the composed grammar's readers cannot
+  be asked to have. Specified in §2 and in §4's W1 row (now **feature-name
+  validity**); fixtured both ways (`xap-compose-126` refuses the slashed
+  feature naming the separator, `xap-compose-127` composes the SAME feature
+  and its ordering rule green under the dotted name).
+
 - **A key with one registration is now REPORTED, and it is a note like every
   other observation (#1190; RULED: 1190-a, 1190-b).** Keys are the shared
   rulers owned by no feature, and W2 checks exactly one property of them —
