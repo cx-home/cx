@@ -45,12 +45,28 @@ else
   exit 1
 fi
 
-# policy_rows — just the [gate-policy]/[suite]/[module] row lines, with any
-# reason='…' prose attr stripped, so doc-comment prose and free-text reasons
-# can neither hide a value nor false-positive the enum check.
+# policy_rows — just the [gate-policy]/[suite]/[module] row lines, TRUNCATED at
+# `reason=`, so free-text prose can neither hide a value nor false-positive the
+# enum check below.
+#
+# Truncation, not a quoted-string strip, and that is the fix for a measured
+# false red (2026-09-08). The strip was `s/reason='[^']*'//g`, whose `[^']*`
+# stops at the first `\'` — a CX single-quoted string's OWN escape, and this
+# file carries several ("time\'s CXER33xx") — which left the entire rest of
+# that reason exposed. A sched-row rewrite then put the phrase
+# `(gate=pending).` in the exposed tail and the gate refused the value
+# `pending).`: a red about prose, not about policy. Handling the escapes
+# correctly needs `(\\.)`-style alternation inside a sed program that already
+# has to quote both kinds of quote, which is exactly the fragility that
+# produced the bug. Truncating is escape-proof by construction and loses
+# nothing: EVERY value this gate reads — `name=`, `gate=`, `default=`,
+# `suite=` — is written before `reason=` on all 60 rows (verified by
+# extracting them from the truncated rows: 60 name=, 56 gate=, 5 default=,
+# the same counts as the full rows). A row that ever puts one after `reason=`
+# is a row this gate would not see, so keep writing the prose last.
 policy_rows() {
   grep -E '^[[:space:]]*\[(gate-policy|suite|module)[[:space:]]' "$GATES" \
-    | sed -E "s/reason='[^']*'//g; s/reason=\"[^\"]*\"//g"
+    | sed -E 's/reason=.*$//'
 }
 
 # extract_attr_values ATTR — every value of ATTR= on a policy row, quotes

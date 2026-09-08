@@ -178,7 +178,14 @@ than the discrepancy.
    same corpus under two different clocks would have been a false green in one
    of them.
 
-4. **Letter 5 — the fire value's `at=` — is answered by 1358-c, not left open.**
+4. **Letter 5 — the fire value's `at=` — SUPERSEDED by `RULED: 1358-e` below.**
+   What this item argued (that `1358-c` alone answers it) was wrong on the
+   record it matters for: under `:manual` the pair really is inconsistent, and
+   `:manual` is where every deterministic replay is graded. Fable ruled the
+   question on 2026-09-08 as `1358-e`; the note is kept rather than deleted
+   because a superseded argument is evidence about how the question was read.
+
+   Original text of this item:
    The draft found that flow stamps a fire value `at=[$time-now]` (real 2026
    wall time) against a deadline computed from `virtual_now`, which starts at 0
    — i.e. 1970. Under 1358-c the `:wall` clock IS the realtime epoch clock, so
@@ -186,3 +193,60 @@ than the discrepancy.
    under `:manual`, where a 1970-origin virtual clock disagreeing with
    `[$time-now]` is the deterministic clock working as designed. No separate
    ruling is needed and none is filed.
+
+## RULED: 1358-e — the fire instant is bound into the fire value
+
+Recorded verbatim in substance from Fable's ruling on #1358, 2026-09-08 09:25
+ET. Questions 1, 2, 3, 4 and 6 of the 09:34Z letter set map onto `1358-a…d`
+above (that mapping is on the issue and needs nothing here). Question 5 is
+ruled:
+
+> **sched binds the fire instant into the fire value from the clock that armed
+> the timer**, and flow reads it instead of calling `[$time-now]` at
+> `stdlib/flow.cx`. A replay must read a consistent (deadline, fired-at) pair;
+> today a fired flow deadline records a 2026 instant against a 1970 deadline.
+
+### What landed
+
+1. **sched (`sch_invoke`).** A callable fire value that DECLARES a parameter is
+   applied with the fire instant — a `::datetime` from `sch_now()`, the one
+   clock read sched has (`1358-c`). A zero-arg callable is applied with no
+   arguments, exactly as before, so nothing in the 43-case corpus moves. A
+   builtin, operator or partial fire value is excluded by construction: each
+   does its own arity checking over arguments the CALLER chose, so an extra one
+   would change what it computes rather than tell it when it fired.
+
+2. **flow.** Both live arming sites (`deadline=` and the `1314-c` re-attempt
+   `wait=`) take the instant as a parameter and stamp `at=$at`. flow now keeps
+   no clock of its own on the live path — the restored path already read the
+   PERSISTED deadline (`789-WF-27a`) and is unchanged.
+
+3. **The instant is the timer's own deadline under the manual drain**, because
+   `test-clock-advance` moves virtual-now to each due timer's deadline before
+   firing it (§4.2). `sched-044` pins exactly that: a 10-minute timer fires at
+   `00:10:00Z` even though the advance runs the clock 30 minutes forward. That
+   is the property the defect had inverted.
+
+### What did NOT land, and why it is a ruling rather than a choice
+
+The **channel face**. A `[tick timer=…]` reader has the same second-clock
+problem a callback had, and the symmetric fix is an `at=` on the tick. But
+`[tick timer=timer-1]` is asserted VERBATIM by twenty `gate=enforced` sched
+expectations, so adding the attribute changes twenty prior rulings' recorded
+output. Under the standing rule (a `gate=enforced` fixture is a prior ruling
+with teeth) that is a ruling, not an implementation choice — drafted as
+**1358-f** on #1358 and left unimplemented. `sched.md` §2.1 and
+`gates.cxd`'s sched row both say plainly that the tick carries no instant, so
+the gap is recorded where a reader meets it rather than left as silence.
+
+The **flow-036 assertion the ruling names** cannot be written as stated, and
+that is worth recording precisely: flow never RECORDS `at=` anywhere.
+`f--apply-timer` reads `run=`, `step=` and `kind=` and ignores `at=`, and a
+fired deadline appends a `[flow-transition status=:failed reason=:deadline]`
+that carries no instant — so flow's live fire value is unobservable from a
+fixture by construction. Making it observable means either flow recording the
+fired instant on the transition (a change to flow's transition vocabulary and
+to flow-036's `expired-step` expectation) or sched recording it on its own
+`[sched-intent … status='fired']` close entry (a change to sched's durable
+entry shape). Both are rulings; both are drafted as **1358-f**. What IS
+pinned here is the mechanism, in `sched-044`, at the layer that owns it.
