@@ -24,7 +24,7 @@ The cause is one line of `xap_gc_gate`:
 owner := tgt.all_before('/')      // 'pb' — not 'pb/store'
 ```
 
-The same feature named `pb.store` composes `ok=true` today (measured).
+The same feature named `acme.store` composes `ok=true` today (measured).
 
 ## The ruling
 
@@ -33,7 +33,7 @@ The same feature named `pb.store` composes `ok=true` today (measured).
 time) AND at compose time as a `:w1` conflict (so a document that never met
 the schema cannot smuggle one in). §2 states the convention: `/` is the
 member-qualification separator and is therefore TAKEN; publisher
-qualification uses `.` — `pb.store` — which nothing in the composition
+qualification uses `.` — `acme.store` — which nothing in the composition
 algebra splits on.
 
 **Refused: (b) make the resolver split on the last `/`.** It fixes the filed
