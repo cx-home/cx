@@ -147,3 +147,42 @@ of compile cost").
    `RULED: 1358-a` … `RULED: 1358-d`; `make spec-freeze-gate` before push.
 
 Unblocks: `cx flow serve` (WF-28) and #1313's implementation half.
+
+## As implemented — four things the tree said that the letters did not
+
+Recorded because each is a place where following the ruling verbatim would have
+produced something wrong, and the next reader deserves the correction rather
+than the discrepancy.
+
+1. **`[?select]` has no pump point.** 1358-a names it among "the waits", but
+   `eval_select` (`eval.v:20376`) does not block in this evaluator: it probes
+   every case once and returns `CXER0202` when none is ready, so its `:timeout`
+   case fires at entry and there is no loop to turn. Nothing was added there.
+   The other named points are all real and all took the pump.
+
+2. **The `:manual` selector had to be STICKY, not a post-`new_env` call.**
+   1358-b says the harness "selects `:manual` through an internal
+   loop-construction setter after `new_env`". That alone cannot carry
+   `--manual-clock`: `sched_reset_state` runs from `new_env` for EVERY program,
+   so a CLI flag set once before evaluation would be erased by the reset. The
+   setter therefore writes a process-global (`g_sched_manual_clock`) that
+   `sched_reset_state` reads, and both selectors go through it. Same surface,
+   same prohibition — no CX verb reaches it — and now the flag survives.
+
+3. **There are TWO in-process conformance harnesses, not one.** 1358-b names
+   `vcx/tests/code_eval_fixtures_test.v`'s six `new_env()` sites. But
+   `Makefile`'s `test-vcx-conform` banner records that `conformance/stdlib/*.cxd`
+   is graded by *the eval lane AND the profile gate*, and
+   `vcx/tests/runners/profile_gate/profile_gate.v` has three more `new_env()`
+   sites over ring≤1 stdlib cases. Both harnesses take the setter; grading the
+   same corpus under two different clocks would have been a false green in one
+   of them.
+
+4. **Letter 5 — the fire value's `at=` — is answered by 1358-c, not left open.**
+   The draft found that flow stamps a fire value `at=[$time-now]` (real 2026
+   wall time) against a deadline computed from `virtual_now`, which starts at 0
+   — i.e. 1970. Under 1358-c the `:wall` clock IS the realtime epoch clock, so
+   in production the two now agree and the defect is gone. It survives only
+   under `:manual`, where a 1970-origin virtual clock disagreeing with
+   `[$time-now]` is the deterministic clock working as designed. No separate
+   ruling is needed and none is filed.
