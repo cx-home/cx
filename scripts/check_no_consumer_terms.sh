@@ -26,6 +26,21 @@
 # false-positive surface the comment above worries about does not exist for
 # the hyphenated form (a lone "pb" is still excluded, and still should be).
 #
+# It failed a SECOND time on 2026-09-07 (#1191), in the DOT spelling:
+# `pb.store` shipped in the composition spec, in the `feature.cxs` comment and
+# in `conformance/stdlib/xap-compose.cxd` as the worked publisher-qualified
+# example, while `pb-[a-z]` reported clean — the hyphen class does not see a
+# dot. A blanket `pb\.[a-z]` class is NOT viable and was measured before being
+# rejected: eight tracked files use it innocently (`pb.bytesize`, `pb.len`,
+# `pb.count` in the archived Ruby/Swift bindings and in five engine sources),
+# so it would cry wolf exactly the way `ae-` did.
+#
+# What makes `pb.store` a leak and `pb.len` not is that the leak is a NAME —
+# it appears QUOTED, as a publisher-qualified identifier or as prose in
+# backticks. So the class is anchored on the quote: `'pb.`, `"pb.`, `` `pb. ``.
+# Verified against the whole tracked tree: it matched all eight leak sites and
+# nothing else, before or after the sanitization.
+#
 # `ae-<word>` was tried as a class too and REVERTED, which is worth
 # recording so nobody repeats it. It fires on `mem://ae-origin` /
 # `mem://ae-rep` / `shred-ae-N` in the journal erasure examples, where `ae`
@@ -52,6 +67,10 @@ TERMS=(
 	# way `pb-ae` did. Subsumes pb-engine / pb-xap / pb-hq / pb-roadmap /
 	# x-pb-, which are no longer listed individually.
 	'pb-[a-z]'
+	# CLASS pattern, dotted form (#1191) — a publisher qualification is a
+	# NAME, so it is quoted or in backticks; see the header for why the
+	# unanchored `pb\.[a-z]` was measured and rejected.
+	"['\"\`]pb\.[a-z]"
 )
 
 # PROBES — one string per TERM that the term MUST match. Parallel array; the
@@ -78,6 +97,7 @@ PROBES=(
 	'account executive'
 	'ae-queue'
 	'pb-x'
+	"'pb.x"
 )
 
 if [ "${#TERMS[@]}" -ne "${#PROBES[@]}" ]; then
