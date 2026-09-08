@@ -317,7 +317,8 @@
           src=[$strip-edges [$section-of $kids 'src']]
           note=[$strip-edges [$section-of $kids 'note']]
           wasm-unsupported=[$strings:trim [$section-of $kids 'wasm-unsupported']]
-          no-stable-value=[$strings:trim [$section-of $kids 'no-stable-value']]]]]]]]]]
+          no-stable-value=[$strings:trim [$section-of $kids 'no-stable-value']]
+          bare-builtin-ok=[$strings:trim [$section-of $kids 'bare-builtin-ok']]]]]]]]]]
 
 # ── audit (one isolated, grant-free child per example) ───────────────
 
@@ -657,6 +658,74 @@
          [?if [$strings:ends-with $text '\n'] [then ''] [else '\n']],
          '#]')]]
 
+# ── §C2: the BARE-BUILTIN-HEAD lint (RULED: 1170-b) ──────────────────
+#
+# §C1 makes an R-A1 casualty visible in review. This makes it visible to
+# the machine, so the class cannot come back one example at a time.
+#
+# Post R-A1 (2026-08-25) a bare `[name …]` head is DATA CONSTRUCTION and
+# the builtin is reached through the `$`-head call form. Fourteen
+# examples still used the retired spelling: they echoed their own
+# arguments, exited 0, and every note still promised the computed answer.
+#
+# HOW THE NAMES ARE KNOWN — measured, not copied. `[$NAME]` answers
+#
+#   [err code=user-undefined message='no callable "pizza"']         not a builtin
+#   [err code=cx-err:CXER0100 message='concat: expected at least 1  a builtin
+#                                      argument(s), got 0 …']
+#
+# so the ENGINE is the authority and there is no second copy of
+# `builtin_dispatchable` (vcx/code/eval.v) to go stale. Note what this
+# does NOT use: BUILTIN-NAMES above is a 30-name list for TAG inference
+# and it is already wrong — it carries `modulo` and `rem`, which are not
+# callable at all. A lint must not be built on it.
+#
+# WHY THE NAME ALONE IS NOT ENOUGH. Over the corpus, seventeen distinct
+# bare heads resolve as builtins and five of them are LEGITIMATE, each
+# for a different reason:
+#
+#   and, or, not   bare-spelled OPERATORS — `[and]` gives an arity error,
+#                  so dispatch really happens
+#   cast           dispatched bare WITH arguments: `[cast 3.7 :int]`
+#                  refuses with CXER0290, while bare `[cast]` echoes
+#   log, name      DATA elements named after a builtin — `[log 10]` and
+#                  `[name "Alice"]` are documents, not calls
+#
+# `cast` is why the obvious zero-argument probe is refused as the second
+# condition: `[and]` errors (dispatched) but `[cast]` echoes, so a
+# zero-arg probe misclassifies it.
+#
+# THE SECOND CONDITION IS THE PIN. R-A1's symptom is not "a builtin name
+# appears bare", it is "the construct CAME TO REST as data". §C1 already
+# has every answer in hand, so the rule is: a bare head H in `src`, AND
+# `[$H]` resolves, AND the recorded answer holds a construct headed H.
+# That is clean on 25-logical (`[and …]` computes to a boolean) and on
+# 35-cast-float-int (the answer is the CXER0290 refusal), and leaves only
+# a genuine data element named after a builtin — which is what
+# `[bare-builtin-ok [# reason #]]` is for, graded in BOTH directions like
+# the wasm marker so the corpus cannot be defeated by marking it
+# wholesale.
+
+[?def is-builtin-head scope=public impure ($cxbin $tmp $out-path $err-path $name)
+  [?let
+    [= $w [$must 'writing builtin probe' [$io:write-file $tmp [$cat ('[$', $name, ']\n')]]]]
+    [= $w1 [$must 'truncating probe stdout' [$io:write-file $out-path '']]]
+    [= $w2 [$must 'truncating probe stderr' [$io:write-file $err-path '']]]
+    [= $r [$process:run ('sh', '-c', 'exec "$1" "$2" >"$3" 2>"$4"',
+                         'gen_examples-builtin-probe', $cxbin, $tmp,
+                         $out-path, $err-path)]]
+    [= $o [$string [$must 'reading probe stdout' [$io:read-file $out-path]]]]
+    [= $e [$string [$must 'reading probe stderr' [$io:read-file $err-path]]]]
+    [not [$strings:contains [$cat ($o, $e)] 'user-undefined']]]]
+
+# resting-heads-of: the bare heads a source names whose construct came to
+# rest in that example's answer.
+[?def resting-heads-of scope=public ($src $answer)
+  [$uniq [?for [in $m [$re:find-all [$re:compile BRACKET-RX-SRC] $src]]
+    [= $h [$re:group $m 1]]
+    [where [$strings:contains $answer [$cat ('[', $h)]]]
+    [yield $h]]]]
+
 [?def render-out-block scope=public ($key $out $err $no-stable-value)
   [?if [not [= $no-stable-value '']]
     [then [$cat (' [ex key=', $key, ' no-stable-value=true]')]]
@@ -720,6 +789,7 @@
       [yield [row key=$key status=[$string $r@status] msg=[$string $r@msg]
                 ms=$r@ms
                 out=[$string $r@out] err=[$string $r@err]
+                src=$src bare-ok=[$string $e@bare-builtin-ok]
                 block=[?if [= [$string $r@status] 'ok']
                   [then [$render-block $key [$string $e@label] $src $note $r@runnable
                           [$string $e@wasm-unsupported] [$string $e@no-stable-value]]]
@@ -759,6 +829,53 @@
       HEADER-TAIL,
       [?for [in $x $rows] [where [= [$string $x@status] 'ok']] [yield [$string $x@block]]],
       FOOTER-LINES)] '\n'], '\n')]]
+
+  # ── §C2: the bare-builtin-head lint (RULED: 1170-b) ────────────────
+  # Runs BEFORE anything is written, so a corpus that trips it cannot be
+  # regenerated past — the fix is by hand in examples.cxd, which is the
+  # whole point.
+  [= $pairs [$seq-flat [?for [in $x $rows]
+      [where [= [$string $x@status] 'ok']]
+      [= $k [$string $x@key]]
+      [yield [?for [in $h [$resting-heads-of [$string $x@src] [$string $x@out]]]
+        [yield [pair key=$k head=$h]]]]]]]
+  # Each distinct head is probed ONCE, not once per example.
+  [= $probe-names [$uniq [?for [in $p $pairs] [yield [$string $p@head]]]]]
+  [= $builtin-names [?for [in $n $probe-names]
+      [where [$is-builtin-head $cxbin $probe-tmp $out-path $err-path $n]]
+      [yield $n]]]
+  [= $flagged [?for [in $p $pairs]
+      [where [$member [$string $p@head] $builtin-names]]
+      [yield $p]]]
+  [= $flagged-keys [$uniq [?for [in $p $flagged] [yield [$string $p@key]]]]]
+  [= $marked-keys [?for [in $x $rows]
+      [where [= [$string $x@status] 'ok']]
+      [where [not [= [$string $x@bare-ok] '']]]
+      [yield [$string $x@key]]]]
+  [= $unmarked [?for [in $k $flagged-keys]
+      [where [not [$member $k $marked-keys]]] [yield $k]]]
+  [= $unjustified [?for [in $k $marked-keys]
+      [where [not [$member $k $flagged-keys]]] [yield $k]]]
+  [= $c2 [?if [and [$empty $unmarked] [$empty $unjustified]]
+      [then 0]
+      [else (
+        [$cry [$cat ('=== gen_examples: the bare-builtin-head lint FAILED ',
+                     '(#1170 §C2, RULED: 1170-b) — refusing to ',
+                     [?if $check [then 'verify'] [else 'write']], ' ===')]],
+        [?for [in $k $unmarked] [yield [$cry [$cat ('BARE  ',
+            [$strings:pad-end $k 40 ' '], ' builds ',
+            [$strings:join [?for [in $p $flagged]
+              [where [= [$string $p@key] $k]]
+              [yield [$cat ('[', [$string $p@head], ' …]')]]] ', '],
+            ' as DATA — a bare head is not a call since R-A1; write [$',
+            [$string [?for [in $p $flagged]
+              [where [= [$string $p@key] $k]] [yield [$string $p@head]]][1]],
+            ' …], or add [bare-builtin-ok [# why this is data #]] to the entry')]]]],
+        [?for [in $k $unjustified] [yield [$cry [$cat ('MARK  ',
+            [$strings:pad-end $k 40 ' '],
+            ' carries [bare-builtin-ok] but builds no bare builtin head —',
+            ' an unjustified marker is a failure too; remove it')]]]],
+        [$env:exit 1])]]]
 
   # The raw-text payload has ONE limit and it is the corpus's own: a
   # literal terminator inside a payload cannot be written. Refuse by KEY
