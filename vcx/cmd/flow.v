@@ -68,6 +68,7 @@ const flow_cli_usage = [
 	'       cx flow simulate FLOW.cx RESULTS.cx [--env ENV.cx] [--<arg>=VALUE]...',
 	'       cx flow status   --journal URL RUN-ID [--stream=NAME] [--allow-*]',
 	'       cx flow serve    RUNNER.cx [--for DURATION] [--allow-*]',
+	'       cx flow diagram  FLOW.cx [--level=min|compact|full]',
 	'',
 	'The local profile of cx-stdlib/flow (std-lib/flow.md §4.15) and its STANDALONE',
 	'RUNNER (§4.23). `run` is a journal, never a service: there is no engine to',
@@ -97,6 +98,10 @@ const flow_cli_usage = [
 	'  --authority=ID the authority basis (default cli)',
 	'  --stream=NAME  place the run in its subject\'s aggregate stream (default:',
 	'                 the run id itself)',
+	'  --level=RUNG   diagram only: the detail rung (min | compact | full;',
+	'                 default compact). min is names and topology, compact adds',
+	'                 the act, the performer badge and the clock marks, full',
+	'                 labels a needs= edge with the reason it exists.',
 	'  --for DURATION serve only: stop after DURATION and answer',
 	'                 [runner-stopped …]. Absent, a runner runs until it is',
 	'                 stopped, which is what a runner is for.',
@@ -436,7 +441,8 @@ fn flow_cli_answer(rendered string, want_done bool) {
 
 // ── argv ─────────────────────────────────────────────────────────────────────
 
-const flow_cli_known_flags = ['--env', '--journal', '--actor', '--authority', '--stream', '--for']
+const flow_cli_known_flags = ['--env', '--journal', '--actor', '--authority', '--stream', '--for',
+	'--level']
 
 struct FlowCliOpts {
 mut:
@@ -450,6 +456,9 @@ mut:
 	// `[runner-stopped …]`. Absent (0) is a runner that runs until it is
 	// stopped, which is what a runner is for.
 	for_spec  string
+	// `diagram` only: the detail rung (min | compact | full). Absent is
+	// `compact`, which the module's own ladder also defaults to.
+	level     string
 	args      [][]string
 	positional []string
 	allow_all    bool
@@ -496,7 +505,7 @@ fn flow_cli_parse(args []string) FlowCliOpts {
 			i++
 			continue
 		}
-		// `--name VALUE` for the five named flags; `--name=VALUE` for those and
+		// `--name VALUE` for the named flags; `--name=VALUE` for those and
 		// for every `[args …]` field.
 		if a in flow_cli_known_flags {
 			if i + 1 >= args.len {
@@ -533,6 +542,7 @@ fn flow_cli_set(mut o FlowCliOpts, key string, val string) {
 		'authority' { o.authority = val }
 		'stream' { o.stream = val }
 		'for' { o.for_spec = val }
+		'level' { o.level = val }
 		else { flow_cli_die('unknown flag `--${key}`') }
 	}
 }
@@ -578,11 +588,11 @@ fn flow_cli_opts_map(o FlowCliOpts, nonce string, with_flow bool) string {
 	return b + '}'
 }
 
-// ── the four verbs ───────────────────────────────────────────────────────────
+// ── the verbs ────────────────────────────────────────────────────────────────
 
 fn run_flow(args []string) {
 	if args.len == 0 {
-		flow_cli_die('needs a verb: run | validate | simulate | status')
+		flow_cli_die('needs a verb: run | validate | simulate | status | serve | diagram')
 	}
 	verb := args[0]
 	mut o := flow_cli_parse(args[1..])
@@ -614,8 +624,9 @@ fn run_flow(args []string) {
 		'simulate' { flow_cli_simulate(o) }
 		'status' { flow_cli_status(o) }
 		'serve' { flow_cli_serve(o, for_ns) }
+		'diagram' { flow_cli_diagram(o) }
 		else {
-			flow_cli_die('unknown verb `${verb}` (run | validate | simulate | status | serve)')
+			flow_cli_die('unknown verb `${verb}` (run | validate | simulate | status | serve | diagram)')
 		}
 	}
 }
@@ -674,6 +685,35 @@ fn flow_cli_validate(o FlowCliOpts) {
 	].join('\n')
 	flow_cli_answer(flow_cli_eval(flow_src, program), false)
 }
+
+// flow_cli_diagram is the local profile's face on flow.md §4.17's derived
+// picture (RULED: WF-17). It is a PURE PROJECTION of the document: no
+// journal, no `--env` and no capability grant, because the picture is
+// computed from the bytes and reads nothing else. Totality is normative —
+// every document `validate` accepts has a picture — so this verb never
+// validates first: a document `validate` would refuse still draws, and it
+// is `validate` that says why it is wrong.
+fn flow_cli_diagram(o FlowCliOpts) {
+	if o.positional.len != 1 {
+		flow_cli_die('diagram takes exactly one FLOW.cx')
+	}
+	level := if o.level != '' { o.level } else { 'compact' }
+	if level !in flow_cli_diagram_levels {
+		flow_cli_die('--level=${level} is not a detail rung (${flow_cli_diagram_levels.join(' | ')}) — a typo must not silently render the wrong rung')
+	}
+	flow_src := flow_cli_read(o.positional[0], 'the flow document')
+	program := [
+		"[?lib 'cx-stdlib/diagram' :as cxdg]",
+		'[?let [= \$fl [\$first [\$cx:select \$doc "//flow"]]]',
+		'  [\$cxdg:flow-diagram \$fl "${level}"]]',
+	].join('\n')
+	flow_cli_answer(flow_cli_eval(flow_src, program), false)
+}
+
+// The rungs, as a list rather than an `if` chain, so the refusal above can
+// print them and a new rung cannot be admitted in one place and refused in
+// the other (the `code_diagram_views` precedent, vcx/cmd/diagram.v).
+const flow_cli_diagram_levels = ['min', 'compact', 'full']
 
 fn flow_cli_simulate(o FlowCliOpts) {
 	if o.positional.len != 2 {
