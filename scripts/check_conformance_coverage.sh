@@ -6,12 +6,25 @@
 # suites it drives; it is the DOCUMENT lane and refuses [in-code …] fixtures by
 # design (#1134), so `test-vcx-conform` never covered conformance/code.cxd —
 # the largest corpus — while its name said "conformance". That corpus is graded
-# by the EVAL lane (test-vcx-code's code_eval_fixtures_test.v, plus the profile
+# by the EVAL lane (test-vcx-suite's code_eval_fixtures_test.v, plus the profile
 # gate), and other suites by their own runners. Nothing was uncovered — but the
 # map lived in nobody's head, and a NEW .cxd dropped into conformance/ would be
 # graded by nothing while every lane stayed green (the vacuous-gate class this
 # repo keeps paying for: #1127, #1134, #1180, #1209). This guard is that map,
 # in the tree, asserted on every gate: a suite with no claim is a red that
+#
+# THE CLAIM MUST NAME A LANE THAT ACTUALLY RUNS THE FILE. Until 2026-09-08 the
+# code.cxd and stdlib/*.cxd rows claimed `test-vcx-code`, which runs
+# `v test vcx/code/ vcx/platform/` (Makefile:2088) -- two directories that do
+# NOT contain vcx/tests/code_eval_fixtures_test.v. `test-vcx-suite` runs
+# `v test vcx/tests/` (Makefile:2024), which does. The rows also named
+# test-profile-gate, which runs tests/runners/profile_gate/ against the
+# cli/embed profile binaries (vcx/Makefile:950-952) -- a different corpus.
+# Nothing was ungraded (test-vcx-suite is in TEST_TARGETS), but a worker who
+# trusted this map to pick a verification lane ran test-vcx-code, got
+# `31 passed, 31 total` with the fixture runner absent from those 31, and
+# reported a green that had graded none of the new fixtures. A map that names
+# the wrong lane is worse than no map, because it is believed.
 # names it and says where a claim is written. (macOS bash 3.2: no assoc arrays —
 # the claims are a two-column file.)
 set -euo pipefail
@@ -24,8 +37,8 @@ grep -oE "'\.\./conformance/[A-Za-z0-9_./-]+\.cxd'" "$runner" | sed -E "s#'\.\./
   printf '%s\t%s\n' "$s" "test-vcx-conform (conform-all: $runner)"
 done >> "$claims"
 # 2. the eval lane (in-code fixtures): code.cxd + every conformance/stdlib/*.cxd
-printf '%s\t%s\n' "conformance/code.cxd" "test-vcx-code (code_eval_fixtures_test.v: parse_all_fixtures) + test-profile-gate" >> "$claims"
-for f in conformance/stdlib/*.cxd; do printf '%s\t%s\n' "$f" "test-vcx-code (code_eval_fixtures_test.v: test_stdlib_module_fixtures) + test-profile-gate"; done >> "$claims"
+printf '%s\t%s\n' "conformance/code.cxd" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_test.v: parse_all_fixtures); also test-vcx-resilience-matrix, which runs that file by name -- but it reds 14 db.cxd fixtures by construction (no -d cx_db_sqlite/-d cx_db_redis in VFLAGS_VCX), so read its failure LIST, not its exit code" >> "$claims"
+for f in conformance/stdlib/*.cxd; do printf '%s\t%s\n' "$f" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_test.v: test_stdlib_module_fixtures); also test-vcx-resilience-matrix, which runs that file by name -- but it reds 14 db.cxd fixtures by construction (no -d cx_db_sqlite/-d cx_db_redis in VFLAGS_VCX), so read its failure LIST, not its exit code"; done >> "$claims"
 # 3. dedicated runners / lanes
 {
   printf '%s\t%s\n' "conformance/diff.cxd" "test-vcx-conform (conform-diff: tests/runners/diff_lint/diff_lint_conform.v)"

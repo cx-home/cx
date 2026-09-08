@@ -2671,6 +2671,17 @@ bench-code-gates: bench-code-pattern-compile bench-code-streaming bench-code-htt
 # parses each block, evaluates in_code with $doc bound, and compares the
 # rendered result against out_text. Asserts at runtime that at least one
 # fixture executed. Per conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded) gate 5.
+# ITS EXIT CODE IS NOT A VERDICT — read the failure LIST. VFLAGS_VCX carries no
+# `-d cx_db_sqlite -d cx_db_redis`, but the same code_eval_fixtures_test.v also
+# runs test_stdlib_module_fixtures over every conformance/stdlib/*.cxd, and
+# db.cxd's cases 010-023 need those engines. So this target reds exactly 14
+# ENFORCED db fixtures by construction (E_STORE_UNRESOLVED_BACKEND "this build
+# carries no sqlite engine", and `no callable "redis-open"`) and exits 2 on a
+# perfectly healthy tree. `make test` builds with both -d flags, which is why
+# the full matrix is green on the same corpus. Measured 2026-09-08: 3754
+# fixtures across 73 module files, 14 failures, all db.cxd. When using this
+# target to verify a stdlib suite you added, the signal is "no failure names
+# MY suite", never exit 0.
 .PHONY: test-vcx-resilience-matrix
 test-vcx-resilience-matrix: build-vcx
 	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_eval_fixtures_test.v
