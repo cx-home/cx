@@ -22,6 +22,20 @@ Adding a section that cites a new suite = add the suite here. A template
 citing an undeclared (or nonexistent) fixture id is a HARD generator
 failure, never a silently empty block.
 
+CAPABILITIES — the non-obvious one. The generator replays each cited case
+with EXACTLY the flags the case's own `grant=` attribute names (see
+`argv-tokens` in primer_build.cx), and with none if it declares none. The
+stdlib EVAL lane is more generous: it hands a full capability set to any
+case whose `out-err` does not mention CXER0271. So a fixture that needs a
+capability but declares no `grant=` is GREEN in the gate and UNCITABLE
+here — `make docs` fails it as EXAMPLE FRESHNESS with a CXER0271 as the
+live output. Seen 2026-09-08 on the three xap-dist publish/pin cases,
+which mint an ed25519 keypair (`crypto`/`did`/`store`) and declare
+nothing. Cite such a case by id in prose, or add the `grant=` it actually
+needs to the fixture — but note that adding `grant=` also narrows how the
+eval lane runs it, from the full set to exactly that least-privilege list,
+so it is a change to that suite's contract and not a docs-only edit.
+
 RETIRING a document means deleting its file in the SAME change that drops
 its [output] entry: `--check` fails on any file under docs/llm/ that no
 entry claims (an ORPHAN), because a file the manifest does not know about

@@ -227,22 +227,24 @@ Two rejected alternatives are on the record (`xap_grammar_composition.md:381`):
 (silent propagation)."* Both would have made the fleet story easier and the
 guarantee empty.
 
-Underneath, distribution supplies the immutability the pin relies on. A
-released version alias cannot be re-pointed — a new artifact is a new version:
+Underneath, distribution supplies the immutability the pin relies on.
+`xap_feature_distribution_market.md:480` — *"Released aliases are immutable
+(re-pointing is a market-rule violation; consumers pin hashes anyway)"*. So a
+new artifact is a new version, and a pin rollback is hash identity: "go back"
+is exact rather than approximate. (Both are pinned by
+`conformance/stdlib/xap-dist.cxd` cases `xap-dist-014-publish-released-alias-immutable`
+and `xap-dist-020-pin-rollback-hash-identity`; they are cited by id rather than
+inlined here because they mint an ed25519 keypair, and this document's code
+blocks are replayed with no capability grants.)
 
-{{EXAMPLE:xap-dist-014-publish-released-alias-immutable block}}
-
-A pin rollback is hash identity, so "go back" is exact rather than approximate:
-
-{{EXAMPLE:xap-dist-020-pin-rollback-hash-identity block}}
-
-And publishing itself diffs the new version's schema against the previous
-release: additive change derives its lineage claim and deploys, while a
-**reinterpreting** change (an `int` that becomes a `string`) refuses. This is
-the closest thing the grammar plane has to a preflight — it runs at publish,
-against schema history, not per tenant:
-
-{{EXAMPLE:xap-dist-051-publish-lineage-derived-and-refused block}}
+Publishing itself also diffs the new version against the previous release —
+`:482`, *"Schema lineage rides the publish (RULED: SEA-1)"*: publish compares
+the two content trees' schema entries and classifies each change, so a
+**derivable** change derives its lineage claim and its upcaster mechanically
+while a **reinterpreting** one (an `int` that becomes a `string`) **refuses the
+publish** with `CXER4890` (`:488`). That is the nearest thing the grammar plane
+has to a preflight — but note what it is not: it runs **at publish, against
+schema history**, not per tenant against tenant bindings. See §6.2.
 
 ## 4. How change reaches a fleet — the surface plane
 
