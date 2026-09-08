@@ -46,7 +46,14 @@
 # (check-v-fork territory), before any release cut, and before widening
 # -usecache to more lanes. Recorded in the audit file.
 #
-# Usage: devbox run -- bash scripts/vcache_soundness_gate.sh [--prove-red]
+# Usage: bash scripts/vcache_soundness_gate.sh [--prove-red]
+#        (devbox is NOT required since #1337 - see PORTABLE PRIMITIVES below.
+#        It used to be, silently: outside the nix stdenv this script's GNU-only
+#        in-place sed and `stat -c` failed, five mutation probes scored an
+#        UNMUTATED fixture as RED, and hit-identity went vacuously GREEN. The
+#        Makefile recipe runs it as a bare `bash`, so the invocation environment
+#        decided the verdict. It no longer can: the primitives are portable and
+#        every mutation asserts it applied.)
 # Env:   CX_V=<path to fork v>   VCACHE_GATE_WORK=<workdir>
 
 set -u
@@ -82,7 +89,106 @@ mkfix() {
   printf 'import mymod\n\nfn main() {\n\tprintln(mymod.probe())\n}\n' > "$WORK/$1/prog.v"
 }
 
-osnap() { find "$VCACHE" -name '*.o' | sort | xargs -r stat -c '%Y %n' | md5sum; }
+# ── PORTABLE PRIMITIVES, AND WHY THEY ARE NOT OPTIONAL (#1337) ──────────────
+# This gate was written with GNU-only spellings: in-place sed with no backup
+# suffix, and `stat -c` piped through md5sum with `xargs -r`. macOS base
+# userland has none of them. The Makefile recipe runs `bash scripts/...` with
+# NO devbox wrapper (see check-vcache-soundness), so PATH decides which
+# userland answers, and outside the nix stdenv this script degraded SILENTLY.
+# A/B measured on this box, 2026-09-08, on the same one-line fixture:
+#
+#   bare shell   in-place sed -> rc=1, file UNCHANGED; stat -c -> rc=1,
+#                "stat: illegal option -- c"; sed is /usr/bin/sed (BSD)
+#   devbox run   rc=0, file changed to 'S2'; stat -c ok; sed is
+#                /nix/store/...-gnused-4.9/bin/sed  (GNU sed 4.9)
+#
+# The five mutation probes then compared the PRE-mutation program against the
+# post-mutation expectation and reported RED, and osnap collapsed to the
+# digest of empty input so hit-identity compared two identical constants and
+# went VACUOUSLY GREEN. That is the whole of the `sound=10 red=6` result that
+# filed #1337 - five false reds and one false green, the cache never at fault.
+# A prio:high landing was held for a full verification cycle over it.
+#
+# So the fix is not "require GNU". It is:
+#   1. portable spellings, so the gate is correct in BOTH userlands, and
+#   2. EVERY MUTATION ASSERTS IT APPLIED. A probe may never draw a conclusion
+#      from a fixture it failed to mutate - that is a tooling fault, and it
+#      exits 2 loudly rather than being scored as evidence about the cache.
+# (2) is the load-bearing half: it holds against any future mutation-tool
+# failure, not only against this one.
+
+# stat_mtime FILE - seconds since epoch, GNU or BSD spelling. Resolved once.
+if stat -c '%Y' "$SCRIPT_DIR" >/dev/null 2>&1; then
+  stat_mtime() { stat -c '%Y' "$1"; }        # GNU coreutils
+elif stat -f '%m' "$SCRIPT_DIR" >/dev/null 2>&1; then
+  stat_mtime() { stat -f '%m' "$1"; }        # BSD / macOS base
+else
+  echo "vcache-soundness: FATAL - no usable stat(1): neither the GNU nor the"
+  echo "  BSD mtime spelling works here. The gate cannot tell whether a cached"
+  echo "  object was rewritten, so every HIT/MISS verdict would be unearned."
+  exit 2
+fi
+
+# digest - a stable fingerprint of stdin. cksum is POSIX and always present;
+# md5sum is not (macOS base ships md5, not md5sum).
+digest() { cksum; }
+
+# osnap - fingerprint of the MTIMES of every cached object.
+#
+# Mtime, deliberately, not content: the question these probes ask is "was this
+# object REUSED or REWRITTEN". A cache MISS that happens to recompile
+# byte-identical output is still a MISS, and a content digest would score it
+# HIT - which would turn H1-cc-identity (expects MISS) into a false red and
+# hit-identity into a vacuous pass. `xargs -r` is GNU-only; the read loop
+# handles empty input by doing nothing, which is the same thing portably.
+osnap() {
+  find "$VCACHE" -name '*.o' 2>/dev/null | sort | while IFS= read -r f; do
+    printf '%s %s\n' "$(stat_mtime "$f")" "$f"
+  done | digest
+}
+
+# mutate FILE SED-EXPR - an in-place edit that PROVES it happened.
+# Portable (plain sed to a temp, then mv - the backup-suffix idiom
+# scripts/bump_version.sh:29 uses, one step further so no .bak is left beside
+# a fixture the compiler then globs). A no-op edit is a TOOLING FAULT, never a
+# probe result: exit 2, loudly, naming the remedy.
+MUTATIONS=0
+mutate() {
+  _f=$1; _expr=$2
+  [ -f "$_f" ] || { echo "vcache-soundness: FATAL - mutate: no such file: $_f"; exit 2; }
+  _before=$(digest < "$_f")
+  sed "$_expr" "$_f" > "$_f.mutating" || {
+    echo "vcache-soundness: FATAL - mutate: sed failed on $_f (expr: $_expr)"; exit 2; }
+  mv "$_f.mutating" "$_f"
+  _after=$(digest < "$_f")
+  if [ "$_before" = "$_after" ]; then
+    echo "vcache-soundness: FATAL - the mutation did not change the fixture."
+    echo "  file: $_f"
+    echo "  expr: $_expr"
+    echo "  This is a TOOLING fault, not a cache result. Every mutation probe"
+    echo "  below would have compared the UNMUTATED program against the mutated"
+    echo "  expectation and reported RED with the cache never at fault - which"
+    echo "  is exactly what #1337 was: five false reds and one false green."
+    echo "  Check sed(1) and this expression before reading any verdict."
+    exit 2
+  fi
+  MUTATIONS=$((MUTATIONS+1))
+}
+
+# Prove both primitives work BEFORE any probe runs, so a broken toolchain
+# fails here - at the top, named - instead of as six mysterious probe reds.
+_pf="$WORK/.preflight"
+mkdir -p "$WORK"
+printf "return 'S1'\n" > "$_pf"
+mutate "$_pf" "s/'S1'/'S2'/"
+if [ "$(cat "$_pf")" != "return 'S2'" ]; then
+  echo "vcache-soundness: FATAL - preflight mutation produced [$(cat "$_pf")]"; exit 2
+fi
+stat_mtime "$_pf" >/dev/null 2>&1 || {
+  echo "vcache-soundness: FATAL - preflight stat_mtime failed"; exit 2; }
+rm -f "$_pf"
+MUTATIONS=0
+note "preflight OK - in-place mutation and mtime snapshots both work here"
 
 # ── hit-identity + src-invalidate ────────────────────────────────────────────
 note "hit-identity / src-invalidate"
@@ -101,7 +207,7 @@ s1=$(osnap)
 s2=$(osnap)
 hit=$([ "$s1" = "$s2" ] && echo HIT || echo MISS)
 verdict "hit-identity" "HIT" "$hit"
-sed -i "s/'S1'/'S2'/" mymod/mymod.v
+mutate mymod/mymod.v "s/'S1'/'S2'/"
 "$V" -usecache -o p3 prog.v >/dev/null 2>&1 || echo "base build3 FAILED"
 verdict "src-invalidate" "S2" "$(./p3 2>/dev/null || echo BUILD-FAILED)"
 
@@ -157,7 +263,7 @@ EOF
 cd "$WORK/h3"; export VCACHE="$WORK/h3/.vcache"
 "$V" -usecache -o pa prog.v >/dev/null 2>&1 || echo "h3 A1 FAILED"
 "$V" -usecache -d cfgb -o pb prog.v >/dev/null 2>&1 || echo "h3 B1 FAILED"
-sed -i "s/'S1'/'S2'/" mymod/mymod.v
+mutate mymod/mymod.v "s/'S1'/'S2'/"
 "$V" -usecache -o pa2 prog.v >/dev/null 2>&1 || echo "h3 A2 FAILED"
 "$V" -usecache -d cfgb -o pb2 prog.v >/dev/null 2>&1 || echo "h3 B2 FAILED"
 verdict "H3-configA" "S2" "$(./pa2 2>/dev/null || echo BUILD-FAILED)"
@@ -216,7 +322,7 @@ pub fn probe() string {
 EOF
 cd "$WORK/h7"; export VCACHE="$WORK/h7/.vcache"
 "$V" -usecache -o p1 prog.v >/dev/null 2>&1 || echo "h7 build1 FAILED"
-sed -i 's/return 1;/return 2;/' "$WORK/h7/mymod/extra.h"
+mutate "$WORK/h7/mymod/extra.h" 's/return 1;/return 2;/'
 "$V" -usecache -o p2 prog.v >/dev/null 2>&1 || echo "h7 build2 FAILED"
 verdict "H7-c-header" "2" "$(./p2 2>/dev/null || echo BUILD-FAILED)"
 
@@ -240,7 +346,7 @@ EOF
 cd "$WORK/h4"; export VCACHE="$WORK/h4/.vcache"
 "$V" -usecache -o p1 prog.v >/dev/null 2>&1 || echo "h4 build1 FAILED"
 mv "$WORK/h4/mymod/extra.h" "$WORK/h4/extra.h.saved"
-sed -i "s/'A'/'B'/" mymod/mymod.v
+mutate mymod/mymod.v "s/'A'/'B'/"
 "$V" -usecache -o p2 prog.v >/dev/null 2>&1
 rc2=$?
 o2=$([ -x ./p2 ] && ./p2 2>/dev/null || echo BUILD-FAILED)
@@ -289,7 +395,7 @@ if [ "$MODE" = "--prove-red" ]; then
   evil_m="${evil_o%.o}.srcs.txt"
   if [ -f "$good_m" ] && [ -f "$evil_m" ]; then
     evil_oline=$(grep -m1 '^o:' "$evil_m")
-    sed -i "s|^o:.*|$evil_oline|" "$good_m"
+    mutate "$good_m" "s|^o:.*|$evil_oline|"
     echo "prove-red: forged manifest $(basename "$good_m") with the planted object's binding"
   else
     echo "prove-red: no provenance manifest exists yet (pre-fix tree) — the plain plant below must already be red"
@@ -410,7 +516,27 @@ verdict "H11-no-duplicate-defs" "1" "$ndef"
 
 # ── summary ──────────────────────────────────────────────────────────────────
 echo ""
-echo "vcache-soundness: sound=$PASS red=$RED elapsed=$((SECONDS-T0))s"
+# `mutations=` is on this line ON PURPOSE (#1337). Five of the six probes
+# that reported RED in the run that filed the issue had never mutated their
+# fixture at all, and nothing in the output said so. The count makes a
+# degraded run visible AT THE VERDICT.
+#
+# FOUR is the whole roster of a normal pass, counted at the call sites, not
+# guessed: the base `src-invalidate` edit, the h3 edit (ONE mutation feeding
+# BOTH H3-configA and H3-configB), the h7 C-header edit, and the h4
+# `A`->`B` edit. The fifth `mutate` in this file is inside the
+# `--prove-red` branch and does not run in a normal pass, which is why the
+# floor is skipped in that mode. Those four edits are what the five
+# sed-dependent reds of #1337 came from; the sixth red, H1-cc-identity, was
+# the `stat` half, not the `sed` half.
+echo "vcache-soundness: sound=$PASS red=$RED mutations=$MUTATIONS elapsed=$((SECONDS-T0))s"
+if [ "$MODE" != "--prove-red" ] && [ "$MUTATIONS" -lt 4 ]; then
+  echo "vcache-soundness: FATAL - only $MUTATIONS of the 4 fixture mutations ran."
+  echo "  A mutation probe that never mutated its fixture compares the"
+  echo "  UNMUTATED program against the mutated expectation. Those verdicts are"
+  echo "  about the harness, not the cache. Do not read them. (#1337)"
+  exit 2
+fi
 if [ "$MODE" = "--prove-red" ]; then
   if [ $RED -ge 1 ]; then
     echo "vcache-soundness --prove-red: gate went RED on the injected hole — red side PROVEN"
