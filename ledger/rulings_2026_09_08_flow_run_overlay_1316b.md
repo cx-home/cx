@@ -93,3 +93,54 @@ justification the other rows lack.
   base picture drew, and a `[seq]` lane takes none), `diagram-030` (the
   three refusals, including a record that pinned another document).
 - `spec/03-approved/std-lib/flow.md` §4.17 — the construct table's new row.
+
+---
+
+# RULED: 1316-b3 — `cx flow watch` is READ-ONLY; a watcher has no liveness
+
+Ruled by the owner + Fable at 2026-09-08 19:45 ET on worker B's 22:50Z
+question 3 = **(b)**.
+
+`watch` subscribes to the run's stream (`[$journal:subscribe]` +
+`[?receive]`), paints each transition onto the picture as a `1316-b1`
+overlay row, **arms NO timers and performs NO effect**. A parked run stays
+parked while watched; a watcher that sees a due deadline SAYS so on the
+picture and never fires it.
+
+**Spec text (freeze edit carries the token):** `flow.md` §4.15 gains, beside
+the runner table, the sentence that a watcher is an OBSERVER — it holds no
+liveness, arms no timer and performs no effect; whether a deadline fires
+never depends on who is looking. The runner table stays at three rows.
+
+**Refused:** (a) a watcher that services timers — an observer becomes a
+runner and a fleet console watching 200 runs would be 200 accidental
+runners; (c) polling `status` — loses transitions between ticks.
+
+## Measured, on a genuinely parked run
+
+A finished run would prove nothing, so the probe parks one: a step whose act
+fails with `attempts=2` unspent is `:retrying` with an `every=1h` wait — its
+next move is a durable timer an hour out.
+
+```
+before  run :running   step :retrying      stream entries 2
+watch   [flow-watch [flow-overlay … [node … status=:retrying]]]
+after   run :running   step :retrying      stream entries 2
+```
+
+The watcher appended nothing and did not fire the wait. Pinned as
+`diagram-031`.
+
+## One delivery decision that is NOT the ruling's, and why
+
+`watch` ANSWERS a value that the harness prints, exactly as `serve` does; it
+does not stream a line per paint. This is a capability fact, not a
+preference: the only output path a PROGRAM has is
+`[$io:write-line [$env:stdout] …]`, which refuses `CXER0271` without
+`--allow-write` — a grant that, in its own message, covers the whole
+filesystem (per-path scoping is #1061). Making a read-only observer demand a
+filesystem write grant in order to print would contradict the posture this
+very ruling establishes. The live-paint face is therefore the XAP host's
+`GET /stream` (`1316-b4`), and the CLI answers when it stops. The gap —
+that a CLI program has no ungranted line-out — is drafted as **`1316-c2`**
+on the issue.

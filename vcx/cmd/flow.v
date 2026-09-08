@@ -69,6 +69,7 @@ const flow_cli_usage = [
 	'       cx flow status   --journal URL RUN-ID [--stream=NAME] [--allow-*]',
 	'       cx flow serve    RUNNER.cx [--for DURATION] [--allow-*]',
 	'       cx flow diagram  FLOW.cx [--level=min|compact|full]',
+	'       cx flow watch    FLOW.cx RUN-ID --journal URL [--level=RUNG] [--for D]',
 	'',
 	'The local profile of cx-stdlib/flow (std-lib/flow.md §4.15) and its STANDALONE',
 	'RUNNER (§4.23). `run` is a journal, never a service: there is no engine to',
@@ -98,13 +99,17 @@ const flow_cli_usage = [
 	'  --authority=ID the authority basis (default cli)',
 	'  --stream=NAME  place the run in its subject\'s aggregate stream (default:',
 	'                 the run id itself)',
-	'  --level=RUNG   diagram only: the detail rung (min | compact | full;',
+	'  --level=RUNG   diagram and watch: the detail rung (min | compact | full;',
 	'                 default compact). min is names and topology, compact adds',
 	'                 the act, the performer badge and the clock marks, full',
 	'                 labels a needs= edge with the reason it exists.',
-	'  --for DURATION serve only: stop after DURATION and answer',
+	'  --for DURATION serve: stop after DURATION and answer',
 	'                 [runner-stopped …]. Absent, a runner runs until it is',
 	'                 stopped, which is what a runner is for.',
+	'                 watch: stop after DURATION. Absent, a watch ends when the',
+	'                 run reaches a terminal status — a PARKED run is watched',
+	'                 until the process is stopped, because a watcher holds no',
+	'                 liveness and never advances what it observes (§4.15).',
 	'  --allow-*      capability grants, as for any `cx FILE` (deny-by-default).',
 	'                 A file:// journal needs --allow-read --allow-write;',
 	'                 --ephemeral, validate and simulate need no grant. `serve`',
@@ -592,7 +597,7 @@ fn flow_cli_opts_map(o FlowCliOpts, nonce string, with_flow bool) string {
 
 fn run_flow(args []string) {
 	if args.len == 0 {
-		flow_cli_die('needs a verb: run | validate | simulate | status | serve | diagram')
+		flow_cli_die('needs a verb: run | validate | simulate | status | serve | diagram | watch')
 	}
 	verb := args[0]
 	mut o := flow_cli_parse(args[1..])
@@ -610,8 +615,8 @@ fn run_flow(args []string) {
 	}
 	mut for_ns := i64(0)
 	if o.for_spec != '' {
-		if verb != 'serve' {
-			flow_cli_die('--for bounds a `serve` process\'s lifetime; `${verb}` returns when it is done')
+		if verb !in ['serve', 'watch'] {
+			flow_cli_die('--for bounds a `serve` process\'s or a `watch`\'s lifetime; `${verb}` returns when it is done')
 		}
 		for_ns = flow_serve_duration_ns(o.for_spec) or {
 			flow_cli_die('--for ${o.for_spec} is not a duration (30s, 5m, 1d)')
@@ -625,8 +630,9 @@ fn run_flow(args []string) {
 		'status' { flow_cli_status(o) }
 		'serve' { flow_cli_serve(o, for_ns) }
 		'diagram' { flow_cli_diagram(o) }
+		'watch' { flow_cli_watch(o, for_ns) }
 		else {
-			flow_cli_die('unknown verb `${verb}` (run | validate | simulate | status | serve | diagram)')
+			flow_cli_die('unknown verb `${verb}` (run | validate | simulate | status | serve | diagram | watch)')
 		}
 	}
 }
@@ -714,6 +720,110 @@ fn flow_cli_diagram(o FlowCliOpts) {
 // print them and a new rung cannot be admitted in one place and refused in
 // the other (the `code_diagram_views` precedent, vcx/cmd/diagram.v).
 const flow_cli_diagram_levels = ['min', 'compact', 'full']
+
+// flow_cli_watch is the local profile's face on the RUN OVERLAY's feed
+// (RULED: 1316-b3). It is an OBSERVER and nothing else: it subscribes to the
+// run's own journal stream, folds the record with `status` and paints it onto
+// the picture as a `1316-b1` overlay value, and it ARMS NO TIMER AND PERFORMS
+// NO EFFECT. A parked run stays parked while it is watched — measured on a
+// `:retrying` step waiting an hour on its `every=` timer: record and stream
+// are byte-for-byte identical before and after a watch, and the stream gains
+// no entry.
+//
+// The alternative an implementer reaches for — a watcher that also services
+// timers, so a watched run makes progress — is exactly what §4.15 refuses:
+// liveness is a property of the RUNNER PROCESS, never of the document, and
+// under it a deadline's firing becomes a function of who happened to be
+// watching. `advance` is not in this program's vocabulary, which is the
+// structural half of that guarantee; the declared `[effects [read] [clock]]`
+// on the loop is the other half.
+//
+// IT ANSWERS A VALUE, and the harness prints it, exactly as `serve` does. It
+// does NOT stream a line per paint, and the reason is a capability fact
+// rather than a preference: the only output path a PROGRAM has is
+// `[$io:write-line [$env:stdout] …]`, which refuses `CXER0271` without
+// `--allow-write` — a grant that, in its own words, covers the whole
+// filesystem (per-path scoping is #1061). Making a read-only observer demand
+// a filesystem write grant in order to print is a worse trade than batching,
+// so the live-paint face is the XAP host's `GET /stream` (RULED: 1316-b4) and
+// the CLI answers when it stops. Drafted as 1316-c2 on #1316.
+fn flow_cli_watch(o FlowCliOpts, for_ns i64) {
+	if o.positional.len != 2 {
+		flow_cli_die('watch takes FLOW.cx and RUN-ID')
+	}
+	if o.journal == '' {
+		flow_cli_die('watch needs --journal URL (or --ephemeral, which holds no run past its process)')
+	}
+	level := if o.level != '' { o.level } else { 'compact' }
+	if level !in flow_cli_diagram_levels {
+		flow_cli_die('--level=${level} is not a detail rung (${flow_cli_diagram_levels.join(' | ')}) — a typo must not silently render the wrong rung')
+	}
+	flow_src := flow_cli_read(o.positional[0], 'the flow document')
+	id := o.positional[1]
+	flow_cli_install_caps(o)
+	// The run's HOME STREAM, and it is not optional to pass it: a
+	// subscription with no `stream:` follows the DEFAULT stream, where a run
+	// placed in its subject's aggregate stream has no entries at all — a
+	// watcher that silently followed the wrong stream would report a live run
+	// as one that never transitions.
+	mut sopts := '{}'
+	if o.stream != '' {
+		sopts = '{stream: "${flow_cli_quote(o.stream)}"}'
+	} else {
+		sopts = '{stream: "${flow_cli_quote(id)}"}'
+	}
+	// `--for`'s budget in ticks of the poll cadence; absent, -1, and the loop
+	// then ends when the run reaches a terminal status. A parked run watched
+	// without `--for` is watched until the process is stopped, which is the
+	// truth about that run.
+	ticks := if for_ns <= 0 { i64(-1) } else { for_ns / (i64(flow_cli_watch_tick_ms) * 1_000_000) }
+	program := [
+		flow_cli_prelude(true),
+		"[?lib 'cx-stdlib/diagram' :as cxdg]",
+		flow_cli_watch_defs(),
+		'[?let [= \$j [\$cxjournal:open "${flow_cli_quote(o.journal)}" "${flow_cli_tenant}"]]',
+		'  [= \$fl [\$first [\$cx:select \$doc "//flow"]]]',
+		'  [= \$sub [\$cxjournal:subscribe \$j {from: 0, stream: "${flow_cli_quote(if o.stream != '' { o.stream } else { id })}"}]]',
+		'  [\$fw--loop \$j "${flow_cli_quote(id)}" \$fl ${sopts} \$sub ${ticks} [flow-watch]]]',
+	].join('\n')
+	flow_cli_answer(flow_cli_eval(flow_src, program), false)
+}
+
+// The poll cadence. `[?receive]`'s deadline is the only place this program
+// blocks, and blocking there is a SAFEPOINT rather than a timer: it services
+// nothing and arms nothing.
+const flow_cli_watch_tick_ms = 200
+
+// The terminal run statuses, from §2.2's closed set. A run that reaches one
+// will never transition again, so the loop ends rather than holding a
+// subscription open on a finished run. `:cancelled` is deliberately ABSENT:
+// `cancel` is a named landing with no wave assigned (flow.md §4.21), so no
+// record can carry it, and listing it here would be a claim this build cannot
+// keep.
+fn flow_cli_watch_defs() string {
+	return r"[?def fw--terminal pure [returns bool] ($s::string)
+  [$exists [$first [?for [in $x (':done', ':compensated', ':incomplete', ':conflict', ':failed')]
+    [where [= $x $s]] [yield 1]]]]]
+
+[; a batch is a PAINT: the record is the fold at head, so one paint after a
+   batch says exactly what several paints inside it would. An empty batch
+   paints NOTHING — a watcher that re-emitted an unchanged overlay every tick
+   would turn a parked run into a stream of identical values. ]
+[?def fw--loop impure [effects [read] [clock]] [returns element]
+      ($j $id::string $fl $so::map $sub $n::int $acc::element)
+  [?let
+    [= $b [?receive from=$sub max=64 deadline=TICKMS]]
+    [= $paint [?if [> [$count $b] 0]
+      [then ([$cxdg:flow-overlay $fl [$cxflow:status $j $id $so]])]
+      [else ()]]]
+    [= $acc2 [flow-watch [?splice [?for [in $p $acc/*] [yield $p]]] [?splice $paint]]]
+    [= $st [?for [in $p $acc2/*] [yield [$string $p@status]]]]
+    [= $done [?if [> [$count $st] 0] [then [$fw--terminal [$nth $st [$count $st]]]] [else false]]]
+    [?if [?if $done [then true] [else [= $n 0]]]
+      [then $acc2]
+      [else [$fw--loop $j $id $fl $so $sub [?if [< $n 0] [then -1] [else [- $n 1]]] $acc2]]]]]
+".replace('TICKMS', flow_cli_watch_tick_ms.str())
+}
 
 fn flow_cli_simulate(o FlowCliOpts) {
 	if o.positional.len != 2 {
