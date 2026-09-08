@@ -2316,11 +2316,12 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
                       [yield [?send [processed value=[?receive from=$jobs]]
                                to=$results]]]]]]
       [= $_ [?wait-for worker=$d]]
+      [= $_w [?wait-for worker=$w]]
   [?for [in $k [$range 1 4]]
     [yield [?receive from=$results]]]]
 #]]
   [note [#
-**Pattern:** a two-stage pipeline across two channels — a dispatcher fans jobs into `jobs`, a worker transforms each into `[processed …]` on `results`, and the main thread drains `results`. **Diagram:** the let-bound workers and channels render as a `sequenceDiagram`. **Running it:** the playground's default wasm build has no threads, so this program does not run in the browser — see the banner. Real parallelism (and true channel backpressure on the bounded buffers) needs `make guide-http`, where cxlib loads the pthreads build.
+**Pattern:** a two-stage pipeline across two channels — a dispatcher fans jobs into `jobs`, a worker transforms each into `[processed …]` on `results`, and the main thread drains `results` after joining **both** workers. **Why both joins matter:** `[?receive]` blocks inside a `[?worker]`, but on the MAIN thread an empty-and-open channel answers `CXER0202 receive timed out` immediately rather than deadlocking a single-threaded program — so a main-thread drain that has not joined the worker filling the channel is a race, not a wait. **Diagram:** the let-bound workers and channels render as a `sequenceDiagram`. **Running it:** the playground's default wasm build has no threads, so this program does not run in the browser — see the banner. Real parallelism (and true channel backpressure on the bounded buffers) needs `make guide-http`, where cxlib loads the pthreads build.
 #]]
   [wasm-unsupported [#`[?worker]` spawns an OS thread; the playground's default single-threaded wasm build refuses it (`go code__run_worker_thread(): Not supported`).#]]
  ]
