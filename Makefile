@@ -583,7 +583,7 @@ test-playground-mermaid:
 # is a FAILURE too, so the gate cannot be defeated by marking the corpus
 # wholesale.
 #
-# WHY THIS IS NOT COVERED ELSEWHERE. verify-playground-examples replays all 182
+# WHY THIS IS NOT COVERED ELSEWHERE. verify-playground-examples replays the whole corpus
 # through NATIVE cx; test-playground-mermaid checks that the DIAGRAMS parse (it
 # calls evalCode for its `output` subject but swallows the result into a SKIP).
 # So nothing evaluated the corpus in the shipped wasm engine, and 10 examples

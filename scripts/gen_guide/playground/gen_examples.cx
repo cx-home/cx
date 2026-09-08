@@ -271,7 +271,8 @@
 # wrong answer.
 #
 # OPTIONAL — `section-of` yields '' when the section is absent, which is
-# the case for 171 of the 182. `make test-playground-wasm-eval` keeps the
+# the case for all but a handful of the corpus. `make test-playground-wasm-eval`
+# keeps the
 # set honest in BOTH directions: an unmarked refusal or divergence fails,
 # and so does a marker on an example that actually matches native.
 #
@@ -342,8 +343,8 @@
 # perfectly healthy example and reports it as broken. Measured on this
 # corpus (2026-08-26, 12 logical cores):
 #
-#   idle                    182 examples in  19.8 s   (mean 108 ms/example)
-#   48 spinners (4x oversub) 182 examples in 146.6 s   (mean 805 ms/example)
+#   idle                    182 examples in  19.8 s   (mean 108 ms/example)  [at 182]
+#   48 spinners (4x oversub) 182 examples in 146.6 s   (mean 805 ms/example)  [at 182]
 #
 # — a 7.4x uniform stretch of every example from one source of contention,
 # with nothing wrong anywhere. The bound has to stretch with it.
