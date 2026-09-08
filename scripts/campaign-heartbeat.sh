@@ -16,19 +16,24 @@
 root=$(cd "$(dirname "$0")/.." && pwd); cd "$root" || exit 1
 every=${1:-60}
 write_html() {
-  # $1 = current line, $2 = epoch seconds it was written
-  esc() { sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g'; }
-  cur=$(printf '%s' "$1" | esc)
-  cls=ok; case "$1" in *HUNG?*|*STALE*) cls=bad;; esac
+  # The page is static; its script polls campaign.heartbeat over HTTP every 15 s
+  # (same origin, cache-busted) and rebuilds itself — meta refresh is not
+  # honoured by the app's Browser pane, and a data:/file: snapshot never
+  # refreshes at all. Age comes from the file's Last-Modified header.
   {
-    printf '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="%s"><title>cx campaign</title>\n' "$every"
+    printf '<!doctype html><meta charset="utf-8"><title>cx campaign</title>\n'
     printf '<style>body{margin:0;padding:14px 18px;background:#111;color:#ddd;font:13px/1.5 ui-monospace,Menlo,monospace}'
     printf 'h1{font-size:15px;margin:0 0 10px;font-weight:600}.ok{color:#8fd18f}.bad{color:#ff7b72}.dead{color:#ff7b72;font-weight:700}'
     printf '.age{color:#888;font-weight:400}pre{margin:12px 0 0;color:#999;white-space:pre-wrap}</style>\n'
-    printf '<h1 class="%s">%s <span class="age" id="age"></span></h1>\n' "$cls" "$cur"
+    printf '<h1 id="h" class="ok">loading… <span class="age" id="age"></span></h1>\n'
     printf '<div id="dead" class="dead" hidden>WATCHER STOPPED — no heartbeat for over %s s. The campaign run may still be alive; the feed is not.</div>\n' "$((every*3))"
-    printf '<pre>'; tail -40 vcx/target/campaign.heartbeat | tail -r 2>/dev/null | esc; printf '</pre>\n'
-    printf '<script>var w=%s*1000,e=%s*1000;function t(){var a=Date.now()-w;document.getElementById("age").textContent="written "+Math.round(a/1000)+"s ago";document.getElementById("dead").hidden=a<3*e}t();setInterval(t,1000)</script>\n' "$2" "$every"
+    printf '<pre id="log"></pre>\n'
+    printf '<script>var E=%s*1000,W=0;function esc(t){return t.replace(/&/g,"&amp;").replace(/</g,"&lt;")}\n' "$every"
+    printf 'async function poll(){try{var r=await fetch("campaign.heartbeat?t="+Date.now(),{cache:"no-store"});var t=await r.text();var lm=r.headers.get("Last-Modified");W=lm?Date.parse(lm):Date.now();'
+    printf 'var ls=t.trim().split("\\n");var cur=ls[ls.length-1]||"";var h=document.getElementById("h");h.innerHTML=esc(cur)+" <span class=age id=age></span>";h.className=/HUNG\\?|STALE/.test(cur)?"bad":"ok";'
+    printf 'document.getElementById("log").textContent=ls.slice(-40).reverse().join("\\n")}catch(e){}tick()}\n'
+    printf 'function tick(){var a=Date.now()-W;var el=document.getElementById("age");if(el)el.textContent=W?"written "+Math.round(a/1000)+"s ago":"";document.getElementById("dead").hidden=!W||a<3*E}\n'
+    printf 'poll();setInterval(poll,15000);setInterval(tick,1000)</script>\n'
   } > vcx/target/campaign-status.html.tmp && mv vcx/target/campaign-status.html.tmp vcx/target/campaign-status.html
 }
 longest_proc() {
