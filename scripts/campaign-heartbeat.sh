@@ -79,5 +79,15 @@ while true; do
   echo "$line"
   echo "$line" >> vcx/target/campaign.heartbeat
   write_html "$line" "$now"
+  # Remote mirror: if vcx/target/campaign-gist.id names a gist, push the tail there every 5 min
+  # (a plain `gh gist edit` from this shell loop — no session, no tokens). Open the gist from a phone.
+  tick=$(( ${tick:-0} + 1 ))
+  if [ -s vcx/target/campaign-gist.id ] && [ $(( tick % (300 / every) )) -eq 0 ]; then
+    { echo "# cx v0.18.0 campaign — heartbeat mirror, written $(date -u +%FT%TZ) (every 5 min; a stale time here means the watcher on the box is down)"; echo
+      echo "## last notes from the workers"; grep -E '  (worker )?[ABC]:' vcx/target/campaign.status | tail -6 | cut -c12-160; echo
+      echo "## heartbeat, newest first"; tail -40 vcx/target/campaign.heartbeat | tail -r
+    } > vcx/target/campaign-gist.txt
+    gh gist edit "$(cat vcx/target/campaign-gist.id)" -f campaign-heartbeat.txt vcx/target/campaign-gist.txt >/dev/null 2>>vcx/target/campaign-heartbeat.err || true
+  fi
   sleep "$every"
 done
