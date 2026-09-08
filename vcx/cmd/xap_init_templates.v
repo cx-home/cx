@@ -403,6 +403,29 @@ meant.
 - A client is a SEPARATE project (`cx xap init ${name} --client` scaffolds
   a RUNNABLE one — generic tables derived from the surface's `shows`, a
   floor for your own views): a XAP never embeds its renderer.
+
+## Before your first client asks for a custom verb
+
+Read **docs/llm/model-customization.md** (published at
+https://cxhome.org/llm/model-customization.md). It answers the question that
+decides your architecture: what one tenant may change, what must change for
+everyone, and why.
+
+The short version, so you know whether you need it yet: a tenant customizes
+its SURFACE (arrangement, presentation, look and feel — journaled commands,
+replayed onto each new base) and its CONTRACT (rename / add / tighten /
+select, in an `[instance …]` binding). A tenant never customizes BEHAVIOUR.
+That is deliberate, not a gap: one code path per feature means one release
+reaches every tenant, and the toolchain can tell you which tenants a change
+breaks before you ship it. When a client genuinely needs new behaviour, you
+author a new feature and compose it BESIDE the shared one — the two bases
+here, `thing` and `owner`, are that shape already, and the compose gate
+checks the seam between them.
+
+Run the model on this very scaffold: `conformance/stdlib/xap-compose.cxd`
+cases `xap-compose-128` through `-132` instantiate the `thing` feature above
+for two different tenants, ship a v2, re-bless one tenant onto it, and show
+the refinement that was legal against v1 refusing against v2.
 "
 }
 

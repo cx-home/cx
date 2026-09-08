@@ -128,6 +128,18 @@ bootstrap, the deployment host, and the ux-web hypermedia surface — with what
 the rulings forbid stated as plainly as what they require.
 #]]]
 
+  [output id=model-customization out='model-customization.md'
+          template='model-customization.md.tmpl'
+          section=build
+          title='The customization model: what one tenant may change'
+    [summary [#
+The question an adopter asks first and the layer answers in seven places: what
+a tenant may change, what must change for everyone, how a change reaches a
+fleet on both the surface and the grammar plane, and why behaviour is not
+tenant-customizable — the refusals stated as the promise they enforce rather
+than as friction.
+#]]]
+
   [output id=platform out='reference-platform.md'
           template='reference-platform.md.tmpl'
           title='Reference: the platform and ecosystem rings'
