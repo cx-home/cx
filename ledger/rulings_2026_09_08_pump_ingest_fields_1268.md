@@ -159,13 +159,46 @@ Whether the parameter list should also refuse **missing** fields (the original
 letter (a)). It does not: `ledger/rulings_2026_09_05_xap_queue.md` ruled (b),
 and fixture 4 above exists to make any future change to that visible.
 
-## Open — the error code, NOT ruled here and NOT self-ruled
+## RULED: 1268-d — the error code (Fable + owner, 2026-09-08 16:25 ET)
 
-The refusal class c2 orders first has no code. The §4.9 sub-band
-(`CXER4865–4868`) was allocated by
-`ledger/rulings_2026_09_05_constraint_grammar_1308.md` as "the band's last free
-codes", and that record ends "`CXER4869` stays reserved" —
-`xap.md` §8 repeats it. Spending the band's last reserve is a resource decision
-this record does not make; letters are drafted on #1268 and the §4.9 text and
-its registry row land only once a `RULED:` answers them. Nothing here is
-implemented on an assumed code.
+The refusal class `1268-c2` orders first had no code, and the only unspent
+code between the §4.9 sub-band and the compose surface was deliberately
+reserved: `ledger/rulings_2026_09_05_constraint_grammar_1308.md:249-252`
+allocated `CXER4865–4868` as "the band's last free codes" and ended
+"`CXER4869` stays reserved"; `xap.md` §8 repeats the reservation. Letters were
+drafted on #1268 rather than self-ruled, because "nothing else needs the
+reserve" is an argument from absence over a reserve this record did not author.
+
+**1(a) — spend `CXER4869` as `E_XAP_PARAM_UNDECLARED`**: the §4.9 pre-commit
+refusal for an act carrying a field the verb's grammar does not declare,
+ordered FIRST in the §4.9 item-3 order per `1268-c2`. **The §4.9 sub-band
+(`CXER4865–4869`) is now FULL.** The next refusal class discovered at this
+enforcement point needs a *band* decision, made with knowledge — not a reserve
+spent blind. Checked by the ruling: `4880–4889` are all allocated, so "grow the
+band past `4879`" would leave the registered allocation, and reusing
+`CXER4867 E_XAP_FIELD_TYPE` would make one code mean two failures §4.6
+explicitly separates ("a field the intent does not carry is not a type
+failure"). Both refused.
+
+Why the reserve is spent correctly rather than merely conveniently: it was
+written in the same sentence that allocated codes for "the grammar-declared
+runtime refusals raised at the one pre-commit enforcement point". This refusal
+is exactly that class, raised at exactly that point, and ordered first among
+its members. A reserve spent on the next member of the class it sits beside is
+a reserve working as intended.
+
+**2(a) — the deployment-time binding refusal takes no new code.** A binding
+whose `fields` does not cover the verb's declared parameters rides the existing
+`[$xap:run]` refusal path (`xap_err_arg_invalid`, the same channel that already
+answers for a binding missing `verb:`), naming the verb and the uncovered
+parameter. A configuration refusal and a per-act refusal have different
+audiences — one is read once by whoever deploys, the other per act by a client,
+and only the second is caught programmatically. Spending a second code to
+distinguish a refusal that never reaches a client would have cost the band
+growth `1(a)` refuses.
+
+Registry rows land in **both** documents this band is registered across:
+`xap_grammar_composition.md` §8.1 (the sub-band's own table) and `xap.md` §8's
+reserve sentence, which stops saying `CXER4869` is reserved and starts saying
+the sub-band is full. One band, two documents, no code defined twice — the
+invariant §8 states is preserved by editing both in this landing.
