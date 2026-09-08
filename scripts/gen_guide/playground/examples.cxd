@@ -2116,7 +2116,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
   [label [#[161] Sequence diagram — top-level `[?worker]`#]]
   [src [#
 [?worker name="task"
-  [?let [= $_ [?sleep 100ms :mock]]
+  [?let [= $_ [?sleep 100ms mock]]
     [ok value="done"]]]
 #]]
   [note [#

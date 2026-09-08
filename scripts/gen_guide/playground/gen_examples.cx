@@ -158,7 +158,7 @@
 
 [?const SLOT-KWS (
   [t needle=':par' tag='par'],       [t needle=':ordered' tag='ordered'],
-  [t needle=':mock' tag='mock'],     [t needle=':where' tag='where'],
+  [t needle=' mock]' tag='mock'],    [t needle=':where' tag='where'],
   [t needle=':yield' tag='yield'],   [t needle=':let' tag='let'],
   [t needle=':init' tag='init'],     [t needle=':using' tag='using'],
   [t needle=':case' tag='case'],     [t needle=':when' tag='when'],
