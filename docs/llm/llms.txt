@@ -11,6 +11,7 @@ Generated from the CX conformance corpus at the v0.17.0 cut by scripts/gen_docs/
 ## Building something
 
 - [Playbook: building a production XAP](https://cxhome.org/llm/playbook-xap.md): The full arc for a production feature deployment: authoring and composing feature grammars, derived nouns and deriver principals, the authority model, the *.xap.cxd deployment document and its [runtime] bindings, offline identity bootstrap, the deployment host, and the ux-web hypermedia surface — with what the rulings forbid stated as plainly as what they require.
+- [The customization model: what one tenant may change](https://cxhome.org/llm/model-customization.md): The question an adopter asks first and the layer answers in seven places: what a tenant may change, what must change for everyone, how a change reaches a fleet on both the surface and the grammar plane, and why behaviour is not tenant-customizable — the refusals stated as the promise they enforce rather than as friction.
 
 ## Reference
 

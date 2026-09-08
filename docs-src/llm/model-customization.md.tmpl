@@ -1,0 +1,432 @@
+# The customization model: what one tenant may change — v{{VERSION}}
+
+> **GENERATED.** Source: `docs-src/llm/model-customization.md.tmpl` + the
+> conformance corpus. Every code block is a fixture and every output was
+> re-recorded from the `cx` v{{VERSION}} binary at generation time. Where a
+> claim rests on a file in the repository rather than on a fixture, the file
+> and line are cited and **the citation is the evidence**. Where a mechanism
+> does not exist yet, this document says so in the same voice — §6 is a list
+> of gaps, not a list of features.
+
+Read `primer.md` first for the language and `playbook-xap.md` for how a
+deployment is assembled. This document answers a different question, and it is
+the one an adopter asks first:
+
+> **What may be changed for one tenant, what must change for everyone, and
+> why?**
+
+## 0. The answer in one sentence
+
+**A tenant customizes its surface and its contract; it never customizes
+behaviour — so one release reaches every tenant, and the toolchain can say in
+advance which tenants it breaks.**
+
+Every refusal you will meet is that sentence being enforced. This matters
+because the refusals are the product. Met one at a time — `CXER4877`,
+`CXER4878`, `CXER4879`, `:unservable-verb` — they read as friction, and the
+natural response is to route around them. Read as one model, they are the
+reason a fleet upgrade is a replay instead of a merge.
+
+The comparison an adopter will reach for is the metadata-driven platform that
+held this same line **by policy** and eventually opened a side door under
+customer pressure. CX holds it in the toolchain, which is stronger — but only
+if you know it is the line before your first client asks for a custom verb.
+
+Two planes, and they behave differently. Keep them apart:
+
+| | **Surface plane** | **Grammar plane** |
+|---|---|---|
+| What a tenant edits | arrangement, presentation, look and feel | a **contract**: renames, additions, narrowings, withdrawals |
+| The unit | journaled commands over a base document | an `[instance …]` binding document |
+| How a vendor change arrives | adopt a new base, **replay** the tenant's commands | move the `of=` pin, **re-instantiate** |
+| Granularity of failure | per command: clean / drifted / refused | **all-or-nothing** per instance |
+| Authority | `ux.md` §18–§19 | `xap_grammar_composition.md` §4.3 |
+
+## 1. What you build once, and what a tenant may change
+
+### 1.1 The surface plane — exactly three planes, each a document
+
+`ux.md:1861` is normative and worth quoting exactly:
+
+> **[P0-114] Everything a studio edits is one of exactly three planes, and
+> each plane is a document — never code, never markup.**
+
+| Plane | The document | The commands a tenant issues |
+|---|---|---|
+| **Arrangement** | a `[ux:layout]` base document + its journaled command stream | `ux:move` · `ux:wrap` · `ux:place` · `ux:remove` |
+| **Presentation & content** | the same layout document (hint and param children) | `ux:set-hint` · `ux:set-param` |
+| **Look and feel** | the theme token document | the theme write (`ux.md:521`, `[P0-112]`) |
+
+What is deliberately **not** a plane: *"markup, CSS, and component internals"*
+(`ux.md:1870`). And nothing is stored flattened — `ux.md:1878` — *"The
+rendered arrangement is `fold(base, commands)` — recomputed, never a saved
+copy."* That is not an implementation detail; it is the entire reason an
+upgrade can exist. A forked document cannot be replayed onto a new base. A
+command stream can.
+
+A move touches what it addresses and nothing else, and a command addressing an
+element that is not there refuses rather than guessing:
+
+{{EXAMPLE:ux-105-layout-move-untouched block}}
+
+{{EXAMPLE:ux-106-layout-address-miss block}}
+
+Every command has an inverse, and the round trip is byte-identical — which is
+what makes an edit stream auditable and reversible rather than a diff:
+
+{{EXAMPLE:ux-111-layout-inverse-pairs block}}
+
+A batch is atomic, so a tenant never lands half an edit:
+
+{{EXAMPLE:ux-113-layout-batch-atomic block}}
+
+Content and presentation are the same closed discipline — an undeclared param
+name refuses:
+
+{{EXAMPLE:ux-114-set-param-content-surface block}}
+
+And look-and-feel is a token document compiled to a stylesheet, where an
+unsafe value refuses **the whole sheet** rather than emitting a partial one:
+
+{{EXAMPLE:web-007-token-theme-to-stylesheet block}}
+
+The closed command set is doing load-bearing work here. `ux.md:2154` states
+why: *"A closed set is analyzable, which is what makes [P0-120]'s fleet
+preflight possible at all… Free CSS is not analyzable, which is why theme-fork
+platforms make upgrades the client's problem."*
+
+### 1.2 The grammar plane — four refinements, and removal cannot be spelled
+
+A tenant's variant of someone else's feature is an `[instance …]` binding
+document. `xap_grammar_composition.md:330` calls it *"The refinement contract
+— four verbs admitted, everything else structurally impossible"*:
+
+| Refinement | What it may do |
+|---|---|
+| `[rename]` | `label` / `doc` / `summary` of a named noun, field or verb. **Names of record are not renameable** — the vocabulary has no slot for it |
+| `[add]` | new fields on existing nouns, new verbs, new rules. Adding is always a narrowing in this rule model; an added name **must not collide** with an inherited one |
+| `[tighten]` | move **up** the rank lattice only — scope may narrow, consequence may rise, effect may strengthen |
+| `[select]` | the subsetting vocabulary (`offer` / `not-offered`-with-`why`). Selection is a narrowing and **binds every consumption point** |
+
+The schema is the same list, and it is deliberately the whole vocabulary
+(`spec/03-approved/xap/xap_schemas/instance.cxs:18-26`). Note what is absent:
+*"Removal is not refused because it cannot be spelled: the binding vocabulary
+has no remove"* (`xap_grammar_composition.md:359`).
+
+All four at once, with the pin computed in-case — which is also the
+demonstration that `of=` is derivable rather than magic:
+
+{{EXAMPLE:xap-compose-057-instantiate-effective-feature block}}
+
+An instance may also add views onto a noun it inherited:
+
+{{EXAMPLE:xap-compose-077-instance-adds-views-on-inherited-noun block}}
+
+### 1.3 What is refused, and the one-sentence reason for each
+
+| Refusal | Raised when | The reason, in one sentence |
+|---|---|---|
+| `CXER4877` `E_XAP_ARCHETYPE_REPURPOSE` | an `[add]` collides with an inherited name, or a refinement names a member the archetype does not declare | a tenant may extend the vocabulary, never redefine a word already in it |
+| `CXER4878` `E_XAP_ARCHETYPE_LOOSEN` | a `[tighten]` widens any axis | substitutability — an instance must be usable everywhere its archetype is |
+| `CXER4879` `E_XAP_INSTANCE_INVALID` | `of=` does not match the archetype document presented | an instance derives from an **exact** base, never from "whatever the vendor ships today" |
+| `CXER4864` `E_XAP_VERB_NOT_OFFERED` | a withdrawn verb is uttered | a withdrawal is a real narrowing, not a hidden verb — and it is deliberately distinct from "no such verb" |
+
+Repurposing an inherited name:
+
+{{EXAMPLE:xap-compose-058-instantiate-repurpose-refuses block}}
+
+Widening what was inherited. `xap_grammar_composition.md:358` is blunt about
+the absence of an escape hatch: *"There is no escape hatch; the honest release
+valve is authoring your own feature."*
+
+{{EXAMPLE:xap-compose-059-instantiate-loosen-refuses block}}
+
+A refinement naming a field the archetype does not declare — the typo class,
+caught at instantiation rather than at first render:
+
+{{EXAMPLE:xap-compose-078-instance-views-on-undeclared-field-refuses block}}
+
+A withdrawn verb refuses at resolution, **before** the policy check, and with
+its own code:
+
+{{EXAMPLE:xap-compose-065-selection-refuses-at-rho block}}
+
+A withdrawal removes a *verb*, not a *word* — a bare term still resolves
+through another feature that offers one:
+
+{{EXAMPLE:xap-compose-066-selection-withdraws-a-verb-not-a-word block}}
+
+## 2. Why behaviour is not tenant-customizable
+
+State this as the promise, not the limitation. `xap_grammar_composition.md`
+§4.3 now says it normatively (**RULED: AD-10**, #1162): *instantiation is
+contract-level by design.* A binding refines a contract — it selects, narrows
+and renames what the archetype **already implements**. It does not carry code,
+and the vocabulary has no slot for code: `[rename]`, `[add]`, `[tighten]` and
+`[select]` are declarations about a grammar, not implementations of one.
+
+Behaviour travels with a feature as its `<feature>.cx` module, and dispatch is
+by feature name, so an instance is served by the **archetype's** module — the
+one its `of=` pin resolves to.
+
+The consequence you will actually meet: **an `[add]`ed verb that no
+implementation can serve is admitted at instantiation and refused at the
+surface.** `[add]` is one of the four refinements, so the instance may still
+*declare* the verb. What may not happen is a surface **offering** it, because
+that is where a declaration becomes a route a caller can reach.
+`cx xap check-surface` reports it as `:unservable-verb` — *"a route offers a
+verb no `<feature>.cx` module can serve"* (`vcx/cmd/xap_check_surface.v:49`;
+exit 0 clean, 1 any problem). The rationale is carried in the generated
+checker program itself, `vcx/cmd/xap_check_surface.v:213-216`:
+
+> At the SURFACE, not at instantiate: §4.3 admits ADD of new verbs as one of
+> its four refinement operations, so an instance may still DECLARE one. What
+> may not happen is a surface OFFERING it, because that is where the promise
+> becomes a route a caller can reach.
+
+What this buys, stated as the value and not the mechanism: **one code path per
+feature, one release for every tenant, and conflicts known before shipping.**
+The ruling record is explicit that this was chosen as a *refusal* rather than
+as a new capability — `ledger/rulings_2026_09_01_adoption_campaign.md:446`:
+*"a DECLARATION THAT BINDS NOTHING becomes a refusal, not a new capability."*
+
+So when a tenant genuinely needs new behaviour, the answer is §4 below: author
+your own feature and compose it beside the shared one. That is a supported
+path with a checked seam — not a workaround.
+
+## 3. How change reaches a fleet — the grammar plane
+
+Nothing propagates. A vendor publishing v2 does not move any instance.
+
+The vendor ships v2 of a feature; a tenant's binding still pins v1; presenting
+it the new archetype **refuses**, naming both addresses:
+
+{{EXAMPLE:xap-compose-129-vendor-v2-does-not-reach-a-pinned-instance block}}
+
+The upgrade is one deliberate act — *"Re-bless, never silent propagation"*
+(`xap_grammar_composition.md:372`): the binding's `of=` moves to the new
+address and the instance re-instantiates, **with the whole contract re-checked
+against the new base.** The tenant keeps its refinements and inherits the
+vendor's additions:
+
+{{EXAMPLE:xap-compose-130-re-bless-moves-the-pin-and-rechecks block}}
+
+And *"the gate holds at every generation"* is not decoration. A refinement
+that was legal against v1 can become a widening against v2, and re-bless
+refuses rather than lowering the vendor's new floor for one tenant:
+
+{{EXAMPLE:xap-compose-131-a-refinement-legal-on-v1-widens-on-v2 block}}
+
+The control proves the refusal is about the *base*, not the binding — the same
+refinement against v1 is fine:
+
+{{EXAMPLE:xap-compose-132-the-same-refinement-is-legal-on-v1 block}}
+
+Two rejected alternatives are on the record (`xap_grammar_composition.md:381`):
+*"copy-with-provenance (a fork with a birth certificate); mutable `extends=`
+(silent propagation)."* Both would have made the fleet story easier and the
+guarantee empty.
+
+Underneath, distribution supplies the immutability the pin relies on.
+`xap_feature_distribution_market.md:480` — *"Released aliases are immutable
+(re-pointing is a market-rule violation; consumers pin hashes anyway)"*. So a
+new artifact is a new version, and a pin rollback is hash identity: "go back"
+is exact rather than approximate. (Both are pinned by
+`conformance/stdlib/xap-dist.cxd` cases `xap-dist-014-publish-released-alias-immutable`
+and `xap-dist-020-pin-rollback-hash-identity`; they are cited by id rather than
+inlined here because they mint an ed25519 keypair, and this document's code
+blocks are replayed with no capability grants.)
+
+Publishing itself also diffs the new version against the previous release —
+`:482`, *"Schema lineage rides the publish (RULED: SEA-1)"*: publish compares
+the two content trees' schema entries and classifies each change, so a
+**derivable** change derives its lineage claim and its upcaster mechanically
+while a **reinterpreting** one (an `int` that becomes a `string`) **refuses the
+publish** with `CXER4890` (`:488`). That is the nearest thing the grammar plane
+has to a preflight — but note what it is not: it runs **at publish, against
+schema history**, not per tenant against tenant bindings. See §6.2.
+
+## 4. How change reaches a fleet — the surface plane
+
+Here the mechanism is a replay, and `ux.md:1934` gives the reason it can be
+one: *"improvements and customizations live at different cascade levels and in
+different documents, so 'upgrade' is a replay, never an overwrite."*
+
+`[P0-119]` (`ux.md:1938-1947`) names **three deliberately separate deploy
+channels**:
+
+1. **Code** — *"Improves every client on deploy with no per-tenant state,
+   because no client owns markup."*
+2. **Vendor documents** — content-addressed; *"each tenant is pinned to a
+   version and moves only by an explicit act."*
+3. **The tenant's own streams** — *"Never rewritten by an upgrade."*
+
+Adopting a new base is itself a journaled act with a preflight, and
+`[P0-120]` (`ux.md:1954`) classifies every replayed command:
+
+| Class | Meaning |
+|---|---|
+| **clean** | applies |
+| **drifted** | applies, but its neighborhood changed — reported |
+| **refused** | its target is gone |
+
+A dry run produces that classification without committing. Two sentences carry
+the value: *"the same replay runs across the whole fleet before release — the
+vendor learns which tenants break, and on which command, before shipping"*
+(`ux.md:1962`), and *"A refused customization is presented to its owner as a
+decision (re-place it, or drop it); no upgrade path may silently discard one"*
+(`ux.md:1965`).
+
+Breaking vendor changes ship **migration commands in the same act**; unmigrated,
+they refuse rather than degrading (`ux.md:1968`).
+
+The layering an adopter is operating in is §19.3's: platform (CX) → **vendor
+(you)** → tenant (your client) → surface (one deployment). *"An adopter's
+release is therefore a versioned vendor bundle, each client pinned to a
+version"* (`ux.md:2245`). The ceiling is itself a document: *"The allow
+document at the vendor level is how the adopter chooses their client's ceiling:
+which elements may move, which axes may be set, which params may be written"*
+(`ux.md:2247`).
+
+**Read §6 before building against this section.** The surface-plane fleet
+story is spec prose plus one demo, with no conformance fixture, and the spec's
+own status ladder scopes it.
+
+## 5. When to compose beside, instead of refining
+
+Refine when you are narrowing a contract someone else implements. **Compose a
+new feature beside the shared one** when you need behaviour — that is the
+supported answer to §2's refusal, and the seam is checked.
+
+The compose gate reports **every** violation, not the first
+(`xap_grammar_composition.md:145`). The gates that guard a seam between two
+independently authored features:
+
+| Gate | What it guarantees |
+|---|---|
+| **W1** | feature names distinct, each a single segment |
+| **W2** | **key compatibility** — every registration onto one key name carries the same value type/shape |
+| **W3** | frame registration: `via` names a real field, typed to the family's coordinate type |
+| **W4** | rule consistency — no mandate/exclusion contradiction, no ordering cycle, dependency targets exist |
+| **W5** | every `uses` entry, every qualified reference in a derived noun's `[from …]`, and every derived verb's constituent resolves |
+| **W6** | resolution is total and deterministic — every bare term yields one qualified verb or a well-formed ambiguity, never zero-or-crash |
+| **W7** | a derived noun is **deriver-reserved** — no verb writes onto it |
+
+W2 is the one an adopter meets first, because the shared key is the join:
+
+{{EXAMPLE:xap-compose-009-w2-key-type-mismatch block}}
+
+Compose is commutative and idempotent, and the same feature *set* yields a
+byte-identical canonical form — which is what makes a grammar hash an equality
+oracle rather than a checksum:
+
+{{EXAMPLE:xap-compose-003-commutative block}}
+
+{{EXAMPLE:xap-compose-005-idempotent block}}
+
+### 5.1 The trap: a shared key that moves does NOT refuse
+
+This is the most important paragraph in this section, because the intuition is
+wrong. **W2 checks type agreement only, never spelling**
+(`xap_grammar_composition.md:1104`): *"W2 checks exactly one property of them:
+that every registration onto one name agrees in value type. Nothing checks
+that the NAME is the one the author meant."*
+
+So if one feature says `order-id` and the other says `order_id`, there is **no
+W2 conflict**. Both become solitary, composition is green, `ok=true`, and the
+first evidence is an empty readout at runtime. What catches it is a **note**,
+and `ok=` is untouched:
+
+{{EXAMPLE:xap-compose-068-solitary-key-is-reported block}}
+
+Spelled correctly, the same pair joins and the report is silent — so the note
+carries information rather than noise:
+
+{{EXAMPLE:xap-compose-069-a-key-that-actually-joins-is-silent block}}
+
+Know its limit, stated at `xap_grammar_composition.md:1123`: it catches the
+**typo** class exactly, and says nothing about two features meaning different
+things by one correctly-spelled name.
+
+### 5.2 Archetype status is earned, not declared
+
+Before you publish a feature as an archetype for others to instantiate,
+`xap_grammar_composition.md:383`:
+
+> **Graduation (R8.10).** Archetype status is EARNED: the cohesion gate green,
+> plus TWO genuinely different instantiations named and recorded as evidence —
+> different composing surface/tenant, non-overlapping `uses` neighborhoods,
+> **not two skins of one deployment**.
+
+The same bar governs whether a feature is ready for a marketplace at all
+(`:497`): *"Designed-for-one-XAP bias cannot be seen by inspection, only by a
+second composition failing to fit."* The cohesion instrument ships
+report-first — a healthy feature is one component:
+
+{{EXAMPLE:xap-compose-061-cohesion-one-component block}}
+
+{{EXAMPLE:xap-compose-062-cohesion-two-domains-report-two block}}
+
+## 6. The worked arc, and what is missing
+
+### 6.1 Two tenants, one archetype — runnable
+
+This is the whole model in one fixture, on the feature `cx xap init` actually
+generates (`vcx/cmd/xap_init_templates.v:100-131`, copied verbatim). Two
+tenants derive **different** variants of **one** base: `acme` renames, adds a
+field and tightens `create` to irreversible; `borough` renames and withdraws
+`list` from its offer. Neither carries code. Both name the same base pin.
+
+{{EXAMPLE:xap-compose-128-two-tenants-one-archetype block}}
+
+Read the output: two contracts, one implementation. That is §0's sentence,
+executed.
+
+### 6.2 What does not exist yet — do not build against it
+
+Stated plainly, because a document that implies a mechanism is worse than one
+that admits a gap:
+
+- **There is no grammar-plane preflight.** The surface plane classifies every
+  replayed command as clean / drifted / refused (§4). The grammar plane is
+  **all-or-nothing per instance**: re-bless either produces an effective
+  document or refuses (§3). There is no per-refinement report telling a vendor
+  *which* tenants' bindings a candidate v2 would break and *on which
+  refinement* — the thing §4 gives the surface plane. `xap-dist-051`'s publish
+  lineage check is adjacent but different: it diffs schema history at publish,
+  not tenant bindings per tenant.
+- **No prescribed fleet upgrade order.** `ux.md:1962` says the preflight runs
+  fleet-wide before release; nothing states in what order an adopter should
+  then move tenants.
+- **The surface-plane fleet mechanics have no conformance fixture.**
+  `adopt-base`, the `fold(base, commands)` replay, tenant pins and the allow
+  document are spec prose plus the ORIEL demo
+  (`spec/03-approved/xap/demos/oriel/serve.cx:5165-5263`, routes at
+  `surface.cx:66-67`, gate-enforced assertions at `drive.cx:1016-1025` and
+  `:1362-1381` — which is a real lane, `make test-oriel-lane`). The spec's own
+  status ladder scopes the claim (`ux.md:2114`): built *"for a candidate bundle
+  and per-tenant adoption"*, with migration commands for breaking changes
+  **unbuilt**.
+- **Two spellings in §18.5 are not what the implementation does.** `ux.md:1960`
+  describes adoption committing a `[base-adopted from=… to=…]` entry; the
+  implementation journals `[pinned tenant= version= clean= refused=]`
+  (`serve.cx:5253-5258`). And of `[P0-120]`'s three classes, the layout replay
+  emits only `clean` and `refused` (`serve.cx:3523-3531`); `drifted` comes from
+  the catalog comparison arm (`serve.cx:3647`), i.e. tenant-owned content, not
+  a replayed vendor-document command. Trust the code over the prose here until
+  one of them moves.
+
+## 7. Where to go next
+
+| File | Load it when |
+|---|---|
+| `playbook-xap.md` | you are authoring the features and the deployment this model applies to |
+| `reference-platform.md` | you are persisting, serving or distributing |
+
+Normative sources for everything above: `spec/03-approved/xap/ux.md` §18–§19
+(the surface plane), `spec/03-approved/xap/xap_grammar_composition.md` §4.3–§4.4
+and §4.13 (the grammar plane),
+`spec/03-approved/xap/xap_feature_distribution_market.md` §1 (packages and
+pins), and `spec/03-approved/xap/xap_schemas/instance.cxs` (the binding
+vocabulary). The rulings behind the refusals: AD-10 (#1162) and 1161-Q1a in
+`ledger/`.
