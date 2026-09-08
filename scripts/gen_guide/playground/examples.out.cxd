@@ -1122,12 +1122,9 @@ error: the result carries an error value — cx-err:CXER9999 at /err
 ((1, 2, 3))
 #]]
  ]
- [ex key=181-fp-traverse-none chars=199 err-chars=67
+ [ex key=181-fp-traverse-none chars=2
   [out-text [#
-[err code=cx-err:CXER0001 message='[?if] expects [then …] / [else …] clause children after the condition — got a bare positional branch expression; write [?if cond [then thenExpr] [else elseExpr]?]']
-#]]
-  [err-text [#
-error: the result carries an error value — cx-err:CXER0001 at /err
+()
 #]]
  ]
  [ex key=182-fp-traverse-http chars=132 err-chars=67

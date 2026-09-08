@@ -656,7 +656,7 @@
     "90-cancel": {
       label: "[90] [?cancel] \u2014 abort a future",
       input: "[?let [= $f [?async [?let [= $_ [?sleep 1s mock]]\n                      [ok value='never']]]]\n      [= $_ [?cancel $f]]\n  [?await $f]]",
-      note:  "**Introduces:** `[?cancel $handle]`. Requests cancellation; future resolves to `[err :code \"cx-err:CXER0260\"]`.",
+      note:  "**Introduces:** `[?cancel $handle]`. Requests cancellation; the future then resolves to `[err code=cx-err:CXER0260 message='operation cancelled']`.",
       tags:  ["async", "await", "cancel", "eq", "let", "mock", "sleep"],
       runnable: true,
       wasmUnsupported: "`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).",
@@ -678,14 +678,14 @@
     "93-retry-exhaustion": {
       label: "[93] [?retry] \u2014 exhausted \u2192 CXER0140",
       input: "[?retry max=3\n  [?test-always-err]]",
-      note:  "**Introduces:** `[?retry]` exhaustion. When `max=N` is hit and positional body still errs, returns `[err :code \"cx-err:CXER0140\" \u2026]`.",
+      note:  "**Introduces:** `[?retry]` exhaustion. When `max=N` is hit and the positional body still errs, the result is `[err code=cx-err:CXER0140 message='retry budget exhausted after 3 attempts' attempts=3 [cause \u2026]]` \u2014 the attempt count is on the err and the LAST underlying failure rides along under `[cause]`, so the diagnosis is not lost by the retry that gave up.",
       tags:  ["retry", "test-always-err"],
       runnable: true,
     },
     "94-timeout-fires": {
       label: "[94] [?timeout] \u2014 fires after mock sleep",
       input: "[?timeout 50ms\n  [?let [= $_ [?sleep 200ms mock]]\n    [ok value='too-slow']]]",
-      note:  "**Introduces:** a `[?timeout]` that elapses. The body's 200ms mock-sleep exceeds the 50ms budget, so the timeout returns `[err cx-err:CXER0141 elapsed=50ms]` rather than the body value.",
+      note:  "**Introduces:** a `[?timeout]` that elapses. The body's 200ms mock-sleep exceeds the 50ms budget, so the result is `[err code=cx-err:CXER0141 message='operation timed out after 50ms' elapsed=50ms]` rather than the body value \u2014 `elapsed=` reports the budget that was spent, not the body's own logical time.",
       tags:  ["eq", "let", "mock", "sleep", "timeout"],
       runnable: true,
     },
@@ -706,7 +706,7 @@
     "97-rate-limit-over": {
       label: "[97] [?rate-limit] \u2014 exceeds the limit",
       input: "[?for [in $i (1, 2, 3, 4, 5)]\n  [yield [?rate-limit max=2 per=1s\n           [ok i=$i]]]]",
-      note:  "**Introduces:** over-limit behaviour. After `max=N` admits, further calls return `[err :code \"cx-err:CXER0151\" :retry-after DUR]`.",
+      note:  "**Introduces:** over-limit behaviour. After `max=N` admits, further calls return `[err code=cx-err:CXER0151 message='rate limit exceeded' retry-after=1s]`.",
       tags:  ["for", "rate-limit", "resilience"],
       runnable: true,
     },
@@ -867,7 +867,7 @@
     "120-distinct-by-key": {
       label: "[120] Filter \u2014 distinct by key",
       input: "[?let [= $doc [log\n                [hit user=alice]\n                [hit user=bob]\n                [hit user=alice]\n                [hit user=carol]\n                [hit user=bob]]]\n  [?for [in $h $doc//hit]\n    [group-by $h/@user]\n    [yield $h/@user]]]",
-      note:  "**Pattern:** unique values of a derived key. **Uses:** `[group-by]` clause \u2014 each distinct key appears once. Different from `[distinct $xs]` (which dedupes scalars); this groups elements by an extracted attribute.",
+      note:  "**Pattern:** unique values of a derived key. **Uses:** `[group-by]` clause \u2014 each distinct key appears once. Different from `[$distinct $xs]` (which dedupes scalars); this groups elements by an extracted attribute.",
       tags:  ["cxpath", "descendant", "eq", "for", "let"],
       runnable: true,
     },
@@ -902,14 +902,14 @@
     "125-min-max": {
       label: "[125] Aggregate \u2014 min / max",
       input: "[?let [= $doc [scores [s v=42] [s v=88] [s v=15] [s v=77]]]\n  [stats\n    lo=[$min $doc/s/@v]\n    hi=[$max $doc/s/@v]\n    avg=[$avg $doc/s/@v]]]",
-      note:  "**Pattern:** statistical summary across attribute values. **Uses:** `[min]` / `[max]` / `[avg]` builtins over `$doc/s/@v` (child axis fans out across every `s` child). Compose into a single summary element. `[$avg]` answers a float, and a float renders in exponent form \u2014 the average here is `5.55e1`, i.e. 55.5.lement.",
+      note:  "**Pattern:** statistical summary across attribute values. **Uses:** the `[$min]` / `[$max]` / `[$avg]` builtins over `$doc/s/@v` (child axis fans out across every `s` child). Compose into a single summary element. `[$avg]` answers a float, and a float renders in exponent form \u2014 the average here is `5.55e1`, i.e. 55.5.",
       tags:  ["cxpath", "eq", "let"],
       runnable: true,
     },
     "126-group-aggregate": {
       label: "[126] Aggregate \u2014 group-by attribute \u2192 totals per group",
       input: "[?let [= $doc [orders\n                [o region=US   amt=100]\n                [o region=EU   amt=200]\n                [o region=US   amt=50]\n                [o region=EU   amt=80]\n                [o region=APAC amt=300]]]\n  [?for [in $o $doc/o]\n    [= $amt $o/@amt]\n    [group-by $o/@region]\n    [yield [total region=$key orders=$count amt=[$sum $group/amt]]]]]",
-      note:  "**Pattern:** fold each group down to one row. **Uses:** `[group-by]` over `$doc/o` (child axis enumerates each `o` child after gap A). Yields `(US, EU, APAC)`. Aggregations per group await `[?group-by]` iterator combinator.g spelled out: `$group` holds the BINDINGS made in the comprehension, so bind what you want to fold \u2014 `[= $amt $o/@amt]` \u2014 and then `[$sum $group/amt]` reads it back.",
+      note:  "**Pattern:** fold each group down to one row. **Uses:** `[group-by]` over `$doc/o` (child axis enumerates each `o` child after gap A), with `$key` naming the group and `$count` its size. Aggregating per group needs one thing spelled out: `$group` holds the BINDINGS made in the comprehension, so bind what you want to fold \u2014 `[= $amt $o/@amt]` \u2014 and then `[$sum $group/amt]` reads it back. Yields one `[total \u2026]` row per region.",
       tags:  ["cxpath", "eq", "for", "let"],
       runnable: true,
     },
@@ -923,7 +923,7 @@
     "128-flatten-one-level": {
       label: "[128] Tree \u2014 flatten one level",
       input: "[?let [= $doc [groups\n                [g [item \"a\"] [item \"b\"]]\n                [g [item \"c\"]]\n                [g [item \"d\"] [item \"e\"]]]]\n  [?for [in $g $doc/g]\n    [yield $g/item]]]",
-      note:  "**Pattern:** pull nested children up one level. **Uses:** `[?for]` over `$doc/g` (child axis), `[yield $g/item]` to splat each group's items. Both axes are child-axis (gap A: `$bind/child` now returns every match, not just the first). The output is a flat sequence. Watch the middle group: a path step that matches exactly ONE element yields that element rather than a one-item sequence, so `[g [item \"c\"]]` contributes a bare `'c'` where its neighbours contribute `[item 'a']` / `[item 'b']`.",
+      note:  "**Pattern:** pull nested children up one level. **Uses:** `[?for]` over `$doc/g` (child axis), `[yield $g/item]` to splat each group's items. Both axes are child-axis (gap A: `$bind/child` now returns every match, not just the first). The output is a flat sequence. Watch the middle group: a path step that matches exactly ONE element yields that element rather than a one-item sequence, so `[g [item \"c\"]]` contributes a bare `c` where its neighbours contribute `[item 'a']` / `[item 'b']` \u2014 and a bare string prints unquoted when it needs no quoting, which is why it is `c` and not `'c'`.",
       tags:  ["cxpath", "eq", "for", "let"],
       runnable: true,
     },
@@ -1035,7 +1035,7 @@
     "144-set-difference": {
       label: "[144] Set \u2014 difference (A \u2212 B)",
       input: "[?for [in $x (1, 2, 3, 4, 5)]\n  [where [and [not [= $x 2]] [not [= $x 4]]]]\n  [yield $x]]",
-      note:  "**Pattern:** keep items NOT in the exclusion set. **Uses:** `[not [= \u2026]]` per excluded item, joined with `[and \u2026]`. Returns `(1, 3, 5)` \u2014 i.e., `(1..5) \u2212 (2, 4)`.",
+      note:  "**Pattern:** keep items NOT in the exclusion set. **Uses:** `[not [= \u2026]]` per excluded item, joined with `[and \u2026]`. Answers `(1..5) \u2212 (2, 4)` \u2014 and note the OUTPUT SHAPE: a `[?for]` yields three top-level results, and the run surface prints each on its own line, so the pane shows `1`, `3`, `5` on three lines rather than one `(1, 3, 5)`.",
       tags:  ["and", "builtin", "eq", "for", "not"],
       runnable: true,
     },
@@ -1070,7 +1070,7 @@
     "149-group-then-sum": {
       label: "[149] ETL \u2014 group-aggregate (region \u2192 total)",
       input: "[?let [= $doc [orders\n                [o region=US amt=100]\n                [o region=EU amt=200]\n                [o region=US amt=50]\n                [o region=EU amt=80]]]\n  [totals\n    us=[$sum $doc//o[= $_@region \"US\"]/@amt]\n    eu=[$sum $doc//o[= $_@region \"EU\"]/@amt]]]",
-      note:  "**Pattern:** SQL's `GROUP BY region, SUM(amt)` shape. **Uses:** inline predicates `[= $_@region \"US\"]`, `[sum \u2026]` builtin per group. (Generalizes when groups are known up-front; arbitrary-key group-aggregate awaits.)",
+      note:  "**Pattern:** SQL's `GROUP BY region, SUM(amt)` shape. **Uses:** inline predicates `[= $_@region \"US\"]` and the `[$sum \u2026]` builtin per group. This spelling needs the groups known up-front; for an ARBITRARY key, example 126 folds each group with the `[group-by]` clause and example 195 does it with the `[?group-by]` combinator \u2014 both ship.",
       tags:  ["cxpath", "descendant", "eq", "let"],
       runnable: true,
     },
@@ -1133,7 +1133,7 @@
     "158-slice-reverse": {
       label: "[158] Slice \u2014 reverse with `$xs[::-1]`",
       input: "[?let [= $xs (\"a\", \"b\", \"c\", \"d\", \"e\")]\n  $xs[::-1]]",
-      note:  "**Pattern:** reverse a sequence in one move. **Uses:** open start/stop + step `-1`. Walks the receiver backwards from the last element to the first inclusive (reverse-stride convention). Equivalent to `[reverse $xs]` but more direct when you're already in slice territory.",
+      note:  "**Pattern:** reverse a sequence in one move. **Uses:** open start/stop + step `-1`. Walks the receiver backwards from the last element to the first inclusive (reverse-stride convention). Equivalent to `[$reverse $xs]` but more direct when you're already in slice territory.",
       tags:  ["eq", "let"],
       runnable: true,
     },
@@ -1296,7 +1296,7 @@
     },
     "181-fp-traverse-none": {
       label: "[181] fp \u2014 Maybe short-circuit (a `None` collapses the result)",
-      input: "[?lib 'cx-stdlib/fp']\n\n[$fp:traverse (1, 2, 3)\n  [?fn ($x) [?if [= $x 2] () ($x)]]]",
+      input: "[?lib 'cx-stdlib/fp']\n\n[$fp:traverse (1, 2, 3)\n  [?fn ($x) [?if [= $x 2] [then ()] [else ($x)]]]]",
       note:  "**Introduces:** because `None=()` zeroes the list-applicative product, a single `()` from `fn` collapses the whole traverse to `()` \u2014 the Maybe short-circuit, for free, with no `[just]`/`[none]` heads.",
       tags:  ["eq", "fn", "if", "lib"],
       runnable: true,
@@ -1339,7 +1339,7 @@
     "187-present-vs-count": {
       label: "[187] [$present] \u2014 \"did this step match\", for a leaf too",
       input: "[?let [= $doc [box [empty] [full v=1]]]\n  [checks\n    present-empty=[$present $doc/empty]\n    count-empty=[$count $doc/empty]\n    present-missing=[$present $doc/nope]]]",
-      note:  "**Introduces:** `[$present PATH]` \u2014 the reason the predicate exists. `[$count]` answers how many CHILDREN a step's result has, so on a childless element it answers `0` \u2014 and every \"did this step match\" test written with `[$count]` was therefore wrong on a leaf. `[$empty]` is `[empty]`: it MATCHED, `[$present]` says `true`, and `[$count]` still says `0`. For a step that matches nothing, `[$present]` says `false`.",
+      note:  "**Introduces:** `[$present PATH]` \u2014 the reason the predicate exists. `[$count]` answers how many CHILDREN a step's result has, so on a childless element it answers `0`, and every \"did this step match\" test written with `[$count]` was therefore wrong on a leaf. The `[empty]` element below has no children: the step MATCHED it, so `[$present]` says `true` while `[$count]` still says `0`. For a step that matches nothing at all, `[$present]` says `false`.",
       tags:  ["cxpath", "eq", "let"],
       runnable: true,
     },
@@ -1437,7 +1437,7 @@
     "202-else-coalesce": {
       label: "[202] [?else] \u2014 coalesce an absent result",
       input: "[?else [$nth (1, 2) 9] 'default']",
-      note:  "**Introduces:** `[?else]` \u2014 supply a value when the first expression yields nothing. `[$nth (1, 2) 9]` asks for the ninth of two items and answers the empty sequence; `[?else]` turns that into `'default'`. It is the idiom the `[$concat]` diagnostic points at (\"bind it or default it with `[?else]` first\") whenever a path step might match nothing.",
+      note:  "**Introduces:** `[?else]` \u2014 supply a value when the first expression yields nothing. `[$nth (1, 2) 9]` asks for the ninth of two items and answers the empty sequence; `[?else]` turns that into the string `default`. (A string prints unquoted when it needs no quoting \u2014 `'has space'` keeps its quotes.) It is the idiom the `[$concat]` diagnostic points at (\"bind it or default it with `[?else]` first\") whenever a path step might match nothing.",
       tags:  ["else"],
       runnable: true,
     },
