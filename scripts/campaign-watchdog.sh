@@ -20,7 +20,11 @@ while :; do
 		last=$(grep -E "  (worker )?$w:" vcx/target/campaign.status 2>/dev/null | tail -1)
 		[ -z "$last" ] && continue
 		ts=$(echo "$last" | cut -c1-20); txt=$(echo "$last" | cut -c23-90); a=$(age_min "$ts")
-		case "$txt" in *"run exit"*) ;; *) [ "$a" -ge 35 ] && emit "silent-$w-$ts" "SILENT worker $w: ${a}m since \"$txt\"";; esac
+		# SILENT only when nothing is building: a worker queued behind the slot is silent by design.
+		slotd=${CX_BUILD_SLOT:-"$HOME/git-repos/cx/.build-slot"}
+		if [ ! -d "$slotd" ] && [ -z "$(ls "$slotd.queue" 2>/dev/null)" ]; then
+			case "$txt" in *"run exit"*) ;; *) [ "$a" -ge 35 ] && emit "silent-$w-$ts" "SILENT worker $w (slot free, queue empty): ${a}m since \"$txt\"";; esac
+		fi
 		# missed firing: the worker's last word was "run exit" and nothing has been heard since for
 		# longer than a firing interval (+10 min jitter/warm-up). A run that outlives its hour is not a miss.
 		case "$txt" in *"run exit"*) [ "$a" -ge 70 ] && emit "missed-$w-$ts" "MISSED worker $w: last note was run exit ${a}m ago, no new run";; esac
