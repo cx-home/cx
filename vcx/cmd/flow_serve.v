@@ -894,8 +894,19 @@ fn flow_serve_program(r FlowRunner, directives []string, acts []FlowCliAct, tick
 		' act-path="${flow_serve_act_path}" bindings=${r.bindings.len}' +
 		' documents=[\$count \$fs] ingress=[\$string \$srv@state] ' + rearm_parts.join(' ') + ']]'
 	b << '[= \$lg [\$cxlog:info [\$cx:emit \$rep]]]'
+	// `ticks=` is the BUDGET (`--for` over `every=`) and it carries NO
+	// wall-time information: the courier is `:fixed-delay` (RULED: WF-28a),
+	// so a turn takes `work + every`. `elapsed-ms=` beside it is the
+	// MEASUREMENT, taken on the same clock the occurrence buckets are
+	// computed on — `[$time-to-unix-ms [$time-now]]`, exact integer ms,
+	// because `[/ …]` is exact-or-CXER3002 and would answer a float here.
+	// Every claim about the runner's PERIOD is written against this field;
+	// two assertions written against `ticks=` were vacuous, which is what
+	// WF-28b retired.
+	b << '[= \$w0 [\$time-to-unix-ms [\$time-now]]]'
 	b << '[= \$ran [fs--loop \$j \$e \$fs \$bs ${ticks} 0]]'
-	b << '  [runner-stopped ticks=\$ran \$rep]]'
+	b << '[= \$w1 [\$time-to-unix-ms [\$time-now]]]'
+	b << '  [runner-stopped ticks=\$ran elapsed-ms=[- \$w1 \$w0] \$rep]]'
 	return b.join('\n')
 }
 
