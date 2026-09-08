@@ -1,0 +1,1251 @@
+[playground-example-outputs  # 202 audited answers, corpus order
+ [doc [#
+GENERATED — do not hand-edit. Written by
+scripts/gen_guide/playground/gen_examples.cx from a grant-free audit run
+of every [ex] in examples.cxd, and verified without rewriting by
+`make verify-playground-examples` (the generator with --check).
+Regenerate with `make playground-examples-regen`.
+
+One [ex] per corpus entry, in corpus order. [out-text] is the child
+process's stdout, [err-text] its stderr (emitted only when non-empty),
+both as raw-text payloads under the corpus convention: the content
+starts on the line after the opening marker and the closing marker sits
+on its own line, so exactly one leading and one trailing newline are
+the delimiters and not content. That convention normalizes away a final
+newline, so `chars=` carries the captured length as measured — a
+truncation can never hide behind the payload shape.
+
+An entry marked no-stable-value=true carries no payload: its native
+result is a race (see the [no-stable-value] marker in examples.cxd), so
+there is no single answer to pin and the sweep asserts only that it
+still evaluates. That is the SAME three-state vocabulary
+`make test-playground-wasm-eval` grades, not a fourth spelling.
+
+THIS FILE IS THE REVIEW MOMENT. A diff here means an example now
+computes something else. Read it against the entry's [note] before
+accepting it: a note that promises an answer this file contradicts is
+the defect #1170 was filed for.
+#]]
+
+ [ex key=01-atom-element chars=18
+  [out-text [#
+[pizza size=large]
+#]]
+ ]
+ [ex key=02-string-scalar chars=14
+  [out-text [#
+'hello, world'
+#]]
+ ]
+ [ex key=03-number-scalars chars=41
+  [out-text [#
+[stats min=-5 mid=0 max=99.5 ratio=0.001]
+#]]
+ ]
+ [ex key=04-boolean-scalars chars=58
+  [out-text [#
+[user active=true verified=false admin=true blocked=false]
+#]]
+ ]
+ [ex key=05-atom-values chars=21
+  [out-text [#
+[response status=:ok]
+#]]
+ ]
+ [ex key=06-string-quoting chars=71
+  [out-text [#
+[note single='single quotes' double='double quotes' apostrophe="can't"]
+#]]
+ ]
+ [ex key=07-triple-quoted chars=35
+  [out-text [#
+[doc body='line 1\nline 2\nline 3']
+#]]
+ ]
+ [ex key=08-nested-elements chars=77
+  [out-text [#
+[order [customer name=Alice] [item name=pizza qty=2] [item name=salad qty=1]]
+#]]
+ ]
+ [ex key=09-attrs-vs-children chars=58
+  [out-text [#
+[user id=1 active=true [email 'a@x.com'] [phone '+1-555']]
+#]]
+ ]
+ [ex key=10-mixed-content chars=50
+  [out-text [#
+[link href='https://cx-home.github.io' 'CX Guide']
+#]]
+ ]
+ [ex key=11-sequence chars=15
+  [out-text [#
+(1, 2, 3, 4, 5)
+#]]
+ ]
+ [ex key=12-sequence-mixed chars=28
+  [out-text [#
+(1, 2.5, three, true, :four)
+#]]
+ ]
+ [ex key=13-map-literal chars=36
+  [out-text [#
+{name: Alice, age: 30, active: true}
+#]]
+ ]
+ [ex key=14-durations chars=91
+  [out-text [#
+[timing short::duration=50ms medium::duration=2s long::duration=15m very-long::duration=2h]
+#]]
+ ]
+ [ex key=15-hyphenated-names chars=86
+  [out-text [#
+[user-profile is-active=true [contact-info [phone-number kind=mobile value='+1-555']]]
+#]]
+ ]
+ [ex key=16-let-basic chars=22
+  [out-text [#
+[greeting hello=Alice]
+#]]
+ ]
+ [ex key=17-let-nested chars=28
+  [out-text [#
+[order subtotal=36 tax=2.88]
+#]]
+ ]
+ [ex key=18-arith-add chars=2
+  [out-text [#
+15
+#]]
+ ]
+ [ex key=19-arith-mixed chars=29
+  [out-text [#
+[stats sum=13 diff=7 prod=30]
+#]]
+ ]
+ [ex key=20-string-concat chars=14
+  [out-text [#
+'hello, world'
+#]]
+ ]
+ [ex key=21-string-length chars=1
+  [out-text [#
+5
+#]]
+ ]
+ [ex key=22-string-contains chars=4
+  [out-text [#
+true
+#]]
+ ]
+ [ex key=23-comparison-eq chars=4
+  [out-text [#
+true
+#]]
+ ]
+ [ex key=24-comparison-gt chars=31
+  [out-text [#
+[stats gt=true lt=true ge=true]
+#]]
+ ]
+ [ex key=25-logical chars=4
+  [out-text [#
+true
+#]]
+ ]
+ [ex key=26-if-basic chars=16
+  [out-text [#
+[grade letter=A]
+#]]
+ ]
+ [ex key=27-if-chained chars=7
+  [out-text [#
+:medium
+#]]
+ ]
+ [ex key=28-match-scalar chars=3
+  [out-text [#
+:ok
+#]]
+ ]
+ [ex key=29-match-else-fallback chars=4
+  [out-text [#
+:err
+#]]
+ ]
+ [ex key=30-match-no-else chars=0
+  [out-text [#
+
+#]]
+ ]
+ [ex key=31-match-wildcard chars=6
+  [out-text [#
+:other
+#]]
+ ]
+ [ex key=32-match-element-shape chars=14
+  [out-text [#
+[p body=hello]
+#]]
+ ]
+ [ex key=33-match-type-strict chars=10
+  [out-text [#
+:int-match
+#]]
+ ]
+ [ex key=34-cast-string-int chars=2
+  [out-text [#
+42
+#]]
+ ]
+ [ex key=35-cast-float-int chars=108 err-chars=67
+  [out-text [#
+[err code=cx-err:CXER0290 message='cast: decimal `3.7` is not integral — :int requires a whole value (L44)']
+#]]
+  [err-text [#
+error: the result carries an error value — cx-err:CXER0290 at /err
+#]]
+ ]
+ [ex key=36-for-sequence chars=91
+  [out-text [#
+[square n=1 sq=1]
+[square n=2 sq=4]
+[square n=3 sq=9]
+[square n=4 sq=16]
+[square n=5 sq=25]
+#]]
+ ]
+ [ex key=37-for-where chars=50
+  [out-text [#
+[big n=6]
+[big n=7]
+[big n=8]
+[big n=9]
+[big n=10]
+#]]
+ ]
+ [ex key=38-for-yield-cond chars=89
+  [out-text [#
+[small n=1]
+[small n=2]
+[small n=3]
+[small n=4]
+[small n=5]
+[big n=6]
+[big n=7]
+[big n=8]
+#]]
+ ]
+ [ex key=39-for-nested chars=134
+  [out-text [#
+[pair i=1 j=1]
+[pair i=1 j=2]
+[pair i=1 j=3]
+[pair i=2 j=1]
+[pair i=2 j=2]
+[pair i=2 j=3]
+[pair i=3 j=1]
+[pair i=3 j=2]
+[pair i=3 j=3]
+#]]
+ ]
+ [ex key=40-for-multi-source chars=143
+  [out-text [#
+[pair a=1 b=10]
+[pair a=1 b=20]
+[pair a=1 b=30]
+[pair a=2 b=10]
+[pair a=2 b=20]
+[pair a=2 b=30]
+[pair a=3 b=10]
+[pair a=3 b=20]
+[pair a=3 b=30]
+#]]
+ ]
+ [ex key=41-for-let chars=81
+  [out-text [#
+[pair n=1 sq=1]
+[pair n=2 sq=4]
+[pair n=3 sq=9]
+[pair n=4 sq=16]
+[pair n=5 sq=25]
+#]]
+ ]
+ [ex key=42-for-yield-par chars=132
+  [out-text [#
+[item n=1 sq=1]
+[item n=2 sq=4]
+[item n=3 sq=9]
+[item n=4 sq=16]
+[item n=5 sq=25]
+[item n=6 sq=36]
+[item n=7 sq=49]
+[item n=8 sq=64]
+#]]
+ ]
+ [ex key=43-for-yield-par-mock chars=132
+  [out-text [#
+[item n=1 sq=1]
+[item n=2 sq=4]
+[item n=3 sq=9]
+[item n=4 sq=16]
+[item n=5 sq=25]
+[item n=6 sq=36]
+[item n=7 sq=49]
+[item n=8 sq=64]
+#]]
+ ]
+ [ex key=44-for-yield-stream chars=43
+  [out-text [#
+[tick n=1]
+[tick n=2]
+[tick n=3]
+[tick n=4]
+#]]
+ ]
+ [ex key=45-for-empty chars=0
+  [out-text [#
+
+#]]
+ ]
+ [ex key=46-fn-via-map chars=17
+  [out-text [#
+(1, 4, 9, 16, 25)
+#]]
+ ]
+ [ex key=47-map-cube chars=14
+  [out-text [#
+(1, 8, 27, 64)
+#]]
+ ]
+ [ex key=48-map-with-let chars=69
+  [out-text [#
+([point x=1 y=1], [point x=2 y=4], [point x=3 y=9], [point x=4 y=16])
+#]]
+ ]
+ [ex key=49-map-par-mock chars=29
+  [out-text [#
+(1, 4, 9, 16, 25, 36, 49, 64)
+#]]
+ ]
+ [ex key=50-map-par-wall chars=13
+  [out-text [#
+(1, 4, 9, 16)
+#]]
+ ]
+ [ex key=51-map-par-ordered chars=13
+  [out-text [#
+(1, 4, 9, 16)
+#]]
+ ]
+ [ex key=52-fn-passed chars=29
+  [out-text [#
+(1, 4, 9, 16, 25, 36, 49, 64)
+#]]
+ ]
+ [ex key=53-reduce-sum chars=2
+  [out-text [#
+15
+#]]
+ ]
+ [ex key=54-reduce-product chars=3
+  [out-text [#
+120
+#]]
+ ]
+ [ex key=55-reduce-par chars=2
+  [out-text [#
+36
+#]]
+ ]
+ [ex key=56-map-then-reduce chars=2
+  [out-text [#
+55
+#]]
+ ]
+ [ex key=57-map-par-bulkhead chars=59 err-chars=65
+  [out-text [#
+(1, 4, 9, 16, [err code=shard-offline shard=5], 36, 49, 64)
+#]]
+  [err-text [#
+error: the result carries an error value — shard-offline at /err
+#]]
+ ]
+ [ex key=58-par-shared-cb chars=48
+  [out-text [#
+(1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144)
+#]]
+ ]
+ [ex key=59-par-rich-shape chars=85
+  [out-text [#
+([point x=1 y=2 z=1], [point x=2 y=4 z=4], [point x=3 y=6 z=9], [point x=4 y=8 z=16])
+#]]
+ ]
+ [ex key=60-par-with-composition chars=85
+  [out-text [#
+([computed n=1 sq=1], [computed n=2 sq=4], [computed n=3 sq=9], [computed n=4 sq=16])
+#]]
+ ]
+ [ex key=61-modify-delete chars=79
+  [out-text [#
+[users [user id=1 name=Alice banned=false] [user id=3 name=Carol banned=false]]
+#]]
+ ]
+ [ex key=62-modify-set-attr chars=87
+  [out-text [#
+[users [user id=1 status=active [name 'Alice']] [user id=2 status=active [name 'Bob']]]
+#]]
+ ]
+ [ex key=63-modify-chain chars=103
+  [out-text [#
+[users [user id=1 name=Alice banned=false role=member] [user id=3 name=Carol banned=false role=member]]
+#]]
+ ]
+ [ex key=64-cxpath-axes chars=5
+  [out-text [#
+2
+3
+5
+#]]
+ ]
+ [ex key=65-cxpath-where chars=63
+  [out-text [#
+[active-user name=Alice age=30]
+[active-user name=Carol age=22]
+#]]
+ ]
+ [ex key=66-pipe-canonical chars=1
+  [out-text [#
+2
+#]]
+ ]
+ [ex key=67-pipe-multistage chars=2
+  [out-text [#
+22
+#]]
+ ]
+ [ex key=68-pipe-modify chars=77
+  [out-text [#
+[users [user verified=true [name 'Alice']] [user verified=true [name 'Bob']]]
+#]]
+ ]
+ [ex key=69-fallback-recover chars=25 err-chars=66
+  [out-text [#
+[err code=down-secondary]
+#]]
+  [err-text [#
+error: the result carries an error value — down-secondary at /err
+#]]
+ ]
+ [ex key=70-fallback-success chars=18
+  [out-text [#
+[ok value=healthy]
+#]]
+ ]
+ [ex key=71-builtin-head-tail chars=31
+  [out-text [#
+[list first=10 [rest 20 30 40]]
+#]]
+ ]
+ [ex key=72-builtin-nth chars=2
+  [out-text [#
+20
+#]]
+ ]
+ [ex key=73-builtin-distinct chars=12
+  [out-text [#
+(1, 2, 3, 4)
+#]]
+ ]
+ [ex key=74-builtin-reverse chars=15
+  [out-text [#
+(5, 4, 3, 2, 1)
+#]]
+ ]
+ [ex key=75-builtin-position chars=1
+  [out-text [#
+2
+#]]
+ ]
+ [ex key=76-numeric-abs chars=2
+  [out-text [#
+42
+#]]
+ ]
+ [ex key=77-numeric-round chars=19
+  [out-text [#
+[stats r=4 f=3 c=4]
+#]]
+ ]
+ [ex key=78-string-substring chars=8
+  [out-text [#
+' world'
+#]]
+ ]
+ [ex key=79-string-starts-ends chars=30
+  [out-text [#
+[checks starts=true ends=true]
+#]]
+ ]
+ [ex key=80-string-normalize chars=13
+  [out-text [#
+'hello world'
+#]]
+ ]
+ [ex key=81-sleep-mock-timeout chars=82 err-chars=67
+  [out-text [#
+[err code=cx-err:CXER0141 message='operation timed out after 100ms' elapsed=100ms]
+#]]
+  [err-text [#
+error: the result carries an error value — cx-err:CXER0141 at /err
+#]]
+ ]
+ [ex key=82-sleep-wall chars=18
+  [out-text [#
+[ok value=woke-up]
+#]]
+ ]
+ [ex key=83-async-await chars=13
+  [out-text [#
+[ok value=42]
+#]]
+ ]
+ [ex key=84-async-mock-sleep chars=15
+  [out-text [#
+[ok value=done]
+#]]
+ ]
+ [ex key=85-await-all chars=28
+  [out-text [#
+([ok value=a], [ok value=b])
+#]]
+ ]
+ [ex key=86-await-any chars=19
+  [out-text [#
+[ok value=survivor]
+#]]
+ ]
+ [ex key=87-await-race chars=15
+  [out-text [#
+[ok value=fast]
+#]]
+ ]
+ [ex key=88-channel-basic chars=2
+  [out-text [#
+42
+#]]
+ ]
+ [ex key=89-worker-basic chars=47
+  [out-text [#
+[worker-handle name=w __cx_close_id__=worker:w]
+#]]
+ ]
+ [ex key=90-cancel chars=56 err-chars=67
+  [out-text [#
+[err code=cx-err:CXER0260 message='operation cancelled']
+#]]
+  [err-text [#
+error: the result carries an error value — cx-err:CXER0260 at /err
+#]]
+ ]
+ [ex key=91-retry-happy chars=20
+  [out-text [#
+[ok value=first-try]
+#]]
+ ]
+ [ex key=92-retry-eventually chars=20
+  [out-text [#
+[ok value=recovered]
+#]]
+ ]
+ [ex key=93-retry-exhaustion chars=142 err-chars=67
+  [out-text [#
+[err code=cx-err:CXER0140 message='retry budget exhausted after 3 attempts' attempts=3 [cause [err code=test-failure message='test failure']]]
+#]]
+  [err-text [#
+error: the result carries an error value — cx-err:CXER0140 at /err
+#]]
+ ]
+ [ex key=94-timeout-fires chars=80 err-chars=67
+  [out-text [#
+[err code=cx-err:CXER0141 message='operation timed out after 50ms' elapsed=50ms]
+#]]
+  [err-text [#
+error: the result carries an error value — cx-err:CXER0141 at /err
+#]]
+ ]
+ [ex key=95-circuit-breaker-trips chars=253 err-chars=64
+  [out-text [#
+[err code=test-failure message='test failure']
+[err code=test-failure message='test failure']
+[err code=cx-err:CXER0150 message='circuit breaker open' [until [instant 10s]]]
+[err code=cx-err:CXER0150 message='circuit breaker open' [until [instant 10s]]]
+#]]
+  [err-text [#
+error: the result carries an error value — test-failure at /err
+#]]
+ ]
+ [ex key=96-rate-limit-allow chars=26
+  [out-text [#
+[ok i=1]
+[ok i=2]
+[ok i=3]
+#]]
+ ]
+ [ex key=97-rate-limit-over chars=233 err-chars=67
+  [out-text [#
+[ok i=1]
+[ok i=2]
+[err code=cx-err:CXER0151 message='rate limit exceeded' retry-after=1s]
+[err code=cx-err:CXER0151 message='rate limit exceeded' retry-after=1s]
+[err code=cx-err:CXER0151 message='rate limit exceeded' retry-after=1s]
+#]]
+  [err-text [#
+error: the result carries an error value — cx-err:CXER0151 at /err
+#]]
+ ]
+ [ex key=98-bulkhead-pass chars=20
+  [out-text [#
+[ok value=in-flight]
+#]]
+ ]
+ [ex key=99-composition-stack chars=18
+  [out-text [#
+[ok value=layered]
+#]]
+ ]
+ [ex key=100-composition-everything chars=21
+  [out-text [#
+[ok value=full-stack]
+#]]
+ ]
+ [ex key=101-cxpath-descendant chars=9
+  [out-text [#
+1
+2
+3
+4
+5
+#]]
+ ]
+ [ex key=102-cxpath-child chars=3
+  [out-text [#
+1
+2
+#]]
+ ]
+ [ex key=103-cxpath-attr-access chars=27
+  [out-text [#
+[pair slash=Alice short=30]
+#]]
+ ]
+ [ex key=104-cxpath-wildcard chars=5
+  [out-text [#
+a
+b
+c
+#]]
+ ]
+ [ex key=105-cxpath-position chars=11
+  [out-text [#
+[item id=2]
+#]]
+ ]
+ [ex key=106-cxpath-last chars=11
+  [out-text [#
+[item id=3]
+#]]
+ ]
+ [ex key=107-cxpath-compound chars=25
+  [out-text [#
+[user active=true age=30]
+#]]
+ ]
+ [ex key=108-cxpath-parent chars=20
+  [out-text [#
+[id 1]
+[id 2]
+[id 3]
+#]]
+ ]
+ [ex key=109-rename-via-attr chars=41
+  [out-text [#
+[apple qty=3]
+[pear qty=5]
+[carrot qty=2]
+#]]
+ ]
+ [ex key=110-attr-to-child chars=51
+  [out-text [#
+[user id=1 [name 'Alice']]
+[user id=2 [name 'Bob']]
+#]]
+ ]
+ [ex key=111-child-to-attr chars=43
+  [out-text [#
+[user id=1 name=Alice]
+[user id=2 name=Bob]
+#]]
+ ]
+ [ex key=112-unwrap-singleton chars=18
+  [out-text [#
+[payload value=42]
+#]]
+ ]
+ [ex key=113-wrap-each chars=71
+  [out-text [#
+[box [item id=1]]
+[box [item id=2]]
+[box [item id=3]]
+[box [item id=4]]
+#]]
+ ]
+ [ex key=114-computed-attr chars=92
+  [out-text [#
+[line price=10 qty=2 total=20]
+[line price=20 qty=3 total=60]
+[line price=5 qty=10 total=50]
+#]]
+ ]
+ [ex key=115-project-attrs chars=37
+  [out-text [#
+[user id=1 name=A]
+[user id=2 name=B]
+#]]
+ ]
+ [ex key=116-reorder chars=35
+  [out-text [#
+[item id=1]
+[item id=2]
+[item id=3]
+#]]
+ ]
+ [ex key=117-filter-where chars=50
+  [out-text [#
+[big n=6]
+[big n=7]
+[big n=8]
+[big n=9]
+[big n=10]
+#]]
+ ]
+ [ex key=118-odd-even-partition chars=145
+  [out-text [#
+[odd-val n=1]
+[even-val n=2]
+[odd-val n=3]
+[even-val n=4]
+[odd-val n=5]
+[even-val n=6]
+[odd-val n=7]
+[even-val n=8]
+[odd-val n=9]
+[even-val n=10]
+#]]
+ ]
+ [ex key=119-top-n chars=8
+  [out-text [#
+15
+33
+42
+#]]
+ ]
+ [ex key=120-distinct-by-key chars=15
+  [out-text [#
+alice
+bob
+carol
+#]]
+ ]
+ [ex key=121-composite-predicate chars=36
+  [out-text [#
+[user active=true age=30 role=admin]
+#]]
+ ]
+ [ex key=122-attr-presence chars=55
+  [out-text [#
+[user id=1 email='a@x.com']
+[user id=3 email='c@x.com']
+#]]
+ ]
+ [ex key=123-count-matches chars=1
+  [out-text [#
+3
+#]]
+ ]
+ [ex key=124-sum-attr chars=2
+  [out-text [#
+35
+#]]
+ ]
+ [ex key=125-min-max chars=30
+  [out-text [#
+[stats lo=15 hi=88 avg=5.55e1]
+#]]
+ ]
+ [ex key=126-group-aggregate chars=106
+  [out-text [#
+[total region=US orders=2 amt=150]
+[total region=EU orders=2 amt=280]
+[total region=APAC orders=1 amt=300]
+#]]
+ ]
+ [ex key=127-deep-descendant chars=3
+  [out-text [#
+d
+y
+#]]
+ ]
+ [ex key=128-flatten-one-level chars=45
+  [out-text [#
+[item 'a']
+[item 'b']
+c
+[item 'd']
+[item 'e']
+#]]
+ ]
+ [ex key=129-name-via-builtin chars=67
+  [out-text [#
+[section type=database]
+[section type=cache]
+[section type=logging]
+#]]
+ ]
+ [ex key=130-siblings chars=61
+  [out-text [#
+[title 'On X']
+[author 'Alice']
+[body '...']
+[tags 'T1' 'T2']
+#]]
+ ]
+ [ex key=131-leaves-only chars=5
+  [out-text [#
+1
+2
+3
+#]]
+ ]
+ [ex key=132-pipe-of-modifies chars=44
+  [out-text [#
+[users [user id=2 banned=false role=member]]
+#]]
+ ]
+ [ex key=133-filter-map-reduce chars=3
+  [out-text [#
+355
+#]]
+ ]
+ [ex key=134-build-index chars=37
+  [out-text [#
+[Alice tier=:gold]
+[Bob tier=:silver]
+#]]
+ ]
+ [ex key=135-read-rewrite chars=60
+  [out-text [#
+[line qty=2 price=10 total=20]
+[line qty=3 price=5 total=15]
+#]]
+ ]
+ [ex key=136-rdf-triples-shape chars=115
+  [out-text [#
+[triples [t s=Alice p=knows o=Bob] [t s=Bob p=knows o=Carol] [t s=Alice p=likes o=pizza] [t s=Carol p=likes o=tea]]
+#]]
+ ]
+ [ex key=137-query-by-subject chars=53
+  [out-text [#
+[t s=Alice p=knows o=Bob]
+[t s=Alice p=likes o=pizza]
+#]]
+ ]
+ [ex key=138-query-by-predicate chars=39
+  [out-text [#
+[t s=A p=knows o=B]
+[t s=B p=knows o=C]
+#]]
+ ]
+ [ex key=139-out-edges chars=37
+  [out-text [#
+[edge to=B via=r1]
+[edge to=C via=r2]
+#]]
+ ]
+ [ex key=140-in-edges chars=41
+  [out-text [#
+[edge from=A via=r1]
+[edge from=C via=r1]
+#]]
+ ]
+ [ex key=141-reachability-1hop chars=3
+  [out-text [#
+B
+C
+#]]
+ ]
+ [ex key=142-set-union chars=18
+  [out-text [#
+(1, 2, 3, 4, 5, 6)
+#]]
+ ]
+ [ex key=143-set-intersection chars=3
+  [out-text [#
+3
+4
+#]]
+ ]
+ [ex key=144-set-difference chars=5
+  [out-text [#
+1
+3
+5
+#]]
+ ]
+ [ex key=145-cartesian chars=89
+  [out-text [#
+[pair a=1 b=x]
+[pair a=1 b=y]
+[pair a=2 b=x]
+[pair a=2 b=y]
+[pair a=3 b=x]
+[pair a=3 b=y]
+#]]
+ ]
+ [ex key=146-pivot-rows-to-attrs chars=50
+  [out-text [#
+[snapshot [cpu [v 87]] [mem [v 62]] [disk [v 44]]]
+#]]
+ ]
+ [ex key=147-unpivot chars=49
+  [out-text [#
+([m k=cpu v=87], [m k=mem v=62], [m k=disk v=44])
+#]]
+ ]
+ [ex key=148-transpose-matrix chars=114
+  [out-text [#
+[transposed [col k=a [val 1] [val 4] [val 7]] [col k=b [val 2] [val 5] [val 8]] [col k=c [val 3] [val 6] [val 9]]]
+#]]
+ ]
+ [ex key=149-group-then-sum chars=22
+  [out-text [#
+[totals us=150 eu=280]
+#]]
+ ]
+ [ex key=150-join-by-key chars=136
+  [out-text [#
+[joined order-id=1 amt=100 [email 'a@x.com']]
+[joined order-id=2 amt=200 [email 'b@x.com']]
+[joined order-id=3 amt=50 [email 'a@x.com']]
+#]]
+ ]
+ [ex key=151-range-by-stride chars=9
+  [out-text [#
+1
+3
+5
+7
+9
+#]]
+ ]
+ [ex key=152-range-reverse-stride chars=12
+  [out-text [#
+20
+16
+12
+8
+4
+#]]
+ ]
+ [ex key=153-take-prefix chars=19
+  [out-text [#
+101
+102
+103
+104
+105
+#]]
+ ]
+ [ex key=154-drop-prefix chars=6
+  [out-text [#
+8
+9
+10
+#]]
+ ]
+ [ex key=155-drop-take-page chars=14
+  [out-text [#
+31
+32
+33
+34
+35
+#]]
+ ]
+ [ex key=156-slice-range chars=9
+  [out-text [#
+(a, b, c)
+#]]
+ ]
+ [ex key=157-slice-last-three chars=11
+  [out-text [#
+(c, d, 'e')
+#]]
+ ]
+ [ex key=158-slice-reverse chars=17
+  [out-text [#
+('e', d, c, b, a)
+#]]
+ ]
+ [ex key=159-slice-every-other chars=11
+  [out-text [#
+(a, c, 'e')
+#]]
+ ]
+ [ex key=160-slice-trim-ends chars=9
+  [out-text [#
+(b, c, d)
+#]]
+ ]
+ [ex key=161-sequence-worker-top chars=53
+  [out-text [#
+[worker-handle name=task __cx_close_id__=worker:task]
+#]]
+ ]
+ [ex key=162-sequence-select-channels chars=12
+  [out-text [#
+[ok value=1]
+#]]
+ ]
+ [ex key=163-sequence-http-service chars=27
+  [out-text [#
+[service-handle name=hello]
+#]]
+ ]
+ [ex key=164-graph-state-machine-data chars=197
+  [out-text [#
+[state-machine [state 'idle'] [state 'running'] [state 'stopped'] [transition from=idle to=running on=start] [transition from=running to=stopped on=stop] [transition from=stopped to=idle on=reset]]
+#]]
+ ]
+ [ex key=165-graph-workflow-dag chars=137
+  [out-text [#
+[workflow [task id=fetch cmd=curl] [task id=parse cmd=jq] [task id=store cmd=psql] [edge from=fetch to=parse] [edge from=parse to=store]]
+#]]
+ ]
+ [ex key=166-flowchart-control-flow chars=64
+  [out-text [#
+[lo value=1]
+[lo value=2]
+[hi value=3]
+[hi value=4]
+[hi value=5]
+#]]
+ ]
+ [ex key=167-erd-mid-shop-orders chars=229
+  [out-text [#
+[shop [product sku=A1 name=widget price=9.99] [product sku=A2 name=gadget price=19.99] [customer id=1 name=alice [order id=100 [item sku=A1 qty=2] [item sku=A2 qty=1]]] [customer id=2 name=bob [order id=102 [item sku=A2 qty=3]]]]
+#]]
+ ]
+ [ex key=168-erd-large-org-structure chars=552
+  [out-text [#
+[company [department id=1 name=engineering [team id=10 name=parser [employee id=100 name=alice role=lead] [employee id=101 name=bob role=engineer]] [team id=11 name=runtime [employee id=102 name=carol role=engineer]]] [department id=2 name=design [team id=20 name=ux [employee id=200 name=dave role=designer]]] [project id=1000 name='v0.8.0' [owner employee-id=100] [milestone date='2026-06-01' status=active] [milestone date='2026-08-01' status=planned]] [project id=1001 name=docs [owner employee-id=200] [milestone date='2026-07-01' status=active]]]
+#]]
+ ]
+ [ex key=169-cfg-small-bare-if chars=3
+  [out-text [#
+yes
+#]]
+ ]
+ [ex key=170-cfg-large-def-match-process chars=38
+  [out-text [#
+:nonzero
+:zero
+:nonzero
+:zero
+:nonzero
+#]]
+ ]
+ [ex key=171-seq-mid-producer-consumer chars=5
+  [out-text [#
+1
+2
+3
+#]]
+ ]
+ [ex key=172-seq-large-workers-with-backpressure chars=79
+  [out-text [#
+[processed value=1]
+[processed value=2]
+[processed value=3]
+[processed value=4]
+#]]
+ ]
+ [ex key=173-fp-map chars=9
+  [out-text [#
+(1, 4, 9)
+#]]
+ ]
+ [ex key=174-fp-flat-map chars=21
+  [out-text [#
+(1, 10, 2, 20, 3, 30)
+#]]
+ ]
+ [ex key=175-fp-pure chars=4
+  [out-text [#
+(42)
+#]]
+ ]
+ [ex key=176-fp-fold chars=2
+  [out-text [#
+10
+#]]
+ ]
+ [ex key=177-fp-sequence-results chars=14
+  [out-text [#
+[ok (1, 2, 3)]
+#]]
+ ]
+ [ex key=178-fp-sequence-err chars=39 err-chars=67
+  [out-text [#
+[err code=cx-err:CXER9999 message=boom]
+#]]
+  [err-text [#
+error: the result carries an error value — cx-err:CXER9999 at /err
+#]]
+ ]
+ [ex key=179-fp-traverse-result chars=14
+  [out-text [#
+[ok (1, 2, 3)]
+#]]
+ ]
+ [ex key=180-fp-traverse-maybe chars=11
+  [out-text [#
+((1, 2, 3))
+#]]
+ ]
+ [ex key=181-fp-traverse-none chars=199 err-chars=67
+  [out-text [#
+[err code=cx-err:CXER0001 message='[?if] expects [then …] / [else …] clause children after the condition — got a bare positional branch expression; write [?if cond [then thenExpr] [else elseExpr]?]']
+#]]
+  [err-text [#
+error: the result carries an error value — cx-err:CXER0001 at /err
+#]]
+ ]
+ [ex key=182-fp-traverse-http chars=132 err-chars=67
+  [out-text [#
+[err code=cx-err:CXER0271 message='E_CAP_DENIED: net capability required for example.com:443; none granted (grant via --allow-net)']
+#]]
+  [err-text [#
+error: the result carries an error value — cx-err:CXER0271 at /err
+#]]
+ ]
+ [ex key=183-loop-break-continue chars=2
+  [out-text [#
+15
+#]]
+ ]
+ [ex key=184-do-sequence chars=4
+  [out-text [#
+null
+#]]
+ ]
+ [ex key=185-modulo chars=42
+  [out-text [#
+[n v=1]
+[n v=2]
+[fizz n=3]
+[n v=4]
+[n v=5]
+#]]
+ ]
+ [ex key=186-random-stream chars=21
+  [out-text [#
+[draws a=52 b=54 c=1]
+#]]
+ ]
+ [ex key=187-present-vs-count chars=63
+  [out-text [#
+[checks present-empty=true count-empty=0 present-missing=false]
+#]]
+ ]
+ [ex key=188-err-operand-consuming chars=53 err-chars=67
+  [out-text [#
+[err code=cx-err:CXER0101 message='division by zero']
+#]]
+  [err-text [#
+error: the result carries an error value — cx-err:CXER0101 at /err
+#]]
+ ]
+ [ex key=189-postfix-path-step chars=1
+  [out-text [#
+7
+#]]
+ ]
+ [ex key=190-map-syntax chars=39
+  [out-text [#
+{name: Alice, age: ::int, active: true}
+#]]
+ ]
+ [ex key=192-map-module chars=31
+  [out-text [#
+[out size=2 a=1 [keys 'a' 'b']]
+#]]
+ ]
+ [ex key=193-array-module chars=39
+  [out-text [#
+[out size=4 [rev 3 2 1] [sorted 1 2 3]]
+#]]
+ ]
+ [ex key=194-read-construct-split chars=55
+  [out-text [#
+[reads count-arr=3 count-seq=3 first-arr=1 first-seq=1]
+#]]
+ ]
+ [ex key=195-group-by-combinator chars=64
+  [out-text [#
+((US, ([o r=US amt=4], [o r=US amt=1])), (EU, ([o r=EU amt=2])))
+#]]
+ ]
+ [ex key=196-with-caps-deny chars=20
+  [out-text [#
+[ok value=sandboxed]
+#]]
+ ]
+ [ex key=197-secret-redaction chars=31
+  [out-text [#
+[config [api-key '‹redacted›']]
+#]]
+ ]
+ [ex key=198-checked-int-overflow chars=137 err-chars=67
+  [out-text [#
+[err code=cx-err:CXER3000 message='E_MATH_OVERFLOW: int64 overflow in `*` (checked by default; use wrapping-mul for modular arithmetic)']
+#]]
+  [err-text [#
+error: the result carries an error value — cx-err:CXER3000 at /err
+#]]
+ ]
+ [ex key=199-exact-int-division chars=16
+  [out-text [#
+3002399751580331
+#]]
+ ]
+ [ex key=200-const-and-def chars=20
+  [out-text [#
+[bill amount=108.00]
+#]]
+ ]
+ [ex key=201-str-interpolation chars=19
+  [out-text [#
+'Hello CX, 3 items'
+#]]
+ ]
+ [ex key=202-else-coalesce chars=7
+  [out-text [#
+default
+#]]
+ ]
+ [ex key=203-quote-homoiconic chars=42
+  [out-text [#
+[cx:op name=add [cx:int '1'] [cx:int '2']]
+#]]
+ ]
+]
