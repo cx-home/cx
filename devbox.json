@@ -1,30 +1,35 @@
 {
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.17.1/.schema/devbox.schema.json",
   "packages": {
-    "rustup":    "latest",
-    "python":    "3.12",
-    "jq":        "latest",
+    "rustup": "latest",
+    "python": "3.12",
+    "jq": "latest",
     "hyperfine": "latest",
-    "git":       "latest",
-    "lazygit":   "latest",
+    "git": "latest",
+    "lazygit": "latest",
     "sqlite": {
       "version": "latest",
-      "outputs": ["out", "dev"]
+      "outputs": [
+        "out",
+        "dev"
+      ]
     }
   },
   "env": {
-    "CPATH":        "$PWD/.devbox/nix/profile/default/include",
+    "CPATH": "$PWD/.devbox/nix/profile/default/include",
     "LIBRARY_PATH": "$PWD/.devbox/nix/profile/default/lib"
   },
   "shell": {
     "init_hook": [
       "rustup toolchain install stable --no-self-update 2>/dev/null || true",
-      "rustup default stable"
+      "rustup default stable",
+      "[ -d scripts/playground-gate/node_modules/jsdom ] || npm --prefix scripts/playground-gate ci --no-audit --no-fund >/dev/null 2>&1 || echo \"devbox: jsdom install for test-playground-mermaid failed \u2014 run: npm --prefix scripts/playground-gate ci\""
     ],
     "scripts": {
-      "build":    "make build",
-      "test":     "make test",
-      "conform":  "make conform"
+      "build": "make build",
+      "test": "make test",
+      "conform": "make conform",
+      "gate-deps": "npm --prefix scripts/playground-gate ci --no-audit --no-fund"
     }
   }
 }
