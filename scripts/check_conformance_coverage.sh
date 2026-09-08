@@ -37,8 +37,8 @@ grep -oE "'\.\./conformance/[A-Za-z0-9_./-]+\.cxd'" "$runner" | sed -E "s#'\.\./
   printf '%s\t%s\n' "$s" "test-vcx-conform (conform-all: $runner)"
 done >> "$claims"
 # 2. the eval lane (in-code fixtures): code.cxd + every conformance/stdlib/*.cxd
-printf '%s\t%s\n' "conformance/code.cxd" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_test.v: parse_all_fixtures); also test-vcx-resilience-matrix, which runs that file by name" >> "$claims"
-for f in conformance/stdlib/*.cxd; do printf '%s\t%s\n' "$f" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_test.v: test_stdlib_module_fixtures); also test-vcx-resilience-matrix, which runs that file by name"; done >> "$claims"
+printf '%s\t%s\n' "conformance/code.cxd" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_test.v: parse_all_fixtures); also test-vcx-resilience-matrix, which runs that file by name -- but it reds 14 db.cxd fixtures by construction (no -d cx_db_sqlite/-d cx_db_redis in VFLAGS_VCX), so read its failure LIST, not its exit code" >> "$claims"
+for f in conformance/stdlib/*.cxd; do printf '%s\t%s\n' "$f" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_test.v: test_stdlib_module_fixtures); also test-vcx-resilience-matrix, which runs that file by name -- but it reds 14 db.cxd fixtures by construction (no -d cx_db_sqlite/-d cx_db_redis in VFLAGS_VCX), so read its failure LIST, not its exit code"; done >> "$claims"
 # 3. dedicated runners / lanes
 {
   printf '%s\t%s\n' "conformance/diff.cxd" "test-vcx-conform (conform-diff: tests/runners/diff_lint/diff_lint_conform.v)"
