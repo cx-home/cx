@@ -191,7 +191,7 @@ line 3''']
   very-long=2h]
 #]]
   [note [#
-**Introduces:** duration scalars `Nms` / `Ns` / `Nm` / `Nh`. Recognized by `[?sleep]`, `[?timeout]`, etc.
+**Introduces:** duration scalars `Nms` / `Ns` / `Nm` / `Nh`. Recognized by `[?sleep]`, `[?timeout]`, etc. A duration keeps its kind on the way out, so the value renders with its ascription — `short::duration=50ms`, not a bare `50ms`.
 #]]
  ]
 
@@ -388,7 +388,7 @@ line 3''']
     [case 404 :not-found]]]
 #]]
   [note [#
-**Introduces:** missing `[else …]` semantics. With no fallback, an unmatched scrutinee yields the empty sequence `()`.
+**Introduces:** missing `[else …]` semantics. With no fallback, an unmatched scrutinee yields the empty sequence `()`. **The empty output pane below IS the answer** — nothing printed is what `()` looks like, not a hang and not a failure.
 #]]
  ]
 
@@ -570,7 +570,7 @@ line 3''']
   [yield [item n=$n]]]
 #]]
   [note [#
-**Introduces:** comprehension over an empty source. Yields zero elements — result is the empty sequence `()`.
+**Introduces:** comprehension over an empty source. Yields zero elements — result is the empty sequence `()`. **The empty output pane below IS the answer**: nothing printed is what `()` looks like, not a hang and not a failure.
 #]]
  ]
 
@@ -1617,12 +1617,12 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
     avg=[$avg $doc/s/@v]]]
 #]]
   [note [#
-**Pattern:** statistical summary across attribute values. **Uses:** `[min]` / `[max]` / `[avg]` builtins over `$doc/s/@v` (child axis fans out across every `s` child). Compose into a single summary element.
+**Pattern:** statistical summary across attribute values. **Uses:** `[min]` / `[max]` / `[avg]` builtins over `$doc/s/@v` (child axis fans out across every `s` child). Compose into a single summary element. `[$avg]` answers a float, and a float renders in exponent form — the average here is `5.55e1`, i.e. 55.5.lement.
 #]]
  ]
 
  [ex key=126-group-aggregate
-  [label [#[126] Aggregate — group-by attribute → count per group#]]
+  [label [#[126] Aggregate — group-by attribute → totals per group#]]
   [src [#
 [?let [= $doc [orders
                 [o region=US   amt=100]
@@ -1631,11 +1631,12 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
                 [o region=EU   amt=80]
                 [o region=APAC amt=300]]]
   [?for [in $o $doc/o]
+    [= $amt $o/@amt]
     [group-by $o/@region]
-    [yield $o/@region]]]
+    [yield [total region=$key orders=$count amt=[$sum $group/amt]]]]]
 #]]
   [note [#
-**Pattern:** what are the distinct group keys? **Uses:** `[group-by]` over `$doc/o` (child axis enumerates each `o` child after gap A). Yields `(US, EU, APAC)`. Aggregations per group await `[?group-by]` iterator combinator.
+**Pattern:** fold each group down to one row. **Uses:** `[group-by]` over `$doc/o` (child axis enumerates each `o` child after gap A). Yields `(US, EU, APAC)`. Aggregations per group await `[?group-by]` iterator combinator.g spelled out: `$group` holds the BINDINGS made in the comprehension, so bind what you want to fold — `[= $amt $o/@amt]` — and then `[$sum $group/amt]` reads it back.
 #]]
  ]
 
@@ -1664,7 +1665,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
     [yield $g/item]]]
 #]]
   [note [#
-**Pattern:** pull nested children up one level. **Uses:** `[?for]` over `$doc/g` (child axis), `[yield $g/item]` to splat each group's items. Both axes are child-axis (gap A: `$bind/child` now returns every match, not just the first). The output is a flat sequence.
+**Pattern:** pull nested children up one level. **Uses:** `[?for]` over `$doc/g` (child axis), `[yield $g/item]` to splat each group's items. Both axes are child-axis (gap A: `$bind/child` now returns every match, not just the first). The output is a flat sequence. Watch the middle group: a path step that matches exactly ONE element yields that element rather than a one-item sequence, so `[g [item "c"]]` contributes a bare `'c'` where its neighbours contribute `[item 'a']` / `[item 'b']`.
 #]]
  ]
 
@@ -1709,7 +1710,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
     [yield $l/@id]]]
 #]]
   [note [#
-**Pattern:** select only the leaf-shaped nodes by name. **Uses:** `//leaf` descendant-by-name. For tree-shape-with-mixed-names, filter by `count(child::*)=0` once that surface lands.
+**Pattern:** select only the leaf-shaped nodes by name. **Uses:** `//leaf` descendant-by-name. For tree-shape-with-mixed-names the name is not the discriminator and the shape is: `[?for [in $x $doc//*] [where [= [$count $x/*] 0]] [yield [$name $x]]]` selects exactly the childless nodes.
 #]]
  ]
 
@@ -1876,14 +1877,13 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
  [ex key=143-set-intersection
   [label [#[143] Set — intersection (in both)#]]
   [src [#
-[?let [= $a (1, 2, 3, 4)]
-  [?let [= $b (3, 4, 5, 6)]
-    [?for [in $x $a]
-      [where [or [= $x 3] [= $x 4]]]
-      [yield $x]]]]
+[?let [= $a (1, 2, 3, 4)] [= $b (3, 4, 5, 6)]
+  [?for [in $x $a]
+    [where [> [$position $b $x] 0]]
+    [yield $x]]]
 #]]
   [note [#
-**Pattern:** keep items that appear in both sequences. **Uses:** explicit `[where …]` filter — the v0.8.0 surface doesn't have a generic `[in $x $set]` predicate yet, so the filter spells out membership.
+**Pattern:** keep items that appear in both sequences. **Uses:** `[$position xs needle]` as the membership test — it answers the **1-based** index of the first occurrence and `0` when the needle is absent (#1177), so `[> [$position $b $x] 0]` reads "is in `$b`". Both bindings are actually read; one flat `[?let]` takes them both.
 #]]
  ]
 
@@ -1990,7 +1990,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
                     [u name="B" email="b@x.com"]]]
     [?for [in $o $orders//o]
       [yield [joined order-id=$o/@id amt=$o/@amt
-               [email [?splice $users//u[= $_@name $o/@user]/@email]]]]]]]
+               [?splice $users//u[= $_@name $o/@user]/@email]]]]]]
 #]]
   [note [#
 **Pattern:** inner-join two collections by a shared key — look up each order's user record by name and project the email. **Uses:** cross-binding inline predicate `[@name=$o/@user]` (gap C closed: the RHS now evaluates the path-bearing reference against the *outer* env, so `$o/@user` is the iterating row's key while `$users//u[…]` does the lookup), spliced into content with `[?splice …]` (R-A1, 2026-08-25). Terminal `/@email` materialises the value as `[email "…"]` (same `/@attr` materialisation shape as ex 146). The natural single-expression join is now the standard surface; the prior `[?match]` workaround is retired.
