@@ -679,10 +679,29 @@ fn flow_cli_run(o FlowCliOpts) {
 		// channel (#853's propagation positions), which would turn a visible
 		// refusal into the run's own. Emitting it first keeps a refusal LOUD —
 		// it is not the all-zero string, so it is logged.
+		//
+		// THE QUOTES ARE WHY `$flat` EXISTS. `$cx:emit` renders the report's
+		// counts QUOTED — `[restore-report rearmed='0' …]`, measured — while a
+		// fixture's `out-text` shows them bare, so a comparison against either
+		// spelling alone silently never matches. Normalizing the quotes away
+		// compares the one thing that matters and is indifferent to which
+		// serializer wrote the text — and the NORMALIZED text is what gets
+		// logged, so the report reads the same here as it does in `cx flow
+		// serve`'s boot report, which is spliced into an element and printed
+		// unquoted. One spelling in the product's own output.
+		//
+		// A REFUSAL IS LOGGED UNNORMALIZED, at warn. Quotes inside an err's
+		// `message='…'` are part of the message, so stripping them would
+		// mangle exactly the text an operator needs; the branch is chosen by a
+		// prefix test on the flattened string, never by an attribute read on a
+		// value that may be an err.
 		'[= \$rep [\$cx:emit \$rearmed]]',
-		'[= \$lg [?if [= \$rep "[restore-report rearmed=0 skipped=0 orphaned=0]"]',
+		'[= \$flat [\$str-replace \$rep "\'" ""]]',
+		'[= \$lg [?if [= \$flat "[restore-report rearmed=0 skipped=0 orphaned=0]"]',
 		'           [then ()]',
-		'           [else [\$cxlog:info \$rep]]]]',
+		'           [else [?if [\$str-starts-with \$flat "[restore-report "]',
+		'                   [then [\$cxlog:info \$flat]]',
+		'                   [else [\$cxlog:warn \$rep]]]]]]',
 		'[= \$a ${args_src}]',
 		'  [\$cxflow:start \$j \$fl \$a ${flow_cli_opts_map(o, flow_cli_nonce(args_src), true)}]]',
 	].join('\n')
