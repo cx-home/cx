@@ -23,13 +23,25 @@ SLOT=${CX_BUILD_SLOT:-"$HOME/git-repos/cx/.build-slot"}
 TIMEOUT=${BUILD_SLOT_TIMEOUT:-14400}
 [ $# -gt 0 ] || { echo "build-slot: usage: $0 <command…>" >&2; exit 64; }
 
+# FIFO: every waiter files a ticket; only the OLDEST live ticket may take the
+# slot. Without this, waiters raced on mkdir every 15 s and one starved for an
+# hour behind newer arrivals (measured 2026-09-08 02:29).
+Q="$SLOT.queue"; mkdir -p "$Q"
+ticket="$Q/$(date +%s).$$"; : > "$ticket"
+trap 'rm -f "$ticket"' EXIT
 waited=0
 while :; do
-	if mkdir "$SLOT" 2>/dev/null; then
+	# drop tickets whose holder died
+	for t in "$Q"/*; do
+		[ -e "$t" ] || continue
+		tp=${t##*.}; kill -0 "$tp" 2>/dev/null || rm -f "$t"
+	done
+	oldest=$(ls "$Q" 2>/dev/null | sort -t. -k1,1n -k2,2n | head -1)
+	if [ "$Q/$oldest" = "$ticket" ] && mkdir "$SLOT" 2>/dev/null; then
 		break
 	fi
 	holder=$(cat "$SLOT/pid" 2>/dev/null || echo "")
-	if [ -n "$holder" ] && ! kill -0 "$holder" 2>/dev/null; then
+	if [ -d "$SLOT" ] && [ -n "$holder" ] && ! kill -0 "$holder" 2>/dev/null; then
 		echo "build-slot: holder $holder is dead — breaking the stale slot" >&2
 		rm -rf "$SLOT"
 		continue
@@ -38,16 +50,16 @@ while :; do
 		echo "build-slot: waited ${waited}s for $(cat "$SLOT/cmd" 2>/dev/null) (pid ${holder:-?}) — giving up" >&2
 		exit 75
 	fi
-	[ "$waited" -eq 0 ] && echo "build-slot: waiting — held by pid ${holder:-?}: $(cat "$SLOT/cmd" 2>/dev/null | cut -c1-80)" >&2
+	[ "$waited" -eq 0 ] && echo "build-slot: waiting (queue position $(ls "$Q" | sort -t. -k1,1n -k2,2n | grep -n "^$(basename "$ticket")$" | cut -d: -f1)) — held by pid ${holder:-?}: $(cat "$SLOT/cmd" 2>/dev/null | cut -c1-80)" >&2
 	sleep 15
 	waited=$((waited + 15))
 done
-
+rm -f "$ticket"
 echo "$$" > "$SLOT/pid"
 printf '%s\n' "$*" > "$SLOT/cmd"
 pwd > "$SLOT/cwd"
 date -u +%FT%TZ > "$SLOT/since"
-release() { rm -rf "$SLOT"; }
+release() { rm -rf "$SLOT"; rm -f "$ticket"; }
 trap 'release' EXIT
 trap 'release; exit 143' TERM
 trap 'release; exit 129' HUP
