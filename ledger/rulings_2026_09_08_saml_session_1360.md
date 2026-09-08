@@ -89,32 +89,55 @@ must be able to tell which is which.
 `[$session:attach-saml $xml::string $keys::[sequence element] $cfg::map
 $client::map {}] -> element`, impure. It runs `saml:verify → assertion →
 validate → claims → map-claims → bind → mirror-attach` and refuses at the
-FIRST fault with the saml module's own code (CXER5400…5411) or session's
-(CXER48xx), exactly as `attach-token` refuses on `jwt-verify`'s.
+FIRST fault, exactly as `attach-token` refuses on `jwt-verify`'s: a saml
+fault WRAPPED as session's CXER4801 with the CXER54xx value verbatim in
+`[cause]`, and session's own faults (CXER48xx) as themselves.
 `validate`'s `now`, `audience`, `recipient` and `in-response-to`, and
 `claims`'s `attrs`, come from `cfg.saml`; `cfg.tenant-claim` keeps its
 meaning. Replay defense (saml.md §9) stays the deployment's, stated in the
 attach-path row.
 
-**One point settled here:** the ruling's "with the saml module's own code
-… exactly as `attach-token` refuses on `jwt-verify`'s" reads two ways,
-because `attach-token` in fact WRAPS the crypto fault as CXER4801 with the
-verbatim fault as a `[cause]` child (`stdlib_session.v:454`). The literal
-sentence — saml's own code — is what ships: a saml refusal is returned
-unchanged, and only faults arising in session's own half (tenant
-unresolved, principal unresolved, insecure transport) carry a CXER48xx.
-"Exactly as `attach-token`" is honored as the fail-closed MANNER (refuse at
-the first fault, mint nothing), which is the part of that sentence that
-carries the safety property. Stated out loud because the alternative
-reading is defensible and a later reader should not have to guess which
-one was taken.
+**One point raised here and since RULED — WRAP.** The ruling's "with the
+saml module's own code … exactly as `attach-token` refuses on
+`jwt-verify`'s" read two ways, because `attach-token` in fact WRAPS the
+crypto fault as CXER4801 with the verbatim fault as a `[cause]` child
+(`stdlib_session.v:454`). The first implementation took the literal
+sentence — saml's own code returned unchanged — and said so rather than
+guessing silently.
+
+**Fable's clarification of 1360-b (2026-09-08 16:00 ET) settles it the
+other way, and the parity reading is what ships:** `attach-saml` refuses
+with session's own verification-failure code **CXER4801**, carrying the
+saml fault verbatim in `[cause]` with its CXER54xx code and message
+intact — exactly the shape `attach-token` gives a `jwt-verify` fault. The
+stated reason is the one that decides it: **a client of the session
+surface catches ONE refusal band across all five attach paths and never
+has to know which IdP format was behind the token**, while the specific
+cause stays fully visible one level down for the operator. Faults arising
+in session's own half (tenant unresolved, principal unresolved, insecure
+transport) keep their own CXER48xx as before, and `saml.md`'s verbs still
+return their CXER54xx verbatim to a direct caller — the wrapping belongs
+to the consumer, not the producer, so nothing in the saml module changes
+shape for it.
+
+Implemented at all four delegation sites in `session_attach_saml_impl`
+(verify / assertion / validate / claims) through the same
+`session_err_with_cause` helper the bearer path uses, so the two cannot
+drift apart. The three end-to-end refusal fixtures are RE-CAST from the
+binary against the wrapped code, and one case records the wrapped **pair**
+(outer code + `[cause]` code) — `out-err` pins only the outer code, so a
+band-only fixture would have been green either way and would not have
+pinned the ruling at all.
 
 ## Fixtures owed (fixture-first, red at HEAD)
 
 - SAML login → `[principal id=… [tenant id=…]]`, `groups` a sequence.
-- `NotOnOrAfter` in the past → refused with saml's expiry code, NO session.
-- `Audience` mismatch → refused.
-- An unsigned assertion → refused by `verify`.
+- `NotOnOrAfter` in the past → refused with CXER4801, NO session.
+- `Audience` mismatch → refused (CXER4801).
+- An unsigned assertion → refused by `verify` (CXER4801).
+- The WRAPPED PAIR read out together: outer `CXER4801` and `[cause]`'s
+  `CXER5401`, in one `out-text`. This is the only case that can red if the
+  wrap is dropped, because `out-err` pins the outer code alone.
 - `claims` over the corpus's canonical assertion pins the exact `[claims …]`
   bytes.
 
