@@ -2443,4 +2443,241 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
 #]]
  ]
 
+ [ex key=183-loop-break-continue
+  [label [#[183] [?loop] — condition-driven loop with [break] / [continue]#]]
+  [src [#
+[?loop [= $i 1] [= $acc 0]
+  [?if [> $i 5]
+    [then [break $acc]]
+    [else [continue [+ $i 1] [+ $acc $i]]]]]
+#]]
+  [note [#
+**Introduces:** `[?loop]` (#550) — the condition-driven loop, and CX's anonymous trampolined tail recursion. `[= …]` clauses declare the loop state; `[continue …]` supplies the next state positionally and `[break v]` leaves with a value. This sums 1..5 to `15`.
+
+**Every exit is explicit.** A body that forgets its exit word does NOT silently become the result — it is a `cx-err:CXER0100`: "`[?loop]` body must end in `[break …]` or `[continue …]`". That is the deliberate rejection of `loop`/`recur`'s implicit exit, and it is why you can read any `[?loop]` and see where it stops. There is no `[?while]`.
+#]]
+ ]
+
+ [ex key=184-do-sequence
+  [label [#[184] [?do] — evaluate for effect, discard the values#]]
+  [src [#
+[?do [a] [b] [c]]
+#]]
+  [note [#
+**Introduces:** `[?do]` (#550) — sequencing for effect. Every child is evaluated in order, their values are DISCARDED, and the result is `null` — so `[?do]` is the shape for "run these three things", never for "compute these three things". The first `[err]` a child produces propagates out instead of being swallowed, so a failing step still stops the sequence.
+#]]
+ ]
+
+ [ex key=185-modulo
+  [label [#[185] `%` — modulo#]]
+  [src [#
+[?for [in $n (1, 2, 3, 4, 5)]
+  [yield [?if [= [% $n 3] 0] [then [fizz n=$n]] [else [n v=$n]]]]]
+#]]
+  [note [#
+**Introduces:** the `%` modulo operator (#598), beside `[$mod]` / `[$div]` / `[$idiv]`. Here it drives the FizzBuzz test: every third item yields `[fizz …]`, the rest yield `[n …]`.
+#]]
+ ]
+
+ [ex key=186-random-stream
+  [label [#[186] [$random:new] — a private, seeded, deterministic stream#]]
+  [src [#
+[?lib 'cx-stdlib/random']
+
+[?let [= $r [$random:new 42]]
+  [draws
+    a=[$random:gen-int-range $r 1 100]
+    b=[$random:gen-int-range $r 1 100]
+    c=[$random:gen-int-range $r 1 100]]]
+#]]
+  [note [#
+**Introduces:** `[$random:new SEED]` (#625) — a random stream is a VALUE you hold, not a process-global generator you perturb. Same seed, same sequence, every run: `42` draws `52`, `54`, `1`. Two streams in one program are independent, so one part of a program can never shift another part's numbers — which is what makes a seeded test reproducible.
+#]]
+ ]
+
+ [ex key=187-present-vs-count
+  [label [#[187] [$present] — "did this step match", for a leaf too#]]
+  [src [#
+[?let [= $doc [box [empty] [full v=1]]]
+  [checks
+    present-empty=[$present $doc/empty]
+    count-empty=[$count $doc/empty]
+    present-missing=[$present $doc/nope]]]
+#]]
+  [note [#
+**Introduces:** `[$present PATH]` — the reason the predicate exists. `[$count]` answers how many CHILDREN a step's result has, so on a childless element it answers `0` — and every "did this step match" test written with `[$count]` was therefore wrong on a leaf. `[$empty]` is `[empty]`: it MATCHED, `[$present]` says `true`, and `[$count]` still says `0`. For a step that matches nothing, `[$present]` says `false`.
+#]]
+ ]
+
+ [ex key=188-err-operand-consuming
+  [label [#[188] Element construction is operand-consuming#]]
+  [src [#
+[report [$idiv 1 0]]
+#]]
+  [note [#
+**Introduces:** the operand-consuming rule. A **computed** `[err]` in child position is not collected into the document — it PROPAGATES and becomes the result, so this whole `[report …]` evaluates to `[err code=cx-err:CXER0101 message='division by zero']`.
+
+**Position, not value, is the discriminator.** A **source-literal** err is still ordinary data: `[report [err code='app:X' message='…']]` yields the `[report …]` document with the err at rest inside it. To keep a computed failure as data, rebuild it from its parts (`@code` / `@message`) or collect it in a paren sequence — the same move `[?for]` / `[?map]` make when they gather errs instead of raising them.
+#]]
+ ]
+
+ [ex key=189-postfix-path-step
+  [label [#[189] Uniform postfix path steps#]]
+  [src [#
+[?if true [then [box [v n=7]]] [else ()]]/v@n
+#]]
+  [note [#
+**Introduces:** the uniform postfix step (#886). EVERY program-position bracketed form takes a path step on its closing bracket — not just bindings and calls. The `[?if]` here answers `[box [v n=7]]` and `/v@n` reads straight through it to `7`, with no intermediate `[?let]` to hold the result.
+#]]
+ ]
+
+ [ex key=190-map-syntax
+  [label [#[190] Maps — whitespace or comma, and the declaration-only entry#]]
+  [src [#
+{name: 'Alice' age: ::int active: true}
+#]]
+  [note [#
+**Introduces:** the map-syntax settlement (#917). Entries separate by whitespace **or** comma — both are the same map. `age: ::int` is the **declaration-only** entry: the kind is declared and the value is ABSENT. That is not the same as `null`; it is a slot whose type is known and whose value has not been supplied.
+#]]
+ ]
+
+ [ex key=192-map-module
+  [label [#[192] cx-stdlib/map — size / get / keys#]]
+  [src [#
+[?lib 'cx-stdlib/map']
+
+[?let [= $m {a: 1, b: 2}]
+  [out size=[$map:size $m] a=[$map:get $m 'a']
+    [keys [?splice [$map:keys $m]]]]]
+#]]
+  [note [#
+**Introduces:** the `cx-stdlib/map` surface (#925) — `[$map:size]`, `[$map:get]`, `[$map:keys]`, `[$map:merge]`. Map syntax is core; the OPERATIONS live in a module you declare with `[?lib]`, and they need no capability, so they run in the sandbox exactly as they run natively.
+#]]
+ ]
+
+ [ex key=193-array-module
+  [label [#[193] cx-stdlib/array — size / reverse / sort#]]
+  [src [#
+[?lib 'cx-stdlib/array']
+
+[out size=[$array:size [1, 2, 3, 4]]
+  [rev [?splice [$array:reverse [1, 2, 3]]]]
+  [sorted [?splice [$array:sort [3, 1, 2]]]]]
+#]]
+  [note [#
+**Introduces:** the `cx-stdlib/array` surface (#925), the array counterpart of `cx-stdlib/map`. `[…]` is the array container — ordered, indexable — as distinct from `(…)`, the sequence.
+#]]
+ ]
+
+ [ex key=194-read-construct-split
+  [label [#[194] Readers destructure any collection; constructors do not#]]
+  [src [#
+[reads
+  count-arr=[$count [1, 2, 3]]
+  count-seq=[$count (1, 2, 3)]
+  first-arr=[$first [1, 2, 3]]
+  first-seq=[$first (1, 2, 3)]]
+#]]
+  [note [#
+**Introduces:** the read/construct split (#882). READERS are container-agnostic — `[$count]` and `[$first]` answer the same over an array `[…]` and a sequence `(…)`, so a helper that inspects a collection does not care which one it was handed. CONSTRUCTORS are strict: `[$concat [1, 2] (3, 4)]` refuses with the §6.5 diagnostic ("a single scalar … is required"), because a builder must not guess which container you meant to build.
+#]]
+ ]
+
+ [ex key=195-group-by-combinator
+  [label [#[195] [?group-by] — the standalone grouping combinator#]]
+  [src [#
+[?let [= $rows ([o r=US amt=4], [o r=EU amt=2], [o r=US amt=1])]
+  [?group-by $rows [using [?fn ($o) $o@r]]]]
+#]]
+  [note [#
+**Introduces:** `[?group-by]` as a combinator over a sequence you already hold, with `[using [?fn …]]` naming the key. It answers pairs of `(key, members)`: `((US, (…)), (EU, (…)))`. This is the sibling of the `[group-by]` CLAUSE inside `[?for]` (example 126) — use the clause when you are already iterating and want `$key` / `$count` / `$group`, and the combinator when the sequence is in hand.
+#]]
+ ]
+
+ [ex key=196-with-caps-deny
+  [label [#[196] [?with-caps [deny …]] — narrow authority, never widen it#]]
+  [src [#
+[?with-caps [deny net]
+  [ok value='sandboxed']]
+#]]
+  [note [#
+**Introduces:** `[?with-caps [deny …]]` — the effect-posture half of the authority model. It can only ever REMOVE authority for the extent of its body: there is no `[allow]`, because a program cannot grant itself a capability it was not started with. So this is the shape for "run this part with less than I have" — deny `net` around a plugin, deny `write` around a rendering step — and reading it tells you the maximum the body could do.
+#]]
+ ]
+
+ [ex key=197-secret-redaction
+  [label [#[197] [?secret] — redaction happens on emit#]]
+  [src [#
+[?let [= $k [?secret 'sk-live-abc123']]
+  [config [api-key $k]]]
+#]]
+  [note [#
+**Introduces:** `[?secret]`. The value stays usable inside the program, but anything that RENDERS it prints `'‹redacted›'` — so a secret cannot reach a log line, an error message, or this output pane by accident. Redaction is a property of the value, not a discipline the author has to remember at every emit site.
+#]]
+ ]
+
+ [ex key=198-checked-int-overflow
+  [label [#[198] Integer arithmetic is checked — no silent wrap#]]
+  [src [#
+[* 9223372036854775807 2]
+#]]
+  [note [#
+**Introduces:** checked integer arithmetic. Overflow is an `[err code=cx-err:CXER3000]` — `E_MATH_OVERFLOW: int64 overflow in \`*\`` — not a wrapped negative number. Modular arithmetic is available and must be ASKED for by name (`wrapping-mul`), which the diagnostic itself says. The default is the answer that cannot be wrong quietly.
+#]]
+ ]
+
+ [ex key=199-exact-int-division
+  [label [#[199] Exact int division past 2⁵³#]]
+  [src [#
+[$idiv 9007199254740993 3]
+#]]
+  [note [#
+**Introduces:** the exact integer lane. `9007199254740993` is 2⁵³+1 — the first integer a float64 cannot represent — and `[$idiv]` answers `3002399751580331` exactly, because it computes in i64 and never routes through f64. A language that quietly promoted this to a float would be off by one and say nothing.
+#]]
+ ]
+
+ [ex key=200-const-and-def
+  [label [#[200] [?const] + module-level [?def]#]]
+  [src [#
+[?const TAX 0.08]
+[?def total scope=public pure ($net) [* $net [+ 1 TAX]]]
+
+[bill amount=[$total 100]]
+#]]
+  [note [#
+**Introduces:** the two module-level forms. `[?const]` binds a name once, at load, with no `$` sigil at the use site — `TAX`, not `$TAX`. `[?def]` declares a function, called through `$` like any builtin: `[$total 100]` → `[bill amount=108.00]`. `pure` is a CLAIM the engine checks, so a `pure` body that reaches for an effect is refused rather than trusted.
+#]]
+ ]
+
+ [ex key=201-str-interpolation
+  [label [#[201] [?str] — interpolation#]]
+  [src [#
+[?let [= $name 'CX'] [= $n 3]
+  [?str "Hello {$name}, {$n} items"]]
+#]]
+  [note [#
+**Introduces:** `[?str]` — `{…}` interpolation into a string. The braces take a full expression, not just a bare variable, and everything outside them is literal text. This is the readable alternative to a `[$concat]` chain when you are building a message.
+#]]
+ ]
+
+ [ex key=202-else-coalesce
+  [label [#[202] [?else] — coalesce an absent result#]]
+  [src [#
+[?else [$nth (1, 2) 9] 'default']
+#]]
+  [note [#
+**Introduces:** `[?else]` — supply a value when the first expression yields nothing. `[$nth (1, 2) 9]` asks for the ninth of two items and answers the empty sequence; `[?else]` turns that into `'default'`. It is the idiom the `[$concat]` diagnostic points at ("bind it or default it with `[?else]` first") whenever a path step might match nothing.
+#]]
+ ]
+
+ [ex key=203-quote-homoiconic
+  [label [#[203] [?quote] — the program as data#]]
+  [src [#
+[?quote [+ 1 2]]
+#]]
+  [note [#
+**Introduces:** `[?quote]` — and with it the homoiconicity story. `[+ 1 2]` is not evaluated; it is handed back as ITS OWN AST, in ordinary CX element syntax: `[cx:op name=add [cx:int '1'] [cx:int '2']]`. One bracketed element syntax serves documents, queries, programs, and the compiler's own tree — so a program can be read, matched with `[?match]`, and transformed with `[?modify]` using the same surface you use on data. Switch the Tree pane on to walk it.
+#]]
+ ]
+
 ]
