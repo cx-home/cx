@@ -33,13 +33,17 @@ version, library version).
   authorize a double charge. The test reads the row's VALUE rather than its
   existence, which is what lets a dry run's `idempotent='unresolved:'`
   sentinel stand the gate down instead of inheriting a fabricated `true`.
-  The WAIT between attempts (`every=`) is NOT part of this and stays
-  refused: §6 and RULED: 1265-PB-5 name every flow timer `<run id>:<step>`,
-  which `sched` treats as the registry identity, so a step carrying both a
-  `deadline=` and a re-attempt wait would silently lose its deadline — a
-  ruling, tracked on #1314, and one that already applies to a `deadline=`
-  beside a W3 escalation rung. Until then `attempts=` re-offers on the next
-  drive, which is WF-26's own stated default.
+  The WAIT between attempts landed with it (RULED: 1314-c1 .. c4): `every=`
+  is a durable timer named `<run id>:<step>:wait`, armed `on-missed
+  :coalesce`. A flow timer's name gained a KIND segment to make that
+  possible — `sched` treats a name as the registry identity, so one name for
+  a step's `deadline`, its re-attempt `wait` and its W3 rung meant the
+  second timer armed silently DELETED the first. A step with `attempts=` and
+  no `every=` re-offers on the next drive, which is WF-26's own stated
+  default. Not landed: the `retry-after=` FLOOR under the cadence — an
+  ABSOLUTE `retry-after=` is taken relative to `now` and the runner law is
+  pure, so the instant has to reach it on the event; that letter is on
+  #1314 and no producer in this release emits the absolute form.
 
 - **A feature name is ONE segment; `/` is the qualification separator and is
   therefore taken (#1191; RULED: 1191-a).** `feature.cxs` accepted any string
