@@ -15,6 +15,36 @@ version, library version).
 
 ### Added
 
+- **`attempts=` on a flow `[step]` — a bounded re-attempt of a FAILED act,
+  gated on the command's own `[idempotent]` declaration (#1314; RULED:
+  789-WF-26a).** §2.3's word table has carried `attempts=` since vocabulary
+  round 2 while `validate` refused it as unimplemented, so the only spelling
+  for a flaky external act was "make it idempotent and re-run the courier".
+  A step may now carry `attempts=N`: a failed act with the bound unspent
+  records `:retrying attempt=K` and is re-offered, and the failure path opens
+  only on exhaustion, where a second `:failed` transition carries
+  `reason=:attempts-exhausted` so the record distinguishes "the act failed"
+  from "the act failed N times". `attempt=K` rides the step row and
+  `:retrying` joins §2.2's closed status set. **The gate is the command's,
+  not the flow's:** `validate` admits `attempts=` only where the resolved
+  resolver row says `idempotent=true`, and refuses `CXER4952` NAMING THE
+  VERB otherwise — absence is a negative disposition (RULED: 789-WF-38a),
+  deny-by-default, because an ungated re-attempt would let a document
+  authorize a double charge. The test reads the row's VALUE rather than its
+  existence, which is what lets a dry run's `idempotent='unresolved:'`
+  sentinel stand the gate down instead of inheriting a fabricated `true`.
+  The WAIT between attempts landed with it (RULED: 1314-c1 .. c4): `every=`
+  is a durable timer named `<run id>:<step>:wait`, armed `on-missed
+  :coalesce`. A flow timer's name gained a KIND segment to make that
+  possible — `sched` treats a name as the registry identity, so one name for
+  a step's `deadline`, its re-attempt `wait` and its W3 rung meant the
+  second timer armed silently DELETED the first. A step with `attempts=` and
+  no `every=` re-offers on the next drive, which is WF-26's own stated
+  default. Not landed: the `retry-after=` FLOOR under the cadence — an
+  ABSOLUTE `retry-after=` is taken relative to `now` and the runner law is
+  pure, so the instant has to reach it on the event; that letter is on
+  #1314 and no producer in this release emits the absolute form.
+
 - **`cx-stdlib/flow` §3 says which of its verbs answer, and a gate holds it
   (#1327; RULED: 1327-a).** §3 declared seventeen public verbs while the
   module registered six, and nothing was red: `flow-vocabulary-gate` reads
@@ -29,6 +59,28 @@ version, library version).
   nobody had looked for, `fold-record`, `scope=public` and shipped in W1 and
   never declared by §3 at all. Six mutations were run against the new check
   and each goes red with exactly one finding.
+
+- **The playground gate grades the ANSWER, not just the run (#1170 §C1; RULED:
+  1170-a).** `make verify-playground-examples` replayed all 182 examples through
+  native `cx` and failed only on a non-zero exit or an unterminated note
+  comment — it recorded no answer and compared none, because the corpus held
+  none. So a semantics change retired an example's MEANING while the gate
+  stayed green: R-A1 (2026-08-25) made a bare `[name …]` head data
+  construction rather than a builtin call, and FOURTEEN examples stopped
+  computing what their note claims while still exiting 0. `[concat "hello" ", "
+  "world"]` echoed `[concat 'hello', ', ', 'world']` under a note promising
+  `'hello, world'`, for three release windows, and #1033's wasm sweep could not
+  see it either — it compares wasm against native for the same source and both
+  agree on the wrong answer. The generator now records every audited answer in
+  `scripts/gen_guide/playground/examples.out.cxd` — `[out-text [# … #]]`, the
+  same element the conformance corpus uses for a pinned program answer — and
+  `--check` compares it, so a changed answer is a diff a human must accept
+  instead of a silence. The pin is a SEPARATE generated file, never spliced
+  into the hand-authored corpus (a generator that rewrites its own
+  hand-authored input is how `design/787/tools/gen_ux_fixtures.cx` came to
+  delete seven fixtures); the two claims — "the bundle is stale" and "an
+  example computes something else" — are reported separately, because they
+  need different fixes.
 
 - **A feature name is ONE segment; `/` is the qualification separator and is
   therefore taken (#1191; RULED: 1191-a).** `feature.cxs` accepted any string
@@ -444,6 +496,38 @@ version, library version).
   authoring and client guides follow.
 
 ### Fixed
+
+- **Nineteen playground examples taught something the binary does not do
+  (#1170 Part A).** All measured against the shipped binary, not read:
+  - The fourteen R-A1 casualties now call through `$` and compute:
+    `[$concat]` → `'hello, world'`, `[$string-length "hello"]` → `5`,
+    `[$contains]` → `true`, `[$nth (10,20,30,40) 2]` → `20`, `[$distinct]`,
+    `[$reverse]`, `[$position]` → `2`, `[$abs -42]` → `42`,
+    `[$substring "hello world" 6 11]` → `' world'`, `[$normalize-space]`,
+    `[$name $e]` (examples 104 and 127), and `[$distinct [?concat $a $b]]`.
+    `118-odd-even-partition` is the worst of them and read green: `[odd $n]`
+    built a truthy data element, so the example that exists to demonstrate
+    branching took the `then` arm for EVERY item; `[$odd $n]` now alternates
+    `[odd-val]` / `[even-val]` as advertised.
+  - The index-base drift that fell out of fixing them is re-derived from the
+    run rather than patched: `nth` is 1-based inclusive (#1177) so example 72
+    returns `20`, not the `30` its note claimed; `position` answers `0` — not
+    `-1` — when the needle is absent; `substring` is 1-based inclusive, so
+    `6 11` keeps the leading space.
+  - Three notes taught the retired bare spelling even where their source was
+    already right (`71`, `77`, `79`) — a reader who copied the note got a data
+    element.
+  - The four `[?sleep DUR :mock]` examples (`84`, `85`, `87`, `90`) passed an
+    ATOM where the surface takes the bare word, so every one of them
+    demonstrated a `CXER0100` arity error instead of the timing behavior it
+    names — which is to say `[?await-all]`, `[?await-race]` and `[?cancel]`,
+    three of the highest-value examples on the page, taught a parse error.
+  - `35-cast-float-int` promised silent truncation, which the L44 exact lane
+    removed deliberately; it now teaches the `CXER0290` refusal and points at
+    `[$round]` / `[$floor]` / `[$ceiling]` as the explicit-intent spelling.
+  - `142-set-union` bound two variables and then ignored both, hand-inlining
+    the union as a literal; it now computes it with `[?concat]` and one flat
+    `[?let]`.
 
 - **Module defs are purity-checked at load (#1298).** The static purity check
   (code.md §6.5.x / D11 — a `pure` def, explicit or default, whose body calls
