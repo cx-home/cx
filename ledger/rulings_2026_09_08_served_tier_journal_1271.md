@@ -189,3 +189,86 @@ nested cause. Under `1271-b1` the served-tier journal stops constructing that
 url at all — it passes the handle — so this ruling removes one PRODUCER of the
 misreport. The misreported cause itself is independent of #1271 and remains
 open on #1293.
+
+---
+
+# SUPERSEDED IN MECHANISM, ANSWERED IN OUTCOME — RULED: 1271-c1, 1271-c2 (owner + Fable, 2026-09-08 18:00 ET)
+
+The record above ends BLOCKED on two findings. Both are now answered, and the
+answers supersede this record's mechanism while keeping its outcome.
+
+## RULED: 1271-c1 — `attach`, not a widened `open`
+
+Finding 1 of this record was right and is adopted: `[$journal:attach]` already
+IS "a journal over an already-open `[store]` handle" (`journal.md` §3.1), so the
+proposed widening of `jrn_open` was a **dual-accept of `attach`**. `jrn_open`'s
+signature does not move. The served-tier bind calls the existing verb over the
+deployment's own `[store]` handle — the one `$host` already carries, taken from
+the deployment author's `store:` opt, byte-for-byte, nothing re-opened.
+
+That this works over the wire is not new ground: `journal.md` §6.1 is already
+normative that a journal attached to a `cx-store(+xsp)://` handle runs every §3
+verb through the store's remote object model, with the per-stream head riding
+the daemon's authoritative alias table. **1271-b2 stands** — folds push DOWN
+through `store_xsp_journal.v`'s verbs and are never a client-side replay.
+
+## RULED: 1271-c2 — the invariant is DECLARED and CHECKED, not assumed
+
+Finding 2 was the blocker: nothing established that the deployment's working
+store is the store holding its served act chain. The fabric daemon opens the
+chain at its **own** configured `store=` (`fabric_service.v`), a url that never
+travels on the wire, so an attach against the wrong store **still succeeds** and
+answers a coherent-looking fold over a different chain — which this record
+correctly called strictly worse than the absence it would replace, because
+absence is a value a feature can test for.
+
+The answer is not to infer the agreement but to **require** it and **check** it:
+
+* **Declared** — one normative sentence in distribution §1.2: a served
+  deployment's working store IS the store its act chain lives in, and that is
+  what makes `$host/journal` fold-capable at that tier.
+* **Checked** — at boot the host attaches, reads the head the store answers for
+  the deployment's tenant and stream, compares it with the head the bound fabric
+  reports for the same stream, and **REFUSES THE BOOT on disagreement, naming
+  both heads**.
+
+Why this and not the alternatives: the record is the state, so one store per
+tenant deployment is one durability domain — backup, replication, retention.
+Splitting the chain from the working data would create cross-store consistency
+questions permanently; exposing the daemon's storage layout leaks it to every
+client; and putting fold compute on the fabric daemon is a layering error.
+
+## Three details the implementation had to get right
+
+1. **The comparison is seq-only, and the hash rides the message.** The fabric
+   reports a bare `head=N` integer (`[fabric-sub … head=N]`); only the journal
+   side has a content hash. So equality is over seqs, and the refusal names the
+   store's `seq` **and** `hash` beside the fabric's `seq` — "naming both heads"
+   without inventing a hash the fabric never sent.
+2. **`head == 0` is not a claim.** An empty stream and a daemon predating the
+   `head=` attribute are indistinguishable at zero (`xap_replay_journal` says so
+   in its own comment). The check never refuses on it.
+3. **The check is scoped to `journal_remote`.** An embedded deployment may
+   legitimately run a `mem://` working store against a `file://` journal binding
+   — `test_xap_host_document_runtime_bindings` does exactly that and is green —
+   because the embedded tier hands the runtime's own opened handle and the opt
+   store never participates. Applying the served invariant there would red a
+   passing test for the wrong reason.
+
+## The three deletions stand
+
+The tier-split paragraph in §1.2, the boot-notice `else` arm in
+`xap_host_context`, and the `has_journal_handle` tier sentences are removed. A
+fourth sentence saying the same retired thing — on `XapJournalBind.jrn` — was
+found beside them and removed too; leaving it would be exactly the stale text
+the other three deletions exist to clear.
+
+## Cross-branch note for the landing
+
+Distribution §1.2's body is fingerprinted by `check-contract-revision`
+(#1272, unmerged at the time of writing). This change edits that body, so the
+landing must run `make contract-revision-repin` and keep `contract-revision: 2`:
+a module built against revision 2 still works, because this sentence constrains
+the DEPLOYMENT's store, not any entry point's shape. It is the **editorial**
+acknowledgment, never a bump — a bump is a statement that packages in the field
+are refused, and nothing here refuses one.
