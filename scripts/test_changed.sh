@@ -236,13 +236,86 @@ prebuild() {
   make build-vcx && make build-vcx-dev
 }
 
+# ── the SERIAL TAIL, mirrored from `make test` (#1216 / #1227 / #1345) ──
+#
+# `make test` does NOT run its whole union under -j. Three lanes carry
+# WALL-CLOCK assertions and are filtered OUT of the storm and run one at a
+# time after it drains (the `test:` recipe): test-profile-gate for #1227's
+# quiet context, test-vcx-timing for #1216's boot and try-send/try-receive
+# budgets, test-code-diagram for #1345's emitter budget. The reasoning is
+# recorded there: "an absolute budget that only holds on an idle box is not a
+# property of the binary".
+#
+# This script ran its ENTIRE selection under one -j, so all three went back
+# INTO a storm — the fast loop disagreeing with the exit gate about which
+# lanes are load-sensitive. Measured 2026-09-08: two consecutive
+# `make test-changed` runs over one vcx/code edit both exited 2 on
+# test-vcx-timing at a sha where the lane is green alone. That lane's own
+# assertion text reads "This lane runs serially after the -j storm (#1216),
+# so load is not the explanation" — true of `make test`, false here, so a
+# false red arrived wearing a message that pointed the reader at the binary.
+#
+# The order is the Makefile's order, and it is one `make` per tail lane so a
+# red names its own lane.
+SERIAL_TAIL='test-profile-gate test-vcx-timing test-code-diagram'
+
+# run_lane_set LANE… — the storm for everything but the tail, then the tail,
+# serially. Propagates the FIRST failure, like the bare `make` it replaces.
+#
+# bash 3.2 (what macOS ships, and what runs this script when devbox is not in
+# front of it) makes `"${arr[@]}"` on an EMPTY array an unbound-variable error
+# under `set -u`, so every expansion below is length-guarded. A docs-only
+# selection has no tail lane, and that is the common case, not the corner.
+run_lane_set() {
+  local par=() tailed=() l t is_tail
+  for l in "$@"; do
+    is_tail=0
+    for t in $SERIAL_TAIL; do
+      [ "$l" = "$t" ] && { is_tail=1; break; }
+    done
+    if [ $is_tail -eq 1 ]; then tailed+=("$l"); else par+=("$l"); fi
+  done
+  if [ $DRY -eq 1 ]; then
+    # The split is what this function EXISTS for, so --dry-run shows it rather
+    # than only the selection — that is what makes the carve-out checkable
+    # without spending a lane run on it.
+    echo "test-changed: --dry-run — parallel (-j): ${par[*]:-none}"
+    # Printed in EXECUTION order (SERIAL_TAIL's), not selection order, so the
+    # line says what would actually happen.
+    local shown=()
+    if [ ${#tailed[@]} -gt 0 ]; then
+      for t in $SERIAL_TAIL; do
+        for l in "${tailed[@]}"; do
+          [ "$l" = "$t" ] && shown+=("$t")
+        done
+      done
+    fi
+    echo "test-changed: --dry-run — serial tail:  ${shown[*]:-none}"
+    return 0
+  fi
+  if [ ${#par[@]} -gt 0 ]; then
+    make $MAKEFLAGS_PAR "${par[@]}" || return $?
+  fi
+  [ ${#tailed[@]} -eq 0 ] && return 0
+  for t in $SERIAL_TAIL; do
+    for l in "${tailed[@]}"; do
+      if [ "$l" = "$t" ]; then
+        echo "test-changed: serial tail (wall-clock lane, #1216/#1227/#1345): $t"
+        make "$t" || return $?
+      fi
+    done
+  done
+  return 0
+}
+
 if [ $INFRA_HIT -eq 1 ]; then
   echo "test-changed: build-infra change detected (Makefile/scripts/VERSION/devbox) — running the FULL lane union"
   if [ $DRY -eq 1 ]; then
     echo "test-changed: --dry-run — would run: $LANES"
+    run_lane_set $LANES
     exit 0
   fi
-  prebuild && make $MAKEFLAGS_PAR $LANES
+  prebuild && run_lane_set $LANES
   exit $?
 fi
 
@@ -279,7 +352,8 @@ if [ ${#run_lanes[@]} -eq 0 ]; then
   exit 0
 fi
 if [ $DRY -eq 1 ]; then
+  run_lane_set "${run_lanes[@]}"
   echo "test-changed: --dry-run — nothing executed"
   exit 0
 fi
-prebuild && make $MAKEFLAGS_PAR "${run_lanes[@]}"
+prebuild && run_lane_set "${run_lanes[@]}"
