@@ -67,15 +67,21 @@ const flow_cli_usage = [
 	'       cx flow validate FLOW.cx --env ENV.cx',
 	'       cx flow simulate FLOW.cx RESULTS.cx [--env ENV.cx] [--<arg>=VALUE]...',
 	'       cx flow status   --journal URL RUN-ID [--stream=NAME] [--allow-*]',
+	'       cx flow serve    RUNNER.cx [--for DURATION] [--allow-*]',
 	'',
-	'The local profile of cx-stdlib/flow (std-lib/flow.md §4.15): a journal, never',
-	'a service. There is no engine to start — a run is a journaled record and the',
-	'runner is a pure function this process evaluates.',
+	'The local profile of cx-stdlib/flow (std-lib/flow.md §4.15) and its STANDALONE',
+	'RUNNER (§4.23). `run` is a journal, never a service: there is no engine to',
+	'start — a run is a journaled record and the runner is a pure function this',
+	'process evaluates. `serve` is the long-running form of the SAME law, so that',
+	'nothing which needs liveness needs a XAP deployment.',
 	'',
 	'  FLOW.cx        the flow DOCUMENT (data — a closed vocabulary, no [?lib] of',
 	'                 its own)',
 	'  RESULTS.cx     a [results [step name= status= [result …]]…] table (simulate)',
 	'  RUN-ID         a run id as `run` printed it (status)',
+	'  RUNNER.cx      a [runner …] document (serve): [journal url=], [docs url=],',
+	'                 [env …], [ingress bind=], [courier every=] and the [on',
+	'                 kind=<kind> …] binding rows. A malformed one refuses CXER4965.',
 	'',
 	'  --env ENV.cx   the PROGRAM whose module tree the acts resolve through',
 	'                 (§4.1). Its [?lib … :as alias] imports and its own',
@@ -91,14 +97,30 @@ const flow_cli_usage = [
 	'  --authority=ID the authority basis (default cli)',
 	'  --stream=NAME  place the run in its subject\'s aggregate stream (default:',
 	'                 the run id itself)',
+	'  --for DURATION serve only: stop after DURATION and answer',
+	'                 [runner-stopped …]. Absent, a runner runs until it is',
+	'                 stopped, which is what a runner is for.',
 	'  --allow-*      capability grants, as for any `cx FILE` (deny-by-default).',
 	'                 A file:// journal needs --allow-read --allow-write;',
-	'                 --ephemeral, validate and simulate need no grant.',
+	'                 --ephemeral, validate and simulate need no grant. `serve`',
+	'                 also needs --allow-net for its ingress. The runner holds',
+	'                 the flow capability and NOTHING else: every step is',
+	'                 admitted against the RUN\'s recorded basis, never the',
+	'                 runner\'s, so an act needing a grant this process was not',
+	'                 given is denied at its own effect point (CXER0271).',
 	'',
 	'The run id is DERIVED, never random: the content address over (the document,',
 	'--actor, the [args …] record). So re-running the same command RESUMES an',
 	'interrupted run at the step it stopped and answers [deduped …] for a terminal',
-	'one, while a different argument set is a different run.',
+	'one, while a different argument set is a different run. `serve` derives the',
+	'same id from the EVENT that started the run (§4.25), so the two faces produce',
+	'byte-identical transitions for the same flow and the same acts (§4.23).',
+	'',
+	'`serve` binds two ingress inputs and no third: the RESERVED path',
+	'`/.cx/flow/act` takes a correlated act ([act run= step= …]), a declared',
+	'[on kind=webhook path=…] row takes that binding\'s delivery, anything else is',
+	'404. It serves FOUR of §4.24\'s five kinds — schedule, intent, webhook, file;',
+	'a fold binding refuses CXER4965 naming its landing.',
 	'',
 	'Output: the record (or [valid …] / [simulation …]) in canonical CX on stdout;',
 	'a refusal is the [err …] value on stderr.',
@@ -329,10 +351,30 @@ fn flow_cli_args(pairs [][]string, types map[string]string) string {
 }
 
 // flow_cli_nonce is the local profile's NAMED nonce (see the header): the
-// content address over the run's `[args …]` record, so `cx flow run` is
+// CONTENT ADDRESS over the run's `[args …]` record, so `cx flow run` is
 // idempotent on (document, actor, args) and §4.15's resume happens.
+//
+// RULED: 789-WF-37a — it is the content address, `cx.cx_text_hash` over the
+// record, and NOT the untagged raw-text digest this used to take over the
+// CLI's own indented rendering. WF-31 makes the SERVE side's nonce a content
+// address; an untagged digest over an un-canonicalized rendering can never
+// coincide with one, so the §4.23 byte-identical-transitions gate was
+// unreachable until one side moved. A DEFECT FIX, not a surface change: PB-2
+// ruled only that the nonce is DETERMINISTIC from the args and said nothing
+// about the derivation, and this file's own header already claimed the value
+// was "the content address over the `[args …]` record". Nothing pins a
+// CLI-derived run id — the umbrella lane asserts only the `flow:sha2-256:`
+// prefix and every pinned id in `flow.cxd` supplies `opts.nonce` explicitly —
+// so what this DELETES is every existing `cx flow run` run id, a cost that is
+// acceptable only because CX has no external users.
 fn flow_cli_nonce(args_src string) string {
-	return sha256.sum256(args_src.bytes()).hex()
+	return cx.cx_text_hash(args_src) or {
+		// the record is rendered by flow_cli_args from the flow's own
+		// declaration, so it always parses; a change that broke that should
+		// fail loudly here rather than silently fall back to a second scheme.
+		eprintln('cx flow: the [args …] record does not canonicalize: ${err.msg()}')
+		exit(1)
+	}
 }
 
 // ── driving the module's verbs ───────────────────────────────────────────────
@@ -394,7 +436,7 @@ fn flow_cli_answer(rendered string, want_done bool) {
 
 // ── argv ─────────────────────────────────────────────────────────────────────
 
-const flow_cli_known_flags = ['--env', '--journal', '--actor', '--authority', '--stream']
+const flow_cli_known_flags = ['--env', '--journal', '--actor', '--authority', '--stream', '--for']
 
 struct FlowCliOpts {
 mut:
@@ -404,6 +446,10 @@ mut:
 	actor     string
 	authority string
 	stream    string
+	// `serve` only: run for at most this long, then stop and answer
+	// `[runner-stopped …]`. Absent (0) is a runner that runs until it is
+	// stopped, which is what a runner is for.
+	for_spec  string
 	args      [][]string
 	positional []string
 	allow_all    bool
@@ -486,6 +532,7 @@ fn flow_cli_set(mut o FlowCliOpts, key string, val string) {
 		'actor' { o.actor = val }
 		'authority' { o.authority = val }
 		'stream' { o.stream = val }
+		'for' { o.for_spec = val }
 		else { flow_cli_die('unknown flag `--${key}`') }
 	}
 }
@@ -551,12 +598,25 @@ fn run_flow(args []string) {
 		}
 		o.journal = 'mem://cx-flow'
 	}
+	mut for_ns := i64(0)
+	if o.for_spec != '' {
+		if verb != 'serve' {
+			flow_cli_die('--for bounds a `serve` process\'s lifetime; `${verb}` returns when it is done')
+		}
+		for_ns = flow_serve_duration_ns(o.for_spec) or {
+			flow_cli_die('--for ${o.for_spec} is not a duration (30s, 5m, 1d)')
+			i64(0)
+		}
+	}
 	match verb {
 		'run' { flow_cli_run(o) }
 		'validate' { flow_cli_validate(o) }
 		'simulate' { flow_cli_simulate(o) }
 		'status' { flow_cli_status(o) }
-		else { flow_cli_die('unknown verb `${verb}` (run | validate | simulate | status)') }
+		'serve' { flow_cli_serve(o, for_ns) }
+		else {
+			flow_cli_die('unknown verb `${verb}` (run | validate | simulate | status | serve)')
+		}
 	}
 }
 

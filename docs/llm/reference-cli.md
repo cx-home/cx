@@ -181,7 +181,7 @@ Subcommands (`cx <subcommand> --help` for details):
   table                Table API over [table[...]] blocks (info / dump / load).
   scaffold             Typed, commented skeleton on stdout (config/data/doc/log/table).
   xap                  XAP project tooling — scaffold (`init`) and check (`check-surface`).
-  flow                 Local profile of cx-stdlib/flow (run / validate / simulate / status).
+  flow                 cx-stdlib/flow: the local profile (run / validate / simulate / status) and the standalone runner (serve).
   demo                 Self-contained showcase (no file I/O, no network, < 1s).
   lock                 Generate / verify cx.lock from [?lib] directives.
   lsp                  Language server (LSP) on stdio.
