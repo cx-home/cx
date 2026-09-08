@@ -227,7 +227,11 @@ ruled:
    `00:10:00Z` even though the advance runs the clock 30 minutes forward. That
    is the property the defect had inverted.
 
-### What did NOT land, and why it is a ruling rather than a choice
+### What did NOT land under 1358-e, and why it was a ruling rather than a choice
+
+**SUPERSEDED 2026-09-08 by `1358-f1`/`1358-f2` (below), which ruled both
+halves and are now implemented.** The section is kept as the record of what
+was open and why, not as a live statement of the tree.
 
 The **channel face**. A `[tick timer=…]` reader has the same second-clock
 problem a callback had, and the symmetric fix is an `at=` on the tick. But
@@ -250,6 +254,101 @@ to flow-036's `expired-step` expectation) or sched recording it on its own
 `[sched-intent … status='fired']` close entry (a change to sched's durable
 entry shape). Both are rulings; both are drafted as **1358-f**. What IS
 pinned here is the mechanism, in `sched-044`, at the layer that owns it.
+
+## RULED: 1358-f1, 1358-f2 — the fire instant's two faces
+
+**Ruled by Fable, 2026-09-08 10:15 ET, on #1358.** Ids: `1358-f1`, `1358-f2`.
+These answer the two halves the section above left open under "What did NOT
+land" — that section is now historical, and this one supersedes its
+"unimplemented" status.
+
+### 1358-f1 — the channel tick stays a bare signal
+
+`[tick timer='<name>']` is unchanged: **no `at=` on ticks.** Twenty
+`gate=enforced` sched expectations assert that shape verbatim, and the
+standing rule is re-cast, never flip — but here there is nothing to re-cast
+*toward*, because the fact already has a home. A consumer that wants the fire
+instant arms a **callable** fire value declaring one parameter, and `1358-e`
+already delivers the instant there from the arming clock. Two spellings of
+one fact — the instant on the tick *and* the instant on the callable — is the
+fork this refuses.
+
+**No code changes.** `sched.md` §2.1 already said the tick "carries **no**
+instant"; what it did not say is that this is a *decision* rather than a
+shortfall, so the sentence is sharpened to state the division: the tick is a
+bare signal, and the instant travels the callable path. That is the whole
+delivery for f1 — a reader who meets the limitation now meets the reason.
+
+### 1358-f2 — a fired timer's instant is recorded as `fired-at=`
+
+The transitions `f--apply-timer` produces carry the event's instant as
+`fired-at=`, taken from the `[timer-fired … at=]` **event** and never from a
+clock read, so the runner law stays pure. Two transitions are affected, and
+they are the only two that function produces:
+
+| kind × status | transition | gains |
+|---|---|---|
+| `deadline` × `:running`/`:pending`/`:retrying` | `:failed reason=:deadline` | `fired-at=` |
+| `wait` × `:retrying` | `:retrying attempt=K` (the re-offer) | `fired-at=` |
+
+`[timer-fired … at=]` already holds the arming clock's instant after
+`1358-e`, so this is the last link: the durable `(deadline, fired-at)` pair
+that `1358-e`'s rationale named becomes readable off the record instead of
+being unobservable by construction.
+
+PB-6's act shape is untouched — `[timer-fired …]` is a courier **event**, not
+an act.
+
+### Three things the tree said that the ruling's wording did not
+
+Recorded precisely, in the same spirit as the section above, because each one
+would otherwise read as a discrepancy between this record and the code.
+
+1. **The record's step row is a CLOSED allow-list, so `fired-at=` needed an
+   explicit clause.** `f--row-with` (`stdlib/flow.cx:1042`) rebuilds each row
+   from a hand-written `[?attr]` per attribute — `name`, `status`, `pivot`,
+   `ord`, `reason`, `attempt`, `wait`, `count`, `cursor`, `started`, `done`,
+   `failed`, plus `result`/`effect`/`conflict` children. There is no generic
+   attribute sweep, so an attribute with no clause is silently dropped. A
+   transition carrying `fired-at=` would have reached the journal and vanished
+   from the record.
+2. **`fired-at=` is carried in the STICKY shape, and that is a deliberate
+   reading of "durable".** The row builder has two shapes available:
+   `wait=` reads the transition only (so the next transition clears it), while
+   `attempt=` uses `f--carry-val` (transition wins, else the row's prior
+   value). `fired-at=` takes the `attempt=` shape. Under the non-sticky shape
+   the wait-fired instant would be erased by the very next drive transition
+   (`:running attempt=K+1`), which is emitted from the record and never sees
+   the event — so the pair would be unobservable off the record, and the
+   ruling's own stated fixture outcome could not hold. Sticky-with-overwrite
+   means the row always carries the instant of the most recent timer firing
+   that moved that step, which is the durable pair.
+3. **The ruling names `flow-050` for the wait half; the wait half lives in
+   `flow-059`.** `flow-050-deadline-arms-fire-all` pins `on-missed=fire-all`
+   on the ARM and has no wait timer and no re-attempt at all — its probe reads
+   only the `[sched-intent …]` rows. The case that fires a `wait` timer and
+   re-attempts is `flow-059-the-every-wait-is-its-own-timer` (`1314-c1`,
+   `-c2`, `-c4`), and it fires the wait through the LIVE arming path
+   (`$sched:test-clock-advance`), so the instant it records genuinely is the
+   advanced virtual instant the ruling asks for. An id slip, not a different
+   option — the mechanism it rules is unambiguous, so it is implemented as
+   ruled and the id corrected here rather than stalled on a re-ruling.
+   Likewise the ruling's `:running attempt=K+1` names the drive's transition;
+   the transition `f--apply-timer` actually produces for a fired `wait` is
+   `:retrying attempt=K`, the re-offer. The ruling's first sentence — "the
+   transitions `f--apply-timer` produces" — is what governs, and it is what
+   landed.
+
+### What this DELETES
+
+Nothing that was asserted. `fired-at=` is additive: every affected expectation
+gains one attribute and no existing one changes value, so every corpus move is
+a re-cast. The count is the one place the ruling's arithmetic moved: it
+predicted "the two cases gain one attribute each", and the cases that actually
+move are those whose probe splices a WHOLE step element rather than
+re-projecting named attributes. `flow-051` and `flow-053` both fire deadlines
+and do NOT move, because their probes project `name`/`status`/`reason` by
+name. The moved set is recorded with the implementation.
 
 ## 1358-g — the `cmp-005` bisect: #1358 did NOT regress it, and the assertion is the defect
 
@@ -303,3 +402,4 @@ per-loop measurement**. Its verdict moves with unrelated fixtures, which is
 exactly the behavior observed across the three gates. That is a defect in the
 assertion and it belongs to no ruling here — filed separately. #1358 is
 cleared.
+||||||| parent of aab032a89 (feat(1358): a fired timer's instant is recorded as fired-at= on the transition)
