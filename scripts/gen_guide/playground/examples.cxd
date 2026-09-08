@@ -1184,7 +1184,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
   [?test-always-err]]
 #]]
   [note [#
-**Introduces:** `[?retry]` exhaustion. When `max=N` is hit and positional body still errs, returns `[err :code "cx-err:CXER0140" …]`.
+**Introduces:** `[?retry]` exhaustion. When `max=N` is hit and the positional body still errs, the result is `[err code=cx-err:CXER0140 message='retry budget exhausted after 3 attempts' attempts=3 [cause …]]` — the attempt count is on the err and the LAST underlying failure rides along under `[cause]`, so the diagnosis is not lost by the retry that gave up.
 #]]
  ]
 
@@ -1196,7 +1196,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
     [ok value='too-slow']]]
 #]]
   [note [#
-**Introduces:** a `[?timeout]` that elapses. The body's 200ms mock-sleep exceeds the 50ms budget, so the timeout returns `[err cx-err:CXER0141 elapsed=50ms]` rather than the body value.
+**Introduces:** a `[?timeout]` that elapses. The body's 200ms mock-sleep exceeds the 50ms budget, so the result is `[err code=cx-err:CXER0141 message='operation timed out after 50ms' elapsed=50ms]` rather than the body value — `elapsed=` reports the budget that was spent, not the body's own logical time.
 #]]
  ]
 
@@ -1615,7 +1615,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
     avg=[$avg $doc/s/@v]]]
 #]]
   [note [#
-**Pattern:** statistical summary across attribute values. **Uses:** `[min]` / `[max]` / `[avg]` builtins over `$doc/s/@v` (child axis fans out across every `s` child). Compose into a single summary element. `[$avg]` answers a float, and a float renders in exponent form — the average here is `5.55e1`, i.e. 55.5.lement.
+**Pattern:** statistical summary across attribute values. **Uses:** the `[$min]` / `[$max]` / `[$avg]` builtins over `$doc/s/@v` (child axis fans out across every `s` child). Compose into a single summary element. `[$avg]` answers a float, and a float renders in exponent form — the average here is `5.55e1`, i.e. 55.5.
 #]]
  ]
 
@@ -1634,7 +1634,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
     [yield [total region=$key orders=$count amt=[$sum $group/amt]]]]]
 #]]
   [note [#
-**Pattern:** fold each group down to one row. **Uses:** `[group-by]` over `$doc/o` (child axis enumerates each `o` child after gap A). Yields `(US, EU, APAC)`. Aggregations per group await `[?group-by]` iterator combinator.g spelled out: `$group` holds the BINDINGS made in the comprehension, so bind what you want to fold — `[= $amt $o/@amt]` — and then `[$sum $group/amt]` reads it back.
+**Pattern:** fold each group down to one row. **Uses:** `[group-by]` over `$doc/o` (child axis enumerates each `o` child after gap A), with `$key` naming the group and `$count` its size. Aggregating per group needs one thing spelled out: `$group` holds the BINDINGS made in the comprehension, so bind what you want to fold — `[= $amt $o/@amt]` — and then `[$sum $group/amt]` reads it back. Yields one `[total …]` row per region.
 #]]
  ]
 
@@ -1663,7 +1663,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
     [yield $g/item]]]
 #]]
   [note [#
-**Pattern:** pull nested children up one level. **Uses:** `[?for]` over `$doc/g` (child axis), `[yield $g/item]` to splat each group's items. Both axes are child-axis (gap A: `$bind/child` now returns every match, not just the first). The output is a flat sequence. Watch the middle group: a path step that matches exactly ONE element yields that element rather than a one-item sequence, so `[g [item "c"]]` contributes a bare `'c'` where its neighbours contribute `[item 'a']` / `[item 'b']`.
+**Pattern:** pull nested children up one level. **Uses:** `[?for]` over `$doc/g` (child axis), `[yield $g/item]` to splat each group's items. Both axes are child-axis (gap A: `$bind/child` now returns every match, not just the first). The output is a flat sequence. Watch the middle group: a path step that matches exactly ONE element yields that element rather than a one-item sequence, so `[g [item "c"]]` contributes a bare `c` where its neighbours contribute `[item 'a']` / `[item 'b']` — and a bare string prints unquoted when it needs no quoting, which is why it is `c` and not `'c'`.
 #]]
  ]
 
@@ -1893,7 +1893,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
   [yield $x]]
 #]]
   [note [#
-**Pattern:** keep items NOT in the exclusion set. **Uses:** `[not [= …]]` per excluded item, joined with `[and …]`. Returns `(1, 3, 5)` — i.e., `(1..5) − (2, 4)`.
+**Pattern:** keep items NOT in the exclusion set. **Uses:** `[not [= …]]` per excluded item, joined with `[and …]`. Answers `(1..5) − (2, 4)` — and note the OUTPUT SHAPE: a `[?for]` yields three top-level results, and the run surface prints each on its own line, so the pane shows `1`, `3`, `5` on three lines rather than one `(1, 3, 5)`.
 #]]
  ]
 
@@ -2420,7 +2420,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
 [?lib 'cx-stdlib/fp']
 
 [$fp:traverse (1, 2, 3)
-  [?fn ($x) [?if [= $x 2] () ($x)]]]
+  [?fn ($x) [?if [= $x 2] [then ()] [else ($x)]]]]
 #]]
   [note [#
 **Introduces:** because `None=()` zeroes the list-applicative product, a single `()` from `fn` collapses the whole traverse to `()` — the Maybe short-circuit, for free, with no `[just]`/`[none]` heads.
@@ -2664,7 +2664,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
 [?else [$nth (1, 2) 9] 'default']
 #]]
   [note [#
-**Introduces:** `[?else]` — supply a value when the first expression yields nothing. `[$nth (1, 2) 9]` asks for the ninth of two items and answers the empty sequence; `[?else]` turns that into `'default'`. It is the idiom the `[$concat]` diagnostic points at ("bind it or default it with `[?else]` first") whenever a path step might match nothing.
+**Introduces:** `[?else]` — supply a value when the first expression yields nothing. `[$nth (1, 2) 9]` asks for the ninth of two items and answers the empty sequence; `[?else]` turns that into the string `default`. (A string prints unquoted when it needs no quoting — `'has space'` keeps its quotes.) It is the idiom the `[$concat]` diagnostic points at ("bind it or default it with `[?else]` first") whenever a path step might match nothing.
 #]]
  ]
 
