@@ -733,6 +733,29 @@ version, library version).
   prohibition (`cxdm.md` §2.6) now answers with one name. `cxdm.md` §2.6
   also gained the rationale note for that prohibition — the five grounds
   recorded so the question is asked once (RULED: EN-4).
+- **An unreachable journal store is a FAULT, not a claim about the chain
+  (#1293).** `[$journal:open "cx-store+xsp://…" "t"]` against nothing
+  listening answered `E_JOURNAL_OPEN_FAILED: journal store rejected the
+  open-time algo stamp` — asserting the store answered and refused an
+  algorithm, about a store that was never reached, with the dial failure
+  three causes down where a caller printing `@message` never sees it.
+  `journal.md` §8 was already normative on both halves: `CXER4600` is for a
+  backend that is *reachable* with an unusable partition, and inherited
+  `store` faults "propagate as-is, not remapped". Now they do — when any link
+  of the cause chain carries `CXER11xx` / `CXER0271` / `CXER0260`, that
+  fault's code and message are the headline and the journal's step is quoted
+  after it, with the original chain preserved. Applied at all 23 wrap sites,
+  since append, head advance, entry pointers, rotate, compact, shred and the
+  adapter-stream write shared the defect. The larger half was on the READ
+  side, where an `[err]` was turned into ABSENCE — one helper's own comment
+  said so — and absence then became a positive statement: a **read-only open
+  SUCCEEDED** against a store nobody reached, answering `head-seq=0
+  head-hash='genesis:'`; `create=false` answered a bare `CXER4601` "no
+  partition for tenant" with *no cause chain at all*; and `verify` answered
+  `valid=false reason='seq-gap'`, an integrity finding about a chain it could
+  not read, where §3.6 has verify answering a finding and not a fault. The
+  read helpers now keep absence and fault apart, and open, attach and both
+  verify walks refuse on a fault instead of inventing a fresh or broken chain.
 
 ## [0.17.0] — 2026-08-27
 

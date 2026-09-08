@@ -940,6 +940,21 @@
                                   [?if $pin-exists
                                     [then 'DISAGREES with this run — an example computes something else than the recorded answer']
                                     [else 'is MISSING']], ' ===')]],
+                     [; NAME the entries, do not just say one moved. The first
+                        cut of this check compared the two pin files as whole
+                        strings and reported only that "an example computes
+                        something else", which is a gate that reds without
+                        saying what — and it cost a full diagnosis detour to
+                        find out which of 202 entries had moved. An entry's
+                        recorded block is a contiguous run of the pin, so
+                        containment names it with no new string surface. An
+                        entry present in the pin and GONE from this run is not
+                        named here; the corpus is the source of truth for what
+                        exists, and the audited-answer count above covers it. ]
+                     [?for [in $x $rows]
+                       [where [= [$string $x@status] 'ok']]
+                       [where [not [$strings:contains $pin-current [$string $x@out-block]]]]
+                       [yield [$cry [$cat ('    DISAGREES  ', [$string $x@key])]]]],
                      [$cry '    Read the diff against each entry\'s [note] before accepting it:'],
                      [$cry '    a note promising an answer the pin contradicts is the defect (#1170).'])]],
             [$cry '    Run: make playground-examples-regen'],
