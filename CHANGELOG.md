@@ -15,6 +15,36 @@ version, library version).
 
 ### Added
 
+- **`attempts=` on a flow `[step]` — a bounded re-attempt of a FAILED act,
+  gated on the command's own `[idempotent]` declaration (#1314; RULED:
+  789-WF-26a).** §2.3's word table has carried `attempts=` since vocabulary
+  round 2 while `validate` refused it as unimplemented, so the only spelling
+  for a flaky external act was "make it idempotent and re-run the courier".
+  A step may now carry `attempts=N`: a failed act with the bound unspent
+  records `:retrying attempt=K` and is re-offered, and the failure path opens
+  only on exhaustion, where a second `:failed` transition carries
+  `reason=:attempts-exhausted` so the record distinguishes "the act failed"
+  from "the act failed N times". `attempt=K` rides the step row and
+  `:retrying` joins §2.2's closed status set. **The gate is the command's,
+  not the flow's:** `validate` admits `attempts=` only where the resolved
+  resolver row says `idempotent=true`, and refuses `CXER4952` NAMING THE
+  VERB otherwise — absence is a negative disposition (RULED: 789-WF-38a),
+  deny-by-default, because an ungated re-attempt would let a document
+  authorize a double charge. The test reads the row's VALUE rather than its
+  existence, which is what lets a dry run's `idempotent='unresolved:'`
+  sentinel stand the gate down instead of inheriting a fabricated `true`.
+  The WAIT between attempts landed with it (RULED: 1314-c1 .. c4): `every=`
+  is a durable timer named `<run id>:<step>:wait`, armed `on-missed
+  :coalesce`. A flow timer's name gained a KIND segment to make that
+  possible — `sched` treats a name as the registry identity, so one name for
+  a step's `deadline`, its re-attempt `wait` and its W3 rung meant the
+  second timer armed silently DELETED the first. A step with `attempts=` and
+  no `every=` re-offers on the next drive, which is WF-26's own stated
+  default. Not landed: the `retry-after=` FLOOR under the cadence — an
+  ABSOLUTE `retry-after=` is taken relative to `now` and the runner law is
+  pure, so the instant has to reach it on the event; that letter is on
+  #1314 and no producer in this release emits the absolute form.
+
 - **`cx-stdlib/flow` §3 says which of its verbs answer, and a gate holds it
   (#1327; RULED: 1327-a).** §3 declared seventeen public verbs while the
   module registered six, and nothing was red: `flow-vocabulary-gate` reads
