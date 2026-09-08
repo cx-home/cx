@@ -250,3 +250,56 @@ to flow-036's `expired-step` expectation) or sched recording it on its own
 `[sched-intent … status='fired']` close entry (a change to sched's durable
 entry shape). Both are rulings; both are drafted as **1358-f**. What IS
 pinned here is the mechanism, in `sched-044`, at the layer that owns it.
+
+## 1358-g — the `cmp-005` bisect: #1358 did NOT regress it, and the assertion is the defect
+
+**Owner-owed measurement (note of 2026-09-08 11:35 ET on #1354: "the 1358-g
+bisect (two ratios posted) is still owed").** Delivered as two
+DISTRIBUTIONS rather than two ratios, because two single numbers cannot
+separate a regression from a wide gauge.
+
+**The instrument came first.** The ratio could not be posted at all: the
+runner computed it and printed it ONLY inside the `ratio >= max_ratio`
+branch, so a passing run left no measurement behind. That is why three gates
+produced three verdicts and zero numbers — FAIL at `249a2b842` (1.603), PASS
+at `f2d9501d0`, PASS at `8d6717f62`. It now prints on every run.
+
+**Five runs per side, same instrument, one machine, build slot held:**
+
+| side | sha | n | min | max | mean |
+|---|---|---|---|---|---|
+| BEFORE (#1358's merge's first parent) | `5aed3c1ea` | 5 | 0.977 | 1.064 | **1.0164** |
+| AFTER (green full gate) | `8d6717f62` | 5 | 1.019 | 1.072 | **1.0406** |
+
+`5 passed, 0 failed` on all ten runs. The spreads **overlap**, both sit at
+~1.0, and both are nowhere near the 1.500 cap. **There is no regression from
+#1358**, and no bisect direction to walk: the fixture passes at a descendant
+of the sha it failed at.
+
+### The decisive number is the BASELINE, not the ratio
+
+| | baseline | ratio |
+|---|---|---|
+| standalone (this measurement) | ~24.7 MB | ~1.02 |
+| inside the full gate at `249a2b842` | **422.5 MB** | **1.603** |
+
+**A 17× difference in the denominator.** `runtime.used_memory()` is
+PROCESS-wide (`vcx/tests/runners/conformance/conformance_run.v:265-340`), and
+inside `conform-all` roughly a hundred other suites have already run in that
+same process. So the value the assertion divides by is dominated by
+co-resident corpus residue, not by the fd-streaming write loop it claims to
+measure. The loop itself is bounded — ratio ~1.0 over 100 extra 65536-row
+groups, which is what the fixture set out to prove.
+
+**Stated as the limit of this measurement, not glossed:** ten standalone runs
+CANNOT reproduce the failing condition, precisely because standalone the
+baseline is 17× smaller. They answer the regression question and they show
+the loop is bounded; they do not measure the in-gate ratio. Reproducing that
+needs the full `conform-all`, and its verdict would still be a statement
+about the corpus's residue rather than about the loop.
+
+**Conclusion.** `cmp-005`'s assertion is a **process-wide gauge used as a
+per-loop measurement**. Its verdict moves with unrelated fixtures, which is
+exactly the behavior observed across the three gates. That is a defect in the
+assertion and it belongs to no ruling here — filed separately. #1358 is
+cleared.
