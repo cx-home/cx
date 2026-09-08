@@ -751,8 +751,18 @@ const flow_serve_helpers = "
 [; a run is advanced with ITS OWN pinned document — the record carries the
    address, and this runner knows its documents by address. A run whose document
    this runner does not hold is left alone rather than advanced against the
-   wrong one. ]
-[?def fs--advance-run scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$fs \$b \$id::string)
+   wrong one.
+
+   AND WITH ITS OWN BASIS. The basis comes off the RECORD (`$rec@actor`,
+   `$rec@authority`), never off a binding row, which is the law this verb's
+   own `--allow-*` help text already states: every step is admitted against
+   the RUN's recorded basis, never the runner's. The courier reaches every
+   pending run in the journal regardless of which binding started it, so
+   taking the basis from a binding row admits a webhook run under the
+   SCHEDULE binder's identity — a real authority defect, not a cosmetic one.
+   A run records the basis it was admitted against precisely so a courier
+   contributes none of its own (§4.15, RULED: 1265-PB-1). ]
+[?def fs--advance-run scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$fs \$id::string)
   [?match [\$cxflow:status \$j \$id {}]
     [case [err @code=\$c] [skipped run=\$id reason=[\$string \$c]]]
     [else [?let [= \$rec [\$cxflow:status \$j \$id {}]]
@@ -760,15 +770,14 @@ const flow_serve_helpers = "
       [?if [\$empty \$ds]
         [then [skipped run=\$id reason=\"unbound-document\"]]
         [else [?match [\$cxflow:advance \$j \$id ()
-                {env: \$e flow: [\$first \$ds] actor: [\$string \$b@as] authority: [\$string \$b@as]}]
+                {env: \$e flow: [\$first \$ds] actor: [\$string \$rec@actor] authority: [\$string \$rec@authority]}]
           [case [err @code=\$c] [skipped run=\$id reason=[\$string \$c]]]
           [else [ticked run=\$id]]]]]]]]]
 
-[?def fs--courier scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$fs \$bs)
-  [?let [= \$b [\$first \$bs/*]]
-    [couriered n=[\$count [?to-sequence [?for [in \$id [fs--courier-runs \$j]]
-      [where [not [= \$id \"\"]]]
-      [yield [\$name [fs--advance-run \$j \$e \$fs \$b \$id]]]]]]]]]
+[?def fs--courier scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$fs)
+  [couriered n=[\$count [?to-sequence [?for [in \$id [fs--courier-runs \$j]]
+    [where [not [= \$id \"\"]]]
+    [yield [\$name [fs--advance-run \$j \$e \$fs \$id]]]]]]]]
 
 [; ── the ingress (§4.23): two inputs and no third, told apart BY PATH ────── ]
 [?def fs--reply scope=private pure [returns element] (\$code::int \$body::string)
@@ -850,7 +859,7 @@ fn flow_serve_program(r FlowRunner, directives []string, acts []FlowCliAct, tick
          to happen at all (measured — the first loop that bound it and did not
          read it started no run). ]
       [= \$w [\$count [?to-sequence [?for [in \$b \$bs/*] [yield [fs--tick-one \$j \$e \$fs \$b]]]]]]
-      [= \$c [\$string [fs--courier \$j \$e \$fs \$bs]@n]]
+      [= \$c [\$string [fs--courier \$j \$e \$fs]@n]]
       [= \$s [?sleep ${tick_ms}ms]]
       [fs--loop \$j \$e \$fs \$bs [?if [< \$n 0] [then -1] [else [- \$n 1]]] [+ \$done 1]]]]]]'
 	b << '[?let [= \$e ${flow_cli_resolver(acts)}]'
