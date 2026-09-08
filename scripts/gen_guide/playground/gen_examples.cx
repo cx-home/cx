@@ -158,7 +158,7 @@
 
 [?const SLOT-KWS (
   [t needle=':par' tag='par'],       [t needle=':ordered' tag='ordered'],
-  [t needle=':mock' tag='mock'],     [t needle=':where' tag='where'],
+  [t needle=' mock]' tag='mock'],    [t needle=':where' tag='where'],
   [t needle=':yield' tag='yield'],   [t needle=':let' tag='let'],
   [t needle=':init' tag='init'],     [t needle=':using' tag='using'],
   [t needle=':case' tag='case'],     [t needle=':when' tag='when'],
@@ -271,7 +271,8 @@
 # wrong answer.
 #
 # OPTIONAL — `section-of` yields '' when the section is absent, which is
-# the case for 171 of the 182. `make test-playground-wasm-eval` keeps the
+# the case for all but a handful of the corpus. `make test-playground-wasm-eval`
+# keeps the
 # set honest in BOTH directions: an unmarked refusal or divergence fails,
 # and so does a marker on an example that actually matches native.
 #
@@ -342,8 +343,8 @@
 # perfectly healthy example and reports it as broken. Measured on this
 # corpus (2026-08-26, 12 logical cores):
 #
-#   idle                    182 examples in  19.8 s   (mean 108 ms/example)
-#   48 spinners (4x oversub) 182 examples in 146.6 s   (mean 805 ms/example)
+#   idle                    182 examples in  19.8 s   (mean 108 ms/example)  [at 182]
+#   48 spinners (4x oversub) 182 examples in 146.6 s   (mean 805 ms/example)  [at 182]
 #
 # — a 7.4x uniform stretch of every example from one source of contention,
 # with nothing wrong anywhere. The bound has to stretch with it.
@@ -416,7 +417,7 @@
         # cannot make the report the next problem.
         [= $osz [$must 'sizing killed child stdout' [$io:size $out-path]]]
         [= $esz [$must 'sizing killed child stderr' [$io:size $err-path]]]
-        [res status='fail' runnable=true ms=$ms
+        [res status='fail' runnable=true ms=$ms out='' err=''
              msg=[$cat ('TIMEOUT after ', [$string $ms], ' ms (bound ',
                         [$string $bound], ' ms) — captured ', [$string $osz],
                         ' B stdout / ', [$string $esz],
@@ -459,14 +460,16 @@
                                  [or [$strings:contains $out SEQ-ERR-OPEN]
                                      [$strings:contains $out SEQ-ERR-MID]]]]
         [?if $over
-          [then [res status='fail' runnable=true ms=$ms
+          [then [res status='fail' runnable=true ms=$ms out='' err=''
                  msg=[$cat ('output too large: ', [$string [+ $osz $esz]],
                             ' B exceeds the ', [$string CAPTURE-CAP],
                             ' B capture cap — the playground cannot show this')]]]
           [else [?if [or [$strings:starts-with $out 'error:']
                          [and [not [= $rcw 0]] [not $err-value-result]]]
-            [then [res status='fail' runnable=$runnable ms=$ms msg=$msg]]
-            [else [res status='ok' runnable=$runnable ms=$ms msg=$msg]]]]]]]]]]
+            [then [res status='fail' runnable=$runnable ms=$ms msg=$msg
+                       out=$out err=$errout]]
+            [else [res status='ok' runnable=$runnable ms=$ms msg=$msg
+                       out=$out err=$errout]]]]]]]]]]
 
 # ── the timeout is RE-MEASURED before it is believed (#988) ───────────
 #
@@ -512,7 +515,7 @@
                          ' ms on the re-derived bound: attempt 1 was STARVED,',
                          ' not hung')]]]]]
         [?if $again
-          [then [res status='fail' runnable=true ms=$r1@ms
+          [then [res status='fail' runnable=true ms=$r1@ms out='' err=''
                  msg=[$cat ('TIMEOUT twice — ', [$string $r0@ms], ' ms under a ',
                             [$string $bound], ' ms bound, then ', [$string $r1@ms],
                             ' ms under a re-derived ', [$string $b2],
@@ -528,6 +531,11 @@
   '//   61-100 modify / pipe / cxpath / builtins   ·  concurrency / resilience',
   '//   101-160 cxpath + transforms / composition  ·  161-172 diagrams',
   '//   173-182 functional composition (cx-stdlib/fp)',
+  '//   183-203 the v0.14 → v0.18 surface: [?loop] / [?do] / % / seeded random,',
+  '//          [$present], the operand-consuming err rule, uniform postfix steps,',
+  '//          the map + array module surfaces, the read/construct split,',
+  '//          [?group-by], [?with-caps [deny]], [?secret], checked int arithmetic,',
+  '//          [?const] + [?def], [?str], [?else], [?quote]',
   '// runnable:false marks an example that needs a wasm-unavailable capability',
   '// (net / subprocess / fs); it is exempt from the clean-run gate.',
   '// wasmUnsupported marks an example the SHIPPED wasm engine cannot reproduce',
@@ -574,6 +582,94 @@
       [else ([$cat ('      noStableValue: ', [$jstr $no-stable-value], ',')])]],
     '    },')] '\n']]
 
+# ── the RECORDED ANSWER (#1170 §C1, RULED: 1170-a) ────────────────────
+#
+# Until this landed, `make verify-playground-examples` proved only that
+# each example RUNS: it failed on a non-zero exit or an unterminated note
+# comment and compared no value, because the corpus recorded none. So a
+# semantics change retired an example's MEANING while the gate stayed
+# green — R-A1's bare-head retirement (2026-08-25) left FOURTEEN examples
+# echoing their own arguments (`[concat "a" "b"]` → `[concat 'a', 'b']`)
+# with every note still promising the computed answer, and #1033's wasm
+# sweep could not see it either: it compares wasm against native for the
+# SAME source, and both agree on the wrong answer.
+#
+# The fix is to record what the binary actually did, in a file a human
+# reviews. A changed answer then becomes a diff the author must accept —
+# which is exactly the review moment all fourteen never got.
+#
+# WHERE it is recorded is RULED: 1170-a
+# (ledger/rulings_2026_09_08_playground_output_pin_1170.md) — a SEPARATE
+# generated `examples.out.cxd`, never spliced into the hand-authored
+# `examples.cxd`. A generator must not rewrite its own hand-authored
+# input: the corpus is read through `cx --ast --compact` (RawText is
+# opaque to the in-process CXDM), so a rewrite from that AST would lose
+# the hand-written [doc] block and every formatting choice, and the
+# alternative — line-splicing the raw file — puts a fragile text
+# transform in the path of the only copy of 182 hand-authored examples.
+# This repo already has one generator documented as owning a
+# hand-authored corpus (design/787/tools/gen_ux_fixtures.cx) and it would
+# DELETE seven fixtures if run as documented. There is not a second.
+#
+# `[out-text [# … #]]` is the house spelling for a pinned program answer
+# — the same element conformance/*.cxd uses — so this repository has ONE
+# shape for "what this program prints", not two.
+
+[?const RAW-TERM '#]']
+
+[?const OUT-HEADER-TAIL (
+  ' [doc [#',
+  'GENERATED — do not hand-edit. Written by',
+  'scripts/gen_guide/playground/gen_examples.cx from a grant-free audit run',
+  'of every [ex] in examples.cxd, and verified without rewriting by',
+  '`make verify-playground-examples` (the generator with --check).',
+  'Regenerate with `make playground-examples-regen`.',
+  '',
+  'One [ex] per corpus entry, in corpus order. [out-text] is the child',
+  "process's stdout, [err-text] its stderr (emitted only when non-empty),",
+  'both as raw-text payloads under the corpus convention: the content',
+  'starts on the line after the opening marker and the closing marker sits',
+  'on its own line, so exactly one leading and one trailing newline are',
+  'the delimiters and not content. That convention normalizes away a final',
+  'newline, so `chars=` carries the captured length as measured — a',
+  'truncation can never hide behind the payload shape.',
+  '',
+  'An entry marked no-stable-value=true carries no payload: its native',
+  'result is a race (see the [no-stable-value] marker in examples.cxd), so',
+  'there is no single answer to pin and the sweep asserts only that it',
+  'still evaluates. That is the SAME three-state vocabulary',
+  '`make test-playground-wasm-eval` grades, not a fourth spelling.',
+  '',
+  'THIS FILE IS THE REVIEW MOMENT. A diff here means an example now',
+  'computes something else. Read it against the entry\'s [note] before',
+  'accepting it: a note that promises an answer this file contradicts is',
+  'the defect #1170 was filed for.',
+  '#]]',
+  '')]
+
+# out-payload: one raw-text payload under the corpus convention. An empty
+# capture renders as an empty payload (`[#` then `#]`), which is a
+# DELIBERATE record — 30-match-no-else and 45-for-empty legitimately print
+# nothing, and on a page whose contract is "press Run and read the answer"
+# an empty pane has to be pinned as the answer rather than left ambiguous.
+[?def out-payload scope=public ($text)
+  [$cat ('[#\n', $text,
+         [?if [$strings:ends-with $text '\n'] [then ''] [else '\n']],
+         '#]')]]
+
+[?def render-out-block scope=public ($key $out $err $no-stable-value)
+  [?if [not [= $no-stable-value '']]
+    [then [$cat (' [ex key=', $key, ' no-stable-value=true]')]]
+    [else [$strings:join [$seq-flat (
+        [$cat (' [ex key=', $key,
+               ' chars=', [$string [$strings:length $out]],
+               [?if [= $err ''] [then '']
+                 [else [$cat (' err-chars=', [$string [$strings:length $err]])]]])],
+        [$cat ('  [out-text ', [$out-payload $out], ']')],
+        [?if [= $err ''] [then ()]
+          [else ([$cat ('  [err-text ', [$out-payload $err], ']')])]],
+        ' ]')] '\n']]]]
+
 # ── main ──────────────────────────────────────────────────────────────
 
 [?let
@@ -587,6 +683,9 @@
   [= $self-dir [$path:dirname [$path:absolute $argv[1]]]]
   [= $data-path [$path:join $self-dir 'examples.cxd']]
   [= $js-path [$path:join $self-dir 'playground.examples.js']]
+  # The recorded answer (#1170 §C1, RULED: 1170-a) — a generated sibling of
+  # the corpus, never the corpus itself.
+  [= $pin-path [$path:join $self-dir 'examples.out.cxd']]
   [= $cxbin 'vcx/target/cx']
   [= $tmpdir [$cat ([$env:var-or-default 'TMPDIR' '/tmp'], '/cx-gen-examples')]]
   [= $mk [$must 'creating tmp dir' [$io:make-dirs $tmpdir]]]
@@ -620,9 +719,14 @@
                [$compose $src $note] $bound0]]
       [yield [row key=$key status=[$string $r@status] msg=[$string $r@msg]
                 ms=$r@ms
+                out=[$string $r@out] err=[$string $r@err]
                 block=[?if [= [$string $r@status] 'ok']
                   [then [$render-block $key [$string $e@label] $src $note $r@runnable
                           [$string $e@wasm-unsupported] [$string $e@no-stable-value]]]
+                  [else '']]
+                out-block=[?if [= [$string $r@status] 'ok']
+                  [then [$render-out-block $key [$string $r@out] [$string $r@err]
+                          [$string $e@no-stable-value]]]
                   [else '']]]]]]
   [= $fails [?for [in $x $rows] [where [= [$string $x@status] 'fail']] [yield $x]]]
   [= $nfails [$count $fails]]
@@ -656,6 +760,29 @@
       [?for [in $x $rows] [where [= [$string $x@status] 'ok']] [yield [$string $x@block]]],
       FOOTER-LINES)] '\n'], '\n')]]
 
+  # The raw-text payload has ONE limit and it is the corpus's own: a
+  # literal terminator inside a payload cannot be written. Refuse by KEY
+  # rather than emit a malformed pin — a pin file that does not parse is
+  # worse than no pin, because --check compares text and would go green
+  # over it forever.
+  [= $raw-term-hits [?for [in $x $rows]
+      [where [= [$string $x@status] 'ok']]
+      [where [or [$strings:contains [$string $x@out] RAW-TERM]
+                 [$strings:contains [$string $x@err] RAW-TERM]]]
+      [yield [$string $x@key]]]]
+  [= $raw-term-check [?if [$empty $raw-term-hits] [then 0]
+      [else [$die [$cat ('gen_examples: captured output contains the raw-text ',
+                         'terminator, which examples.out.cxd cannot carry: ',
+                         [$strings:join $raw-term-hits ', '])]]]]]
+
+  [= $pin-text [$cat ([$strings:join [$seq-flat (
+      [$cat ('[playground-example-outputs  # ', [$string $n],
+             ' audited answers, corpus order')],
+      OUT-HEADER-TAIL,
+      [?for [in $x $rows] [where [= [$string $x@status] 'ok']]
+        [yield [$string $x@out-block]]],
+      ']')] '\n'], '\n')]]
+
   [= $done (
     [?if [> $nfails 0]
       [then (
@@ -673,16 +800,38 @@
         [= $current [?if $exists
             [then [$must 'reading current js' [$io:read-file $js-path]]]
             [else '']]]
-        [?if [and $exists [= $current $text]]
+        [= $js-ok [and $exists [= [$string $current] $text]]]
+        # The pin is checked in the SAME pass and reported SEPARATELY:
+        # "the bundle is current" and "every example still computes what
+        # it computed" are two different claims, and a reader of the gate
+        # log has to be able to tell which one broke (#1170 §C1).
+        [= $pin-exists [$io:exists $pin-path]]
+        [= $pin-current [?if $pin-exists
+            [then [$must 'reading current pin' [$io:read-file $pin-path]]]
+            [else '']]]
+        [= $pin-ok [and $pin-exists [= [$string $pin-current] $pin-text]]]
+        [?if [and $js-ok $pin-ok]
           [then ([$cry [$cat ('=== gen_examples --check: OK — ', [$string $n],
-                              ' examples clean & current ===')]],
+                              ' examples clean & current, ', [$string $n],
+                              ' answers unchanged ===')]],
                  [$env:exit 0])]
-          [else ([$cry '=== gen_examples --check: playground.examples.js is STALE ==='],
-                 [$cry '    Run: make playground-examples-regen'],
-                 [$env:exit 1])]]]]
+          [else (
+            [?if $js-ok [then ()]
+              [else ([$cry '=== gen_examples --check: playground.examples.js is STALE ==='],)]],
+            [?if $pin-ok [then ()]
+              [else ([$cry [$cat ('=== gen_examples --check: examples.out.cxd ',
+                                  [?if $pin-exists
+                                    [then 'DISAGREES with this run — an example computes something else than the recorded answer']
+                                    [else 'is MISSING']], ' ===')]],
+                     [$cry '    Read the diff against each entry\'s [note] before accepting it:'],
+                     [$cry '    a note promising an answer the pin contradicts is the defect (#1170).'])]],
+            [$cry '    Run: make playground-examples-regen'],
+            [$env:exit 1])]]]]
       [else (
         [$must 'writing playground.examples.js' [$io:write-file $js-path $text]],
         [$cry [$cat ('=== wrote: ', $js-path)]],
+        [$must 'writing examples.out.cxd' [$io:write-file $pin-path $pin-text]],
+        [$cry [$cat ('=== wrote: ', $pin-path)]],
         [$cry [$cat ('=== passing: ', [$string $n], '/', [$string $n], ' (all clean) ===')]])]]
   )]
   [?if false [then '']]]
