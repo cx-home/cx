@@ -23,7 +23,7 @@ show() {
 	# reported the wrong pid (and, with `pgrep -f`, would also match itself —
 	# the trap in feedback_background_wait_no_self_matching_pgrep). Match the
 	# exact argv of the wrapper and take the ancestor, not a descendant.
-	pid=$(ps -eo pid,args | awk '$2=="/bin/sh" && $3 ~ /gate\.sh$/ {print $1}' | head -1)
+	pid=$(ps -eo pid,args | awk '($2=="/bin/sh" || $2=="sh" || $2=="/bin/bash" || $2=="bash") && $3 ~ /gate\.sh$/ {print $1}' | head -1)
 	[ -z "$pid" ] && pid=$(ps -eo pid,ppid,args \
 		| awk '$4 ~ /gate\.sh$/ && $2==1 {print $1}' | head -1)
 
