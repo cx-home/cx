@@ -1,5 +1,34 @@
 # Rulings 2026-09-04 — #1217 the UX projection reaches feature verbs (VF)
 
+**IMPLEMENTED 2026-09-08 (#1217).** `ux:form` now dispatches on the source
+kind; `ux:feature-form` is retired with no alias; the five refusal codes are
+values; spec claim **P0-129** carries the rule; pinned by
+`ux-122-one-entry-projects-both-declaration-systems` and
+`ux-123-form-tells-its-refusals-apart` (both `gate=enforced`). Twelve call
+sites cut over (oriel `serve.cx` ×2, the W5 shop `serve.cx` ×3,
+`gen_ux_fixtures.cx` ×7) and nine fixture call sites re-spelled. One thing the
+2026-09-04 record did NOT anticipate and the implementation measured: an
+`observe` verb projected a form **with a submit button and no inputs** — a
+write offered on a verb that declares it reads — so `ux-verb-observe` is a
+behaviour fix, not only a diagnostic. The owner veto on retiring the #787 W5
+public verb was flagged on 2026-09-04 and never exercised; it is retired.
+
+**One clarification the implementation had to make, recorded because the 09-04
+letter did not say it.** VF-1(a) reads "a source that is a string is module
+source text → P0-17's `[?def]` path". Taken literally that leaves the FILING's
+own reproduction refusing: the issue passes `[$io:read-file
+"owner.feature.cxd"]`, i.e. a feature document as TEXT, and every string would
+go to the def path and answer `ux-no-such-command` — the exact misleading
+refusal VF-1(a) lists under DELETES. So the string lane now also sees a data
+document: it takes the `[?def]` path byte-for-byte, and only where the def
+lookup was about to refuse does it ask whether the text parses to a top-level
+`[feature]`/`[grammar]` element. A `[?def]` module never does (measured: module
+source parses to neither, a feature document parses to `[feature]`), so this is
+a definite test and not a guess, and the fast path pays nothing. Recorded as a
+clarification of 1217-VF-1 rather than a new ruling id: it changes no letter's
+choice, it makes the chosen letter's own DELETES clause true, and pinning it
+otherwise would ship a projection that refuses the report it closes.
+
 **Status: VF-1 RULED (a) 2026-09-04 under the owner's standing letter-acceptance rule and the 2026-09-04 directive (run the campaign through; best long-term decision) — re-verified: one projection, one entry, dispatch on the value's kind, eight in-tree call sites to cut over, no external users. Proposed first (239fcd2de), ruled in the following commit; OWNER VETO by letter stands open because (a) retires the #787 W5 public verb `ux:feature-form`.**
 Recorded BEFORE any spec text. Ruling id `1217-VF-1`. Needed by #1265 W3:
 the `by=:principal` human-task step renders "the act's projected form"
