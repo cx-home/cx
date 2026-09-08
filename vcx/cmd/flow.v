@@ -627,6 +627,10 @@ fn flow_cli_prelude(with_journal bool) string {
 	if with_journal {
 		b << "[?lib 'cx-stdlib/store' :as cxstore]"
 		b << "[?lib 'cx-stdlib/journal' :as cxjournal]"
+		// the boot re-arm's report goes to the LOG SINK, not to stdout: a
+		// run's answer is its record (§4.11), and `cx flow serve` already
+		// reports its own boot re-arm exactly this way.
+		b << "[?lib 'cx-stdlib/log' :as cxlog]"
 	}
 	return b.join('\n')
 }
@@ -649,6 +653,22 @@ fn flow_cli_run(o FlowCliOpts) {
 		'[?let [= \$fl [\$first [\$cx:select \$doc "//flow"]]]',
 		'[= \$e ${flow_cli_resolver(acts)}]',
 		'[= \$j [\$cxjournal:open "${flow_cli_quote(url)}" "${flow_cli_tenant}"]]',
+		// §4.15's LOCAL POSTURE, and it was unimplemented (RULED: 789-WF-27a,
+		// the surviving half of #1313 after that ruling deleted its premise).
+		// `cx flow run` guarantees no liveness of its own and RE-ARMS on the
+		// next invocation of the same command line — the run id is derived, so
+		// the same command line names the same run. Nothing did that: this
+		// program went straight to `start`, so a parked run whose deadline
+		// elapsed while no process held the journal stayed parked for ever, and
+		// `sched`'s `:fire-all` policy that flow persists with every deadline
+		// had nothing to re-arm it. `cx flow serve` calls the same verb at
+		// boot; this is the same call at the same point in the same order.
+		//
+		// The report is READ, into the log sink — an unread binding is the
+		// shape that hides a failure, and an operator whose deadline just
+		// fired should be able to see why.
+		'[= \$rearmed [\$cxflow:rearm \$j ${flow_cli_opts_map(o, '', true)}]]',
+		'[= \$lg [\$cxlog:info [\$cx:emit \$rearmed]]]',
 		'[= \$a ${args_src}]',
 		'  [\$cxflow:start \$j \$fl \$a ${flow_cli_opts_map(o, flow_cli_nonce(args_src), true)}]]',
 	].join('\n')
