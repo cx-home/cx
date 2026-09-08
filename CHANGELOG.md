@@ -15,6 +15,21 @@ version, library version).
 
 ### Added
 
+- **`cx-stdlib/flow` §3 says which of its verbs answer, and a gate holds it
+  (#1327; RULED: 1327-a).** §3 declared seventeen public verbs while the
+  module registered six, and nothing was red: `flow-vocabulary-gate` reads
+  §2.3's word table and never looked at §3, and `check-code-spec-consistency`
+  compares signatures for defs that exist — a def that does not exist has no
+  signature to compare. So a caller reading §3 could not tell a verb that
+  answers from one that names a wave. §3 now carries a per-verb status table
+  using the marking §4.24 already uses for a binding kind (RULED: WF-36):
+  `shipped`, or `named landing` citing the section or ruling that owns the
+  verb and saying "not yet implemented". The gate gains check D, which holds
+  the table against the module in BOTH directions — including the drift
+  nobody had looked for, `fold-record`, `scope=public` and shipped in W1 and
+  never declared by §3 at all. Six mutations were run against the new check
+  and each goes red with exactly one finding.
+
 - **A feature name is ONE segment; `/` is the qualification separator and is
   therefore taken (#1191; RULED: 1191-a).** `feature.cxs` accepted any string
   as a feature name, so a feature named `pb/store` validated, composed and
