@@ -808,6 +808,9 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
   [note [#
 **Introduces:** `:set-attr NAME VALUE` — writes an attribute on every matched node. Adds `status=active` to every user.
 #]]
+  [bare-builtin-ok [#
+`[name "Alice"]` is a DATA element — the users document's own name field — not a call to the `[$name]` builtin. `[?modify]` operates on that document, so the head has to stay.
+#]]
  ]
 
  [ex key=63-modify-chain
@@ -894,6 +897,9 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
 #]]
   [note [#
 **Pattern:** a `[?modify PATH OP]` directive is a valid pipe stage — it receives the threaded document. Here every `[user]` gets `verified=true`.
+#]]
+  [bare-builtin-ok [#
+Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` builtin.
 #]]
  ]
 
@@ -1407,6 +1413,9 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
 #]]
   [note [#
 **Pattern:** move scalar attribute into a nested element shape. **Uses:** `[?for]`, `$u/@…` reads, child-element construction. Common when migrating flat attribute records to a more structured form.
+#]]
+  [bare-builtin-ok [#
+`[name $u/@name]` CONSTRUCTS a name child from an attribute — that is the whole point of the example — so the bare head is deliberate data construction, not a call to `[$name]`.
 #]]
  ]
 
