@@ -702,6 +702,29 @@ fn flow_cli_run(o FlowCliOpts) {
 		'           [else [?if [\$str-starts-with \$flat "[restore-report "]',
 		'                   [then [\$cxlog:info \$flat]]',
 		'                   [else [\$cxlog:warn \$rep]]]]]]',
+		// AND THEN THE RE-ARMED TIMERS HAVE TO ACTUALLY FIRE. §4.15's promise
+		// is not "re-armed" but "the next run finds the parked run and FIRES
+		// WHAT IS DUE" — a re-arm whose timers never fire is a seam with no
+		// consumer. A due timer fires at the process's next SAFEPOINT (RULED:
+		// 1358-a: the pump runs at the blocking cancellation points), and this
+		// program had none between `rearm` and `start`, so under the
+		// production `:wall` clock (RULED: 1358-b) the deadline stayed unfired
+		// and the run stayed parked — the very defect #1313 filed, one step
+		// further in.
+		//
+		// MEASURED at c39be6437 over the flow-063 journal, wall clock, this
+		// program's own shape:
+		//   no sleep / [?sleep 0ms]  → rearmed=1, reserve :running   (no fire)
+		//   [?sleep 1ms]             → rearmed=1, reserve :failed reason=:deadline,
+		//                              run :compensated
+		// 1 ms is not a wait dressed as a fix: it is the smallest cadence the
+		// language admits (`cx flow serve`'s own tick floor) and what is needed
+		// is the SAFEPOINT, not the time. It is skipped entirely when nothing
+		// was re-armed, so an ordinary invocation over a journal with no
+		// pending timer pays nothing and the branch says why it exists.
+		'[= \$pump [?if [\$str-starts-with \$flat "[restore-report rearmed=0"]',
+		'             [then ()]',
+		'             [else [?sleep 1ms]]]]',
 		'[= \$a ${args_src}]',
 		'  [\$cxflow:start \$j \$fl \$a ${flow_cli_opts_map(o, flow_cli_nonce(args_src), true)}]]',
 	].join('\n')

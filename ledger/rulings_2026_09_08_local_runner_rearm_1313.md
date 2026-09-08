@@ -146,3 +146,31 @@ run against that tree's own binary:
 `:fire-all` deadline of the run it could drive **never fired**. The expected
 answer after the change is `rearmed=1 orphaned=1`, `p-run :compensated`,
 `[row status=:failed reason=:deadline]`, `r-run :running`.
+
+## The re-arm had to FIRE, and that took a safepoint
+
+§4.15's row promised more than arming: "the next run finds the parked run and
+FIRES what is due". A re-arm whose timers never fire is a seam with no
+consumer, and that is what the first working version shipped: the generated
+`run` program had no safepoint between `rearm` and `start`, and a due timer
+fires at the process's next blocking cancellation point (RULED: 1358-a) under
+the production `:wall` clock (RULED: 1358-b).
+
+MEASURED at `c39be6437` over `flow-063`'s journal, wall clock, in that
+program's own shape:
+
+```
+no sleep / [?sleep 0ms]  →  rearmed=1, reserve :running                (no fire)
+[?sleep 1ms]             →  rearmed=1, reserve :failed reason=:deadline,
+                            run :compensated                           (the ruled answer)
+```
+
+So the invocation now reaches one safepoint after the re-arm and before its own
+`start`. 1 ms is not a wait dressed as a fix: what is needed is the SAFEPOINT,
+and 1 ms is the smallest cadence the language admits — `cx flow serve`'s own
+tick floor. It is skipped entirely when nothing was re-armed, so an ordinary
+invocation over a journal with no pending timer pays nothing.
+
+The ORDER is part of the rule and is stated in §4.15: a deadline that elapsed
+BEFORE this invocation belongs to the record it was armed against, so it fires
+on its own run, under its own recorded basis, before the invoking run starts.
