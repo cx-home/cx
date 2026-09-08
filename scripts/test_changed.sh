@@ -182,6 +182,9 @@ lane_globs() {
     tools-export-gate)             echo 'conformance/tools-export/* vcx/* stdlib/*' ;;
     # the roster rows live in the Makefile and name files under vcx/
     check-serial-retry-rosters)    echo 'Makefile vcx/*' ;;
+    # pure shell over canned logs — its only inputs are the classifier and the
+    # SKIP_UNUSED_ESCAPE_PROBE that consumes it (\#1337).
+    check-build-failure-classifier) echo 'Makefile scripts/classify_v_build_failure.sh' ;;
     test-xpath-parity-cx)          echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED conformance/* scripts/check_xpath_parity_fixtures.cx" ;;
     # corpus-audit (RULED: VC-28) runs every rosetta program through the built
     # binary and fails on drift from AUDIT.md, so it depends on the corpus AND
