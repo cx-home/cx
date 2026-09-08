@@ -15,6 +15,31 @@ version, library version).
 
 ### Added
 
+- **A key with one registration is now REPORTED, and it is a note like every
+  other observation (#1190; RULED: 1190-a, 1190-b).** Keys are the shared
+  rulers owned by no feature, and W2 checks exactly one property of them —
+  that every registration onto a name agrees in value type. Nothing checked
+  that the NAME was the one the author meant, so `order-id` and `order_id`
+  composed green as two rulers: the join the author intended did not exist and
+  the first evidence was an empty readout at runtime, which is the class the
+  W-gate exists to eliminate. `[$xap:compose-report]` now carries
+  `[note code=':solitary-key' at='<feature>/<noun>#<via>' key='<key name>'
+  detail=…]` for each such key — `at=` locates the one registration, `key=`
+  names the ruler. It is a REPORT, not a gate: `ok=` is untouched and
+  `compose` still raises on conflicts alone, because there is no declared key
+  vocabulary to judge a solitary key against and a private field wearing a
+  global name is a legitimate, if unwise, choice. Counting registrations
+  catches the TYPO class exactly and says nothing about two features meaning
+  different things by one correctly-spelled name; only a key vocabulary can,
+  and that is #1199. The report rides the existing notes channel rather than
+  an element of its own: `xap_grammar_composition.md` §8.1 gives a report two
+  answers — a `[conflict]` moves `ok=`, a `[note]` does not — so an
+  observation about a grammar that composed is always a note, and a parallel
+  element would have made "does this move `ok=`?" un-answerable from the
+  element name. Specified as §4.13; fixtured both ways (`xap-compose-068`
+  reports both keys of the one-character-apart pair, `xap-compose-069`
+  reports nothing when the key actually joins).
+
 - **A grammar's own laws no longer follow their caller — the grammar-expression
   environment (RULED: GE-0..GE-3,
   ledger/rulings_2026_09_05_grammar_expression_env.md).** A rule's `[check]`
