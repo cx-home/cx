@@ -113,7 +113,6 @@ module main
 
 import os
 import cx
-import code
 
 // the RESERVED ingress path: correlated acts, never a binding's delivery. An
 // `[on kind=webhook path=…]` row claiming it refuses CXER4965 (§8, WF-35).
