@@ -538,6 +538,17 @@ directive-docs-check: build-vcx
 # eval error fails the gate, an unbalanced bracket in a note (→ unterminated
 # comment) fails the gate, and examples needing a wasm-unavailable capability
 # carry runnable:false (exempt). --check verifies without rewriting the file.
+#
+# Since #1170 (RULED: 1170-a) it also gates the ANSWER, not just the run.
+# Proving each entry RUNS is not enough: R-A1 retired the bare `[name …]`
+# builtin call on 2026-08-25 and fourteen examples silently stopped computing
+# what their note claims — `[concat "a" "b"]` builds a data element and echoes
+# it, exit 0, gate green, for three release windows. The generator now records
+# every audited answer in scripts/gen_guide/playground/examples.out.cxd and
+# --check compares it, so a semantics change that retires an example's MEANING
+# is a diff a human has to accept instead of a silence. The two claims are
+# reported separately, because "the bundle is stale" and "an example computes
+# something else" need different fixes.
 .PHONY: verify-playground-examples
 verify-playground-examples: build-vcx
 	@vcx/target/cx --allow-read --allow-write --allow-subprocess --allow-env \

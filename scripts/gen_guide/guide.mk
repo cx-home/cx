@@ -96,8 +96,14 @@ check-retired-surface:
 ##                                   (gen_examples.cx reading examples.cxd:
 ##                                   every entry CLI-audited against the
 ##                                   current binary, then the file is
-##                                   rewritten). Run after any engine/syntax
-##                                   change the playground must reflect.
+##                                   rewritten). Also rewrites
+##                                   examples.out.cxd — every audited answer,
+##                                   the file `verify-playground-examples`
+##                                   diffs so a semantics change cannot
+##                                   silently retire an example's meaning
+##                                   (#1170, RULED: 1170-a). Run after any
+##                                   engine/syntax change the playground must
+##                                   reflect.
 playground-examples-regen: $(GUIDE_CX_DEP)
 	@$(GUIDE_CX_BIN) --allow-read --allow-write --allow-subprocess --allow-env \
 	  --allow-clock \

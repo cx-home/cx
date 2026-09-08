@@ -260,30 +260,30 @@ line 3''']
  [ex key=20-string-concat
   [label [#[20] Strings — concat builtin#]]
   [src [#
-[concat "hello" ", " "world"]
+[$concat "hello" ", " "world"]
 #]]
   [note [#
-**Introduces:** `[concat str₁ str₂ …]` — string concatenation.
+**Introduces:** `[$concat str₁ str₂ …]` — string concatenation.
 #]]
  ]
 
  [ex key=21-string-length
   [label [#[21] Strings — length#]]
   [src [#
-[string-length "hello"]
+[$string-length "hello"]
 #]]
   [note [#
-**Introduces:** `[string-length s]` — character count of a string.
+**Introduces:** `[$string-length s]` — character count of a string.
 #]]
  ]
 
  [ex key=22-string-contains
   [label [#[22] Strings — contains#]]
   [src [#
-[contains "foobar" "oob"]
+[$contains "foobar" "oob"]
 #]]
   [note [#
-**Introduces:** `[contains haystack needle]` — boolean test for substring presence.
+**Introduces:** `[$contains haystack needle]` — boolean test for substring presence.
 #]]
  ]
 
@@ -444,12 +444,12 @@ line 3''']
  ]
 
  [ex key=35-cast-float-int
-  [label [#[35] [cast] — float to int (truncate)#]]
+  [label [#[35] [cast] — float to int REFUSES (L44)#]]
   [src [#
 [cast 3.7 :int]
 #]]
   [note [#
-**Introduces:** float → int truncation via `[cast]`. Result is `3`, not rounded.
+**Introduces:** the L44 exact lane. `[cast]` does **not** truncate — silent truncation was removed deliberately, so a non-integral decimal is a refusal: `cx-err:CXER0290` "decimal `3.7` is not integral". Ask for the rounding you mean instead: `[$round 3.7]` → `4`, `[$floor 3.7]` → `3`, `[$ceiling 3.2]` → `4` (example 77).
 #]]
  ]
 
@@ -929,57 +929,57 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
     [rest [?splice [$tail $xs]]]]]
 #]]
   [note [#
-**Introduces:** `[head xs]` (first element) + `[tail xs]` (everything after the first).
+**Introduces:** `[$head xs]` (first element) + `[$tail xs]` (everything after the first).
 #]]
  ]
 
  [ex key=72-builtin-nth
-  [label [#[72] Sequence — nth (0-indexed)#]]
+  [label [#[72] Sequence — nth (1-based)#]]
   [src [#
-[nth (10, 20, 30, 40) 2]
+[$nth (10, 20, 30, 40) 2]
 #]]
   [note [#
-**Introduces:** `[nth xs i]` — zero-indexed element access. Returns `30`.
+**Introduces:** `[$nth xs i]` — element access. Indexing is **1-based and inclusive** (#1177), so `2` is the SECOND item and this returns `20`.
 #]]
  ]
 
  [ex key=73-builtin-distinct
   [label [#[73] Sequence — distinct#]]
   [src [#
-[distinct (1, 2, 1, 3, 2, 4, 1)]
+[$distinct (1, 2, 1, 3, 2, 4, 1)]
 #]]
   [note [#
-**Introduces:** `[distinct xs]` — preserves first occurrence, drops duplicates.
+**Introduces:** `[$distinct xs]` — preserves first occurrence, drops duplicates.
 #]]
  ]
 
  [ex key=74-builtin-reverse
   [label [#[74] Sequence — reverse#]]
   [src [#
-[reverse (1, 2, 3, 4, 5)]
+[$reverse (1, 2, 3, 4, 5)]
 #]]
   [note [#
-**Introduces:** `[reverse xs]` — flips order.
+**Introduces:** `[$reverse xs]` — flips order.
 #]]
  ]
 
  [ex key=75-builtin-position
   [label [#[75] Sequence — position#]]
   [src [#
-[position (10, 20, 30, 20, 40) 20]
+[$position (10, 20, 30, 20, 40) 20]
 #]]
   [note [#
-**Introduces:** `[position xs needle]` — index of first occurrence (0-based), or -1.
+**Introduces:** `[$position xs needle]` — **1-based** index of the first occurrence, or `0` when the needle is absent (#1177). Here that is `2`.
 #]]
  ]
 
  [ex key=76-numeric-abs
   [label [#[76] Numeric — abs#]]
   [src [#
-[abs -42]
+[$abs -42]
 #]]
   [note [#
-**Introduces:** `[abs n]` — absolute value.
+**Introduces:** `[$abs n]` — absolute value.
 #]]
  ]
 
@@ -992,17 +992,17 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
   c=[$ceiling 3.2]]
 #]]
   [note [#
-**Introduces:** `[round f]` / `[floor f]` / `[ceiling f]` — float-to-int with three rounding modes.
+**Introduces:** `[$round f]` / `[$floor f]` / `[$ceiling f]` — float-to-int with three rounding modes.
 #]]
  ]
 
  [ex key=78-string-substring
   [label [#[78] Strings — substring#]]
   [src [#
-[substring "hello world" 6 11]
+[$substring "hello world" 6 11]
 #]]
   [note [#
-**Introduces:** `[substring s start end]` — half-open substring slice.
+**Introduces:** `[$substring s start end]` — substring slice. Indexing is **1-based and inclusive** (#1177), so `6 11` spans characters 6 through 11 and the result is `' world'` — the leading space is character 6.
 #]]
  ]
 
@@ -1014,17 +1014,17 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
   ends=[$ends-with "hello world" "world"]]
 #]]
   [note [#
-**Introduces:** `[starts-with s prefix]` + `[ends-with s suffix]` — boolean tests.
+**Introduces:** `[$starts-with s prefix]` + `[$ends-with s suffix]` — boolean tests.
 #]]
  ]
 
  [ex key=80-string-normalize
   [label [#[80] Strings — normalize-space#]]
   [src [#
-[normalize-space "  hello   world  "]
+[$normalize-space "  hello   world  "]
 #]]
   [note [#
-**Introduces:** `[normalize-space s]` — collapses runs of whitespace, trims edges.
+**Introduces:** `[$normalize-space s]` — collapses runs of whitespace, trims edges.
 #]]
  ]
 
@@ -1066,7 +1066,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
  [ex key=84-async-mock-sleep
   [label [#[84] [?async] — mock sleep then resolve#]]
   [src [#
-[?let [= $f [?async [?let [= $_ [?sleep 100ms :mock]]
+[?let [= $f [?async [?let [= $_ [?sleep 100ms mock]]
                       [ok value='done']]]]
   [?await $f]]
 #]]
@@ -1079,9 +1079,9 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
  [ex key=85-await-all
   [label [#[85] [?await-all] — wait on every future#]]
   [src [#
-[?let [= $fast [?async [?let [= $_ [?sleep 100ms :mock]]
+[?let [= $fast [?async [?let [= $_ [?sleep 100ms mock]]
                          [ok value='a']]]]
-  [?let [= $slow [?async [?let [= $_ [?sleep 400ms :mock]]
+  [?let [= $slow [?async [?let [= $_ [?sleep 400ms mock]]
                            [ok value='b']]]]
     [?await-all ($fast, $slow)]]]
 #]]
@@ -1107,9 +1107,9 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
  [ex key=87-await-race
   [label [#[87] [?await-race] — first to resolve wins#]]
   [src [#
-[?let [= $fast [?async [?let [= $_ [?sleep 100ms :mock]]
+[?let [= $fast [?async [?let [= $_ [?sleep 100ms mock]]
                          [ok value='fast']]]]
-  [?let [= $slow [?async [?let [= $_ [?sleep 500ms :mock]]
+  [?let [= $slow [?async [?let [= $_ [?sleep 500ms mock]]
                            [ok value='slow']]]]
     [?await-race ($fast, $slow)]]]
 #]]
@@ -1146,7 +1146,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
  [ex key=90-cancel
   [label [#[90] [?cancel] — abort a future#]]
   [src [#
-[?let [= $f [?async [?let [= $_ [?sleep 1s :mock]]
+[?let [= $f [?async [?let [= $_ [?sleep 1s mock]]
                       [ok value='never']]]]
   [?let [= $_ [?cancel $f]]
     [?await $f]]]
@@ -1324,10 +1324,10 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
   [src [#
 [?let [= $doc [box [a x=1] [b y=2] [c z=3]]]
   [?for [in $e $doc/*]
-    [yield [name $e]]]]
+    [yield [$name $e]]]]
 #]]
   [note [#
-**Pattern:** iterate all children regardless of name. **Uses:** `/*`, `[name $e]`. `[name $e]` returns the element's own name as a string — useful when names are unknown ahead of time.
+**Pattern:** iterate all children regardless of name. **Uses:** `/*`, `[$name $e]`. `[$name $e]` returns the element's own name as a string — useful when names are unknown ahead of time.
 #]]
  ]
 
@@ -1509,12 +1509,12 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
   [label [#[118] Filter — odd / even partition#]]
   [src [#
 [?for [in $n (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)]
-  [yield [?if [odd $n]
+  [yield [?if [$odd $n]
            [then [odd-val n=$n]]
            [else [even-val n=$n]]]]]
 #]]
   [note [#
-**Pattern:** route each item to one of two shapes by a predicate. **Uses:** `[odd $n]` builtin (Phase 1, this session), `[?if]` ternary. Each iteration yields exactly one element — never both branches.
+**Pattern:** route each item to one of two shapes by a predicate. **Uses:** the `[$odd $n]` builtin and the `[?if]` ternary. Each iteration yields exactly one element — never both branches.
 #]]
  ]
 
@@ -1646,10 +1646,10 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
                 [a [b [c [d marker=hit]]]]
                 [x [y marker=miss]]]]
   [?for [in $m $doc//*[@marker]]
-    [yield [name $m]]]]
+    [yield [$name $m]]]]
 #]]
   [note [#
-**Pattern:** find everything with a given attribute anywhere in the tree. **Uses:** `//*` (descendant wildcard) chained with `[@marker]` (attribute-presence inline predicate), `[name $m]`. The descendant axis walks ALL the way down.
+**Pattern:** find everything with a given attribute anywhere in the tree. **Uses:** `//*` (descendant wildcard) chained with `[@marker]` (attribute-presence inline predicate), `[$name $m]`. The descendant axis walks ALL the way down.
 #]]
  ]
 
@@ -1865,12 +1865,11 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
  [ex key=142-set-union
   [label [#[142] Set — union (concat + distinct)#]]
   [src [#
-[?let [= $a (1, 2, 3, 4)]
-  [?let [= $b (3, 4, 5, 6)]
-    [distinct ((1, 2, 3, 4, 3, 4, 5, 6))]]]
+[?let [= $a (1, 2, 3, 4)] [= $b (3, 4, 5, 6)]
+  [$distinct [?concat $a $b]]]
 #]]
   [note [#
-**Pattern:** combine two sequences and dedupe. **Uses:** sequence literal concatenation (manual), `[distinct]` builtin. (A lazy `[?distinct]` combinator is a planned addition; `[?concat]` covers lazy concatenation.)
+**Pattern:** combine two sequences and dedupe. **Uses:** `[?concat]` — the lazy concatenation combinator — piped into the `[$distinct]` builtin. Both bindings are actually read: the union is computed, not hand-inlined. One flat `[?let]` takes both bindings (§8.5), so no cascade is needed.
 #]]
  ]
 
