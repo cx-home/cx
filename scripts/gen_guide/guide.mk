@@ -27,8 +27,20 @@ GUIDE_GEN := scripts/gen_guide
 GUIDE_CX_BIN  := $(CURDIR)/vcx/target/cx
 GUIDE_CX_SRCS := $(shell find $(CURDIR)/vcx/cx $(CURDIR)/vcx/code $(CURDIR)/vcx/cmd -name '*.v' 2>/dev/null)
 
+# The recipe has to build the FILE IT DECLARES. Since #1312 split the dev and
+# prod artifacts, `build-vcx-dev` writes vcx/target/cx-dev and never
+# vcx/target/cx — so in any checkout without a prior `make build-vcx` (a fresh
+# clone, every wave worktree) this rule ran a four-minute build and then failed
+# with `make: …/vcx/target/cx: No such file or directory`, Error 127. It is
+# masked in the main checkout, where the gate has already built the prod
+# binary.
+#
+# `build-vcx` is also the right dependency and not merely the working one:
+# `verify-playground-examples` audits with vcx/target/cx, so regen must use
+# THAT binary or the recorded answers (#1170 §C1) would be pinned by one binary
+# and checked by another.
 $(GUIDE_CX_BIN): $(GUIDE_CX_SRCS)
-	@$(MAKE) --no-print-directory build-vcx-dev
+	@$(MAKE) --no-print-directory build-vcx
 
 ifeq ($(GUIDE_SKIP_CX_BUILD),)
   GUIDE_CX_DEP := $(GUIDE_CX_BIN)
