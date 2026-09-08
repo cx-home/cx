@@ -28,7 +28,11 @@ version, library version).
   `[$ux:form SOURCE VERB OPTS]` now dispatches on what the source IS: a string
   is module source text and takes P0-17's path unchanged; a `[feature …]` or a
   composed `[grammar …]` element takes the grammar path, resolving a qualified
-  verb through the composition. `ux:feature-form` is retired cutover-first with
+  verb through the composition; and a string that carries a feature *document*
+  rather than module source — what `[$io:read-file]` hands over, which is this
+  issue's own reproduction — takes the grammar path too, because a `[?def]`
+  module never parses to a top-level `[feature]`/`[grammar]` element, so the
+  test is definite and it runs only where the def lookup was about to refuse. `ux:feature-form` is retired cutover-first with
   no alias (twelve call sites in-tree; cx has no external users). Its refusals
   are told apart as values — `ux-no-such-command`, `ux-not-a-command` (the def
   exists and declares no `[effects]`, previously indistinguishable from a
