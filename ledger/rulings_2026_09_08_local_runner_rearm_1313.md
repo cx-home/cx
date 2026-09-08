@@ -73,13 +73,27 @@ Two consequences were left, and both are certain from the code:
    and the defect it was written to fix returned — silently, because a
    fallback that is correct for the one-run case is invisible in it.
 
-Both are fixed by deriving all of it from ONE source at arm time: the run's
-own `:started` transition — `actor=`, `authority=`, `stream=`, `flow=`. That
-is the shape `f--child-opts` (§4.12) already uses for a child run, and it
-costs no second read: the entry sweep `rearm` already performs for the
-pending `[sched-intent …]` set carries those transitions, so `rearm` now
-folds both out of one sweep. The basis values are the same immutable ones the
-fire-time read looked for — a run's basis is written once, at `start`.
+Both are fixed by deriving all of it from the run's own record at arm time —
+`actor=`, `authority=`, the stream it was found in, and `flow=` for the pin.
+The basis values are the same immutable ones the fire-time read looked for; a
+run's basis is written once, at `start`.
+
+**And a measured fact that shaped the fix, worth recording on its own.** The
+first attempt folded the `:started` rows out of the entry sweep `rearm`
+already performs, on the assumption that the sweep sees the journal. It does
+not: `[$journal-since $journal 1 "" {}]` returns the **DEFAULT stream only**.
+That is where `sched` appends its `[sched-intent …]` rows — which is why the
+pending fold works over it — and a run's transitions are in the run's own
+home stream (its id verbatim by default, §4.11 RULED 1265-PB-3, or wherever
+its starter's `opts.stream` put them). Measured 2026-09-08 with a two-entry
+journal: `[default-stream 1] [order-p 1]`, the intent in the first and the
+transition in the second, and `journal:query` over `//flow-transition` and
+`/event/flow-transition` both answered 0 hits. So there is no all-streams
+sweep to fold, and the record has to be LOCATED: the run's own id first, then
+the stream the invocation carries — two reads at most, one in the ordinary
+case, the same order of cost as the per-fire read this replaces, moved to
+boot where a finding can still be reported. A run neither read finds is not
+re-armed and is named in the `[orphan …]` rows.
 
 ## The one thing §4.15 left open, and how it is settled
 
@@ -115,7 +129,12 @@ runs, neither of them the invoker's — one whose document the invocation holds
 whose document it does not (orphaned, untouched) — with a third actor and a
 third stream on the invocation.
 
-MEASURED at `4d128743b`, before the change, with the fixture's own program:
+Both parked runs are seeded in their DEFAULT home streams (the run id
+verbatim), which is the production shape — `cx flow run` passes no
+`--stream` — and the invocation carries a third stream, `order:boot`.
+
+MEASURED at `4d128743b`, before the change, with the fixture's own program
+run against that tree's own binary:
 
 ```
 [probe [report rearmed=2 skipped=0 orphaned=0] [p-run :running]
