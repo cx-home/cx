@@ -726,6 +726,83 @@
     [where [$strings:contains $answer [$cat ('[', $h)]]]
     [yield $h]]]]
 
+# ── §C3: the [?let]-CASCADE lint (RULED: 1170-c) ──────────────────────
+#
+# `[?let]` takes ALL its bindings in ONE flat list, and each one can read
+# the ones before it (code.md §8.5). Reaching for a second `[?let]` to add
+# a second binding is a Scheme habit (#361), and the corpus TAUGHT it: 16
+# of 202 examples cascaded, `172` six deep. `17-let-nested` was the worst
+# case because its own note presented the cascade as the idiom.
+#
+# THE RULE IS STRUCTURAL, AND ASKED OF THE ENGINE. A `[?let]` directive
+# that has another `[?let]` directive as a DIRECT child is a cascade: the
+# inner one sits in the outer one's BODY position, which is the only place
+# a second binding list can go. Everything else nests through something —
+# a `[?for]`, a `[?fn]`, a `[?worker]`'s `[body …]`, an element — and is a
+# genuinely different scope.
+#
+# THAT EXCLUSION IS NOT A SPECIAL CASE, which is the point worth keeping.
+# The §C3 sketch on #1170 asked for the `[?async]`/`[?worker]` bodies to be
+# exempted by NAME. They do not need to be: measured over the corpus, the
+# four surviving multi-`[?let]` entries that are NOT cascades — `84`, `85`,
+# `87`, `90` — all nest their inner `[?let]` inside an `[?async]`/`[?worker]`
+# body, so the direct-child rule already passes them, and a rule with no
+# name list cannot go stale when a fifth scoping directive is added.
+#
+# AND THERE IS NO ALLOW-LIST, deliberately (1170-c, 1(a)). A marker like
+# `bare-builtin-ok` exists because §C2's rule has legitimate exceptions —
+# a data element named after a builtin. This rule has none: a nested
+# `[?let]` in a genuinely different scope is never in body position, so it
+# is never flagged, and an escape hatch would only ever be used to keep a
+# cascade. `162`/`171`/`172` — the three §C1 left standing because
+# `make test-playground-mermaid` grades the emitter's shape
+# classification — are flattened in this same change under a green run of
+# that gate, so the list this lint would have needed is EMPTY.
+#
+# ATTRIBUTES ARE NOT WALKED, and cannot need to be: a node-valued
+# attribute is refused outright (D2 — `value=[…]` is `E211`), so a `[?let]`
+# can only ever be an item.
+
+[?const LET-RX-SRC '\[\?let\b']
+
+# A member that is not there is an ERROR, not an absence: `$n.name` on a
+# `Scalar`/`Hole`/`RawText` node answers CXER0001 `no member "name"` and
+# takes the whole run down, so both reads are guarded — the same `[?else]`
+# the corpus loader already uses for `items`.
+[?def is-let-node scope=public ($n)
+  [and [= [$string [?else $n.type '']] 'EvalDirective']
+       [= [$string [?else $n.name '']] 'let']]]
+
+# node-let-cascades: how many `[?let]`s in this subtree open another
+# `[?let]` directly in their body.
+[?def node-let-cascades scope=public ($node)
+  [?let
+    [= $kids [$items-of $node]]
+    [= $here [?if [$is-let-node $node]
+        [then [$count [?for [in $k $kids] [where [$is-let-node $k]] [yield 1]]]]
+        [else 0]]]
+    [= $below [?for [in $k $kids] [yield [$node-let-cascades $k]]]]
+    [+ $here [?if [$empty $below] [then 0] [else [$sum $below]]]]]]
+
+# src-cascades: the cascade count of ONE example's source, from the
+# engine's own parse. `--ast` does not evaluate, so a `[?lib]` head or a
+# missing grant cannot reach this.
+[?def src-cascades scope=public impure ($cxbin $tmp $key $src)
+  [?let
+    [= $w [$must 'writing cascade probe' [$io:write-file $tmp [$cat ($src, '\n')]]]]
+    [= $r [$process:run ($cxbin, '--ast', '--compact', $tmp)]]
+    [= $ok [?if [= $r@exit-code 0] [then 0]
+        [else [$die [$cat ('gen_examples: cx --ast failed on the src of ', $key,
+                           ' (#1170 §C3) — a source the audit RAN must project: ',
+                           [$strings:trim [$string $r@stderr]])]]]]]
+    [= $a [$must 'parsing src --ast JSON' [$json:parse [$string $r@stdout]]]]
+    [= $t [?if [= [$string [?else $a.type '']] 'Document'] [then 0]
+        [else [$die [$cat ('gen_examples: expected a Document AST from the src of ',
+                           $key, ' (#1170 §C3)')]]]]]
+    [= $cs [?for [in $e [$array:flatten [?else $a.elements []]]]
+        [yield [$node-let-cascades $e]]]]
+    [?if [$empty $cs] [then 0] [else [$sum $cs]]]]]
+
 [?def render-out-block scope=public ($key $out $err $no-stable-value)
   [?if [not [= $no-stable-value '']]
     [then [$cat (' [ex key=', $key, ' no-stable-value=true]')]]
@@ -766,6 +843,10 @@
   # A SEPARATE tmp for the calibration probe: the audit's tmp holds the
   # composed example being retried, and the re-probe must not overwrite it.
   [= $probe-tmp [$cat ($tmpdir, '/probe.cx')]]
+  # A THIRD tmp, for §C3's `--ast` projection of an example's own src: the
+  # audit's tmp holds the composed example and the probe's holds the
+  # builtin-head probe, and neither may be overwritten under the other.
+  [= $cascade-tmp [$cat ($tmpdir, '/cascade.cx')]]
 
   [= $entries [$load-examples $cxbin $data-path]]
   [= $n [$count $entries]]
@@ -856,9 +937,14 @@
       [where [not [$member $k $marked-keys]]] [yield $k]]]
   [= $unjustified [?for [in $k $marked-keys]
       [where [not [$member $k $flagged-keys]]] [yield $k]]]
-  [= $c2 [?if [and [$empty $unmarked] [$empty $unjustified]]
-      [then 0]
-      [else (
+  # §C2 and §C3 both REPORT here and neither exits: the two classes are
+  # independent, and a corpus that trips both should learn about both in
+  # one run. 1170-b's own warning is that a gate which is painful to act
+  # on teaches people to ignore it, and "fix one, rerun, discover the
+  # other" is that pain.
+  [= $c2-bad [not [and [$empty $unmarked] [$empty $unjustified]]]]
+  [= $c2 [?if $c2-bad
+      [then (
         [$cry [$cat ('=== gen_examples: the bare-builtin-head lint FAILED ',
                      '(#1170 §C2, RULED: 1170-b) — refusing to ',
                      [?if $check [then 'verify'] [else 'write']], ' ===')]],
@@ -875,7 +961,44 @@
             [$strings:pad-end $k 40 ' '],
             ' carries [bare-builtin-ok] but builds no bare builtin head —',
             ' an unjustified marker is a failure too; remove it')]]]],
-        [$env:exit 1])]]]
+        1)]
+      [else 0]]]
+
+  # ── §C3: the [?let]-cascade lint (RULED: 1170-c) ───────────────────
+  # The PREFILTER is sound rather than convenient: a cascade needs two
+  # `[?let]` directives in one src, and `[?let` is the ONLY spelling —
+  # `[? let` is `expected name` and `[?LET` parses as a processing
+  # instruction, neither of them a let. So an src with fewer than two
+  # occurrences cannot cascade and is not worth a process; over the
+  # corpus that is 7 parses, not 202.
+  [= $multi-let [?for [in $x $rows]
+      [where [= [$string $x@status] 'ok']]
+      [where [>= [$count [$re:find-all [$re:compile LET-RX-SRC] [$string $x@src]]] 2]]
+      [yield $x]]]
+  [= $cascaded [?for [in $x $multi-let]
+      [= $n [$src-cascades $cxbin $cascade-tmp [$string $x@key] [$string $x@src]]]
+      [where [> $n 0]]
+      [yield [hit key=[$string $x@key] n=$n]]]]
+  [= $c3-bad [not [$empty $cascaded]]]
+  [= $c3 [?if $c3-bad
+      [then (
+        [$cry [$cat ('=== gen_examples: the [?let]-cascade lint FAILED ',
+                     '(#1170 §C3, RULED: 1170-c) — refusing to ',
+                     [?if $check [then 'verify'] [else 'write']], ' ===')]],
+        [?for [in $h $cascaded] [yield [$cry [$cat ('CASCADE  ',
+            [$strings:pad-end [$string $h@key] 40 ' '], ' ',
+            [$string $h@n], ' [?let] in a [?let] BODY — [?let] takes all its',
+            ' bindings in ONE flat list and each reads the ones before it',
+            ' (code.md §8.5); a second [?let] for a second binding is the',
+            ' Scheme habit tracked as #361. Merge them into the outer [?let].')]]]],
+        1)]
+      [else 0]]]
+
+  # ONE exit for both classes. The two `[= $c2 …]` / `[= $c3 …]` bindings
+  # above are what PRINT (a sequence literal evaluates its elements; a
+  # bare `[?for]` bound to nothing would not), and this reads the verdict
+  # off the booleans rather than off their shape.
+  [= $lint [?if [or $c2-bad $c3-bad] [then [$env:exit 1]] [else 0]]]
 
   # The raw-text payload has ONE limit and it is the corpus's own: a
   # literal terminator inside a payload cannot be written. Refuse by KEY

@@ -2136,12 +2136,12 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
   [label [#[162] Sequence diagram — `[?select]` across channels#]]
   [src [#
 [?let [= $ch1 [?channel name="a" buffer=1]]
-  [?let [= $ch2 [?channel name="b" buffer=1]]
-    [?let [= $_ [?send 1 to=$ch1]]
-      [?select
-        [case [from $ch1 $v]  [ok value=$v]]
-        [case [from $ch2 $v]  [ok value=$v]]
-        [case [timeout 50ms]  [err code="timeout"]]]]]]
+      [= $ch2 [?channel name="b" buffer=1]]
+      [= $_ [?send 1 to=$ch1]]
+  [?select
+    [case [from $ch1 $v]  [ok value=$v]]
+    [case [from $ch2 $v]  [ok value=$v]]
+    [case [timeout 50ms]  [err code="timeout"]]]]
 #]]
   [note [#
 **Pattern:** wait on the first of several channels (with a timeout escape hatch). **Diagram:** top-level `[?select]` triggers `sequenceDiagram` — each `[case [from CH $v] …]` arm becomes an arrow from the channel actor; the `[timeout]` arm becomes a self-loop with a duration label. The case-envelope shape `[case [from $ch $msg] HANDLER]` is the split-selector form: selector head is the case kind, handler is positional.
@@ -2286,15 +2286,15 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
   [label [#[171] Sequence — producer / consumer over a channel#]]
   [src [#
 [?let [= $ch [?channel name="jobs" buffer=4]]
-  [?let [= $prod [?worker name="producer"
-                   [body [?let [= $_ [?for [in $i [$range 1 3]]
-                                       [yield [?send $i to=$ch]]]]
-                           [?close $ch]]]]]
-    [?let [= $cons [?worker name="consumer"
-                     [body [?for [in $i [$range 1 3]]
-                             [yield [?receive from=$ch]]]]]]
-      [?let [= $_ [?wait-for worker=$prod]]
-        [?wait-for worker=$cons]]]]]
+      [= $prod [?worker name="producer"
+                 [body [?let [= $_ [?for [in $i [$range 1 3]]
+                                     [yield [?send $i to=$ch]]]]
+                         [?close $ch]]]]]
+      [= $cons [?worker name="consumer"
+                 [body [?for [in $i [$range 1 3]]
+                         [yield [?receive from=$ch]]]]]]
+      [= $_ [?wait-for worker=$prod]]
+  [?wait-for worker=$cons]]
 #]]
   [note [#
 **Pattern:** a `[?channel buffer=N]` with a `[?worker]` producer (`[?send X to=$ch]` then `[?close]`) and a consumer (`[?receive from=$ch]`), joined with `[?wait-for worker=…]`. **Diagram:** the let-bound workers and channels render as `sequenceDiagram` actors with channel arrows. **Running it:** the playground's default wasm build has no threads, so this program does not run in the browser — see the banner. Under `make guide-http` (COOP/COEP) cxlib loads the pthreads build and the workers run on real OS threads.
@@ -2306,18 +2306,18 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
   [label [#[172] Sequence — dispatcher + worker + collector#]]
   [src [#
 [?let [= $jobs [?channel name="jobs" buffer=8]]
-  [?let [= $results [?channel name="results" buffer=16]]
-    [?let [= $d [?worker name="dispatcher"
-                  [body [?let [= $_ [?for [in $j [$range 1 4]]
-                                      [yield [?send $j to=$jobs]]]]
-                          [?close $jobs]]]]]
-      [?let [= $w [?worker name="worker"
-                    [body [?for [in $j [$range 1 4]]
-                            [yield [?send [processed value=[?receive from=$jobs]]
-                                     to=$results]]]]]]
-        [?let [= $_ [?wait-for worker=$d]]
-          [?for [in $k [$range 1 4]]
-            [yield [?receive from=$results]]]]]]]]
+      [= $results [?channel name="results" buffer=16]]
+      [= $d [?worker name="dispatcher"
+              [body [?let [= $_ [?for [in $j [$range 1 4]]
+                                  [yield [?send $j to=$jobs]]]]
+                      [?close $jobs]]]]]
+      [= $w [?worker name="worker"
+              [body [?for [in $j [$range 1 4]]
+                      [yield [?send [processed value=[?receive from=$jobs]]
+                               to=$results]]]]]]
+      [= $_ [?wait-for worker=$d]]
+  [?for [in $k [$range 1 4]]
+    [yield [?receive from=$results]]]]
 #]]
   [note [#
 **Pattern:** a two-stage pipeline across two channels — a dispatcher fans jobs into `jobs`, a worker transforms each into `[processed …]` on `results`, and the main thread drains `results`. **Diagram:** the let-bound workers and channels render as a `sequenceDiagram`. **Running it:** the playground's default wasm build has no threads, so this program does not run in the browser — see the banner. Real parallelism (and true channel backpressure on the bounded buffers) needs `make guide-http`, where cxlib loads the pthreads build.

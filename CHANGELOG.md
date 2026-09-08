@@ -112,6 +112,41 @@ version, library version).
   example computes something else" — are reported separately, because they
   need different fixes.
 
+- **Two corpus LINTS, so neither defect class can come back one example at a
+  time (#1170 §C2 + §C3; RULED: 1170-b, 1170-c).** §C1's pin makes a retired
+  construct visible in review; these make it visible to the machine, and both
+  run BEFORE anything is written, so a corpus that trips one cannot be
+  regenerated past — the fix is by hand in `examples.cxd`, which is the point.
+  **§C2, the bare-builtin-head lint,** asks the ENGINE which bare heads name
+  builtins rather than carrying a list: `[$NAME]` answers `user-undefined` for
+  a name that is not callable and an ARITY error for one that is, so there is
+  no second copy of `builtin_dispatchable` to go stale (the generator's own
+  30-name `BUILTIN-NAMES` constant, kept for tag inference, is already wrong —
+  it carries `modulo` and `rem`, which are not callable at all). The name alone
+  over-reports: `and`/`or`/`not` are bare-spelled operators, `cast` is
+  dispatched bare WITH arguments, and `log`/`name` are data elements that
+  happen to share a builtin's name — so the second condition is §C1's pin, and
+  an entry is flagged only when the construct CAME TO REST in the recorded
+  answer. What survives is a genuine data element named after a builtin, and
+  `[bare-builtin-ok [# reason #]]` states that per entry, graded in BOTH
+  directions like the wasm marker so the corpus cannot be defeated by marking
+  it wholesale. **§C3, the `[?let]`-cascade lint,** refuses a `[?let]` whose
+  DIRECT child is another `[?let]` — the inner one is then in the outer's body
+  position, which is the only place a second binding list can go, and `[?let]`
+  takes all its bindings in ONE flat list where each reads the ones before it
+  (`code.md` §8.5). Sixteen of 202 entries cascaded, `172` six deep, and
+  `17-let-nested` taught it; the last three — the sequence-diagram examples
+  `162`/`171`/`172`, left standing by §C1 because `make test-playground-mermaid`
+  grades the emitter's shape classification — are flattened here under a green
+  run of that gate, so the lint lands with **no allow-list at all**. It needs
+  none, and that is the part worth keeping: the rule is structural and asked of
+  `cx --ast`, so the `[?let]`s nested inside an `[?async]` or `[?worker]` body
+  (`84`, `85`, `87`, `90`) pass without any directive being named anywhere, and
+  a rule with no name list cannot go stale when a fifth scoping directive is
+  added. Both lints report and neither exits; one gate exits after both, because
+  "fix one, rerun, discover the other" is the pain that teaches people to ignore
+  a gate.
+
 - **A feature name is ONE segment; `/` is the qualification separator and is
   therefore taken (#1191; RULED: 1191-a).** `feature.cxs` accepted any string
   as a feature name, so a feature named `pb/store` validated, composed and
