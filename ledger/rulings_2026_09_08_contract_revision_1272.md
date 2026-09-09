@@ -98,13 +98,26 @@ This is the opposite call from #1268 the same afternoon, where reusing
 a type failure and an arity failure are different classes evaluated at the same
 point; here it is the same gate with one more condition.
 
-## What was NOT ruled here
+## RULED: 1272-a3 — the ABOVE-host direction refuses too (owner + Fable, 19:35 ET)
 
-**The ABOVE-host direction.** A package declaring a revision *greater* than the
-host's — built against a contract this binary does not implement yet — is a real
-second failure mode and is **not** refused. 1272-a1 ruled "below the host's" and
-nothing else; refusing the forward direction is a new refusal condition, so it
-is recorded on #1272 for a ruling rather than invented in the implementation.
+Drafted here as "not ruled", raised on the issue, and ruled **(a)** the same
+evening. `pkg-install` and the boot check refuse a package whose
+`contract-revision` is **above** the host's exactly as they refuse one below —
+same code, same `stage=`, message naming both revisions **and the direction**.
+A host cannot run a contract it does not implement; accepting it would be the
+silent-lie shape this issue was filed to end, with the arrow reversed.
+
+So the comparison is **exact agreement**, not a floor, and the refusal carries
+`direction=below|above` because the two cases call for opposite actions: below,
+re-seal the package with this toolchain; above, upgrade the host (or seal
+against its revision). Printing an inequality and leaving the reader to work
+out which side is old is the thing this attribute exists to prevent.
+
+Fixture `xap-dist-059` pins it with a revision literally one above the host's,
+as the ruling describes — which means a future §1.2 bump turns that case into an
+equal comparison and reds it. That is deliberate, and it is the same
+acknowledgment `xap-dist-056` carries: a bump is a statement about packages in
+the field, and the corpus is one of the places that has to say so out loud.
 
 ## Fixtures
 
