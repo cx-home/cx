@@ -152,7 +152,7 @@ because a wrong suggestion sends the reader to check a name they never wrote.
 [$greeet "world"]
 #]]
   [out-text [#
-[err code=user-undefined message='no callable "greeet" — did you mean `greet`?']
+[err code=cx-err:CXER0136 message='E_NO_CALLABLE: no callable "greeet" — did you mean `greet`?']
 #]]
   [exit-code [#1#]]
  ]

@@ -2002,7 +2002,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[err code=user-undefined message='no callable "greeet" — did you mean `greet`?']
+[err code=cx-err:CXER0136 message='E_NO_CALLABLE: no callable "greeet" — did you mean `greet`?']
 ```
 
 <sub>Fixtures: `ap-bare-head-typo-wrong` / `ap-bare-head-typo-right` in `conformance/llm/antipatterns.cxd`</sub>
