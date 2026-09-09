@@ -2715,7 +2715,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
  [ex key=206-head-bind-captures-the-whole-element
   [label [#[206] pattern head-bind `[user$u …]` — the binding glued to the name is the WHOLE element#]]
   [src [#
-[?match [user id=7 [name Ada]]
+[?match [user id=7 [given Ada]]
   [case [user$u id=$id] [found id=$id [?splice ($u)]]]
   [else NOMATCH]]
 #]]
@@ -2803,10 +2803,10 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
  [ex key=214-quasiquote-with-unquote
   [label [#[214] `[?quote]` with `[?unquote]` — a tree with computed holes#]]
   [src [#
-[?let [= $n [+ 1 2]] [?quote [sum [?unquote $n] [?unquote [* $n 2]]]]]
+[?let [= $n [+ 1 2]] [?quote [total [?unquote $n] [?unquote [* $n 2]]]]]
 #]]
   [note [#
-**Introduces:** the quasiquote hole (code.md §6.4.3). `[?quote …]` hands back the tree AS DATA; `[?unquote EXPR]` inside it evaluates EXPR and puts the VALUE at that spot. Here the two unquotes compute `3` and `6` while `sum` stays a literal head. Contrast `203-quote-homoiconic`, which quotes an expression whole.
+**Introduces:** the quasiquote hole (code.md §6.4.3). `[?quote …]` hands back the tree AS DATA; `[?unquote EXPR]` inside it evaluates EXPR and puts the VALUE at that spot. Here the two unquotes compute `3` and `6` while `total` stays a literal head. Contrast `203-quote-homoiconic`, which quotes an expression whole.
 #]]
  ]
 
@@ -2848,7 +2848,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
  [ex key=218-exact-numeric-lane
   [label [#[218] the exact lane — `$idiv`, `%`, `$avg` over decimals, an all-int `/` chain#]]
   [src [#
-[readings [exact [$idiv 7 2]] [rem [% 7 2]] [avg [$avg (1.5, 2.5)]] [chain [/ 12 3 2]]]
+[readings [exact [$idiv 7 2]] [rem [% 7 2]] [mean [$avg (1.5, 2.5)]] [chain [/ 12 3 2]]]
 #]]
   [note [#
 **Introduces:** the exact numeric lane (code.md §6.5; #1072, #1044, #1046). Integers are i64 and CHECKED; `$idiv` and `%` are the integer pair; `$avg` over decimals stays decimal (`2.00`, scale preserved); an all-int `/` chain `[/ 12 3 2]` folds exactly in i64 → `2`. Nothing here passes through a float.
@@ -2954,7 +2954,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
  [ex key=228-a-scoped-deny-is-not-a-total-deny
   [label [#[228] `[?with-caps [deny net HOST]]` narrows; `[deny net]` removes#]]
   [src [#
-[caps [total-deny [?with-caps [deny net] [$caps]]] [scoped-deny [?with-caps [deny net "a.example:443"] [$caps]]]]
+[capabilities [total-deny [?with-caps [deny net] [$caps]]] [scoped-deny [?with-caps [deny net "a.example:443"] [$caps]]]]
 #]]
   [note [#
 **Introduces:** resource-scoped capability denial (code.md §9, #1332). `[deny net]` removes the capability — the inner `[$caps]` has no `net` key — while `[deny net "a.example:443"]` denies ONE resource and leaves `net: true`. Before #1332 the scoped form silently denied the whole capability. `[?with-caps]` only ever NARROWS what the program already holds.
