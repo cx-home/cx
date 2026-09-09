@@ -108,3 +108,33 @@ in the language today. No source in the corpus holds two `modify` statements in
 one scope, which is the only reason no golden shows it. Carried to #1349 as
 drafted question `1349-d` rather than taken silently or filed away as a new
 issue.
+
+## Addendum — the id family's OTHER two pin sites, recorded by worker A
+
+The implementation rules above name `vcx/tests/testdata/code_diagram_golden/`
+and the tool's `pin_sources`. Two further places pin the same ids, and the
+first lane over this branch (`lane_B_1349`, 8d7dd77de) found them as reds:
+
+- `conformance/code_diagram.cxd` — 9 of its 52 cases (`cfg-001-bare-for`,
+  `cfg-006-for-containing-if`, `cfg-007-def-simple-body`,
+  `cfg-010-mixed-def-and-main`, `auto-002-pure-code`,
+  `auto-003-mixed-def-then-data`, `full-code-cfg-terminals`,
+  `full-code-cfg-yield-enumeration`, `full-code-cfg-cross-def-call`).
+- five V assertions — four in `vcx/tests/code_units_umbrella_test.v`, one in
+  `vcx/tests/diagram_umbrella_test.v:346` (the `b` role).
+
+**No new ruling was taken to move them, and none is owed.** 1349-a makes the
+emitter MINT `lh1`/`lb1`/`b1`; a fixture pinning `lh` is therefore not an
+expectation any implementation of this ruling could satisfy, and 1349-b's "all
+three roles in ONE landing" is the clause that puts them here rather than in a
+follow-up. Nothing was relaxed: every case keeps its full node and edge set,
+renamed. The mapping was taken from the grader's own missing/extra pairs rather
+than from a scan, and applied token-exact — which is why `d1_greets` and
+`d1_greete`, the start/end roles this ruling does not move, are untouched on
+the very lines whose body node moved.
+
+The golden movement at 8d7dd77de was verified against this record's "any other
+byte moving is a defect" rule before the landing: of the 31 modified goldens,
+after stripping the ordinal every changed line pairs with its removed twin,
+leaving exactly two unpaired lines — the two new 1349-c pin ids registered in
+the MANIFEST. Landed by worker A at be2589139.
