@@ -2691,6 +2691,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=204-partial-application-hole
   [label [#[204] [?pipe] and `_` — the hole defers one argument#]]
+  [wasm-unsupported [#`[?pipe]` into a partial-application hole throws `table index is out of bounds` under wasm32 (#1374) — the hole itself works (example 205); native answers `1`.#]]
   [src [#
 [?pipe (3, 1, 2) [$sort _] [$first _]]
 #]]
