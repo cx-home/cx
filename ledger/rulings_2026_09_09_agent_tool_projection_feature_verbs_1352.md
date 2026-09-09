@@ -80,3 +80,19 @@ ruling itself says ("this is the residual").
 - the def-table-only enumeration; the `CXER0100 cx:ast` leak on a non-string
   source; the `($source::string)` signature (`$source::any`, no dual-accept).
 - `1352-b`'s parenthetical that arrange verbs are not projected (see 1).
+
+## RULED: 1352-g — `compose` carries `[summary]` / `[doc]` onto the composed verb (Fable, 2026-09-09 16:00 ET)
+
+Measured while implementing 1352-a: `[$tools:descriptors-of [$xap:compose $ft]]`
+on a feature whose verbs both carry `[summary]` refused with
+`missing-summary verb='board/peek' verb='board/place'` — composition dropped
+the clause, so the grammar path 1352-a names could only ever refuse. Ruled (a):
+the documentation clauses ride the composed `[verb …]` as authored, after the
+structural clauses (`XapGVerb.docs`, emitted after `[transition]`). Refused (b)
+reading the sources from the projection (a composed grammar does not carry
+them) and (c) leaving a path whose only answer is a refusal. Fixtures:
+`xap-compose-164` (the clause carried through; a verb authored without one
+carries none) and `tools-015` re-pinned to the projection. Landed as its own
+commit after 1352-a…f, since it moves composition output. DELETES: the
+refusal on every composed grammar with documented verbs; tools-015's interim
+pin.
