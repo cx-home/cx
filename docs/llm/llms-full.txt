@@ -3711,6 +3711,24 @@ $ cx prog.cx
 1
 ```
 
+`[$cx:carries-err TEXT]` answers the one question about a run that only the
+runtime can answer: does this RENDERED output carry an err value anywhere in
+it? Three positions count — a line beginning `[err `, a sequence whose first
+item errs, and a sequence whose err sits anywhere else — so a CX tool that
+spawns `cx` and reads its stdout back never has to guess at a prefix. It is a
+**tolerance** test: an err in the output does not make a nonzero exit code
+required, because a literal err in a data document is data echoing itself.
+
+`prog.cx`
+```cx
+[$cx:carries-err '(1, 4, 9, 16, [err code=shard-offline shard=5], 36)']
+```
+
+```console
+$ cx prog.cx
+true
+```
+
 ### `log` — structured context, not string prefixes
 
 Log context is a **scope**, entered with `[?with-scope]` and read back as a
