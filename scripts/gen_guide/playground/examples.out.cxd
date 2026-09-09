@@ -1322,12 +1322,9 @@ default
 [readings [exact 3] [rem 1] [mean 2.00] [chain 2]]
 #]]
  ]
- [ex key=219-non-terminating-division-refuses-by-name chars=195 err-chars=67
+ [ex key=219-non-terminating-division-refuses-by-name chars=94
   [out-text [#
-[err code=cx-err:CXER3002 message='$div: non-terminating exact division — supply an explicit rounding context (precision + mode) with [$math:div-decimal a b {precision: N mode: :half-up}] (L44)']
-#]]
-  [err-text [#
-error: the result carries an error value — cx-err:CXER3002 at /err
+[divisions [exact [refused code=cx-err:CXER3002]] [rounded 0.33] [float 3.333333333333333e-1]]
 #]]
  ]
  [ex key=220-checked-overflow chars=137 err-chars=67

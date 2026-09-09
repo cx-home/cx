@@ -227,7 +227,7 @@ line 3''']
     tax=[* $subtotal 0.08]]]
 #]]
   [note [#
-**Introduces:** `[?let]` takes ALL its bindings in ONE flat list, and each one can read the ones before it (§8.5) — so `$subtotal` is computed once from `$price` and `$qty` and then used twice, instead of `[* $price $qty]` being written out again. A nested `[?let]` inside another is for a genuinely different scope, not for a second binding; reaching for the cascade is a Scheme habit (#361) and the flat form is the CX spelling. `[* $price $qty]` is the multiplication directive — CX's arithmetic uses the same `[? …]` bracket shape as every other op.
+**Introduces:** `[?let]` takes ALL its bindings in ONE flat list, and each one can read the ones before it (§8.5) — so `$subtotal` is computed once from `$price` and `$qty` and then used twice, instead of `[* $price $qty]` being written out again. A nested `[?let]` inside another is for a genuinely different scope, not for a second binding; reaching for the cascade is a Scheme habit and the flat form is the CX spelling. `[* $price $qty]` is the multiplication directive — CX's arithmetic uses the same `[? …]` bracket shape as every other op.
 #]]
  ]
 
@@ -943,7 +943,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 [$nth (10, 20, 30, 40) 2]
 #]]
   [note [#
-**Introduces:** `[$nth xs i]` — element access. Indexing is **1-based and inclusive** (#1177), so `2` is the SECOND item and this returns `20`.
+**Introduces:** `[$nth xs i]` — element access. Indexing is **1-based and inclusive**, so `2` is the SECOND item and this returns `20`.
 #]]
  ]
 
@@ -973,7 +973,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 [$position (10, 20, 30, 20, 40) 20]
 #]]
   [note [#
-**Introduces:** `[$position xs needle]` — **1-based** index of the first occurrence, or `0` when the needle is absent (#1177). Here that is `2`.
+**Introduces:** `[$position xs needle]` — **1-based** index of the first occurrence, or `0` when the needle is absent. Here that is `2`.
 #]]
  ]
 
@@ -1006,7 +1006,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 [$substring "hello world" 6 11]
 #]]
   [note [#
-**Introduces:** `[$substring s start end]` — substring slice. Indexing is **1-based and inclusive** (#1177), so `6 11` spans characters 6 through 11 and the result is `' world'` — the leading space is character 6.
+**Introduces:** `[$substring s start end]` — substring slice. Indexing is **1-based and inclusive**, so `6 11` spans characters 6 through 11 and the result is `' world'` — the leading space is character 6.
 #]]
  ]
 
@@ -1890,7 +1890,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
     [yield $x]]]
 #]]
   [note [#
-**Pattern:** keep items that appear in both sequences. **Uses:** `[$position xs needle]` as the membership test — it answers the **1-based** index of the first occurrence and `0` when the needle is absent (#1177), so `[> [$position $b $x] 0]` reads "is in `$b`". Both bindings are actually read; one flat `[?let]` takes them both.
+**Pattern:** keep items that appear in both sequences. **Uses:** `[$position xs needle]` as the membership test — it answers the **1-based** index of the first occurrence and `0` when the needle is absent, so `[> [$position $b $x] 0]` reads "is in `$b`". Both bindings are actually read; one flat `[?let]` takes them both.
 #]]
  ]
 
@@ -2188,7 +2188,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
   [edge from="parse" to="store"]]
 #]]
   [note [#
-**Pattern:** a build / orchestration DAG described as data. **Diagram:** renders as an entity diagram (`erDiagram` because the root is data); each `[task]` + each `[edge]` becomes an entity. As with #164, a true directed-graph projection awaits the (2) detail-level work; this example exists so the Tree pane reflects how the relationships are encoded.
+**Pattern:** a build / orchestration DAG described as data. **Diagram:** renders as an entity diagram (`erDiagram` because the root is data); each `[task]` + each `[edge]` becomes an entity. As with example 164, a true directed-graph projection awaits the (2) detail-level work; this example exists so the Tree pane reflects how the relationships are encoded.
 #]]
  ]
 
@@ -2202,7 +2202,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
              [else [lo value=$x]]]]]]
 #]]
   [note [#
-**Pattern:** the most common diagram shape: a for-comprehension with a branch in the body. **Diagram:** flowchart TD; the for-comp becomes a loop header, the `[?if]` becomes a diamond with `true`/`false` arms feeding back into the loop tail. Good baseline to compare against the sequence-diagram examples #161-163.
+**Pattern:** the most common diagram shape: a for-comprehension with a branch in the body. **Diagram:** flowchart TD; the for-comp becomes a loop header, the `[?if]` becomes a diamond with `true`/`false` arms feeding back into the loop tail. Good baseline to compare against the sequence-diagram examples 161 to 163.
 #]]
  ]
 
@@ -2460,7 +2460,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
     [else [continue [+ $i 1] [+ $acc $i]]]]]
 #]]
   [note [#
-**Introduces:** `[?loop]` (#550) — the condition-driven loop, and CX's anonymous trampolined tail recursion. `[= …]` clauses declare the loop state; `[continue …]` supplies the next state positionally and `[break v]` leaves with a value. This sums 1..5 to `15`.
+**Introduces:** `[?loop]` — the condition-driven loop, and CX's anonymous trampolined tail recursion. `[= …]` clauses declare the loop state; `[continue …]` supplies the next state positionally and `[break v]` leaves with a value. This sums 1..5 to `15`.
 
 **Every exit is explicit.** A body that forgets its exit word does NOT silently become the result — it is a `cx-err:CXER0100`: "`[?loop]` body must end in `[break …]` or `[continue …]`". That is the deliberate rejection of `loop`/`recur`'s implicit exit, and it is why you can read any `[?loop]` and see where it stops. There is no `[?while]`.
 #]]
@@ -2472,7 +2472,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 [?do [a] [b] [c]]
 #]]
   [note [#
-**Introduces:** `[?do]` (#550) — sequencing for effect. Every child is evaluated in order, their values are DISCARDED, and the result is `null` — so `[?do]` is the shape for "run these three things", never for "compute these three things". The first `[err]` a child produces propagates out instead of being swallowed, so a failing step still stops the sequence.
+**Introduces:** `[?do]` — sequencing for effect. Every child is evaluated in order, their values are DISCARDED, and the result is `null` — so `[?do]` is the shape for "run these three things", never for "compute these three things". The first `[err]` a child produces propagates out instead of being swallowed, so a failing step still stops the sequence.
 #]]
  ]
 
@@ -2483,7 +2483,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
   [yield [?if [= [% $n 3] 0] [then [fizz n=$n]] [else [n v=$n]]]]]
 #]]
   [note [#
-**Introduces:** the `%` modulo operator (#598), beside `[$mod]` / `[$div]` / `[$idiv]`. Here it drives the FizzBuzz test: every third item yields `[fizz …]`, the rest yield `[n …]`.
+**Introduces:** the `%` modulo operator, beside `[$mod]` / `[$div]` / `[$idiv]`. Here it drives the FizzBuzz test: every third item yields `[fizz …]`, the rest yield `[n …]`.
 #]]
  ]
 
@@ -2499,7 +2499,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
     c=[$random:gen-int-range $r 1 100]]]
 #]]
   [note [#
-**Introduces:** `[$random:new SEED]` (#625) — a random stream is a VALUE you hold, not a process-global generator you perturb. Same seed, same sequence, every run: `42` draws `52`, `54`, `1`. Two streams in one program are independent, so one part of a program can never shift another part's numbers — which is what makes a seeded test reproducible.
+**Introduces:** `[$random:new SEED]` — a random stream is a VALUE you hold, not a process-global generator you perturb. Same seed, same sequence, every run: `42` draws `52`, `54`, `1`. Two streams in one program are independent, so one part of a program can never shift another part's numbers — which is what makes a seeded test reproducible.
 #]]
  ]
 
@@ -2535,7 +2535,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 [?if true [then [box [v n=7]]] [else ()]]/v@n
 #]]
   [note [#
-**Introduces:** the uniform postfix step (#886). EVERY program-position bracketed form takes a path step on its closing bracket — not just bindings and calls. The `[?if]` here answers `[box [v n=7]]` and `/v@n` reads straight through it to `7`, with no intermediate `[?let]` to hold the result.
+**Introduces:** the uniform postfix step. EVERY program-position bracketed form takes a path step on its closing bracket — not just bindings and calls. The `[?if]` here answers `[box [v n=7]]` and `/v@n` reads straight through it to `7`, with no intermediate `[?let]` to hold the result.
 #]]
  ]
 
@@ -2545,7 +2545,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 {name: 'Alice' age: ::int active: true}
 #]]
   [note [#
-**Introduces:** the map-syntax settlement (#917). Entries separate by whitespace **or** comma — both are the same map. `age: ::int` is the **declaration-only** entry: the kind is declared and the value is ABSENT. That is not the same as `null`; it is a slot whose type is known and whose value has not been supplied.
+**Introduces:** the map-syntax settlement. Entries separate by whitespace **or** comma — both are the same map. `age: ::int` is the **declaration-only** entry: the kind is declared and the value is ABSENT. That is not the same as `null`; it is a slot whose type is known and whose value has not been supplied.
 #]]
  ]
 
@@ -2559,7 +2559,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
     [keys [?splice [$map:keys $m]]]]]
 #]]
   [note [#
-**Introduces:** the `cx-stdlib/map` surface (#925) — `[$map:size]`, `[$map:get]`, `[$map:keys]`, `[$map:merge]`. Map syntax is core; the OPERATIONS live in a module you declare with `[?lib]`, and they need no capability, so they run in the sandbox exactly as they run natively.
+**Introduces:** the `cx-stdlib/map` surface — `[$map:size]`, `[$map:get]`, `[$map:keys]`, `[$map:merge]`. Map syntax is core; the OPERATIONS live in a module you declare with `[?lib]`, and they need no capability, so they run in the sandbox exactly as they run natively.
 #]]
  ]
 
@@ -2573,7 +2573,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
   [sorted [?splice [$array:sort [3, 1, 2]]]]]
 #]]
   [note [#
-**Introduces:** the `cx-stdlib/array` surface (#925), the array counterpart of `cx-stdlib/map`. `[…]` is the array container — ordered, indexable — as distinct from `(…)`, the sequence.
+**Introduces:** the `cx-stdlib/array` surface, the array counterpart of `cx-stdlib/map`. `[…]` is the array container — ordered, indexable — as distinct from `(…)`, the sequence.
 #]]
  ]
 
@@ -2587,7 +2587,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
   first-seq=[$first (1, 2, 3)]]
 #]]
   [note [#
-**Introduces:** the read/construct split (#882). READERS are container-agnostic — `[$count]` and `[$first]` answer the same over an array `[…]` and a sequence `(…)`, so a helper that inspects a collection does not care which one it was handed. CONSTRUCTORS are strict: `[$concat [1, 2] (3, 4)]` refuses with the §6.5 diagnostic ("a single scalar … is required"), because a builder must not guess which container you meant to build.
+**Introduces:** the read/construct split. READERS are container-agnostic — `[$count]` and `[$first]` answer the same over an array `[…]` and a sequence `(…)`, so a helper that inspects a collection does not care which one it was handed. CONSTRUCTORS are strict: `[$concat [1, 2] (3, 4)]` refuses with the §6.5 diagnostic ("a single scalar … is required"), because a builder must not guess which container you meant to build.
 #]]
  ]
 
@@ -2691,7 +2691,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=204-partial-application-hole
   [label [#[204] [?pipe] and `_` — the hole defers one argument#]]
-  [wasm-unsupported [#`[?pipe]` into a partial-application hole throws `table index is out of bounds` under wasm32 (#1374) — the hole itself works (example 205); native answers `1`.#]]
+  [wasm-unsupported [#`[?pipe]` into a partial-application hole throws `table index is out of bounds` under wasm32 — a known wasm defect being fixed; the hole itself works (example 205); native answers `1`.#]]
   [src [#
 [?pipe (3, 1, 2) [$sort _] [$first _]]
 #]]
@@ -2723,7 +2723,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
   [else NOMATCH]]
 #]]
   [note [#
-**Introduces:** the head-bind (code.md §5.1, #1172). A binding GLUED to a pattern's name — `[user$u …]` — captures the whole matched element, attributes and body included, while the rest of the pattern still destructures it (`id=$id`). Whitespace matters: `[user $u]` is a body item (rule 5's auto-unwrap), `[user$u]` is the head-bind. On wildcard, deep and type-guard heads the binding MAY be separated (`[* $x]`).
+**Introduces:** the head-bind (code.md §5.1). A binding GLUED to a pattern's name — `[user$u …]` — captures the whole matched element, attributes and body included, while the rest of the pattern still destructures it (`id=$id`). Whitespace matters: `[user $u]` is a body item (rule 5's auto-unwrap), `[user$u]` is the head-bind. On wildcard, deep and type-guard heads the binding MAY be separated (`[* $x]`).
 #]]
   [expect [# [found id=7 [user id=7 [given 'Ada']]] #]]
  ]
@@ -2736,7 +2736,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
   [else NOMATCH]]
 #]]
   [note [#
-**Introduces:** the attribute rest (code.md §5.1 [126d], RULED 1270-Q1/Q2). `@* $rest` binds every attribute the pattern's other `@`/`name=` predicates did not claim, as a MAP — here `role` and `name`, with `id` taken by `id=$id`. Use it to forward "everything else" without listing it.
+**Introduces:** the attribute rest (code.md §5.1 [126d]). `@* $rest` binds every attribute the pattern's other `@`/`name=` predicates did not claim, as a MAP — here `role` and `name`, with `id` taken by `id=$id`. Use it to forward "everything else" without listing it.
 #]]
   [expect [# [rest {role: admin, name: Ada}] #]]
  ]
@@ -2760,7 +2760,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
 [?for [in [point x=$x y=$y] ([point x=1 y=2], [point x=3 y=4])] [yield [+ $x $y]]]
 #]]
   [note [#
-**Introduces:** `[?for]` over a PATTERN (code.md §6.3, W3 / #1141). The `[in PAT EXPR]` slot takes the whole pattern grammar, not just a binding name: each `[point …]` is destructured into `$x` and `$y` as it is generated. Items that do not match are SKIPPED (a generator filters, it does not refuse); a bind-form that is not a pattern refuses loudly.
+**Introduces:** `[?for]` over a PATTERN (code.md §6.3). The `[in PAT EXPR]` slot takes the whole pattern grammar, not just a binding name: each `[point …]` is destructured into `$x` and `$y` as it is generated. Items that do not match are SKIPPED (a generator filters, it does not refuse); a bind-form that is not a pattern refuses loudly.
 #]]
   [expect [#
 3
@@ -2785,7 +2785,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
 [?let [= $r [ok 42]] [?match $r [case [ok $v] [* $v 2]]]]
 #]]
   [note [#
-**Introduces:** the one-arm match (W1, #1135–#1137). `[?match $r [case [ok $v] …]]` needs no `[else]` when the caller knows the shape; the arm's pattern is the full grammar (`[ok $v]` binds the body). A value that matches NO arm is a refusal, not a silent null — see the `[of]` examples for the closed-type version of that rule.
+**Introduces:** the one-arm match. `[?match $r [case [ok $v] …]]` needs no `[else]` when the caller knows the shape; the arm's pattern is the full grammar (`[ok $v]` binds the body). A value that matches NO arm is a refusal, not a silent null — see the `[of]` examples for the closed-type version of that rule.
 #]]
   [expect [# 84 #]]
  ]
@@ -2809,7 +2809,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
 (0, [?splice (1, 2)], 3)
 #]]
   [note [#
-**Introduces:** splicing into a sequence literal (code.md §6.4.1, #1223). `[?splice EXPR]` in a `(…)` or `[…]` literal adopts EXPR's members at that position, so `(0, [?splice (1, 2)], 3)` is the flat `(0, 1, 2, 3)` — not a nested pair. A sequence in element-content position without `?splice` refuses (the earlier `CXER0100 … adopt its members with [?splice]` example).
+**Introduces:** splicing into a sequence literal (code.md §6.4.1). `[?splice EXPR]` in a `(…)` or `[…]` literal adopts EXPR's members at that position, so `(0, [?splice (1, 2)], 3)` is the flat `(0, 1, 2, 3)` — not a nested pair. A sequence in element-content position without `?splice` refuses (the earlier `CXER0100 … adopt its members with [?splice]` example).
 #]]
   [expect [# (0, 1, 2, 3) #]]
  ]
@@ -2833,7 +2833,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
 [twice-inc 1]
 #]]
   [note [#
-**Introduces:** load-time purity checking (code.md §8, #1298). A `[?def]` is PURE unless it says `impure [effects …]`; a pure def calling pure defs loads and runs → `3`. Change `inc` to `[?def inc impure [effects [write]] ($x) [+ $x 1]]` and keep `twice-inc` as written, and the module refuses to LOAD before anything runs:
+**Introduces:** load-time purity checking (code.md §8). A `[?def]` is PURE unless it says `impure [effects …]`; a pure def calling pure defs loads and runs → `3`. Change `inc` to `[?def inc impure [effects [write]] ($x) [+ $x 1]]` and keep `twice-inc` as written, and the module refuses to LOAD before anything runs:
 
 ```
 error: cx-err:CXER0233: cx-err:CXER0233 E_PURITY_VIOLATION: call to impure `[?def] inc`
@@ -2875,7 +2875,7 @@ The message names the offending call. The next example shows the honest declarat
 [readings [exact [$idiv 7 2]] [rem [% 7 2]] [mean [$avg (1.5, 2.5)]] [chain [/ 12 3 2]]]
 #]]
   [note [#
-**Introduces:** the exact numeric lane (code.md §6.5; #1072, #1044, #1046). Integers are i64 and CHECKED; `$idiv` and `%` are the integer pair; `$avg` over decimals stays decimal (`2.00`, scale preserved); an all-int `/` chain `[/ 12 3 2]` folds exactly in i64 → `2`. Nothing here passes through a float.
+**Introduces:** the exact numeric lane (code.md §6.5). Integers are i64 and CHECKED; `$idiv` and `%` are the integer pair; `$avg` over decimals stays decimal (`2.00`, scale preserved); an all-int `/` chain `[/ 12 3 2]` folds exactly in i64 → `2`. Nothing here passes through a float.
 #]]
   [expect [# [exact 3] [rem 1] [mean 2.00] [chain 2] #]]
  ]
@@ -2883,12 +2883,16 @@ The message names the offending call. The next example shows the honest declarat
  [ex key=219-non-terminating-division-refuses-by-name
   [label [#[219] `[$div 1.0 3.0]` refuses — an exact result does not exist#]]
   [src [#
-[$div 1.0 3.0]
+[?lib 'cx-stdlib/math' :as math]
+[divisions
+  [exact [?fallback recover-with=[refused code=$err@code] body=[$div 1.0 3.0]]]
+  [rounded [$math:div-decimal 1.0 3.0 {precision: 2 mode: :half-up}]]
+  [float [/ 1 3]]]
 #]]
   [note [#
-**Introduces:** the refusal side of the exact lane (#1044, L44). `1.0 / 3.0` has no terminating decimal, so `$div` REFUSES BY NAME (`CXER3002`) and tells you how to ask properly — a rounding context via `[$math:div-decimal a b {precision: N mode: :half-up}]`. Compare `[/ 1 3]`, the float operator, which answers `3.333333333333333e-1`: two lanes, two contracts.
+**Introduces:** the refusal side of the exact lane, and the two ways to ask properly. `1.0 / 3.0` has no terminating decimal, so `$div` REFUSES BY NAME (`CXER3002`) rather than inventing a precision — here the refusal is caught as a value and only its code is shown. `[$math:div-decimal a b {precision: N mode: :half-up}]` from `cx-stdlib/math` supplies the rounding context and answers `0.33`; `[/ 1 3]` on integers takes the float lane and answers the nearest double. Three spellings, three different contracts, each visible in the output.
 #]]
-  [expect [# CXER3002 #]]
+  [expect [# [rounded 0.33] #]]
  ]
 
  [ex key=220-checked-overflow
@@ -2897,7 +2901,7 @@ The message names the offending call. The next example shows the honest declarat
 [* 9223372036854775807 2]
 #]]
   [note [#
-**Introduces:** checked integer arithmetic (v0.17; code.md §6.5). `9223372036854775807 × 2` does not silently wrap to `-2`: it refuses `E_MATH_OVERFLOW` and names the way out. Overflow is a value you can see, not a number you cannot.
+**Introduces:** checked integer arithmetic (code.md §6.5). `9223372036854775807 × 2` does not silently wrap to `-2`: it refuses `E_MATH_OVERFLOW` and names the way out. Overflow is a value you can see, not a number you cannot.
 #]]
   [expect [# E_MATH_OVERFLOW #]]
  ]
@@ -2920,7 +2924,7 @@ The message names the offending call. The next example shows the honest declarat
 [?let [= $e [err code=cx-err:CXER9999 message="boom"]] [report ok=[$exists $e/@code]]]
 #]]
   [note [#
-**Introduces:** CO-2's first half (code.md §6.4.1, RULED CO-2 #975). Inside the program an `[err …]` is an ordinary element: bind it, read `$e/@code`, branch on it. `[$exists $e/@code]` → `true` and the program's own result is a clean `[report ok=true]`. Nothing refused, because nothing crossed an effect boundary.
+**Introduces:** an error is a value in process (code.md §6.4.1). Inside the program an `[err …]` is an ordinary element: bind it, read `$e/@code`, branch on it. `[$exists $e/@code]` → `true` and the program's own result is a clean `[report ok=true]`. Nothing refused, because nothing crossed an effect boundary.
 #]]
   [expect [# [report ok=true] #]]
  ]
@@ -2931,7 +2935,7 @@ The message names the offending call. The next example shows the honest declarat
 [?let [= $e [err code=cx-err:CXER9999 message="boom"]] [report $e]]
 #]]
   [note [#
-**Introduces:** CO-2's second half. The same `[err]` placed INTO the result — `[report $e]` — crosses the program's output boundary, and emission is an externalizing effect: the run refuses loudly (`error: the result carries an error value — cx-err:CXER9999 at /err`) instead of printing a document with a refusal buried in it. Only a deliberate `errs=:permit` on an emitting form externalizes an err on purpose.
+**Introduces:** the other half of that rule: at the boundary, a result carrying an error refuses. The same `[err]` placed INTO the result — `[report $e]` — crosses the program's output boundary, and emission is an externalizing effect: the run refuses loudly (`error: the result carries an error value — cx-err:CXER9999 at /err`) instead of printing a document with a refusal buried in it. Only a deliberate `errs=:permit` on an emitting form externalizes an err on purpose.
 #]]
   [expect [# code=cx-err:CXER9999 #]]
  ]
@@ -2942,7 +2946,7 @@ The message names the offending call. The next example shows the honest declarat
 [$nope 1]
 #]]
   [note [#
-**Introduces:** the name-resolution miss (code.md §9.4, #1058 T1.6). `[$nope 1]` resolves to no builtin, no def, no binding — the answer is a CODED refusal, `CXER0136 E_NO_CALLABLE`, that names the callable it could not find. The old `user-undefined` spelling is gone; graders and tools key on the code, never the prose.
+**Introduces:** the name-resolution miss (code.md §9.4). `[$nope 1]` resolves to no builtin, no def, no binding — the answer is a CODED refusal, `CXER0136 E_NO_CALLABLE`, that names the callable it could not find. The old `user-undefined` spelling is gone; graders and tools key on the code, never the prose.
 #]]
   [expect [# E_NO_CALLABLE: no callable "nope" #]]
  ]
@@ -2956,7 +2960,7 @@ The message names the offending call. The next example shows the honest declarat
   [bill for=[?str "{$name}, {$n} items"] amount=[total 100]]]
 #]]
   [note [#
-**Introduces:** three v0.14 forms together (code.md §5). `[?const RATE 0.08]` is a module-level constant, read bare (`RATE`) inside `total`; `[?str "{$name}, {$n} items"]` interpolates bindings into text; the amount is exact decimal arithmetic → `108.00`. The flat `[?let]` binds two names in one form — the ruled idiom, not a cascade.
+**Introduces:** three module-level forms together (code.md §5). `[?const RATE 0.08]` is a module-level constant, read bare (`RATE`) inside `total`; `[?str "{$name}, {$n} items"]` interpolates bindings into text; the amount is exact decimal arithmetic → `108.00`. The flat `[?let]` binds two names in one form — the ruled idiom, not a cascade.
 #]]
   [expect [# amount=108.00 #]]
  ]
@@ -2969,7 +2973,7 @@ The message names the offending call. The next example shows the honest declarat
     [yield [total region=[$first $g] amt=[$sum [?for [in $s [$nth $g 2]] [yield $s@amt]]]]]]]
 #]]
   [note [#
-**Introduces:** `[?group-by]` (code.md §6.3, v0.16). The `[using FN]` slot names the key; the result is a sequence of `(key, (items…))` pairs in first-seen key order. The outer `[?for]` walks the groups (`[$first $g]` is the key, `[$nth $g 2]` the items — indices are 1-based, RULED 1177) and sums each group's amounts.
+**Introduces:** `[?group-by]` (code.md §6.3). The `[using FN]` slot names the key; the result is a sequence of `(key, (items…))` pairs in first-seen key order. The outer `[?for]` walks the groups (`[$first $g]` is the key, `[$nth $g 2]` the items — indices are 1-based) and sums each group's amounts.
 #]]
   [expect [# [total region=US amt=8] #]]
  ]
@@ -2980,7 +2984,7 @@ The message names the offending call. The next example shows the honest declarat
 [?let [= $d [doc [empty]]] [checks present=[$present $d/empty] count=[$count $d/empty] exists=[$exists $d/empty]]]
 #]]
   [note [#
-**Introduces:** `[$present PATH]` (code.md §6.6, v0.16). On a LEAF element `[empty]`, `$count` is `0` and `$exists` is `false` — both ask about CONTENT — while `$present` asks the question the reader meant: is there a node at this path? → `true`. Every "did this step match" test written with `$count` was wrong on a leaf; this is the fix.
+**Introduces:** `[$present PATH]` (code.md §6.6). On a LEAF element `[empty]`, `$count` is `0` and `$exists` is `false` — both ask about CONTENT — while `$present` asks the question the reader meant: is there a node at this path? → `true`. Every "did this step match" test written with `$count` was wrong on a leaf; this is the fix.
 #]]
   [expect [# present=true count=0 exists=false #]]
  ]
@@ -2991,7 +2995,7 @@ The message names the offending call. The next example shows the honest declarat
 [capabilities [total-deny [?with-caps [deny net] [$caps]]] [scoped-deny [?with-caps [deny net "a.example:443"] [$caps]]]]
 #]]
   [note [#
-**Introduces:** resource-scoped capability denial (code.md §9, #1332). `[deny net]` removes the capability — the inner `[$caps]` has no `net` key — while `[deny net "a.example:443"]` denies ONE resource and leaves `net: true`. Before #1332 the scoped form silently denied the whole capability. `[?with-caps]` only ever NARROWS what the program already holds. The playground runs GRANT-FREE, so here BOTH maps are empty — neither run holds `net` to begin with; with `--allow-net` the total deny removes the `net` key while the scoped deny leaves `net: true`.
+**Introduces:** resource-scoped capability denial (code.md §9). `[deny net]` removes the capability — the inner `[$caps]` has no `net` key — while `[deny net "a.example:443"]` denies ONE resource and leaves `net: true`. Earlier the scoped form silently denied the whole capability. `[?with-caps]` only ever NARROWS what the program already holds. The playground runs GRANT-FREE, so here BOTH maps are empty — neither run holds `net` to begin with; with `--allow-net` the total deny removes the `net` key while the scoped deny leaves `net: true`.
 #]]
   [expect [# [total-deny {}] [scoped-deny {}] #]]
  ]
@@ -3003,7 +3007,7 @@ The message names the offending call. The next example shows the honest declarat
 [?let [= $m {name: "Ada" age: ::int}] [entry name=[$map:get $m "name"] has-age=[$present [$map:get $m "age"]]]]
 #]]
   [note [#
-**Introduces:** the map-syntax settlement (data.md §4, #917). Entries separate by whitespace or comma; `age: ::int` DECLARES the kind and supplies no value — `[$map:get $m "age"]` answers absence, so `$present` is `false`. Absence is not `null`: `null` is a value you would have to write. Ascriptions on entries are CHECKED when a value is present.
+**Introduces:** the map-syntax settlement (data.md §4). Entries separate by whitespace or comma; `age: ::int` DECLARES the kind and supplies no value — `[$map:get $m "age"]` answers absence, so `$present` is `false`. Absence is not `null`: `null` is a value you would have to write. Ascriptions on entries are CHECKED when a value is present.
 #]]
   [expect [# has-age=false #]]
  ]
@@ -3020,7 +3024,7 @@ The message names the offending call. The next example shows the honest declarat
 error: cx-err:CXER0100: parse: atom is not a valid map key (cx-err:CXERMAP-BADKEY) at line 1:2
 ```
 
-Diagnostics render values in canonical spelling everywhere since v0.18, so the message and the document agree byte for byte.
+Diagnostics render values in canonical spelling everywhere, so the message and the document agree byte for byte.
 #]]
   [expect [# {name: 1} #]]
  ]
@@ -3031,7 +3035,7 @@ Diagnostics render values in canonical spelling everywhere since v0.18, so the m
 [greeting hello]
 #]]
   [note [#
-**Introduces:** #1311 — a bare word in a data body no longer reads a binding. `[greeting hello]` is data: `hello` is the text `'hello'` even if a `$hello` binding exists nearby. To place a binding's value in a body you write `$hello`. One rule for readers and tools: data bodies never reach into scope.
+**Introduces:** a bare word in a data body is TEXT, never a binding read. `[greeting hello]` is data: `hello` is the text `'hello'` even if a `$hello` binding exists nearby. To place a binding's value in a body you write `$hello`. One rule for readers and tools: data bodies never reach into scope.
 #]]
   [expect [# [greeting 'hello'] #]]
  ]
@@ -3048,7 +3052,7 @@ Diagnostics render values in canonical spelling everywhere since v0.18, so the m
   [case :pending 'waiting']]
 #]]
   [note [#
-**Introduces:** EN-1's `[of]` clause (schema.md §4/§5.4, #1154). `[?cx schema-inline …]` declares a program-scope schema; `[type status::atom [enum :ok :err :pending]]` closes the set; `[of status]` tells the match which type it is over, so the arms are CHECKED against the members — a typo in a `[case …]` atom is a load error, not a silent never-match. Value `:err` → `'failed'`.
+**Introduces:** the `[of]` clause (schema.md §4/§5.4). `[?cx schema-inline …]` declares a program-scope schema; `[type status::atom [enum :ok :err :pending]]` closes the set; `[of status]` tells the match which type it is over, so the arms are CHECKED against the members — a typo in a `[case …]` atom is a load error, not a silent never-match. Value `:err` → `'failed'`.
 #]]
   [expect [# failed #]]
  ]
@@ -3107,7 +3111,7 @@ Diagnostics render values in canonical spelling everywhere since v0.18, so the m
 [reading a=-0.0 b=0.0 c=-0.00]
 #]]
   [note [#
-**Introduces:** canonical.md §2.5 as amended by #1353. `-0.0` is a distinct decimal from `0.0` in the canonical image, and the scale is preserved like any other decimal (`-0.00` stays two places). Equality is a separate axis: `[= -0.0 0.0]` is still `true`. The canonical image records what was written; comparison decides what is equal.
+**Introduces:** canonical.md §2.5 on negative zero. `-0.0` is a distinct decimal from `0.0` in the canonical image, and the scale is preserved like any other decimal (`-0.00` stays two places). Equality is a separate axis: `[= -0.0 0.0]` is still `true`. The canonical image records what was written; comparison decides what is equal.
 #]]
   [expect [# a=-0.0 b=0.0 c=-0.00 #]]
  ]
@@ -3119,7 +3123,7 @@ Diagnostics render values in canonical spelling everywhere since v0.18, so the m
 [$xml:parse "<r x='1' x='2'/>"]
 #]]
   [note [#
-**Introduces:** #1104 — the XML codec enforces the 1.0 well-formedness constraint "Unique Att Spec": `x` appears twice on `<r>`, so parsing refuses `CXER0100 PARSE_ERROR` at `1:10` and cites the constraint. No last-writer-wins, no silent merge. (The attribute values are single-quoted here only because a `\"` inside a string literal trips the diagram emitter's label escaping — #1373; the refusal is the same either way.)
+**Introduces:** the XML codec enforces the 1.0 well-formedness constraint "Unique Att Spec": `x` appears twice on `<r>`, so parsing refuses `CXER0100 PARSE_ERROR` at `1:10` and cites the constraint. No last-writer-wins, no silent merge. (The attribute values are single-quoted here only because a `\"` inside a string literal trips the diagram emitter's label escaping — a known defect being fixed; the refusal is the same either way.)
 #]]
   [expect [# WFC: Unique Att Spec #]]
  ]
@@ -3130,7 +3134,7 @@ Diagnostics render values in canonical spelling everywhere since v0.18, so the m
 [?if true [then [box [v n=7]]] [else ()]]/v@n
 #]]
   [note [#
-**Introduces:** uniform postfix path steps (cxpath.md §2, #886). Every program-position bracketed form's closing bracket accepts the compact step, not just bindings and calls: the `[?if …]` evaluates to `[box [v n=7]]` and `/v@n` reads straight through it → `7`.
+**Introduces:** uniform postfix path steps (cxpath.md §2). Every program-position bracketed form's closing bracket accepts the compact step, not just bindings and calls: the `[?if …]` evaluates to `[box [v n=7]]` and `/v@n` reads straight through it → `7`.
 #]]
   [expect [# 7 #]]
  ]
@@ -3141,7 +3145,7 @@ Diagnostics render values in canonical spelling everywhere since v0.18, so the m
 [both count=[$count [1, 2]] first=[$first (3, 4)]]
 #]]
   [note [#
-**Introduces:** the read/construct split (code.md §6.6, #882). Readers — `$count`, `$first`, `$nth`, patterns — work over both arrays `[…]` and sequences `(…)`. The next example is the other half of the rule.
+**Introduces:** the read/construct split (code.md §6.6). Readers — `$count`, `$first`, `$nth`, patterns — work over both arrays `[…]` and sequences `(…)`. The next example is the other half of the rule.
 #]]
   [expect [# count=2 first=3 #]]
  ]
