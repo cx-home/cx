@@ -102,3 +102,17 @@ are the next census movers and deserve their own letters.
 
 - the decline for the def-interior-comment class;
 - the sentence at `program_fmt.v:242-247`.
+
+## Addendum (2026-09-09 20:45Z) — a tripwire this ruling's DELETES did not name
+
+`vcx/tests/codecs_formats_umbrella_test.v` `test_fmt_fails_closed_on_an_interior_comment`
+pinned exactly the shape T1.9 un-declines (`[?def  f  ($n)\n  # interior\n  $n]`),
+with its own comment calling the decline "the honest boundary until the
+width-bounded layout lands". The first gate carrying T1.9 (`3ae64d274`) caught
+it. The T1.9 lane graded `vcx/cx` and `conformance/fmt.cxd` but not this
+umbrella — the corpus pre-flight has to cover `vcx/tests/**/*_test.v` too, the
+same lesson 1347-a recorded. Re-pinned as `test_fmt_formats_a_def_interior_comment_and_keeps_it`
+(formats; the comment survives exactly once) plus
+`test_fmt_fails_closed_on_an_unplaceable_interior_comment` (a comment inside a
+map literal still leaves the file untouched — the guarantee's fail-closed half,
+on the shape the layout still cannot place). DELETES: the old pin.
