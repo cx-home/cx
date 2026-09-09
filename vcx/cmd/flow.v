@@ -172,7 +172,17 @@ struct FlowCliAct {
 	resolved    string
 	compensates string
 	idempotent  bool
-	callable    string
+	// requires — the def's own `[requires …]` authority declaration, the
+	// items joined by a space. §4.7's SECOND compensability predicate reads
+	// it off the COMPENSATOR'S row (RULED: 1265-WF-40b): a pre-pivot act
+	// whose `[compensates]` pairing declares authority of its own is not one
+	// the runner can be relied on to reverse, because the PEP admits the
+	// forward act against the run's recorded basis and the reversal is the
+	// runner's own obligation after the effect exists. It is the row's third
+	// projected def property, and it is there for the same reason the first
+	// two are: a STATIC check needs to see it.
+	requires string
+	callable string
 }
 
 // flow_cli_tier1 is the def's Tier-1 text address — the tagged hash of the RAW
@@ -196,6 +206,7 @@ fn flow_cli_local_act(span string) ?FlowCliAct {
 		resolved:    flow_cli_tier1(span)
 		compensates: d.compensates
 		idempotent:  d.is_idempotent
+		requires:    d.requires.join(' ')
 		callable:    '\$${d.name}'
 	}
 }
@@ -231,6 +242,7 @@ fn flow_cli_module_acts(span string, mut table code.ModuleTable) []FlowCliAct {
 			resolved:    flow_cli_tier1(d.source or { span })
 			compensates: comp
 			idempotent:  d.is_idempotent
+			requires:    d.requires.join(' ')
 			callable:    '\$${prefix}:${name}'
 		}
 	}
@@ -276,10 +288,12 @@ fn flow_cli_env_scan(path string) ([]string, []FlowCliAct) {
 // the executing environment's ONE resolver; the rows are the same
 // `[act name= resolved= idempotent=?]` shape `validate` answers with).
 //
-// `compensates=` and `idempotent=` are emitted ONLY when the def declares the
-// clause: an ABSENT field means the def declares none, so a resolver row that
-// carries no `idempotent=` is NOT idempotent (RULED: 789-WF-38a), which is
-// `commands_effects.md`'s deny-by-default posture. Both sit ahead of the
+// `compensates=`, `idempotent=` and `requires=` are emitted ONLY when the def
+// declares the clause: an ABSENT field means the def declares none, so a
+// resolver row that carries no `idempotent=` is NOT idempotent (RULED:
+// 789-WF-38a) and one that carries no `requires=` declares no authority
+// requirement (RULED: 1265-WF-40b) — which is
+// `commands_effects.md`'s deny-by-default posture. All three sit ahead of the
 // `[fn …]` child on purpose — `cx` ends an element's attribute list at the
 // first content token, so an attribute written after the child would be
 // invisible to every read.
@@ -293,6 +307,9 @@ fn flow_cli_resolver(acts []FlowCliAct) string {
 		}
 		if a.idempotent {
 			row += ' idempotent=true'
+		}
+		if a.requires != '' {
+			row += " requires='${a.requires}'"
 		}
 		row += ' [fn ${a.callable}]]'
 		b << row
