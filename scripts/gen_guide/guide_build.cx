@@ -913,7 +913,7 @@
   [li [a href=[$cat ($d@slug, '.html')] $d@title] [$cat ('  —  ', $d@blurb)]]]
 
 [# xap-landing: the XAP overview page body. #]
-[?def xap-landing scope=public ()
+[?def xap-landing scope=public impure ()
   [$post-body [$xml:emit
     [section id=xap
       [h1 'XAP — the experience layer']
