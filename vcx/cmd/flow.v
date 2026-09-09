@@ -644,6 +644,10 @@ fn flow_cli_prelude(with_journal bool) string {
 	if with_journal {
 		b << "[?lib 'cx-stdlib/store' :as cxstore]"
 		b << "[?lib 'cx-stdlib/journal' :as cxjournal]"
+		// the boot re-arm's report goes to the LOG SINK, not to stdout: a
+		// run's answer is its record (§4.11), and `cx flow serve` already
+		// reports its own boot re-arm exactly this way.
+		b << "[?lib 'cx-stdlib/log' :as cxlog]"
 	}
 	return b.join('\n')
 }
@@ -666,6 +670,78 @@ fn flow_cli_run(o FlowCliOpts) {
 		'[?let [= \$fl [\$first [\$cx:select \$doc "//flow"]]]',
 		'[= \$e ${flow_cli_resolver(acts)}]',
 		'[= \$j [\$cxjournal:open "${flow_cli_quote(url)}" "${flow_cli_tenant}"]]',
+		// §4.15's LOCAL POSTURE, and it was unimplemented (RULED: 789-WF-27a,
+		// the surviving half of #1313 after that ruling deleted its premise).
+		// `cx flow run` guarantees no liveness of its own and RE-ARMS on the
+		// next invocation of the same command line — the run id is derived, so
+		// the same command line names the same run. Nothing did that: this
+		// program went straight to `start`, so a parked run whose deadline
+		// elapsed while no process held the journal stayed parked for ever, and
+		// `sched`'s `:fire-all` policy that flow persists with every deadline
+		// had nothing to re-arm it. `cx flow serve` calls the same verb at
+		// boot; this is the same call at the same point in the same order.
+		//
+		// The report is READ, into the log sink — an unread binding is the
+		// shape that hides a failure, and an operator whose deadline just
+		// fired should be able to see why.
+		'[= \$rearmed [\$cxflow:rearm \$j ${flow_cli_opts_map(o, '', true)}]]',
+		// AND THE EMPTY REPORT IS SILENT. `[= $lg [$cxlog:info …]]`
+		// unconditionally made every clean `cx flow run` write to stderr, which
+		// the CLI surface fixture forbids in as many words ("a clean run wrote
+		// to stderr") — and it is right: a report that says nothing happened is
+		// noise on every invocation, while a report naming a timer that fired
+		// is the one thing an operator needs. The test is on the TEXT, not on
+		// the attributes: `$rearmed` is an `[err …]` value when the guard
+		// refuses, and reading an attribute off an err travels the failure
+		// channel (#853's propagation positions), which would turn a visible
+		// refusal into the run's own. Emitting it first keeps a refusal LOUD —
+		// it is not the all-zero string, so it is logged.
+		//
+		// THE QUOTES ARE WHY `$flat` EXISTS. `$cx:emit` renders the report's
+		// counts QUOTED — `[restore-report rearmed='0' …]`, measured — while a
+		// fixture's `out-text` shows them bare, so a comparison against either
+		// spelling alone silently never matches. Normalizing the quotes away
+		// compares the one thing that matters and is indifferent to which
+		// serializer wrote the text — and the NORMALIZED text is what gets
+		// logged, so the report reads the same here as it does in `cx flow
+		// serve`'s boot report, which is spliced into an element and printed
+		// unquoted. One spelling in the product's own output.
+		//
+		// A REFUSAL IS LOGGED UNNORMALIZED, at warn. Quotes inside an err's
+		// `message='…'` are part of the message, so stripping them would
+		// mangle exactly the text an operator needs; the branch is chosen by a
+		// prefix test on the flattened string, never by an attribute read on a
+		// value that may be an err.
+		'[= \$rep [\$cx:emit \$rearmed]]',
+		'[= \$flat [\$str-replace \$rep "\'" ""]]',
+		'[= \$lg [?if [= \$flat "[restore-report rearmed=0 skipped=0 orphaned=0]"]',
+		'           [then ()]',
+		'           [else [?if [\$str-starts-with \$flat "[restore-report "]',
+		'                   [then [\$cxlog:info \$flat]]',
+		'                   [else [\$cxlog:warn \$rep]]]]]]',
+		// AND THEN THE RE-ARMED TIMERS HAVE TO ACTUALLY FIRE. §4.15's promise
+		// is not "re-armed" but "the next run finds the parked run and FIRES
+		// WHAT IS DUE" — a re-arm whose timers never fire is a seam with no
+		// consumer. A due timer fires at the process's next SAFEPOINT (RULED:
+		// 1358-a: the pump runs at the blocking cancellation points), and this
+		// program had none between `rearm` and `start`, so under the
+		// production `:wall` clock (RULED: 1358-b) the deadline stayed unfired
+		// and the run stayed parked — the very defect #1313 filed, one step
+		// further in.
+		//
+		// MEASURED at c39be6437 over the flow-063 journal, wall clock, this
+		// program's own shape:
+		//   no sleep / [?sleep 0ms]  → rearmed=1, reserve :running   (no fire)
+		//   [?sleep 1ms]             → rearmed=1, reserve :failed reason=:deadline,
+		//                              run :compensated
+		// 1 ms is not a wait dressed as a fix: it is the smallest cadence the
+		// language admits (`cx flow serve`'s own tick floor) and what is needed
+		// is the SAFEPOINT, not the time. It is skipped entirely when nothing
+		// was re-armed, so an ordinary invocation over a journal with no
+		// pending timer pays nothing and the branch says why it exists.
+		'[= \$pump [?if [\$str-starts-with \$flat "[restore-report rearmed=0"]',
+		'             [then ()]',
+		'             [else [?sleep 1ms]]]]',
 		'[= \$a ${args_src}]',
 		'  [\$cxflow:start \$j \$fl \$a ${flow_cli_opts_map(o, flow_cli_nonce(args_src), true)}]]',
 	].join('\n')
