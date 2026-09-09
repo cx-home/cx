@@ -148,3 +148,70 @@ The CORRECTION half of the agreement pin IS writable and is pinned
 from the xap read, and the journal read at the same cut sees the same two
 entries the xap fold saw. `1310-d` asks whether the envelope should carry the
 reserved vocabulary so the journal's own projection works over an xap stream.
+
+## RULED: 1310-d — points 1, 3 and 4 landed; point 2 drafted back as a fork
+
+Owner + Fable, 2026-09-09 04:10 ET, on the issue: `(a)` with `(b)` folded into
+the same landing. Recorded here as implemented, with the one point that is
+NOT implemented named explicitly rather than left to be discovered.
+
+**Landed.**
+
+- **Point 1 — the envelope carries the journal's reserved validity
+  vocabulary.** `[$xap:emit]` derives `valid-from=` / `valid-to=` from the
+  written noun's `axis=` fields and stamps them on the durable envelope's
+  root, and it hoists a `[supersedes hash= relation=]` child of the intent to
+  a direct child of the envelope. Both are where `jrn_vt_bounds` and
+  `jrn_temporal_project`'s pass 1 look, because the envelope is the payload
+  `jrn_entry_event` hands them. `xap.md` §3.1.1 gains the normative row.
+- The noun whose axes are read is resolved with the FOLD's own resolution,
+  factored into `xap_commit_bind` and called from both sides, so the axis the
+  emit stamps and the noun the fold writes cannot be two different nouns. When
+  the bind names no grammar noun both reads get no axis and both filter
+  nothing — they stay in agreement, which is the invariant, rather than one
+  side silently narrowing.
+- **Point 3 — the agreement pins.** `xap-compose-159` (no linkage: a fact not
+  yet valid is absent from BOTH reads) and `xap-compose-160` (the journal's
+  own collapse applies an xap-written `:correction`, asserted at two instants
+  so a single column cannot agree by accident).
+- **Point 4 — measured, and the answer is that nothing needs re-recording.**
+  Every xap-committed entry's preimage and hash do move, but a sweep of all
+  20 `sha2-256:` literals in `xap-compose.cxd` finds ZERO journal-entry
+  content addresses: 18 are record/version/architecture pins computed in the
+  fixture, 2 are synthetic unresolvable addresses used as refusal probes
+  (`sha2-256:0000dead`, `sha2-256:aa`). Every real entry address is read live
+  through `[$journal:read … ]/@hash`. `fabric.md` states no committed-envelope
+  row at all — the shape lives in `xap.md` §3.1.1 — so the re-cast is there.
+- **`1310-e`** — `journal-161` pins the `hash=`-is-not-a-content-address
+  refusal (`CXER4618`) that `journal-112` left uncovered. Measured GREEN at
+  HEAD: coverage, not a defect.
+
+**NOT implemented: point 2, the removal of the `entry/event/event` wrap.**
+Drafted back as a fork on #1310 with the measurement, because the `event` head
+is load-bearing in a way the ruling did not have in front of it:
+
+- The boot replay and every external observer select an xap entry with a
+  fabric HEAD PATTERN spelled `"event"` — `stdlib_xap.v`'s own replay
+  subscription, plus four `[$fabric:observe $f "acts" "event"]` lanes in
+  `xap_umbrella_test.v`.
+- A head pattern matches the PAYLOAD's head, not the journal's wrapper. That
+  is pinned, gate-enforced, by `fab-cst-003`, which observes with the pattern
+  `"do"` over `[do :order.a]` payloads and is delivered.
+- The pattern vocabulary is a topic atom, a head-name string, or a predicate
+  — there is no match-everything pattern.
+
+So dropping the head makes the boot replay match ZERO entries. It would red
+`xap-compose-157` (whose `replay-raw-n=2` IS the boot replay) and the four
+observer lanes, and it changes the subscription every external consumer of an
+xap stream writes. `xap.md` §3.1.1 states the head "stays `event`, so
+`"event"` is the stream's total pattern" — normative text point 2 contradicts.
+Point 1 alone closes the measured defect, so the two halves are separable and
+this landing takes the one that is settled.
+
+**The defect, measured with the shipped binary at `b2c4d4f14` before any fix**
+(recorded, not predicted): `[agree jrn-mar=2 xap-mar=1 … raw=2]` — the journal
+handed back a fact dated five months in the future that the feature's own read
+correctly withheld; and `[collapse jrn-mar=2 xap-mar=1 jrn-jul=2 xap-jul=2
+raw=2]` — the journal applied an xap-written correction in neither column.
+`path-event-event=2` / `path-event-do=0` / `path-vf=0` on the same run
+confirm the double wrap and the absent vocabulary directly.
