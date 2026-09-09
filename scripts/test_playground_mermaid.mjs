@@ -107,7 +107,7 @@ function countExamples() {
 if (!SLICE) {
   const total = Math.min(countExamples(), LIMIT);
   if (total === 0) setupFail('playground.examples.js yielded no examples.');
-  const totals = { pass: 0, empty: 0, skipped: 0, fail: 0 };
+  const totals = { pass: 0, empty: 0, skipped: 0, cximage: 0, fail: 0 };
   let sawSetupFailure = false;
   for (let from = 0; from < total; from += SHARD_SIZE) {
     const to = Math.min(from + SHARD_SIZE, total);
@@ -126,6 +126,7 @@ if (!SLICE) {
       const s = JSON.parse(m[1]);
       totals.pass += s.pass; totals.empty += s.empty;
       totals.skipped += s.skipped; totals.fail += s.fail;
+      totals.cximage += s.cximage || 0;
     } else {
       // A child that died without reporting is itself a failure — never
       // let a crashed shard read as a clean slice.
@@ -141,6 +142,7 @@ if (!SLICE) {
   console.log(`  diagrams parsed   ${totals.pass}`);
   console.log(`  empty (no shape)  ${totals.empty}`);
   console.log(`  no subject        ${totals.skipped}`);
+  console.log(`  cx: image (1170-d) ${totals.cximage}   named skip — ${CX_IMAGE_REASON}`);
   console.log(`  FAILURES          ${totals.fail}`);
   console.log('══════════════════════════════════════════════════════════');
   if (totals.fail > 0) process.exit(1);
@@ -325,8 +327,18 @@ function normalise(src) {
   return body.replace(/^```mermaid\s*/, '').replace(/```\s*$/, '').trim();
 }
 
-let pass = 0, fail = 0, empty = 0, skipped = 0;
+let pass = 0, fail = 0, empty = 0, skipped = 0, cximage = 0;
 const failures = [];
+
+// RULED: 1170-d. An `output` text that is the emitter-internal `cx:` image
+// (`[cx:op …]`, `[cx:int …]`, …) is NOT authorable CX: approved spec keeps it
+// unreadable — E210 stays intact — until semantic_value_model.md §2 L78 lowers
+// quoted trees at the I1 epoch (#708). The Diagram pane shows the same empty
+// placeholder for it, so it is a NAMED, COUNTED skip here, not a failure and
+// not a silent pass. The class is self-clearing: the day L78 lands the image
+// stops matching and these rows grade again with nothing to un-mark.
+const CX_IMAGE_REASON = 'output is the emitter-internal cx: image; not authorable until semantic_value_model.md §2 L78 lowers quoted trees (#708/I1)';
+const isCxImage = (text) => /^\s*\[cx:[A-Za-z]/.test(text);
 
 for (const key of keys) {
   const ex = examples[key];
@@ -356,6 +368,11 @@ for (const key of keys) {
   for (const subject of SUBJECTS) {
     const text = texts[subject];
     if (!text) { skipped += VIEWS.length * LEVELS.length; continue; }
+    if (subject === 'output' && isCxImage(text)) {
+      cximage += VIEWS.length * LEVELS.length;
+      console.log(`SKIP  ${key} · output — ${CX_IMAGE_REASON}`);
+      continue;
+    }
     // The tree is what the instance view graphs; one call feeds every
     // rung, exactly as refreshView() does it.
     let parsedTree = null;
@@ -431,5 +448,5 @@ if (fail > 0) {
     + `(vendored mermaid, ${MERMAID_BYTES} bytes, sha256 ${MERMAID_SHA.slice(0, 12)}…)`);
 }
 // The line the dispatcher reads. Kept last and kept unique.
-console.log(`__SHARD__ ${JSON.stringify({ pass, empty, skipped, fail })}`);
+console.log(`__SHARD__ ${JSON.stringify({ pass, empty, skipped, cximage, fail })}`);
 process.exit(fail === 0 ? 0 : 1);
