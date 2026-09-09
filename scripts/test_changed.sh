@@ -172,7 +172,11 @@ lane_globs() {
     check-code-fixtures)           echo 'conformance/* vcx/* spec/*' ;;
     # the SIGPIPE-PIPE gate reads every shell script in the tree
     check-pipefail-pipes)          echo '*' ;;
-    test-code-diagram)             echo "conformance/* $RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/check_code_diagram_fixtures.cx" ;;
+    # RULED: 1170-d — the lane now also carries the SEQ-4 page-sync guard, so a
+    # playground-page edit and a golden-sidecar edit are both inputs to it. The
+    # whole point of that guard is that a page edit to 171/172 reds something;
+    # without these two globs the dev loop would skip the lane that says so.
+    test-code-diagram)             echo "conformance/* $RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/check_code_diagram_fixtures.cx scripts/gen_guide/playground/playground.examples.js vcx/tests/testdata/code_diagram_golden/*" ;;
     # the oriel surface lane drives spec/03-approved/xap/demos/oriel/
     test-oriel-lane)               echo 'spec/03-approved/xap/demos/* vcx/* stdlib/* x/*' ;;
     tools-export-gate)             echo 'conformance/tools-export/* vcx/* stdlib/*' ;;

@@ -595,6 +595,104 @@
         [else [res id=$id status="ERROR"
                 detail=[$concat "unknown view: '" $view "'"]]]]]]]]
 
+# ── RULED: 1170-d — the SEQ-4 page-sourced pins must still EQUAL the page ──
+#
+# `vcx/tools/regen_code_diagram_golden/main.v` carries two pins whose comment
+# says they are "sourced verbatim from
+# scripts/gen_guide/playground/playground.examples.js — the page's own bytes,
+# so a corpus edit that re-breaks the shape moves these goldens instead of
+# passing unobserved". That was a COMMENT, and it went false the day #1170 §C3
+# flattened the page's `[?let]` cascades (1170-c): the pins kept the nested
+# spelling, the page had the flat one, and every lane stayed green — a
+# hardcoded V string is not something the corpus can red.
+#
+# 1170-d (ledger/rulings_2026_09_08_seq4_pin_page_sync_1170.md) makes the
+# sentence a check, and puts it on the `<id>.source` SIDECARS rather than on
+# the V strings, because the sidecars are what the byte gate
+# (vcx/tests/diagram_umbrella_test.v) actually grades: a check on the tool
+# alone would leave the same gap one level down, with the tool right and the
+# committed corpus stale.
+#
+# `pin-seq-let-cascade-spine-pair` / `-fanout` are EXEMPT by id — they are
+# deliberately not the page's bytes; they freeze the cascaded spelling as the
+# SEQ-4 regression for the shape that historically broke.
+#
+# It lives in this lane and not in the V umbrella for a packaging reason:
+# `scripts/gen_guide/` is not rsynced into the relocated cx-v package
+# (scripts/publish_v.sh), and `diagram_umbrella_test.v` IS published, so a
+# hard dependency on the page from there would either break the package smoke
+# test or need a silent skip — the vacuous-gate shape this ruling exists to
+# remove. This lane always runs from the repo root.
+[?def seq4-page-input-literal scope=public ($lines $key)
+  [?let [= $marker [$concat '"' $key '": {']]
+        [= $starts [?for [in $i [$range 1 [$count $lines]]]
+                     [where [$strings:contains [$nth $lines $i] $marker]]
+                     [yield $i]]]
+    [?if [$empty $starts]
+      [then ""]
+      [else
+        [?let [= $s [$nth $starts 1]]
+              [= $hits [?for [in $i [$range $s [$count $lines]]]
+                         [where [$strings:starts-with [$strings:trim [$nth $lines $i]] "input:"]]
+                         [yield $i]]]
+          [?if [$empty $hits]
+            [then ""]
+            [else
+              [?let [= $t [$strings:trim [$nth $lines [$nth $hits 1]]]]
+                [$strings:trim-end-chars
+                  [$strings:trim [$strings:slice $t 7 [$strings:length $t]]] ","]]]]]]]]]
+
+[?def seq4-page-sync-one scope=public impure ($lines $gdir $pin $key)
+  [?let [= $src-path [$path:join $gdir [$concat $pin ".source"]]]
+        [= $lit [$seq4-page-input-literal $lines $key]]
+    [?if [= $lit ""]
+      [then ([$concat "SEQ-4 page-sync: no `input:` line for `" $key
+              "` in the playground page — the pin `" $pin
+              "` names an example that has been renamed or removed (RULED: 1170-d)"])]
+      [else [?if [not [$json:is-valid $lit]]
+        [then ([$concat "SEQ-4 page-sync: the `input:` value for `" $key
+                "` is not a JSON string literal — the page's shape changed and this "
+                "check can no longer read it (RULED: 1170-d)"])]
+        [else [?if [not [$io:is-file $src-path]]
+          [then ([$concat "SEQ-4 page-sync: missing golden sidecar " $src-path
+                  " — run vcx/tools/regen_code_diagram_golden FROM THE REPO ROOT"])]
+          [else
+            [?let [= $want [$string [$json:parse $lit]]]
+                  [= $have [$io:read-file $src-path]]
+              [?if [= $want $have]
+                [then ()]
+                [else ([$concat "SEQ-4 page-sync: " $pin ".source is NOT the page's `input` for `"
+                        $key "` (" [$string [$strings:length $have]] " bytes on disk vs "
+                        [$string [$strings:length $want]] " on the page). That pin promises the "
+                        "page's own bytes. Re-sync the string in "
+                        "vcx/tools/regen_code_diagram_golden/main.v, regenerate, READ all the "
+                        "moved goldens, and record a DR-8 mini-ruling in ledger/ in the SAME "
+                        "landing (RULED: 1170-d)."])]]]]]]]]]]]
+
+[?def seq4-page-sync scope=public impure ()
+  [?let [= $page "scripts/gen_guide/playground/playground.examples.js"]
+        [= $gdir [$path:join "vcx" "tests" "testdata" "code_diagram_golden"]]
+        [= $pins ([pin id="pin-seq-let-bound-spine-pair"   key="171-seq-mid-producer-consumer"],
+                  [pin id="pin-seq-let-bound-spine-fanout" key="172-seq-large-workers-with-backpressure"])]
+    [?if [not [$io:is-file $page]]
+      [then [?let [= $_e [$cry [$concat
+              "error: SEQ-4 page-sync check: playground page not found: " $page
+              " — this lane runs from the repo root (RULED: 1170-d)"]]]
+              [$env:exit 2]]]
+      [else
+        [?let [= $lines [$strings:split-lines [$io:read-file $page]]]
+              [= $problems [$cat-seqs [?for [in $p $pins]
+                             [yield [$seq4-page-sync-one $lines $gdir
+                                      [$string $p@id] [$string $p@key]]]]]]
+              [= $n [$count $problems]]
+          [?if [= $n 0]
+            [then [$say [$concat "seq4 page-sync: " [$string [$count $pins]]
+                          " page-sourced pin(s) still equal the page (RULED: 1170-d)"]]]
+            [else
+              [?let [= $told [?for [in $m $problems] [yield [$cry $m]]]]
+                    [= $_n [$count $told]]
+                [$env:exit 1]]]]]]]]]
+
 # ── main ─────────────────────────────────────────────────────────────
 [?let
   [= $args [$env:parse-args [argspec
@@ -605,6 +703,9 @@
   [= $fix-path [?let [= $fx [$string [?else [$env:flag $args "fixtures"] ""]]]
     [?if [= $fx ""] [then "conformance/code_diagram.cxd"] [else $fx]]]]
   [= $verbose [$env:flag $args "verbose"]]
+  # RULED: 1170-d — the page-sync guard runs BEFORE any fixture work and exits
+  # on its own; binding its verdict here is what forces it.
+  [= $_seq4 [$seq4-page-sync]]
   [?if [not [$io:is-file $fix-path]]
     [then [?let [= $_e [$cry [$concat "error: fixture file not found: " $fix-path]]]
             [$env:exit 2]]]
