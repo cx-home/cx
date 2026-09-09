@@ -1681,8 +1681,8 @@
     },
     "237-xml-refuses-a-duplicate-attribute": {
       label: "[237] `[$xml:parse]` refuses a duplicate attribute by position",
-      input: "[?lib 'cx-stdlib/xml' :as xml]\n[$xml:parse \"<r x=\\\"1\\\" x=\\\"2\\\"/>\"]",
-      note:  "**Introduces:** #1104 \u2014 the XML codec enforces the 1.0 well-formedness constraint \"Unique Att Spec\": `x` appears twice on `<r>`, so parsing refuses `CXER0100 PARSE_ERROR` at `1:10` and cites the constraint. No last-writer-wins, no silent merge.",
+      input: "[?lib 'cx-stdlib/xml' :as xml]\n[$xml:parse \"<r x='1' x='2'/>\"]",
+      note:  "**Introduces:** #1104 \u2014 the XML codec enforces the 1.0 well-formedness constraint \"Unique Att Spec\": `x` appears twice on `<r>`, so parsing refuses `CXER0100 PARSE_ERROR` at `1:10` and cites the constraint. No last-writer-wins, no silent merge. (The attribute values are single-quoted here only because a `\\\"` inside a string literal trips the diagram emitter's label escaping \u2014 #1373; the refusal is the same either way.)",
       tags:  ["lib", "par"],
       runnable: true,
     },
