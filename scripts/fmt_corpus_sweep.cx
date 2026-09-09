@@ -11,7 +11,9 @@
 #   ... fmt_corpus_sweep.cx --no-bench                  # skip fixtures/bench/
 #   ... fmt_corpus_sweep.cx --bin vcx/target/cx-dev --jobs 8
 #   ... fmt_corpus_sweep.cx --filter stdlib/          # a path substring
-#   ... fmt_corpus_sweep.cx --ratchet --max-declined 97 --max-errors 0
+#   ... fmt_corpus_sweep.cx --ratchet --max-declined 94 \
+#         --expected-errors scripts/fmt_corpus_expected_errors.txt
+#                                                     # == `make fmt-sweep-gate`
 #
 # WHY THIS EXISTS. #1348 recorded that every `cx fmt` corpus measurement so far
 # excluded `fixtures/bench/` because one 10 MB blob made a 90 s sweep take half
@@ -48,11 +50,17 @@
 #              exit 0, no diagnostic, no gate anywhere notices.
 #   ERROR      non-zero exit; the diagnostic is reported.
 #
-# The sweep is a REPORT, not a gate: it exits 0 with the census unless it could
-# not run at all. `--ratchet --max-declined N --max-errors N` turn it into a
-# ratchet once the census is a committed number. An UNSTABLE row always reds,
-# with or without `--ratchet`: §7 says `fmt_source` fails closed rather than
-# returning an unsettled candidate, so there is no number to ratchet against.
+# The sweep is a REPORT by default: it exits 0 with the census unless it could
+# not run at all. `--ratchet --max-declined N` turns the DECLINED column into a
+# ratchet, and `--expected-errors ROSTER` turns the ERROR column into a named
+# gate (RULED: 1348-c) — reding both on a file that errors and is not on the
+# roster and on a roster entry that has STOPPED erroring, which is the half
+# `--max-errors N` cannot express. The roster SUPERSEDES `--max-errors`; that
+# flag still applies when no roster is given. `make fmt-sweep-gate` is this
+# invocation with the census committed, and it is in TEST_TARGETS.
+# An UNSTABLE row always reds, with or without `--ratchet`: §7 says
+# `fmt_source` fails closed rather than returning an unsettled candidate, so
+# there is no number to ratchet against.
 
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
@@ -82,6 +90,7 @@
   [flag name="max-declined" type=int    default=0]
   [flag name="max-errors"   type=int    default=0]
   [flag name="ratchet"      type=bool   default=false]
+  [flag name="expected-errors" type=string default=""]
   [flag name="filter"       type=string default=""]]]
 
 # Vendored and archived trees are not ours to format; everything else tracked
@@ -133,6 +142,28 @@
 
 [?def read-or-empty scope=private impure [returns string] ($p::string)
   [?fallback [$io:read-file $p] [recover-with '']]]
+
+[?def in-list scope=private pure [returns bool] ($x::string $xs::any)
+  [> [$count [?for [in $y $xs] [where [= [$string $y] $x]] [yield $y]]] 0]]
+
+# The expected-ERROR roster (RULED: 1348-c) — one repo-relative path per line,
+# `#` comments and blank lines ignored. A MISSING or unreadable file reads back
+# as the empty roster, which would silently turn the gate into "every error is
+# stale"; `expected-roster` therefore DIES rather than returning empty, because
+# an absence here is indistinguishable from a roster that legitimately lists
+# nothing and the difference is the whole gate.
+[?def expected-roster scope=private impure ($p::string)
+  [?let
+    [= $raw [$read-or-empty $p]]
+    [= $_ [?if [= $raw '']
+            [then [$die [$cat ('fmt_corpus_sweep: --expected-errors ', $p,
+                              ' is missing or empty — the roster is the gate, ',
+                              'and an unreadable one grades nothing')]]]
+            [else null]]]
+    [?to-sequence [?for [in $l [$strings:split-lines $raw]]
+                    [where [and [not [= [$strings:trim $l] '']]
+                                [not [$strings:starts-with [$strings:trim $l] '#']]]]
+                    [yield [$strings:trim $l]]]]]]
 
 # ── the correctness pass ────────────────────────────────────────────────────
 
@@ -276,10 +307,58 @@
         [= $ratchet [$env:flag $args 'ratchet']]
         [= $max-d [$env:flag $args 'max-declined']]
         [= $max-e [$env:flag $args 'max-errors']]
+        [; RULED: 1348-c — the ERROR verdict is gated by a NAMED ROSTER, not by
+           a count. `--max-errors` still applies when no roster is given, so a
+           bare `--ratchet` invocation keeps working, but the roster SUPERSEDES
+           it: a count has no lower bound, so fixing one of the listed files
+           drops the total below the budget and the pin loosens in silence.
+           Two rows, each a separate red so the log says which happened.
+           UNEXPECTED is a file that errored and is not on the roster.
+           STALE is a roster entry that did NOT error, i.e. it was fixed or
+           removed and the line must go — the half a count cannot express, and
+           the half that matters, because
+           `tooling/vscode/test/grammar/basic.cx` is a real #1347-family gap
+           that somebody will fix. ]
+        [= $roster-path [$env:flag $args 'expected-errors']]
+        [= $roster [?if [= $roster-path '']
+                     [then [?to-sequence [?for [in $x ()] [yield $x]]]]
+                     [else [$expected-roster $roster-path]]]]
+        [= $errored [?to-sequence [?for [in $row $rows]
+                      [where [= $row/verdict 'ERROR']] [yield [$string $row/path]]]]]
+        [; WITHOUT a roster every ERROR is trivially "not on the roster", so an
+           unguarded UNEXPECTED count turns the bare REPORT into a red — which
+           is exactly what it did the first time this lane ran, taking
+           `make fmt-sweep` from a census to `Error 1`. The roster columns exist
+           only when a roster was given; `stale` is empty in that case anyway,
+           but it is guarded alongside so the pair cannot drift apart. ]
+        [= $has-roster [not [= $roster-path '']]]
+        [= $unexpected [?if $has-roster
+                         [then [?to-sequence [?for [in $e $errored]
+                                 [where [not [$in-list $e $roster]]] [yield $e]]]]
+                         [else [?to-sequence [?for [in $x ()] [yield $x]]]]]]
+        [= $stale [?if $has-roster
+                    [then [?to-sequence [?for [in $m $roster]
+                            [where [not [$in-list $m $errored]]] [yield $m]]]]
+                    [else [?to-sequence [?for [in $x ()] [yield $x]]]]]]
+        [= $nx [$count $unexpected]]
+        [= $ns [$count $stale]]
+        [= $_xl [$count [?to-sequence [?for [in $p $unexpected]
+                  [yield [$say [$cat ('UNEXPECTED-ERROR ', $p)]]]]]]]
+        [= $_sl [$count [?to-sequence [?for [in $p $stale]
+                  [yield [$say [$cat ('STALE-EXPECTED-ERROR ', $p,
+                                    '  — it no longer errors; drop the roster line')]]]]]]]
+        [= $_rr [?if [= $roster-path '']
+                  [then null]
+                  [else ([$say [$cat ('SWEEP-EXPECTED-ERRORS=', [$string [$count $roster]])]],
+                         [$say [$cat ('SWEEP-UNEXPECTED-ERRORS=', [$string $nx])]],
+                         [$say [$cat ('SWEEP-STALE-EXPECTED=', [$string $ns])]],
+                         null)]]]
         [= $_r [?if [or [and $ratchet [> $nd $max-d]]
-                    [or [and $ratchet [> $ne $max-e]] [> $nu 0]]]
+                    [or [and $ratchet [and [= $roster-path ''] [> $ne $max-e]]]
+                    [or [> $nx 0] [or [> $ns 0] [> $nu 0]]]]]
                  [then ([$cry [$cat ('fmt_corpus_sweep: RATCHET RED — declined=', [$string $nd],
-                                   ' errors=', [$string $ne], ' unstable=', [$string $nu])]],
+                                   ' errors=', [$string $ne], ' unstable=', [$string $nu],
+                                   ' unexpected=', [$string $nx], ' stale=', [$string $ns])]],
                         [$env:exit 1], null)]
                  [else null]]]
         [$say [$cat ('SWEEP-FILES=', [$string $n])]]]]]]

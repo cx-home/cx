@@ -822,7 +822,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster fmt-sweep-gate
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS lanes whose
@@ -2947,6 +2947,42 @@ fmt-sweep: build-vcx
 fmt-sweep-timed: build-vcx
 	@$(CX_SWEEP_BIN) --allow-read --allow-write --allow-subprocess --allow-clock \
 	  scripts/fmt_corpus_sweep.cx --bin $(CX_SWEEP_BIN) --timed --no-bench $(FMT_SWEEP_ARGS)
+
+# ── fmt-sweep-gate (RULED: 1348-c) — the census as a GATE ────────────────────
+#
+# The sweep above is a REPORT. This is the same instrument with the numbers
+# committed, and it is in TEST_TARGETS: the Makefile note at the top of this
+# section said it "becomes a gate lane once the census is a committed number",
+# and #1348's census is that number.
+#
+# The ERROR verdict is gated by a NAMED ROSTER, not by a count. A count has no
+# lower bound: fix one of the five files that are supposed to fail and the
+# total drops below the budget while the lane stays green, and a genuinely new
+# error is invisible until it is the sixth. The roster reds BOTH ways — a file
+# that errors and is not listed, and a listed file that has STOPPED erroring.
+# The second is the half a count cannot express, and it is load-bearing here:
+# `tooling/vscode/test/grammar/basic.cx` is on the roster for a real
+# #1347-family gap, so when that lands this lane says the line must go. Same
+# shape as the #1350 golden MANIFEST (`99c25169d`).
+#
+# DECLINED stays a count, ratcheted at the committed census, and it is a
+# ONE-WAY ratchet by convention: whoever lowers it edits the number down in the
+# same landing. UNSTABLE reds at >0 with or without --ratchet, because §7 says
+# fmt_source fails closed rather than returning an unsettled candidate, so
+# there is no number to ratchet against.
+#
+# Census measured at 3ef4d597e, the landing base:
+#   SWEEP-FILES=272  FORMATTED=173  DECLINED=94  UNSTABLE=0  ERROR=5
+# It is 272/94 and not the 271/93 of #1348's own census at 12abdac33 because
+# #1317 added `bench/flow/served.cx`, which declines.
+FMT_SWEEP_MAX_DECLINED ?= 94
+FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
+.PHONY: fmt-sweep-gate
+fmt-sweep-gate: build-vcx
+	@$(CX_SWEEP_BIN) --allow-read --allow-write --allow-subprocess --allow-clock \
+	  scripts/fmt_corpus_sweep.cx --bin $(CX_SWEEP_BIN) --ratchet \
+	  --max-declined $(FMT_SWEEP_MAX_DECLINED) \
+	  --expected-errors $(FMT_SWEEP_EXPECTED_ERRORS)
 
 
 # ── REPR GUARD (#1119 W1, RULED: RP-5) — the CXDM live-memory ratchet ────────
