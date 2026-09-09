@@ -1454,6 +1454,7 @@
       note:  "**Introduces:** the partial-application hole `_` (code.md \u00a76.3a). A bare `_` in an ARGUMENT position defers that argument: `[$sort _]` is a callable waiting for its sequence, and `[?pipe]` feeds each stage's value into the hole. Read the pipeline top to bottom: sort `(3, 1, 2)`, take the first \u2192 `1`.\n\nA hole is not a wildcard and not a binding \u2014 it is the one place a call is allowed to be incomplete, and the result is a value you can pass around (next example).",
       tags:  ["parallel", "pipe"],
       runnable: true,
+      wasmUnsupported: "`[?pipe]` into a partial-application hole throws `table index is out of bounds` under wasm32 (#1374) \u2014 the hole itself works (example 205); native answers `1`.",
     },
     "205-hole-as-a-callable-value": {
       label: "[205] a hole makes a callable you can bind and call",
