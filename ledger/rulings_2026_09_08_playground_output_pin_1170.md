@@ -108,3 +108,28 @@ spelling. Letters are drafted on #1170.
 §C3 (a `[?let]`-cascade lint) and §C4 (a note↔output consistency check) need no
 new surface and are the worker's to rule; they follow the pin, because both
 read it.
+
+
+## 1170-d / 1170-e / 1170-f — the mermaid gate joins the matrix (RULED, Fable 2026-09-09 05:07 ET)
+
+**1170-d (Q1 a):** the three `203-quote-homoiconic` `output` rows are the
+emitter-internal `cx:` image, which approved spec keeps unreadable (E210 stays
+intact; semantic_value_model.md §2 L78 lowers quoted trees at the I1 epoch,
+#708). They are a NAMED, COUNTED skip — `cx: image (1170-d)` in the gate's
+summary, reason string cited on every skipped row — not a failure and not a
+silent pass. Self-clearing: when L78 lands the image stops matching.
+
+**1170-e (Q4 a):** `test-playground-mermaid` grades a bundle it BUILDS or PROVES
+FRESH: `wasm-fresh-gate` (#992) first; `build-playground` (both wasm variants the gate names, ~2 min measured) when it reports stale; refuse
+if it still does. Refused: a tracked multi-megabyte bundle (new surface for a
+problem the freshness gate already solves); enrolling as-is; leaving it manual.
+
+**1170-f:** enrollment order — #1349 landed every constant-minted id (`lh`, `lb`,
+`b` at `fb3a3b686`; `u` at `50b2f3b2c`) → the named skip → the prerequisites →
+`test-playground-mermaid` in `TEST_TARGETS`, one landing. GATE_REGISTER gains
+row 9.1; `scripts/test_changed.sh` gains the lane's input row so the
+development loop can skip it when none of its inputs moved.
+
+Red-proved in a fresh worktree at `94835ad43` (`lane_F_1170_p1.log`): with the
+bundle built from THIS tree and proven fresh, the gate failed on exactly the
+three `203` output rows and nothing else — the #1349 rows were gone.
