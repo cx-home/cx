@@ -116,3 +116,67 @@ inside Part 2: it lands as #1369. Until it lands, `watch` stays as shipped
 (the (b) holding position): batched, read-only, correct-but-not-live at the
 CLI face, with the XAP face live via `1316-b4`. Commits on #1369 carry
 `RULED: 1316-c2`.
+
+---
+
+## Addendum — item 3 landed (2026-09-09, worker A)
+
+Items 1 and 2 landed at `f8f3edee3` / `81c41cfce`. **Item 3 — `cx flow watch`
+streams one overlay row per transition through the primitive — landed here.**
+Until it did, `[$env:write-line]` had no caller outside its own fixtures and
+its own `[fn-doc]` example, which by this repo's rules is a seam with no live
+consumer, i.e. a partial implementation of this ruling; #1369 was held open
+on exactly that and does not close before both halves are in.
+
+### The consumer, measured before and after
+
+Probe: a one-step `pivot=true` flow over a `file://` journal, run to `:done`,
+then watched with `--for=2s` on the same stream. `cx-dev` built from the tip
+`5c328325d` in both arms; stdout captured alone.
+
+```
+pre   1 line , 190 bytes — the batched [flow-watch …] answer, nothing before it
+post  2 lines, 293 bytes — [flow-overlay …] as the paint happens, then the answer
+```
+
+### Three implementation facts settled by RUNNING, not by choosing
+
+1. **The forcing.** The write rides `[= $streamed [$count [?to-sequence
+   [?for … [yield [$cxenv:write-line …]]]]]]`, the idiom `fs--loop` in
+   `flow_serve.v` already uses, and `$streamed` is never read. The prior note
+   on this ruling flagged that an unused `[?let]` binding and `fs--loop`'s own
+   shape could not both be right. Measured on this build: a `[?let]` binding
+   **is** eager — an unused one of that shape ran, and a two-member probe
+   sequence wrote both lines in order. `fs--loop` is correct and this copies it.
+2. **The rendering is `[$cx:pretty-print]`, not `[$cx:emit]`.** `emit` and
+   `canonical` both lay an element with element children out as a BLOCK —
+   the first build of this change emitted ONE paint as THREE lines, which is
+   not a row and not pipeable. `pretty-print` is a layout pass over the same
+   token layer, so a large `max-line-length` converges on the canonical
+   spelling on one line. The residual: a value carrying a literal newline
+   still breaks the line; an overlay carries node ids and `:status` symbols
+   and no free text, and the process's answer carries the same rows for a
+   consumer needing a hard guarantee.
+3. **`[effects [read] [clock]]` is UNCHANGED and admits the call.**
+   `[effects …]` only NARROWS capabilities (`caps_push_effects_narrowed`
+   clears every capability outside the set) and an ungated primitive never
+   consults `cap_current_flags`. `1316-b3`'s read-only claim is untouched,
+   which is this ruling's own sentence 1.
+
+### The spec edit this carries
+
+`flow.md` §4.15's watcher paragraph said a watcher "performs no effect" and
+stopped there, which now reads as a contradiction of the shipped feed. It
+gains one paragraph saying that streaming is not among the effects it
+performs none of, citing `security.md` §2 for why fd 1 is not the filesystem,
+and recording that an empty poll writes nothing — a parked run is silent
+exactly while it is parked. No sentence is withdrawn.
+
+### Measured and NOT fixed here, because it is not this ruling's subject
+
+A `file://` journal open charges `write` on the STORE, so `cx flow watch` over
+one still needs `--allow-write` — the read-only observer is capability-clean on
+its own output and not on its journal. That is `store-open`'s per-call charge
+(§2.1, one of the three), not the line-out, and #1061's path scoping is where
+it belongs. Recorded so a reader does not mistake the remaining grant for a
+failure of this ruling.

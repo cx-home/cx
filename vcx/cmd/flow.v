@@ -814,15 +814,31 @@ const flow_cli_diagram_levels = ['min', 'compact', 'full']
 // structural half of that guarantee; the declared `[effects [read] [clock]]`
 // on the loop is the other half.
 //
-// IT ANSWERS A VALUE, and the harness prints it, exactly as `serve` does. It
-// does NOT stream a line per paint, and the reason is a capability fact
-// rather than a preference: the only output path a PROGRAM has is
+// IT STREAMS ONE OVERLAY PER PAINT AND THEN ANSWERS THE WHOLE FEED (RULED:
+// 1316-c2, item 3). Every paint goes out on fd 1 as it happens, through
+// `[$env:write-line]` — the capability-free line-out #1369 landed for exactly
+// this consumer — and the accumulated `[flow-watch …]` is still the process's
+// answer, so a caller that pipes the verb reads the feed live and a caller
+// that captures its answer reads the same rows batched. Neither face is
+// dropped.
+//
+// This paragraph used to say the opposite, and the reason it did is worth
+// keeping: before #1369 the only output path a PROGRAM had was
 // `[$io:write-line [$env:stdout] …]`, which refuses `CXER0271` without
 // `--allow-write` — a grant that, in its own words, covers the whole
 // filesystem (per-path scoping is #1061). Making a read-only observer demand
-// a filesystem write grant in order to print is a worse trade than batching,
-// so the live-paint face is the XAP host's `GET /stream` (RULED: 1316-b4) and
-// the CLI answers when it stops. Drafted as 1316-c2 on #1316.
+// a filesystem write grant in order to print was a worse trade than batching,
+// so the verb batched and the live-paint face was the XAP host's
+// `GET /stream` alone (RULED: 1316-b4). `security.md` §2 now says fd 1 is the
+// invocation's ANSWER channel rather than the filesystem, so the trade is
+// gone: the streamed line costs no capability at all.
+//
+// A STREAMED LINE IS NOT AN EFFECT under that sentence, so `1316-b3`'s
+// read-only claim is untouched and the loop's `[effects [read] [clock]]` row
+// is UNCHANGED. `[effects …]` narrows capabilities — `caps_push_effects_narrowed`
+// clears every capability outside the declared set — and an ungated primitive
+// never consults `cap_current_flags`, so no `write` is needed to admit the
+// call. `advance` is still absent from the generated program's vocabulary.
 fn flow_cli_watch(o FlowCliOpts, for_ns i64) {
 	if o.positional.len != 2 {
 		flow_cli_die('watch takes FLOW.cx and RUN-ID')
@@ -856,6 +872,11 @@ fn flow_cli_watch(o FlowCliOpts, for_ns i64) {
 	program := [
 		flow_cli_prelude(true),
 		"[?lib 'cx-stdlib/diagram' :as cxdg]",
+		// the fd-1 line-out the paint feed rides (RULED: 1316-c2, item 3). It
+		// is in THIS program's directives rather than in `flow_cli_prelude`
+		// because `watch` is the only verb that streams: `run` and `serve`
+		// answer once, and `serve`'s progress lines already go to the log sink.
+		"[?lib 'cx-stdlib/env' :as cxenv]",
 		flow_cli_watch_defs(),
 		'[?let [= \$j [\$cxjournal:open "${flow_cli_quote(o.journal)}" "${flow_cli_tenant}"]]',
 		'  [= \$fl [\$first [\$cx:select \$doc "//flow"]]]',
@@ -869,6 +890,24 @@ fn flow_cli_watch(o FlowCliOpts, for_ns i64) {
 // blocks, and blocking there is a SAFEPOINT rather than a timer: it services
 // nothing and arms nothing.
 const flow_cli_watch_tick_ms = 200
+
+// ONE PAINT IS ONE LINE, which is what makes the feed pipeable — a consumer
+// reads it with `while read`, and a `[flow-overlay …]` split across three
+// lines is not a row. `[$cx:emit]` and `[$cx:canonical]` both lay an element
+// with element children out as a BLOCK (measured: the probe overlay came out
+// as three lines), because `emit_cx` decides block-vs-inline structurally and
+// has no notion of a line budget. `[$cx:pretty-print]` is the surface that
+// does: it is a LAYOUT pass over the SAME token layer (`cx_emit_node_str(n,
+// true)`), so a budget this large converges on the canonical spelling on one
+// line rather than approximating it. It is a budget rather than a switch
+// because §2.3 gives no `inline` option; the number is "larger than any
+// overlay", not a limit anyone should reach.
+//
+// The one shape it cannot flatten is a value carrying a literal newline. An
+// overlay carries node ids and `:status` symbols and no free text, so none
+// occurs here; a consumer that needs a hard guarantee reads the process's
+// `[flow-watch …]` answer, which is the same rows.
+const flow_cli_watch_line_budget = 1_000_000
 
 // The terminal run statuses, from §2.2's closed set. A run that reaches one
 // will never transition again, so the loop ends rather than holding a
@@ -884,7 +923,16 @@ fn flow_cli_watch_defs() string {
 [; a batch is a PAINT: the record is the fold at head, so one paint after a
    batch says exactly what several paints inside it would. An empty batch
    paints NOTHING — a watcher that re-emitted an unchanged overlay every tick
-   would turn a parked run into a stream of identical values. ]
+   would turn a parked run into a stream of identical values, and it writes
+   no line either, so a piped watch is silent exactly while the run is. ]
+[; $streamed is bound and never read, and that is deliberate rather than dead:
+   a [?for] is LAZY, so the writes need forcing, and [$count [?to-sequence …]]
+   is the forcing `fs--loop` in flow_serve.v already uses. MEASURED on this
+   build rather than assumed, because a paint that silently never reaches fd 1
+   is this feature's failure mode. Measured against the built binary: an
+   unused [?let] binding of that shape DOES run, and a two-member probe
+   sequence wrote both lines in order. The binding names the count rather
+   than being spelled `$_`, so a reader can see what was forced. ]
 [?def fw--loop impure [effects [read] [clock]] [returns element]
       ($j $id::string $fl $so::map $sub $n::int $acc::element)
   [?let
@@ -892,13 +940,15 @@ fn flow_cli_watch_defs() string {
     [= $paint [?if [> [$count $b] 0]
       [then ([$cxdg:flow-overlay $fl [$cxflow:status $j $id $so]])]
       [else ()]]]
+    [= $streamed [$count [?to-sequence [?for [in $p $paint]
+      [yield [$cxenv:write-line [$cx:pretty-print $p {max-line-length: LINEBUDGET}]]]]]]]
     [= $acc2 [flow-watch [?splice [?for [in $p $acc/*] [yield $p]]] [?splice $paint]]]
     [= $st [?for [in $p $acc2/*] [yield [$string $p@status]]]]
     [= $done [?if [> [$count $st] 0] [then [$fw--terminal [$nth $st [$count $st]]]] [else false]]]
     [?if [?if $done [then true] [else [= $n 0]]]
       [then $acc2]
       [else [$fw--loop $j $id $fl $so $sub [?if [< $n 0] [then -1] [else [- $n 1]]] $acc2]]]]]
-".replace('TICKMS', flow_cli_watch_tick_ms.str())
+".replace('TICKMS', flow_cli_watch_tick_ms.str()).replace('LINEBUDGET', flow_cli_watch_line_budget.str())
 }
 
 fn flow_cli_simulate(o FlowCliOpts) {
