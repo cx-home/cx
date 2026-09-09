@@ -84,6 +84,20 @@ paragraph and `misc/cli.md`'s serve bullet.
    when the store was opened, and an empty request tenant cannot cross a
    partition — it can only decline to re-assert one (`authz.md` §4.6).
 
+## One fork the ruling did not reach, flagged not decided
+
+`coord_flow_admit` is called AFTER `coord_flow_perform`'s compensate branch
+returns, so a **compensator is not admitted at the PEP** — only the forward
+act is. The ruling said "every step"; a compensation is §4.8's reversal of a
+step rather than a step of its own, so the placement decides something the
+ruling did not say. It is recorded rather than assumed: a compensator the PEP
+refused would strand the run `[conflict kind=:uncompensatable]` for an
+authority reason instead of an effect one, and §4.8's reverse path is the
+runner's obligation to finish once the forward act has run — against which
+`[compensates]` does name an ordinary command that may declare its own
+`[requires]`. Put to Fable as a letter on #1265. Reversing it moves ONE call
+above the compensate branch and changes nothing else.
+
 ## The id range moved by one
 
 The ruling pre-announced `flow-066` … `flow-070`. `flow-066` was taken by
