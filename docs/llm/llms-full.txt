@@ -2002,7 +2002,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-[err code=user-undefined message='no callable "greeet" — did you mean `greet`?']
+[err code=cx-err:CXER0136 message='E_NO_CALLABLE: no callable "greeet" — did you mean `greet`?']
 ```
 
 <sub>Fixtures: `ap-bare-head-typo-wrong` / `ap-bare-head-typo-right` in `conformance/llm/antipatterns.cxd`</sub>
@@ -3711,6 +3711,24 @@ $ cx prog.cx
 1
 ```
 
+`[$cx:carries-err TEXT]` answers the one question about a run that only the
+runtime can answer: does this RENDERED output carry an err value anywhere in
+it? Three positions count — a line beginning `[err `, a sequence whose first
+item errs, and a sequence whose err sits anywhere else — so a CX tool that
+spawns `cx` and reads its stdout back never has to guess at a prefix. It is a
+**tolerance** test: an err in the output does not make a nonzero exit code
+required, because a literal err in a data document is data echoing itself.
+
+`prog.cx`
+```cx
+[$cx:carries-err '(1, 4, 9, 16, [err code=shard-offline shard=5], 36)']
+```
+
+```console
+$ cx prog.cx
+true
+```
+
 ### `log` — structured context, not string prefixes
 
 Log context is a **scope**, entered with `[?with-scope]` and read back as a
@@ -3962,7 +3980,7 @@ Subcommands (`cx <subcommand> --help` for details):
   table                Table API over [table[...]] blocks (info / dump / load).
   scaffold             Typed, commented skeleton on stdout (config/data/doc/log/table).
   xap                  XAP project tooling — scaffold (`init`) and check (`check-surface`).
-  flow                 cx-stdlib/flow: the local profile (run / validate / simulate / status) and the standalone runner (serve).
+  flow                 cx-stdlib/flow: the local profile (run / validate / simulate / status / diagram) and the standalone runner (serve).
   demo                 Self-contained showcase (no file I/O, no network, < 1s).
   lock                 Generate / verify cx.lock from [?lib] directives.
   lsp                  Language server (LSP) on stdio.

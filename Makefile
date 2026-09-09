@@ -486,6 +486,18 @@ check-v-fork: build-vcx
 # `VFLAGS_VCX` carries no `-usecache`, so a "cache-free re-run" of those gates
 # would differ from the cached run in nothing and the classifier would print a
 # verdict it had not earned.
+# The build-failure classifier decides whether a failed `$(V) ... run` gate is
+# worth a -no-skip-unused re-run (see SKIP_UNUSED_ESCAPE_PROBE). A classifier
+# that silently stops matching disables the diagnosis while the gate looks
+# unchanged — the vacuous-gate class check-serial-retry-rosters exists for —
+# so its matcher is red-proofed from both ends over canned logs, including the
+# verbatim \#1337 failure. Every alternative in the signature carries its own
+# sample, so deleting one reds and adding one without a sample reds too.
+# Pure shell over heredocs: it compiles nothing and needs no build slot.
+.PHONY: check-build-failure-classifier
+check-build-failure-classifier:
+	@sh scripts/classify_v_build_failure.sh --self-test
+
 .PHONY: check-vcache-soundness
 check-vcache-soundness:
 	@log=vcx/target/vcache-soundness.log; \
@@ -572,7 +584,18 @@ verify-playground-examples: build-vcx
 # emcc or a network fetch — and belongs with scripts/test_playground_smoke.sh as
 # the playground release lane.
 .PHONY: test-playground-mermaid
+# RULED: 1170-e / 1170-f. The lane grades a bundle it BUILDS or PROVES FRESH,
+# never one it finds: `wasm-fresh-gate` (#992) refuses an artifact older than
+# vcx/ + stdlib/ + VERSION or whose cx_version() disagrees, so the bundle is
+# rebuilt (`build-playground`: both wasm variants the freshness gate names,
+# ~2 min) only when that gate says stale (in a gate that is every run; in a
+# developer loop usually not), and the lane REFUSES if it still reports stale
+# or missing. Before this the gate read an untracked, gitignored dist/wasm —
+# a two-week-stale bundle produced one false red and could have hidden a real
+# one. In TEST_TARGETS since 1170-f, after #1349 landed every constant id.
 test-playground-mermaid:
+	@./scripts/wasm/check_wasm_fresh.sh >/dev/null 2>&1 || $(MAKE) build-playground
+	@./scripts/wasm/check_wasm_fresh.sh
 	@node scripts/test_playground_mermaid.mjs
 
 # ── playground wasm EVALUATION sweep (#1033) ──────────────────────────────────
@@ -810,7 +833,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness test-vcx-timing check-conformance-coverage abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-oriel-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster fmt-sweep-gate
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS lanes whose
@@ -1236,7 +1259,14 @@ test-extraction-gate: build-vcx
 # NEW corpus defs are added (never to absorb a move).
 .PHONY: address-baseline-gate
 address-baseline-gate:
-	@$(JS_CLOSE) $(V) $(VFLAGS_VCX) run vcx/tests/runners/address_baseline/address_baseline.v
+	@$(JS_CLOSE) log=vcx/target/address-baseline-gate.log; \
+	  SU_RERUN='$(V) -no-skip-unused $(VFLAGS_VCX) run vcx/tests/runners/address_baseline/address_baseline.v'; \
+	  if $(V) $(VFLAGS_VCX) run vcx/tests/runners/address_baseline/address_baseline.v > "$$log" 2>&1; then \
+	    cat "$$log"; \
+	  else \
+	    cat "$$log"; \
+	    $(SKIP_UNUSED_ESCAPE_PROBE); \
+	  fi
 
 .PHONY: address-baseline-capture
 address-baseline-capture:
@@ -1914,7 +1944,8 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/net_real_socket_test.v \
                       vcx/tests/a2a_real_test.v \
                       vcx/tests/http_h2_serve_test.v \
-                      vcx/tests/process_pty_test.v
+                      vcx/tests/process_pty_test.v \
+                      vcx/tests/xap_umbrella_test.v
 
 # The retry ROSTERS above say WHICH lanes get a serial retry. This says WHY,
 # PER LANE. The emitted line used to read "serial retry (known real-socket
@@ -1932,6 +1963,8 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
 RETRY_REASON_CASE = case "$$rel" in \
 	  vcx/tests/process_pty_test.v) \
 	    reason="\#1125 pty master read races under the -j12 suite storm (empty child output); green in isolation and in the prior full run" ;; \
+	  vcx/tests/xap_umbrella_test.v) \
+	    reason="reference web client / store readiness bounds (calibrated ~30 s) exceeded only under the -j12 storm plus box load: measured 2026-09-09 OK 72 s alone, FAIL 98.7 s and 123 s with a lane or build sharing the box" ;; \
 	  vcx/tests/net_udp_read_deadline_test.v|vcx/tests/net_dtls_test.v|vcx/tests/net_real_socket_test.v|vcx/tests/a2a_real_test.v|vcx/tests/http_h2_serve_test.v) \
 	    reason="real-socket contention: ephemeral-port / deadline race under -j" ;; \
 	  vcx/platform/store_admin_plane_test.v|vcx/platform/store_grpc_live_test.v|vcx/platform/store_lazy_load_test.v) \
@@ -1975,6 +2008,65 @@ RETRY_REASON_CASE = case "$$rel" in \
 # comment and silently truncates the line it is on (measured while writing
 # this: the banner became `GATE ESCAPE (`). Issue numbers here must be
 # written `\#700`, the same idiom RETRY_REASON_CASE above uses for `\#1125`.
+# ── SKIP-UNUSED ESCAPE PROBE (\#1337) ────────────────────────────────────────
+# The cache-free re-run above is the right classifier for a lane that runs
+# WITH $(CX_CACHE). It is the wrong one for a `$(V) ... run` gate, and that
+# distinction is the whole of \#1337's second ask.
+#
+# `VFLAGS_VCX := -cc cc -path ...` carries NO -usecache, and has not since the
+# single commit that ever wrote that line. So when address-baseline-gate died
+# on `call to undeclared function 'string_runes'`, the cache was off in the
+# failing run AND in the "cache-free" re-run the issue reports as a
+# discriminator — the same command twice, which makes its greenness a NON-
+# REPRODUCTION rather than a discriminator. A cache-free re-run of these gates
+# differs from the failing run in NOTHING, which is exactly why ask 2's first
+# option was declined. That reasoning was right about the cache and wrong
+# about the remedy.
+#
+# What IS on for every one of these builds is -skip-unused: for the C backend
+# and any build that is not -build-module, V sets skip_unused unconditionally
+# (third_party/v/vlib/v/pref/pref.v, the `res.backend == .c` block). Pruning a
+# symbol the translation unit still references is precisely this failure
+# class, and the fork already carries two patches in it — upstream's
+# "markused: fix undeclared C identifier for alias array type" (5f6bc5ab07)
+# and CX's own use_cache interface mitigation in vlib/v/markused/markused.v,
+# whose comment reads "the wrapper references an undeclared function -> C
+# error". Neither covers a cache-free program TU.
+#
+# STATE THIS PLAINLY: markused is the best-supported hypothesis for that
+# symptom, NOT a measured cause. It has not reproduced since. This probe
+# exists so the NEXT occurrence names itself instead of costing another full
+# verification cycle, which is what \#1337 says the first one cost.
+#
+# Discipline, identical to CACHE_ESCAPE_PROBE: the verdict STAYS RED either
+# way. The re-run is the classifier, never a retry, and it only happens when
+# the log actually carries a C symbol-level failure — re-running the whole
+# graph on an ordinary red (a moved address) would cost a full rebuild and
+# classify nothing. scripts/classify_v_build_failure.sh owns that decision and
+# self-tests it.
+# NOTE for editors: this is a make VARIABLE, so a bare `#` starts a make
+# comment and silently truncates the line it is on. Issue numbers here must be
+# written `\#1337`, the same idiom CACHE_ESCAPE_PROBE above uses.
+SKIP_UNUSED_ESCAPE_PROBE = \
+	if sh scripts/classify_v_build_failure.sh "$$log"; then \
+	  echo "──── -no-skip-unused DIAGNOSTIC (verdict stays RED; classifying only) ────"; \
+	  if eval "$$SU_RERUN" > "$$log.noskip" 2>&1; then \
+	    echo "════ SKIP-UNUSED ESCAPE (\#1337): FAILED with -skip-unused, PASSES with -no-skip-unused ════"; \
+	    echo "     markused pruned a symbol the generated translation unit still references."; \
+	    echo "     DO NOT re-run to get green, and do not add -no-skip-unused to the gate:"; \
+	    echo "     that hides a real codegen defect behind a slower build."; \
+	    echo "     Capture and file against \#1337:"; \
+	    echo "       - $$log        (the pruned failure, with the undeclared symbol)"; \
+	    echo "       - $$log.noskip (the same build, nothing pruned)"; \
+	    echo "     Then add the reproducer to third_party/v as a markused regression test."; \
+	  else \
+	    echo "──── real failure, not a markused artifact (fails with -no-skip-unused too) ────"; \
+	  fi; \
+	else \
+	  echo "──── ordinary red: no C symbol-level failure in $$log, so no re-run ────"; \
+	fi; \
+	exit 1
+
 CACHE_ESCAPE_PROBE = \
 	echo "──── cache-free DIAGNOSTIC (verdict stays red; classifying): $$rel ────"; \
 	if $(V) -cc cc $(CX_GC) $(CX_ENGINES) test "$$rel"; then \
@@ -2030,6 +2122,22 @@ check-consolidation-manifests:
 .PHONY: check-conformance-coverage
 check-conformance-coverage:
 	@bash scripts/check_conformance_coverage.sh
+
+# ── #1272 (RULED: 1272-a1): the §1.2 feature runtime contract has a REVISION ──
+# The gate refuses a tree whose §1.2 normative body moved without the author
+# saying which kind of move it was (a bump, or an editorial re-pin), and refuses
+# a drift between the spec's declaration and the V constant generated from it.
+# `-repin` is the deliberate act that records the decision; `-regen` only
+# refreshes the generated constant.
+.PHONY: check-contract-revision contract-revision-regen contract-revision-repin
+check-contract-revision:
+	@bash scripts/check_contract_revision.sh
+
+contract-revision-regen:
+	@bash scripts/gen_contract_revision.sh
+
+contract-revision-repin:
+	@bash scripts/gen_contract_revision.sh --repin
 
 # ── #1216: the wall-clock lane ──────────────────────────────────────────────
 # vcx/timing/*_test.v hold the assertions whose SUBJECT is elapsed time (boot
@@ -2812,6 +2920,83 @@ bench-code-modify-sharing: build-vcx
 .PHONY: corpus-audit
 corpus-audit: build-vcx
 	@bash scripts/corpus_audit.sh
+
+
+# ── `cx fmt` corpus sweep (#1348) ───────────────────────────────────────────
+#
+# TWO sweeps, because one cannot be both: `fmt-sweep` is the CORRECTNESS
+# census over every tracked `.cx` file INCLUDING `fixtures/bench/`, and
+# `fmt-sweep-timed` is the wall-clock pass over the non-bench files, whose
+# count stays comparable across runs. #1348 recorded that every fmt corpus
+# measurement so far excluded the bench blobs because one 10 MB file made a
+# 90 s sweep take half an hour — "which means the ONE class of input where
+# formatter cost is worth measuring is the one class never measured".
+#
+# The correctness pass feeds every file as a copy with one leading blank line
+# prepended, so `output == input` means the formatter DECLINED and cannot mean
+# "already canonical". Without that, `cx fmt F == F` is the vacuous probe the
+# #1318/#1320 record warns about: `cx fmt` fails closed by returning the
+# SOURCE at exit 0, so a sweep comparing a file to itself scores every silent
+# decline as a pass.
+#
+# A REPORT by default. `--max-declined N` / `--max-errors N` make it a
+# ratchet, and it becomes a gate lane once the census is a committed number.
+#
+# CX_SWEEP_BIN is the binary MEASURED and the binary that runs the sweep — one
+# variable for both, because a census of one binary produced by another is a
+# census of neither. It defaults to the shipped `vcx/target/cx`, which is what
+# #1348's own figures were taken with; a lane that only wants the correctness
+# verdict can point it at `vcx/target/cx-dev`.
+CX_SWEEP_BIN ?= vcx/target/cx
+.PHONY: fmt-sweep fmt-sweep-timed
+# --allow-clock is load-bearing for the timed pass and NOT optional: a denied
+# clock capability makes `[$time:monotonic-now]` answer ABSENCE rather than
+# fail, so every `ms` column came out empty and the total with it (measured in
+# lane_A_1348). Granted to both recipes because either can be handed `--timed`
+# through FMT_SWEEP_ARGS.
+fmt-sweep: build-vcx
+	@$(CX_SWEEP_BIN) --allow-read --allow-write --allow-subprocess --allow-clock \
+	  scripts/fmt_corpus_sweep.cx --bin $(CX_SWEEP_BIN) $(FMT_SWEEP_ARGS)
+
+fmt-sweep-timed: build-vcx
+	@$(CX_SWEEP_BIN) --allow-read --allow-write --allow-subprocess --allow-clock \
+	  scripts/fmt_corpus_sweep.cx --bin $(CX_SWEEP_BIN) --timed --no-bench $(FMT_SWEEP_ARGS)
+
+# ── fmt-sweep-gate (RULED: 1348-c) — the census as a GATE ────────────────────
+#
+# The sweep above is a REPORT. This is the same instrument with the numbers
+# committed, and it is in TEST_TARGETS: the Makefile note at the top of this
+# section said it "becomes a gate lane once the census is a committed number",
+# and #1348's census is that number.
+#
+# The ERROR verdict is gated by a NAMED ROSTER, not by a count. A count has no
+# lower bound: fix one of the five files that are supposed to fail and the
+# total drops below the budget while the lane stays green, and a genuinely new
+# error is invisible until it is the sixth. The roster reds BOTH ways — a file
+# that errors and is not listed, and a listed file that has STOPPED erroring.
+# The second is the half a count cannot express, and it is load-bearing here:
+# `tooling/vscode/test/grammar/basic.cx` is on the roster for a real
+# #1347-family gap, so when that lands this lane says the line must go. Same
+# shape as the #1350 golden MANIFEST (`99c25169d`).
+#
+# DECLINED stays a count, ratcheted at the committed census, and it is a
+# ONE-WAY ratchet by convention: whoever lowers it edits the number down in the
+# same landing. UNSTABLE reds at >0 with or without --ratchet, because §7 says
+# fmt_source fails closed rather than returning an unsettled candidate, so
+# there is no number to ratchet against.
+#
+# Census measured at 3ef4d597e, the landing base:
+#   SWEEP-FILES=272  FORMATTED=173  DECLINED=94  UNSTABLE=0  ERROR=5
+# It is 272/94 and not the 271/93 of #1348's own census at 12abdac33 because
+# #1317 added `bench/flow/served.cx`, which declines.
+FMT_SWEEP_MAX_DECLINED ?= 94
+FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
+.PHONY: fmt-sweep-gate
+fmt-sweep-gate: build-vcx
+	@$(CX_SWEEP_BIN) --allow-read --allow-write --allow-subprocess --allow-clock \
+	  scripts/fmt_corpus_sweep.cx --bin $(CX_SWEEP_BIN) --ratchet \
+	  --max-declined $(FMT_SWEEP_MAX_DECLINED) \
+	  --expected-errors $(FMT_SWEEP_EXPECTED_ERRORS)
 
 
 # ── REPR GUARD (#1119 W1, RULED: RP-5) — the CXDM live-memory ratchet ────────

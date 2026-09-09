@@ -28,6 +28,18 @@ fn xap_init_files(name string) map[string]string {
 // by construction: the scaffolder derives both sides from this table, so
 // the surface and the client cannot drift apart.
 
+// DERIVATION IS KEYED BY THE PANE, NOT THE FEATURE (RULED: 1259-f3).
+// `emits-of $c` would grow a control for a verb the scaffold cannot service:
+// the composite declares an act verb `reassign` (a derived-noun write with no
+// deriver bound), and the first click on it would be a refusal the scaffold
+// itself set up. A pane offers exactly the act verb it declares; a feature's
+// act verb with no pane is not offered.
+//
+// There is no `slots` field (RULED: 1259-f1/1259-f2): the intent slots are
+// DERIVED in the generated program by `[$xap:emits-of]` over the feature the
+// program already parses, so the adopter's file has ONE source of truth for
+// field names — the feature document they are told to edit — and the block
+// cannot drift from it the way a table written here at scaffold time does.
 struct XapInitPane {
 	panel  string   // the [panel] name in the surface
 	comp   string   // component (= feature) name; also the shell mount name
@@ -38,7 +50,7 @@ struct XapInitPane {
 	fields []string // the SHOWN fields, in column order
 	verb   string   // the pane's act verb ('' = view-only pane)
 	label  string   // the control's label
-	slots  []string // the act verb's intent slots
+	src    string   // the generated program's binding for the pane's feature
 }
 
 fn xap_init_panes() []XapInitPane {
@@ -53,7 +65,7 @@ fn xap_init_panes() []XapInitPane {
 			fields: ['id', 'label', 'owner']
 			verb:   'create'
 			label:  'Create thing'
-			slots:  ['id', 'owner', 'created-at', 'label']
+			src:    'a'
 		},
 		XapInitPane{
 			panel:  'owners'
@@ -65,7 +77,7 @@ fn xap_init_panes() []XapInitPane {
 			fields: ['id', 'name']
 			verb:   'register'
 			label:  'Register owner'
-			slots:  ['id', 'name', 'registered-at']
+			src:    'b'
 		},
 		XapInitPane{
 			panel:  'owned'
@@ -75,6 +87,7 @@ fn xap_init_panes() []XapInitPane {
 			region: 'main'
 			mode:   'stacked'
 			fields: ['thing-id', 'owner-name', 'label']
+			src:    'c'
 		},
 	]
 }
@@ -473,9 +486,33 @@ fn xap_init_client_readme(name string) string {
 		'commit) is yours to add when you replace the floor.\n'
 }
 
-// xap_init_client_component renders one [$xap:component …] block whose view
-// is the GENERIC TABLE derived from the pane's shown fields (RULED: ATC-2):
-// every shown field a column, no view authored by hand.
+// xap_init_client_component renders one [$xap:component …] binding inside the
+// generated program's [?let] (RULED: 1259-f1) — its view the GENERIC TABLE
+// derived from the pane's shown fields (RULED: ATC-2), its vocabulary and its
+// control's inputs DERIVED from the feature the program already parsed
+// (RULED: 1259-f1/1259-f2).
+//
+// Why the derivation is written into the GENERATED CX and not performed here.
+// `[$xap:emits-of]` is a Ring-2 name and `cx xap init` ships in the Ring-2-FREE
+// cli profile (`build_subcommands()`, `vcx/cmd/main.v:1051`, untagged sources;
+// only `CX_PROFILE_PLATFORM` adds the define), so calling it from `vcx/cmd`
+// would put Ring-2 code in an artifact defined by its absence — the §4
+// profile-by-construction rule `test-profile-gate` grades. Doing it behind
+// `$if cx_platform` is worse: one command would then write two different
+// scaffolds and no lane would notice.
+//
+// And the generated file is the better home anyway. Deriving here would leave
+// a LITERAL block on the adopter's disk — indistinguishable from a hand table,
+// correct once, and stale the moment they do the first thing the template tells
+// them to do ("Rename it to your own noun"). Written into the program, the
+// block is re-derived from `thing.feature.cxd` on every boot and cannot drift.
+// The generated program is already Ring 2 — it calls compose, run, emit and
+// serve — so the dependency moves to where it already exists.
+//
+// The pane's atom is bound ONCE, eagerly, and the control is built from it as
+// an element literal: a `[?for]` comprehension is LAZY (#1220, xap-compose-142),
+// so a slot list left as a bound comprehension would be an iterator the view
+// function re-reads on every render — empty on the second one.
 fn xap_init_client_component(p XapInitPane) string {
 	mut head := ''
 	for f in p.fields {
@@ -483,33 +520,31 @@ fn xap_init_client_component(p XapInitPane) string {
 	}
 	mut cells := ''
 	for f in p.fields {
-		cells += "\n                             [cell [\$concat '' [?else \$r/${f} '']]]"
+		cells += "\n                               [cell [\$concat '' [?else \$r/${f} '']]]"
 	}
+	mut derive := ''
 	mut emits := ''
-	if p.verb != '' {
-		mut slots := ''
-		for s in p.slots {
-			slots += ' [${s} :string]'
-		}
-		emits = '\n   emits: ([do :${p.verb}${slots}])'
-	}
 	mut control := ''
 	if p.verb != '' {
-		mut inputs := ''
-		for s in p.slots {
-			inputs += ' [input :${s}]'
-		}
-		control = "\n             [control :${p.verb} [label '${p.label}']${inputs}]"
+		// the ONE atom this pane offers, selected from the feature's derived
+		// vocabulary by the pane's own verb (RULED: 1259-f3).
+		derive = "  [= \$v-${p.comp} [\$first [?for [in \$e [\$xap:emits-of \$${p.src}]]\n" +
+			"                          [where [= [\$string [\$first \$e]] '${p.verb}']] [yield \$e]]]]\n" +
+			"  [= \$c-${p.comp} [control :${p.verb} [label '${p.label}']\n" +
+			"                     [?splice [?for [in \$s \$v-${p.comp}/*] [yield [input [\$name \$s]]]]]]]\n"
+		emits = '\n     emits: (\$v-${p.comp})'
+		control = '\n               \$c-${p.comp}'
 	}
-	return '[\$xap:component ${p.comp}\n' +
-		'  {bind: "${p.bind}"${emits}\n' +
-		'   view: [?fn (\$rs)\n' +
-		'           [panel\n' +
-		'             [table\n' +
-		'               [head ${head.trim_space()}]\n' +
-		'               [?for [in \$r \$rs]\n' +
-		'                 [yield [row${cells}]]]]${control}]]\n' +
-		'   working-panel: :none}]\n'
+	return derive +
+		'  [= \$_${p.comp} [\$xap:component ${p.comp}\n' +
+		'    {bind: "${p.bind}"${emits}\n' +
+		'     view: [?fn (\$rs)\n' +
+		'             [panel\n' +
+		'               [table\n' +
+		'                 [head ${head.trim_space()}]\n' +
+		'                 [?for [in \$r \$rs]\n' +
+		'                   [yield [row${cells}]]]]${control}]]\n' +
+		'     working-panel: :none}]]\n'
 }
 
 // xap_init_client_serve renders the client's GENERATED server (RULED:
@@ -568,9 +603,7 @@ fn xap_init_client_serve(name string) string {
                                   [yield [\$concat '' \$w/name]]]] '(unregistered)']]
              [label [\$concat '' [?else \$t/label '']]]]]]]
 
-[; ── the components: one per pane, each view a generic `shows` table ── ]
-
-${comps}[?let
+[?let
   [= \$dir [?else [\$env:var 'CX_XAP_DIR'] '../${name}']]
   [= \$port [?else [\$env:var 'CX_XAP_PORT'] '8791']]
 
@@ -585,6 +618,22 @@ ${comps}[?let
   [= \$a [\$first [?for [in \$n \$ad//feature] [yield \$n]]]]
   [= \$b [\$first [?for [in \$n \$bd//feature] [yield \$n]]]]
   [= \$c [\$first [?for [in \$n \$cd//feature] [yield \$n]]]]
+
+  [; ── the components: one per pane, each view a generic `shows` table ──
+
+     Each pane's VOCABULARY and its control's INPUTS are derived, here, from
+     the feature document parsed just above: [\$xap:emits-of] answers one
+     [do :verb [field :type]…] atom per act verb, with the slots the verb
+     declares (or, for a bare [intent [do :v]], the written noun's fields) and
+     every slot's type taken from that noun's [field … type=]. So the field
+     names live in ONE place — the feature file you are told to edit — and
+     this block follows it instead of drifting from it.
+
+     The selection is by the PANE's verb, not by the feature: the composite
+     declares an act verb (`reassign`) that no deriver here can service, and
+     offering it would put a control on the panel whose first click is a
+     refusal. A feature's act verb with no pane is simply not offered. ]
+${comps}
   [= \$g [\$xap:compose \$a \$b \$c]]
 
   [; run ASSEMBLY (composition §4.2): a grammar carrying a derived noun

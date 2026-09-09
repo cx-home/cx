@@ -1,0 +1,372 @@
+# scripts/fmt_corpus_sweep.cx — the `cx fmt` CORRECTNESS sweep over the whole
+# tracked CX corpus, `fixtures/bench/` INCLUDED (#1348).
+#
+#   vcx/target/cx --allow-read --allow-write --allow-subprocess --allow-clock \
+#     scripts/fmt_corpus_sweep.cx                       # correctness, parallel
+#
+# --allow-clock is required by `--timed` and NOT optional: a denied clock
+# capability makes `[$time:monotonic-now]` answer ABSENCE rather than fail, so
+# every `ms` reads empty and the run looks like it measured zero.
+#   ... fmt_corpus_sweep.cx --timed                     # wall clock, SEQUENTIAL
+#   ... fmt_corpus_sweep.cx --no-bench                  # skip fixtures/bench/
+#   ... fmt_corpus_sweep.cx --bin vcx/target/cx-dev --jobs 8
+#   ... fmt_corpus_sweep.cx --filter stdlib/          # a path substring
+#   ... fmt_corpus_sweep.cx --ratchet --max-declined 94 \
+#         --expected-errors scripts/fmt_corpus_expected_errors.txt
+#                                                     # == `make fmt-sweep-gate`
+#
+# WHY THIS EXISTS. #1348 recorded that every `cx fmt` corpus measurement so far
+# excluded `fixtures/bench/` because one 10 MB blob made a 90 s sweep take half
+# an hour — "which means the ONE class of input where formatter cost is worth
+# measuring is the one class never measured". The answer it names is two
+# ratchets, not one: a CORRECTNESS sweep that covers every file including the
+# blobs, and a separate WALL-CLOCK sweep whose file set stays comparable across
+# runs. This is the correctness half, and `--timed` is the timing half.
+#
+# WHY A PERTURBED COPY, AND NOT THE FILE ITSELF. `cx fmt` fails CLOSED: when it
+# cannot produce a lossless canonical form it returns the SOURCE, exit 0. So
+# `cx fmt F == F` cannot tell "already canonical" from "declined" — both answer
+# F — and a sweep built on that comparison is the vacuous probe the #1318/#1320
+# record warns about. Every file is therefore fed as a copy with ONE leading
+# blank line prepended, which is:
+#
+#   * meaning-preserving — offset 0 is never inside a string, a text run or a
+#     `[?def]` verbatim clause region, so the perturbation cannot land anywhere
+#     its bytes are the model;
+#   * provably NON-canonical — measured 2026-09-09: a leading blank line is
+#     removed both from a bare form and from a file whose first line is a
+#     top-level comment;
+#   * observable — a formatter that formats at all removes it, so
+#     output == input now means DECLINED and nothing else.
+#
+# The four verdicts are therefore exhaustive and none of them is vacuous:
+#
+#   FORMATTED  fmt changed the perturbed copy, and fmt(output) == output (§7).
+#   UNSTABLE   fmt changed it, but the output is not its own fixed point. §7
+#              says that cannot happen; `fmt_source` is supposed to fail closed
+#              to the source instead of returning an unsettled candidate.
+#   DECLINED   fmt returned a provably non-canonical input verbatim. Not a
+#              crash and not a wrong answer — a HOLE, and the hole is silent:
+#              exit 0, no diagnostic, no gate anywhere notices.
+#   ERROR      non-zero exit; the diagnostic is reported.
+#
+# The sweep is a REPORT by default: it exits 0 with the census unless it could
+# not run at all. `--ratchet --max-declined N` turns the DECLINED column into a
+# ratchet, and `--expected-errors ROSTER` turns the ERROR column into a named
+# gate (RULED: 1348-c) — reding both on a file that errors and is not on the
+# roster and on a roster entry that has STOPPED erroring, which is the half
+# `--max-errors N` cannot express. The roster SUPERSEDES `--max-errors`; that
+# flag still applies when no roster is given. `make fmt-sweep-gate` is this
+# invocation with the census committed, and it is in TEST_TARGETS.
+# An UNSTABLE row always reds, with or without `--ratchet`: §7 says
+# `fmt_source` fails closed rather than returning an unsettled candidate, so
+# there is no number to ratchet against.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/time'    as=time]
+[?lib 'cx-stdlib/fp'      as=fp]
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def cat scope=private ($parts) [$strings:join $parts '']]
+[?def die scope=private impure ($msg) ([$cry $msg], [$env:exit 2], null)]
+
+# EVERY flag carries an explicit default, and nothing here reads a flag through
+# `[?else …]`. An UNSET flag with no declared default reads back as `null`, and
+# `null` is a VALUE, not an absence — so `[?else [$env:flag $a 'filter'] '']`
+# yields `null`, `[$string null]` is the four-letter string "null", and the
+# sweep silently ran over the one corpus path containing that substring:
+# `scripts/check_null_absence_conflation.cx`, which is the defect's own name.
+# Measured 2026-09-09 in lane_A_1348 (`1 tracked .cx files`, every count empty).
+# A declared default is the fix at the source; `[?else]` cannot see a null.
+[?const ARG-SPEC [argspec
+  [flag name="bin"          type=string default=""]
+  [flag name="jobs"         type=int    default=0]
+  [flag name="no-bench"     type=bool   default=false]
+  [flag name="timed"        type=bool   default=false]
+  [flag name="max-declined" type=int    default=0]
+  [flag name="max-errors"   type=int    default=0]
+  [flag name="ratchet"      type=bool   default=false]
+  [flag name="expected-errors" type=string default=""]
+  [flag name="filter"       type=string default=""]]]
+
+# Vendored and archived trees are not ours to format; everything else tracked
+# under a .cx extension is in scope, `fixtures/bench/` included by default.
+[?const EXCLUDED-PREFIXES ('third_party/', 'lang/_archived/')]
+
+[?def excluded scope=private pure [returns bool] ($path::string)
+  [> [$count [?for [in $x EXCLUDED-PREFIXES]
+               [where [$strings:starts-with $path $x]]
+               [yield $x]]] 0]]
+
+[?def is-bench scope=private pure [returns bool] ($path::string)
+  [$strings:starts-with $path 'fixtures/bench/']]
+
+# A temp basename that is unique per corpus path and keeps the `.cx` extension
+# `cx fmt` dispatches on.
+[?def flat-name scope=private pure [returns string] ($path::string)
+  [$strings:replace $path '/' '_']]
+
+[?def corpus scope=private impure ($include-bench::bool)
+  [?let
+    [= $r [?fallback [$process:run ('git', 'ls-files', '*.cx')]
+            [recover-with [proc-result exit-code=1 stdout='']]]]
+    [= $_ [?if [not [= $r@exit-code 0]]
+            [then [$die 'fmt_corpus_sweep: git ls-files failed — run this from the checkout root']]
+            [else null]]]
+    [?to-sequence [?for [in $f [$strings:split-lines [$string $r@stdout]]]
+                    [where [and [not [= $f '']]
+                           [and [not [$excluded $f]]
+                                [or $include-bench [not [$is-bench $f]]]]]]
+                    [yield $f]]]]]
+
+# One `cx fmt` run, as a shell line: stdout, stderr and the exit code each land
+# in a file, so nothing depends on draining a pipe while N children run.
+[?def fmt-cmd scope=private pure [returns string] ($bin::string $in::string $out::string $err::string $rc::string)
+  [$cat ([$strings:escape-shell $bin], ' fmt ', [$strings:escape-shell $in],
+        ' > ', [$strings:escape-shell $out],
+        ' 2> ', [$strings:escape-shell $err],
+        '; echo $? > ', [$strings:escape-shell $rc])]]
+
+[?def job-paths scope=private pure ($dir::string $path::string $tag::string)
+  [?let [= $stem [$cat ($dir, '/', $tag, '_', [$flat-name $path])]]
+    {in: [$cat ($stem, '.cx')], out: [$cat ($stem, '.out.cx')],
+     err: [$cat ($stem, '.err')], rc: [$cat ($stem, '.rc')]}]]
+
+[?def read-rc scope=private impure [returns int] ($p::string)
+  [?fallback [$strings:to-int [$strings:trim [$io:read-file $p]]]
+    [recover-with [- 0 1]]]]
+
+[?def read-or-empty scope=private impure [returns string] ($p::string)
+  [?fallback [$io:read-file $p] [recover-with '']]]
+
+[?def in-list scope=private pure [returns bool] ($x::string $xs::any)
+  [> [$count [?for [in $y $xs] [where [= [$string $y] $x]] [yield $y]]] 0]]
+
+# The expected-ERROR roster (RULED: 1348-c) — one repo-relative path per line,
+# `#` comments and blank lines ignored. A MISSING or unreadable file reads back
+# as the empty roster, which would silently turn the gate into "every error is
+# stale"; `expected-roster` therefore DIES rather than returning empty, because
+# an absence here is indistinguishable from a roster that legitimately lists
+# nothing and the difference is the whole gate.
+[?def expected-roster scope=private impure ($p::string)
+  [?let
+    [= $raw [$read-or-empty $p]]
+    [= $_ [?if [= $raw '']
+            [then [$die [$cat ('fmt_corpus_sweep: --expected-errors ', $p,
+                              ' is missing or empty — the roster is the gate, ',
+                              'and an unreadable one grades nothing')]]]
+            [else null]]]
+    [?to-sequence [?for [in $l [$strings:split-lines $raw]]
+                    [where [and [not [= [$strings:trim $l] '']]
+                                [not [$strings:starts-with [$strings:trim $l] '#']]]]
+                    [yield [$strings:trim $l]]]]]]
+
+# ── the correctness pass ────────────────────────────────────────────────────
+
+# Stage one for a chunk: write every perturbed copy, spawn every child, then
+# wait. [?to-sequence] is what makes it PARALLEL — a comprehension is a lazy
+# iterator, so a `[?for … [yield [$process:spawn …]]]` walked by the waiter
+# would spawn and wait one child at a time (the #1069 laziness trap).
+[?def start-job scope=private impure ($bin::string $dir::string $path::string)
+  [?let
+    [= $j [$job-paths $dir $path 'a']]
+    [= $pert [$cat ("\n", [$read-or-empty $path])]]
+    [= $_w [$io:write-file $j/in $pert]]
+    {path: $path, pert: $pert, out: $j/out, err: $j/err, rc: $j/rc,
+     proc: [$process:spawn ('sh', '-c', [$fmt-cmd $bin $j/in $j/out $j/err $j/rc])]}]]
+
+[?def collect-job scope=private impure ($j)
+  [?let
+    [= $out [$read-or-empty $j/out]]
+    {path: $j/path, rc: [$read-rc $j/rc], out: $out,
+     declined: [= $out $j/pert],
+     diag: [$strings:trim [$read-or-empty $j/err]]}]]
+
+[?def run-chunk scope=private impure ($bin::string $dir::string $chunk)
+  [?let
+    [= $jobs [?to-sequence [?for [in $p $chunk] [yield [$start-job $bin $dir $p]]]]]
+    [= $_waited [$count [?to-sequence [?for [in $j $jobs] [yield [$process:wait $j/proc]]]]]]
+    [?to-sequence [?for [in $j $jobs] [yield [$collect-job $j]]]]]]
+
+# Stage two: the §7 fixed-point check, only for the files fmt actually
+# formatted. Feeding the OUTPUT back in is the whole check, so this pass takes
+# no perturbation — its input is by construction what fmt just called canonical.
+[?def start-check scope=private impure ($bin::string $dir::string $r)
+  [?let
+    [= $j [$job-paths $dir $r/path 'b']]
+    [= $_w [$io:write-file $j/in $r/out]]
+    {path: $r/path, first: $r/out, out: $j/out, rc: $j/rc,
+     proc: [$process:spawn ('sh', '-c', [$fmt-cmd $bin $j/in $j/out $j/err $j/rc])]}]]
+
+[?def collect-check scope=private impure ($j)
+  {path: $j/path,
+   stable: [and [= [$read-rc $j/rc] 0] [= [$read-or-empty $j/out] $j/first]]}]
+
+[?def check-chunk scope=private impure ($bin::string $dir::string $chunk)
+  [?let
+    [= $jobs [?to-sequence [?for [in $r $chunk] [yield [$start-check $bin $dir $r]]]]]
+    [= $_waited [$count [?to-sequence [?for [in $j $jobs] [yield [$process:wait $j/proc]]]]]]
+    [?to-sequence [?for [in $j $jobs] [yield [$collect-check $j]]]]]]
+
+[?def chunked scope=private impure ($bin::string $dir::string $files $jobs::int $stage::string $acc)
+  [?if [= [$count $files] 0]
+    [then $acc]
+    [else [?let
+      [= $head [?to-sequence [?take $jobs $files]]]
+      [= $rest [?drop $jobs $files]]
+      [= $res [?if [= $stage 'a']
+                [then [$run-chunk $bin $dir $head]]
+                [else [$check-chunk $bin $dir $head]]]]
+      [$chunked $bin $dir $rest $jobs $stage [?to-sequence [?concat $acc $res]]]]]]]
+
+# ── the timing pass (SEQUENTIAL — a parallel wall clock measures nothing) ───
+
+# A `[?let]` binding is evaluated when it is first READ, not where it is
+# written, so `[= $t0 …] [= $rc …] [= $t1 …]` in a record does NOT measure the
+# process — the two clock reads can both land after it, or in either order, and
+# lane_A_1348 duly reported an empty `MS` column. The chain below is ordered by
+# DATA DEPENDENCE, which is the only ordering laziness respects: `$t0` is forced
+# by the guard that gates the spawn, and the elapsed read is inside a branch
+# whose condition is `$rc`, so the child has been waited for before the clock is
+# read a second time.
+[?def timed-one scope=private impure ($bin::string $dir::string $path::string)
+  [?let
+    [= $j [$job-paths $dir $path 't']]
+    [= $_w [$io:write-file $j/in [$cat ("\n", [$read-or-empty $path])]]]
+    [= $t0 [$time:monotonic-now]]
+    [= $rc [?if [> $t0 0]
+             [then [$process:wait [$process:spawn ('sh', '-c', [$fmt-cmd $bin $j/in $j/out $j/err $j/rc])]]]
+             [else [- 0 1]]]]
+    {path: $path, rc: $rc,
+     ms: [?if [>= $rc 0]
+           [then [/ [- [$time:monotonic-now] $t0] 1000000.0e0]]
+           [else 0.0e0]]}]]
+
+# ── report ─────────────────────────────────────────────────────────────────
+
+[?def verdict-of scope=private pure [returns string] ($r $stable-paths)
+  [?if [not [= $r/rc 0]] [then 'ERROR']
+  [else [?if $r/declined [then 'DECLINED']
+  [else [?if [> [$count [?for [in $p $stable-paths] [where [= $p $r/path]] [yield $p]]] 0]
+          [then 'FORMATTED']
+          [else 'UNSTABLE']]]]]]]
+
+[?let
+  [= $args [?fallback [$env:parse-args ARG-SPEC]
+             [recover-with ([$cry 'usage: fmt_corpus_sweep.cx [--bin PATH] [--jobs N] [--no-bench] [--timed] [--max-declined N] [--max-errors N]'],
+                            [$env:exit 2], null)]]]
+  [= $bin [?let [= $b [$string [$env:flag $args 'bin']]]
+            [?if [= $b ''] [then 'vcx/target/cx'] [else $b]]]]
+  [= $jobs [?let [= $j [$env:flag $args 'jobs']]
+             [?if [> $j 0] [then $j] [else [$env:cpu-count]]]]]
+  [= $include-bench [not [$env:flag $args 'no-bench']]]
+  [= $timed [$env:flag $args 'timed']]
+  [= $filter [$string [$env:flag $args 'filter']]]
+  [= $files [?to-sequence [?for [in $f [$corpus $include-bench]]
+              [where [or [= $filter ''] [$strings:contains $f $filter]]]
+              [yield $f]]]]
+  [= $n [$count $files]]
+  [= $_e [?if [= $n 0] [then [$die 'fmt_corpus_sweep: no tracked .cx files in scope']] [else null]]]
+  [= $dir [$io:temp-dir 'cx-fmt-sweep']]
+  [= $_h [$say [$cat ('fmt_corpus_sweep: ', [$string $n], ' tracked .cx files, bin=', $bin,
+                    ', bench=', [?if $include-bench [then 'included'] [else 'excluded']],
+                    [?if $timed [then ', TIMED (sequential)'] [else [$cat (', jobs=', [$string $jobs])]]])]]]
+  [= $out
+    [?if $timed
+      [then [?let
+        [= $rows [?to-sequence [?for [in $p $files] [yield [$timed-one $bin $dir $p]]]]]
+        [= $_t [?for [in $r $rows]
+                 [yield [$say [$cat ('MS ', [$string $r/ms], ' rc=', [$string $r/rc], ' ', $r/path)]]]]]
+        [= $_tc [$count $_t]]
+        [= $total [$fp:fold [?for [in $r $rows] [yield $r/ms]] 0.0e0 [?fn ($acc $x) [+ $acc $x]]]]
+        [$say [$cat ('TIMED-TOTAL-MS=', [$string $total], ' FILES=', [$string [$count $rows]])]]]]
+      [else [?let
+        [= $res [$chunked $bin $dir $files $jobs 'a' [?to-sequence [?for [in $x ()] [yield $x]]]]]
+        [= $changed [?to-sequence [?for [in $r $res]
+                      [where [and [= $r/rc 0] [not $r/declined]]] [yield $r]]]]
+        [= $checks [$chunked $bin $dir $changed $jobs 'b' [?to-sequence [?for [in $x ()] [yield $x]]]]]
+        [= $stable-paths [?to-sequence [?for [in $c $checks] [where $c/stable] [yield $c/path]]]]
+        [= $rows [?to-sequence [?for [in $r $res]
+                   [yield {path: $r/path, verdict: [$verdict-of $r $stable-paths], diag: $r/diag}]]]]
+        [= $_lists [?for [in $v ('ERROR', 'UNSTABLE', 'DECLINED')]
+          [yield [?for [in $row $rows] [where [= $row/verdict $v]]
+                   [yield [$say [$cat ($v, ' ', $row/path,
+                                     [?if [= $row/diag ''] [then ''] [else [$cat ('  — ', $row/diag)]]])]]]]]]]
+        [= $_lc [$count [?to-sequence [?for [in $l $_lists] [yield [$count [?to-sequence $l]]]]]]]
+        [= $counts [?to-sequence [?for [in $v ('FORMATTED', 'DECLINED', 'UNSTABLE', 'ERROR')]
+                     [yield {v: $v, n: [$count [?for [in $row $rows] [where [= $row/verdict $v]] [yield $row]]]}]]]]
+        [= $_s [?for [in $c $counts] [yield [$say [$cat ('SWEEP-', $c/v, '=', [$string $c/n])]]]]]
+        [= $_sc [$count [?to-sequence $_s]]]
+        [= $nd [$first [?for [in $c $counts] [where [= $c/v 'DECLINED']] [yield $c/n]]]]
+        [= $ne [$first [?for [in $c $counts] [where [= $c/v 'ERROR']] [yield $c/n]]]]
+        [= $nu [$first [?for [in $c $counts] [where [= $c/v 'UNSTABLE']] [yield $c/n]]]]
+        [= $ratchet [$env:flag $args 'ratchet']]
+        [= $max-d [$env:flag $args 'max-declined']]
+        [= $max-e [$env:flag $args 'max-errors']]
+        [; RULED: 1348-c — the ERROR verdict is gated by a NAMED ROSTER, not by
+           a count. `--max-errors` still applies when no roster is given, so a
+           bare `--ratchet` invocation keeps working, but the roster SUPERSEDES
+           it: a count has no lower bound, so fixing one of the listed files
+           drops the total below the budget and the pin loosens in silence.
+           Two rows, each a separate red so the log says which happened.
+           UNEXPECTED is a file that errored and is not on the roster.
+           STALE is a roster entry that did NOT error, i.e. it was fixed or
+           removed and the line must go — the half a count cannot express, and
+           the half that matters, because
+           `tooling/vscode/test/grammar/basic.cx` is a real #1347-family gap
+           that somebody will fix. ]
+        [= $roster-path [$env:flag $args 'expected-errors']]
+        [= $roster [?if [= $roster-path '']
+                     [then [?to-sequence [?for [in $x ()] [yield $x]]]]
+                     [else [$expected-roster $roster-path]]]]
+        [= $errored [?to-sequence [?for [in $row $rows]
+                      [where [= $row/verdict 'ERROR']] [yield [$string $row/path]]]]]
+        [; WITHOUT a roster every ERROR is trivially "not on the roster", so an
+           unguarded UNEXPECTED count turns the bare REPORT into a red — which
+           is exactly what it did the first time this lane ran, taking
+           `make fmt-sweep` from a census to `Error 1`. The roster columns exist
+           only when a roster was given; `stale` is empty in that case anyway,
+           but it is guarded alongside so the pair cannot drift apart. ]
+        [= $has-roster [not [= $roster-path '']]]
+        [= $unexpected [?if $has-roster
+                         [then [?to-sequence [?for [in $e $errored]
+                                 [where [not [$in-list $e $roster]]] [yield $e]]]]
+                         [else [?to-sequence [?for [in $x ()] [yield $x]]]]]]
+        [= $stale [?if $has-roster
+                    [then [?to-sequence [?for [in $m $roster]
+                            [where [not [$in-list $m $errored]]] [yield $m]]]]
+                    [else [?to-sequence [?for [in $x ()] [yield $x]]]]]]
+        [= $nx [$count $unexpected]]
+        [= $ns [$count $stale]]
+        [= $_xl [$count [?to-sequence [?for [in $p $unexpected]
+                  [yield [$say [$cat ('UNEXPECTED-ERROR ', $p)]]]]]]]
+        [= $_sl [$count [?to-sequence [?for [in $p $stale]
+                  [yield [$say [$cat ('STALE-EXPECTED-ERROR ', $p,
+                                    '  — it no longer errors; drop the roster line')]]]]]]]
+        [= $_rr [?if [= $roster-path '']
+                  [then null]
+                  [else ([$say [$cat ('SWEEP-EXPECTED-ERRORS=', [$string [$count $roster]])]],
+                         [$say [$cat ('SWEEP-UNEXPECTED-ERRORS=', [$string $nx])]],
+                         [$say [$cat ('SWEEP-STALE-EXPECTED=', [$string $ns])]],
+                         null)]]]
+        [= $_r [?if [or [and $ratchet [> $nd $max-d]]
+                    [or [and $ratchet [and [= $roster-path ''] [> $ne $max-e]]]
+                    [or [> $nx 0] [or [> $ns 0] [> $nu 0]]]]]
+                 [then ([$cry [$cat ('fmt_corpus_sweep: RATCHET RED — declined=', [$string $nd],
+                                   ' errors=', [$string $ne], ' unstable=', [$string $nu],
+                                   ' unexpected=', [$string $nx], ' stale=', [$string $ns])]],
+                        [$env:exit 1], null)]
+                 [else null]]]
+        [$say [$cat ('SWEEP-FILES=', [$string $n])]]]]]]
+  [= $_rm [$io:remove-tree $dir]]
+  [; The program's VALUE is printed by `cx FILE`, and a report whose last line
+     is a bare `null` glued to the caller's next byte is a report a lane cannot
+     parse — lane_A_1348 read `nullSWEEP-EXIT=0` and scored two green markers
+     as missing. Exiting explicitly makes the census the whole of stdout.
+     `$out` and `$_rm` above are ordinary bindings, evaluated in order before
+     this line, and a ratchet red has already exited 1 from inside `$out`. ]
+  [$env:exit 0]]

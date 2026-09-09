@@ -1,4 +1,4 @@
-[playground-example-outputs  # 202 audited answers, corpus order
+[playground-example-outputs  # 239 audited answers, corpus order
  [doc [#
 GENERATED — do not hand-edit. Written by
 scripts/gen_guide/playground/gen_examples.cx from a grant-free audit run
@@ -1243,6 +1243,212 @@ default
  [ex key=203-quote-homoiconic chars=42
   [out-text [#
 [cx:op name=add [cx:int '1'] [cx:int '2']]
+#]]
+ ]
+ [ex key=204-partial-application-hole chars=1
+  [out-text [#
+1
+#]]
+ ]
+ [ex key=205-hole-as-a-callable-value chars=18
+  [out-text [#
+[names 'ADA' 'BO']
+#]]
+ ]
+ [ex key=206-head-bind-captures-the-whole-element chars=38
+  [out-text [#
+[found id=7 [user id=7 [given 'Ada']]]
+#]]
+ ]
+ [ex key=207-attribute-rest chars=44
+  [out-text [#
+[known id=7 [rest {role: admin, name: Ada}]]
+#]]
+ ]
+ [ex key=208-wildcard-heads-bind chars=28
+  [out-text [#
+[heads first=item deep=item]
+#]]
+ ]
+ [ex key=209-for-destructures-an-element chars=3
+  [out-text [#
+3
+7
+#]]
+ ]
+ [ex key=210-for-destructures-a-pair chars=29
+  [out-text [#
+[pair k=a v=1]
+[pair k=b v=2]
+#]]
+ ]
+ [ex key=211-single-arm-match chars=2
+  [out-text [#
+84
+#]]
+ ]
+ [ex key=212-a-bare-def-name-is-the-callable chars=2
+  [out-text [#
+12
+#]]
+ ]
+ [ex key=213-splice-inside-a-literal chars=12
+  [out-text [#
+(0, 1, 2, 3)
+#]]
+ ]
+ [ex key=214-quasiquote-with-unquote chars=11
+  [out-text [#
+[total 3 6]
+#]]
+ ]
+ [ex key=215-purity-is-checked-at-load chars=1
+  [out-text [#
+3
+#]]
+ ]
+ [ex key=216-declared-effects chars=1
+  [out-text [#
+2
+#]]
+ ]
+ [ex key=217-typed-params-and-returns chars=2
+  [out-text [#
+12
+#]]
+ ]
+ [ex key=218-exact-numeric-lane chars=50
+  [out-text [#
+[readings [exact 3] [rem 1] [mean 2.00] [chain 2]]
+#]]
+ ]
+ [ex key=219-non-terminating-division-refuses-by-name chars=195 err-chars=67
+  [out-text [#
+[err code=cx-err:CXER3002 message='$div: non-terminating exact division — supply an explicit rounding context (precision + mode) with [$math:div-decimal a b {precision: N mode: :half-up}] (L44)']
+#]]
+  [err-text [#
+error: the result carries an error value — cx-err:CXER3002 at /err
+#]]
+ ]
+ [ex key=220-checked-overflow chars=137 err-chars=67
+  [out-text [#
+[err code=cx-err:CXER3000 message='E_MATH_OVERFLOW: int64 overflow in `*` (checked by default; use wrapping-mul for modular arithmetic)']
+#]]
+  [err-text [#
+error: the result carries an error value — cx-err:CXER3000 at /err
+#]]
+ ]
+ [ex key=221-wrapping-arithmetic-on-request chars=2
+  [out-text [#
+-2
+#]]
+ ]
+ [ex key=222-an-err-is-a-value-in-process chars=16
+  [out-text [#
+[report ok=true]
+#]]
+ ]
+ [ex key=223-at-the-boundary-a-result-with-an-err-refuses chars=39 err-chars=67
+  [out-text [#
+[err code=cx-err:CXER9999 message=boom]
+#]]
+  [err-text [#
+error: the result carries an error value — cx-err:CXER9999 at /err
+#]]
+ ]
+ [ex key=224-no-callable-is-a-coded-refusal chars=70 err-chars=67
+  [out-text [#
+[err code=cx-err:CXER0136 message='E_NO_CALLABLE: no callable "nope"']
+#]]
+  [err-text [#
+error: the result carries an error value — cx-err:CXER0136 at /err
+#]]
+ ]
+ [ex key=225-const-str-and-a-module-def chars=39
+  [out-text [#
+[bill for='Ada, 3 items' amount=108.00]
+#]]
+ ]
+ [ex key=226-group-by-with-per-group-totals chars=47
+  [out-text [#
+[total region=US amt=8]
+[total region=EU amt=7]
+#]]
+ ]
+ [ex key=227-present-vs-exists-vs-count chars=42
+  [out-text [#
+[checks present=true count=0 exists=false]
+#]]
+ ]
+ [ex key=228-a-scoped-deny-is-not-a-total-deny chars=47
+  [out-text [#
+[capabilities [total-deny {}] [scoped-deny {}]]
+#]]
+ ]
+ [ex key=229-declaration-only-map-entry chars=30
+  [out-text [#
+[entry name=Ada has-age=false]
+#]]
+ ]
+ [ex key=230-an-atom-is-not-a-map-key chars=9
+  [out-text [#
+{name: 1}
+#]]
+ ]
+ [ex key=231-a-bare-word-in-a-data-body-is-text chars=18
+  [out-text [#
+[greeting 'hello']
+#]]
+ ]
+ [ex key=232-of-clause-closed-match chars=6
+  [out-text [#
+failed
+#]]
+ ]
+ [ex key=233-of-clause-membership-refusal chars=106
+  [out-text [#
+[refused [why 'cx-err:CXER0100: [?match] [of status]: S007: value :gone not in [enum :ok :err :pending]']]
+#]]
+ ]
+ [ex key=234-of-clause-no-silent-fall-through chars=212
+  [out-text [#
+[refused [why 'cx-err:CXER0100: [?match] [of status]: no arm claimed :pending — a match over a declared-closed type has no silent fall-through; add the missing [case …] arm or an explicit [else] (code.md §8.2)']]
+#]]
+ ]
+ [ex key=235-of-clause-else-opts-out chars=5
+  [out-text [#
+other
+#]]
+ ]
+ [ex key=236-negative-zero-keeps-its-sign chars=30
+  [out-text [#
+[reading a=-0.0 b=0.0 c=-0.00]
+#]]
+ ]
+ [ex key=237-xml-refuses-a-duplicate-attribute chars=196 err-chars=67
+  [out-text [#
+[err code=cx-err:CXER0100 message='cx-err:CXER0100 PARSE_ERROR: XML — 1:10: duplicate attribute `x` on <r> (XML 1.0 §3.1 WFC: Unique Att Spec — an attribute name may appear at most once per tag)']
+#]]
+  [err-text [#
+error: the result carries an error value — cx-err:CXER0100 at /err
+#]]
+ ]
+ [ex key=238-postfix-path-step-on-any-form chars=1
+  [out-text [#
+7
+#]]
+ ]
+ [ex key=239-readers-read-any-collection chars=22
+  [out-text [#
+[both count=2 first=3]
+#]]
+ ]
+ [ex key=240-constructors-keep-strict-typing chars=192 err-chars=67
+  [out-text [#
+[err code=cx-err:CXER0100 message='concat: argument 2 is a 2-item sequence — a single scalar (or a node atomizing to one) is required; bind it or default it with [?else] first (code.md §6.5)']
+#]]
+  [err-text [#
+error: the result carries an error value — cx-err:CXER0100 at /err
 #]]
  ]
 ]

@@ -182,6 +182,13 @@ lane_globs() {
     tools-export-gate)             echo 'conformance/tools-export/* vcx/* stdlib/*' ;;
     # the roster rows live in the Makefile and name files under vcx/
     check-serial-retry-rosters)    echo 'Makefile vcx/*' ;;
+    # pure shell over canned logs — its only inputs are the classifier and the
+    # SKIP_UNUSED_ESCAPE_PROBE that consumes it (\#1337).
+    check-build-failure-classifier) echo 'Makefile scripts/classify_v_build_failure.sh' ;;
+    # 1170-f: every playground diagram parses and has no structural fault. Inputs:
+    # the engine (the wasm bundle is built from it), the emitters, the playground
+    # page and its example corpus, the gate itself.
+    test-playground-mermaid)       echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED stdlib/* scripts/gen_guide/playground/* scripts/test_playground_mermaid.mjs scripts/wasm/*" ;;
     test-xpath-parity-cx)          echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED conformance/* scripts/check_xpath_parity_fixtures.cx" ;;
     # corpus-audit (RULED: VC-28) runs every rosetta program through the built
     # binary and fails on drift from AUDIT.md, so it depends on the corpus AND
@@ -193,6 +200,10 @@ lane_globs() {
     # the in-module Ring-0 test roster guard (#1209) reads the Makefile roster
     # and the vcx/cx test files it must account for.
     check-inmodule-test-roster)    echo 'Makefile vcx/cx/*' ;;
+    # fmt-sweep-gate (RULED: 1348-c) re-formats every tracked .cx, so ANY .cx
+    # anywhere can move a verdict — the row is deliberately the whole tree,
+    # plus the formatter, the sweep and its roster.
+    fmt-sweep-gate)                echo '*.cx Makefile scripts/fmt_corpus_sweep.cx scripts/fmt_corpus_expected_errors.txt vcx/cx/*' ;;
     *)                             echo '' ;; # unknown lane → ALWAYS RUN
   esac
 }
