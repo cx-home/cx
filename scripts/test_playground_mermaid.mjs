@@ -61,6 +61,16 @@ const SLICE = SLICE_IX >= 0 ? process.argv[SLICE_IX + 1] : '';
 const LIMIT_IX = process.argv.indexOf('--limit');
 const LIMIT = LIMIT_IX >= 0 ? parseInt(process.argv[LIMIT_IX + 1], 10) : Infinity;
 
+// RULED: 1170-d. An `output` text that is the emitter-internal `cx:` image
+// (`[cx:op …]`, `[cx:int …]`, …) is NOT authorable CX: approved spec keeps it
+// unreadable — E210 stays intact — until semantic_value_model.md §2 L78 lowers
+// quoted trees at the I1 epoch (#708). The Diagram pane shows the same empty
+// placeholder for it, so it is a NAMED, COUNTED skip here, not a failure and
+// not a silent pass. The class is self-clearing: the day L78 lands the image
+// stops matching and these rows grade again with nothing to un-mark.
+const CX_IMAGE_REASON = 'output is the emitter-internal cx: image; not authorable until semantic_value_model.md §2 L78 lowers quoted trees (#708/I1)';
+const isCxImage = (text) => /^\s*\[cx:[A-Za-z]/.test(text);
+
 const GATE_MODULES = resolve(ROOT, 'scripts/playground-gate/node_modules');
 const PLAYGROUND = resolve(ROOT, 'scripts/gen_guide/playground');
 // The renderer the PAGE loads (#1007). Not an npm resolution — the file
@@ -330,15 +340,6 @@ function normalise(src) {
 let pass = 0, fail = 0, empty = 0, skipped = 0, cximage = 0;
 const failures = [];
 
-// RULED: 1170-d. An `output` text that is the emitter-internal `cx:` image
-// (`[cx:op …]`, `[cx:int …]`, …) is NOT authorable CX: approved spec keeps it
-// unreadable — E210 stays intact — until semantic_value_model.md §2 L78 lowers
-// quoted trees at the I1 epoch (#708). The Diagram pane shows the same empty
-// placeholder for it, so it is a NAMED, COUNTED skip here, not a failure and
-// not a silent pass. The class is self-clearing: the day L78 lands the image
-// stops matching and these rows grade again with nothing to un-mark.
-const CX_IMAGE_REASON = 'output is the emitter-internal cx: image; not authorable until semantic_value_model.md §2 L78 lowers quoted trees (#708/I1)';
-const isCxImage = (text) => /^\s*\[cx:[A-Za-z]/.test(text);
 
 for (const key of keys) {
   const ex = examples[key];
