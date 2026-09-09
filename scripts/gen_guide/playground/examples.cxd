@@ -3161,4 +3161,64 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [expect [# argument 2 is a 2-item sequence #]]
  ]
 
+ [ex key=241-json-in-and-out
+  [label [#[241] JSON in, CX out — and back again#]]
+  [src [#
+[?lib 'cx-stdlib/json' :as json]
+[?let [= $doc [$json:parse "{\"order\": {\"id\": 7, \"items\": [\"pen\", \"ink\"], \"paid\": true}}"]]
+  [round-trip [as-cx $doc] [items [?splice $doc.order.items]] [back [$json:emit {order: {id: 7, items: ["pen", "ink"], paid: true}}]]]]
+#]]
+  [note [#
+**Introduces:** the codec surface every format shares (codec.md §3): `[$json:parse s]` reads text into a CX VALUE — a JSON object becomes a map, an array becomes an array, `true` stays a bool — and `[$json:emit v]` writes a value back as compact JSON. Because the parse is a value, the program reads it with ordinary paths (`$doc.order.items`) and splices it into an element like any other data. Codecs charge no capability: parsing text is pure.
+#]]
+  [expect [# "items":["pen","ink"] #]]]
+
+ [ex key=242-xml-in-and-out
+  [label [#[242] XML in, CX out — attributes and text#]]
+  [src [#
+[?lib 'cx-stdlib/xml' :as xml]
+[?let [= $doc [$xml:parse "<order id=\"7\"><item sku=\"pen\">2</item><item sku=\"ink\">1</item></order>"]]
+  [round-trip [as-cx $doc] [skus [?splice [?for [in $i $doc//item] [yield [$string $i@sku]]]]] [back [$xml:emit [order id=7 [item sku=pen 2]]]]]]
+#]]
+  [note [#
+**Introduces:** XML is the format closest to CX's own element shape, so `[$xml:parse]` answers an ELEMENT: attributes stay attributes, text content stays text (`'2'`, a string — XML carries no numbers), and the descendant path `$doc//item` reads it exactly like a native document. `[$xml:emit]` renders an element back, one tag per line. The same document hashed as CX and as XML are two different byte streams over one value.
+#]]
+  [expect [# [skus 'pen' 'ink'] #]]]
+
+ [ex key=243-yaml-in-and-out
+  [label [#[243] YAML in, CX out — a config as a map#]]
+  [src [#
+[?lib 'cx-stdlib/yaml' :as yaml]
+[?let [= $cfg [$yaml:parse "service: api\nreplicas: 3\nports:\n  - 8080\n  - 8443\n"]]
+  [round-trip [as-cx $cfg] [replicas $cfg.replicas] [back [$yaml:emit {service: "api", replicas: 3, ports: [8080, 8443]}]]]]
+#]]
+  [note [#
+**Introduces:** YAML follows the same two verbs. A mapping parses to a map, a sequence to an array, scalars keep their kinds (`3` is an int), and `[$yaml:emit]` writes a map back in block style. Nothing here is YAML-specific in the program: swap the module name and `[$toml:parse]` or `[$json:parse]` read the same `$cfg.replicas`.
+#]]
+  [expect [# [replicas 3] #]]]
+
+ [ex key=244-toml-in-and-out
+  [label [#[244] TOML in, CX out — tables are nested maps#]]
+  [src [#
+[?lib 'cx-stdlib/toml' :as toml]
+[?let [= $cfg [$toml:parse "title = \"cx\"\n[owner]\nname = \"Ada\"\nyear = 2026\n"]]
+  [round-trip [as-cx $cfg] [owner $cfg.owner.name] [back [$toml:emit {title: "cx", owner: {name: "Ada", year: 2026}}]]]]
+#]]
+  [note [#
+**Introduces:** a TOML `[owner]` table is a nested map after `[$toml:parse]`, so `$cfg.owner.name` walks it like any map, and `[$toml:emit]` turns a nested map back into a table with its header. Top-level keys come first, tables after — the emitter orders the document the way TOML requires.
+#]]
+  [expect [# [owner 'Ada'] #]]]
+
+ [ex key=245-csv-in-and-out
+  [label [#[245] CSV in, CX out — rows as maps keyed by the header#]]
+  [src [#
+[?lib 'cx-stdlib/csv' :as csv]
+[?let [= $rows [$csv:parse "sku,qty,price\npen,2,1.50\nink,1,4.25"]]
+  [round-trip [rows [$count $rows]] [head-row [$first $rows]] [back [$csv:emit $rows]]]]
+#]]
+  [note [#
+**Introduces:** `[$csv:parse]` reads the header row as the keys and answers one map per data row, so `[$count $rows]` is `2` and `[$first $rows]` is the first record (the output heads `rows` and `head-row` are plain data names — a bare `count` head would read as data, not a call). Cells stay STRINGS (`'2'`, `'1.50'`) — CSV carries no types; ascribe or convert when you need numbers, or parse with a schema. `[$csv:emit]` writes the rows back, header first.
+#]]
+  [expect [# [rows 2] #]]]
+
 ]

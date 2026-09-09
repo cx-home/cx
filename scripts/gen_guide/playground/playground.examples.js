@@ -1,4 +1,4 @@
-// CX Playground — 239 progressive eval examples (every entry CLI-audited).
+// CX Playground — 244 progressive eval examples (every entry CLI-audited).
 // Single ordered list, simple → complex:
 //   1-39   data / bindings / control flow      ·  40-60  comprehensions, map/reduce ([par])
 //   61-100 modify / pipe / cxpath / builtins   ·  concurrency / resilience
@@ -1706,6 +1706,41 @@
       input: "[$concat [1, 2] (3, 4)]",
       note:  "**Introduces:** the construct side of the split. `$concat` builds text from scalars; handed a two-item sequence as an argument it refuses and says what it needed \u2014 bind or `[?else]` the value first. Reading is permissive, constructing is strict, and the boundary between them is where CX's shape guarantees live.",
       tags:  [],
+      runnable: true,
+    },
+    "241-json-in-and-out": {
+      label: "[241] JSON in, CX out \u2014 and back again",
+      input: "[?lib 'cx-stdlib/json' :as json]\n[?let [= $doc [$json:parse \"{\\\"order\\\": {\\\"id\\\": 7, \\\"items\\\": [\\\"pen\\\", \\\"ink\\\"], \\\"paid\\\": true}}\"]]\n  [round-trip [as-cx $doc] [items [?splice $doc.order.items]] [back [$json:emit {order: {id: 7, items: [\"pen\", \"ink\"], paid: true}}]]]]",
+      note:  "**Introduces:** the codec surface every format shares (codec.md \u00a73): `[$json:parse s]` reads text into a CX VALUE \u2014 a JSON object becomes a map, an array becomes an array, `true` stays a bool \u2014 and `[$json:emit v]` writes a value back as compact JSON. Because the parse is a value, the program reads it with ordinary paths (`$doc.order.items`) and splices it into an element like any other data. Codecs charge no capability: parsing text is pure.",
+      tags:  ["eq", "let", "lib", "par", "splice"],
+      runnable: true,
+    },
+    "242-xml-in-and-out": {
+      label: "[242] XML in, CX out \u2014 attributes and text",
+      input: "[?lib 'cx-stdlib/xml' :as xml]\n[?let [= $doc [$xml:parse \"<order id=\\\"7\\\"><item sku=\\\"pen\\\">2</item><item sku=\\\"ink\\\">1</item></order>\"]]\n  [round-trip [as-cx $doc] [skus [?splice [?for [in $i $doc//item] [yield [$string $i@sku]]]]] [back [$xml:emit [order id=7 [item sku=pen 2]]]]]]",
+      note:  "**Introduces:** XML is the format closest to CX's own element shape, so `[$xml:parse]` answers an ELEMENT: attributes stay attributes, text content stays text (`'2'`, a string \u2014 XML carries no numbers), and the descendant path `$doc//item` reads it exactly like a native document. `[$xml:emit]` renders an element back, one tag per line. The same document hashed as CX and as XML are two different byte streams over one value.",
+      tags:  ["attr", "cxpath", "descendant", "eq", "for", "let", "lib", "par", "splice"],
+      runnable: true,
+    },
+    "243-yaml-in-and-out": {
+      label: "[243] YAML in, CX out \u2014 a config as a map",
+      input: "[?lib 'cx-stdlib/yaml' :as yaml]\n[?let [= $cfg [$yaml:parse \"service: api\\nreplicas: 3\\nports:\\n  - 8080\\n  - 8443\\n\"]]\n  [round-trip [as-cx $cfg] [replicas $cfg.replicas] [back [$yaml:emit {service: \"api\", replicas: 3, ports: [8080, 8443]}]]]]",
+      note:  "**Introduces:** YAML follows the same two verbs. A mapping parses to a map, a sequence to an array, scalars keep their kinds (`3` is an int), and `[$yaml:emit]` writes a map back in block style. Nothing here is YAML-specific in the program: swap the module name and `[$toml:parse]` or `[$json:parse]` read the same `$cfg.replicas`.",
+      tags:  ["eq", "let", "lib", "par"],
+      runnable: true,
+    },
+    "244-toml-in-and-out": {
+      label: "[244] TOML in, CX out \u2014 tables are nested maps",
+      input: "[?lib 'cx-stdlib/toml' :as toml]\n[?let [= $cfg [$toml:parse \"title = \\\"cx\\\"\\n[owner]\\nname = \\\"Ada\\\"\\nyear = 2026\\n\"]]\n  [round-trip [as-cx $cfg] [owner $cfg.owner.name] [back [$toml:emit {title: \"cx\", owner: {name: \"Ada\", year: 2026}}]]]]",
+      note:  "**Introduces:** a TOML `[owner]` table is a nested map after `[$toml:parse]`, so `$cfg.owner.name` walks it like any map, and `[$toml:emit]` turns a nested map back into a table with its header. Top-level keys come first, tables after \u2014 the emitter orders the document the way TOML requires.",
+      tags:  ["eq", "let", "lib", "par"],
+      runnable: true,
+    },
+    "245-csv-in-and-out": {
+      label: "[245] CSV in, CX out \u2014 rows as maps keyed by the header",
+      input: "[?lib 'cx-stdlib/csv' :as csv]\n[?let [= $rows [$csv:parse \"sku,qty,price\\npen,2,1.50\\nink,1,4.25\"]]\n  [round-trip [rows [$count $rows]] [head-row [$first $rows]] [back [$csv:emit $rows]]]]",
+      note:  "**Introduces:** `[$csv:parse]` reads the header row as the keys and answers one map per data row, so `[$count $rows]` is `2` and `[$first $rows]` is the first record (the output heads `rows` and `head-row` are plain data names \u2014 a bare `count` head would read as data, not a call). Cells stay STRINGS (`'2'`, `'1.50'`) \u2014 CSV carries no types; ascribe or convert when you need numbers, or parse with a schema. `[$csv:emit]` writes the rows back, header first.",
+      tags:  ["eq", "let", "lib", "par"],
       runnable: true,
     },
   };
