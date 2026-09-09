@@ -2989,7 +2989,12 @@ fmt-sweep-timed: build-vcx
 #   SWEEP-FILES=272  FORMATTED=173  DECLINED=94  UNSTABLE=0  ERROR=5
 # It is 272/94 and not the 271/93 of #1348's own census at 12abdac33 because
 # #1317 added `bench/flow/served.cx`, which declines.
-FMT_SWEEP_MAX_DECLINED ?= 94
+# 2026-09-09 (#1058 T1.9, RULED: 1058-T1.9-a) — def-body comments are placed:
+#   SWEEP-FILES=272  FORMATTED=174  DECLINED=93  UNSTABLE=0  ERROR=5
+# One file un-declines; the rest of the def-bearing corpus still declines on
+# the layout's other limits (a head wider than the bound, a comment inside the
+# last child of a form that fits), which are not this ruling's.
+FMT_SWEEP_MAX_DECLINED ?= 93
 FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
 .PHONY: fmt-sweep-gate
 fmt-sweep-gate: build-vcx

@@ -84,9 +84,19 @@ unchanged and still passes.
 ## Census
 
 `make fmt-sweep` at the landing base `03ebabce4`: SWEEP-FILES=272 FORMATTED=173
-DECLINED=94 UNSTABLE=0 ERROR=5. After: recorded in the landing's commit
-message; `FMT_SWEEP_MAX_DECLINED` is lowered to the measured value in the same
-landing. UNSTABLE must stay 0 — every newly formatting file is a fixed point.
+DECLINED=94 UNSTABLE=0 ERROR=5. After (measured on this branch, release
+binary): SWEEP-FILES=272 FORMATTED=174 **DECLINED=93** UNSTABLE=0 ERROR=5.
+`FMT_SWEEP_MAX_DECLINED` lowered 94 → 93 in the same landing. UNSTABLE stayed
+0 — every newly formatting file is a fixed point.
+
+Why only one file moved, honestly: the def-interior-comment CLASS is fixed
+(the five fixtures prove it), but most def-bearing files in this tree still
+decline on the layout's OTHER limits — a def whose head alone runs past 80
+columns cannot break at all (Rule 1's second half; e.g. `[?def f--fold-anchored
+scope=private pure [returns element] ($st $anchor::int)` is 79 columns before
+its body), and a comment inside the LAST child of a form that fits is invisible
+to `interior_between`. Both are pre-existing layout limits, not T1.9's; they
+are the next census movers and deserve their own letters.
 
 ## DELETES
 
