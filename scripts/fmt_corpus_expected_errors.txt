@@ -1,0 +1,39 @@
+# scripts/fmt_corpus_expected_errors.txt — the corpus files `cx fmt` is
+# EXPECTED to refuse (RULED: 1348-c).
+#
+# WHY A NAMED LIST AND NOT A COUNT. `--max-errors N` has no lower bound: when
+# someone FIXES one of these the count falls below N and the lane stays green
+# with the pin silently loosened, and a genuinely new error is invisible until
+# it is the N+1'th. This roster reds BOTH ways — a file that errors and is not
+# here, and a file here that has stopped erroring. The second half is the one a
+# count cannot express, and it is the half that matters, because one entry
+# below is a real defect somebody will fix.
+#
+# Same shape as the #1350 golden MANIFEST (`99c25169d`): the roster is derived
+# from a measurement, checked in, and compared by the gate.
+#
+# Format: one repo-relative path per line. `#` comments and blank lines ignored.
+# Every entry carries its diagnostic, quoted from the census in lane_A_1348m.
+
+# Unterminated by design — these two ARE the fixtures for the unclosed-bracket
+# diagnostic, so `cx fmt` refusing them is the corpus working.
+#   5:1: expected ']' got EOF (cx-err:CXER0100) (unterminated [root] opened at 2:1)
+fixtures/errors/nested_unclosed.cx
+#   3:1: expected ']' got EOF (cx-err:CXER0100) (unterminated [server] opened at 2:1)
+fixtures/errors/unclosed.cx
+
+# LSP diagnostic inputs — deliberately ill-formed, for the language server to
+# report on. Formatting them is not a thing anyone asks for.
+#   cx-err:CXER0100: [?modify] action '[set-attr …]' requires an element-step focus path
+tooling/lsp/tests/cxls004_modify_attr_mismatch.cx
+#   cx-err:CXER0100: unexpected token ']' opening a CXPath predicate body
+tooling/lsp/tests/cxpath_completion_predicate.cx
+
+# NOT deliberately invalid — a REAL formatter gap, and the reason this file is
+# a roster rather than a budget. `0o17` at line 39 is an OCTAL integer literal
+# the temporal-literal scanner claims, the same family as #1347's hex and
+# underscore cases. When #1347 reaches it this entry goes STALE and the gate
+# will say so; delete the line in that landing.
+#   cx-err:CXER0100: invalid temporal literal '0o17' (duration units ns|us|ms|s|m|h|d|w;
+#   period units mo|y) at line 39
+tooling/vscode/test/grammar/basic.cx

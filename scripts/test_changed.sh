@@ -196,6 +196,10 @@ lane_globs() {
     # the in-module Ring-0 test roster guard (#1209) reads the Makefile roster
     # and the vcx/cx test files it must account for.
     check-inmodule-test-roster)    echo 'Makefile vcx/cx/*' ;;
+    # fmt-sweep-gate (RULED: 1348-c) re-formats every tracked .cx, so ANY .cx
+    # anywhere can move a verdict — the row is deliberately the whole tree,
+    # plus the formatter, the sweep and its roster.
+    fmt-sweep-gate)                echo '*.cx Makefile scripts/fmt_corpus_sweep.cx scripts/fmt_corpus_expected_errors.txt vcx/cx/*' ;;
     *)                             echo '' ;; # unknown lane → ALWAYS RUN
   esac
 }
