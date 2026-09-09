@@ -566,6 +566,18 @@ verify-playground-examples: build-vcx
 	@vcx/target/cx --allow-read --allow-write --allow-subprocess --allow-env \
 	  --allow-clock \
 	  scripts/gen_guide/playground/gen_examples.cx --check
+	@# #1170 §C4 (RULED: 1170-g) — the [expect] check must RED on a wrong
+	@# expectation: the fixture corpus carries one right, one wrong and one
+	@# absent [expect]; the lint-only run has to exit 1 naming the wrong one,
+	@# or the check above is vacuous. Output captured; shown only on failure.
+	@out=$$(vcx/target/cx --allow-read --allow-write --allow-subprocess --allow-env \
+	  --allow-clock \
+	  scripts/gen_guide/playground/gen_examples.cx --lint-only \
+	  scripts/gen_guide/playground/tests/expect_red.cxd 2>&1); rc=$$?; \
+	if [ "$$rc" -ne 1 ] || ! printf '%s' "$$out" | grep -q 'EXPECT 02-expect-wrong'; then \
+	  echo "verify-playground-examples: the [expect] check is VACUOUS (rc=$$rc; expected 1 naming 02-expect-wrong)"; \
+	  printf '%s\n' "$$out" | tail -8; exit 1; fi; \
+	echo "verify-playground-examples: [expect] red-proof OK (fixture corpus reds exactly 02-expect-wrong)"
 
 # ── playground diagram validity gate (#992) ───────────────────────────────────
 # Every diagram the playground can put on screen must PARSE:

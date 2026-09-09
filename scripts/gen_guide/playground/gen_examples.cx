@@ -318,7 +318,8 @@
           note=[$strip-edges [$section-of $kids 'note']]
           wasm-unsupported=[$strings:trim [$section-of $kids 'wasm-unsupported']]
           no-stable-value=[$strings:trim [$section-of $kids 'no-stable-value']]
-          bare-builtin-ok=[$strings:trim [$section-of $kids 'bare-builtin-ok']]]]]]]]]]
+          bare-builtin-ok=[$strings:trim [$section-of $kids 'bare-builtin-ok']]
+          expect=[$strings:trim [$section-of $kids 'expect']]]]]]]]]]
 
 # ── audit (one isolated, grant-free child per example) ───────────────
 
@@ -839,8 +840,18 @@
   # #988 asked and the harness could not answer — "where does the time
   # actually GO across the corpus?".
   [= $timings [$member '--timings' $argv]]
+  # --lint-only PATH: audit and lint the corpus at PATH, write NOTHING, compare
+  # against no pin, and exit by the lints alone (RULED: 1170-g) — how a
+  # fixture corpus proves a lint reds without touching the shipped corpus.
+  [= $lint-only-at [?let [= $hits [?for [in $a $argv] [where [= $a '--lint-only']] [yield 1]]]
+      [?if [$empty $hits] [then '']
+        [else [?let [= $after [$fp:fold $argv {take: false, path: ''} [?fn ($acc $a)
+                  [?if $acc.take [then {take: false, path: [?if [= $acc.path ''] [then $a] [else $acc.path]]}]
+                    [else [?if [= $a '--lint-only'] [then {take: true, path: $acc.path}] [else $acc]]]]]]]
+                $after.path]]]]]
+  [= $lint-only [not [= $lint-only-at '']]]
   [= $self-dir [$path:dirname [$path:absolute $argv[1]]]]
-  [= $data-path [$path:join $self-dir 'examples.cxd']]
+  [= $data-path [?if $lint-only [then [$path:absolute $lint-only-at]] [else [$path:join $self-dir 'examples.cxd']]]]
   [= $js-path [$path:join $self-dir 'playground.examples.js']]
   # The recorded answer (#1170 §C1, RULED: 1170-a) — a generated sibling of
   # the corpus, never the corpus itself.
@@ -884,6 +895,7 @@
                 ms=$r@ms
                 out=[$string $r@out] err=[$string $r@err]
                 src=$src bare-ok=[$string $e@bare-builtin-ok]
+                expect=[$string $e@expect] no-stable=[$string $e@no-stable-value]
                 block=[?if [= [$string $r@status] 'ok']
                   [then [$render-block $key [$string $e@label] $src $note $r@runnable
                           [$string $e@wasm-unsupported] [$string $e@no-stable-value]]]
@@ -1026,7 +1038,41 @@
   # above are what PRINT (a sequence literal evaluates its elements; a
   # bare `[?for]` bound to nothing would not), and this reads the verdict
   # off the booleans rather than off their shape.
-  [= $lint [?if [or $c2-bad $c3-bad] [then [$env:exit 1]] [else 0]]]
+  # ── §C4: the [expect] check (RULED: 1170-g) — EXACT, never heuristic ─
+  # An entry may carry `[expect [# … #]]`: a literal substring its pinned
+  # output must contain. The prose [note] is never read by this check —
+  # 1170-b's warning is that a heuristic extractor false-reds and teaches
+  # people to ignore the gate — so a note that promises an answer without
+  # pinning it in [expect] is a REVIEW finding, not a lint. An entry marked
+  # no-stable-value has no single answer and is not graded here.
+  [= $expect-misses [?for [in $x $rows]
+      [where [= [$string $x@status] 'ok']]
+      [where [= [$string $x@no-stable] '']]
+      [where [not [= [$string $x@expect] '']]]
+      [where [not [$strings:contains [$string $x@out] [$string $x@expect]]]]
+      [yield $x]]]
+  [= $expect-count [$count [?for [in $x $rows]
+      [where [not [= [$string $x@expect] '']]] [yield 1]]]]
+  [= $c4-bad [not [$empty $expect-misses]]]
+  [= $c4 [?if $c4-bad
+      [then (
+        [$cry [$cat ('=== gen_examples: the [expect] check FAILED (#1170 §C4, RULED: 1170-g) — ',
+                     [$string [$count $expect-misses]], ' of ', [$string $expect-count],
+                     ' pinned expectations are not in the output ===')]],
+        [?for [in $x $expect-misses] [yield [$cry [$cat ('EXPECT ',
+            [$strings:pad-end [$string $x@key] 40 ' '],
+            ' output does not contain ', [$jstr [$string $x@expect]],
+            '; the output is ', [$jstr [$string $x@out]],
+            ' — fix the example, or the [expect], never the pin')]]]],
+        1)]
+      [else 0]]]
+  [= $c4-note [$cry [$cat ('=== [expect] pins graded: ', [$string $expect-count],
+                            ' of ', [$string $n], ' entries carry one (#1170 §C4)')]]]
+  [= $lint [?if [or $c2-bad $c3-bad $c4-bad] [then [$env:exit 1]] [else 0]]]
+  # --lint-only stops here: the lints ARE the verdict and nothing is written.
+  [= $lint-only-exit [?if $lint-only
+      [then ([$cry [$cat ('=== gen_examples --lint-only: ', [$string $n], ' entries, lints clean ===')]], [$env:exit 0])]
+      [else 0]]]
 
   # The raw-text payload has ONE limit and it is the corpus's own: a
   # literal terminator inside a payload cannot be written. Refuse by KEY

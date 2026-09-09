@@ -1620,7 +1620,7 @@
     "228-a-scoped-deny-is-not-a-total-deny": {
       label: "[228] `[?with-caps [deny net HOST]]` narrows; `[deny net]` removes",
       input: "[capabilities [total-deny [?with-caps [deny net] [$caps]]] [scoped-deny [?with-caps [deny net \"a.example:443\"] [$caps]]]]",
-      note:  "**Introduces:** resource-scoped capability denial (code.md \u00a79, #1332). `[deny net]` removes the capability \u2014 the inner `[$caps]` has no `net` key \u2014 while `[deny net \"a.example:443\"]` denies ONE resource and leaves `net: true`. Before #1332 the scoped form silently denied the whole capability. `[?with-caps]` only ever NARROWS what the program already holds.",
+      note:  "**Introduces:** resource-scoped capability denial (code.md \u00a79, #1332). `[deny net]` removes the capability \u2014 the inner `[$caps]` has no `net` key \u2014 while `[deny net \"a.example:443\"]` denies ONE resource and leaves `net: true`. Before #1332 the scoped form silently denied the whole capability. `[?with-caps]` only ever NARROWS what the program already holds. The playground runs GRANT-FREE, so here BOTH maps are empty \u2014 neither run holds `net` to begin with; with `--allow-net` the total deny removes the `net` key while the scoped deny leaves `net: true`.",
       tags:  ["with-caps"],
       runnable: true,
     },

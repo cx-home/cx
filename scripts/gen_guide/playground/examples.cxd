@@ -2700,6 +2700,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
 A hole is not a wildcard and not a binding — it is the one place a call is allowed to be incomplete, and the result is a value you can pass around (next example).
 #]]
+  [expect [# 1 #]]
  ]
 
  [ex key=205-hole-as-a-callable-value
@@ -2711,6 +2712,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
   [note [#
 **Introduces:** binding the result of a hole (§6.3a/§6.3b). `[$strings:upper _]` is a function value; bound to `$shout` it is called like any callable — `[$shout $n]` — inside the comprehension. Compare `[?fn ($n) [$strings:upper $n]]`: the hole says the same thing without naming the parameter. Stdlib verbs are reached through `[?lib …]` here as everywhere; a hole can only be applied to a FUNCTION (a bare data head refuses `CXER0001`).
 #]]
+  [expect [# [names 'ADA' 'BO'] #]]
  ]
 
  [ex key=206-head-bind-captures-the-whole-element
@@ -2723,6 +2725,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
   [note [#
 **Introduces:** the head-bind (code.md §5.1, #1172). A binding GLUED to a pattern's name — `[user$u …]` — captures the whole matched element, attributes and body included, while the rest of the pattern still destructures it (`id=$id`). Whitespace matters: `[user $u]` is a body item (rule 5's auto-unwrap), `[user$u]` is the head-bind. On wildcard, deep and type-guard heads the binding MAY be separated (`[* $x]`).
 #]]
+  [expect [# [found id=7 [user id=7 [given 'Ada']]] #]]
  ]
 
  [ex key=207-attribute-rest
@@ -2735,6 +2738,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
   [note [#
 **Introduces:** the attribute rest (code.md §5.1 [126d], RULED 1270-Q1/Q2). `@* $rest` binds every attribute the pattern's other `@`/`name=` predicates did not claim, as a MAP — here `role` and `name`, with `id` taken by `id=$id`. Use it to forward "everything else" without listing it.
 #]]
+  [expect [# [rest {role: admin, name: Ada}] #]]
  ]
 
  [ex key=208-wildcard-heads-bind
@@ -2744,6 +2748,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
   [case [order [* $first] [** $deep]] [heads first=[$name $first] deep=[$name $deep]]]
   [else NOMATCH]]
 #]]
+  [expect [# first=item deep=item #]]
   [note [#
 **Introduces:** head-binds on the wildcard heads (§5.1, §5.2 rules 2–3). `[* $first]` matches any ONE element at that position and binds it; `[** $deep]` matches at this position OR deeper. Both `$first` and `$deep` land on an `item` here — `$deep` because `**` also matches at depth zero. The names are read back with `[$name …]`.
 #]]
@@ -2757,6 +2762,10 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
   [note [#
 **Introduces:** `[?for]` over a PATTERN (code.md §6.3, W3 / #1141). The `[in PAT EXPR]` slot takes the whole pattern grammar, not just a binding name: each `[point …]` is destructured into `$x` and `$y` as it is generated. Items that do not match are SKIPPED (a generator filters, it does not refuse); a bind-form that is not a pattern refuses loudly.
 #]]
+  [expect [#
+3
+7
+#]]
  ]
 
  [ex key=210-for-destructures-a-pair
@@ -2767,6 +2776,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
   [note [#
 **Introduces:** the same generator pattern over ARRAY items (§6.3). `[$k, $v]` is an array pattern: each `["a", 1]` splits into key and value, and the body builds one `[pair]` per item. The read/construct split is why this works over both `[…]` and `(…)` inputs — patterns READ any collection kind.
 #]]
+  [expect [# [pair k=a v=1] #]]
  ]
 
  [ex key=211-single-arm-match
@@ -2777,6 +2787,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
   [note [#
 **Introduces:** the one-arm match (W1, #1135–#1137). `[?match $r [case [ok $v] …]]` needs no `[else]` when the caller knows the shape; the arm's pattern is the full grammar (`[ok $v]` binds the body). A value that matches NO arm is a refusal, not a silent null — see the `[of]` examples for the closed-type version of that rule.
 #]]
+  [expect [# 84 #]]
  ]
 
  [ex key=212-a-bare-def-name-is-the-callable
@@ -2789,6 +2800,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
   [note [#
 **Introduces:** callable values (code.md §6.3b). Inside a program body a bare def name in VALUE position — `double` passed to `twice` — denotes the function itself, and a parameter holding a function is called with `[$f …]`. No quoting, no `[?fn]` wrapper: `[twice double 3]` → `12`. (In a DATA body the same word is text — see example on bare words.)
 #]]
+  [expect [# 12 #]]
  ]
 
  [ex key=213-splice-inside-a-literal
@@ -2799,6 +2811,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
   [note [#
 **Introduces:** splicing into a sequence literal (code.md §6.4.1, #1223). `[?splice EXPR]` in a `(…)` or `[…]` literal adopts EXPR's members at that position, so `(0, [?splice (1, 2)], 3)` is the flat `(0, 1, 2, 3)` — not a nested pair. A sequence in element-content position without `?splice` refuses (the earlier `CXER0100 … adopt its members with [?splice]` example).
 #]]
+  [expect [# (0, 1, 2, 3) #]]
  ]
 
  [ex key=214-quasiquote-with-unquote
@@ -2809,6 +2822,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
   [note [#
 **Introduces:** the quasiquote hole (code.md §6.4.3). `[?quote …]` hands back the tree AS DATA; `[?unquote EXPR]` inside it evaluates EXPR and puts the VALUE at that spot. Here the two unquotes compute `3` and `6` while `total` stays a literal head. Contrast `203-quote-homoiconic`, which quotes an expression whole.
 #]]
+  [expect [# [total 3 6] #]]
  ]
 
  [ex key=215-purity-is-checked-at-load
@@ -2827,6 +2841,7 @@ error: cx-err:CXER0233: cx-err:CXER0233 E_PURITY_VIOLATION: call to impure `[?de
 
 The message names the offending call. The next example shows the honest declaration on the caller.
 #]]
+  [expect [# 3 #]]
  ]
 
  [ex key=216-declared-effects
@@ -2839,6 +2854,7 @@ The message names the offending call. The next example shows the honest declarat
   [note [#
 **Introduces:** the `[effects …]` clause (code.md §8). `loud` declares the same effect its callee `bump` declares, so the static check passes and `[loud 1]` → `2`. Effects compose upward: whatever a def calls, it must admit. `[effects]` is a NARROWING declaration — it never grants a capability the program does not hold (see the caps examples).
 #]]
+  [expect [# 2 #]]
  ]
 
  [ex key=217-typed-params-and-returns
@@ -2850,6 +2866,7 @@ The message names the offending call. The next example shows the honest declarat
   [note [#
 **Introduces:** parameter and return ascriptions on `[?def]` (code.md §8.4). `($w::int $h::int)` declares the parameter kinds and `[returns int]` the result kind. The playground runs the default profile, where the ascriptions DOCUMENT and the arithmetic still refuses a non-number by its own rule; under `cx --strict` the call `[area 3 "four"]` refuses at the boundary with `CXER0206 E_TYPE_ARG_MISMATCH: argument for \`h\` does not match declared type \`int\``.
 #]]
+  [expect [# 12 #]]
  ]
 
  [ex key=218-exact-numeric-lane
@@ -2860,6 +2877,7 @@ The message names the offending call. The next example shows the honest declarat
   [note [#
 **Introduces:** the exact numeric lane (code.md §6.5; #1072, #1044, #1046). Integers are i64 and CHECKED; `$idiv` and `%` are the integer pair; `$avg` over decimals stays decimal (`2.00`, scale preserved); an all-int `/` chain `[/ 12 3 2]` folds exactly in i64 → `2`. Nothing here passes through a float.
 #]]
+  [expect [# [exact 3] [rem 1] [mean 2.00] [chain 2] #]]
  ]
 
  [ex key=219-non-terminating-division-refuses-by-name
@@ -2870,6 +2888,7 @@ The message names the offending call. The next example shows the honest declarat
   [note [#
 **Introduces:** the refusal side of the exact lane (#1044, L44). `1.0 / 3.0` has no terminating decimal, so `$div` REFUSES BY NAME (`CXER3002`) and tells you how to ask properly — a rounding context via `[$math:div-decimal a b {precision: N mode: :half-up}]`. Compare `[/ 1 3]`, the float operator, which answers `3.333333333333333e-1`: two lanes, two contracts.
 #]]
+  [expect [# CXER3002 #]]
  ]
 
  [ex key=220-checked-overflow
@@ -2880,6 +2899,7 @@ The message names the offending call. The next example shows the honest declarat
   [note [#
 **Introduces:** checked integer arithmetic (v0.17; code.md §6.5). `9223372036854775807 × 2` does not silently wrap to `-2`: it refuses `E_MATH_OVERFLOW` and names the way out. Overflow is a value you can see, not a number you cannot.
 #]]
+  [expect [# E_MATH_OVERFLOW #]]
  ]
 
  [ex key=221-wrapping-arithmetic-on-request
@@ -2891,6 +2911,7 @@ The message names the offending call. The next example shows the honest declarat
   [note [#
 **Introduces:** the wrapping family in `cx-stdlib/math`. The same multiplication the previous example refused answers `-2` here — the two's-complement wrap — because you asked for modular arithmetic by name. Hashing and ring arithmetic want this; a total or a price never does, which is why it is not the default.
 #]]
+  [expect [# -2 #]]
  ]
 
  [ex key=222-an-err-is-a-value-in-process
@@ -2901,6 +2922,7 @@ The message names the offending call. The next example shows the honest declarat
   [note [#
 **Introduces:** CO-2's first half (code.md §6.4.1, RULED CO-2 #975). Inside the program an `[err …]` is an ordinary element: bind it, read `$e/@code`, branch on it. `[$exists $e/@code]` → `true` and the program's own result is a clean `[report ok=true]`. Nothing refused, because nothing crossed an effect boundary.
 #]]
+  [expect [# [report ok=true] #]]
  ]
 
  [ex key=223-at-the-boundary-a-result-with-an-err-refuses
@@ -2911,6 +2933,7 @@ The message names the offending call. The next example shows the honest declarat
   [note [#
 **Introduces:** CO-2's second half. The same `[err]` placed INTO the result — `[report $e]` — crosses the program's output boundary, and emission is an externalizing effect: the run refuses loudly (`error: the result carries an error value — cx-err:CXER9999 at /err`) instead of printing a document with a refusal buried in it. Only a deliberate `errs=:permit` on an emitting form externalizes an err on purpose.
 #]]
+  [expect [# code=cx-err:CXER9999 #]]
  ]
 
  [ex key=224-no-callable-is-a-coded-refusal
@@ -2921,6 +2944,7 @@ The message names the offending call. The next example shows the honest declarat
   [note [#
 **Introduces:** the name-resolution miss (code.md §9.4, #1058 T1.6). `[$nope 1]` resolves to no builtin, no def, no binding — the answer is a CODED refusal, `CXER0136 E_NO_CALLABLE`, that names the callable it could not find. The old `user-undefined` spelling is gone; graders and tools key on the code, never the prose.
 #]]
+  [expect [# E_NO_CALLABLE: no callable "nope" #]]
  ]
 
  [ex key=225-const-str-and-a-module-def
@@ -2934,6 +2958,7 @@ The message names the offending call. The next example shows the honest declarat
   [note [#
 **Introduces:** three v0.14 forms together (code.md §5). `[?const RATE 0.08]` is a module-level constant, read bare (`RATE`) inside `total`; `[?str "{$name}, {$n} items"]` interpolates bindings into text; the amount is exact decimal arithmetic → `108.00`. The flat `[?let]` binds two names in one form — the ruled idiom, not a cascade.
 #]]
+  [expect [# amount=108.00 #]]
  ]
 
  [ex key=226-group-by-with-per-group-totals
@@ -2946,6 +2971,7 @@ The message names the offending call. The next example shows the honest declarat
   [note [#
 **Introduces:** `[?group-by]` (code.md §6.3, v0.16). The `[using FN]` slot names the key; the result is a sequence of `(key, (items…))` pairs in first-seen key order. The outer `[?for]` walks the groups (`[$first $g]` is the key, `[$nth $g 2]` the items — indices are 1-based, RULED 1177) and sums each group's amounts.
 #]]
+  [expect [# [total region=US amt=8] #]]
  ]
 
  [ex key=227-present-vs-exists-vs-count
@@ -2956,6 +2982,7 @@ The message names the offending call. The next example shows the honest declarat
   [note [#
 **Introduces:** `[$present PATH]` (code.md §6.6, v0.16). On a LEAF element `[empty]`, `$count` is `0` and `$exists` is `false` — both ask about CONTENT — while `$present` asks the question the reader meant: is there a node at this path? → `true`. Every "did this step match" test written with `$count` was wrong on a leaf; this is the fix.
 #]]
+  [expect [# present=true count=0 exists=false #]]
  ]
 
  [ex key=228-a-scoped-deny-is-not-a-total-deny
@@ -2964,8 +2991,9 @@ The message names the offending call. The next example shows the honest declarat
 [capabilities [total-deny [?with-caps [deny net] [$caps]]] [scoped-deny [?with-caps [deny net "a.example:443"] [$caps]]]]
 #]]
   [note [#
-**Introduces:** resource-scoped capability denial (code.md §9, #1332). `[deny net]` removes the capability — the inner `[$caps]` has no `net` key — while `[deny net "a.example:443"]` denies ONE resource and leaves `net: true`. Before #1332 the scoped form silently denied the whole capability. `[?with-caps]` only ever NARROWS what the program already holds.
+**Introduces:** resource-scoped capability denial (code.md §9, #1332). `[deny net]` removes the capability — the inner `[$caps]` has no `net` key — while `[deny net "a.example:443"]` denies ONE resource and leaves `net: true`. Before #1332 the scoped form silently denied the whole capability. `[?with-caps]` only ever NARROWS what the program already holds. The playground runs GRANT-FREE, so here BOTH maps are empty — neither run holds `net` to begin with; with `--allow-net` the total deny removes the `net` key while the scoped deny leaves `net: true`.
 #]]
+  [expect [# [total-deny {}] [scoped-deny {}] #]]
  ]
 
  [ex key=229-declaration-only-map-entry
@@ -2977,6 +3005,7 @@ The message names the offending call. The next example shows the honest declarat
   [note [#
 **Introduces:** the map-syntax settlement (data.md §4, #917). Entries separate by whitespace or comma; `age: ::int` DECLARES the kind and supplies no value — `[$map:get $m "age"]` answers absence, so `$present` is `false`. Absence is not `null`: `null` is a value you would have to write. Ascriptions on entries are CHECKED when a value is present.
 #]]
+  [expect [# has-age=false #]]
  ]
 
  [ex key=230-an-atom-is-not-a-map-key
@@ -2993,6 +3022,7 @@ error: cx-err:CXER0100: parse: atom is not a valid map key (cx-err:CXERMAP-BADKE
 
 Diagnostics render values in canonical spelling everywhere since v0.18, so the message and the document agree byte for byte.
 #]]
+  [expect [# {name: 1} #]]
  ]
 
  [ex key=231-a-bare-word-in-a-data-body-is-text
@@ -3003,6 +3033,7 @@ Diagnostics render values in canonical spelling everywhere since v0.18, so the m
   [note [#
 **Introduces:** #1311 — a bare word in a data body no longer reads a binding. `[greeting hello]` is data: `hello` is the text `'hello'` even if a `$hello` binding exists nearby. To place a binding's value in a body you write `$hello`. One rule for readers and tools: data bodies never reach into scope.
 #]]
+  [expect [# [greeting 'hello'] #]]
  ]
 
  [ex key=232-of-clause-closed-match
@@ -3019,6 +3050,7 @@ Diagnostics render values in canonical spelling everywhere since v0.18, so the m
   [note [#
 **Introduces:** EN-1's `[of]` clause (schema.md §4/§5.4, #1154). `[?cx schema-inline …]` declares a program-scope schema; `[type status::atom [enum :ok :err :pending]]` closes the set; `[of status]` tells the match which type it is over, so the arms are CHECKED against the members — a typo in a `[case …]` atom is a load error, not a silent never-match. Value `:err` → `'failed'`.
 #]]
+  [expect [# failed #]]
  ]
 
  [ex key=233-of-clause-membership-refusal
@@ -3034,6 +3066,7 @@ Diagnostics render values in canonical spelling everywhere since v0.18, so the m
   [note [#
 **Introduces:** membership under `[of]`. `:gone` is not a member of `status`, so the match refuses `S007: value :gone not in [enum :ok :err :pending]` — the same code the schema validator uses for an out-of-set atom in data. One constraint, two readers, one spelling. The `[?fallback]` wrapper is only here so the refusal is shown as a VALUE (`$err` is bound inside `recover-with=`); unwrapped, the program refuses at the top level with that text.
 #]]
+  [expect [# S007: value :gone not in [enum :ok :err :pending] #]]
  ]
 
  [ex key=234-of-clause-no-silent-fall-through
@@ -3049,6 +3082,7 @@ Diagnostics render values in canonical spelling everywhere since v0.18, so the m
   [note [#
 **Introduces:** exhaustiveness under `[of]` (code.md §8.2). The value `:pending` IS a member, but no arm claims it and there is no `[else]` — over a declared-closed type that is a refusal naming the missing arm, because a closed set with an unhandled member is a bug the compiler can see. `cx lint` reports the same gap statically. Again `[?fallback]` only surfaces the refusal as a value for the pane.
 #]]
+  [expect [# no arm claimed :pending #]]
  ]
 
  [ex key=235-of-clause-else-opts-out
@@ -3064,6 +3098,7 @@ Diagnostics render values in canonical spelling everywhere since v0.18, so the m
   [note [#
 **Introduces:** the escape hatch. An explicit `[else …]` says "every other member goes here" — `:pending` → `'other'` — and the exhaustiveness check stands down because you said so, in the source, where a reader can see it.
 #]]
+  [expect [# other #]]
  ]
 
  [ex key=236-negative-zero-keeps-its-sign
@@ -3074,6 +3109,7 @@ Diagnostics render values in canonical spelling everywhere since v0.18, so the m
   [note [#
 **Introduces:** canonical.md §2.5 as amended by #1353. `-0.0` is a distinct decimal from `0.0` in the canonical image, and the scale is preserved like any other decimal (`-0.00` stays two places). Equality is a separate axis: `[= -0.0 0.0]` is still `true`. The canonical image records what was written; comparison decides what is equal.
 #]]
+  [expect [# a=-0.0 b=0.0 c=-0.00 #]]
  ]
 
  [ex key=237-xml-refuses-a-duplicate-attribute
@@ -3085,6 +3121,7 @@ Diagnostics render values in canonical spelling everywhere since v0.18, so the m
   [note [#
 **Introduces:** #1104 — the XML codec enforces the 1.0 well-formedness constraint "Unique Att Spec": `x` appears twice on `<r>`, so parsing refuses `CXER0100 PARSE_ERROR` at `1:10` and cites the constraint. No last-writer-wins, no silent merge. (The attribute values are single-quoted here only because a `\"` inside a string literal trips the diagram emitter's label escaping — #1373; the refusal is the same either way.)
 #]]
+  [expect [# WFC: Unique Att Spec #]]
  ]
 
  [ex key=238-postfix-path-step-on-any-form
@@ -3095,6 +3132,7 @@ Diagnostics render values in canonical spelling everywhere since v0.18, so the m
   [note [#
 **Introduces:** uniform postfix path steps (cxpath.md §2, #886). Every program-position bracketed form's closing bracket accepts the compact step, not just bindings and calls: the `[?if …]` evaluates to `[box [v n=7]]` and `/v@n` reads straight through it → `7`.
 #]]
+  [expect [# 7 #]]
  ]
 
  [ex key=239-readers-read-any-collection
@@ -3105,6 +3143,7 @@ Diagnostics render values in canonical spelling everywhere since v0.18, so the m
   [note [#
 **Introduces:** the read/construct split (code.md §6.6, #882). Readers — `$count`, `$first`, `$nth`, patterns — work over both arrays `[…]` and sequences `(…)`. The next example is the other half of the rule.
 #]]
+  [expect [# count=2 first=3 #]]
  ]
 
  [ex key=240-constructors-keep-strict-typing
@@ -3115,6 +3154,7 @@ Diagnostics render values in canonical spelling everywhere since v0.18, so the m
   [note [#
 **Introduces:** the construct side of the split. `$concat` builds text from scalars; handed a two-item sequence as an argument it refuses and says what it needed — bind or `[?else]` the value first. Reading is permissive, constructing is strict, and the boundary between them is where CX's shape guarantees live.
 #]]
+  [expect [# argument 2 is a 2-item sequence #]]
  ]
 
 ]
