@@ -1,0 +1,28 @@
+[playground-examples
+ [; FIXTURE CORPUS for #1170 §C4 (RULED: 1170-g) — run only through
+    `gen_examples.cx --lint-only <this file>`; never rendered, never pinned.
+    One entry whose [expect] IS in the output (green on its own), one whose
+    [expect] is NOT (the red this corpus exists to prove), one with no
+    [expect] (ungraded). The checker must exit 1 and name `expect-wrong`
+    with both the expectation and the output. ]
+ [ex key=01-expect-right
+  [label [# right #]]
+  [src [#
+[$concat "ab" "cd"]
+#]]
+  [note [# The answer is `abcd`. #]]
+  [expect [# abcd #]]]
+ [ex key=02-expect-wrong
+  [label [# wrong #]]
+  [src [#
+[$concat "ab" "cd"]
+#]]
+  [note [# The note promises `abce`, which the program does not compute. #]]
+  [expect [# abce #]]]
+ [ex key=03-no-expect
+  [label [# ungraded #]]
+  [src [#
+[$concat "x" "y"]
+#]]
+  [note [# No expectation pinned — not graded by §C4. #]]]
+]
