@@ -118,6 +118,14 @@ to enterprise orchestration, performant, reliable, durable, high-trust.
 
 ## 1265-WF-40 — the admission sentence in W1
 
+> **AMENDED by `1265-WF-40b`** (owner, 2026-09-08 21:35Z; mechanism ruled by
+> Fable 2026-09-09 20:21Z; implemented 2026-09-09). The requirement below was
+> kept normative and DATED to the W3 performer axis. The owner refused the
+> dating and the mechanism SHIPS in v0.18.0, bus-side. Everything this record
+> decided about the re-cast SENTENCES stands; only the "lands with the W3
+> performer axis" clause is superseded. See
+> [`rulings_2026_09_09_flow_pep_admission_1265_wf40b.md`](rulings_2026_09_09_flow_pep_admission_1265_wf40b.md).
+
 Three normative sentences (`flow.md` §4.5, `flow.md` §4.23, `misc/cli.md`'s
 serve capabilities bullet) said every step is *admitted at the PEP against the
 run's recorded basis*. Measured, by reading every site on the path: **no
