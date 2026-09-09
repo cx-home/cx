@@ -88,8 +88,23 @@ leaving either would make 1349-a's own goldens dangle.
 
 `cd-emit-modify` mints `[$concat $s.pfx "u"]`, a fourth constant of the same
 family. It is NOT renumbered here: 1349-b names three roles, and the
-implementation rule permits only `lh`/`lb`/`b` bytes to move. One golden pair
-(`cfg-009-modify-three-actions`) declares a `u[` node and no source in the
-corpus holds two `modify` statements in one scope, so the collision is latent,
-not measured. Carried to #1349 as a drafted question rather than taken
-silently or filed away as a new issue.
+implementation rule permits only `lh`/`lb`/`b` bytes to move — renumbering `u`
+would move `cfg-009-modify-three-actions`'s two goldens, which is a
+fixture-expectation change outside the authorized diff.
+
+**It is MEASURED, not latent** (worker B, 2026-09-09, `cfg-009`'s own source
+doubled, rendered through the edited module with the shipped binary):
+
+```
+  u["modify @ //users/user | set-attr | delete-attr | append"]
+  start --> u
+  u["modify @ //users/user | set-attr | delete-attr | append"]
+  u --> u
+  u --> done
+```
+
+Two declarations and a `u --> u` self-edge — the identical pathology, reachable
+in the language today. No source in the corpus holds two `modify` statements in
+one scope, which is the only reason no golden shows it. Carried to #1349 as
+drafted question `1349-d` rather than taken silently or filed away as a new
+issue.
