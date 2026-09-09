@@ -109,3 +109,84 @@ and every branch answered nothing. `flow-063` is in fact claimed by
 being written. The correct pre-flight uses `"${b}:…"`, or does not go through
 the shell at all. Same trap as the one worker A recorded on #1354; the fix is
 one brace and the failure mode is silence.
+
+---
+
+# AMENDED — RULED: 1316-d — `activated=` is the activating transition's FOLD
+# ORDINAL, write-once; the entry-seq form above is SUPERSEDED
+
+Date: 2026-09-09 04:05 ET (posted on the issue 2026-09-09T07:13:12Z).
+Issue: cx-home/cx-private#1316. Letter drafted by worker B on the issue at
+07:01Z; ruled (a) by the owner + Fable.
+Related: `1265-PC-2` (`snapshot-every` is a COST knob), `flow-045`
+(gate=enforced: the anchored read equals the genesis fold, as a byte
+equality), `flow-066` (kept), §11a (`f--take-anchor`).
+
+## Why the form above was wrong — and it was caught by a gate, not by review
+
+`1316-c1`'s premise, that a journal entry's seq is a stable in-run address,
+does not hold. `f--take-anchor` appends `[flow-snapshot …]` **into the run's
+own home stream** (`stdlib/flow.cx` §11a), so every anchor CONSUMES a seq, and
+a value read off an entry seq therefore became a function of `snapshot-every`
+— which `1265-PC-2` rules is a pure cost knob that must not be observable.
+
+MEASURED, in the c1 lane at `b25fb87bf`
+(`vcx/target/lane_B_1316c1.log`, `SUITE-EXIT=2`): `flow-045` — the pin that
+the anchored read equals the genesis fold — went RED, with
+`anchored-eq-off false` and `anchored-eq-default false`, and the same step
+recording `activated=4` under anchoring against `activated=3` without it. A
+gate-enforced fixture outranks a ruling, so the ruling moved.
+
+## Ruled
+
+`f--row-with` writes `activated=<the FOLD ORDINAL of the activating
+transition>` — the first move out of `:waiting` — once, read off the `$ord`
+that def already receives, exactly as `ord=` is the completing transition's
+ordinal. The fold reads only `[flow-transition …]` entries (`f--entry-ts`), so
+no anchor, migration marker or future interleaved entry can move it.
+
+REVERTED with it: the `$seq` threading through `f--commit` /
+`f--after-commit` / `f--fold-step` / `f--fold-apply` / `f--fold-one` /
+`f--apply-transition` / `f--apply-construct`, **and** `1316-c1`'s change to
+`status`'s `opts.at` branch. The ordinal lives in the fold state, so the head
+read and the positional read cannot disagree and the positional read goes back
+to the flattened `fold-record` form it always had. `flow-066` (the head /
+positional equality pin) is KEPT and is what proves it. `flow-045` is
+untouched.
+
+`1316-c1`'s other clauses stand: write-once and not sticky-with-overwrite (the
+measured correction to the letter's own "sticky"), deterministic, and the
+overlay (`1316-b1`) carrying the value verbatim while the EMITTERS — the
+`/stream` frame (`1316-b4`) and `cx flow watch` (`1316-b3`) — map the ordinal
+to the transition they are already walking and paint `elapsed` against their
+own clock.
+
+**Refused:** (b) projecting `activated=` out of `flow-045`'s comparison —
+deletes `1265-PC-2` as a byte equality and makes an anchor observable; (c) the
+entry's `ts` — unmeasured invariance; (d) dropping the attribute — refused
+under `1316-c1` and still refused.
+
+## One clause of `1316-c1` this ruling widens, and it is a MEASUREMENT
+
+`1316-c1` said the attribute is ABSENT where the fold is not journal-backed —
+`fold-record` over a bare transition sequence, and `simulate`. That was a
+property of the SEQ (there is no entry, so there is no seq), not of the
+attribute. **A transition sequence has ordinals whether or not anyone
+journaled it**, so under `1316-d` the pure fold carries `activated=` exactly
+as a live one does, and a simulated record now names the ordinal that
+activated each construct. Nothing in the ruled mechanism could suppress it
+without re-introducing the very threading the ruling reverts.
+
+The consequence is that `1316-c1`'s re-pin count does not carry over, and it
+is re-measured rather than re-estimated. Measured with the module-source probe
+against an `origin/release/0.18` control (no build, no build slot — the slot
+FIFO was 13 deep):
+
+- `flow-023-doc-start`, the `[fn-doc]` example for `start` mirrored into the
+  corpus, moves from the pinned bare rows to
+  `ord=3 activated=2` / `ord=5 activated=4`. Under `1316-c1`'s seqs the same
+  case measured `activated=2` / `activated=3` — so the second row's value
+  differs between the two forms, which is the difference the ruling is about,
+  observed on a fixture rather than argued.
+
+The full re-pin table, both directions, is in the commit that lands it.
