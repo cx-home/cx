@@ -202,6 +202,48 @@ fixtures these are; `fmt-031/032` free.
   entry **stays**. Its `CXER0100 invalid temporal literal '0o17'` is an OCTAL
   literal — the same §2.5 family, a different gap — and this change does not
   reach it, so the roster line is not stale.
-* `FMT_SWEEP_MAX_DECLINED` is lowered in this landing, per the one-way-ratchet
-  convention the Makefile states: whoever lowers it edits the number down in the
-  same landing.
+## The corpus effect is ZERO, and that is the honest headline
+
+`FMT_SWEEP_MAX_DECLINED` is **not** lowered, because the census did not move.
+Re-measured on this tree with `make fmt-sweep`:
+
+```
+SWEEP-FILES=272  FORMATTED=173  DECLINED=94  UNSTABLE=0  ERROR=5
+```
+
+byte-identical to the census committed at `3ef4d597e`, so the one-way ratchet's
+"whoever lowers it edits the number down in the same landing" convention does
+not apply here — there is nothing to lower.
+
+The A/B that explains it: every `.cx` file in the tree carrying an underscored
+integer, formatted through the PRE-fix binary (`88c18a923`) and the POST-fix one
+and compared byte-for-byte —
+
+| file | delta |
+|---|---|
+| `examples/logs.cx` | identical |
+| `examples/chapter.cx` | identical |
+| `examples/vcore.cx` | identical (declines either way) |
+| `examples/env.cx` | identical |
+| `examples/post.cx` | identical |
+| `examples/config.cx` | identical |
+| `tooling/vscode/test/grammar/basic.cx` | identical (ERROR either way — the `0o17` octal) |
+
+**Not one byte moves.** Each of those files either declines for an independent
+reason or holds its underscored integer in a DATA position, where the emitter
+copies the token verbatim and the program fingerprint is never consulted —
+`examples/logs.cx`'s `latency_ms=5_034` is a logfmt attribute, not a program
+literal.
+
+And a grep for an underscored literal under a text-coercing ascription across
+`examples/ conformance/ stdlib/ x/ scripts/ tooling/ bench/` returns **only this
+landing's own fmt-031**. So the corruption class the exception guards has no
+live instance in the tree either — which is exactly why the tripwire existed to
+catch it before one appeared.
+
+So this landing fixes the CLASS, proved by five fixtures, and un-declines
+nothing that ships today. Stating it that way rather than implying a corpus win:
+the value of the change is that `canonical.md:210` becomes operative for
+`cx fmt` and not only for the emitter, and that the next author who writes
+`[?let [= $x 1_000] $x]` gets it formatted instead of silently getting the whole
+file back.
