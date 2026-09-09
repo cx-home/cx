@@ -2857,12 +2857,17 @@ corpus-audit: build-vcx
 # verdict can point it at `vcx/target/cx-dev`.
 CX_SWEEP_BIN ?= vcx/target/cx
 .PHONY: fmt-sweep fmt-sweep-timed
+# --allow-clock is load-bearing for the timed pass and NOT optional: a denied
+# clock capability makes `[$time:monotonic-now]` answer ABSENCE rather than
+# fail, so every `ms` column came out empty and the total with it (measured in
+# lane_A_1348). Granted to both recipes because either can be handed `--timed`
+# through FMT_SWEEP_ARGS.
 fmt-sweep: build-vcx
-	@$(CX_SWEEP_BIN) --allow-read --allow-write --allow-subprocess \
+	@$(CX_SWEEP_BIN) --allow-read --allow-write --allow-subprocess --allow-clock \
 	  scripts/fmt_corpus_sweep.cx --bin $(CX_SWEEP_BIN) $(FMT_SWEEP_ARGS)
 
 fmt-sweep-timed: build-vcx
-	@$(CX_SWEEP_BIN) --allow-read --allow-write --allow-subprocess \
+	@$(CX_SWEEP_BIN) --allow-read --allow-write --allow-subprocess --allow-clock \
 	  scripts/fmt_corpus_sweep.cx --bin $(CX_SWEEP_BIN) --timed --no-bench $(FMT_SWEEP_ARGS)
 
 

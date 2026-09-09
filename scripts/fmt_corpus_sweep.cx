@@ -1,12 +1,17 @@
 # scripts/fmt_corpus_sweep.cx — the `cx fmt` CORRECTNESS sweep over the whole
 # tracked CX corpus, `fixtures/bench/` INCLUDED (#1348).
 #
-#   vcx/target/cx --allow-read --allow-write --allow-subprocess \
+#   vcx/target/cx --allow-read --allow-write --allow-subprocess --allow-clock \
 #     scripts/fmt_corpus_sweep.cx                       # correctness, parallel
+#
+# --allow-clock is required by `--timed` and NOT optional: a denied clock
+# capability makes `[$time:monotonic-now]` answer ABSENCE rather than fail, so
+# every `ms` reads empty and the run looks like it measured zero.
 #   ... fmt_corpus_sweep.cx --timed                     # wall clock, SEQUENTIAL
 #   ... fmt_corpus_sweep.cx --no-bench                  # skip fixtures/bench/
 #   ... fmt_corpus_sweep.cx --bin vcx/target/cx-dev --jobs 8
 #   ... fmt_corpus_sweep.cx --filter stdlib/          # a path substring
+#   ... fmt_corpus_sweep.cx --ratchet --max-declined 97 --max-errors 0
 #
 # WHY THIS EXISTS. #1348 recorded that every `cx fmt` corpus measurement so far
 # excluded `fixtures/bench/` because one 10 MB blob made a 90 s sweep take half
@@ -44,8 +49,10 @@
 #   ERROR      non-zero exit; the diagnostic is reported.
 #
 # The sweep is a REPORT, not a gate: it exits 0 with the census unless it could
-# not run at all. `--max-declined N` / `--max-errors N` turn it into a ratchet
-# once the census is a committed number.
+# not run at all. `--ratchet --max-declined N --max-errors N` turn it into a
+# ratchet once the census is a committed number. An UNSTABLE row always reds,
+# with or without `--ratchet`: §7 says `fmt_source` fails closed rather than
+# returning an unsettled candidate, so there is no number to ratchet against.
 
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
@@ -59,14 +66,23 @@
 [?def cat scope=private ($parts) [$strings:join $parts '']]
 [?def die scope=private impure ($msg) ([$cry $msg], [$env:exit 2], null)]
 
+# EVERY flag carries an explicit default, and nothing here reads a flag through
+# `[?else …]`. An UNSET flag with no declared default reads back as `null`, and
+# `null` is a VALUE, not an absence — so `[?else [$env:flag $a 'filter'] '']`
+# yields `null`, `[$string null]` is the four-letter string "null", and the
+# sweep silently ran over the one corpus path containing that substring:
+# `scripts/check_null_absence_conflation.cx`, which is the defect's own name.
+# Measured 2026-09-09 in lane_A_1348 (`1 tracked .cx files`, every count empty).
+# A declared default is the fix at the source; `[?else]` cannot see a null.
 [?const ARG-SPEC [argspec
-  [flag name="bin"          type=string]
-  [flag name="jobs"         type=int]
-  [flag name="no-bench"     type=bool default=false]
-  [flag name="timed"        type=bool default=false]
-  [flag name="max-declined" type=int]
-  [flag name="max-errors"   type=int]
-  [flag name="filter"       type=string]]]
+  [flag name="bin"          type=string default=""]
+  [flag name="jobs"         type=int    default=0]
+  [flag name="no-bench"     type=bool   default=false]
+  [flag name="timed"        type=bool   default=false]
+  [flag name="max-declined" type=int    default=0]
+  [flag name="max-errors"   type=int    default=0]
+  [flag name="ratchet"      type=bool   default=false]
+  [flag name="filter"       type=string default=""]]]
 
 # Vendored and archived trees are not ours to format; everything else tracked
 # under a .cx extension is in scope, `fixtures/bench/` included by default.
@@ -178,14 +194,26 @@
 
 # ── the timing pass (SEQUENTIAL — a parallel wall clock measures nothing) ───
 
+# A `[?let]` binding is evaluated when it is first READ, not where it is
+# written, so `[= $t0 …] [= $rc …] [= $t1 …]` in a record does NOT measure the
+# process — the two clock reads can both land after it, or in either order, and
+# lane_A_1348 duly reported an empty `MS` column. The chain below is ordered by
+# DATA DEPENDENCE, which is the only ordering laziness respects: `$t0` is forced
+# by the guard that gates the spawn, and the elapsed read is inside a branch
+# whose condition is `$rc`, so the child has been waited for before the clock is
+# read a second time.
 [?def timed-one scope=private impure ($bin::string $dir::string $path::string)
   [?let
     [= $j [$job-paths $dir $path 't']]
     [= $_w [$io:write-file $j/in [$cat ("\n", [$read-or-empty $path])]]]
     [= $t0 [$time:monotonic-now]]
-    [= $rc [$process:wait [$process:spawn ('sh', '-c', [$fmt-cmd $bin $j/in $j/out $j/err $j/rc])]]]
-    [= $t1 [$time:monotonic-now]]
-    {path: $path, rc: $rc, ms: [/ [- $t1 $t0] 1000000.0e0]}]]
+    [= $rc [?if [> $t0 0]
+             [then [$process:wait [$process:spawn ('sh', '-c', [$fmt-cmd $bin $j/in $j/out $j/err $j/rc])]]]
+             [else [- 0 1]]]]
+    {path: $path, rc: $rc,
+     ms: [?if [>= $rc 0]
+           [then [/ [- [$time:monotonic-now] $t0] 1000000.0e0]]
+           [else 0.0e0]]}]]
 
 # ── report ─────────────────────────────────────────────────────────────────
 
@@ -200,13 +228,13 @@
   [= $args [?fallback [$env:parse-args ARG-SPEC]
              [recover-with ([$cry 'usage: fmt_corpus_sweep.cx [--bin PATH] [--jobs N] [--no-bench] [--timed] [--max-declined N] [--max-errors N]'],
                             [$env:exit 2], null)]]]
-  [= $bin [?let [= $b [$string [?else [$env:flag $args 'bin'] '']]]
+  [= $bin [?let [= $b [$string [$env:flag $args 'bin']]]
             [?if [= $b ''] [then 'vcx/target/cx'] [else $b]]]]
-  [= $jobs [?let [= $j [?else [$env:flag $args 'jobs'] 0]]
-             [?if [> $j 0] [then $j] [else [?else [$env:cpu-count] 4]]]]]
-  [= $include-bench [not [?else [$env:flag $args 'no-bench'] false]]]
-  [= $timed [?else [$env:flag $args 'timed'] false]]
-  [= $filter [$string [?else [$env:flag $args 'filter'] '']]]
+  [= $jobs [?let [= $j [$env:flag $args 'jobs']]
+             [?if [> $j 0] [then $j] [else [$env:cpu-count]]]]]
+  [= $include-bench [not [$env:flag $args 'no-bench']]]
+  [= $timed [$env:flag $args 'timed']]
+  [= $filter [$string [$env:flag $args 'filter']]]
   [= $files [?to-sequence [?for [in $f [$corpus $include-bench]]
               [where [or [= $filter ''] [$strings:contains $f $filter]]]
               [yield $f]]]]
@@ -245,14 +273,21 @@
         [= $nd [$first [?for [in $c $counts] [where [= $c/v 'DECLINED']] [yield $c/n]]]]
         [= $ne [$first [?for [in $c $counts] [where [= $c/v 'ERROR']] [yield $c/n]]]]
         [= $nu [$first [?for [in $c $counts] [where [= $c/v 'UNSTABLE']] [yield $c/n]]]]
-        [= $max-d [?else [$env:flag $args 'max-declined'] [- 0 1]]]
-        [= $max-e [?else [$env:flag $args 'max-errors'] [- 0 1]]]
-        [= $_r [?if [or [and [>= $max-d 0] [> $nd $max-d]]
-                    [or [and [>= $max-e 0] [> $ne $max-e]] [> $nu 0]]]
+        [= $ratchet [$env:flag $args 'ratchet']]
+        [= $max-d [$env:flag $args 'max-declined']]
+        [= $max-e [$env:flag $args 'max-errors']]
+        [= $_r [?if [or [and $ratchet [> $nd $max-d]]
+                    [or [and $ratchet [> $ne $max-e]] [> $nu 0]]]
                  [then ([$cry [$cat ('fmt_corpus_sweep: RATCHET RED — declined=', [$string $nd],
                                    ' errors=', [$string $ne], ' unstable=', [$string $nu])]],
                         [$env:exit 1], null)]
                  [else null]]]
         [$say [$cat ('SWEEP-FILES=', [$string $n])]]]]]]
   [= $_rm [$io:remove-tree $dir]]
-  $out]
+  [; The program's VALUE is printed by `cx FILE`, and a report whose last line
+     is a bare `null` glued to the caller's next byte is a report a lane cannot
+     parse — lane_A_1348 read `nullSWEEP-EXIT=0` and scored two green markers
+     as missing. Exiting explicitly makes the census the whole of stdout.
+     `$out` and `$_rm` above are ordinary bindings, evaluated in order before
+     this line, and a ratchet red has already exited 1 from inside `$out`. ]
+  [$env:exit 0]]
