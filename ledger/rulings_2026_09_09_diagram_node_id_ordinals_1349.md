@@ -138,3 +138,57 @@ byte moving is a defect" rule before the landing: of the 31 modified goldens,
 after stripping the ordinal every changed line pairs with its removed twin,
 leaving exactly two unpaired lines — the two new 1349-c pin ids registered in
 the MANIFEST. Landed by worker A at be2589139.
+
+## 1349-d — the second landing: `modify` joins the family
+
+**RULED: 1349-d — (a)** (owner + Fable, 2026-09-09 03:10 ET). `cd-emit-modify`
+minted `[$concat $s.pfx "u"]` with no counter — the same shape 1349-a removed
+for `lh`/`lb`/`b`, and the last role in the family still minting a CONSTANT id.
+The ruling's sequencing put it in a second landing under this issue so the
+first landing's 18 re-records stayed auditable against the closed list
+`lh→lh1, lb→lb1, b→b1`. This landing's permitted diff is likewise closed:
+**`u`→`uN` only.**
+
+**Red-proved before the fix**, with the shipped module at `86f77672c`, over a
+source holding two `[?modify]` statements in one scope:
+
+```
+  u["modify @ //a/b | set-attr"]
+  start --> u
+  u["modify @ //c/d | set-attr"]
+  u --> u
+  u --> done
+```
+
+Two declarations of one id — mermaid keeps the LAST, so the first statement's
+node disappears — and a `u --> u` SELF-EDGE the source does not contain. The
+same output at `compact` and at `full`.
+
+**Implementation.** `cst` gains a `us` counter beside `lhs`/`lbs`/`bs`, advanced
+by a new `cst-us` helper on the `cst-lets` pattern (one helper per counter
+family, so `cst-ids`' signature does not move). It resets per def subgraph
+exactly as the other three do, because the pfx already separates those scopes.
+`cd-emit-modify` mints `<pfx>u<n>` from it.
+
+**The pins that move, enumerated before the regeneration** — the same census
+the addendum above prescribes, run over `vcx/tests/testdata/`, `conformance/`,
+`docs-src/`, `spec/`, `x/`, `stdlib/` and `scripts/`. Exactly four sites hold
+the `u` id, and the ruling's "two cfg-009 goldens" is the whole golden half:
+
+- `vcx/tests/testdata/code_diagram_golden/cfg-009-modify-three-actions.{compact,full}.golden`
+  (the `min` rung declares no CFG node and does not move).
+- `conformance/code_diagram.cxd`, case `cfg-009-modify-three-actions` — one
+  declaration and one edge endpoint.
+- `vcx/tests/code_units_umbrella_test.v` — four assertions in one test
+  (`start --> u`, `u --> done`, the `u[` label scan, and that assertion's own
+  message). No new ruling is owed to move them, for the reason the addendum
+  above already records: 1349-d makes the emitter MINT `u1`, so a fixture
+  pinning `u` is not an expectation any implementation of this ruling could
+  satisfy. Nothing is relaxed — every node and edge is kept, renamed.
+
+**The third pin.** `pin-cfg-two-modifies-one-scope` is registered in
+`regen_code_diagram_golden`'s `pin_sources` (and therefore in the #1350
+MANIFEST) BEFORE the regeneration, carrying the pre-fix measurement above in
+its comment. It is the shape this corpus never held: of 98 sources not one had
+two `modify` statements in a scope, which is why a byte gate over 321 goldens
+never saw the collapse.
