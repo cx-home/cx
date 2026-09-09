@@ -2830,6 +2830,35 @@ corpus-audit: build-vcx
 	@bash scripts/corpus_audit.sh
 
 
+# ── `cx fmt` corpus sweep (#1348) ───────────────────────────────────────────
+#
+# TWO sweeps, because one cannot be both: `fmt-sweep` is the CORRECTNESS
+# census over every tracked `.cx` file INCLUDING `fixtures/bench/`, and
+# `fmt-sweep-timed` is the wall-clock pass over the non-bench files, whose
+# count stays comparable across runs. #1348 recorded that every fmt corpus
+# measurement so far excluded the bench blobs because one 10 MB file made a
+# 90 s sweep take half an hour — "which means the ONE class of input where
+# formatter cost is worth measuring is the one class never measured".
+#
+# The correctness pass feeds every file as a copy with one leading blank line
+# prepended, so `output == input` means the formatter DECLINED and cannot mean
+# "already canonical". Without that, `cx fmt F == F` is the vacuous probe the
+# #1318/#1320 record warns about: `cx fmt` fails closed by returning the
+# SOURCE at exit 0, so a sweep comparing a file to itself scores every silent
+# decline as a pass.
+#
+# A REPORT by default. `--max-declined N` / `--max-errors N` make it a
+# ratchet, and it becomes a gate lane once the census is a committed number.
+.PHONY: fmt-sweep fmt-sweep-timed
+fmt-sweep: build-vcx
+	@vcx/target/cx --allow-read --allow-write --allow-subprocess \
+	  scripts/fmt_corpus_sweep.cx $(FMT_SWEEP_ARGS)
+
+fmt-sweep-timed: build-vcx
+	@vcx/target/cx --allow-read --allow-write --allow-subprocess \
+	  scripts/fmt_corpus_sweep.cx --timed --no-bench $(FMT_SWEEP_ARGS)
+
+
 # ── REPR GUARD (#1119 W1, RULED: RP-5) — the CXDM live-memory ratchet ────────
 # Parses a ~2 MB corpus per lane (json / xml / cx) through the `cx` module,
 # forces a collection with the tree still reachable, and asserts
