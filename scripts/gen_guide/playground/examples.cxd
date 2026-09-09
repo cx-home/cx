@@ -2811,14 +2811,20 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
  ]
 
  [ex key=215-purity-is-checked-at-load
-  [label [#[215] a default-pure `[?def]` calling an impure one refuses `CXER0233` at load#]]
+  [label [#[215] purity is checked at LOAD — a default-pure `[?def]` may only call pure defs#]]
   [src [#
-[?def bump impure [effects [write]] ($x) [+ $x 1]]
-[?def quiet ($x) [bump $x]]
-[quiet 1]
+[?def inc ($x) [+ $x 1]]
+[?def twice-inc ($x) [inc [inc $x]]]
+[twice-inc 1]
 #]]
   [note [#
-**Introduces:** load-time purity checking (code.md §8, #1298). A `[?def]` is PURE unless it says `impure [effects …]`. `quiet` claims purity and calls `bump`, which declares a write effect — the module refuses to LOAD with `E_PURITY_VIOLATION` before anything runs. The message names the offending call. Next example: the honest declaration.
+**Introduces:** load-time purity checking (code.md §8, #1298). A `[?def]` is PURE unless it says `impure [effects …]`; a pure def calling pure defs loads and runs → `3`. Change `inc` to `[?def inc impure [effects [write]] ($x) [+ $x 1]]` and keep `twice-inc` as written, and the module refuses to LOAD before anything runs:
+
+```
+error: cx-err:CXER0233: cx-err:CXER0233 E_PURITY_VIOLATION: call to impure `[?def] inc`
+```
+
+The message names the offending call. The next example shows the honest declaration on the caller.
 #]]
  ]
 
@@ -2973,12 +2979,18 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
  ]
 
  [ex key=230-an-atom-is-not-a-map-key
-  [label [#[230] `{:name: 1}` — the atom-key refusal, named in both readings#]]
+  [label [#[230] map keys are strings — `{"name": 1}` parses, `{:name: 1}` refuses at its position#]]
   [src [#
-{:name: 1}
+{"name": 1}
 #]]
   [note [#
-**Introduces:** a data-language refusal spelled for both readers (schema.md §10.3). Map keys are strings; `:name` is an ATOM, so the parser refuses at the exact position (`1:2`) with `CXERMAP-BADKEY` and the canonical spelling of what it saw. Diagnostics render values in canonical spelling everywhere since v0.18, so the message and the document agree byte for byte.
+**Introduces:** a data-language refusal spelled for both readers (schema.md §10.3). Map keys are strings, so `{"name": 1}` is the map `{name: 1}`. Write the key as an ATOM — `{:name: 1}` — and the parser refuses at the exact position with the canonical spelling of what it saw:
+
+```
+error: cx-err:CXER0100: parse: atom is not a valid map key (cx-err:CXERMAP-BADKEY) at line 1:2
+```
+
+Diagnostics render values in canonical spelling everywhere since v0.18, so the message and the document agree byte for byte.
 #]]
  ]
 
@@ -3009,18 +3021,17 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
  ]
 
  [ex key=233-of-clause-membership-refusal
-  [label [#[233] `[of TYPE]` refuses a value outside the set — `S007`#]]
+  [label [#[233] `[of TYPE]` refuses a value outside the set — `S007`, caught here as a value#]]
   [src [#
 [?cx schema-inline
   [schema of=job]
   [type status::atom [enum :ok :err :pending]]]
-[?match :gone [of status]
-  [case :ok 'done']
-  [case :err 'failed']
-  [case :pending 'waiting']]
+[?fallback recover-with=[refused [why $err@message]]
+  body=[?match :gone [of status]
+    [case :ok "done"] [case :err "failed"] [case :pending "waiting"]]]
 #]]
   [note [#
-**Introduces:** membership under `[of]`. `:gone` is not a member of `status`, so the match refuses `S007: value :gone not in [enum :ok :err :pending]` — the same code the schema validator uses for an out-of-set atom in data. One constraint, two readers, one spelling.
+**Introduces:** membership under `[of]`. `:gone` is not a member of `status`, so the match refuses `S007: value :gone not in [enum :ok :err :pending]` — the same code the schema validator uses for an out-of-set atom in data. One constraint, two readers, one spelling. The `[?fallback]` wrapper is only here so the refusal is shown as a VALUE (`$err` is bound inside `recover-with=`); unwrapped, the program refuses at the top level with that text.
 #]]
  ]
 
@@ -3030,12 +3041,12 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
 [?cx schema-inline
   [schema of=job]
   [type status::atom [enum :ok :err :pending]]]
-[?match :pending [of status]
-  [case :ok 'done']
-  [case :err 'failed']]
+[?fallback recover-with=[refused [why $err@message]]
+  body=[?match :pending [of status]
+    [case :ok "done"] [case :err "failed"]]]
 #]]
   [note [#
-**Introduces:** exhaustiveness under `[of]` (code.md §8.2). The value `:pending` IS a member, but no arm claims it and there is no `[else]` — over a declared-closed type that is a refusal naming the missing arm, because a closed set with an unhandled member is a bug the compiler can see. `cx lint` reports the same gap statically.
+**Introduces:** exhaustiveness under `[of]` (code.md §8.2). The value `:pending` IS a member, but no arm claims it and there is no `[else]` — over a declared-closed type that is a refusal naming the missing arm, because a closed set with an unhandled member is a bug the compiler can see. `cx lint` reports the same gap statically. Again `[?fallback]` only surfaces the refusal as a value for the pane.
 #]]
  ]
 
