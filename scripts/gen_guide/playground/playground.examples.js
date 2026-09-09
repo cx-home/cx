@@ -29,6 +29,7 @@
       input: "[pizza size=large]",
       note:  "**Introduces:** the simplest CX shape \u2014 one element with one attribute. Eval returns the value unchanged. Switch the Output tab to JSON / XML to see the same value across projections.",
       tags:  [],
+      section: "data/elements",
       runnable: true,
     },
     "02-string-scalar": {
@@ -36,6 +37,7 @@
       input: "\"hello, world\"",
       note:  "**Introduces:** scalar literals. Strings (`\"\u2026\"`) are first-class values; everything in CX is a value, including bare scalars at the top level.",
       tags:  [],
+      section: "data/text",
       runnable: true,
     },
     "03-number-scalars": {
@@ -43,6 +45,7 @@
       input: "[stats\n  min=-5\n  mid=0\n  max=99.5\n  ratio=0.001]",
       note:  "**Introduces:** numeric attribute values. Positive / negative / int / float / sub-unit \u2014 all round-trip through projections.",
       tags:  [],
+      section: "data/numbers",
       runnable: true,
     },
     "04-boolean-scalars": {
@@ -50,6 +53,7 @@
       input: "[user\n  active=true\n  verified=false\n  admin=true\n  blocked=false]",
       note:  "**Introduces:** boolean attributes. `true` / `false` are typed scalars (not strings); JSON projects them as booleans.",
       tags:  [],
+      section: "data/elements",
       runnable: true,
     },
     "05-atom-values": {
@@ -57,6 +61,7 @@
       input: "[response status=:ok]",
       note:  "**Introduces:** atoms \u2014 `:kebab-case` identifiers that evaluate to themselves. Use atoms for enum-like markers without quoting.",
       tags:  [],
+      section: "data/elements",
       runnable: true,
     },
     "06-string-quoting": {
@@ -64,6 +69,7 @@
       input: "[note\n  single='single quotes'\n  double=\"double quotes\"\n  apostrophe=\"can't\"]",
       note:  "**Introduces:** string quoting \u2014 both `'\u2026'` and `\"\u2026\"`. Pick whichever avoids the most escapes.",
       tags:  [],
+      section: "data/text",
       runnable: true,
     },
     "07-triple-quoted": {
@@ -71,6 +77,7 @@
       input: "[doc\n  body='''line 1\nline 2\nline 3''']",
       note:  "**Introduces:** triple-quoted strings `'''\u2026'''`. Multi-line content with embedded newlines, useful for prose or code blocks.",
       tags:  [],
+      section: "data/text",
       runnable: true,
     },
     "08-nested-elements": {
@@ -78,6 +85,7 @@
       input: "[order\n  [customer name=Alice]\n  [item name=pizza qty=2]\n  [item name=salad qty=1]]",
       note:  "**Introduces:** nesting by containment. Children appear in document order. JSON projects child-element lists as arrays; XML round-trips verbatim.",
       tags:  [],
+      section: "data/elements",
       runnable: true,
     },
     "09-attrs-vs-children": {
@@ -85,6 +93,7 @@
       input: "[user id=1 active=true\n  [email \"a@x.com\"]\n  [phone \"+1-555\"]]",
       note:  "**Introduces:** the attribute-vs-child distinction. Attributes (`id`, `active`) live on the open tag; child elements (`[email \u2026]`) live inside the body. Both project cleanly.",
       tags:  ["attr"],
+      section: "data/elements",
       runnable: true,
     },
     "10-mixed-content": {
@@ -92,6 +101,7 @@
       input: "[link href=\"https://cx-home.github.io\" \"CX Guide\"]",
       note:  "**Introduces:** an element carrying both attributes AND a body in the same tag \u2014 common for link / button shapes.",
       tags:  ["descendant"],
+      section: "data/elements",
       runnable: true,
     },
     "11-sequence": {
@@ -99,6 +109,7 @@
       input: "(1, 2, 3, 4, 5)",
       note:  "**Introduces:** sequence literal `(a, b, c)`. Ordered, heterogeneous, evaluated to themselves. JSON projects as an array.",
       tags:  [],
+      section: "data/collections",
       runnable: true,
     },
     "12-sequence-mixed": {
@@ -106,6 +117,7 @@
       input: "(1, 2.5, \"three\", true, :four)",
       note:  "**Introduces:** heterogeneous sequences \u2014 CX holds any scalar mix in one container.",
       tags:  [],
+      section: "data/collections",
       runnable: true,
     },
     "13-map-literal": {
@@ -113,6 +125,7 @@
       input: "{name: 'Alice', age: 30, active: true}",
       note:  "**Introduces:** map literal `{key: value, \u2026}`. String-typed keys; JSON projects as an object.",
       tags:  [],
+      section: "data/collections",
       runnable: true,
     },
     "14-durations": {
@@ -120,6 +133,7 @@
       input: "[timing\n  short=50ms\n  medium=2s\n  long=15m\n  very-long=2h]",
       note:  "**Introduces:** duration scalars `Nms` / `Ns` / `Nm` / `Nh`. Recognized by `[?sleep]`, `[?timeout]`, etc. A duration keeps its kind on the way out, so the value renders with its ascription \u2014 `short::duration=50ms`, not a bare `50ms`.",
       tags:  [],
+      section: "data/numbers",
       runnable: true,
     },
     "15-hyphenated-names": {
@@ -127,6 +141,7 @@
       input: "[user-profile is-active=true\n  [contact-info\n    [phone-number kind=mobile value=\"+1-555\"]]]",
       note:  "**Introduces:** kebab-case identifiers. Element and attribute names can carry hyphens (`user-profile`, `is-active`).",
       tags:  [],
+      section: "data/elements",
       runnable: true,
     },
     "16-let-basic": {
@@ -134,6 +149,7 @@
       input: "[?let [= $name 'Alice']\n  [greeting hello=$name]]",
       note:  "**Introduces:** `[?let [= $var VALUE] BODY]` \u2014 lexical binding. `$name` substitutes its value inside BODY. Attribute form `hello=$name` reads the binding.",
       tags:  ["eq", "let"],
+      section: "code/bindings",
       runnable: true,
     },
     "17-let-nested": {
@@ -141,6 +157,7 @@
       input: "[?let [= $price 12] [= $qty 3] [= $subtotal [* $price $qty]]\n  [order\n    subtotal=$subtotal\n    tax=[* $subtotal 0.08]]]",
       note:  "**Introduces:** `[?let]` takes ALL its bindings in ONE flat list, and each one can read the ones before it (\u00a78.5) \u2014 so `$subtotal` is computed once from `$price` and `$qty` and then used twice, instead of `[* $price $qty]` being written out again. A nested `[?let]` inside another is for a genuinely different scope, not for a second binding; reaching for the cascade is a Scheme habit and the flat form is the CX spelling. `[* $price $qty]` is the multiplication directive \u2014 CX's arithmetic uses the same `[? \u2026]` bracket shape as every other op.",
       tags:  ["eq", "let", "mul"],
+      section: "code/bindings",
       runnable: true,
     },
     "18-arith-add": {
@@ -148,6 +165,7 @@
       input: "[+ 1 2 3 4 5]",
       note:  "**Introduces:** the `[+ a b c \u2026]` builtin \u2014 prefix-form addition over any number of arguments.",
       tags:  ["add"],
+      section: "data/numbers",
       runnable: true,
     },
     "19-arith-mixed": {
@@ -155,6 +173,7 @@
       input: "[?let [= $x 10] [= $y 3]\n  [stats\n    sum=[+ $x $y]\n    diff=[- $x $y]\n    prod=[* $x $y]]]",
       note:  "**Introduces:** `[-]` (subtract) and `[*]` (multiply). All arithmetic is prefix-form.",
       tags:  ["add", "eq", "let", "mul", "sub"],
+      section: "data/numbers",
       runnable: true,
     },
     "20-string-concat": {
@@ -162,6 +181,7 @@
       input: "[$concat \"hello\" \", \" \"world\"]",
       note:  "**Introduces:** `[$concat str\u2081 str\u2082 \u2026]` \u2014 string concatenation.",
       tags:  [],
+      section: "data/text",
       runnable: true,
     },
     "21-string-length": {
@@ -169,6 +189,7 @@
       input: "[$string-length \"hello\"]",
       note:  "**Introduces:** `[$string-length s]` \u2014 character count of a string.",
       tags:  [],
+      section: "data/text",
       runnable: true,
     },
     "22-string-contains": {
@@ -176,6 +197,7 @@
       input: "[$contains \"foobar\" \"oob\"]",
       note:  "**Introduces:** `[$contains haystack needle]` \u2014 boolean test for substring presence.",
       tags:  [],
+      section: "data/text",
       runnable: true,
     },
     "23-comparison-eq": {
@@ -183,6 +205,7 @@
       input: "[?let [= $x 7]\n  [= $x 7]]",
       note:  "**Introduces:** `[= a b]` \u2014 equality predicate. Returns `true` / `false`.",
       tags:  ["eq", "let", "parallel"],
+      section: "code/control-flow",
       runnable: true,
     },
     "24-comparison-gt": {
@@ -190,6 +213,7 @@
       input: "[?let [= $n 42]\n  [stats\n    gt=[> $n 10]\n    lt=[< $n 100]\n    ge=[>= $n 42]]]",
       note:  "**Introduces:** numeric comparisons `[> a b]`, `[< a b]`, `[>= a b]`, `[<= a b]`. Each returns a boolean.",
       tags:  ["eq", "ge", "gt", "let", "lt", "parallel"],
+      section: "code/control-flow",
       runnable: true,
     },
     "25-logical": {
@@ -197,6 +221,7 @@
       input: "[?let [= $on true]\n  [and $on [or false true] [not false]]]",
       note:  "**Introduces:** `[and \u2026]` / `[or \u2026]` / `[not x]` \u2014 boolean operators with short-circuit semantics.",
       tags:  ["and", "builtin", "eq", "let", "not", "or"],
+      section: "code/control-flow",
       runnable: true,
     },
     "26-if-basic": {
@@ -204,6 +229,7 @@
       input: "[?let [= $score 87]\n  [?if [>= $score 80]\n    [then [grade letter='A']]\n    [else [grade letter='B']]]]",
       note:  "**Introduces:** `[?if PRED [then EXPR] [else EXPR]]`. Predicate is any expression; truthy values pick `[then \u2026]`, falsy pick `[else \u2026]`.",
       tags:  ["eq", "ge", "if", "let"],
+      section: "code/control-flow",
       runnable: true,
     },
     "27-if-chained": {
@@ -211,6 +237,7 @@
       input: "[?let [= $n 25]\n  [?if [< $n 10]\n    [then :small]\n    [else [?if [< $n 50]\n            [then :medium]\n            [else :large]]]]]",
       note:  "**Introduces:** chaining `[?if]` via nested `[else \u2026]`. The inner `[?if]` itself returns a value, so it's a valid `[else \u2026]` body.",
       tags:  ["eq", "if", "let", "lt"],
+      section: "code/control-flow",
       runnable: true,
     },
     "28-match-scalar": {
@@ -218,6 +245,7 @@
       input: "[?let [= $s 200]\n  [?match $s\n    [case 200 :ok]\n    [case 404 :not-found]\n    [else :err]]]",
       note:  "**Introduces:** `[?match SCRUTINEE [case PATTERN RESULT] \u2026]`. First matching `[case \u2026]` wins; `[else \u2026]` is the fallback.",
       tags:  ["eq", "let", "match"],
+      section: "code/control-flow",
       runnable: true,
     },
     "29-match-else-fallback": {
@@ -225,6 +253,7 @@
       input: "[?let [= $s 500]\n  [?match $s\n    [case 200 :ok]\n    [case 404 :not-found]\n    [else :err]]]",
       note:  "**Introduces:** the `[else \u2026]` fallback. When no `[case \u2026]` matches, `[else \u2026]` fires.",
       tags:  ["eq", "let", "match"],
+      section: "code/control-flow",
       runnable: true,
     },
     "30-match-no-else": {
@@ -232,6 +261,7 @@
       input: "[?let [= $s 500]\n  [?match $s\n    [case 200 :ok]\n    [case 404 :not-found]]]",
       note:  "**Introduces:** missing `[else \u2026]` semantics. With no fallback, an unmatched scrutinee yields the empty sequence `()`. **The empty output pane below IS the answer** \u2014 nothing printed is what `()` looks like, not a hang and not a failure.",
       tags:  ["eq", "let", "match"],
+      section: "code/control-flow",
       runnable: true,
     },
     "31-match-wildcard": {
@@ -239,6 +269,7 @@
       input: "[?let [= $v \"surprise\"]\n  [?match $v\n    [case 200 :http-ok]\n    [case _   :other]]]",
       note:  "**Introduces:** the wildcard `_` pattern. Matches any value \u2014 equivalent to `[else \u2026]` but lets you bind via richer patterns.",
       tags:  ["eq", "let", "match"],
+      section: "code/control-flow",
       runnable: true,
     },
     "32-match-element-shape": {
@@ -246,6 +277,7 @@
       input: "[?let [= $n [prose \"hello\"]]\n  [?match $n\n    [case [prose $p] [p body=$p]]\n    [case [code $c]  [pre body=$c]]\n    [else ()]]]",
       note:  "**Introduces:** matching on element shape with binding. `[prose $p]` matches any `prose` element and binds its body to `$p` for use in `[yield \u2026]`.",
       tags:  ["eq", "let", "match"],
+      section: "code/patterns",
       runnable: true,
     },
     "33-match-type-strict": {
@@ -253,6 +285,7 @@
       input: "[?let [= $v 200]\n  [?match $v\n    [case \"200\" :string-match]\n    [case 200   :int-match]\n    [else :other]]]",
       note:  "**Introduces:** type-strict scalar matching. `200` (int) \u2260 `\"200\"` (string).",
       tags:  ["eq", "in", "let", "match"],
+      section: "data/schema",
       runnable: true,
     },
     "34-cast-string-int": {
@@ -260,6 +293,7 @@
       input: "[cast \"42\" :int]",
       note:  "**Introduces:** `[cast VALUE :TYPE]` \u2014 explicit scalar conversion. `CXER0290` on invalid.",
       tags:  ["builtin", "cast", "in"],
+      section: "data/numbers",
       runnable: true,
     },
     "35-cast-float-int": {
@@ -267,6 +301,7 @@
       input: "[cast 3.7 :int]",
       note:  "**Introduces:** the L44 exact lane. `[cast]` does **not** truncate \u2014 silent truncation was removed deliberately, so a non-integral decimal is a refusal: `cx-err:CXER0290` \"decimal `3.7` is not integral\". Ask for the rounding you mean instead: `[$round 3.7]` \u2192 `4`, `[$floor 3.7]` \u2192 `3`, `[$ceiling 3.2]` \u2192 `4` (example 77).",
       tags:  ["builtin", "cast", "in"],
+      section: "data/numbers",
       runnable: true,
     },
     "36-for-sequence": {
@@ -274,6 +309,7 @@
       input: "[?for [in $n (1, 2, 3, 4, 5)]\n  [yield [square n=$n sq=[* $n $n]]]]",
       note:  "**Introduces:** the comprehension `[?for [in $var SOURCE] [yield EXPR]]`. Iterates `source`, evaluates `EXPR` per item, collects results.",
       tags:  ["for", "mul"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "37-for-where": {
@@ -281,6 +317,7 @@
       input: "[?for [in $n (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)]\n  [where [> $n 5]]\n  [yield [big n=$n]]]",
       note:  "**Introduces:** the `[where \u2026]` clause. Filters items before `[yield \u2026]`. Predicates use the bracket form: `[> $n 5]`.",
       tags:  ["for", "gt"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "38-for-yield-cond": {
@@ -288,6 +325,7 @@
       input: "[?for [in $n (1, 2, 3, 4, 5, 6, 7, 8)]\n  [yield [?if [> $n 5]\n           [then [big n=$n]]\n           [else [small n=$n]]]]]",
       note:  "**Introduces:** conditional inside `[yield \u2026]`. Every iteration yields one element; the branch decides which shape.",
       tags:  ["for", "gt", "if"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "39-for-nested": {
@@ -295,6 +333,7 @@
       input: "[?for [in $i (1, 2, 3)]\n  [yield [?for [in $j (1, 2, 3)]\n           [yield [pair i=$i j=$j]]]]]",
       note:  "**Introduces:** nested comprehensions. The outer `[yield \u2026]` body is itself a comprehension. Produces a 2D shape.",
       tags:  ["for"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "40-for-multi-source": {
@@ -302,6 +341,7 @@
       input: "[?for [in $a (1, 2, 3)]\n      [in $b (10, 20, 30)]\n  [yield [pair a=$a b=$b]]]",
       note:  "**Introduces:** multiple `$var `[in $var SOURCE]` clause` clauses. Outer source iterates outer loop, inner source iterates inner (Cartesian product).",
       tags:  ["for"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "41-for-let": {
@@ -309,6 +349,7 @@
       input: "[?for [in $n (1, 2, 3, 4, 5)]\n  [= $sq [* $n $n]]\n  [yield [pair n=$n sq=$sq]]]",
       note:  "**Introduces:** `:let` clause \u2014 bind a derived value once per iteration, reuse in subsequent clauses.",
       tags:  ["eq", "for", "mul"],
+      section: "code/bindings",
       runnable: true,
     },
     "42-for-yield-par": {
@@ -316,6 +357,7 @@
       input: "[?for [in $n (1, 2, 3, 4, 5, 6, 7, 8)]\n  [yield [?let [= $_ [?sleep 500ms]]\n           [item n=$n sq=[* $n $n]]]]\n  [par]]",
       note:  "**Introduces:** `[?for :par]` parallelizes the outermost generator. Under `make guide-http` mode the 8 sleeps overlap on real OS threads (~500ms). Under file:// the wasm runtime is single-threaded (~4s). Items stream in source order.",
       tags:  ["eq", "for", "let", "mul", "parallel", "sleep"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "43-for-yield-par-mock": {
@@ -323,6 +365,7 @@
       input: "[?for [in $n (1, 2, 3, 4, 5, 6, 7, 8)]\n  [yield [?let [= $_ [?sleep 500ms mock]]\n           [item n=$n sq=[* $n $n]]]]\n  [par]]",
       note:  "**Introduces:** `[par]` parallelizes the outermost generator; `[?sleep DUR mock]` advances *virtual* time so this is instant. Under `make guide-http` the 8 sleeps overlap on real OS threads (~500ms); under file:// the wasm runtime is single-threaded. Items stream in source order.",
       tags:  ["eq", "for", "let", "mock", "mul", "parallel", "sleep"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "44-for-yield-stream": {
@@ -330,6 +373,7 @@
       input: "[?for [in $n (1, 2, 3, 4)]\n  [yield [?let [= $_ [?sleep 300ms]]\n           [tick n=$n]]]]",
       note:  "**Introduces:** `[?for]` streaming. Each `[yield \u2026]` flushes one chunk to the output pane; you see items appear one at a time at the sleep cadence.",
       tags:  ["eq", "for", "let", "sleep", "streaming"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "45-for-empty": {
@@ -337,6 +381,7 @@
       input: "[?for [in $n ()]\n  [yield [item n=$n]]]",
       note:  "**Introduces:** comprehension over an empty source. Yields zero elements \u2014 result is the empty sequence `()`. **The empty output pane below IS the answer**: nothing printed is what `()` looks like, not a hang and not a failure.",
       tags:  ["for"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "46-fn-via-map": {
@@ -344,6 +389,7 @@
       input: "[?map (1, 2, 3, 4, 5)\n  [using [?fn $x [* $x $x]]]]",
       note:  "**Introduces:** `[?fn ($param) BODY]` \u2014 anonymous closure. `[?map XS [using FN]]` invokes it on each element of `xs`.",
       tags:  ["fn", "map", "mul"],
+      section: "code/functions",
       runnable: true,
     },
     "47-map-cube": {
@@ -351,6 +397,7 @@
       input: "[?map (1, 2, 3, 4)\n  [using [?fn $n [* $n [* $n $n]]]]]",
       note:  "**Introduces:** composed builtins inside `[?fn]`. `[* $n [* $n $n]]` is `$n \u00d7 $n \u00d7 $n` \u2014 cube.",
       tags:  ["fn", "map", "mul"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "48-map-with-let": {
@@ -358,6 +405,7 @@
       input: "[?map (1, 2, 3, 4)\n  [using [?fn $n\n           [?let [= $sq [* $n $n]]\n             [point x=$n y=$sq]]]]]",
       note:  "**Introduces:** rich-shape per-item output. The closure builds a `[point]` element per input, using `[?let]` to name an intermediate.",
       tags:  ["eq", "fn", "let", "map", "mul"],
+      section: "code/bindings",
       runnable: true,
     },
     "49-map-par-mock": {
@@ -365,6 +413,7 @@
       input: "[?map (1, 2, 3, 4, 5, 6, 7, 8)\n  [using [?fn $n\n           [?let [= $_ [?sleep 500ms mock]]\n             [* $n $n]]]]\n  [par]\n  [ordered]]",
       note:  "**Introduces:** `[?map \u2026 [par]]` \u2014 parallel map; output is always source order (`[ordered]` is a tombstoned no-op). With `[?sleep DUR mock]` (virtual time) this is instant.",
       tags:  ["eq", "fn", "let", "map", "mock", "mul", "parallel", "sleep"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "50-map-par-wall": {
@@ -372,6 +421,7 @@
       input: "[?map (1, 2, 3, 4)\n  [using [?fn $n\n           [?let [= $_ [?sleep 500ms]]\n             [* $n $n]]]]\n  [par]]",
       note:  "**Introduces:** wall-clock `[?map [par]]`. Under `make guide-http` mode the 4 workers run on real OS threads (~500ms). Under file:// the wasm runtime is single-threaded (~2s). Items stream in source order as the completed prefix grows.",
       tags:  ["eq", "fn", "let", "map", "mul", "parallel", "sleep"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "51-map-par-ordered": {
@@ -379,6 +429,7 @@
       input: "[?map (1, 2, 3, 4)\n  [using [?fn $n\n           [?let [= $_ [?sleep 500ms]]\n             [* $n $n]]]]\n  [par]\n  [ordered]]",
       note:  "**Introduces:** `[ordered]` is a tombstoned no-op \u2014 `[par]` reassembles source order always, so this is identical to example 50. It remains valid only paired with `[par]`.",
       tags:  ["eq", "fn", "let", "map", "mul", "parallel", "sleep"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "52-fn-passed": {
@@ -386,6 +437,7 @@
       input: "[?let [= $sqr [?fn $n [* $n $n]]]\n  [?map (1, 2, 3, 4, 5, 6, 7, 8)\n    [using $sqr]\n    [par]\n    [ordered]]]",
       note:  "**Introduces:** closure-passing. Define `$sqr` once with `[?let]`, pass it as `[using]` \u2014 decouples definition from use.",
       tags:  ["eq", "fn", "let", "map", "mul"],
+      section: "code/functions",
       runnable: true,
     },
     "53-reduce-sum": {
@@ -393,6 +445,7 @@
       input: "[?reduce (1, 2, 3, 4, 5)\n  [using [?fn ($a $b) [+ $a $b]]]\n  [init 0]]",
       note:  "**Introduces:** `[?reduce SRC [using FN] [init Z]]` \u2014 fold a sequence to a single value. `[using \u2026]` and `[init \u2026]` are named clauses; the closure takes `($acc $item)`.",
       tags:  ["add", "fn", "reduce"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "54-reduce-product": {
@@ -400,6 +453,7 @@
       input: "[?reduce (1, 2, 3, 4, 5)\n  [using [?fn ($a $b) [* $a $b]]]\n  [init 1]]",
       note:  "**Introduces:** the same fold with a different combiner + identity. `[init 1]` is the multiplicative identity, so the product of 1..5 is 120.",
       tags:  ["fn", "mul", "reduce"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "55-reduce-par": {
@@ -407,6 +461,7 @@
       input: "[?reduce (1, 2, 3, 4, 5, 6, 7, 8)\n  [using [?fn ($a $b) [+ $a $b]]]\n  [init 0]\n  [par]]",
       note:  "**Introduces:** `[par]` on a reduce \u2014 an associative tree-reduce. The combiner must be associative; under `make guide-http` the tree levels run on real threads.",
       tags:  ["add", "fn", "parallel", "reduce"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "56-map-then-reduce": {
@@ -414,6 +469,7 @@
       input: "[?reduce [?map (1, 2, 3, 4, 5)\n           [using [?fn $n [* $n $n]]]]\n  [using [?fn ($a $b) [+ $a $b]]]\n  [init 0]]",
       note:  "**Pattern:** map then reduce \u2014 square each item, then sum the squares (1+4+9+16+25 = 55). The inner `[?map]` feeds the `[?reduce]` source directly.",
       tags:  ["add", "fn", "map", "mul", "reduce"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "57-map-par-bulkhead": {
@@ -421,6 +477,7 @@
       input: "[?map (1, 2, 3, 4, 5, 6, 7, 8)\n  [using [?fn $shard\n           [?bulkhead max-concurrent=8\n             [?if [= $shard 5]\n               [then [err code=\"shard-offline\" shard=$shard]]\n               [else [* $shard $shard]]]]]]\n  [par 2]]",
       note:  "**Introduces:** `[par N]` \u2014 the width bound. Since #94 **`[par]` owns its own concurrency**: `[par 2]` runs a two-worker pool over the eight shards (bare `[par]` defaults to `min(4, ncpu)`, `[par max]` uses `ncpu`). `[?bulkhead]` is *not* the fan-out limiter \u2014 that lint was retired \u2014 so the compartment here is sized to the whole batch (`max-concurrent=8`) and never sheds.\n\nWhat it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and that failure stays in shard 5's own slot. The other seven still return their squares and the batch completes \u2014 a failed compartment does not sink the ship. Output is always source order (\u00a77.3), so the result is the same every run and in the browser.\n\n**Why not show `CXER0152`?** A `[?bulkhead]` can only shed when two workers contend for the last permit, and *which* one loses is thread timing \u2014 a program with no single answer. `[?bulkhead]` is EXPERIMENTAL (spec/code.md \u00a710.2.6): its permit counter is a non-atomic read-modify-write, so under real contention the cap is not reliably enforced in either direction. For production load-shedding reach for `[?rate-limit]` (examples 96\u201397) or a buffered `[?channel]`.",
       tags:  ["bulkhead", "eq", "fn", "if", "map", "mul", "parallel", "resilience"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "58-par-shared-cb": {
@@ -428,6 +485,7 @@
       input: "[?map (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)\n  [using [?fn $n\n           [?circuit-breaker threshold=0.5 window=1s reset=10s name=\"shared\"\n             [* $n $n]]]]\n  [par]]",
       note:  "**Introduces:** state-sharing under `[par]`. The named `[?circuit-breaker]` shares state across parallel workers per spec/code.md \u00a710.2.7 \u2014 same source-text directive = one shared breaker.",
       tags:  ["circuit-breaker", "fn", "map", "mul", "parallel", "resilience"],
+      section: "code/resilience",
       runnable: true,
     },
     "59-par-rich-shape": {
@@ -435,6 +493,7 @@
       input: "[?map (1, 2, 3, 4)\n  [using [?fn $n\n           [?let [= $_ [?sleep 250ms]]\n             [point x=$n y=[* $n 2] z=[* $n $n]]]]]\n  [par]]",
       note:  "**Introduces:** rich per-item output. Each worker emits a `[point]` with three computed slots. The streaming pane fills in as workers complete.",
       tags:  ["eq", "fn", "let", "map", "mul", "parallel", "sleep", "streaming"],
+      section: "code/resilience",
       runnable: true,
     },
     "60-par-with-composition": {
@@ -442,6 +501,7 @@
       input: "[?map (1, 2, 3, 4)\n  [using [?fn $n\n           [?retry max=3\n             [?timeout 200ms\n               [?let [= $_ [?sleep 50ms]]\n                 [computed n=$n sq=[* $n $n]]]]]]]\n  [par]\n  [ordered]]",
       note:  "**Introduces:** the full composition \u2014 `[?map :par]` over a `[using]` closure that nests `[?retry]` + `[?timeout]` + `[?sleep]`. Parallel workers compose freely with resilience directives.",
       tags:  ["eq", "fn", "let", "map", "mul", "parallel", "retry", "sleep", "timeout"],
+      section: "code/resilience",
       runnable: true,
     },
     "61-modify-delete": {
@@ -449,6 +509,7 @@
       input: "[?let [= $doc [users\n                [user id=1 name=Alice banned=false]\n                [user id=2 name=Bob   banned=true]\n                [user id=3 name=Carol banned=false]\n                [user id=4 name=Dave  banned=true]]]\n  [?modify $doc //user[= $_@banned true]\n    [delete]]]",
       note:  "**Introduces:** `[?modify DOC PATH :ACTION]`. Pure-functional \u2014 returns a new document; the original `$doc` is unchanged. `//user[@banned=true]` is a CXPath predicate filter; `:delete` removes the matches.",
       tags:  ["attr", "descendant", "eq", "let", "modify"],
+      section: "code/transforms",
       runnable: true,
     },
     "62-modify-set-attr": {
@@ -456,6 +517,7 @@
       input: "[?let [= $doc [users\n                [user id=1 [name \"Alice\"]]\n                [user id=2 [name \"Bob\"]]]]\n  [?modify $doc //user\n    [set-attr status \"active\"]]]",
       note:  "**Introduces:** `:set-attr NAME VALUE` \u2014 writes an attribute on every matched node. Adds `status=active` to every user.",
       tags:  ["builtin", "descendant", "eq", "let", "modify", "name"],
+      section: "code/transforms",
       runnable: true,
     },
     "63-modify-chain": {
@@ -463,6 +525,7 @@
       input: "[?let [= $doc [users\n                [user id=1 name=Alice banned=false]\n                [user id=2 name=Bob   banned=true]\n                [user id=3 name=Carol banned=false]]]\n      [= $clean [?modify $doc //user[= $_@banned true]\n                  [delete]]]\n  [?modify $clean //user\n    [set-attr role \"member\"]]]",
       note:  "**Introduces:** composing multiple `[?modify]` steps with `[?let]`. First delete banned users, then set `role=member` on the survivors.",
       tags:  ["attr", "descendant", "eq", "let", "modify"],
+      section: "code/transforms",
       runnable: true,
     },
     "64-cxpath-axes": {
@@ -470,6 +533,7 @@
       input: "[?let [= $doc [order [item qty=2] [item qty=3] [item qty=5]]]\n  [?for [in $i $doc/item]\n    [yield $i/@qty]]]",
       note:  "**Introduces:** CXPath axes \u2014 `/item` selects direct children named `item`; `/@qty` selects the `qty` attribute.",
       tags:  ["cxpath", "eq", "for", "let"],
+      section: "code/paths",
       runnable: true,
     },
     "65-cxpath-where": {
@@ -477,6 +541,7 @@
       input: "[?let [= $doc [users\n                [user name=Alice active=true  age=30]\n                [user name=Bob   active=false age=25]\n                [user name=Carol active=true  age=22]]]\n  [?for [in $u $doc/user]\n    [where [= $u/@active true]]\n    [yield [active-user name=$u/@name age=$u/@age]]]]",
       note:  "**Introduces:** filtering a CXPath result via `[where \u2026]`. `$doc/user` selects direct children named `user`; `[where [= $u/@active true]]` filters them.",
       tags:  ["cxpath", "eq", "for", "let"],
+      section: "code/paths",
       runnable: true,
     },
     "66-pipe-canonical": {
@@ -484,6 +549,7 @@
       input: "[?pipe (1, 2, 3, 4)\n  [?fn ($xs) [?for [in $x $xs]\n               [where [> $x 2]]\n               [yield $x]]]\n  count]",
       note:  "**Introduces:** `[?pipe SEED STAGE \u2026]` \u2014 each bare stage is a transform applied to the threaded value (the `[through \u2026]` wrapper is retired). Here: filter `> 2` (\u2192 3,4) then `count` (\u2192 2).",
       tags:  ["fn", "for", "gt", "pipe"],
+      section: "code/transforms",
       runnable: true,
     },
     "67-pipe-multistage": {
@@ -491,6 +557,7 @@
       input: "[?pipe (5, 3, 8, 1, 9)\n  [?fn ($xs) [?for [in $x $xs]\n               [where [> $x 3]]\n               [yield $x]]]\n  [?fn ($xs) [?reduce $xs\n               [using [?fn ($a $b) [+ $a $b]]]\n               [init 0]]]]",
       note:  "**Pattern:** two function stages thread left-to-right. Filter `> 3` (\u2192 5,8,9) then sum (\u2192 22). Each stage receives the previous stage's output as its single argument.",
       tags:  ["add", "fn", "for", "gt", "pipe", "reduce"],
+      section: "code/transforms",
       runnable: true,
     },
     "68-pipe-modify": {
@@ -498,6 +565,7 @@
       input: "[?let [= $doc [users [user [name \"Alice\"]] [user [name \"Bob\"]]]]\n  [?pipe $doc\n    [?modify //user [set-attr verified true]]]]",
       note:  "**Pattern:** a `[?modify PATH OP]` directive is a valid pipe stage \u2014 it receives the threaded document. Here every `[user]` gets `verified=true`.",
       tags:  ["builtin", "descendant", "eq", "let", "modify", "name", "pipe"],
+      section: "code/transforms",
       runnable: true,
     },
     "69-fallback-recover": {
@@ -505,6 +573,7 @@
       input: "[?fallback [err code=\"down-primary\"]\n  [recover-with [err code=\"down-secondary\"]]]",
       note:  "**Introduces:** `[?fallback BODY [recover-with R]]`. If positional body is an err, evaluate `[recover-with \u2026]` and return that. Otherwise return the body's value.",
       tags:  ["fallback"],
+      section: "code/errors",
       runnable: true,
     },
     "70-fallback-success": {
@@ -512,6 +581,7 @@
       input: "[?fallback [ok value=\"healthy\"]\n  [recover-with [ok value=\"never\"]]]",
       note:  "**Introduces:** `[?fallback]` happy path. When positional body returns a non-err value, that value is returned and `[recover-with \u2026]` is never evaluated.",
       tags:  ["fallback"],
+      section: "code/errors",
       runnable: true,
     },
     "71-builtin-head-tail": {
@@ -519,6 +589,7 @@
       input: "[?let [= $xs (10, 20, 30, 40)]\n  [list first=[$head $xs]\n    [rest [?splice [$tail $xs]]]]]",
       note:  "**Introduces:** `[$head xs]` (first element) + `[$tail xs]` (everything after the first).",
       tags:  ["eq", "let", "splice"],
+      section: "code/builtins",
       runnable: true,
     },
     "72-builtin-nth": {
@@ -526,6 +597,7 @@
       input: "[$nth (10, 20, 30, 40) 2]",
       note:  "**Introduces:** `[$nth xs i]` \u2014 element access. Indexing is **1-based and inclusive**, so `2` is the SECOND item and this returns `20`.",
       tags:  [],
+      section: "code/builtins",
       runnable: true,
     },
     "73-builtin-distinct": {
@@ -533,6 +605,7 @@
       input: "[$distinct (1, 2, 1, 3, 2, 4, 1)]",
       note:  "**Introduces:** `[$distinct xs]` \u2014 preserves first occurrence, drops duplicates.",
       tags:  [],
+      section: "code/builtins",
       runnable: true,
     },
     "74-builtin-reverse": {
@@ -540,6 +613,7 @@
       input: "[$reverse (1, 2, 3, 4, 5)]",
       note:  "**Introduces:** `[$reverse xs]` \u2014 flips order.",
       tags:  [],
+      section: "code/builtins",
       runnable: true,
     },
     "75-builtin-position": {
@@ -547,6 +621,7 @@
       input: "[$position (10, 20, 30, 20, 40) 20]",
       note:  "**Introduces:** `[$position xs needle]` \u2014 **1-based** index of the first occurrence, or `0` when the needle is absent. Here that is `2`.",
       tags:  [],
+      section: "code/builtins",
       runnable: true,
     },
     "76-numeric-abs": {
@@ -554,6 +629,7 @@
       input: "[$abs -42]",
       note:  "**Introduces:** `[$abs n]` \u2014 absolute value.",
       tags:  [],
+      section: "data/numbers",
       runnable: true,
     },
     "77-numeric-round": {
@@ -561,6 +637,7 @@
       input: "[stats\n  r=[$round 3.7]\n  f=[$floor 3.7]\n  c=[$ceiling 3.2]]",
       note:  "**Introduces:** `[$round f]` / `[$floor f]` / `[$ceiling f]` \u2014 float-to-int with three rounding modes.",
       tags:  [],
+      section: "data/numbers",
       runnable: true,
     },
     "78-string-substring": {
@@ -568,6 +645,7 @@
       input: "[$substring \"hello world\" 6 11]",
       note:  "**Introduces:** `[$substring s start end]` \u2014 substring slice. Indexing is **1-based and inclusive**, so `6 11` spans characters 6 through 11 and the result is `' world'` \u2014 the leading space is character 6.",
       tags:  [],
+      section: "data/text",
       runnable: true,
     },
     "79-string-starts-ends": {
@@ -575,6 +653,7 @@
       input: "[checks\n  starts=[$starts-with \"hello world\" \"hello\"]\n  ends=[$ends-with \"hello world\" \"world\"]]",
       note:  "**Introduces:** `[$starts-with s prefix]` + `[$ends-with s suffix]` \u2014 boolean tests.",
       tags:  [],
+      section: "data/text",
       runnable: true,
     },
     "80-string-normalize": {
@@ -582,6 +661,7 @@
       input: "[$normalize-space \"  hello   world  \"]",
       note:  "**Introduces:** `[$normalize-space s]` \u2014 collapses runs of whitespace, trims edges.",
       tags:  [],
+      section: "data/text",
       runnable: true,
     },
     "81-sleep-mock-timeout": {
@@ -589,6 +669,7 @@
       input: "[?timeout 100ms\n  [?let [= $_ [?sleep 500ms mock]]\n    [ok value='never']]]",
       note:  "**Introduces:** `[?sleep DUR mock]` \u2014 virtual time, instant in wall-clock. The outer `[?timeout 100ms]` fires because the mock-sleep advances the logical clock past 100ms, returning `[err cx-err:CXER0141]`.",
       tags:  ["eq", "let", "mock", "sleep", "timeout"],
+      section: "code/concurrency",
       runnable: true,
     },
     "82-sleep-wall": {
@@ -596,6 +677,7 @@
       input: "[?let [= $_ [?sleep 500ms]]\n  [ok value='woke-up']]",
       note:  "**Introduces:** bare `[?sleep DUR]` \u2014 really sleeps. In the playground the async wasm yields cooperatively so the UI stays responsive.",
       tags:  ["eq", "let", "sleep"],
+      section: "code/concurrency",
       runnable: true,
     },
     "83-async-await": {
@@ -603,6 +685,7 @@
       input: "[?let [= $f [?async [ok value=42]]]\n  [?await $f]]",
       note:  "**Introduces:** `[?async EXPR]` returns a future handle. `[?await $f]` resolves it. Futures are lazy: the body runs on first await.",
       tags:  ["async", "await", "eq", "let"],
+      section: "code/concurrency",
       runnable: true,
       wasmUnsupported: "`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).",
     },
@@ -611,6 +694,7 @@
       input: "[?let [= $f [?async [?let [= $_ [?sleep 100ms mock]]\n                      [ok value='done']]]]\n  [?await $f]]",
       note:  "**Introduces:** futures with internal mock-sleep. The future resolves in logical time.",
       tags:  ["async", "await", "eq", "let", "mock", "sleep"],
+      section: "code/concurrency",
       runnable: true,
       wasmUnsupported: "`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).",
     },
@@ -619,6 +703,7 @@
       input: "[?let [= $fast [?async [?let [= $_ [?sleep 100ms mock]]\n                         [ok value='a']]]]\n      [= $slow [?async [?let [= $_ [?sleep 400ms mock]]\n                         [ok value='b']]]]\n  [?await-all ($fast, $slow)]]",
       note:  "**Introduces:** `[?await-all (futures\u2026)]`. Waits on every future; returns the sequence of results (or aggregated CXER0240 err).",
       tags:  ["async", "await-all", "eq", "let", "mock", "sleep"],
+      section: "code/concurrency",
       runnable: true,
       wasmUnsupported: "`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).",
     },
@@ -627,6 +712,7 @@
       input: "[?let [= $broken [?async [err code=\"down\"]]]\n      [= $good [?async [ok value='survivor']]]\n  [?await-any ($broken, $good)]]",
       note:  "**Introduces:** `[?await-any]`. Returns the first successful future; ignores subsequent failures.",
       tags:  ["async", "await-any", "eq", "let"],
+      section: "code/concurrency",
       runnable: true,
       wasmUnsupported: "`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).",
     },
@@ -635,6 +721,7 @@
       input: "[?let [= $fast [?async [?let [= $_ [?sleep 100ms mock]]\n                         [ok value='fast']]]]\n      [= $slow [?async [?let [= $_ [?sleep 500ms mock]]\n                         [ok value='slow']]]]\n  [?await-race ($fast, $slow)]]",
       note:  "**Introduces:** `[?await-race]`. Returns the first future to resolve (success OR fail); cancels the losers.",
       tags:  ["async", "await-race", "eq", "let", "mock", "sleep"],
+      section: "code/concurrency",
       runnable: true,
       wasmUnsupported: "`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).",
     },
@@ -643,6 +730,7 @@
       input: "[?let [= $ch [?channel name=\"c\" buffer=4]]\n      [= $_ [?send 42 to=$ch]]\n  [?receive from=$ch]]",
       note:  "**Introduces:** `[?channel :name S :buffer N]` is a typed FIFO queue. `[?send V :to $ch]` enqueues; `[?receive :from $ch]` dequeues. (Note: directives use `:slot value` syntax; the `name=value` attribute form is for element construction.)",
       tags:  ["channel", "eq", "let", "receive", "send"],
+      section: "code/concurrency",
       runnable: true,
     },
     "89-worker-basic": {
@@ -650,6 +738,7 @@
       input: "[?worker name=\"w\"\n  [ok value='worked']]",
       note:  "**Introduces:** `[?worker name=S BODY]` \u2014 registers a worker. In the sequential substrate the body runs to completion synchronously.",
       tags:  ["worker"],
+      section: "code/concurrency",
       runnable: true,
       wasmUnsupported: "`[?worker]` spawns an OS thread; the playground's default single-threaded wasm build refuses it (`go code__run_worker_thread(): Not supported`).",
     },
@@ -658,6 +747,7 @@
       input: "[?let [= $f [?async [?let [= $_ [?sleep 1s mock]]\n                      [ok value='never']]]]\n      [= $_ [?cancel $f]]\n  [?await $f]]",
       note:  "**Introduces:** `[?cancel $handle]`. Requests cancellation; the future then resolves to `[err code=cx-err:CXER0260 message='operation cancelled']`.",
       tags:  ["async", "await", "cancel", "eq", "let", "mock", "sleep"],
+      section: "code/concurrency",
       runnable: true,
       wasmUnsupported: "`[?async]` runs its future on a spawned thread; the playground's default single-threaded wasm build refuses it (`go code__run_future_thread(): Not supported`).",
     },
@@ -666,6 +756,7 @@
       input: "[?retry max=3\n  [ok value='first-try']]",
       note:  "**Introduces:** `[?retry max=N BODY]`. Re-runs positional body until it returns a non-err value or `max=N` is hit. Here it succeeds on attempt 1.",
       tags:  ["retry"],
+      section: "code/resilience",
       runnable: true,
     },
     "92-retry-eventually": {
@@ -673,6 +764,7 @@
       input: "[?retry max=5\n  [?test-err-then-ok err-count=2 ok-value=[ok value='recovered']]]",
       note:  "**Introduces:** `[?test-err-then-ok]` \u2014 fixture helper that returns err N times then OK. Combined with `[?retry]` shows the retry succeeding after 2 transient failures.",
       tags:  ["retry", "test-err-then-ok"],
+      section: "code/resilience",
       runnable: true,
     },
     "93-retry-exhaustion": {
@@ -680,6 +772,7 @@
       input: "[?retry max=3\n  [?test-always-err]]",
       note:  "**Introduces:** `[?retry]` exhaustion. When `max=N` is hit and the positional body still errs, the result is `[err code=cx-err:CXER0140 message='retry budget exhausted after 3 attempts' attempts=3 [cause \u2026]]` \u2014 the attempt count is on the err and the LAST underlying failure rides along under `[cause]`, so the diagnosis is not lost by the retry that gave up.",
       tags:  ["retry", "test-always-err"],
+      section: "code/resilience",
       runnable: true,
     },
     "94-timeout-fires": {
@@ -687,6 +780,7 @@
       input: "[?timeout 50ms\n  [?let [= $_ [?sleep 200ms mock]]\n    [ok value='too-slow']]]",
       note:  "**Introduces:** a `[?timeout]` that elapses. The body's 200ms mock-sleep exceeds the 50ms budget, so the result is `[err code=cx-err:CXER0141 message='operation timed out after 50ms' elapsed=50ms]` rather than the body value \u2014 `elapsed=` reports the budget that was spent, not the body's own logical time.",
       tags:  ["eq", "let", "mock", "sleep", "timeout"],
+      section: "code/resilience",
       runnable: true,
     },
     "95-circuit-breaker-trips": {
@@ -694,6 +788,7 @@
       input: "[?for [in $i (1, 2, 3, 4)]\n  [yield [?circuit-breaker threshold=0.5 window=1s reset=10s min-samples=2\n           [?test-always-err]]]]",
       note:  "**Introduces:** `[?circuit-breaker]`. After `min-samples=N` samples and `threshold=T` failure ratio, opens for `reset=DUR` time and rejects without invoking positional body.",
       tags:  ["circuit-breaker", "for", "resilience", "test-always-err"],
+      section: "code/resilience",
       runnable: true,
     },
     "96-rate-limit-allow": {
@@ -701,6 +796,7 @@
       input: "[?for [in $i (1, 2, 3)]\n  [yield [?rate-limit max=10 per=1s\n           [ok i=$i]]]]",
       note:  "**Introduces:** `[?rate-limit :max N :per DUR]`. Admits up to N invocations per window. Within the limit, just passes through.",
       tags:  ["for", "rate-limit", "resilience"],
+      section: "code/resilience",
       runnable: true,
     },
     "97-rate-limit-over": {
@@ -708,6 +804,7 @@
       input: "[?for [in $i (1, 2, 3, 4, 5)]\n  [yield [?rate-limit max=2 per=1s\n           [ok i=$i]]]]",
       note:  "**Introduces:** over-limit behaviour. After `max=N` admits, further calls return `[err code=cx-err:CXER0151 message='rate limit exceeded' retry-after=1s]`.",
       tags:  ["for", "rate-limit", "resilience"],
+      section: "code/resilience",
       runnable: true,
     },
     "98-bulkhead-pass": {
@@ -715,6 +812,7 @@
       input: "[?bulkhead max-concurrent=4 queue=0\n  [ok value=\"in-flight\"]]",
       note:  "**Introduces:** `[?bulkhead :max-concurrent N]`. Sequential evaluator: passes when current concurrent count < N. Saturated \u2192 CXER0152.",
       tags:  ["bulkhead", "resilience"],
+      section: "code/resilience",
       runnable: true,
     },
     "99-composition-stack": {
@@ -722,6 +820,7 @@
       input: "[?retry max=3\n  [?timeout 100ms\n    [?circuit-breaker threshold=0.5 window=1s reset=10s\n      [ok value=\"layered\"]]]]",
       note:  "**Introduces:** layered resilience composition. Outer `[?retry]` wraps inner `[?timeout]` wraps inner `[?circuit-breaker]`. Each err bubbles up the stack.",
       tags:  ["circuit-breaker", "resilience", "retry", "timeout"],
+      section: "code/resilience",
       runnable: true,
     },
     "100-composition-everything": {
@@ -729,6 +828,7 @@
       input: "[?retry max=2\n  [?fallback [?timeout 200ms\n               [?circuit-breaker threshold=0.5 window=1s reset=10s\n                 [?rate-limit max=100 per=1s\n                   [?bulkhead max-concurrent=4\n                     [ok value=\"full-stack\"]]]]]\n    [recover-with [ok value=\"fallback-fire\"]]]]",
       note:  "**Introduces:** the full resilience stack \u2014 `[?retry]` \u2192 `[?fallback]` \u2192 `[?timeout]` \u2192 `[?circuit-breaker]` \u2192 `[?rate-limit]` \u2192 `[?bulkhead]`. Demonstrates that all resilience directives compose.",
       tags:  ["bulkhead", "circuit-breaker", "fallback", "rate-limit", "resilience", "retry", "timeout"],
+      section: "code/resilience",
       runnable: true,
     },
     "101-cxpath-descendant": {
@@ -736,6 +836,7 @@
       input: "[?let [= $doc [tree\n                [branch [leaf id=1] [leaf id=2]]\n                [branch [leaf id=3]]\n                [branch [leaf id=4] [leaf id=5]]]]\n  [?for [in $l $doc//leaf]\n    [yield $l/@id]]]",
       note:  "**Pattern:** find descendants at any depth. **Uses:** `//`, `[yield \u2026]`, attribute access. The `//leaf` step matches every `leaf` element under `$doc`, no matter how deeply nested. (G1 closed.)",
       tags:  ["cxpath", "descendant", "eq", "for", "let"],
+      section: "code/paths",
       runnable: true,
     },
     "102-cxpath-child": {
@@ -743,6 +844,7 @@
       input: "[?let [= $doc [shop\n                [item id=1]\n                [item id=2]\n                [staff [member id=99]]]]\n  [?for [in $i $doc//item]\n    [yield $i/@id]]]",
       note:  "**Pattern:** select direct children only. **Uses:** `/`, `[yield \u2026]`. `/item` finds direct children of `$doc` named `item`; the nested `[member id=A]` inside `staff` is ignored.",
       tags:  ["cxpath", "descendant", "eq", "for", "let"],
+      section: "code/paths",
       runnable: true,
     },
     "103-cxpath-attr-access": {
@@ -750,6 +852,7 @@
       input: "[?let [= $u [user name=Alice age=30]]\n  [pair slash=$u/@name short=$u@age]]",
       note:  "**Pattern:** read an attribute by name. **Uses:** `/@attr` (canonical) and `$node@attr` (shorthand). Both return the attribute value; the shorthand reads better inside expressions and as attribute values.",
       tags:  ["cxpath", "eq", "let"],
+      section: "code/paths",
       runnable: true,
     },
     "104-cxpath-wildcard": {
@@ -757,6 +860,7 @@
       input: "[?let [= $doc [box [a x=1] [b y=2] [c z=3]]]\n  [?for [in $e $doc/*]\n    [yield [$name $e]]]]",
       note:  "**Pattern:** iterate all children regardless of name. **Uses:** `/*`, `[$name $e]`. `[$name $e]` returns the element's own name as a string \u2014 useful when names are unknown ahead of time.",
       tags:  ["cxpath", "eq", "for", "let"],
+      section: "code/paths",
       runnable: true,
     },
     "105-cxpath-position": {
@@ -764,6 +868,7 @@
       input: "[?let [= $doc [list [item id=1] [item id=2] [item id=3] [item id=4]]]\n  $doc/item[2]]",
       note:  "**Pattern:** pick the Nth match. **Uses:** `[N]` inline predicate (1-indexed per XPath convention). Returns the second `item`. (G3 closed.)",
       tags:  ["cxpath", "eq", "let"],
+      section: "code/paths",
       runnable: true,
     },
     "106-cxpath-last": {
@@ -771,6 +876,7 @@
       input: "[?let [= $doc [list [item id=1] [item id=2] [item id=3]]]\n  $doc/item[= $_position $_last]]",
       note:  "**Pattern:** pick the final match. **Uses:** `[= $_position $_last]` \u2014 the reserved position bindings select the final match at application time.",
       tags:  ["cxpath", "eq", "let"],
+      section: "code/paths",
       runnable: true,
     },
     "107-cxpath-compound": {
@@ -778,6 +884,7 @@
       input: "[?let [= $doc [users\n                [user active=true  age=30]\n                [user active=false age=40]\n                [user active=true  age=22]]]\n  $doc/user[and [= $_@active true] [> $_@age 25]]]",
       note:  "**Pattern:** filter by multiple conditions. **Uses:** `[and a b]` predicate body wrapping `[= $_@attr v]` and `[> $_@attr v]` comparisons. The bracket-form predicates compose; `or` works the same way. Per `[expr]` general predicate framing.",
       tags:  ["and", "attr", "builtin", "cxpath", "eq", "gt", "let"],
+      section: "code/paths",
       runnable: true,
     },
     "108-cxpath-parent": {
@@ -785,6 +892,7 @@
       input: "[?let [= $doc [orders\n                [order id=1 [line p=10]]\n                [order id=2 [line p=20]]\n                [order id=3 [line p=30]]]]\n  [?for [in $l $doc//line]\n    [yield $l/../@id]]]",
       note:  "**Pattern:** find the container of a match. **Uses:** `..` parent axis, chained with `/@id`. For each `line` element, navigate up to its `order` parent and read that order's `id`. (G2 closed.)",
       tags:  ["cxpath", "descendant", "eq", "for", "let", "parallel"],
+      section: "code/paths",
       runnable: true,
     },
     "109-rename-via-attr": {
@@ -792,6 +900,7 @@
       input: "[?let [= $doc [doc\n                [item name=apple  qty=3]\n                [item name=pear   qty=5]\n                [item name=carrot qty=2]]]\n  [?for [in $i $doc//item]\n    [yield [?element $i/@name qty=$i/@qty]]]]",
       note:  "**Introduces:** `[?element NAME-EXPR \u2026]` \u2014 a computed element name. Each `[item name=apple]` is reshaped into `[apple \u2026]`, lifting the `@name` attribute to the tag.",
       tags:  ["cxpath", "descendant", "element", "eq", "for", "let"],
+      section: "code/transforms",
       runnable: true,
     },
     "110-attr-to-child": {
@@ -799,6 +908,7 @@
       input: "[?let [= $doc [users\n                [user id=1 name=Alice]\n                [user id=2 name=Bob]]]\n  [?for [in $u $doc//user]\n    [yield [user id=$u/@id\n             [name $u/@name]]]]]",
       note:  "**Pattern:** move scalar attribute into a nested element shape. **Uses:** `[?for]`, `$u/@\u2026` reads, child-element construction. Common when migrating flat attribute records to a more structured form.",
       tags:  ["builtin", "cxpath", "descendant", "eq", "for", "let", "name"],
+      section: "code/transforms",
       runnable: true,
     },
     "111-child-to-attr": {
@@ -806,6 +916,7 @@
       input: "[?let [= $doc [users\n                [user id=1 [name \"Alice\"]]\n                [user id=2 [name \"Bob\"]]]]\n  [?for [in $u $doc//user]\n    [yield [user id=$u/@id name=$u/name]]]]",
       note:  "**Pattern:** flatten a singleton child into an attribute. **Uses:** `$u/name` to select the child element, then construct a new `user` with `name=\u2026` as an attribute. The inverse of pattern 110.",
       tags:  ["builtin", "cxpath", "descendant", "eq", "for", "let", "name"],
+      section: "code/transforms",
       runnable: true,
     },
     "112-unwrap-singleton": {
@@ -813,6 +924,7 @@
       input: "[?let [= $doc [wrapper [payload value=42]]]\n  [?for [in $p $doc/payload]\n    [yield $p]]]",
       note:  "**Pattern:** unwrap a singleton parent. **Uses:** `[in $p $doc/payload] [yield $p]`. Drop the outer `wrapper` and emit the child directly. Generalizes when there are N payloads.",
       tags:  ["cxpath", "eq", "for", "let"],
+      section: "code/transforms",
       runnable: true,
     },
     "113-wrap-each": {
@@ -820,6 +932,7 @@
       input: "[?for [in $n (1, 2, 3, 4)]\n  [yield [box [item id=$n]]]]",
       note:  "**Pattern:** wrap each element in a consistent container. **Uses:** `[?for]`, nested element construction. The output is a sequence of `[box [item \u2026]]` shapes \u2014 useful for boxing scalars into element identity.",
       tags:  ["for"],
+      section: "code/transforms",
       runnable: true,
     },
     "114-computed-attr": {
@@ -827,6 +940,7 @@
       input: "[?let [= $doc [order\n                [line price=10 qty=2]\n                [line price=20 qty=3]\n                [line price=5  qty=10]]]\n  [?for [in $l $doc/line]\n    [yield [line price=$l/@price\n                 qty=$l/@qty\n                 total=[* $l/@price $l/@qty]]]]]",
       note:  "**Pattern:** project + augment each record with a derived field. **Uses:** `[?for]`, `[* $l/@price $l/@qty]` for the computation, fresh `line` shape on the way out.",
       tags:  ["cxpath", "eq", "for", "let", "mul"],
+      section: "code/transforms",
       runnable: true,
     },
     "115-project-attrs": {
@@ -834,6 +948,7 @@
       input: "[?let [= $doc [users\n                [user id=1 name=A age=30 ssn=secret]\n                [user id=2 name=B age=25 ssn=secret]]]\n  [?for [in $u $doc/user]\n    [yield [user id=$u/@id name=$u/@name]]]]",
       note:  "**Pattern:** keep only certain attributes (the SQL `SELECT a, b` shape). **Uses:** `[?for]` + explicit attribute construction over `$doc/user` (child axis returns every `user` child after Wave 1 gap A). Useful for shedding sensitive or redundant fields.",
       tags:  ["cxpath", "eq", "for", "let"],
+      section: "code/transforms",
       runnable: true,
     },
     "116-reorder": {
@@ -841,6 +956,7 @@
       input: "[?let [= $doc [list [item id=3] [item id=1] [item id=2]]]\n  [?for [in $i $doc//item]\n    [order-by $i/@id]\n    [yield $i]]]",
       note:  "**Pattern:** reorder by a derived key. **Uses:** `[order-by EXPR]` comprehension clause (ascending). Output preserves the new order.",
       tags:  ["cxpath", "descendant", "eq", "for", "let"],
+      section: "code/transforms",
       runnable: true,
     },
     "117-filter-where": {
@@ -848,6 +964,7 @@
       input: "[?for [in $n (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)]\n  [where [> $n 5]]\n  [yield [big n=$n]]]",
       note:  "**Pattern:** drop everything that doesn't match. **Uses:** `[where \u2026]` clause + bracket-form predicate `[> $n 5]`. Items failing the predicate are skipped entirely.",
       tags:  ["for", "gt"],
+      section: "code/transforms",
       runnable: true,
     },
     "118-odd-even-partition": {
@@ -855,6 +972,7 @@
       input: "[?for [in $n (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)]\n  [yield [?if [$odd $n]\n           [then [odd-val n=$n]]\n           [else [even-val n=$n]]]]]",
       note:  "**Pattern:** route each item to one of two shapes by a predicate. **Uses:** the `[$odd $n]` builtin and the `[?if]` ternary. Each iteration yields exactly one element \u2014 never both branches.",
       tags:  ["for", "if", "parallel"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "119-top-n": {
@@ -862,6 +980,7 @@
       input: "[?let [= $doc [scores [s v=42] [s v=88] [s v=15] [s v=77] [s v=33]]]\n  [?for [in $s $doc//s]\n    [order-by $s/@v]\n    [limit 3]\n    [yield $s/@v]]]",
       note:  "**Pattern:** keep the lowest 3 by score. **Uses:** `[order-by]` + `[limit N]`. Returns 15, 33, 42. For top-N descending, reverse the sequence or invert the key.",
       tags:  ["cxpath", "descendant", "eq", "for", "let"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "120-distinct-by-key": {
@@ -869,6 +988,7 @@
       input: "[?let [= $doc [log\n                [hit user=alice]\n                [hit user=bob]\n                [hit user=alice]\n                [hit user=carol]\n                [hit user=bob]]]\n  [?for [in $h $doc//hit]\n    [group-by $h/@user]\n    [yield $h/@user]]]",
       note:  "**Pattern:** unique values of a derived key. **Uses:** `[group-by]` clause \u2014 each distinct key appears once. Different from `[$distinct $xs]` (which dedupes scalars); this groups elements by an extracted attribute.",
       tags:  ["cxpath", "descendant", "eq", "for", "let"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "121-composite-predicate": {
@@ -876,6 +996,7 @@
       input: "[?let [= $doc [users\n                [user active=true  age=30 role=admin]\n                [user active=true  age=22 role=user]\n                [user active=false age=40 role=admin]]]\n  $doc/user[and [= $_@active true] [>= $_@age 25]]]",
       note:  "**Pattern:** combine multiple filter conditions inline. **Uses:** `[and [= $_@a v] [>= $_@b N]]` inline predicate with two clauses. Each `[op @attr value]` is an independent boolean; `and` short-circuits. (G3 closed.)",
       tags:  ["and", "attr", "builtin", "cxpath", "eq", "ge", "let"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "122-attr-presence": {
@@ -883,6 +1004,7 @@
       input: "[?let [= $doc [users\n                [user id=1 email=\"a@x.com\"]\n                [user id=2]\n                [user id=3 email=\"c@x.com\"]]]\n  $doc/user[@email]]",
       note:  "**Pattern:** keep records that *have* a given attribute. **Uses:** bare `[@email]` predicate \u2014 truthy if the attribute exists on the candidate. Drops `user id=2` (no email).",
       tags:  ["attr", "cxpath", "eq", "let"],
+      section: "code/paths",
       runnable: true,
     },
     "123-count-matches": {
@@ -890,6 +1012,7 @@
       input: "[?let [= $doc [log\n                [hit ok=true]\n                [hit ok=false]\n                [hit ok=true]\n                [hit ok=true]]]\n  [$count $doc/hit[= $_@ok true]]]",
       note:  "**Pattern:** how many records match the predicate? **Uses:** the `[$count $bind]` head-dispatch builtin over an inline-predicate-filtered path.",
       tags:  ["attr", "cxpath", "eq", "let"],
+      section: "code/paths",
       runnable: true,
     },
     "124-sum-attr": {
@@ -897,6 +1020,7 @@
       input: "[?let [= $doc [order\n                [line qty=2 price=10]\n                [line qty=1 price=20]\n                [line qty=3 price=5]]]\n  [$sum $doc/line/@price]]",
       note:  "**Pattern:** total of an attribute across all matches. **Uses:** the `[$sum \u2026]` builtin call over the attribute-axis node-set `/line/@price` (`$doc/line` enumerates every `line` child). Named builtins are reached via the `$`-head call form \u2014 a bare `[sum \u2026]` is data construction (R-A1 migration 2026-08-25: the old spelling constructed a data element; this one computes).",
       tags:  ["cxpath", "eq", "let"],
+      section: "code/paths",
       runnable: true,
     },
     "125-min-max": {
@@ -904,6 +1028,7 @@
       input: "[?let [= $doc [scores [s v=42] [s v=88] [s v=15] [s v=77]]]\n  [stats\n    lo=[$min $doc/s/@v]\n    hi=[$max $doc/s/@v]\n    avg=[$avg $doc/s/@v]]]",
       note:  "**Pattern:** statistical summary across attribute values. **Uses:** the `[$min]` / `[$max]` / `[$avg]` builtins over `$doc/s/@v` (child axis fans out across every `s` child). Compose into a single summary element. `[$avg]` answers a float, and a float renders in exponent form \u2014 the average here is `5.55e1`, i.e. 55.5.",
       tags:  ["cxpath", "eq", "let"],
+      section: "code/paths",
       runnable: true,
     },
     "126-group-aggregate": {
@@ -911,6 +1036,7 @@
       input: "[?let [= $doc [orders\n                [o region=US   amt=100]\n                [o region=EU   amt=200]\n                [o region=US   amt=50]\n                [o region=EU   amt=80]\n                [o region=APAC amt=300]]]\n  [?for [in $o $doc/o]\n    [= $amt $o/@amt]\n    [group-by $o/@region]\n    [yield [total region=$key orders=$count amt=[$sum $group/amt]]]]]",
       note:  "**Pattern:** fold each group down to one row. **Uses:** `[group-by]` over `$doc/o` (child axis enumerates each `o` child after gap A), with `$key` naming the group and `$count` its size. Aggregating per group needs one thing spelled out: `$group` holds the BINDINGS made in the comprehension, so bind what you want to fold \u2014 `[= $amt $o/@amt]` \u2014 and then `[$sum $group/amt]` reads it back. Yields one `[total \u2026]` row per region.",
       tags:  ["cxpath", "eq", "for", "let"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "127-deep-descendant": {
@@ -918,6 +1044,7 @@
       input: "[?let [= $doc [root\n                [a [b [c [d marker=hit]]]]\n                [x [y marker=miss]]]]\n  [?for [in $m $doc//*[@marker]]\n    [yield [$name $m]]]]",
       note:  "**Pattern:** find everything with a given attribute anywhere in the tree. **Uses:** `//*` (descendant wildcard) chained with `[@marker]` (attribute-presence inline predicate), `[$name $m]`. The descendant axis walks ALL the way down.",
       tags:  ["attr", "cxpath", "descendant", "eq", "for", "let"],
+      section: "code/paths",
       runnable: true,
     },
     "128-flatten-one-level": {
@@ -925,6 +1052,7 @@
       input: "[?let [= $doc [groups\n                [g [item \"a\"] [item \"b\"]]\n                [g [item \"c\"]]\n                [g [item \"d\"] [item \"e\"]]]]\n  [?for [in $g $doc/g]\n    [yield $g/item]]]",
       note:  "**Pattern:** pull nested children up one level. **Uses:** `[?for]` over `$doc/g` (child axis), `[yield $g/item]` to splat each group's items. Both axes are child-axis (gap A: `$bind/child` now returns every match, not just the first). The output is a flat sequence. Watch the middle group: a path step that matches exactly ONE element yields that element rather than a one-item sequence, so `[g [item \"c\"]]` contributes a bare `c` where its neighbours contribute `[item 'a']` / `[item 'b']` \u2014 and a bare string prints unquoted when it needs no quoting, which is why it is `c` and not `'c'`.",
       tags:  ["cxpath", "eq", "for", "let"],
+      section: "code/paths",
       runnable: true,
     },
     "129-name-via-builtin": {
@@ -932,6 +1060,7 @@
       input: "[?let [= $doc [config\n                [database host=A]\n                [cache provider=R]\n                [logging level=W]]]\n  [?for [in $section $doc/*]\n    [yield [section type=[$local-name $section]]]]]",
       note:  "**Pattern:** capture each child's own name as data. **Uses:** `[$local-name $node]` head-dispatch builtin, `[?for]` + dynamic data shape. Output records the kind of each section.",
       tags:  ["cxpath", "eq", "for", "let"],
+      section: "code/paths",
       runnable: true,
     },
     "130-siblings": {
@@ -939,6 +1068,7 @@
       input: "[?let [= $doc [post\n                [title \"On X\"]\n                [author \"Alice\"]\n                [body \"...\"]\n                [tags \"T1\" \"T2\"]]]\n  [?for [in $a $doc//author]\n    [yield $a/../*]]]",
       note:  "**Pattern:** walk to parent, then back down to all children. **Uses:** `..` parent axis + `/*` wildcard. Returns every direct child of the post (including the author itself).",
       tags:  ["cxpath", "descendant", "eq", "for", "let"],
+      section: "code/paths",
       runnable: true,
     },
     "131-leaves-only": {
@@ -946,6 +1076,7 @@
       input: "[?let [= $doc [tree\n                [n [n1 [leaf id=1]] [leaf id=2]]\n                [leaf id=3]]]\n  [?for [in $l $doc//leaf]\n    [yield $l/@id]]]",
       note:  "**Pattern:** select only the leaf-shaped nodes by name. **Uses:** `//leaf` descendant-by-name. For tree-shape-with-mixed-names the name is not the discriminator and the shape is: `[?for [in $x $doc//*] [where [= [$count $x/*] 0]] [yield [$name $x]]]` selects exactly the childless nodes.",
       tags:  ["cxpath", "descendant", "eq", "for", "let"],
+      section: "code/paths",
       runnable: true,
     },
     "132-pipe-of-modifies": {
@@ -953,6 +1084,7 @@
       input: "[?let [= $doc [users\n                [user id=1 banned=true]\n                [user id=2 banned=false]\n                [user id=3 banned=true]]]\n  [?pipe $doc\n    [?modify //user[= $_@banned true] [delete]]\n    [?modify //user [set-attr role \"member\"]]]]",
       note:  "**Pattern:** chain two `[?modify]` stages \u2014 first delete banned users (predicate `[= $_@banned true]`), then tag the survivors `role=member`. Stages thread the document left to right.",
       tags:  ["attr", "descendant", "eq", "let", "modify", "pipe"],
+      section: "code/transforms",
       runnable: true,
     },
     "133-filter-map-reduce": {
@@ -960,6 +1092,7 @@
       input: "[?pipe (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)\n  [?fn ($xs) [?for [in $x $xs]\n               [where [> $x 4]]\n               [yield [* $x $x]]]]\n  [?fn ($xs) [?reduce $xs\n               [using [?fn ($a $b) [+ $a $b]]]\n               [init 0]]]]",
       note:  "**Pattern:** a classic data pipeline \u2014 keep `> 4`, square, then sum (25+36+49+64+81+100 = 355). Two function stages over a `[?pipe]`.",
       tags:  ["add", "fn", "for", "gt", "mul", "pipe", "reduce"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "134-build-index": {
@@ -967,6 +1100,7 @@
       input: "[?let [= $users [users\n                  [user name=Alice score=30]\n                  [user name=Bob   score=20]]]\n  [?for [in $u $users//user]\n    [yield [?element $u/@name\n             tier=[?if [>= $u/@score 25]\n                    [then :gold]\n                    [else :silver]]]]]]",
       note:  "**Pattern:** build a name-keyed index whose tag is the user name and whose `tier` attribute is computed by an inline `[?if]` on `@score`. Combines computed names (`[?element]`) with a branch.",
       tags:  ["cxpath", "descendant", "element", "eq", "for", "ge", "if", "let"],
+      section: "code/transforms",
       runnable: true,
     },
     "135-read-rewrite": {
@@ -974,6 +1108,7 @@
       input: "[?let [= $doc [items [item q=2 p=10] [item q=3 p=5]]]\n  [?for [in $i $doc/item]\n    [= $total [* $i/@q $i/@p]]\n    [yield [line qty=$i/@q price=$i/@p total=$total]]]]",
       note:  "**Pattern:** comprehension with `:let` for derived per-iteration values. **Uses:** `:let` clause, `[* \u2026]` arithmetic, reshape on `[yield \u2026]`.",
       tags:  ["cxpath", "eq", "for", "let", "mul"],
+      section: "code/transforms",
       runnable: true,
     },
     "136-rdf-triples-shape": {
@@ -981,6 +1116,7 @@
       input: "[triples\n  [t s=Alice p=knows o=Bob]\n  [t s=Bob   p=knows o=Carol]\n  [t s=Alice p=likes o=pizza]\n  [t s=Carol p=likes o=tea]]",
       note:  "**Pattern:** model an RDF graph as triple records. **Uses:** flat element shape with `s` / `p` / `o` attributes. Queries are CXPath predicates against this shape.",
       tags:  [],
+      section: "code/queries",
       runnable: true,
     },
     "137-query-by-subject": {
@@ -988,6 +1124,7 @@
       input: "[?let [= $g [triples\n              [t s=Alice p=knows o=Bob]\n              [t s=Alice p=likes o=pizza]\n              [t s=Bob   p=likes o=tea]]]\n  $g//t[= $_@s \"Alice\"]]",
       note:  "**Pattern:** find all statements about a subject. **Uses:** `[= $_@s \"Alice\"]` inline predicate against the triples graph. Returns every triple where the subject is `Alice`.",
       tags:  ["attr", "cxpath", "descendant", "eq", "let"],
+      section: "code/queries",
       runnable: true,
     },
     "138-query-by-predicate": {
@@ -995,6 +1132,7 @@
       input: "[?let [= $g [triples\n              [t s=A p=knows o=B]\n              [t s=B p=knows o=C]\n              [t s=A p=likes o=X]]]\n  $g//t[= $_@p \"knows\"]]",
       note:  "**Pattern:** find all statements of a given relation. **Uses:** `[= $_@p \"knows\"]` inline predicate. Returns the `knows` edges of the graph; flip the predicate for any other relation.",
       tags:  ["attr", "cxpath", "descendant", "eq", "let"],
+      section: "code/queries",
       runnable: true,
     },
     "139-out-edges": {
@@ -1002,6 +1140,7 @@
       input: "[?let [= $g [triples\n              [t s=A p=r1 o=B]\n              [t s=A p=r2 o=C]\n              [t s=B p=r1 o=D]]]\n  [?for [in $t $g//t[= $_@s \"A\"]]\n    [yield [edge to=$t/@o via=$t/@p]]]]",
       note:  "**Pattern:** all edges leaving a node. **Uses:** `[= $_@s \"A\"]` predicate, `[?for]` reshape. Each output records the destination and the relation.",
       tags:  ["cxpath", "descendant", "eq", "for", "let"],
+      section: "code/queries",
       runnable: true,
     },
     "140-in-edges": {
@@ -1009,6 +1148,7 @@
       input: "[?let [= $g [triples\n              [t s=A p=r1 o=B]\n              [t s=C p=r1 o=B]\n              [t s=A p=r2 o=D]]]\n  [?for [in $t $g//t[= $_@o \"B\"]]\n    [yield [edge from=$t/@s via=$t/@p]]]]",
       note:  "**Pattern:** all edges arriving at a node. **Uses:** `[= $_@o \"B\"]` predicate against the triples. Each output records the source and relation.",
       tags:  ["cxpath", "descendant", "eq", "for", "let"],
+      section: "code/queries",
       runnable: true,
     },
     "141-reachability-1hop": {
@@ -1016,6 +1156,7 @@
       input: "[?let [= $g [triples\n              [t s=A p=knows o=B]\n              [t s=A p=knows o=C]\n              [t s=B p=knows o=D]]]\n  [?for [in $t $g//t[and [= $_@s \"A\"] [= $_@p \"knows\"]]]\n    [yield $t/@o]]]",
       note:  "**Pattern:** who can `A` reach in one hop via `knows`? **Uses:** `[and [= $_@s \"A\"] [= $_@p \"knows\"]]` compound predicate. RHS literals are quoted (`\"A\"` / `\"knows\"`) \u2014 bare-identifier RHS in operator predicates currently produces no matches and is a separate spec ambiguity, distinct from gaps A/B/C. Multi-hop reachability needs recursion; v0.8.0 surfaces single-hop cleanly.",
       tags:  ["and", "builtin", "cxpath", "descendant", "eq", "for", "let"],
+      section: "code/queries",
       runnable: true,
     },
     "142-set-union": {
@@ -1023,6 +1164,7 @@
       input: "[?let [= $a (1, 2, 3, 4)] [= $b (3, 4, 5, 6)]\n  [$distinct [?concat $a $b]]]",
       note:  "**Pattern:** combine two sequences and dedupe. **Uses:** `[?concat]` \u2014 the lazy concatenation combinator \u2014 piped into the `[$distinct]` builtin. Both bindings are actually read: the union is computed, not hand-inlined. One flat `[?let]` takes both bindings (\u00a78.5), so no cascade is needed.",
       tags:  ["concat", "eq", "let"],
+      section: "code/queries",
       runnable: true,
     },
     "143-set-intersection": {
@@ -1030,6 +1172,7 @@
       input: "[?let [= $a (1, 2, 3, 4)] [= $b (3, 4, 5, 6)]\n  [?for [in $x $a]\n    [where [> [$position $b $x] 0]]\n    [yield $x]]]",
       note:  "**Pattern:** keep items that appear in both sequences. **Uses:** `[$position xs needle]` as the membership test \u2014 it answers the **1-based** index of the first occurrence and `0` when the needle is absent, so `[> [$position $b $x] 0]` reads \"is in `$b`\". Both bindings are actually read; one flat `[?let]` takes them both.",
       tags:  ["eq", "for", "gt", "let"],
+      section: "code/queries",
       runnable: true,
     },
     "144-set-difference": {
@@ -1037,6 +1180,7 @@
       input: "[?for [in $x (1, 2, 3, 4, 5)]\n  [where [and [not [= $x 2]] [not [= $x 4]]]]\n  [yield $x]]",
       note:  "**Pattern:** keep items NOT in the exclusion set. **Uses:** `[not [= \u2026]]` per excluded item, joined with `[and \u2026]`. Answers `(1..5) \u2212 (2, 4)` \u2014 and note the OUTPUT SHAPE: a `[?for]` yields three top-level results, and the run surface prints each on its own line, so the pane shows `1`, `3`, `5` on three lines rather than one `(1, 3, 5)`.",
       tags:  ["and", "builtin", "eq", "for", "not"],
+      section: "code/queries",
       runnable: true,
     },
     "145-cartesian": {
@@ -1044,6 +1188,7 @@
       input: "[?for [in $a (1, 2, 3)]\n      [in $b (\"x\", \"y\")]\n  [yield [pair a=$a b=$b]]]",
       note:  "**Pattern:** every combination of two sequences. **Uses:** multi-source `[?for]` \u2014 outer loop over `$a`, inner loop over `$b`. Yields 6 pairs (3 \u00d7 2).",
       tags:  ["for"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "146-pivot-rows-to-attrs": {
@@ -1051,6 +1196,7 @@
       input: "[?let [= $doc [stats\n                [m k=cpu  v=87]\n                [m k=mem  v=62]\n                [m k=disk v=44]]]\n  [snapshot\n    [cpu  [?splice $doc/m[= $_@k \"cpu\"]/@v]]\n    [mem  [?splice $doc/m[= $_@k \"mem\"]/@v]]\n    [disk [?splice $doc/m[= $_@k \"disk\"]/@v]]]]",
       note:  "**Pattern:** turn N rows-of-(k,v) into one element with N attributes. **Uses:** inline `$doc/m[= $_@k \u2026]/@v` per pivot key, spliced into content with `[?splice \u2026]` (R-A1, 2026-08-25: a node-set in element content splices as direct children \u2014 a bare one refuses loudly). The terminal `/@v` materialises the attribute as a single-attr element (`[v 87]`), so each pivot slot carries `[v 87]` as a child; to read the raw scalar `87`, bind the row first \u2014 `[?let [= $cpu $doc/m[@k=\"cpu\"]] $cpu@v]`. The shape still pivots skinny-tall \u2192 wide. (G4 closed.)",
       tags:  ["cxpath", "eq", "let", "splice"],
+      section: "code/transforms",
       runnable: true,
     },
     "147-unpivot": {
@@ -1058,6 +1204,7 @@
       input: "[?let [= $row [snapshot cpu=87 mem=62 disk=44]]\n  ([m k=cpu  v=$row/@cpu],\n   [m k=mem  v=$row/@mem],\n   [m k=disk v=$row/@disk])]",
       note:  "**Pattern:** the inverse of pivot. **Uses:** literal sequence + `$row/@\u2026` reads. Output is the skinny-tall form. Generalizes when there's a known attribute set; an arbitrary-attr unpivot waits on iterator combinators.",
       tags:  ["cxpath", "eq", "let"],
+      section: "code/transforms",
       runnable: true,
     },
     "148-transpose-matrix": {
@@ -1065,6 +1212,7 @@
       input: "[?let [= $m [matrix\n              [row a=1 b=2 c=3]\n              [row a=4 b=5 c=6]\n              [row a=7 b=8 c=9]]]\n      [= $r1 $m/row[1]]\n      [= $r2 $m/row[2]]\n      [= $r3 $m/row[3]]\n  [transposed\n    [col k=a [val $r1@a] [val $r2@a] [val $r3@a]]\n    [col k=b [val $r1@b] [val $r2@b] [val $r3@b]]\n    [col k=c [val $r1@c] [val $r2@c] [val $r3@c]]]]",
       note:  "**Pattern:** transpose a fixed-shape 2D table. **Uses:** position predicates `[1]`/`[2]`/`[3]` (G3 closed) on the child axis `$m/row[N]` (gap A: child axis now returns every match \u2014 picking row N by position rather than getting the first row regardless). For arbitrary dimensions, lazy `[?zip]` is the right tool.",
       tags:  ["attr", "cxpath", "eq", "let"],
+      section: "code/transforms",
       runnable: true,
     },
     "149-group-then-sum": {
@@ -1072,6 +1220,7 @@
       input: "[?let [= $doc [orders\n                [o region=US amt=100]\n                [o region=EU amt=200]\n                [o region=US amt=50]\n                [o region=EU amt=80]]]\n  [totals\n    us=[$sum $doc//o[= $_@region \"US\"]/@amt]\n    eu=[$sum $doc//o[= $_@region \"EU\"]/@amt]]]",
       note:  "**Pattern:** SQL's `GROUP BY region, SUM(amt)` shape. **Uses:** inline predicates `[= $_@region \"US\"]` and the `[$sum \u2026]` builtin per group. This spelling needs the groups known up-front; for an ARBITRARY key, example 126 folds each group with the `[group-by]` clause and example 195 does it with the `[?group-by]` combinator \u2014 both ship.",
       tags:  ["cxpath", "descendant", "eq", "let"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "150-join-by-key": {
@@ -1079,6 +1228,7 @@
       input: "[?let [= $orders [o-set\n                   [o id=1 user=\"A\" amt=100]\n                   [o id=2 user=\"B\" amt=200]\n                   [o id=3 user=\"A\" amt=50]]]\n      [= $users [u-set\n                  [u name=\"A\" email=\"a@x.com\"]\n                  [u name=\"B\" email=\"b@x.com\"]]]\n  [?for [in $o $orders//o]\n    [yield [joined order-id=$o/@id amt=$o/@amt\n             [?splice $users//u[= $_@name $o/@user]/@email]]]]]",
       note:  "**Pattern:** inner-join two collections by a shared key \u2014 look up each order's user record by name and project the email. **Uses:** cross-binding inline predicate `[@name=$o/@user]` (gap C closed: the RHS now evaluates the path-bearing reference against the *outer* env, so `$o/@user` is the iterating row's key while `$users//u[\u2026]` does the lookup), spliced into content with `[?splice \u2026]` (R-A1, 2026-08-25). Terminal `/@email` materialises the value as `[email \"\u2026\"]` (same `/@attr` materialisation shape as ex 146). The natural single-expression join is now the standard surface; the prior `[?match]` workaround is retired.",
       tags:  ["cxpath", "descendant", "eq", "for", "let", "splice"],
+      section: "code/transforms",
       runnable: true,
     },
     "151-range-by-stride": {
@@ -1086,6 +1236,7 @@
       input: "[?for [in $x [$range 1 10 2]]\n  [yield $x]]",
       note:  "**Introduces:** `[$range lo hi step]` \u2014 the prefix range generator (infix `to`/`by` is retired). Stride 2 over 1..10 yields the odds 1,3,5,7,9.",
       tags:  ["for"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "152-range-reverse-stride": {
@@ -1093,6 +1244,7 @@
       input: "[?for [in $x [$range 20 4 -4]]\n  [yield $x]]",
       note:  "**Introduces:** a descending range via a negative step. `[$range 20 4 -4]` counts down 20,16,12,8,4.",
       tags:  ["for"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "153-take-prefix": {
@@ -1100,6 +1252,7 @@
       input: "[?for [in $x [$range 1 *]]\n  [where [> $x 100]]\n  [take 5]\n  [yield $x]]",
       note:  "**Introduces:** `[$range 1 *]` \u2014 an *open* (infinite) range \u2014 made finite by `[take 5]`. Laziness matters: only enough items to find 5 past 100 are produced (101..105).",
       tags:  ["for", "gt"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "154-drop-prefix": {
@@ -1107,6 +1260,7 @@
       input: "[?for [in $x [$range 1 10]]\n  [drop 7]\n  [yield $x]]",
       note:  "**Introduces:** `[drop N]` \u2014 skip the first N items of the stream. Dropping 7 of 1..10 leaves 8,9,10.",
       tags:  ["for"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "155-drop-take-page": {
@@ -1114,6 +1268,7 @@
       input: "[?for [in $x [$range 1 100]]\n  [drop 30]\n  [take 5]\n  [yield $x]]",
       note:  "**Pattern:** `[drop OFFSET] [take SIZE]` is page-N slicing. Offset 30, size 5 yields items 31..35 \u2014 the standard pagination window.",
       tags:  ["for"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "156-slice-range": {
@@ -1121,6 +1276,7 @@
       input: "[?let [= $xs (\"a\", \"b\", \"c\", \"d\", \"e\")]\n  $xs[1:3]]",
       note:  "**Pattern:** sub-sequence by inclusive index bounds. **Uses:** `$xs[1:3]` \u2014 the slice postfix on a `$binding`. Indices are 1-based and STOP is INCLUSIVE (D4/D5), so the result is `(\"a\", \"b\", \"c\")`. Out-of-range or wrong-direction slices return the empty sequence rather than erroring (D20).",
       tags:  ["eq", "let"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "157-slice-last-three": {
@@ -1128,6 +1284,7 @@
       input: "[?let [= $xs (\"a\", \"b\", \"c\", \"d\", \"e\")]\n  $xs[-3:]]",
       note:  "**Pattern:** \"last three\" / pagination tail. **Uses:** negative indices resolve from the end at apply time (`-1` = last, `-3` = third-from-last). Equivalent to Python's `xs[-3:]`. Open-stop walks through the end of the sequence.",
       tags:  ["eq", "let"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "158-slice-reverse": {
@@ -1135,6 +1292,7 @@
       input: "[?let [= $xs (\"a\", \"b\", \"c\", \"d\", \"e\")]\n  $xs[::-1]]",
       note:  "**Pattern:** reverse a sequence in one move. **Uses:** open start/stop + step `-1`. Walks the receiver backwards from the last element to the first inclusive (reverse-stride convention). Equivalent to `[$reverse $xs]` but more direct when you're already in slice territory.",
       tags:  ["eq", "let"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "159-slice-every-other": {
@@ -1142,6 +1300,7 @@
       input: "[?let [= $xs (\"a\", \"b\", \"c\", \"d\", \"e\")]\n  $xs[::2]]",
       note:  "**Pattern:** stride a sequence. **Uses:** open start/stop + step `2` \u2014 yields elements at 0-based positions `0, 2, 4` (1-based `1, 3, 5`). Composes with negative stride (`[::-2]` \u2192 every-other backwards) and explicit bounds (`[5::-2]` \u2192 walk from index 5 backwards by 2).",
       tags:  ["eq", "let"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "160-slice-trim-ends": {
@@ -1149,6 +1308,7 @@
       input: "[?let [= $xs (\"a\", \"b\", \"c\", \"d\", \"e\")]\n  $xs[2:[- $_last 1]]]",
       note:  "**Pattern:** drop the first and last item. **Uses:** the `$_last` sigil resolves to the receiver's cardinality at slice-apply time, so `[- $_last 1]` evaluates to `n - 1` regardless of the source. Stop is inclusive, so `[2:n-1]` keeps items 2 through n-1 \u2014 i.e. everything except the first and last.",
       tags:  ["eq", "let", "sub"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "161-sequence-worker-top": {
@@ -1156,6 +1316,7 @@
       input: "[?worker name=\"task\"\n  [?let [= $_ [?sleep 100ms mock]]\n    [ok value=\"done\"]]]",
       note:  "**Pattern:** background task as program entry-point. **Diagram:** because the program is sequence-shaped the emitter switches to Mermaid `sequenceDiagram` instead of `flowchart TD` (per spec/code.md \u00a710.1.2). The worker becomes an actor lane with its body events as messages along that lane. A trigger reached through a `[?let]` binding counts too \u2014 `[?let [= $w [?worker \u2026]] \u2026]` is still a sequence, since the binding only aliases the lane (examples 171-172 are that shape).",
       tags:  ["eq", "let", "mock", "sleep", "worker"],
+      section: "code/diagrams",
       runnable: true,
       wasmUnsupported: "`[?worker]` spawns an OS thread; the playground's default single-threaded wasm build refuses it (`go code__run_worker_thread(): Not supported`).",
     },
@@ -1164,6 +1325,7 @@
       input: "[?let [= $ch1 [?channel name=\"a\" buffer=1]]\n      [= $ch2 [?channel name=\"b\" buffer=1]]\n      [= $_ [?send 1 to=$ch1]]\n  [?select\n    [case [from $ch1 $v]  [ok value=$v]]\n    [case [from $ch2 $v]  [ok value=$v]]\n    [case [timeout 50ms]  [err code=\"timeout\"]]]]",
       note:  "**Pattern:** wait on the first of several channels (with a timeout escape hatch). **Diagram:** top-level `[?select]` triggers `sequenceDiagram` \u2014 each `[case [from CH $v] \u2026]` arm becomes an arrow from the channel actor; the `[timeout]` arm becomes a self-loop with a duration label. The case-envelope shape `[case [from $ch $msg] HANDLER]` is the split-selector form: selector head is the case kind, handler is positional.",
       tags:  ["channel", "eq", "let", "select", "send", "timeout"],
+      section: "code/diagrams",
       runnable: true,
     },
     "163-sequence-http-service": {
@@ -1171,6 +1333,7 @@
       input: "[?http-service on=http port=0 name=\"hello\"\n  [resource [get \"/\"]\n    [response status=200\n      [body \"hi\"]]]]",
       note:  "**Pattern:** declare a service endpoint and its routes. `on=http` selects the protocol and `port=0` is the in-process conformance shape (no real socket). **Diagram:** a top-level `[?http-service]` triggers `sequenceDiagram` \u2014 the service is one actor and each `[resource [METHOD PATH] HANDLER]` becomes an inbound arrow from a generic `client`. **http mode:** the real-socket variant (port>0, served by `cx` under `make guide-http`) actually binds and answers requests; here it just returns a `[service-handle]`.",
       tags:  ["http-service"],
+      section: "code/diagrams",
       runnable: true,
     },
     "164-graph-state-machine-data": {
@@ -1178,6 +1341,7 @@
       input: "[state-machine\n  [state idle]\n  [state running]\n  [state stopped]\n  [transition from=idle    to=running on=start]\n  [transition from=running to=stopped on=stop]\n  [transition from=stopped to=idle    on=reset]]",
       note:  "**Pattern:** a state machine described as pure CX data (no directives). **Diagram:** because the root isn't a directive, the emitter classifies this as a data document and renders an `erDiagram` (entity-relationship). The Tree pane shows the full nested structure; the Graph pane shows entity-style boxes for each `[state]` / `[transition]`. (Caveat: `flowchart TD` projection of data-shape graphs \u2014 turning each `[transition]` into a real directed arrow \u2014 is the proposed evolution of the `(2) detail-level` playground item; today the renderer falls back to `erDiagram`.)",
       tags:  [],
+      section: "code/diagrams",
       runnable: true,
     },
     "165-graph-workflow-dag": {
@@ -1185,6 +1349,7 @@
       input: "[workflow\n  [task id=\"fetch\" cmd=\"curl\"]\n  [task id=\"parse\" cmd=\"jq\"]\n  [task id=\"store\" cmd=\"psql\"]\n  [edge from=\"fetch\" to=\"parse\"]\n  [edge from=\"parse\" to=\"store\"]]",
       note:  "**Pattern:** a build / orchestration DAG described as data. **Diagram:** renders as an entity diagram (`erDiagram` because the root is data); each `[task]` + each `[edge]` becomes an entity. As with example 164, a true directed-graph projection awaits the (2) detail-level work; this example exists so the Tree pane reflects how the relationships are encoded.",
       tags:  [],
+      section: "code/diagrams",
       runnable: true,
     },
     "166-flowchart-control-flow": {
@@ -1192,6 +1357,7 @@
       input: "[?let [= $xs (1, 2, 3, 4, 5)]\n  [?for [in $x $xs]\n    [yield [?if [> $x 2]\n             [then [hi value=$x]]\n             [else [lo value=$x]]]]]]",
       note:  "**Pattern:** the most common diagram shape: a for-comprehension with a branch in the body. **Diagram:** flowchart TD; the for-comp becomes a loop header, the `[?if]` becomes a diamond with `true`/`false` arms feeding back into the loop tail. Good baseline to compare against the sequence-diagram examples 161 to 163.",
       tags:  ["eq", "for", "gt", "if", "let"],
+      section: "code/diagrams",
       runnable: true,
     },
     "167-erd-mid-shop-orders": {
@@ -1199,6 +1365,7 @@
       input: "[shop\n  [product sku=\"A1\" name=\"widget\" price=9.99]\n  [product sku=\"A2\" name=\"gadget\" price=19.99]\n  [customer id=1 name=\"alice\"\n    [order id=100\n      [item sku=\"A1\" qty=2]\n      [item sku=\"A2\" qty=1]]]\n  [customer id=2 name=\"bob\"\n    [order id=102\n      [item sku=\"A2\" qty=3]]]]",
       note:  "**Pattern:** classic e-commerce shape \u2014 products, customers, orders containing items. **Diagram:** ERD with four entity types; cardinality classifier draws `customer \u2016--o{ order` (repeating child), `order \u2016--o{ item` (repeating), `shop \u2016--o{ product` (repeating), `shop \u2016--o{ customer` (repeating). At `full` level the per-attribute value enumeration shows e.g. `string @sku \"A1, A2\"` and the synthetic `DOCUMENT` root surfaces source metadata. Mid-size: 4 types, ~12 nodes, ~4 relationships \u2014 enough to exercise the cardinality classifier without crowding the view.",
       tags:  [],
+      section: "code/diagrams",
       runnable: true,
     },
     "168-erd-large-org-structure": {
@@ -1206,6 +1373,7 @@
       input: "[company\n  [department id=1 name=\"engineering\"\n    [team id=10 name=\"parser\"\n      [employee id=100 name=\"alice\" role=\"lead\"]\n      [employee id=101 name=\"bob\" role=\"engineer\"]]\n    [team id=11 name=\"runtime\"\n      [employee id=102 name=\"carol\" role=\"engineer\"]]]\n  [department id=2 name=\"design\"\n    [team id=20 name=\"ux\"\n      [employee id=200 name=\"dave\" role=\"designer\"]]]\n  [project id=1000 name=\"v0.8.0\"\n    [owner employee-id=100]\n    [milestone date=\"2026-06-01\" status=\"active\"]\n    [milestone date=\"2026-08-01\" status=\"planned\"]]\n  [project id=1001 name=\"docs\"\n    [owner employee-id=200]\n    [milestone date=\"2026-07-01\" status=\"active\"]]]",
       note:  "**Pattern:** organizational hierarchy with cross-cutting projects \u2014 the canonical 'real schema' shape. **Diagram:** large ERD with 7 types (company, department, team, employee, project, owner, milestone); `full` level surfaces the inferred-FK candidate `owner.employee-id \u2192 employee.id` as a dashed link (FK inference is name-only \u2014 no schema). 4-deep nesting + sibling-projects exercises the path-walker. Use this as the 'step-back' test: at `compact` the layout stays readable; at `full` per-attribute value enumeration is where the renderer must decide what to truncate.",
       tags:  [],
+      section: "code/diagrams",
       runnable: true,
     },
     "169-cfg-small-bare-if": {
@@ -1213,6 +1381,7 @@
       input: "[?if true\n  [then \"yes\"]\n  [else \"no\"]]",
       note:  "**Pattern:** the smallest CFG \u2014 one decision, two arms. **Diagram:** flowchart TD with a single diamond and two leaf nodes. Min-level shows just `[?if]` head; compact shows the diamond + both arm labels; full adds INPUT/OUTPUT terminals + per-arm yield enumeration + source spans. Use as a baseline for the per-level pruning rules.",
       tags:  ["if"],
+      section: "code/diagrams",
       runnable: true,
     },
     "170-cfg-large-def-match-process": {
@@ -1220,6 +1389,7 @@
       input: "[?def classify ($n)\n  [?match $n\n    [case 0 :zero]\n    [else :nonzero]]]\n\n[?def process ($items)\n  [?for [in $i $items]\n    [yield [$classify $i]]]]\n\n[$process (3, 0, 7, 0, 1)]",
       note:  "**Pattern:** two `[?def]`s composed \u2014 `classify` maps a number to an atom via `[?match]`, `process` maps it over a sequence. Parameters carry the `$` sigil and defined functions are called as `[$name \u2026]`. **Diagram:** the control-flow graph shows the match branches and the for-loop.",
       tags:  ["def", "for", "match"],
+      section: "code/diagrams",
       runnable: true,
     },
     "171-seq-mid-producer-consumer": {
@@ -1227,6 +1397,7 @@
       input: "[?let [= $ch [?channel name=\"jobs\" buffer=4]]\n      [= $prod [?worker name=\"producer\"\n                 [body [?let [= $_ [?for [in $i [$range 1 3]]\n                                     [yield [?send $i to=$ch]]]]\n                         [?close $ch]]]]]\n      [= $cons [?worker name=\"consumer\"\n                 [body [?for [in $i [$range 1 3]]\n                         [yield [?receive from=$ch]]]]]]\n      [= $_ [?wait-for worker=$prod]]\n  [?wait-for worker=$cons]]",
       note:  "**Pattern:** a `[?channel buffer=N]` with a `[?worker]` producer (`[?send X to=$ch]` then `[?close]`) and a consumer (`[?receive from=$ch]`), joined with `[?wait-for worker=\u2026]`. **Diagram:** the let-bound workers and channels render as `sequenceDiagram` actors with channel arrows. **Running it:** the playground's default wasm build has no threads, so this program does not run in the browser \u2014 see the banner. Under `make guide-http` (COOP/COEP) cxlib loads the pthreads build and the workers run on real OS threads.",
       tags:  ["channel", "close", "eq", "for", "let", "receive", "send", "wait-for", "worker"],
+      section: "code/diagrams",
       runnable: true,
       wasmUnsupported: "`[?worker]` spawns an OS thread; the playground's default single-threaded wasm build refuses it (`go code__run_worker_thread(): Not supported`).",
     },
@@ -1235,6 +1406,7 @@
       input: "[?let [= $jobs [?channel name=\"jobs\" buffer=8]]\n      [= $results [?channel name=\"results\" buffer=16]]\n      [= $d [?worker name=\"dispatcher\"\n              [body [?let [= $_ [?for [in $j [$range 1 4]]\n                                  [yield [?send $j to=$jobs]]]]\n                      [?close $jobs]]]]]\n      [= $w [?worker name=\"worker\"\n              [body [?for [in $j [$range 1 4]]\n                      [yield [?send [processed value=[?receive from=$jobs]]\n                               to=$results]]]]]]\n      [= $_ [?wait-for worker=$d]]\n      [= $_w [?wait-for worker=$w]]\n  [?for [in $k [$range 1 4]]\n    [yield [?receive from=$results]]]]",
       note:  "**Pattern:** a two-stage pipeline across two channels \u2014 a dispatcher fans jobs into `jobs`, a worker transforms each into `[processed \u2026]` on `results`, and the main thread drains `results` after joining **both** workers. **Why both joins matter:** `[?receive]` blocks inside a `[?worker]`, but on the MAIN thread an empty-and-open channel answers `CXER0202 receive timed out` immediately rather than deadlocking a single-threaded program \u2014 so a main-thread drain that has not joined the worker filling the channel is a race, not a wait. **Diagram:** the let-bound workers and channels render as a `sequenceDiagram`. **Running it:** the playground's default wasm build has no threads, so this program does not run in the browser \u2014 see the banner. Real parallelism (and true channel backpressure on the bounded buffers) needs `make guide-http`, where cxlib loads the pthreads build.",
       tags:  ["channel", "close", "eq", "for", "let", "receive", "send", "wait-for", "worker"],
+      section: "code/diagrams",
       runnable: true,
       wasmUnsupported: "`[?worker]` spawns an OS thread; the playground's default single-threaded wasm build refuses it (`go code__run_worker_thread(): Not supported`).",
     },
@@ -1243,6 +1415,7 @@
       input: "[?lib 'cx-stdlib/fp']\n\n[$fp:map (1, 2, 3) [?fn ($x) [* $x $x]]]",
       note:  "**Introduces:** `cx-stdlib/fp` \u2014 composition over the value channels. `[$fp:map F fn]` maps `fn` inside the container `F`; over a sequence it is the ordinary element map (\u2192 1,4,9). Pure \u2014 runs live in the wasm playground.",
       tags:  ["fn", "lib", "mul"],
+      section: "code/functions",
       runnable: true,
     },
     "174-fp-flat-map": {
@@ -1250,6 +1423,7 @@
       input: "[?lib 'cx-stdlib/fp']\n\n[$fp:flat-map (1, 2, 3) [?fn ($x) ($x, [* $x 10])]]",
       note:  "**Introduces:** `[$fp:flat-map F fn]` \u2014 map then flatten one level. Each item expands to a 2-element sequence, concatenated into `(1,10,2,20,3,30)`.",
       tags:  ["fn", "lib", "mul"],
+      section: "code/functions",
       runnable: true,
     },
     "175-fp-pure": {
@@ -1257,6 +1431,7 @@
       input: "[?lib 'cx-stdlib/fp']\n\n[$fp:pure 42]",
       note:  "**Introduces:** `[$fp:pure x]` lifts a value into the default `sequence` instance \u2014 `pure 42 = (42)`. `[$fp:pure x tag=result]` would lift into `[ok x]` instead.",
       tags:  ["lib"],
+      section: "code/functions",
       runnable: true,
     },
     "176-fp-fold": {
@@ -1264,6 +1439,7 @@
       input: "[?lib 'cx-stdlib/fp']\n\n[$fp:fold (1, 2, 3, 4) 0 [?fn ($acc $x) [+ $acc $x]]]",
       note:  "**Introduces:** `[$fp:fold F init fn]` \u2014 an err-boundary reduce over the container's items (\u2192 10). Unlike `map`/`flat-map` it may inspect an `[err]`-holding item rather than auto-propagating it.",
       tags:  ["add", "fn", "lib"],
+      section: "code/functions",
       runnable: true,
     },
     "177-fp-sequence-results": {
@@ -1271,6 +1447,7 @@
       input: "[?lib 'cx-stdlib/fp']\n\n[$fp:sequence ([ok 1], [ok 2], [ok 3])]",
       note:  "**Introduces:** `[$fp:sequence F]` turns a structure of containers inside-out. A sequence of `[ok]`s collapses to one `[ok]` of the sequence \u2014 `[ok (1,2,3)]`.",
       tags:  ["lib"],
+      section: "code/functions",
       runnable: true,
     },
     "178-fp-sequence-err": {
@@ -1278,6 +1455,7 @@
       input: "[?lib 'cx-stdlib/fp']\n\n[$fp:sequence ([ok 1],\n               [err code='cx-err:CXER9999' message='boom'],\n               [ok 3])]",
       note:  "**Introduces:** the railway. The first `[err]` in the sequence short-circuits and is returned unchanged \u2014 `sequence` is the err-boundary form of `traverse`.",
       tags:  ["lib"],
+      section: "code/functions",
       runnable: true,
     },
     "179-fp-traverse-result": {
@@ -1285,6 +1463,7 @@
       input: "[?lib 'cx-stdlib/fp']\n\n[$fp:traverse (1, 2, 3) [?fn ($x) [ok $x]]]",
       note:  "**Introduces:** `[$fp:traverse F fn]` maps an effectful `fn: (a) \u2192 G b` across `F` and swaps the layers to `G (F b)`. Here `fn` returns `[ok \u2026]`, so the result is `[ok (1,2,3)]` \u2014 the applicative `G` is dispatched from what `fn` returns.",
       tags:  ["fn", "lib"],
+      section: "code/functions",
       runnable: true,
     },
     "180-fp-traverse-maybe": {
@@ -1292,6 +1471,7 @@
       input: "[?lib 'cx-stdlib/fp']\n\n[$fp:traverse (1, 2, 3) [?fn ($x) ($x)]]",
       note:  "**Introduces:** Maybe is **not** a boxed type in CX \u2014 it is the sequence at cardinality \u2264 1 (`Some(x)=(x)`, `None=()`). `fn` returning `(x)` makes `traverse` swap into the sequence/list applicative \u2014 `((1,2,3))`.",
       tags:  ["fn", "lib"],
+      section: "code/functions",
       runnable: true,
     },
     "181-fp-traverse-none": {
@@ -1299,6 +1479,7 @@
       input: "[?lib 'cx-stdlib/fp']\n\n[$fp:traverse (1, 2, 3)\n  [?fn ($x) [?if [= $x 2] [then ()] [else ($x)]]]]",
       note:  "**Introduces:** because `None=()` zeroes the list-applicative product, a single `()` from `fn` collapses the whole traverse to `()` \u2014 the Maybe short-circuit, for free, with no `[just]`/`[none]` heads.",
       tags:  ["eq", "fn", "if", "lib"],
+      section: "code/functions",
       runnable: true,
     },
     "182-fp-traverse-http": {
@@ -1306,6 +1487,7 @@
       input: "[?lib 'cx-stdlib/fp']\n[?lib 'cx-stdlib/http']\n\n[$fp:traverse (\"https://example.com/a\", \"https://example.com/b\")\n  [?fn ($u) [$http:get $u]]]",
       note:  "**Pattern:** the real-world `traverse` \u2014 fan a fallible effect across a list and collect results on the railway (all `[ok]` \u2192 one `[ok (\u2026)]`; first `[err]` short-circuits). **http mode only:** this makes live network calls \u2014 run it under `make guide-http` (or `cx --allow-net` in your terminal). The file:// wasm playground has no network/capabilities, so it returns a capability-denied `[err cx-err:CXER0271]`.",
       tags:  ["descendant", "fn", "lib"],
+      section: "code/functions",
       runnable: false,
     },
     "183-loop-break-continue": {
@@ -1313,6 +1495,7 @@
       input: "[?loop [= $i 1] [= $acc 0]\n  [?if [> $i 5]\n    [then [break $acc]]\n    [else [continue [+ $i 1] [+ $acc $i]]]]]",
       note:  "**Introduces:** `[?loop]` \u2014 the condition-driven loop, and CX's anonymous trampolined tail recursion. `[= \u2026]` clauses declare the loop state; `[continue \u2026]` supplies the next state positionally and `[break v]` leaves with a value. This sums 1..5 to `15`.\n\n**Every exit is explicit.** A body that forgets its exit word does NOT silently become the result \u2014 it is a `cx-err:CXER0100`: \"`[?loop]` body must end in `[break \u2026]` or `[continue \u2026]`\". That is the deliberate rejection of `loop`/`recur`'s implicit exit, and it is why you can read any `[?loop]` and see where it stops. There is no `[?while]`.",
       tags:  ["add", "eq", "gt", "if", "loop"],
+      section: "code/control-flow",
       runnable: true,
     },
     "184-do-sequence": {
@@ -1320,6 +1503,7 @@
       input: "[?do [a] [b] [c]]",
       note:  "**Introduces:** `[?do]` \u2014 sequencing for effect. Every child is evaluated in order, their values are DISCARDED, and the result is `null` \u2014 so `[?do]` is the shape for \"run these three things\", never for \"compute these three things\". The first `[err]` a child produces propagates out instead of being swallowed, so a failing step still stops the sequence.",
       tags:  ["do"],
+      section: "code/control-flow",
       runnable: true,
     },
     "185-modulo": {
@@ -1327,6 +1511,7 @@
       input: "[?for [in $n (1, 2, 3, 4, 5)]\n  [yield [?if [= [% $n 3] 0] [then [fizz n=$n]] [else [n v=$n]]]]]",
       note:  "**Introduces:** the `%` modulo operator, beside `[$mod]` / `[$div]` / `[$idiv]`. Here it drives the FizzBuzz test: every third item yields `[fizz \u2026]`, the rest yield `[n \u2026]`.",
       tags:  ["eq", "for", "if"],
+      section: "data/numbers",
       runnable: true,
     },
     "186-random-stream": {
@@ -1334,6 +1519,7 @@
       input: "[?lib 'cx-stdlib/random']\n\n[?let [= $r [$random:new 42]]\n  [draws\n    a=[$random:gen-int-range $r 1 100]\n    b=[$random:gen-int-range $r 1 100]\n    c=[$random:gen-int-range $r 1 100]]]",
       note:  "**Introduces:** `[$random:new SEED]` \u2014 a random stream is a VALUE you hold, not a process-global generator you perturb. Same seed, same sequence, every run: `42` draws `52`, `54`, `1`. Two streams in one program are independent, so one part of a program can never shift another part's numbers \u2014 which is what makes a seeded test reproducible.",
       tags:  ["eq", "let", "lib"],
+      section: "code/builtins",
       runnable: true,
     },
     "187-present-vs-count": {
@@ -1341,6 +1527,7 @@
       input: "[?let [= $doc [box [empty] [full v=1]]]\n  [checks\n    present-empty=[$present $doc/empty]\n    count-empty=[$count $doc/empty]\n    present-missing=[$present $doc/nope]]]",
       note:  "**Introduces:** `[$present PATH]` \u2014 the reason the predicate exists. `[$count]` answers how many CHILDREN a step's result has, so on a childless element it answers `0`, and every \"did this step match\" test written with `[$count]` was therefore wrong on a leaf. The `[empty]` element below has no children: the step MATCHED it, so `[$present]` says `true` while `[$count]` still says `0`. For a step that matches nothing at all, `[$present]` says `false`.",
       tags:  ["cxpath", "eq", "let"],
+      section: "code/paths",
       runnable: true,
     },
     "188-err-operand-consuming": {
@@ -1348,6 +1535,7 @@
       input: "[report [$idiv 1 0]]",
       note:  "**Introduces:** the operand-consuming rule. A **computed** `[err]` in child position is not collected into the document \u2014 it PROPAGATES and becomes the result, so this whole `[report \u2026]` evaluates to `[err code=cx-err:CXER0101 message='division by zero']`.\n\n**Position, not value, is the discriminator.** A **source-literal** err is still ordinary data: `[report [err code='app:X' message='\u2026']]` yields the `[report \u2026]` document with the err at rest inside it. To keep a computed failure as data, rebuild it from its parts (`@code` / `@message`) or collect it in a paren sequence \u2014 the same move `[?for]` / `[?map]` make when they gather errs instead of raising them.",
       tags:  [],
+      section: "code/errors",
       runnable: true,
     },
     "189-postfix-path-step": {
@@ -1355,6 +1543,7 @@
       input: "[?if true [then [box [v n=7]]] [else ()]]/v@n",
       note:  "**Introduces:** the uniform postfix step. EVERY program-position bracketed form takes a path step on its closing bracket \u2014 not just bindings and calls. The `[?if]` here answers `[box [v n=7]]` and `/v@n` reads straight through it to `7`, with no intermediate `[?let]` to hold the result.",
       tags:  ["attr", "if"],
+      section: "code/paths",
       runnable: true,
     },
     "190-map-syntax": {
@@ -1362,6 +1551,7 @@
       input: "{name: 'Alice' age: ::int active: true}",
       note:  "**Introduces:** the map-syntax settlement. Entries separate by whitespace **or** comma \u2014 both are the same map. `age: ::int` is the **declaration-only** entry: the kind is declared and the value is ABSENT. That is not the same as `null`; it is a slot whose type is known and whose value has not been supplied.",
       tags:  ["in"],
+      section: "data/collections",
       runnable: true,
     },
     "192-map-module": {
@@ -1369,6 +1559,7 @@
       input: "[?lib 'cx-stdlib/map']\n\n[?let [= $m {a: 1, b: 2}]\n  [out size=[$map:size $m] a=[$map:get $m 'a']\n    [keys [?splice [$map:keys $m]]]]]",
       note:  "**Introduces:** the `cx-stdlib/map` surface \u2014 `[$map:size]`, `[$map:get]`, `[$map:keys]`, `[$map:merge]`. Map syntax is core; the OPERATIONS live in a module you declare with `[?lib]`, and they need no capability, so they run in the sandbox exactly as they run natively.",
       tags:  ["eq", "let", "lib", "splice"],
+      section: "data/collections",
       runnable: true,
     },
     "193-array-module": {
@@ -1376,6 +1567,7 @@
       input: "[?lib 'cx-stdlib/array']\n\n[out size=[$array:size [1, 2, 3, 4]]\n  [rev [?splice [$array:reverse [1, 2, 3]]]]\n  [sorted [?splice [$array:sort [3, 1, 2]]]]]",
       note:  "**Introduces:** the `cx-stdlib/array` surface, the array counterpart of `cx-stdlib/map`. `[\u2026]` is the array container \u2014 ordered, indexable \u2014 as distinct from `(\u2026)`, the sequence.",
       tags:  ["lib", "splice"],
+      section: "data/collections",
       runnable: true,
     },
     "194-read-construct-split": {
@@ -1383,6 +1575,7 @@
       input: "[reads\n  count-arr=[$count [1, 2, 3]]\n  count-seq=[$count (1, 2, 3)]\n  first-arr=[$first [1, 2, 3]]\n  first-seq=[$first (1, 2, 3)]]",
       note:  "**Introduces:** the read/construct split. READERS are container-agnostic \u2014 `[$count]` and `[$first]` answer the same over an array `[\u2026]` and a sequence `(\u2026)`, so a helper that inspects a collection does not care which one it was handed. CONSTRUCTORS are strict: `[$concat [1, 2] (3, 4)]` refuses with the \u00a76.5 diagnostic (\"a single scalar \u2026 is required\"), because a builder must not guess which container you meant to build.",
       tags:  [],
+      section: "data/collections",
       runnable: true,
     },
     "195-group-by-combinator": {
@@ -1390,6 +1583,7 @@
       input: "[?let [= $rows ([o r=US amt=4], [o r=EU amt=2], [o r=US amt=1])]\n  [?group-by $rows [using [?fn ($o) $o@r]]]]",
       note:  "**Introduces:** `[?group-by]` as a combinator over a sequence you already hold, with `[using [?fn \u2026]]` naming the key. It answers pairs of `(key, members)`: `((US, (\u2026)), (EU, (\u2026)))`. This is the sibling of the `[group-by]` CLAUSE inside `[?for]` (example 126) \u2014 use the clause when you are already iterating and want `$key` / `$count` / `$group`, and the combinator when the sequence is in hand.",
       tags:  ["attr", "eq", "fn", "group-by", "let"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "196-with-caps-deny": {
@@ -1397,6 +1591,7 @@
       input: "[?with-caps [deny net]\n  [ok value='sandboxed']]",
       note:  "**Introduces:** `[?with-caps [deny \u2026]]` \u2014 the effect-posture half of the authority model. It can only ever REMOVE authority for the extent of its body: there is no `[allow]`, because a program cannot grant itself a capability it was not started with. So this is the shape for \"run this part with less than I have\" \u2014 deny `net` around a plugin, deny `write` around a rendering step \u2014 and reading it tells you the maximum the body could do.",
       tags:  ["with-caps"],
+      section: "code/effects",
       runnable: true,
     },
     "197-secret-redaction": {
@@ -1404,6 +1599,7 @@
       input: "[?let [= $k [?secret 'sk-live-abc123']]\n  [config [api-key $k]]]",
       note:  "**Introduces:** `[?secret]`. The value stays usable inside the program, but anything that RENDERS it prints `'\u2039redacted\u203a'` \u2014 so a secret cannot reach a log line, an error message, or this output pane by accident. Redaction is a property of the value, not a discipline the author has to remember at every emit site.",
       tags:  ["eq", "let", "secret"],
+      section: "code/effects",
       runnable: true,
     },
     "198-checked-int-overflow": {
@@ -1411,6 +1607,7 @@
       input: "[* 9223372036854775807 2]",
       note:  "**Introduces:** checked integer arithmetic. Overflow is an `[err code=cx-err:CXER3000]` \u2014 `E_MATH_OVERFLOW: int64 overflow in \\`*\\`` \u2014 not a wrapped negative number. Modular arithmetic is available and must be ASKED for by name (`wrapping-mul`), which the diagnostic itself says. The default is the answer that cannot be wrong quietly.",
       tags:  ["mul"],
+      section: "data/numbers",
       runnable: true,
     },
     "199-exact-int-division": {
@@ -1418,6 +1615,7 @@
       input: "[$idiv 9007199254740993 3]",
       note:  "**Introduces:** the exact integer lane. `9007199254740993` is 2\u2075\u00b3+1 \u2014 the first integer a float64 cannot represent \u2014 and `[$idiv]` answers `3002399751580331` exactly, because it computes in i64 and never routes through f64. A language that quietly promoted this to a float would be off by one and say nothing.",
       tags:  [],
+      section: "data/numbers",
       runnable: true,
     },
     "200-const-and-def": {
@@ -1425,6 +1623,7 @@
       input: "[?const TAX 0.08]\n[?def total scope=public pure ($net) [* $net [+ 1 TAX]]]\n\n[bill amount=[$total 100]]",
       note:  "**Introduces:** the two module-level forms. `[?const]` binds a name once, at load, with no `$` sigil at the use site \u2014 `TAX`, not `$TAX`. `[?def]` declares a function, called through `$` like any builtin: `[$total 100]` \u2192 `[bill amount=108.00]`. `pure` is a CLAIM the engine checks, so a `pure` body that reaches for an effect is refused rather than trusted.",
       tags:  ["add", "const", "def", "mul"],
+      section: "code/bindings",
       runnable: true,
     },
     "201-str-interpolation": {
@@ -1432,6 +1631,7 @@
       input: "[?let [= $name 'CX'] [= $n 3]\n  [?str \"Hello {$name}, {$n} items\"]]",
       note:  "**Introduces:** `[?str]` \u2014 `{\u2026}` interpolation into a string. The braces take a full expression, not just a bare variable, and everything outside them is literal text. This is the readable alternative to a `[$concat]` chain when you are building a message.",
       tags:  ["eq", "let", "str"],
+      section: "data/text",
       runnable: true,
     },
     "202-else-coalesce": {
@@ -1439,6 +1639,7 @@
       input: "[?else [$nth (1, 2) 9] 'default']",
       note:  "**Introduces:** `[?else]` \u2014 supply a value when the first expression yields nothing. `[$nth (1, 2) 9]` asks for the ninth of two items and answers the empty sequence; `[?else]` turns that into the string `default`. (A string prints unquoted when it needs no quoting \u2014 `'has space'` keeps its quotes.) It is the idiom the `[$concat]` diagnostic points at (\"bind it or default it with `[?else]` first\") whenever a path step might match nothing.",
       tags:  ["else"],
+      section: "code/control-flow",
       runnable: true,
     },
     "203-quote-homoiconic": {
@@ -1446,6 +1647,7 @@
       input: "[?quote [+ 1 2]]",
       note:  "**Introduces:** `[?quote]` \u2014 and with it the homoiconicity story. `[+ 1 2]` is not evaluated; it is handed back as ITS OWN AST, in ordinary CX element syntax: `[cx:op name=add [cx:int '1'] [cx:int '2']]`. One bracketed element syntax serves documents, queries, programs, and the compiler's own tree \u2014 so a program can be read, matched with `[?match]`, and transformed with `[?modify]` using the same surface you use on data. Switch the Tree pane on to walk it.",
       tags:  ["add", "quote"],
+      section: "code/metaprogramming",
       runnable: true,
     },
     "204-partial-application-hole": {
@@ -1453,6 +1655,7 @@
       input: "[?pipe (3, 1, 2) [$sort _] [$first _]]",
       note:  "**Introduces:** the partial-application hole `_` (code.md \u00a76.3a). A bare `_` in an ARGUMENT position defers that argument: `[$sort _]` is a callable waiting for its sequence, and `[?pipe]` feeds each stage's value into the hole. Read the pipeline top to bottom: sort `(3, 1, 2)`, take the first \u2192 `1`.\n\nA hole is not a wildcard and not a binding \u2014 it is the one place a call is allowed to be incomplete, and the result is a value you can pass around (next example).",
       tags:  ["parallel", "pipe"],
+      section: "code/functions",
       runnable: true,
       wasmUnsupported: "`[?pipe]` into a partial-application hole throws `table index is out of bounds` under wasm32 \u2014 a known wasm defect being fixed; the hole itself works (example 205); native answers `1`.",
     },
@@ -1461,6 +1664,7 @@
       input: "[?lib 'cx-stdlib/strings' :as strings]\n[?let [= $shout [$strings:upper _]] [names [?splice [?for [in $n (\"ada\", \"bo\")] [yield [$shout $n]]]]]]",
       note:  "**Introduces:** binding the result of a hole (\u00a76.3a/\u00a76.3b). `[$strings:upper _]` is a function value; bound to `$shout` it is called like any callable \u2014 `[$shout $n]` \u2014 inside the comprehension. Compare `[?fn ($n) [$strings:upper $n]]`: the hole says the same thing without naming the parameter. Stdlib verbs are reached through `[?lib \u2026]` here as everywhere; a hole can only be applied to a FUNCTION (a bare data head refuses `CXER0001`).",
       tags:  ["eq", "for", "let", "lib", "splice"],
+      section: "code/functions",
       runnable: true,
     },
     "206-head-bind-captures-the-whole-element": {
@@ -1468,6 +1672,7 @@
       input: "[?match [user id=7 [given Ada]]\n  [case [user$u id=$id] [found id=$id [?splice ($u)]]]\n  [else NOMATCH]]",
       note:  "**Introduces:** the head-bind (code.md \u00a75.1). A binding GLUED to a pattern's name \u2014 `[user$u \u2026]` \u2014 captures the whole matched element, attributes and body included, while the rest of the pattern still destructures it (`id=$id`). Whitespace matters: `[user $u]` is a body item (rule 5's auto-unwrap), `[user$u]` is the head-bind. On wildcard, deep and type-guard heads the binding MAY be separated (`[* $x]`).",
       tags:  ["match", "splice"],
+      section: "code/patterns",
       runnable: true,
     },
     "207-attribute-rest": {
@@ -1475,6 +1680,7 @@
       input: "[?match [user id=7 role=admin name=Ada]\n  [case [user id=$id @* $rest] [known id=$id [rest [?splice ($rest)]]]]\n  [else NOMATCH]]",
       note:  "**Introduces:** the attribute rest (code.md \u00a75.1 [126d]). `@* $rest` binds every attribute the pattern's other `@`/`name=` predicates did not claim, as a MAP \u2014 here `role` and `name`, with `id` taken by `id=$id`. Use it to forward \"everything else\" without listing it.",
       tags:  ["attr", "match", "splice"],
+      section: "code/patterns",
       runnable: true,
     },
     "208-wildcard-heads-bind": {
@@ -1482,6 +1688,7 @@
       input: "[?match [order [item sku=A] [item sku=B] [note x]]\n  [case [order [* $first] [** $deep]] [heads first=[$name $first] deep=[$name $deep]]]\n  [else NOMATCH]]",
       note:  "**Introduces:** head-binds on the wildcard heads (\u00a75.1, \u00a75.2 rules 2\u20133). `[* $first]` matches any ONE element at that position and binds it; `[** $deep]` matches at this position OR deeper. Both `$first` and `$deep` land on an `item` here \u2014 `$deep` because `**` also matches at depth zero. The names are read back with `[$name \u2026]`.",
       tags:  ["match", "mul"],
+      section: "code/patterns",
       runnable: true,
     },
     "209-for-destructures-an-element": {
@@ -1489,6 +1696,7 @@
       input: "[?for [in [point x=$x y=$y] ([point x=1 y=2], [point x=3 y=4])] [yield [+ $x $y]]]",
       note:  "**Introduces:** `[?for]` over a PATTERN (code.md \u00a76.3). The `[in PAT EXPR]` slot takes the whole pattern grammar, not just a binding name: each `[point \u2026]` is destructured into `$x` and `$y` as it is generated. Items that do not match are SKIPPED (a generator filters, it does not refuse); a bind-form that is not a pattern refuses loudly.",
       tags:  ["add", "for"],
+      section: "code/patterns",
       runnable: true,
     },
     "210-for-destructures-a-pair": {
@@ -1496,6 +1704,7 @@
       input: "[?for [in [$k, $v] ([\"a\", 1], [\"b\", 2])] [yield [pair k=$k v=$v]]]",
       note:  "**Introduces:** the same generator pattern over ARRAY items (\u00a76.3). `[$k, $v]` is an array pattern: each `[\"a\", 1]` splits into key and value, and the body builds one `[pair]` per item. The read/construct split is why this works over both `[\u2026]` and `(\u2026)` inputs \u2014 patterns READ any collection kind.",
       tags:  ["for"],
+      section: "code/patterns",
       runnable: true,
     },
     "211-single-arm-match": {
@@ -1503,6 +1712,7 @@
       input: "[?let [= $r [ok 42]] [?match $r [case [ok $v] [* $v 2]]]]",
       note:  "**Introduces:** the one-arm match. `[?match $r [case [ok $v] \u2026]]` needs no `[else]` when the caller knows the shape; the arm's pattern is the full grammar (`[ok $v]` binds the body). A value that matches NO arm is a refusal, not a silent null \u2014 see the `[of]` examples for the closed-type version of that rule.",
       tags:  ["eq", "let", "match", "mul"],
+      section: "code/control-flow",
       runnable: true,
     },
     "212-a-bare-def-name-is-the-callable": {
@@ -1510,6 +1720,7 @@
       input: "[?def double ($x) [* $x 2]]\n[?def twice ($f $x) [$f [$f $x]]]\n[twice double 3]",
       note:  "**Introduces:** callable values (code.md \u00a76.3b). Inside a program body a bare def name in VALUE position \u2014 `double` passed to `twice` \u2014 denotes the function itself, and a parameter holding a function is called with `[$f \u2026]`. No quoting, no `[?fn]` wrapper: `[twice double 3]` \u2192 `12`. (In a DATA body the same word is text \u2014 see example on bare words.)",
       tags:  ["def", "mul"],
+      section: "code/functions",
       runnable: true,
     },
     "213-splice-inside-a-literal": {
@@ -1517,6 +1728,7 @@
       input: "(0, [?splice (1, 2)], 3)",
       note:  "**Introduces:** splicing into a sequence literal (code.md \u00a76.4.1). `[?splice EXPR]` in a `(\u2026)` or `[\u2026]` literal adopts EXPR's members at that position, so `(0, [?splice (1, 2)], 3)` is the flat `(0, 1, 2, 3)` \u2014 not a nested pair. A sequence in element-content position without `?splice` refuses (the earlier `CXER0100 \u2026 adopt its members with [?splice]` example).",
       tags:  ["splice"],
+      section: "code/metaprogramming",
       runnable: true,
     },
     "214-quasiquote-with-unquote": {
@@ -1524,6 +1736,7 @@
       input: "[?let [= $n [+ 1 2]] [?quote [total [?unquote $n] [?unquote [* $n 2]]]]]",
       note:  "**Introduces:** the quasiquote hole (code.md \u00a76.4.3). `[?quote \u2026]` hands back the tree AS DATA; `[?unquote EXPR]` inside it evaluates EXPR and puts the VALUE at that spot. Here the two unquotes compute `3` and `6` while `total` stays a literal head. Contrast `203-quote-homoiconic`, which quotes an expression whole.",
       tags:  ["add", "eq", "let", "mul", "quote", "unquote"],
+      section: "code/metaprogramming",
       runnable: true,
     },
     "215-purity-is-checked-at-load": {
@@ -1531,6 +1744,7 @@
       input: "[?def inc ($x) [+ $x 1]]\n[?def twice-inc ($x) [inc [inc $x]]]\n[twice-inc 1]",
       note:  "**Introduces:** load-time purity checking (code.md \u00a78). A `[?def]` is PURE unless it says `impure [effects \u2026]`; a pure def calling pure defs loads and runs \u2192 `3`. Change `inc` to `[?def inc impure [effects [write]] ($x) [+ $x 1]]` and keep `twice-inc` as written, and the module refuses to LOAD before anything runs:\n\n```\nerror: cx-err:CXER0233: cx-err:CXER0233 E_PURITY_VIOLATION: call to impure `[?def] inc`\n```\n\nThe message names the offending call. The next example shows the honest declaration on the caller.",
       tags:  ["add", "def"],
+      section: "code/effects",
       runnable: true,
     },
     "216-declared-effects": {
@@ -1538,6 +1752,7 @@
       input: "[?def bump impure [effects [write]] ($x) [+ $x 1]]\n[?def loud impure [effects [write]] ($x) [bump $x]]\n[loud 1]",
       note:  "**Introduces:** the `[effects \u2026]` clause (code.md \u00a78). `loud` declares the same effect its callee `bump` declares, so the static check passes and `[loud 1]` \u2192 `2`. Effects compose upward: whatever a def calls, it must admit. `[effects]` is a NARROWING declaration \u2014 it never grants a capability the program does not hold (see the caps examples).",
       tags:  ["add", "def"],
+      section: "code/effects",
       runnable: true,
     },
     "217-typed-params-and-returns": {
@@ -1545,6 +1760,7 @@
       input: "[?def area ($w::int $h::int) [returns int] [* $w $h]]\n[area 3 4]",
       note:  "**Introduces:** parameter and return ascriptions on `[?def]` (code.md \u00a78.4). `($w::int $h::int)` declares the parameter kinds and `[returns int]` the result kind. The playground runs the default profile, where the ascriptions DOCUMENT and the arithmetic still refuses a non-number by its own rule; under `cx --strict` the call `[area 3 \"four\"]` refuses at the boundary with `CXER0206 E_TYPE_ARG_MISMATCH: argument for \\`h\\` does not match declared type \\`int\\``.",
       tags:  ["def", "in", "mul", "parallel"],
+      section: "code/functions",
       runnable: true,
     },
     "218-exact-numeric-lane": {
@@ -1552,6 +1768,7 @@
       input: "[readings [exact [$idiv 7 2]] [rem [% 7 2]] [mean [$avg (1.5, 2.5)]] [chain [/ 12 3 2]]]",
       note:  "**Introduces:** the exact numeric lane (code.md \u00a76.5). Integers are i64 and CHECKED; `$idiv` and `%` are the integer pair; `$avg` over decimals stays decimal (`2.00`, scale preserved); an all-int `/` chain `[/ 12 3 2]` folds exactly in i64 \u2192 `2`. Nothing here passes through a float.",
       tags:  ["builtin", "div", "rem"],
+      section: "data/numbers",
       runnable: true,
     },
     "219-non-terminating-division-refuses-by-name": {
@@ -1559,6 +1776,7 @@
       input: "[?lib 'cx-stdlib/math' :as math]\n[divisions\n  [exact [?fallback recover-with=[refused code=$err@code] body=[$div 1.0 3.0]]]\n  [rounded [$math:div-decimal 1.0 3.0 {precision: 2 mode: :half-up}]]\n  [float [/ 1 3]]]",
       note:  "**Introduces:** the refusal side of the exact lane, and the two ways to ask properly. `1.0 / 3.0` has no terminating decimal, so `$div` REFUSES BY NAME (`CXER3002`) rather than inventing a precision \u2014 here the refusal is caught as a value and only its code is shown. `[$math:div-decimal a b {precision: N mode: :half-up}]` from `cx-stdlib/math` supplies the rounding context and answers `0.33`; `[/ 1 3]` on integers takes the float lane and answers the nearest double. Three spellings, three different contracts, each visible in the output.",
       tags:  ["attr", "div", "fallback", "lib"],
+      section: "data/numbers",
       runnable: true,
     },
     "220-checked-overflow": {
@@ -1566,6 +1784,7 @@
       input: "[* 9223372036854775807 2]",
       note:  "**Introduces:** checked integer arithmetic (code.md \u00a76.5). `9223372036854775807 \u00d7 2` does not silently wrap to `-2`: it refuses `E_MATH_OVERFLOW` and names the way out. Overflow is a value you can see, not a number you cannot.",
       tags:  ["mul"],
+      section: "data/numbers",
       runnable: true,
     },
     "221-wrapping-arithmetic-on-request": {
@@ -1573,6 +1792,7 @@
       input: "[?lib 'cx-stdlib/math' :as math]\n[$math:wrapping-mul 9223372036854775807 2]",
       note:  "**Introduces:** the wrapping family in `cx-stdlib/math`. The same multiplication the previous example refused answers `-2` here \u2014 the two's-complement wrap \u2014 because you asked for modular arithmetic by name. Hashing and ring arithmetic want this; a total or a price never does, which is why it is not the default.",
       tags:  ["lib"],
+      section: "data/numbers",
       runnable: true,
     },
     "222-an-err-is-a-value-in-process": {
@@ -1580,6 +1800,7 @@
       input: "[?let [= $e [err code=cx-err:CXER9999 message=\"boom\"]] [report ok=[$exists $e/@code]]]",
       note:  "**Introduces:** an error is a value in process (code.md \u00a76.4.1). Inside the program an `[err \u2026]` is an ordinary element: bind it, read `$e/@code`, branch on it. `[$exists $e/@code]` \u2192 `true` and the program's own result is a clean `[report ok=true]`. Nothing refused, because nothing crossed an effect boundary.",
       tags:  ["cxpath", "eq", "let"],
+      section: "code/errors",
       runnable: true,
     },
     "223-at-the-boundary-a-result-with-an-err-refuses": {
@@ -1587,6 +1808,7 @@
       input: "[?let [= $e [err code=cx-err:CXER9999 message=\"boom\"]] [report $e]]",
       note:  "**Introduces:** the other half of that rule: at the boundary, a result carrying an error refuses. The same `[err]` placed INTO the result \u2014 `[report $e]` \u2014 crosses the program's output boundary, and emission is an externalizing effect: the run refuses loudly (`error: the result carries an error value \u2014 cx-err:CXER9999 at /err`) instead of printing a document with a refusal buried in it. Only a deliberate `errs=:permit` on an emitting form externalizes an err on purpose.",
       tags:  ["eq", "let"],
+      section: "code/errors",
       runnable: true,
     },
     "224-no-callable-is-a-coded-refusal": {
@@ -1594,6 +1816,7 @@
       input: "[$nope 1]",
       note:  "**Introduces:** the name-resolution miss (code.md \u00a79.4). `[$nope 1]` resolves to no builtin, no def, no binding \u2014 the answer is a CODED refusal, `CXER0136 E_NO_CALLABLE`, that names the callable it could not find. The old `user-undefined` spelling is gone; graders and tools key on the code, never the prose.",
       tags:  [],
+      section: "code/errors",
       runnable: true,
     },
     "225-const-str-and-a-module-def": {
@@ -1601,6 +1824,7 @@
       input: "[?const RATE 0.08]\n[?def total ($sub) [* $sub [+ 1 RATE]]]\n[?let [= $name \"Ada\"] [= $n 3]\n  [bill for=[?str \"{$name}, {$n} items\"] amount=[total 100]]]",
       note:  "**Introduces:** three module-level forms together (code.md \u00a75). `[?const RATE 0.08]` is a module-level constant, read bare (`RATE`) inside `total`; `[?str \"{$name}, {$n} items\"]` interpolates bindings into text; the amount is exact decimal arithmetic \u2192 `108.00`. The flat `[?let]` binds two names in one form \u2014 the ruled idiom, not a cascade.",
       tags:  ["add", "const", "def", "eq", "let", "mul", "str"],
+      section: "code/bindings",
       runnable: true,
     },
     "226-group-by-with-per-group-totals": {
@@ -1608,6 +1832,7 @@
       input: "[?let [= $rows ([sale region=US amt=5], [sale region=EU amt=7], [sale region=US amt=3])]\n  [?for [in $g [?group-by $rows [using [?fn ($s) $s@region]]]]\n    [yield [total region=[$first $g] amt=[$sum [?for [in $s [$nth $g 2]] [yield $s@amt]]]]]]]",
       note:  "**Introduces:** `[?group-by]` (code.md \u00a76.3). The `[using FN]` slot names the key; the result is a sequence of `(key, (items\u2026))` pairs in first-seen key order. The outer `[?for]` walks the groups (`[$first $g]` is the key, `[$nth $g 2]` the items \u2014 indices are 1-based) and sums each group's amounts.",
       tags:  ["attr", "eq", "fn", "for", "group-by", "let"],
+      section: "code/comprehensions",
       runnable: true,
     },
     "227-present-vs-exists-vs-count": {
@@ -1615,6 +1840,7 @@
       input: "[?let [= $d [doc [empty]]] [checks present=[$present $d/empty] count=[$count $d/empty] exists=[$exists $d/empty]]]",
       note:  "**Introduces:** `[$present PATH]` (code.md \u00a76.6). On a LEAF element `[empty]`, `$count` is `0` and `$exists` is `false` \u2014 both ask about CONTENT \u2014 while `$present` asks the question the reader meant: is there a node at this path? \u2192 `true`. Every \"did this step match\" test written with `$count` was wrong on a leaf; this is the fix.",
       tags:  ["cxpath", "eq", "let"],
+      section: "code/paths",
       runnable: true,
     },
     "228-a-scoped-deny-is-not-a-total-deny": {
@@ -1622,6 +1848,7 @@
       input: "[capabilities [total-deny [?with-caps [deny net] [$caps]]] [scoped-deny [?with-caps [deny net \"a.example:443\"] [$caps]]]]",
       note:  "**Introduces:** resource-scoped capability denial (code.md \u00a79). `[deny net]` removes the capability \u2014 the inner `[$caps]` has no `net` key \u2014 while `[deny net \"a.example:443\"]` denies ONE resource and leaves `net: true`. Earlier the scoped form silently denied the whole capability. `[?with-caps]` only ever NARROWS what the program already holds. The playground runs GRANT-FREE, so here BOTH maps are empty \u2014 neither run holds `net` to begin with; with `--allow-net` the total deny removes the `net` key while the scoped deny leaves `net: true`.",
       tags:  ["with-caps"],
+      section: "code/effects",
       runnable: true,
     },
     "229-declaration-only-map-entry": {
@@ -1629,6 +1856,7 @@
       input: "[?lib 'cx-stdlib/map' :as map]\n[?let [= $m {name: \"Ada\" age: ::int}] [entry name=[$map:get $m \"name\"] has-age=[$present [$map:get $m \"age\"]]]]",
       note:  "**Introduces:** the map-syntax settlement (data.md \u00a74). Entries separate by whitespace or comma; `age: ::int` DECLARES the kind and supplies no value \u2014 `[$map:get $m \"age\"]` answers absence, so `$present` is `false`. Absence is not `null`: `null` is a value you would have to write. Ascriptions on entries are CHECKED when a value is present.",
       tags:  ["eq", "in", "let", "lib"],
+      section: "data/collections",
       runnable: true,
     },
     "230-an-atom-is-not-a-map-key": {
@@ -1636,6 +1864,7 @@
       input: "{\"name\": 1}",
       note:  "**Introduces:** a data-language refusal spelled for both readers (schema.md \u00a710.3). Map keys are strings, so `{\"name\": 1}` is the map `{name: 1}`. Write the key as an ATOM \u2014 `{:name: 1}` \u2014 and the parser refuses at the exact position with the canonical spelling of what it saw:\n\n```\nerror: cx-err:CXER0100: parse: atom is not a valid map key (cx-err:CXERMAP-BADKEY) at line 1:2\n```\n\nDiagnostics render values in canonical spelling everywhere, so the message and the document agree byte for byte.",
       tags:  [],
+      section: "data/collections",
       runnable: true,
     },
     "231-a-bare-word-in-a-data-body-is-text": {
@@ -1643,6 +1872,7 @@
       input: "[greeting hello]",
       note:  "**Introduces:** a bare word in a data body is TEXT, never a binding read. `[greeting hello]` is data: `hello` is the text `'hello'` even if a `$hello` binding exists nearby. To place a binding's value in a body you write `$hello`. One rule for readers and tools: data bodies never reach into scope.",
       tags:  [],
+      section: "data/elements",
       runnable: true,
     },
     "232-of-clause-closed-match": {
@@ -1650,6 +1880,7 @@
       input: "[?cx schema-inline\n  [schema of=job]\n  [type status::atom [enum :ok :err :pending]]]\n[?match :err [of status]\n  [case :ok 'done']\n  [case :err 'failed']\n  [case :pending 'waiting']]",
       note:  "**Introduces:** the `[of]` clause (schema.md \u00a74/\u00a75.4). `[?cx schema-inline \u2026]` declares a program-scope schema; `[type status::atom [enum :ok :err :pending]]` closes the set; `[of status]` tells the match which type it is over, so the arms are CHECKED against the members \u2014 a typo in a `[case \u2026]` atom is a load error, not a silent never-match. Value `:err` \u2192 `'failed'`.",
       tags:  ["cx", "match"],
+      section: "data/schema",
       runnable: true,
     },
     "233-of-clause-membership-refusal": {
@@ -1657,6 +1888,7 @@
       input: "[?cx schema-inline\n  [schema of=job]\n  [type status::atom [enum :ok :err :pending]]]\n[?fallback recover-with=[refused [why $err@message]]\n  body=[?match :gone [of status]\n    [case :ok \"done\"] [case :err \"failed\"] [case :pending \"waiting\"]]]",
       note:  "**Introduces:** membership under `[of]`. `:gone` is not a member of `status`, so the match refuses `S007: value :gone not in [enum :ok :err :pending]` \u2014 the same code the schema validator uses for an out-of-set atom in data. One constraint, two readers, one spelling. The `[?fallback]` wrapper is only here so the refusal is shown as a VALUE (`$err` is bound inside `recover-with=`); unwrapped, the program refuses at the top level with that text.",
       tags:  ["attr", "cx", "fallback", "match"],
+      section: "data/schema",
       runnable: true,
     },
     "234-of-clause-no-silent-fall-through": {
@@ -1664,6 +1896,7 @@
       input: "[?cx schema-inline\n  [schema of=job]\n  [type status::atom [enum :ok :err :pending]]]\n[?fallback recover-with=[refused [why $err@message]]\n  body=[?match :pending [of status]\n    [case :ok \"done\"] [case :err \"failed\"]]]",
       note:  "**Introduces:** exhaustiveness under `[of]` (code.md \u00a78.2). The value `:pending` IS a member, but no arm claims it and there is no `[else]` \u2014 over a declared-closed type that is a refusal naming the missing arm, because a closed set with an unhandled member is a bug the compiler can see. `cx lint` reports the same gap statically. Again `[?fallback]` only surfaces the refusal as a value for the pane.",
       tags:  ["attr", "cx", "fallback", "match"],
+      section: "data/schema",
       runnable: true,
     },
     "235-of-clause-else-opts-out": {
@@ -1671,6 +1904,7 @@
       input: "[?cx schema-inline\n  [schema of=job]\n  [type status::atom [enum :ok :err :pending]]]\n[?match :pending [of status]\n  [case :ok 'done']\n  [else 'other']]",
       note:  "**Introduces:** the escape hatch. An explicit `[else \u2026]` says \"every other member goes here\" \u2014 `:pending` \u2192 `'other'` \u2014 and the exhaustiveness check stands down because you said so, in the source, where a reader can see it.",
       tags:  ["cx", "match"],
+      section: "data/schema",
       runnable: true,
     },
     "236-negative-zero-keeps-its-sign": {
@@ -1678,6 +1912,7 @@
       input: "[reading a=-0.0 b=0.0 c=-0.00]",
       note:  "**Introduces:** canonical.md \u00a72.5 on negative zero. `-0.0` is a distinct decimal from `0.0` in the canonical image, and the scale is preserved like any other decimal (`-0.00` stays two places). Equality is a separate axis: `[= -0.0 0.0]` is still `true`. The canonical image records what was written; comparison decides what is equal.",
       tags:  [],
+      section: "data/numbers",
       runnable: true,
     },
     "237-xml-refuses-a-duplicate-attribute": {
@@ -1685,6 +1920,7 @@
       input: "[?lib 'cx-stdlib/xml' :as xml]\n[$xml:parse \"<r x='1' x='2'/>\"]",
       note:  "**Introduces:** the XML codec enforces the 1.0 well-formedness constraint \"Unique Att Spec\": `x` appears twice on `<r>`, so parsing refuses `CXER0100 PARSE_ERROR` at `1:10` and cites the constraint. No last-writer-wins, no silent merge. (The attribute values are single-quoted here only because a `\\\"` inside a string literal trips the diagram emitter's label escaping \u2014 a known defect being fixed; the refusal is the same either way.)",
       tags:  ["lib", "par"],
+      section: "data/formats",
       runnable: true,
     },
     "238-postfix-path-step-on-any-form": {
@@ -1692,6 +1928,7 @@
       input: "[?if true [then [box [v n=7]]] [else ()]]/v@n",
       note:  "**Introduces:** uniform postfix path steps (cxpath.md \u00a72). Every program-position bracketed form's closing bracket accepts the compact step, not just bindings and calls: the `[?if \u2026]` evaluates to `[box [v n=7]]` and `/v@n` reads straight through it \u2192 `7`.",
       tags:  ["attr", "if"],
+      section: "code/paths",
       runnable: true,
     },
     "239-readers-read-any-collection": {
@@ -1699,6 +1936,7 @@
       input: "[both count=[$count [1, 2]] first=[$first (3, 4)]]",
       note:  "**Introduces:** the read/construct split (code.md \u00a76.6). Readers \u2014 `$count`, `$first`, `$nth`, patterns \u2014 work over both arrays `[\u2026]` and sequences `(\u2026)`. The next example is the other half of the rule.",
       tags:  [],
+      section: "data/collections",
       runnable: true,
     },
     "240-constructors-keep-strict-typing": {
@@ -1706,6 +1944,7 @@
       input: "[$concat [1, 2] (3, 4)]",
       note:  "**Introduces:** the construct side of the split. `$concat` builds text from scalars; handed a two-item sequence as an argument it refuses and says what it needed \u2014 bind or `[?else]` the value first. Reading is permissive, constructing is strict, and the boundary between them is where CX's shape guarantees live.",
       tags:  [],
+      section: "data/collections",
       runnable: true,
     },
     "241-json-in-and-out": {
@@ -1713,6 +1952,7 @@
       input: "[?lib 'cx-stdlib/json' :as json]\n[?let [= $doc [$json:parse \"{\\\"order\\\": {\\\"id\\\": 7, \\\"items\\\": [\\\"pen\\\", \\\"ink\\\"], \\\"paid\\\": true}}\"]]\n  [round-trip [as-cx $doc] [items [?splice $doc.order.items]] [back [$json:emit {order: {id: 7, items: [\"pen\", \"ink\"], paid: true}}]]]]",
       note:  "**Introduces:** the codec surface every format shares (codec.md \u00a73): `[$json:parse s]` reads text into a CX VALUE \u2014 a JSON object becomes a map, an array becomes an array, `true` stays a bool \u2014 and `[$json:emit v]` writes a value back as compact JSON. Because the parse is a value, the program reads it with ordinary paths (`$doc.order.items`) and splices it into an element like any other data. Codecs charge no capability: parsing text is pure.",
       tags:  ["eq", "let", "lib", "par", "splice"],
+      section: "data/formats",
       runnable: true,
     },
     "242-xml-in-and-out": {
@@ -1720,6 +1960,7 @@
       input: "[?lib 'cx-stdlib/xml' :as xml]\n[?let [= $doc [$xml:parse \"<order id=\\\"7\\\"><item sku=\\\"pen\\\">2</item><item sku=\\\"ink\\\">1</item></order>\"]]\n  [round-trip [as-cx $doc] [skus [?splice [?for [in $i $doc//item] [yield [$string $i@sku]]]]] [back [$xml:emit [order id=7 [item sku=pen 2]]]]]]",
       note:  "**Introduces:** XML is the format closest to CX's own element shape, so `[$xml:parse]` answers an ELEMENT: attributes stay attributes, text content stays text (`'2'`, a string \u2014 XML carries no numbers), and the descendant path `$doc//item` reads it exactly like a native document. `[$xml:emit]` renders an element back, one tag per line. The same document hashed as CX and as XML are two different byte streams over one value.",
       tags:  ["attr", "cxpath", "descendant", "eq", "for", "let", "lib", "par", "splice"],
+      section: "data/formats",
       runnable: true,
     },
     "243-yaml-in-and-out": {
@@ -1727,6 +1968,7 @@
       input: "[?lib 'cx-stdlib/yaml' :as yaml]\n[?let [= $cfg [$yaml:parse \"service: api\\nreplicas: 3\\nports:\\n  - 8080\\n  - 8443\\n\"]]\n  [round-trip [as-cx $cfg] [replicas $cfg.replicas] [back [$yaml:emit {service: \"api\", replicas: 3, ports: [8080, 8443]}]]]]",
       note:  "**Introduces:** YAML follows the same two verbs. A mapping parses to a map, a sequence to an array, scalars keep their kinds (`3` is an int), and `[$yaml:emit]` writes a map back in block style. Nothing here is YAML-specific in the program: swap the module name and `[$toml:parse]` or `[$json:parse]` read the same `$cfg.replicas`.",
       tags:  ["eq", "let", "lib", "par"],
+      section: "data/formats",
       runnable: true,
     },
     "244-toml-in-and-out": {
@@ -1734,6 +1976,7 @@
       input: "[?lib 'cx-stdlib/toml' :as toml]\n[?let [= $cfg [$toml:parse \"title = \\\"cx\\\"\\n[owner]\\nname = \\\"Ada\\\"\\nyear = 2026\\n\"]]\n  [round-trip [as-cx $cfg] [owner $cfg.owner.name] [back [$toml:emit {title: \"cx\", owner: {name: \"Ada\", year: 2026}}]]]]",
       note:  "**Introduces:** a TOML `[owner]` table is a nested map after `[$toml:parse]`, so `$cfg.owner.name` walks it like any map, and `[$toml:emit]` turns a nested map back into a table with its header. Top-level keys come first, tables after \u2014 the emitter orders the document the way TOML requires.",
       tags:  ["eq", "let", "lib", "par"],
+      section: "data/formats",
       runnable: true,
     },
     "245-csv-in-and-out": {
@@ -1741,6 +1984,7 @@
       input: "[?lib 'cx-stdlib/csv' :as csv]\n[?let [= $rows [$csv:parse \"sku,qty,price\\npen,2,1.50\\nink,1,4.25\"]]\n  [round-trip [rows [$count $rows]] [head-row [$first $rows]] [back [$csv:emit $rows]]]]",
       note:  "**Introduces:** `[$csv:parse]` reads the header row as the keys and answers one map per data row, so `[$count $rows]` is `2` and `[$first $rows]` is the first record (the output heads `rows` and `head-row` are plain data names \u2014 a bare `count` head would read as data, not a call). Cells stay STRINGS (`'2'`, `'1.50'`) \u2014 CSV carries no types; ascribe or convert when you need numbers, or parse with a schema. `[$csv:emit]` writes the rows back, header first.",
       tags:  ["eq", "let", "lib", "par"],
+      section: "data/formats",
       runnable: true,
     },
   };

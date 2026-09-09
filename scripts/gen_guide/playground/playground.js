@@ -5,8 +5,49 @@
 
   const examples = (window.cxPlaygroundExamples || { program: {} });
   const programEntries = examples.program || {};
+  // ── Sections (#1375) — two top-level groups, domain subcategories ─────
+  // The picker groups by `ex.section` (authored in examples.cxd, one of the
+  // closed list gen_examples.cx enforces), never by when a feature was
+  // introduced. The ORDER here is the reading order; within a subcategory
+  // the corpus order (simple → complex) stands. Left/right walk this order,
+  // up/down jump to the neighbouring subcategory.
+  const SECTION_ORDER = [
+    'data/elements', 'data/collections', 'data/numbers', 'data/text', 'data/formats', 'data/schema',
+    'code/bindings', 'code/control-flow', 'code/patterns', 'code/functions', 'code/comprehensions',
+    'code/paths', 'code/transforms', 'code/queries', 'code/errors', 'code/effects', 'code/builtins',
+    'code/concurrency', 'code/resilience', 'code/metaprogramming', 'code/diagrams',
+  ];
+  const SECTION_NAMES = {
+    'data/elements': ['CX data', 'Elements and attributes'],
+    'data/collections': ['CX data', 'Collections: sequences, arrays, maps'],
+    'data/numbers': ['CX data', 'Numbers and durations'],
+    'data/text': ['CX data', 'Text'],
+    'data/formats': ['CX data', 'Formats: JSON, XML, YAML, TOML, CSV'],
+    'data/schema': ['CX data', 'Schema and closed types'],
+    'code/bindings': ['CX code', 'Bindings, constants, modules'],
+    'code/control-flow': ['CX code', 'Control flow and match'],
+    'code/patterns': ['CX code', 'Patterns and destructuring'],
+    'code/functions': ['CX code', 'Functions and callables'],
+    'code/comprehensions': ['CX code', 'Comprehensions, map, reduce, slices'],
+    'code/paths': ['CX code', 'Paths (cxpath)'],
+    'code/transforms': ['CX code', 'Transforms: modify and pipe'],
+    'code/queries': ['CX code', 'Queries over graphs and sets'],
+    'code/errors': ['CX code', 'Errors and refusals'],
+    'code/effects': ['CX code', 'Effects, purity, capabilities'],
+    'code/builtins': ['CX code', 'Builtins and randomness'],
+    'code/concurrency': ['CX code', 'Concurrency'],
+    'code/resilience': ['CX code', 'Resilience'],
+    'code/metaprogramming': ['CX code', 'Quoting and splicing'],
+    'code/diagrams': ['CX code', 'Diagrams'],
+  };
+  const sectionRank = (sec) => { const i = SECTION_ORDER.indexOf(sec); return i < 0 ? SECTION_ORDER.length : i; };
+  const keyNumber = (key) => parseInt(String(key).split('-')[0], 10) || 0;
   const ALL_ENTRIES = [];
   for (const [key, ex] of Object.entries(programEntries)) ALL_ENTRIES.push({ key, kind: 'program', ex });
+  ALL_ENTRIES.sort((a, b) => (sectionRank(a.ex.section) - sectionRank(b.ex.section)) || (keyNumber(a.key) - keyNumber(b.key)));
+  // The picker shows the label WITHOUT the `[204]` corpus number: the number
+  // is the stable id (URL hash, pins), not something a reader navigates by.
+  const displayLabel = (e) => (e.ex.label || e.key).replace(/^\[\d+\]\s*/, '');
 
   const pick     = document.getElementById('cxp-pick');
   const searchEl = document.getElementById('cxp-search');
@@ -270,12 +311,24 @@
     pick.innerHTML = '';
     const q = (filter || '').trim().toLowerCase();
     let shown = 0;
+    let group = null;
+    let groupSec = null;
     for (const e of ALL_ENTRIES) {
       if (q && !exampleMatches(e, q)) continue;
+      const sec = e.ex.section || '';
+      if (sec !== groupSec) {
+        // one <optgroup> per subcategory, labelled "CX code › Paths (cxpath)";
+        // a group with no match under the filter is simply never created.
+        const names = SECTION_NAMES[sec] || ['Other', sec || '(unsectioned)'];
+        group = document.createElement('optgroup');
+        group.label = `${names[0]} › ${names[1]}`;
+        pick.appendChild(group);
+        groupSec = sec;
+      }
       const o = document.createElement('option');
       o.value = `${e.kind}:${e.key}`;
-      o.textContent = e.ex.label || e.key;
-      pick.appendChild(o);
+      o.textContent = displayLabel(e);
+      group.appendChild(o);
       shown++;
     }
     if (shown === 0) {
@@ -298,6 +351,14 @@
     return words.every(w => haystack.includes(w));
   }
   populatePicker();
+  // #ex=KEY reopens an example by its stable key (set on every load).
+  (function openFromHash() {
+    const m = /^#ex=([^&]+)/.exec(location.hash || '');
+    if (!m) return;
+    const key = decodeURIComponent(m[1]);
+    const hit = ALL_ENTRIES.find(e => e.key === key);
+    if (hit) pick.value = `${hit.kind}:${hit.key}`;
+  })();
 
   if (searchEl) {
     searchEl.addEventListener('input', () => {
@@ -355,9 +416,21 @@
   // each one working — output pane and View pane both populated — with
   // no run control to hunt for. runProgram() serialises and tokenises,
   // so a fast switch never paints the previous example's result.
+  const crumbEl = document.getElementById('cxp-crumb');
+  function showCrumb(found) {
+    if (!crumbEl) return;
+    const names = SECTION_NAMES[found.ex.section] || ['', found.ex.section || ''];
+    const sec = ALL_ENTRIES.filter(e => e.ex.section === found.ex.section);
+    const pos = sec.findIndex(e => e.key === found.key) + 1;
+    crumbEl.textContent = `${names[0]} › ${names[1]} · ${pos} of ${sec.length}`;
+    crumbEl.title = 'Left/right: previous/next example · Up/down: previous/next subcategory';
+  }
   function loadExample(key) {
     const found = lookup(key);
     if (!found) return;
+    showCrumb(found);
+    // the key is the stable address: #ex=<key> reopens this example
+    try { history.replaceState(null, '', `#ex=${encodeURIComponent(found.key)}`); } catch (_) {}
     input.value = composeSource(found.ex);
     syncRender();
     clearResults();
@@ -420,9 +493,42 @@
     if (!cur) return;
     let next = (cur.idx + delta + ALL_ENTRIES.length) % ALL_ENTRIES.length;
     const target = ALL_ENTRIES[next];
-    pick.value = `${target.kind}:${target.key}`;
-    loadExample(pick.value);
+    selectAndLoad(target);
   }
+  // A target hidden by the filter is reached by clearing the filter first.
+  function selectAndLoad(target) {
+    const v = `${target.kind}:${target.key}`;
+    pick.value = v;
+    if (pick.value !== v) {
+      if (searchEl) searchEl.value = '';
+      populatePicker();
+      pick.value = v;
+    }
+    loadExample(v);
+  }
+  // Up/down: the FIRST example of the previous/next subcategory (wrapping).
+  function stepSection(delta) {
+    const cur = lookup(pick.value);
+    if (!cur) return;
+    const secs = [];
+    for (const e of ALL_ENTRIES) if (secs[secs.length - 1] !== e.ex.section) secs.push(e.ex.section);
+    const i = secs.indexOf(cur.ex.section);
+    const target = secs[(i + delta + secs.length) % secs.length];
+    const first = ALL_ENTRIES.find(e => e.ex.section === target);
+    if (first) selectAndLoad(first);
+  }
+  // Arrow keys navigate ONLY when focus is not in a text field or select —
+  // typing in the editor or the filter is never hijacked.
+  document.addEventListener('keydown', (ev) => {
+    const t = ev.target;
+    const tag = t && t.tagName ? t.tagName.toLowerCase() : '';
+    if (tag === 'textarea' || tag === 'input' || tag === 'select' || (t && t.isContentEditable)) return;
+    if (ev.altKey || ev.ctrlKey || ev.metaKey) return;
+    if (ev.key === 'ArrowRight') { ev.preventDefault(); stepExample(+1); }
+    else if (ev.key === 'ArrowLeft') { ev.preventDefault(); stepExample(-1); }
+    else if (ev.key === 'ArrowDown') { ev.preventDefault(); stepSection(+1); }
+    else if (ev.key === 'ArrowUp') { ev.preventDefault(); stepSection(-1); }
+  });
   // Editing the source retires the loaded example's wasm-unsupported marker
   // (#1033). The marker is a claim about THAT program; once the reader has
   // changed the text, a refusal may be entirely their own, and labelling it
@@ -528,6 +634,35 @@
     refreshView();
   }));
 
+  // The Auto view is the diagram module's INFERRED shape. Which shape it
+  // inferred is the reader's first question (#1375: 161–163 render a
+  // sequence diagram while their neighbours render a flowchart), so the
+  // graph bar names it — "Auto: sequence" — next to the selector, with the
+  // rule that chose it. Forcing a shape is not an engine surface yet: the
+  // wasm diagram entry takes only the detail rung, so the selector offers
+  // what exists (Auto, Instance) and the label makes Auto legible.
+  const gkindEl = document.getElementById('cxp-gkind');
+  function detectedKind(mermaidText) {
+    const head = String(mermaidText || '').trim().split('\n')[0].toLowerCase();
+    if (head.startsWith('sequencediagram')) return 'sequence';
+    if (head.startsWith('erdiagram')) return 'entity';
+    if (head.startsWith('flowchart') || head.startsWith('graph')) return 'flowchart';
+    if (head.startsWith('statediagram')) return 'state';
+    return head ? head.split(/\s+/)[0] : '';
+  }
+  const KIND_WHY = {
+    sequence: 'sequence diagram — the source declares async, worker or channel steps, so time runs down the page',
+    entity: 'entity diagram — the root is data, so element names become entities',
+    flowchart: 'flowchart — the source is code with branches or loops',
+    state: 'state diagram',
+    instance: 'one box per element occurrence, from the parsed tree',
+  };
+  function showGraphKind(kind) {
+    if (!gkindEl) return;
+    if (!kind) { gkindEl.textContent = ''; gkindEl.title = ''; return; }
+    gkindEl.textContent = (graphView === 'instance') ? 'Instance' : `Auto: ${kind}`;
+    gkindEl.title = KIND_WHY[kind] || kind;
+  }
   function resetVizPanes() {
     vizTreeEl.innerHTML  = '<p class="cxp-viz-placeholder">Run a program to see its structural tree.</p>';
     vizGraphEl.querySelector('.cxp-graph-canvas').innerHTML =
@@ -1570,6 +1705,7 @@
           const fmtWithDetail = `mermaid:${detailLevel}`;
           d = (typeof cxlib.diagram === 'function') ? cxlib.diagram(part.text, fmtWithDetail) : '';
         }
+        showGraphKind(graphView === 'instance' ? 'instance' : detectedKind(d));
         renderGraph(d, graphHost);
       } catch (e) {
         graphUnavailable(graphHost, '', e, 'build');
@@ -1600,7 +1736,10 @@
       } catch (_) {}
     }
     if (pick.options.length > 0) {
-      pick.selectedIndex = 0;
+      // #ex=KEY in the URL wins over "the first example" (#1375): a link to an
+      // example must open that example. openFromHash() already selected it.
+      const fromHash = /^#ex=/.test(location.hash || '') && lookup(pick.value);
+      if (!fromHash) pick.selectedIndex = 0;
       loadExample(pick.value);
     }
   }, (err) => {

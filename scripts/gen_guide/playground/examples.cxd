@@ -34,6 +34,7 @@ playground.examples.js. Drift is gated by make verify-playground-examples.
 
  [ex key=01-atom-element
   [label [#[1] Element — one attribute#]]
+  [section [# data/elements #]]
   [src [#
 [pizza size=large]
 #]]
@@ -44,6 +45,7 @@ playground.examples.js. Drift is gated by make verify-playground-examples.
 
  [ex key=02-string-scalar
   [label [#[2] String — bare scalar#]]
+  [section [# data/text #]]
   [src [#
 "hello, world"
 #]]
@@ -54,6 +56,7 @@ playground.examples.js. Drift is gated by make verify-playground-examples.
 
  [ex key=03-number-scalars
   [label [#[3] Numbers — int / float / negative#]]
+  [section [# data/numbers #]]
   [src [#
 [stats
   min=-5
@@ -68,6 +71,7 @@ playground.examples.js. Drift is gated by make verify-playground-examples.
 
  [ex key=04-boolean-scalars
   [label [#[4] Booleans — feature flags#]]
+  [section [# data/elements #]]
   [src [#
 [user
   active=true
@@ -82,6 +86,7 @@ playground.examples.js. Drift is gated by make verify-playground-examples.
 
  [ex key=05-atom-values
   [label [#[5] Atoms — `:kebab-case`#]]
+  [section [# data/elements #]]
   [src [#
 [response status=:ok]
 #]]
@@ -92,6 +97,7 @@ playground.examples.js. Drift is gated by make verify-playground-examples.
 
  [ex key=06-string-quoting
   [label [#[6] Strings — quoting variants#]]
+  [section [# data/text #]]
   [src [#
 [note
   single='single quotes'
@@ -105,6 +111,7 @@ playground.examples.js. Drift is gated by make verify-playground-examples.
 
  [ex key=07-triple-quoted
   [label [#[7] Strings — triple-quoted (multiline)#]]
+  [section [# data/text #]]
   [src [#
 [doc
   body='''line 1
@@ -118,6 +125,7 @@ line 3''']
 
  [ex key=08-nested-elements
   [label [#[8] Nested elements — containment#]]
+  [section [# data/elements #]]
   [src [#
 [order
   [customer name=Alice]
@@ -131,6 +139,7 @@ line 3''']
 
  [ex key=09-attrs-vs-children
   [label [#[9] Attributes vs child elements#]]
+  [section [# data/elements #]]
   [src [#
 [user id=1 active=true
   [email "a@x.com"]
@@ -143,6 +152,7 @@ line 3''']
 
  [ex key=10-mixed-content
   [label [#[10] Element — attrs AND text body#]]
+  [section [# data/elements #]]
   [src [#
 [link href="https://cx-home.github.io" "CX Guide"]
 #]]
@@ -153,6 +163,7 @@ line 3''']
 
  [ex key=11-sequence
   [label [#[11] Sequence — ordered values#]]
+  [section [# data/collections #]]
   [src [#
 (1, 2, 3, 4, 5)
 #]]
@@ -163,6 +174,7 @@ line 3''']
 
  [ex key=12-sequence-mixed
   [label [#[12] Sequence — mixed scalar types#]]
+  [section [# data/collections #]]
   [src [#
 (1, 2.5, "three", true, :four)
 #]]
@@ -173,6 +185,7 @@ line 3''']
 
  [ex key=13-map-literal
   [label [#[13] Map — string keys#]]
+  [section [# data/collections #]]
   [src [#
 {name: 'Alice', age: 30, active: true}
 #]]
@@ -183,6 +196,7 @@ line 3''']
 
  [ex key=14-durations
   [label [#[14] Durations — first-class scalars#]]
+  [section [# data/numbers #]]
   [src [#
 [timing
   short=50ms
@@ -197,6 +211,7 @@ line 3''']
 
  [ex key=15-hyphenated-names
   [label [#[15] Hyphenated names — kebab identifiers#]]
+  [section [# data/elements #]]
   [src [#
 [user-profile is-active=true
   [contact-info
@@ -209,6 +224,7 @@ line 3''']
 
  [ex key=16-let-basic
   [label [#[16] [?let] — bind a value, then use it#]]
+  [section [# code/bindings #]]
   [src [#
 [?let [= $name 'Alice']
   [greeting hello=$name]]
@@ -220,6 +236,7 @@ line 3''']
 
  [ex key=17-let-nested
   [label [#[17] [?let] — one flat binding list#]]
+  [section [# code/bindings #]]
   [src [#
 [?let [= $price 12] [= $qty 3] [= $subtotal [* $price $qty]]
   [order
@@ -233,6 +250,7 @@ line 3''']
 
  [ex key=18-arith-add
   [label [#[18] Arithmetic — add#]]
+  [section [# data/numbers #]]
   [src [#
 [+ 1 2 3 4 5]
 #]]
@@ -243,6 +261,7 @@ line 3''']
 
  [ex key=19-arith-mixed
   [label [#[19] Arithmetic — sub / mul / div#]]
+  [section [# data/numbers #]]
   [src [#
 [?let [= $x 10] [= $y 3]
   [stats
@@ -257,6 +276,7 @@ line 3''']
 
  [ex key=20-string-concat
   [label [#[20] Strings — concat builtin#]]
+  [section [# data/text #]]
   [src [#
 [$concat "hello" ", " "world"]
 #]]
@@ -267,6 +287,7 @@ line 3''']
 
  [ex key=21-string-length
   [label [#[21] Strings — length#]]
+  [section [# data/text #]]
   [src [#
 [$string-length "hello"]
 #]]
@@ -277,6 +298,7 @@ line 3''']
 
  [ex key=22-string-contains
   [label [#[22] Strings — contains#]]
+  [section [# data/text #]]
   [src [#
 [$contains "foobar" "oob"]
 #]]
@@ -287,6 +309,7 @@ line 3''']
 
  [ex key=23-comparison-eq
   [label [#[23] Comparison — equality#]]
+  [section [# code/control-flow #]]
   [src [#
 [?let [= $x 7]
   [= $x 7]]
@@ -298,6 +321,7 @@ line 3''']
 
  [ex key=24-comparison-gt
   [label [#[24] Comparison — `>` / `<` / `>=`#]]
+  [section [# code/control-flow #]]
   [src [#
 [?let [= $n 42]
   [stats
@@ -312,6 +336,7 @@ line 3''']
 
  [ex key=25-logical
   [label [#[25] Logical — and / or / not#]]
+  [section [# code/control-flow #]]
   [src [#
 [?let [= $on true]
   [and $on [or false true] [not false]]]
@@ -323,6 +348,7 @@ line 3''']
 
  [ex key=26-if-basic
   [label [#[26] [?if] — branch on a predicate#]]
+  [section [# code/control-flow #]]
   [src [#
 [?let [= $score 87]
   [?if [>= $score 80]
@@ -336,6 +362,7 @@ line 3''']
 
  [ex key=27-if-chained
   [label [#[27] [?if] — chained branches#]]
+  [section [# code/control-flow #]]
   [src [#
 [?let [= $n 25]
   [?if [< $n 10]
@@ -351,6 +378,7 @@ line 3''']
 
  [ex key=28-match-scalar
   [label [#[28] [?match] — multi-arm on a scalar#]]
+  [section [# code/control-flow #]]
   [src [#
 [?let [= $s 200]
   [?match $s
@@ -365,6 +393,7 @@ line 3''']
 
  [ex key=29-match-else-fallback
   [label [#[29] [?match] — [else …] fires#]]
+  [section [# code/control-flow #]]
   [src [#
 [?let [= $s 500]
   [?match $s
@@ -379,6 +408,7 @@ line 3''']
 
  [ex key=30-match-no-else
   [label [#[30] [?match] — no [else …] returns ()#]]
+  [section [# code/control-flow #]]
   [src [#
 [?let [= $s 500]
   [?match $s
@@ -392,6 +422,7 @@ line 3''']
 
  [ex key=31-match-wildcard
   [label [#[31] [?match] — wildcard `_`#]]
+  [section [# code/control-flow #]]
   [src [#
 [?let [= $v "surprise"]
   [?match $v
@@ -405,6 +436,7 @@ line 3''']
 
  [ex key=32-match-element-shape
   [label [#[32] [?match] — element shape dispatch#]]
+  [section [# code/patterns #]]
   [src [#
 [?let [= $n [prose "hello"]]
   [?match $n
@@ -419,6 +451,7 @@ line 3''']
 
  [ex key=33-match-type-strict
   [label [#[33] [?match] — type-strict scalar#]]
+  [section [# data/schema #]]
   [src [#
 [?let [= $v 200]
   [?match $v
@@ -433,6 +466,7 @@ line 3''']
 
  [ex key=34-cast-string-int
   [label [#[34] [cast] — string to int#]]
+  [section [# data/numbers #]]
   [src [#
 [cast "42" :int]
 #]]
@@ -443,6 +477,7 @@ line 3''']
 
  [ex key=35-cast-float-int
   [label [#[35] [cast] — float to int REFUSES (L44)#]]
+  [section [# data/numbers #]]
   [src [#
 [cast 3.7 :int]
 #]]
@@ -453,6 +488,7 @@ line 3''']
 
  [ex key=36-for-sequence
   [label [#[36] [?for] — iterate a literal sequence#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?for [in $n (1, 2, 3, 4, 5)]
   [yield [square n=$n sq=[* $n $n]]]]
@@ -464,6 +500,7 @@ line 3''']
 
  [ex key=37-for-where
   [label [#[37] [?for] — [where] filter#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?for [in $n (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)]
   [where [> $n 5]]
@@ -476,6 +513,7 @@ line 3''']
 
  [ex key=38-for-yield-cond
   [label [#[38] [?for] — conditional [yield] body#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?for [in $n (1, 2, 3, 4, 5, 6, 7, 8)]
   [yield [?if [> $n 5]
@@ -489,6 +527,7 @@ line 3''']
 
  [ex key=39-for-nested
   [label [#[39] [?for] — nested iteration#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?for [in $i (1, 2, 3)]
   [yield [?for [in $j (1, 2, 3)]
@@ -501,6 +540,7 @@ line 3''']
 
  [ex key=40-for-multi-source
   [label [#[40] [?for] — multiple sources#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?for [in $a (1, 2, 3)]
       [in $b (10, 20, 30)]
@@ -513,6 +553,7 @@ line 3''']
 
  [ex key=41-for-let
   [label [#[41] [?for] — :let clause for derived values#]]
+  [section [# code/bindings #]]
   [src [#
 [?for [in $n (1, 2, 3, 4, 5)]
   [= $sq [* $n $n]]
@@ -525,6 +566,7 @@ line 3''']
 
  [ex key=42-for-yield-par
   [label [#[42] [?for :par] — wall-clock parallel comprehension#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?for [in $n (1, 2, 3, 4, 5, 6, 7, 8)]
   [yield [?let [= $_ [?sleep 500ms]]
@@ -538,6 +580,7 @@ line 3''']
 
  [ex key=43-for-yield-par-mock
   [label [#[43] [?for] — parallel comprehension (instant via mock sleep)#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?for [in $n (1, 2, 3, 4, 5, 6, 7, 8)]
   [yield [?let [= $_ [?sleep 500ms mock]]
@@ -551,6 +594,7 @@ line 3''']
 
  [ex key=44-for-yield-stream
   [label [#[44] [?for] — yield streams as items complete#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?for [in $n (1, 2, 3, 4)]
   [yield [?let [= $_ [?sleep 300ms]]
@@ -563,6 +607,7 @@ line 3''']
 
  [ex key=45-for-empty
   [label [#[45] [?for] — empty source#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?for [in $n ()]
   [yield [item n=$n]]]
@@ -574,6 +619,7 @@ line 3''']
 
  [ex key=46-fn-via-map
   [label [#[46] [?fn] — anonymous function via [?map]#]]
+  [section [# code/functions #]]
   [src [#
 [?map (1, 2, 3, 4, 5)
   [using [?fn $x [* $x $x]]]]
@@ -585,6 +631,7 @@ line 3''']
 
  [ex key=47-map-cube
   [label [#[47] [?map] — composition with builtins#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?map (1, 2, 3, 4)
   [using [?fn $n [* $n [* $n $n]]]]]
@@ -596,6 +643,7 @@ line 3''']
 
  [ex key=48-map-with-let
   [label [#[48] [?map] — closure with internal [?let]#]]
+  [section [# code/bindings #]]
   [src [#
 [?map (1, 2, 3, 4)
   [using [?fn $n
@@ -609,6 +657,7 @@ line 3''']
 
  [ex key=49-map-par-mock
   [label [#[49] [?map] — parallel map (instant via mock sleep)#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?map (1, 2, 3, 4, 5, 6, 7, 8)
   [using [?fn $n
@@ -624,6 +673,7 @@ line 3''']
 
  [ex key=50-map-par-wall
   [label [#[50] [?map :par] — wall-clock streaming#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?map (1, 2, 3, 4)
   [using [?fn $n
@@ -638,6 +688,7 @@ line 3''']
 
  [ex key=51-map-par-ordered
   [label [#[51] [?map [par] [ordered]] — tombstoned no-op#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?map (1, 2, 3, 4)
   [using [?fn $n
@@ -653,6 +704,7 @@ line 3''']
 
  [ex key=52-fn-passed
   [label [#[52] [?fn] — define once, pass to [?map]#]]
+  [section [# code/functions #]]
   [src [#
 [?let [= $sqr [?fn $n [* $n $n]]]
   [?map (1, 2, 3, 4, 5, 6, 7, 8)
@@ -667,6 +719,7 @@ line 3''']
 
  [ex key=53-reduce-sum
   [label [#[53] [?reduce] — fold to one value (sum)#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?reduce (1, 2, 3, 4, 5)
   [using [?fn ($a $b) [+ $a $b]]]
@@ -679,6 +732,7 @@ line 3''']
 
  [ex key=54-reduce-product
   [label [#[54] [?reduce] — fold to a product#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?reduce (1, 2, 3, 4, 5)
   [using [?fn ($a $b) [* $a $b]]]
@@ -691,6 +745,7 @@ line 3''']
 
  [ex key=55-reduce-par
   [label [#[55] [?reduce … [par]] — associative tree-reduce#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?reduce (1, 2, 3, 4, 5, 6, 7, 8)
   [using [?fn ($a $b) [+ $a $b]]]
@@ -704,6 +759,7 @@ line 3''']
 
  [ex key=56-map-then-reduce
   [label [#[56] Map → reduce composition#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?reduce [?map (1, 2, 3, 4, 5)
            [using [?fn $n [* $n $n]]]]
@@ -717,6 +773,7 @@ line 3''']
 
  [ex key=57-map-par-bulkhead
   [label [#[57] [par N] bounds the width — [?bulkhead] isolates the failure#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?map (1, 2, 3, 4, 5, 6, 7, 8)
   [using [?fn $shard
@@ -737,6 +794,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
 
  [ex key=58-par-shared-cb
   [label [#[58] [?map :par] — shared [?circuit-breaker]#]]
+  [section [# code/resilience #]]
   [src [#
 [?map (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
   [using [?fn $n
@@ -751,6 +809,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
 
  [ex key=59-par-rich-shape
   [label [#[59] [?map :par] — emit rich shapes#]]
+  [section [# code/resilience #]]
   [src [#
 [?map (1, 2, 3, 4)
   [using [?fn $n
@@ -765,6 +824,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
 
  [ex key=60-par-with-composition
   [label [#[60] [?map :par] — composed with everything#]]
+  [section [# code/resilience #]]
   [src [#
 [?map (1, 2, 3, 4)
   [using [?fn $n
@@ -782,6 +842,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
 
  [ex key=61-modify-delete
   [label [#[61] [?modify] — pure-functional :delete#]]
+  [section [# code/transforms #]]
   [src [#
 [?let [= $doc [users
                 [user id=1 name=Alice banned=false]
@@ -798,6 +859,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
 
  [ex key=62-modify-set-attr
   [label [#[62] [?modify] — :set-attr on every match#]]
+  [section [# code/transforms #]]
   [src [#
 [?let [= $doc [users
                 [user id=1 [name "Alice"]]
@@ -815,6 +877,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
 
  [ex key=63-modify-chain
   [label [#[63] [?modify] — chained transforms via [?let]#]]
+  [section [# code/transforms #]]
   [src [#
 [?let [= $doc [users
                 [user id=1 name=Alice banned=false]
@@ -832,6 +895,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
 
  [ex key=64-cxpath-axes
   [label [#[64] CXPath — child + attribute axes#]]
+  [section [# code/paths #]]
   [src [#
 [?let [= $doc [order [item qty=2] [item qty=3] [item qty=5]]]
   [?for [in $i $doc/item]
@@ -844,6 +908,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
 
  [ex key=65-cxpath-where
   [label [#[65] CXPath — filter via [where]#]]
+  [section [# code/paths #]]
   [src [#
 [?let [= $doc [users
                 [user name=Alice active=true  age=30]
@@ -860,6 +925,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
 
  [ex key=66-pipe-canonical
   [label [#[66] [?pipe] — canonical pipeline (bare stages)#]]
+  [section [# code/transforms #]]
   [src [#
 [?pipe (1, 2, 3, 4)
   [?fn ($xs) [?for [in $x $xs]
@@ -874,6 +940,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
 
  [ex key=67-pipe-multistage
   [label [#[67] [?pipe] — multi-stage threading#]]
+  [section [# code/transforms #]]
   [src [#
 [?pipe (5, 3, 8, 1, 9)
   [?fn ($xs) [?for [in $x $xs]
@@ -890,6 +957,7 @@ What it *does* do is **isolate**: shard 5 is offline and returns an `[err]`, and
 
  [ex key=68-pipe-modify
   [label [#[68] [?pipe] — a [?modify] stage#]]
+  [section [# code/transforms #]]
   [src [#
 [?let [= $doc [users [user [name "Alice"]] [user [name "Bob"]]]]
   [?pipe $doc
@@ -905,6 +973,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=69-fallback-recover
   [label [#[69] [?fallback] — on err, recover#]]
+  [section [# code/errors #]]
   [src [#
 [?fallback [err code="down-primary"]
   [recover-with [err code="down-secondary"]]]
@@ -916,6 +985,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=70-fallback-success
   [label [#[70] [?fallback] — body succeeds, no recover#]]
+  [section [# code/errors #]]
   [src [#
 [?fallback [ok value="healthy"]
   [recover-with [ok value="never"]]]
@@ -927,6 +997,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=71-builtin-head-tail
   [label [#[71] Sequence — head + tail#]]
+  [section [# code/builtins #]]
   [src [#
 [?let [= $xs (10, 20, 30, 40)]
   [list first=[$head $xs]
@@ -939,6 +1010,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=72-builtin-nth
   [label [#[72] Sequence — nth (1-based)#]]
+  [section [# code/builtins #]]
   [src [#
 [$nth (10, 20, 30, 40) 2]
 #]]
@@ -949,6 +1021,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=73-builtin-distinct
   [label [#[73] Sequence — distinct#]]
+  [section [# code/builtins #]]
   [src [#
 [$distinct (1, 2, 1, 3, 2, 4, 1)]
 #]]
@@ -959,6 +1032,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=74-builtin-reverse
   [label [#[74] Sequence — reverse#]]
+  [section [# code/builtins #]]
   [src [#
 [$reverse (1, 2, 3, 4, 5)]
 #]]
@@ -969,6 +1043,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=75-builtin-position
   [label [#[75] Sequence — position#]]
+  [section [# code/builtins #]]
   [src [#
 [$position (10, 20, 30, 20, 40) 20]
 #]]
@@ -979,6 +1054,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=76-numeric-abs
   [label [#[76] Numeric — abs#]]
+  [section [# data/numbers #]]
   [src [#
 [$abs -42]
 #]]
@@ -989,6 +1065,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=77-numeric-round
   [label [#[77] Numeric — round / floor / ceiling#]]
+  [section [# data/numbers #]]
   [src [#
 [stats
   r=[$round 3.7]
@@ -1002,6 +1079,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=78-string-substring
   [label [#[78] Strings — substring#]]
+  [section [# data/text #]]
   [src [#
 [$substring "hello world" 6 11]
 #]]
@@ -1012,6 +1090,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=79-string-starts-ends
   [label [#[79] Strings — starts-with / ends-with#]]
+  [section [# data/text #]]
   [src [#
 [checks
   starts=[$starts-with "hello world" "hello"]
@@ -1024,6 +1103,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=80-string-normalize
   [label [#[80] Strings — normalize-space#]]
+  [section [# data/text #]]
   [src [#
 [$normalize-space "  hello   world  "]
 #]]
@@ -1034,6 +1114,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=81-sleep-mock-timeout
   [label [#[81] [?sleep … mock] inside [?timeout]#]]
+  [section [# code/concurrency #]]
   [src [#
 [?timeout 100ms
   [?let [= $_ [?sleep 500ms mock]]
@@ -1046,6 +1127,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=82-sleep-wall
   [label [#[82] [?sleep DUR] — real wall-clock#]]
+  [section [# code/concurrency #]]
   [src [#
 [?let [= $_ [?sleep 500ms]]
   [ok value='woke-up']]
@@ -1057,6 +1139,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=83-async-await
   [label [#[83] [?async] + [?await] — minimal future#]]
+  [section [# code/concurrency #]]
   [src [#
 [?let [= $f [?async [ok value=42]]]
   [?await $f]]
@@ -1069,6 +1152,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=84-async-mock-sleep
   [label [#[84] [?async] — mock sleep then resolve#]]
+  [section [# code/concurrency #]]
   [src [#
 [?let [= $f [?async [?let [= $_ [?sleep 100ms mock]]
                       [ok value='done']]]]
@@ -1082,6 +1166,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=85-await-all
   [label [#[85] [?await-all] — wait on every future#]]
+  [section [# code/concurrency #]]
   [src [#
 [?let [= $fast [?async [?let [= $_ [?sleep 100ms mock]]
                          [ok value='a']]]]
@@ -1097,6 +1182,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=86-await-any
   [label [#[86] [?await-any] — first success wins#]]
+  [section [# code/concurrency #]]
   [src [#
 [?let [= $broken [?async [err code="down"]]]
       [= $good [?async [ok value='survivor']]]
@@ -1110,6 +1196,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=87-await-race
   [label [#[87] [?await-race] — first to resolve wins#]]
+  [section [# code/concurrency #]]
   [src [#
 [?let [= $fast [?async [?let [= $_ [?sleep 100ms mock]]
                          [ok value='fast']]]]
@@ -1125,6 +1212,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=88-channel-basic
   [label [#[88] [?channel] — buffered send / receive#]]
+  [section [# code/concurrency #]]
   [src [#
 [?let [= $ch [?channel name="c" buffer=4]]
       [= $_ [?send 42 to=$ch]]
@@ -1137,6 +1225,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=89-worker-basic
   [label [#[89] [?worker] — long-running task#]]
+  [section [# code/concurrency #]]
   [src [#
 [?worker name="w"
   [ok value='worked']]
@@ -1149,6 +1238,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=90-cancel
   [label [#[90] [?cancel] — abort a future#]]
+  [section [# code/concurrency #]]
   [src [#
 [?let [= $f [?async [?let [= $_ [?sleep 1s mock]]
                       [ok value='never']]]]
@@ -1163,6 +1253,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=91-retry-happy
   [label [#[91] [?retry] — first try wins#]]
+  [section [# code/resilience #]]
   [src [#
 [?retry max=3
   [ok value='first-try']]
@@ -1174,6 +1265,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=92-retry-eventually
   [label [#[92] [?retry] — succeeds after some failures#]]
+  [section [# code/resilience #]]
   [src [#
 [?retry max=5
   [?test-err-then-ok err-count=2 ok-value=[ok value='recovered']]]
@@ -1185,6 +1277,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=93-retry-exhaustion
   [label [#[93] [?retry] — exhausted → CXER0140#]]
+  [section [# code/resilience #]]
   [src [#
 [?retry max=3
   [?test-always-err]]
@@ -1196,6 +1289,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=94-timeout-fires
   [label [#[94] [?timeout] — fires after mock sleep#]]
+  [section [# code/resilience #]]
   [src [#
 [?timeout 50ms
   [?let [= $_ [?sleep 200ms mock]]
@@ -1208,6 +1302,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=95-circuit-breaker-trips
   [label [#[95] [?circuit-breaker] — trips after failures#]]
+  [section [# code/resilience #]]
   [src [#
 [?for [in $i (1, 2, 3, 4)]
   [yield [?circuit-breaker threshold=0.5 window=1s reset=10s min-samples=2
@@ -1220,6 +1315,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=96-rate-limit-allow
   [label [#[96] [?rate-limit] — under the limit#]]
+  [section [# code/resilience #]]
   [src [#
 [?for [in $i (1, 2, 3)]
   [yield [?rate-limit max=10 per=1s
@@ -1232,6 +1328,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=97-rate-limit-over
   [label [#[97] [?rate-limit] — exceeds the limit#]]
+  [section [# code/resilience #]]
   [src [#
 [?for [in $i (1, 2, 3, 4, 5)]
   [yield [?rate-limit max=2 per=1s
@@ -1244,6 +1341,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=98-bulkhead-pass
   [label [#[98] [?bulkhead] — under cap#]]
+  [section [# code/resilience #]]
   [src [#
 [?bulkhead max-concurrent=4 queue=0
   [ok value="in-flight"]]
@@ -1255,6 +1353,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=99-composition-stack
   [label [#[99] Composition — retry + timeout + circuit-breaker#]]
+  [section [# code/resilience #]]
   [src [#
 [?retry max=3
   [?timeout 100ms
@@ -1268,6 +1367,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=100-composition-everything
   [label [#[100] Composition — every resilience directive#]]
+  [section [# code/resilience #]]
   [src [#
 [?retry max=2
   [?fallback [?timeout 200ms
@@ -1284,6 +1384,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=101-cxpath-descendant
   [label [#[101] CXPath — descendant axis `//`#]]
+  [section [# code/paths #]]
   [src [#
 [?let [= $doc [tree
                 [branch [leaf id=1] [leaf id=2]]
@@ -1299,6 +1400,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=102-cxpath-child
   [label [#[102] CXPath — child axis `/`#]]
+  [section [# code/paths #]]
   [src [#
 [?let [= $doc [shop
                 [item id=1]
@@ -1314,6 +1416,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=103-cxpath-attr-access
   [label [#[103] CXPath — attribute access (`/@` and `$x@a`)#]]
+  [section [# code/paths #]]
   [src [#
 [?let [= $u [user name=Alice age=30]]
   [pair slash=$u/@name short=$u@age]]
@@ -1325,6 +1428,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=104-cxpath-wildcard
   [label [#[104] CXPath — wildcard `*`#]]
+  [section [# code/paths #]]
   [src [#
 [?let [= $doc [box [a x=1] [b y=2] [c z=3]]]
   [?for [in $e $doc/*]
@@ -1337,6 +1441,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=105-cxpath-position
   [label [#[105] CXPath — position predicate `[N]`#]]
+  [section [# code/paths #]]
   [src [#
 [?let [= $doc [list [item id=1] [item id=2] [item id=3] [item id=4]]]
   $doc/item[2]]
@@ -1348,6 +1453,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=106-cxpath-last
   [label [#[106] CXPath — last-position `[last()]`#]]
+  [section [# code/paths #]]
   [src [#
 [?let [= $doc [list [item id=1] [item id=2] [item id=3]]]
   $doc/item[= $_position $_last]]
@@ -1359,6 +1465,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=107-cxpath-compound
   [label [#[107] CXPath — compound predicate `[and …]`#]]
+  [section [# code/paths #]]
   [src [#
 [?let [= $doc [users
                 [user active=true  age=30]
@@ -1373,6 +1480,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=108-cxpath-parent
   [label [#[108] CXPath — parent axis `..`#]]
+  [section [# code/paths #]]
   [src [#
 [?let [= $doc [orders
                 [order id=1 [line p=10]]
@@ -1388,6 +1496,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=109-rename-via-attr
   [label [#[109] Transform — rename element via computed name#]]
+  [section [# code/transforms #]]
   [src [#
 [?let [= $doc [doc
                 [item name=apple  qty=3]
@@ -1403,6 +1512,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=110-attr-to-child
   [label [#[110] Transform — promote attribute to child element#]]
+  [section [# code/transforms #]]
   [src [#
 [?let [= $doc [users
                 [user id=1 name=Alice]
@@ -1421,6 +1531,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=111-child-to-attr
   [label [#[111] Transform — demote child element to attribute#]]
+  [section [# code/transforms #]]
   [src [#
 [?let [= $doc [users
                 [user id=1 [name "Alice"]]
@@ -1435,6 +1546,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=112-unwrap-singleton
   [label [#[112] Transform — strip a wrapper element#]]
+  [section [# code/transforms #]]
   [src [#
 [?let [= $doc [wrapper [payload value=42]]]
   [?for [in $p $doc/payload]
@@ -1447,6 +1559,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=113-wrap-each
   [label [#[113] Transform — wrap each child in a container#]]
+  [section [# code/transforms #]]
   [src [#
 [?for [in $n (1, 2, 3, 4)]
   [yield [box [item id=$n]]]]
@@ -1458,6 +1571,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=114-computed-attr
   [label [#[114] Transform — add a computed attribute#]]
+  [section [# code/transforms #]]
   [src [#
 [?let [= $doc [order
                 [line price=10 qty=2]
@@ -1475,6 +1589,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=115-project-attrs
   [label [#[115] Transform — project (keep only some attrs)#]]
+  [section [# code/transforms #]]
   [src [#
 [?let [= $doc [users
                 [user id=1 name=A age=30 ssn=secret]
@@ -1489,6 +1604,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=116-reorder
   [label [#[116] Transform — reorder children#]]
+  [section [# code/transforms #]]
   [src [#
 [?let [= $doc [list [item id=3] [item id=1] [item id=2]]]
   [?for [in $i $doc//item]
@@ -1502,6 +1618,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=117-filter-where
   [label [#[117] Filter — keep matches#]]
+  [section [# code/transforms #]]
   [src [#
 [?for [in $n (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)]
   [where [> $n 5]]
@@ -1514,6 +1631,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=118-odd-even-partition
   [label [#[118] Filter — odd / even partition#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?for [in $n (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)]
   [yield [?if [$odd $n]
@@ -1527,6 +1645,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=119-top-n
   [label [#[119] Filter — top-N by attribute#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?let [= $doc [scores [s v=42] [s v=88] [s v=15] [s v=77] [s v=33]]]
   [?for [in $s $doc//s]
@@ -1541,6 +1660,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=120-distinct-by-key
   [label [#[120] Filter — distinct by key#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?let [= $doc [log
                 [hit user=alice]
@@ -1559,6 +1679,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=121-composite-predicate
   [label [#[121] Filter — composite predicate#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?let [= $doc [users
                 [user active=true  age=30 role=admin]
@@ -1573,6 +1694,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=122-attr-presence
   [label [#[122] Filter — attribute presence#]]
+  [section [# code/paths #]]
   [src [#
 [?let [= $doc [users
                 [user id=1 email="a@x.com"]
@@ -1587,6 +1709,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=123-count-matches
   [label [#[123] Aggregate — count matches#]]
+  [section [# code/paths #]]
   [src [#
 [?let [= $doc [log
                 [hit ok=true]
@@ -1602,6 +1725,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=124-sum-attr
   [label [#[124] Aggregate — sum an attribute#]]
+  [section [# code/paths #]]
   [src [#
 [?let [= $doc [order
                 [line qty=2 price=10]
@@ -1616,6 +1740,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=125-min-max
   [label [#[125] Aggregate — min / max#]]
+  [section [# code/paths #]]
   [src [#
 [?let [= $doc [scores [s v=42] [s v=88] [s v=15] [s v=77]]]
   [stats
@@ -1630,6 +1755,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=126-group-aggregate
   [label [#[126] Aggregate — group-by attribute → totals per group#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?let [= $doc [orders
                 [o region=US   amt=100]
@@ -1649,6 +1775,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=127-deep-descendant
   [label [#[127] Tree — deep descendants at any depth#]]
+  [section [# code/paths #]]
   [src [#
 [?let [= $doc [root
                 [a [b [c [d marker=hit]]]]
@@ -1663,6 +1790,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=128-flatten-one-level
   [label [#[128] Tree — flatten one level#]]
+  [section [# code/paths #]]
   [src [#
 [?let [= $doc [groups
                 [g [item "a"] [item "b"]]
@@ -1678,6 +1806,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=129-name-via-builtin
   [label [#[129] Tree — node name via local-name()#]]
+  [section [# code/paths #]]
   [src [#
 [?let [= $doc [config
                 [database host=A]
@@ -1693,6 +1822,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=130-siblings
   [label [#[130] Tree — find siblings of a node#]]
+  [section [# code/paths #]]
   [src [#
 [?let [= $doc [post
                 [title "On X"]
@@ -1709,6 +1839,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=131-leaves-only
   [label [#[131] Tree — leaf nodes (no children)#]]
+  [section [# code/paths #]]
   [src [#
 [?let [= $doc [tree
                 [n [n1 [leaf id=1]] [leaf id=2]]
@@ -1723,6 +1854,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=132-pipe-of-modifies
   [label [#[132] Compose — pipe of [?modify] stages#]]
+  [section [# code/transforms #]]
   [src [#
 [?let [= $doc [users
                 [user id=1 banned=true]
@@ -1739,6 +1871,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=133-filter-map-reduce
   [label [#[133] Compose — filter → map → reduce#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?pipe (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
   [?fn ($xs) [?for [in $x $xs]
@@ -1755,6 +1888,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=134-build-index
   [label [#[134] Compose — index with a computed tier#]]
+  [section [# code/transforms #]]
   [src [#
 [?let [= $users [users
                   [user name=Alice score=30]
@@ -1772,6 +1906,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=135-read-rewrite
   [label [#[135] Compose — read, transform, emit#]]
+  [section [# code/transforms #]]
   [src [#
 [?let [= $doc [items [item q=2 p=10] [item q=3 p=5]]]
   [?for [in $i $doc/item]
@@ -1785,6 +1920,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=136-rdf-triples-shape
   [label [#[136] Graph — RDF triple shape#]]
+  [section [# code/queries #]]
   [src [#
 [triples
   [t s=Alice p=knows o=Bob]
@@ -1799,6 +1935,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=137-query-by-subject
   [label [#[137] Graph — query by subject#]]
+  [section [# code/queries #]]
   [src [#
 [?let [= $g [triples
               [t s=Alice p=knows o=Bob]
@@ -1813,6 +1950,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=138-query-by-predicate
   [label [#[138] Graph — query by predicate (relation)#]]
+  [section [# code/queries #]]
   [src [#
 [?let [= $g [triples
               [t s=A p=knows o=B]
@@ -1827,6 +1965,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=139-out-edges
   [label [#[139] Graph — out-edges from a node#]]
+  [section [# code/queries #]]
   [src [#
 [?let [= $g [triples
               [t s=A p=r1 o=B]
@@ -1842,6 +1981,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=140-in-edges
   [label [#[140] Graph — in-edges to a node#]]
+  [section [# code/queries #]]
   [src [#
 [?let [= $g [triples
               [t s=A p=r1 o=B]
@@ -1857,6 +1997,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=141-reachability-1hop
   [label [#[141] Graph — one-hop reachability#]]
+  [section [# code/queries #]]
   [src [#
 [?let [= $g [triples
               [t s=A p=knows o=B]
@@ -1872,6 +2013,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=142-set-union
   [label [#[142] Set — union (concat + distinct)#]]
+  [section [# code/queries #]]
   [src [#
 [?let [= $a (1, 2, 3, 4)] [= $b (3, 4, 5, 6)]
   [$distinct [?concat $a $b]]]
@@ -1883,6 +2025,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=143-set-intersection
   [label [#[143] Set — intersection (in both)#]]
+  [section [# code/queries #]]
   [src [#
 [?let [= $a (1, 2, 3, 4)] [= $b (3, 4, 5, 6)]
   [?for [in $x $a]
@@ -1896,6 +2039,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=144-set-difference
   [label [#[144] Set — difference (A − B)#]]
+  [section [# code/queries #]]
   [src [#
 [?for [in $x (1, 2, 3, 4, 5)]
   [where [and [not [= $x 2]] [not [= $x 4]]]]
@@ -1908,6 +2052,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=145-cartesian
   [label [#[145] Set — Cartesian product#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?for [in $a (1, 2, 3)]
       [in $b ("x", "y")]
@@ -1920,6 +2065,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=146-pivot-rows-to-attrs
   [label [#[146] ETL — pivot (row-shape → attr-shape)#]]
+  [section [# code/transforms #]]
   [src [#
 [?let [= $doc [stats
                 [m k=cpu  v=87]
@@ -1937,6 +2083,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=147-unpivot
   [label [#[147] ETL — unpivot (attrs → rows)#]]
+  [section [# code/transforms #]]
   [src [#
 [?let [= $row [snapshot cpu=87 mem=62 disk=44]]
   ([m k=cpu  v=$row/@cpu],
@@ -1950,6 +2097,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=148-transpose-matrix
   [label [#[148] ETL — transpose a 2D table#]]
+  [section [# code/transforms #]]
   [src [#
 [?let [= $m [matrix
               [row a=1 b=2 c=3]
@@ -1970,6 +2118,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=149-group-then-sum
   [label [#[149] ETL — group-aggregate (region → total)#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?let [= $doc [orders
                 [o region=US amt=100]
@@ -1987,6 +2136,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=150-join-by-key
   [label [#[150] ETL — join two collections by attribute#]]
+  [section [# code/transforms #]]
   [src [#
 [?let [= $orders [o-set
                    [o id=1 user="A" amt=100]
@@ -2006,6 +2156,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=151-range-by-stride
   [label [#[151] Range — strided `[$range lo hi step]`#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?for [in $x [$range 1 10 2]]
   [yield $x]]
@@ -2017,6 +2168,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=152-range-reverse-stride
   [label [#[152] Range — descending with negative step#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?for [in $x [$range 20 4 -4]]
   [yield $x]]
@@ -2028,6 +2180,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=153-take-prefix
   [label [#[153] Comprehension — `[take N]` over an open range#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?for [in $x [$range 1 *]]
   [where [> $x 100]]
@@ -2041,6 +2194,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=154-drop-prefix
   [label [#[154] Comprehension — `[drop N]` skip-prefix#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?for [in $x [$range 1 10]]
   [drop 7]
@@ -2053,6 +2207,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=155-drop-take-page
   [label [#[155] Comprehension — paginate via [drop] + [take]#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?for [in $x [$range 1 100]]
   [drop 30]
@@ -2066,6 +2221,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=156-slice-range
   [label [#[156] Slice — single-axis range `$xs[1:3]`#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?let [= $xs ("a", "b", "c", "d", "e")]
   $xs[1:3]]
@@ -2077,6 +2233,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=157-slice-last-three
   [label [#[157] Slice — last N via negative start `$xs[-3:]`#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?let [= $xs ("a", "b", "c", "d", "e")]
   $xs[-3:]]
@@ -2088,6 +2245,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=158-slice-reverse
   [label [#[158] Slice — reverse with `$xs[::-1]`#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?let [= $xs ("a", "b", "c", "d", "e")]
   $xs[::-1]]
@@ -2099,6 +2257,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=159-slice-every-other
   [label [#[159] Slice — every other with `$xs[::2]`#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?let [= $xs ("a", "b", "c", "d", "e")]
   $xs[::2]]
@@ -2110,6 +2269,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=160-slice-trim-ends
   [label [#[160] Slice — trim ends with `$_last`#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?let [= $xs ("a", "b", "c", "d", "e")]
   $xs[2:[- $_last 1]]]
@@ -2121,6 +2281,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=161-sequence-worker-top
   [label [#[161] Sequence diagram — top-level `[?worker]`#]]
+  [section [# code/diagrams #]]
   [src [#
 [?worker name="task"
   [?let [= $_ [?sleep 100ms mock]]
@@ -2134,6 +2295,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=162-sequence-select-channels
   [label [#[162] Sequence diagram — `[?select]` across channels#]]
+  [section [# code/diagrams #]]
   [src [#
 [?let [= $ch1 [?channel name="a" buffer=1]]
       [= $ch2 [?channel name="b" buffer=1]]
@@ -2150,6 +2312,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=163-sequence-http-service
   [label [#[163] Sequence diagram — `[?http-service]` config#]]
+  [section [# code/diagrams #]]
   [src [#
 [?http-service on=http port=0 name="hello"
   [resource [get "/"]
@@ -2163,6 +2326,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=164-graph-state-machine-data
   [label [#[164] Graph view — state machine as data#]]
+  [section [# code/diagrams #]]
   [src [#
 [state-machine
   [state idle]
@@ -2179,6 +2343,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=165-graph-workflow-dag
   [label [#[165] Graph view — workflow DAG as data#]]
+  [section [# code/diagrams #]]
   [src [#
 [workflow
   [task id="fetch" cmd="curl"]
@@ -2194,6 +2359,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=166-flowchart-control-flow
   [label [#[166] Flowchart — nested if / for control flow#]]
+  [section [# code/diagrams #]]
   [src [#
 [?let [= $xs (1, 2, 3, 4, 5)]
   [?for [in $x $xs]
@@ -2208,6 +2374,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=167-erd-mid-shop-orders
   [label [#[167] ERD — shop / customer / order / item (mid)#]]
+  [section [# code/diagrams #]]
   [src [#
 [shop
   [product sku="A1" name="widget" price=9.99]
@@ -2227,6 +2394,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=168-erd-large-org-structure
   [label [#[168] ERD — company / department / team / project (large)#]]
+  [section [# code/diagrams #]]
   [src [#
 [company
   [department id=1 name="engineering"
@@ -2253,6 +2421,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=169-cfg-small-bare-if
   [label [#[169] CFG — bare `[?if]` (small)#]]
+  [section [# code/diagrams #]]
   [src [#
 [?if true
   [then "yes"]
@@ -2265,6 +2434,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=170-cfg-large-def-match-process
   [label [#[170] CFG — `[?def]` + `[?match]` + `[?for]` pipeline#]]
+  [section [# code/diagrams #]]
   [src [#
 [?def classify ($n)
   [?match $n
@@ -2284,6 +2454,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=171-seq-mid-producer-consumer
   [label [#[171] Sequence — producer / consumer over a channel#]]
+  [section [# code/diagrams #]]
   [src [#
 [?let [= $ch [?channel name="jobs" buffer=4]]
       [= $prod [?worker name="producer"
@@ -2304,6 +2475,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=172-seq-large-workers-with-backpressure
   [label [#[172] Sequence — dispatcher + worker + collector#]]
+  [section [# code/diagrams #]]
   [src [#
 [?let [= $jobs [?channel name="jobs" buffer=8]]
       [= $results [?channel name="results" buffer=16]]
@@ -2328,6 +2500,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=173-fp-map
   [label [#[173] fp — `[$fp:map]` (functor map)#]]
+  [section [# code/functions #]]
   [src [#
 [?lib 'cx-stdlib/fp']
 
@@ -2340,6 +2513,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=174-fp-flat-map
   [label [#[174] fp — `[$fp:flat-map]` (monad bind)#]]
+  [section [# code/functions #]]
   [src [#
 [?lib 'cx-stdlib/fp']
 
@@ -2352,6 +2526,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=175-fp-pure
   [label [#[175] fp — `[$fp:pure]` (lift)#]]
+  [section [# code/functions #]]
   [src [#
 [?lib 'cx-stdlib/fp']
 
@@ -2364,6 +2539,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=176-fp-fold
   [label [#[176] fp — `[$fp:fold]` (reduce)#]]
+  [section [# code/functions #]]
   [src [#
 [?lib 'cx-stdlib/fp']
 
@@ -2376,6 +2552,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=177-fp-sequence-results
   [label [#[177] fp — `[$fp:sequence]` over results#]]
+  [section [# code/functions #]]
   [src [#
 [?lib 'cx-stdlib/fp']
 
@@ -2388,6 +2565,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=178-fp-sequence-err
   [label [#[178] fp — `[$fp:sequence]` short-circuits on `[err]`#]]
+  [section [# code/functions #]]
   [src [#
 [?lib 'cx-stdlib/fp']
 
@@ -2402,6 +2580,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=179-fp-traverse-result
   [label [#[179] fp — `[$fp:traverse]` (result applicative)#]]
+  [section [# code/functions #]]
   [src [#
 [?lib 'cx-stdlib/fp']
 
@@ -2414,6 +2593,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=180-fp-traverse-maybe
   [label [#[180] fp — `[$fp:traverse]` over Maybe (= the ≤1 sequence)#]]
+  [section [# code/functions #]]
   [src [#
 [?lib 'cx-stdlib/fp']
 
@@ -2426,6 +2606,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=181-fp-traverse-none
   [label [#[181] fp — Maybe short-circuit (a `None` collapses the result)#]]
+  [section [# code/functions #]]
   [src [#
 [?lib 'cx-stdlib/fp']
 
@@ -2439,6 +2620,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=182-fp-traverse-http
   [label [#[182] fp — `[$fp:traverse]` over HTTP calls (http mode)#]]
+  [section [# code/functions #]]
   [src [#
 [?lib 'cx-stdlib/fp']
 [?lib 'cx-stdlib/http']
@@ -2453,6 +2635,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=183-loop-break-continue
   [label [#[183] [?loop] — condition-driven loop with [break] / [continue]#]]
+  [section [# code/control-flow #]]
   [src [#
 [?loop [= $i 1] [= $acc 0]
   [?if [> $i 5]
@@ -2468,6 +2651,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=184-do-sequence
   [label [#[184] [?do] — evaluate for effect, discard the values#]]
+  [section [# code/control-flow #]]
   [src [#
 [?do [a] [b] [c]]
 #]]
@@ -2478,6 +2662,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=185-modulo
   [label [#[185] `%` — modulo#]]
+  [section [# data/numbers #]]
   [src [#
 [?for [in $n (1, 2, 3, 4, 5)]
   [yield [?if [= [% $n 3] 0] [then [fizz n=$n]] [else [n v=$n]]]]]
@@ -2489,6 +2674,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=186-random-stream
   [label [#[186] [$random:new] — a private, seeded, deterministic stream#]]
+  [section [# code/builtins #]]
   [src [#
 [?lib 'cx-stdlib/random']
 
@@ -2505,6 +2691,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=187-present-vs-count
   [label [#[187] [$present] — "did this step match", for a leaf too#]]
+  [section [# code/paths #]]
   [src [#
 [?let [= $doc [box [empty] [full v=1]]]
   [checks
@@ -2519,6 +2706,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=188-err-operand-consuming
   [label [#[188] Element construction is operand-consuming#]]
+  [section [# code/errors #]]
   [src [#
 [report [$idiv 1 0]]
 #]]
@@ -2531,6 +2719,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=189-postfix-path-step
   [label [#[189] Uniform postfix path steps#]]
+  [section [# code/paths #]]
   [src [#
 [?if true [then [box [v n=7]]] [else ()]]/v@n
 #]]
@@ -2541,6 +2730,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=190-map-syntax
   [label [#[190] Maps — whitespace or comma, and the declaration-only entry#]]
+  [section [# data/collections #]]
   [src [#
 {name: 'Alice' age: ::int active: true}
 #]]
@@ -2551,6 +2741,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=192-map-module
   [label [#[192] cx-stdlib/map — size / get / keys#]]
+  [section [# data/collections #]]
   [src [#
 [?lib 'cx-stdlib/map']
 
@@ -2565,6 +2756,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=193-array-module
   [label [#[193] cx-stdlib/array — size / reverse / sort#]]
+  [section [# data/collections #]]
   [src [#
 [?lib 'cx-stdlib/array']
 
@@ -2579,6 +2771,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=194-read-construct-split
   [label [#[194] Readers destructure any collection; constructors do not#]]
+  [section [# data/collections #]]
   [src [#
 [reads
   count-arr=[$count [1, 2, 3]]
@@ -2593,6 +2786,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=195-group-by-combinator
   [label [#[195] [?group-by] — the standalone grouping combinator#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?let [= $rows ([o r=US amt=4], [o r=EU amt=2], [o r=US amt=1])]
   [?group-by $rows [using [?fn ($o) $o@r]]]]
@@ -2604,6 +2798,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=196-with-caps-deny
   [label [#[196] [?with-caps [deny …]] — narrow authority, never widen it#]]
+  [section [# code/effects #]]
   [src [#
 [?with-caps [deny net]
   [ok value='sandboxed']]
@@ -2615,6 +2810,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=197-secret-redaction
   [label [#[197] [?secret] — redaction happens on emit#]]
+  [section [# code/effects #]]
   [src [#
 [?let [= $k [?secret 'sk-live-abc123']]
   [config [api-key $k]]]
@@ -2626,6 +2822,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=198-checked-int-overflow
   [label [#[198] Integer arithmetic is checked — no silent wrap#]]
+  [section [# data/numbers #]]
   [src [#
 [* 9223372036854775807 2]
 #]]
@@ -2636,6 +2833,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=199-exact-int-division
   [label [#[199] Exact int division past 2⁵³#]]
+  [section [# data/numbers #]]
   [src [#
 [$idiv 9007199254740993 3]
 #]]
@@ -2646,6 +2844,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=200-const-and-def
   [label [#[200] [?const] + module-level [?def]#]]
+  [section [# code/bindings #]]
   [src [#
 [?const TAX 0.08]
 [?def total scope=public pure ($net) [* $net [+ 1 TAX]]]
@@ -2659,6 +2858,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=201-str-interpolation
   [label [#[201] [?str] — interpolation#]]
+  [section [# data/text #]]
   [src [#
 [?let [= $name 'CX'] [= $n 3]
   [?str "Hello {$name}, {$n} items"]]
@@ -2670,6 +2870,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=202-else-coalesce
   [label [#[202] [?else] — coalesce an absent result#]]
+  [section [# code/control-flow #]]
   [src [#
 [?else [$nth (1, 2) 9] 'default']
 #]]
@@ -2680,6 +2881,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=203-quote-homoiconic
   [label [#[203] [?quote] — the program as data#]]
+  [section [# code/metaprogramming #]]
   [src [#
 [?quote [+ 1 2]]
 #]]
@@ -2691,6 +2893,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
 
  [ex key=204-partial-application-hole
   [label [#[204] [?pipe] and `_` — the hole defers one argument#]]
+  [section [# code/functions #]]
   [wasm-unsupported [#`[?pipe]` into a partial-application hole throws `table index is out of bounds` under wasm32 — a known wasm defect being fixed; the hole itself works (example 205); native answers `1`.#]]
   [src [#
 [?pipe (3, 1, 2) [$sort _] [$first _]]
@@ -2705,6 +2908,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
 
  [ex key=205-hole-as-a-callable-value
   [label [#[205] a hole makes a callable you can bind and call#]]
+  [section [# code/functions #]]
   [src [#
 [?lib 'cx-stdlib/strings' :as strings]
 [?let [= $shout [$strings:upper _]] [names [?splice [?for [in $n ("ada", "bo")] [yield [$shout $n]]]]]]
@@ -2717,6 +2921,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
 
  [ex key=206-head-bind-captures-the-whole-element
   [label [#[206] pattern head-bind `[user$u …]` — the binding glued to the name is the WHOLE element#]]
+  [section [# code/patterns #]]
   [src [#
 [?match [user id=7 [given Ada]]
   [case [user$u id=$id] [found id=$id [?splice ($u)]]]
@@ -2730,6 +2935,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
 
  [ex key=207-attribute-rest
   [label [#[207] attribute rest `@* $rest` — the attributes the pattern did not name, as a map#]]
+  [section [# code/patterns #]]
   [src [#
 [?match [user id=7 role=admin name=Ada]
   [case [user id=$id @* $rest] [known id=$id [rest [?splice ($rest)]]]]
@@ -2743,6 +2949,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
 
  [ex key=208-wildcard-heads-bind
   [label [#[208] wildcard heads bind too — `[* $first]` and `[** $deep]`#]]
+  [section [# code/patterns #]]
   [src [#
 [?match [order [item sku=A] [item sku=B] [note x]]
   [case [order [* $first] [** $deep]] [heads first=[$name $first] deep=[$name $deep]]]
@@ -2756,6 +2963,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
 
  [ex key=209-for-destructures-an-element
   [label [#[209] `[?for [in [point x=$x y=$y] …]]` — the generator takes a full pattern#]]
+  [section [# code/patterns #]]
   [src [#
 [?for [in [point x=$x y=$y] ([point x=1 y=2], [point x=3 y=4])] [yield [+ $x $y]]]
 #]]
@@ -2770,6 +2978,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
 
  [ex key=210-for-destructures-a-pair
   [label [#[210] `[?for [in [$k, $v] …]]` — destructuring an array pair per item#]]
+  [section [# code/patterns #]]
   [src [#
 [?for [in [$k, $v] (["a", 1], ["b", 2])] [yield [pair k=$k v=$v]]]
 #]]
@@ -2781,6 +2990,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
 
  [ex key=211-single-arm-match
   [label [#[211] a single-arm `[?match]` takes the full pattern grammar#]]
+  [section [# code/control-flow #]]
   [src [#
 [?let [= $r [ok 42]] [?match $r [case [ok $v] [* $v 2]]]]
 #]]
@@ -2792,6 +3002,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
 
  [ex key=212-a-bare-def-name-is-the-callable
   [label [#[212] a bare def name in value position IS the callable#]]
+  [section [# code/functions #]]
   [src [#
 [?def double ($x) [* $x 2]]
 [?def twice ($f $x) [$f [$f $x]]]
@@ -2805,6 +3016,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
 
  [ex key=213-splice-inside-a-literal
   [label [#[213] `[?splice]` adopts members inside a `(…)` literal#]]
+  [section [# code/metaprogramming #]]
   [src [#
 (0, [?splice (1, 2)], 3)
 #]]
@@ -2816,6 +3028,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
 
  [ex key=214-quasiquote-with-unquote
   [label [#[214] `[?quote]` with `[?unquote]` — a tree with computed holes#]]
+  [section [# code/metaprogramming #]]
   [src [#
 [?let [= $n [+ 1 2]] [?quote [total [?unquote $n] [?unquote [* $n 2]]]]]
 #]]
@@ -2827,6 +3040,7 @@ A hole is not a wildcard and not a binding — it is the one place a call is all
 
  [ex key=215-purity-is-checked-at-load
   [label [#[215] purity is checked at LOAD — a default-pure `[?def]` may only call pure defs#]]
+  [section [# code/effects #]]
   [src [#
 [?def inc ($x) [+ $x 1]]
 [?def twice-inc ($x) [inc [inc $x]]]
@@ -2846,6 +3060,7 @@ The message names the offending call. The next example shows the honest declarat
 
  [ex key=216-declared-effects
   [label [#[216] `impure [effects [write]]` — the caller declares what its callee does#]]
+  [section [# code/effects #]]
   [src [#
 [?def bump impure [effects [write]] ($x) [+ $x 1]]
 [?def loud impure [effects [write]] ($x) [bump $x]]
@@ -2859,6 +3074,7 @@ The message names the offending call. The next example shows the honest declarat
 
  [ex key=217-typed-params-and-returns
   [label [#[217] `[?def area ($w::int $h::int) [returns int] …]` — typed parameters#]]
+  [section [# code/functions #]]
   [src [#
 [?def area ($w::int $h::int) [returns int] [* $w $h]]
 [area 3 4]
@@ -2871,6 +3087,7 @@ The message names the offending call. The next example shows the honest declarat
 
  [ex key=218-exact-numeric-lane
   [label [#[218] the exact lane — `$idiv`, `%`, `$avg` over decimals, an all-int `/` chain#]]
+  [section [# data/numbers #]]
   [src [#
 [readings [exact [$idiv 7 2]] [rem [% 7 2]] [mean [$avg (1.5, 2.5)]] [chain [/ 12 3 2]]]
 #]]
@@ -2882,6 +3099,7 @@ The message names the offending call. The next example shows the honest declarat
 
  [ex key=219-non-terminating-division-refuses-by-name
   [label [#[219] `[$div 1.0 3.0]` refuses — an exact result does not exist#]]
+  [section [# data/numbers #]]
   [src [#
 [?lib 'cx-stdlib/math' :as math]
 [divisions
@@ -2897,6 +3115,7 @@ The message names the offending call. The next example shows the honest declarat
 
  [ex key=220-checked-overflow
   [label [#[220] integer arithmetic is CHECKED — `[* i64-max 2]` is `CXER3000`, not a wrap#]]
+  [section [# data/numbers #]]
   [src [#
 [* 9223372036854775807 2]
 #]]
@@ -2908,6 +3127,7 @@ The message names the offending call. The next example shows the honest declarat
 
  [ex key=221-wrapping-arithmetic-on-request
   [label [#[221] `[$math:wrapping-mul …]` — modular arithmetic, asked for by name#]]
+  [section [# data/numbers #]]
   [src [#
 [?lib 'cx-stdlib/math' :as math]
 [$math:wrapping-mul 9223372036854775807 2]
@@ -2920,6 +3140,7 @@ The message names the offending call. The next example shows the honest declarat
 
  [ex key=222-an-err-is-a-value-in-process
   [label [#[222] an `[err]` is a VALUE in-process — inspect it like any element#]]
+  [section [# code/errors #]]
   [src [#
 [?let [= $e [err code=cx-err:CXER9999 message="boom"]] [report ok=[$exists $e/@code]]]
 #]]
@@ -2931,6 +3152,7 @@ The message names the offending call. The next example shows the honest declarat
 
  [ex key=223-at-the-boundary-a-result-with-an-err-refuses
   [label [#[223] a RESULT that carries an `[err]` refuses at the effect boundary#]]
+  [section [# code/errors #]]
   [src [#
 [?let [= $e [err code=cx-err:CXER9999 message="boom"]] [report $e]]
 #]]
@@ -2942,6 +3164,7 @@ The message names the offending call. The next example shows the honest declarat
 
  [ex key=224-no-callable-is-a-coded-refusal
   [label [#[224] calling a name that resolves to nothing — `cx-err:CXER0136 E_NO_CALLABLE`#]]
+  [section [# code/errors #]]
   [src [#
 [$nope 1]
 #]]
@@ -2953,6 +3176,7 @@ The message names the offending call. The next example shows the honest declarat
 
  [ex key=225-const-str-and-a-module-def
   [label [#[225] `[?const]`, `[?str]` interpolation and a module `[?def]` in one bill#]]
+  [section [# code/bindings #]]
   [src [#
 [?const RATE 0.08]
 [?def total ($sub) [* $sub [+ 1 RATE]]]
@@ -2967,6 +3191,7 @@ The message names the offending call. The next example shows the honest declarat
 
  [ex key=226-group-by-with-per-group-totals
   [label [#[226] `[?group-by … [using FN]]` then a total per group#]]
+  [section [# code/comprehensions #]]
   [src [#
 [?let [= $rows ([sale region=US amt=5], [sale region=EU amt=7], [sale region=US amt=3])]
   [?for [in $g [?group-by $rows [using [?fn ($s) $s@region]]]]
@@ -2980,6 +3205,7 @@ The message names the offending call. The next example shows the honest declarat
 
  [ex key=227-present-vs-exists-vs-count
   [label [#[227] `$present` — the predicate `$count`/`$exists` were being misused for#]]
+  [section [# code/paths #]]
   [src [#
 [?let [= $d [doc [empty]]] [checks present=[$present $d/empty] count=[$count $d/empty] exists=[$exists $d/empty]]]
 #]]
@@ -2991,6 +3217,7 @@ The message names the offending call. The next example shows the honest declarat
 
  [ex key=228-a-scoped-deny-is-not-a-total-deny
   [label [#[228] `[?with-caps [deny net HOST]]` narrows; `[deny net]` removes#]]
+  [section [# code/effects #]]
   [src [#
 [capabilities [total-deny [?with-caps [deny net] [$caps]]] [scoped-deny [?with-caps [deny net "a.example:443"] [$caps]]]]
 #]]
@@ -3002,6 +3229,7 @@ The message names the offending call. The next example shows the honest declarat
 
  [ex key=229-declaration-only-map-entry
   [label [#[229] `{name: "Ada" age: ::int}` — a declared kind with NO value is absent, not null#]]
+  [section [# data/collections #]]
   [src [#
 [?lib 'cx-stdlib/map' :as map]
 [?let [= $m {name: "Ada" age: ::int}] [entry name=[$map:get $m "name"] has-age=[$present [$map:get $m "age"]]]]
@@ -3014,6 +3242,7 @@ The message names the offending call. The next example shows the honest declarat
 
  [ex key=230-an-atom-is-not-a-map-key
   [label [#[230] map keys are strings — `{"name": 1}` parses, `{:name: 1}` refuses at its position#]]
+  [section [# data/collections #]]
   [src [#
 {"name": 1}
 #]]
@@ -3031,6 +3260,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
 
  [ex key=231-a-bare-word-in-a-data-body-is-text
   [label [#[231] a bare word in a DATA body is text; a `$name` is the binding#]]
+  [section [# data/elements #]]
   [src [#
 [greeting hello]
 #]]
@@ -3042,6 +3272,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
 
  [ex key=232-of-clause-closed-match
   [label [#[232] `[?match X [of TYPE] …]` — the arms are checked against a declared enum#]]
+  [section [# data/schema #]]
   [src [#
 [?cx schema-inline
   [schema of=job]
@@ -3059,6 +3290,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
 
  [ex key=233-of-clause-membership-refusal
   [label [#[233] `[of TYPE]` refuses a value outside the set — `S007`, caught here as a value#]]
+  [section [# data/schema #]]
   [src [#
 [?cx schema-inline
   [schema of=job]
@@ -3075,6 +3307,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
 
  [ex key=234-of-clause-no-silent-fall-through
   [label [#[234] `[of TYPE]` with a missing arm refuses — no silent fall-through#]]
+  [section [# data/schema #]]
   [src [#
 [?cx schema-inline
   [schema of=job]
@@ -3091,6 +3324,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
 
  [ex key=235-of-clause-else-opts-out
   [label [#[235] `[else]` is the explicit opt-out from exhaustiveness#]]
+  [section [# data/schema #]]
   [src [#
 [?cx schema-inline
   [schema of=job]
@@ -3107,6 +3341,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
 
  [ex key=236-negative-zero-keeps-its-sign
   [label [#[236] a decimal `-0.0` keeps its sign — and its scale#]]
+  [section [# data/numbers #]]
   [src [#
 [reading a=-0.0 b=0.0 c=-0.00]
 #]]
@@ -3118,6 +3353,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
 
  [ex key=237-xml-refuses-a-duplicate-attribute
   [label [#[237] `[$xml:parse]` refuses a duplicate attribute by position#]]
+  [section [# data/formats #]]
   [src [#
 [?lib 'cx-stdlib/xml' :as xml]
 [$xml:parse "<r x='1' x='2'/>"]
@@ -3130,6 +3366,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
 
  [ex key=238-postfix-path-step-on-any-form
   [label [#[238] a path step on ANY bracketed form — `[?if …]/v@n`#]]
+  [section [# code/paths #]]
   [src [#
 [?if true [then [box [v n=7]]] [else ()]]/v@n
 #]]
@@ -3141,6 +3378,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
 
  [ex key=239-readers-read-any-collection
   [label [#[239] readers destructure ANY collection kind — `$count` over `[…]`, `$first` over `(…)`#]]
+  [section [# data/collections #]]
   [src [#
 [both count=[$count [1, 2]] first=[$first (3, 4)]]
 #]]
@@ -3152,6 +3390,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
 
  [ex key=240-constructors-keep-strict-typing
   [label [#[240] constructors keep strict typing — `[$concat [1, 2] (3, 4)]` refuses#]]
+  [section [# data/collections #]]
   [src [#
 [$concat [1, 2] (3, 4)]
 #]]
@@ -3163,6 +3402,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
 
  [ex key=241-json-in-and-out
   [label [#[241] JSON in, CX out — and back again#]]
+  [section [# data/formats #]]
   [src [#
 [?lib 'cx-stdlib/json' :as json]
 [?let [= $doc [$json:parse "{\"order\": {\"id\": 7, \"items\": [\"pen\", \"ink\"], \"paid\": true}}"]]
@@ -3175,6 +3415,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
 
  [ex key=242-xml-in-and-out
   [label [#[242] XML in, CX out — attributes and text#]]
+  [section [# data/formats #]]
   [src [#
 [?lib 'cx-stdlib/xml' :as xml]
 [?let [= $doc [$xml:parse "<order id=\"7\"><item sku=\"pen\">2</item><item sku=\"ink\">1</item></order>"]]
@@ -3187,6 +3428,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
 
  [ex key=243-yaml-in-and-out
   [label [#[243] YAML in, CX out — a config as a map#]]
+  [section [# data/formats #]]
   [src [#
 [?lib 'cx-stdlib/yaml' :as yaml]
 [?let [= $cfg [$yaml:parse "service: api\nreplicas: 3\nports:\n  - 8080\n  - 8443\n"]]
@@ -3199,6 +3441,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
 
  [ex key=244-toml-in-and-out
   [label [#[244] TOML in, CX out — tables are nested maps#]]
+  [section [# data/formats #]]
   [src [#
 [?lib 'cx-stdlib/toml' :as toml]
 [?let [= $cfg [$toml:parse "title = \"cx\"\n[owner]\nname = \"Ada\"\nyear = 2026\n"]]
@@ -3211,6 +3454,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
 
  [ex key=245-csv-in-and-out
   [label [#[245] CSV in, CX out — rows as maps keyed by the header#]]
+  [section [# data/formats #]]
   [src [#
 [?lib 'cx-stdlib/csv' :as csv]
 [?let [= $rows [$csv:parse "sku,qty,price\npen,2,1.50\nink,1,4.25"]]
