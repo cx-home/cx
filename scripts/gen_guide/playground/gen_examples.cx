@@ -328,11 +328,6 @@
 # still be read back. 4 MiB is ~4000x the largest current example and far
 # past anything the playground could put on screen, so exceeding it means
 # the example is wrong, not that the cap is tight.
-[?const NL '\n']
-[?const ERR-OPEN '[err ']
-[?const SEQ-ERR-OPEN '([err ']
-[?const SEQ-ERR-MID ', [err ']
-
 [?const CAPTURE-CAP 4194304]
 
 # ── the per-example bound: CALIBRATED, never a wall-clock constant ────
@@ -441,25 +436,32 @@
             [then [$strings:trim $errout]] [else [$strings:trim $out]]]]
         [= $runnable [not [$strings:contains $combined 'CXER0271']]]
         # An err value ANYWHERE in the result means the program produced one,
-        # so a nonzero rc is expected. #1058 T1.1 made that true of SEQUENCES
-        # too, and `starts-with` cannot see them: `[?for]` / `[?map]` COLLECT
-        # errs so the output starts with `(`, and the run surface renders each
-        # top-level result on its own line so a multi-line output carries its
-        # err on a later one. Both shapes hit the `rc != 0 && !err-value` arm:
+        # so a nonzero rc is expected — and the rule is asked ONCE, of the
+        # runtime that rendered the bytes (#1351, RULED: 1351-a1).
+        #
+        # This auditor used to TRANSLITERATE `code.output_carries_err` in CX:
+        # three prefix constants (`[err `, `([err `, `, [err `) and a per-line
+        # scan. #1058 T1.1 changed the contract — an err INSIDE a sequence now
+        # exits 1 — and the rule turned out to have five independent
+        # implementations, three of them prefix scanners over rendered text.
+        # The two scanners each needed FOUR rounds of widening, every round
+        # failing on a different err POSITION rather than a different err:
         #   57-map-par-bulkhead   (1, 4, 9, 16, [err code=shard-offline …], …)
+        #                         — the err sits FIFTH, so neither `[err ` nor
+        #                         `([err ` matches
         #   97-rate-limit-over    [ok i=1] / [ok i=2] / [err …CXER0151…]
-        # Same predicate the profile gate's binary lane needed
-        # (expectation_carries_err) — T1.1's rule has several graders and they
-        # have to agree.
-        [= $err-lines [?for [in $l [$strings:split $out NL]]
-            [where [$strings:starts-with [$strings:trim $l] ERR-OPEN]]
-            [yield $l]]]
-        # An err can sit ANYWHERE in the sequence, not just first —
-        # 57-map-par-bulkhead is `(1, 4, 9, 16, [err …], 36, 49, 64)`, so the
-        # `([err ` prefix does not match and `, [err ` is needed too.
-        [= $err-value-result [or [not [$empty $err-lines]]
-                                 [or [$strings:contains $out SEQ-ERR-OPEN]
-                                     [$strings:contains $out SEQ-ERR-MID]]]]
+        #                         — the run surface prints each top-level
+        #                         result on its own line, so the err is on the
+        #                         THIRD one
+        # A prefix test can never see either, and a scanner that fails to
+        # recognise an err grades the case as an ordinary mismatch or, worse,
+        # tolerates it. One verb now owns the byte contract, so the day the run
+        # surface renders a fourth shape this auditor learns it for free.
+        #
+        # The converse must NOT be asserted: an err in the output does not make
+        # rc=1 REQUIRED — a literal err in a data document is DATA echoing
+        # itself and legitimately exits 0. This stays a TOLERANCE test.
+        [= $err-value-result [$cx:carries-err $out]]
         [?if $over
           [then [res status='fail' runnable=true ms=$ms out='' err=''
                  msg=[$cat ('output too large: ', [$string [+ $osz $esz]],
