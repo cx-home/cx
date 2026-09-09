@@ -486,6 +486,18 @@ check-v-fork: build-vcx
 # `VFLAGS_VCX` carries no `-usecache`, so a "cache-free re-run" of those gates
 # would differ from the cached run in nothing and the classifier would print a
 # verdict it had not earned.
+# The build-failure classifier decides whether a failed `$(V) ... run` gate is
+# worth a -no-skip-unused re-run (see SKIP_UNUSED_ESCAPE_PROBE). A classifier
+# that silently stops matching disables the diagnosis while the gate looks
+# unchanged — the vacuous-gate class check-serial-retry-rosters exists for —
+# so its matcher is red-proofed from both ends over canned logs, including the
+# verbatim \#1337 failure. Every alternative in the signature carries its own
+# sample, so deleting one reds and adding one without a sample reds too.
+# Pure shell over heredocs: it compiles nothing and needs no build slot.
+.PHONY: check-build-failure-classifier
+check-build-failure-classifier:
+	@sh scripts/classify_v_build_failure.sh --self-test
+
 .PHONY: check-vcache-soundness
 check-vcache-soundness:
 	@log=vcx/target/vcache-soundness.log; \
@@ -810,7 +822,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness test-vcx-timing check-conformance-coverage check-contract-revision abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check directive-docs-check verify-doc-blocks verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-oriel-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS lanes whose
@@ -1236,7 +1248,14 @@ test-extraction-gate: build-vcx
 # NEW corpus defs are added (never to absorb a move).
 .PHONY: address-baseline-gate
 address-baseline-gate:
-	@$(JS_CLOSE) $(V) $(VFLAGS_VCX) run vcx/tests/runners/address_baseline/address_baseline.v
+	@$(JS_CLOSE) log=vcx/target/address-baseline-gate.log; \
+	  SU_RERUN='$(V) -no-skip-unused $(VFLAGS_VCX) run vcx/tests/runners/address_baseline/address_baseline.v'; \
+	  if $(V) $(VFLAGS_VCX) run vcx/tests/runners/address_baseline/address_baseline.v > "$$log" 2>&1; then \
+	    cat "$$log"; \
+	  else \
+	    cat "$$log"; \
+	    $(SKIP_UNUSED_ESCAPE_PROBE); \
+	  fi
 
 .PHONY: address-baseline-capture
 address-baseline-capture:
@@ -1975,6 +1994,65 @@ RETRY_REASON_CASE = case "$$rel" in \
 # comment and silently truncates the line it is on (measured while writing
 # this: the banner became `GATE ESCAPE (`). Issue numbers here must be
 # written `\#700`, the same idiom RETRY_REASON_CASE above uses for `\#1125`.
+# ── SKIP-UNUSED ESCAPE PROBE (\#1337) ────────────────────────────────────────
+# The cache-free re-run above is the right classifier for a lane that runs
+# WITH $(CX_CACHE). It is the wrong one for a `$(V) ... run` gate, and that
+# distinction is the whole of \#1337's second ask.
+#
+# `VFLAGS_VCX := -cc cc -path ...` carries NO -usecache, and has not since the
+# single commit that ever wrote that line. So when address-baseline-gate died
+# on `call to undeclared function 'string_runes'`, the cache was off in the
+# failing run AND in the "cache-free" re-run the issue reports as a
+# discriminator — the same command twice, which makes its greenness a NON-
+# REPRODUCTION rather than a discriminator. A cache-free re-run of these gates
+# differs from the failing run in NOTHING, which is exactly why ask 2's first
+# option was declined. That reasoning was right about the cache and wrong
+# about the remedy.
+#
+# What IS on for every one of these builds is -skip-unused: for the C backend
+# and any build that is not -build-module, V sets skip_unused unconditionally
+# (third_party/v/vlib/v/pref/pref.v, the `res.backend == .c` block). Pruning a
+# symbol the translation unit still references is precisely this failure
+# class, and the fork already carries two patches in it — upstream's
+# "markused: fix undeclared C identifier for alias array type" (5f6bc5ab07)
+# and CX's own use_cache interface mitigation in vlib/v/markused/markused.v,
+# whose comment reads "the wrapper references an undeclared function -> C
+# error". Neither covers a cache-free program TU.
+#
+# STATE THIS PLAINLY: markused is the best-supported hypothesis for that
+# symptom, NOT a measured cause. It has not reproduced since. This probe
+# exists so the NEXT occurrence names itself instead of costing another full
+# verification cycle, which is what \#1337 says the first one cost.
+#
+# Discipline, identical to CACHE_ESCAPE_PROBE: the verdict STAYS RED either
+# way. The re-run is the classifier, never a retry, and it only happens when
+# the log actually carries a C symbol-level failure — re-running the whole
+# graph on an ordinary red (a moved address) would cost a full rebuild and
+# classify nothing. scripts/classify_v_build_failure.sh owns that decision and
+# self-tests it.
+# NOTE for editors: this is a make VARIABLE, so a bare `#` starts a make
+# comment and silently truncates the line it is on. Issue numbers here must be
+# written `\#1337`, the same idiom CACHE_ESCAPE_PROBE above uses.
+SKIP_UNUSED_ESCAPE_PROBE = \
+	if sh scripts/classify_v_build_failure.sh "$$log"; then \
+	  echo "──── -no-skip-unused DIAGNOSTIC (verdict stays RED; classifying only) ────"; \
+	  if eval "$$SU_RERUN" > "$$log.noskip" 2>&1; then \
+	    echo "════ SKIP-UNUSED ESCAPE (\#1337): FAILED with -skip-unused, PASSES with -no-skip-unused ════"; \
+	    echo "     markused pruned a symbol the generated translation unit still references."; \
+	    echo "     DO NOT re-run to get green, and do not add -no-skip-unused to the gate:"; \
+	    echo "     that hides a real codegen defect behind a slower build."; \
+	    echo "     Capture and file against \#1337:"; \
+	    echo "       - $$log        (the pruned failure, with the undeclared symbol)"; \
+	    echo "       - $$log.noskip (the same build, nothing pruned)"; \
+	    echo "     Then add the reproducer to third_party/v as a markused regression test."; \
+	  else \
+	    echo "──── real failure, not a markused artifact (fails with -no-skip-unused too) ────"; \
+	  fi; \
+	else \
+	  echo "──── ordinary red: no C symbol-level failure in $$log, so no re-run ────"; \
+	fi; \
+	exit 1
+
 CACHE_ESCAPE_PROBE = \
 	echo "──── cache-free DIAGNOSTIC (verdict stays red; classifying): $$rel ────"; \
 	if $(V) -cc cc $(CX_GC) $(CX_ENGINES) test "$$rel"; then \
