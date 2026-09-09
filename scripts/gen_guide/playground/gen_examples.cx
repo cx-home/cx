@@ -672,9 +672,20 @@
 #
 # HOW THE NAMES ARE KNOWN — measured, not copied. `[$NAME]` answers
 #
-#   [err code=user-undefined message='no callable "pizza"']         not a builtin
+#   [err code=cx-err:CXER0136 message='E_NO_CALLABLE: no callable   not a builtin
+#                                      "pizza"']
 #   [err code=cx-err:CXER0100 message='concat: expected at least 1  a builtin
 #                                      argument(s), got 0 …']
+#
+# The MISS code is what this reads, and it is read positively. It was
+# `user-undefined` until #1058 T1.6-b gave the miss a real code and
+# REMOVED that string (RULED: 1058-T1.6-b, vcx/code/eval.v). This
+# predicate was spelled as the ABSENCE of the old string, so the rename
+# made it vacuously TRUE for every name: every bare head read as a
+# builtin and the gate printed 52 false BAREs (red at c281b4130). An
+# absence is not evidence — hence the discrimination self-test at the
+# call site, which fails loudly the next time the engine's spelling
+# moves instead of failing silently.
 #
 # so the ENGINE is the authority and there is no second copy of
 # `builtin_dispatchable` (vcx/code/eval.v) to go stale. Note what this
@@ -718,7 +729,7 @@
                          $out-path, $err-path)]]
     [= $o [$string [$must 'reading probe stdout' [$io:read-file $out-path]]]]
     [= $e [$string [$must 'reading probe stderr' [$io:read-file $err-path]]]]
-    [not [$strings:contains [$cat ($o, $e)] 'user-undefined']]]]
+    [not [$strings:contains [$cat ($o, $e)] 'cx-err:CXER0136']]]]
 
 # resting-heads-of: the bare heads a source names whose construct came to
 # rest in that example's answer.
@@ -924,6 +935,14 @@
         [yield [pair key=$k head=$h]]]]]]]
   # Each distinct head is probed ONCE, not once per example.
   [= $probe-names [$uniq [?for [in $p $pairs] [yield [$string $p@head]]]]]
+  # The probe is asserted to DISCRIMINATE before a single verdict is read
+  # from it: a known-missing name must answer `false` and a known builtin
+  # must answer `true`. Two extra probe runs, and they are the difference
+  # between this lint failing loudly and failing vacuously.
+  [= $probe-miss [$is-builtin-head $cxbin $probe-tmp $out-path $err-path
+      'zz-no-such-callable-1058']]
+  [= $probe-hit [$is-builtin-head $cxbin $probe-tmp $out-path $err-path 'concat']]
+  [= $probe-broken [not [and [not $probe-miss] $probe-hit]]]
   [= $builtin-names [?for [in $n $probe-names]
       [where [$is-builtin-head $cxbin $probe-tmp $out-path $err-path $n]]
       [yield $n]]]
@@ -944,12 +963,19 @@
   # one run. 1170-b's own warning is that a gate which is painful to act
   # on teaches people to ignore it, and "fix one, rerun, discover the
   # other" is that pain.
-  [= $c2-bad [not [and [$empty $unmarked] [$empty $unjustified]]]]
+  [= $c2-bad [or $probe-broken [not [and [$empty $unmarked] [$empty $unjustified]]]]]
   [= $c2 [?if $c2-bad
       [then (
         [$cry [$cat ('=== gen_examples: the bare-builtin-head lint FAILED ',
                      '(#1170 §C2, RULED: 1170-b) — refusing to ',
                      [?if $check [then 'verify'] [else 'write']], ' ===')]],
+        [?for [in $b [?if $probe-broken [then (1)] [else ()]]]
+          [yield [$cry [$cat ('PROBE the builtin probe no longer DISCRIMINATES ',
+              '(missing-name=', [$string $probe-miss],
+              ' builtin=', [$string $probe-hit], ', both should differ). ',
+              'is-builtin-head reads the name-resolution MISS code; the engine ',
+              'has changed its spelling, so every verdict below is vacuous. ',
+              'Fix the predicate, not the corpus (#1058 T1.6-b did this once).')]]]],
         [?for [in $k $unmarked] [yield [$cry [$cat ('BARE  ',
             [$strings:pad-end $k 40 ' '], ' builds ',
             [$strings:join [?for [in $p $flagged]

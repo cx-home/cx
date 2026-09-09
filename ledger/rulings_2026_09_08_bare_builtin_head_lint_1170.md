@@ -42,15 +42,37 @@ must not be built on it.
 **The discriminator, measured on the shipped binary:**
 
 ```
-$ printf '[$pizza]\n'  | cx …   →  [err code=user-undefined message='no callable "pizza"']
+$ printf '[$pizza]\n'  | cx …   →  [err code=cx-err:CXER0136 message='E_NO_CALLABLE: no callable "pizza"']
 $ printf '[$concat]\n' | cx …   →  [err code=cx-err:CXER0100 message='concat: expected at least 1 argument(s), got 0 (code.md §6.5)']
 ```
 
-`user-undefined` ⇔ the name is not a builtin. Any other verdict — including an
-ARITY error — means it is. One grant-free child process per distinct head, and
-the engine is the authority, so the answer cannot drift from the engine the way
-a copied list does. (`user-undefined` is load-bearing elsewhere too — #1058
-T1.6 — so this is not a private reading of an incidental string.)
+**Corrected 2026-09-09 (RULED: 1058-T1.6-b).** As ruled on 09-08 this block
+read `user-undefined` for the miss; `1058-T1.6-b` then gave the miss a real code
+and REMOVED that string. The DECISION is unchanged — the miss code ⇔ the name is
+not a builtin — only its spelling, and the correction is recorded here rather
+than left for a reader to discover from a red gate.
+
+The miss code (`cx-err:CXER0136`) ⇔ the name is not a builtin. Any other verdict
+— including an ARITY error (`CXER0100`) — means it is. One grant-free child
+process per distinct head, and the engine is the authority, so the answer cannot
+drift from the engine the way a copied list does.
+
+**Read the miss POSITIVELY, never as an absence.** The original predicate was
+`not contains(output, 'user-undefined')`, and when T1.6-b removed that string the
+lint went vacuously TRUE for every name — including names that cannot exist —
+so all 148 heads read as builtins and `verify-playground-examples` printed 52
+false BAREs (gate red at `c281b4130`). Measured both directions on the shipped
+binary, with the real def and its real helpers:
+
+```
+new needle 'cx-err:CXER0136'  missing-name=false concat=true pair=false and=true  discriminates=true
+old needle 'user-undefined'   missing-name=true  concat=true pair=true  and=true  discriminates=false
+```
+
+`pair` is one of the 52 that were falsely flagged; `and` is one of the five
+LEGITIMATE bare operators this rule must keep detecting. The call site now
+asserts that discrimination before reading any verdict from the probe, so the
+next spelling change fails loudly instead of silently.
 
 Run over every distinct bare head in the corpus (148 of them), 17 resolve:
 
@@ -79,7 +101,8 @@ builtin name appears bare" — it is "the construct CAME TO REST as data". §C1
 already records every answer, so:
 
 > Flag an entry when a bare head `H` appears in its `[src]`, AND `[$H]`
-> answers something other than `user-undefined`, AND the entry's recorded
+> answers something other than the miss code (`cx-err:CXER0136`; `user-undefined`
+> as ruled on 09-08), AND the entry's recorded
 > answer contains a construct headed `H`.
 
 Checked against the corpus: `20-string-concat` flags (answer holds
