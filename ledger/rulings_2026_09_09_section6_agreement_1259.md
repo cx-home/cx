@@ -118,3 +118,70 @@ still projects a submit form for it, because `grammar-form` refuses only
 `1259-h` rules on ordered parameter names; nothing rules on membership, and
 changing either reader would change what a surface offers. Reported on #1259
 rather than fixed or dropped.
+
+## 1259-i — the readers agree on MEMBERSHIP, not only on names
+
+**RULED: 1259-i — (a)** (Fable, 2026-09-09 09:17 ET, under the owner's
+delegation). Membership is **"not `observe`"**: `[$xap:emits-of]` offers every
+verb that is not `observe` — `act`, `arrange`, and the undeclared effect the
+1259-g1 clause reads as `act` — in both arms, with the same parameter walk, the
+same fallback and the same `offered=false` skip.
+
+**Verified before the change, as the ruling instructs:** nothing pinned the
+exclusion. `grep -rn 'emits-of' conformance/ x/ spec/ docs-src/ | grep -i arrange`
+returns nothing — no fixture asserted an arrange verb's ABSENCE from an
+`emits-of` answer.
+
+**Red-proved at `f34b55b3d`** over a feature carrying one `act`, one `arrange`
+and one `observe` verb, and its composed grammar:
+
+```
+[probe [feature-arm [do :place [title :text] [lane :text]]]
+       [grammar-arm [do 'board/place' [title :text] [lane :text]]]]
+```
+
+The arrange slot is absent from BOTH arms. After: both answer `place` and
+`highlight`, and `peek` stays out. Pinned as `xap-compose-161`.
+
+**One thing the ruling did not name, found by reading both arms.** They did not
+apply the same test. The feature arm read `eff != '' && eff != 'act'`, which
+honors 1259-g1's undeclared-effect default; the **grammar arm demanded
+`effect == 'act'` exactly**, so it dropped an undeclared effect as well as an
+arrange one — it never honored 1259-g1 at all. The single `eff == 'observe'`
+test fixes both, which is what "the same fallback" in the ruling requires.
+
+## The `ux-124` row the ruling asks for CANNOT be authored yet, and why
+
+`1259-i` asks for "one row in `ux-124`'s agreement set for the arrange document
+(`agree=true`)". Three measurements say that row would be either vacuous or
+red for an unrelated reason, so it is **not** in this landing and the concern is
+on the issue rather than resolved by picking whichever document looks green.
+
+1. **The canonical arrange verb has no parameters.** All 30 `effect=arrange`
+   verbs in `xap-compose.cxd` are
+   `[verb name=highlight effect=arrange [intent [do :highlight]] [reads viewport]]`.
+   A slot-comparison row over that document answers `[emits] [ux]` — both empty
+   — and therefore `agree='true'` **before AND after** the fix. Measured both
+   ways. That is an absence-based row: it passes for the wrong reason.
+2. **A parameterised arrange verb with `[writes]` has no precedent**, and the
+   §6 signature floor says writing domain state ⇒ `act`, so declaring `arrange`
+   over a write is a weakening a W5-class conflict exists to catch. Not a
+   document to put in a gate.
+3. **`ux:form` cannot project ANY verb with no `[writes]` noun** — including
+   every corpus arrange verb. `x/ux.cx:2132` is
+   `[= $wname [$bare-name [$string [$first $v/writes]]]]`, and `$first` over an
+   empty selection answers `nth: index 0 out of range (1..0)`, which lands as
+   an `[err]` INSIDE the projected form. Measured on three documents: `act` +
+   `[writes]` projects cleanly; `arrange` + `[writes]` projects cleanly;
+   **`act` + `[reads]` and `arrange` + `[reads]` both error**. So the defect is
+   "no written noun", NOT arrange — it is older than this ruling and independent
+   of it.
+
+Point 3 also contradicts `1259-i`'s stated premise that "`ux:form` keeps
+projecting a submit form for them". It refuses only `observe`, which is what the
+ruling checked — but on the canonical arrange verb it does not refuse, it
+CRASHES. The two readers therefore still do not agree on that document, and no
+change to `emits-of` can make them.
+
+The `emits-of` half is correct, self-contained and lands here. The remainder is
+drafted back on #1259 as letters rather than decided.
