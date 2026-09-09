@@ -2849,14 +2849,21 @@ corpus-audit: build-vcx
 #
 # A REPORT by default. `--max-declined N` / `--max-errors N` make it a
 # ratchet, and it becomes a gate lane once the census is a committed number.
+#
+# CX_SWEEP_BIN is the binary MEASURED and the binary that runs the sweep — one
+# variable for both, because a census of one binary produced by another is a
+# census of neither. It defaults to the shipped `vcx/target/cx`, which is what
+# #1348's own figures were taken with; a lane that only wants the correctness
+# verdict can point it at `vcx/target/cx-dev`.
+CX_SWEEP_BIN ?= vcx/target/cx
 .PHONY: fmt-sweep fmt-sweep-timed
 fmt-sweep: build-vcx
-	@vcx/target/cx --allow-read --allow-write --allow-subprocess \
-	  scripts/fmt_corpus_sweep.cx $(FMT_SWEEP_ARGS)
+	@$(CX_SWEEP_BIN) --allow-read --allow-write --allow-subprocess \
+	  scripts/fmt_corpus_sweep.cx --bin $(CX_SWEEP_BIN) $(FMT_SWEEP_ARGS)
 
 fmt-sweep-timed: build-vcx
-	@vcx/target/cx --allow-read --allow-write --allow-subprocess \
-	  scripts/fmt_corpus_sweep.cx --timed --no-bench $(FMT_SWEEP_ARGS)
+	@$(CX_SWEEP_BIN) --allow-read --allow-write --allow-subprocess \
+	  scripts/fmt_corpus_sweep.cx --bin $(CX_SWEEP_BIN) --timed --no-bench $(FMT_SWEEP_ARGS)
 
 
 # ── REPR GUARD (#1119 W1, RULED: RP-5) — the CXDM live-memory ratchet ────────
