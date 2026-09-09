@@ -2908,6 +2908,47 @@ corpus-audit: build-vcx
 	@bash scripts/corpus_audit.sh
 
 
+# ── `cx fmt` corpus sweep (#1348) ───────────────────────────────────────────
+#
+# TWO sweeps, because one cannot be both: `fmt-sweep` is the CORRECTNESS
+# census over every tracked `.cx` file INCLUDING `fixtures/bench/`, and
+# `fmt-sweep-timed` is the wall-clock pass over the non-bench files, whose
+# count stays comparable across runs. #1348 recorded that every fmt corpus
+# measurement so far excluded the bench blobs because one 10 MB file made a
+# 90 s sweep take half an hour — "which means the ONE class of input where
+# formatter cost is worth measuring is the one class never measured".
+#
+# The correctness pass feeds every file as a copy with one leading blank line
+# prepended, so `output == input` means the formatter DECLINED and cannot mean
+# "already canonical". Without that, `cx fmt F == F` is the vacuous probe the
+# #1318/#1320 record warns about: `cx fmt` fails closed by returning the
+# SOURCE at exit 0, so a sweep comparing a file to itself scores every silent
+# decline as a pass.
+#
+# A REPORT by default. `--max-declined N` / `--max-errors N` make it a
+# ratchet, and it becomes a gate lane once the census is a committed number.
+#
+# CX_SWEEP_BIN is the binary MEASURED and the binary that runs the sweep — one
+# variable for both, because a census of one binary produced by another is a
+# census of neither. It defaults to the shipped `vcx/target/cx`, which is what
+# #1348's own figures were taken with; a lane that only wants the correctness
+# verdict can point it at `vcx/target/cx-dev`.
+CX_SWEEP_BIN ?= vcx/target/cx
+.PHONY: fmt-sweep fmt-sweep-timed
+# --allow-clock is load-bearing for the timed pass and NOT optional: a denied
+# clock capability makes `[$time:monotonic-now]` answer ABSENCE rather than
+# fail, so every `ms` column came out empty and the total with it (measured in
+# lane_A_1348). Granted to both recipes because either can be handed `--timed`
+# through FMT_SWEEP_ARGS.
+fmt-sweep: build-vcx
+	@$(CX_SWEEP_BIN) --allow-read --allow-write --allow-subprocess --allow-clock \
+	  scripts/fmt_corpus_sweep.cx --bin $(CX_SWEEP_BIN) $(FMT_SWEEP_ARGS)
+
+fmt-sweep-timed: build-vcx
+	@$(CX_SWEEP_BIN) --allow-read --allow-write --allow-subprocess --allow-clock \
+	  scripts/fmt_corpus_sweep.cx --bin $(CX_SWEEP_BIN) --timed --no-bench $(FMT_SWEEP_ARGS)
+
+
 # ── REPR GUARD (#1119 W1, RULED: RP-5) — the CXDM live-memory ratchet ────────
 # Parses a ~2 MB corpus per lane (json / xml / cx) through the `cx` module,
 # forces a collection with the tree still reachable, and asserts
