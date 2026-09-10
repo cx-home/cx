@@ -501,4 +501,61 @@ waiting
 #]]
   [exit-code [#0#]]
  ]
+
+ [case id=ap-exists-as-presence-wrong level=core
+  [title [#[$exists] as a presence test — false for the element [$first] just returned#]]
+  [tags present exists absence content-arity antipattern 1262 854 584]
+  [why [#
+`[$exists]` reads like a presence test and is not one. Over an ELEMENT it
+answers that element's CONTENT ARITY — how many children it has — which is
+the ruled meaning (#584) and is unchanged. A `[grant verb= to=]` declaration
+carries everything in attributes and has no children, so it reads
+`exists=false` while `[$first]` hands it back and `[$name]` reads it as
+`grant`. The guard below therefore takes its `[else]` branch for two grants
+that are right there, at exit 0, with nothing printed to say why — the
+silent-wrong-answer class, not the refusal class. The same guard over
+`[rule name=a [statement 'x']]` would answer true, and the only difference
+is whether the element happens to have children.
+
+The predicate that asks the question you meant is `[$present]` (#854, #849):
+it does not look inside at all. A childless element, `""`, `null` and an
+empty array are all present; only the absence channel — the empty sequence
+`()` — is absent. Reach for `[$exists]` / `[$count]` / `[$empty]` when you
+genuinely mean *does this have contents*, and for `[$present]` when you mean
+*did this match*.
+#]]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?let [= $d [grants [grant verb=read to=alice] [grant verb=write to=bob]]]
+      [= $g [$first $d//grant]]
+  [?if [$exists $g]
+    [then [$string $g@verb]]
+    [else 'no grants declared']]]
+#]]
+  [out-text [#
+'no grants declared'
+#]]
+  [exit-code [#0#]]
+ ]
+
+ [case id=ap-exists-as-presence-right level=core
+  [title [#[$present] — the presence test that does not look inside#]]
+  [tags present exists absence content-arity 1262 854 584]
+  [in-cx [#
+[empty]
+#]]
+  [in-code [#
+[?let [= $d [grants [grant verb=read to=alice] [grant verb=write to=bob]]]
+      [= $g [$first $d//grant]]
+  [?if [$present $g]
+    [then [$string $g@verb]]
+    [else 'no grants declared']]]
+#]]
+  [out-text [#
+read
+#]]
+  [exit-code [#0#]]
+ ]
 ]

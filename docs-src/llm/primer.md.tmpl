@@ -43,6 +43,9 @@ called "CX" is not this one. Read these twelve before writing anything.
 10. **Absence is a value, not a crash.** A missing map key, an out-of-range
     read, an empty match set: each has a defined, distinguishable answer —
     and an absent item contributes *no child* rather than an empty one.
+    Absence is not the same as emptiness: `[$present]` asks *is this there*,
+    while `[$exists]` answers content arity and is false for a childless
+    element. See §6.
 11. **Effects are deny-by-default.** Reading a file, dialing a host, or
     reading the clock needs a capability granted on the command line, and a
     denial is an ordinary error value naming the flag that would allow it.
@@ -587,9 +590,9 @@ template dialect.
 ### The builtins you will reach for without a `[?lib]`
 
 `[$concat]`, `[$count]`, `[$distinct]`, `[$first]`, `[$nth]`, `[$string]`,
-`[$name]`, `[$text]`, `[$sort]`, `[$empty]`, `[$position]`, `[$avg]`,
-`[$abs]`, `[$floor]`, `[$ceiling]` and the comparison/arithmetic operators
-are always available.
+`[$name]`, `[$text]`, `[$sort]`, `[$empty]`, `[$exists]`, `[$present]`,
+`[$position]`, `[$avg]`, `[$abs]`, `[$floor]`, `[$ceiling]` and the
+comparison/arithmetic operators are always available.
 
 {{EXAMPLE:program-builtin-concat block}}
 
@@ -632,6 +635,32 @@ and now appear only in negative fixtures asserting their rejection.
 A missing map key reads as empty rather than raising:
 
 {{EXAMPLE:map-002-get-absent-is-empty block}}
+
+### Absence is not emptiness — `[$present]`, not `[$exists]`
+
+Two predicates, two different questions, and both answers are correct:
+
+* **`[$present VALUE]`** — is this value *there*? It never looks inside. A
+  childless element, `""`, `null` and an empty array are all present. It is
+  false only for the absence channel, the empty sequence `()`.
+* **`[$exists VALUE]`**, and `[$count]` / `[$empty]` with it — what is this
+  value's **content arity**? Over an element that is its own child count, so
+  a childless element answers `exists=false`, `count=0`, `empty=true`. That
+  is the settled meaning and it does not change.
+
+{{EXAMPLE:program-builtin-present-002-not-exists-content-arity block}}
+
+The difference decides the commonest guard in the language — *did this step
+match* — because `[$exists]` cannot tell a matched childless element from no
+match at all: it answers false for both. `[$present]` separates them:
+
+{{EXAMPLE:program-builtin-present-003-leaf-match-vs-no-match block}}
+
+So `[$first]` handing back an element and `[$exists]` answering false about
+that same element are not in conflict. `[$first]` found a value; the value
+has no children. Write the guard with `[$present]`, or test the **sequence**
+before collapsing it — `[> [$count $matches] 0]` is total, where
+`[$exists [$first $matches]]` is not.
 
 ### An error may not *leave* the program silently
 
@@ -775,6 +804,8 @@ actually see — not a description of it.
 
 {{PAIR:ap-open-string-dispatch-wrong ap-open-string-dispatch-right}}
 
+{{PAIR:ap-exists-as-presence-wrong ap-exists-as-presence-right}}
+
 ### One more, from the language itself
 
 `[?if]` requires its clause names. A bare positional branch is refused rather
@@ -798,9 +829,11 @@ than guessed at:
     `errs=:permit` — deliberately.
 11. Where you compared for identity you used `cx hash` / canonical bytes, not
     `[$eq]`.
-12. You did not write `[?try]`, `[?chain]`, `[?find]`, or `[?par-map]` — all
+12. Every *did this match* guard uses `[$present]`. `[$exists]` is content
+    arity and is false for the childless element `[$first]` just returned.
+13. You did not write `[?try]`, `[?chain]`, `[?find]`, or `[?par-map]` — all
     retired.
-13. You ran it. `cx FILE.cx` is one second; a plausible-looking CX program
+14. You ran it. `cx FILE.cx` is one second; a plausible-looking CX program
     that does not parse costs the reader much more than that.
 
 ## 11. Where to go next
