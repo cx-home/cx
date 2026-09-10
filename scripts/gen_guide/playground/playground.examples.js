@@ -1,4 +1,4 @@
-// CX Playground — 244 progressive eval examples (every entry CLI-audited).
+// CX Playground — 245 progressive eval examples (every entry CLI-audited).
 // Single ordered list, simple → complex:
 //   1-39   data / bindings / control flow      ·  40-60  comprehensions, map/reduce ([par])
 //   61-100 modify / pipe / cxpath / builtins   ·  concurrency / resilience
@@ -1551,6 +1551,14 @@
       input: "{name: 'Alice' age: ::int active: true}",
       note:  "**Introduces:** the map-syntax settlement. Entries separate by whitespace **or** comma \u2014 both are the same map. `age: ::int` is the **declaration-only** entry: the kind is declared and the value is ABSENT. That is not the same as `null`; it is a slot whose type is known and whose value has not been supplied.",
       tags:  ["in"],
+      section: "data/collections",
+      runnable: true,
+    },
+    "191-map-checked-ascription": {
+      label: "[191] Maps \u2014 the checked ascription `value::kind` on an entry",
+      input: "{a: 5::float, b: true::string, c: :ok::atom, plain: 'x'}",
+      note:  "**Introduces:** the checked ascription on a map VALUE \u2014 `value::kind` glued to the value, not the key. `5::float` makes the float `5.0e0` out of an integer image; `true::string` keeps the WORD `true` as a string instead of the boolean; `:ok::atom` names the kind the atom image already has. The payload is checked against the kind: `abc::int` is a loud refusal, never a silent string.\n\nCompare the previous example's `age: ::int`, which declares a kind with NO value. Here every entry has a value, and the ascription says what kind it is. The same postfix spelling works for a sequence item and for a bare value at the top of a document; inside an element the type goes on the head instead \u2014 `[n::bytes 0x2a]`.",
+      tags:  [],
       section: "data/collections",
       runnable: true,
     },
