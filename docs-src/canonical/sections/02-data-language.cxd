@@ -514,20 +514,29 @@
 
     [child id=entity-refs n=2.6.1 title='Entity references'
       [body
-        """CX text accepts the five XML/HTML entity references: `&amp;`,
-           `&lt;`, `&gt;`, `&quot;`, `&apos;`. They are **not decoded**
-           — an entity reference parses to an entity-reference node and
-           is re-emitted verbatim, byte-for-byte, in both canonical
-           forms. `[t 'a &amp; b']` canonicalizes to exactly that."""]
+        """CX text accepts an entity reference `&name;` under **any**
+           name — the five XML/HTML ones (`&amp;`, `&lt;`, `&gt;`,
+           `&quot;`, `&apos;`) and undeclared names alike, since CX
+           stores refs without requiring an entity declaration. They are
+           **not decoded** — an entity reference parses to an
+           entity-reference node and is re-emitted verbatim,
+           byte-for-byte, in both canonical forms. `[t 'a &amp; b']`
+           canonicalizes to exactly that."""]
       [body
-        """Numeric character references (`&#65;`, `&#x41;`) are carried
-           the same verbatim way. There is no textual expansion pass at
-           all — which is why recursive-expansion attacks (the XML
-           "billion laughs") have nothing to attack (see [[limits]]).
-           External entity resolution (the XML
-           `<!ENTITY foo SYSTEM "…"> &foo;` pattern) does not exist in
-           CX; DTD content rides through as verbatim prolog data (see
-           [[surfaces]])."""]]
+        """Numeric character references (`&#65;`, `&#x41;`) are **not**
+           carried that way: a char reference is *resolved* to its
+           Unicode character and stored as Text, so the spelling does
+           not survive the read — `[p &#169; 2026]` reads as the single
+           text `© 2026`. The asymmetry is deliberate and mirrors XML: a
+           char reference is character sugar XML does not preserve,
+           whereas a named entity is markup that round-trips. A
+           surrogate or a value above U+10FFFF is rejected. Either way
+           there is no textual expansion pass — which is why
+           recursive-expansion attacks (the XML "billion laughs") have
+           nothing to attack (see [[limits]]). External entity
+           resolution (the XML `<!ENTITY foo SYSTEM "…"> &foo;`
+           pattern) does not exist in CX; DTD content rides through as
+           verbatim prolog data (see [[surfaces]])."""]]
 
     [child id=xml-space n=2.6.2 title='Whitespace preservation (xml:space)'
       [body
