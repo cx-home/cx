@@ -60,8 +60,15 @@
 # death: an empty listing read as "no synthesized modules" would pass every
 # direction below while measuring nothing.
 [?def cx-lines scope=private impure [returns any] ($flag::string)
+  # The argv is BOUND, not written as a parenthesized literal in the
+  # call: `cx fmt` fails closed on a namespaced call whose argument is a
+  # sequence literal (`[$ns:f (…)]`), so the literal spelling makes this
+  # file DECLINED and moves the fmt-sweep ratchet. Same call either way —
+  # measured byte-identical output and exit 0 — and this is the spelling
+  # check_v_fork_patches.cx and check_lint_rules.cx already use.
   [?let [= $bin [$env:executable-path]]
-        [= $r [$process:run ($bin, 'stdlib', 'list', $flag)]]
+        [= $argv ($bin, 'stdlib', 'list', $flag)]
+        [= $r [$process:run $argv]]
     [?if [not [= $r@exit-code 0]]
       [then ([$io:write-line [$env:stderr]
                [$concat "stdlib-catalog-gate: `cx stdlib list " $flag "` failed (exit "
