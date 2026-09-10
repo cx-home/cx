@@ -97,10 +97,14 @@
 # fixture lane (store-err-boundary-001..004) and the live-listener serve
 # tests. (A [# #] comment cannot sit inside this paren sequence — the #826
 # authoring trap — so the note lives here.)
+# CXER0282 (E_VIEW_NOT_CARRIED, RULED: 1377-a) is the diagram VIEW axis's
+# refusal — a forced view the source cannot carry — raised only by
+# code-diagram; its pins are diagram.cxd 035..038 (cd-view-refused).
 [?const CROSS-SUITE (
   [xs code='CXER0120' file='conformance/stdlib/cx.cxd'],
   [xs code='CXER0273' file='vcx/tests/eval_semantics_umbrella_test.v'],
-  [xs code='CXER0275' file='conformance/stdlib/store.cxd'])]
+  [xs code='CXER0275' file='conformance/stdlib/store.cxd'],
+  [xs code='CXER0282' file='conformance/stdlib/diagram.cxd'])]
 
 # Spec-defined codes NO implementation can raise today — pinned NAMED to
 # their filed issue. EMPTY as of #808 (mechanism kept).
