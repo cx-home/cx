@@ -78,13 +78,45 @@ function classify(e) {
   return ['REFUSED', msg];
 }
 
+// ── platform probes (#1381) ──────────────────────────────────────────────
+// Ring-2 surfaces the playground never lists but the shipped engine must
+// still not TRAP on: each of these used to die in a wasm-ld
+// `signature_mismatch:syscall` thunk because V's crypto.rand draws entropy
+// through a Linux getrandom syscall the wasm stub declared with another
+// shape. A refusal is acceptable here; a trap never is.
+const PROBES = {
+  'probe:1381:journal-mem-open':
+    "[?lib 'cx-stdlib/journal'] [?let [= $j [$journal:open \"mem://probe-1381\" \"acme\"]] [$name $j]]",
+  'probe:1381:random-crypto-bytes':
+    "[?lib 'cx-stdlib/random'] [$count [$random-crypto-bytes 8]]",
+  'probe:1381:crypto-ed25519-keypair':
+    "[?lib 'cx-stdlib/crypto'] [$name [$crypto-ed25519-keypair]]",
+  // the issue's motivating case: a flow run over a mem:// journal (the
+  // flow.cxd flow-023 document, start only) — every verb it reaches must be
+  // closure-free under the single-threaded bundle.
+  'probe:1381:flow-start': [
+    "[?lib 'cx-stdlib/flow'] [?lib 'cx-stdlib/journal']",
+    "[?def unreserve impure [effects] ($sku='') [unreserved sku=$sku]]",
+    "[?def reserve impure [effects] [compensates unreserve] ($sku='') [reserved sku=$sku]]",
+    "[?def place-order impure [effects] ($order='') [placed order=$order]]",
+    "[?let [= $j [$journal:open \"mem://probe-1381-flow\" \"acme\"]]",
+    "[= $f [$cx:parse \"[flow name='checkout' [args [sku::string] [order::string]] [step name='reserve' [do 'inventory/reserve' [sku $args/sku]]] [step name='place' pivot=true [do 'orders/place' [order $args/order]]]]\"]]",
+    "[= $e [resolver [act name='inventory/reserve' resolved='sha2-256:11' compensates='inventory/unreserve' [fn $reserve]] [act name='orders/place' resolved='sha2-256:22' [fn $place-order]]]]",
+    "[= $o {env: $e flow: $f actor: \"did:key:z6Mk\" authority: \"cap:sha2-256:c1\" nonce: \"n1\" stream: \"order:o-1\"}]",
+    "[= $r1 [$flow:start $j $f [args [sku \"88\"] [order \"o-1\"]] $o]]",
+    "[status $r1@status]]",
+  ].join('\n'),
+};
+const cases = keys.map(key => {
+  const entry = program[key];
+  return [key, entry.input ?? entry.source ?? entry.src ?? ''];
+}).filter(([, source]) => source);
+for (const [key, source] of Object.entries(PROBES)) cases.push([key, source]);
+
 const counts = { ok: 0, refused: 0, abort: 0, trap: 0 };
 const traps = [];
 const aborts = [];
-for (const key of keys) {
-  const entry = program[key];
-  const source = entry.input ?? entry.source ?? entry.src ?? '';
-  if (!source) continue;
+for (const [key, source] of cases) {
   let verdict = 'OK', detail = '';
   try {
     cxlib.evalCode(source, 'cx', '');
@@ -100,7 +132,7 @@ for (const key of keys) {
   if (verdict === 'TRAP' || verdict === 'ABORT') { try { cxlib.reset(); } catch (_) { /* older bundle */ } }
 }
 
-console.log(`test-playground-wasm-traps: ${keys.length} examples — ok ${counts.ok}, refused ${counts.refused}, aborted ${counts.abort} (single-threaded bundle), TRAPS ${counts.trap}`);
+console.log(`test-playground-wasm-traps: ${cases.length} examples+probes — ok ${counts.ok}, refused ${counts.refused}, aborted ${counts.abort} (single-threaded bundle), TRAPS ${counts.trap}`);
 if (aborts.length && VERBOSE) console.log(`  aborted: ${aborts.join(', ')}`);
 if (traps.length) {
   console.log('FAIL — the shipped engine TRAPS on:');
