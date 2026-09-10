@@ -362,12 +362,9 @@ error: the result carries an error value — cx-err:CXER0290 at /err
 55
 #]]
  ]
- [ex key=57-map-par-bulkhead chars=59 err-chars=65
+ [ex key=57-map-par-bulkhead chars=59
   [out-text [#
 (1, 4, 9, 16, [err code=shard-offline shard=5], 36, 49, 64)
-#]]
-  [err-text [#
-error: the result carries an error value — shard-offline at /err
 #]]
  ]
  [ex key=58-par-shared-cb chars=48
