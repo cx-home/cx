@@ -1947,7 +1947,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-'2026-05-26'
+2026-05-26
 ```
 
 ### Tables are a data form, not a convention
