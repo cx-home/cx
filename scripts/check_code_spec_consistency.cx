@@ -463,4 +463,32 @@
              pass: [$empty $dangling]},
            green: $green}]
         [= $_out [$say [$json:emit-with-opts $report {indent: 2}]]]
-        [?if $green [then [$env:exit 0]] [else [$env:exit 1]]]]]]]
+
+        # FAIL path (#1388): the JSON report above is this gate's only
+        # output and `make check-code-spec-consistency` sends stdout to
+        # /dev/null, so a red printed nothing at all. Name the failing
+        # sub-gates on stderr before exiting 1.
+        [?if $green
+          [then [$env:exit 0]]
+          [else
+            [?let
+              [= $checks (
+                {name: "gate-1 completeness",                  bad: [$array:size $gate1-hits]},
+                {name: "gate-2 unresolved refs",               bad: [$array:size $unresolved]},
+                {name: "gate-2 error-code conflicts",          bad: [$array:size $conflicts]},
+                {name: "gate-2 directive registry/body parity", bad: [?if $parity-ok [then 0]
+                    [else [+ [$count $reg-minus-body] [$count $body-minus-reg]]]]},
+                {name: "gate-3 grammar.ebnf alignment",        bad: [?if [$map:get $grammar-report "pass"] [then 0] [else 1]]},
+                {name: "gate-3 ast.md alignment",              bad: [?if [$map:get $ast-report "pass"] [then 0] [else 1]]},
+                {name: "gate-3 eval.md alignment",             bad: [?if $eval-ok [then 0] [else 1]]},
+                {name: "no-impl-anchor",                       bad: [$array:size $impl-hits]},
+                {name: "no-dangling-decision",                 bad: [$count $dangling]})]
+              [= $fail-lines [?for [in $c $checks]
+                [where [> [$map:get $c "bad"] 0]]
+                [yield [$concat "  [" [$map:get $c "name"] "]  -- "
+                        [$string [$map:get $c "bad"]] " offending item(s)"]]]]
+              [= $_fail [$cry [$concat "check-code-spec-consistency FAILED over " $spec-path
+                  " -- " [$string [$count $fail-lines]] " failing check(s):\n"
+                  [$strings:join $fail-lines "\n"]
+                  "\n(full JSON report on stdout: cx --allow-read --allow-write scripts/check_code_spec_consistency.cx)"]]]
+              [$env:exit 1]]]]]]]]

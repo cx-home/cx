@@ -386,4 +386,53 @@ program-viz-
                    cite_counts: $cite-counts},
                  green: $green}]
               [= $_out [$say [$json:emit-with-opts $report {indent: 2}]]]
-              [?if $green [then [$env:exit 0]] [else [$env:exit 1]]]]]]]]]]
+
+              # FAIL path (#1388): the JSON report above is the gate's only
+              # output, and `make check-code-fixtures` sends stdout to
+              # /dev/null — so a red printed NOTHING and sat unread through
+              # four gates. Name the non-green sections on stderr, the way
+              # stdlib-catalog-gate and guide-check do, before exiting 1.
+              [?if $green
+                [then [$env:exit 0]]
+                [else
+                  [?let
+                    [= $dup-lines [?for [in $x $duplicate-ids]
+                      [yield [$concat "  [duplicate id]      " $x]]]]
+                    [= $fmt-lines [?for [in $x $bad-format]
+                      [yield [?if [$map:contains $x "missing"]
+                        [then [$concat "  [missing section]   " [$map:get $x "id"]
+                                "  -- the case has no [" [$map:get $x "missing"] "] block"]]
+                        [else [$concat "  [out sections]      " [$map:get $x "id"]
+                                "  -- exactly one of out-text/out-err/out-multiset is required, found: "
+                                [$strings:join [$map:get $x "out_keys"] ", "]]]]]]]
+                    [= $level-lines [?for [in $x $bad-level]
+                      [yield [$concat "  [bad level]         " [$map:get $x "id"]
+                              "  -- level=" [$map:get $x "level"] " is not a known category"]]]]
+                    [= $cat-lines [?for [in $x $bad-id-category]
+                      [yield [$concat "  [id category]       " [$map:get $x "id"]
+                              "  -- no registered id prefix for level=" [$map:get $x "level"]
+                              "; register the category in PREFIX-MAP (scripts/check_code_fixtures.cx)"]]]]
+                    [= $dir-lines [?for [in $x $unknown-directives]
+                      [yield [$concat "  [unknown directive] " [$map:get $x "id"]
+                              "  -- [?" [$map:get $x "directive"] "] is not in the code.md 4.1 registry"]]]]
+                    [= $code-lines [?for [in $c $enforced-uncovered]
+                      [yield [$concat "  [uncovered code]    " $c
+                              "  -- no fixture raises it and no cross-suite citation covers it"]]]]
+                    [= $xs-lines [?for [in $c [$map:keys $cross-broken]]
+                      [yield [$concat "  [broken citation]   " [$string $c]
+                              "  -- " [$string [$map:get $cross-broken $c]] " no longer cites it"]]]]
+                    [= $blocks [?for [in $blk (
+                          [$strings:join $dup-lines "\n"],
+                          [$strings:join $fmt-lines "\n"],
+                          [$strings:join $level-lines "\n"],
+                          [$strings:join $cat-lines "\n"],
+                          [$strings:join $dir-lines "\n"],
+                          [$strings:join $code-lines "\n"],
+                          [$strings:join $xs-lines "\n"])]
+                        [where [not [= $blk ""]]]
+                        [yield $blk]]]
+                    [= $_fail [$cry [$concat "check-code-fixtures FAILED over " $fix-path
+                        " -- " [$string [$count $blocks]] " non-green section(s):\n"
+                        [$strings:join $blocks "\n"]
+                        "\n(full JSON report on stdout: cx --allow-read --allow-write scripts/check_code_fixtures.cx)"]]]
+                    [$env:exit 1]]]]]]]]]]]
