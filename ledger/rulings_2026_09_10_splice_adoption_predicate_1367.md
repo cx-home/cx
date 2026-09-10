@@ -66,11 +66,27 @@ The wrapped answer for `[?splice]` over a lazy iterator and over a raw
 (`[?to-sequence]` over a materialized sequence is identity), they are simply no
 longer required.
 
-## Spec
+## Spec — no edit owed, and the text was already ahead of the code
 
-None. `code.md` §6.4.3's registry row says `[?splice]` "adopts a **sequence
-value's** members into element content (R-A1: a sequence value cannot BE
-element content; `[?splice]` is the syntactic adopter)", and R-A1's own
-predicate is what defines "a sequence value" — it names the lazy iterator. The
-implementation is brought to the text; no spec sentence moves, so no
-`spec-freeze-gate` token is owed for the prose.
+No spec sentence moves, so no `spec-freeze-gate` token is owed. Three passages
+already prescribe the fixed behavior:
+
+- **`code.md` §6.4.6, the Computed values/subtrees applicability matrix
+  (line 1824).** The `[?splice E]` in body/sequence row has an explicit
+  **Path/Iterator** column, and its cell reads **"— realize then splice"**.
+  That is exactly the change: force the lazy value, then adopt its members.
+  So today's wrapped answer was not an unruled choice between two coherent
+  designs — it was a **violation of a matrix cell that has been normative all
+  along**, with no fixture covering that cell. The matrix's own convention is
+  that every cell earns a fixture; this one had none, which is why the
+  divergence survived. `program-dc-splice-adopts-iterator-1367` is now that
+  cell's fixture.
+- **`code.md` §6.4.3's registry row** — `[?splice]` "adopts a **sequence
+  value's** members into element content (R-A1: a sequence value cannot BE
+  element content; `[?splice]` is the syntactic adopter)". R-A1's own
+  predicate is what defines "a sequence value", and it names the lazy
+  iterator and the raw sequence node.
+- **`grammar.ebnf:1289-1296`** — "`[?splice EXPR]` grafts each item of a
+  sequence in order", with no carve-out for either kind.
+
+The implementation is brought to the text.
