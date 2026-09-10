@@ -98,7 +98,20 @@ function setupFail(msg, hint) {
 // a fresh page. So the gate gives each slice its own process and its own
 // engine, which is both the honest model of how the page is used and the
 // thing that makes a red result mean a bad diagram.
-const SHARD_SIZE = 20;
+//
+// #1377 (the view axis): a subject is now drawn under SIX views, not two,
+// so an example costs ~30 MB of arena instead of ~10 (measured: RSS
+// 295 → 692 MB over examples 1-14 in one instance, `V panic: memory
+// allocation failure` at example 15; the lane saw the same wall at 19 as
+// 240 cascading "Program terminated with exit(1)" failures). Twenty per
+// shard no longer fits the 512 MB wasm ceiling, and six does not either:
+// 168-erd-large-org-structure ALONE grows the process by ~310 MB across its
+// 36 subjects (RSS 236 → 547 MB, measured), so any shard that reaches it
+// with a warm arena dies at it and takes the shard's tail with it. One
+// example per process is the model the paragraph above already names — a
+// visitor opens one example on a fresh page — and it is the only shard
+// size under which a red here can only mean a bad diagram.
+const SHARD_SIZE = 1;
 
 function countExamples() {
   // Cheap: the examples file is a self-contained IIFE that assigns to
