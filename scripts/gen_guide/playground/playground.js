@@ -47,7 +47,11 @@
   ALL_ENTRIES.sort((a, b) => (sectionRank(a.ex.section) - sectionRank(b.ex.section)) || (keyNumber(a.key) - keyNumber(b.key)));
   // The picker shows the label WITHOUT the `[204]` corpus number: the number
   // is the stable id (URL hash, pins), not something a reader navigates by.
-  const displayLabel = (e) => (e.ex.label || e.key).replace(/^\[\d+\]\s*/, '');
+  // The authored label keeps its `[NNN]` number: it is how the owner, the
+  // issues and the notes name an example (#1380 — stripping it made the
+  // picker hard to reference).
+  const displayLabel = (e) => (e.ex.label || e.key);
+  const exampleNumber = (e) => { const m = /^\[(\d+)\]/.exec(e.ex.label || ''); return m ? m[1] : ''; };
 
   const pick     = document.getElementById('cxp-pick');
   const searchEl = document.getElementById('cxp-search');
@@ -422,8 +426,9 @@
     const names = SECTION_NAMES[found.ex.section] || ['', found.ex.section || ''];
     const sec = ALL_ENTRIES.filter(e => e.ex.section === found.ex.section);
     const pos = sec.findIndex(e => e.key === found.key) + 1;
-    crumbEl.textContent = `${names[0]} › ${names[1]} · ${pos} of ${sec.length}`;
-    crumbEl.title = 'Left/right: previous/next example · Up/down: previous/next subcategory';
+    const num = exampleNumber(found);
+    crumbEl.textContent = `${num ? '[' + num + '] · ' : ''}${names[0]} › ${names[1]} · ${pos} of ${sec.length}`;
+    crumbEl.title = 'Left/right: previous/next example · Up/down: previous/next subcategory (also from the picker)';
   }
   function loadExample(key) {
     const found = lookup(key);
@@ -517,12 +522,15 @@
     const first = ALL_ENTRIES.find(e => e.ex.section === target);
     if (first) selectAndLoad(first);
   }
-  // Arrow keys navigate ONLY when focus is not in a text field or select —
-  // typing in the editor or the filter is never hijacked.
+  // Arrow keys navigate unless focus is in a TEXT field — typing in the
+  // editor or the filter is never hijacked. The picker is not a text field:
+  // after choosing an example it holds focus, and the keys must keep working
+  // from there (#1380 — before this the handler returned for every <select>,
+  // so ←/→ did nothing and ↑/↓ fell through to the native option stepping).
   document.addEventListener('keydown', (ev) => {
     const t = ev.target;
     const tag = t && t.tagName ? t.tagName.toLowerCase() : '';
-    if (tag === 'textarea' || tag === 'input' || tag === 'select' || (t && t.isContentEditable)) return;
+    if (tag === 'textarea' || tag === 'input' || (t && t.isContentEditable)) return;
     if (ev.altKey || ev.ctrlKey || ev.metaKey) return;
     if (ev.key === 'ArrowRight') { ev.preventDefault(); stepExample(+1); }
     else if (ev.key === 'ArrowLeft') { ev.preventDefault(); stepExample(-1); }
