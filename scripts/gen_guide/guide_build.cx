@@ -720,7 +720,7 @@
              [$env:exit 1], ())]
       [else [?for [in $l [$strings:split [$string $r@stdout] "\n"]]
               [where [not [= $l ""]]]
-              [yield [$cat ('synth/', $l, '.cx')]]]]]]
+              [yield [$cat ('synth/', $l, '.cx')]]]]]]]
 
 [# module-source-of: a module's SOURCE, wherever the loader keeps it. A
    `synth/` path has no file, so it is read back through `cx stdlib source`,
