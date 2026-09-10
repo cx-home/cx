@@ -130,7 +130,7 @@ program-bytes-ascription- program-int-ascription- program-float-ascription-
 program-call- program-caps- program-collection-kind-
 program-construction-err- program-cx-pi- program-delivery-
 program-descendant-seq-roundtrip- program-do- program-doc-implicit-
-program-eq- program-field-read- program-if- program-loop-
+program-eq- program-else- program-field-read- program-if- program-loop-
 program-mapnode-nav- program-match- program-planar- program-purity-
 program-pvmatrix- program-reserved-ns- program-slot-singleton- program-table-
 program-tree-eval- program-ophead-
