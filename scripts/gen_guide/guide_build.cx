@@ -31,6 +31,7 @@
 [?lib 'cx-stdlib/re']
 [?lib 'cx-stdlib/fp']
 [?lib 'cx-stdlib/env']
+[?lib 'cx-stdlib/process']
 
 [# ── string helpers ──────────────────────────────────────────────────── #]
 
@@ -297,7 +298,8 @@
    was the only page in the tree left reachable from nothing. #]
 [?def lib-ring-items scope=public ($libfiles $ring $active)
   [$strings:join [?for [in $f $libfiles]
-    [where [and [not [$is-x-file $f]] [= [$pack-ring [$stdlib-slug $f]] $ring]]]
+    [where [and [and [not [$is-x-file $f]] [not [$is-synth-file $f]]]
+                [= [$pack-ring [$stdlib-slug $f]] $ring]]]
     [yield [$nav-link [$cat ('lib-', [$stdlib-slug $f])] [$stdlib-slug $f] '' $active]]] '']]
 
 [# x-tier-items: the experimental tier's own links, in name order. Its own
@@ -355,6 +357,8 @@
     [$nav-section 'Ring 3 — Ecosystem'
       [$cat ([$group-nav-items $metas 'Ring 3 — Ecosystem' $active],
              [$lib-ring-items $libfiles 3 $active])]],
+    [$nav-section 'Codecs — core, synthesized'
+      [$codec-tier-items $libfiles $active]],
     [$nav-section 'x/ tier — experimental'
       [$x-tier-items $libfiles $active]],
     [$nav-section 'Reference'
@@ -545,6 +549,8 @@
     [$nav-section 'Ring 3 — Ecosystem'
       [$cat ([$group-nav-items $metas 'Ring 3 — Ecosystem' ''],
              [$lib-ring-items $libfiles 3 ''])]],
+    [$nav-section 'Codecs — core, synthesized'
+      [$codec-tier-items $libfiles '']],
     [$nav-section 'x/ tier — experimental'
       [$x-tier-items $libfiles '']],
     [$nav-section 'Reference'
@@ -689,10 +695,59 @@
    nav group and a banner on every page. #]
 [?def is-x-file scope=public [returns bool] ($f)
   [$strings:starts-with $f 'x/']]
+[# ── the SYNTHESIZED codec modules (#1368, RULED: 1368-a) ──────────────────
+   Five module surfaces (`cx`, `xml`, `yaml`, `toml`, `md`) are built from the
+   codec registry at registration time and have NO FILE ON DISK, so the globs
+   below cannot see them and their pages were never rendered. They ride the
+   same path-shaped pipeline under a SYNTHETIC path, `synth/<m>.cx`: every
+   helper here is a string operation on that path and answers correctly, and
+   the ONE place that touches the disk (`module-source-of`) reads the loader
+   instead. Nothing else in this file learns that a module can be sourceless.
+
+   They get their own nav group rather than a ring, for the same reason the
+   x/ tier does: codec.md's opening line is that codecs are CORE, not stdlib
+   modules, so their position is a STATEMENT about what they are, and filing
+   them under Ring 1 beside the packs would say the opposite. #]
+[?def is-synth-file scope=public [returns bool] ($f)
+  [$strings:starts-with $f 'synth/']]
+
+[?def synth-libfiles scope=public impure [returns [sequence string]] ()
+  [?let [= $r [$process:run ([$env:executable-path], 'stdlib', 'list', '--synthesized')]]
+    [?if [not [= $r@exit-code 0]]
+      [then ([$io:write-line [$env:stderr]
+               [$cat ('guide_build: `cx stdlib list --synthesized` failed (exit ',
+                      [$string $r@exit-code], ') — the synthesized module pages cannot be rendered')]],
+             [$env:exit 1], ())]
+      [else [?for [in $l [$strings:split [$string $r@stdout] "\n"]]
+              [where [not [= $l ""]]]
+              [yield [$cat ('synth/', $l, '.cx')]]]]]]
+
+[# module-source-of: a module's SOURCE, wherever the loader keeps it. A
+   `synth/` path has no file, so it is read back through `cx stdlib source`,
+   which answers for a disk-backed and a synthesized module identically. #]
+[?def module-source-of scope=public impure [returns string] ($f)
+  [?if [not [$is-synth-file $f]]
+    [then [$io:read-file $f]]
+    [else
+      [?let [= $r [$process:run ([$env:executable-path], 'stdlib', 'source', [$stdlib-slug $f])]]
+        [?if [not [= $r@exit-code 0]]
+          [then ([$io:write-line [$env:stderr]
+                   [$cat ('guide_build: `cx stdlib source ', [$stdlib-slug $f],
+                          '` failed (exit ', [$string $r@exit-code], ')')]],
+                 [$env:exit 1], "")]
+          [else [$string $r@stdout]]]]]]]
+
+[# codec-tier-items: the synthesized codec modules' nav links, in name order. #]
+[?def codec-tier-items scope=public ($libfiles $active)
+  [$strings:join [?for [in $f $libfiles]
+    [where [$is-synth-file $f]]
+    [yield [$nav-link [$module-page $f] [$stdlib-slug $f] '' $active]]] '']]
 [# the page slug for a module: the frozen packs keep `lib-`, the experimental
    tier takes `x-`, so a URL states which promise applies to what it shows. #]
 [?def module-page scope=public ($f)
-  [$cat ([?if [$is-x-file $f] [then 'x-'] [else 'lib-']], [$stdlib-slug $f])]]
+  [$cat ([?if [$is-x-file $f] [then 'x-']
+          [else [?if [$is-synth-file $f] [then 'codec-'] [else 'lib-']]]],
+         [$stdlib-slug $f])]]
 [?def stdlib-slug scope=public ($f)
   [$strings:replace [$strings:slice $f [+ [$strings:rfind $f '/'] 1] [$strings:length $f]] '.cx' '']]
 
@@ -751,7 +806,7 @@
    scripts/gen_guide/stdlib_docs_check.cx already uses; both now read
    docs the same way, so they cannot disagree about a module. #]
 [?def module-docs scope=public impure ($f)
-  [?let [= $raw [$cx:ast [$io:read-file $f]]]
+  [?let [= $raw [$cx:ast [$module-source-of $f]]]
     [?match $raw
       [case [err $e]
         ([$io:write-line [$env:stderr]
@@ -942,7 +997,7 @@
   [= $gen 'scripts/gen_guide']
   [= $out 'docs/guide']
   [= $metas [$load-metas $src]]
-  [= $libfiles [$fp:flat-map ([$io:glob 'stdlib/*.cx'], [$io:glob 'x/*.cx'])
+  [= $libfiles [$fp:flat-map ([$io:glob 'stdlib/*.cx'], [$io:glob 'x/*.cx'], [$synth-libfiles])
                  [?fn ($g) $g]]]
   [= $ver [$strings:trim [$io:read-file 'VERSION']]]
   [= $sec-ancs [?for [in $m $metas] [yield

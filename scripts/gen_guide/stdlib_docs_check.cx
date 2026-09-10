@@ -64,6 +64,7 @@
 [?lib 'cx-stdlib/strings' as=strings]
 [?lib 'cx-stdlib/json'    as=json]
 [?lib 'cx-stdlib/fp'      as=fp]
+[?lib 'cx-stdlib/process' as=process]
 
 # example child-text extractors (mirror guide_build's ex-part).
 [?def ex-code ($ex)
@@ -71,17 +72,57 @@
 [?def ex-expect ($ex)
   [$strings:join [?for [in $c $ex/*] [yield [?match $c [case [expect $t] $t] [else ()]]]] '']]
 
+# ── the SYNTHESIZED modules (#1368, RULED: 1368-a) ─────────────────────
+# Five module surfaces reach a program through register_bundled_codecs and
+# have NO FILE ON DISK, so the globs below cannot see them and their
+# [fn-doc]s were ungraded — the gap #1368 measured. They are read from the
+# LOADER instead, through `cx stdlib`, which answers for a disk-backed and a
+# synthesized module identically.
+#
+# A non-zero exit is FATAL (exit 2, distinct from the gate's 1 = drift):
+# an empty listing read as "no synthesized modules" would skip five modules
+# while reporting a pass, which is the absence-based check that cannot
+# report its own death.
+[?def cx-run ($args)
+  [?let [= $r [$process:run $args]]
+    [?if [not [= $r@exit-code 0]]
+      [then ([$io:write-line [$env:stderr]
+               [$concat "stdlib-docs-check: `" [$strings:join $args " "]
+                        "` failed (exit " [$string $r@exit-code]
+                        ") -- cannot read the synthesized module set"]],
+             [$env:exit 2], "")]
+      [else [$string $r@stdout]]]]]
+
+[?def synth-names ()
+  [?for [in $l [$strings:split [$cx-run ([$env:executable-path], 'stdlib', 'list', '--synthesized')] "\n"]]
+    [where [not [= $l ""]]]
+    [yield $l]]]
+
+[?def synth-source ($m)
+  [$cx-run ([$env:executable-path], 'stdlib', 'source', $m)]]
+
 # RE2 over the raw module text: every public [?def] with its purity word.
 [?def def-rx () [$re:compile "\\[\\?def\\s+([a-z0-9-]+)\\s+scope=public(\\s+(pure|impure))?"]]
 
 [?let [= $rx [$def-rx]]
   [?let [= $bundle-files [?for [in $g ([$io:glob "stdlib/*.cx"], [$io:glob "x/*.cx"])] [in $f $g] [yield $f]]]
 
+    # Every module this gate grades, as {name, text} — a file on disk and a
+    # synthesized surface are the same thing to every check below, which is
+    # the point: the checks read a module's SOURCE, and where that source
+    # comes from is the loader's business, not theirs.
+    [?let [= $modules
+      [?for [in $src (
+              [?for [in $f $bundle-files] [yield {name: [$path:stem $f], text: [$io:read-file $f]}]],
+              [?for [in $n [$synth-names]]  [yield {name: $n, text: [$synth-source $n]}]])]
+            [in $mod $src]
+            [yield $mod]]]
+
     # --- per-module (1)(2)(3)(4)(5): one violation blob per module -----
     [?let [= $blobs
-      [?for [in $f $bundle-files]
-        [= $m [$path:stem $f]]
-        [= $txt [$io:read-file $f]]
+      [?for [in $mod $modules]
+        [= $m $mod.name]
+        [= $txt $mod.text]
         [= $cxdpath [$concat "conformance/stdlib/" $m ".cxd"]]
         [= $has-cxd [$io:exists $cxdpath]]
         [= $cxdraw [?if $has-cxd [then [$io:read-file $cxdpath]] [else ""]]]
@@ -170,11 +211,13 @@
       [?if [= $n-bad 0]
         [then
           [?let [= $_ok [$io:write-line [$env:stdout]
-              [$concat "guide-check OK -- " [$count $bundle-files]
-                       " modules: every public def has a [fn-doc] (presence + purity), and every example is backed by its conformance corpus."]]]
+              [$concat "guide-check OK -- " [$count $modules]
+                       " modules (" [$count $bundle-files] " on disk, "
+                       [- [$count $modules] [$count $bundle-files]]
+                       " synthesized): every public def has a [fn-doc] (presence + purity), and every example is backed by its conformance corpus."]]]
             [$env:exit 0]]]
         [else
           [?let [= $_fail [$io:write-line [$env:stderr]
               [$concat "guide-check FAILED -- co-located stdlib docs drifted:\n"
                        [$strings:join $blobs "\n"]]]]
-            [$env:exit 1]]]]]]]]
+            [$env:exit 1]]]]]]]]]
