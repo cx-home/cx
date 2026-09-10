@@ -83,7 +83,7 @@
 # an empty listing read as "no synthesized modules" would skip five modules
 # while reporting a pass, which is the absence-based check that cannot
 # report its own death.
-[?def cx-run ($args)
+[?def cx-run impure ($args)
   [?let [= $r [$process:run $args]]
     [?if [not [= $r@exit-code 0]]
       [then ([$io:write-line [$env:stderr]
@@ -93,12 +93,12 @@
              [$env:exit 2], "")]
       [else [$string $r@stdout]]]]]
 
-[?def synth-names ()
+[?def synth-names impure ()
   [?for [in $l [$strings:split [$cx-run ([$env:executable-path], 'stdlib', 'list', '--synthesized')] "\n"]]
     [where [not [= $l ""]]]
     [yield $l]]]
 
-[?def synth-source ($m)
+[?def synth-source impure ($m)
   [$cx-run ([$env:executable-path], 'stdlib', 'source', $m)]]
 
 # RE2 over the raw module text: every public [?def] with its purity word.
