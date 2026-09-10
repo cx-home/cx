@@ -319,7 +319,8 @@
           wasm-unsupported=[$strings:trim [$section-of $kids 'wasm-unsupported']]
           no-stable-value=[$strings:trim [$section-of $kids 'no-stable-value']]
           bare-builtin-ok=[$strings:trim [$section-of $kids 'bare-builtin-ok']]
-          expect=[$strings:trim [$section-of $kids 'expect']]]]]]]]]]
+          expect=[$strings:trim [$section-of $kids 'expect']]
+          section=[$strings:trim [$section-of $kids 'section']]]]]]]]]]
 
 # ── audit (one isolated, grant-free child per example) ───────────────
 
@@ -570,13 +571,14 @@
 # presence of this field; `make test-playground-wasm-eval` keeps the set
 # from drifting in either direction.
 [?def render-block scope=public ($key $label $src $note $runnable $wasm-unsupported
-                                $no-stable-value)
+                                $no-stable-value $section)
   [$strings:join [$seq-flat (
     [$cat ('    ', [$jstr $key], ': {')],
     [$cat ('      label: ', [$jstr $label], ',')],
     [$cat ('      input: ', [$jstr $src], ',')],
     [$cat ('      note:  ', [$jstr $note], ',')],
     [$cat ('      tags:  ', [$jlist [$infer-tags $key $src $note]], ',')],
+    [$cat ('      section: ', [$jstr $section], ',')],
     [$cat ('      runnable: ', [?if $runnable [then 'true'] [else 'false']], ',')],
     [?if [= $wasm-unsupported '']
       [then ()]
@@ -779,6 +781,15 @@
 
 [?const LET-RX-SRC '\[\?let\b']
 
+# The picker's sections (#1375): two top-level groups, domain subcategories,
+# nothing chronological. Display names live in playground.js SECTION_NAMES.
+[?const KNOWN-SECTIONS ('data/elements', 'data/collections', 'data/numbers', 'data/text',
+  'data/formats', 'data/schema',
+  'code/bindings', 'code/control-flow', 'code/patterns', 'code/functions',
+  'code/comprehensions', 'code/paths', 'code/transforms', 'code/queries', 'code/errors',
+  'code/effects', 'code/builtins', 'code/concurrency', 'code/resilience',
+  'code/metaprogramming', 'code/diagrams')]
+
 # A member that is not there is an ERROR, not an absence: `$n.name` on a
 # `Scalar`/`Hole`/`RawText` node answers CXER0001 `no member "name"` and
 # takes the whole run down, so both reads are guarded — the same `[?else]`
@@ -902,9 +913,10 @@
                 out=[$string $r@out] err=[$string $r@err]
                 src=$src bare-ok=[$string $e@bare-builtin-ok]
                 expect=[$string $e@expect] no-stable=[$string $e@no-stable-value]
+                section=[$string $e@section]
                 block=[?if [= [$string $r@status] 'ok']
                   [then [$render-block $key [$string $e@label] $src $note $r@runnable
-                          [$string $e@wasm-unsupported] [$string $e@no-stable-value]]]
+                          [$string $e@wasm-unsupported] [$string $e@no-stable-value] [$string $e@section]]]
                   [else '']]
                 out-block=[?if [= [$string $r@status] 'ok']
                   [then [$render-out-block $key [$string $r@out] [$string $r@err]
@@ -1074,7 +1086,22 @@
       [else 0]]]
   [= $c4-note [$cry [$cat ('=== [expect] pins graded: ', [$string $expect-count],
                             ' of ', [$string $n], ' entries carry one (#1170 §C4)')]]]
-  [= $lint [?if [or $c2-bad $c3-bad $c4-bad] [then [$env:exit 1]] [else 0]]]
+  # ── §C5: every entry names a SECTION the picker knows (#1375) ─────────
+  # The picker groups by this field, so an entry without one, or with a
+  # misspelt one, would silently vanish from the page. Closed list; the
+  # display names live beside it in playground.js.
+  [= $section-misses [?for [in $e $entries]
+      [where [not [$member [$string $e@section] KNOWN-SECTIONS]]]
+      [yield [$cat ([$string $e@key], ' section=', [$jstr [$string $e@section]])]]]]
+  [= $c5-bad [not [$empty $section-misses]]]
+  [= $c5 [?if $c5-bad
+      [then (
+        [$cry [$cat ('=== gen_examples: the SECTION check FAILED (#1375) — ',
+                     [$string [$count $section-misses]], ' entries carry no known section ===')]],
+        [?for [in $x $section-misses] [yield [$cry [$cat ('SECTION ', $x)]]]],
+        1)]
+      [else 0]]]
+  [= $lint [?if [or $c2-bad $c3-bad $c4-bad $c5-bad] [then [$env:exit 1]] [else 0]]]
   # --lint-only stops here: the lints ARE the verdict and nothing is written.
   [= $lint-only-exit [?if $lint-only
       [then ([$cry [$cat ('=== gen_examples --lint-only: ', [$string $n], ' entries, lints clean ===')]], [$env:exit 0])]

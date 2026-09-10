@@ -1,4 +1,4 @@
-[playground-example-outputs  # 239 audited answers, corpus order
+[playground-example-outputs  # 244 audited answers, corpus order
  [doc [#
 GENERATED — do not hand-edit. Written by
 scripts/gen_guide/playground/gen_examples.cx from a grant-free audit run
@@ -1322,12 +1322,9 @@ default
 [readings [exact 3] [rem 1] [mean 2.00] [chain 2]]
 #]]
  ]
- [ex key=219-non-terminating-division-refuses-by-name chars=195 err-chars=67
+ [ex key=219-non-terminating-division-refuses-by-name chars=94
   [out-text [#
-[err code=cx-err:CXER3002 message='$div: non-terminating exact division — supply an explicit rounding context (precision + mode) with [$math:div-decimal a b {precision: N mode: :half-up}] (L44)']
-#]]
-  [err-text [#
-error: the result carries an error value — cx-err:CXER3002 at /err
+[divisions [exact [refused code=cx-err:CXER3002]] [rounded 0.33] [float 3.333333333333333e-1]]
 #]]
  ]
  [ex key=220-checked-overflow chars=137 err-chars=67
@@ -1449,6 +1446,31 @@ error: the result carries an error value — cx-err:CXER0100 at /err
 #]]
   [err-text [#
 error: the result carries an error value — cx-err:CXER0100 at /err
+#]]
+ ]
+ [ex key=241-json-in-and-out chars=154
+  [out-text [#
+[round-trip [as-cx {order: {id: 7, items: ['pen', 'ink'], paid: true}}] [items 'pen' 'ink'] [back '{"order":{"id":7,"items":["pen","ink"],"paid":true}}']]
+#]]
+ ]
+ [ex key=242-xml-in-and-out chars=152
+  [out-text [#
+[round-trip [as-cx [order id=7 [item sku=pen '2'] [item sku=ink '1']]] [skus 'pen' 'ink'] [back '<order id="7">\n  <item sku="pen">2</item>\n</order>']]
+#]]
+ ]
+ [ex key=243-yaml-in-and-out chars=145
+  [out-text [#
+[round-trip [as-cx {service: api, replicas: 3, ports: [8080, 8443]}] [replicas 3] [back 'service: api\nreplicas: 3\nports:\n  - 8080\n  - 8443']]
+#]]
+ ]
+ [ex key=244-toml-in-and-out chars=142
+  [out-text [#
+[round-trip [as-cx {title: cx, owner: {name: Ada, year: 2026}}] [owner 'Ada'] [back 'title = "cx"\n\n[owner]\nname = "Ada"\nyear = 2026\n\n']]
+#]]
+ ]
+ [ex key=245-csv-in-and-out chars=117
+  [out-text [#
+[round-trip [rows 2] [head-row {sku: pen, qty: '2', price: '1.50'}] [back 'sku,qty,price\npen,2,1.50\nink,1,4.25\n']]
 #]]
  ]
 ]

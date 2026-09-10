@@ -19,7 +19,8 @@
   <input id="cxp-search" class="cxp-search" type="search"
          placeholder="Filter examples (label, tag, code)…"
          autocorrect="off" autocapitalize="off" spellcheck="false">
-  <select id="cxp-pick" aria-label="Choose an example"></select>
+  <select id="cxp-pick" aria-label="Choose an example (grouped by section)"
+          title="Examples grouped by section — CX data, then CX code, each by domain. ← → previous/next example · ↑ ↓ previous/next section"></select>
   <button id="cxp-prev" class="cxp-btn cxp-btn-icon" type="button" title="Previous example">◀</button>
   <button id="cxp-next" class="cxp-btn cxp-btn-icon" type="button" title="Next example">▶</button>
   <button id="cxp-run"   class="cxp-btn cxp-btn-primary" type="button" disabled>Run</button>
@@ -27,6 +28,7 @@
   <button id="cxp-load"  class="cxp-btn" type="button" title="Load a local .cx file">Load…</button>
   <input id="cxp-load-file" type="file" accept=".cx,text/plain" hidden>
   <span class="cxp-spacer"></span>
+  <span id="cxp-crumb" class="cxp-crumb" aria-live="polite"></span>
 </header>
 <main class="cxp-main">
   <div id="cxp-divider-col" class="cxp-divider cxp-divider-col" aria-hidden="true"></div>
@@ -120,6 +122,7 @@
           <button class="cxp-gview-tab is-active" data-gview="auto"     type="button">Auto</button>
           <button class="cxp-gview-tab"           data-gview="instance" type="button">Instance</button>
         </span>
+        <span id="cxp-gkind" class="cxp-gkind" title="Which shape the Auto view inferred, and why"></span>
         <span class="cxp-spacer"></span>
         <button id="cxp-graph-zoom-out" class="cxp-mini-btn" type="button" title="Zoom out">−</button>
         <button id="cxp-graph-fit"      class="cxp-mini-btn" type="button" title="Reset zoom">⊙</button>
