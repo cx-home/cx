@@ -3405,7 +3405,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [section [# data/formats #]]
   [src [#
 [?lib 'cx-stdlib/json' :as json]
-[?let [= $doc [$json:parse "{\"order\": {\"id\": 7, \"items\": [\"pen\", \"ink\"], \"paid\": true}}"]]
+[?let [= $doc [$json:parse '{"order": {"id": 7, "items": ["pen", "ink"], "paid": true}}']]
   [round-trip [as-cx $doc] [items [?splice $doc.order.items]] [back [$json:emit {order: {id: 7, items: ["pen", "ink"], paid: true}}]]]]
 #]]
   [note [#
@@ -3418,7 +3418,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [section [# data/formats #]]
   [src [#
 [?lib 'cx-stdlib/xml' :as xml]
-[?let [= $doc [$xml:parse "<order id=\"7\"><item sku=\"pen\">2</item><item sku=\"ink\">1</item></order>"]]
+[?let [= $doc [$xml:parse '<order id="7"><item sku="pen">2</item><item sku="ink">1</item></order>']]
   [round-trip [as-cx $doc] [skus [?splice [?for [in $i $doc//item] [yield [$string $i@sku]]]]] [back [$xml:emit [order id=7 [item sku=pen 2]]]]]]
 #]]
   [note [#
@@ -3444,7 +3444,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [section [# data/formats #]]
   [src [#
 [?lib 'cx-stdlib/toml' :as toml]
-[?let [= $cfg [$toml:parse "title = \"cx\"\n[owner]\nname = \"Ada\"\nyear = 2026\n"]]
+[?let [= $cfg [$toml:parse 'title = "cx"\n[owner]\nname = "Ada"\nyear = 2026\n']]
   [round-trip [as-cx $cfg] [owner $cfg.owner.name] [back [$toml:emit {title: "cx", owner: {name: "Ada", year: 2026}}]]]]
 #]]
   [note [#
