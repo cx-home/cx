@@ -278,7 +278,11 @@ if (keys.length === 0) setupFail('playground.examples.js yielded no examples.');
 // ── the walk ───────────────────────────────────────────────────
 const LEVELS   = ['min', 'compact', 'full'];
 const SUBJECTS = ['source', 'output'];
-const VIEWS    = ['auto', 'instance'];
+// #1377: the forced views are graded too — a diagram the engine DRAWS for a
+// forced view must parse and be structurally sound like any other; the
+// engine's own refusal (CXER0282 E_VIEW_NOT_CARRIED — the source cannot carry
+// that view) is a recorded SKIP, never a failure and never a pass.
+const VIEWS    = ['auto', 'erd', 'cfg', 'seq', 'effects', 'instance'];
 
 // Mirrors renderGraphNow()'s pre-parse normalisation exactly, so the
 // gate parses the same bytes the pane does.
@@ -389,8 +393,13 @@ for (const key of keys) {
         try {
           diagram = (view === 'instance')
             ? (parsedTree == null ? '' : internals.buildInstanceGraph(parsedTree, level))
-            : (cxlib.diagram(text, `mermaid:${level}`) || '');
+            : (cxlib.diagram(text, `mermaid:${level}`, view) || '');
         } catch (e) {
+          if (view !== 'auto' && view !== 'instance' && /CXER0282/.test(String((e && e.message) || e))) {
+            skipped++;
+            if (VERBOSE) console.log(`SKIP  ${label} — ${String(e.message).split('\n')[0].slice(0, 100)}`);
+            continue;
+          }
           fail++;
           failures.push({ label, msg: `emitter threw: ${e.message}`, body: '' });
           continue;
