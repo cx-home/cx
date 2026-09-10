@@ -1,4 +1,4 @@
-[playground-example-outputs  # 244 audited answers, corpus order
+[playground-example-outputs  # 245 audited answers, corpus order
  [doc [#
 GENERATED — do not hand-edit. Written by
 scripts/gen_guide/playground/gen_examples.cx from a grant-free audit run
@@ -1180,6 +1180,11 @@ error: the result carries an error value — cx-err:CXER0101 at /err
  [ex key=190-map-syntax chars=39
   [out-text [#
 {name: Alice, age: ::int, active: true}
+#]]
+ ]
+ [ex key=191-map-checked-ascription chars=39
+  [out-text [#
+{a: 5.0e0, b: 'true', c: :ok, plain: x}
 #]]
  ]
  [ex key=192-map-module chars=31
