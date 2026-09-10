@@ -102,6 +102,12 @@
 # One [module-meta name=... tier=... status=...] line per spec file. Pull
 # the name= and status= via RE2; keep only status=current.
 [?let [= $meta-rx [$re:compile "\\[module-meta name=([a-z0-9_]+) tier=[A-D] status=([a-z]+)"]]
+      # -- SYNTH_SET / CODEC_SET (the fourth registration path) ----------
+      # Both come from the RUNNING binary's loader and registry, not from a
+      # glob: these modules have no file to glob. Bound HERE, in the outermost
+      # [?let], because they depend on nothing above them.
+      [= $synth-set [$cx-lines '--synthesized']]
+      [= $codec-set [$cx-lines '--codecs']]
 
   [?let [= $spec-set
     [?for [in $f [$io:glob "spec/03-approved/std-lib/*.md"]]
@@ -140,13 +146,6 @@
               [then "http"]
               [else [$re:group $dm 1]]]]]]
 
-          # -- SYNTH_SET / CODEC_SET (the fourth registration path) ------
-          # Both come from the RUNNING binary's loader and registry, not
-          # from a glob: these modules have no file to glob. One flat
-          # [?let] binds both, so the enumeration and the basis it is
-          # checked against are read in one place.
-          [?let [= $synth-set [$cx-lines '--synthesized']]
-                [= $codec-set [$cx-lines '--codecs']]
 
           # -- Direction (1): specced modules with no implementation.
           # A spec module is satisfied iff it is a member of BUNDLE_SET
@@ -230,7 +229,7 @@
                            [+ [$count $orphan-bundle]
                               [+ [$count $orphan-dispatch]
                                  [+ [$count $synth-missing]
-                                    [+ [$count $synth-extra] [$count $synth-specced]]]]]]]]
+                                    [+ [$count $synth-extra] [$count $synth-specced]]]]]]]
 
                         [?if [= $n-violations 0]
                           # PASS: write a one-line OK to stdout, exit 0.
