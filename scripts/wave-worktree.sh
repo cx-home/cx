@@ -13,6 +13,7 @@
 #   third_party/v              the pinned V compiler (submodule, uninitialised)
 #   third_party/re2/obj/*.a    the re2 static lib (a BUILD ARTIFACT)
 #   vcx/target/libcx_*_shim.a  the shims (build artifacts)
+#   scripts/playground-gate/node_modules   the playground gate's dev deps
 #
 # They are LINKED from the main checkout, never copied: all three are inputs
 # the wave does not modify, and copying a 6 MB static lib per wave is waste.
@@ -36,6 +37,25 @@ link "$MAIN/third_party/re2" "$W/third_party/re2"
 for a in libcx_re2_shim.a libcx_arrow_shim.a; do
 	[ -f "$MAIN/vcx/target/$a" ] && link "$MAIN/vcx/target/$a" "$W/vcx/target/$a"
 done
+
+# The FOURTH prerequisite, found the way the first three were — by a failed
+# lane. `make test-playground-mermaid` in a fresh worktree builds the whole
+# wasm bundle (minutes), reports `[wasm-fresh] OK`, and THEN refuses:
+#
+#   [playground-mermaid] SETUP FAILURE: the gate's dev dependencies are not installed.
+#
+# because `scripts/playground-gate/node_modules` is in `.git/info/exclude` and
+# so exists only where someone ran `npm install` — the main checkout. Measured
+# 2026-09-10 (worker A, #1373-b): the row cost a full wasm build before failing,
+# which is the expensive way to discover a missing directory.
+#
+# It is LINKED, like the other three: it is an input no wave modifies, it is
+# ~40 MB, and linking keeps every worktree on the same pinned dependency tree
+# the main checkout resolved. Unlike third_party/v and third_party/re2 this
+# path is UNTRACKED, so it needs no `--skip-worktree` guard — there is no
+# gitlink for a `git add -A` to type-change.
+[ -d "$MAIN/scripts/playground-gate/node_modules" ] && \
+	link "$MAIN/scripts/playground-gate/node_modules" "$W/scripts/playground-gate/node_modules"
 
 # The linked paths must never be committable. `git add -A` in a worktree
 # captures whatever the tree contains, and these symlinks are part of it —
