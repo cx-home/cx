@@ -26,4 +26,4 @@
 #absorbed vcx/code/stdlib_tar_test.v
 
 # 1390: the oidc machine grant's pure value builder (RULED: #728 CK-7).
-vcx/code/stdlib_oidc_test.v
+#absorbed vcx/code/stdlib_oidc_test.v
