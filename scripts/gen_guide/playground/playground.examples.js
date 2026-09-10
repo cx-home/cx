@@ -1665,7 +1665,6 @@
       tags:  ["parallel", "pipe"],
       section: "code/functions",
       runnable: true,
-      wasmUnsupported: "`[?pipe]` into a partial-application hole throws `table index is out of bounds` under wasm32 \u2014 a known wasm defect being fixed; the hole itself works (example 205); native answers `1`.",
     },
     "205-hole-as-a-callable-value": {
       label: "[205] a hole makes a callable you can bind and call",

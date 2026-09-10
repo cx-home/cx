@@ -2908,7 +2908,6 @@ Compare the previous example's `age: ::int`, which declares a kind with NO value
  [ex key=204-partial-application-hole
   [label [#[204] [?pipe] and `_` — the hole defers one argument#]]
   [section [# code/functions #]]
-  [wasm-unsupported [#`[?pipe]` into a partial-application hole throws `table index is out of bounds` under wasm32 — a known wasm defect being fixed; the hole itself works (example 205); native answers `1`.#]]
   [src [#
 [?pipe (3, 1, 2) [$sort _] [$first _]]
 #]]
