@@ -183,4 +183,5 @@
   [patch sha=1307c75f75cc58cb0a2b772370f46640f8595e3f family=compress]
   [patch sha=f3a75eb9dd44bdef3a57cad304b9c125f7a7b000 family=compress]
   [patch sha=9aecd458eb559a037b721734032e97da1ba959c4 family=checker]
+  [patch sha=115487c7a4b8bb3b37f4dcdfb545312d7e47004e family=vgc]
 ]
