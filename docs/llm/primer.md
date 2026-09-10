@@ -43,6 +43,9 @@ called "CX" is not this one. Read these twelve before writing anything.
 10. **Absence is a value, not a crash.** A missing map key, an out-of-range
     read, an empty match set: each has a defined, distinguishable answer —
     and an absent item contributes *no child* rather than an empty one.
+    Absence is not the same as emptiness: `[$present]` asks *is this there*,
+    while `[$exists]` answers content arity and is false for a childless
+    element. See §6.
 11. **Effects are deny-by-default.** Reading a file, dialing a host, or
     reading the clock needs a capability granted on the command line, and a
     denial is an ordinary error value naming the flag that would allow it.
@@ -1518,9 +1521,9 @@ null
 ### The builtins you will reach for without a `[?lib]`
 
 `[$concat]`, `[$count]`, `[$distinct]`, `[$first]`, `[$nth]`, `[$string]`,
-`[$name]`, `[$text]`, `[$sort]`, `[$empty]`, `[$position]`, `[$avg]`,
-`[$abs]`, `[$floor]`, `[$ceiling]` and the comparison/arithmetic operators
-are always available.
+`[$name]`, `[$text]`, `[$sort]`, `[$empty]`, `[$exists]`, `[$present]`,
+`[$position]`, `[$avg]`, `[$abs]`, `[$floor]`, `[$ceiling]` and the
+comparison/arithmetic operators are always available.
 
 `input.cx`
 ```cx
@@ -1630,6 +1633,49 @@ A missing map key reads as empty rather than raising:
 $ cx prog.cx
 ()
 ```
+
+### Absence is not emptiness — `[$present]`, not `[$exists]`
+
+Two predicates, two different questions, and both answers are correct:
+
+* **`[$present VALUE]`** — is this value *there*? It never looks inside. A
+  childless element, `""`, `null` and an empty array are all present. It is
+  false only for the absence channel, the empty sequence `()`.
+* **`[$exists VALUE]`**, and `[$count]` / `[$empty]` with it — what is this
+  value's **content arity**? Over an element that is its own child count, so
+  a childless element answers `exists=false`, `count=0`, `empty=true`. That
+  is the settled meaning and it does not change.
+
+`prog.cx`
+```cx
+[?str 'present={[$present [input]]}|exists={[$exists [input]]}|count={[$count [input]]}|empty={[$empty [input]]}']
+```
+
+```console
+$ cx prog.cx
+'present=true|exists=false|count=0|empty=true'
+```
+
+The difference decides the commonest guard in the language — *did this step
+match* — because `[$exists]` cannot tell a matched childless element from no
+match at all: it answers false for both. `[$present]` separates them:
+
+`prog.cx`
+```cx
+[?let [= $h [box [h [input] [sel [opt]]]]]
+  [?str 'match-present={[$present [$first $h/h/*]]}|match-exists={[$exists [$first $h/h/*]]}|nomatch-present={[$present $h/nope]}|nomatch-exists={[$exists $h/nope]}|field-present={[$present $h/h/input]}|field-count={[$count $h/h/input]}']]
+```
+
+```console
+$ cx prog.cx
+'match-present=true|match-exists=false|nomatch-present=false|nomatch-exists=false|field-present=true|field-count=0'
+```
+
+So `[$first]` handing back an element and `[$exists]` answering false about
+that same element are not in conflict. `[$first]` found a value; the value
+has no children. Write the guard with `[$present]`, or test the **sequence**
+before collapsing it — `[> [$count $matches] 0]` is total, where
+`[$exists [$first $matches]]` is not.
 
 ### An error may not *leave* the program silently
 
@@ -2272,6 +2318,60 @@ waiting
 
 <sub>Fixtures: `ap-open-string-dispatch-wrong` / `ap-open-string-dispatch-right` in `conformance/llm/antipatterns.cxd`</sub>
 
+#### [$exists] as a presence test — false for the element [$first] just returned
+
+`[$exists]` reads like a presence test and is not one. Over an ELEMENT it
+answers that element's CONTENT ARITY — how many children it has — which is
+the ruled meaning (#584) and is unchanged. A `[grant verb= to=]` declaration
+carries everything in attributes and has no children, so it reads
+`exists=false` while `[$first]` hands it back and `[$name]` reads it as
+`grant`. The guard below therefore takes its `[else]` branch for two grants
+that are right there, at exit 0, with nothing printed to say why — the
+silent-wrong-answer class, not the refusal class. The same guard over
+`[rule name=a [statement 'x']]` would answer true, and the only difference
+is whether the element happens to have children.
+
+The predicate that asks the question you meant is `[$present]` (#854, #849):
+it does not look inside at all. A childless element, `""`, `null` and an
+empty array are all present; only the absence channel — the empty sequence
+`()` — is absent. Reach for `[$exists]` / `[$count]` / `[$empty]` when you
+genuinely mean *does this have contents*, and for `[$present]` when you mean
+*did this match*.
+
+**Do not write this:**
+
+`prog.cx`
+```cx
+[?let [= $d [grants [grant verb=read to=alice] [grant verb=write to=bob]]]
+      [= $g [$first $d//grant]]
+  [?if [$exists $g]
+    [then [$string $g@verb]]
+    [else 'no grants declared']]]
+```
+
+```console
+$ cx prog.cx
+'no grants declared'
+```
+
+**Write this:** [$present] — the presence test that does not look inside
+
+`prog.cx`
+```cx
+[?let [= $d [grants [grant verb=read to=alice] [grant verb=write to=bob]]]
+      [= $g [$first $d//grant]]
+  [?if [$present $g]
+    [then [$string $g@verb]]
+    [else 'no grants declared']]]
+```
+
+```console
+$ cx prog.cx
+read
+```
+
+<sub>Fixtures: `ap-exists-as-presence-wrong` / `ap-exists-as-presence-right` in `conformance/llm/antipatterns.cxd`</sub>
+
 ### One more, from the language itself
 
 `[?if]` requires its clause names. A bare positional branch is refused rather
@@ -2303,9 +2403,11 @@ error: cx-err:CXER0001: [?if] expects [then …] / [else …] clause children af
     `errs=:permit` — deliberately.
 11. Where you compared for identity you used `cx hash` / canonical bytes, not
     `[$eq]`.
-12. You did not write `[?try]`, `[?chain]`, `[?find]`, or `[?par-map]` — all
+12. Every *did this match* guard uses `[$present]`. `[$exists]` is content
+    arity and is false for the childless element `[$first]` just returned.
+13. You did not write `[?try]`, `[?chain]`, `[?find]`, or `[?par-map]` — all
     retired.
-13. You ran it. `cx FILE.cx` is one second; a plausible-looking CX program
+14. You ran it. `cx FILE.cx` is one second; a plausible-looking CX program
     that does not parse costs the reader much more than that.
 
 ## 11. Where to go next
