@@ -265,15 +265,20 @@
   [# ─── §14. Resilience directives (§10.2) ─── #]
 
   [; The retry below EXHAUSTS its budget on purpose — that is the lesson.
-     Its value is therefore an [err …], and since #853 an err in element
-     CHILD position PROPAGATES (code.md §6.4.1): written bare it would
-     short-circuit this [section], then [tour], and the whole tour would
-     render as nothing but that one err. The paren SEQUENCE is the escape the
-     ruling documents — a sequence is not element construction, so it CONTAINS
-     the refusal and the demonstration survives. ]
+     Its value is therefore an [err …]. Since #853 an err in element CHILD
+     position PROPAGATES (code.md §6.4.1) — written bare it would
+     short-circuit this [section], then [tour] — and since #1099 a COMPUTED
+     refusal resting ANYWHERE in the program's result makes the run exit 1
+     (cli.md §3.7): a tour that merely contained the raw err inside a paren
+     sequence would print and then fail. So the exhaustion is RECOVERED here
+     the §9.3 way — the [?match] arm renders the refusal's code as written
+     data — which is the pattern a program wanting to report a refusal in its
+     output uses. ]
   [section title='retry with exponential backoff'
-    ([?retry max=3 backoff=exponential delay=1ms
-      [$checked-div 100 0]])]
+    [?match [?retry max=3 backoff=exponential delay=1ms
+              [$checked-div 100 0]]
+      [case [err @code=$c] [exhausted after-attempts=3 code=$c]]
+      [case $v $v]]]
 
   [section title='timeout + fallback composition ($err bound in recover-with)'
     [?fallback
