@@ -857,7 +857,13 @@
   # the corpus, never the corpus itself.
   [= $pin-path [$path:join $self-dir 'examples.out.cxd']]
   [= $cxbin 'vcx/target/cx']
-  [= $tmpdir [$cat ([$env:var-or-default 'TMPDIR' '/tmp'], '/cx-gen-examples')]]
+  # PER-RUN temp dir (the pid in the name). Measured 2026-09-10 00:20Z: the
+  # gate's run of this checker and an impl lane's run shared
+  # $TMPDIR/cx-gen-examples, each read the other's probe files, and the
+  # §C2 lint flagged eight entries that were clean alone; at 00:44Z the same
+  # collision made the gate's --check DISAGREE on three examples whose
+  # answers had not moved. A fixed name is a race between any two checkers.
+  [= $tmpdir [$cat ([$env:var-or-default 'TMPDIR' '/tmp'], '/cx-gen-examples-', [$string [$env:pid]])]]
   [= $mk [$must 'creating tmp dir' [$io:make-dirs $tmpdir]]]
   [= $tmp [$cat ($tmpdir, '/example.cx')]]
   # Per-example capture files — see `audit`: output goes to disk, never a
