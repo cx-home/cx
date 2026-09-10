@@ -3033,6 +3033,8 @@ fmt-sweep-timed: build-vcx
 #
 # Census measured at 3ef4d597e, the landing base:
 #   SWEEP-FILES=272  FORMATTED=173  DECLINED=94  UNSTABLE=0  ERROR=5
+# Re-measured at the examples/platform/ landing:
+#   FORMATTED=181  DECLINED=105  UNSTABLE=0  ERROR=5  (see #1391)
 # It is 272/94 and not the 271/93 of #1348's own census at 12abdac33 because
 # #1317 added `bench/flow/served.cx`, which declines.
 # 2026-09-09 (#1058 T1.9, RULED: 1058-T1.9-a) — def-body comments are placed:
@@ -3040,7 +3042,29 @@ fmt-sweep-timed: build-vcx
 # One file un-declines; the rest of the def-bearing corpus still declines on
 # the layout's other limits (a head wider than the bound, a comment inside the
 # last child of a form that fits), which are not this ruling's.
-FMT_SWEEP_MAX_DECLINED ?= 93
+# RAISED 93 -> 105 by the examples/platform/ landing, and the reason is on
+# the record rather than in a commit message: `cx fmt` FAILS CLOSED, silently,
+# on any file where a bracketed or collection value stands in ARGUMENT or
+# ATTRIBUTE position, and twelve of the new example programs are ordinary CX that
+# does exactly that. Minimal repros, each a whole file that comes back
+# unchanged at exit 0:
+#
+#     [x total=[* 2 3]]
+#     [$scim:schemas {}]
+#     [$array:first ('a','b')]
+#
+# The same operator as a CHILD (`[x [* 2 3]]`) and the same map in a `[?let]`
+# binding both format. So it is the POSITION, not the construct — which is
+# also why the census reads as 93 stubborn legacy files when it is one hole
+# with 93 instances (`stdlib/flow.cx`, every `x/*.cx`, every
+# `spec/03-approved/xap/demos/**/*.cx`, and `cx xap init`'s own generated
+# `compose.cx`). Filed as #1391.
+#
+# Contorting the examples to dodge the hole was the alternative and it was
+# rejected: `total=[* $qty $unit]` is how one multiplies, and an example
+# written around a formatter limitation teaches the limitation. This number
+# comes back down — by far more than twelve — when #1391 closes.
+FMT_SWEEP_MAX_DECLINED ?= 105
 FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
 .PHONY: fmt-sweep-gate
 fmt-sweep-gate: build-vcx

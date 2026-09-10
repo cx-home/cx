@@ -10,6 +10,10 @@ build flags, no scaffolding. Two kinds of file live here:
   (directives, CXPath, match, modify). Run `cx FILE`, adding
   `--data=FILE.input.cx` where the tour ships an input companion
   (it binds as `$doc`).
+- **Platform scenarios** — under [`platform/`](platform/), a whole command
+  line rather than a file: a directory with a `run.sh` and an `expected.txt`,
+  because an SSO login or a flow run is several documents and the command
+  that drives them. See [`platform/README.md`](platform/README.md).
 
 ## Index
 
@@ -36,6 +40,7 @@ build flags, no scaffolding. Two kinds of file live here:
 | [`cxstore/client-server/`](cxstore/client-server/) | Store client+server over CSRP, two real processes | `make -C examples/cxstore/client-server run` | passing |
 | [`cxstore/grpc/`](cxstore/grpc/) | Same store surface over gRPC via the `cx store-serve` daemon | `make -C examples/cxstore/grpc run` | passing |
 | [`cxstore/dir-sync/`](cxstore/dir-sync/) | Directory tree ⇄ content-addressed store (ingest / materialize / watch) | `make -C examples/cxstore/dir-sync run` | passing |
+| [`platform/`](platform/) | **Platform and enterprise components, and them working together** — SSO (OpenID Connect login and its refusals, SAML assertion → session, SCIM provisioning), attribute projection, `cx flow`, a XAP instance, and a composed scenario | see [`platform/README.md`](platform/README.md) | passing |
 | [`htmx/`](htmx/) | Server-rendered htmx demos | — | **parked, do not publish** — pre-v0.8.0 syntax; see [`htmx/DO-NOT-PUBLISH.md`](htmx/DO-NOT-PUBLISH.md) |
 
 The four tours ship a `*.input.cx` companion (`code-tour`, `cxpath-tour`,
