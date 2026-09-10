@@ -665,10 +665,19 @@
     state: 'state diagram',
     instance: 'one box per element occurrence, from the parsed tree',
   };
+  // The forced views (#1377): the engine draws the asked-for subject or
+  // refuses by name (CXER0282) — the label says which the reader asked for.
+  const FORCED_VIEW_LABEL = { erd: 'Data shape', cfg: 'Control flow', seq: 'Sequence', effects: 'Effects' };
   function showGraphKind(kind) {
     if (!gkindEl) return;
     if (!kind) { gkindEl.textContent = ''; gkindEl.title = ''; return; }
-    gkindEl.textContent = (graphView === 'instance') ? 'Instance' : `Auto: ${kind}`;
+    if (graphView === 'instance') { gkindEl.textContent = 'Instance'; gkindEl.title = KIND_WHY.instance; return; }
+    if (FORCED_VIEW_LABEL[graphView]) {
+      gkindEl.textContent = `${FORCED_VIEW_LABEL[graphView]} (forced)`;
+      gkindEl.title = `you asked for the ${FORCED_VIEW_LABEL[graphView].toLowerCase()} view; Auto would draw: ${kind}`;
+      return;
+    }
+    gkindEl.textContent = `Auto: ${kind}`;
     gkindEl.title = KIND_WHY[kind] || kind;
   }
   function resetVizPanes() {
@@ -1707,11 +1716,12 @@
           d = buildInstanceGraph(parsedTree, detailLevel);
         } else {
           // AUTO: the inferred shape (ERD / CFG / SEQ), rendered by the
-          // CX diagram module. Encode the View pane's current detail
-          // level into the format suffix; the V side parses
-          // `mermaid:LEVEL` per render_diagram.
+          // CX diagram module; a FORCED view (erd / cfg / seq / effects,
+          // #1377) asks the engine for that subject and shows its refusal
+          // when the source cannot carry it. The View pane's detail level
+          // rides in the format suffix (`mermaid:LEVEL`).
           const fmtWithDetail = `mermaid:${detailLevel}`;
-          d = (typeof cxlib.diagram === 'function') ? cxlib.diagram(part.text, fmtWithDetail) : '';
+          d = (typeof cxlib.diagram === 'function') ? cxlib.diagram(part.text, fmtWithDetail, graphView) : '';
         }
         showGraphKind(graphView === 'instance' ? 'instance' : detectedKind(d));
         renderGraph(d, graphHost);

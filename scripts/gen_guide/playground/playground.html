@@ -119,8 +119,12 @@
       <div class="cxp-graph-bar">
         <span class="cxp-tabs" role="tablist"
               title="Graph subject — Auto: the INFERRED SHAPE (one box per element NAME for data, control flow for code). Instance: one box per element OCCURRENCE, a table of its own attribute values.">
-          <button class="cxp-gview-tab is-active" data-gview="auto"     type="button">Auto</button>
-          <button class="cxp-gview-tab"           data-gview="instance" type="button">Instance</button>
+          <button class="cxp-gview-tab is-active" data-gview="auto"     type="button" title="The shape the diagram module infers for this source (ERD / CFG / SEQ) — the label to the right says which and why">Auto</button>
+          <button class="cxp-gview-tab"           data-gview="erd"      type="button" title="Force the DATA SHAPE: one entity per element name">Data</button>
+          <button class="cxp-gview-tab"           data-gview="cfg"      type="button" title="Force the CONTROL FLOW: branches, loops, calls (code sources)">Flow</button>
+          <button class="cxp-gview-tab"           data-gview="seq"      type="button" title="Force the SEQUENCE diagram: async, worker and channel steps over time">Sequence</button>
+          <button class="cxp-gview-tab"           data-gview="effects"  type="button" title="Which capabilities the program reaches, through which call path">Effects</button>
+          <button class="cxp-gview-tab"           data-gview="instance" type="button" title="One box per element OCCURRENCE, from the parsed tree">Instance</button>
         </span>
         <span id="cxp-gkind" class="cxp-gkind" title="Which shape the Auto view inferred, and why"></span>
         <span class="cxp-spacer"></span>
