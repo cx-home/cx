@@ -84,7 +84,68 @@ paragraph and `misc/cli.md`'s serve bullet.
    when the store was opened, and an empty request tenant cannot cross a
    partition — it can only decline to re-assert one (`authz.md` §4.6).
 
-## One fork the ruling did not reach, flagged not decided
+## The compensator fork — RULED 2026-09-09 21:30Z, and closed here
+
+The fork below was put to Fable as a letter and **ruled 1(a)**: the FORWARD act
+is admitted at the PEP; a compensator is not — the letter's reasoning stands,
+and (b) is refused on it. **But the asymmetry does not wait for W3.** The
+letter's own honest cost — "a deployment could put authority on the forward act
+and have the reversal escape it" — is an authority hole, and the ruling closes
+it in this landing with one predicate at a check that already exists:
+**`validate` refuses a pre-pivot act whose `[compensates]` target declares
+`[requires]`**, with the shipped `CXER4954`. A compensator that needs authority
+the runner cannot re-present is not a compensator the runner can run — the same
+fault class as "declares no `[compensates]`", reused and never re-coded.
+
+**How a PURE check sees a def's `[requires]`.** Through the resolver row, which
+`stdlib/flow.cx`'s own header ("WHY A DATA RESOLVER AND NOT LIVE
+INTROSPECTION") already names as the only seam: no pure-CX surface reaches a
+live def's clauses. §4.1's row therefore gains an optional `requires=`, the
+def's own items space-separated, beside `compensates=` and `idempotent=` and
+for the same stated reason — a STATIC check needs to see it. `cx flow --env`
+emits it only when the def declares the clause, so an ABSENT `requires=`
+declares no authority requirement, which is `commands_effects.md`'s
+deny-by-default posture read the right way round.
+
+**The compensator has a row of its own to read** because a resolver holds one
+row per COMMAND, not one per act a document names: `flow_cli_module_acts`
+walks every public `[effects]`-bearing def of every imported module. That is a
+property of the shipped emitter, verified by running it, not an assumption —
+`flow_umbrella_test.v`'s new case asserts the `wh/unpick` row exists before it
+asserts the refusal.
+
+**Where the environment carries NO row for the pairing the check STANDS DOWN.**
+This is decided, not overlooked. A resolver may legitimately hold rows for the
+acts a document names and not for their compensators — every hand-built
+resolver in `conformance/stdlib/flow.cxd` does, including `flow-006`'s own
+`compensates='c/undo'` with no `c/undo` row — and `f--open-resolver`'s dry-run
+rows name `compensates='unresolved:'`, which has no row by construction.
+Refusing on a missing row would therefore refuse `simulate` over the open
+resolver and a corpus of valid documents, inventing a refusal from an absence.
+The check is exact where the environment is complete and silent where it is
+partial; `flow-072`'s `comp-row-absent` pins the stand-down so it can never
+become an accident.
+
+**Two things deliberately NOT touched.** (1) `validate`'s ANSWER rows still
+project `name`/`resolved`/`idempotent` only (`f--act-answer`) — `requires=` is
+an INPUT the check reads, not an output, so no `out-text` in the corpus moves.
+(2) The two `CXER4965` argument-refusal messages that spell the row as
+`[act name= resolved= compensates=? idempotent=?]` are unchanged: they are
+fixture-pinned strings whose job is to correct a MALFORMED resolver argument,
+not to enumerate the grammar (one of the three already omits the `[fn …]`
+child). §4.1 is where the grammar is normative, and that is where `requires=?`
+landed.
+
+**Red proof, measured with no build and no slot.** The module source run as a
+program against the same driver, edited vs `origin/release/0.18`: the edited
+module answers `CXER4954` for `comp-requires-pre`, `no-pivot-comp-requires` and
+`map-body-comp-requires` and carries the message; the tip's module answers
+`VALID` for all three with an empty message. Seven probes are identical in both
+columns — `forward-requires` among them, which is the case a naive reading of
+the rule breaks: an act that itself declares `[requires]` validates, because
+THAT one is admitted at the PEP against the run's basis.
+
+## The fork as it was put (superseded by the ruling above)
 
 `coord_flow_admit` is called AFTER `coord_flow_perform`'s compensate branch
 returns, so a **compensator is not admitted at the PEP** — only the forward
