@@ -108,3 +108,7 @@ if (traps.length) {
   process.exit(1);
 }
 console.log('OK — no example traps the wasm engine.');
+// An example that calls exit() inside the engine leaves emscripten's
+// process.exitCode set (the "program exited (with status: 1)" notice above);
+// the sweep's verdict is the trap count, so say so explicitly.
+process.exit(0);
