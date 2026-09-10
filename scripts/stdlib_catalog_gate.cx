@@ -45,11 +45,39 @@
 [?lib 'cx-stdlib/re'      as=re]
 [?lib 'cx-stdlib/path'    as=path]
 [?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+
+# -- helpers ------------------------------------------------------------
+# has-name: set membership, the idiom this gate already used inline.
+[?def has-name scope=private pure [returns bool] ($set::[sequence string] $x::string)
+  [> [$count [?for [in $s $set] [where [= $s $x]] [yield $s]]] 0]]
+
+# cx-lines: one `cx stdlib list <flag>` run, its stdout split into non-empty
+# lines. The binary is the RUNNING one ([$env:executable-path]) -- the gate
+# must interrogate the toolchain it is gating, never a stale one on PATH. A
+# non-zero exit is fatal with exit 2 (a usage failure, distinct from the
+# gate's own 1 = drift), because an absence-based check cannot report its own
+# death: an empty listing read as "no synthesized modules" would pass every
+# direction below while measuring nothing.
+[?def cx-lines scope=private impure [returns any] ($flag::string)
+  [?let [= $bin [$env:executable-path]]
+        [= $r [$process:run ($bin, 'stdlib', 'list', $flag)]]
+    [?if [not [= $r@exit-code 0]]
+      [then ([$io:write-line [$env:stderr]
+               [$concat "stdlib-catalog-gate: `cx stdlib list " $flag "` failed (exit "
+                        [$string $r@exit-code] ") -- cannot enumerate the synthesized set"]],
+             [$env:exit 2], ())]
+      [else [?for [in $l [$strings:split [$string $r@stdout] "\n"]]
+              [where [not [= $l ""]]]
+              [yield $l]]]]]]
+
 
 # -- SPEC_SET -----------------------------------------------------------
 # One [module-meta name=... tier=... status=...] line per spec file. Pull
 # the name= and status= via RE2; keep only status=current.
 [?let [= $meta-rx [$re:compile "\\[module-meta name=([a-z0-9_]+) tier=[A-D] status=([a-z]+)"]]
+      [= $synth-set [$cx-lines '--synthesized']]
+      [= $codec-set [$cx-lines '--codecs']]
 
   [?let [= $spec-set
     [?for [in $f [$io:glob "spec/03-approved/std-lib/*.md"]]
@@ -113,6 +141,22 @@
                   [where [not [> [$count [?for [in $sx $spec-set]   [where [= $sx $d]] [yield $sx]]] 0]]]
                   [yield $d]]]
 
+              [?let [= $synth-missing
+                [?for [in $c $codec-set]
+                  [where [not [$has-name $bundle-set $c]]]
+                  [where [not [$has-name $dispatch-set $c]]]
+                  [where [not [$has-name $synth-set $c]]]
+                  [yield $c]]]
+              [?let [= $synth-extra
+                [?for [in $y $synth-set]
+                  [where [or [not [$has-name $codec-set $y]]
+                             [or [$has-name $bundle-set $y] [$has-name $dispatch-set $y]]]]
+                  [yield $y]]]
+              [?let [= $synth-specced
+                [?for [in $y $synth-set]
+                  [where [$has-name $spec-set $y]]
+                  [yield $y]]]
+
                 # Pre-format each violation list into one line per module.
                 # An empty list joins to "" and is dropped below.
                 [?let [= $missing-lines
@@ -124,9 +168,22 @@
                     [?let [= $orphan-dispatch-lines
                       [?for [in $d $orphan-dispatch]
                         [yield [$concat "  [orphan dispatch]   " $d "  -- " $d "_stdlib_builtin dispatched but no status=current spec"]]]]
+                      [?let [= $synth-missing-lines
+                        [?for [in $c $synth-missing]
+                          [yield [$concat "  [codec, no surface] " $c "  -- a full text codec with no stdlib/" $c ".cx, no " $c "_stdlib_builtin and no synthesized module; codec.md §3 mandates [?lib 'cx-stdlib/" $c "']"]]]]
+                      [?let [= $synth-extra-lines
+                        [?for [in $y $synth-extra]
+                          [yield [$concat "  [orphan synth]      " $y "  -- synthesized as a codec module but not a non-dialect text codec, or already served by a bundle/dispatch module"]]]]
+                      [?let [= $synth-specced-lines
+                        [?for [in $y $synth-specced]
+                          [yield [$concat "  [synth + spec page] " $y "  -- synthesized modules are EXEMPT from SPEC_SET (codec.md §3 is their normative text); spec/03-approved/std-lib/" $y ".md would be a second source"]]]]
 
                       [?let [= $n-violations
-                        [+ [$count $missing] [+ [$count $orphan-bundle] [$count $orphan-dispatch]]]]
+                        [+ [$count $missing]
+                           [+ [$count $orphan-bundle]
+                              [+ [$count $orphan-dispatch]
+                                 [+ [$count $synth-missing]
+                                    [+ [$count $synth-extra] [$count $synth-specced]]]]]]]
 
                         [?if [= $n-violations 0]
                           # PASS: write a one-line OK to stdout, exit 0.
@@ -134,7 +191,11 @@
                             [?let [= $_ok [$io:write-line [$env:stdout]
                                 [$concat "stdlib-catalog-gate OK -- "
                                   [$count $spec-set]
-                                  " specced (status=current) modules, all implemented via bundle and/or dispatch; no orphans."]]]
+                                  " specced (status=current) modules, all implemented via bundle and/or dispatch; no orphans. "
+                                  [$count $synth-set]
+                                  " synthesized codec module(s) of "
+                                  [$count $codec-set]
+                                  " non-dialect text codec(s), all accounted for."]]]
                               [$env:exit 0]]]
 
                           # FAIL: gather every non-empty violation block, join
@@ -145,12 +206,15 @@
                               [?for [in $blk (
                                   [$strings:join $missing-lines "\n"],
                                   [$strings:join $orphan-bundle-lines "\n"],
-                                  [$strings:join $orphan-dispatch-lines "\n"])]
+                                  [$strings:join $orphan-dispatch-lines "\n"],
+                                  [$strings:join $synth-missing-lines "\n"],
+                                  [$strings:join $synth-extra-lines "\n"],
+                                  [$strings:join $synth-specced-lines "\n"])]
                                 [where [not [= $blk ""]]]
                                 [yield $blk]]]
                               [?let [= $_fail [$io:write-line [$env:stderr]
-                                  [$concat "SPEC_SET != (BUNDLE_SET union DISPATCH_SET) -- "
+                                  [$concat "stdlib catalog drift -- "
                                     $n-violations
                                     " violation(s):\n"
                                     [$strings:join $blocks "\n"]]]]
-                                [$env:exit 1]]]]]]]]]]]]]]]]]
+                                [$env:exit 1]]]]]]]]]]]]]]]]]]]]]]]
