@@ -1,0 +1,30 @@
+# THE SEAM. This program answers ONE string: the principal established by an
+# OpenID Connect login, in the spelling the flow runner wants for --actor.
+#
+# It is deliberately not a report. A composed example is only a composition
+# if one component's OUTPUT is the next component's INPUT, and a shell can
+# only carry one value cleanly. So the login happens here, in full — the
+# same `validate-id-token` call, the same refusals available — and what
+# leaves is the subject it licensed.
+#
+# A wrong token yields no principal to spend: `validate-id-token` answers an
+# [err …], `[$crypto:claim]` over it propagates, and the shell gets an error
+# value instead of an actor. There is no path where an unverified subject
+# reaches the flow.
+[?lib 'cx-stdlib/oidc']
+[?lib 'cx-stdlib/crypto']
+[?lib 'cx-stdlib/time']
+[?lib '../../sso/mock-idp/idp.cx' :as idp]
+
+[?let
+  [= $config [$oidc:config [$idp:provider]
+               {client-id: "storefront-web", redirect-uri: "https://rp.example/cb"}]]
+  [= $request [auth-request state="ST-9f3a" nonce="NO-1b7c"
+                            code-verifier="dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"]]
+  [= $now [$time:datetime 2026 9 4 12 0 0]]
+  [= $token [$idp:id-token {iss: 'https://idp.example', sub: 'user-42',
+                            aud: 'storefront-web', nonce: 'NO-1b7c',
+                            email: 'barbara@example.com', exp: 1788523200}]]
+  [= $verified [$oidc:validate-id-token $config $request $token $now {}]]
+  [= $subject [$crypto:claim $verified "sub"]]
+  [?str "principal:{$subject}"]]

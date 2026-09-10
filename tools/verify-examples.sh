@@ -20,6 +20,33 @@
 # examples/htmx/ is excluded — those demos are parked (DO-NOT-PUBLISH.md)
 # and intentionally retain pre-v0.8.0 syntax.
 #
+# THIRD READING — examples/platform/ SCENARIOS.
+#
+# A platform example is not one file with one reading: it is a scenario —
+# several documents plus the command line that drives them. Its unit is a
+# DIRECTORY holding `run.sh` and `expected.txt`; the scenario passes when
+# `run.sh` exits 0 from inside its own directory and its merged
+# stdout+stderr equals `expected.txt` byte for byte.
+#
+# Two properties this buys that the per-file readings cannot:
+#
+#   * The per-file readings would pass a platform example VACUOUSLY. A flow
+#     document is DATA, so `cx --from=cx --to=json checkout.flow.cx`
+#     succeeds without ever running `cx flow validate`; an `--env` module is
+#     a program whose value is `null`, so it succeeds too. Measured both.
+#     So examples/platform/ is excluded from the file walk and graded only
+#     by its scenarios — a green here means the commands ran.
+#   * Nothing may sit in examples/platform/ unexercised. Every `.cx` under
+#     it must live in a scenario directory, and a directory holding one of
+#     `run.sh` / `expected.txt` without the other is a FAIL, not a skip.
+#     That is the difference between an example and a stray.
+#
+# A scenario's `run.sh` gets `$CX` (the binary this script measured) and
+# runs with its own directory as the working directory, so every path it
+# writes is relative and its output carries no absolute path. It echoes each
+# command's exit code into its own output, so `expected.txt` pins the exit
+# codes too and a refusal is an ASSERTED answer rather than a silent skip.
+#
 # Usage:
 #   tools/verify-examples.sh
 #   tools/verify-examples.sh examples/comparisons/
@@ -50,6 +77,8 @@ check_file() {
 	case "$rel" in
 		examples/htmx/*) return ;;
 		examples/cxstore/*) return ;;
+		# graded by check_scenario() below, never by a per-file reading
+		examples/platform/*) return ;;
 	esac
 
 	# A publishable example is valid under EITHER reading. `cx fmt` is NOT a
@@ -92,14 +121,91 @@ check_file() {
 	PASS=$((PASS + 1))
 }
 
+# ── the platform SCENARIO reading ────────────────────────────────────────
+#
+# One scenario = one directory carrying `run.sh` + `expected.txt`. The driver
+# runs from inside that directory with $CX bound to the measured binary, and
+# its merged output must equal expected.txt exactly.
+SCEN_PASS=0
+SCEN_FAIL=0
+
+check_scenario() {
+	local dir="$1"
+	local rel="${dir#$ROOT/}"
+	local out rc
+
+	out="$(cd "$dir" && CX="$CX" sh ./run.sh 2>&1)"
+	rc=$?
+	if [ "$rc" -ne 0 ]; then
+		SCEN_FAIL=$((SCEN_FAIL + 1))
+		FAIL_DETAILS+=("$rel/run.sh [driver exited $rc; a scenario driver must exit 0 and pin each command's own exit code in its output]")
+		return
+	fi
+	if [ "$out" != "$(cat "$dir/expected.txt")" ]; then
+		SCEN_FAIL=$((SCEN_FAIL + 1))
+		FAIL_DETAILS+=("$rel [output DISAGREES with expected.txt — re-read the README's claim before re-recording:
+$(diff -u "$dir/expected.txt" <(printf '%s\n' "$out") | sed -n '3,40p' | sed 's/^/      /')]")
+		return
+	fi
+	SCEN_PASS=$((SCEN_PASS + 1))
+}
+
+# Every .cx under examples/platform/ must be REACHED by a scenario — either
+# it sits in a scenario directory, or a scenario names it (a module two
+# scenarios share, like the mock identity provider, lives beside them and is
+# reached by [?lib]). A file nothing runs and nothing names is a stray, and
+# this is where that is caught.
+audit_platform_tree() {
+	local root="$1"
+	[ -d "$root" ] || return 0
+	local f dir rel base
+	while IFS= read -r f; do
+		dir="$(dirname "$f")"
+		rel="${f#$ROOT/}"
+		base="$(basename "$f")"
+		while [ "$dir" != "$root" ] && [ ! -f "$dir/run.sh" ]; do
+			dir="$(dirname "$dir")"
+		done
+		if [ ! -f "$dir/run.sh" ]; then
+			# not in a scenario directory: some scenario must NAME it
+			if ! grep -rqF -- "$base" --include='run.sh' --include='*.cx' "$root" 2>/dev/null; then
+				SCEN_FAIL=$((SCEN_FAIL + 1))
+				FAIL_DETAILS+=("$rel [no scenario runs or names this file — every .cx under examples/platform/ must sit in a scenario directory or be reached from one]")
+			fi
+		fi
+	done < <(find "$root" -name "*.cx" -not -path "*/node_modules/*")
+
+	# a half-built scenario is a FAIL, never a skip
+	while IFS= read -r dir; do
+		if [ ! -f "$dir/expected.txt" ]; then
+			SCEN_FAIL=$((SCEN_FAIL + 1))
+			FAIL_DETAILS+=("${dir#$ROOT/} [run.sh with no expected.txt — a scenario that asserts nothing]")
+		fi
+	done < <(find "$root" -name run.sh -exec dirname {} \;)
+	while IFS= read -r dir; do
+		if [ ! -f "$dir/run.sh" ]; then
+			SCEN_FAIL=$((SCEN_FAIL + 1))
+			FAIL_DETAILS+=("${dir#$ROOT/} [expected.txt with no run.sh — nothing produces it]")
+		fi
+	done < <(find "$root" -name expected.txt -exec dirname {} \;)
+}
+
 if [ -d "$TARGET" ]; then
 	while IFS= read -r f; do check_file "$f"; done < <(find "$TARGET" -name "*.cx" -not -path "*/node_modules/*")
+	PLATFORM="$TARGET/platform"
+	case "$TARGET" in
+		*/platform|*/platform/*) PLATFORM="$TARGET" ;;
+	esac
+	if [ -d "$PLATFORM" ]; then
+		audit_platform_tree "$PLATFORM"
+		while IFS= read -r dir; do check_scenario "$dir"; done < <(find "$PLATFORM" -name run.sh -exec dirname {} \; | sort)
+	fi
 elif [ -f "$TARGET" ]; then
 	check_file "$TARGET"
 fi
 
-echo "verify-examples: $PASS passed, $FAIL failed"
-if [ $FAIL -ne 0 ]; then
+echo "verify-examples: $PASS passed, $FAIL failed; platform scenarios: $SCEN_PASS passed, $SCEN_FAIL failed"
+if [ $FAIL -ne 0 ] || [ $SCEN_FAIL -ne 0 ]; then
 	echo ""
 	echo "Broken examples:"
 	for d in "${FAIL_DETAILS[@]}"; do echo "  $d"; done

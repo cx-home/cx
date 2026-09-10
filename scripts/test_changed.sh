@@ -128,6 +128,10 @@ lane_globs() {
     guide-check)                   echo 'docs-src/* vcx/* stdlib/*' ;;
     directive-docs-check)          echo 'vcx/* docs-src/* spec/*' ;;
     verify-doc-blocks)             echo 'docs-src/* spec/* vcx/* stdlib/*' ;;
+    # examples/ is graded per landing now, not only at a release cut. The row
+    # is wide because a platform scenario RUNS the toolchain: a `cx flow` or
+    # `cx xap` change moves a recorded transcript, and so does a stdlib one.
+    verify-examples)               echo "examples/* tools/verify-examples.sh stdlib/* $RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED" ;;
     verify-playground-examples)    echo 'docs-src/* examples/* vcx/*' ;;
     # docs-check (#938) regenerates the LLM layer from the templates, the
     # conformance corpus, the spec's directive registry, the stdlib bundle's
