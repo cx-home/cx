@@ -6,7 +6,6 @@
 # fenced near the top of each spec under spec/03-approved/std-lib/*.md:
 #
 #     SPEC_SET == (BUNDLE_SET union DISPATCH_SET)
-#     SYNTH_SET == CODEC_SET - (BUNDLE_SET union DISPATCH_SET)
 #
 # where
 #   SPEC_SET     = name= of every [module-meta] with status=current in
@@ -16,38 +15,12 @@
 #   BUNDLE_SET   = basenames of stdlib/*.cx (the .cx stripped).
 #   DISPATCH_SET = every <name>_stdlib_builtin prefix in
 #                  vcx/code/stdlib_dispatch.v, deduplicated.
-#   SYNTH_SET    = `cx stdlib list --synthesized` -- the SYNTHESIZED codec
-#                  module surfaces (vcx/code/stdlib_bundle.v ::
-#                  register_bundled_codecs). They have NO file on disk, so
-#                  no glob can see them.
-#   CODEC_SET    = `cx stdlib list --codecs` -- every codec with a full TEXT
-#                  contract that is not a dialect of another, derived from
-#                  the codec registry (codec.md §3/§4, §6's one source of
-#                  truth). This is the INDEPENDENT basis SYNTH_SET is
-#                  measured against.
 #
-# The gate FAILS (process exit 1) when any direction breaks:
+# The gate FAILS (process exit 1) when either direction breaks:
 #   (1) a SPEC_SET module is in neither BUNDLE_SET nor DISPATCH_SET
 #       -- a specced module with no implementation; OR
 #   (2) a BUNDLE_SET/DISPATCH_SET module is not in SPEC_SET
-#       -- an orphan impl/bundle with no spec; OR
-#   (3) a CODEC_SET codec with no bundle and no dispatch is missing from
-#       SYNTH_SET -- codec.md §3 mandates its `[?lib 'cx-stdlib/<c>']`
-#       surface and nothing synthesizes it; OR
-#   (4) a SYNTH_SET name is not a CODEC_SET codec, or already ships a
-#       bundle/dispatch module -- a synthesized surface over something that
-#       is not (or no longer needs to be) synthesized; OR
-#   (5) a SYNTH_SET name also has a status=current std-lib spec page --
-#       2(c) rules these modules EXEMPT from SPEC_SET, their normative text
-#       being codec.md §3 itself, so a page would be a second source.
-#
-# Why (3)/(4) exist at all (#1368, RULED: 1368-a). Before them the invariant
-# held VACUOUSLY for five shipping modules: `cx`, `xml`, `yaml`, `toml` and
-# `md` reach a program through `register_bundled_codecs`, a FOURTH
-# registration path, and appeared in none of the three sets -- not exempted,
-# unseen. A set that is only listed is not checked, so SYNTH_SET is compared
-# against CODEC_SET, which a DIFFERENT function derives from the registry:
-# drop a name from the enumeration in stdlib_bundle.v and (3) reds.
+#       -- an orphan impl/bundle with no spec.
 #
 # On success it writes a one-line OK to stdout and exits 0.
 #
@@ -98,14 +71,11 @@
               [where [not [= $l ""]]]
               [yield $l]]]]]]
 
+
 # -- SPEC_SET -----------------------------------------------------------
 # One [module-meta name=... tier=... status=...] line per spec file. Pull
 # the name= and status= via RE2; keep only status=current.
 [?let [= $meta-rx [$re:compile "\\[module-meta name=([a-z0-9_]+) tier=[A-D] status=([a-z]+)"]]
-      # -- SYNTH_SET / CODEC_SET (the fourth registration path) ----------
-      # Both come from the RUNNING binary's loader and registry, not from a
-      # glob: these modules have no file to glob. Bound HERE, in the outermost
-      # [?let], because they depend on nothing above them.
       [= $synth-set [$cx-lines '--synthesized']]
       [= $codec-set [$cx-lines '--codecs']]
 
@@ -146,7 +116,6 @@
               [then "http"]
               [else [$re:group $dm 1]]]]]]
 
-
           # -- Direction (1): specced modules with no implementation.
           # A spec module is satisfied iff it is a member of BUNDLE_SET
           # OR DISPATCH_SET.
@@ -172,32 +141,17 @@
                   [where [not [> [$count [?for [in $sx $spec-set]   [where [= $sx $d]] [yield $sx]]] 0]]]
                   [yield $d]]]
 
-              # -- Direction (3): a text codec nobody surfaces. codec.md §3
-              # mandates `[?lib 'cx-stdlib/<c>']` for every codec with a full
-              # text contract; a codec that ships neither a bundle module nor
-              # a native dispatch module must therefore be SYNTHESIZED. This
-              # is the direction that makes the enumeration a CHECK: drop a
-              # name from bundled_codec_module_names() and it fires.
               [?let [= $synth-missing
                 [?for [in $c $codec-set]
                   [where [not [$has-name $bundle-set $c]]]
                   [where [not [$has-name $dispatch-set $c]]]
                   [where [not [$has-name $synth-set $c]]]
                   [yield $c]]]
-
-              # -- Direction (4): a synthesized surface over something that
-              # is not a text codec, or that already ships a real module.
               [?let [= $synth-extra
                 [?for [in $y $synth-set]
                   [where [or [not [$has-name $codec-set $y]]
                              [or [$has-name $bundle-set $y] [$has-name $dispatch-set $y]]]]
                   [yield $y]]]
-
-              # -- Direction (5): 2(c)'s exemption, enforced in the one
-              # direction it can break. A synthesized module is exempt from
-              # SPEC_SET because codec.md §3 IS its normative text; a std-lib
-              # page for one would be a SECOND source of truth for a surface
-              # that is generated — the drift the synthesis exists to prevent.
               [?let [= $synth-specced
                 [?for [in $y $synth-set]
                   [where [$has-name $spec-set $y]]
@@ -217,12 +171,12 @@
                       [?let [= $synth-missing-lines
                         [?for [in $c $synth-missing]
                           [yield [$concat "  [codec, no surface] " $c "  -- a full text codec with no stdlib/" $c ".cx, no " $c "_stdlib_builtin and no synthesized module; codec.md §3 mandates [?lib 'cx-stdlib/" $c "']"]]]]
-                        [?let [= $synth-extra-lines
-                          [?for [in $y $synth-extra]
-                            [yield [$concat "  [orphan synth]      " $y "  -- synthesized as a codec module but not a non-dialect text codec, or already served by a bundle/dispatch module"]]]]
-                          [?let [= $synth-specced-lines
-                            [?for [in $y $synth-specced]
-                              [yield [$concat "  [synth + spec page] " $y "  -- synthesized modules are EXEMPT from SPEC_SET (codec.md §3 is their normative text); spec/03-approved/std-lib/" $y ".md would be a second source"]]]]
+                      [?let [= $synth-extra-lines
+                        [?for [in $y $synth-extra]
+                          [yield [$concat "  [orphan synth]      " $y "  -- synthesized as a codec module but not a non-dialect text codec, or already served by a bundle/dispatch module"]]]]
+                      [?let [= $synth-specced-lines
+                        [?for [in $y $synth-specced]
+                          [yield [$concat "  [synth + spec page] " $y "  -- synthesized modules are EXEMPT from SPEC_SET (codec.md §3 is their normative text); spec/03-approved/std-lib/" $y ".md would be a second source"]]]]
 
                       [?let [= $n-violations
                         [+ [$count $missing]
