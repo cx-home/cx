@@ -315,26 +315,28 @@ authority. Real per-path/per-name scoping is unimplemented.
 | Code | Meaning |
 |---|---|
 | 0 | success |
-| 1 | the program's TOP-LEVEL result is an `[err]`, or a check found findings |
+| 1 | the program's result carries a COMPUTED `[err]` at any depth, or a check found findings |
 | 2 | usage error — an unknown flag, a missing file, a bad invocation |
 
-Exit 1 is about the **top-level** result (R5.13). Two readings of "nested"
-answer differently, and the difference is not a wrinkle — it is the contract:
+Exit 1 is about the program's result (R5.13), and the discriminator is
+PROVENANCE, not position (RULED: 1099-a, #1099):
 
-- A top-level **collection** — a sequence, array or map — whose members carry
-  an `[err]` IS a result that carries an err, so
-  `[?for [in $n (1)] [yield [/ $n 0]]]` exits 1 (#1058 T1.1). This paragraph
-  claimed the opposite until T1.1 landed, which is precisely the soundness bug
-  T1.1 fixed: `[?for]` and `[?map]` COLLECT errs, so that shape is the most
-  common result in the language.
-- An `[err]` resting inside an **element** exits 0 — `[wrapper [err …]]`, and
-  equally one contributed into an element body by `[?splice]` or `[?for]`. That
-  is ruled (CO-2, #975): err-as-value composition is load-bearing, and the
-  guard sits at the EFFECT boundary instead — `[$store:put-doc]` on a document
-  carrying one refuses with `CXER0275`.
-- A **source-literal** `[err …]` as the program's own top-level form exits 0:
-  it is data echoing itself, not a computed refusal (code.md §6.4.1's position
-  rule — the discriminator is POSITION, not value).
+- A **computed** `[err]` — one a refusal produced at run time — anywhere in
+  the result makes the run exit 1: as the whole result, as a member of a
+  sequence / array / map (#1058 T1.1: `[?for [in $n (1)] [yield [/ $n 0]]]`),
+  or resting inside an **element** at any depth — `[out [doc [?splice $rows]]]`
+  with a refusal among `$rows`, `[doc [?for … [yield [/ $n 0]]]]`. Before
+  1099-a the walk stopped at a named element, so the last shape printed its
+  refusals and exited 0.
+- A **written** `[err …]` — parsed from source, or built by the program's own
+  `[err …]` literal — is data echoing itself and exits 0 wherever it sits:
+  `[err code=x]` as the top-level form, `{a: [err code=c]}`, `[wrapper [err …]]`,
+  `[doc [?splice ([err code=c], 2)]]`.
+- Resting is still ruled (CO-2, #975): a contributed member is not propagated
+  out of the construction — the document is built around it and printed — and
+  the REFUSAL guard sits at the effect boundary (`[$store:put-doc]` on a
+  document carrying any err, written or computed, refuses with `CXER0275`).
+  The exit status is not a refusal; it is the process saying what it printed.
 
 On exit 1 the run also names the first err on STDERR; STDOUT is unchanged,
 because the rendered err is still the program's answer. Do not
