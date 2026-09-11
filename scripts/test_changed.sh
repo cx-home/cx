@@ -126,6 +126,10 @@ lane_globs() {
     check-completions-drift)       echo 'vcx/* tooling/*' ;;
     check-tmlanguage-sync)         echo 'tooling/*' ;;
     guide-check)                   echo 'docs-src/* vcx/* stdlib/*' ;;
+    # #1412 — the RENDERER, not the doc graders. Its inputs are the generator
+    # itself, the canonical sources it reads, and the two module tiers whose
+    # pages it projects (x/ included: an x/ module gets its own page).
+    guide-render-gate)             echo 'scripts/gen_guide/* docs-src/* stdlib/* x/*' ;;
     directive-docs-check)          echo 'vcx/* docs-src/* spec/*' ;;
     verify-doc-blocks)             echo 'docs-src/* spec/* vcx/* stdlib/*' ;;
     # examples/ is graded per landing now, not only at a release cut. The row
