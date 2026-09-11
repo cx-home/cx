@@ -63,3 +63,50 @@ implementation commit under `RULED: 1085-a`.
 
 Option (a) — the steward continues to green — was taken; nothing here reduces the spec's
 demands, and #1421 and #1422 carry the two real gaps with their own triggers.
+
+---
+
+# 1085-d — `[delivery]` carries BOTH the parsed `[message …]` and the raw `[body <bytes>]`
+
+Recorded 2026-09-11 by Fable under the owner's delegation of 2026-09-09, posted on #1085;
+the owner may override on #1354. Raised by the `cx-stdlib/smtp` implementation lane, which
+had shipped only `[body]`. Lands as spec text and one corpus case in the smtp implementation
+commit under `RULED: 1085-a`.
+
+| The question | Ruled |
+|---|---|
+| The delivery handed to a `serve` handler: the parsed `[message …]` element, the raw `[body <bytes>]`, or both? | **both**, and the parse happens **once, in the server core** |
+
+**Why neither alone.** `smtp.md` §2.3 promises the handler `[$email:parse]`'s element — "there
+is no `smtp` message shape", one message model, `email`'s. A delivery carrying only `[body]`
+leaves that promise unimplemented and pushes a parse into every handler, which is a second
+place where *what this message says* is decided: exactly the two-readings disagreement §2.1
+exists to prevent, and the same argument that gives the module ONE reply serializer and ONE
+reply parser. A delivery carrying only `[message]` fails the other half: §6.4's
+no-modification invariant is stated over **octets** ("the only transformation is dot-unstuffing
+and the single prepended `Received:`"), §9.2 grades it as a byte equality, and both #1414's
+relay and #1415's DKIM verifier must forward precisely what arrived — re-emitting a signed
+message from its parse breaks the signature, which is the whole reason §6.4 exists.
+
+These are **not** the "raw plus parsed pair" §2.3 refuses. That sentence refuses a second
+*message model*; there is still exactly one. This is one message plus the bytes it arrived as.
+
+**Where the parse happens.** In the pure state machine (`smtp_finish_message`), not in `serve`:
+the corpus reaches the same `[message]` child through `server-step` with no socket, no port and
+no capability, which is what makes §2.3's promise gradable offline rather than only on #1417's
+two-process lane. Ring 1 reaches `email-parse` through the ring-2 registry seam, the seam
+`sched` already uses for `journal-append`.
+
+**A message `email:parse` rejects carries no `[message]` child** — not a synthesized one and not
+an `[err]` one. The octets are still exact and the handler can still refuse; inventing a message
+shape for input the parser rejected would be the one "helpful" transformation §6.4 forbids.
+
+Normative in `smtp.md` §2.2 (the `[delivery …]` line, which had also omitted `[received]`), §2.3
+and §3.6. Graded by `smtp-123`.
+
+Also recorded from the same lane, as traps rather than rulings: an **inline**
+`[out-err cx-err:CXERnnnn]` is not read by the fixture parser — only the heredoc form
+`[out-err [#…#]]` grades, and ten smtp rows had silently run as `out-text` cases against an
+empty expectation; §5.6's `Received:` is now PREPENDED into the delivered octets rather than
+riding a sidecar child alone, without which §9.2's invariant was unmeasurable; §4.3 client
+pipelining and §4.1's DSN drop-and-report were missing and were implemented.
