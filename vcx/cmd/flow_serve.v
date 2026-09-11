@@ -882,8 +882,16 @@ fn flow_serve_program(r FlowRunner, directives []string, acts []FlowCliAct, tick
 		b << '[= \$${v} [\$cxflow:rearm \$j {env: \$e flow: [\$first [fs--doc-by \$fs "${flow_cli_quote(x.start)}"]] actor: "${flow_cli_quote(x.binder)}" authority: "${flow_cli_quote(x.binder)}"}]]'
 		rearm_parts << '[rearm flow="${flow_cli_quote(x.start)}" rearmed=\$${v}@rearmed skipped=\$${v}@skipped orphaned=\$${v}@orphaned]'
 	}
+	// RULED: 1411-a — the ingress is SERIAL with the courier: its handler runs
+	// only while it holds the program's evaluator turn, which this loop gives
+	// up inside its `[?sleep]` and nowhere else. Before this, the handler ran
+	// on an executor thread concurrently with a tick, over the per-process
+	// capability set (an act admitted with `[effects [write]]` narrowed it
+	// under the ingress's journal append → CXER0271) and the journal's store
+	// bookkeeping (→ CXER1140) — a valid delivery answered 400 about once in
+	// forty under load (#1411, measured).
 	b << '[= \$srv [\$cxhttp:serve "tcp://${flow_cli_quote(r.bind)}"' +
-		' [?fn (\$req) [fs--ingress \$j \$e \$fs \$bs "${flow_serve_act_path}" \$req]] {}]]'
+		' [?fn (\$req) [fs--ingress \$j \$e \$fs \$bs "${flow_serve_act_path}" \$req]] {serial: true}]]'
 	// The BOOT REPORT, twice over, because the two readers are different and
 	// CX has no stdout write. An operator watching a runner that has not
 	// stopped needs it NOW, so it goes to the log sink (stderr by default);
