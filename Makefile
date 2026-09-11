@@ -546,6 +546,43 @@ guide-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
 guide-check: build-vcx
 	@"$(CX_BIN)" --allow-all scripts/gen_guide/stdlib_docs_check.cx
 
+## guide-render-gate  Run the guide GENERATOR itself and assert it produced the
+##                  site. guide-check above grades the doc SOURCES under
+##                  --allow-all; it says nothing about whether `make guide`
+##                  still runs. #1412: it did not, for a day — the renderer
+##                  gained a subprocess spawn at a893c5583 and the recipe's
+##                  grants did not, so every `make guide` died on CXER0271
+##                  while every gate stayed green, because the generator sat
+##                  in no gate at all. tools/release-verify.sh has had a row
+##                  since #989, but that runs at the TAG; a generator can be
+##                  red for any number of commits before it.
+##
+## Renders the REAL docs/guide/ (gitignored, so no tree side effect and no
+## DIRTY): guide_build.cx hardcodes its output root and takes no output-dir
+## argument, and #1412 is not licence to add one. GUIDE_SKIP_CX_BUILD=1 is the
+## other half of "no side effect": the build-vcx prerequisite has already put
+## the prod binary in place, and without the skip the guide rule would drop a
+## DEV binary at vcx/target/cx in the middle of a gate.
+##
+## Cost, measured at the #989 row: 27.3-27.8 s wall / 26.5 CPU-s, single
+## process — absorbed under -j against a ~3 h gate.
+.PHONY: guide-render-gate
+guide-render-gate: build-vcx
+	@mkdir -p vcx/target
+	@rm -f vcx/target/.guide-render-gate.stamp
+	@touch vcx/target/.guide-render-gate.stamp
+	@$(MAKE) --no-print-directory guide GUIDE_SKIP_CX_BUILD=1
+	@for p in docs/guide/index.html docs/guide/codec-xml.html; do \
+	  if [ ! -f "$$p" ]; then \
+	    echo "guide-render-gate: FAILED — the render exited 0 but $$p does not exist"; exit 1; \
+	  fi; \
+	  if [ ! "$$p" -nt vcx/target/.guide-render-gate.stamp ]; then \
+	    echo "guide-render-gate: FAILED — $$p is older than the pre-render stamp; this run did not write it (a stale site from an earlier render is not a passing render)"; exit 1; \
+	  fi; \
+	done
+	@rm -f vcx/target/.guide-render-gate.stamp
+	@echo "guide-render-gate OK — the generator rendered docs/guide/, index page and the synthesized codec-xml module page both written by THIS run"
+
 # Directive + syntax reference drift gate — every code.md §4.1 registry
 # directive has a [directive-doc], no orphans, and each example is backed
 # verbatim by the conformance corpus (mirrors guide-check for the stdlib).
@@ -879,7 +916,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check directive-docs-check verify-doc-blocks verify-examples verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster fmt-sweep-gate test-playground-wasm-traps
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-examples verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster fmt-sweep-gate test-playground-wasm-traps
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS lanes whose

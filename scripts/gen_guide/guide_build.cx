@@ -4,9 +4,14 @@
    docs-src/canonical/ and emits the multi-page site at docs/guide/ —
    render = .cx, dogfooded end to end (codec.md §1 in-memory pipeline:
    read → [$cx:parse] → transform → [$xml:emit] → [$io:write-file], no
-   subprocess, no Python).
+   Python). It is NOT subprocess-free any more: since #1368 (RULED 1368-a's
+   rider) `synth-libfiles` and `module-source-of` below spawn the binary for
+   `cx stdlib list --synthesized` and `cx stdlib source <m>` — a synthesized
+   codec module has no file on disk, so its source comes from the
+   synthesizer, never from a glob.
 
-   Run: cx --allow-read --allow-write scripts/gen_guide/guide_build.cx
+   Run: cx --allow-read --allow-write --allow-subprocess
+   scripts/gen_guide/guide_build.cx
    (the Makefile `guide` target builds the binary + passes the grants).
 
    Pipeline per section:

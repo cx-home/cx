@@ -11,8 +11,13 @@
 # program (run via `cx <file>`, CLI default-eval) that reads
 # docs-src/canonical/ and emits the whole docs/guide/ site —
 # render = .cx, dogfooded end to end (read → [$cx:parse] → transform →
-# [$xml:emit] → [$io:write-file]; no subprocess, no Python). It needs
-# --allow-read / --allow-write capability grants.
+# [$xml:emit] → [$io:write-file]; no Python). It is no longer subprocess-free:
+# since a893c5583 (#1368, the 1368-a rider) the renderer SPAWNS THE BINARY
+# ITSELF — `cx stdlib list --synthesized` and `cx stdlib source <m>` — because
+# a synthesized codec module has no file on disk and its source can only come
+# from the synthesizer. So the grants are --allow-read / --allow-write /
+# --allow-subprocess (#1412: the recipe kept the old pair for a day and every
+# `make guide` died on cx-err:CXER0271).
 
 GUIDE_SRC := docs-src/canonical
 GUIDE_OUT := docs/guide
@@ -69,7 +74,11 @@ endif
 ## engine changed and the playground must reflect it. The render's own stdout
 ## (write-file results) is discarded; real errors still surface.
 guide: $(GUIDE_CX_DEP)
-	@$(GUIDE_CX_BIN) --allow-read --allow-write $(GUIDE_GEN)/guide_build.cx >/dev/null
+	@# --allow-subprocess is load-bearing (#1412): `synth-libfiles` and
+	@# `module-source-of` run `cx stdlib list --synthesized` / `cx stdlib
+	@# source <m>` through [$$process:run], the only source a synthesized
+	@# codec module has. Nothing else here spawns, so nothing else is granted.
+	@$(GUIDE_CX_BIN) --allow-read --allow-write --allow-subprocess $(GUIDE_GEN)/guide_build.cx >/dev/null
 	@# The wasm reuse above is deliberate (minutes vs seconds), but it is
 	@# how a 0.13.0 engine reached a v0.17 playground and stayed there for
 	@# five releases (#992). --warn reports and keeps going: the reuse
@@ -224,6 +233,12 @@ guide-http: guide
 ## guide-diff   Preview what re-running the
 ##                                   target would change in docs/guide/.
 ## Honors GUIDE_SKIP_CX_BUILD=1 (reuse the existing binary), same as `guide`.
+##
+## The grants MUST track the `guide` recipe's (#1412). This invocation sits
+## mid-chain behind `; \`, so a CXER0271 here does not fail the target: it
+## renders nothing, the `diff` then compares the copy against the untouched
+## tree, and `guide-diff` reports NO CHANGES while exiting 0 — a false clean
+## preview, which is worse than the loud red the `guide` recipe gave.
 ifeq ($(GUIDE_SKIP_CX_BUILD),)
 guide-diff: build-vcx
 else
@@ -231,7 +246,7 @@ guide-diff:
 endif
 	@stage="$$(mktemp -d -t cxguide-diff.XXXXXX)"; \
 	 cp -R $(GUIDE_OUT) "$$stage/before" 2>/dev/null || mkdir -p "$$stage/before"; \
-	 $(CURDIR)/vcx/target/cx --allow-read --allow-write $(GUIDE_GEN)/guide_build.cx >/dev/null; \
+	 $(CURDIR)/vcx/target/cx --allow-read --allow-write --allow-subprocess $(GUIDE_GEN)/guide_build.cx >/dev/null; \
 	 diff -ruN "$$stage/before" $(GUIDE_OUT) || true; \
 	 rm -rf "$$stage"
 
