@@ -1826,6 +1826,7 @@ assistant makes with a young language is inventing a plausible module name.
 | `html` | HTML as a first-class document format: parse, sanitize, serialize, and extract text. |
 | `http` | HTTP/1.1 request/response semantics: a programmatic client and server built on the `cx-stdlib/net` transport. |
 | `i18n` | The message and translation layer of CX's internationalization surface. |
+| `imap` | Both halves of IMAP4rev2 (RFC 9051) on one token grammar: the client an agent or a human client reads a mailbox with, and the server core a CX process serves a mailbox from. |
 | `io` | File and stream I/O — whole-file reads and writes, streaming handles, line iteration, filesystem queries, directory operations, globbing, tempfiles, and advisory file locking. |
 | `journal` | An append-only, hash-chained, tenant-partitioned event log and the deterministic projection of that log into state. |
 | `json` | Parse JSON (RFC 8259) into CXDM values and emit CXDM values back to JSON. |
