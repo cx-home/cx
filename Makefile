@@ -3152,7 +3152,8 @@ test-oriel-lane: build-vcx
 ##                  against it (discovery, the issuer mix-up refusal, all
 ##                  four client-authentication methods, PKCE, JWKS key
 ##                  rotation, refresh rotation, the machine grant, SAML
-##                  over the wire), tear down. Refuses if :8793 is already
+##                  over the wire, and SAML with the assertion ENCRYPTED
+##                  end to end), tear down. Refuses if :8793 is already
 ##                  served. This is the ONLY lane that grades the
 ##                  networked half of the SSO stack.
 .PHONY: test-sso-interop-lane
