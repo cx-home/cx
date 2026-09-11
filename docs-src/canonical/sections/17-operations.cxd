@@ -270,7 +270,11 @@ cx vX.Y.Z-dev+3ed9ade5
          identity provider that lives in this repository
          (`scripts/sso_interop/idp.cx`), and `tools/sso_interop_real.sh
          PROVIDER` runs against a real tenant at release time. A cell
-         that names neither is an unverified cell, and it says so."""]
+         that names neither is an unverified cell, and it says so. A
+         PARTIAL verdict names exactly which rows it rests on — in the
+         OIDC and client-auth columns, not folded into the verdict word
+         alone — so a partial run can never be read as more than what
+         it drove."""]
     [body
       """What the per-commit lane grades: discovery and its issuer
          mix-up refusal, the authorization request as the library forms
@@ -287,7 +291,7 @@ cx vX.Y.Z-dev+3ed9ade5
          not exercised by anything here."""]
     [table
       [tr [th 'identity provider'] [th 'OIDC code + PKCE'] [th 'client auth (basic / post / private_key_jwt / none)'] [th 'SAML (assertion-signed / response-signed)'] [th 'SCIM'] [th 'verdict'] [th 'verified how'] [th 'verified at']]
-      [tr [td 'Entra ID'] [td '--'] [td '--'] [td '--'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/sso_interop_real.sh entra -- pending a tenant'] [td '--']]
+      [tr [td 'Entra ID'] [td 'discover + JWKS VERIFIED 2026-09-11 (public tenant 9188040d-6c67-4c5b-b112-36a304b66dad, v2.0; 8 signing keys); auth-code leg PENDING a registered client'] [td 'PENDING (client_credentials / wrong-secret need a registered client)'] [td '--'] [td '--'] [td 'PARTIAL'] [td 'tools/sso_interop_real.sh entra (discovery mode)'] [td '2026-09-11']]
       [tr [td 'Okta'] [td '--'] [td '--'] [td '--'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/sso_interop_real.sh okta -- pending a tenant'] [td '--']]
       [tr [td 'PingFederate / PingOne'] [td '--'] [td '--'] [td '--'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/sso_interop_real.sh ping -- pending a tenant'] [td '--']]
       [tr [td 'ADFS'] [td '--'] [td '--'] [td '--'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/sso_interop_real.sh adfs -- pending a tenant'] [td '--']]
