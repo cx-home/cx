@@ -77,6 +77,7 @@ $ cx prog.cx
 | `random` | Two distinct randomness facilities, kept cleanly separated so PRNG output can never accidentally stand in for crypto. |
 | `re` | Regular expressions backed by the RE2 engine, guaranteeing linear-time matching against any input with no catastrophic backtracking. |
 | `saml` | The SAML 2.0 service-provider verify core: XML-DSig verification and assertion validation as a pure codec, the enterprise counterpart to cx-stdlib/oidc. |
+| `sasl` | The SASL mechanism registry and framing codec, shared by cx-stdlib/smtp and cx-stdlib/imap. |
 | `sched` | Scheduled events and timers on the event loop. |
 | `scim` | SCIM 2.0 provisioning semantics — the PROVISIONING half of enterprise SSO, counterpart to cx-stdlib/oidc's login half. |
 | `session` | The server-held (principal, tenant) session for a web app. |
