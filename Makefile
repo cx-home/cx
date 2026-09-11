@@ -3064,7 +3064,16 @@ fmt-sweep-timed: build-vcx
 # rejected: `total=[* $qty $unit]` is how one multiplies, and an example
 # written around a formatter limitation teaches the limitation. This number
 # comes back down — by far more than twelve — when #1391 closes.
-FMT_SWEEP_MAX_DECLINED ?= 105
+#
+# RAISED 105 -> 107 by #1403's two new programs, scripts/sso_interop/idp.cx
+# and scripts/sso_interop/rp_drive.cx. Same hole, measured the same way
+# (declined=107 on the first sweep after they landed, +2 exactly): both carry
+# bracketed values in argument position that #1391 declines —
+# `[$crypto:jwt-sign $claims [$ec1-private] {alg: 'ES256', kid: 'ec-1'}]` and
+# `[$http:get $url {follow-redirects: false}]` among them. Rewriting either to
+# dodge the formatter would mean not calling the stdlib the way the stdlib is
+# called, which is the one thing an interop lane must not do.
+FMT_SWEEP_MAX_DECLINED ?= 107
 FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
 .PHONY: fmt-sweep-gate
 fmt-sweep-gate: build-vcx
