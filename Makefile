@@ -3195,9 +3195,10 @@ test-oriel-lane: build-vcx
 ##                  scripts/sso_interop/idp.cx, drive a real relying party
 ##                  against it (discovery, the issuer mix-up refusal, all
 ##                  FIVE client-authentication methods including
-##                  client_secret_jwt, PKCE, JWKS key
-##                  rotation, refresh rotation, the machine grant, SAML
-##                  over the wire, and SAML with the assertion ENCRYPTED
+##                  client_secret_jwt, PKCE, JWKS key rotation, refresh
+##                  rotation AND §12.2 revalidation, UserInfo, the RFC
+##                  9207 `iss` refusal, the machine grant, SAML over the
+##                  wire, and SAML with the assertion ENCRYPTED
 ##                  end to end), tear down. Refuses if :8793 is already
 ##                  served. This is the ONLY lane that grades the
 ##                  networked half of the SSO stack.
