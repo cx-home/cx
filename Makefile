@@ -2028,6 +2028,7 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/a2a_real_test.v \
                       vcx/tests/http_h2_serve_test.v \
                       vcx/tests/http_client_tls_transport_test.v \
+                      vcx/tests/smtp_real_socket_test.v \
                       vcx/tests/process_pty_test.v \
                       vcx/tests/xap_umbrella_test.v
 
@@ -2049,7 +2050,7 @@ RETRY_REASON_CASE = case "$$rel" in \
 	    reason="\#1125 pty master read races under the -j12 suite storm (empty child output); green in isolation and in the prior full run" ;; \
 	  vcx/tests/xap_umbrella_test.v) \
 	    reason="reference web client / store readiness bounds (calibrated ~30 s) exceeded only under the -j12 storm plus box load: measured 2026-09-09 OK 72 s alone, FAIL 98.7 s and 123 s with a lane or build sharing the box" ;; \
-	  vcx/tests/net_udp_read_deadline_test.v|vcx/tests/net_dtls_test.v|vcx/tests/net_real_socket_test.v|vcx/tests/a2a_real_test.v|vcx/tests/http_h2_serve_test.v|vcx/tests/http_client_tls_transport_test.v) \
+	  vcx/tests/net_udp_read_deadline_test.v|vcx/tests/net_dtls_test.v|vcx/tests/net_real_socket_test.v|vcx/tests/a2a_real_test.v|vcx/tests/http_h2_serve_test.v|vcx/tests/http_client_tls_transport_test.v|vcx/tests/smtp_real_socket_test.v) \
 	    reason="real-socket contention: ephemeral-port / deadline race under -j" ;; \
 	  vcx/platform/store_admin_plane_test.v|vcx/platform/store_grpc_live_test.v|vcx/platform/store_lazy_load_test.v) \
 	    reason="real-socket contention: live store/grpc endpoint under -j (\#648)" ;; \

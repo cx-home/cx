@@ -42,3 +42,71 @@ end to end; if they meet the 1085-a bar they move to `spec/03-approved/std-lib/`
 `status=current` in ONE spec-only commit whose pass note on #1354 says "delegated G3 — the
 owner may send them back". Implementation (M1) starts only after that commit; fixture corpus
 (attack corpus first) before any V.
+
+---
+
+# 1085-c — implementation rulings
+
+Recorded 2026-09-11 by Fable under the owner's delegation of 2026-09-09, posted on #1085;
+the owner may override on #1354. These are the five STOP items the `cx-stdlib/smtp`
+implementation lane raised against the approved `smtp.md`, ruled so the steward could land
+option (a) — continue to green — rather than pause. Each lands as spec text in the smtp
+implementation commit under `RULED: 1085-a`.
+
+| Id | The STOP item | Ruled |
+|---|---|---|
+| **1085-c-1** server STARTTLS | no server-role TLS handshake over an accepted socket exists in the V fork (`net` dials TLS and binds TLS; there is no `tls-accept-wrap`) | land the HONEST posture: a `tcp://` bind carrying `opts.tls` is **refused at bind time** `CXER5706` naming the gap, and a `tcp://` bind advertises no `STARTTLS` at all — never advertise an upgrade that cannot be performed, because §6.2 says a failed upgrade never falls back to cleartext and the client has already committed by then. `smtp.md` §3.6 says so and cites **#1421** (`net:tls-accept-wrap`, V-fork change + pin bump, prio:high). `tls://` implicit TLS, and BOTH client paths (STARTTLS and implicit), are unaffected and fully implemented |
+| **1085-c-2** the audit channel | `smtp.md` §6.2 point 2 cites "`security.md` §2's audit channel"; §2 is the capability CATEGORY table and names no such channel, and no audit sink exists anywhere in the tree | the `:none`/`:opportunistic` startup event rides the **effects-trace witness channel under an `audit:` prefix** (`effects_trace_note`) — a prefix that is deliberately not a capability name, so it can never be read as a charge against the capability mirror `check-effect-alignment` folds over. `smtp.md` §6.2 point 2 (and `imap.md` §6.2 when it lands) names that channel instead of the phantom. The audit sink proper — durable, structured, queryable, shareable with the `authz` PEP and XAP's approval acts — is **#1422**, prio:low |
+| **1085-c-3** server credential verification | the server half had no way to verify an `AUTH` credential: no store, and no auth handler in §3.6 | **`[credential authcid= secret=]` children on `[smtp-policy]`** — a VALUE, not a callback, so §7.1's value-in/value-out holds and an authenticating session replays in a fixture with no store and no socket. §3.6's opts table gains the row. **A policy declaring no `[credential]` authenticates nobody**: `AUTH` is not advertised and is answered `535 5.7.8` if attempted. Store-backed verification (an account record, `crypto:password-hash`, per-account policy) is **#1413**/**#1416**'s and is named as such in the spec |
+| **1085-c-4** client AUTH-downgrade rows | §9.1 asks for the CLIENT's mechanism refusal and also states every case in it is `server-step`/`parse-reply`; both cannot hold, because client mechanism selection has no pure verb in §3.4 | accepted as the steward did it: the rows are pinned through the exact composition §3.3 names — `parse-ehlo` → the `[ext name="AUTH" [mech …]]` children → `[$sasl:mechanisms]` — asserting `sasl`'s `CXER5901` there, with the smtp-side wrapper (`CXER5709` carrying it as `[cause]`) pinned on the SERVER path offline and on the CLIENT path in the real-socket test. Recorded in the corpus header, not silently dropped |
+| **1085-c-5** the six peer-needing codes | `5700`/`5704`/`5705`/`5707`/`5708`/`5714` cannot be raised without a peer, and `cxer-registry-gate` wants an `out-err` case per code | accepted — they ride `vcx/tests/smtp_real_socket_test.v`, which is §9.3's own split. Each also gets a `parse-reply`/`server-step` arm **where one is expressible** (a scripted `421`/`5xx` reply through `parse-reply` reaches 5704; a stream truncated mid-transaction through `server-step` reaches 5705's server-side twin), and where none is, the registry row cites the V test |
+
+Option (a) — the steward continues to green — was taken; nothing here reduces the spec's
+demands, and #1421 and #1422 carry the two real gaps with their own triggers.
+
+---
+
+# 1085-d — `[delivery]` carries BOTH the parsed `[message …]` and the raw `[body <bytes>]`
+
+Recorded 2026-09-11 by Fable under the owner's delegation of 2026-09-09, posted on #1085;
+the owner may override on #1354. Raised by the `cx-stdlib/smtp` implementation lane, which
+had shipped only `[body]`. Lands as spec text and one corpus case in the smtp implementation
+commit under `RULED: 1085-a`.
+
+| The question | Ruled |
+|---|---|
+| The delivery handed to a `serve` handler: the parsed `[message …]` element, the raw `[body <bytes>]`, or both? | **both**, and the parse happens **once, in the server core** |
+
+**Why neither alone.** `smtp.md` §2.3 promises the handler `[$email:parse]`'s element — "there
+is no `smtp` message shape", one message model, `email`'s. A delivery carrying only `[body]`
+leaves that promise unimplemented and pushes a parse into every handler, which is a second
+place where *what this message says* is decided: exactly the two-readings disagreement §2.1
+exists to prevent, and the same argument that gives the module ONE reply serializer and ONE
+reply parser. A delivery carrying only `[message]` fails the other half: §6.4's
+no-modification invariant is stated over **octets** ("the only transformation is dot-unstuffing
+and the single prepended `Received:`"), §9.2 grades it as a byte equality, and both #1414's
+relay and #1415's DKIM verifier must forward precisely what arrived — re-emitting a signed
+message from its parse breaks the signature, which is the whole reason §6.4 exists.
+
+These are **not** the "raw plus parsed pair" §2.3 refuses. That sentence refuses a second
+*message model*; there is still exactly one. This is one message plus the bytes it arrived as.
+
+**Where the parse happens.** In the pure state machine (`smtp_finish_message`), not in `serve`:
+the corpus reaches the same `[message]` child through `server-step` with no socket, no port and
+no capability, which is what makes §2.3's promise gradable offline rather than only on #1417's
+two-process lane. Ring 1 reaches `email-parse` through the ring-2 registry seam, the seam
+`sched` already uses for `journal-append`.
+
+**A message `email:parse` rejects carries no `[message]` child** — not a synthesized one and not
+an `[err]` one. The octets are still exact and the handler can still refuse; inventing a message
+shape for input the parser rejected would be the one "helpful" transformation §6.4 forbids.
+
+Normative in `smtp.md` §2.2 (the `[delivery …]` line, which had also omitted `[received]`), §2.3
+and §3.6. Graded by `smtp-123`.
+
+Also recorded from the same lane, as traps rather than rulings: an **inline**
+`[out-err cx-err:CXERnnnn]` is not read by the fixture parser — only the heredoc form
+`[out-err [#…#]]` grades, and ten smtp rows had silently run as `out-text` cases against an
+empty expectation; §5.6's `Received:` is now PREPENDED into the delivered octets rather than
+riding a sidecar child alone, without which §9.2's invariant was unmeasurable; §4.3 client
+pipelining and §4.1's DSN drop-and-report were missing and were implemented.
