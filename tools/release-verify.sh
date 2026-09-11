@@ -90,6 +90,20 @@ check "make verify-doc-blocks" \
 check "make verify-doc-links" \
  "make -s verify-doc-links"
 
+section "Identity-provider interop (#1403)"
+# TWO ROWS, AND THE SECOND IS THE ONE THAT BITES. The lane proves the SSO
+# stack works against an identity provider we wrote; the matrix check proves
+# a verdict has been earned against the ones a customer actually runs. A
+# release that passes the first and fails the second has verified itself
+# against itself, which is exactly the gap #1403 exists to close — so the
+# matrix check is NOT advisory and must not be softened into one. It names
+# the providers still unverified; drive each with
+# tools/sso_interop_real.sh <provider> and record the verdict.
+check "make -s test-sso-interop-lane" \
+ "make -s test-sso-interop-lane"
+check "every named identity provider carries a verdict" \
+ "bash tools/sso_matrix_check.sh"
+
 section "Guide generator (#989)"
 # THE OTHER DOC GENERATOR. `make docs-check` below covers docs/llm/; NOTHING
 # covered docs/guide/, and the asymmetry is not because the guide is cheap to

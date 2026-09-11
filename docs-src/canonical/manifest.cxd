@@ -335,7 +335,8 @@
     [child n=17.3 id=ops-artifacts    title='Deployment artifacts']
     [child n=17.4 id=ops-env          title='Environment variables']
     [child n=17.5 id=ops-gc           title='Garbage collection at a glance']
-    [child n=17.6 id=ops-logging      title='Logging and journaling']]
+    [child n=17.6 id=ops-logging      title='Logging and journaling']
+    [child n=17.7 id=ops-sso-compat   title='Identity-provider compatibility']]
   [section n=18 id=store file='18-store.cxd'
     [child n=18.1 id=store-model      title='Content addressing and identity']
     [child n=18.2 id=store-embedded   title='The embedded workflow']

@@ -257,4 +257,55 @@ cx vX.Y.Z-dev+3ed9ade5
          capability is designed but not yet shipped, those pages say
          so explicitly; this guide section only teaches what the
          shipped binary was observed to do."""]]
+
+  [child id=ops-sso-compat n=17.7 title='Identity-provider compatibility'
+    [body
+      """The question an enterprise evaluation actually asks is whether
+         CX will just work against the identity provider that
+         organization already runs, and the only honest answer is a
+         table saying what was run, against what, and when. This is
+         that table. It is kept honest by two lanes, and
+         the split between them is the reason the table can be trusted:
+         `make test-sso-interop-lane` runs on every commit against an
+         identity provider that lives in this repository
+         (`scripts/sso_interop/idp.cx`), and `tools/sso_interop_real.sh
+         PROVIDER` runs against a real tenant at release time. A cell
+         that names neither is an unverified cell, and it says so."""]
+    [body
+      """What the per-commit lane grades: discovery and its issuer
+         mix-up refusal, the authorization request as the library forms
+         it, all four client-authentication methods at the token
+         endpoint, PKCE verification failure, ID-token signature
+         selection by `kid` across a two-key JWKS, refresh-token
+         rotation, the machine grant, and the token endpoint's own
+         OAuth error body surfacing to the caller. What it CANNOT
+         grade: the interactive authorize leg. A real login puts a
+         human at a sign-in page, so no unattended lane can perform one
+         — the lane reads the `Location` the identity provider answers
+         with and redeems the code from it, which is exactly what a
+         callback handler does, but the consent screen in between is
+         not exercised by anything here."""]
+    [table
+      [tr [th 'identity provider'] [th 'OIDC code + PKCE'] [th 'client auth (basic / post / private_key_jwt / none)'] [th 'SAML (assertion-signed / response-signed)'] [th 'SCIM'] [th 'verdict'] [th 'verified how'] [th 'verified at']]
+      [tr [td 'Entra ID'] [td '--'] [td '--'] [td '--'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/sso_interop_real.sh entra -- pending a tenant'] [td '--']]
+      [tr [td 'Okta'] [td '--'] [td '--'] [td '--'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/sso_interop_real.sh okta -- pending a tenant'] [td '--']]
+      [tr [td 'PingFederate / PingOne'] [td '--'] [td '--'] [td '--'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/sso_interop_real.sh ping -- pending a tenant'] [td '--']]
+      [tr [td 'ADFS'] [td '--'] [td '--'] [td '--'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/sso_interop_real.sh adfs -- pending a tenant'] [td '--']]
+      [tr [td 'Keycloak'] [td '--'] [td '--'] [td '--'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/sso_interop_real.sh keycloak -- pending a tenant'] [td '--']]
+      [tr [td 'cx reference IdP (in-tree, scripts/sso_interop/idp.cx)'] [td 'yes -- code, state, nonce, S256 challenge, and the RFC 9207 iss parameter on the authorization response'] [td 'all four'] [td 'assertion-signed: fetched over http and attached; response-signed and the ACS POST binding are NOT graded'] [td 'not exercised -- this lane is the login half'] [td 'verified per commit -- test-sso-interop-lane'] [td 'rows: discover, mixup, login-none, login-secret-basic, login-secret-post, login-private-key-jwt, wrong-secret, pkce-mismatch, rotation, refresh, client-credentials, saml-over-wire'] [td 'every commit']]]
+    [note
+      """A `--` is "not measured", never "not supported". The five named
+         products have no row content because no tenant has been driven
+         yet, and `tools/release-verify.sh` refuses a release while any
+         of Entra, Okta, Ping or ADFS still reads NOT YET VERIFIED --
+         which is the point of writing the unverified cells down rather
+         than leaving the table off the page."""]
+    [note
+      """Scheduled, and deliberately absent above rather than quietly
+         implied: `client_secret_jwt` as a fifth client-authentication
+         method (RULED 1409-a), SAML `EncryptedAssertion` (#1400), and
+         the opt-in acceptance of SHA-1 signatures that some long-lived
+         ADFS deployments still emit (RULED 1410-a). The ACS POST
+         binding and `RelayState` are owed to #1394 and #1402b. Until
+         each lands, the matrix has no column for it."""]]
 ]
