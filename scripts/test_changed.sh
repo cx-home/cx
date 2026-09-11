@@ -191,7 +191,10 @@ lane_globs() {
     # the two programs it runs, the lane script, and every module and native
     # file the relying-party path bottoms out in: a change to oidc's request
     # forming or saml's verification that nothing else catches gets caught here.
-    test-sso-interop-lane)         echo 'scripts/sso_interop/* scripts/sso_interop_lane.sh stdlib/oidc.cx stdlib/saml.cx stdlib/session.cx stdlib/crypto.cx vcx/code/stdlib_oidc.v vcx/code/stdlib_saml*.v vcx/platform/stdlib_session.v vcx/code/stdlib_crypto.v examples/platform/sso/*' ;;
+    # The http CLIENT joined the row with #1396: the lane's proxy and
+    # Retry-After rows grade the client's transport map, so a change there
+    # that never touches oidc must still re-run this lane.
+    test-sso-interop-lane)         echo 'scripts/sso_interop/* scripts/sso_interop_lane.sh stdlib/oidc.cx stdlib/saml.cx stdlib/session.cx stdlib/crypto.cx stdlib/http.cx stdlib/net.cx vcx/code/stdlib_oidc.v vcx/code/stdlib_saml*.v vcx/platform/stdlib_session.v vcx/code/stdlib_crypto.v vcx/code/stdlib_http_notd_cx_no_pack_http_client.v vcx/code/net_core_notd_cx_no_pack_http_client.v examples/platform/sso/*' ;;
     tools-export-gate)             echo 'conformance/tools-export/* vcx/* stdlib/*' ;;
     # the roster rows live in the Makefile and name files under vcx/
     check-serial-retry-rosters)    echo 'Makefile vcx/*' ;;
