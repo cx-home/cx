@@ -183,6 +183,11 @@ lane_globs() {
     test-code-diagram)             echo "conformance/* $RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/check_code_diagram_fixtures.cx scripts/gen_guide/playground/playground.examples.js vcx/tests/testdata/code_diagram_golden/*" ;;
     # the oriel surface lane drives spec/03-approved/xap/demos/oriel/
     test-oriel-lane)               echo 'spec/03-approved/xap/demos/* vcx/* stdlib/* x/*' ;;
+    # #1403 — the ONLY lane that puts the SSO stack on a socket. Its inputs are
+    # the two programs it runs, the lane script, and every module and native
+    # file the relying-party path bottoms out in: a change to oidc's request
+    # forming or saml's verification that nothing else catches gets caught here.
+    test-sso-interop-lane)         echo 'scripts/sso_interop/* scripts/sso_interop_lane.sh stdlib/oidc.cx stdlib/saml.cx stdlib/session.cx stdlib/crypto.cx vcx/code/stdlib_oidc.v vcx/code/stdlib_saml*.v vcx/platform/stdlib_session.v vcx/code/stdlib_crypto.v examples/platform/sso/*' ;;
     tools-export-gate)             echo 'conformance/tools-export/* vcx/* stdlib/*' ;;
     # the roster rows live in the Makefile and name files under vcx/
     check-serial-retry-rosters)    echo 'Makefile vcx/*' ;;
