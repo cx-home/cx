@@ -3194,7 +3194,8 @@ test-oriel-lane: build-vcx
 ##                  (#1403): boot the in-tree identity provider at
 ##                  scripts/sso_interop/idp.cx, drive a real relying party
 ##                  against it (discovery, the issuer mix-up refusal, all
-##                  four client-authentication methods, PKCE, JWKS key
+##                  FIVE client-authentication methods including
+##                  client_secret_jwt, PKCE, JWKS key
 ##                  rotation, refresh rotation, the machine grant, SAML
 ##                  over the wire, and SAML with the assertion ENCRYPTED
 ##                  end to end), tear down. Refuses if :8793 is already
