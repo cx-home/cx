@@ -3074,7 +3074,13 @@ fmt-sweep-timed: build-vcx
 # `[$http:get $url {follow-redirects: false}]` among them. Rewriting either to
 # dodge the formatter would mean not calling the stdlib the way the stdlib is
 # called, which is the one thing an interop lane must not do.
-FMT_SWEEP_MAX_DECLINED ?= 107
+#
+# 107 -> 108 with #1396's scripts/sso_interop/proxy.cx, the forward proxy the
+# lane's three proxy rows run through: ONE more file, measured declined=108 on
+# the first sweep after it landed. The same hole again — a collection in
+# argument position, `[$http:request $method $target {headers: ..., body: ...,
+# follow-redirects: false}]`.
+FMT_SWEEP_MAX_DECLINED ?= 108
 FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
 .PHONY: fmt-sweep-gate
 fmt-sweep-gate: build-vcx
