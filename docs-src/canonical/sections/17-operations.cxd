@@ -296,7 +296,7 @@ cx vX.Y.Z-dev+3ed9ade5
       [tr [td 'PingFederate / PingOne'] [td '--'] [td '--'] [td '--'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/sso_interop_real.sh ping -- pending a tenant'] [td '--']]
       [tr [td 'ADFS'] [td '--'] [td '--'] [td '--'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/sso_interop_real.sh adfs -- pending a tenant'] [td '--']]
       [tr [td 'Keycloak'] [td '--'] [td '--'] [td '--'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/sso_interop_real.sh keycloak -- pending a tenant'] [td '--']]
-      [tr [td 'cx reference IdP (in-tree, scripts/sso_interop/idp.cx)'] [td 'yes -- code, state, nonce, S256 challenge, and the RFC 9207 iss parameter on the authorization response'] [td 'all four'] [td 'assertion-signed: fetched over http and attached; response-signed and the ACS POST binding are NOT graded'] [td 'not exercised -- this lane is the login half'] [td 'verified per commit -- test-sso-interop-lane'] [td 'rows: discover, mixup, login-none, login-secret-basic, login-secret-post, login-private-key-jwt, wrong-secret, pkce-mismatch, rotation, refresh, client-credentials, saml-over-wire'] [td 'every commit']]]
+      [tr [td 'cx reference IdP (in-tree, scripts/sso_interop/idp.cx)'] [td 'yes -- code, state, nonce, S256 challenge, and the RFC 9207 iss parameter on the authorization response'] [td 'all four'] [td 'assertion-signed: fetched over http and attached, in plaintext and as an EncryptedAssertion (AES-256-CBC under RSA-OAEP-MGF1P) the relying party decrypts with its own private half; response-signed and the ACS POST binding are NOT graded'] [td 'not exercised -- this lane is the login half'] [td 'verified per commit -- test-sso-interop-lane'] [td 'rows: discover, mixup, login-none, login-secret-basic, login-secret-post, login-private-key-jwt, wrong-secret, pkce-mismatch, rotation, refresh, client-credentials, saml-over-wire, saml-encrypted-over-wire'] [td 'every commit']]]
     [note
       """A `--` is "not measured", never "not supported". The five named
          products have no row content because no tenant has been driven
@@ -307,7 +307,7 @@ cx vX.Y.Z-dev+3ed9ade5
     [note
       """Scheduled, and deliberately absent above rather than quietly
          implied: `client_secret_jwt` as a fifth client-authentication
-         method (RULED 1409-a), SAML `EncryptedAssertion` (#1400), and
+         method (RULED 1409-a) and
          the opt-in acceptance of SHA-1 signatures that some long-lived
          ADFS deployments still emit (RULED 1410-a). The ACS POST
          binding and `RelayState` are owed to #1394 and #1402b. Until
