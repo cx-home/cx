@@ -1,6 +1,6 @@
 # Integrator decisions, 2026-09-12
 
-Decisions the integrator took inside the delivery grammar's existing rules — no owner letter
+Decisions the integrator took inside the delivery grammar's existing rules — no owner decision
 needed, because each one reads a rule already ruled rather than adding one. Each row is a
 decision of record; the id is the one cited in commits.
 
