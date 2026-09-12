@@ -60,7 +60,7 @@
     reason='Soundness of -usecache and build-module: compiler-identity cache salt, no cross-translation-unit tentative definitions, type-table validation of cached module layers before linking, deterministic embed_file resolution and embedded-asset invalidation. The failure mode of this class is SILENT MISCOMPILATION (cx-private #151, #520, #855, #864), and CX build times depend on the cache being usable. Retires when upstream V carries equivalent validation.']
 
   [family id=net
-    reason='vlib/net capabilities the CX transports require: DTLS-over-UDP with HelloVerifyRequest cookies (the marine NMEA feed is UDP), min and max TLS protocol-version bounds, in-protocol close_notify, runtime server-identity certificate rotation, and explicit isize conversion at the C.sendto boundary. Upstream V has no DTLS wrapper. Retires only if upstream grows one.']
+    reason='vlib/net capabilities the CX transports require: DTLS-over-UDP with HelloVerifyRequest cookies (the marine NMEA feed is UDP), min and max TLS protocol-version bounds, in-protocol close_notify, runtime server-identity certificate rotation, explicit isize conversion at the C.sendto boundary, and the SERVER-role TLS handshake over an ALREADY-ACCEPTED TcpConn (new_ssl_server_conn + SSLConn.accept_conn) that an explicit upgrade — SMTP STARTTLS RFC 3207, IMAP STARTTLS RFC 9051 §6.2.1 — needs and that upstream net.mbedtls does not expose: it offers the client role over an existing socket (SSLConn.connect) and the server role over a socket the listener itself bound (SSLListener.accept), and not the third combination. Upstream V has no DTLS wrapper and no explicit-upgrade entry point. Retires only if upstream grows them.']
 
   [family id=cgen
     reason='General codegen capability and performance that is independent of the GC: honoring thread_local on a __global, direct indexed stores for the in-place reuse map, and forwarding a propagating call result directly when the callee result type is the function own type. CX-agnostic and upstreamable in principle; carried because the upstream path did not take them.']
@@ -184,4 +184,5 @@
   [patch sha=f3a75eb9dd44bdef3a57cad304b9c125f7a7b000 family=compress]
   [patch sha=9aecd458eb559a037b721734032e97da1ba959c4 family=checker]
   [patch sha=115487c7a4b8bb3b37f4dcdfb545312d7e47004e family=vgc]
+  [patch sha=d51c31ccb2d49b2117215aee11ac38ef520e1ece family=net]
 ]
