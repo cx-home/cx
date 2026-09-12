@@ -3138,13 +3138,64 @@ fmt-sweep-timed: build-vcx
 # the first sweep after it landed. The same hole again — a collection in
 # argument position, `[$http:request $method $target {headers: ..., body: ...,
 # follow-redirects: false}]`.
+#
+# 108 -> @@DECLINED@@ by #1391 (RULED: 1391-a), and this is the drop the
+# ruling names: "the number comes back down — by more than ten — when the hole
+# closes". The hole was one vacuous comparison. The data candidate was SEEDED
+# WITH THE SOURCE and overwritten only when the data parse succeeded, so a
+# document the DATA grammar cannot read — a bracketed or collection value in
+# ARGUMENT or ATTRIBUTE position — reached the acceptance test comparing the
+# input against ITSELF: canonical text equal, shape equal, comments equal, by
+# construction. The lane blessed the source as "the data format preserved
+# meaning", returned it verbatim at exit 0, and never reached the program lane
+# that formats it.
+#
+# Every DECLINED row in the log now carries the refusal line that names the
+# construct and its position (RULED: 1391-a) — a count with no names is what
+# let one hole read as 93 stubborn legacy files.
+#
+# ── FMT_SWEEP_MAX_TREE_REFUSED (RULED: 1384-a) — the §1 guard's own column ───
+#
+# TREE-REFUSED is `cx-err:CXER0300`: `cx fmt` produced a canonical form whose
+# node tree is NOT the input's, so the source came back and the refusal said
+# so. It is its own column because it is neither of the other two things — not
+# "a shape fmt cannot format" (DECLINED) and not "fmt fell over" (ERROR), but
+# "fmt formatted the file and changed the document", which is an open defect
+# with a file name and a node path.
+#
+# Measured over all 189 readable `.cx` sources at 469ec08e7, comparing each
+# file's data reading before and after `cx fmt` under the projection
+# `program_fmt.v`'s header documents (whitespace collapsed, a PI's raw payload
+# excluded, a string Scalar equal to a Text node): 103 files under the raw
+# AST-JSON projection, @@TREE@@ under this one. They are four classes, and NONE
+# of them is #1384's — #1384's two shapes are fixed at the cause in this same
+# landing:
+#
+#   * a LEADING COMMENT inside an element body that the formatter moves out of
+#     it (7 files: the two `render-ctx.cx`, both cxstore clients,
+#     `home-components.cx`, and both `tooling/cxfabric/*.config.cx`) —
+#     canonical.md §2.9 requires "comment placement preserved relative to
+#     nodes";
+#   * an ATTRIBUTE WRITTEN AFTER BODY TEXT, which the program reading hoists
+#     to the head and the data reading reads as part of the text run
+#     (`design/787/w1/surface.cx`, `spec/…/oriel/data/oriel-theme.cx`);
+#   * a CXPath `/@a` step re-spelled `@a` inside a value the data reading
+#     carries as TEXT (`checkout.flow.cx`, `packages/gtin/gtin.cx`);
+#   * a quote flip inside a `(…)` sequence the data grammar cannot read, same
+#     TEXT-carried class (`check_version_consistency.cx`,
+#     `gen_guide/stdlib_docs_check.cx`).
+#
+# This number goes DOWN only. Each of the four classes wants its own issue;
+# none is in 1384-a's scope, which is the guard plus #1384's own two shapes.
 FMT_SWEEP_MAX_DECLINED ?= 108
+FMT_SWEEP_MAX_TREE_REFUSED ?= 14
 FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
 .PHONY: fmt-sweep-gate
 fmt-sweep-gate: build-vcx
 	@$(CX_SWEEP_BIN) --allow-read --allow-write --allow-subprocess --allow-clock \
 	  scripts/fmt_corpus_sweep.cx --bin $(CX_SWEEP_BIN) --ratchet \
 	  --max-declined $(FMT_SWEEP_MAX_DECLINED) \
+	  --max-tree-refused $(FMT_SWEEP_MAX_TREE_REFUSED) \
 	  --expected-errors $(FMT_SWEEP_EXPECTED_ERRORS)
 
 

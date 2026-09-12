@@ -11,7 +11,7 @@
 #   ... fmt_corpus_sweep.cx --no-bench                  # skip fixtures/bench/
 #   ... fmt_corpus_sweep.cx --bin vcx/target/cx-dev --jobs 8
 #   ... fmt_corpus_sweep.cx --filter stdlib/          # a path substring
-#   ... fmt_corpus_sweep.cx --ratchet --max-declined 94 \
+#   ... fmt_corpus_sweep.cx --ratchet --max-declined 94 --max-tree-refused 14 \
 #         --expected-errors scripts/fmt_corpus_expected_errors.txt
 #                                                     # == `make fmt-sweep-gate`
 #
@@ -52,11 +52,17 @@
 #              below carries that line, which is the difference between a
 #              census of 93 stubborn legacy files and a census of one hole
 #              with 93 instances.
-#   ERROR      any other non-zero exit; the diagnostic is reported. A
-#              `cx-err:CXER0300` refusal — the §1 tree guard firing, meaning
-#              fmt's own output did not re-parse to the input's node tree —
-#              lands HERE and not in DECLINED, on purpose: it is an open
-#              defect in the formatter, not a shape it cannot format.
+#   TREE-REFUSED  the §1 tree guard fired: `cx-err:CXER0300`, meaning fmt's
+#              own output did not re-parse to the input's node tree, so the
+#              source was returned. Its OWN column and its own ratchet, not
+#              folded into DECLINED and not folded into ERROR (RULED: 1384-a).
+#              DECLINED is "a shape fmt cannot format"; this is "fmt formatted
+#              it and changed the document", which is an open defect with a
+#              named file and a node path — and a count that must only ever
+#              go down. Folding it into DECLINED would hide a data-changing
+#              formatter inside a ratchet; folding it into ERROR would red the
+#              named roster, which exists for files fmt is EXPECTED to refuse.
+#   ERROR      any other non-zero exit; the diagnostic is reported.
 #
 # BEFORE 1391-a a decline was exit 0 with no diagnostic, so this sweep's own
 # perturbation was the only instrument that could see one at all. The verdict
@@ -103,6 +109,7 @@
   [flag name="no-bench"     type=bool   default=false]
   [flag name="timed"        type=bool   default=false]
   [flag name="max-declined" type=int    default=0]
+  [flag name="max-tree-refused" type=int default=0]
   [flag name="max-errors"   type=int    default=0]
   [flag name="ratchet"      type=bool   default=false]
   [flag name="expected-errors" type=string default=""]
@@ -264,12 +271,13 @@
 # ── report ─────────────────────────────────────────────────────────────────
 
 [?def verdict-of scope=private pure [returns string] ($r $stable-paths)
-  [?if [and $r/declined [$strings:contains $r/diag 'CXER0301']] [then 'DECLINED']
+  [?if [and $r/declined [$strings:contains $r/diag 'CXER0300']] [then 'TREE-REFUSED']
+  [else [?if [and $r/declined [$strings:contains $r/diag 'CXER0301']] [then 'DECLINED']
   [else [?if [not [= $r/rc 0]] [then 'ERROR']
   [else [?if $r/declined [then 'DECLINED']
   [else [?if [> [$count [?for [in $p $stable-paths] [where [= $p $r/path]] [yield $p]]] 0]
           [then 'FORMATTED']
-          [else 'UNSTABLE']]]]]]]]]
+          [else 'UNSTABLE']]]]]]]]]]]
 
 [?let
   [= $args [?fallback [$env:parse-args ARG-SPEC]
@@ -308,20 +316,22 @@
         [= $stable-paths [?to-sequence [?for [in $c $checks] [where $c/stable] [yield $c/path]]]]
         [= $rows [?to-sequence [?for [in $r $res]
                    [yield {path: $r/path, verdict: [$verdict-of $r $stable-paths], diag: $r/diag}]]]]
-        [= $_lists [?for [in $v ('ERROR', 'UNSTABLE', 'DECLINED')]
+        [= $_lists [?for [in $v ('ERROR', 'UNSTABLE', 'TREE-REFUSED', 'DECLINED')]
           [yield [?for [in $row $rows] [where [= $row/verdict $v]]
                    [yield [$say [$cat ($v, ' ', $row/path,
                                      [?if [= $row/diag ''] [then ''] [else [$cat ('  — ', $row/diag)]]])]]]]]]]
         [= $_lc [$count [?to-sequence [?for [in $l $_lists] [yield [$count [?to-sequence $l]]]]]]]
-        [= $counts [?to-sequence [?for [in $v ('FORMATTED', 'DECLINED', 'UNSTABLE', 'ERROR')]
+        [= $counts [?to-sequence [?for [in $v ('FORMATTED', 'DECLINED', 'TREE-REFUSED', 'UNSTABLE', 'ERROR')]
                      [yield {v: $v, n: [$count [?for [in $row $rows] [where [= $row/verdict $v]] [yield $row]]]}]]]]
         [= $_s [?for [in $c $counts] [yield [$say [$cat ('SWEEP-', $c/v, '=', [$string $c/n])]]]]]
         [= $_sc [$count [?to-sequence $_s]]]
         [= $nd [$first [?for [in $c $counts] [where [= $c/v 'DECLINED']] [yield $c/n]]]]
         [= $ne [$first [?for [in $c $counts] [where [= $c/v 'ERROR']] [yield $c/n]]]]
         [= $nu [$first [?for [in $c $counts] [where [= $c/v 'UNSTABLE']] [yield $c/n]]]]
+        [= $nt [$first [?for [in $c $counts] [where [= $c/v 'TREE-REFUSED']] [yield $c/n]]]]
         [= $ratchet [$env:flag $args 'ratchet']]
         [= $max-d [$env:flag $args 'max-declined']]
+        [= $max-t [$env:flag $args 'max-tree-refused']]
         [= $max-e [$env:flag $args 'max-errors']]
         [; RULED: 1348-c — the ERROR verdict is gated by a NAMED ROSTER, not by
            a count. `--max-errors` still applies when no roster is given, so a
@@ -370,9 +380,11 @@
                          [$say [$cat ('SWEEP-STALE-EXPECTED=', [$string $ns])]],
                          null)]]]
         [= $_r [?if [or [and $ratchet [> $nd $max-d]]
+                    [or [and $ratchet [> $nt $max-t]]
                     [or [and $ratchet [and [= $roster-path ''] [> $ne $max-e]]]
-                    [or [> $nx 0] [or [> $ns 0] [> $nu 0]]]]]
+                    [or [> $nx 0] [or [> $ns 0] [> $nu 0]]]]]]
                  [then ([$cry [$cat ('fmt_corpus_sweep: RATCHET RED — declined=', [$string $nd],
+                                   ' tree-refused=', [$string $nt],
                                    ' errors=', [$string $ne], ' unstable=', [$string $nu],
                                    ' unexpected=', [$string $nx], ' stale=', [$string $ns])]],
                         [$env:exit 1], null)]
