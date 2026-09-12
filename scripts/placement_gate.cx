@@ -120,13 +120,13 @@
         [$strings:split-whitespace
           [$strings:join
             [?for [in $m $rows]
-              [yield [$strings:join
-                ([$string [?else $m@spec ""]],
-                 [$string [?else $m@spec-to ""]],
-                 [$string [?else $m@corpus ""]],
-                 [$string [?else $m@corpus-to ""]],
-                 [$string [?else $m@source ""]],
-                 [$string [?else $m@source-to ""]]) " "]]]
+              [= $c1 [$string [?else $m@spec ""]]]
+              [= $c2 [$string [?else $m@spec-to ""]]]
+              [= $c3 [$string [?else $m@corpus ""]]]
+              [= $c4 [$string [?else $m@corpus-to ""]]]
+              [= $c5 [$string [?else $m@source ""]]]
+              [= $c6 [$string [?else $m@source-to ""]]]
+              [yield [$concat $c1 " " $c2 " " $c3 " " $c4 " " $c5 " " $c6]]]
             " "]]]
       [= $moved
         [$strings:split-whitespace
@@ -322,12 +322,13 @@
           # An owed artifact's column reads `none`, which `words` drops, so
           # this sweep never sees one -- the [owed] rule above is what holds
           # the row to its promise.
+          [= $g1 [$string [?else $m@spec "none"]]]
+          [= $g2 [$string [?else $m@corpus "none"]]]
+          [= $g3 [$string [?else $m@source "none"]]]
+          [= $g4 [$string [?else $m@code "none"]]]
+          [= $g5 [$string [?else $m@half "none"]]]
           [= $files
-            [?for [in $g ([$string [?else $m@spec "none"]],
-                          [$string [?else $m@corpus "none"]],
-                          [$string [?else $m@source "none"]],
-                          [$string [?else $m@code "none"]],
-                          [$string [?else $m@half "none"]])]
+            [?for [in $g ($g1, $g2, $g3, $g4, $g5)]
               [yield [$strings:join [$words $g] " "]]]]
           [= $hit
             [$strings:join
@@ -394,12 +395,13 @@
               [+ [$count $orphan-spec]
                  [+ [$count $orphan-corpus] [$count $orphan-source]]]]]]
 
+      [= $b1 [$strings:join $row-hits "\n"]]
+      [= $b2 [$strings:join $missing-lines "\n"]]
+      [= $b3 [$strings:join $orphan-spec "\n"]]
+      [= $b4 [$strings:join $orphan-corpus "\n"]]
+      [= $b5 [$strings:join $orphan-source "\n"]]
       [= $blocks
-        [?for [in $b ([$strings:join $row-hits "\n"],
-                      [$strings:join $missing-lines "\n"],
-                      [$strings:join $orphan-spec "\n"],
-                      [$strings:join $orphan-corpus "\n"],
-                      [$strings:join $orphan-source "\n"])]
+        [?for [in $b ($b1, $b2, $b3, $b4, $b5)]
           [where [not [= $b ""]]]
           [yield $b]]]
 
