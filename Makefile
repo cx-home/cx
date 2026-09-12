@@ -3171,11 +3171,13 @@ fmt-sweep-timed: build-vcx
 # of them is #1384's — #1384's two shapes are fixed at the cause in this same
 # landing:
 #
-#   * a LEADING COMMENT inside an element body that the formatter moves out of
-#     it (7 files: the two `render-ctx.cx`, both cxstore clients,
-#     `home-components.cx`, and both `tooling/cxfabric/*.config.cx`) —
-#     canonical.md §2.9 requires "comment placement preserved relative to
-#     nodes";
+#   * an interior COMMENT the formatter RE-ORDERS past the node it documents
+#     (7 files: the two `render-ctx.cx`, both cxstore clients,
+#     `home-components.cx`, and both `tooling/cxfabric/*.config.cx`).
+#     `tooling/cxfabric/adapter.config.cx` is the clearest: the comment that
+#     opens `[webhook-adapter]` and explains `[fabric …]` comes back AFTER
+#     it. canonical.md §2.9 requires "comment placement preserved relative to
+#     nodes", so the comment is still there and no longer documents anything;
 #   * an ATTRIBUTE WRITTEN AFTER BODY TEXT, which the program reading hoists
 #     to the head and the data reading reads as part of the text run
 #     (`design/787/w1/surface.cx`, `spec/…/oriel/data/oriel-theme.cx`);
