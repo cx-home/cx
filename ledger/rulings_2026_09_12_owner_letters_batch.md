@@ -19,9 +19,9 @@ decision of record; the id is the one cited in commits.
 | **OL-12** | Tooling names follow the delivery grammar now: run markers, "lane"→step in output, the runner directories — the directory rename waits until no pre-merge run is active. |
 | **OL-13** | Release exit: the release ships with epic S complete plus M1 (smtp, imap, sasl) and M2 (mailbox); M3–M6 and epics 1 and P move to the next release. |
 
-Powerband-specific integration (hosting, deliverability operations, data residency, client
-protocol) is the platform's decision and appears nowhere in cx specs or code (owner, same
-conversation).
+Consumer-specific integration (hosting, deliverability operations, data residency, client
+protocol) is the downstream platform's decision and appears nowhere in cx specs or code (owner,
+same conversation).
 
 ## Addendum, ~05:20Z — OL-14 and OL-15 (owner: "recommendations accepted for the library and repo plan"; "we can't keep making these big organization mistakes that cause refactoring and restructuring. its been very costly.")
 
