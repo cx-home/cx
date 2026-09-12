@@ -1989,7 +1989,11 @@ The run surface is `cx [cx-flags] FILE [program-args...]` — the interpreter
 convention. Everything AFTER the file is the PROGRAM's argv (#926), so
 `--allow-env` there is a string handed to the program, not a grant handed to
 `cx`. The capability is never granted and the program dies at its first
-effect. Nothing warns you: the flag was consumed, just not by cx.
+effect. Since #1424 (RULED: OL-10) one line on STDERR says so as it happens —
+`cx: '--allow-env' after FILE is program argv, not a cx flag — flags bind
+before FILE (cx [flags] FILE [args])` — unless the program's own `[argspec]`
+declares that argument. The line is a diagnostic: argv, the rendered result
+below and the exit status are exactly what they were.
 
 **Do not write this:**
 

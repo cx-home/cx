@@ -30,12 +30,12 @@ export PATH := $(CURDIR)/third_party/v:$(PATH)
 
 # #1227 — the nixpkgs clang wrapper's `fortify` hardening PREPENDS -O2 to any
 # compile that carries no -O of its own. V's dev builds carry none, so under
-# devbox every non-prod build here (the `v test` lanes, the *-dev libraries,
+# devbox every non-prod build here (the `v test` steps, the *-dev libraries,
 # the harness runners) was a full -O2 optimisation of a multi-MB generated TU:
 # 22.3 s vs 3.6 s on the SAME generated file with fortify off — the undiagnosed
 # cause of dead-end D3 in ledger/dead_ends_700_test_duration.md. -prod builds
 # pass -O3/-Os explicitly and an explicit -O wins, so they are unaffected; the
-# linux lane (plain gcc) was already -O0. Same compiler, same nix store, same
+# linux step (plain gcc) was already -O0. Same compiler, same nix store, same
 # lockfile — one flag. Guarded on the variable being DEFINED so a non-nix shell
 # is untouched (to the wrapper an EMPTY value means "all hardening off").
 ifneq ($(origin NIX_HARDENING_ENABLE),undefined)
@@ -56,7 +56,7 @@ V := $(if $(wildcard $(CURDIR)/third_party/v/v),$(CURDIR)/third_party/v/v,v)
 # Under `-j`, make hands its jobserver pipe to every recipe as fds 3/4 (plus
 # dups 5/6), and ANYTHING a recipe spawns inherits them. The process tests
 # background `sh -c 'sleep 3600'` as their hung-child fixture and the http
-# lanes background `cx-dev` servers; when one outlives its lane it keeps the
+# steps background `cx-dev` servers; when one outlives its step it keeps the
 # jobserver open, and the next parallel make in the gate blocks at make's exit
 # -- alive, 0% CPU, no children, no output, no timeout. It reads as a slow
 # suite. Measured 2026-09-06: a full gate sat wedged AFTER `vcx/tests` had
@@ -78,7 +78,7 @@ V := $(if $(wildcard $(CURDIR)/third_party/v/v),$(CURDIR)/third_party/v/v,v)
 # a later parallel make at 0% CPU with no children and no timeout — no lost
 # token, no killed job and no stray signal are needed. #1057 is the same wedge
 # on the FAILURE path, and it reproduces in 40 seconds with a four-line toy: a
-# `-j4` make with one failing lane plus one leaked fd-inheriting child hangs on
+# `-j4` make with one failing step plus one leaked fd-inheriting child hangs on
 # "Waiting for unfinished jobs...." until a timeout kills it, while the
 # identical toy with these fds closed exits 2 promptly with the real red.
 # Measured 2026-09-07, both directions.
@@ -87,9 +87,9 @@ V := $(if $(wildcard $(CURDIR)/third_party/v/v),$(CURDIR)/third_party/v/v,v)
 # -j1 with "jobserver unavailable" and the parallel build would silently
 # serialize.
 #
-# Applied to every lane that runs a test binary, not only the three that had a
-# known leak, because the wedge's victim is the NEXT make rather than the lane
-# that leaked — so "this lane has no server fixture today" is not a property
+# Applied to every step that runs a test binary, not only the three that had a
+# known leak, because the wedge's victim is the NEXT make rather than the step
+# that leaked — so "this step has no server fixture today" is not a property
 # worth betting a 90-minute gate on.
 JS_CLOSE := exec 3<&- 4<&- 5<&- 6<&- 2>/dev/null || true;
 
@@ -180,10 +180,24 @@ gate-lock-status:
 	  echo "gate-lock: free"; \
 	fi
 
-# check-gate-lock refuses a build that would land inside somebody else's gate.
+# check-gate-lock refuses a step that would start inside somebody else's
+# post-merge run.
+#
+# EXEMPT: a step running under the PRE-MERGE RUNNER (RULED: INT-1, 2026-09-12).
+# The delivery grammar's §6 protects the MAIN CHECKOUT from a merge while a run
+# is active; it does not ask a worktree to stop building. The two runners are
+# separate by design — the post-merge run holds ~/git-repos/cx/.build-slot, a
+# pre-merge run holds ~/git-repos/cx/.build-slot-impl — so a pre-merge step has
+# already serialized against everything the lock was written to protect. Before
+# INT-1 the lock refused every `make` in every worktree with an EXIT=2 that
+# never named the caller's branch; four pre-merge runs were lost to it on
+# 2026-09-12. The test is on the runner directory the caller is holding, which
+# scripts/build-slot.sh exports as CX_BUILD_SLOT: anything but `.build-slot`
+# itself is a pre-merge runner and passes.
 .PHONY: check-gate-lock
 check-gate-lock:
 	@if [ -n "$(CX_GATE_LOCK_OVERRIDE)" ]; then exit 0; fi; \
+	if [ -n "$(CX_BUILD_SLOT)" ] && [ "$(notdir $(CX_BUILD_SLOT))" != ".build-slot" ]; then exit 0; fi; \
 	if [ ! -f "$(CX_GATE_LOCK)" ]; then exit 0; fi; \
 	owner=$$(sed -n 1p "$(CX_GATE_LOCK)" 2>/dev/null); \
 	where=$$(sed -n 2p "$(CX_GATE_LOCK)" 2>/dev/null); \
@@ -194,10 +208,12 @@ check-gate-lock:
 	  echo "check-gate-lock: cleared a stale lock (pid $$owner gone)"; \
 	  exit 0; \
 	fi; \
-	echo "check-gate-lock: a FULL GATE is running (pid $$owner, $$where)."; \
-	echo "  Building now perturbs it — the http/pty lanes red under concurrent"; \
-	echo "  load and a -j storm can deadlock. Wait for it, or if you are certain"; \
-	echo "  it is dead:  make gate-lock-status   /   CX_GATE_LOCK_OVERRIDE=1 make <target>"; \
+	echo "check-gate-lock: a post-merge run is active (pid $$owner, $$where)."; \
+	echo "  A step started now perturbs it — the http/pty steps fail under"; \
+	echo "  concurrent load and a -j storm can deadlock. Wait for it, or run"; \
+	echo "  your step under the pre-merge runner:"; \
+	echo "    CX_BUILD_SLOT=\$$HOME/git-repos/cx/.build-slot-impl sh scripts/build-slot.sh make <target>"; \
+	echo "  If you are certain the run is dead:  make gate-lock-status"; \
 	exit 1
 
 build-vcx: check-gate-lock
@@ -212,7 +228,7 @@ build-vcx-dev: check-gate-lock
 # v0.7.5 — build libcx.wasm + libcx.js (emscripten
 # loader) + cxlib.js (hand-written wrapper). Produces dist/wasm/.
 # Opt-in: not invoked by the default `build` target so contributors
-# without emcc on PATH aren't blocked. The guide CI lane invokes
+# without emcc on PATH aren't blocked. The guide CI step invokes
 # this before scripts/gen_guide/scaffold.sh so the playground page
 # bundles the WASM artifacts. Depends on the patched V at
 # third_party/v/v (carries the wasm32-emcc vmemcpy fix); falls back
@@ -419,7 +435,7 @@ smoke-eval: build-vcx
 # because its scenarios are the only thing in the tree that RUNS the
 # platform command lines (`cx flow validate|diagram|run --ephemeral`,
 # `cx xap check-surface`, an SSO login end to end) and compares the whole
-# output. A lane that only a release cut sees is where a broken example
+# output. A step that only a release cut sees is where a broken example
 # lives for a week.
 #
 # It is offline and deterministic, which is what earns it the place: no
@@ -457,9 +473,9 @@ verify-doc-blocks: build-vcx
 # worktree recipe symlinks only the built v binary), so the fork check has no
 # submodule to inventory — it used to run the ancestry test against the
 # SUPERPROJECT's HEAD and red every worktree gate with a bogus verdict, and
-# under -j that red truncated the lanes after it. The register is a property
+# under -j that red truncated the steps after it. The register is a property
 # of the TREE (the same pin every worktree shares), proven in the checkout
-# that has the submodule populated; in a worktree the lane says so and passes.
+# that has the submodule populated; in a worktree the step says so and passes.
 check-v-fork: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-v-fork: build-vcx
 	@if [ ! -e third_party/v/.git ]; then \
@@ -476,7 +492,7 @@ check-v-fork: build-vcx
 # mechanism regressions; `--prove-red` (run manually) forges a provenance
 # manifest and requires the gate to catch it. ~2 min wall. CADENCE: run on
 # every third_party/v change (alongside check-v-fork), before a release cut,
-# and before widening -usecache to more lanes — it proves the COMPILER, not
+# and before widening -usecache to more steps — it proves the COMPILER, not
 # the tree, so it is not in the default TEST_TARGETS ring. Audit + evidence:
 # ledger/audit_2026_08_24_vcache_key_soundness.md.
 # IN THE GATE MATRIX since #1337, and FIRST in TEST_TARGETS. The gate already
@@ -488,7 +504,7 @@ check-v-fork: build-vcx
 # red gate was a toolchain artifact.
 #
 # Ordered first deliberately: the point is that a stale cache NAMES ITSELF
-# before another lane fails on a symbol that has nothing to do with the
+# before another step fails on a symbol that has nothing to do with the
 # change under test. 81 s against a ~90-minute matrix.
 #
 # This is #1337 ask 2, taken at its second option ("or add
@@ -640,17 +656,17 @@ verify-playground-examples: build-vcx
 #
 # Opt-in, like `build-wasm`: it needs `make build-playground` to have produced
 # dist/wasm/, plus one npm install for jsdom. Both preconditions FAIL
-# LOUD (exit 2) rather than skipping, so this lane can never report a vacuous
-# pass. It is deliberately NOT in TEST_TARGETS — that lane must not require
+# LOUD (exit 2) rather than skipping, so this step can never report a vacuous
+# pass. It is deliberately NOT in TEST_TARGETS — that step must not require
 # emcc or a network fetch — and belongs with scripts/test_playground_smoke.sh as
-# the playground release lane.
+# the playground release step.
 .PHONY: test-playground-mermaid
-# RULED: 1170-e / 1170-f. The lane grades a bundle it BUILDS or PROVES FRESH,
+# RULED: 1170-e / 1170-f. The step grades a bundle it BUILDS or PROVES FRESH,
 # never one it finds: `wasm-fresh-gate` (#992) refuses an artifact older than
 # vcx/ + stdlib/ + VERSION or whose cx_version() disagrees, so the bundle is
 # rebuilt (`build-playground`: both wasm variants the freshness gate names,
 # ~2 min) only when that gate says stale (in a gate that is every run; in a
-# developer loop usually not), and the lane REFUSES if it still reports stale
+# developer loop usually not), and the step REFUSES if it still reports stale
 # or missing. Before this the gate read an untracked, gitignored dist/wasm —
 # a two-week-stale bundle produced one false red and could have hidden a real
 # one. In TEST_TARGETS since 1170-f, after #1349 landed every constant id.
@@ -705,10 +721,10 @@ test-playground-wasm-traps:
 # Opt-in like build-wasm and the mermaid gate: it needs `make build-playground`
 # to have staged dist/playground-preview/, plus a Chromium-family browser
 # (CX_CHROME overrides). Both preconditions FAIL LOUD (exit 2) rather than
-# skipping, so this lane can never report a vacuous pass. Deliberately NOT in
-# TEST_TARGETS — that lane must not require emcc or a browser — and belongs with
+# skipping, so this step can never report a vacuous pass. Deliberately NOT in
+# TEST_TARGETS — that step must not require emcc or a browser — and belongs with
 # test-playground-mermaid and scripts/test_playground_smoke.sh as the playground
-# release lane. Every wait is bounded (WASM_EVAL_DEADLINE, default 900s); the
+# release step. Every wait is bounded (WASM_EVAL_DEADLINE, default 900s); the
 # server and browser are reaped on every exit path.
 .PHONY: test-playground-wasm-eval
 test-playground-wasm-eval:
@@ -724,7 +740,7 @@ test-playground-wasm-eval:
 # directions.
 #
 # WHY THIS IS NOT COVERED ELSEWHERE. NOTHING RENDERS THE TREE. The mermaid gate
-# parses diagrams; the wasm-eval sweep evaluates the corpus; the smoke lane
+# parses diagrams; the wasm-eval sweep evaluates the corpus; the smoke step
 # checks assets. That is exactly how #1001's element branch — reading
 # `node.attrs`/`node.items`, fields the cxlib.tree() contract does not carry —
 # sat inert as dead code through the whole #992 quality package, with `Detail`
@@ -740,11 +756,11 @@ test-playground-wasm-eval:
 #
 # Opt-in like build-wasm and the other two playground gates: it needs `make
 # build-playground` staged plus a Chromium-family browser (CX_CHROME overrides),
-# and both preconditions FAIL LOUD (exit 2) rather than skipping, so this lane
-# can never report a vacuous pass. Deliberately NOT in TEST_TARGETS — that lane
+# and both preconditions FAIL LOUD (exit 2) rather than skipping, so this step
+# can never report a vacuous pass. Deliberately NOT in TEST_TARGETS — that step
 # must not require emcc or a browser — and belongs with test-playground-mermaid,
 # test-playground-wasm-eval and scripts/test_playground_smoke.sh as the
-# playground release lane. Every wait is bounded (TREE_GATE_DEADLINE, default
+# playground release step. Every wait is bounded (TREE_GATE_DEADLINE, default
 # 600s); server and browser are reaped on every exit path.
 .PHONY: test-playground-tree
 test-playground-tree:
@@ -777,7 +793,7 @@ stdlib-catalog-gate: build-vcx
 
 # ── tools-export golden gate (stream 18, #690) ────────────────────────────────
 # `cx tools export` over the checked-in M5 module must reproduce the checked-in
-# golden byte-for-byte — the offline registration lane pinned end-to-end
+# golden byte-for-byte — the offline registration step pinned end-to-end
 # (cx-x/tools descriptors → cx-x/mcp-server adapter → JSON emission). A
 # projection change that moves these bytes is deliberate and regenerates the
 # golden via the verb itself in the same commit.
@@ -918,10 +934,10 @@ release-verify:
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
 TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-examples verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster fmt-sweep-gate test-playground-wasm-traps
 
-# ── test-changed (#700, ruled 1a 2026-08-09) — the lane-input skip manifest ──
-# THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS lanes whose
+# ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
+# THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
 # declared input globs intersect BASE..HEAD (+worktree). Deny-by-default: a
-# lane without a manifest row in scripts/test_changed.sh ALWAYS runs. The full
+# step without a manifest row in scripts/test_changed.sh ALWAYS runs. The full
 # `make test` union stays MANDATORY at wave/phase exits — this target never
 # substitutes for an exit gate.
 #
@@ -1081,12 +1097,12 @@ flow-vocabulary-gate: build-vcx
 # binary — `cx flow validate` and `cx flow simulate` as subprocesses — and
 # holds four properties per document: it validates against its own --env with
 # the construct count named here; every simulated path reaches the terminal
-# status the table names (green, --build=no, and a RED LANE that is
+# status the table names (green, --build=no, and a RED STEP that is
 # `:incomplete` rather than `:compensated`, because the toolchain build is the
 # pivot); the `map` fans out over the address the document computes from the
 # record; and every *.flow.cx in flows/ is covered by a row, over a non-empty
 # case list — so it cannot go green over nothing. It does NOT `cx flow run`
-# with real acts: those acts are `make build-vcx` and `make <lane>`, and
+# with real acts: those acts are `make build-vcx` and `make <step>`, and
 # running them inside `make test` would nest make in the matrix and hand a
 # second make the jobserver. In TEST_TARGETS.
 .PHONY: flow-dogfood-gate
@@ -1095,7 +1111,7 @@ flow-dogfood-gate: build-vcx
 	@"$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/flow_dogfood_gate.cx
 
 # ── check-code-fixtures (gate 4; repaired + wired by the #805 gate-truth
-# batch — it was RED and in no lane, so no stream gate ever ran it). The
+# batch — it was RED and in no step, so no stream gate ever ran it). The
 # corpus/spec agreement gate over conformance/code.cxd: id-category
 # registry, directive registry (§4.1) with retired/PI/intentional-unknown
 # discipline, and ENFORCED spec-error-code coverage (every CXER code
@@ -1185,8 +1201,8 @@ spec-freeze-gate:
 # ── EXTRACTION GATE (partition spec §7, phase I2) — the Ring-0 byte-for-byte
 # rule, executable: the extracted artifacts must match the monolith over the
 # full Ring-0-tagged corpus — outputs, canonical bytes, hashes, error codes.
-# Two lanes:
-#   ABI lane — vcx/tests/runners/extraction_gate/probe/ dlopens ONE artifact,
+# Two steps:
+#   ABI step — vcx/tests/runners/extraction_gate/probe/ dlopens ONE artifact,
 #     feeds every Ring-0 case input through a fixed C-ABI battery (conversions
 #     matrix, canonical/hash/fmt/lint, ast-bin/data-bin/events + decoder
 #     round-trips, diff/eq pairs, schema validate, the streaming-write event
@@ -1207,9 +1223,9 @@ spec-freeze-gate:
 #     exclusion is DERIVED from the probe's own battery table: a case whose
 #     input format has no ABI battery (md, html, url — the C ABI carries no
 #     cx_md_*/cx_html_*/cx_url_* family) cannot be driven here and is
-#     covered by the CLI lane and the cx-only conformance runner. Every
+#     covered by the CLI step and the cx-only conformance runner. Every
 #     format that HAS a battery keeps the full zero-record check.
-#   CLI lane — vcx/tests/runners/extraction_gate/cli/ runs monolith cx and
+#   CLI step — vcx/tests/runners/extraction_gate/cli/ runs monolith cx and
 #     data-profile cx over the shared surface (verbs + EXPLICIT --from=
 #     convert; the bare-FILE run-vs-data reading is a ruled profile
 #     difference, spec §4) requiring stdout+stderr+rc identical, plus the
@@ -1231,7 +1247,7 @@ spec-freeze-gate:
 # Floor = the Ring-0 census recorded at I2 (partition_I2_extraction.md);
 # raise it when Ring-0 cases are added, never lower it silently.
 EXTRACTION_GATE_FLOOR := 1564
-# CLI-lane shard count (RULED: VC-32). This lane was the gate's serial floor:
+# CLI-step shard count (RULED: VC-32). This step was the gate's serial floor:
 # 10,579 invocation pairs = 21,158 process spawns issued two at a time, 717 s at
 # ~1 core, 91% of the extraction gate and 12 of `make test`'s ~21 minutes.
 #
@@ -1253,13 +1269,13 @@ EXTRACTION_GATE_FLOOR := 1564
 # in the #1126 codec/Ring campaign: the first `[in-json …]` cases (conv-052..055,
 # RULED: CR-4 #1127 — json input was ungradeable before the reader became
 # Ring-0) and then the first `[in-html …]`/`[in-url …]` cases (conv-056..059,
-# the D21 corpus floor). The html/url pair add no CLI comparisons — this lane's
+# the D21 corpus floor). The html/url pair add no CLI comparisons — this step's
 # input map drives xml/json/yaml/toml/md — so the digest is unchanged between
 # those two waves.
 #
 # STILL c59db6df… AFTER CR-8 (2026-08-30, #1133), MEASURED: 2,081 cases /
 # 11,755 pairs, unchanged. CR-8 added the registry-generic `cx_convert` ABI
-# entry; it touches the ABI lane only, and this lane's input map and comparison
+# entry; it touches the ABI step only, and this step's input map and comparison
 # set are untouched — a digest that had MOVED here would have meant an
 # unintended CLI-surface change and was the thing to check for.
 #
@@ -1269,20 +1285,20 @@ EXTRACTION_GATE_FLOOR := 1564
 # account, because a moved digest owes one:
 #   • #1104 added THREE `[in-xml …]` cases (conv-060 duplicate-attribute
 #     position, conv-061 the reserved `cx:`/`xml:` names, conv-062 the
-#     Namespaces-spec boundary that still parses). This lane's input map drives
+#     Namespaces-spec boundary that still parses). This step's input map drives
 #     xml, so all three add CLI comparisons — and the first two are REFUSALS,
-#     which is the class this lane most wants pinned across profiles.
+#     which is the class this step most wants pinned across profiles.
 #   • The rest of the case growth is the wave's `[in-code …]` corpus (#1145
 #     strict array/map kinds, #1146 the callable kind × site matrix, #1147 the
-#     emit-boundary lanes). Those are program-eval cases, so they raise the
+#     emit-boundary steps). Those are program-eval cases, so they raise the
 #     Ring-0 census the probe counts without adding CLI comparisons.
-#   • ABI lane: 2,251 cases through both artifacts, transcripts byte-identical
+#   • ABI step: 2,251 cases through both artifacts, transcripts byte-identical
 #     (6,240,317 bytes), ABI-excluded still 0 — the direction that set is
 #     allowed to move.
 # No comparison was REMOVED. The floor (1564) is untouched: it is a minimum,
 # and this wave only added cases.
 #
-# The ABI lane's own numbers DID move, deliberately: the probe's md/html/url
+# The ABI step's own numbers DID move, deliberately: the probe's md/html/url
 # battery (`cx_convert`, 2 targets per case) plus one fixture-independent
 # unknown-format refusal record put 19 new records in each transcript, and the
 # cmp'd transcript grew 5,816,561 → 5,819,181 bytes (+2,620). The number that
@@ -1294,7 +1310,7 @@ EXTRACTION_GATE_FLOOR := 1564
 # WHAT THIS NUMBER IS, AND IS NOT. It is ADVISORY DOCUMENTATION of the last
 # deliberate measurement, not the enforcement. Enforcement is the comparison
 # itself: every invocation pair must agree on stdout+stderr+rc, and the ABI
-# lane's two transcripts must be byte-identical under `cmp`. Those fail on a
+# step's two transcripts must be byte-identical under `cmp`. Those fail on a
 # real divergence whatever this comment says.
 #
 # The digest's JOB is to make a change in WHAT IS COMPARED visible. It prints
@@ -1322,8 +1338,8 @@ test-extraction-gate: build-vcx
 	@vcx/target/extraction_gate/probe $(LIBCX_ART) conformance --min-cases=$(EXTRACTION_GATE_FLOOR) > vcx/target/extraction_gate/transcript_monolith.txt
 	@vcx/target/extraction_gate/probe $(LIBCX_CORE_ART) conformance --min-cases=$(EXTRACTION_GATE_FLOOR) > vcx/target/extraction_gate/transcript_core.txt
 	@cmp vcx/target/extraction_gate/transcript_monolith.txt vcx/target/extraction_gate/transcript_core.txt \
-	  && echo "extraction-gate ABI lane OK — libcx-core transcript byte-identical to libcx ($$(wc -c < vcx/target/extraction_gate/transcript_monolith.txt | tr -d ' ') bytes)" \
-	  || { echo "extraction-gate ABI lane FAILED — transcripts diverge (see vcx/target/extraction_gate/)"; exit 1; }
+	  && echo "extraction-gate ABI step OK — libcx-core transcript byte-identical to libcx ($$(wc -c < vcx/target/extraction_gate/transcript_monolith.txt | tr -d ' ') bytes)" \
+	  || { echo "extraction-gate ABI step FAILED — transcripts diverge (see vcx/target/extraction_gate/)"; exit 1; }
 	@vcx/target/extraction_gate/cli_gate vcx/target/cx vcx/target/profiles/data/cx conformance --min-cases=$(EXTRACTION_GATE_FLOOR) --jobs=$(EXTRACTION_GATE_JOBS)
 
 # ── ABI GC-LIVENESS GATE (remediation R3.8 discovery) — a dlopen'd libcx
@@ -1375,7 +1391,7 @@ abi-gc-gate: build-vcx
 # NOT export module-mangled internals, so the full-list diff is stable
 # across module splits — any diff means the shipped surface moved.
 # Darwin-only for now: the baseline is per-platform (Mach-O vs ELF export
-# semantics differ); a Linux baseline joins if/when the linux lane runs
+# semantics differ); a Linux baseline joins if/when the linux step runs
 # TEST_TARGETS (it builds only today).
 .PHONY: libcx-abi-gate
 # #888: the gate checks the CX EXPORT SURFACE (cx_*/vgc_*, pinned) and
@@ -1401,10 +1417,10 @@ libcx-abi-gate: build-vcx
 test-profile-gate:
 	@$(MAKE) -C vcx test-profile-gate
 
-# ── PER-RING GATE LANES (#700 structural relief, activated at I4) — run the
-# lanes that cover the ring you touched instead of the full battery. Each
-# lane is a SUPERSET of the ones below it (a Ring-1 change can still break
-# Ring 0). These are inner-loop dev lanes; `make test` stays the merge gate.
+# ── PER-RING GATE STEPS (#700 structural relief, activated at I4) — run the
+# steps that cover the ring you touched instead of the full battery. Each
+# step is a SUPERSET of the ones below it (a Ring-1 change can still break
+# Ring 0). These are inner-loop dev steps; `make test` stays the merge gate.
 #   test-ring0 — Ring-0 surfaces: vcx/cx in-module tests, the byte-identity
 #                extraction gate, the libcx ABI freeze, the import/tag gates.
 #   test-ring1 — + the evaluator: code+platform in-module tests, the §4
@@ -1421,18 +1437,18 @@ test-ring2: test-ring1 test-vcx-suite test-vcx-cxstore test-vcx-cmd
 	@$(MAKE) -C vcx conform-all
 
 # ── RING QUERY (corpus audit §2 tagging mechanics; C8 repair, I0) — the
-# ring-lane corpus query, dog-food CX. Parameters via env: RING=0|1|2,
+# ring-step corpus query, dog-food CX. Parameters via env: RING=0|1|2,
 # LANE=doc|eval|both, FORMAT=summary|ids|count. `ring-tag-gate` is the
 # no-parameter run wired into TEST_TARGETS: it hard-fails (exit 2) when any
 # suite header lacks ring= — an untagged suite silently falls out of every
-# ring lane, which is exactly how C8's blanket-tag defect went unseen.
+# ring step, which is exactly how C8's blanket-tag defect went unseen.
 .PHONY: ring-query ring-tag-gate
 ring-query: CX_BIN ?= $(CURDIR)/vcx/target/cx
 ring-query:
 	@"$(CX_BIN)" --allow-read --allow-env --allow-write scripts/ring_query.cx
 ring-tag-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
 ring-tag-gate: build-vcx
-	@FORMAT=count "$(CX_BIN)" --allow-read --allow-env --allow-write scripts/ring_query.cx >/dev/null && echo "ring-tag-gate OK — every suite header carries ring=; lanes queryable via 'make ring-query'"
+	@FORMAT=count "$(CX_BIN)" --allow-read --allow-env --allow-write scripts/ring_query.cx >/dev/null && echo "ring-tag-gate OK — every suite header carries ring=; steps queryable via 'make ring-query'"
 
 # Distribution-spec §9 checkable absences (fixture §11.8): the xap-dist engine
 # (vcx/code/stdlib_xap_dist.v) composes the store/did/vc/compose surfaces and
@@ -1531,13 +1547,13 @@ test:
 	  fi; \
 	fi; \
 	printf '%s\n%s\n' "$(CX_GATE_OWNER)" "$(CURDIR)" > "$(CX_GATE_LOCK)"
-	# Serial pre-build BEFORE the parallel fan-out: every lane's recursive
+	# Serial pre-build BEFORE the parallel fan-out: every step's recursive
 	# `$(MAKE) build-vcx` then hits the vcx Makefile's up-to-date guard and
 	# skips the relink — without this, concurrent sub-makes RELINKED
-	# target/cx while sibling lanes were exec'ing it (the v0.16.0 cut's
+	# target/cx while sibling steps were exec'ing it (the v0.16.0 cut's
 	# 'Exec format error' / empty-output-rc-0 class; see the guard's note).
 	#
-	# This covers the PROD half only. The dev half — nine `test-vcx-*` lanes
+	# This covers the PROD half only. The dev half — nine `test-vcx-*` steps
 	# whose `build-vcx-dev` prerequisite runs inside the storm — used to write
 	# that SAME target/cx and clobber it back (#1312); it now writes
 	# target/cx-dev, so the two halves no longer share a mutable artifact and
@@ -1565,11 +1581,11 @@ test:
 	# belongs in the same serial tail for the same reason. Measured 2026-09-06,
 	# same commit and binary: inside the -j12 storm `erd-001-empty` — the EMPTY
 	# diagram case — blew the 60 s budget twice and errored; the whole 52-case
-	# lane runs 52/52 in 4.6 s alone. Taking over a minute on the empty case
-	# while the full lane finishes in five seconds is starvation, not work.
+	# step runs 52/52 in 4.6 s alone. Taking over a minute on the empty case
+	# while the full step finishes in five seconds is starvation, not work.
 	#
 	# An absolute budget that only holds on an idle box is not a property of the
-	# binary, which is exactly what #1216 concluded for the two lanes above; this
+	# binary, which is exactly what #1216 concluded for the two steps above; this
 	# one was simply missed when they moved.
 	@$(MAKE) test-code-diagram
 	@rm -f "$(CX_GATE_LOCK)"
@@ -1586,7 +1602,7 @@ test-no-parallel: $(TEST_TARGETS)
 # build or CX_BIN, never PATH (#929).
 # #774: this checker is the ONLY gate that sees the ERD attribute-type
 # rows and the diagram structure (the roundtrip suites in the eval-fixtures
-# lane compare trees, not emitted types), and for a long time it was wired
+# step compare trees, not emitted types), and for a long time it was wired
 # into NO union target — so a real regression sat green for a whole stream.
 # It is in TEST_TARGETS now. CX gate (#922, RULED: PYE-5): the former
 # LIBCX_LIB_DIR pin is obsolete — nothing dlopens cxlib any more; the
@@ -1600,7 +1616,7 @@ test-code-diagram: build-vcx
 # The half of the old gate 28.5 that needs no Docker and is real new signal:
 # every case in conformance/xpath_31_parity.cxd evaluated by THIS tree's cx and
 # graded against an expectation DERIVED from that same binary. Before VC-7 those
-# 23 cases had no conformance/gates.cxd row and no lane read them, so they ran
+# 23 cases had no conformance/gates.cxd row and no step read them, so they ran
 # NOWHERE while the register showed a gate. Normative reference:
 # spec/02-working/cxpath_alignment.md. In TEST_TARGETS.
 .PHONY: test-xpath-parity-cx
@@ -1677,10 +1693,10 @@ check-python-interpreter:
 	  echo "       Re-run as: make test-python PYTHON=/opt/homebrew/bin/python3 (or any modern python3)."; \
 	  exit 1; }
 
-# Lane completeness (#512) — no test file in lang/python/ may sit outside
-# every Makefile lane (that is how test_table.py silently missed #509).
+# Step completeness (#512) — no test file in lang/python/ may sit outside
+# every Makefile step (that is how test_table.py silently missed #509).
 # Every lang/python/test_*.py must be referenced somewhere in this
-# Makefile — this lane or an opt-in lane (test-python-arrow, …).
+# Makefile — this step or an opt-in step (test-python-arrow, …).
 .PHONY: check-python-test-lane
 check-python-test-lane:
 	@missing=""; \
@@ -1689,8 +1705,8 @@ check-python-test-lane:
 	  grep -qw "$$b" Makefile || missing="$$missing $$b"; \
 	done; \
 	if [ -n "$$missing" ]; then \
-	  echo "ERROR: python test files wired into NO Makefile lane (#512):$$missing"; \
-	  echo "       Add each to test-python (or an opt-in lane) in the top-level Makefile."; \
+	  echo "ERROR: python test files wired into NO Makefile step (#512):$$missing"; \
+	  echo "       Add each to test-python (or an opt-in step) in the top-level Makefile."; \
 	  exit 1; \
 	fi
 
@@ -1772,7 +1788,7 @@ abi-c-test: build-vcx build-lib-arrow
 # rationale as test-python above: build.rs probes /usr/local/lib and
 # /opt/homebrew/lib BEFORE the repo-relative fallback, so a stale
 # installed libcx.dylib silently shadows THIS build — and the arrow
-# lanes fail to link outright, because system paths carry libcx but
+# steps fail to link outright, because system paths carry libcx but
 # never libcx_arrow (#511). LIBCX_LIB_DIR is build.rs's priority-1
 # override and also sets the rpath to vcx/target.
 test-rust: export LIBCX_LIB_DIR := $(CURDIR)/vcx/target
@@ -1789,7 +1805,7 @@ test-rust-arrow: build-vcx build-lib-arrow
 	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml -- --test-threads=1
 
 # Parquet bridge tests + smoke example (`parquet` implies `arrow`).
-# Before #511 this surface was wired into NO lane, which is how the
+# Before #511 this surface was wired into NO step, which is how the
 # missing `ipc` feature sat unbuildable on release/0.13.0.
 test-rust-parquet: export LIBCX_LIB_DIR := $(CURDIR)/vcx/target
 test-rust-parquet: build-vcx build-lib-arrow
@@ -1810,8 +1826,8 @@ test-rust-arrow-conformance: build-vcx build-lib-arrow
 # conversions suites were previously OUTSIDE every union target, the
 # #743-battery unwired-gate class; and the per-suite `conform`
 # aggregate fan-out OOM-killed the parallel union with 27 concurrent
-# `v run` compiles). The Arrow lane rides its own runner/target.
-# ── the cheap consistency gates, folded into the development lane (#1101) ──
+# `v run` compiles). The Arrow step rides its own runner/target.
+# ── the cheap consistency gates, folded into the development step (#1101) ──
 #
 # WHY. `make test-vcx` is what sessions and handoff notes call "the exit
 # gate", but it is a strict SUBSET of `make test`. Two gates sat RED on
@@ -1820,13 +1836,13 @@ test-rust-arrow-conformance: build-vcx build-lib-arrow
 # fixture) and check-v-fork (since the dynamic-Huffman fork commit).
 #
 # These six cost seconds each next to the V compiles, so there is no reason
-# a development lane should skip them. They run against the DEV binary
+# a development step should skip them. They run against the DEV binary
 # test-vcx already built — depending on build-vcx here would drag a whole
-# prod relink into the fast lane, which is the cost that kept them out.
+# prod relink into the fast step, which is the cost that kept them out.
 #
 # The expensive gates stay in `make test` alone: test-profile-gate (which
-# caught two of the three defects in the #1090 lane), check-prod-build,
-# docs-check, and the language-binding lanes. test-vcx is a BETTER subset
+# caught two of the three defects in the #1090 step), check-prod-build,
+# docs-check, and the language-binding steps. test-vcx is a BETTER subset
 # now, not the full matrix — a wave still exits on `make test`.
 .PHONY: test-vcx-gates
 test-vcx-gates: CX_BIN ?= $(CURDIR)/vcx/target/cx
@@ -1844,18 +1860,18 @@ test-vcx: build-vcx-dev test-vcx-gates test-vcx-suite test-vcx-code test-vcx-cmd
 	$(MAKE) -C vcx conform-data-bin-arrow
 	# #1134 — see the test-vcx-conform block below. diff.cxd / lint.cxd left
 	# conform-all's suite list (34 vacuous PASSes) and are graded by their own
-	# runner here, which no `make test` lane reached before.
+	# runner here, which no `make test` step reached before.
 	$(MAKE) -C vcx conform-diff
 	$(MAKE) -C vcx conform-lint
-	# RULED: R5.8 (#860) — the corpus/spec agreement gates run IN THIS LANE now.
+	# RULED: R5.8 (#860) — the corpus/spec agreement gates run IN THIS STEP now.
 	# Both were in TEST_TARGETS but not a test-vcx dependency, so a green full
 	# `make test-vcx` never executed them: check-code-spec-consistency sat red
 	# from 2026-08-17 (a directive-extractor bug plus an unallowlisted impl
 	# anchor) straight through a run recorded as green. A gate in the roster but
-	# not in a lane that runs is indistinguishable from no gate.
+	# not in a step that runs is indistinguishable from no gate.
 	$(MAKE) check-code-spec-consistency
 	$(MAKE) check-code-fixtures
-	# RULED: R6.3 (#832) — spec-freeze-gate runs IN THIS LANE now, wired only
+	# RULED: R6.3 (#832) — spec-freeze-gate runs IN THIS STEP now, wired only
 	# after R6.1/R6.2 made it green (R5.8's order). It sat in TEST_TARGETS
 	# while 13 violations accumulated across six work streams over three days
 	# of green test-vcx runs — the discipline did not decay, the feedback loop
@@ -1863,41 +1879,41 @@ test-vcx: build-vcx-dev test-vcx-gates test-vcx-suite test-vcx-code test-vcx-cmd
 	$(MAKE) spec-freeze-gate
 
 # ── test-vcx-conform (RULED: VC-22) — the conformance aggregates, as their
-# OWN lane. `test-vcx` used to be the single TEST_TARGETS row for the whole V
-# side: five ring test lanes PLUS these three aggregates. That umbrella made
+# OWN step. `test-vcx` used to be the single TEST_TARGETS row for the whole V
+# side: five ring test steps PLUS these three aggregates. That umbrella made
 # ring-precise selection impossible — a change anywhere under vcx/ selected
-# all five ring lanes, because the gate could only see one node.
+# all five ring steps, because the gate could only see one node.
 #
-# TEST_TARGETS now names the five ring lanes individually, so
+# TEST_TARGETS now names the five ring steps individually, so
 # scripts/test_changed.sh can skip the ones a change cannot reach. These three
 # aggregates were the ONLY work the old umbrella contributed that no other
 # TEST_TARGETS row already carries (check-code-spec-consistency,
 # check-code-fixtures and spec-freeze-gate are their own rows), so they get a
-# lane rather than being dropped — splitting the umbrella must not narrow the
+# step rather than being dropped — splitting the umbrella must not narrow the
 # release gate by one target.
 #
 # `test-vcx` itself is UNCHANGED and stays the human entry point: `make
 # test-vcx` still runs everything the V side owns in one command.
 #
-# #1134 — conform-diff / conform-lint are lane members now. conform-all's
+# #1134 — conform-diff / conform-lint are step members now. conform-all's
 # runner used to list diff.cxd / lint.cxd and print PASS for all 34 of their
 # cases WITHOUT running them (it has no branch for their assertion shape), so
-# this lane's count included 34 fictions. Dropping the suites from that list
+# this step's count included 34 fictions. Dropping the suites from that list
 # made the count honest and revealed the other half of the defect: the runner
 # that DOES grade them — tests/runners/diff_lint/diff_lint_conform.v, reached
-# only through `make -C vcx conform` — was in no `make test` lane at all
+# only through `make -C vcx conform` — was in no `make test` step at all
 # (`conform` is invoked by `conform-vcx`, which is not in TEST_TARGETS). The
 # vacuous count was therefore standing in for the real gate. Both halves land
 # together: the fiction is gone AND the two suites are graded here.
 .PHONY: test-vcx-conform
-# #1212: this is the DOCUMENT lane — conform-all's runner refuses [in-code …]
+# #1212: this is the DOCUMENT step — conform-all's runner refuses [in-code …]
 # fixtures by design (#1134), so conformance/code.cxd (the largest corpus) and
-# conformance/stdlib/*.cxd are graded by test-vcx-code's eval lane and the
+# conformance/stdlib/*.cxd are graded by test-vcx-code's eval step and the
 # profile gate, diff/lint by their own runner below, and every other suite by a
-# named lane. check-conformance-coverage (in TEST_TARGETS) asserts that map on
+# named step. check-conformance-coverage (in TEST_TARGETS) asserts that map on
 # every gate; the banner says it so a green here is read for what it covers.
 test-vcx-conform: build-vcx-dev
-	@echo "test-vcx-conform covers the DOCUMENT suites (conform-all's list) + fmt + data-bin-arrow + diff + lint; code.cxd and stdlib/*.cxd are the eval lane's (test-vcx-code, test-profile-gate) — see check-conformance-coverage"
+	@echo "test-vcx-conform covers the DOCUMENT suites (conform-all's list) + fmt + data-bin-arrow + diff + lint; code.cxd and stdlib/*.cxd are the eval step's (test-vcx-code, test-profile-gate) — see check-conformance-coverage"
 	$(MAKE) -C vcx conform-all
 	$(MAKE) -C vcx conform-fmt
 	$(MAKE) -C vcx conform-data-bin-arrow
@@ -1906,7 +1922,7 @@ test-vcx-conform: build-vcx-dev
 
 # Convenience wrapper: run the full V suite ONCE, stream live output to a
 # log, then print a digest of just the FAIL lines + per-file counts + the
-# skipped-with-reason lanes (#318 — absent prerequisites, counted separately,
+# skipped-with-reason steps (#318 — absent prerequisites, counted separately,
 # never failures). Uses `bash -o pipefail` so the recipe exits with the real
 # `test-vcx` status (a plain `... | grep` would mask failures behind grep's
 # exit code).
@@ -1914,7 +1930,7 @@ test-vcx-conform: build-vcx-dev
 test-vcx-summary:
 	@bash -o pipefail -c '$(MAKE) test-vcx 2>&1 | tee /tmp/cx-test-vcx.log'; st=$$?; \
 	echo "──── failures / skips / counts ────"; \
-	grep -iE '^FAIL|[0-9]+ passed, [0-9]+ failed|[0-9]+ errored|^SKIP |lane\(s\) SKIPPED' /tmp/cx-test-vcx.log || true; \
+	grep -iE '^FAIL|[0-9]+ passed, [0-9]+ failed|[0-9]+ errored|^SKIP |step\(s\) SKIPPED' /tmp/cx-test-vcx.log || true; \
 	echo "full log: /tmp/cx-test-vcx.log"; exit $$st
 
 # ── V-side unit + fixture-runner suite ────────────────────────────────────
@@ -1935,10 +1951,10 @@ CX_GC ?= -gc e
 # Default DB engines (#520) — mirrors vcx/Makefile CX_ENGINES: the shipped
 # artifact carries sqlite + redis, so the test gate compiles the suite with the
 # same gates. This makes the $if-gated engine tests (vcx/code/sql_test.v,
-# redis lanes) and the engine-dependent conformance fixtures
-# (conformance/stdlib/db.cxd success/denial lanes) actually run — the gate
+# redis steps) and the engine-dependent conformance fixtures
+# (conformance/stdlib/db.cxd success/denial steps) actually run — the gate
 # tests the BEHAVIOR the artifact ships. Override CX_ENGINES='' to gate an
-# engine-free build (then db.cxd's engine lanes are expected red; see the
+# engine-free build (then db.cxd's engine steps are expected red; see the
 # fixture doc-comment).
 CX_ENGINES ?= -d cx_db_sqlite -d cx_db_redis
 # `v test dir/` compiles EACH `*_test.v` as its own standalone executable, and
@@ -1951,17 +1967,17 @@ CX_ENGINES ?= -d cx_db_sqlite -d cx_db_redis
 # (third_party/v/vlib/v/pref/default.v), so different flags get distinct buckets.
 # Overridable to A/B: `make CX_CACHE= test-vcx-suite` disables it.
 CX_CACHE ?= -usecache
-# #318 — a lane whose environment prerequisite is absent (e.g. vcx/target/cx
+# #318 — a step whose environment prerequisite is absent (e.g. vcx/target/cx
 # not built in a bare out-of-tree checkout) SELF-SKIPS with a named reason via
 # vcx/testenv (exit 0, never failing-as-regression) and records the reason in
-# this ledger. Plain `v test` suppresses passing-lane output, so the digest is
+# this ledger. Plain `v test` suppresses passing-step output, so the digest is
 # printed LOUDLY after the run — skips are counted separately, never silently.
 #
 # ── The ledger is a DIRECTORY, one file per writer (#1013) ───────────────────
 # It used to be a single append-target file that test-vcx-suite truncated at
 # the top of its own recipe. That is a lost-update race under `make -j`: the
 # writers are three independent make targets — test-vcx-suite (via the
-# vcx/testenv lanes it runs), test-vcx-columnar, and, since #989,
+# vcx/testenv steps it runs), test-vcx-columnar, and, since #989,
 # test-vcx-sqlite — and nothing ordered the truncation before the appends. A
 # sqlite or columnar self-skip that landed BEFORE test-vcx-suite reached its
 # `rm -f` was erased, so the digest under-reported. stdout still carried the
@@ -1974,12 +1990,12 @@ CX_CACHE ?= -usecache
 #   (1) NO SHARED WRITE TARGET. Every writer owns one file named after itself
 #       and TRUNCATES it (`>`), never appends to a file another writer touches.
 #       Concurrency is then irrelevant — there is no interleaving to lose. It
-#       also de-duplicates: a lane re-run by the classified serial retry below
+#       also de-duplicates: a step re-run by the classified serial retry below
 #       overwrites its own line instead of logging the skip twice.
 #
 #   (2) A RESET THAT HAPPENS-BEFORE EVERY WRITE. Clearing the directory inside
 #       one writer's recipe would reintroduce (1)'s race at directory level, so
-#       the reset is its own .PHONY target that every skip-producing lane names
+#       the reset is its own .PHONY target that every skip-producing step names
 #       as a prerequisite. make runs a shared prerequisite exactly once per
 #       invocation and completes it before any dependent recipe starts, under
 #       -j included — so the ordering is a property of the dependency graph
@@ -2001,15 +2017,15 @@ skip-ledger-reset:
 	@mkdir -p $(CX_SKIP_DIR)
 
 .PHONY: test-vcx-suite
-# On a suite failure the recipe retries EXACTLY the lanes that failed, each
+# On a suite failure the recipe retries EXACTLY the steps that failed, each
 # under the retry class it belongs to — never a fixed proxy list (#572: the
-# old shape retried only the socket lanes on ANY failure, so an unrelated
+# old shape retried only the socket steps on ANY failure, so an unrelated
 # failure that coincided with green socket retries was mislabeled "load
-# flake" and the gate exited 0 on a lane nobody re-ran):
-#   • a lane in SUITE_SERIAL_RETRY (real-socket contention: ephemeral-port /
+# flake" and the gate exited 0 on a step nobody re-ran):
+#   • a step in SUITE_SERIAL_RETRY (real-socket contention: ephemeral-port /
 #     deadline races, each repeatedly proven green in isolation) → one
 #     serial retry, same flags;
-#   • any lane whose -j run died in a C compilation error → one serial
+#   • any step whose -j run died in a C compilation error → one serial
 #     retry WITHOUT -usecache (#572: a stale cache layer can inject a
 #     duplicate V-runtime symbol, e.g. ___v_thread_wait; cache-free green
 #     proves the artifact — the cache-key root fixes LANDED as #700 wave 2
@@ -2034,16 +2050,16 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/xap_umbrella_test.v \
                       vcx/tests/store_remote_umbrella_test.v
 
-# The retry ROSTERS above say WHICH lanes get a serial retry. This says WHY,
-# PER LANE. The emitted line used to read "serial retry (known real-socket
-# contention lane)" for every lane in either roster, which became a false
+# The retry ROSTERS above say WHICH steps get a serial retry. This says WHY,
+# PER STEP. The emitted line used to read "serial retry (known real-socket
+# contention step)" for every step in either roster, which became a false
 # statement the moment code_eval_fixtures_test.v joined on 2026-08-23 (its cause
 # was then believed to be a supervise load-race — retired with #1228 — and it
 # held no socket) and stays false while process_pty_test.v is on it. A log
 # line that asserts a single cause for a heterogeneous roster sends whoever
 # reads it after a red gate looking in the wrong place.
 #
-# The default branch is deliberately LOUD rather than a guessed cause: a lane in
+# The default branch is deliberately LOUD rather than a guessed cause: a step in
 # a roster with no declared reason still GETS ITS RETRY — the retry mechanism is
 # load-bearing and is not weakened here — but the log says the reason is
 # undeclared instead of inventing one.
@@ -2051,7 +2067,7 @@ RETRY_REASON_CASE = case "$$rel" in \
 	  vcx/tests/process_pty_test.v) \
 	    reason="\#1125 pty master read races under the -j12 suite storm (empty child output); green in isolation and in the prior full run" ;; \
 	  vcx/tests/xap_umbrella_test.v) \
-	    reason="reference web client / store readiness bounds (calibrated ~30 s) exceeded only under the -j12 storm plus box load: measured 2026-09-09 OK 72 s alone, FAIL 98.7 s and 123 s with a lane or build sharing the box" ;; \
+	    reason="reference web client / store readiness bounds (calibrated ~30 s) exceeded only under the -j12 storm plus box load: measured 2026-09-09 OK 72 s alone, FAIL 98.7 s and 123 s with a step or build sharing the box" ;; \
 	  vcx/tests/store_remote_umbrella_test.v) \
 	    reason="\#1425 daemon start under the -j12 suite storm (the readiness window expires before the listener line); green in isolation and in every prior full run" ;; \
 	  vcx/tests/net_udp_read_deadline_test.v|vcx/tests/net_dtls_test.v|vcx/tests/net_real_socket_test.v|vcx/tests/a2a_real_test.v|vcx/tests/http_h2_serve_test.v|vcx/tests/http_client_tls_transport_test.v|vcx/tests/smtp_real_socket_test.v|vcx/tests/imap_real_socket_test.v) \
@@ -2059,11 +2075,11 @@ RETRY_REASON_CASE = case "$$rel" in \
 	  vcx/platform/store_admin_plane_test.v|vcx/platform/store_grpc_live_test.v|vcx/platform/store_lazy_load_test.v) \
 	    reason="real-socket contention: live store/grpc endpoint under -j (\#648)" ;; \
 	  *) \
-	    reason="NO REASON DECLARED for this lane -- retried anyway; declare it in RETRY_REASON_CASE in the Makefile" ;; \
+	    reason="NO REASON DECLARED for this step -- retried anyway; declare it in RETRY_REASON_CASE in the Makefile" ;; \
 	esac
 
 # The profile gate grades the SAME supervise fixtures as
-# code_eval_fixtures_test.v but is not a `v test` lane, so no roster above
+# code_eval_fixtures_test.v but is not a `v test` step, so no roster above
 # reaches it. It used to carry its own serial re-grade class (#1054) for the
 # "#951 supervise load-race"; #1228 showed that race was a deterministic
 # evaluator defect and fixed it, and the class was RETIRED with #1228 — the
@@ -2083,7 +2099,7 @@ RETRY_REASON_CASE = case "$$rel" in \
 # NON-TEST binary build surfaced `ld: symbol(s) not found` for
 # builtin__closure__closure_init: three mechanisms each assumed the closure
 # runtime was inside builtin.o while it was in no object at all (fork fix
-# 46f1be51d5, gate probe H11). A verdict-flipping retry on that lane would
+# 46f1be51d5, gate probe H11). A verdict-flipping retry on that step would
 # have reported green and the defect would still be in the tree.
 #
 # So the cache-free run still HAPPENS — it is the classifier, and its outcome
@@ -2091,14 +2107,14 @@ RETRY_REASON_CASE = case "$$rel" in \
 #   cache-free PASSES  → GATE ESCAPE, loud, red, with the capture recipe;
 #   cache-free FAILS   → an ordinary real failure, red.
 # The serial-retry (socket / pty) class is untouched and still flips its
-# verdict: those lanes hold real sockets and their flakiness is environmental,
+# verdict: those steps hold real sockets and their flakiness is environmental,
 # not a statement about compiler correctness.
 # NOTE for editors: this is a make VARIABLE, so a bare `#` starts a make
 # comment and silently truncates the line it is on (measured while writing
 # this: the banner became `GATE ESCAPE (`). Issue numbers here must be
 # written `\#700`, the same idiom RETRY_REASON_CASE above uses for `\#1125`.
 # ── SKIP-UNUSED ESCAPE PROBE (\#1337) ────────────────────────────────────────
-# The cache-free re-run above is the right classifier for a lane that runs
+# The cache-free re-run above is the right classifier for a step that runs
 # WITH $(CX_CACHE). It is the wrong one for a `$(V) ... run` gate, and that
 # distinction is the whole of \#1337's second ask.
 #
@@ -2164,20 +2180,20 @@ CACHE_ESCAPE_PROBE = \
 	  echo "     DO NOT re-run to get green. Capture and file against \#700:"; \
 	  echo "       - $$log (the cached failure)"; \
 	  echo "       - make check-vcache-soundness   (expect green — that is the point: a hole)"; \
-	  echo "       - the failing cc/ld symbols, and the cache namespace for this lane"; \
+	  echo "       - the failing cc/ld symbols, and the cache namespace for this step"; \
 	  echo "     Then add a probe to scripts/vcache_soundness_gate.sh that goes RED on it."; \
 	else \
 	  echo "──── real failure, not a cache artifact (fails cache-free too): $$rel ────"; \
 	fi; \
 	st=1
 
-# A retry roster is matched against the lane paths the suite REPORTS, so a
+# A retry roster is matched against the step paths the suite REPORTS, so a
 # row naming a file that no longer exists matches nothing and silently
 # disables its retry class — the class stops applying and the gate looks
 # unchanged. That is the vacuous-gate failure mode, and here it would
 # disable a mitigation while the gate looks unchanged (it absorbed the
 # "#951 supervise load-race" for five months — a defect, #1228, not noise).
-# Consolidation (#700) deletes lane files by design, so this is now a live
+# Consolidation (#700) deletes step files by design, so this is now a live
 # hazard rather than a theoretical one: assert every roster row exists,
 # before the suite runs.
 .PHONY: check-serial-retry-rosters
@@ -2188,14 +2204,14 @@ check-serial-retry-rosters:
 	done; \
 	if [ -n "$$missing" ]; then \
 	  echo "check-serial-retry-rosters: retry roster names file(s) that do not exist —"; \
-	  echo "  a row matching no lane silently disables its retry class:"; \
+	  echo "  a row matching no step silently disables its retry class:"; \
 	  for t in $$missing; do echo "    $$t"; done; \
 	  echo "  fix the roster in Makefile (SUITE_SERIAL_RETRY / CODE_SERIAL_RETRY)."; \
 	  exit 1; \
 	fi; \
-	echo "check-serial-retry-rosters OK — every retry-roster row names an existing lane"
+	echo "check-serial-retry-rosters OK — every retry-roster row names an existing step"
 
-# #700 consolidation absorbs a lane file's tests into an umbrella and REMOVES
+# #700 consolidation absorbs a step file's tests into an umbrella and REMOVES
 # the original; every fix made to the umbrella afterwards then lives only
 # there. So a restored original is a loaded gun: regenerating from it
 # re-derives the section from pre-absorption bytes and drops those fixes with
@@ -2207,7 +2223,7 @@ check-serial-retry-rosters:
 check-consolidation-manifests:
 	@scripts/consolidate_tests.sh audit all
 
-# ── #1212: every conformance suite is claimed by a named lane ────────────────
+# ── #1212: every conformance suite is claimed by a named step ────────────────
 .PHONY: check-conformance-coverage
 check-conformance-coverage:
 	@bash scripts/check_conformance_coverage.sh
@@ -2228,7 +2244,7 @@ contract-revision-regen:
 contract-revision-repin:
 	@bash scripts/gen_contract_revision.sh --repin
 
-# ── #1216: the wall-clock lane ──────────────────────────────────────────────
+# ── #1216: the wall-clock step ──────────────────────────────────────────────
 # vcx/timing/*_test.v hold the assertions whose SUBJECT is elapsed time (boot
 # budget, zero-wait polls). They sit BESIDE vcx/tests/ because `v test <dir>`
 # recurses into every subdirectory except `testdata`, and they run serially
@@ -2248,7 +2264,7 @@ test-vcx-suite: build-vcx-dev check-serial-retry-rosters skip-ledger-reset
 	  want=$$(grep -aE '^Summary for all V _test\.v files: [0-9]+ failed,' $$log | tail -1 | sed -E 's/[^0-9]*([0-9]+) failed.*/\1/'); \
 	  have=$$(printf '%s\n' $$failed | grep -c '_test\.v$$' || true); \
 	  if [ -n "$$want" ] && [ "$$have" -ne "$$want" ]; then \
-	    echo "retry classifier: extracted $$have failed lane(s) but the suite summary says $$want — refusing the partial retry roster (binary-log suppression class)"; \
+	    echo "retry classifier: extracted $$have failed step(s) but the suite summary says $$want — refusing the partial retry roster (binary-log suppression class)"; \
 	    exit 1; \
 	  fi; \
 	  if [ -n "$$failed" ]; then \
@@ -2269,13 +2285,13 @@ test-vcx-suite: build-vcx-dev check-serial-retry-rosters skip-ledger-reset
 	      esac; \
 	    done; \
 	    if [ $$st -eq 0 ]; then \
-	      echo "──── every failed lane green on its classified SERIAL retry (socket / pty lanes) ────"; \
+	      echo "──── every failed step passed on its classified SERIAL retry (socket / pty steps) ────"; \
 	    fi; \
 	  fi; \
 	fi; \
 	skips=$$(cat $(CX_SKIP_DIR)/* 2>/dev/null); \
 	if [ -n "$$skips" ]; then \
-	  echo "──── $$(printf '%s\n' "$$skips" | wc -l | tr -d ' ') lane(s) SKIPPED with a named reason (absent prerequisite, counted separately — NOT failures) ────"; \
+	  echo "──── $$(printf '%s\n' "$$skips" | wc -l | tr -d ' ') step(s) SKIPPED with a named reason (absent prerequisite, counted separately — NOT failures) ────"; \
 	  printf '%s\n' "$$skips"; \
 	fi; exit $$st
 
@@ -2287,13 +2303,13 @@ test-vcx-suite: build-vcx-dev check-serial-retry-rosters skip-ledger-reset
 # the same default -gc e memory model as test-vcx-suite).
 #
 # Same classified-retry contract as test-vcx-suite (#648: this target had NO
-# retry class, so a live-socket lane flaking under -j parallel load failed the
+# retry class, so a live-socket step flaking under -j parallel load failed the
 # umbrella with no re-run — store_admin_plane_test.v, repeatedly green in
 # isolation, is the proven case).
 #
 # store_grpc_parity_test.v was dropped from this roster 2026-08-24: the file
 # has not existed since abaea9b9b retired the CSRP data plane, so the row
-# matched no lane and was doing nothing. check-serial-retry-rosters (below)
+# matched no step and was doing nothing. check-serial-retry-rosters (below)
 # is what found it, and is what stops the next one.
 CODE_SERIAL_RETRY := vcx/platform/store_admin_plane_test.v \
                      vcx/platform/store_grpc_live_test.v \
@@ -2301,7 +2317,7 @@ CODE_SERIAL_RETRY := vcx/platform/store_admin_plane_test.v \
 
 # I3 module split (#651/#516): the in-module tests now live in TWO
 # modules — vcx/code (Ring 1) and vcx/platform (Ring 2, where the
-# store/journal/grpc/service subjects moved). One lane runs both.
+# store/journal/grpc/service subjects moved). One step runs both.
 .PHONY: test-vcx-code
 test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	@$(JS_CLOSE) log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
@@ -2312,7 +2328,7 @@ test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	  want=$$(grep -aE '^Summary for all V _test\.v files: [0-9]+ failed,' $$log | tail -1 | sed -E 's/[^0-9]*([0-9]+) failed.*/\1/'); \
 	  have=$$(printf '%s\n' $$failed | grep -c '_test\.v$$' || true); \
 	  if [ -n "$$want" ] && [ "$$have" -ne "$$want" ]; then \
-	    echo "retry classifier: extracted $$have failed lane(s) but the suite summary says $$want — refusing the partial retry roster (binary-log suppression class)"; \
+	    echo "retry classifier: extracted $$have failed step(s) but the suite summary says $$want — refusing the partial retry roster (binary-log suppression class)"; \
 	    exit 1; \
 	  fi; \
 	  if [ -n "$$failed" ]; then \
@@ -2333,7 +2349,7 @@ test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	      esac; \
 	    done; \
 	    if [ $$st -eq 0 ]; then \
-	      echo "──── every failed lane green on its classified SERIAL retry (socket / pty lanes) ────"; \
+	      echo "──── every failed step passed on its classified SERIAL retry (socket / pty steps) ────"; \
 	    fi; \
 	  fi; \
 	fi; exit $$st
@@ -2357,7 +2373,7 @@ test-vcx-cxstore: build-vcx-dev
 # #737, and it is why this cannot be `test vcx/cx/`.
 #
 # An explicit list with no guard ROTS: between I2 and #1209 three tests were
-# added here and named by no lane, so they ran nowhere for months — including
+# added here and named by no step, so they ran nowhere for months — including
 # name_pool_contract_test.v, which is #1178's parser-quadratic contract. The
 # roster is a variable and `check-inmodule-test-roster` now fails on any
 # vcx/cx/*_test.v that is in neither list, so the next addition cannot be
@@ -2395,7 +2411,7 @@ check-inmodule-test-roster:
 	  esac; \
 	done; \
 	if [ -n "$$unlisted" ]; then \
-	  echo "check-inmodule-test-roster: in-module test(s) that NO lane runs —"; \
+	  echo "check-inmodule-test-roster: in-module test(s) that NO step runs —"; \
 	  for f in $$unlisted; do echo "    $$f"; done; \
 	  echo "  \`v test\` only runs what it is given, so a vcx/cx/*_test.v missing"; \
 	  echo "  from CX_INMODULE_TESTS executes nowhere and guards nothing (#1209)."; \
@@ -2407,9 +2423,9 @@ check-inmodule-test-roster:
 
 # White-box unit tests INSIDE the Ring-0 `cx` module (vcx/cx/*_test.v) plus
 # the `fixtures` test-support module (vcx/fixtures/ — the corpus loader,
-# moved out of shipped libcx at I2). These lanes ran NOWHERE before I2:
+# moved out of shipped libcx at I2). These steps ran NOWHERE before I2:
 # `v test` only runs the directory it is given, and no target named vcx/cx —
-# five in-module tests sat outside every gate (found wiring this lane).
+# five in-module tests sat outside every gate (found wiring this step).
 # Files are listed explicitly, not the directory glob:
 # vcx/cx/parser_multidoc_test.v is EXCLUDED — it segfaults under the shipped
 # `-gc e` model (module-internal-test-only RC double-free of the multi-doc
@@ -2427,15 +2443,15 @@ test-vcx-cx: build-vcx-dev
 # `v test` only runs the directory it is given, so without this target the
 # cmd suite had NO gate consumer (#448 wired it in).
 .PHONY: test-vcx-cmd
-# -d cx_platform: the cmd lane tests the DEFAULT (platform-profile) shape —
+# -d cx_platform: the cmd step tests the DEFAULT (platform-profile) shape —
 # the shipped binary's composition (I4; a bare cmd/ compile is the cli
 # profile, where CX_ENGINES would be inert).
 # Same cache-free DIAGNOSTIC as test-vcx-suite/test-vcx-code (see
-# CACHE_ESCAPE_PROBE above): this is the ONLY vcx test lane besides those that
+# CACHE_ESCAPE_PROBE above): this is the ONLY vcx test step besides those that
 # runs -usecache ($(CX_CACHE)). A cached-only C-compile/link failure is now a
 # GATE ESCAPE against the proven key, reported red with the capture recipe —
-# not retried to green. The historical case this lane recorded (a fresh symbol
-# added to code/ while the cmd lane reused a pre-change cached object, the S6.3
+# not retried to green. The historical case this step recorded (a fresh symbol
+# added to code/ while the cmd step reused a pre-change cached object, the S6.3
 # pushdown symbols) is precisely a provenance failure that part (i)'s manifests
 # now make impossible, and if it recurs the gate needs a probe, not a retry.
 test-vcx-cmd: build-vcx-dev
@@ -2493,18 +2509,18 @@ test-vcx-columnar: build-vcx-dev skip-ledger-reset
 #
 # IN TEST_TARGETS since #989. It was held out on the reasoning that `make test`
 # must stay green on a box without sqlite headers — but 41f44e97c then landed
-# #891's shared-open protection behind a lane no gate ran, so the protection
+# #891's shared-open protection behind a step no gate ran, so the protection
 # could rot without anything noticing, which is the cost the exclusion was
 # actually buying. The header worry is answered the way #318 answers it for
 # test-vcx-columnar, three targets up: PROBE the prerequisite and SELF-SKIP with
 # a named reason into $(CX_SKIP_DIR) when it is absent (skips are counted
 # separately and printed loudly — never silently, never as failures). A box with
-# sqlite runs the lane; a box without says so out loud.
+# sqlite runs the step; a box without says so out loud.
 #
-# GATE-DURATION EVIDENCE (#700 dead-ends register — a lane may not join the ring
+# GATE-DURATION EVIDENCE (#700 dead-ends register — a step may not join the ring
 # on assertion; ledger/dead_ends_700_test_duration.md). MEASURED on the
 # reference machine, this recipe's own `v test` (the build-vcx-dev prerequisite
-# is shared with every other vcx lane, so it is not marginal cost), 3/3 green on
+# is shared with every other vcx step, so it is not marginal cost), 3/3 green on
 # every run:
 #
 #   cold caches, contended    231.1 s elapsed | comptime 674.9 CPU-s | runtime 1.6 s
@@ -2517,18 +2533,18 @@ test-vcx-columnar: build-vcx-dev skip-ledger-reset
 # earlier base). Sized the way the register's POST-CLOSE ADDENDUM requires: by
 # CPU, not by serial length. The gate is THROUGHPUT-bound (1,154 s wall x 12
 # cores against 182 CPU-min is ~9.5x parallelism, already near the 15.2-min CPU
-# floor), so a lane's own duration is NOT its cost — its CPU-min is. This lane
+# floor), so a step's own duration is NOT its cost — its CPU-min is. This step
 # adds 3.6 CPU-min (+2.0% of 182), projecting to ~+23 s of gate wall; the warm
 # and cold extremes bracket that at +1.0% and +6.2%.
 #
 # The estimate in #989 ("seconds") was low by 6-60x, and the reason is worth
 # recording: the RUNTIME is milliseconds (1.2-4.4 s for all three suites), but V
-# recompiles the whole platform module once per test FILE, so the lane is ~99%
-# compile. A lane's runtime is not its gate cost.
+# recompiles the whole platform module once per test FILE, so the step is ~99%
+# compile. A step's runtime is not its gate cost.
 #
 # What it buys: the ONLY gate coverage of the sqlite backend, including #891's
 # shared-open protection and the #220 concurrent-writer durability contract.
-# Before this the alternative was not a cheaper lane, it was no coverage.
+# Before this the alternative was not a cheaper step, it was no coverage.
 ifeq ($(UNAME_S),Darwin)
   SQLITE_CFLAGS := -I/opt/homebrew/opt/sqlite/include
   SQLITE_LDFLAGS := -L/opt/homebrew/opt/sqlite/lib
@@ -2582,7 +2598,7 @@ test-vcx-stream: build-vcx
 # REPRODUCED under it (run 3 of 5, ~70min ack-wait spin; the Go runtime
 # intercepts/forwards signals generally). Only a signal-free suspend
 # path (the mach direction on #743) can clear the class. Until then the
-# Go lanes pin the pacer headroom high (VGC_NEXT_GC_MB) so no collection
+# Go steps pin the pacer headroom high (VGC_NEXT_GC_MB) so no collection
 # triggers in these SHORT-LIVED test processes.
 test-go: build-go
 	cd lang/go/cxlib && VGC_NEXT_GC_MB=65536 $(GO) test ./...
@@ -3029,12 +3045,12 @@ corpus-audit: build-vcx
 # decline as a pass.
 #
 # A REPORT by default. `--max-declined N` / `--max-errors N` make it a
-# ratchet, and it becomes a gate lane once the census is a committed number.
+# ratchet, and it becomes a gate step once the census is a committed number.
 #
 # CX_SWEEP_BIN is the binary MEASURED and the binary that runs the sweep — one
 # variable for both, because a census of one binary produced by another is a
 # census of neither. It defaults to the shipped `vcx/target/cx`, which is what
-# #1348's own figures were taken with; a lane that only wants the correctness
+# #1348's own figures were taken with; a step that only wants the correctness
 # verdict can point it at `vcx/target/cx-dev`.
 CX_SWEEP_BIN ?= vcx/target/cx
 .PHONY: fmt-sweep fmt-sweep-timed
@@ -3055,17 +3071,17 @@ fmt-sweep-timed: build-vcx
 #
 # The sweep above is a REPORT. This is the same instrument with the numbers
 # committed, and it is in TEST_TARGETS: the Makefile note at the top of this
-# section said it "becomes a gate lane once the census is a committed number",
+# section said it "becomes a gate step once the census is a committed number",
 # and #1348's census is that number.
 #
 # The ERROR verdict is gated by a NAMED ROSTER, not by a count. A count has no
 # lower bound: fix one of the five files that are supposed to fail and the
-# total drops below the budget while the lane stays green, and a genuinely new
+# total drops below the budget while the step stays green, and a genuinely new
 # error is invisible until it is the sixth. The roster reds BOTH ways — a file
 # that errors and is not listed, and a listed file that has STOPPED erroring.
 # The second is the half a count cannot express, and it is load-bearing here:
 # `tooling/vscode/test/grammar/basic.cx` is on the roster for a real
-# #1347-family gap, so when that lands this lane says the line must go. Same
+# #1347-family gap, so when that lands this step says the line must go. Same
 # shape as the #1350 golden MANIFEST (`99c25169d`).
 #
 # DECLINED stays a count, ratcheted at the committed census, and it is a
@@ -3115,10 +3131,10 @@ fmt-sweep-timed: build-vcx
 # `[$crypto:jwt-sign $claims [$ec1-private] {alg: 'ES256', kid: 'ec-1'}]` and
 # `[$http:get $url {follow-redirects: false}]` among them. Rewriting either to
 # dodge the formatter would mean not calling the stdlib the way the stdlib is
-# called, which is the one thing an interop lane must not do.
+# called, which is the one thing an interop step must not do.
 #
 # 107 -> 108 with #1396's scripts/sso_interop/proxy.cx, the forward proxy the
-# lane's three proxy rows run through: ONE more file, measured declined=108 on
+# step's three proxy rows run through: ONE more file, measured declined=108 on
 # the first sweep after it landed. The same hole again — a collection in
 # argument position, `[$http:request $method $target {headers: ..., body: ...,
 # follow-redirects: false}]`.
@@ -3145,7 +3161,7 @@ fmt-sweep-gate: build-vcx
 
 
 # ── REPR GUARD (#1119 W1, RULED: RP-5) — the CXDM live-memory ratchet ────────
-# Parses a ~2 MB corpus per lane (json / xml / cx) through the `cx` module,
+# Parses a ~2 MB corpus per step (json / xml / cx) through the `cx` module,
 # forces a collection with the tree still reachable, and asserts
 # live bytes ÷ input bytes against a bound pinned to today's measurement with
 # headroom. A RATIO, never a time and never an absolute byte count, so the
@@ -3156,18 +3172,18 @@ fmt-sweep-gate: build-vcx
 # It is in TEST_TARGETS because it is the measurement instrument the rest of
 # the representation campaign is judged by: W5-W7 each re-pin these bounds
 # DOWNWARD at their exit, and a wave that makes the tree bigger has to red this
-# lane before it can land. Contract + the numbers: bench/repr/README.md.
+# step before it can land. Contract + the numbers: bench/repr/README.md.
 #
 # `repr-guard` depends on `build-vcx` for one reason: the driver links the same
 # vendored RE2 static archive the CLI does (`third_party/re2/obj/libre2.a`), so
-# the lane's prerequisites ARE build-vcx's. Free inside `make test` (the serial
+# the step's prerequisites ARE build-vcx's. Free inside `make test` (the serial
 # pre-build already ran), and it is what makes `make repr-guard` work in a fresh
 # worktree, where that archive does not exist yet.
 .PHONY: repr-guard
 repr-guard: build-vcx
 	@bench/repr/run.sh
 
-# ── bench-flow: the cx-stdlib/flow performance and scale lane ────────────────
+# ── bench-flow: the cx-stdlib/flow performance and scale step ────────────────
 #
 # §9 of spec/03-approved/std-lib/flow.md (RULED: WF-14), #1265 W1 packet C.
 # Floors are set from the first measurement and ratcheted like bench/repr:
@@ -3179,7 +3195,7 @@ repr-guard: build-vcx
 # targets under `-j` — a duration floor there reds on a busy machine rather
 # than on a regression, which is how a gate stops being believed. bench/repr
 # earns its TEST_TARGETS seat because its quantity is a RATIO of live bytes.
-# The load-insensitive halves of this lane ARE gated in `make test`: the two
+# The load-insensitive halves of this step ARE gated in `make test`: the two
 # per-item COUNT rows are pinned exactly in conformance/stdlib/flow.cxd
 # (flow-040), and the racing-advancer count in vcx/tests/flow_umbrella_test.v.
 # Run this target deliberately — before a release, and at every #1265 wave
@@ -3198,7 +3214,7 @@ clean:
 	find lang/python -name '*.pyc' -delete
 	find lang/python -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null || true
 
-## test-oriel-lane  ORIEL, the reference XAP, as its own CI lane (#869): boot
+## test-oriel-lane  ORIEL, the reference XAP, as its own CI step (#869): boot
 ##                  the store at spec/03-approved/xap/demos/oriel/, run the
 ##                  five asserting instruments (drive 38, keys 9, voice,
 ##                  nokernel, diff drift=0), tear down. bench stays
@@ -3207,7 +3223,7 @@ clean:
 test-oriel-lane: build-vcx
 	@bash scripts/oriel_lane.sh
 
-## test-sso-interop-lane  Identity-provider interop as its own CI lane
+## test-sso-interop-lane  Identity-provider interop as its own CI step
 ##                  (#1403): boot the in-tree identity provider at
 ##                  scripts/sso_interop/idp.cx, drive a real relying party
 ##                  against it (discovery, the issuer mix-up refusal, all
@@ -3217,13 +3233,13 @@ test-oriel-lane: build-vcx
 ##                  9207 `iss` refusal, the machine grant, SAML over the
 ##                  wire, and SAML with the assertion ENCRYPTED
 ##                  end to end), tear down. Refuses if :8793 is already
-##                  served. This is the ONLY lane that grades the
+##                  served. This is the ONLY step that grades the
 ##                  networked half of the SSO stack.
 .PHONY: test-sso-interop-lane
 test-sso-interop-lane: build-vcx
 	@bash scripts/sso_interop_lane.sh
 
-# ── <cx-diagram> web-component offline lane (#1015) ────────────────────────────
+# ── <cx-diagram> web-component offline step (#1015) ────────────────────────────
 # Sibling of the playground's no-CDN gate (#1007), for the OTHER surface that
 # was still script-loading mermaid@10 from jsDelivr: tooling/web/cx-diagram.js.
 #
@@ -3261,9 +3277,9 @@ test-web-component-offline: stage-web-component
 # when it exists) begins on an 8-byte boundary. The devbox `ar` pads to 2 and
 # Apple's ld refuses such an archive, so a checkout built inside devbox could
 # not be linked with the OS toolchain — and nothing said so until the link.
-# The shim rules run the same check when they write the archive; this lane
+# The shim rules run the same check when they write the archive; this step
 # catches the archive a checkout already HAS. Not an archive at all (a build
-# that never produced one) is a red too: the lane grades the artifact.
+# that never produced one) is a red too: the step grades the artifact.
 .PHONY: check-shim-archives
 check-shim-archives: build-vcx-dev
 	@sh scripts/check_archive_alignment.sh vcx/target/libcx_re2_shim.a $(wildcard vcx/target/libcx_arrow_shim.a)

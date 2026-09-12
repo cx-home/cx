@@ -12,8 +12,11 @@ cx [cx-flags] FILE [program-args...]
 
 Flags bind **before** the resource. Everything after the resource is the
 program's `argv`. This is the interpreter convention (and shebang-identical),
-and getting it backwards does not produce a usage error — it produces a
-program that silently never got its capability:
+and getting it backwards is not a usage error — it produces a program that
+never got its capability. Since #1424 it is not silent either: an argument
+after the file spelled like a cx flag draws one line on STDERR (unless the
+program's `[argspec]` declares it), while argv and the exit status stay as
+they were:
 
 #### cx flags placed after the file
 
@@ -21,7 +24,11 @@ The run surface is `cx [cx-flags] FILE [program-args...]` — the interpreter
 convention. Everything AFTER the file is the PROGRAM's argv (#926), so
 `--allow-env` there is a string handed to the program, not a grant handed to
 `cx`. The capability is never granted and the program dies at its first
-effect. Nothing warns you: the flag was consumed, just not by cx.
+effect. Since #1424 (RULED: OL-10) one line on STDERR says so as it happens —
+`cx: '--allow-env' after FILE is program argv, not a cx flag — flags bind
+before FILE (cx [flags] FILE [args])` — unless the program's own `[argspec]`
+declares that argument. The line is a diagnostic: argv, the rendered result
+below and the exit status are exactly what they were.
 
 **Do not write this:**
 
@@ -134,7 +141,9 @@ Run flags (the default action; flags bind BEFORE the resource):
                             [$sched:test-clock-advance] works (stdlib_sched.md
                             §3.3). Default is the production :wall clock, where
                             armed timers fire at blocking points instead.
-  Unknown flags are hard usage errors (exit 2) — nothing is ignored.
+  Unknown flags BEFORE FILE are hard usage errors (exit 2) — nothing is
+  ignored; AFTER FILE a cx-flag spelling is the PROGRAM's argv and warns
+  once on stderr, unless the program's [argspec] declares it.
   Capabilities are deny-by-default (spec/core/security.md); grant explicitly:
     --allow-read --allow-write --allow-net --allow-env --allow-clock
     --allow-random --allow-subprocess --allow-eval --allow-secret-reveal --allow-common --allow-all
@@ -345,8 +354,10 @@ read the exit status as a refusal contract: refusal at a boundary is
 `CXER0275` (store / http), raised at the boundary, independent of how the
 process exits.
 
-Unknown flags are hard errors. Nothing is ignored, which is why a typo'd
-grant fails loudly *before* the file but silently *after* it.
+Unknown flags are hard errors. Nothing is ignored: a typo'd grant *before* the
+file exits 2, and a real cx flag *after* the file is the program's argument —
+which still grants nothing, and now says so in one STDERR line unless the
+program's `[argspec]` declares it.
 
 ## Scripting `cx` from CX
 

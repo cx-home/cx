@@ -68,7 +68,7 @@ while true; do
   # the longest-running repo process under any Claude session (the thing that would be hung)
   proc=$(longest_proc)
   [ -z "$proc" ] && proc="idle"
-  slotd=${CX_BUILD_SLOT:-"$HOME/git-repos/cx/.build-slot"}
+  slotd=${CX_RUNNER:-${CX_BUILD_SLOT:-"$HOME/git-repos/cx/.build-slot"}}
   if [ -d "$slotd" ]; then
     st=$(date -j -u -f '%Y-%m-%dT%H:%M:%SZ' "$(cat "$slotd/since" 2>/dev/null)" +%s 2>/dev/null || echo "$now")
     slot="slot $(cut -c1-30 "$slotd/cmd" 2>/dev/null) $(( (now - st) / 60 ))m @$(basename "$(cat "$slotd/cwd" 2>/dev/null)")"
