@@ -176,3 +176,29 @@ call sites, the `gates.cxd` flip from `advisory` to `enforced`, the README count
    than refuses: a `cx:audit` entry that is not a well-formed record is reported as a `[foreign]`
    row by `query` and named by `verify`, never dropped and never counted. This is the spec's one
    ⚠ checklist row.
+
+---
+
+# ADDENDUM — RULED: 1422-b — the owner's two answers to the ⚠ rows, recorded before phase 2 touched a spec or a file
+
+Owner, 2026-09-12, on reading `spec/03-approved/std-lib/audit.md`. The spec stands;
+its two ⚠ checklist rows (§13 rows 9 and 21, cross-referenced from §2.5 and §3.5,
+collected as §12.2 rows 8 and 7) are decided here. Phase 2 implements against this
+table and cites `(RULED: 1422-a, 1422-b)`.
+
+| Id | The question | The decision | Why | Normative at |
+|---|---|---|---|---|
+| **1422-b-1** | Is `cx:audit` reserved in `journal`, the way `cx:erasure` is? | **(a) Yes — amend `journal.md` §2.11 NOW, inside #1422.** A direct `append` to `cx:audit` refuses with a **new journal code**, exactly as a direct append to `cx:erasure` refuses `CXER4622`; `audit:emit` reaches the stream the way `erase-subject` reaches `cx:erasure` — the command's own internal append under the handle's `reserved_append_ok`, never the public verb. The code is allocated from the free slots of journal's own `CXER4600–4649` band, decided by the registry pre-flight (`make cxer-registry-gate`) and registered in `governance.md` §9.6 with the amendment | A hand-authored row on the sink forges the evidence basis, which is the identical failure `CXER4622` exists to refuse — and a sink that only *detects* forgeries has already accepted one. The reservation makes the forgery unrepresentable rather than reportable, from day one, so no deployment ever runs a window in which the sink is forgeable | `journal.md` §2.11, `audit.md` §2.5, §5.2, §8, §12.2 row 8, §13 row 9 |
+| **1422-b-2** | Does the `[foreign …]` row survive that? | **Yes, demoted.** The §2.5 / §5.4 / §13 row 9 interim — "detect and report `[foreign]` rows" — is **no longer the primary behavior**. It is the **refusal's fallback**: the honest reading of entries the reservation does not cover — entries that **predate** it on a `cx:audit` stream written before this commit, and entries on a deployment-named alternate reserved stream (`opts.stream`, §5.1), which `journal` does not reserve by name. Every read still surfaces them, still never counts them as records, still names them in `verify` | Reserving the name closes the forward door; it cannot close a door already walked through. A chain written last quarter is immutable, so the read side must stay honest about what is on it — "a gap that is visible in every read is a gap that cannot be traded on", now applied to a bounded, historical set rather than to the live sink | `audit.md` §2.5, §5.3 (`include-foreign`), §5.4 |
+| **1422-b-3** | Are audit records erasable? (the erasure residue) | **(a) The residue stands as written.** Audit records are **not** erasable; an erasure request that reaches `actor` identifiers is answered by the deployment's **retention window** on the journal, not by shredding the chain (§3.5). `§13` row 21 stops being a ⚠ blocker and becomes the recorded trade-off it already was | The alternative — declaring the `actor` a data subject — makes the audit chain shreddable, which destroys the artifact §3.2 and §3.3 exist to produce: a chain that can be shredded proves nothing about what was not shredded. A deployment whose regulator requires otherwise sets a shorter retention window, which is a **journal** setting and needs no verb here | `audit.md` §3.5, §12.2 row 7, §13 row 21 |
+
+**What this closes.** `audit.md` §13 carries **no ⚠ row** after this addendum: row 9
+becomes 🚧 (the reservation, specified in `journal.md` §2.11 and graded by the
+corpus's reservation cases), row 21 becomes ❌ (a deliberate non-feature with its
+rationale, the `readiness-rubric.md` convention). The two flags §12.2 raised for the
+owner are answered in §12.2 itself, in place, citing this record.
+
+**What this does not do.** It adds no verb, no capability and no member to the
+record. The whole change to `audit`'s own surface is that `emit`'s append is the
+privileged one and every other append to `cx:audit` is refused below it, by the
+module that owns the stream namespace.
