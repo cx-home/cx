@@ -50,6 +50,10 @@ lang/rust/cxlib/target/
 lang/v/.cache/
 
 # compiled V binaries
+# `v -o tests/<name>_test tests/<name>_test.v` leaves a multi-megabyte binary
+# beside its source; the `.v` sources keep their extension, so the extensionless
+# sibling is always an artifact.
+vcx/tests/*_test
 vcx/tests/conformance_run
 vcx/tests/runners/conformance/conformance_run
 lang/v/examples/transform

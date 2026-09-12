@@ -18,7 +18,7 @@ it; fail gets a fix, or a flaky-test issue.
 
 | Term | Meaning |
 |---|---|
-| release | the versioned delivery (`v0.18.0`) |
+| release | one versioned delivery, named by the root `VERSION` file |
 | epic | an issue that groups issues (S, M, P, 1; #1354 is the release) |
 | issue | one unit of work |
 | decision | one recorded choice, made before the work (`ledger/`, cited `RULED: <id>`) |
