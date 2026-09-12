@@ -31,6 +31,14 @@ COLUMNS
           codec    a surface synthesized by the codec registry (codec.md §3)
   spec    the normative text — its directory must match the ring
   corpus  the graded fixtures — its directory must match the ring
+  spec-from / corpus-from
+          where that artifact sat BEFORE #1427, when it was not the flat
+          `spec/03-approved/std-lib/<basename>` or
+          `conformance/stdlib/<basename>` the rest of the tree used. Only
+          the migration tool's link pass reads these — they are what lets a
+          prose link, a V comment citation and a shell literal be rewritten
+          from the same declaration the placement check reads. The
+          placement check ignores them: it grades the tree as it is now
   source  the bundled CX source (stdlib/*.cx), or `none`
   code    the V file(s) carrying the dispatch — every one under the ring's
           own directory
@@ -54,7 +62,7 @@ becomes its own Ring-1 module.
   [module name=bytes ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/bytes.md corpus=conformance/stdlib/bytes.cxd source=stdlib/bytes.cx code=vcx/code/stdlib_bytes.v half=none status=current]
   [module name=crypto ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/crypto.md corpus=conformance/stdlib/crypto.cxd source=stdlib/crypto.cx code='vcx/code/stdlib_crypto.v vcx/code/stdlib_crypto_xmlsign.v vcx/code/stdlib_crypto_xmlenc.v vcx/code/crypto_x509.v' half=none status=current]
   [module name=csv ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/csv.md corpus=conformance/stdlib/csv.cxd source=stdlib/csv.cx code=vcx/code/stdlib_csv.v half=none status=current]
-  [module name=cx ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/modules/cx.md corpus=conformance/stdlib/cx.cxd source=none code='vcx/code/stdlib_cx.v vcx/code/stdlib_cx_analysis.v' half=none status=current]
+  [module name=cx ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/cx.md spec-from=spec/03-approved/modules/cx.md corpus=conformance/stdlib/cx.cxd source=none code='vcx/code/stdlib_cx.v vcx/code/stdlib_cx_analysis.v' half=none status=current]
   [module name=diagram ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/diagram.md corpus=conformance/stdlib/diagram.cxd source=stdlib/diagram.cx code='vcx/code/stdlib_diagram.v vcx/code/diagram.v vcx/code/diagram_cx_seam.v' half=none status=current]
   [module name=email ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/email.md corpus=conformance/stdlib/email.cxd source=stdlib/email.cx code=vcx/code/stdlib_email.v half=none status=current]
   [module name=env ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/env.md corpus=conformance/stdlib/env.cxd source=stdlib/env.cx code=vcx/code/stdlib_env_notd_cx_no_pack_env.v half=none status=current]
@@ -64,7 +72,7 @@ becomes its own Ring-1 module.
   [module name=geo ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/geo.md corpus=conformance/stdlib/geo.cxd source=stdlib/geo.cx code=vcx/code/stdlib_geo.v half=none status=current]
   [module name=hash ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/hash.md corpus=conformance/stdlib/hash.cxd source=stdlib/hash.cx code=vcx/code/stdlib_hash.v half=none status=current]
   [module name=html ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/html.md corpus=conformance/stdlib/html.cxd source=stdlib/html.cx code=vcx/code/stdlib_html.v half=none status=current]
-  [module name=http-client ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/http-client.md corpus=conformance/stdlib/http-client.cxd source=stdlib/http-client.cx code='vcx/code/stdlib_http_notd_cx_no_pack_http_client.v vcx/code/net_core_notd_cx_no_pack_http_client.v vcx/code/module_fetch_notd_cx_no_pack_http_client.v' half=none status=current]
+  [module name=http-client ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/http-client.md spec-from=none corpus=conformance/stdlib/http-client.cxd source=stdlib/http-client.cx code='vcx/code/stdlib_http_notd_cx_no_pack_http_client.v vcx/code/net_core_notd_cx_no_pack_http_client.v vcx/code/module_fetch_notd_cx_no_pack_http_client.v' half=none status=current]
   [module name=i18n ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/i18n.md corpus=conformance/stdlib/i18n.cxd source=stdlib/i18n.cx code=vcx/code/stdlib_i18n.v half=none status=current]
   [module name=io ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/io.md corpus=conformance/stdlib/io.cxd source=stdlib/io.cx code=vcx/code/stdlib_io_notd_cx_no_pack_io.v half=none status=current]
   [module name=json ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/json.md corpus=conformance/stdlib/json.cxd source=stdlib/json.cx code=vcx/code/stdlib_json.v half=none status=current]
@@ -115,7 +123,7 @@ becomes its own Ring-1 module.
   [; ── Ring 2, its own namespace already (left alone by 1427-b, which
        renames `cx-stdlib/X` and nothing else) ─────────────────────────── ]
   [module name=fabric ring=2 ns=cx-fabric kind=module spec=spec/03-approved/platform/fabric.md corpus=conformance/platform/fabric.cxd source=stdlib/fabric.cx code='vcx/platform/stdlib_fabric.v vcx/platform/stdlib_fabric_remote.v vcx/platform/fabric_service.v' half=none status=current]
-  [module name=xap ring=2 ns=cx-xap kind=module spec=spec/03-approved/xap/xap_module.md corpus=conformance/xap/xap-serve.cxd source=stdlib/xap.cx code=vcx/platform/stdlib_xap.v half=none status=current]
+  [module name=xap ring=2 ns=cx-xap kind=module spec=spec/03-approved/xap/xap_module.md spec-from=spec/03-approved/std-lib/xap.md corpus=conformance/xap/xap-serve.cxd source=stdlib/xap.cx code=vcx/platform/stdlib_xap.v half=none status=current]
 
   [; ── Not modules: natives, backend engines, design texts (1427-e) ──── ]
   [module name=term ring=1 ns=none kind=natives spec=spec/03-approved/stdlib/term.md corpus=conformance/stdlib/term.cxd source=none code=vcx/code/stdlib_term_notd_cx_no_pack_term.v half=none status=current]
@@ -125,5 +133,28 @@ becomes its own Ring-1 module.
   [module name=sql ring=2 ns=none kind=backend spec=spec/03-approved/platform/store/sql.md corpus=conformance/platform/db.cxd source=none code=vcx/platform/sql.v half=none status=current]
   [module name=distributed_store ring=2 ns=none kind=design spec=spec/03-approved/platform/store/distributed_store.md corpus=conformance/platform/store.cxd source=none code=none half=none status=current]
   [module name=erasure_compliance ring=2 ns=none kind=design spec=spec/03-approved/platform/store/erasure_compliance.md corpus=conformance/platform/store.cxd source=none code=none half=none status=current]
-  [module name=xml ring=0 ns=cx-stdlib kind=codec spec=spec/03-approved/core/codec.md corpus=conformance/xml_codec.cxd source=none code=vcx/code/stdlib_codec.v half=none status=current]
+  [module name=xml ring=0 ns=cx-stdlib kind=codec spec=spec/03-approved/core/codec.md spec-from=none corpus=conformance/xml_codec.cxd corpus-from=conformance/stdlib/xml.cxd source=none code=vcx/code/stdlib_codec.v half=none status=current]
+
+  [; ── Moves this cutover makes that no module row implies (1427-a, 1427-c).
+       Every one is an artifact whose PARENT spec is not a module: the `x`
+       tier's agent surfaces and the xap tier's composition and UX suites,
+       which sat in conformance/stdlib/ only because that directory was the
+       tree's one corpus bin. The migration tool's link pass reads these the
+       way it reads a row's spec-from/corpus-from; the placement check walks
+       `module` rows and never sees them. ─────────────────────────────────── ]
+  [move from=conformance/stdlib/a2a.cxd         to=conformance/x/a2a.cxd]
+  [move from=conformance/stdlib/a2a-xap.cxd     to=conformance/x/a2a-xap.cxd]
+  [move from=conformance/stdlib/adjudicate.cxd  to=conformance/x/adjudicate.cxd]
+  [move from=conformance/stdlib/llm.cxd         to=conformance/x/llm.cxd]
+  [move from=conformance/stdlib/mcp.cxd         to=conformance/x/mcp.cxd]
+  [move from=conformance/stdlib/mcp-server.cxd  to=conformance/x/mcp-server.cxd]
+  [move from=conformance/stdlib/run.cxd         to=conformance/x/run.cxd]
+  [move from=conformance/stdlib/tools.cxd       to=conformance/x/tools.cxd]
+  [move from=conformance/stdlib/ux.cxd          to=conformance/xap/ux.cxd]
+  [move from=conformance/stdlib/ux-tui.cxd      to=conformance/xap/ux-tui.cxd]
+  [move from=conformance/stdlib/ux-web.cxd      to=conformance/xap/ux-web.cxd]
+  [move from=conformance/stdlib/xap-compose.cxd to=conformance/xap/xap-compose.cxd]
+  [move from=conformance/stdlib/xap-on.cxd      to=conformance/xap/xap-on.cxd]
+  [move from=spec/03-approved/std-lib/stdlib_colocated_docs.md to=spec/03-approved/process/stdlib_colocated_docs.md]
+  [move from=spec/03-approved/std-lib/README.md to=spec/03-approved/stdlib/README.md]
 ]

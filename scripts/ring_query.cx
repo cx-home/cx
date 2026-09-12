@@ -39,7 +39,9 @@
 # (or: make ring-query [RING=n] [LANE=l] [FORMAT=f])
 #
 # Exit: 0 on success (a zero-match query is a valid census answer),
-#       2 when any suite is untagged.
+#       2 when any suite is untagged, and 2 when a suite's header ring
+#       disagrees with its RING DIRECTORY -- conformance/stdlib IS ring 1
+#       and conformance/platform IS ring 2 (RULED: 1427-c).
 
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
@@ -130,6 +132,26 @@
           [where [= [$string $r@ring] ""]]
           [yield [$string $r@file]]]]
 
+      # The DIRECTORY is the suite ring (RULED: 1427-c). conformance/stdlib
+      # IS ring 1 and conformance/platform IS ring 2, so a header that says
+      # otherwise is not a second opinion -- it is a suite filed in the
+      # wrong ring, and the query that resolves case@ring -> suite@ring
+      # would answer from the wrong one. Per-case `ring=`/`eval-ring=` tags
+      # are untouched: a Ring-1 module graded against a Ring-2 fixture is
+      # exactly what those tags are for.
+      [= $dir-mismatch
+        [?for [in $r $reports]
+          [= $f [$string $r@file]]
+          [= $hr [$string $r@ring]]
+          [= $want
+            [?if [$strings:starts-with $f "conformance/stdlib/"] [then "1"]
+              [else [?if [$strings:starts-with $f "conformance/platform/"] [then "2"]
+                [else ""]]]]]
+          [where [not [= $want ""]]]
+          [where [not [= $hr ""]]]
+          [where [not [= $hr $want]]]
+          [yield [$concat $f " carries ring=" $hr ", its directory IS ring " $want]]]]
+
       # Lane selection per report -> the final per-suite id block.
       [= $picked-blocks
         [?for [in $r $reports]
@@ -174,6 +196,13 @@
             [$strings:join $untagged "\n  "]]]]
         [$env:exit 2]]]
     [else
+  [?if [> [$count $dir-mismatch] 0]
+    [then
+      [?let [= $_d [$io:write-line [$env:stderr]
+          [$concat "ring_query: suite header disagrees with its RING DIRECTORY (RULED: 1427-c):\n  "
+            [$strings:join $dir-mismatch "\n  "]]]]
+        [$env:exit 2]]]
+    [else
       [?let [= $out
           [?if [= $format-want "count"] [then [$string $total]]
           [else [?if [= $format-want "ids"] [then $all-ids]
@@ -183,4 +212,4 @@
               [$strings:join $summary-lines "\n"]
               "\n  TOTAL matched=" [$string $total]]]]]]]
         [?let [= $_w [$io:write-line [$env:stdout] $out]]
-          [$env:exit 0]]]]]]
+          [$env:exit 0]]]]]]]]
