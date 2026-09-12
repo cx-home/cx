@@ -173,7 +173,7 @@ step_globs() {
     # the placement declaration and every artifact class it compares against
     # (RULED: 1427-f) — a spec, a corpus, a bundled source or a ring's V
     # directory moving is exactly what this step exists to catch.
-    placement-gate)                echo 'registry/modules.cxd scripts/placement_gate.cx spec/* conformance/* stdlib/* vcx/code/* vcx/platform/*' ;;
+    placement-gate)                echo 'registry/modules.cxd scripts/placement_gate.cx spec/* conformance/* stdlib/* x/* vcx/code/* vcx/platform/*' ;;
     # the dogfood documents, the gate that reads them, and everything that can
     # move the vocabulary or the two subcommands it drives them through.
     flow-dogfood-gate)             echo 'flows/* scripts/flow_dogfood_gate.cx stdlib/flow.cx vcx/cmd/* vcx/code/* vcx/cx/* spec/03-approved/std-lib/flow.md' ;;
