@@ -55,7 +55,7 @@ show() {
 	printf '── post-merge run ────────────────────────────────────\n'
 	printf 'target   %s\n' "$(grep -m1 -E '^(run|gate): ' "$LOG" | sed -E 's/^(run|gate): //')"
 	if [ -n "$state" ]; then
-		printf 'state    %s  (%s)\n' "$state" "$marker"
+		printf 'state    %s   marker %s\n' "$state" "$marker"
 	elif [ -n "$pid" ]; then
 		printf 'state    running   pid %s\n' "$pid"
 	else
