@@ -3139,58 +3139,76 @@ fmt-sweep-timed: build-vcx
 # argument position, `[$http:request $method $target {headers: ..., body: ...,
 # follow-redirects: false}]`.
 #
-# 108 -> @@DECLINED@@ by #1391 (RULED: 1391-a), and this is the drop the
-# ruling names: "the number comes back down — by more than ten — when the hole
-# closes". The hole was one vacuous comparison. The data candidate was SEEDED
-# WITH THE SOURCE and overwritten only when the data parse succeeded, so a
-# document the DATA grammar cannot read — a bracketed or collection value in
-# ARGUMENT or ATTRIBUTE position — reached the acceptance test comparing the
-# input against ITSELF: canonical text equal, shape equal, comments equal, by
-# construction. The lane blessed the source as "the data format preserved
-# meaning", returned it verbatim at exit 0, and never reached the program lane
-# that formats it.
+# 108 -> 31 by #1391 (RULED: 1391-a), measured on the whole 297-file corpus:
+#
+#   SWEEP-FILES=297 FORMATTED=244 DECLINED=31 TREE-REFUSED=17 UNSTABLE=0 ERROR=5
+#
+# The ruling said "the number comes back down — by more than ten — when the
+# hole closes"; it came down by 77. The hole was ONE vacuous comparison. The
+# data candidate was SEEDED WITH THE SOURCE and overwritten only when the data
+# parse succeeded, so a document the DATA grammar cannot read — a bracketed or
+# collection value in ARGUMENT or ATTRIBUTE position — reached the acceptance
+# test comparing the input against ITSELF: canonical text equal, shape equal,
+# comments equal, by construction. The lane blessed the source as "the data
+# format preserved meaning", returned it verbatim at exit 0, and never reached
+# the program lane that formats it.
 #
 # Every DECLINED row in the log now carries the refusal line that names the
 # construct and its position (RULED: 1391-a) — a count with no names is what
-# let one hole read as 93 stubborn legacy files.
+# let one hole read as 93 stubborn legacy files. The 31 that remain are five
+# reasons, and 26 of them are ONE:
+#
+#   26  the comment layout could not place every comment this file carries
+#    2  the comment-bearing layout re-parses to a different program shape
+#    1  the comment-bearing layout does not re-parse to the same canonical text
+#    1  the data formatter does not carry every comment back
+#    1  the canonical form is not its own fixed point (§7)
 #
 # ── FMT_SWEEP_MAX_TREE_REFUSED (RULED: 1384-a) — the §1 guard's own column ───
 #
 # TREE-REFUSED is `cx-err:CXER0300`: `cx fmt` produced a canonical form whose
 # node tree is NOT the input's, so the source came back and the refusal said
-# so. It is its own column because it is neither of the other two things — not
-# "a shape fmt cannot format" (DECLINED) and not "fmt fell over" (ERROR), but
-# "fmt formatted the file and changed the document", which is an open defect
-# with a file name and a node path.
+# so with the differing node's PATH and both values. It is its own column
+# because it is neither of the other two things — not "a shape fmt cannot
+# format" (DECLINED) and not "fmt fell over" (ERROR), but "fmt formatted the
+# file and changed the document", which is an open defect with a file name and
+# a node path. Folding it into DECLINED would hide a data-changing formatter
+# inside a ratchet; folding it into ERROR would red the expected-error ROSTER,
+# which exists for files `cx fmt` is SUPPOSED to refuse.
 #
-# Measured over all 189 readable `.cx` sources at 469ec08e7, comparing each
-# file's data reading before and after `cx fmt` under the projection
-# `program_fmt.v`'s header documents (whitespace collapsed, a PI's raw payload
-# excluded, a string Scalar equal to a Text node): 103 files under the raw
-# AST-JSON projection, @@TREE@@ under this one. They are four classes, and NONE
-# of them is #1384's — #1384's two shapes are fixed at the cause in this same
-# landing:
+# 17 files at the landing, in four classes. NONE of them is silent any more,
+# and none was visible before: every one of these formatted at exit 0 and
+# changed the document.
 #
+#   * a SPACE inserted into a text run at a `[` boundary — #1384's OWN defect
+#     class in a third shape (3: fixtures/bench/bench_{small,medium,large}.cx).
+#     `[tags :string[] internal db cache]` shipped as
+#     `[tags :string [] internal db cache]`, so the data reading's one Text
+#     node `":string[] internal db cache"` became `":string"` plus an empty
+#     array plus the rest. #1384's two shapes are fixed at the cause in this
+#     same landing; this one is not, because the run rule cannot cross `[`,
+#     which is a structural byte — fixing it needs the emitter to know the
+#     atom and the `[]` were GLUED, which is an AST change and not 1384-a's.
 #   * an interior COMMENT the formatter RE-ORDERS past the node it documents
-#     (7 files: the two `render-ctx.cx`, both cxstore clients,
-#     `home-components.cx`, and both `tooling/cxfabric/*.config.cx`).
-#     `tooling/cxfabric/adapter.config.cx` is the clearest: the comment that
-#     opens `[webhook-adapter]` and explains `[fabric …]` comes back AFTER
-#     it. canonical.md §2.9 requires "comment placement preserved relative to
-#     nodes", so the comment is still there and no longer documents anything;
+#     (8: the two `render-ctx.cx`, both cxstore clients, `home-components.cx`,
+#     both `tooling/cxfabric/*.config.cx`, and `check_v_fork_patches.cx` in
+#     the other direction). `tooling/cxfabric/adapter.config.cx` is the
+#     clearest: the comment that opens `[webhook-adapter]` and explains
+#     `[fabric …]` comes back AFTER it. canonical.md §2.9 requires "comment
+#     placement preserved relative to nodes", so the comment is still there
+#     and no longer documents anything.
 #   * an ATTRIBUTE WRITTEN AFTER BODY TEXT, which the program reading hoists
 #     to the head and the data reading reads as part of the text run
-#     (`design/787/w1/surface.cx`, `spec/…/oriel/data/oriel-theme.cx`);
-#   * a CXPath `/@a` step re-spelled `@a` inside a value the data reading
-#     carries as TEXT (`checkout.flow.cx`, `packages/gtin/gtin.cx`);
-#   * a quote flip inside a `(…)` sequence the data grammar cannot read, same
-#     TEXT-carried class (`check_version_consistency.cx`,
-#     `gen_guide/stdlib_docs_check.cx`).
+#     (2: `design/787/w1/surface.cx`, `spec/…/oriel/data/oriel-theme.cx`).
+#   * program surface the data reading can only carry as TEXT (4): a CXPath
+#     `/@a` step re-spelled `@a` (`checkout.flow.cx`, `packages/gtin/gtin.cx`)
+#     and a quote flip inside a `(…)` sequence the data grammar cannot read
+#     (`check_version_consistency.cx`, `gen_guide/stdlib_docs_check.cx`).
 #
-# This number goes DOWN only. Each of the four classes wants its own issue;
-# none is in 1384-a's scope, which is the guard plus #1384's own two shapes.
-FMT_SWEEP_MAX_DECLINED ?= 108
-FMT_SWEEP_MAX_TREE_REFUSED ?= 14
+# This number goes DOWN only. Each class wants its own issue; none is in
+# 1384-a's scope, which is the guard plus #1384's own two measured shapes.
+FMT_SWEEP_MAX_DECLINED ?= 31
+FMT_SWEEP_MAX_TREE_REFUSED ?= 17
 FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
 .PHONY: fmt-sweep-gate
 fmt-sweep-gate: build-vcx
