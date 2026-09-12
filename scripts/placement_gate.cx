@@ -1,0 +1,326 @@
+# scripts/placement_gate.cx -- the PLACEMENT check (RULED: 1427-f, OL-15).
+#
+# Eat-our-own-dog-food: written entirely in CX; runs as `cx <file>`.
+#
+# OL-15 asks for one place where a module's placement is STATED, and a check
+# that refuses a tree where any artifact disagrees with it. The statement is
+# registry/modules.cxd. This program is the check. It reads no other
+# declaration: everything below is the registry row compared against what is
+# actually on disk.
+#
+# What it refuses
+#   [spec missing]      a row whose spec file is not there
+#   [spec ring]         a row whose spec sits in the OTHER ring's directory,
+#                       or a cx-stdlib/cx-platform module whose spec is not
+#                       in its own ring's directory
+#   [corpus none]       a row with no corpus -- a module graded by nothing
+#   [corpus missing]    a row whose corpus file is not there
+#   [corpus ring]       a row whose corpus sits in the other ring's directory,
+#                       or a cx-stdlib/cx-platform module whose corpus is not
+#                       in its own ring's directory
+#   [suite ring]        a corpus whose `ring=` header disagrees with the row
+#   [source missing]    a row naming a stdlib/*.cx source that is not there
+#   [code missing]      a row naming a V file that is not there
+#   [code ring]         a Ring-1 row with a file under vcx/platform, or a
+#                       Ring-2 row with a file under vcx/code that is not
+#                       DECLARED as a half
+#   [half ring]         a declared half outside vcx/code, or a half declared
+#                       by a Ring-1 row (a half only exists to let a Ring-2
+#                       module keep a pure Ring-1 piece)
+#   [dir ring]          any suite under conformance/stdlib|platform whose
+#                       header ring disagrees with its directory -- the
+#                       directory IS the suite ring (1427-c)
+#   [orphan spec]       a spec under spec/03-approved/stdlib|platform with no
+#                       row
+#   [orphan corpus]     a suite under conformance/stdlib|platform with no row
+#   [orphan source]     a stdlib/*.cx with no row
+#
+# Exit: 0 clean, 1 placement drift, 2 the registry itself is unreadable.
+#
+# Run from the checkout root:
+#   vcx/target/cx --allow-all scripts/placement_gate.cx
+# (or: make placement-gate)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/strings' as=strings]
+
+# -- helpers ------------------------------------------------------------
+# named: set membership over a sequence of strings.
+[?def named scope=private pure [returns bool] ($set::[sequence string] $x::string)
+  [> [$count [?for [in $s $set] [where [= $s $x]] [yield $s]]] 0]]
+
+# words: an attribute holding one or more paths, split on whitespace, with
+# the explicit `none` marker dropped. A registry row always spells the
+# absence, so a missing attribute is itself drift.
+[?def words scope=private pure [returns any] ($v::string)
+  [?for [in $w [$strings:split-whitespace $v]]
+    [where [not [= $w ""]]]
+    [where [not [= $w "none"]]]
+    [yield $w]]]
+
+# spec-dir / corpus-dir for a ring: the two directories the tree reads as
+# the rings.
+[?def spec-dir scope=private pure [returns string] ($ring::string)
+  [?if [= $ring "2"] [then "spec/03-approved/platform/"] [else "spec/03-approved/stdlib/"]]]
+
+[?def other-spec-dir scope=private pure [returns string] ($ring::string)
+  [?if [= $ring "2"] [then "spec/03-approved/stdlib/"] [else "spec/03-approved/platform/"]]]
+
+[?def corpus-dir scope=private pure [returns string] ($ring::string)
+  [?if [= $ring "2"] [then "conformance/platform/"] [else "conformance/stdlib/"]]]
+
+[?def other-corpus-dir scope=private pure [returns string] ($ring::string)
+  [?if [= $ring "2"] [then "conformance/stdlib/"] [else "conformance/platform/"]]]
+
+# ringed-ns: the two namespaces whose module MUST live in its ring's
+# directory. cx-xap, cx-fabric and the ns=none rows (natives, engines,
+# design texts) are held only to the weaker "not in the other ring" rule.
+[?def ringed-ns scope=private pure [returns bool] ($ns::string $kind::string)
+  [?if [= $kind "module"]
+    [then [?if [= $ns "cx-stdlib"] [then true] [else [= $ns "cx-platform"]]]]
+    [else false]]]
+
+# suite-ring: the `ring=` on a suite header, "" when the file is unreadable
+# or carries none.
+[?def suite-ring scope=private impure [returns string] ($p::string)
+  [?if [$io:exists $p]
+    [then [?let [= $t [$cx:parse [$io:read-file $p]]] [$string [?else $t@ring ""]]]]
+    [else ""]]]
+
+# -- the registry -------------------------------------------------------
+[?let [= $reg-path "registry/modules.cxd"]
+      [= $reg-ok [$io:exists $reg-path]]
+
+  [?if [not $reg-ok]
+    [then
+      [?let [= $_m [$io:write-line [$env:stderr]
+          "placement-gate: registry/modules.cxd is missing -- the placement declaration (RULED: 1427-f) is the input this check has no substitute for"]]
+        [$env:exit 2]]]
+    [else
+
+[?let [= $reg [$cx:parse [$io:read-file $reg-path]]]
+      [= $rows [?for [in $m $reg//module] [yield $m]]]
+
+      # Declared names and paths, for the orphan sweeps.
+      [= $row-specs   [?for [in $m $rows] [yield [$string $m@spec]]]]
+      [= $row-corpora
+        [$strings:join
+          [?for [in $m $rows] [yield [$strings:join [$words [$string $m@corpus]] " "]]]
+          " "]]
+      [= $row-corpus-set [$strings:split-whitespace $row-corpora]]
+      [= $row-sources [?for [in $m $rows] [yield [$string $m@source]]]]
+
+      # -- per-row placement ------------------------------------------
+      [= $row-lines
+        [?for [in $m $rows]
+          [= $name   [$string $m@name]]
+          [= $ring   [$string $m@ring]]
+          [= $ns     [$string $m@ns]]
+          [= $kind   [$string $m@kind]]
+          [= $spec   [$string $m@spec]]
+          [= $corpus [$string $m@corpus]]
+          [= $source [$string $m@source]]
+          [= $strict [$ringed-ns $ns $kind]]
+          [= $sdir   [$spec-dir $ring]]
+          [= $sother [$other-spec-dir $ring]]
+          [= $cdir   [$corpus-dir $ring]]
+          [= $cother [$other-corpus-dir $ring]]
+          [= $corpus-files [$words $corpus]]
+          [= $n-corpus [$count $corpus-files]]
+          [= $spec-there [$io:exists $spec]]
+          [= $v-spec
+            [?if $spec-there [then ""]
+              [else [$concat "  [spec missing]   " $name "  -- " $spec]]]]
+          [= $v-spec-other
+            [?if [$strings:starts-with $spec $sother]
+              [then [$concat "  [spec ring]      " $name "  -- ring=" $ring
+                       " but its spec sits in " $sother]]
+              [else ""]]]
+          [= $v-spec-strict
+            [?if $strict
+              [then [?if [$strings:starts-with $spec $sdir] [then ""]
+                [else [$concat "  [spec ring]      " $name "  -- " $ns "/" $name
+                         " is a ring-" $ring " module; its spec must be under " $sdir
+                         ", found " $spec]]]]
+              [else ""]]]
+          [= $v-corpus-none
+            [?if [= $n-corpus 0]
+              [then [$concat "  [corpus none]    " $name
+                       "  -- a module graded by nothing; every row names a corpus"]]
+              [else ""]]]
+          [= $v-corpus
+            [$strings:join
+              [?for [in $c $corpus-files]
+                [where [not [$io:exists $c]]]
+                [yield [$concat "  [corpus missing] " $name "  -- " $c]]]
+              "\n"]]
+          [= $v-corpus-other
+            [$strings:join
+              [?for [in $c $corpus-files]
+                [where [$strings:starts-with $c $cother]]
+                [yield [$concat "  [corpus ring]    " $name "  -- ring=" $ring
+                         " but " $c " is in " $cother]]]
+              "\n"]]
+          [= $v-corpus-strict
+            [?if $strict
+              [then [$strings:join
+                [?for [in $c $corpus-files]
+                  [where [not [$strings:starts-with $c $cdir]]]
+                  [yield [$concat "  [corpus ring]    " $name "  -- a ring-" $ring
+                           " module's corpus must be under " $cdir ", found " $c]]]
+                "\n"]]
+              [else ""]]]
+          [= $v-suite
+            [$strings:join
+              [?for [in $c $corpus-files]
+                [= $sr [$suite-ring $c]]
+                [where [not [= $sr ""]]]
+                [where [not [= $sr $ring]]]
+                [yield [$concat "  [suite ring]     " $name "  -- " $c
+                         " carries ring=" $sr ", the row declares ring=" $ring]]]
+              "\n"]]
+          [= $v-source
+            [$strings:join
+              [?for [in $s [$words $source]]
+                [where [not [$io:exists $s]]]
+                [yield [$concat "  [source missing] " $name "  -- " $s]]]
+              "\n"]]
+          [= $parts
+            [?for [in $p ($v-spec, $v-spec-other, $v-spec-strict, $v-corpus-none,
+                          $v-corpus, $v-corpus-other, $v-corpus-strict, $v-suite, $v-source)]
+              [where [not [= $p ""]]]
+              [yield $p]]]
+          [yield [$strings:join $parts "\n"]]]]
+
+      # -- per-row code placement -------------------------------------
+      [= $code-lines
+        [?for [in $m $rows]
+          [= $name [$string $m@name]]
+          [= $ring [$string $m@ring]]
+          [= $code-files [$words [$string $m@code]]]
+          [= $half-files [$words [$string $m@half]]]
+          [= $want [?if [= $ring "2"] [then "vcx/platform/"] [else "vcx/code/"]]]
+          [= $v-code-missing
+            [$strings:join
+              [?for [in $f $code-files]
+                [where [not [$io:exists $f]]]
+                [yield [$concat "  [code missing]   " $name "  -- " $f]]]
+              "\n"]]
+          [= $v-code-ring
+            [$strings:join
+              [?for [in $f $code-files]
+                [where [not [$strings:starts-with $f $want]]]
+                [yield [$concat "  [code ring]      " $name "  -- ring=" $ring
+                         " wants " $want ", found " $f
+                         " (a Ring-2 module's pure piece belongs in half=, not code=)"]]]
+              "\n"]]
+          [= $v-half-missing
+            [$strings:join
+              [?for [in $f $half-files]
+                [where [not [$io:exists $f]]]
+                [yield [$concat "  [code missing]   " $name "  -- declared half " $f]]]
+              "\n"]]
+          [= $v-half-ring
+            [$strings:join
+              [?for [in $f $half-files]
+                [where [not [$strings:starts-with $f "vcx/code/"]]]
+                [yield [$concat "  [half ring]      " $name
+                         "  -- a declared half is Ring 1 and lives in vcx/code/, found " $f]]]
+              "\n"]]
+          [= $v-half-ring1
+            [?if [= $ring "2"] [then ""]
+              [else [?if [= [$count $half-files] 0] [then ""]
+                [else [$concat "  [half ring]      " $name
+                         "  -- only a Ring-2 module declares a half; this row is ring=" $ring]]]]]]
+          [= $parts
+            [?for [in $p ($v-code-missing, $v-code-ring, $v-half-missing,
+                          $v-half-ring, $v-half-ring1)]
+              [where [not [= $p ""]]]
+              [yield $p]]]
+          [yield [$strings:join $parts "\n"]]]]
+
+      # -- the directory IS the suite ring (1427-c) --------------------
+      [= $ring1-suites [$io:glob "conformance/stdlib/*.cxd"]]
+      [= $ring2-suites [$io:glob "conformance/platform/*.cxd"]]
+      [= $dir-lines
+        [?for [in $c $ring1-suites]
+          [= $sr [$suite-ring $c]]
+          [where [not [= $sr "1"]]]
+          [yield [$concat "  [dir ring]       " $c "  -- conformance/stdlib/ IS ring 1; header says ring=" $sr]]]]
+      [= $dir2-lines
+        [?for [in $c $ring2-suites]
+          [= $sr [$suite-ring $c]]
+          [where [not [= $sr "2"]]]
+          [yield [$concat "  [dir ring]       " $c "  -- conformance/platform/ IS ring 2; header says ring=" $sr]]]]
+
+      # -- orphans -----------------------------------------------------
+      [= $spec1 [$io:glob "spec/03-approved/stdlib/*.md"]]
+      [= $spec2 [$io:glob "spec/03-approved/platform/**/*.md"]]
+      [= $orphan-spec1
+        [?for [in $s $spec1]
+          [where [not [= [$path:basename $s] "README.md"]]]
+          [where [not [$named $row-specs $s]]]
+          [yield [$concat "  [orphan spec]    " $s "  -- no row in registry/modules.cxd"]]]]
+      [= $orphan-spec2
+        [?for [in $s $spec2]
+          [where [not [= [$path:basename $s] "README.md"]]]
+          [where [not [$named $row-specs $s]]]
+          [yield [$concat "  [orphan spec]    " $s "  -- no row in registry/modules.cxd"]]]]
+      [= $orphan-corpus1
+        [?for [in $c $ring1-suites]
+          [where [not [$named $row-corpus-set $c]]]
+          [yield [$concat "  [orphan corpus]  " $c "  -- graded, but no row claims it"]]]]
+      [= $orphan-corpus2
+        [?for [in $c $ring2-suites]
+          [where [not [$named $row-corpus-set $c]]]
+          [yield [$concat "  [orphan corpus]  " $c "  -- graded, but no row claims it"]]]]
+      [= $orphan-source
+        [?for [in $s [$io:glob "stdlib/*.cx"]]
+          [where [not [$named $row-sources $s]]]
+          [yield [$concat "  [orphan source]  " $s "  -- bundled, but no row claims it"]]]]
+
+      # -- assemble ----------------------------------------------------
+      [= $row-hits    [?for [in $x $row-lines]  [where [not [= $x ""]]] [yield $x]]]
+      [= $code-hits   [?for [in $x $code-lines] [where [not [= $x ""]]] [yield $x]]]
+      [= $n-violations
+        [+ [$count $row-hits]
+           [+ [$count $code-hits]
+              [+ [$count $dir-lines]
+                 [+ [$count $dir2-lines]
+                    [+ [$count $orphan-spec1]
+                       [+ [$count $orphan-spec2]
+                          [+ [$count $orphan-corpus1]
+                             [+ [$count $orphan-corpus2] [$count $orphan-source]]]]]]]]]]
+
+      [= $blocks
+        [?for [in $b ([$strings:join $row-hits "\n"],
+                      [$strings:join $code-hits "\n"],
+                      [$strings:join $dir-lines "\n"],
+                      [$strings:join $dir2-lines "\n"],
+                      [$strings:join $orphan-spec1 "\n"],
+                      [$strings:join $orphan-spec2 "\n"],
+                      [$strings:join $orphan-corpus1 "\n"],
+                      [$strings:join $orphan-corpus2 "\n"],
+                      [$strings:join $orphan-source "\n"])]
+          [where [not [= $b ""]]]
+          [yield $b]]]
+
+      [= $n-ring1 [$count [?for [in $m $rows] [where [= [$string $m@ring] "1"]] [yield $m]]]]
+      [= $n-ring2 [$count [?for [in $m $rows] [where [= [$string $m@ring] "2"]] [yield $m]]]]
+
+  [?if [= $n-violations 0]
+    [then
+      [?let [= $_ok [$io:write-line [$env:stdout]
+          [$concat "placement-gate OK -- " [$count $rows]
+            " rows in registry/modules.cxd (" $n-ring1 " ring 1, " $n-ring2
+            " ring 2); every spec, corpus, source and code file sits in the ring its row declares, and nothing under the ring directories is unclaimed."]]]
+        [$env:exit 0]]]
+    [else
+      [?let [= $_bad [$io:write-line [$env:stderr]
+          [$concat "placement drift -- " $n-violations
+            " violation(s) against registry/modules.cxd (RULED: 1427-f, OL-15):\n"
+            [$strings:join $blocks "\n"]]]]
+        [$env:exit 1]]]]]]]]
