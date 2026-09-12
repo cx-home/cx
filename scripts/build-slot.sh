@@ -24,6 +24,13 @@
 # on timeout the wrapper exits 75 (EX_TEMPFAIL) without running the command.
 set -u
 SLOT=${CX_RUNNER:-${CX_BUILD_SLOT:-"$HOME/git-repos/cx/.build-slot"}}
+# The command we run must be able to see WHICH runner it is holding: the
+# Makefile's check-gate-lock exempts a step held by a pre-merge runner
+# (RULED: INT-1). Export the resolved directory under the CX_BUILD_SLOT
+# spelling whichever spelling the caller used. CX_RUNNER is deliberately NOT
+# exported — the Makefile already uses that name for the cx binary that
+# test-code-diagram drives.
+export CX_BUILD_SLOT="$SLOT"
 TIMEOUT=${BUILD_SLOT_TIMEOUT:-14400}
 [ $# -gt 0 ] || { echo "runner: usage: $0 <command…>" >&2; exit 64; }
 

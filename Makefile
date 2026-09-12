@@ -180,10 +180,24 @@ gate-lock-status:
 	  echo "gate-lock: free"; \
 	fi
 
-# check-gate-lock refuses a build that would land inside somebody else's gate.
+# check-gate-lock refuses a step that would start inside somebody else's
+# post-merge run.
+#
+# EXEMPT: a step running under the PRE-MERGE RUNNER (RULED: INT-1, 2026-09-12).
+# The delivery grammar's §6 protects the MAIN CHECKOUT from a merge while a run
+# is active; it does not ask a worktree to stop building. The two runners are
+# separate by design — the post-merge run holds ~/git-repos/cx/.build-slot, a
+# pre-merge run holds ~/git-repos/cx/.build-slot-impl — so a pre-merge step has
+# already serialized against everything the lock was written to protect. Before
+# INT-1 the lock refused every `make` in every worktree with an EXIT=2 that
+# never named the caller's branch; four pre-merge runs were lost to it on
+# 2026-09-12. The test is on the runner directory the caller is holding, which
+# scripts/build-slot.sh exports as CX_BUILD_SLOT: anything but `.build-slot`
+# itself is a pre-merge runner and passes.
 .PHONY: check-gate-lock
 check-gate-lock:
 	@if [ -n "$(CX_GATE_LOCK_OVERRIDE)" ]; then exit 0; fi; \
+	if [ -n "$(CX_BUILD_SLOT)" ] && [ "$(notdir $(CX_BUILD_SLOT))" != ".build-slot" ]; then exit 0; fi; \
 	if [ ! -f "$(CX_GATE_LOCK)" ]; then exit 0; fi; \
 	owner=$$(sed -n 1p "$(CX_GATE_LOCK)" 2>/dev/null); \
 	where=$$(sed -n 2p "$(CX_GATE_LOCK)" 2>/dev/null); \
@@ -194,10 +208,12 @@ check-gate-lock:
 	  echo "check-gate-lock: cleared a stale lock (pid $$owner gone)"; \
 	  exit 0; \
 	fi; \
-	echo "check-gate-lock: a FULL GATE is running (pid $$owner, $$where)."; \
-	echo "  Building now perturbs it — the http/pty steps red under concurrent"; \
-	echo "  load and a -j storm can deadlock. Wait for it, or if you are certain"; \
-	echo "  it is dead:  make gate-lock-status   /   CX_GATE_LOCK_OVERRIDE=1 make <target>"; \
+	echo "check-gate-lock: a post-merge run is active (pid $$owner, $$where)."; \
+	echo "  A step started now perturbs it — the http/pty steps fail under"; \
+	echo "  concurrent load and a -j storm can deadlock. Wait for it, or run"; \
+	echo "  your step under the pre-merge runner:"; \
+	echo "    CX_BUILD_SLOT=\$$HOME/git-repos/cx/.build-slot-impl sh scripts/build-slot.sh make <target>"; \
+	echo "  If you are certain the run is dead:  make gate-lock-status"; \
 	exit 1
 
 build-vcx: check-gate-lock
