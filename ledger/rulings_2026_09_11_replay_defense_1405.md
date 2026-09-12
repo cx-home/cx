@@ -39,3 +39,14 @@ Order: after S7 (#1394) merges — its deployment is the consumer and its intero
 graders. Spec text delegated (flagged): `saml.md` §3 (`claims` gains `jti`), `session.md` §3.1
 (`replay`, `leeway`), §3.x (`replay-claim`), §8 (4814), the :1053 sentence; `oidc.md` §5 (the
 one-time re-fetch), `crypto.md` §3.10/:282.
+
+## Addendum — `validate-id-token` stays pure
+
+Integrator, 2026-09-12 09:58Z, recorded on #1354 as the **1405-a addendum**: `validate-id-token`
+stays **pure** and therefore OUTSIDE §3's re-fetch list. §3 named `complete` / `refresh` /
+`validate-id-token`; the third cannot re-fetch, because §4 of `oidc.md` makes it pure and a `pure`
+wrapper over an impure builtin is `CXER0233`. The impure verbs that hold `net` — `complete`,
+`refresh`, `device-poll` — re-fetch once; the pure verb answers crypto's own `CXER3714` for an
+unknown `kid` and dials nothing, which is what lets a whole login replay inside a fixture. The
+asymmetry is graded both ways: `oidc.md` §5.1, corpus case `oidc-073` offline, and the interop
+step's `rotation-bounded` / `rotation-refetch` rows for the impure half.
