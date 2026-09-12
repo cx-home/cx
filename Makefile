@@ -3190,20 +3190,23 @@ fmt-sweep-timed: build-vcx
 #     which is a structural byte — fixing it needs the emitter to know the
 #     atom and the `[]` were GLUED, which is an AST change and not 1384-a's.
 #   * an interior COMMENT the formatter RE-ORDERS past the node it documents
-#     (8: the two `render-ctx.cx`, both cxstore clients, `home-components.cx`,
-#     both `tooling/cxfabric/*.config.cx`, and `check_v_fork_patches.cx` in
-#     the other direction). `tooling/cxfabric/adapter.config.cx` is the
-#     clearest: the comment that opens `[webhook-adapter]` and explains
-#     `[fabric …]` comes back AFTER it. canonical.md §2.9 requires "comment
-#     placement preserved relative to nodes", so the comment is still there
-#     and no longer documents anything.
+#     (9: the two `render-ctx.cx`, both cxstore clients, `home-components.cx`,
+#     both `tooling/cxfabric/*.config.cx`, `check_version_consistency.cx`, and
+#     `check_v_fork_patches.cx` in the other direction).
+#     `tooling/cxfabric/adapter.config.cx` is the clearest: the comment that
+#     opens `[webhook-adapter]` and explains `[fabric …]` comes back AFTER it.
+#     canonical.md §2.9 requires "comment placement preserved relative to
+#     nodes", so the comment is still there and no longer documents anything.
 #   * an ATTRIBUTE WRITTEN AFTER BODY TEXT, which the program reading hoists
 #     to the head and the data reading reads as part of the text run
 #     (2: `design/787/w1/surface.cx`, `spec/…/oriel/data/oriel-theme.cx`).
-#   * program surface the data reading can only carry as TEXT (4): a CXPath
-#     `/@a` step re-spelled `@a` (`checkout.flow.cx`, `packages/gtin/gtin.cx`)
-#     and a quote flip inside a `(…)` sequence the data grammar cannot read
-#     (`check_version_consistency.cx`, `gen_guide/stdlib_docs_check.cx`).
+#   * program surface the data reading can only carry as TEXT or as an
+#     unstructured collection (3): a CXPath `/@a` step re-spelled `@a`
+#     (`checkout.flow.cx`, `packages/gtin/gtin.cx`) and a `(…)` sequence the
+#     data grammar cannot read (`gen_guide/stdlib_docs_check.cx`). The two
+#     spellings the ruling GRANTS — the quote character and an underscored
+#     integer — are folded out of the comparison, so a file whose only
+#     difference was one of those is not here.
 #
 # This number goes DOWN only. Each class wants its own issue; none is in
 # 1384-a's scope, which is the guard plus #1384's own two measured shapes.
