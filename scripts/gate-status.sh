@@ -64,9 +64,20 @@ show() {
 	[ -n "${elapsed:-}" ] && printf 'elapsed  %sm %ss   (a full post-merge run is typically 60-120m)\n' \
 		"$(( elapsed / 60 ))" "$(( elapsed % 60 ))"
 
-	printf 'failing  %s FAIL line(s), %s make error(s)\n' \
-		"$(grep -cE '^FAIL' "$LOG")" "$(grep -cE '^make: \*\*\*' "$LOG")"
 	printf 'log      %s lines, %s\n' "$(grep -c '' "$LOG")" "$LOG"
+
+	printf '\n── failing steps ─────────────────────────────────────\n'
+	# `make: *** [<target>] Error N` names the STEP. Deduplicated, because a
+	# serial retry reports the same step twice.
+	failing=$(grep -oE '^make(\[[0-9]+\])?: \*\*\* \[[^]]+\]' "$LOG" \
+		| sed -E 's/.*\[//; s/\]$//' | sort -u)
+	if [ -n "$failing" ]; then
+		printf '%s\n' "$failing" | sed 's/^/  /'
+	else
+		printf '  (none)\n'
+	fi
+	printf '  %s FAIL line(s), %s make error(s) in the log\n' \
+		"$(grep -cE '^FAIL' "$LOG")" "$(grep -cE '^make(\[[0-9]+\])?: \*\*\*' "$LOG")"
 
 	printf '\n── finished steps ────────────────────────────────────\n'
 	grep -E 'Summary for all V _test.v|passed, [0-9]+ failed|: [0-9]+ passed' "$LOG" \
