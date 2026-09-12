@@ -8,8 +8,8 @@ git fetch -q origin release/0.18 2>/dev/null
 tip=$(git rev-parse --short origin/release/0.18)
 open=$(gh issue list --repo cx-home/cx-private --state open --limit 1000 --json number --jq length 2>/dev/null)
 gated=$(grep -o 'cx_commit=[0-9a-f]*' vcx/target/gate.log 2>/dev/null | tail -1 | cut -d= -f2)
-gexit=$(grep '^GATE-EXIT=' vcx/target/gate.log 2>/dev/null | tail -1)
-gstate=$(sh scripts/gate-status.sh 2>/dev/null | awk '/^state/{print $2, $3}')
+gexit=$(grep -E '^(RUN|GATE)-EXIT=' vcx/target/gate.log 2>/dev/null | tail -1)
+gstate=$(sh scripts/gate-status.sh 2>/dev/null | awk '/^state/{print $2}')
 slot=$(cat "$HOME/git-repos/cx/.build-slot/cmd" 2>/dev/null | grep -oE 'lane_[A-Za-z0-9_]+|gate\.sh' | head -1)
 since=$(cat "$HOME/git-repos/cx/.build-slot/since" 2>/dev/null)
 {
@@ -17,14 +17,14 @@ echo "# cx v0.18.0 close-out — status"
 echo
 echo "updated $(date -u +%FT%TZ) · tip \`$tip\` · **open issues: ${open:-?}**"
 echo
-echo "## gate lane"
-echo "last finished gate: \`${gated:-none}\` ${gexit:-} · gate-status: ${gstate:-?}"
-echo "gate-loop (last 5):"
+echo "## post-merge run"
+echo "last finished run: \`${gated:-none}\` ${gexit:-} · state: ${gstate:-?}"
+echo "post-merge runner (last 5):"
 echo '```'
 tail -5 vcx/target/gate-loop.log 2>/dev/null || echo "(no gate-loop.log)"
 echo '```'
 echo
-echo "## build slots"
+echo "## runners"
 echo "default holder: ${slot:-idle} ${since:+(since $since)}"
 for q in "$HOME/git-repos/cx/.build-slot.queue" "$HOME/git-repos/cx/.build-slot-impl.queue"; do
   n=$(ls "$q" 2>/dev/null | wc -l | tr -d ' ')
@@ -32,7 +32,7 @@ for q in "$HOME/git-repos/cx/.build-slot.queue" "$HOME/git-repos/cx/.build-slot-
   for t in $(ls "$q" 2>/dev/null | sort -t. -k1,1n -k2,2n); do p=${t##*.}; c=$(ps -o command= -p "$p" 2>/dev/null | grep -oE 'lane_[A-Za-z0-9_]+|gate\.sh|merge --no-ff [^ ]+' | head -1); [ -n "$c" ] && echo "    - $c ($(( ($(date +%s) - ${t%%.*}) / 60 ))m)"; done
 done
 echo
-echo "## landed since last green gate (b2c4d4f14), awaiting a green"
+echo "## landed since the last passed run (b2c4d4f14), awaiting a pass"
 git log --merges --format='- `%h` %s' b2c4d4f14..origin/release/0.18 | cut -c1-110
 echo
 echo "## open branches (ahead of tip)"

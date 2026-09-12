@@ -6,8 +6,8 @@
 # Anomalies:
 #   SILENT   a worker's last note is mid-run (not "run exit") and older than 35 min
 #   MISSED   a worker wrote no "run start" in the 70 min after its firing slot
-#   RED      gate.log carries GATE-EXIT=2 (reported once per verdict)
-#   SLOT     the build slot has been held longer than 150 min
+#   FAILED   gate.log carries RUN-EXIT=2 (or the older GATE-EXIT=2); reported once per run
+#   RUNNER   the runner has been held longer than 150 min
 #   STALE    the shared lock is 45+ min old while some worker's last note is mid-run
 root=$(cd "$(dirname "$0")/.." && pwd); cd "$root" || exit 1
 every=${1:-300}
@@ -21,17 +21,17 @@ while :; do
 		[ -z "$last" ] && continue
 		ts=$(echo "$last" | cut -c1-20); txt=$(echo "$last" | cut -c23-90); a=$(age_min "$ts")
 		# SILENT only when nothing is building: a worker queued behind the slot is silent by design.
-		slotd=${CX_BUILD_SLOT:-"$HOME/git-repos/cx/.build-slot"}
+		slotd=${CX_RUNNER:-${CX_BUILD_SLOT:-"$HOME/git-repos/cx/.build-slot"}}
 		if [ ! -d "$slotd" ] && [ -z "$(ls "$slotd.queue" 2>/dev/null)" ]; then
-			case "$txt" in *"run exit"*) ;; *) [ "$a" -ge 35 ] && emit "silent-$w-$ts" "SILENT worker $w (slot free, queue empty): ${a}m since \"$txt\"";; esac
+			case "$txt" in *"run exit"*) ;; *) [ "$a" -ge 35 ] && emit "silent-$w-$ts" "SILENT worker $w (runner free, queue empty): ${a}m since \"$txt\"";; esac
 		fi
 		# missed firing: the worker's last word was "run exit" and nothing has been heard since for
 		# longer than a firing interval (+10 min jitter/warm-up). A run that outlives its hour is not a miss.
 		case "$txt" in *"run exit"*) [ "$a" -ge 70 ] && emit "missed-$w-$ts" "MISSED worker $w: last note was run exit ${a}m ago, no new run";; esac
 	done
-	v=$(grep -o 'GATE-EXIT=[0-9]*' vcx/target/gate.log 2>/dev/null | tail -1); st=$(grep -m1 '^gate: started' vcx/target/gate.log 2>/dev/null | cut -c15-)
-	[ "$v" = "GATE-EXIT=2" ] && emit "red-$st" "RED gate started $st: $v; $(grep -c '^FAIL' vcx/target/gate.log) FAIL line(s): $(grep '^FAIL' vcx/target/gate.log | head -2 | cut -c1-80 | tr '\n' ';')"
-	slotd=${CX_BUILD_SLOT:-"$HOME/git-repos/cx/.build-slot"}
-	if [ -d "$slotd" ]; then sa=$(age_min "$(cat "$slotd/since" 2>/dev/null)"); [ "$sa" -ge 150 ] && emit "slot-$(cat "$slotd/since")" "SLOT held ${sa}m by pid $(cat "$slotd/pid"): $(cut -c1-70 "$slotd/cmd") @$(basename "$(cat "$slotd/cwd")")"; fi
+	v=$(grep -oE '(RUN|GATE)-EXIT=[0-9]*' vcx/target/gate.log 2>/dev/null | tail -1); st=$(grep -m1 -E '^(run|gate): started' vcx/target/gate.log 2>/dev/null | sed -E 's/^(run|gate): started //')
+	case "$v" in RUN-EXIT=2|GATE-EXIT=2) emit "failed-$st" "FAILED run started $st: $v; $(grep -c '^FAIL' vcx/target/gate.log) FAIL line(s): $(grep '^FAIL' vcx/target/gate.log | head -2 | cut -c1-80 | tr '\n' ';')" ;; esac
+	slotd=${CX_RUNNER:-${CX_BUILD_SLOT:-"$HOME/git-repos/cx/.build-slot"}}
+	if [ -d "$slotd" ]; then sa=$(age_min "$(cat "$slotd/since" 2>/dev/null)"); [ "$sa" -ge 150 ] && emit "runner-$(cat "$slotd/since")" "RUNNER held ${sa}m by pid $(cat "$slotd/pid"): $(cut -c1-70 "$slotd/cmd") @$(basename "$(cat "$slotd/cwd")")"; fi
 	sleep "$every"
 done

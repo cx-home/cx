@@ -93,47 +93,68 @@ them.
 
 ```
 make build-vcx        build the toolchain (the `cx` binary lands in vcx/target/)
-make test             the full gate matrix — run this once, at the end
-make test-changed     only the lanes whose inputs your change touched
+make test             the whole post-merge pipeline — run this once, at the end
+make test-changed     only the steps whose inputs your change touched
 make test-changed-dry the same selection, printed and not run
 make docs             regenerate the LLM layer after changing a cited fixture
 make docs-check       the drift gate; fails if the layer is stale
 make guide            the human-facing documentation site
-scripts/gate.sh       run a gate detached and ALWAYS write a verdict marker
+scripts/gate.sh       run a pipeline detached and ALWAYS write a verdict marker
 ```
 
-Targeted lanes are the development loop; the full matrix is the exit gate.
-[`CONTRIBUTING.md`](CONTRIBUTING.md) has the rest.
+The words here are the delivery grammar's — pipeline, step, run, runner,
+pre-merge, post-merge — and
+[`spec/03-approved/process/delivery-grammar.md`](spec/03-approved/process/delivery-grammar.md)
+defines them. A **step** is one command with a pass/fail exit (a make target, a
+test file). A **pipeline** is an ordered set of steps, and two exist: the
+**pre-merge** pipeline (your branch's subset, in your worktree — `make
+test-changed BASE=<integration branch>` plus any step your branch adds) and the
+**post-merge** pipeline (all of `make test`, on the integration branch's head).
+A **run** is one pipeline on one commit; its status is passed, failed or
+cancelled. A **runner** executes runs one at a time, and there is one per
+pipeline.
 
-**Run a long gate through `scripts/gate.sh`, not through a hand-typed
+The pre-merge pipeline is the development loop; the post-merge pipeline is what
+a branch is merged into. [`CONTRIBUTING.md`](CONTRIBUTING.md) has the rest.
+
+**Run a long pipeline through `scripts/gate.sh`, not through a hand-typed
 wrapper.** The idiom everyone reaches for —
 
 ```
-nohup sh -c 'make test ; echo GATE-EXIT=$?' > gate.log 2>&1 &
+nohup sh -c 'make test ; echo RUN-EXIT=$?' > gate.log 2>&1 &
 ```
 
 writes no marker if the WRAPPER is killed, so an
-`until grep -q GATE-EXIT= gate.log` waiter polls forever; #1333 found three
-such waiters alive three hours after their gate had died. `scripts/gate.sh`
+`until grep -q RUN-EXIT= gate.log` waiter polls forever; #1333 found three
+such waiters alive three hours after their run had died. `scripts/gate.sh`
 writes the marker from a `trap ... EXIT`, so it is unconditional, and it
 signals make's whole process group on the way out instead of orphaning the
-gate:
+run:
 
 ```
 nohup scripts/gate.sh > /dev/null 2>&1 &                      # or a target
-until grep -q 'GATE-EXIT=' vcx/target/gate.log; do sleep 30; done
+until grep -q 'RUN-EXIT=' vcx/target/gate.log; do sleep 30; done
 ```
 
-`GATE-EXIT=0` passed, `2` a real red, `130`/`143`/`129` interrupted /
-terminated / hung up, `70` the wrapper died before make returned. Read the
-verdict FROM THE LOG — a piped gate loses the per-lane summaries.
+The marker carries the exit code AND the status word: `RUN-EXIT=0 passed`,
+`RUN-EXIT=2 failed` (a real red), `RUN-EXIT=130|143|129 cancelled` (interrupted
+/ terminated / hung up), `RUN-EXIT=70 failed` (the wrapper died before make
+returned). Logs written before this change say `GATE-EXIT=` instead, and every
+reader in the tree still accepts that spelling; the file names (`gate.sh`,
+`gate.log`, `gate-loop.log`) have not moved either. Read the verdict FROM THE
+LOG — a piped run loses the per-step summaries.
+
+`scripts/gate-status.sh` reads that log and prints the run in the same words:
+state `running`/`passed`/`failed`/`cancelled`, how many steps are failing, which
+steps have finished, and what is running now.
 
 ### The development loop
 
-`make test-changed` is the loop. It reads the change set, intersects it with a
-per-lane input manifest in [`scripts/test_changed.sh`](scripts/test_changed.sh),
-and runs only the lanes that can possibly have moved. It is conservative by
-construction: a lane with no manifest row always runs (and says so), a touched
+`make test-changed` is the loop — it is the pre-merge pipeline. It reads the
+change set, intersects it with a per-step input manifest in
+[`scripts/test_changed.sh`](scripts/test_changed.sh), and runs only the steps
+that can possibly have moved. It is conservative by construction: a step with no
+manifest row always runs (and says so), a touched
 `Makefile`/`scripts/`/`VERSION`/`devbox.*` collapses to the full union, and the
 globs over-include on doubt — a false "run" costs minutes, a false "skip" costs
 correctness.
@@ -147,16 +168,16 @@ make test-changed BASE=origin/release/0.17   # the whole branch
 make test-changed-dry BASE=HEAD~3            # show the decision, run nothing
 ```
 
-**`make test-changed` never substitutes for `make test`.** The release gate is
-the full matrix, and it is what a wave or phase exits on.
+**`make test-changed` never substitutes for `make test`.** The post-merge
+pipeline is the whole union, and it is what a wave or phase exits on.
 
 Test *files*, not test functions, are the unit of compile cost: every
 `*_test.v` links its own binary over the whole module graph, so a new standalone
-test file costs a whole-graph link on every gate run. Add test functions to the
+test file costs a whole-graph link on every run. Add test functions to the
 umbrella that already owns the area — the roster is
 [`scripts/consolidation/`](scripts/consolidation)`/<area>.files` and
 `scripts/consolidate_tests.sh absorb <area>` folds a stray file in — and
-introduce a standalone `*_test.v` only when the lane genuinely needs process
+introduce a standalone `*_test.v` only when the step genuinely needs process
 isolation (a real socket, a serial-retry class, an exclusion in
 `scripts/publish_v.sh`).
 
@@ -167,7 +188,7 @@ never becomes optional.
 **A cited fixture is not the only docs-layer input.** `docs/llm/reference-cli.md`
 is generated by **running `cx --help`**, so adding, renaming or re-wording a
 flag or subcommand drifts it — and `llms-full.txt` with it, since that
-concatenates every document. `docs-check`'s lane-input row in
+concatenates every document. `docs-check`'s step-input row in
 [`scripts/test_changed.sh`](scripts/test_changed.sh) is accordingly wide
 (`docs-src/* docs/llm/* scripts/gen_docs/* conformance/* spec/* stdlib/* x/*
 vcx/* VERSION`): **any** `vcx/` change selects it. So if you touch the CLI
