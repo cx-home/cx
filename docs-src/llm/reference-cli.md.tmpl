@@ -12,8 +12,11 @@ cx [cx-flags] FILE [program-args...]
 
 Flags bind **before** the resource. Everything after the resource is the
 program's `argv`. This is the interpreter convention (and shebang-identical),
-and getting it backwards does not produce a usage error — it produces a
-program that silently never got its capability:
+and getting it backwards is not a usage error — it produces a program that
+never got its capability. Since #1424 it is not silent either: an argument
+after the file spelled like a cx flag draws one line on STDERR (unless the
+program's `[argspec]` declares it), while argv and the exit status stay as
+they were:
 
 {{PAIR:ap-flags-after-file-wrong ap-flags-after-file-right}}
 
@@ -176,8 +179,10 @@ read the exit status as a refusal contract: refusal at a boundary is
 `CXER0275` (store / http), raised at the boundary, independent of how the
 process exits.
 
-Unknown flags are hard errors. Nothing is ignored, which is why a typo'd
-grant fails loudly *before* the file but silently *after* it.
+Unknown flags are hard errors. Nothing is ignored: a typo'd grant *before* the
+file exits 2, and a real cx flag *after* the file is the program's argument —
+which still grants nothing, and now says so in one STDERR line unless the
+program's `[argspec]` declares it.
 
 ## Scripting `cx` from CX
 
