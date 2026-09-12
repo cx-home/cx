@@ -8,10 +8,12 @@
 #     SPEC_SET == (BUNDLE_SET union DISPATCH_SET)
 #
 # where
-#   SPEC_SET     = name= of every [module-meta] with status=current in
-#                  spec/03-approved/std-lib/*.md. status=new modules
-#                  (e.g. xap in spec/01-new) are EXCLUDED -- not yet
-#                  implemented.
+#   SPEC_SET     = name= of every [module-meta] with status=current in the
+#                  spec pages registry/modules.cxd declares (RULED: 1427-f;
+#                  `spec/03-approved/std-lib/*.md` today, and wherever the
+#                  #1427 split puts them tomorrow -- see catalog-spec-files
+#                  below). status=new modules (e.g. xap in spec/01-new) are
+#                  EXCLUDED -- not yet implemented.
 #   BUNDLE_SET   = basenames of stdlib/*.cx (the .cx stripped).
 #   DISPATCH_SET = every <name>_stdlib_builtin prefix in
 #                  vcx/code/stdlib_dispatch.v, deduplicated.
@@ -42,12 +44,41 @@
 
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
 [?lib 'cx-stdlib/re'      as=re]
 [?lib 'cx-stdlib/path'    as=path]
 [?lib 'cx-stdlib/strings' as=strings]
 [?lib 'cx-stdlib/process' as=process]
 
 # -- helpers ------------------------------------------------------------
+# catalog-spec-files: the spec pages this gate reads, taken from
+# registry/modules.cxd rather than from a directory glob (RULED: 1427-f).
+#
+# WHY NOT A GLOB. `spec/03-approved/std-lib/*.md` is a path this gate
+# happened to know; when #1427 splits that directory into `stdlib/` and
+# `platform/` a glob over it goes empty and this gate passes by finding
+# nothing -- the vacuous-step class the repo keeps paying for. The registry
+# is where a surface's spec is DECLARED, so reading it here means the gate
+# follows the pages wherever they are put and cannot silently stop looking.
+#
+# The population is exactly the one the glob covered: a `codec` row is
+# EXEMPT by this gate's own rule (codec.md §3 is its normative text, not a
+# std-lib page), a `suite` row's spec belongs to something that is not a
+# module, and the `cx-x` tier is experimental and was never in SPEC_SET
+# (spec/03-approved/std-lib/README.md D3).
+[?def catalog-spec-files scope=private impure [returns any] ()
+  [?let [= $reg [$cx:parse [$io:read-file "registry/modules.cxd"]]]
+    [?for [in $m $reg//module]
+      [= $spec [$string [?else $m@spec "none"]]]
+      [= $kind [$string [?else $m@kind "module"]]]
+      [= $ns   [$string [?else $m@ns "none"]]]
+      [where [not [= $spec "none"]]]
+      [where [not [= $kind "codec"]]]
+      [where [not [= $kind "suite"]]]
+      [where [not [= $ns "cx-x"]]]
+      [where [$io:exists $spec]]
+      [yield $spec]]]]
+
 # has-name: set membership, the idiom this gate already used inline.
 [?def has-name scope=private pure [returns bool] ($set::[sequence string] $x::string)
   [> [$count [?for [in $s $set] [where [= $s $x]] [yield $s]]] 0]]
@@ -87,7 +118,7 @@
       [= $codec-set [$cx-lines '--codecs']]
 
   [?let [= $spec-set
-    [?for [in $f [$io:glob "spec/03-approved/std-lib/*.md"]]
+    [?for [in $f [$catalog-spec-files]]
       [= $m [$re:find $meta-rx [$io:read-file $f]]]
       [where [not [?match $m [case [no-match] true] [else false]]]]
       [where [= [$re:group $m 2] "current"]]
