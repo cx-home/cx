@@ -2266,7 +2266,7 @@ test-vcx-suite: build-vcx-dev check-serial-retry-rosters skip-ledger-reset
 	      esac; \
 	    done; \
 	    if [ $$st -eq 0 ]; then \
-	      echo "──── every failed step green on its classified SERIAL retry (socket / pty steps) ────"; \
+	      echo "──── every failed step passed on its classified SERIAL retry (socket / pty steps) ────"; \
 	    fi; \
 	  fi; \
 	fi; \
@@ -2330,7 +2330,7 @@ test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	      esac; \
 	    done; \
 	    if [ $$st -eq 0 ]; then \
-	      echo "──── every failed step green on its classified SERIAL retry (socket / pty steps) ────"; \
+	      echo "──── every failed step passed on its classified SERIAL retry (socket / pty steps) ────"; \
 	    fi; \
 	  fi; \
 	fi; exit $$st
