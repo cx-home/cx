@@ -45,10 +45,25 @@
 #   UNSTABLE   fmt changed it, but the output is not its own fixed point. §7
 #              says that cannot happen; `fmt_source` is supposed to fail closed
 #              to the source instead of returning an unsettled candidate.
-#   DECLINED   fmt returned a provably non-canonical input verbatim. Not a
-#              crash and not a wrong answer — a HOLE, and the hole is silent:
-#              exit 0, no diagnostic, no gate anywhere notices.
-#   ERROR      non-zero exit; the diagnostic is reported.
+#   DECLINED   fmt returned a provably non-canonical input verbatim, and SAID
+#              so — exit 1 with one `cx-err:CXER0301` line naming the
+#              construct and its position (RULED: 1391-a). Not a crash and not
+#              a wrong answer: a hole, now a NAMED one. Every DECLINED row
+#              below carries that line, which is the difference between a
+#              census of 93 stubborn legacy files and a census of one hole
+#              with 93 instances.
+#   ERROR      any other non-zero exit; the diagnostic is reported. A
+#              `cx-err:CXER0300` refusal — the §1 tree guard firing, meaning
+#              fmt's own output did not re-parse to the input's node tree —
+#              lands HERE and not in DECLINED, on purpose: it is an open
+#              defect in the formatter, not a shape it cannot format.
+#
+# BEFORE 1391-a a decline was exit 0 with no diagnostic, so this sweep's own
+# perturbation was the only instrument that could see one at all. The verdict
+# below keeps that comparison as the primary signal — the ANSWER is what makes
+# a decline a decline — and reads the code only to separate a decline from a
+# real error, so a regression to a silent decline still counts as DECLINED
+# rather than being promoted to FORMATTED.
 #
 # The sweep is a REPORT by default: it exits 0 with the census unless it could
 # not run at all. `--ratchet --max-declined N` turns the DECLINED column into a
@@ -249,11 +264,12 @@
 # ── report ─────────────────────────────────────────────────────────────────
 
 [?def verdict-of scope=private pure [returns string] ($r $stable-paths)
-  [?if [not [= $r/rc 0]] [then 'ERROR']
+  [?if [and $r/declined [$strings:contains $r/diag 'CXER0301']] [then 'DECLINED']
+  [else [?if [not [= $r/rc 0]] [then 'ERROR']
   [else [?if $r/declined [then 'DECLINED']
   [else [?if [> [$count [?for [in $p $stable-paths] [where [= $p $r/path]] [yield $p]]] 0]
           [then 'FORMATTED']
-          [else 'UNSTABLE']]]]]]]
+          [else 'UNSTABLE']]]]]]]]]
 
 [?let
   [= $args [?fallback [$env:parse-args ARG-SPEC]
