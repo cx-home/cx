@@ -298,6 +298,18 @@ cx vX.Y.Z-dev+3ed9ade5
       [tr [td 'Keycloak'] [td '--'] [td '--'] [td '--'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/sso_interop_real.sh keycloak -- pending a tenant'] [td '--']]
       [tr [td 'cx reference IdP (in-tree, scripts/sso_interop/idp.cx)'] [td 'yes -- code, state, nonce, S256 challenge, and the RFC 9207 iss parameter on the authorization response'] [td 'all four'] [td 'assertion-signed: fetched over http and attached, in plaintext and as an EncryptedAssertion (AES-256-CBC under RSA-OAEP-MGF1P) the relying party decrypts with its own private half; response-signed and the ACS POST binding are NOT graded'] [td 'not exercised -- this lane is the login half'] [td 'verified per commit -- test-sso-interop-lane'] [td 'rows: discover, mixup, login-none, login-secret-basic, login-secret-post, login-private-key-jwt, wrong-secret, pkce-mismatch, rotation, refresh, client-credentials, saml-over-wire, saml-encrypted-over-wire'] [td 'every commit']]]
     [note
+      """Entra groups OVERAGE, recorded rather than left silent (RULED:
+         1406-b). Above its threshold Entra stops emitting the `groups`
+         claim and sends `_claim_names` / `_claim_sources` naming a
+         Microsoft Graph endpoint instead. `session:map-claims` reads
+         that and records `[groups-overage source=...]` with NO `groups`,
+         and an `authz` decision over such a binding refuses with
+         `:groups-indeterminate` -- never an empty allow. FETCHING the
+         withheld set over Graph is the deployment's step and is
+         DEFERRED: the trigger for building it is the first Entra tenant
+         in this matrix over the overage threshold. Until then the
+         fail-closed refusal is the whole behavior."""]
+    [note
       """A `--` is "not measured", never "not supported". The five named
          products have no row content because no tenant has been driven
          yet, and `tools/release-verify.sh` refuses a release while any
