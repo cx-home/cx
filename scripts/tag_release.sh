@@ -209,7 +209,7 @@ else
     note "verifying version consistency"
     vcx/target/cx --allow-read --allow-write scripts/check_version_consistency.cx || fail "version inconsistent after bump"
     # the contract-revision stamp bump_version.sh regenerates must agree too (#1435)
-    make check-contract-revision
+    make check-contract-revision || fail "contract-revision stamp disagrees with VERSION after the bump (#1435)"
 fi
 
 # -- Step 3: commit the bump, TAG it, THEN rebuild (#666, #979) -------
