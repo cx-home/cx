@@ -105,7 +105,7 @@ An attacker uses the events streaming API (`cx_events_open` / `next` / `close`) 
 
 ### T9 — ReDoS via regex functions
 
-The `cx-stdlib/re` module ([`../std-lib/re.md`](../stdlib/re.md)) — `re:matches`, `re:find`, `re:find-all`, `re:replace`, `re:replace-first`, `re:replace-fn`, `re:split` — plus the schema `[pattern …]` constraint ([`../core/schema.md`](../core/schema.md) §7.1, rule `S008`) accept caller-supplied regex patterns. PCRE/Perl-style engines run for minutes on catastrophic-backtracking patterns such as `(a+)+$`.
+The `cx-stdlib/re` module ([`../stdlib/re.md`](../stdlib/re.md)) — `re:matches`, `re:find`, `re:find-all`, `re:replace`, `re:replace-first`, `re:replace-fn`, `re:split` — plus the schema `[pattern …]` constraint ([`../core/schema.md`](../core/schema.md) §7.1, rule `S008`) accept caller-supplied regex patterns. PCRE/Perl-style engines run for minutes on catastrophic-backtracking patterns such as `(a+)+$`.
 
 **Mitigation:** all regex call sites route through the vendored RE2 engine inside `libcx`. Matching is **linear-time in the input length** with no exposure to backtracking explosion. The same engine backs `cx-stdlib/re` and the schema `[pattern …]` constraint, so cross-binding regex-flavour drift is also eliminated.
 
@@ -170,7 +170,7 @@ Defenses present at the V core and inherited by every binding, each testable thr
 | Bounds-checked deserialization | every binding's CXCol / AST decoder validates length prefixes before allocation | [`../core/abi.md`](../core/abi.md); [`governance.md`](governance.md) §1.2 |
 | Type-preservation across formats | CXCol v1 binary, no string-format round-trips on hot paths | [`../core/data-bin.md`](../core/data-bin.md) |
 | Canonical-form determinism | `cx canonical` byte-stable across runs and bindings | [`../core/canonical.md`](../core/canonical.md); [`governance.md`](governance.md) §2.3 |
-| Linear-time regex | all regex call sites route through the vendored RE2 shim | [`../std-lib/re.md`](../stdlib/re.md) |
+| Linear-time regex | all regex call sites route through the vendored RE2 shim | [`../stdlib/re.md`](../stdlib/re.md) |
 | Function-recursion budget | evaluator enforces configurable call-depth cap (default 256) | [`../core/code.md`](../core/code.md) |
 | Sequence-length budget | evaluator enforces configurable sequence-length cap (default 1,000,000) | [`../core/code.md`](../core/code.md) |
 | Strict xs: constructors | `xs:integer` / `xs:double` / `xs:decimal` / etc. raise on unparseable string inputs | [`../core/code.md`](../core/code.md) |

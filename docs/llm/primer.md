@@ -370,7 +370,7 @@ the capability-free substrate, which is why this runs with no grants at all:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [doc [item "hello"]]]] [$store:get-doc $s $h]]
 ```
 
@@ -1685,7 +1685,7 @@ document containing an `[err]` at any depth out of the program:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]]
       [= $rows ([row [v 2.5]], [err code=cx-err:CXER0100 message="a refusal at rest"], [row [v 4.5]])]
   [$store:put-doc $s [report [count [$count $rows]] [?splice $rows]]]]
@@ -1713,7 +1713,7 @@ verbs, an attribute on `[response]` / `[sse-subscribe]`:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]]
       [= $h [$store:put-doc $s [report [err code=cx-err:CXER0100 message="stored deliberately"]] {errs: :permit}]]
   [$store:get-doc $s $h]]
@@ -1825,7 +1825,7 @@ assistant makes with a young language is inventing a plausible module name.
 | `geo` | Coordinate primitives without a new scalar kind — geometries are ordinary CXDM elements. |
 | `hash` | Content-addressable hashing — fixed-length digests of arbitrary byte payloads. |
 | `html` | HTML as a first-class document format: parse, sanitize, serialize, and extract text. |
-| `http` | HTTP/1.1 request/response semantics: a programmatic client and server built on the `cx-stdlib/net` transport. |
+| `http` | HTTP/1.1 request/response semantics: a programmatic client and server built on the `cx-platform/net` transport. |
 | `i18n` | The message and translation layer of CX's internationalization surface. |
 | `imap` | Both halves of IMAP4rev2 (RFC 9051) on one token grammar: the client an agent or a human client reads a mailbox with, and the server core a CX process serves a mailbox from. |
 | `io` | File and stream I/O — whole-file reads and writes, streaming handles, line iteration, filesystem queries, directory operations, globbing, tempfiles, and advisory file locking. |
@@ -1844,7 +1844,7 @@ assistant makes with a young language is inventing a plausible module name.
 | `random` | Two distinct randomness facilities, kept cleanly separated so PRNG output can never accidentally stand in for crypto. |
 | `re` | Regular expressions backed by the RE2 engine, guaranteeing linear-time matching against any input with no catastrophic backtracking. |
 | `saml` | The SAML 2.0 service-provider verify core: XML-DSig verification and assertion validation as a pure codec, the enterprise counterpart to cx-stdlib/oidc. |
-| `sasl` | The SASL mechanism registry and framing codec, shared by cx-stdlib/smtp and cx-stdlib/imap. |
+| `sasl` | The SASL mechanism registry and framing codec, shared by cx-platform/smtp and cx-platform/imap. |
 | `sched` | Scheduled events and timers on the event loop. |
 | `scim` | SCIM 2.0 provisioning semantics — the PROVISIONING half of enterprise SSO, counterpart to cx-stdlib/oidc's login half. |
 | `session` | The server-held (principal, tenant) session for a web app. |

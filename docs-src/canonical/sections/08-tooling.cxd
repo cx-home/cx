@@ -81,7 +81,7 @@
         [tr [td 'cx scaffold KIND'] [td 'Typed, commented skeleton on stdout (config / data / doc / log / table)']]
         [tr [td 'cx lock'] [td 'Generate / verify cx.lock from [?lib] directives']]
         [tr [td 'cx lsp'] [td 'Language server on stdio']]
-        [tr [td 'cx flow run FLOW.cx --env ENV.cx'] [td 'Run a flow document over a journal — the local profile of cx-stdlib/flow; no engine to start']]
+        [tr [td 'cx flow run FLOW.cx --env ENV.cx'] [td 'Run a flow document over a journal — the local profile of cx-platform/flow; no engine to start']]
         [tr [td 'cx flow validate / simulate / status'] [td 'Validate a flow document, run the runner law over a supplied result table, or read a run record back']]
         [tr [td 'cx diagram FILE'] [td 'Program/data containment diagram (mermaid / svg / png; svg and png need --allow-subprocess for graphviz)']]
         [tr [td 'cx code-diagram FILE'] [td 'Sequence diagram of a CX program']]
