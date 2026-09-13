@@ -72,7 +72,7 @@
     reason='Build reproducibility and fork safety: pinned vc bootstrap, tccbin and macports-legacy-support fetches; C-error bug reports made opt-in because a fork must not phone home; -gc e on macOS resolving straight to the system cc because tcc has no Mach-O thread-local storage; and v up refusing to rebase this patched fork by default. These exist BECAUSE the fork is a fork — they cannot be upstreamed and are permanent by construction.']
 
   [family id=vlib
-    reason='Assorted vlib correctness the fork carries: os execute_capture using the public spawn.h rather than private posix_spawn externs, sync panicking loudly when a pthread lock or unlock fails instead of guarding nothing, map value_ptr for a by-ref get with one probe and no value copy, and db.redis handling the RESP3 null reply. Each is CX-agnostic and upstreamable in principle.; picoev handing a request to its callback only once the head and the declared body are in the buffer, kept across read events, and refusing one that cannot fit (cx-private#1394)']
+    reason='Assorted vlib correctness the fork carries: os execute_capture using the public spawn.h rather than private posix_spawn externs, sync panicking loudly when a pthread lock or unlock fails instead of guarding nothing, map value_ptr for a by-ref get with one probe and no value copy, and db.redis handling the RESP3 null reply. Each is CX-agnostic and upstreamable in principle.']
 
   [family id=compress
     reason='The dynamic-Huffman block emitter for compress.deflate. Upstream V emits fixed-Huffman blocks only, which costs roughly 35% of the achievable ratio on literal-dominated input (measured 2000 raw: fixed 1943, dynamic 1241) — and that emitter is what cx-stdlib/zip and bytes:gzip-compress ship to a customer. The fork adds a canonical-Huffman table builder and an RFC 1951 3.2.7 dynamic header over the EXISTING LZ77 tokenizer, so every entry point emits the smaller of fixed/dynamic from one tokenize pass and stays a pure function of its input (which is what cx-stdlib/zip determinism rests on). CX-agnostic and upstreamable in principle; retires the day upstream V carries a dynamic emitter.']
@@ -184,7 +184,4 @@
   [patch sha=f3a75eb9dd44bdef3a57cad304b9c125f7a7b000 family=compress]
   [patch sha=9aecd458eb559a037b721734032e97da1ba959c4 family=checker]
   [patch sha=115487c7a4b8bb3b37f4dcdfb545312d7e47004e family=vgc]
-  [patch sha=d51c31ccb2d49b2117215aee11ac38ef520e1ece family=net]
-  [patch sha=8c7678557b355fc407809c40fcdbf7764527133c family=vlib]
-  [patch sha=84637089c98a69211fba4e949801247b1fc2452d family=vlib]
 ]
