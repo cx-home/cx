@@ -148,6 +148,14 @@ becomes its own Ring-1 module.
   [module name=audit ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/audit.md corpus=conformance/platform/audit.cxd source=stdlib/audit.cx code=vcx/platform/stdlib_audit.v half=none status=current]
   [module name=authz ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/authz.md corpus=conformance/platform/authz.cxd source=stdlib/authz.cx code=vcx/platform/stdlib_authz.v half=none status=current]
   [module name=bus ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/bus.md corpus=conformance/platform/bus.cxd source=stdlib/bus.cx code=vcx/platform/stdlib_bus.v half=none status=current]
+  [; connector — #1430's connector kit, spec-first: the spec and its 134-case
+     attack corpus landed before any code, so the row declares the two
+     artifacts that are still OWED. Those `-to` columns are NOT cutover debt
+     (the cutover owes nothing) — they are what the row uses to say an
+     artifact is unwritten, and they go when #1430's code lands. 1427-j: the
+     branch that lands second adapts, so the spec and the corpus are in the
+     Ring-2 directories here. ]
+  [module name=connector ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/connector.md corpus=conformance/platform/connector.cxd source=none source-to=stdlib/connector.cx code=none code-to=vcx/platform/stdlib_connector.v half=none owed='source code' status=current]
   [module name=did ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/did.md corpus=conformance/platform/did.cxd source=stdlib/did.cx code=vcx/platform/stdlib_did.v half=none status=current]
   [; flow is a pure-CX orchestrator over the journal, sched and uuid
      primitives — Ring 2 by what it reaches, with no V file of its own. ]
