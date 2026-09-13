@@ -46,6 +46,9 @@ stamp lang/python/pyproject.toml  "s/^version = \".*\"/version = \"$NEW\"/"
 # (#1272); `check-contract-revision` refuses a tree where the two disagree, and
 # the v0.18.0-pre.1 cut left it behind (#1435) — regenerate it with the bump.
 bash scripts/gen_contract_revision.sh
+# The generated docs (docs/llm/*, the README badge) stamp the version too and
+# `docs-check` refuses drift; regenerate them with the bump (#1435).
+make docs
 # Narrative docs carry the version in ONE machine-checkable place: the shields
 # badge. Per-release prose lives in RELEASE_NOTES_v*.md (per-release by
 # construction), NOT in these READMEs — so the badge is the only token that can

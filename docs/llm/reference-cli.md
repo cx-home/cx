@@ -1,7 +1,7 @@
-# Reference: the `cx` command line — v0.17.0
+# Reference: the `cx` command line — v0.18.0-pre.1
 
 > **GENERATED.** Source: `docs-src/llm/reference-cli.md.tmpl`. The help text
-> below is the v0.17.0 binary's own `--help`, captured at generation
+> below is the v0.18.0-pre.1 binary's own `--help`, captured at generation
 > time — not a transcription. Read `primer.md` first.
 
 ## The one rule

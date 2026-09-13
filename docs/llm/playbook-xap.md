@@ -1,8 +1,8 @@
-# Playbook: building a production XAP — v0.17.0
+# Playbook: building a production XAP — v0.18.0-pre.1
 
 > **GENERATED.** Source: `docs-src/llm/playbook-xap.md.tmpl` + the conformance
 > corpus. Every code block is a fixture and every output was re-recorded from
-> the `cx` v0.17.0 binary at generation time. Where a claim is backed by a
+> the `cx` v0.18.0-pre.1 binary at generation time. Where a claim is backed by a
 > file in the repository rather than a fixture, the file and line are cited and
 > **the citation is the evidence** — nothing here is invented. Read `primer.md`
 > first; this document assumes the language.
