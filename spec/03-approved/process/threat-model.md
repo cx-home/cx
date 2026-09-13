@@ -105,7 +105,7 @@ An attacker uses the events streaming API (`cx_events_open` / `next` / `close`) 
 
 ### T9 — ReDoS via regex functions
 
-The `cx-stdlib/re` module ([`../std-lib/re.md`](../std-lib/re.md)) — `re:matches`, `re:find`, `re:find-all`, `re:replace`, `re:replace-first`, `re:replace-fn`, `re:split` — plus the schema `[pattern …]` constraint ([`../core/schema.md`](../core/schema.md) §7.1, rule `S008`) accept caller-supplied regex patterns. PCRE/Perl-style engines run for minutes on catastrophic-backtracking patterns such as `(a+)+$`.
+The `cx-stdlib/re` module ([`../std-lib/re.md`](../stdlib/re.md)) — `re:matches`, `re:find`, `re:find-all`, `re:replace`, `re:replace-first`, `re:replace-fn`, `re:split` — plus the schema `[pattern …]` constraint ([`../core/schema.md`](../core/schema.md) §7.1, rule `S008`) accept caller-supplied regex patterns. PCRE/Perl-style engines run for minutes on catastrophic-backtracking patterns such as `(a+)+$`.
 
 **Mitigation:** all regex call sites route through the vendored RE2 engine inside `libcx`. Matching is **linear-time in the input length** with no exposure to backtracking explosion. The same engine backs `cx-stdlib/re` and the schema `[pattern …]` constraint, so cross-binding regex-flavour drift is also eliminated.
 
@@ -170,7 +170,7 @@ Defenses present at the V core and inherited by every binding, each testable thr
 | Bounds-checked deserialization | every binding's CXCol / AST decoder validates length prefixes before allocation | [`../core/abi.md`](../core/abi.md); [`governance.md`](governance.md) §1.2 |
 | Type-preservation across formats | CXCol v1 binary, no string-format round-trips on hot paths | [`../core/data-bin.md`](../core/data-bin.md) |
 | Canonical-form determinism | `cx canonical` byte-stable across runs and bindings | [`../core/canonical.md`](../core/canonical.md); [`governance.md`](governance.md) §2.3 |
-| Linear-time regex | all regex call sites route through the vendored RE2 shim | [`../std-lib/re.md`](../std-lib/re.md) |
+| Linear-time regex | all regex call sites route through the vendored RE2 shim | [`../std-lib/re.md`](../stdlib/re.md) |
 | Function-recursion budget | evaluator enforces configurable call-depth cap (default 256) | [`../core/code.md`](../core/code.md) |
 | Sequence-length budget | evaluator enforces configurable sequence-length cap (default 1,000,000) | [`../core/code.md`](../core/code.md) |
 | Strict xs: constructors | `xs:integer` / `xs:double` / `xs:decimal` / etc. raise on unparseable string inputs | [`../core/code.md`](../core/code.md) |
@@ -187,7 +187,7 @@ Defenses present at the V core and inherited by every binding, each testable thr
 | Streaming-write per-chunk timer | absent — caller responsibility (T12) |
 | BOM / line-ending policy | **defined** — UTF-8 mandatory; UTF-8 BOM tolerated on parse and never emitted; LF / CRLF / CR all tolerated on parse; canonical emit produces LF only (per [`../core/conversions.md §0.4`](../core/conversions.md), [`../core/canonical.md §2.2`](../core/canonical.md), and [`../core/code.md §3.1`](../core/code.md)) |
 | Unicode normalization policy | **defined** — input bytes preserved; NFC applied only for duplicate-key comparison, never to stored strings (per [`../core/abi.md §1.7`](../core/abi.md)) |
-| Hard sandboxing for the evaluator | **defined by composition** — the purity classifier (`pure` modifier on `[?def]` per [`../core/code.md §12.2`](../core/code.md), enforced against the closed builtin-purity table at [`../core/code.md §6.5.x`](../core/code.md)) refuses any reach into impure surfaces; `cx:eval` runs adversary-controlled program fragments under the five-mitigation sandbox at [`../modules/cx.md §3`](../modules/cx.md) (impurity refusal, context-map isolation, library-set non-widening, recursion-depth cap, and shared T10/T11/T9 budgets — see §10 and §11 of this document). A process-level hard sandbox (cgroup / seccomp / ulimit) remains the caller's responsibility for adversary-controlled inputs. |
+| Hard sandboxing for the evaluator | **defined by composition** — the purity classifier (`pure` modifier on `[?def]` per [`../core/code.md §12.2`](../core/code.md), enforced against the closed builtin-purity table at [`../core/code.md §6.5.x`](../core/code.md)) refuses any reach into impure surfaces; `cx:eval` runs adversary-controlled program fragments under the five-mitigation sandbox at [`../modules/cx.md §3`](../stdlib/cx.md) (impurity refusal, context-map isolation, library-set non-widening, recursion-depth cap, and shared T10/T11/T9 budgets — see §10 and §11 of this document). A process-level hard sandbox (cgroup / seccomp / ulimit) remains the caller's responsibility for adversary-controlled inputs. |
 
 Each row is tracked in `ROADMAP.md` and moves to §5 as it closes.
 
@@ -230,7 +230,7 @@ The evaluator C-ABI surface (`cx_code_eval`, `cx_code_eval_streaming`, and the p
 
 ## 11 — Trust model for `cx:eval` (self-host)
 
-[`../modules/cx.md`](../modules/cx.md) §3 specifies the `cx:eval(source, context, options?)` self-host function — the homoiconic runtime callable that evaluates a CX source string at runtime against a context map. It is **categorically different** from §10's C-ABI entry: `cx_code_eval` runs an operator-authored template against caller data; `cx:eval` runs a string-supplied program that may itself be adversary-controlled.
+[`../modules/cx.md`](../stdlib/cx.md) §3 specifies the `cx:eval(source, context, options?)` self-host function — the homoiconic runtime callable that evaluates a CX source string at runtime against a context map. It is **categorically different** from §10's C-ABI entry: `cx_code_eval` runs an operator-authored template against caller data; `cx:eval` runs a string-supplied program that may itself be adversary-controlled.
 
 ### 11.1 — Untrusted-input sources
 
@@ -245,7 +245,7 @@ A `cx:eval` call is **out of scope** when its `source` argument is a static stri
 
 ### 11.2 — Mitigations
 
-[`../modules/cx.md`](../modules/cx.md) §3 specifies five mitigations; they map to threat vectors as follows.
+[`../modules/cx.md`](../stdlib/cx.md) §3 specifies five mitigations; they map to threat vectors as follows.
 
 | # | Mitigation | Defends against |
 |---|---|---|

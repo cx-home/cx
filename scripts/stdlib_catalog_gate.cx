@@ -64,8 +64,11 @@
 # The population is exactly the one the glob covered: a `codec` row is
 # EXEMPT by this gate's own rule (codec.md §3 is its normative text, not a
 # std-lib page), a `suite` row's spec belongs to something that is not a
-# module, and the `cx-x` tier is experimental and was never in SPEC_SET
-# (spec/03-approved/std-lib/README.md D3).
+# module, a `design` row is an approved design text with no surface of its
+# own (1427-a gave the two under platform/store/ the `kind=design`
+# module-meta the registry already declared, and a design text names no
+# module), and the `cx-x` tier is experimental and was never in SPEC_SET
+# (spec/03-approved/stdlib/README.md D3).
 [?def catalog-spec-files scope=private impure [returns any] ()
   [?let [= $reg [$cx:parse [$io:read-file "registry/modules.cxd"]]]
     [?for [in $m $reg//module]
@@ -75,6 +78,7 @@
       [where [not [= $spec "none"]]]
       [where [not [= $kind "codec"]]]
       [where [not [= $kind "suite"]]]
+      [where [not [= $kind "design"]]]
       [where [not [= $ns "cx-x"]]]
       [where [$io:exists $spec]]
       [yield $spec]]]]

@@ -112,6 +112,10 @@
 [?let [= $reg [$cx:parse [$io:read-file $reg-path]]]
       [= $rows [?for [in $m $reg//module] [yield $m]]]
       [= $moves [?for [in $m $reg//move] [yield $m]]]
+      # the two ring catalogs (1427-a/g): a README is not a surface, so no
+      # row can claim it, and a ring directory that lost its catalog would
+      # otherwise be invisible here.
+      [= $catalogs [?for [in $m $reg//catalog] [yield $m]]]
 
       # Every path any row or move claims, in either position -- the input to
       # the orphan sweeps. An artifact is claimed by where it is OR by where
@@ -134,6 +138,8 @@
             [?for [in $m $moves]
               [yield [$concat [$string [?else $m@from ""]] " " [$string [?else $m@to ""]]]]]
             " "]]]
+      [= $catalogued
+        [?for [in $m $catalogs] [yield [$string [?else $m@path ""]]]]]
 
       # -- per-row placement ------------------------------------------
       [= $row-lines
@@ -375,6 +381,7 @@
         [?for [in $s $all-specs]
           [where [not [$named $claimed $s]]]
           [where [not [$named $moved $s]]]
+          [where [not [$named $catalogued $s]]]
           [yield [$concat "  [orphan spec]    " $s "  -- no row in registry/modules.cxd"]]]]
       [= $orphan-corpus
         [?for [in $c $all-corpora]
@@ -387,21 +394,32 @@
           [where [not [$named $moved $s]]]
           [yield [$concat "  [orphan source]  " $s "  -- bundled, but no row claims it"]]]]
 
+      # -- the ring catalogs: declared, and on disk ---------------------
+      [= $catalog-lines
+        [?for [in $m $catalogs]
+          [= $p [$string [?else $m@path ""]]]
+          [= $r [$string [?else $m@ring "?"]]]
+          [where [not [$io:exists $p]]]
+          [yield [$concat "  [catalog]        ring " $r
+                   "  -- the catalog page " $p " is declared and not on disk"]]]]
+
       # -- assemble ----------------------------------------------------
       [= $row-hits [?for [in $x $row-lines] [where [not [= $x ""]]] [yield $x]]]
       [= $n-violations
         [+ [$count $row-hits]
+           [+ [$count $catalog-lines]
            [+ [$count $missing-lines]
               [+ [$count $orphan-spec]
-                 [+ [$count $orphan-corpus] [$count $orphan-source]]]]]]
+                 [+ [$count $orphan-corpus] [$count $orphan-source]]]]]]]
 
       [= $b1 [$strings:join $row-hits "\n"]]
+      [= $b0 [$strings:join $catalog-lines "\n"]]
       [= $b2 [$strings:join $missing-lines "\n"]]
       [= $b3 [$strings:join $orphan-spec "\n"]]
       [= $b4 [$strings:join $orphan-corpus "\n"]]
       [= $b5 [$strings:join $orphan-source "\n"]]
       [= $blocks
-        [?for [in $b ($b1, $b2, $b3, $b4, $b5)]
+        [?for [in $b ($b0, $b1, $b2, $b3, $b4, $b5)]
           [where [not [= $b ""]]]
           [yield $b]]]
 

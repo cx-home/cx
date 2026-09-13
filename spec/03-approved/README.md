@@ -25,7 +25,7 @@ The CX language and its companion specifications, organised into five directorie
 
 ## `std-lib/` — standard library (29 modules + README)
 
-The `cx-stdlib` module specs. See [`std-lib/README.md`](std-lib/README.md) for the per-module index.
+The `cx-stdlib` module specs. See [`std-lib/README.md`](stdlib/README.md) for the per-module index.
 
 ## `modules/` — external-system integrations (3 files)
 
