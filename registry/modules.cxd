@@ -134,6 +134,11 @@ becomes its own Ring-1 module.
   [module name=zip ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/zip.md spec-to=spec/03-approved/stdlib/zip.md corpus=conformance/stdlib/zip.cxd source=stdlib/zip.cx code=vcx/code/stdlib_zip.v half=none status=current]
 
   [; ── Ring 2 — cx-stdlib today, cx-platform after 1427-b ───────────── ]
+  [; audit arrives with #1422's merge (the INT-2 batch): the audit sink, Ring 2
+     per audit.md §1 (RULED: 1422-a), cx-platform/audit at the cutover. Declared
+     `incoming` ahead of the code (OL-15); the commit that merges it flips this
+     row to current. ]
+  [module name=audit ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/audit.md spec-to=spec/03-approved/platform/audit.md corpus=conformance/stdlib/audit.cxd corpus-to=conformance/platform/audit.cxd source=stdlib/audit.cx code=vcx/platform/stdlib_audit.v half=none status=incoming]
   [module name=authz ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/authz.md spec-to=spec/03-approved/platform/authz.md corpus=conformance/stdlib/authz.cxd corpus-to=conformance/platform/authz.cxd source=stdlib/authz.cx code=vcx/platform/stdlib_authz.v half=none status=current]
   [module name=bus ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/bus.md spec-to=spec/03-approved/platform/bus.md corpus=conformance/stdlib/bus.cxd corpus-to=conformance/platform/bus.cxd source=stdlib/bus.cx code=vcx/platform/stdlib_bus.v half=none status=current]
   [module name=did ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/did.md spec-to=spec/03-approved/platform/did.md corpus=conformance/stdlib/did.cxd corpus-to=conformance/platform/did.cxd source=stdlib/did.cx code=vcx/platform/stdlib_did.v half=none status=current]
@@ -159,10 +164,10 @@ becomes its own Ring-1 module.
   [module name=net ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/net.md spec-to=spec/03-approved/platform/net.md corpus=conformance/stdlib/net.cxd corpus-to=conformance/platform/net.cxd source=stdlib/net.cx code=vcx/platform/stdlib_net.v half=none status=current]
   [module name=session ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/session.md spec-to=spec/03-approved/platform/session.md corpus=conformance/stdlib/session.cxd corpus-to=conformance/platform/session.cxd source=stdlib/session.cx code=vcx/platform/stdlib_session.v half=none status=current]
   [module name=smtp ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/smtp.md spec-to=spec/03-approved/platform/smtp.md corpus=conformance/stdlib/smtp.cxd corpus-to=conformance/platform/smtp.cxd suite-ring=1 source=stdlib/smtp.cx code=vcx/platform/stdlib_smtp_wire.v half='vcx/code/stdlib_smtp.v vcx/code/stdlib_smtp_server.v' status=current]
-  [; sso arrives with #1394's merge (the enterprise-SSO handler surface, pure
-     CX over oidc/saml/scim/session). Declared here so that merge does not
-     fail this check — OL-15's "state the placement before the code". ]
-  [module name=sso ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/sso.md spec-to=spec/03-approved/platform/sso.md corpus=conformance/stdlib/sso.cxd corpus-to=conformance/platform/sso.cxd source=stdlib/sso.cx code=none half=none status=incoming]
+  [; sso — #1394's enterprise-SSO handler surface, pure CX over
+     oidc/saml/scim/session; declared `incoming` before its merge (OL-15) and
+     current since release/0.18 carries it. ]
+  [module name=sso ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/sso.md spec-to=spec/03-approved/platform/sso.md corpus=conformance/stdlib/sso.cxd corpus-to=conformance/platform/sso.cxd source=stdlib/sso.cx code=none half=none status=current]
   [module name=store ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/store.md spec-to=spec/03-approved/platform/store.md corpus=conformance/stdlib/store.cxd corpus-to=conformance/platform/store.cxd source=stdlib/store.cx code=vcx/platform/stdlib_store.v half=none status=current]
   [module name=vc ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/vc.md spec-to=spec/03-approved/platform/vc.md corpus=conformance/stdlib/vc.cxd corpus-to=conformance/platform/vc.cxd source=stdlib/vc.cx code=vcx/platform/stdlib_vc.v half=none status=current]
   [module name=xap ring=2 ns=cx-xap kind=module spec=spec/03-approved/std-lib/xap.md spec-to=spec/03-approved/xap/xap_module.md corpus=conformance/stdlib/xap-serve.cxd corpus-to=conformance/xap/xap-serve.cxd source=stdlib/xap.cx code=vcx/platform/stdlib_xap.v half=none status=current]
