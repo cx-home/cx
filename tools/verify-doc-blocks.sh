@@ -2,6 +2,16 @@
 # tools/verify-doc-blocks.sh — every fenced ```cx ... ``` block in a
 # markdown file must parse cleanly through `cx fmt`.
 #
+# PARSE, not format (RULED: INT-7). Since 1391-a `cx fmt` refuses instead of
+# failing open: a block it cannot lay out is DECLINED (cx-err:CXER0301, source
+# unchanged) and a block whose canonical form would change the node tree is
+# REFUSED (cx-err:CXER0300). Both verdicts are reached AFTER the block parsed —
+# the formatter compared trees it had built — so here they are "parsed, not
+# formattable": counted, listed, never a failure. The first post-merge run
+# after INT-2 (861ca66ec) read 50 such blocks as parse failures; every one of
+# the four re-checked parses under `cx lint`. Any other non-zero exit from
+# `cx fmt` (a parse error, a crash) still fails this step.
+#
 # Usage:
 #   tools/verify-doc-blocks.sh                 # default: spec/ docs-src/ docs/ README.md
 #   tools/verify-doc-blocks.sh README.md
@@ -28,7 +38,7 @@ fi
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-CX="$ROOT/vcx/target/cx"
+CX="${CX_BIN:-$ROOT/vcx/target/cx}"   # CX_BIN: the Makefile's spelling, for a worktree without a build
 
 if [ ! -x "$CX" ]; then
   echo "WARN: cx binary not at $CX — building..."
@@ -67,7 +77,9 @@ fi
 PASS=0
 FAIL=0
 SKIP=0
+UNFMT=0
 FAIL_DETAILS=()
+UNFMT_DETAILS=()
 
 TMPDIR_BLOCKS="$(mktemp -d "${TMPDIR:-/tmp}/verify-doc-blocks.XXXXXX")"
 trap 'rm -rf "$TMPDIR_BLOCKS"' EXIT
@@ -103,18 +115,27 @@ for file in "${TARGETS[@]}"; do
       SKIP=$((SKIP + 1))
       continue
     fi
-    # `cx fmt -` does not read stdin; feed it a real file.
-    if "$CX" fmt "$BLOCK_FILE" > /dev/null 2>&1; then
+    # `cx fmt -` does not read stdin; feed it a real file. The verdict is
+    # read from the refusal line, not the exit alone: `cx fmt` has ONE
+    # non-zero exit for a decline, a refusal and a parse error.
+    if FMT_ERR="$("$CX" fmt "$BLOCK_FILE" 2>&1 > /dev/null)"; then
       PASS=$((PASS + 1))
+    elif grep -qE 'cx-err:CXER030[01]' <<< "$FMT_ERR"; then
+      UNFMT=$((UNFMT + 1))
+      UNFMT_DETAILS+=("$file: block #$idx — ${FMT_ERR%%;*}")
     else
       FAIL=$((FAIL + 1))
-      FAIL_DETAILS+=("$file: block #$idx")
+      FAIL_DETAILS+=("$file: block #$idx — ${FMT_ERR%%$'\n'*}")
     fi
   done
 done
 
-TOTAL=$((PASS + FAIL + SKIP))
-echo "verify-doc-blocks: $PASS passed, $FAIL failed, $SKIP skipped (${#TARGETS[@]} files scanned)"
+TOTAL=$((PASS + FAIL + SKIP + UNFMT))
+echo "verify-doc-blocks: $PASS passed, $FAIL failed, $UNFMT parsed but not formattable, $SKIP skipped (${#TARGETS[@]} files scanned)"
+if [ "$UNFMT" -ne 0 ]; then
+  echo "Parsed, not formattable (the formatter's own census — #1436 and the TREE-REFUSED column; not this step's failures):"
+  for d in "${UNFMT_DETAILS[@]}"; do echo "  $d"; done
+fi
 
 if [ "$TOTAL" -eq 0 ]; then
   echo "FAIL: no \`\`\`cx blocks found in any target — nothing was verified" >&2
