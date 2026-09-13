@@ -186,4 +186,5 @@
   [patch sha=115487c7a4b8bb3b37f4dcdfb545312d7e47004e family=vgc]
   [patch sha=d51c31ccb2d49b2117215aee11ac38ef520e1ece family=net]
   [patch sha=8c7678557b355fc407809c40fcdbf7764527133c family=vlib]
+  [patch sha=84637089c98a69211fba4e949801247b1fc2452d family=vlib]
 ]
