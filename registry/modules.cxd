@@ -134,11 +134,10 @@ becomes its own Ring-1 module.
   [module name=zip ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/zip.md spec-to=spec/03-approved/stdlib/zip.md corpus=conformance/stdlib/zip.cxd source=stdlib/zip.cx code=vcx/code/stdlib_zip.v half=none status=current]
 
   [; ── Ring 2 — cx-stdlib today, cx-platform after 1427-b ───────────── ]
-  [; audit arrives with #1422's merge (the INT-2 batch): the audit sink, Ring 2
-     per audit.md §1 (RULED: 1422-a), cx-platform/audit at the cutover. Declared
-     `incoming` ahead of the code (OL-15); the commit that merges it flips this
-     row to current. ]
-  [module name=audit ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/audit.md spec-to=spec/03-approved/platform/audit.md corpus=conformance/stdlib/audit.cxd corpus-to=conformance/platform/audit.cxd source=stdlib/audit.cx code=vcx/platform/stdlib_audit.v half=none status=incoming]
+  [; audit — #1422's audit sink, Ring 2 per audit.md §1 (RULED: 1422-a),
+     cx-platform/audit at the cutover; declared `incoming` ahead of its merge
+     (OL-15) and current since release/0.18 carries it (861ca66ec). ]
+  [module name=audit ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/audit.md spec-to=spec/03-approved/platform/audit.md corpus=conformance/stdlib/audit.cxd corpus-to=conformance/platform/audit.cxd source=stdlib/audit.cx code=vcx/platform/stdlib_audit.v half=none status=current]
   [module name=authz ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/authz.md spec-to=spec/03-approved/platform/authz.md corpus=conformance/stdlib/authz.cxd corpus-to=conformance/platform/authz.cxd source=stdlib/authz.cx code=vcx/platform/stdlib_authz.v half=none status=current]
   [module name=bus ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/bus.md spec-to=spec/03-approved/platform/bus.md corpus=conformance/stdlib/bus.cxd corpus-to=conformance/platform/bus.cxd source=stdlib/bus.cx code=vcx/platform/stdlib_bus.v half=none status=current]
   [module name=did ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/did.md spec-to=spec/03-approved/platform/did.md corpus=conformance/stdlib/did.cxd corpus-to=conformance/platform/did.cxd source=stdlib/did.cx code=vcx/platform/stdlib_did.v half=none status=current]
