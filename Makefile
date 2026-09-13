@@ -3138,7 +3138,19 @@ fmt-sweep-timed: build-vcx
 # the first sweep after it landed. The same hole again — a collection in
 # argument position, `[$http:request $method $target {headers: ..., body: ...,
 # follow-redirects: false}]`.
-FMT_SWEEP_MAX_DECLINED ?= 108
+#
+# 108 -> 111 with #1394's THREE new .cx files: stdlib/sso.cx, the enterprise-SSO
+# deployment surface; examples/platform/sso/deployment/deployment.cx, the one
+# [?http-service] that mounts it; and scripts/sso_interop/deploy_drive.cx, the
+# rows that drive that deployment over real sockets. `cx fmt` returns all three
+# unchanged, measured one file at a time before the sweep ran. The same hole
+# again and for the same reason as #1403's two: a collection or a bracketed
+# call in ARGUMENT or ATTRIBUTE position — `[$http:get $url {follow-redirects:
+# false}]`, `[$scim:project $stored {}]`, `[header name='Set-Cookie'
+# value=[sso--cookie-value $c]]`. Rewriting any of them to dodge the formatter
+# would mean not calling the stdlib the way the stdlib is called, which is the
+# one thing a deployment a customer copies must not do.
+FMT_SWEEP_MAX_DECLINED ?= 111
 FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
 .PHONY: fmt-sweep-gate
 fmt-sweep-gate: build-vcx

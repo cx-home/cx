@@ -84,6 +84,7 @@ $ cx prog.cx
 | `session` | The server-held (principal, tenant) session for a web app. |
 | `similar` | Graded comparison as a generalization of exact equality: where = returns a boolean, the core ~ operator returns a score in [0,1] plus evidence, and a decision policy maps the score to :match / :review / :no-match bands. |
 | `smtp` | Both halves of ESMTP on one wire grammar: the submission client a CX program sends mail with (RFC 6409) and the receive server core it accepts mail with (RFC 5321 §4). |
+| `sso` | The enterprise-SSO deployment surface: the half of enterprise single sign-on that RECEIVES a request. |
 | `store` | A content-addressed object store with URL-dispatched backends. |
 | `strings` | String inspection, search, and transformation for general text work. |
 | `supervise` | Restart policies over monitored workers: run a set of named children (each an arity-0 callable spawned as a worker) under a declared policy — strategy (:one-for-one, :one-for-all, :rest-for-one), restart intensity (max-restarts within a window), and per-child exponential backoff — restarting them when they die according to each child's restart type (:permanent, :transient, :temporary). |
