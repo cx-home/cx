@@ -1809,6 +1809,7 @@ assistant makes with a young language is inventing a plausible module name.
 
 | Module | Scope |
 |---|---|
+| `audit` | The audit sink: the one durable, attributed, append-only, queryable record of what the platform did, who asked, under whose authority, on what, and what was decided. |
 | `authz` | The XAP authority model as data plus a single decision function. |
 | `bus` | In-process publish/subscribe that delivers each published message to its matching subscribers synchronously and in a defined order. |
 | `bytes` | Byte-level operations on the CX bytes scalar kind. |
@@ -3531,6 +3532,7 @@ $ cx prog.cx
 
 | Module | Scope |
 |---|---|
+| `audit` | The audit sink: the one durable, attributed, append-only, queryable record of what the platform did, who asked, under whose authority, on what, and what was decided. |
 | `authz` | The XAP authority model as data plus a single decision function. |
 | `bus` | In-process publish/subscribe that delivers each published message to its matching subscribers synchronously and in a defined order. |
 | `bytes` | Byte-level operations on the CX bytes scalar kind. |

@@ -2391,7 +2391,7 @@ test-vcx-cxstore: build-vcx-dev
 # roster is a variable and `check-inmodule-test-roster` now fails on any
 # vcx/cx/*_test.v that is in neither list, so the next addition cannot be
 # forgotten silently. Delete both lists and glob the directory when #737 closes.
-CX_INMODULE_TESTS := vcx/cx/program_interior_comments_test.v vcx/cx/program_layout_test.v vcx/cx/program_emit_head_ascription_test.v vcx/cx/directive_emit_surface_test.v vcx/cx/anchor_resolve_test.v vcx/cx/numeric_exact_fast_test.v vcx/cx/atom_test.v vcx/cx/token_golden_test.v vcx/cx/version_stamp_test.v vcx/cx/html_url_codec_test.v vcx/cx/span_jump_test.v vcx/cx/feature_compat_test.v vcx/cx/name_pool_contract_test.v vcx/cx/schema_extensions_test.v vcx/cx/node_api_test.v
+CX_INMODULE_TESTS := vcx/cx/program_interior_comments_test.v vcx/cx/program_layout_test.v vcx/cx/program_fmt_guard_test.v vcx/cx/program_emit_head_ascription_test.v vcx/cx/directive_emit_surface_test.v vcx/cx/anchor_resolve_test.v vcx/cx/numeric_exact_fast_test.v vcx/cx/atom_test.v vcx/cx/token_golden_test.v vcx/cx/version_stamp_test.v vcx/cx/html_url_codec_test.v vcx/cx/span_jump_test.v vcx/cx/feature_compat_test.v vcx/cx/name_pool_contract_test.v vcx/cx/schema_extensions_test.v vcx/cx/node_api_test.v
 CX_INMODULE_TESTS_EXCLUDED := vcx/cx/parser_multidoc_test.v
 
 # check-build-input-roster (#1065) — forwards to vcx/, where the per-artifact
@@ -3152,24 +3152,107 @@ fmt-sweep-timed: build-vcx
 # argument position, `[$http:request $method $target {headers: ..., body: ...,
 # follow-redirects: false}]`.
 #
-# 108 -> 111 with #1394's THREE new .cx files: stdlib/sso.cx, the enterprise-SSO
-# deployment surface; examples/platform/sso/deployment/deployment.cx, the one
-# [?http-service] that mounts it; and scripts/sso_interop/deploy_drive.cx, the
-# rows that drive that deployment over real sockets. `cx fmt` returns all three
-# unchanged, measured one file at a time before the sweep ran. The same hole
-# again and for the same reason as #1403's two: a collection or a bracketed
-# call in ARGUMENT or ATTRIBUTE position — `[$http:get $url {follow-redirects:
-# false}]`, `[$scim:project $stored {}]`, `[header name='Set-Cookie'
-# value=[sso--cookie-value $c]]`. Rewriting any of them to dodge the formatter
-# would mean not calling the stdlib the way the stdlib is called, which is the
-# one thing a deployment a customer copies must not do.
-FMT_SWEEP_MAX_DECLINED ?= 111
+# At the INT-2 batch the head had ratcheted 108 -> 111 for #1394's three new
+# .cx files (stdlib/sso.cx, the sso deployment, scripts/sso_interop/deploy_drive.cx
+# — a collection or bracketed call in ARGUMENT or ATTRIBUTE position, the very
+# hole #1391 closes below); the batch's own sweep measures where they land.
+#
+# 108 -> 31 by #1391 (RULED: 1391-a), measured on the whole 297-file corpus:
+#
+#   SWEEP-FILES=297 FORMATTED=244 DECLINED=31 TREE-REFUSED=17 UNSTABLE=0 ERROR=5
+#
+# The ruling said "the number comes back down — by more than ten — when the
+# hole closes"; it came down by 77. The hole was ONE vacuous comparison. The
+# data candidate was SEEDED WITH THE SOURCE and overwritten only when the data
+# parse succeeded, so a document the DATA grammar cannot read — a bracketed or
+# collection value in ARGUMENT or ATTRIBUTE position — reached the acceptance
+# test comparing the input against ITSELF: canonical text equal, shape equal,
+# comments equal, by construction. The lane blessed the source as "the data
+# format preserved meaning", returned it verbatim at exit 0, and never reached
+# the program lane that formats it.
+#
+# Every DECLINED row in the log now carries the refusal line that names the
+# construct and its position (RULED: 1391-a) — a count with no names is what
+# let one hole read as 93 stubborn legacy files. The 31 that remain are five
+# reasons, and 26 of them are ONE:
+#
+#   26  the comment layout could not place every comment this file carries
+#    2  the comment-bearing layout re-parses to a different program shape
+#    1  the comment-bearing layout does not re-parse to the same canonical text
+#    1  the data formatter does not carry every comment back
+#    1  the canonical form is not its own fixed point (§7)
+#
+#
+# 31 -> 34 at the INT-2 merge (RULED: INT-2, 1391-a), measured on the batch's
+# own tree — fmt + #1421 + #1422 on the head — in run 2 of its pipeline:
+#
+#   SWEEP-FILES=301 FORMATTED=245 DECLINED=34 TREE-REFUSED=17 UNSTABLE=0 ERROR=5
+#
+# The +3 is the paragraph above coming due: #1394's stdlib/sso.cx and its
+# deployment (examples/platform/sso/deployment/deployment.cx) no longer
+# decline on the argument-position hole #1391 closed — they decline one
+# stratum down, on an interior `[; …]` comment inside a form body the
+# comment layout cannot place (sso.cx:232, deployment.cx:74) — and #1422's
+# stdlib/audit.cx (audit.cx:359) is a new file in the same class. Its
+# third file, scripts/sso_interop/deploy_drive.cx, formats. The class is
+# 29 of the 34 now and has its own issue, #1436; the number comes back down
+# when that closes. Rewriting the three files' comments to dodge the layout
+# was not an option: a comment written where CX allows one must format.
+# ── FMT_SWEEP_MAX_TREE_REFUSED (RULED: 1384-a) — the §1 guard's own column ───
+#
+# TREE-REFUSED is `cx-err:CXER0300`: `cx fmt` produced a canonical form whose
+# node tree is NOT the input's, so the source came back and the refusal said
+# so with the differing node's PATH and both values. It is its own column
+# because it is neither of the other two things — not "a shape fmt cannot
+# format" (DECLINED) and not "fmt fell over" (ERROR), but "fmt formatted the
+# file and changed the document", which is an open defect with a file name and
+# a node path. Folding it into DECLINED would hide a data-changing formatter
+# inside a ratchet; folding it into ERROR would red the expected-error ROSTER,
+# which exists for files `cx fmt` is SUPPOSED to refuse.
+#
+# 17 files at the landing, in four classes. NONE of them is silent any more,
+# and none was visible before: every one of these formatted at exit 0 and
+# changed the document.
+#
+#   * a SPACE inserted into a text run at a `[` boundary — #1384's OWN defect
+#     class in a third shape (3: fixtures/bench/bench_{small,medium,large}.cx).
+#     `[tags :string[] internal db cache]` shipped as
+#     `[tags :string [] internal db cache]`, so the data reading's one Text
+#     node `":string[] internal db cache"` became `":string"` plus an empty
+#     array plus the rest. #1384's two shapes are fixed at the cause in this
+#     same landing; this one is not, because the run rule cannot cross `[`,
+#     which is a structural byte — fixing it needs the emitter to know the
+#     atom and the `[]` were GLUED, which is an AST change and not 1384-a's.
+#   * an interior COMMENT the formatter RE-ORDERS past the node it documents
+#     (9: the two `render-ctx.cx`, both cxstore clients, `home-components.cx`,
+#     both `tooling/cxfabric/*.config.cx`, `check_version_consistency.cx`, and
+#     `check_v_fork_patches.cx` in the other direction).
+#     `tooling/cxfabric/adapter.config.cx` is the clearest: the comment that
+#     opens `[webhook-adapter]` and explains `[fabric …]` comes back AFTER it.
+#     canonical.md §2.9 requires "comment placement preserved relative to
+#     nodes", so the comment is still there and no longer documents anything.
+#   * an ATTRIBUTE WRITTEN AFTER BODY TEXT, which the program reading hoists
+#     to the head and the data reading reads as part of the text run
+#     (2: `design/787/w1/surface.cx`, `spec/…/oriel/data/oriel-theme.cx`).
+#   * program surface the data reading can only carry as TEXT or as an
+#     unstructured collection (3): a CXPath `/@a` step re-spelled `@a`
+#     (`checkout.flow.cx`, `packages/gtin/gtin.cx`) and a `(…)` sequence the
+#     data grammar cannot read (`gen_guide/stdlib_docs_check.cx`). The two
+#     spellings the ruling GRANTS — the quote character and an underscored
+#     integer — are folded out of the comparison, so a file whose only
+#     difference was one of those is not here.
+#
+# This number goes DOWN only. Each class wants its own issue; none is in
+# 1384-a's scope, which is the guard plus #1384's own two measured shapes.
+FMT_SWEEP_MAX_DECLINED ?= 34
+FMT_SWEEP_MAX_TREE_REFUSED ?= 17
 FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
 .PHONY: fmt-sweep-gate
 fmt-sweep-gate: build-vcx
 	@$(CX_SWEEP_BIN) --allow-read --allow-write --allow-subprocess --allow-clock \
 	  scripts/fmt_corpus_sweep.cx --bin $(CX_SWEEP_BIN) --ratchet \
 	  --max-declined $(FMT_SWEEP_MAX_DECLINED) \
+	  --max-tree-refused $(FMT_SWEEP_MAX_TREE_REFUSED) \
 	  --expected-errors $(FMT_SWEEP_EXPECTED_ERRORS)
 
 
