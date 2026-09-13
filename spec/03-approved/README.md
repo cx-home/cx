@@ -23,9 +23,15 @@ The CX language and its companion specifications, organised into five directorie
 | `lockfile.md` | `cx.lock` format for `[?lib]` module pinning. |
 | `streaming.md` | Streaming event protocol (read + write). |
 
-## `std-lib/` — standard library (29 modules + README)
+## `stdlib/` — the bundled standard library, Ring 1 (45 modules + README)
 
-The `cx-stdlib` module specs. See [`std-lib/README.md`](stdlib/README.md) for the per-module index.
+The `cx-stdlib` module specs: the modules that are pure or purely local. See [`stdlib/README.md`](stdlib/README.md) for the per-module index.
+
+## `platform/` — the bundled platform modules, Ring 2 (17 modules + README + `store/`)
+
+The `cx-platform` module specs: the modules that serve, or that reach a store or a protocol. See [`platform/README.md`](platform/README.md) for the per-module index; `platform/store/` holds the external-engine catalog entries (`redis`, `sql`) and the two approved store design texts.
+
+A surface's ring is DECLARED once, in [`registry/modules.cxd`](../../registry/modules.cxd), and `make placement-gate` refuses a tree where a spec's directory, its `ring=` header, its corpus, its code directory or its namespace disagrees with that row (RULED: 1427-a/1427-f, OL-15).
 
 ## `modules/` — external-system integrations (3 files)
 

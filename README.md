@@ -1,7 +1,7 @@
 # CX
 
 [![Version](https://img.shields.io/badge/version-v0.18.0-pre.1-blue.svg)](#status)
-[![CX](https://img.shields.io/badge/CX-37.4%25_of_source-1a1a17.svg)](#status)
+[![CX](https://img.shields.io/badge/CX-37.5%25_of_source-1a1a17.svg)](#status)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-cx--home.github.io%2Fcx-brightgreen.svg)](https://cx-home.github.io/cx/)
 [![Status](https://img.shields.io/badge/status-pre--1.0_experimental-orange.svg)](#status)
@@ -181,7 +181,7 @@ tier, integrating on the current release line:
 - **cx store** — a content-addressed multimodel store, embeddable in-process
   ([`docs/dev/store-embedded.md`](docs/dev/store-embedded.md)) across mem /
   file / sqlite / s3 substrates. Stdlib surface:
-  [`spec/03-approved/std-lib/store.md`](spec/03-approved/platform/store.md).
+  [`spec/03-approved/platform/store.md`](spec/03-approved/platform/store.md).
 - **store-serve** — the store's single-node service tier: a daemon with auth,
   observability, and the CSRP/gRPC remote protocols
   ([`docs/dev/store-service.md`](docs/dev/store-service.md)).
