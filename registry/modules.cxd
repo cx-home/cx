@@ -17,15 +17,28 @@ vcx/tests/stdlib_umbrella_test.v, the namespace migration tool
 the catalog step and the two READMEs.
 
 TODAY AND THE DESTINATION. Every path column names where the artifact IS,
-on the tree this file sits in. A `<column>-to` names where 1427 PUTS it, and
-exists only while the move is still owed: writing one is how a row says
+on the tree this file sits in. A `<column>-to` names where a move PUTS it,
+and exists only while that move is still owed: writing one is how a row says
 "this dimension has not moved yet", and deleting it is how the commit that
 moves the artifact closes that line. So the check passes on today's tree
 without being vacuous — a dimension with no `-to` is held to its ring on
-every run — and the set of `-to` values IS the census of what #1427 still
+every run — and the set of `-to` values IS the census of what the move still
 owes. A `-to` equal to its column, or naming a path that already exists, is
 refused: a stale declaration would hide exactly the drift this file exists
 to name.
+
+#1427's cutover is SPENT: no row carries a `-to`, an `ns-to` or a
+`suite-ring` any more, and the census the check prints reads zero on every
+dimension. The columns stay because the mechanism is not the cutover — the
+next decision that moves an artifact writes one, and the same two refusals
+keep it from going stale.
+
+NOT WRITTEN YET is a different statement from NOT MOVED YET, and it is
+`status=planned`, never a `-to`. A planned row's columns name where the
+artifact WILL be, the check holds it to its ring and its directories but not
+to existence, and it refuses the row once every artifact is on disk — so the
+declaration cannot outlive the writing. One row is planned today: `connector`
+(#1430, spec-first by its own decision).
 
 COLUMNS
   name    the surface's call-site prefix — `[?lib '<ns>/<name>']` binds it.
@@ -63,11 +76,13 @@ COLUMNS
           with the row. Same contract as a `-to`: it exists only while the
           disagreement does, and the check refuses one that is already
           resolved
-  owed    artifacts this row declares that are not written yet (their column
-          reads `none` and their `-to` names where they go). An `owed`
-          artifact that exists is refused
   status  current  the artifacts are on this tree
-          planned  the artifacts are written by #1427 itself (http-client)
+          planned  the row is DECLARED ahead of the artifacts: its columns
+                   name where they will be written, and the decision that
+                   owes them is named in the row's comment. Held to its ring
+                   and its directories, not to existence — and REFUSED once
+                   every artifact exists, which is the commit that flips it
+                   to current
           incoming the artifacts arrive with another branch's merge; the row
                    is here so that merge does not fail this check. Graded
                    when present, not required
@@ -141,7 +156,7 @@ becomes its own Ring-1 module.
   [module name=validate ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/validate.md corpus=conformance/stdlib/validate.cxd source=stdlib/validate.cx code=vcx/code/stdlib_validate.v half=none status=current]
   [module name=zip ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/zip.md corpus=conformance/stdlib/zip.cxd source=stdlib/zip.cx code=vcx/code/stdlib_zip.v half=none status=current]
 
-  [; ── Ring 2 — cx-stdlib today, cx-platform after 1427-b ───────────── ]
+  [; ── Ring 2 — cx-platform (1427-b, spent) ─────────────────────────── ]
   [; audit — #1422's audit sink, Ring 2 per audit.md §1 (RULED: 1422-a),
      cx-platform/audit at the cutover; declared `incoming` ahead of its merge
      (OL-15) and current since release/0.18 carries it (861ca66ec). ]
@@ -149,13 +164,15 @@ becomes its own Ring-1 module.
   [module name=authz ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/authz.md corpus=conformance/platform/authz.cxd source=stdlib/authz.cx code=vcx/platform/stdlib_authz.v half=none status=current]
   [module name=bus ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/bus.md corpus=conformance/platform/bus.cxd source=stdlib/bus.cx code=vcx/platform/stdlib_bus.v half=none status=current]
   [; connector — #1430's connector kit, spec-first: the spec and its 134-case
-     attack corpus landed before any code, so the row declares the two
-     artifacts that are still OWED. Those `-to` columns are NOT cutover debt
-     (the cutover owes nothing) — they are what the row uses to say an
-     artifact is unwritten, and they go when #1430's code lands. 1427-j: the
-     branch that lands second adapts, so the spec and the corpus are in the
-     Ring-2 directories here. ]
-  [module name=connector ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/connector.md corpus=conformance/platform/connector.cxd source=none source-to=stdlib/connector.cx code=none code-to=vcx/platform/stdlib_connector.v half=none owed='source code' status=current]
+     attack corpus landed before any code, so this row is `planned` and its
+     source and code columns name where #1430 writes them. connector.md says
+     the same in its own words — `status=new` flips to current in the commit
+     that lands `stdlib/connector.cx` + `vcx/platform/stdlib_connector.v` —
+     and the placement check refuses this row the moment both exist, so the
+     two statements cannot drift apart. This is NOT cutover debt: #1427 owes
+     nothing. 1427-j: the branch that lands second adapts, so the spec and
+     the corpus are in the Ring-2 directories here. ]
+  [module name=connector ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/connector.md corpus=conformance/platform/connector.cxd source=stdlib/connector.cx code=vcx/platform/stdlib_connector.v half=none status=planned]
   [module name=did ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/did.md corpus=conformance/platform/did.cxd source=stdlib/did.cx code=vcx/platform/stdlib_did.v half=none status=current]
   [; flow is a pure-CX orchestrator over the journal, sched and uuid
      primitives — Ring 2 by what it reaches, with no V file of its own. ]

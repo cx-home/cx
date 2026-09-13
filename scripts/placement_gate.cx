@@ -9,24 +9,31 @@
 # actually on disk.
 #
 # THE ONE THING TO UNDERSTAND. A row's path columns name where the artifact
-# IS; a `<column>-to` names where #1427 PUTS it, and exists only while the
+# IS; a `<column>-to` names where a move PUTS it, and exists only while that
 # move is still owed. So a dimension with NO `-to` is held to its ring on
 # every run -- that is the live half -- and a dimension WITH one is held to
 # the destination instead, plus the two refusals that keep the declaration
 # from going stale: a `-to` equal to its column, and a `-to` naming a path
 # that already exists. A finished move is therefore not expressible as a
 # lingering `-to`, and the outstanding `-to` set IS the census of what the
-# cutover still owes. The same contract governs `suite-ring=` (the corpus
-# header's ring while it disagrees with the row) and `owed=` (an artifact
-# the row declares that nobody has written yet).
+# move still owes. The same contract governs `suite-ring=` (the corpus
+# header's ring while it disagrees with the row). #1427's cutover is spent:
+# no row carries one of these any more, and the census below reads zero on
+# every dimension.
+#
+# NOT WRITTEN YET is the OTHER statement, and it is `status=planned`, not a
+# `-to`: a planned row's columns name where its artifacts WILL be, and the
+# check holds it to its ring and its directories but not to existence. The
+# row is refused once every artifact is on disk, so a declaration written
+# ahead of the code cannot outlive the code.
 #
 # What it refuses
 #   [missing]        a `status=current` row whose declared artifact is not
 #                    on disk
-#   [owed]           an `owed=` artifact whose column is not `none`, that has
-#                    no `-to`, or that already exists
-#   [corpus none]    a graded kind with no corpus and no `owed=corpus` -- a
-#                    surface nothing holds to its spec
+#   [stale planned]  a `status=planned` row whose artifacts are ALL on disk
+#                    -- the writing is done; the row says `current` now
+#   [corpus none]    a graded, non-planned kind with no corpus -- a surface
+#                    nothing holds to its spec
 #   [suite ring]     a corpus whose `ring=` header is neither the row's ring
 #                    nor its declared `suite-ring=`
 #   [stale]          a `-to` equal to its column, a `-to` that already
@@ -148,7 +155,7 @@
           [= $ring    [$string $m@ring]]
           [= $ns      [$string [?else $m@ns "none"]]]
           [= $kind    [$string [?else $m@kind "module"]]]
-          [= $owed    [$strings:split-whitespace [$string [?else $m@owed ""]]]]
+          [= $status  [$string [?else $m@status "current"]]]
           [= $tag     [$concat $name " (" $ns ")"]]
 
           # the five artifact dimensions, each as (column, destination)
@@ -164,40 +171,45 @@
           [= $suite-ring [$string [?else $m@suite-ring ""]]]
           [= $ns-to     [$string [?else $m@ns-to ""]]]
 
-          # -- [owed]: the column reads `none`, a `-to` says where it goes,
-          #    and the file is not there yet. All three, or it is not owed.
-          [= $v-owed
-            [$strings:join
-              [?for [in $d ("spec", "corpus", "source", "code")]
-                [= $col [?if [= $d "spec"] [then $spec]
-                          [else [?if [= $d "corpus"] [then $corpus]
-                            [else [?if [= $d "source"] [then $source] [else $code]]]]]]]
-                [= $to  [?if [= $d "spec"] [then $spec-to]
-                          [else [?if [= $d "corpus"] [then $corpus-to]
-                            [else [?if [= $d "source"] [then $source-to] [else $code-to]]]]]]]
-                [where [$named $owed $d]]
-                [= $why
-                  [?if [not [= $col "none"]]
-                    [then [$concat "its " $d "= reads " $col ", not `none`"]]
-                    [else [?if [= $to ""]
-                      [then [$concat "no " $d "-to= says where it goes"]]
-                      [else [?if [$io:exists $to]
-                        [then [$concat $to " already exists -- the row owes nothing"]]
-                        [else ""]]]]]]]
-                [where [not [= $why ""]]]
-                [yield [$concat "  [owed]           " $tag "  -- " $why]]]
-              "\n"]]
+          # -- [stale planned]: a row written AHEAD of its artifacts says so
+          #    with `status=planned`, and its columns name where they will
+          #    be. The declaration is spent the moment every one of them is
+          #    on disk -- at which point `planned` would be a second, silent
+          #    statement that the code is not written, next to code that is.
+          #    That is the drift this file exists to refuse, so the row is
+          #    refused here and the commit that lands the artifacts flips it.
+          #    ALL, not any: connector's spec and corpus landed first by
+          #    design, and a row is only finished when nothing is left.
+          [= $v-stale-planned
+            [?if [not [= $status "planned"]] [then ""]
+              [else
+                [?let [= $decl
+                        [?for [in $g ($spec, $corpus, $source, $code, $half)]
+                          [yield [$strings:join [$words $g] " "]]]]
+                      [= $files
+                        [$strings:split-whitespace [$strings:join $decl " "]]]
+                      [= $absent
+                        [$count [?for [in $f $files]
+                                  [where [not [$io:exists $f]]]
+                                  [yield $f]]]]
+                  [?if [and [> [$count $files] 0] [= $absent 0]]
+                    [then [$concat "  [stale planned]  " $tag
+                             "  -- every artifact this row declares is on disk;"
+                             " the writing is done, so the row says status=current now"]]
+                    [else ""]]]]]]
 
-          # -- [corpus none]: a graded kind must name a corpus.
+          # -- [corpus none]: a graded kind must name a corpus. A planned row
+          #    is exempt: its corpus is one of the artifacts not written yet,
+          #    and [stale planned] is what holds it to writing one.
           [= $graded
             [?if [= $kind "design"] [then false]
-              [else [?if [= $kind "backend"] [then false] [else true]]]]]
+              [else [?if [= $kind "backend"] [then false]
+                [else [?if [= $status "planned"] [then false] [else true]]]]]]]
           [= $v-corpus-none
             [?if $graded
               [then [?if [> [$count [$words $corpus]] 0] [then ""]
-                [else [?if [$named $owed "corpus"] [then ""]
-                  [else [$concat "  [corpus none]    " $tag
-                           "  -- a surface graded by nothing; every row names a corpus"]]]]]]
+                [else [$concat "  [corpus none]    " $tag
+                         "  -- a surface graded by nothing; every row names a corpus"]]]]
               [else ""]]]
 
           # -- [suite ring]: the corpus header against the row.
@@ -297,10 +309,9 @@
                 [= $why
                   [?if [= $to $col]
                     [then [$concat $d "-to repeats " $d "="]]
-                    [else [?if [$named $owed $d] [then ""]
-                      [else [?if [$io:exists $to]
-                        [then [$concat $to " already exists -- the move is made; drop " $d "-to and set " $d "="]]
-                        [else ""]]]]]]]
+                    [else [?if [$io:exists $to]
+                      [then [$concat $to " already exists -- the move is made; drop " $d "-to and set " $d "="]]
+                      [else ""]]]]]
                 [where [not [= $why ""]]]
                 [yield [$concat "  [stale]          " $tag "  -- " $why]]]
               "\n"]]
@@ -310,7 +321,7 @@
               [else ""]]]
 
           [= $parts
-            [?for [in $p ($v-owed, $v-corpus-none, $v-suite, $v-stale-suite,
+            [?for [in $p ($v-stale-planned, $v-corpus-none, $v-suite, $v-stale-suite,
                           $v-code-ring, $v-half-ring, $v-half-ring1,
                           $v-spec-ring, $v-corpus-ring, $v-dest,
                           $v-stale-to, $v-stale-ns)]
@@ -325,9 +336,10 @@
           [where [= $status "current"]]
           [= $name [$string $m@name]]
           [= $ns   [$string [?else $m@ns "none"]]]
-          # An owed artifact's column reads `none`, which `words` drops, so
-          # this sweep never sees one -- the [owed] rule above is what holds
-          # the row to its promise.
+          # A `status=planned` row is skipped above: its columns name where
+          # the artifacts WILL be, and [stale planned] is what holds it to
+          # writing them. An absent artifact spelled `none` is dropped by
+          # `words`, so this sweep only ever sees a declared path.
           [= $g1 [$string [?else $m@spec "none"]]]
           [= $g2 [$string [?else $m@corpus "none"]]]
           [= $g3 [$string [?else $m@source "none"]]]
@@ -433,9 +445,20 @@
       [= $n-code-to   [$count [?for [in $m $rows] [where [not [= [$string [?else $m@code-to ""]] ""]]] [yield $m]]]]
       [= $n-ns-to     [$count [?for [in $m $rows] [where [not [= [$string [?else $m@ns-to ""]] ""]]] [yield $m]]]]
       [= $n-suite     [$count [?for [in $m $rows] [where [not [= [$string [?else $m@suite-ring ""]] ""]]] [yield $m]]]]
-      [= $n-owed      [$count [?for [in $m $rows] [where [not [= [$string [?else $m@owed ""]] ""]]] [yield $m]]]]
-      [= $n-planned   [$count [?for [in $m $rows] [where [= [$string [?else $m@status "current"]] "planned"]] [yield $m]]]]
-      [= $n-incoming  [$count [?for [in $m $rows] [where [= [$string [?else $m@status "current"]] "incoming"]] [yield $m]]]]
+      # The planned and incoming rows are NAMED, not just counted: a bare
+      # count tells a reader that something is declared ahead of its code
+      # without telling them what, and "which module is unwritten?" is the
+      # first question the number raises.
+      [= $planned-rows [?for [in $m $rows] [where [= [$string [?else $m@status "current"]] "planned"]] [yield [$string $m@name]]]]
+      [= $incoming-rows [?for [in $m $rows] [where [= [$string [?else $m@status "current"]] "incoming"]] [yield [$string $m@name]]]]
+      [= $n-planned   [$count $planned-rows]]
+      [= $n-incoming  [$count $incoming-rows]]
+      [= $named-of
+        [?if [= [$count $planned-rows] 0] [then ""]
+          [else [$concat " (" [$strings:join $planned-rows " "] ")"]]]]
+      [= $named-in
+        [?if [= [$count $incoming-rows] 0] [then ""]
+          [else [$concat " (" [$strings:join $incoming-rows " "] ")"]]]]
 
       [= $census
         [$concat
@@ -445,10 +468,10 @@
           [$string $n-source-to] " source, "
           [$string $n-code-to] " code, "
           [$string $n-ns-to] " namespace, "
-          [$string $n-suite] " corpus-header ring, "
-          [$string $n-owed] " unwritten; "
+          [$string $n-suite] " corpus-header ring; "
           [$string [$count $moves]] " non-row move(s); "
-          [$string $n-planned] " planned, " [$string $n-incoming] " incoming row(s)."]]
+          [$string $n-planned] " planned" $named-of ", "
+          [$string $n-incoming] " incoming row(s)" $named-in "."]]
 
   [?if [= $n-violations 0]
     [then
