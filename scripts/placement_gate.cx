@@ -1,0 +1,449 @@
+# scripts/placement_gate.cx -- the PLACEMENT check (RULED: 1427-f, OL-15).
+#
+# Eat-our-own-dog-food: written entirely in CX; runs as `cx <file>`.
+#
+# OL-15 asks for one place where a surface's placement is STATED, and a check
+# that refuses a tree where any artifact disagrees with it. The statement is
+# registry/modules.cxd. This program is the check. It reads no other
+# declaration: everything below is a registry row compared against what is
+# actually on disk.
+#
+# THE ONE THING TO UNDERSTAND. A row's path columns name where the artifact
+# IS; a `<column>-to` names where #1427 PUTS it, and exists only while the
+# move is still owed. So a dimension with NO `-to` is held to its ring on
+# every run -- that is the live half -- and a dimension WITH one is held to
+# the destination instead, plus the two refusals that keep the declaration
+# from going stale: a `-to` equal to its column, and a `-to` naming a path
+# that already exists. A finished move is therefore not expressible as a
+# lingering `-to`, and the outstanding `-to` set IS the census of what the
+# cutover still owes. The same contract governs `suite-ring=` (the corpus
+# header's ring while it disagrees with the row) and `owed=` (an artifact
+# the row declares that nobody has written yet).
+#
+# What it refuses
+#   [missing]        a `status=current` row whose declared artifact is not
+#                    on disk
+#   [owed]           an `owed=` artifact whose column is not `none`, that has
+#                    no `-to`, or that already exists
+#   [corpus none]    a graded kind with no corpus and no `owed=corpus` -- a
+#                    surface nothing holds to its spec
+#   [suite ring]     a corpus whose `ring=` header is neither the row's ring
+#                    nor its declared `suite-ring=`
+#   [stale]          a `-to` equal to its column, a `-to` that already
+#                    exists, or a `suite-ring=` equal to the row's ring
+#   [code ring]      a code file outside its ring's V directory, with no
+#                    `code-to` declaring the move (Ring 0 and Ring 1 share
+#                    vcx/code; Ring 2 is vcx/platform)
+#   [half ring]      a declared half outside vcx/code, or declared by a row
+#                    that is not Ring 2 -- a half exists only to let a Ring-2
+#                    module keep a pure Ring-1 piece
+#   [spec ring] / [corpus ring]
+#                    an artifact under a RING DIRECTORY that belongs to the
+#                    other ring, with no `-to` declaring the move (1427-c:
+#                    the directory IS the ring)
+#   [dest ring]      a destination -- a `-to`, or the column itself when the
+#                    row declares no move -- under the other ring's directory
+#   [orphan ...]     a spec, corpus or bundled source that no row and no
+#                    `[move]` claims
+#
+# Exit: 0 clean, 1 placement drift, 2 the registry itself is unreadable.
+#
+# Run from the checkout root:
+#   vcx/target/cx --allow-all scripts/placement_gate.cx
+# (or: make placement-gate)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/strings' as=strings]
+
+# -- helpers ------------------------------------------------------------
+# named: set membership over a sequence of strings.
+[?def named scope=private pure [returns bool] ($set::[sequence string] $x::string)
+  [> [$count [?for [in $s $set] [where [= $s $x]] [yield $s]]] 0]]
+
+# words: an attribute holding one or more paths, split on whitespace, with
+# the explicit `none` marker dropped. A registry row always spells the
+# absence, so a missing attribute is itself drift.
+[?def words scope=private pure [returns any] ($v::string)
+  [?for [in $w [$strings:split-whitespace $v]]
+    [where [not [= $w ""]]]
+    [where [not [= $w "none"]]]
+    [yield $w]]]
+
+# ring-of-dir: the ring a path's DIRECTORY declares, or "" when the path is
+# outside the ring-legible space (spec/03-approved/core, xap/, x/, the
+# top-level corpora -- none of which the stdlib/platform split touches).
+# `vcx/code` answers "01" because 1427-d puts Ring 0 and Ring 1 both there.
+[?def ring-of-dir scope=private pure [returns string] ($p::string)
+  [?if [$strings:starts-with $p "spec/03-approved/stdlib/"] [then "1"]
+  [else [?if [$strings:starts-with $p "spec/03-approved/platform/"] [then "2"]
+  [else [?if [$strings:starts-with $p "conformance/stdlib/"] [then "1"]
+  [else [?if [$strings:starts-with $p "conformance/platform/"] [then "2"]
+  [else [?if [$strings:starts-with $p "vcx/code/"] [then "01"]
+  [else [?if [$strings:starts-with $p "vcx/platform/"] [then "2"]
+  [else ""]]]]]]]]]]]]]
+
+# ring-dir-ok: does this path sit in a directory that agrees with `ring`?
+# A path outside the ring-legible space agrees with every ring -- the split
+# does not reach it, and pretending otherwise would refuse core/codec.md.
+[?def ring-dir-ok scope=private pure [returns bool] ($p::string $ring::string)
+  [?let [= $d [$ring-of-dir $p]]
+    [?if [= $d ""] [then true] [else [$strings:contains $d $ring]]]]]
+
+# suite-ring-of: the `ring=` on a suite header, "" when the file is
+# unreadable or carries none.
+[?def suite-ring-of scope=private impure [returns string] ($p::string)
+  [?if [$io:exists $p]
+    [then [?let [= $t [$cx:parse [$io:read-file $p]]] [$string [?else $t@ring ""]]]]
+    [else ""]]]
+
+# -- the registry -------------------------------------------------------
+[?let [= $reg-path "registry/modules.cxd"]
+      [= $reg-ok [$io:exists $reg-path]]
+
+  [?if [not $reg-ok]
+    [then
+      [?let [= $_m [$io:write-line [$env:stderr]
+          "placement-gate: registry/modules.cxd is missing -- the placement declaration (RULED: 1427-f) is the input this check has no substitute for"]]
+        [$env:exit 2]]]
+    [else
+
+[?let [= $reg [$cx:parse [$io:read-file $reg-path]]]
+      [= $rows [?for [in $m $reg//module] [yield $m]]]
+      [= $moves [?for [in $m $reg//move] [yield $m]]]
+
+      # Every path any row or move claims, in either position -- the input to
+      # the orphan sweeps. An artifact is claimed by where it is OR by where
+      # it is going; both are statements about it.
+      [= $claimed
+        [$strings:split-whitespace
+          [$strings:join
+            [?for [in $m $rows]
+              [= $c1 [$string [?else $m@spec ""]]]
+              [= $c2 [$string [?else $m@spec-to ""]]]
+              [= $c3 [$string [?else $m@corpus ""]]]
+              [= $c4 [$string [?else $m@corpus-to ""]]]
+              [= $c5 [$string [?else $m@source ""]]]
+              [= $c6 [$string [?else $m@source-to ""]]]
+              [yield [$concat $c1 " " $c2 " " $c3 " " $c4 " " $c5 " " $c6]]]
+            " "]]]
+      [= $moved
+        [$strings:split-whitespace
+          [$strings:join
+            [?for [in $m $moves]
+              [yield [$concat [$string [?else $m@from ""]] " " [$string [?else $m@to ""]]]]]
+            " "]]]
+
+      # -- per-row placement ------------------------------------------
+      [= $row-lines
+        [?for [in $m $rows]
+          [= $name    [$string $m@name]]
+          [= $ring    [$string $m@ring]]
+          [= $ns      [$string [?else $m@ns "none"]]]
+          [= $kind    [$string [?else $m@kind "module"]]]
+          [= $owed    [$strings:split-whitespace [$string [?else $m@owed ""]]]]
+          [= $tag     [$concat $name " (" $ns ")"]]
+
+          # the five artifact dimensions, each as (column, destination)
+          [= $spec      [$string [?else $m@spec "none"]]]
+          [= $spec-to   [$string [?else $m@spec-to ""]]]
+          [= $corpus    [$string [?else $m@corpus "none"]]]
+          [= $corpus-to [$string [?else $m@corpus-to ""]]]
+          [= $source    [$string [?else $m@source "none"]]]
+          [= $source-to [$string [?else $m@source-to ""]]]
+          [= $code      [$string [?else $m@code "none"]]]
+          [= $code-to   [$string [?else $m@code-to ""]]]
+          [= $half      [$string [?else $m@half "none"]]]
+          [= $suite-ring [$string [?else $m@suite-ring ""]]]
+          [= $ns-to     [$string [?else $m@ns-to ""]]]
+
+          # -- [owed]: the column reads `none`, a `-to` says where it goes,
+          #    and the file is not there yet. All three, or it is not owed.
+          [= $v-owed
+            [$strings:join
+              [?for [in $d ("spec", "corpus", "source", "code")]
+                [= $col [?if [= $d "spec"] [then $spec]
+                          [else [?if [= $d "corpus"] [then $corpus]
+                            [else [?if [= $d "source"] [then $source] [else $code]]]]]]]
+                [= $to  [?if [= $d "spec"] [then $spec-to]
+                          [else [?if [= $d "corpus"] [then $corpus-to]
+                            [else [?if [= $d "source"] [then $source-to] [else $code-to]]]]]]]
+                [where [$named $owed $d]]
+                [= $why
+                  [?if [not [= $col "none"]]
+                    [then [$concat "its " $d "= reads " $col ", not `none`"]]
+                    [else [?if [= $to ""]
+                      [then [$concat "no " $d "-to= says where it goes"]]
+                      [else [?if [$io:exists $to]
+                        [then [$concat $to " already exists -- the row owes nothing"]]
+                        [else ""]]]]]]]
+                [where [not [= $why ""]]]
+                [yield [$concat "  [owed]           " $tag "  -- " $why]]]
+              "\n"]]
+
+          # -- [corpus none]: a graded kind must name a corpus.
+          [= $graded
+            [?if [= $kind "design"] [then false]
+              [else [?if [= $kind "backend"] [then false] [else true]]]]]
+          [= $v-corpus-none
+            [?if $graded
+              [then [?if [> [$count [$words $corpus]] 0] [then ""]
+                [else [?if [$named $owed "corpus"] [then ""]
+                  [else [$concat "  [corpus none]    " $tag
+                           "  -- a surface graded by nothing; every row names a corpus"]]]]]]
+              [else ""]]]
+
+          # -- [suite ring]: the corpus header against the row.
+          [= $want-suite [?if [= $suite-ring ""] [then $ring] [else $suite-ring]]]
+          [= $v-suite
+            [$strings:join
+              [?for [in $c [$words $corpus]]
+                [= $sr [$suite-ring-of $c]]
+                [where [not [= $sr ""]]]
+                [where [not [= $sr $want-suite]]]
+                [yield [$concat "  [suite ring]     " $tag "  -- " $c
+                         " carries ring=" $sr ", the row says ring=" $want-suite]]]
+              "\n"]]
+          [= $v-stale-suite
+            [?if [= $suite-ring $ring]
+              [then [$concat "  [stale]          " $tag
+                       "  -- suite-ring=" $suite-ring " repeats the row's ring; drop it"]]
+              [else ""]]]
+
+          # -- [code ring] / [half ring].
+          [= $want-code [?if [= $ring "2"] [then "vcx/platform/"] [else "vcx/code/"]]]
+          [= $v-code-ring
+            [?if [not [= $code-to ""]] [then ""]
+              [else [$strings:join
+                [?for [in $f [$words $code]]
+                  [where [not [$ring-dir-ok $f $ring]]]
+                  [yield [$concat "  [code ring]      " $tag "  -- ring=" $ring
+                           " wants " $want-code ", found " $f
+                           " (a Ring-2 module's pure piece belongs in half=, not code=)"]]]
+                "\n"]]]]
+          [= $v-half-ring
+            [$strings:join
+              [?for [in $f [$words $half]]
+                [where [not [$strings:starts-with $f "vcx/code/"]]]
+                [yield [$concat "  [half ring]      " $tag
+                         "  -- a declared half is Ring 1 and lives in vcx/code/, found " $f]]]
+              "\n"]]
+          [= $v-half-ring1
+            [?if [= $ring "2"] [then ""]
+              [else [?if [= [$count [$words $half]] 0] [then ""]
+                [else [$concat "  [half ring]      " $tag
+                         "  -- only a Ring-2 module declares a half; this row is ring=" $ring]]]]]]
+
+          # -- [spec ring] / [corpus ring]: the directory IS the ring, unless
+          #    the row declares the move.
+          [= $v-spec-ring
+            [?if [not [= $spec-to ""]] [then ""]
+              [else [$strings:join
+                [?for [in $f [$words $spec]]
+                  [where [not [$ring-dir-ok $f $ring]]]
+                  [yield [$concat "  [spec ring]      " $tag "  -- ring=" $ring
+                           ", but " $f " is in the other ring's directory"]]]
+                "\n"]]]]
+          [= $v-corpus-ring
+            [?if [not [= $corpus-to ""]] [then ""]
+              [else [$strings:join
+                [?for [in $f [$words $corpus]]
+                  [where [not [$ring-dir-ok $f $ring]]]
+                  [yield [$concat "  [corpus ring]    " $tag "  -- ring=" $ring
+                           ", but " $f " is in the other ring's directory"]]]
+                "\n"]]]]
+
+          # -- [dest ring]: where the row SAYS the artifact goes must agree
+          #    with the ring, whether that is a `-to` or the column itself.
+          [= $v-dest
+            [$strings:join
+              [?for [in $d ("spec", "corpus", "source", "code")]
+                [= $to  [?if [= $d "spec"] [then $spec-to]
+                          [else [?if [= $d "corpus"] [then $corpus-to]
+                            [else [?if [= $d "source"] [then $source-to] [else $code-to]]]]]]]
+                [where [not [= $to ""]]]
+                [= $bad
+                  [$strings:join
+                    [?for [in $f [$words $to]]
+                      [where [not [$ring-dir-ok $f $ring]]]
+                      [yield $f]]
+                    " "]]
+                [where [not [= $bad ""]]]
+                [yield [$concat "  [dest ring]      " $tag "  -- ring=" $ring
+                         ", but " $d "-to names " $bad]]]
+              "\n"]]
+
+          # -- [stale]: a `-to` that repeats its column, or that already
+          #    exists. Either one would let a finished move keep declaring
+          #    itself unfinished, which is the whole failure mode this file
+          #    was written against.
+          [= $v-stale-to
+            [$strings:join
+              [?for [in $d ("spec", "corpus", "source", "code")]
+                [= $col [?if [= $d "spec"] [then $spec]
+                          [else [?if [= $d "corpus"] [then $corpus]
+                            [else [?if [= $d "source"] [then $source] [else $code]]]]]]]
+                [= $to  [?if [= $d "spec"] [then $spec-to]
+                          [else [?if [= $d "corpus"] [then $corpus-to]
+                            [else [?if [= $d "source"] [then $source-to] [else $code-to]]]]]]]
+                [where [not [= $to ""]]]
+                [= $why
+                  [?if [= $to $col]
+                    [then [$concat $d "-to repeats " $d "="]]
+                    [else [?if [$named $owed $d] [then ""]
+                      [else [?if [$io:exists $to]
+                        [then [$concat $to " already exists -- the move is made; drop " $d "-to and set " $d "="]]
+                        [else ""]]]]]]]
+                [where [not [= $why ""]]]
+                [yield [$concat "  [stale]          " $tag "  -- " $why]]]
+              "\n"]]
+          [= $v-stale-ns
+            [?if [= $ns-to $ns]
+              [then [$concat "  [stale]          " $tag "  -- ns-to repeats ns="]]
+              [else ""]]]
+
+          [= $parts
+            [?for [in $p ($v-owed, $v-corpus-none, $v-suite, $v-stale-suite,
+                          $v-code-ring, $v-half-ring, $v-half-ring1,
+                          $v-spec-ring, $v-corpus-ring, $v-dest,
+                          $v-stale-to, $v-stale-ns)]
+              [where [not [= $p ""]]]
+              [yield $p]]]
+          [yield [$strings:join $parts "\n"]]]]
+
+      # -- existence, as its own sweep (one line per file, not per row) --
+      [= $missing-lines
+        [?for [in $m $rows]
+          [= $status [$string [?else $m@status "current"]]]
+          [where [= $status "current"]]
+          [= $name [$string $m@name]]
+          [= $ns   [$string [?else $m@ns "none"]]]
+          # An owed artifact's column reads `none`, which `words` drops, so
+          # this sweep never sees one -- the [owed] rule above is what holds
+          # the row to its promise.
+          [= $g1 [$string [?else $m@spec "none"]]]
+          [= $g2 [$string [?else $m@corpus "none"]]]
+          [= $g3 [$string [?else $m@source "none"]]]
+          [= $g4 [$string [?else $m@code "none"]]]
+          [= $g5 [$string [?else $m@half "none"]]]
+          [= $files
+            [?for [in $g ($g1, $g2, $g3, $g4, $g5)]
+              [yield [$strings:join [$words $g] " "]]]]
+          [= $hit
+            [$strings:join
+              [?for [in $f [$strings:split-whitespace [$strings:join $files " "]]]
+                [where [not [$io:exists $f]]]
+                [yield [$concat "  [missing]        " $name " (" $ns ")  -- " $f]]]
+              "\n"]]
+          [where [not [= $hit ""]]]
+          [yield $hit]]]
+
+      # -- orphans -----------------------------------------------------
+      # Every artifact under a directory the split governs must be claimed by
+      # a row (where it is, or where it is going) or by a `[move]`.
+      # The sweep is written over a JOINED string rather than a sequence of
+      # sequences: a `yield` of a sequence nests, and three directories that
+      # each hold a few dozen files would come back as three lists to walk
+      # instead of one. Paths carry no spaces, so joining and re-splitting is
+      # lossless. The directory guard matters because two of the three do not
+      # exist until #1427 phase 2 makes them.
+      [= $all-specs
+        [$strings:split-whitespace
+          [$strings:join
+            [?for [in $d ("spec/03-approved/std-lib", "spec/03-approved/stdlib",
+                          "spec/03-approved/platform")]
+              [where [$io:is-directory $d]]
+              [yield [$strings:join [$io:glob [$concat $d "/**/*.md"]] " "]]]
+            " "]]]
+      [= $all-corpora
+        [$strings:split-whitespace
+          [$strings:join
+            [?for [in $d ("conformance/stdlib", "conformance/platform")]
+              [where [$io:is-directory $d]]
+              [yield [$strings:join [$io:glob [$concat $d "/*.cxd"]] " "]]]
+            " "]]]
+      [= $all-sources
+        [$strings:split-whitespace
+          [$strings:join
+            [?for [in $d ("stdlib", "x")]
+              [where [$io:is-directory $d]]
+              [yield [$strings:join [$io:glob [$concat $d "/*.cx"]] " "]]]
+            " "]]]
+
+      [= $orphan-spec
+        [?for [in $s $all-specs]
+          [where [not [$named $claimed $s]]]
+          [where [not [$named $moved $s]]]
+          [yield [$concat "  [orphan spec]    " $s "  -- no row in registry/modules.cxd"]]]]
+      [= $orphan-corpus
+        [?for [in $c $all-corpora]
+          [where [not [$named $claimed $c]]]
+          [where [not [$named $moved $c]]]
+          [yield [$concat "  [orphan corpus]  " $c "  -- graded, but no row claims it"]]]]
+      [= $orphan-source
+        [?for [in $s $all-sources]
+          [where [not [$named $claimed $s]]]
+          [where [not [$named $moved $s]]]
+          [yield [$concat "  [orphan source]  " $s "  -- bundled, but no row claims it"]]]]
+
+      # -- assemble ----------------------------------------------------
+      [= $row-hits [?for [in $x $row-lines] [where [not [= $x ""]]] [yield $x]]]
+      [= $n-violations
+        [+ [$count $row-hits]
+           [+ [$count $missing-lines]
+              [+ [$count $orphan-spec]
+                 [+ [$count $orphan-corpus] [$count $orphan-source]]]]]]
+
+      [= $b1 [$strings:join $row-hits "\n"]]
+      [= $b2 [$strings:join $missing-lines "\n"]]
+      [= $b3 [$strings:join $orphan-spec "\n"]]
+      [= $b4 [$strings:join $orphan-corpus "\n"]]
+      [= $b5 [$strings:join $orphan-source "\n"]]
+      [= $blocks
+        [?for [in $b ($b1, $b2, $b3, $b4, $b5)]
+          [where [not [= $b ""]]]
+          [yield $b]]]
+
+      # -- the census: what the cutover still owes, counted from the rows.
+      [= $n-ring1 [$count [?for [in $m $rows] [where [= [$string $m@ring] "1"]] [yield $m]]]]
+      [= $n-ring2 [$count [?for [in $m $rows] [where [= [$string $m@ring] "2"]] [yield $m]]]]
+      [= $n-ring0 [$count [?for [in $m $rows] [where [= [$string $m@ring] "0"]] [yield $m]]]]
+      [= $n-spec-to   [$count [?for [in $m $rows] [where [not [= [$string [?else $m@spec-to ""]] ""]]] [yield $m]]]]
+      [= $n-corpus-to [$count [?for [in $m $rows] [where [not [= [$string [?else $m@corpus-to ""]] ""]]] [yield $m]]]]
+      [= $n-source-to [$count [?for [in $m $rows] [where [not [= [$string [?else $m@source-to ""]] ""]]] [yield $m]]]]
+      [= $n-code-to   [$count [?for [in $m $rows] [where [not [= [$string [?else $m@code-to ""]] ""]]] [yield $m]]]]
+      [= $n-ns-to     [$count [?for [in $m $rows] [where [not [= [$string [?else $m@ns-to ""]] ""]]] [yield $m]]]]
+      [= $n-suite     [$count [?for [in $m $rows] [where [not [= [$string [?else $m@suite-ring ""]] ""]]] [yield $m]]]]
+      [= $n-owed      [$count [?for [in $m $rows] [where [not [= [$string [?else $m@owed ""]] ""]]] [yield $m]]]]
+      [= $n-planned   [$count [?for [in $m $rows] [where [= [$string [?else $m@status "current"]] "planned"]] [yield $m]]]]
+      [= $n-incoming  [$count [?for [in $m $rows] [where [= [$string [?else $m@status "current"]] "incoming"]] [yield $m]]]]
+
+      [= $census
+        [$concat
+          "cutover still owed (RULED: 1427-a/b/c/d/e): "
+          [$string $n-spec-to] " spec, "
+          [$string $n-corpus-to] " corpus, "
+          [$string $n-source-to] " source, "
+          [$string $n-code-to] " code, "
+          [$string $n-ns-to] " namespace, "
+          [$string $n-suite] " corpus-header ring, "
+          [$string $n-owed] " unwritten; "
+          [$string [$count $moves]] " non-row move(s); "
+          [$string $n-planned] " planned, " [$string $n-incoming] " incoming row(s)."]]
+
+  [?if [= $n-violations 0]
+    [then
+      [?let [= $_ok [$io:write-line [$env:stdout]
+          [$concat "placement-gate OK -- " [$string [$count $rows]]
+            " rows in registry/modules.cxd (" [$string $n-ring0] " ring 0, "
+            [$string $n-ring1] " ring 1, " [$string $n-ring2]
+            " ring 2); every artifact sits where its row says, every row's ring agrees with the directories it is not declared to be leaving, and nothing under the ring directories is unclaimed.\n  " $census]]]
+        [$env:exit 0]]]
+    [else
+      [?let [= $_bad [$io:write-line [$env:stderr]
+          [$concat "placement drift -- " [$string $n-violations]
+            " site(s) disagree with registry/modules.cxd (RULED: 1427-f, OL-15); a site is one row or one unclaimed artifact, and a row may carry several lines:\n"
+            [$strings:join $blocks "\n"]
+            "\n  " $census]]]
+        [$env:exit 1]]]]]]]]

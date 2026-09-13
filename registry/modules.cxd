@@ -1,0 +1,219 @@
+[module-registry name=cx-modules
+  [doc [#
+THE MODULE REGISTRY — one row per shipped surface, and the single place its
+RING is DECLARED (RULED: 1427-f, OL-15).
+
+Before this file a surface's placement was stated in four places by
+implication — the spec's directory, the corpus's `ring=` header, the
+directory its V code sits in (`vcx/code` = Ring 1, `vcx/platform` = Ring 2),
+and its `[?lib]` namespace — and nothing compared them. #1077 and OL-14
+record what that costs. This file is the declaration; `make placement-gate`
+(scripts/placement_gate.cx) refuses a tree where any of the four disagrees
+with the row, or where an artifact under a ring directory has no row.
+
+Derived FROM this file: the bundled-surface census asserted in
+vcx/tests/stdlib_umbrella_test.v, the namespace migration tool
+(`cx --migrate-namespace registry/modules.cxd`), and — as #1427 proceeds —
+the catalog step and the two READMEs.
+
+TODAY AND THE DESTINATION. Every path column names where the artifact IS,
+on the tree this file sits in. A `<column>-to` names where 1427 PUTS it, and
+exists only while the move is still owed: writing one is how a row says
+"this dimension has not moved yet", and deleting it is how the commit that
+moves the artifact closes that line. So the check passes on today's tree
+without being vacuous — a dimension with no `-to` is held to its ring on
+every run — and the set of `-to` values IS the census of what #1427 still
+owes. A `-to` equal to its column, or naming a path that already exists, is
+refused: a stale declaration would hide exactly the drift this file exists
+to name.
+
+COLUMNS
+  name    the surface's call-site prefix — `[?lib '<ns>/<name>']` binds it.
+          Unique per namespace, not globally: `term` is both a natives
+          family (ns=none) and an x-tier module (ns=cx-x)
+  ring    1 = pure/local, 2 = serves or reaches a store/protocol, 0 = a
+          surface synthesized by the codec registry (codec.md §3). This is
+          the DECLARED ring — the decision, not a location, so it has no
+          `-to`: what moves is the artifact, never the ruling
+  ns      the resolver namespace TODAY: `cx-stdlib`, `cx-x`, or — for the two
+          packages bundled under a name of their own, where the namespace IS
+          the whole resolver name — `cx-xap` and `cx-fabric`. `none` = no
+          `[?lib]` surface at all (natives, backend engines, design texts)
+  ns-to   the namespace 1427-b moves it to (`cx-platform` for every Ring-2
+          module; nothing else is renamed)
+  kind    module   a `[?lib]`-resolvable module
+          natives  a dispatch family with no module surface
+          backend  an external engine reached through core verbs
+          design   an approved design text with no surface of its own
+          codec    a surface synthesized by the codec registry
+          suite    fixtures whose parent spec is not a module of its own
+  spec    the normative text
+  corpus  the graded fixtures
+  source  the bundled CX source (stdlib/*.cx, x/*.cx), or `none`
+  code    the V file(s) carrying the dispatch, or `none` for a pure-CX
+          module — every one under the ring's own directory
+  half    a DECLARED Ring-1 half of a Ring-2 module (1427-d): the pure codec
+          or client a Ring-1 consumer may need for profile composition. It
+          stays in vcx/code and is named HERE, so the placement check reads
+          it as declared rather than as a ring violation. The split trigger
+          is the first Ring-1 CONSUMER of a half — that is how `http-client`
+          became its own Ring-1 module (1427-e)
+  suite-ring
+          the `ring=` the corpus header carries TODAY, when it disagrees
+          with the row. Same contract as a `-to`: it exists only while the
+          disagreement does, and the check refuses one that is already
+          resolved
+  owed    artifacts this row declares that are not written yet (their column
+          reads `none` and their `-to` names where they go). An `owed`
+          artifact that exists is refused
+  status  current  the artifacts are on this tree
+          planned  the artifacts are written by #1427 itself (http-client)
+          incoming the artifacts arrive with another branch's merge; the row
+                   is here so that merge does not fail this check. Graded
+                   when present, not required
+
+MEMBERSHIP TEST (spec/03-approved/core/cx_partition.md §10, carried from
+ledger/partition_I3_ring12_split.md): a module that imports the store or a
+protocol module, or that SERVES, is Ring 2; otherwise it is Ring 1. A module
+lives in the ring of its HIGHEST verb; a pure half a Ring-1 consumer needs
+becomes its own Ring-1 module.
+#]]
+
+  [; ── Ring 1 — cx-stdlib ───────────────────────────────────────────── ]
+  [module name=array ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/array.md spec-to=spec/03-approved/stdlib/array.md corpus=conformance/stdlib/array.cxd source=stdlib/array.cx code=vcx/code/stdlib_array.v half=none status=current]
+  [module name=bytes ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/bytes.md spec-to=spec/03-approved/stdlib/bytes.md corpus=conformance/stdlib/bytes.cxd source=stdlib/bytes.cx code=vcx/code/stdlib_bytes.v half=none status=current]
+  [module name=crypto ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/crypto.md spec-to=spec/03-approved/stdlib/crypto.md corpus=conformance/stdlib/crypto.cxd source=stdlib/crypto.cx code='vcx/code/stdlib_crypto.v vcx/code/stdlib_crypto_xmlsign.v vcx/code/stdlib_crypto_xmlenc.v vcx/code/crypto_x509.v' half=none status=current]
+  [module name=csv ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/csv.md spec-to=spec/03-approved/stdlib/csv.md corpus=conformance/stdlib/csv.cxd source=stdlib/csv.cx code=vcx/code/stdlib_csv.v half=none status=current]
+  [module name=cx ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/modules/cx.md spec-to=spec/03-approved/stdlib/cx.md corpus=conformance/stdlib/cx.cxd source=none code='vcx/code/stdlib_cx.v vcx/code/stdlib_cx_analysis.v' half=none status=current]
+  [module name=diagram ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/diagram.md spec-to=spec/03-approved/stdlib/diagram.md corpus=conformance/stdlib/diagram.cxd source=stdlib/diagram.cx code='vcx/code/stdlib_diagram.v vcx/code/diagram.v vcx/code/diagram_cx_seam.v' half=none status=current]
+  [; email is the 1427-e re-classification: pure RFC 5322/MIME codec, its V
+     file importing nothing from the platform half, so the import test puts
+     it in Ring 1 — and its code file and its corpus header are both still
+     where the old tier-based placement left them. ]
+  [module name=email ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/email.md spec-to=spec/03-approved/stdlib/email.md corpus=conformance/stdlib/email.cxd suite-ring=2 source=stdlib/email.cx code=vcx/platform/stdlib_email.v code-to=vcx/code/stdlib_email.v half=none status=current]
+  [module name=env ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/env.md spec-to=spec/03-approved/stdlib/env.md corpus=conformance/stdlib/env.cxd source=stdlib/env.cx code=vcx/code/stdlib_env_notd_cx_no_pack_env.v half=none status=current]
+  [module name=format ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/format.md spec-to=spec/03-approved/stdlib/format.md corpus=conformance/stdlib/format.cxd source=stdlib/format.cx code=vcx/code/stdlib_format.v half=none status=current]
+  [module name=fp ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/fp.md spec-to=spec/03-approved/stdlib/fp.md corpus=conformance/stdlib/fp.cxd source=stdlib/fp.cx code=none half=none status=current]
+  [module name=ft ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/ft.md spec-to=spec/03-approved/stdlib/ft.md corpus=conformance/stdlib/ft.cxd source=stdlib/ft.cx code=vcx/code/stdlib_ft.v half=none status=current]
+  [module name=geo ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/geo.md spec-to=spec/03-approved/stdlib/geo.md corpus=conformance/stdlib/geo.cxd source=stdlib/geo.cx code=vcx/code/stdlib_geo.v half=none status=current]
+  [module name=hash ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/hash.md spec-to=spec/03-approved/stdlib/hash.md corpus=conformance/stdlib/hash.cxd source=stdlib/hash.cx code=vcx/code/stdlib_hash.v half=none status=current]
+  [module name=html ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/html.md spec-to=spec/03-approved/stdlib/html.md corpus=conformance/stdlib/html.cxd source=stdlib/html.cx code=vcx/code/stdlib_html.v half=none status=current]
+  [; http-client is the Ring-1 half 1427-e promotes to a module of its own.
+     Its V files are already in vcx/code under the pack-conditional names;
+     its spec, corpus and bundled source are written by #1427 phase 2. ]
+  [module name=http-client ring=1 ns=cx-stdlib kind=module spec=none spec-to=spec/03-approved/stdlib/http-client.md corpus=none corpus-to=conformance/stdlib/http-client.cxd source=none source-to=stdlib/http-client.cx code='vcx/code/stdlib_http_notd_cx_no_pack_http_client.v vcx/code/net_core_notd_cx_no_pack_http_client.v vcx/code/module_fetch_notd_cx_no_pack_http_client.v' half=none owed='spec corpus source' status=planned]
+  [module name=i18n ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/i18n.md spec-to=spec/03-approved/stdlib/i18n.md corpus=conformance/stdlib/i18n.cxd source=stdlib/i18n.cx code=vcx/code/stdlib_i18n.v half=none status=current]
+  [module name=io ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/io.md spec-to=spec/03-approved/stdlib/io.md corpus=conformance/stdlib/io.cxd source=stdlib/io.cx code=vcx/code/stdlib_io_notd_cx_no_pack_io.v half=none status=current]
+  [module name=json ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/json.md spec-to=spec/03-approved/stdlib/json.md corpus=conformance/stdlib/json.cxd source=stdlib/json.cx code=vcx/code/stdlib_json.v half=none status=current]
+  [module name=jsonrpc ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/jsonrpc.md spec-to=spec/03-approved/stdlib/jsonrpc.md corpus=conformance/stdlib/jsonrpc.cxd source=stdlib/jsonrpc.cx code=none half=none status=current]
+  [module name=jsonschema ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/jsonschema.md spec-to=spec/03-approved/stdlib/jsonschema.md corpus=conformance/stdlib/jsonschema.cxd source=stdlib/jsonschema.cx code='vcx/code/stdlib_jsonschema.v vcx/code/stdlib_schema_registry.v' half=none status=current]
+  [module name=locale ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/locale.md spec-to=spec/03-approved/stdlib/locale.md corpus=conformance/stdlib/locale.cxd source=stdlib/locale.cx code=vcx/code/stdlib_locale.v half=none status=current]
+  [module name=log ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/log.md spec-to=spec/03-approved/stdlib/log.md corpus=conformance/stdlib/log.cxd source=stdlib/log.cx code=vcx/code/stdlib_log_notd_cx_no_pack_log.v half=none status=current]
+  [module name=map ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/map.md spec-to=spec/03-approved/stdlib/map.md corpus=conformance/stdlib/map.cxd source=stdlib/map.cx code=vcx/code/stdlib_map.v half=none status=current]
+  [module name=math ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/math.md spec-to=spec/03-approved/stdlib/math.md corpus=conformance/stdlib/math.cxd source=stdlib/math.cx code=vcx/code/stdlib_math.v half=none status=current]
+  [module name=mime ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/mime.md spec-to=spec/03-approved/stdlib/mime.md corpus=conformance/stdlib/mime.cxd source=stdlib/mime.cx code=vcx/code/stdlib_mime.v half=none status=current]
+  [module name=oidc ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/oidc.md spec-to=spec/03-approved/stdlib/oidc.md corpus=conformance/stdlib/oidc.cxd source=stdlib/oidc.cx code=vcx/code/stdlib_oidc.v half=none status=current]
+  [module name=path ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/path.md spec-to=spec/03-approved/stdlib/path.md corpus=conformance/stdlib/path.cxd source=stdlib/path.cx code=vcx/code/stdlib_path.v half=none status=current]
+  [module name=process ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/process.md spec-to=spec/03-approved/stdlib/process.md corpus=conformance/stdlib/process.cxd source=stdlib/process.cx code=vcx/code/stdlib_process_notd_cx_no_pack_process.v half=none status=current]
+  [module name=prof ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/prof.md spec-to=spec/03-approved/stdlib/prof.md corpus=conformance/stdlib/prof.cxd source=stdlib/prof.cx code=vcx/code/stdlib_prof.v half=none status=current]
+  [module name=random ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/random.md spec-to=spec/03-approved/stdlib/random.md corpus=conformance/stdlib/random.cxd source=stdlib/random.cx code=vcx/code/stdlib_random_notd_cx_no_pack_random.v half=none status=current]
+  [module name=re ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/re.md spec-to=spec/03-approved/stdlib/re.md corpus=conformance/stdlib/re.cxd source=stdlib/re.cx code=vcx/code/stdlib_re.v half=none status=current]
+  [module name=saml ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/saml.md spec-to=spec/03-approved/stdlib/saml.md corpus=conformance/stdlib/saml.cxd source=stdlib/saml.cx code='vcx/code/stdlib_saml.v vcx/code/stdlib_saml_binding.v vcx/code/stdlib_saml_c14n.v vcx/code/stdlib_saml_metadata.v vcx/code/stdlib_saml_xml.v vcx/code/stdlib_saml_xmlenc.v' half=none status=current]
+  [module name=sasl ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/sasl.md spec-to=spec/03-approved/stdlib/sasl.md corpus=conformance/stdlib/sasl.cxd source=stdlib/sasl.cx code=vcx/code/stdlib_sasl.v half=none status=current]
+  [module name=sched ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/sched.md spec-to=spec/03-approved/stdlib/sched.md corpus=conformance/stdlib/sched.cxd source=stdlib/sched.cx code='vcx/code/stdlib_sched_notd_cx_no_pack_sched.v vcx/code/sched_close_d_cx_no_pack_sched.v' half=none status=current]
+  [module name=scim ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/scim.md spec-to=spec/03-approved/stdlib/scim.md corpus=conformance/stdlib/scim.cxd source=stdlib/scim.cx code=vcx/code/stdlib_scim.v half=none status=current]
+  [module name=similar ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/similar.md spec-to=spec/03-approved/stdlib/similar.md corpus=conformance/stdlib/similar.cxd source=stdlib/similar.cx code='vcx/code/stdlib_similar.v vcx/code/stdlib_similar_verbs.v vcx/code/stdlib_similar_assign.v vcx/code/stdlib_similar_metaphone.v' half=none status=current]
+  [module name=strings ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/strings.md spec-to=spec/03-approved/stdlib/strings.md corpus=conformance/stdlib/strings.cxd source=stdlib/strings.cx code=vcx/code/stdlib_strings.v half=none status=current]
+  [module name=supervise ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/supervise.md spec-to=spec/03-approved/stdlib/supervise.md corpus=conformance/stdlib/supervise.cxd source=stdlib/supervise.cx code=none half=none status=current]
+  [module name=tar ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/tar.md spec-to=spec/03-approved/stdlib/tar.md corpus=conformance/stdlib/tar.cxd source=stdlib/tar.cx code=vcx/code/stdlib_tar.v half=none status=current]
+  [module name=test ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/test.md spec-to=spec/03-approved/stdlib/test.md corpus=conformance/stdlib/test.cxd source=stdlib/test.cx code=vcx/code/stdlib_testkit.v half=none status=current]
+  [module name=time ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/time.md spec-to=spec/03-approved/stdlib/time.md corpus=conformance/stdlib/time.cxd source=stdlib/time.cx code='vcx/code/stdlib_time_notd_cx_no_pack_time.v vcx/code/datetime_core.v' half=none status=current]
+  [module name=url ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/url.md spec-to=spec/03-approved/stdlib/url.md corpus=conformance/stdlib/url.cxd source=stdlib/url.cx code=vcx/code/stdlib_url.v half=none status=current]
+  [module name=uuid ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/uuid.md spec-to=spec/03-approved/stdlib/uuid.md corpus=conformance/stdlib/uuid.cxd source=stdlib/uuid.cx code=vcx/code/stdlib_uuid.v half=none status=current]
+  [module name=validate ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/validate.md spec-to=spec/03-approved/stdlib/validate.md corpus=conformance/stdlib/validate.cxd source=stdlib/validate.cx code=vcx/code/stdlib_validate.v half=none status=current]
+  [module name=zip ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/zip.md spec-to=spec/03-approved/stdlib/zip.md corpus=conformance/stdlib/zip.cxd source=stdlib/zip.cx code=vcx/code/stdlib_zip.v half=none status=current]
+
+  [; ── Ring 2 — cx-stdlib today, cx-platform after 1427-b ───────────── ]
+  [; audit — #1422's audit sink, Ring 2 per audit.md §1 (RULED: 1422-a),
+     cx-platform/audit at the cutover; declared `incoming` ahead of its merge
+     (OL-15) and current since release/0.18 carries it (861ca66ec). ]
+  [module name=audit ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/audit.md spec-to=spec/03-approved/platform/audit.md corpus=conformance/stdlib/audit.cxd corpus-to=conformance/platform/audit.cxd source=stdlib/audit.cx code=vcx/platform/stdlib_audit.v half=none status=current]
+  [module name=authz ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/authz.md spec-to=spec/03-approved/platform/authz.md corpus=conformance/stdlib/authz.cxd corpus-to=conformance/platform/authz.cxd source=stdlib/authz.cx code=vcx/platform/stdlib_authz.v half=none status=current]
+  [module name=bus ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/bus.md spec-to=spec/03-approved/platform/bus.md corpus=conformance/stdlib/bus.cxd corpus-to=conformance/platform/bus.cxd source=stdlib/bus.cx code=vcx/platform/stdlib_bus.v half=none status=current]
+  [module name=did ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/did.md spec-to=spec/03-approved/platform/did.md corpus=conformance/stdlib/did.cxd corpus-to=conformance/platform/did.cxd source=stdlib/did.cx code=vcx/platform/stdlib_did.v half=none status=current]
+  [; flow is a pure-CX orchestrator over the journal, sched and uuid
+     primitives — Ring 2 by what it reaches, with no V file of its own. ]
+  [module name=flow ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/flow.md spec-to=spec/03-approved/platform/flow.md corpus=conformance/stdlib/flow.cxd corpus-to=conformance/platform/flow.cxd source=stdlib/flow.cx code=none half=none status=current]
+  [; fabric and xap (below) are each bundled as their OWN package rather than
+     as a name inside cx-stdlib — `[?lib 'cx-fabric']`, `[?lib 'cx-xap']`,
+     registered by name in new_seeded_module_table. 1427-b renames
+     `cx-stdlib/X` and nothing else, so neither carries an ns-to: they are
+     already outside the namespace that is splitting. ]
+  [module name=fabric ring=2 ns=cx-fabric kind=module spec=spec/03-approved/std-lib/fabric.md spec-to=spec/03-approved/platform/fabric.md corpus=conformance/stdlib/fabric.cxd corpus-to=conformance/platform/fabric.cxd source=stdlib/fabric.cx code='vcx/platform/stdlib_fabric.v vcx/platform/stdlib_fabric_remote.v vcx/platform/fabric_service.v' half=none status=current]
+  [; http is the 1427-e split: the serve half stays here and keeps the name,
+     the client+codec half is the `http-client` row above. ]
+  [module name=http ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/http.md spec-to=spec/03-approved/platform/http.md corpus=conformance/stdlib/http.cxd corpus-to=conformance/platform/http.cxd source=stdlib/http.cx code='vcx/platform/stdlib_http_serve.v vcx/platform/http_h2_serve_notd_wasm32_emcc.v vcx/platform/serve_file.v' half=none status=current]
+  [; imap and smtp go whole to cx-platform (1427-e): they SERVE, and their
+     client/codec halves stay declared in vcx/code until a Ring-1 consumer
+     asks for a module of their own. Both corpora still carry the ring=1
+     header the old tier-based placement gave them. ]
+  [module name=imap ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/imap.md spec-to=spec/03-approved/platform/imap.md corpus=conformance/stdlib/imap.cxd corpus-to=conformance/platform/imap.cxd suite-ring=1 source=stdlib/imap.cx code=vcx/platform/stdlib_imap_wire.v half='vcx/code/stdlib_imap.v vcx/code/stdlib_imap_server.v' status=current]
+  [module name=journal ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/journal.md spec-to=spec/03-approved/platform/journal.md corpus=conformance/stdlib/journal.cxd corpus-to=conformance/platform/journal.cxd source=stdlib/journal.cx code='vcx/platform/stdlib_journal.v vcx/platform/journal_ingest.v' half=none status=current]
+  [module name=live ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/live.md spec-to=spec/03-approved/platform/live.md corpus=conformance/stdlib/live.cxd corpus-to=conformance/platform/live.cxd source=stdlib/live.cx code=vcx/platform/stdlib_live.v half=none status=current]
+  [module name=net ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/net.md spec-to=spec/03-approved/platform/net.md corpus=conformance/stdlib/net.cxd corpus-to=conformance/platform/net.cxd source=stdlib/net.cx code=vcx/platform/stdlib_net.v half=none status=current]
+  [module name=session ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/session.md spec-to=spec/03-approved/platform/session.md corpus=conformance/stdlib/session.cxd corpus-to=conformance/platform/session.cxd source=stdlib/session.cx code=vcx/platform/stdlib_session.v half=none status=current]
+  [module name=smtp ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/smtp.md spec-to=spec/03-approved/platform/smtp.md corpus=conformance/stdlib/smtp.cxd corpus-to=conformance/platform/smtp.cxd suite-ring=1 source=stdlib/smtp.cx code=vcx/platform/stdlib_smtp_wire.v half='vcx/code/stdlib_smtp.v vcx/code/stdlib_smtp_server.v' status=current]
+  [; sso — #1394's enterprise-SSO handler surface, pure CX over
+     oidc/saml/scim/session; declared `incoming` before its merge (OL-15) and
+     current since release/0.18 carries it. ]
+  [module name=sso ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/sso.md spec-to=spec/03-approved/platform/sso.md corpus=conformance/stdlib/sso.cxd corpus-to=conformance/platform/sso.cxd source=stdlib/sso.cx code=none half=none status=current]
+  [module name=store ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/store.md spec-to=spec/03-approved/platform/store.md corpus=conformance/stdlib/store.cxd corpus-to=conformance/platform/store.cxd source=stdlib/store.cx code=vcx/platform/stdlib_store.v half=none status=current]
+  [module name=vc ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/vc.md spec-to=spec/03-approved/platform/vc.md corpus=conformance/stdlib/vc.cxd corpus-to=conformance/platform/vc.cxd source=stdlib/vc.cx code=vcx/platform/stdlib_vc.v half=none status=current]
+  [module name=xap ring=2 ns=cx-xap kind=module spec=spec/03-approved/std-lib/xap.md spec-to=spec/03-approved/xap/xap_module.md corpus=conformance/stdlib/xap-serve.cxd corpus-to=conformance/xap/xap-serve.cxd source=stdlib/xap.cx code=vcx/platform/stdlib_xap.v half=none status=current]
+  [module name=xsp ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/xsp.md spec-to=spec/03-approved/platform/xsp.md corpus=conformance/stdlib/xsp.cxd corpus-to=conformance/platform/xsp.cxd source=stdlib/xsp.cx code=vcx/platform/stdlib_xsp.v half=none status=current]
+
+  [; ── The x tier — cx-x, its own namespace and its own spec directory.
+       1427-b renames `cx-stdlib/X` and nothing else, so these rows carry no
+       ns-to; what moves is their corpora, out of the one bin the tree used
+       to keep every suite in. Each row's ring is the one its own suite
+       header already declares. ─────────────────────────────────────────── ]
+  [module name=a2a ring=1 ns=cx-x kind=module spec=spec/03-approved/x/a2a.md corpus=conformance/stdlib/a2a.cxd corpus-to=conformance/x/a2a.cxd source=x/a2a.cx code=none half=none status=current]
+  [module name=a2a-xap ring=2 ns=cx-x kind=module spec=spec/03-approved/x/a2a-xap.md corpus=conformance/stdlib/a2a-xap.cxd corpus-to=conformance/x/a2a-xap.cxd source=x/a2a-xap.cx code=none half=none status=current]
+  [module name=adjudicate ring=2 ns=cx-x kind=module spec=spec/03-approved/x/adjudicate.md corpus=conformance/stdlib/adjudicate.cxd corpus-to=conformance/x/adjudicate.cxd source=x/adjudicate.cx code=none half=none status=current]
+  [module name=llm ring=1 ns=cx-x kind=module spec=spec/03-approved/x/llm.md corpus=conformance/stdlib/llm.cxd corpus-to=conformance/x/llm.cxd source=x/llm.cx code=none half=none status=current]
+  [module name=mcp ring=1 ns=cx-x kind=module spec=spec/03-approved/x/mcp.md corpus=conformance/stdlib/mcp.cxd corpus-to=conformance/x/mcp.cxd source=x/mcp.cx code=none half=none status=current]
+  [module name=mcp-server ring=2 ns=cx-x kind=module spec=spec/03-approved/x/mcp-server.md corpus=conformance/stdlib/mcp-server.cxd corpus-to=conformance/x/mcp-server.cxd source=x/mcp-server.cx code=none half=none status=current]
+  [module name=run ring=1 ns=cx-x kind=module spec=spec/03-approved/x/run.md corpus=conformance/stdlib/run.cxd corpus-to=conformance/x/run.cxd source=x/run.cx code=none half=none status=current]
+  [; cx-x/term is a module over the $term-* natives, and it is the one
+     bundled surface in the tree with a spec and a source and NO fixtures.
+     1427-e's "term gets a corpus" names the natives family below (the row
+     with code and no corpus); this one is a second, smaller hole, recorded
+     here rather than left implicit. ]
+  [module name=term ring=1 ns=cx-x kind=module spec=spec/03-approved/x/term.md corpus=none corpus-to=conformance/x/term.cxd source=x/term.cx code=none half=none owed=corpus status=current]
+  [module name=tools ring=1 ns=cx-x kind=module spec=spec/03-approved/x/tools.md corpus=conformance/stdlib/tools.cxd corpus-to=conformance/x/tools.cxd source=x/tools.cx code=none half=none status=current]
+  [module name=ux ring=2 ns=cx-x kind=module spec=spec/03-approved/xap/ux.md corpus=conformance/stdlib/ux.cxd corpus-to=conformance/xap/ux.cxd source=x/ux.cx code=none half=none status=current]
+  [module name=ux-tui ring=2 ns=cx-x kind=module spec=spec/03-approved/xap/ux.md corpus=conformance/stdlib/ux-tui.cxd corpus-to=conformance/xap/ux-tui.cxd source=x/ux-tui.cx code=none half=none status=current]
+  [module name=ux-web ring=2 ns=cx-x kind=module spec=spec/03-approved/xap/ux.md corpus=conformance/stdlib/ux-web.cxd corpus-to=conformance/xap/ux-web.cxd source=x/ux-web.cx code=none half=none status=current]
+
+  [; ── Not modules: natives, backend engines, design texts, and the suites
+       whose parent spec is not a module of its own (1427-e). ──────────── ]
+  [module name=term ring=1 ns=none kind=natives spec=spec/03-approved/std-lib/term.md spec-to=spec/03-approved/stdlib/term.md corpus=conformance/stdlib/term.cxd source=none code=vcx/code/stdlib_term_notd_cx_no_pack_term.v half=none status=current]
+  [module name=xap_dist ring=2 ns=none kind=natives spec=spec/03-approved/std-lib/xap_dist.md spec-to=spec/03-approved/xap/xap_dist.md corpus=conformance/stdlib/xap-dist.cxd corpus-to=conformance/xap/xap-dist.cxd source=none code=vcx/platform/stdlib_xap_dist.v half=none status=current]
+  [module name=xsp_auth ring=2 ns=none kind=natives spec=spec/03-approved/std-lib/xsp-auth.md spec-to=spec/03-approved/xap/xsp-auth.md corpus=conformance/stdlib/xsp-auth.cxd corpus-to=conformance/xap/xsp-auth.cxd source=none code=vcx/platform/stdlib_xsp_auth.v half=none status=current]
+  [module name=redis ring=2 ns=none kind=backend spec=spec/03-approved/std-lib/redis.md spec-to=spec/03-approved/platform/store/redis.md corpus=conformance/stdlib/db.cxd corpus-to=conformance/platform/db.cxd source=none code=vcx/platform/redis_d_cx_db_redis.v half=none status=current]
+  [module name=sql ring=2 ns=none kind=backend spec=spec/03-approved/std-lib/sql.md spec-to=spec/03-approved/platform/store/sql.md corpus=conformance/stdlib/db.cxd corpus-to=conformance/platform/db.cxd source=none code=vcx/platform/sql.v half=none status=current]
+  [module name=distributed_store ring=2 ns=none kind=design spec=spec/03-approved/std-lib/distributed_store.md spec-to=spec/03-approved/platform/store/distributed_store.md corpus=conformance/stdlib/store.cxd corpus-to=conformance/platform/store.cxd source=none code=none half=none status=current]
+  [module name=erasure_compliance ring=2 ns=none kind=design spec=spec/03-approved/std-lib/erasure_compliance.md spec-to=spec/03-approved/platform/store/erasure_compliance.md corpus=conformance/stdlib/store.cxd corpus-to=conformance/platform/store.cxd source=none code=none half=none status=current]
+  [module name=db ring=2 ns=none kind=suite spec=spec/03-approved/core/db_access.md corpus=conformance/stdlib/db.cxd corpus-to=conformance/platform/db.cxd source=none code=none half=none status=current]
+  [module name=xap-compose ring=2 ns=none kind=suite spec=spec/03-approved/xap/xap_grammar_composition.md corpus=conformance/stdlib/xap-compose.cxd corpus-to=conformance/xap/xap-compose.cxd source=none code=none half=none status=current]
+  [module name=xap-on ring=2 ns=none kind=suite spec=spec/03-approved/xap/xap.md corpus=conformance/stdlib/xap-on.cxd corpus-to=conformance/xap/xap-on.cxd source=none code=none half=none status=current]
+  [module name=xml ring=0 ns=cx-stdlib kind=codec spec=spec/03-approved/core/codec.md corpus=conformance/stdlib/xml.cxd corpus-to=conformance/xml_codec.cxd source=none code=vcx/code/stdlib_codec.v half=none status=current]
+
+  [; ── Artifacts this cutover moves that no row implies: the two texts under
+       spec/03-approved/std-lib/ that are not a surface's spec. The
+       migration tool's link pass reads these the way it reads a row's
+       spec-to; the placement check reads them only as claims, so neither
+       file is reported as an orphan. ──────────────────────────────────── ]
+  [move from=spec/03-approved/std-lib/README.md to=spec/03-approved/stdlib/README.md]
+  [move from=spec/03-approved/std-lib/stdlib_colocated_docs.md to=spec/03-approved/process/stdlib_colocated_docs.md]
+]

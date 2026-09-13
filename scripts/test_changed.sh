@@ -169,7 +169,11 @@ step_globs() {
     libcx-abi-gate)                echo "$RING_LIB $RING_SUP include/* tools/libcx-abi-gate.sh" ;;
     test-profile-gate)             echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED vcx/tests/runners/profile_gate/* conformance/*" ;;
     check-code-spec-consistency)   echo 'spec/* vcx/code/*' ;;
-    stdlib-catalog-gate)           echo 'stdlib/* vcx/* docs-src/*' ;;
+    stdlib-catalog-gate)           echo 'stdlib/* vcx/* docs-src/* registry/modules.cxd' ;;
+    # the placement declaration and every artifact class it compares against
+    # (RULED: 1427-f) — a spec, a corpus, a bundled source or a ring's V
+    # directory moving is exactly what this step exists to catch.
+    placement-gate)                echo 'registry/modules.cxd scripts/placement_gate.cx spec/* conformance/* stdlib/* x/* vcx/code/* vcx/platform/*' ;;
     # the dogfood documents, the gate that reads them, and everything that can
     # move the vocabulary or the two subcommands it drives them through.
     flow-dogfood-gate)             echo 'flows/* scripts/flow_dogfood_gate.cx stdlib/flow.cx vcx/cmd/* vcx/code/* vcx/cx/* spec/03-approved/std-lib/flow.md' ;;
