@@ -1,7 +1,7 @@
-# Reference: the CX data language — v0.17.0
+# Reference: the CX data language — v0.18.0-pre.1
 
 > **GENERATED.** Source: `docs-src/llm/reference-data-language.md.tmpl` + the
-> conformance corpus. Every output was re-recorded from the `cx` v0.17.0
+> conformance corpus. Every output was re-recorded from the `cx` v0.18.0-pre.1
 > binary. Read `primer.md` first.
 
 This is Ring 0: the reading, the canonical form, and the conversions. No

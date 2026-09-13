@@ -1,8 +1,8 @@
-# CX 0.17.0
+# CX 0.18.0-pre.1
 
 > CX is a homoiconic data-and-code language: one bracketed element syntax for documents, queries, programs and its own AST. It post-dates every model's training data, so this layer is the context an assistant needs to write it correctly.
 
-Generated from the CX conformance corpus at the v0.17.0 cut by scripts/gen_docs/primer_build.cx. Every code example in every file below is a conformance fixture whose output was re-recorded from the v0.17.0 binary.
+Generated from the CX conformance corpus at the v0.18.0-pre.1 cut by scripts/gen_docs/primer_build.cx. Every code example in every file below is a conformance fixture whose output was re-recorded from the v0.18.0-pre.1 binary.
 
 ## Start here
 
