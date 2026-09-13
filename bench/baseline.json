@@ -1,11 +1,11 @@
 {
   "benchmarks": {
     "code_streaming.for_mbps": {
-      "median": 191.9,
+      "median": 202.1,
       "unit": "MB/s"
     },
     "code_streaming.map_mbps": {
-      "median": 98.8,
+      "median": 101.7,
       "unit": "MB/s"
     },
     "convert.json_300k_arenas": {
@@ -13,7 +13,7 @@
       "unit": "arenas"
     },
     "convert.json_300k_ms": {
-      "median": 1295.473333,
+      "median": 1241.135625,
       "unit": "ms"
     },
     "streaming.buffered_ms": {
@@ -21,16 +21,16 @@
       "unit": "ms"
     },
     "streaming.streaming_ms": {
-      "median": 91.0,
+      "median": 92.0,
       "unit": "ms"
     },
     "tooling.fmt_8k_ms": {
-      "median": 1829.447916,
+      "median": 1844.16625,
       "unit": "ms"
     }
   },
-  "cx_commit": "69e917753",
-  "run_id": "2026-09-13T12:47:47Z",
+  "cx_commit": "a0fd972d8",
+  "run_id": "2026-09-13T13:34:03Z",
   "schema_version": 1,
   "uname": "Darwin 25.6.0 arm64"
 }
