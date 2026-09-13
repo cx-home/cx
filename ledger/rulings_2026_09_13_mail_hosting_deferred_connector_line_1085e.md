@@ -33,3 +33,11 @@ Recorded as the **connector-kit rule** for #1430 (#728 component 2):
 - #1417: scope note — provider rows stand; the server-half choice goes to the owner as a letter.
 - #1430: order line and item 6 amended per decision 2.
 - #1354: the 09-13 handoff's *Scope left* loses (4) M2 #1413 code; the connector kit stays, spec first, item 6 narrowed.
+
+## Addendum — owner letters, 2026-09-13 (later the same day)
+
+| Letter | Decision |
+|---|---|
+| **1(b)** | #1417's *boot our IMAP server and drive fetch/IDLE/flags against it* half **leaves the v0.18 scope**; #1417 is the provider rows only (Gmail / Microsoft 365 / Fastmail, our client, OAUTHBEARER over the RFC 8628 device grant). The dormant server core is graded again on the 1085-e trigger. |
+| **2(a)** | #728 component 3 (incremental sync — the generic cursor/watermark contract, polling-diff baseline, log-based capture per engine) is filed as its own issue, sequenced after #1430; provider delta mechanisms stay the consumer's. |
+| **3(b)** | #1430 keeps its order (after INT-2 and #1427): #1427 moves the tree the connector spec must be placed in (OL-15), so the spec is written once, in the new tree. |
