@@ -12,7 +12,7 @@
 #           defaults · [?pipe seed f g] pipelines · [?match] to handle.
 #   Tier 2 (opt-in):     the four-channel model · [?fallback] ·
 #           [?with-error-hook] observability · capabilities.
-#   Tier 3 (advanced):   spec/std-lib/fp.md (functor/monad/traverse) ·
+#   Tier 3 (advanced):   spec/03-approved/stdlib/fp.md (functor/monad/traverse) ·
 #           effect-totality · structured concurrency · --strict / [throws T].
 #
 # §4's three normative rules say a guide/docs reviewer applies them. This

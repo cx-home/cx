@@ -49,7 +49,7 @@
 # the one illustrative example per function -- so collapsing the test
 # source onto the doc examples would discard negative/edge coverage. The
 # .cxd stays authoritative; the examples are pinned to it. (Design note
-# recorded in spec/03-approved/std-lib/stdlib_colocated_docs.md.)
+# recorded in spec/03-approved/process/stdlib_colocated_docs.md.)
 #
 # Capabilities: glob / read-file need `read`; the env standard streams +
 # exit are ambient (env.md §7). Run:
@@ -93,6 +93,40 @@
              [$env:exit 2], "")]
       [else [$string $r@stdout]]]]]
 
+# registry-corpus: the {name, source, corpus} of every registry row, read
+# once. #1427-c moved a module's corpus into its RING's directory, so
+# "conformance/stdlib/<m>.cxd" is no longer where half of them are; the
+# registry is where a surface's corpus is DECLARED (RULED: 1427-f), and
+# reading it here means this gate follows a corpus wherever the tree puts it
+# instead of quietly finding no .cxd and skipping the example check — the
+# vacuous shape #1427 exists to remove.
+[?def registry-corpus scope=private impure [returns any] ()
+  [?let [= $reg [$cx:parse [$io:read-file "registry/modules.cxd"]]]
+    [?for [in $m $reg//module]
+      [yield {name:   [$string $m@name]
+              source: [$string [?else $m@source "none"]]
+              corpus: [$string [?else $m@corpus "none"]]}]]]]
+
+# corpus-path: the corpus a module's rows declare. A module is matched on its
+# bundled SOURCE first, because `term` is two surfaces with one name (the
+# `$term-*` natives family and cx-x/term) and only the source tells them
+# apart; a synthesized module has no source and falls back to the name.
+[?def corpus-path scope=private pure [returns string] ($rows::[sequence any] $name::string $source::string)
+  [?let [= $by-source
+          [?for [in $r $rows]
+            [where [not [= $source "none"]]]
+            [where [= $r.source $source]]
+            [where [not [= $r.corpus "none"]]]
+            [yield $r.corpus]]]
+        [= $by-name
+          [?for [in $r $rows]
+            [where [= $r.name $name]]
+            [where [not [= $r.corpus "none"]]]
+            [yield $r.corpus]]]
+    [?if [> [$count $by-source] 0] [then [$first $by-source]]
+      [else [?if [> [$count $by-name] 0] [then [$first $by-name]]
+        [else [$concat "conformance/stdlib/" $name ".cxd"]]]]]]]
+
 [?def synth-names impure ()
   [?for [in $l [$strings:split [$cx-run ([$env:executable-path], 'stdlib', 'list', '--synthesized')] "\n"]]
     [where [not [= $l ""]]]
@@ -113,17 +147,18 @@
     # comes from is the loader's business, not theirs.
     [?let [= $modules
       [?for [in $src (
-              [?for [in $f $bundle-files] [yield {name: [$path:stem $f], text: [$io:read-file $f]}]],
-              [?for [in $n [$synth-names]]  [yield {name: $n, text: [$synth-source $n]}]])]
+              [?for [in $f $bundle-files] [yield {name: [$path:stem $f], text: [$io:read-file $f], source: $f}]],
+              [?for [in $n [$synth-names]]  [yield {name: $n, text: [$synth-source $n], source: "none"}]])]
             [in $mod $src]
             [yield $mod]]]
+          [= $reg-rows [$registry-corpus]]
 
     # --- per-module (1)(2)(3)(4)(5): one violation blob per module -----
     [?let [= $blobs
       [?for [in $mod $modules]
         [= $m $mod.name]
         [= $txt $mod.text]
-        [= $cxdpath [$concat "conformance/stdlib/" $m ".cxd"]]
+        [= $cxdpath [$corpus-path $reg-rows $m $mod.source]]
         [= $has-cxd [$io:exists $cxdpath]]
         [= $cxdraw [?if $has-cxd [then [$io:read-file $cxdpath]] [else ""]]]
         # the structured def view (stream 18: [$cx:ast] — commands by clause
