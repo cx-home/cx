@@ -36,9 +36,15 @@ trap 'rm -f "$claims"' EXIT
 grep -oE "'\.\./conformance/[A-Za-z0-9_./-]+\.cxd'" "$runner" | sed -E "s#'\.\./##; s#'##" | while IFS= read -r s; do
   printf '%s\t%s\n' "$s" "test-vcx-conform (conform-all: $runner)"
 done >> "$claims"
-# 2. the eval step (in-code fixtures): code.cxd + every conformance/stdlib/*.cxd
+# 2. the eval step (in-code fixtures): code.cxd + every module corpus. #1427-c
+#    split that corpus into the ring-legible directories the specs sit in, so
+#    the walk is the UNION of them plus the two suites that belong to no ring
+#    directory — extended.cxd (#1379) and the ring-0 codec suite xml_codec.cxd,
+#    which is the file conformance/stdlib/xml.cxd became. A glob left on
+#    stdlib/ alone would leave 35 suites unclaimed here, which is the failure
+#    this step exists to raise.
 printf '%s\t%s\n' "conformance/code.cxd" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_test.v: parse_all_fixtures); also test-vcx-resilience-matrix, which runs that file by name -- but it reds 14 db.cxd fixtures by construction (no -d cx_db_sqlite/-d cx_db_redis in VFLAGS_VCX), so read its failure LIST, not its exit code" >> "$claims"
-for f in conformance/stdlib/*.cxd; do printf '%s\t%s\n' "$f" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_test.v: test_stdlib_module_fixtures); also test-vcx-resilience-matrix, which runs that file by name -- but it reds 14 db.cxd fixtures by construction (no -d cx_db_sqlite/-d cx_db_redis in VFLAGS_VCX), so read its failure LIST, not its exit code"; done >> "$claims"
+for f in conformance/stdlib/*.cxd conformance/platform/*.cxd conformance/x/*.cxd conformance/xap/*.cxd conformance/extended.cxd conformance/xml_codec.cxd; do printf '%s\t%s\n' "$f" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_test.v: test_stdlib_module_fixtures); also test-vcx-resilience-matrix, which runs that file by name -- but it reds 14 db.cxd fixtures by construction (no -d cx_db_sqlite/-d cx_db_redis in VFLAGS_VCX), so read its failure LIST, not its exit code"; done >> "$claims"
 # 3. dedicated runners / steps
 {
   printf '%s\t%s\n' "conformance/diff.cxd" "test-vcx-conform (conform-diff: tests/runners/diff_lint/diff_lint_conform.v)"
