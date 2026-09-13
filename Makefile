@@ -3216,7 +3216,9 @@ test-oriel-lane: build-vcx
 ##                  scripts/sso_interop/idp.cx, drive a real relying party
 ##                  against it (discovery, the issuer mix-up refusal, all
 ##                  FIVE client-authentication methods including
-##                  client_secret_jwt, PKCE, JWKS key rotation, refresh
+##                  client_secret_jwt, PKCE, JWKS key selection by kid AND
+##                  the §5.1 one bounded re-fetch across a provider that
+##                  publishes TWO SUCCESSIVE key sets (#1405), refresh
 ##                  rotation AND §12.2 revalidation, UserInfo, the RFC
 ##                  9207 `iss` refusal, the machine grant, SAML over the
 ##                  wire, and SAML with the assertion ENCRYPTED
