@@ -115,9 +115,19 @@
 
 
 # -- SPEC_SET -----------------------------------------------------------
-# One [module-meta name=... tier=... status=...] line per spec file. Pull
-# the name= and status= via RE2; keep only status=current.
-[?let [= $meta-rx [$re:compile "\\[module-meta name=([a-z0-9_]+) tier=[A-D] status=([a-z]+)"]]
+# One [module-meta name=... status=...] line per spec file. Pull the name=
+# and status= via RE2; keep only status=current.
+#
+# The header carries more than it did. #1427-a put `ring=` on every
+# module-meta and `kind=` on the ones that are not modules, both between
+# `name=` and `tier=`, so a pattern that demanded `tier=` immediately after
+# the name matched NOTHING and emptied SPEC_SET — which this gate reports as
+# every bundle being an orphan, loudly, rather than as a pass. The two are
+# optional here so the pattern reads the headers on either side of the
+# cutover, and the name accepts a `-` because `http-client` has one
+# (RULED: 1427-e); `tier=x` is matched for completeness even though
+# catalog-spec-files filters the cx-x tier out before this point.
+[?let [= $meta-rx [$re:compile "\\[module-meta name=([a-z0-9_-]+)(?: ring=[0-9])?(?: kind=[a-z]+)? tier=[A-Dx] status=([a-z]+)"]]
       [= $synth-set [$cx-lines '--synthesized']]
       [= $codec-set [$cx-lines '--codecs']]
 
