@@ -1,7 +1,7 @@
-# Reference: the CX code language — v0.17.0
+# Reference: the CX code language — v0.18.0-pre.1
 
 > **GENERATED.** Source: `docs-src/llm/reference-code-language.md.tmpl` + the
-> conformance corpus. Every output was re-recorded from the `cx` v0.17.0
+> conformance corpus. Every output was re-recorded from the `cx` v0.18.0-pre.1
 > binary. Read `primer.md` first.
 
 Ring 1. A program is a document whose elements include directives. Directives

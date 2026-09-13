@@ -1,8 +1,8 @@
-# The customization model: what one tenant may change — v0.17.0
+# The customization model: what one tenant may change — v0.18.0-pre.1
 
 > **GENERATED.** Source: `docs-src/llm/model-customization.md.tmpl` + the
 > conformance corpus. Every code block is a fixture and every output was
-> re-recorded from the `cx` v0.17.0 binary at generation time. Where a
+> re-recorded from the `cx` v0.18.0-pre.1 binary at generation time. Where a
 > claim rests on a file in the repository rather than on a fixture, the file
 > and line are cited and **the citation is the evidence**. Where a mechanism
 > does not exist yet, this document says so in the same voice — §6 is a list
