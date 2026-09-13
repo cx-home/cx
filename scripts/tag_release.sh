@@ -92,13 +92,22 @@ CUR_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 # The old release/X.Y.0 spelling here would hard-fail every cut from the
 # renamed line while release.sh passed its own check (found by CO-4's
 # release-ordering audit, #979).
-EXPECT_BRANCH="release/${VERSION%.*}"
+# The LINE is X.Y whatever follows: vX.Y.Z and a pre-release vX.Y.Z-pre.N both
+# cut from release/X.Y — the same derivation release.sh uses. `${VERSION%.*}`
+# stripped only the last dotted field and asked for release/0.18.0-pre on the
+# first pre-release tag (v0.18.0-pre.1, measured 2026-09-13), so the cut
+# refused a branch that was right.
+EXPECT_BRANCH="release/$(echo "$VERSION" | sed -E 's/^([0-9]+\.[0-9]+)\..*$/\1/')"
 if [[ $DRY_RUN -eq 0 ]]; then
     if [[ "$CUR_BRANCH" != "$EXPECT_BRANCH" ]]; then
         fail "Not on $EXPECT_BRANCH (currently on $CUR_BRANCH); v$VERSION cuts from its release branch (#666)."
     fi
 else
-    echo "[dry-run] current branch: $CUR_BRANCH  (real tag requires $EXPECT_BRANCH)"
+    if [[ "$CUR_BRANCH" != "$EXPECT_BRANCH" ]]; then
+        echo "[dry-run] WARNING: the real tag would REFUSE here — on $CUR_BRANCH, $TAG requires $EXPECT_BRANCH"
+    else
+        echo "[dry-run] current branch: $CUR_BRANCH  (matches what the real tag requires)"
+    fi
 fi
 
 if ! git diff-index --quiet HEAD; then
@@ -199,6 +208,9 @@ else
     scripts/bump_version.sh "$VERSION"
     note "verifying version consistency"
     vcx/target/cx --allow-read --allow-write scripts/check_version_consistency.cx || fail "version inconsistent after bump"
+    # the contract-revision stamp bump_version.sh regenerates must agree too (#1435)
+    make check-contract-revision || fail "contract-revision stamp disagrees with VERSION after the bump (#1435)"
+    make docs-check || fail "generated docs drifted from the bumped VERSION (#1435)"
 fi
 
 # -- Step 3: commit the bump, TAG it, THEN rebuild (#666, #979) -------
