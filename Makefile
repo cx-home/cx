@@ -2064,6 +2064,38 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/xap_umbrella_test.v \
                       vcx/tests/store_remote_umbrella_test.v
 
+# ── The MEMORY GAUGE UNDER LOAD class (#1431, RULED: 1431-a) ────────────────
+# The two rosters above hold `v test` steps, matched against the paths the
+# suite reports. `repr-guard` is neither — it is its own target running one
+# script — so it needs its own roster row, and it needs one for the same
+# reason the others do: it is an INSTRUMENT whose reading moves with machine
+# load, and a reading is not a regression.
+#
+# bench/repr measures live bytes ÷ input bytes after a forced collection. The
+# ratio was chosen over an RSS or a duration precisely because it survives a
+# loaded box (RP-5(a)(ii); measured identical under eight saturating CPU
+# burners), and that holds — up to a point far past eight. The post-merge run
+# on 984cd3c99 read xml at 8.941x against the 8.35x bound at a load average of
+# ~300 (a full-union test-changed at -j12 plus five agents building); the merge
+# was LEDGER-ONLY, byte-identical to 469ec08e7, whose run passed the same step
+# four hours earlier, and the retry on the same head passed. Under -gc e the
+# collection point moves with scheduler pressure, so at that load the gauge
+# reports the machine.
+#
+# The class is therefore ONE serial re-measurement, and it is deliberately
+# narrow: only a BOUND EXCEEDANCE re-measures. A driver that exits non-zero, a
+# measurement that does not parse, or a second exceedance is a real failure and
+# reds the run — the ratchet keeps its teeth, and `BOUND_xml` is NOT re-pinned
+# to accommodate a load reading (RP-5: the ratchet is never loosened for a
+# regression, and a bound widened for load cannot catch one).
+#
+# The sibling gauge is cmp-005-fd-streaming-write-bounded-memory (#1364), which
+# answered FAIL / PASS / PASS on three runs of identical code until 1364-a moved
+# it into a process of its own. It carries no roster row because it is not a
+# step: it is one fixture inside the conformance runner, and its isolation fix
+# is where its load sensitivity was addressed.
+GAUGE_SERIAL_RETRY := bench/repr/run.sh
+
 # The retry ROSTERS above say WHICH steps get a serial retry. This says WHY,
 # PER STEP. The emitted line used to read "serial retry (known real-socket
 # contention step)" for every step in either roster, which became a false
@@ -2088,6 +2120,8 @@ RETRY_REASON_CASE = case "$$rel" in \
 	    reason="real-socket contention: ephemeral-port / deadline race under -j" ;; \
 	  vcx/platform/store_admin_plane_test.v|vcx/platform/store_grpc_live_test.v|vcx/platform/store_lazy_load_test.v) \
 	    reason="real-socket contention: live store/grpc endpoint under -j (\#648)" ;; \
+	  bench/repr/run.sh) \
+	    reason="\#1431 memory gauge under load: live-bytes/input-bytes moves with the -gc e collection point under a -j storm (read 8.941x against 8.35x at load ~300 on a LEDGER-ONLY head byte-identical to one that passed the same step four hours earlier; the retry passed)" ;; \
 	  *) \
 	    reason="NO REASON DECLARED for this step -- retried anyway; declare it in RETRY_REASON_CASE in the Makefile" ;; \
 	esac
@@ -2210,17 +2244,22 @@ CACHE_ESCAPE_PROBE = \
 # Consolidation (#700) deletes step files by design, so this is now a live
 # hazard rather than a theoretical one: assert every roster row exists,
 # before the suite runs.
+#
+# GAUGE_SERIAL_RETRY (#1431) is checked here on the same terms: its row is not
+# a `v test` step path but the script `repr-guard` runs, and a row naming a
+# script that moved would silently disable that class exactly as a stale test
+# path does. Every roster the tree has is bound by this one target.
 .PHONY: check-serial-retry-rosters
 check-serial-retry-rosters:
 	@missing=""; \
-	for t in $(SUITE_SERIAL_RETRY) $(CODE_SERIAL_RETRY); do \
+	for t in $(SUITE_SERIAL_RETRY) $(CODE_SERIAL_RETRY) $(GAUGE_SERIAL_RETRY); do \
 	  [ -f "$$t" ] || missing="$$missing $$t"; \
 	done; \
 	if [ -n "$$missing" ]; then \
 	  echo "check-serial-retry-rosters: retry roster names file(s) that do not exist —"; \
 	  echo "  a row matching no step silently disables its retry class:"; \
 	  for t in $$missing; do echo "    $$t"; done; \
-	  echo "  fix the roster in Makefile (SUITE_SERIAL_RETRY / CODE_SERIAL_RETRY)."; \
+	  echo "  fix the roster in Makefile (SUITE_SERIAL_RETRY / CODE_SERIAL_RETRY / GAUGE_SERIAL_RETRY)."; \
 	  exit 1; \
 	fi; \
 	echo "check-serial-retry-rosters OK — every retry-roster row names an existing step"
@@ -3276,9 +3315,36 @@ fmt-sweep-gate: build-vcx
 # the step's prerequisites ARE build-vcx's. Free inside `make test` (the serial
 # pre-build already ran), and it is what makes `make repr-guard` work in a fresh
 # worktree, where that archive does not exist yet.
+#
+# THE RETRY CLASS (#1431, RULED: 1431-a). The step is on GAUGE_SERIAL_RETRY —
+# "memory gauge under load", the class defined beside the two `v test` rosters
+# above. A run whose ONLY failure is a bound exceedance re-measures once,
+# serially (the driver is already built by then, so the second reading costs
+# ~0.6 s), and the run fails if the second reading is over too. Anything else
+# the script can fail with — an absent V, a driver exiting non-zero, a
+# measurement that does not parse — is a real failure with no retry, so the
+# class cannot absorb a broken instrument. The bound itself never moves here:
+# re-pinning is a wave-exit obligation in run.sh (RP-5), never a reaction to a
+# red. Every reading now carries the machine's load average, so the next such
+# row is classifiable from the log alone.
 .PHONY: repr-guard
 repr-guard: build-vcx
-	@bench/repr/run.sh
+	@log=vcx/target/repr-guard-run.log; stf=vcx/target/repr-guard-status; \
+	mkdir -p vcx/target; \
+	{ bench/repr/run.sh 2>&1; echo $$? > $$stf; } | tee $$log; \
+	st=$$(cat $$stf); \
+	if [ $$st -ne 0 ]; then \
+	  if grep -aq 'exceeds the pinned bound' $$log; then \
+	    rel=bench/repr/run.sh; \
+	    $(RETRY_REASON_CASE); \
+	    echo "──── serial retry ($$reason): $$rel ────"; \
+	    bench/repr/run.sh || exit 1; \
+	    echo "──── the re-measurement is within every pinned bound; the first reading was load-induced (#1431) ────"; \
+	    st=0; \
+	  else \
+	    echo "──── real failure (no retry class applies): bench/repr/run.sh did not report a bound exceedance ────"; \
+	  fi; \
+	fi; exit $$st
 
 # ── bench-flow: the cx-platform/flow performance and scale step ────────────────
 #
