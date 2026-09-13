@@ -153,6 +153,25 @@ buys anything and the bounds were re-pinned to measured +5 %.
 measuring a build CX does not ship — and the campaign's other half (peak RSS ≤
 8× input, RP-5(a)(i)) is measured on the shipped `-prod` `cx` binary.
 
+## The load average beside every reading (#1431, RULED: 1431-a)
+
+Each row carries a `load1` column — the machine's 1-minute load average sampled
+immediately after that lane's driver returns — and the header, the RED/GREEN
+line and every failure diagnostic carry all three averages. The ratio is
+load-insensitive by construction and measured identical under eight saturating
+CPU burners, but not without limit: the post-merge run on `984cd3c99`
+(2026-09-12) read xml at 8.941x against the 8.35x bound at a load average of
+~300, on a **ledger-only** tree byte-identical to `469ec08e7`, whose run had
+passed the same step four hours earlier; the retry on the same head passed.
+
+That reading could only be classified by correlating the runner's log with the
+steps running beside it. It is stated in this output now, and `make repr-guard`
+carries the matching retry class (`GAUGE_SERIAL_RETRY`, "memory gauge under
+load"): a bound exceedance re-measures **once**, serially, and the run fails on
+the second reading. Any other failure — no V, a driver exiting non-zero, an
+unparsable measurement — is a real failure with no retry. **No bound moves for
+a load reading**: re-pinning stays a wave-exit obligation (RP-5).
+
 ## The census
 
 Every run prints the per-kind census and the struct sizes under each lane's
