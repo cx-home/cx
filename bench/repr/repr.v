@@ -272,6 +272,18 @@ fn parse_lane(lane string, src string) []cx.Node {
 // `vgc_count_marked()` at mark termination, so this read is the live set and
 // not a committed-arena figure (`gc_memory_use()` would be the latter).
 @[inline]
+// scrub_stack overwrites the stack region the parse and census frames used, so
+// a stale pointer to a dead buffer cannot survive as a conservative root into
+// the measuring collect. @[noinline] so the frame really exists.
+@[noinline]
+fn scrub_stack() {
+	mut pad := [262144]u8{}
+	unsafe { C.memset(&pad[0], 0, 262144) }
+	if pad[131072] != 0 {
+		println('')
+	}
+}
+
 fn live_bytes() u64 {
 	return u64(gc_heap_usage().total_bytes)
 }
@@ -326,6 +338,15 @@ fn main() {
 	for r in roots {
 		c.walk(r)
 	}
+	// The collector is conservative about the stack: a dead pointer left in a
+	// spilled register or a stale frame slot by parse_lane keeps whatever it
+	// points at marked — measured as exactly one retained input copy (+1.0 on
+	// the ratio, 7.941 → 8.941 on xml) in three post-merge runs whose process
+	// environment differed from a shell's (make -j, the jobserver fds), and
+	// never in a shell. Scrubbing the stack region those frames used, then
+	// collecting twice, leaves only what the tree really reaches.
+	scrub_stack()
+	gc_collect()
 
 	// The tree is still reachable through `roots` below this point — that is
 	// the whole measurement: what a feature navigating this document PAYS.
