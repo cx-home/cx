@@ -3169,6 +3169,22 @@ fmt-sweep-timed: build-vcx
 #    1  the data formatter does not carry every comment back
 #    1  the canonical form is not its own fixed point (§7)
 #
+#
+# 31 -> 34 at the INT-2 merge (RULED: INT-2, 1391-a), measured on the batch's
+# own tree — fmt + #1421 + #1422 on the head — in run 2 of its pipeline:
+#
+#   SWEEP-FILES=301 FORMATTED=245 DECLINED=34 TREE-REFUSED=17 UNSTABLE=0 ERROR=5
+#
+# The +3 is the paragraph above coming due: #1394's stdlib/sso.cx and its
+# deployment (examples/platform/sso/deployment/deployment.cx) no longer
+# decline on the argument-position hole #1391 closed — they decline one
+# stratum down, on an interior `[; …]` comment inside a form body the
+# comment layout cannot place (sso.cx:232, deployment.cx:74) — and #1422's
+# stdlib/audit.cx (audit.cx:359) is a new file in the same class. Its
+# third file, scripts/sso_interop/deploy_drive.cx, formats. The class is
+# 29 of the 34 now and has its own issue, #1436; the number comes back down
+# when that closes. Rewriting the three files' comments to dodge the layout
+# was not an option: a comment written where CX allows one must format.
 # ── FMT_SWEEP_MAX_TREE_REFUSED (RULED: 1384-a) — the §1 guard's own column ───
 #
 # TREE-REFUSED is `cx-err:CXER0300`: `cx fmt` produced a canonical form whose
@@ -3215,7 +3231,7 @@ fmt-sweep-timed: build-vcx
 #
 # This number goes DOWN only. Each class wants its own issue; none is in
 # 1384-a's scope, which is the guard plus #1384's own two measured shapes.
-FMT_SWEEP_MAX_DECLINED ?= 31
+FMT_SWEEP_MAX_DECLINED ?= 34
 FMT_SWEEP_MAX_TREE_REFUSED ?= 17
 FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
 .PHONY: fmt-sweep-gate
