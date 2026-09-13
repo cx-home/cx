@@ -149,8 +149,12 @@ ingress race, and the format/playground/diagram tooling had another hardening pa
   socket for the flows exercised so far and SAML rows are 29/29 live against the in-tree IdP; the
   published compatibility matrix continues to carry PARTIAL/PENDING cells per named provider
   until each is driven live (release-verify fails while any remain, by design, #1403).
-- **#1394**, the SSO deployment-surface issue this checkpoint is named for, reflects the state at
-  the moment of this cut; its formal close is a separate step from the code landing it here.
+- **#1394**, the SSO deployment-surface issue this checkpoint is named for, is complete on this
+  head: the eleven routes, the live in-tree deployment and the interop matrix merged as `7a3828fe9`,
+  and the issue closes on that merge's post-merge run. The accept row exposed two platform defects
+  fixed in the same merge: the served fold's 4096-byte request bound (a SAML form POST got no
+  response at all; the bound is 64 KiB now, one buffer per live connection) and the deployment's
+  `idp-initiated` word applied to solicited logins.
 
 ## Toolchain
 
