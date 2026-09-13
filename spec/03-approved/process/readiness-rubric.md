@@ -228,6 +228,7 @@ Status reflects branch HEAD, not the latest released version.
 | Vulnerability reporting policy | ✅ | `SECURITY.md` |
 | Threat model document | ✅ | `process/threat-model.md` |
 | Fuzz-testing harness | ✅ | `.github/workflows/fuzz.yml` (nightly 1h budget; `scripts/fuzz_cx.py` against parser + buffered eval + streaming eval + ABI-passthrough) |
+| Durable, attributed, queryable audit record of what the platform did | ✅ | `std-lib/audit.md` (#1422, RULED: 1422-a/1422-b) — the one closed-core record on the reserved `cx:audit` journal stream, a **boot** refusal for a required-but-unbound runtime, one cross-module fold for "what did this agent do, under whose grant", retention behind a signed snapshot and a re-derivable export; a hand-authored row on the sink refuses `CXER4623` |
 | External security audit | 📋 | v1.0 |
 | Reproducible builds | ✅ | `.github/workflows/reproducibility.yml` (per-tag + weekly double-build SHA-256 diff under fixed `SOURCE_DATE_EPOCH`) |
 
