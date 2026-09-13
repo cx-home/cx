@@ -137,6 +137,31 @@ if [[ "$stale" == "1" ]]; then
   printf '%s' "$inputs_hash" > "$STAMP"
 fi
 
+# ── the load average beside every reading (#1431, RULED: 1431-a) ────────────
+#
+# The ratio is load-insensitive by construction and measured identical under
+# eight saturating CPU burners — but not at a load average of 300, where the
+# `-gc e` collection point moves far enough to read 8.941x against the 8.35x
+# xml bound on a tree byte-identical to one that had just passed. That run
+# (984cd3c99, 2026-09-12) could only be classified by correlating the runner's
+# own log with the other steps running beside it. Every reading states its
+# load now, so the next such row is classifiable from this output alone.
+#
+# Never fails the measurement: an unreadable load prints `?` and nothing else
+# changes. `make repr-guard` re-measures ONCE on a bound exceedance and reds on
+# the second (the "memory gauge under load" class, GAUGE_SERIAL_RETRY in the
+# top-level Makefile). The bound is NOT re-pinned for a load reading (RP-5).
+load_avgs() {
+  if [[ -r /proc/loadavg ]]; then
+    awk '{print $1, $2, $3}' /proc/loadavg 2>/dev/null || echo '? ? ?'
+  else
+    # darwin: `sysctl -n vm.loadavg` prints `{ 8.20 44.10 68.54 }`.
+    sysctl -n vm.loadavg 2>/dev/null | awk '{gsub(/[{}]/, ""); if (NF >= 3) print $1, $2, $3; else print "? ? ?"}' \
+      || echo '? ? ?'
+  fi
+}
+load_1m() { load_avgs | awk '{print $1}'; }
+
 # ── measure ─────────────────────────────────────────────────────────────────
 mkdir -p "$CORPUS"
 fail=0
@@ -144,8 +169,8 @@ fail=0
 # under `set -e`, unless the caller asked to keep them for inspection.
 cleanup() { [[ "${CX_REPR_KEEP:-0}" == "1" ]] || rm -rf "$CORPUS"; }
 trap cleanup EXIT
-echo "bench/repr — CXDM live-memory multiplier (records=$RECORDS)"
-echo "lane   input_bytes    live_bytes   ratio    bound   verdict"
+echo "bench/repr — CXDM live-memory multiplier (records=$RECORDS, load average at start: $(load_avgs))"
+printf '%-6s %12s %12s %8s %8s %8s   %s\n' lane input_bytes live_bytes ratio bound load1 verdict
 for lane in "${LANES[@]}"; do
   corpus="$CORPUS/$lane-$RECORDS.corpus"
   bound_var="BOUND_$lane"
@@ -154,18 +179,22 @@ for lane in "${LANES[@]}"; do
   if [[ ! -f "$corpus" ]]; then
     "$BIN" gen "$lane" "$corpus" "$RECORDS"
   fi
+  # The load THIS reading was taken under: sampled immediately after the
+  # driver returns, so the 1-minute figure covers the measurement itself.
   if ! out="$("$BIN" "$lane" "$corpus" "$RECORDS")"; then
-    echo "bench/repr: FAIL — lane $lane driver exited non-zero; its diagnosis is above." >&2
+    load="$(load_1m)"
+    echo "bench/repr: FAIL — lane $lane driver exited non-zero at load average $load; its diagnosis is above." >&2
     fail=1
     continue
   fi
+  load="$(load_1m)"
   first="${out%%$'\n'*}"
   ratio="$(sed -n 's/.* ratio=\([0-9.]*\).*/\1/p' <<< "$first")"
   input="$(sed -n 's/.* input_bytes=\([0-9]*\).*/\1/p' <<< "$first")"
   live="$(sed -n 's/.* repr_bytes=\([0-9]*\).*/\1/p' <<< "$first")"
 
   if [[ -z "$ratio" || -z "$input" || -z "$live" ]]; then
-    echo "bench/repr: FAIL — lane $lane produced no parsable measurement. Driver output:" >&2
+    echo "bench/repr: FAIL — lane $lane produced no parsable measurement (load average $load). Driver output:" >&2
     printf '%s\n' "$out" >&2
     fail=1
     continue
@@ -178,7 +207,7 @@ for lane in "${LANES[@]}"; do
     verdict=FAIL
     fail=1
   fi
-  printf '%-6s %12s %12s %8s %8s   %s\n' "$lane" "$input" "$live" "$ratio" "$bound" "$verdict"
+  printf '%-6s %12s %12s %8s %8s %8s   %s\n' "$lane" "$input" "$live" "$ratio" "$bound" "$load" "$verdict"
 
   # The census and the struct sizes are the per-node accounting every later wave
   # reads to see WHICH allocation it removed. Printed always: a gate whose
@@ -188,7 +217,9 @@ for lane in "${LANES[@]}"; do
   if [[ "$over" == "1" ]]; then
     echo "bench/repr: FAIL — lane $lane live multiplier ${ratio}x exceeds the pinned bound ${bound}x." >&2
     echo "bench/repr:        The ratchet is not loosened to accommodate a regression (RULED: RP-5)." >&2
-    echo "bench/repr:        ${live} live bytes for ${input} input bytes." >&2
+    echo "bench/repr:        ${live} live bytes for ${input} input bytes, at load average $(load_avgs)." >&2
+    echo "bench/repr:        A reading taken under a heavily loaded machine is a flaky test, not a regression" >&2
+    echo "bench/repr:        (#1431): \`make repr-guard\` re-measures once, serially, and reds on the second." >&2
   elif [[ "$slack" == "1" ]]; then
     echo "       NOTE: ${ratio}x sits well under the ${bound}x bound — if this is a wave's improvement,"
     echo "             RE-PIN the ratchet in run.sh (BOUND_${lane}) in the same commit (RP-5)."
@@ -196,7 +227,7 @@ for lane in "${LANES[@]}"; do
 done
 
 if [[ "$fail" != "0" ]]; then
-  echo "bench/repr: RED — at least one lane exceeded its pinned live-memory bound." >&2
+  echo "bench/repr: RED — at least one lane exceeded its pinned live-memory bound (load average $(load_avgs))." >&2
   exit 1
 fi
-echo "bench/repr: GREEN — every lane within its pinned live-memory bound."
+echo "bench/repr: GREEN — every lane within its pinned live-memory bound (load average $(load_avgs))."
