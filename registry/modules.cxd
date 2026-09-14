@@ -37,8 +37,8 @@ NOT WRITTEN YET is a different statement from NOT MOVED YET, and it is
 `status=planned`, never a `-to`. A planned row's columns name where the
 artifact WILL be, the check holds it to its ring and its directories but not
 to existence, and it refuses the row once every artifact is on disk — so the
-declaration cannot outlive the writing. One row is planned today: `connector`
-(#1430, spec-first by its own decision).
+declaration cannot outlive the writing. Two rows are planned today:
+`connector` (#1430) and `sync` (#1434), each spec-first by its own decision.
 
 COLUMNS
   name    the surface's call-site prefix — `[?lib '<ns>/<name>']` binds it.
@@ -201,6 +201,14 @@ becomes its own Ring-1 module.
      current since release/0.18 carries it. ]
   [module name=sso ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/sso.md corpus=conformance/platform/sso.cxd source=stdlib/sso.cx code=none half=none status=current]
   [module name=store ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/store.md corpus=conformance/platform/store.cxd source=stdlib/store.cx code=vcx/platform/stdlib_store.v half=none status=current]
+  [; sync — #1434's incremental-sync module, spec-first like connector: the
+     spec and its 132-case attack corpus landed before any code (RULED:
+     1434-a, 1085-e), so this row is `planned` and its source and code
+     columns name where #1434 writes them. 1427-j: the branch that lands
+     second adapts, so the artifacts #1434 wrote under the pre-cutover
+     std-lib/ and conformance/stdlib/ are in the Ring-2 directories here and
+     its four `-to` columns are spent rather than carried. ]
+  [module name=sync ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/sync.md corpus=conformance/platform/sync.cxd source=stdlib/sync.cx code=vcx/platform/stdlib_sync.v half=none status=planned]
   [module name=vc ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/vc.md corpus=conformance/platform/vc.cxd source=stdlib/vc.cx code=vcx/platform/stdlib_vc.v half=none status=current]
   [module name=xap ring=2 ns=cx-xap kind=module spec=spec/03-approved/xap/xap_module.md corpus=conformance/xap/xap-serve.cxd source=stdlib/xap.cx code=vcx/platform/stdlib_xap.v half=none status=current]
   [module name=xsp ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/xsp.md corpus=conformance/platform/xsp.cxd source=stdlib/xsp.cx code=vcx/platform/stdlib_xsp.v half=none status=current]

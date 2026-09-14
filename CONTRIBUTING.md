@@ -4,8 +4,11 @@ Thanks for your interest in contributing. CX is pre-1.0 — there is
 real room to influence the format, the bindings, the tooling, and the
 spec. Bug reports, doc fixes, and PRs are all welcome.
 
-This file covers dev setup, the test matrix, the audit-driven coding
-rules every PR is held to, and the commit / PR conventions.
+This file covers dev setup, the test matrix, the pre-merge development
+loop and how a long run is started and waited on, the audit-driven
+coding rules every PR is held to, and the commit / PR conventions. The
+rules that do not bend — and which file wins when two of them disagree —
+are in [`AGENTS.md`](AGENTS.md).
 
 For the format itself, start with the docs site
 ([cx-home.github.io/cx](https://cx-home.github.io/cx/) online; locally,
@@ -126,6 +129,114 @@ never as failures). Plain `v test` suppresses the output of passing
 lanes; use `v -stats test …` to see `SKIP` lines inline. The binary
 path is resolved relative to the source tree, so lanes behave the same
 from any invocation directory.
+
+### The development loop — `make test-changed`
+
+The delivery grammar's words are used throughout this section and
+[`spec/03-approved/process/delivery-grammar.md`](spec/03-approved/process/delivery-grammar.md)
+defines them. A **step** is one command with a pass/fail exit (a make target, a
+test file). A **pipeline** is an ordered set of steps, and two exist: the
+**pre-merge** pipeline (your branch's subset, in your worktree — `make
+test-changed BASE=<integration branch>` plus any step your branch adds) and the
+**post-merge** pipeline (all of `make test`, on the integration branch's head).
+A **run** is one pipeline on one commit; its status is passed, failed or
+cancelled. A **runner** executes runs one at a time, and there is one per
+pipeline.
+
+The pre-merge pipeline is the development loop; the post-merge pipeline is what
+a branch is merged into.
+
+```sh
+make build-vcx        build the toolchain (the `cx` binary lands in vcx/target/)
+make test             the whole post-merge pipeline — run this once, at the end
+make test-changed     only the steps whose inputs your change touched
+make test-changed-dry the same selection, printed and not run
+make docs             regenerate the LLM layer after changing a cited fixture
+make docs-check       the drift gate; fails if the layer is stale
+make guide            the human-facing documentation site
+scripts/gate.sh       run a pipeline and ALWAYS write a verdict marker
+```
+
+`make test-changed` reads the change set, intersects it with a per-step input
+manifest in [`scripts/test_changed.sh`](scripts/test_changed.sh), and runs only
+the steps that can possibly have moved. It is conservative by construction: a
+step with no manifest row always runs (and says so), a touched
+`Makefile`/`scripts/`/`VERSION`/`devbox.*` collapses to the full union, and the
+globs over-include on doubt — a false "run" costs minutes, a false "skip" costs
+correctness.
+
+`BASE` sets the window and defaults to `HEAD`, i.e. the work you have not
+committed yet. Widen it when your change is already committed:
+
+```sh
+make test-changed                            # uncommitted work only (default)
+make test-changed BASE=origin/release/0.18   # the whole branch
+make test-changed-dry BASE=HEAD~3            # show the decision, run nothing
+```
+
+**`make test-changed` never substitutes for `make test`.** The post-merge
+pipeline is the whole union, and it is what a release exits on.
+
+### Starting and waiting on a long run
+
+A run that outlives a single command goes through
+[`scripts/gate.sh`](scripts/gate.sh), started as a background job your session
+can see, with its output going to a log file you can read. `gate.sh` writes its
+verdict marker from a `trap ... EXIT`, so the marker is unconditional, and it
+signals make's whole process group on the way out instead of orphaning the run.
+
+The idiom to avoid is a detached wrapper whose output is discarded —
+`nohup sh -c 'make test' > /dev/null 2>&1 &` and its relatives. It writes no
+marker if the wrapper is killed, so an `until grep -q RUN-EXIT= ...` waiter
+polls forever; #1333 found three such waiters alive three hours after their run
+had died, and a piped run loses the per-step summaries besides. Read the
+verdict **from the log**:
+
+```sh
+until grep -q 'RUN-EXIT=' vcx/target/gate.log; do sleep 30; done
+```
+
+The marker carries the exit code AND the status word: `RUN-EXIT=0 passed`,
+`RUN-EXIT=2 failed` (a real failure), `RUN-EXIT=130|143|129 cancelled`
+(interrupted / terminated / hung up), `RUN-EXIT=70 failed` (the wrapper died
+before make returned). Logs written before this change say `GATE-EXIT=`
+instead, and every reader in the tree still accepts that spelling; the file
+names (`gate.sh`, `gate.log`, `gate-loop.log`) have not moved either.
+
+`scripts/gate-status.sh` reads that log and prints the run in the same words:
+state `running`/`passed`/`failed`/`cancelled`, how many steps are failing, which
+steps have finished, and what is running now.
+
+### Adding a test file costs more than adding a test function
+
+Test *files*, not test functions, are the unit of compile cost: every
+`*_test.v` links its own binary over the whole module graph, so a new standalone
+test file costs a whole-graph link on every run. Add test functions to the
+umbrella that already owns the area — the roster is
+[`scripts/consolidation/`](scripts/consolidation)`/<area>.files` and
+`scripts/consolidate_tests.sh absorb <area>` folds a stray file in — and
+introduce a standalone `*_test.v` only when the step genuinely needs process
+isolation (a real socket, a serial-retry class, an exclusion in
+`scripts/publish_v.sh`).
+
+### A cited fixture carries its docs regeneration
+
+If you change a conformance fixture the primer cites, run `make docs` and commit
+the regenerated `docs/llm/` **in the same change**. The `docs-check` gate exists
+so that never becomes optional.
+
+**A cited fixture is not the only docs-layer input.** `docs/llm/reference-cli.md`
+is generated by **running `cx --help`**, so adding, renaming or re-wording a
+flag or subcommand drifts it — and `llms-full.txt` with it, since that
+concatenates every document. `docs-check`'s step-input row in
+[`scripts/test_changed.sh`](scripts/test_changed.sh) is accordingly wide
+(`docs-src/* docs/llm/* scripts/gen_docs/* conformance/* spec/* stdlib/* x/*
+vcx/* VERSION`): **any** `vcx/` change selects it. So if you touch the CLI
+surface, `make docs` belongs in the same change for the same reason.
+
+Measured 2026-09-08: a new `--manual-clock` flag landed without a regeneration
+and failed the full matrix on `docs-check` alone, with two DRIFT lines and
+nothing else wrong in the tree.
 
 ---
 

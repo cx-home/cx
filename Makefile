@@ -792,6 +792,23 @@ stdlib-catalog-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
 stdlib-catalog-gate: build-vcx
 	@"$(CX_BIN)" --allow-all scripts/stdlib_catalog_gate.cx
 
+# ── ledger-index / ledger-index-check (#1438, RULED: CFG-1) ───────────────────
+# Every commit subject ends `(RULED: <id>)` and `ledger/` is the decision store
+# those ids point into, but nothing mapped an id to the page and heading that
+# carry it — resolving one meant grepping 265 files. `ledger-index` regenerates
+# `ledger/README.md` from the store; `ledger-index-check` is the drift step and
+# fails when the committed index no longer matches the pages, the same shape as
+# `docs-check`. Both need `--allow-write`: the generator writes the index, and
+# `write-line` to a standard stream is itself a write capability.
+.PHONY: ledger-index ledger-index-check
+ledger-index: CX_BIN ?= $(CURDIR)/vcx/target/cx
+ledger-index: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/ledger_index.cx
+
+ledger-index-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
+ledger-index-check: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/ledger_index.cx --check
+
 # ── placement-gate (RULED: 1427-f, OL-15) ─────────────────────────────────────
 # registry/modules.cxd is where a module's RING is DECLARED. This step refuses
 # a tree where the spec's directory, the corpus's directory, the corpus's
@@ -946,7 +963,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-examples verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster fmt-sweep-gate test-playground-wasm-traps
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-examples verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster fmt-sweep-gate test-playground-wasm-traps ledger-index-check
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -2064,10 +2081,23 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/http_client_tls_transport_test.v \
                       vcx/tests/smtp_real_socket_test.v \
                       vcx/tests/imap_real_socket_test.v \
+                      vcx/tests/http_umbrella_test.v \
                       vcx/tests/process_pty_test.v \
                       vcx/tests/xap_umbrella_test.v \
                       vcx/tests/store_remote_umbrella_test.v \
                       vcx/tests/code_eval_fixtures_test.v
+
+# ── http_umbrella_test.v joins the real-socket class (#1445) ────────────────
+# The post-merge run on ca5cb0996 (2026-09-13 22:48Z–23:09Z) failed ONLY at
+# http_umbrella_test.v:1687 test_directive_resource_sees_post_body — "directive
+# POST #0 got no response" — with the 15-minute load average at 27 (six
+# pre-merge pipelines building after a session restart). The merge under test
+# touched the Makefile rosters, bench/repr/run.sh and a ledger page: nothing
+# under vcx/ or http. The same file had passed on 1076e6f57 minutes earlier and
+# in every run that day; the re-run on the same head (23:11Z–23:53Z, load under
+# 5) passed. A real-socket request that gets no response under that load is the
+# class the row above already names; the assertion and its timeouts are not
+# changed.
 
 # ── The TIMING / EARLY EXIT UNDER LOAD class (#1432, RULED: 1432-a) ─────────
 # Two rows above carry this class rather than a socket or a daemon cause. Both
@@ -2149,7 +2179,7 @@ RETRY_REASON_CASE = case "$$rel" in \
 	    reason="reference web client / store readiness bounds (calibrated ~30 s) exceeded only under the -j12 storm plus box load: measured 2026-09-09 OK 72 s alone, FAIL 98.7 s and 123 s with a step or build sharing the box" ;; \
 	  vcx/tests/store_remote_umbrella_test.v) \
 	    reason="\#1425 daemon start under the -j12 suite storm (the readiness window expires before the listener line); green in isolation and in every prior full run" ;; \
-	  vcx/tests/net_udp_read_deadline_test.v|vcx/tests/net_dtls_test.v|vcx/tests/net_real_socket_test.v|vcx/tests/a2a_real_test.v|vcx/tests/http_h2_serve_test.v|vcx/tests/http_client_tls_transport_test.v|vcx/tests/smtp_real_socket_test.v|vcx/tests/imap_real_socket_test.v) \
+	  vcx/tests/net_udp_read_deadline_test.v|vcx/tests/net_dtls_test.v|vcx/tests/net_real_socket_test.v|vcx/tests/a2a_real_test.v|vcx/tests/http_h2_serve_test.v|vcx/tests/http_client_tls_transport_test.v|vcx/tests/smtp_real_socket_test.v|vcx/tests/imap_real_socket_test.v|vcx/tests/http_umbrella_test.v) \
 	    reason="real-socket contention: ephemeral-port / deadline race under -j" ;; \
 	  vcx/platform/store_admin_plane_test.v|vcx/platform/store_grpc_live_test.v|vcx/platform/store_lazy_load_test.v) \
 	    reason="real-socket contention: live store/grpc endpoint under -j (\#648)" ;; \
