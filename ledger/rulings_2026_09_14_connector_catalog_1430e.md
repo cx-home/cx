@@ -1,0 +1,16 @@
+# Owner letter 2026-09-14 ~05:50Z — every connection type, every database, the reference set (RULED: 1430-e, 1455-a, 1430-f)
+
+Owner: *"add ftp of course as well. any other protocols or connection types? of course db connections must
+support what cx supports now plus many others to be added. what reference connectors should we have? put
+together a great reference example or set of examples using the connector kit. at least one should include
+integrating with fabric and flow as well. continue autonomously."*
+
+| Id | Decision |
+|---|---|
+| **1430-e** | **(owner; the v0.18 set chosen by the integrator under "continue autonomously")** The kit's executable kinds in v0.18 are every connection type that has or gets a protocol module this release: `http` (#1430), `db` (#1455), `graphql` (#1429), `soap` (#1456), `sftp` (#1457), **`ftp` (#1458 — FTP and FTPS; one file-surface contract shared with sftp)**, `webhook` (#1460, inbound over `[?http-service]`), `stream` (#1461, WebSocket and SSE over http), `mail` (#1462, IMAP source and SMTP sink over the shipped modules), `bus` (#1463, NATS through the fabric bridge; Kafka/AMQP/MQTT as declared backends later). The kinds that need a client CX does not have — grpc, kafka, amqp, mqtt, ldap, s3/object storage, odata, filesystem, raw tcp — are the catalog #1464 carries: each gets its own issue and placement row when scheduled; none is in v0.18 unless the owner pulls it in. Every kind is a declared adapter under connector.md §3.9 (1430-d). Placement decided here: `ftp` Ring 2, `cx-stdlib/ftp` → `cx-platform/ftp`, `platform/ftp.md`, `conformance/platform/ftp.cxd`, `vcx/platform/stdlib_ftp.v` — `planned` row with this record; webhook/stream/mail/bus live inside `connector` over existing modules. |
+| **1455-a** | **(owner)** `kind=db` executes every `db_access` backend the build has at its landing — sqlite, redis, pg, mysql (`-d cx_db_*`) — and the backend list becomes an open declared-by-adapter registry inside `db_access` (dialect, cursor idiom, isolation levels, error classes, handle scheme, discovery), so adding mssql, oracle, mongodb, duckdb, clickhouse, snowflake or bigquery changes nothing in `db_access`'s core or in `kind=db` (#1459; each backend its own issue when scheduled). |
+| **1430-f** | **(owner)** The reference set (#1465): seven in-tree examples against mock systems — crm-rest, orders-db, order-pipeline (flow + fabric + sync + two connectors), file-drop (sftp + ftp behind one feature), legacy-soap, graphql-catalog, inbound-webhook — each a real feature package under `reference/connectors/`, graded by `verify-examples` and its acceptance fixtures, teaching an axes matrix with every cell covered; design document first (`reference/connectors/README.md`), the owner reads, each example built as its kind lands and filed as its own issue. CX ships no real vendor's connector (1085-e, I-9). |
+
+Why the v0.18 line is "has or gets a protocol module this release": the kit's promise (1430-d) is that a kind
+costs one adapter; a kind whose client library CX lacks costs a module first, and a module is a placement
+decision and a spec the owner reads — the catalog keeps those visible without pretending they are cheap.
