@@ -29,7 +29,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-MANIFEST=conformance/fixture_shards.cxd
+MANIFEST=vcx/tests/fixtures_grader/fixture_shards.cxd
 [ -f "$MANIFEST" ] || { echo "check-fixture-shard-manifest: no $MANIFEST"; exit 1; }
 
 tmp="$(mktemp -d "${TMPDIR:-/tmp}/cx-shard-manifest.XXXXXX")"

@@ -47,15 +47,22 @@ done >> "$claims"
 #    #1448 (RULED: 1448-a): that union is graded by the SHARD test files, not
 #    by code_eval_fixtures_test.v, which keeps code.cxd, the packages and the
 #    four fast-path differs. Which shard grades which corpus file is
-#    conformance/fixture_shards.cxd's business, and check-fixture-shard-manifest
+#    vcx/tests/fixtures_grader/fixture_shards.cxd's business, and
+#    check-fixture-shard-manifest
 #    refuses a file in no shard or in two -- so the claim names the step that
 #    runs them all and the guard that holds the partition complete. A map that
 #    names the wrong step is worse than no map, because it is believed (the
 #    2026-09-08 note above), and "code_eval_fixtures_test.v" would now be
 #    exactly that.
 printf '%s\t%s\n' "conformance/code.cxd" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_test.v: parse_all_code_fixtures) or 'make fixtures'; also test-vcx-resilience-matrix and test-vcx-services, which run that file by name" >> "$claims"
-for f in conformance/stdlib/*.cxd conformance/platform/*.cxd conformance/x/*.cxd conformance/xap/*.cxd conformance/extended.cxd conformance/xml_codec.cxd; do printf '%s\t%s\n' "$f" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_shard_<k>_test.v, partitioned by conformance/fixture_shards.cxd and held complete by check-fixture-shard-manifest) or 'make fixtures'"; done >> "$claims"
-printf '%s\t%s\n' "conformance/fixture_shards.cxd" "POLICY -- the partition of the module corpus across the grader's shard test files, validated by check-fixture-shard-manifest (not a fixture suite)" >> "$claims"
+for f in conformance/stdlib/*.cxd conformance/platform/*.cxd conformance/x/*.cxd conformance/xap/*.cxd conformance/extended.cxd conformance/xml_codec.cxd; do printf '%s\t%s\n' "$f" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_shard_<k>_test.v, partitioned by vcx/tests/fixtures_grader/fixture_shards.cxd and held complete by check-fixture-shard-manifest) or 'make fixtures'"; done >> "$claims"
+# The shard manifest itself needs NO claim row: it is not a conformance suite
+# and it does not live in conformance/. It sits beside the grader that reads it,
+# vcx/tests/fixtures_grader/fixture_shards.cxd, because every walker of
+# conformance/**/*.cxd treats what it finds there as a corpus suite --
+# ring-tag-gate red the post-merge run on 942e7d513 with
+# `UNTAGGED suite header (no ring=)` when the manifest was filed under
+# conformance/. A file that PARTITIONS corpus files is not one of them.
 # 3. dedicated runners / steps
 {
   printf '%s\t%s\n' "conformance/diff.cxd" "test-vcx-conform (conform-diff: tests/runners/diff_lint/diff_lint_conform.v)"
