@@ -791,6 +791,23 @@ stdlib-catalog-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
 stdlib-catalog-gate: build-vcx
 	@"$(CX_BIN)" --allow-all scripts/stdlib_catalog_gate.cx
 
+# ── ledger-index / ledger-index-check (#1438, RULED: CFG-1) ───────────────────
+# Every commit subject ends `(RULED: <id>)` and `ledger/` is the decision store
+# those ids point into, but nothing mapped an id to the page and heading that
+# carry it — resolving one meant grepping 265 files. `ledger-index` regenerates
+# `ledger/README.md` from the store; `ledger-index-check` is the drift step and
+# fails when the committed index no longer matches the pages, the same shape as
+# `docs-check`. Both need `--allow-write`: the generator writes the index, and
+# `write-line` to a standard stream is itself a write capability.
+.PHONY: ledger-index ledger-index-check
+ledger-index: CX_BIN ?= $(CURDIR)/vcx/target/cx
+ledger-index: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/ledger_index.cx
+
+ledger-index-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
+ledger-index-check: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/ledger_index.cx --check
+
 # ── placement-gate (RULED: 1427-f, OL-15) ─────────────────────────────────────
 # registry/modules.cxd is where a module's RING is DECLARED. This step refuses
 # a tree where the spec's directory, the corpus's directory, the corpus's
@@ -945,7 +962,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-examples verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster fmt-sweep-gate test-playground-wasm-traps
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-examples verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster fmt-sweep-gate test-playground-wasm-traps ledger-index-check
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose

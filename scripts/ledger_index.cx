@@ -1,0 +1,137 @@
+# scripts/ledger_index.cx -- the ledger's decision-id index (#1438, RULED: CFG-1).
+#
+# WHAT IT IS FOR. Every commit subject in this repo ends `(RULED: <id>)`, and
+# `ledger/` is the decision store those ids point into -- but nothing mapped an
+# id to the file and heading that carry it, so resolving `RULED: 1085-a` meant
+# grepping 265 files. This program regenerates `ledger/README.md` as that map:
+# id -> file -> heading.
+#
+# Eat-our-own-dog-food: written in CX and run as `cx <file>` (make ledger-index).
+#
+# WHAT AN ID IS. The token `<digits>-<part>[-<part>...]` (1085-a, 728-CK-10,
+# 1058-T1.2-b) or `<LETTERS>-<digits>` (CFG-1, INT-5, OL-15, DG-1). An ISO date
+# has the first shape and is excluded by name.
+#
+# DECLARED vs CITED. An id in a HEADING line is DECLARED there -- that is the
+# decision's own text, and the three heading shapes in the store all work:
+# `# RULED: 1085-a — ...`, `## RULED 1318-A`, and `## 1404-a — ...`. An id that
+# appears only in body prose is CITED, and its row names every file that
+# mentions it. Both tables are emitted: measured on the 2026-09-13 store, the
+# heading table alone resolved 87 of the 130 ids the last 150 commit subjects
+# name, and the two tables together resolve all of them.
+#
+# MODES. No argument regenerates ledger/README.md (exit 0). `--check` compares
+# what it would write against what is on disk and exits 1 on drift, naming the
+# first differing line -- that is `make ledger-index-check`, the drift step.
+#
+# Capabilities: glob / read-file need `read`; writing the index needs `write`.
+# Run via:  vcx/target/cx --allow-read --allow-write scripts/ledger_index.cx
+# (flags bind BEFORE the file -- everything after the file is program args.)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/array'   as=array]
+
+# -- helpers ------------------------------------------------------------
+# uniq-sorted: the distinct values of a sequence, ordered. `[?to-array]`
+# materializes the comprehension (a sequence is not an array and
+# `[$array:sort]` refuses one), and the duplicate walk compares each item
+# with its predecessor in the sorted array.
+[?def uniq-sorted scope=private pure [returns any] ($xs::any)
+  [?let [= $a [$array:sort [?to-array $xs]]]
+    [?to-array [?for [in $i [$range 1 [$count $a]]]
+      [where [?if [= $i 1] [then true] [else [not [= [$nth $a $i] [$nth $a [- $i 1]]]]]]]
+      [yield [$nth $a $i]]]]]]
+
+# heading-text: a heading line with its leading `#` run and spacing removed,
+# and every `|` escaped so the row cannot break the markdown table.
+[?def heading-text scope=private pure [returns string] ($line::string)
+  [$strings:replace [$strings:trim [$strings:trim-start-chars [$strings:trim $line] "#"]] "|" "\\|"]]
+
+# ledger-files: every ledger page except the generated index itself.
+[?def ledger-files scope=private impure [returns any] ()
+  [?to-array [?for [in $f [$io:glob "ledger/*.md"]]
+    [where [not [= [$path:basename $f] "README.md"]]]
+    [yield $f]]]]
+
+[?let [= $id-rx   [$re:compile "\\b([1-9][0-9]{2,3}-(?:[A-Za-z][0-9]?[0-9A-Za-z.]{0,2}|[A-Z]{1,3}-[0-9]+[a-z]?)(?:-[0-9A-Za-z]{1,3})?|[A-Z]{2,6}-[0-9]+[a-z]?)\\b"]]
+      [= $date-rx [$re:compile "^(19|20)[0-9]{2}-[0-9]{2}"]]
+      [= $files   [$ledger-files]]
+      [= $check   [> [$count [?for [in $x [$env:argv]] [where [= $x "--check"]] [yield $x]]] 0]]
+      [= $is-id   [?fn ($t::string)
+                    [?match [$re:find $date-rx $t] [case [no-match] true] [else false]]]]
+      [= $decls
+        [?to-array [?for [in $f $files]
+          [in $l [$strings:split-lines [$io:read-file $f]]]
+          [where [$strings:starts-with $l "#"]]
+          [in $m [$re:find-all $id-rx $l]]
+          [where [$is-id [$re:group $m 1]]]
+          [= $idv [$strings:lower [$re:group $m 1]]]
+          [= $base [$path:basename $f]]
+          [= $head [$heading-text $l]]
+          [yield [rec id=$idv file=$base heading=$head]]]]]
+      [= $cites
+        [?to-array [?for [in $f $files]
+          [in $m [$re:find-all $id-rx [$io:read-file $f]]]
+          [where [$is-id [$re:group $m 1]]]
+          [= $idv [$strings:lower [$re:group $m 1]]]
+          [= $base [$path:basename $f]]
+          [yield [rec id=$idv file=$base]]]]]
+      [= $declared-ids [$uniq-sorted [?for [in $d $decls] [yield $d@id]]]]
+      [= $cited-only   [$uniq-sorted
+        [?for [in $c $cites]
+          [where [= 0 [$count [?for [in $x $declared-ids] [where [= $x $c@id]] [yield $x]]]]]
+          [yield $c@id]]]]
+      [= $decl-rows
+        [?to-array [?for [in $id $declared-ids]
+          [in $d $decls]
+          [where [= $d@id $id]]
+          [yield [$concat "| `" $id "` | [" $d@file "](" $d@file ") | " $d@heading " |"]]]]]
+      [= $cite-rows
+        [?to-array [?for [in $id $cited-only]
+          [yield [$concat "| `" $id "` | "
+            [$strings:join
+              [?for [in $fn [$uniq-sorted [?for [in $c $cites] [where [= $c@id $id]] [yield $c@file]]]]
+                [yield [$concat "[" $fn "](" $fn ")"]]]
+              ", "]
+            " |"]]]]]
+      [= $header [$concat
+          "# The ledger index\n\n"
+          "Every decision id this store carries, and where to read it. **Generated** by\n"
+          "[`scripts/ledger_index.cx`](../scripts/ledger_index.cx) -- run `make ledger-index`\n"
+          "after adding or editing a ledger page; `make ledger-index-check` is the drift step\n"
+          "and fails when this file is stale. Do not edit it by hand.\n\n"
+          "A commit subject ends `(RULED: <id>)`; this is how that id resolves.\n\n"
+          "## Declared -- the heading that carries the decision\n\n"
+          "| id | file | heading |\n|---|---|---|\n"]]
+      [= $middle [$concat
+          "\n\n## Cited only -- named in a page's prose, with no heading of its own\n\n"
+          "| id | pages that name it |\n|---|---|\n"]]
+      [= $footer [$concat
+          "\n\n*" [$string [$count $files]] " ledger pages; "
+          [$string [$count $declared-ids]] " ids declared, "
+          [$string [$count $cited-only]] " cited only.*\n"]]
+      [= $text [$concat $header [$strings:join $decl-rows "\n"] $middle
+                        [$strings:join $cite-rows "\n"] $footer]]
+
+  [?if $check
+    [then [?let [= $on-disk [$io:read-file "ledger/README.md"]]
+            [?if [= $on-disk $text]
+              [then ([$io:write-line [$env:stdout]
+                       [$concat "ledger-index-check: ledger/README.md is current ("
+                                [$string [$count $declared-ids]] " declared, "
+                                [$string [$count $cited-only]] " cited only)"]],
+                     [$env:exit 0], ())]
+              [else ([$io:write-line [$env:stderr]
+                       "ledger-index-check: DRIFT -- ledger/README.md does not match what scripts/ledger_index.cx generates. Run `make ledger-index` and commit the result."],
+                     [$env:exit 1], ())]]]]
+    [else [?let [= $_w [$io:write-file "ledger/README.md" $text]]
+            ([$io:write-line [$env:stdout]
+               [$concat "ledger-index: wrote ledger/README.md -- "
+                        [$string [$count $declared-ids]] " ids declared, "
+                        [$string [$count $cited-only]] " cited only, across "
+                        [$string [$count $files]] " pages"]],
+             [$env:exit 0], ())]]]]
