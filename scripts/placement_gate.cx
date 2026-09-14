@@ -52,12 +52,25 @@
 #                    row declares no move -- under the other ring's directory
 #   [orphan ...]     a spec, corpus or bundled source that no row and no
 #                    `[move]` claims
+#   [integration map] a platform specification with no `Integration map`
+#                    heading (RULED: COMP-1) -- the section that restates
+#                    composition.md §2's rows for that module
+#
+# THE INTEGRATION-MAP RULE, and why it is here. Placement is where a surface
+# sits; COMP-1's third deliverable is that a reader of any platform page can
+# see, without leaving it, which modules meet it and what each of them is
+# refused. That is a property of the page, checked the same way its directory
+# is. The exempt page is the ring catalog
+# spec/03-approved/platform/README.md: it indexes the modules and is not one,
+# so it owes no map. composition.md and deployment-topology.md are catalog
+# pages in registry/modules.cxd and are NOT exempt -- each already carries its
+# own map, and the rule is what keeps that true.
 #
 # Exit: 0 clean, 1 placement drift, 2 the registry itself is unreadable.
 #
 # Run from the checkout root:
-#   vcx/target/cx --allow-all scripts/placement_gate.cx
-# (or: make placement-gate)
+#   vcx/target/cx --allow-all scripts/placement_gate.cx [--self-test]
+# (or: make placement-gate, which runs the self-test then the tree)
 
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
@@ -104,6 +117,46 @@
   [?if [$io:exists $p]
     [then [?let [= $t [$cx:parse [$io:read-file $p]]] [$string [?else $t@ring ""]]]]
     [else ""]]]
+
+# member: is this string one of these? (the argv read)
+[?def member scope=private pure [returns bool] ($x::string $xs::[sequence string])
+  [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+# has-integration-map: does this page carry a HEADING whose text names the
+# section? The heading is the check, not the words in a paragraph: a page that
+# mentions an integration map in prose has not written one.
+[?def has-integration-map scope=private pure [returns bool] ($text::string)
+  [> [$count [?for [in $l [$strings:split-lines $text]]
+               [where [$strings:starts-with $l "#"]]
+               [where [$strings:contains $l "Integration map"]]
+               [yield 1]]] 0]]
+
+# -- the self-test (RULED: COMP-1) --------------------------------------
+# One catch and one no-catch case for [integration map], over strings: it
+# touches no file, and the tree scan below does not run under `--self-test`.
+[?if [$member "--self-test" [$env:argv]]
+  [then
+    [?let
+      [= $catch  "# `cx-x` -- a module\n\n## §1. Scope\n\n## §2. Cross-references\n"]
+      [= $clean  "# `cx-x` -- a module\n\n## §1. Scope\n\n## §2. Integration map -- what `x` owes each module, and what it refuses\n"]
+      [= $f1 [?if [$has-integration-map $catch]
+               [then "MISSED (should catch): a platform page whose headings carry no integration map"]
+               [else ""]]]
+      [= $f2 [?if [$has-integration-map $clean]
+               [then ""]
+               [else "FALSE POSITIVE: a page whose §2 heading IS the integration map"]]]
+      [= $failures [?for [in $x ($f1, $f2)] [where [not [= $x ""]]] [yield $x]]]
+      [?if [> [$count $failures] 0]
+        [then
+          [?let [= $_bad [$io:write-line [$env:stderr]
+                  [$concat "placement-gate self-test FAILED -- "
+                           [$strings:join $failures "; "]]]]
+            [$env:exit 1]]]
+        [else
+          [?let [= $_ok [$io:write-line [$env:stdout]
+                  "placement-gate self-test OK -- 1 catch + 1 no-catch case for [integration map] pass."]]
+            [$env:exit 0]]]]]]
+  [else ""]]
 
 # -- the registry -------------------------------------------------------
 [?let [= $reg-path "registry/modules.cxd"]
@@ -415,14 +468,27 @@
           [yield [$concat "  [catalog]        ring " $r
                    "  -- the catalog page " $p " is declared and not on disk"]]]]
 
+      # -- the integration maps (RULED: COMP-1) -------------------------
+      # Every page under the Ring-2 spec directory except the ring catalog
+      # states its own seams. The catalog is the one page that indexes the
+      # modules instead of being one.
+      [= $map-lines
+        [?for [in $f [$io:glob "spec/03-approved/platform/**/*.md"]]
+          [where [not [= $f "spec/03-approved/platform/README.md"]]]
+          [where [not [$has-integration-map [$io:read-file $f]]]]
+          [yield [$concat "  [integration map] " $f
+                   "  -- a platform specification with no Integration map heading;"
+                   " the section restates composition.md §2's rows for this module (RULED: COMP-1)"]]]]
+
       # -- assemble ----------------------------------------------------
       [= $row-hits [?for [in $x $row-lines] [where [not [= $x ""]]] [yield $x]]]
       [= $n-violations
+        [+ [$count $map-lines]
         [+ [$count $row-hits]
            [+ [$count $catalog-lines]
            [+ [$count $missing-lines]
               [+ [$count $orphan-spec]
-                 [+ [$count $orphan-corpus] [$count $orphan-source]]]]]]]
+                 [+ [$count $orphan-corpus] [$count $orphan-source]]]]]]]]
 
       [= $b1 [$strings:join $row-hits "\n"]]
       [= $b0 [$strings:join $catalog-lines "\n"]]
@@ -430,8 +496,9 @@
       [= $b3 [$strings:join $orphan-spec "\n"]]
       [= $b4 [$strings:join $orphan-corpus "\n"]]
       [= $b5 [$strings:join $orphan-source "\n"]]
+      [= $b6 [$strings:join $map-lines "\n"]]
       [= $blocks
-        [?for [in $b ($b0, $b1, $b2, $b3, $b4, $b5)]
+        [?for [in $b ($b0, $b1, $b2, $b3, $b4, $b5, $b6)]
           [where [not [= $b ""]]]
           [yield $b]]]
 
@@ -479,12 +546,12 @@
           [$concat "placement-gate OK -- " [$string [$count $rows]]
             " rows in registry/modules.cxd (" [$string $n-ring0] " ring 0, "
             [$string $n-ring1] " ring 1, " [$string $n-ring2]
-            " ring 2); every artifact sits where its row says, every row's ring agrees with the directories it is not declared to be leaving, and nothing under the ring directories is unclaimed.\n  " $census]]]
+            " ring 2); every artifact sits where its row says, every row's ring agrees with the directories it is not declared to be leaving, nothing under the ring directories is unclaimed, and every platform specification but the ring catalog carries an integration-map section (RULED: COMP-1).\n  " $census]]]
         [$env:exit 0]]]
     [else
       [?let [= $_bad [$io:write-line [$env:stderr]
           [$concat "placement drift -- " [$string $n-violations]
-            " site(s) disagree with registry/modules.cxd (RULED: 1427-f, OL-15); a site is one row or one unclaimed artifact, and a row may carry several lines:\n"
+            " site(s) disagree with registry/modules.cxd, or with the integration-map rule (RULED: 1427-f, OL-15, COMP-1); a site is one row, one unclaimed artifact or one page with no map, and a row may carry several lines:\n"
             [$strings:join $blocks "\n"]
             "\n  " $census]]]
         [$env:exit 1]]]]]]]]
