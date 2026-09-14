@@ -132,6 +132,11 @@ below all of these and never overrides one of them.
   writing to a log file. Never a detached wrapper whose output is discarded —
   a run with no log and no verdict marker cannot be waited on, and #1333
   found three waiters alive three hours after their run had died.
+  There are **two** pre-merge runners and the step decides which one a branch
+  queues on (RULED: INT-8): a load-SENSITIVE step — the memory gauges, the
+  performance ratchet, the real-socket tests — goes on `.build-slot-impl`,
+  where one run at a time is the point; everything else may use
+  `.build-slot-impl2`. A branch never queues the same run on both.
   `CONTRIBUTING.md` §Testing has the mechanics.
 - **Words.** `decision` is the noun for a thing the owner has ruled;
   `RULED:` is the token that carries its id in a commit subject and in the
