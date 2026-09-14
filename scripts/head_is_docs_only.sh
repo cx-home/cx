@@ -33,7 +33,7 @@
 #                       placement-gate, ring-import-gate and ring-tag-gate
 #   *.md                anywhere EXCEPT spec/03-approved/ — an approved spec is
 #                       normative, read by spec-freeze-gate,
-#                       check-code-spec-consistency and check-no-adr-citations,
+#                       check-code-spec-consistency and the citation checker,
 #                       so it always costs a full run
 #
 # Everything else — conformance/, scripts/, the Makefile, vcx/, stdlib/, x/,
