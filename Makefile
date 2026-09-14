@@ -963,7 +963,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-examples verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster fmt-sweep-gate test-playground-wasm-traps ledger-index-check
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-examples verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster fmt-sweep-gate test-playground-wasm-traps ledger-index-check
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -2047,6 +2047,21 @@ skip-ledger-reset:
 	@rm -rf $(CX_SKIP_DIR)
 	@mkdir -p $(CX_SKIP_DIR)
 
+# ── fixtures-census-reset (#1448, RULED: 1448-a) ────────────────────────────
+# The same property, and the same argument, as skip-ledger-reset above. Each
+# grader shard writes vcx/target/fixtures/<shard>.census and
+# scripts/fixtures_census.sh sums them into #1026's one `stdlib corpus: …`
+# line; a census left over from an EARLIER run would be summed into this one,
+# and a total that counts cases nobody graded this run is worse than no total,
+# because it is believed. One file per writer, so no writer can lose another's
+# line and none can race; the truncation is a prerequisite of the suite rather
+# than a line inside one writer's recipe, which is exactly the lost-update the
+# skip ledger paid for under `make -j`.
+.PHONY: fixtures-census-reset
+fixtures-census-reset:
+	@rm -rf vcx/target/fixtures
+	@mkdir -p vcx/target/fixtures
+
 .PHONY: test-vcx-suite
 # On a suite failure the recipe retries EXACTLY the steps that failed, each
 # under the retry class it belongs to — never a fixed proxy list (#572: the
@@ -2085,7 +2100,23 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/process_pty_test.v \
                       vcx/tests/xap_umbrella_test.v \
                       vcx/tests/store_remote_umbrella_test.v \
-                      vcx/tests/code_eval_fixtures_test.v
+                      vcx/tests/code_eval_fixtures_test.v \
+                      vcx/tests/code_eval_fixtures_shard_1_test.v \
+                      vcx/tests/code_eval_fixtures_shard_2_test.v \
+                      vcx/tests/code_eval_fixtures_shard_3_test.v \
+                      vcx/tests/code_eval_fixtures_shard_4_test.v \
+                      vcx/tests/code_eval_fixtures_shard_5_test.v
+
+# ── the grader's SHARDS carry its roster row too (#1448, RULED: 1448-a) ─────
+# 1448-a split the eval lane's stdlib walk out of code_eval_fixtures_test.v and
+# across code_eval_fixtures_shard_<k>_test.v so the V runner's parallel jobs
+# carry it. The #1432 class below is a property of the GRADER, not of the file
+# it happened to live in — an early exit with no assertion while a parallel step
+# relinks libcx.dylib can happen in any of them — so every shard inherits the
+# row. A roster that named only the driver would have silently dropped the
+# class for five of six processes; `check-serial-retry-rosters` holds every row
+# to an existing file, and `check-fixture-shard-manifest` holds the shard set
+# and the manifest to each other.
 
 # ── http_umbrella_test.v joins the real-socket class (#1445) ────────────────
 # The post-merge run on ca5cb0996 (2026-09-13 22:48Z–23:09Z) failed ONLY at
@@ -2185,7 +2216,7 @@ RETRY_REASON_CASE = case "$$rel" in \
 	    reason="real-socket contention: live store/grpc endpoint under -j (\#648)" ;; \
 	  vcx/code/code_module_umbrella_test.v) \
 	    reason="\#1432 timing under load: test_retry_without_delay_does_not_suspend is a WALL-CLOCK control row (delay=0 must cost < 40 ms) and read 42 ms at load 190-218 while two pipelines built at -j; nothing in that head touched the retry path, and the bound is NOT loosened" ;; \
-	  vcx/tests/code_eval_fixtures_test.v) \
+	  vcx/tests/code_eval_fixtures_test.v|vcx/tests/code_eval_fixtures_shard_*_test.v) \
 	    reason="\#1432 early exit under load: the grader runs 20+ minutes over 4583 fixtures, and the failing run exited after 13.8 s with NO assertion while a parallel step relinked libcx.dylib/cx; the step's first line and its first failure now name the cx build identity, so a mid-run relink says so itself" ;; \
 	  bench/repr/run.sh) \
 	    reason="\#1431 memory gauge under load: live-bytes/input-bytes moves with the -gc e collection point under a -j storm (read 8.941x against 8.35x at load ~300 on a LEDGER-ONLY head byte-identical to one that passed the same step four hours earlier; the retry passed)" ;; \
@@ -2331,6 +2362,33 @@ check-serial-retry-rosters:
 	fi; \
 	echo "check-serial-retry-rosters OK — every retry-roster row names an existing step"
 
+# ── check-fixture-shard-manifest (#1448, RULED: 1448-a) ─────────────────────
+# The same shape, one level down. 1448-a partitions the module corpus —
+# conformance/{stdlib,platform,x,xap}/*.cxd plus extended.cxd and
+# xml_codec.cxd — across the grader's shard test files so the V runner's
+# parallel jobs carry a walk that was the run's 16-29 minute critical path. The partition introduces
+# exactly one new failure mode — a corpus file in NO shard is graded by nothing
+# while every step stays green — and this refuses it, together with a file in
+# two shards, a row naming a file that does not exist, a shard row naming a
+# test file that does not exist, and a shard test file with no manifest row.
+.PHONY: check-fixture-shard-manifest
+check-fixture-shard-manifest:
+	@bash scripts/check_fixture_shard_manifest.sh
+
+# ── fixtures (#1448, RULED: 1448-a) — the grader's ONE-COMMAND form ─────────
+# Before the shard split a pre-merge pipeline graded the corpus with one line
+# and read the census off its stdout. The corpus is now graded by the driver
+# plus the shards, so this target is that line: all of them in parallel under
+# the pipelines' own flags (`-cc cc -gc e -d cx_db_sqlite -d cx_db_redis` —
+# without the two engine defines db.cxd's cases 010-023 fail by construction),
+# each one's output printed in manifest order, and the aggregated
+# `stdlib corpus: …` census line last. No build prerequisite, exactly as the
+# direct invocation had none: the grader links the `cx` module as SOURCE and
+# only READS vcx/target/cx's build-identity stamp (#1432).
+.PHONY: fixtures
+fixtures:
+	@sh scripts/run_fixture_shards.sh
+
 # #700 consolidation absorbs a step file's tests into an umbrella and REMOVES
 # the original; every fix made to the umbrella afterwards then lives only
 # there. So a restored original is a loaded gun: regenerating from it
@@ -2375,7 +2433,7 @@ contract-revision-repin:
 test-vcx-timing: build-vcx-dev
 	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/timing/
 
-test-vcx-suite: build-vcx-dev check-serial-retry-rosters skip-ledger-reset
+test-vcx-suite: build-vcx-dev check-serial-retry-rosters check-fixture-shard-manifest fixtures-census-reset skip-ledger-reset
 	@$(JS_CLOSE) log=vcx/target/test-suite-run.log; stf=vcx/target/test-suite-status; \
 	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/tests/ 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
@@ -2413,7 +2471,9 @@ test-vcx-suite: build-vcx-dev check-serial-retry-rosters skip-ledger-reset
 	if [ -n "$$skips" ]; then \
 	  echo "──── $$(printf '%s\n' "$$skips" | wc -l | tr -d ' ') step(s) SKIPPED with a named reason (absent prerequisite, counted separately — NOT failures) ────"; \
 	  printf '%s\n' "$$skips"; \
-	fi; exit $$st
+	fi; \
+	bash scripts/fixtures_census.sh || st=1; \
+	exit $$st
 
 # White-box unit tests that live INSIDE the `code` module (vcx/code/*_test.v) —
 # they exercise unexported internals (e.g. store_cxpack_flush / store_put_canonical
@@ -3033,17 +3093,20 @@ bench-code-gates: bench-code-pattern-compile bench-code-streaming bench-code-htt
 # parses each block, evaluates in_code with $doc bound, and compares the
 # rendered result against out_text. Asserts at runtime that at least one
 # fixture executed. Per conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded) gate 5.
-# ITS EXIT CODE IS NOT A VERDICT — read the failure LIST. VFLAGS_VCX carries no
-# `-d cx_db_sqlite -d cx_db_redis`, but the same code_eval_fixtures_test.v also
-# runs test_stdlib_module_fixtures over every conformance/stdlib/*.cxd, and
-# db.cxd's cases 010-023 need those engines. So this target reds exactly 14
-# ENFORCED db fixtures by construction (E_STORE_UNRESOLVED_BACKEND "this build
-# carries no sqlite engine", and `no callable "redis-open"`) and exits 2 on a
-# perfectly healthy tree. `make test` builds with both -d flags, which is why
-# the full matrix is green on the same corpus. Measured 2026-09-08: 3754
-# fixtures across 73 module files, 14 failures, all db.cxd. When using this
-# target to verify a stdlib suite you added, the signal is "no failure names
-# MY suite", never exit 0.
+# 1448-a REMOVED this target's by-construction red. It used to say: VFLAGS_VCX
+# carries no `-d cx_db_sqlite -d cx_db_redis`, but the same
+# code_eval_fixtures_test.v also walked every module corpus file, and
+# db.cxd's cases 010-023 need those engines — so the target red 14 ENFORCED db
+# fixtures (E_STORE_UNRESOLVED_BACKEND "this build carries no sqlite engine",
+# and `no callable "redis-open"`) and exited 2 on a perfectly healthy tree.
+# The module walk now lives in the shard files, and this file grades code.cxd,
+# the packages and the four fast-path differs — none of which need a db engine.
+# The §11.6 gate-5 corpus is in code.cxd, so this target grades exactly what
+# its header claims and its exit code means what it says.
+#
+# To verify a module suite you added, run `make fixtures` (every shard plus this
+# driver, under the pipelines' flags) and read the census line — never this
+# target, which no longer reaches the module corpus directories at all.
 .PHONY: test-vcx-resilience-matrix
 test-vcx-resilience-matrix: build-vcx
 	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_eval_fixtures_test.v
@@ -3064,6 +3127,8 @@ test-vcx-concurrency-soundness:
 # whitelist covers all 21 program-svc-NNN fixtures (HTTP verbs + status
 # codes + TLS + streaming body + graceful-stop + handle lookup). Per
 # conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded) gate 6.
+# Since 1448-a that file grades code.cxd, the packages and the differs; the
+# module-corpus walk is in the shard files (`make fixtures`).
 .PHONY: test-vcx-services
 test-vcx-services: build-vcx
 	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_eval_fixtures_test.v
