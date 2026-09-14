@@ -25,6 +25,7 @@ import os
 
 const xap_init_usage = [
 	'Usage: cx xap init NAME [--dir DIR] [--client]',
+	'       cx xap scaffold PATTERN [--dir DIR]',
 	'       cx xap check-surface [DIR]',
 	'',
 	'init scaffolds a XAP project: two base features, one composite that',
@@ -37,6 +38,11 @@ const xap_init_usage = [
 	'              as generated: serve.cx renders each pane as a generic',
 	'              table derived from the surface\'s `shows` declarations —',
 	'              a floor to replace with your own views, never final UX.',
+	'',
+	"scaffold emits one COMPOSITION PATTERN's declaration skeleton from the",
+	'closed set of seven (composition.md §3), with an authoring TODO wherever',
+	'the pattern fixes no value. `cx xap scaffold --help` lists the seven.',
+	'Unlike init, the result does not run as generated: a pattern is a shape.',
 	'',
 	'check-surface verifies every *.surface.cxd in DIR (default .) is a',
 	'faithful DERIVATION of the xap + feature specs beside it — the classes',
@@ -71,8 +77,12 @@ fn run_xap(args []string) {
 		run_xap_check_surface(args[1..])
 		return
 	}
+	if args[0] == 'scaffold' {
+		run_xap_scaffold(args[1..])
+		return
+	}
 	if args[0] != 'init' {
-		xap_init_die('unknown action `${args[0]}` — actions: init, check-surface, compat')
+		xap_init_die('unknown action `${args[0]}` — actions: init, scaffold, check-surface, compat')
 	}
 	if args.len < 2 {
 		xap_init_die('missing NAME')

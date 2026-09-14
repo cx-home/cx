@@ -118,6 +118,15 @@
                 [then [$strings:slice $a 1 [- [$strings:length $a] 1]]] [else $a]]]
     [?if [$strings:contains $b "\n"] [then $b] [else [$strings:trim $b]]]]]
 
+# The primer's PLATFORM chapter is itself GENERATED — projected from
+# composition.md §1-§3 and deployment-topology.md §1-§4 by
+# scripts/gen_docs/primer_platform.cx (RULED: COMP-1). It reaches the primer
+# as an ordinary placeholder, so this generator neither knows nor restates
+# what is in it; `make primer-platform-check` is what holds the chapter to
+# those two pages, and this file's own drift gate then holds the primer to the
+# chapter.
+[?const PLATFORM-CHAPTER-PATH "docs-src/llm/primer-platform.chapter.md"]
+
 [?def member scope=public ($seq $x)
   [> [$count [?for [in $s $seq] [where [= $s $x]] [yield $s]]] 0]]
 
@@ -502,6 +511,7 @@
         [= $kind [?if [$empty $parts] [then ""] [else [$first $parts]]]]
     [?match $kind
       [when [= $kind "VERSION"] $version]
+      [when [= $kind "PLATFORM-CHAPTER"] [$io:read-file PLATFORM-CHAPTER-PATH]]
       [when [= $kind "CXHELP"]  [$cx-help $cxbin]]
       [when [= $kind "DIRECTIVES"] [$directive-rows]]
       [when [$strings:starts-with $kind "MODULES:"]

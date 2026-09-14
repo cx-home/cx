@@ -1,0 +1,298 @@
+# scripts/gen_docs/primer_platform.cx — the primer's PLATFORM chapter,
+# generated from the two platform pages that own the material (RULED: COMP-1).
+#
+# WHY A GENERATOR AND NOT PROSE. An adopter's agent reads `cx primer` before
+# its first line of CX. What it most needs before composing anything is the
+# material two specifications already state: which seams exist and which
+# directions are refused (`composition.md` §1-§2), the closed set of
+# composition patterns with their skeletons (§3), the runtimes a deployment
+# runs and the one carrier between them (`deployment-topology.md` §1-§4).
+# Transcribed by hand, that text drifts the first time either page moves, and
+# a drifted primer is worse than no primer: it is a confident wrong answer.
+# So the chapter is a PROJECTION of those sections, and `primer-platform-check`
+# (in TEST_TARGETS) fails the run when the projection and the committed
+# chapter disagree.
+#
+# WHAT IS PROJECTED, AND WHAT IS AUTHORED HERE. Everything below §12.1 is
+# lifted from the two pages, section by section, with exactly two transforms:
+#
+#   * a markdown link becomes its own link TEXT (`[`flow.md`](flow.md)` ->
+#     `` `flow.md` ``). docs/llm/ is served from the published site root,
+#     where a repo-relative path resolves to nothing — `verify-doc-links`
+#     holds that layer at zero relative links, so the chapter carries none.
+#   * a spec heading becomes a bold line, so the primer keeps ONE heading
+#     level per chapter and the spec's own §-numbers stay visible as the
+#     citation they are.
+#
+# Lines inside a fenced block are copied byte for byte: a skeleton in the
+# chapter is the skeleton in the specification, which is what makes
+# `cx xap scaffold` and this chapter the same material (`composition.md`
+# §3.9).
+#
+# §12.1 is the one AUTHORED section — the three head shapes of a CX element,
+# restated from `core/code.md` §6.3 and §8's head-form table. It opens the
+# chapter because every skeleton below is a document of data elements, and an
+# agent that reads `[do 'crm-rest/list-contacts' …]` as a call has already
+# misread the platform.
+#
+# Run:
+#   cx --allow-read --allow-write scripts/gen_docs/primer_platform.cx
+#   cx --allow-read              scripts/gen_docs/primer_platform.cx --check
+#   (or: make primer-platform / make primer-platform-check)
+#
+# The chapter reaches `cx primer` through the ordinary docs layer: it is the
+# `{{PLATFORM-CHAPTER}}` placeholder in docs-src/llm/primer.md.tmpl, so
+# `make docs` folds it into docs/llm/primer.md and `make build-vcx` embeds it.
+#
+# Exit: 0 green; 1 drift (--check) or a source page that lost a section.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/fp'      as=fp]
+
+[?const COMP-PATH "spec/03-approved/platform/composition.md"]
+[?const TOPO-PATH "spec/03-approved/platform/deployment-topology.md"]
+[?const OUT-PATH  "docs-src/llm/primer-platform.chapter.md"]
+
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?def member scope=public ($seq $x)
+  [> [$count [?for [in $s $seq] [where [= $s $x]] [yield $s]]] 0]]
+
+[?def die scope=public impure ($s)
+  [?let [= $_e [$cry [$concat "primer_platform: " $s]]] [$env:exit 1]]]
+
+# ── the two line transforms ──────────────────────────────────────────────
+
+# drop-last-open: remove the LAST "[" of a string — the opening bracket of
+# the markdown link whose "](" de-link is standing on.
+[?def drop-last-open scope=public ($s)
+  [?let [= $parts [$strings:split $s "["]]
+        [= $n [$count $parts]]
+    [?if [< $n 2]
+      [then $s]
+      [else [$concat
+              [$strings:join [?for [in $i [$range 1 [- $n 1]]] [yield [$nth $parts $i]]] "["]
+              [$nth $parts $n]]]]]]
+
+# de-link: `[TEXT](TARGET)` -> `TEXT`, every occurrence on one PROSE line.
+# Split on "](" rather than matching brackets: every chunk after the first
+# opens with a link target, which ends at the first ")".
+[?def de-link scope=public ($line)
+  [?let [= $chunks [$strings:split $line "]("]]
+        [= $n [$count $chunks]]
+    [?if [< $n 2]
+      [then $line]
+      [else [$fp:fold
+              [?for [in $i [$range 2 $n]] [yield [$nth $chunks $i]]]
+              [$nth $chunks 1]
+              [?fn ($acc $ch)
+                [?let [= $k [$strings:find $ch ")"]]
+                      [= $len [$strings:length $ch]]
+                  [$concat [$drop-last-open $acc]
+                    [?if [not [$present $k]]
+                      [then $ch]
+                      [else [?if [>= $k $len]
+                              [then ""]
+                              [else [$strings:slice $ch [+ $k 1] $len]]]]]]]]]]]]]
+
+# demote: a spec heading line becomes a bold line. The §-number is kept —
+# it is the citation a reader follows back to the page.
+[?def demote scope=public ($line)
+  [?let [= $len [$strings:length $line]]
+        [= $body [?if [$starts-with $line "#### "]
+                   [then [$strings:slice $line 6 $len]]
+                   [else [?if [$starts-with $line "### "]
+                     [then [$strings:slice $line 5 $len]]
+                     [else [?if [$starts-with $line "## "]
+                       [then [$strings:slice $line 4 $len]]
+                       [else ""]]]]]]]
+    [?if [= $body ""] [then $line] [else [$concat "**" $body "**"]]]]]
+
+# ── the block projection ─────────────────────────────────────────────────
+
+# project: both transforms over a section's lines, with fenced blocks copied
+# byte for byte. The fold carries the fence state; a "```" line toggles it and
+# is itself copied.
+[?def project scope=public ($text)
+  [?let [= $st [$fp:fold [$strings:split-lines $text]
+                 [$map:put [$map:put {} "fence" false] "text" ""]
+                 [?fn ($acc $line)
+                   [?let [= $f [$map:get $acc "fence"]]
+                         [= $t [$map:get $acc "text"]]
+                     [?if [$starts-with $line "```"]
+                       [then [$map:put [$map:put {} "fence" [not $f]]
+                                       "text" [$concat $t $line "\n"]]]
+                       [else [$map:put [$map:put {} "fence" $f]
+                               "text" [$concat $t
+                                        [?if $f
+                                          [then $line]
+                                          [else [$de-link [$demote $line]]]] "\n"]]]]]]]]
+        [= $out [$map:get $st "text"]]
+        [= $n [$strings:length $out]]
+    [?if [$ends-with $out "\n"] [then [$strings:slice $out 1 [- $n 1]]] [else $out]]]]
+
+# ── section extraction ───────────────────────────────────────────────────
+
+# first-index: the 1-based index of the first line at or after $from whose
+# text starts with $prefix, or 0 for none.
+[?def first-index scope=public ($lines $prefix $from)
+  [?let [= $hits [?for [in $i [$range $from [$count $lines]]]
+                   [where [$starts-with [$nth $lines $i] $prefix]]
+                   [yield $i]]]
+    [?if [$empty $hits] [then 0] [else [$first $hits]]]]]
+
+# trim-tail: drop the trailing blank lines and the trailing `---` rule a spec
+# section ends with, so the chapter's own spacing is uniform.
+[?def trim-tail scope=public ($lines)
+  [?let [= $n [$count $lines]]
+    [?if [= $n 0]
+      [then $lines]
+      [else [?let [= $last [$strings:trim [$nth $lines $n]]]
+        [?if [or [= $last ""] [= $last "---"]]
+          [then [$trim-tail [?for [in $i [$range 1 [- $n 1]]] [yield [$nth $lines $i]]]]]
+          [else $lines]]]]]]]
+
+# section: the lines from the line starting $start up to (not including) the
+# line starting $end. A missing marker is a HARD failure naming the page: a
+# section that moved must be noticed here, never silently dropped from the
+# chapter.
+[?def section scope=public impure ($text $start $end $where)
+  [?let [= $lines [$strings:split-lines $text]]
+        [= $i [$first-index $lines $start 1]]
+        [= $_a [?if [= $i 0]
+                 [then [$die [$concat "no line starting '" $start "' in " $where]]]
+                 [else 0]]]
+        [= $j [$first-index $lines $end [+ $i 1]]]
+        [= $_b [?if [= $j 0]
+                 [then [$die [$concat "no line starting '" $end "' after '" $start "' in " $where]]]
+                 [else 0]]]
+    [$project [$strings:join
+      [$trim-tail [?for [in $k [$range $i [- $j 1]]] [yield [$nth $lines $k]]]] "\n"]]]]
+
+# part: one chapter section — the primer's own heading, then the projection.
+[?def part scope=public ($heading $body)
+  [$concat $heading "\n\n" $body]]
+
+# ── §12.1, the one authored section ──────────────────────────────────────
+
+[?const HEAD-SHAPES "### 12.1 The three head shapes, before any of the rest
+
+Every skeleton in this chapter is a document of ELEMENTS, and the head of an
+element decides what it is. There are three head shapes and no fourth
+(`core/code.md` §6.3, §8).
+
+**Bare `[name …]` is data-element construction.** The head names an element
+you are building, never a function to run — even when `name` happens to match
+a built-in. `[first \"a\"]` constructs an element named `first`; the built-in
+is `[$first \"a\"]`.
+
+```cx
+[step name=\"pull-contacts\" needs=\"start\"]
+```
+
+**`[$name …]` is the call form.** The `$` sigil is what makes a word head a
+call: `$`-bound name in head position, applied to the positional arguments.
+The sigil is declared, never inferred — a bare word head can never be a call.
+
+```cx
+[$strings:upper \"acme\"]
+```
+
+**`[?name …]` is a special form.** A directive: control flow, binding,
+definition — `[?for …]`, `[?let …]`, `[?def …]`, `[?if …]`. Directives are a
+closed, registered set.
+
+```cx
+[?for [in $c $contacts] [yield $c@email]]
+```
+
+(One footnote to the first shape: a closed set of reserved operator tokens —
+`+ - * / %`, `= != < <= > >=`, `~`, `and or not`, `cast`, `union intersect
+except` — is admitted BARE as an expression head, because a symbolic token is
+never a valid data-element name. `[> $x 100]` is the comparison, not an
+element named `>`.)
+
+**This is why a flow's `[do …]` and a feature's `[intent [do …]]` are DATA.**
+Neither is a call and neither runs where it is written: they are data elements
+the flow runner (for `[do …]` in a step) or the agent surface (for the
+`[intent]` a verb declares) hands to the platform, which resolves the verb,
+decides it, and records the result. An agent that reads a `[do …]` as an
+invocation has misread every pattern below."]
+
+[?const CHAPTER-HEAD "## 12. The platform — the seams, the patterns, the runtimes
+
+> **GENERATED CHAPTER.** Every section below §12.1 is projected from
+> `spec/03-approved/platform/composition.md` §1-§3 and
+> `spec/03-approved/platform/deployment-topology.md` §1-§4 by
+> `scripts/gen_docs/primer_platform.cx`. `make primer-platform-check` fails
+> the run when this text and those pages disagree, so what you read here is
+> what those pages say — edit the pages, never this chapter.
+
+Read this chapter before composing anything on the platform. It answers four
+questions an adopter's agent otherwise guesses at: what an element's head
+means, which module may use which (and which direction is refused), which
+compositions exist (the set is CLOSED), and what changes when the same
+composition is deployed across four runtimes instead of one.
+
+`cx xap scaffold <pattern>` emits any of §12.5's patterns as a declaration
+skeleton with an authoring TODO wherever the pattern fixes no value."]
+
+# ── the chapter ──────────────────────────────────────────────────────────
+
+[?def chapter scope=public impure ()
+  [?let [= $comp [$io:read-file COMP-PATH]]
+        [= $topo [$io:read-file TOPO-PATH]]
+    [$strings:join (
+      CHAPTER-HEAD,
+      HEAD-SHAPES,
+      [$part "### 12.2 Orthogonality — composition.md §1"
+             [$section $comp "## §1." "## §2." "composition.md"]],
+      [$part "### 12.3 The seam table — composition.md §2"
+             [$section $comp "## §2." "## §3." "composition.md"]],
+      [$part "### 12.4 The composition patterns — composition.md §3"
+             [$section $comp "## §3." "## §4." "composition.md"]],
+      [$part "### 12.5 The four runtimes — deployment-topology.md §1"
+             [$section $topo "## §1." "## §2." "deployment-topology.md"]],
+      [$part "### 12.6 The two shapes, and a worked binding — deployment-topology.md §2"
+             [$section $topo "## §2." "## §3." "deployment-topology.md"]],
+      [$part "### 12.7 The carrier rule — deployment-topology.md §3"
+             [$section $topo "## §3." "## §4." "deployment-topology.md"]],
+      [$part "### 12.8 What differs across a runtime boundary — deployment-topology.md §4"
+             [$section $topo "## §4." "## §5." "deployment-topology.md"]]) "\n\n"]]]
+
+# ── main ─────────────────────────────────────────────────────────────────
+
+[?let
+  [= $argv [$env:argv]]
+  [= $check [$member $argv "--check"]]
+  [= $body [$chapter]]
+  [= $old [?if [$io:is-file OUT-PATH] [then [$io:read-file OUT-PATH]] [else "absent"]]]
+  [?if $check
+    [then [?if [= $old $body]
+      [then [?let [= $_o [$say [$concat "primer_platform: " OUT-PATH
+                                        " is current (" [$string [$strings:length $body]]
+                                        " chars)"]]]
+              [$env:exit 0]]]
+      [else [?let
+        [= $_h [$cry [$concat "primer-platform-check: " OUT-PATH
+                              " does not match a fresh projection of the two platform "
+                              "pages. The chapter is GENERATED: run `make primer-platform`, "
+                              "then `make docs`, and commit both results with the spec "
+                              "change that moved."]]]
+        [= $_w [?if [= $old "absent"]
+                 [then [$cry [$concat "  the chapter is not committed at " OUT-PATH]]]
+                 [else [$cry [$concat "  committed " [$string [$strings:length $old]]
+                                      " chars, fresh " [$string [$strings:length $body]]
+                                      " chars"]]]]]
+        [$env:exit 1]]]]]
+    [else [?let
+      [= $_w [$io:write-file OUT-PATH $body]]
+      [= $_o [$say [$concat "primer_platform: " OUT-PATH " <- composition.md §1-§3 + "
+                            "deployment-topology.md §1-§4 (" [$string [$strings:length $body]]
+                            " chars). Run `make docs` to fold it into the primer."]]]
+      [$env:exit 0]]]]]
