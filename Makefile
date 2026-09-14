@@ -2050,8 +2050,12 @@ skip-ledger-reset:
 #   • code_eval_fixtures_test.v was on this roster 2026-08-23 → 2026-09-03 for
 #     the "#951 supervise load-race" — which #1228 showed was a deterministic
 #     evaluator defect (a monitor [?receive] ignoring deadline=), fixed at
-#     6e80897b0; six full gates after the fix retried nothing, so the entry is
-#     RETIRED. A red there is a real failure again.
+#     6e80897b0; six full gates after the fix retried nothing, so that entry
+#     was RETIRED. It is BACK 2026-09-13 (#1432, RULED: 1432-a) for a
+#     DIFFERENT cause — the timing / early-exit class below, an exit with no
+#     assertion at all, not a case answering wrong. A case that FAILS there is
+#     still a real failure: the retry re-runs the step, and a deterministic
+#     wrong answer fails again.
 SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/net_dtls_test.v \
                       vcx/tests/net_real_socket_test.v \
@@ -2062,7 +2066,36 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/imap_real_socket_test.v \
                       vcx/tests/process_pty_test.v \
                       vcx/tests/xap_umbrella_test.v \
-                      vcx/tests/store_remote_umbrella_test.v
+                      vcx/tests/store_remote_umbrella_test.v \
+                      vcx/tests/code_eval_fixtures_test.v
+
+# ── The TIMING / EARLY EXIT UNDER LOAD class (#1432, RULED: 1432-a) ─────────
+# Two rows above carry this class rather than a socket or a daemon cause. Both
+# come from the post-merge run on 5193e3752 (2026-09-13 03:20Z–03:51Z), which
+# ran at load averages of 190–218 because two pre-merge pipelines were building
+# at -j on the same box. Four steps failed; the two with a class passed their
+# serial retry, and these two had none, so the run failed on them:
+#
+#   • vcx/code/code_module_umbrella_test.v — test_retry_without_delay_does_not_
+#     suspend read `42ms elapsed` against its 40 ms bound. That row is a WALL
+#     CLOCK control (it keeps test_retry_backoff_really_suspends's 60 ms floor
+#     from being met by any slow evaluator), so under a load of 200 it measures
+#     the machine. Nothing in that head's merges (#1394 routes, #1405/#1292,
+#     release notes) touches the retry path. The 40 ms bound is NOT loosened —
+#     widening it is what would make the pair vacuous (1432-a).
+#
+#   • vcx/tests/code_eval_fixtures_test.v — `FAIL [11/66] C: 405943.8 ms,
+#     R: 13832.684 ms` with NO assertion text. The grader runs 20+ minutes over
+#     4583 fixtures, so a 13.8 s exit is a process that DIED, not a case that
+#     answered wrong; the run log shows a parallel step relinking libcx.dylib /
+#     cx in the same minute. The same tree's fixtures passed on the branch.
+#     The grader now states the cx build identity (the .buildid stamp and its
+#     #1056 .writer sidecar) in its first line and re-reads it at its first
+#     failure, so a stamp that MOVED between the two reads names a mid-run
+#     relink in the grader's own log instead of in a cross-step correlation.
+#
+# Both keep every assertion they had: the class re-RUNS the step, so a
+# deterministic failure fails again on the retry and the run stays red.
 
 # ── The MEMORY GAUGE UNDER LOAD class (#1431, RULED: 1431-a) ────────────────
 # The two rosters above hold `v test` steps, matched against the paths the
@@ -2120,6 +2153,10 @@ RETRY_REASON_CASE = case "$$rel" in \
 	    reason="real-socket contention: ephemeral-port / deadline race under -j" ;; \
 	  vcx/platform/store_admin_plane_test.v|vcx/platform/store_grpc_live_test.v|vcx/platform/store_lazy_load_test.v) \
 	    reason="real-socket contention: live store/grpc endpoint under -j (\#648)" ;; \
+	  vcx/code/code_module_umbrella_test.v) \
+	    reason="\#1432 timing under load: test_retry_without_delay_does_not_suspend is a WALL-CLOCK control row (delay=0 must cost < 40 ms) and read 42 ms at load 190-218 while two pipelines built at -j; nothing in that head touched the retry path, and the bound is NOT loosened" ;; \
+	  vcx/tests/code_eval_fixtures_test.v) \
+	    reason="\#1432 early exit under load: the grader runs 20+ minutes over 4583 fixtures, and the failing run exited after 13.8 s with NO assertion while a parallel step relinked libcx.dylib/cx; the step's first line and its first failure now name the cx build identity, so a mid-run relink says so itself" ;; \
 	  bench/repr/run.sh) \
 	    reason="\#1431 memory gauge under load: live-bytes/input-bytes moves with the -gc e collection point under a -j storm (read 8.941x against 8.35x at load ~300 on a LEDGER-ONLY head byte-identical to one that passed the same step four hours earlier; the retry passed)" ;; \
 	  *) \
@@ -2364,9 +2401,15 @@ test-vcx-suite: build-vcx-dev check-serial-retry-rosters skip-ledger-reset
 # has not existed since abaea9b9b retired the CSRP data plane, so the row
 # matched no step and was doing nothing. check-serial-retry-rosters (below)
 # is what found it, and is what stops the next one.
+#
+# code_module_umbrella_test.v joined 2026-09-13 (#1432, RULED: 1432-a) under
+# the "timing / early exit under load" class documented beside the rosters
+# above — its wall-clock control row read 42 ms against 40 ms at a load average
+# of 200. No bound moved.
 CODE_SERIAL_RETRY := vcx/platform/store_admin_plane_test.v \
                      vcx/platform/store_grpc_live_test.v \
-                     vcx/platform/store_lazy_load_test.v
+                     vcx/platform/store_lazy_load_test.v \
+                     vcx/code/code_module_umbrella_test.v
 
 # I3 module split (#651/#516): the in-module tests now live in TWO
 # modules — vcx/code (Ring 1) and vcx/platform (Ring 2, where the
