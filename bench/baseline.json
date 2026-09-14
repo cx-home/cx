@@ -25,7 +25,7 @@
       "unit": "ms"
     },
     "tooling.fmt_8k_ms": {
-      "median": 1351.615417,
+      "median": 1304.200833,
       "unit": "ms"
     }
   },
