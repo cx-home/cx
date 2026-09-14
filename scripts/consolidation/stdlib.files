@@ -9,7 +9,7 @@
 #absorbed vcx/tests/stdlib_xsp_test.v
 #absorbed vcx/tests/vc_roundtrip_test.v
 # ── #700 wave 1, 2026-08-24.
-# SPEC-CITATION DEBT: spec/03-approved/std-lib/supervise.md:13 and :359 cite
+# SPEC-CITATION DEBT: spec/03-approved/stdlib/supervise.md:13 and :359 cite
 # stdlib_supervise_test.v by path; not trued here (see diagram.files).
 # ISOLATION: stdlib_supervise_test.v drives supervise in-process with
 # FIXED-NAME channels (vlane-never / vlane-never2 / vlane-ok2). Those names

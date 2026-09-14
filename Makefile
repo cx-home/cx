@@ -549,7 +549,7 @@ install-hooks:
 	@echo "[install-hooks] git core.hooksPath set to .githooks"
 	@ls -1 .githooks/ | sed 's/^/  - /'
 
-# std-lib documentation freshness gate — CX-native (dog-food), run as
+# stdlib documentation freshness gate — CX-native (dog-food), run as
 # `cx <file>`. Verifies the co-located [module-doc]/[fn-doc] in stdlib/*.cx:
 # presence parity (every public [?def] has a [fn-doc] and vice-versa),
 # purity agreement, and that every [fn-doc] example is backed verbatim by
@@ -768,7 +768,8 @@ test-playground-tree:
 
 # stdlib catalog drift gate — verifies the single invariant
 #   SPEC_SET == (BUNDLE_SET union DISPATCH_SET)
-# i.e. every status=current [module-meta] in spec/03-approved/std-lib/*.md
+# i.e. every status=current [module-meta] in the spec pages
+# registry/modules.cxd declares (both ring directories since #1427-a)
 # is implemented (stdlib/*.cx bundle and/or a *_stdlib_builtin entry in
 # vcx/code/stdlib_dispatch.v), and there are no orphan impls/bundles
 # without a current spec. The gate is itself written in CX (dog-food) and
@@ -1064,7 +1065,7 @@ check-version-consistency: build-vcx
 # "absent." An optional read signals "nothing here" via the absence channel
 # (the empty sequence `()`), never `null`. Token-aware: it flags the
 # `[returns [or T null]]` declared-optional-return shape in the stdlib def
-# surface (spec/std-lib/*.md + the vcx/code bundle sources); unit-null
+# surface (spec/03-approved/{stdlib,platform}/*.md + the vcx/code bundle sources); unit-null
 # `[returns null]` and param-position `[or T null]` are deliberately not
 # flagged. Permanent gate, not migration-only.
 .PHONY: check-null-absence-conflation
@@ -1478,7 +1479,7 @@ ring-query:
 	@"$(CX_BIN)" --allow-read --allow-env --allow-write scripts/ring_query.cx
 ring-tag-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
 ring-tag-gate: build-vcx
-	@FORMAT=count "$(CX_BIN)" --allow-read --allow-env --allow-write scripts/ring_query.cx >/dev/null && echo "ring-tag-gate OK — every suite header carries ring=; steps queryable via 'make ring-query'"
+	@FORMAT=count "$(CX_BIN)" --allow-read --allow-env --allow-write scripts/ring_query.cx >/dev/null && echo "ring-tag-gate OK — every suite header carries ring=, and every suite under a ring DIRECTORY agrees with it (RULED: 1427-c); steps queryable via 'make ring-query'"
 
 # Distribution-spec §9 checkable absences (fixture §11.8): the xap-dist engine
 # (vcx/code/stdlib_xap_dist.v) composes the store/did/vc/compose surfaces and
@@ -1982,7 +1983,7 @@ CX_GC ?= -gc e
 # artifact carries sqlite + redis, so the test gate compiles the suite with the
 # same gates. This makes the $if-gated engine tests (vcx/code/sql_test.v,
 # redis steps) and the engine-dependent conformance fixtures
-# (conformance/stdlib/db.cxd success/denial steps) actually run — the gate
+# (conformance/platform/db.cxd success/denial steps) actually run — the gate
 # tests the BEHAVIOR the artifact ships. Override CX_ENGINES='' to gate an
 # engine-free build (then db.cxd's engine steps are expected red; see the
 # fixture doc-comment).
@@ -2362,9 +2363,10 @@ check-serial-retry-rosters:
 	echo "check-serial-retry-rosters OK — every retry-roster row names an existing step"
 
 # ── check-fixture-shard-manifest (#1448, RULED: 1448-a) ─────────────────────
-# The same shape, one level down. 1448-a partitions conformance/stdlib/*.cxd
-# across the grader's shard test files so the V runner's parallel jobs carry a
-# walk that was the run's 16-29 minute critical path. The partition introduces
+# The same shape, one level down. 1448-a partitions the module corpus —
+# conformance/{stdlib,platform,x,xap}/*.cxd plus extended.cxd and
+# xml_codec.cxd — across the grader's shard test files so the V runner's
+# parallel jobs carry a walk that was the run's 16-29 minute critical path. The partition introduces
 # exactly one new failure mode — a corpus file in NO shard is graded by nothing
 # while every step stays green — and this refuses it, together with a file in
 # two shards, a row naming a file that does not exist, a shard row naming a
@@ -3093,18 +3095,18 @@ bench-code-gates: bench-code-pattern-compile bench-code-streaming bench-code-htt
 # fixture executed. Per conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded) gate 5.
 # 1448-a REMOVED this target's by-construction red. It used to say: VFLAGS_VCX
 # carries no `-d cx_db_sqlite -d cx_db_redis`, but the same
-# code_eval_fixtures_test.v also walked every conformance/stdlib/*.cxd, and
+# code_eval_fixtures_test.v also walked every module corpus file, and
 # db.cxd's cases 010-023 need those engines — so the target red 14 ENFORCED db
 # fixtures (E_STORE_UNRESOLVED_BACKEND "this build carries no sqlite engine",
 # and `no callable "redis-open"`) and exited 2 on a perfectly healthy tree.
-# The stdlib walk now lives in the shard files, and this file grades code.cxd,
+# The module walk now lives in the shard files, and this file grades code.cxd,
 # the packages and the four fast-path differs — none of which need a db engine.
 # The §11.6 gate-5 corpus is in code.cxd, so this target grades exactly what
 # its header claims and its exit code means what it says.
 #
-# To verify a stdlib suite you added, run `make fixtures` (every shard plus this
+# To verify a module suite you added, run `make fixtures` (every shard plus this
 # driver, under the pipelines' flags) and read the census line — never this
-# target, which no longer reaches conformance/stdlib/ at all.
+# target, which no longer reaches the module corpus directories at all.
 .PHONY: test-vcx-resilience-matrix
 test-vcx-resilience-matrix: build-vcx
 	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_eval_fixtures_test.v
@@ -3126,7 +3128,7 @@ test-vcx-concurrency-soundness:
 # codes + TLS + streaming body + graceful-stop + handle lookup). Per
 # conformance/GATE_REGISTER.md (the living register; the archived status doc is superseded) gate 6.
 # Since 1448-a that file grades code.cxd, the packages and the differs; the
-# conformance/stdlib/*.cxd walk is in the shard files (`make fixtures`).
+# module-corpus walk is in the shard files (`make fixtures`).
 .PHONY: test-vcx-services
 test-vcx-services: build-vcx
 	VFLAGS='$(VFLAGS_VCX)' v test vcx/tests/code_eval_fixtures_test.v
@@ -3482,9 +3484,9 @@ repr-guard: build-vcx
 	  fi; \
 	fi; exit $$st
 
-# ── bench-flow: the cx-stdlib/flow performance and scale step ────────────────
+# ── bench-flow: the cx-platform/flow performance and scale step ────────────────
 #
-# §9 of spec/03-approved/std-lib/flow.md (RULED: WF-14), #1265 W1 packet C.
+# §9 of spec/03-approved/platform/flow.md (RULED: WF-14), #1265 W1 packet C.
 # Floors are set from the first measurement and ratcheted like bench/repr:
 # ledger/bench_flow_first_measurement_2026_09_04.md records the numbers, the
 # machine and the binary; bench/flow/run.sh carries the floors they set.
@@ -3495,7 +3497,7 @@ repr-guard: build-vcx
 # than on a regression, which is how a gate stops being believed. bench/repr
 # earns its TEST_TARGETS seat because its quantity is a RATIO of live bytes.
 # The load-insensitive halves of this step ARE gated in `make test`: the two
-# per-item COUNT rows are pinned exactly in conformance/stdlib/flow.cxd
+# per-item COUNT rows are pinned exactly in conformance/platform/flow.cxd
 # (flow-040), and the racing-advancer count in vcx/tests/flow_umbrella_test.v.
 # Run this target deliberately — before a release, and at every #1265 wave
 # exit, whose ledger row re-pins what it improved. Contract + numbers:

@@ -28,7 +28,7 @@
 #
 # It failed a SECOND time on 2026-09-07 (#1191), in the DOT spelling:
 # `pb.store` shipped in the composition spec, in the `feature.cxs` comment and
-# in `conformance/stdlib/xap-compose.cxd` as the worked publisher-qualified
+# in `conformance/xap/xap-compose.cxd` as the worked publisher-qualified
 # example, while `pb-[a-z]` reported clean — the hyphen class does not see a
 # dot. A blanket `pb\.[a-z]` class is NOT viable and was measured before being
 # rejected: eight tracked files use it innocently (`pb.bytesize`, `pb.len`,

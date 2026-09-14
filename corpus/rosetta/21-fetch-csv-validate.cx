@@ -8,7 +8,7 @@
    [?def] (retired — grammar [152a] refuses them by name), the
    `[?http-client :method … :yield-body $b :in …]` request form (the directive
    is a client HANDLE constructor now; the one-shot verbs live in
-   cx-stdlib/http), `[?let $x = … :in]`, `[?for … :where … :yield …]`, and
+   cx-stdlib/http-client), `[?let $x = … :in]`, `[?for … :where … :yield …]`, and
    `[field :name "email"]` colon-attributes.
 
    Two things the rewrite MEASURED rather than assumed:
@@ -28,7 +28,7 @@
    for real with:
      cx --allow-net=crm.example.com corpus/rosetta/21-fetch-csv-validate.cx ]
 
-[?lib 'cx-stdlib/http']
+[?lib 'cx-stdlib/http-client' :as http]
 [?lib 'cx-stdlib/csv']
 [?lib 'cx-stdlib/validate']
 

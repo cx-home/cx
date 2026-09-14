@@ -171,7 +171,7 @@ $ cx --allow-env home.cx
          `127.0.0.0/8`, `10.0.0.0/8`, `192.168.0.0/16`, and the other
          reserved ranges gets a refusal:"""]
     [example lang=cx
-      """[?lib 'cx-stdlib/http']
+      """[?lib 'cx-stdlib/http-client' :as http]
 [$http:get 'http://127.0.0.1:1/health']"""]
     [output
       """$ cx --allow-net probe.cx

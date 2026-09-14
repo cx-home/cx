@@ -4,8 +4,8 @@
 # red.
 #
 # 1448-a splits `vcx/tests/code_eval_fixtures_test.v`'s single-threaded walk
-# over `conformance/stdlib/*.cxd` into shard test files the V runner's parallel
-# jobs carry. That buys 12–25 minutes off every run and introduces exactly one
+# over the module corpus into shard test files the V runner's parallel jobs
+# carry. That buys 12–25 minutes off every run and introduces exactly one
 # new failure mode: a module file assigned to NO shard is graded by nothing,
 # while every step stays green. That is the vacuous-gate class this repo keeps
 # paying for (#1127, #1134, #1180, #1209, #1212), and this guard is the answer
@@ -13,10 +13,14 @@
 # a roster row naming a deleted file silently disabled its retry class.
 #
 # Five properties, each red-on-synthetic:
-#   1. every conformance/stdlib/*.cxd is named by EXACTLY ONE shard;
-#   2. conformance/extended.cxd (joined to this walk by #1379, spelled
-#      `../extended.cxd`) is named by exactly one shard;
-#   3. every [file name=…] row resolves to a file that EXISTS;
+#   1. every corpus file the walk discovers is named by EXACTLY ONE shard. That
+#      walk is the UNION #1427-c left behind: conformance/{stdlib,platform,x,
+#      xap}/*.cxd, the ring-legible directories the specs sit in plus the `x/`
+#      tier and the XAP suites;
+#   2. so are the two files that belong to no ring directory — extended.cxd
+#      (joined to this walk by #1379) and the Ring-0 codec suite xml_codec.cxd;
+#   3. every [file name=…] row resolves to a file that EXISTS under
+#      conformance/;
 #   4. every [shard … test=…] row names a test file that EXISTS;
 #   5. every vcx/tests/code_eval_fixtures_shard_*_test.v in the tree has a
 #      manifest row — a shard file with no row grades nothing and passes.
@@ -80,8 +84,9 @@ if [ -n "$orphan_tests" ]; then
 fi
 
 # ── properties 1–3: the assignment is complete, disjoint and resolvable ─────
-# The manifest spells a module file the way the walk joins it: a bare name is
-# under conformance/stdlib/, and `../extended.cxd` is the parent-dir file.
+# The manifest spells a corpus file the way the walk joins it: relative to
+# conformance/, so `stdlib/ux.cxd`, `platform/flow.cxd`, and the two loose
+# files by their own names.
 sort "$tmp/assigned" > "$tmp/assigned_sorted"
 dupfiles=$(uniq -d "$tmp/assigned_sorted")
 if [ -n "$dupfiles" ]; then
@@ -94,18 +99,23 @@ fi
 missing=""
 while read -r f; do
   [ -n "$f" ] || continue
-  if [ ! -f "conformance/stdlib/$f" ]; then missing="$missing $f"; fi
+  if [ ! -f "conformance/$f" ]; then missing="$missing $f"; fi
 done < "$tmp/assigned"
 if [ -n "$missing" ]; then
   echo "check-fixture-shard-manifest: manifest row(s) naming a corpus file that does not exist —"
-  for f in $missing; do echo "    conformance/stdlib/$f"; done
+  for f in $missing; do echo "    conformance/$f"; done
   fail=1
 fi
 
-# the corpus the walk actually discovers: conformance/stdlib/*.cxd + extended
+# The corpus the walk actually discovers — derived, never listed, so a NEW
+# .cxd in any of these directories is unassigned the moment it lands. Kept in
+# step with fixtures_grader's corpus_dirs / corpus_loose.
 {
-  for f in conformance/stdlib/*.cxd; do basename "$f"; done
-  echo "../extended.cxd"
+  for d in stdlib platform x xap; do
+    for f in conformance/$d/*.cxd; do [ -e "$f" ] && echo "$d/$(basename "$f")"; done
+  done
+  echo "extended.cxd"
+  echo "xml_codec.cxd"
 } | sort > "$tmp/corpus"
 uniq "$tmp/assigned_sorted" > "$tmp/assigned_uniq"
 
@@ -114,7 +124,7 @@ if [ -n "$unassigned" ]; then
   echo "check-fixture-shard-manifest: corpus file(s) in NO shard —"
   echo "  a .cxd graded by nothing is a green that guards nothing. Add each to a"
   echo "  shard in $MANIFEST (and re-measure if the shard's budget is spent):"
-  for f in $unassigned; do echo "    conformance/stdlib/$f"; done
+  for f in $unassigned; do echo "    conformance/$f"; done
   fail=1
 fi
 

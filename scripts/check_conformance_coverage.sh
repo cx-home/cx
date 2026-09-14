@@ -36,17 +36,26 @@ trap 'rm -f "$claims"' EXIT
 grep -oE "'\.\./conformance/[A-Za-z0-9_./-]+\.cxd'" "$runner" | sed -E "s#'\.\./##; s#'##" | while IFS= read -r s; do
   printf '%s\t%s\n' "$s" "test-vcx-conform (conform-all: $runner)"
 done >> "$claims"
-# 2. the eval step (in-code fixtures): code.cxd + every conformance/stdlib/*.cxd
+# 2. the eval step (in-code fixtures): code.cxd + every module corpus. #1427-c
+#    split that corpus into the ring-legible directories the specs sit in, so
+#    the walk is the UNION of them plus the two suites that belong to no ring
+#    directory — extended.cxd (#1379) and the ring-0 codec suite xml_codec.cxd,
+#    which is the file conformance/xml_codec.cxd became. A glob left on
+#    stdlib/ alone would leave 35 suites unclaimed here, which is the failure
+#    this step exists to raise.
+#
+#    #1448 (RULED: 1448-a): that union is graded by the SHARD test files, not
+#    by code_eval_fixtures_test.v, which keeps code.cxd, the packages and the
+#    four fast-path differs. Which shard grades which corpus file is
+#    conformance/fixture_shards.cxd's business, and check-fixture-shard-manifest
+#    refuses a file in no shard or in two -- so the claim names the step that
+#    runs them all and the guard that holds the partition complete. A map that
+#    names the wrong step is worse than no map, because it is believed (the
+#    2026-09-08 note above), and "code_eval_fixtures_test.v" would now be
+#    exactly that.
 printf '%s\t%s\n' "conformance/code.cxd" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_test.v: parse_all_code_fixtures) or 'make fixtures'; also test-vcx-resilience-matrix and test-vcx-services, which run that file by name" >> "$claims"
-# #1448 (RULED: 1448-a): the stdlib corpus is graded by the SHARD test files,
-# not by code_eval_fixtures_test.v. Which shard grades which module file is
-# conformance/fixture_shards.cxd's business and `check-fixture-shard-manifest`
-# refuses a file in no shard or in two -- so the claim here is the step that
-# runs them all, and the guard that holds the partition complete. A map that
-# names the wrong step is worse than no map, because it is believed (the 2026-09-08
-# note below), and "code_eval_fixtures_test.v" would now be exactly that.
-for f in conformance/stdlib/*.cxd; do printf '%s\t%s\n' "$f" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_shard_<k>_test.v, partitioned by conformance/fixture_shards.cxd and held complete by check-fixture-shard-manifest) or 'make fixtures'"; done >> "$claims"
-printf '%s\t%s\n' "conformance/fixture_shards.cxd" "POLICY -- the partition of the stdlib corpus across the grader's shard test files, validated by check-fixture-shard-manifest (not a fixture suite)" >> "$claims"
+for f in conformance/stdlib/*.cxd conformance/platform/*.cxd conformance/x/*.cxd conformance/xap/*.cxd conformance/extended.cxd conformance/xml_codec.cxd; do printf '%s\t%s\n' "$f" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_shard_<k>_test.v, partitioned by conformance/fixture_shards.cxd and held complete by check-fixture-shard-manifest) or 'make fixtures'"; done >> "$claims"
+printf '%s\t%s\n' "conformance/fixture_shards.cxd" "POLICY -- the partition of the module corpus across the grader's shard test files, validated by check-fixture-shard-manifest (not a fixture suite)" >> "$claims"
 # 3. dedicated runners / steps
 {
   printf '%s\t%s\n' "conformance/diff.cxd" "test-vcx-conform (conform-diff: tests/runners/diff_lint/diff_lint_conform.v)"
