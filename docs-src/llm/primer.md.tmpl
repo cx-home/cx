@@ -508,8 +508,11 @@ A def is a first-class value, usable wherever a function is:
 
 ### Import with `[?lib]`
 
-`cx-stdlib/…` is the frozen standard set; `cx-x/…` is the experimental tier
-and says so in the import line. `as=` renames.
+`cx-stdlib/…` is the frozen standard set's **Ring 1** — pure or purely local;
+`cx-platform/…` is its **Ring 2** — the modules that serve, or that reach a
+store or a protocol. Both are bundled in the binary and both are frozen; the
+prefix tells you which ring a line reaches. `cx-x/…` is the experimental tier
+and says so in the import line too. `as=` renames.
 
 {{EXAMPLE:strings-001-upper block}}
 
@@ -733,11 +736,24 @@ The bundled set, projected from each module's own documentation. **If a module
 is not in this table it does not exist** — the most expensive mistake an
 assistant makes with a young language is inventing a plausible module name.
 
-### Standard tier — `[?lib 'cx-stdlib/<name>']`
+### Standard tier, Ring 1 — `[?lib 'cx-stdlib/<name>']`
+
+Pure or purely local: no serving, no store, no protocol. A Ring-1 module never
+imports a Ring-2 one.
 
 | Module | Scope |
 |---|---|
 {{MODULES:stdlib}}
+
+### Standard tier, Ring 2 — `[?lib 'cx-platform/<name>']`
+
+The modules that SERVE, or that reach a store or a protocol. Bundled and
+frozen exactly as Ring 1 is; the separate prefix is what makes the reach
+visible in the import line.
+
+| Module | Scope |
+|---|---|
+{{MODULES:platform}}
 
 ### Experimental tier — `[?lib 'cx-x/<name>']`
 

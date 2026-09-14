@@ -1,4 +1,4 @@
-// `cx flow` — the LOCAL PROFILE of cx-stdlib/flow (flow.md §4.15; RULED:
+// `cx flow` — the LOCAL PROFILE of cx-platform/flow (flow.md §4.15; RULED:
 // 1265-PD-1, ledger/rulings_2026_09_04_flow_w1_cli_1265.md).
 //
 // A flow document is DATA: it names its acts by qualified name and carries no
@@ -71,7 +71,7 @@ const flow_cli_usage = [
 	'       cx flow diagram  FLOW.cx [--level=min|compact|full]',
 	'       cx flow watch    FLOW.cx RUN-ID --journal URL [--level=RUNG] [--for D]',
 	'',
-	'The local profile of cx-stdlib/flow (std-lib/flow.md §4.15) and its STANDALONE',
+	'The local profile of cx-platform/flow (platform/flow.md §4.15) and its STANDALONE',
 	'RUNNER (§4.23). `run` is a journal, never a service: there is no engine to',
 	'start — a run is a journaled record and the runner is a pure function this',
 	'process evaluates. `serve` is the long-running form of the SAME law, so that',
@@ -657,10 +657,10 @@ fn run_flow(args []string) {
 // flow_cli_prelude is the driver's own module set, aliased so it can never
 // clash with anything ENV.cx imports under a name of its own.
 fn flow_cli_prelude(with_journal bool) string {
-	mut b := ["[?lib 'cx-stdlib/flow' :as cxflow]"]
+	mut b := ["[?lib 'cx-platform/flow' :as cxflow]"]
 	if with_journal {
-		b << "[?lib 'cx-stdlib/store' :as cxstore]"
-		b << "[?lib 'cx-stdlib/journal' :as cxjournal]"
+		b << "[?lib 'cx-platform/store' :as cxstore]"
+		b << "[?lib 'cx-platform/journal' :as cxjournal]"
 		// the boot re-arm's report goes to the LOG SINK, not to stdout: a
 		// run's answer is its record (§4.11), and `cx flow serve` already
 		// reports its own boot re-arm exactly this way.

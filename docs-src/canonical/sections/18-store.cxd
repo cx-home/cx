@@ -2,7 +2,7 @@
    workflow, git-porcelain and replication, the service tier, the XSP
    store profile + gRPC-edge transports, security/encryption, the
    management console. Spec home:
-   the store spec (spec/03-approved/std-lib/store.md); operator docs:
+   the store spec (spec/03-approved/platform/store.md); operator docs:
    docs/dev/store-*.md (runtime-verified). Every command and output on
    this page was run against the branch-head binary before it landed
    here (issue #425 coverage gap: store platform user guide). #]
@@ -16,7 +16,7 @@
        SQLite file, an S3 bucket, or a production daemon — you pick the
        substrate with a URL at open time and nothing else changes. It
        is specified in the store spec
-       (`spec/03-approved/std-lib/store.md`); this section teaches the
+       (`spec/03-approved/platform/store.md`); this section teaches the
        workflow. The per-function API reference is the `store` module
        page in the Standard library section of this guide, and the
        operator-depth documents live under `docs/dev/` in the
@@ -32,7 +32,7 @@
          verifiable by construction and identical content stores
          exactly once — dedup is free, not a feature:"""]
     [example lang=cx
-      """[?lib 'cx-stdlib/store' :as store]
+      """[?lib 'cx-platform/store' :as store]
 [?let [= $s [$store:open 'mem://']]
       [= $h [$store:put-doc $s [order [id 1] [amt 100]]]]
       [= $again [$store:put-doc $s [order [id 1] [amt 100]]]]
@@ -55,7 +55,7 @@
          key — so alpha-equivalent definitions share one claim while
          each spelling keeps its own byte-exact address:"""]
     [example lang=cx
-      """[?lib 'cx-stdlib/store' :as store]
+      """[?lib 'cx-platform/store' :as store]
 [?let [= $s [$store:open 'mem://']]
       [= $src '[?def double ($x) [* $x 2]]']
       [= $back [$store:get-blob $s [$store:put-blob $s $src]]]
@@ -87,7 +87,7 @@
 
   [child id=store-embedded n=18.2 title='The embedded workflow'
     [body
-      """`cx-stdlib/store` is the embedded tier — the store runs inside
+      """`cx-platform/store` is the embedded tier — the store runs inside
          your process. Documents are immutable; "the latest X" lives in
          a separate **alias layer** that maps names to hashes, which is
          the one mutable surface. Updating means storing a new document
@@ -95,7 +95,7 @@
          `[?modify]` action server-side-shaped and returns the new
          hash) and re-pointing the name:"""]
     [example lang=cx
-      """[?lib 'cx-stdlib/store' :as store]
+      """[?lib 'cx-platform/store' :as store]
 [?let [= $s [$store:open 'mem://']]
       [= $v1 [$store:put-doc $s [config [retries 3]]]]
       [= $v2 [$store:modify-doc $s $v1 [set-attr name=env value='prod']]]
@@ -110,7 +110,7 @@
          ever overwritten. Across the whole corpus, `query` runs a
          CXPath selection over every held document:"""]
     [example lang=cx
-      """[?lib 'cx-stdlib/store' :as store]
+      """[?lib 'cx-platform/store' :as store]
 [?let [= $s [$store:open 'mem://']]
       [= $h1 [$store:put-doc $s [invoice [total 120] [customer 'ada']]]]
       [= $h2 [$store:put-doc $s [invoice [total 80] [customer 'grace']]]]
@@ -123,7 +123,7 @@
          self-describing (options are declared at create, not repeated
          at open):"""]
     [example lang=cx
-      """[?lib 'cx-stdlib/store' :as store]
+      """[?lib 'cx-platform/store' :as store]
 [?let [= $s [$store:open 'file:///tmp/notes-store']]
   [$store:put-doc $s [note [text 'durable']]]]"""]
     [example lang=sh
@@ -146,7 +146,7 @@
       """Over the content-addressed plumbing sits a deliberately
          git-shaped porcelain. Introspection and space reclamation:"""]
     [example lang=cx
-      """[?lib 'cx-stdlib/store' :as store]
+      """[?lib 'cx-platform/store' :as store]
 [?let [= $s [$store:open 'mem://']]
       [= $h1 [$store:put-doc $s [doc [v 1]]]]
       [= $h2 [$store:put-doc $s [doc [v 2]]]]
@@ -169,7 +169,7 @@
          objects move), idempotent, and conflict-free — no CAS is
          needed on doc keys:"""]
     [example lang=cx
-      """[?lib 'cx-stdlib/store' :as store]
+      """[?lib 'cx-platform/store' :as store]
 [?let [= $laptop [$store:open 'mem://']]
       [= $h [$store:put-doc $laptop [doc [item 'hello']]]]
       [= $backup [$store:open 'mem://']]
@@ -228,7 +228,7 @@ ready"""]
          `cx-store+xsp://` is the cleartext-dev sibling) is a named
          remote store with the identical API:"""]
     [example lang=cx
-      """[?lib 'cx-stdlib/store' :as store]
+      """[?lib 'cx-platform/store' :as store]
 [?let [= $remote [$store:open 'cx-store+xsp://127.0.0.1:18971/docs/']]
       [= $h [$store:put-doc $remote [doc [title 'over the wire']]]]
   [$store:get-doc $remote $h]]"""]
@@ -263,7 +263,7 @@ ready"""]
          same ops, same semantics, same error codes:"""]
     [table
       [tr [th 'transport'] [th 'client URL scheme'] [th 'role']]
-      [tr [td 'XSP store profile'] [td 'cx-store:// (TLS) · cx-store+xsp:// (cleartext dev)'] [td 'THE CX-to-CX store wire (spec/03-approved/std-lib/store.md §6.4)']]
+      [tr [td 'XSP store profile'] [td 'cx-store:// (TLS) · cx-store+xsp:// (cleartext dev)'] [td 'THE CX-to-CX store wire (spec/03-approved/platform/store.md §6.4)']]
       [tr [td 'gRPC — HTTP/2 + protobuf'] [td 'cx-store+grpc:// (TLS: cx-store+grpcs://)'] [td 'the integration edge for gRPC-speaking systems — opt-in second listener ([grpc enabled=true addr=…]) with normative profile parity and per-call XSP-AUTH (spec/03-approved/misc/cxstore-grpc.md)']]]
     [body
       """Only the scheme on `[$store:open]` changes — a client cannot
@@ -304,7 +304,7 @@ ready"""]
          replication are unchanged; only the bytes on the substrate are
          ciphertext:"""]
     [example lang=cx
-      """[?lib 'cx-stdlib/store' :as store]
+      """[?lib 'cx-platform/store' :as store]
 [?let [= $s [$store:open-opts 'file:///tmp/sealed-store' [map encrypt-key-id='tenant-a']]]
       [= $h [$store:put-doc $s [secret-plan [step 'first']]]]
   [$store:get-doc $s $h]]"""]
@@ -324,7 +324,7 @@ ready"""]
        docs-example gate would count as a failure; the output below is
        pinned from a live run. ]
     [example lang=cx check=none
-      """[?lib 'cx-stdlib/store' :as store]
+      """[?lib 'cx-platform/store' :as store]
 [$store:open-opts 'mem://' [map encrypt-key-id='tenant-a']]"""]
     [output
       """[err code=cx-err:CXER1100 message='E_STORE_UNRESOLVED_BACKEND: encryption-at-rest (encrypt-key-id) is supported on the sealing substrates — `file://…` (pack, the default), `file://…?encoding=object-per-key`, `sqlite://…`, or `s3://…` (got scheme=mem); refusing to store plaintext for mem://']"""]

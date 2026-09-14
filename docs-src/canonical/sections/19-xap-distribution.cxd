@@ -179,9 +179,9 @@
        below. ]
     [example lang=cx check=none
       """[?lib 'cx-xap' :as xap]
-[?lib 'cx-stdlib/store' :as store]
+[?lib 'cx-platform/store' :as store]
 [?lib 'cx-stdlib/crypto' :as crypto]
-[?lib 'cx-stdlib/did' :as did]
+[?lib 'cx-platform/did' :as did]
 [?let [= $reg [$store:open 'mem://']]
       [= $kp [$crypto:ed25519-keypair]]
       [= $pub [$did:key-create $kp@public]]
@@ -244,7 +244,7 @@
          lists `gtin@0.1.0`), was run live for this page:"""]
     [example lang=cx
       """[?lib 'cx-xap' :as xap]
-[?lib 'cx-stdlib/store' :as store]
+[?lib 'cx-platform/store' :as store]
 [?let [= $reg [$store:open-opts 'file://registry/store'
                                 [map read-only='true']]]
       [= $v [$xap:pkg-verify $reg 'gtin@0.1.0']]
@@ -265,7 +265,7 @@
        pinned below. ]
     [example lang=cx check=none
       """[?lib 'cx-xap' :as xap]
-[?lib 'cx-stdlib/store' :as store]
+[?lib 'cx-platform/store' :as store]
 [?let [= $reg [publish geo-utils@0.1.0 as in the previous subsection]]
       [= $xap0 [xap name=my-app version='0.0.1' [features]]]
       [= $done [$xap:pkg-install $xap0 $reg 'geo-utils@0.1.0']]
@@ -327,7 +327,7 @@ true"""]
     [example lang=cx
       """[?lib 'cx-xap' :as xap]
 [?lib 'cx-stdlib/crypto' :as crypto]
-[?lib 'cx-stdlib/did' :as did]
+[?lib 'cx-platform/did' :as did]
 [?let [= $kp [$crypto:ed25519-keypair]]
       [= $publisher [$did:key-create $kp@public]]
       [= $vc [$xap:license-issue $publisher $kp@private 'principal:alice'
@@ -353,7 +353,7 @@ true"""]
     [example lang=cx
       """[?lib 'cx-xap' :as xap]
 [?lib 'cx-stdlib/crypto' :as crypto]
-[?lib 'cx-stdlib/did' :as did]
+[?lib 'cx-platform/did' :as did]
 [?let [= $kp [$crypto:ed25519-keypair]]
       [= $publisher [$did:key-create $kp@public]]
       [= $vc [$xap:license-issue $publisher $kp@private 'principal:vessel-1'

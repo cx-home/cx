@@ -372,7 +372,7 @@ the capability-free substrate, which is why this runs with no grants at all:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [doc [item "hello"]]]] [$store:get-doc $s $h]]
 ```
 
@@ -1298,8 +1298,11 @@ $ cx prog.cx
 
 ### Import with `[?lib]`
 
-`cx-stdlib/…` is the frozen standard set; `cx-x/…` is the experimental tier
-and says so in the import line. `as=` renames.
+`cx-stdlib/…` is the frozen standard set's **Ring 1** — pure or purely local;
+`cx-platform/…` is its **Ring 2** — the modules that serve, or that reach a
+store or a protocol. Both are bundled in the binary and both are frozen; the
+prefix tells you which ring a line reaches. `cx-x/…` is the experimental tier
+and says so in the import line too. `as=` renames.
 
 `prog.cx`
 ```cx
@@ -1687,7 +1690,7 @@ document containing an `[err]` at any depth out of the program:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]]
       [= $rows ([row [v 2.5]], [err code=cx-err:CXER0100 message="a refusal at rest"], [row [v 4.5]])]
   [$store:put-doc $s [report [count [$count $rows]] [?splice $rows]]]]
@@ -1715,7 +1718,7 @@ verbs, an attribute on `[response]` / `[sse-subscribe]`:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]]
       [= $h [$store:put-doc $s [report [err code=cx-err:CXER0100 message="stored deliberately"]] {errs: :permit}]]
   [$store:get-doc $s $h]]
@@ -1805,40 +1808,33 @@ The bundled set, projected from each module's own documentation. **If a module
 is not in this table it does not exist** — the most expensive mistake an
 assistant makes with a young language is inventing a plausible module name.
 
-### Standard tier — `[?lib 'cx-stdlib/<name>']`
+### Standard tier, Ring 1 — `[?lib 'cx-stdlib/<name>']`
+
+Pure or purely local: no serving, no store, no protocol. A Ring-1 module never
+imports a Ring-2 one.
 
 | Module | Scope |
 |---|---|
-| `audit` | The audit sink: the one durable, attributed, append-only, queryable record of what the platform did, who asked, under whose authority, on what, and what was decided. |
-| `authz` | The XAP authority model as data plus a single decision function. |
-| `bus` | In-process publish/subscribe that delivers each published message to its matching subscribers synchronously and in a defined order. |
 | `bytes` | Byte-level operations on the CX bytes scalar kind. |
 | `crypto` | Operations involving a key, a secret, or authentication. |
 | `csv` | Parse and emit CSV/TSV following RFC 4180 with Excel-pragmatic extensions. |
 | `diagram` | The §10.1.2 reference diagram renderer as a pure CX program (RULED #758, DR-1…DR-11). |
-| `did` | Decentralized identifiers (DIDs): the decentralized identity source that identifies a principal, counterpart to crypto's centralized JWT/JWKS. |
 | `email` | Parse and build RFC 5322 + MIME multipart email messages. |
 | `env` | Expose process-level metadata to CX code: environment variables, command-line arguments, and process identity. |
-| `fabric` | Platform-level eventing over the shipped primitives: one subscribe/emit surface with an explicit durability axis. |
-| `flow` | General workflow on the saga substrate: flows as documents, runs as journaled records, and a runner that is a pure function rather than an engine. |
 | `format` | Emit CX values back to CX text in four forms: canonical, pretty, compact, and diff-friendly. |
 | `fp` | Functional composition over the four value channels. |
 | `ft` | In-program fulltext search with structured ranking and snippet generation. |
 | `geo` | Coordinate primitives without a new scalar kind — geometries are ordinary CXDM elements. |
 | `hash` | Content-addressable hashing — fixed-length digests of arbitrary byte payloads. |
 | `html` | HTML as a first-class document format: parse, sanitize, serialize, and extract text. |
-| `http` | HTTP/1.1 request/response semantics: a programmatic client and server built on the `cx-stdlib/net` transport. |
+| `http-client` | HTTP/1.1 request/response semantics from the CLIENT side, plus the message codec both halves of HTTP share: method verbs, headers, materialized bodies, redirects, content decoding, connection pooling, and the Server-Sent Events read side. |
 | `i18n` | The message and translation layer of CX's internationalization surface. |
-| `imap` | Both halves of IMAP4rev2 (RFC 9051) on one token grammar: the client an agent or a human client reads a mailbox with, and the server core a CX process serves a mailbox from. |
 | `io` | File and stream I/O — whole-file reads and writes, streaming handles, line iteration, filesystem queries, directory operations, globbing, tempfiles, and advisory file locking. |
-| `journal` | An append-only, hash-chained, tenant-partitioned event log and the deterministic projection of that log into state. |
 | `json` | Parse JSON (RFC 8259) into CXDM values and emit CXDM values back to JSON. |
-| `live` | The live modes over the one planar comprehension: the same quoted `[?for]` that runs once as a query is also a delta feed. |
 | `locale` | The primitives layer of CX's internationalization surface. |
 | `log` | Structured logging: leveled emit with arbitrary structured fields. |
 | `math` | Numeric utilities over CX int and float scalar kinds. |
 | `mime` | MIME data-shape handling: a built-in extension-to-type registry, Content-Type and Content-Disposition parsing, multipart boundary generation, type classification, and Accept-header content negotiation. |
-| `net` | Transport-level (L4) networking: opening and accepting stream connections (TCP, Unix-stream, TLS), exchanging datagrams (UDP, Unix-datagram, DTLS), name resolution, and TLS upgrade or termination. |
 | `oidc` | The OpenID Connect relying party: the login half of enterprise SSO. |
 | `path` | Filesystem path manipulation — splitting, joining, normalizing, and comparing OS paths. |
 | `process` | Run child processes: spawn them, capture their output, stream their stdio, connect them into pipelines, deliver signals, manage process groups, and drive pseudo-terminals. |
@@ -1846,14 +1842,10 @@ assistant makes with a young language is inventing a plausible module name.
 | `random` | Two distinct randomness facilities, kept cleanly separated so PRNG output can never accidentally stand in for crypto. |
 | `re` | Regular expressions backed by the RE2 engine, guaranteeing linear-time matching against any input with no catastrophic backtracking. |
 | `saml` | The SAML 2.0 service-provider verify core: XML-DSig verification and assertion validation as a pure codec, the enterprise counterpart to cx-stdlib/oidc. |
-| `sasl` | The SASL mechanism registry and framing codec, shared by cx-stdlib/smtp and cx-stdlib/imap. |
+| `sasl` | The SASL mechanism registry and framing codec, shared by cx-platform/smtp and cx-platform/imap. |
 | `sched` | Scheduled events and timers on the event loop. |
 | `scim` | SCIM 2.0 provisioning semantics — the PROVISIONING half of enterprise SSO, counterpart to cx-stdlib/oidc's login half. |
-| `session` | The server-held (principal, tenant) session for a web app. |
 | `similar` | Graded comparison as a generalization of exact equality: where = returns a boolean, the core ~ operator returns a score in [0,1] plus evidence, and a decision policy maps the score to :match / :review / :no-match bands. |
-| `smtp` | Both halves of ESMTP on one wire grammar: the submission client a CX program sends mail with (RFC 6409) and the receive server core it accepts mail with (RFC 5321 §4). |
-| `sso` | The enterprise-SSO deployment surface: the half of enterprise single sign-on that RECEIVES a request. |
-| `store` | A content-addressed object store with URL-dispatched backends. |
 | `strings` | String inspection, search, and transformation for general text work. |
 | `supervise` | Restart policies over monitored workers: run a set of named children (each an arity-0 callable spawned as a worker) under a declared policy — strategy (:one-for-one, :one-for-all, :rest-for-one), restart intensity (max-restarts within a window), and per-child exponential backoff — restarting them when they die according to each child's restart type (:permanent, :transient, :temporary). |
 | `tar` | Tar archive codec over the CX bytes scalar kind. |
@@ -1862,10 +1854,32 @@ assistant makes with a young language is inventing a plausible module name.
 | `url` | RFC 3986 and WHATWG-URL-aligned URL parsing, building, and component encoding. |
 | `uuid` | Generate, parse, format, and validate Universally Unique Identifiers. |
 | `validate` | Validate a CX data record against a record-schema at runtime, in the    JSON-Schema / pydantic style. |
-| `vc` | Verifiable credentials: portable, signed, attenuating delegations that carry authority between DIDs and verify offline (the §22.2 delegation transport, counterpart to `did` for identity). |
-| `xap` | The XAP orchestrator — the experience layer at the top of the CX web    stack. |
-| `xsp` | The XAP Stream Protocol frame codec — a self-describing, self-delimiting frame [version · type · stream-id · principal-DID · flags · len · payload] that carries XAP over any transport. |
 | `zip` | Zip archive codec over the CX bytes scalar kind. |
+
+### Standard tier, Ring 2 — `[?lib 'cx-platform/<name>']`
+
+The modules that SERVE, or that reach a store or a protocol. Bundled and
+frozen exactly as Ring 1 is; the separate prefix is what makes the reach
+visible in the import line.
+
+| Module | Scope |
+|---|---|
+| `audit` | The audit sink: the one durable, attributed, append-only, queryable record of what the platform did, who asked, under whose authority, on what, and what was decided. |
+| `authz` | The XAP authority model as data plus a single decision function. |
+| `bus` | In-process publish/subscribe that delivers each published message to its matching subscribers synchronously and in a defined order. |
+| `did` | Decentralized identifiers (DIDs): the decentralized identity source that identifies a principal, counterpart to crypto's centralized JWT/JWKS. |
+| `flow` | General workflow on the saga substrate: flows as documents, runs as journaled records, and a runner that is a pure function rather than an engine. |
+| `http` | The HTTP/1.1 SERVER: an event-loop accept/respond surface over the `cx-platform/net` transport, with Server-Sent Events streaming for held-open push. |
+| `imap` | Both halves of IMAP4rev2 (RFC 9051) on one token grammar: the client an agent or a human client reads a mailbox with, and the server core a CX process serves a mailbox from. |
+| `journal` | An append-only, hash-chained, tenant-partitioned event log and the deterministic projection of that log into state. |
+| `live` | The live modes over the one planar comprehension: the same quoted `[?for]` that runs once as a query is also a delta feed. |
+| `net` | Transport-level (L4) networking: opening and accepting stream connections (TCP, Unix-stream, TLS), exchanging datagrams (UDP, Unix-datagram, DTLS), name resolution, and TLS upgrade or termination. |
+| `session` | The server-held (principal, tenant) session for a web app. |
+| `smtp` | Both halves of ESMTP on one wire grammar: the submission client a CX program sends mail with (RFC 6409) and the receive server core it accepts mail with (RFC 5321 §4). |
+| `sso` | The enterprise-SSO deployment surface: the half of enterprise single sign-on that RECEIVES a request. |
+| `store` | A content-addressed object store with URL-dispatched backends. |
+| `vc` | Verifiable credentials: portable, signed, attenuating delegations that carry authority between DIDs and verify offline (the §22.2 delegation transport, counterpart to `did` for identity). |
+| `xsp` | The XAP Stream Protocol frame codec — a self-describing, self-delimiting frame [version · type · stream-id · principal-DID · flags · len · payload] that carries XAP over any transport. |
 
 ### Experimental tier — `[?lib 'cx-x/<name>']`
 
@@ -1874,18 +1888,18 @@ import line says so out loud.
 
 | Module | Scope |
 |---|---|
-| `a2a-xap` | A2A tasks over the xap substrate (EXPERIMENTAL x/ tier, #6 Y2b). |
 | `a2a` | A minimal A2A (Agent-to-Agent) protocol client (EXPERIMENTAL x/ tier, #6    Y2) — completing the agentic triad (S9 MCP client, Y1 MCP server, Y2 A2A) on the    shared substrate (jsonrpc + http + json), no new transport. |
+| `a2a-xap` | A2A tasks over the xap substrate (EXPERIMENTAL x/ tier, #6 Y2b). |
 | `adjudicate` | Out-of-band agent adjudicator for the similar review band (EXPERIMENTAL    x/ tier; cx-private #376, similar.md §5.3 ruling Q4). |
 | `llm` | A minimal LLM provider (EXPERIMENTAL x/ tier, #6 D2/S10) — the first    Runnable. |
-| `mcp-server` | Minimal MCP server helpers (EXPERIMENTAL x/ tier, #6 Y1; stream 18) — the    server counterpart to cx-x/mcp, at the 2025-06-18 protocol revision (one    target). |
 | `mcp` | A minimal MCP (Model Context Protocol) client (EXPERIMENTAL x/ tier, #6    S9). |
+| `mcp-server` | Minimal MCP server helpers (EXPERIMENTAL x/ tier, #6 Y1; stream 18) — the    server counterpart to cx-x/mcp, at the 2025-06-18 protocol revision (one    target). |
 | `run` | The Runnable convention + combinator library (EXPERIMENTAL x/ tier, #6    D2/M2). |
 | `term` | Native raw-mode terminal input for interactive TUIs (EXPERIMENTAL x/    tier, #30). |
 | `tools` | The agent-tool projection (EXPERIMENTAL x/ tier; stream 18): ONE    tool-descriptor model derived from command definitions ([effects]-bearing    [?def]s — clause presence is the discriminator) at list time, no    materialized manifest. |
+| `ux` | The SEMANTIC CORE of the UX projection (EXPERIMENTAL x/ tier;    #787): the vocabulary, the fragment addressing, the validation, the three    projections (command→form, query→table, feature-grammar→form/columns), the    hint claims, the patch algebra a live feed lowers onto, and the surface    document's routing correspondence. |
 | `ux-tui` | The TERMINAL RENDERER of the UX projection (EXPERIMENTAL x/ tier;    #787 W5): the second of two peers over `cx-x/ux`'s semantic vocabulary, and    the reason R5's renderer-agnostic claim is testable rather than asserted. |
 | `ux-web` | The WEB RENDERER of the UX projection (EXPERIMENTAL x/ tier;    #787): one of two peers over `cx-x/ux`'s semantic vocabulary, not the    privileged one. |
-| `ux` | The SEMANTIC CORE of the UX projection (EXPERIMENTAL x/ tier;    #787): the vocabulary, the fragment addressing, the validation, the three    projections (command→form, query→table, feature-grammar→form/columns), the    hint claims, the patch algebra a live feed lowers onto, and the surface    document's routing correspondence. |
 
 ### Five you will reach for immediately
 
@@ -3532,36 +3546,26 @@ $ cx prog.cx
 
 | Module | Scope |
 |---|---|
-| `audit` | The audit sink: the one durable, attributed, append-only, queryable record of what the platform did, who asked, under whose authority, on what, and what was decided. |
-| `authz` | The XAP authority model as data plus a single decision function. |
-| `bus` | In-process publish/subscribe that delivers each published message to its matching subscribers synchronously and in a defined order. |
 | `bytes` | Byte-level operations on the CX bytes scalar kind. |
 | `crypto` | Operations involving a key, a secret, or authentication. |
 | `csv` | Parse and emit CSV/TSV following RFC 4180 with Excel-pragmatic extensions. |
 | `diagram` | The §10.1.2 reference diagram renderer as a pure CX program (RULED #758, DR-1…DR-11). |
-| `did` | Decentralized identifiers (DIDs): the decentralized identity source that identifies a principal, counterpart to crypto's centralized JWT/JWKS. |
 | `email` | Parse and build RFC 5322 + MIME multipart email messages. |
 | `env` | Expose process-level metadata to CX code: environment variables, command-line arguments, and process identity. |
-| `fabric` | Platform-level eventing over the shipped primitives: one subscribe/emit surface with an explicit durability axis. |
-| `flow` | General workflow on the saga substrate: flows as documents, runs as journaled records, and a runner that is a pure function rather than an engine. |
 | `format` | Emit CX values back to CX text in four forms: canonical, pretty, compact, and diff-friendly. |
 | `fp` | Functional composition over the four value channels. |
 | `ft` | In-program fulltext search with structured ranking and snippet generation. |
 | `geo` | Coordinate primitives without a new scalar kind — geometries are ordinary CXDM elements. |
 | `hash` | Content-addressable hashing — fixed-length digests of arbitrary byte payloads. |
 | `html` | HTML as a first-class document format: parse, sanitize, serialize, and extract text. |
-| `http` | HTTP/1.1 request/response semantics: a programmatic client and server built on the `cx-stdlib/net` transport. |
+| `http-client` | HTTP/1.1 request/response semantics from the CLIENT side, plus the message codec both halves of HTTP share: method verbs, headers, materialized bodies, redirects, content decoding, connection pooling, and the Server-Sent Events read side. |
 | `i18n` | The message and translation layer of CX's internationalization surface. |
-| `imap` | Both halves of IMAP4rev2 (RFC 9051) on one token grammar: the client an agent or a human client reads a mailbox with, and the server core a CX process serves a mailbox from. |
 | `io` | File and stream I/O — whole-file reads and writes, streaming handles, line iteration, filesystem queries, directory operations, globbing, tempfiles, and advisory file locking. |
-| `journal` | An append-only, hash-chained, tenant-partitioned event log and the deterministic projection of that log into state. |
 | `json` | Parse JSON (RFC 8259) into CXDM values and emit CXDM values back to JSON. |
-| `live` | The live modes over the one planar comprehension: the same quoted `[?for]` that runs once as a query is also a delta feed. |
 | `locale` | The primitives layer of CX's internationalization surface. |
 | `log` | Structured logging: leveled emit with arbitrary structured fields. |
 | `math` | Numeric utilities over CX int and float scalar kinds. |
 | `mime` | MIME data-shape handling: a built-in extension-to-type registry, Content-Type and Content-Disposition parsing, multipart boundary generation, type classification, and Accept-header content negotiation. |
-| `net` | Transport-level (L4) networking: opening and accepting stream connections (TCP, Unix-stream, TLS), exchanging datagrams (UDP, Unix-datagram, DTLS), name resolution, and TLS upgrade or termination. |
 | `oidc` | The OpenID Connect relying party: the login half of enterprise SSO. |
 | `path` | Filesystem path manipulation — splitting, joining, normalizing, and comparing OS paths. |
 | `process` | Run child processes: spawn them, capture their output, stream their stdio, connect them into pipelines, deliver signals, manage process groups, and drive pseudo-terminals. |
@@ -3569,14 +3573,10 @@ $ cx prog.cx
 | `random` | Two distinct randomness facilities, kept cleanly separated so PRNG output can never accidentally stand in for crypto. |
 | `re` | Regular expressions backed by the RE2 engine, guaranteeing linear-time matching against any input with no catastrophic backtracking. |
 | `saml` | The SAML 2.0 service-provider verify core: XML-DSig verification and assertion validation as a pure codec, the enterprise counterpart to cx-stdlib/oidc. |
-| `sasl` | The SASL mechanism registry and framing codec, shared by cx-stdlib/smtp and cx-stdlib/imap. |
+| `sasl` | The SASL mechanism registry and framing codec, shared by cx-platform/smtp and cx-platform/imap. |
 | `sched` | Scheduled events and timers on the event loop. |
 | `scim` | SCIM 2.0 provisioning semantics — the PROVISIONING half of enterprise SSO, counterpart to cx-stdlib/oidc's login half. |
-| `session` | The server-held (principal, tenant) session for a web app. |
 | `similar` | Graded comparison as a generalization of exact equality: where = returns a boolean, the core ~ operator returns a score in [0,1] plus evidence, and a decision policy maps the score to :match / :review / :no-match bands. |
-| `smtp` | Both halves of ESMTP on one wire grammar: the submission client a CX program sends mail with (RFC 6409) and the receive server core it accepts mail with (RFC 5321 §4). |
-| `sso` | The enterprise-SSO deployment surface: the half of enterprise single sign-on that RECEIVES a request. |
-| `store` | A content-addressed object store with URL-dispatched backends. |
 | `strings` | String inspection, search, and transformation for general text work. |
 | `supervise` | Restart policies over monitored workers: run a set of named children (each an arity-0 callable spawned as a worker) under a declared policy — strategy (:one-for-one, :one-for-all, :rest-for-one), restart intensity (max-restarts within a window), and per-child exponential backoff — restarting them when they die according to each child's restart type (:permanent, :transient, :temporary). |
 | `tar` | Tar archive codec over the CX bytes scalar kind. |
@@ -3585,27 +3585,24 @@ $ cx prog.cx
 | `url` | RFC 3986 and WHATWG-URL-aligned URL parsing, building, and component encoding. |
 | `uuid` | Generate, parse, format, and validate Universally Unique Identifiers. |
 | `validate` | Validate a CX data record against a record-schema at runtime, in the    JSON-Schema / pydantic style. |
-| `vc` | Verifiable credentials: portable, signed, attenuating delegations that carry authority between DIDs and verify offline (the §22.2 delegation transport, counterpart to `did` for identity). |
-| `xap` | The XAP orchestrator — the experience layer at the top of the CX web    stack. |
-| `xsp` | The XAP Stream Protocol frame codec — a self-describing, self-delimiting frame [version · type · stream-id · principal-DID · flags · len · payload] that carries XAP over any transport. |
 | `zip` | Zip archive codec over the CX bytes scalar kind. |
 
 ## Experimental tier — `cx-x/<name>`
 
 | Module | Scope |
 |---|---|
-| `a2a-xap` | A2A tasks over the xap substrate (EXPERIMENTAL x/ tier, #6 Y2b). |
 | `a2a` | A minimal A2A (Agent-to-Agent) protocol client (EXPERIMENTAL x/ tier, #6    Y2) — completing the agentic triad (S9 MCP client, Y1 MCP server, Y2 A2A) on the    shared substrate (jsonrpc + http + json), no new transport. |
+| `a2a-xap` | A2A tasks over the xap substrate (EXPERIMENTAL x/ tier, #6 Y2b). |
 | `adjudicate` | Out-of-band agent adjudicator for the similar review band (EXPERIMENTAL    x/ tier; cx-private #376, similar.md §5.3 ruling Q4). |
 | `llm` | A minimal LLM provider (EXPERIMENTAL x/ tier, #6 D2/S10) — the first    Runnable. |
-| `mcp-server` | Minimal MCP server helpers (EXPERIMENTAL x/ tier, #6 Y1; stream 18) — the    server counterpart to cx-x/mcp, at the 2025-06-18 protocol revision (one    target). |
 | `mcp` | A minimal MCP (Model Context Protocol) client (EXPERIMENTAL x/ tier, #6    S9). |
+| `mcp-server` | Minimal MCP server helpers (EXPERIMENTAL x/ tier, #6 Y1; stream 18) — the    server counterpart to cx-x/mcp, at the 2025-06-18 protocol revision (one    target). |
 | `run` | The Runnable convention + combinator library (EXPERIMENTAL x/ tier, #6    D2/M2). |
 | `term` | Native raw-mode terminal input for interactive TUIs (EXPERIMENTAL x/    tier, #30). |
 | `tools` | The agent-tool projection (EXPERIMENTAL x/ tier; stream 18): ONE    tool-descriptor model derived from command definitions ([effects]-bearing    [?def]s — clause presence is the discriminator) at list time, no    materialized manifest. |
+| `ux` | The SEMANTIC CORE of the UX projection (EXPERIMENTAL x/ tier;    #787): the vocabulary, the fragment addressing, the validation, the three    projections (command→form, query→table, feature-grammar→form/columns), the    hint claims, the patch algebra a live feed lowers onto, and the surface    document's routing correspondence. |
 | `ux-tui` | The TERMINAL RENDERER of the UX projection (EXPERIMENTAL x/ tier;    #787 W5): the second of two peers over `cx-x/ux`'s semantic vocabulary, and    the reason R5's renderer-agnostic claim is testable rather than asserted. |
 | `ux-web` | The WEB RENDERER of the UX projection (EXPERIMENTAL x/ tier;    #787): one of two peers over `cx-x/ux`'s semantic vocabulary, not the    privileged one. |
-| `ux` | The SEMANTIC CORE of the UX projection (EXPERIMENTAL x/ tier;    #787): the vocabulary, the fragment addressing, the validation, the three    projections (command→form, query→table, feature-grammar→form/columns), the    hint claims, the patch algebra a live feed lowers onto, and the surface    document's routing correspondence. |
 
 ## The packs that need a capability
 
@@ -4106,7 +4103,7 @@ Subcommands (`cx <subcommand> --help` for details):
   table                Table API over [table[...]] blocks (info / dump / load).
   scaffold             Typed, commented skeleton on stdout (config/data/doc/log/table).
   xap                  XAP project tooling — scaffold (`init`) and check (`check-surface`).
-  flow                 cx-stdlib/flow: the local profile (run / validate / simulate / status / diagram) and the standalone runner (serve).
+  flow                 cx-platform/flow: the local profile (run / validate / simulate / status / diagram) and the standalone runner (serve).
   demo                 Self-contained showcase (no file I/O, no network, < 1s).
   lock                 Generate / verify cx.lock from [?lib] directives.
   lsp                  Language server (LSP) on stdio.
@@ -4964,7 +4961,7 @@ names the chain it travelled:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
@@ -4984,7 +4981,7 @@ expired:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [$authz:check $az [authz-request [actor [agent ghost]] [capability refund-duplicate] [slice '/orders/9'] [tenant acme]]]]
 ```
@@ -4996,7 +4993,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
@@ -5011,7 +5008,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
@@ -5305,7 +5302,7 @@ failing link** rather than reporting a bare denial:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
@@ -5321,7 +5318,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $dec [$authz:check $az [authz-request [actor [agent x]] [capability y] [tenant acme]]]]
   [$authz:explain $dec]]
@@ -5506,12 +5503,12 @@ principal can never collide with an inherent-authority `principal:` id.
 
 ### Sessions bind a principal, immutably
 
-Below the host, `cx-stdlib/session` binds a `(principal, tenant)` pair for the
+Below the host, `cx-platform/session` binds a `(principal, tenant)` pair for the
 session's whole life. An anonymous floor is a real principal:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/session']
+[?lib 'cx-platform/session']
 [?let [= $pair [$session:attach-guest [request scheme="https"] {anonymous-floor: "web-public" tenant: "shop"}]] [= $s [$first $pair]] [?let [= $p [$session:principal $s]] $p@id]]
 ```
 
@@ -5524,7 +5521,7 @@ web-public
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/session']
+[?lib 'cx-platform/session']
 [$session:attach-guest [request scheme="https"] {tenant: "shop"}]
 ```
 
@@ -5542,7 +5539,7 @@ decides: there is one evaluator, not a credential path running beside the
 authority path, and a credential past its time of use denies at check.
 
 Those four cases carry full RFC key vectors and are long, so they are cited
-rather than printed. Read them in `conformance/stdlib/session.cxd`:
+rather than printed. Read them in `conformance/platform/session.cxd`:
 `session-045-attach-xsp-binds-proven-principal`,
 `session-047-attach-xsp-anonymous-no-floor-rejected`,
 `session-050-present-vc-compiles-to-permit`,
@@ -5554,7 +5551,7 @@ Session ids are opaque and are **never** the raw token:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/session']
+[?lib 'cx-platform/session']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/time']
 [?lib 'cx-stdlib/strings']
@@ -5568,7 +5565,7 @@ true
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/session']
+[?lib 'cx-platform/session']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/time']
 [?let [= $pair [$session:attach-cookie [request scheme="https" [headers [header name="Authorization" value="Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6InJzYS0xIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlIiwic3ViIjoidXNlci0xIiwiYXVkIjoibXktYXBpIiwiZXhwIjoxNzAwMDAzNjAwLCJuYmYiOjE2OTk5OTk5OTAsImlhdCI6MTY5OTk5OTk5MH0.e4bn1A_a5Q0_4IZxKWipmmrUCCdmNkiTUs071mBMtMVXb68RGPtV2FTR1nRWvM3Zw2XTMuBsk_Y1HPinat_2JQkm3s90lltrErpYOky6Nwm6ha57BxQ0Sg5kWxuQF5KhWUqHzePIVDTfkr0WeN591nDTDn6VuajLaHn2pjXBsaJ0reT6mh6v40UQcBW-yy-XOfrsMeGVj_qZd1UmlE81XN957rjPENcPpH2E1SHfVhu3fQP3QZapxtdMADgWmryw_z5O2lDIIWb7miT0siXRCDjVEhDzKH6Hsf1aUPcYx9x44o1B5OBpX6z1uM1SP0qaOZu6x26H0AbHj84nIISE1A"]]] {jwks: [$crypto:jwks-parse "{\"keys\":[{\"kid\":\"rsa-1\",\"kty\":\"RSA\",\"alg\":\"RS256\",\"n\":\"jdwwBcaMZQLoSNYGNEm3l03HIQqpRIv0eqLUNUCkyv7ysVw4i6vZgdYxcdU0D3kSvUCIjH-icqk4PCDx5AwkeNp55Nqt6wKXDv9TH5pr-Wc3BWmZ1sEOEwyN8QlI8_5EpY3i1w5tysDdeFuiR7BOjpkD49RZzF0YajmocsB4_jXoZcldVNCOChXAbEfOw-BtjFJRN0N3EksymF4azkey8Q3rX07sXkRHavRfAOnowH119RL1V-Xmk_DUX8wSR-2zdlp8FxitJWPgbMmnszsTgEQrThTwsuMrndqzJ_nQ7HTnuK2LXEFmFwXw9NADspq2ZnQmZiN7CXnEYG8WCApzxw\",\"e\":\"AQAB\"}]}"] tenant-claim: "aud" now: [$time:datetime 2023 11 14 22 13 20]}]] [= $s [$first $pair]] [= $r [$session:rotate $s]] [= $s@id $r@id]]
@@ -6328,7 +6325,7 @@ the boundary, which is the only honest place. See `primer.md` §6.
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]]
       [= $rows ([row [v 2.5]], [err code=cx-err:CXER0100 message="a refusal at rest"], [row [v 4.5]])]
   [$store:put-doc $s [report [count [$count $rows]] [?splice $rows]]]]
@@ -7009,7 +7006,7 @@ Underneath, distribution supplies the immutability the pin relies on.
 (re-pointing is a market-rule violation; consumers pin hashes anyway)"*. So a
 new artifact is a new version, and a pin rollback is hash identity: "go back"
 is exact rather than approximate. (Both are pinned by
-`conformance/stdlib/xap-dist.cxd` cases `xap-dist-014-publish-released-alias-immutable`
+`conformance/xap/xap-dist.cxd` cases `xap-dist-014-publish-released-alias-immutable`
 and `xap-dist-020-pin-rollback-hash-identity`; they are cited by id rather than
 inlined here because they mint an ed25519 keypair, and this document's code
 blocks are replayed with no capability grants.)
@@ -7505,7 +7502,7 @@ plain `cx` invocation:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [doc [item "hello"]]]] [$store:get-doc $s $h]]
 ```
 
@@ -7520,7 +7517,7 @@ not of insertion order:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]] [= $h1 [$store:put-doc $s [doc [item "hello"]]]] [= $h2 [$store:put-doc $s [doc [item "hello"]]]] [= $h1 $h2]]
 ```
 
@@ -7533,7 +7530,7 @@ Two different documents cannot collide into one handle:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]] [= $h1 [$store:put-doc $s [doc [item "a"]]]] [= $h2 [$store:put-doc $s [doc [item "b"]]]] [= $h1 $h2]]
 ```
 
@@ -7548,7 +7545,7 @@ distinct answers:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]] [$store:get-doc $s "sha2-256:0000000000000000000000000000000000000000000000000000000000000000"]]
 ```
 
@@ -7559,7 +7556,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]] [$store:get-doc $s "deadbeef"]]
 ```
 
@@ -7572,7 +7569,7 @@ Aliases give a mutable name over immutable content:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [doc [item "hello"]]]] [= $a [$store:set-alias $s "latest" $h]] [$store:get-alias $s "latest"]]
 ```
 
@@ -7585,7 +7582,7 @@ A read-only store refuses writes rather than accepting and dropping them:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open-opts "mem://" [map read-only="true"]]] [$store:put-doc $s [doc [item "x"]]]]
 ```
 
@@ -7601,7 +7598,7 @@ containing an `[err]` at any depth out of the program:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]]
       [= $rows ([row [v 2.5]], [err code=cx-err:CXER0100 message="a refusal at rest"], [row [v 4.5]])]
   [$store:put-doc $s [report [count [$count $rows]] [?splice $rows]]]]
@@ -7619,7 +7616,7 @@ vehicle). Blob and byte writes are exempt by construction — bytes carry no
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]]
       [= $h [$store:put-doc $s [report [err code=cx-err:CXER0100 message="stored deliberately"]] {errs: :permit}]]
   [$store:get-doc $s $h]]
@@ -7632,7 +7629,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]]
       [= $h [$store:put-doc $s [doc [item "x"]]]]
   [$store:modify-doc $s $h [append [err code=cx-err:CXER0100 message="injected"]]]]
@@ -7655,7 +7652,7 @@ the history is verifiable rather than merely stored.
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/journal']
+[?lib 'cx-platform/journal']
 [?let [= $j [$journal:open "mem://acme" "acme"]]
   [$journal:append $j [do :refund] {actor: "ops" authority: "d-77"}]]
 ```
@@ -7667,7 +7664,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/journal']
+[?lib 'cx-platform/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
 [= $e1 [$journal:append $j [a 1] {actor: "u" authority: "g"}]]
 [= $e2 [$journal:append $j [b 2] {actor: "u" authority: "g"}]]
@@ -7683,7 +7680,7 @@ Reading past the end is absence, not an error:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/journal']
+[?lib 'cx-platform/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
   [$journal:read $j 5]]
 ```
@@ -7701,7 +7698,7 @@ separate error channel:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/http']
+[?lib 'cx-stdlib/http-client' :as http]
 [$http:status [response status=404]]
 ```
 
@@ -7712,7 +7709,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/http']
+[?lib 'cx-stdlib/http-client' :as http]
 [$http:ok [response status=404]]
 ```
 
@@ -7738,7 +7735,7 @@ admits an anonymous floor says so in its attach policy, and the floor is a
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/session']
+[?lib 'cx-platform/session']
 [?let [= $pair [$session:attach-guest [request scheme="https"] {anonymous-floor: "web-public" tenant: "shop"}]] [= $s [$first $pair]] [?let [= $p [$session:principal $s]] $p@id]]
 ```
 
@@ -7752,7 +7749,7 @@ clean typed refusal naming the policy — deny-by-default all the way down:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/session']
+[?lib 'cx-platform/session']
 [$session:attach-guest [request scheme="https"] {tenant: "shop"}]
 ```
 
@@ -7766,7 +7763,7 @@ names the chain it came through:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
@@ -7784,7 +7781,7 @@ implicit grant anywhere:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [$authz:check $az [authz-request [actor [agent ghost]] [capability refund-duplicate] [slice '/orders/9'] [tenant acme]]]]
 ```
@@ -7796,7 +7793,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
@@ -7814,7 +7811,7 @@ what makes an authority chain auditable rather than merely enforced:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
@@ -7830,7 +7827,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $dec [$authz:check $az [authz-request [actor [agent x]] [capability y] [tenant acme]]]]
   [$authz:explain $dec]]
@@ -8053,7 +8050,7 @@ tree is content-addressed, so entry order cannot change its identity:
 `prog.cx`
 ```cx
 [?lib 'cx-xap' :as xap]
-[?lib 'cx-stdlib/store' :as store]
+[?lib 'cx-platform/store' :as store]
 [?let [= $s [$store:open "mem://"]]
  [= $t1 [$xap:pkg-tree ([entry path='b.cx' 'bee'], [entry path='a.cx' 'ay'])]]
  [= $t2 [$xap:pkg-tree ([entry path='a.cx' 'ay'], [entry path='b.cx' 'bee'])]]

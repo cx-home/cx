@@ -12,7 +12,9 @@
 #      module-row validation under it silently (#721, M36);
 #   4. every [module name=X] row resolves to a real fixture, per its
 #      enclosing [suite name=S] block:
-#        S=stdlib          -> conformance/stdlib/X.cxd
+#        S=stdlib          -> conformance/{stdlib,platform,x,xap}/X.cxd — one
+#                              gate-policy suite, four directories since
+#                              #1427-c put a module's corpus in its ring's
 #        S=packages        -> packages/X/X.test.cxd
 #        S=code            -> (no module rows; the suite default governs code.cxd)
 #        S=xpath-31-parity -> (no module rows; the suite default governs
@@ -121,7 +123,7 @@ while IFS= read -r line; do
   if printf '%s\n' "$line" | grep -qE '\[module name='; then
     mod="$(printf '%s\n' "$line" | sed -E "s/.*\[module name=('[^']*'|\"[^\"]*\"|[A-Za-z0-9_-]+).*/\1/; s/^'(.*)'$/\1/; s/^\"(.*)\"$/\1/")"
     case "$cur_suite" in
-      stdlib)   [ -f "$ROOT/conformance/stdlib/$mod.cxd" ] || { echo "GATE-DANGLING: stdlib module '$mod' has no conformance/stdlib/$mod.cxd"; fail=1; } ;;
+      stdlib)   [ -f "$ROOT/conformance/stdlib/$mod.cxd" ] || [ -f "$ROOT/conformance/platform/$mod.cxd" ] || [ -f "$ROOT/conformance/x/$mod.cxd" ] || [ -f "$ROOT/conformance/xap/$mod.cxd" ] || { echo "GATE-DANGLING: stdlib module '$mod' has no corpus under conformance/{stdlib,platform,x,xap}/$mod.cxd (RULED: 1427-c — the ring directory is the corpus's home now)"; fail=1; } ;;
       packages) [ -f "$ROOT/packages/$mod/$mod.test.cxd" ] || { echo "GATE-DANGLING: packages module '$mod' has no packages/$mod/$mod.test.cxd"; fail=1; } ;;
       code)     echo "GATE-UNEXPECTED: module row '$mod' under suite 'code' (code.cxd uses the suite default, no module rows)"; fail=1 ;;
       xpath-31-parity) echo "GATE-UNEXPECTED: module row '$mod' under suite 'xpath-31-parity' (xpath_31_parity.cxd uses the suite default, no module rows)"; fail=1 ;;

@@ -577,7 +577,7 @@ install-hooks:
 	@echo "[install-hooks] git core.hooksPath set to .githooks"
 	@ls -1 .githooks/ | sed 's/^/  - /'
 
-# std-lib documentation freshness gate — CX-native (dog-food), run as
+# stdlib documentation freshness gate — CX-native (dog-food), run as
 # `cx <file>`. Verifies the co-located [module-doc]/[fn-doc] in stdlib/*.cx:
 # presence parity (every public [?def] has a [fn-doc] and vice-versa),
 # purity agreement, and that every [fn-doc] example is backed verbatim by
@@ -796,7 +796,8 @@ test-playground-tree:
 
 # stdlib catalog drift gate — verifies the single invariant
 #   SPEC_SET == (BUNDLE_SET union DISPATCH_SET)
-# i.e. every status=current [module-meta] in spec/03-approved/std-lib/*.md
+# i.e. every status=current [module-meta] in the spec pages
+# registry/modules.cxd declares (both ring directories since #1427-a)
 # is implemented (stdlib/*.cx bundle and/or a *_stdlib_builtin entry in
 # vcx/code/stdlib_dispatch.v), and there are no orphan impls/bundles
 # without a current spec. The gate is itself written in CX (dog-food) and
@@ -1092,7 +1093,7 @@ check-version-consistency: build-vcx
 # "absent." An optional read signals "nothing here" via the absence channel
 # (the empty sequence `()`), never `null`. Token-aware: it flags the
 # `[returns [or T null]]` declared-optional-return shape in the stdlib def
-# surface (spec/std-lib/*.md + the vcx/code bundle sources); unit-null
+# surface (spec/03-approved/{stdlib,platform}/*.md + the vcx/code bundle sources); unit-null
 # `[returns null]` and param-position `[or T null]` are deliberately not
 # flagged. Permanent gate, not migration-only.
 .PHONY: check-null-absence-conflation
@@ -1508,7 +1509,7 @@ ring-query:
 	@"$(CX_BIN)" --allow-read --allow-env --allow-write scripts/ring_query.cx
 ring-tag-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
 ring-tag-gate: build-vcx
-	@FORMAT=count "$(CX_BIN)" --allow-read --allow-env --allow-write scripts/ring_query.cx >/dev/null && echo "ring-tag-gate OK — every suite header carries ring=; steps queryable via 'make ring-query'"
+	@FORMAT=count "$(CX_BIN)" --allow-read --allow-env --allow-write scripts/ring_query.cx >/dev/null && echo "ring-tag-gate OK — every suite header carries ring=, and every suite under a ring DIRECTORY agrees with it (RULED: 1427-c); steps queryable via 'make ring-query'"
 
 # Distribution-spec §9 checkable absences (fixture §11.8): the xap-dist engine
 # (vcx/code/stdlib_xap_dist.v) composes the store/did/vc/compose surfaces and
@@ -2022,7 +2023,7 @@ CX_GC ?= -gc e
 # artifact carries sqlite + redis, so the test gate compiles the suite with the
 # same gates. This makes the $if-gated engine tests (vcx/code/sql_test.v,
 # redis steps) and the engine-dependent conformance fixtures
-# (conformance/stdlib/db.cxd success/denial steps) actually run — the gate
+# (conformance/platform/db.cxd success/denial steps) actually run — the gate
 # tests the BEHAVIOR the artifact ships. Override CX_ENGINES='' to gate an
 # engine-free build (then db.cxd's engine steps are expected red; see the
 # fixture doc-comment).
@@ -3458,9 +3459,9 @@ repr-guard: build-vcx
 	  fi; \
 	fi; exit $$st
 
-# ── bench-flow: the cx-stdlib/flow performance and scale step ────────────────
+# ── bench-flow: the cx-platform/flow performance and scale step ────────────────
 #
-# §9 of spec/03-approved/std-lib/flow.md (RULED: WF-14), #1265 W1 packet C.
+# §9 of spec/03-approved/platform/flow.md (RULED: WF-14), #1265 W1 packet C.
 # Floors are set from the first measurement and ratcheted like bench/repr:
 # ledger/bench_flow_first_measurement_2026_09_04.md records the numbers, the
 # machine and the binary; bench/flow/run.sh carries the floors they set.
@@ -3471,7 +3472,7 @@ repr-guard: build-vcx
 # than on a regression, which is how a gate stops being believed. bench/repr
 # earns its TEST_TARGETS seat because its quantity is a RATIO of live bytes.
 # The load-insensitive halves of this step ARE gated in `make test`: the two
-# per-item COUNT rows are pinned exactly in conformance/stdlib/flow.cxd
+# per-item COUNT rows are pinned exactly in conformance/platform/flow.cxd
 # (flow-040), and the racing-advancer count in vcx/tests/flow_umbrella_test.v.
 # Run this target deliberately — before a release, and at every #1265 wave
 # exit, whose ledger row re-pins what it improved. Contract + numbers:
