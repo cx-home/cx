@@ -10,7 +10,7 @@
 #     package smoke test.
 #
 # SPEC-CITATION DEBT (measured 2026-08-24): approved spec cites six of the
-# files below BY PATH — spec/03-approved/std-lib/diagram.md:135, :154, :300,
+# files below BY PATH — spec/03-approved/stdlib/diagram.md:135, :154, :300,
 # :332, :364, :514, :861. Those citations go stale here. They are NOT trued
 # in this change: repointing approved-spec prose is a spec edit, VC-3's
 # mechanical-truing list does not name them, and the spec-freeze gate classes

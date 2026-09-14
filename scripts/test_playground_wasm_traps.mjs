@@ -86,7 +86,7 @@ function classify(e) {
 // shape. A refusal is acceptable here; a trap never is.
 const PROBES = {
   'probe:1381:journal-mem-open':
-    "[?lib 'cx-stdlib/journal'] [?let [= $j [$journal:open \"mem://probe-1381\" \"acme\"]] [$name $j]]",
+    "[?lib 'cx-platform/journal'] [?let [= $j [$journal:open \"mem://probe-1381\" \"acme\"]] [$name $j]]",
   'probe:1381:random-crypto-bytes':
     "[?lib 'cx-stdlib/random'] [$count [$random-crypto-bytes 8]]",
   'probe:1381:crypto-ed25519-keypair':
@@ -95,7 +95,7 @@ const PROBES = {
   // flow.cxd flow-023 document, start only) — every verb it reaches must be
   // closure-free under the single-threaded bundle.
   'probe:1381:flow-start': [
-    "[?lib 'cx-stdlib/flow'] [?lib 'cx-stdlib/journal']",
+    "[?lib 'cx-platform/flow'] [?lib 'cx-platform/journal']",
     "[?def unreserve impure [effects] ($sku='') [unreserved sku=$sku]]",
     "[?def reserve impure [effects] [compensates unreserve] ($sku='') [reserved sku=$sku]]",
     "[?def place-order impure [effects] ($order='') [placed order=$order]]",

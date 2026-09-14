@@ -110,7 +110,7 @@ Status reflects branch HEAD, not the latest released version.
 | Capability | Status | Reference |
 |---|---|---|
 | Schema language (`.cxs`) | ✅ | `core/schema.md` |
-| Schema validation engine | ✅ | `std-lib/validate.md` |
+| Schema validation engine | ✅ | `stdlib/validate.md` |
 | Schema-driven defaults + coercion | ✅ | `core/schema.md` |
 | Required vs optional attribute markers | ✅ | `core/schema.md` |
 | Cardinality constraints | ✅ | `core/schema.md` |
@@ -139,8 +139,8 @@ Status reflects branch HEAD, not the latest released version.
 | Parquet bridge (via Arrow) | 📋 | planned |
 | Binary AST format (`cx_ast_bin`) | ✅ | `core/ast-bin.md` |
 | Data-bin one-shot loaders/dumpers | ✅ | `core/abi.md` |
-| Delimited (CSV / TSV / PSV) | ✅ | `std-lib/csv.md`, `core/conversions.md` |
-| Auto-typing on delimited → CX | ✅ | `std-lib/csv.md` |
+| Delimited (CSV / TSV / PSV) | ✅ | `stdlib/csv.md`, `core/conversions.md` |
+| Auto-typing on delimited → CX | ✅ | `stdlib/csv.md` |
 | Protobuf / MessagePack | ❌ | deliberate non-feature |
 
 ## 7 — Internationalization
@@ -150,8 +150,8 @@ Status reflects branch HEAD, not the latest released version.
 | UTF-8 input/output | ✅ | `core/abi.md` |
 | Unicode-correct identifier rules | ✅ | `core/grammar.ebnf` |
 | Unicode normalization policy | ✅ | `core/canonical.md` |
-| Bidirectional text handling | ✅ | `std-lib/i18n.md` |
-| Language-tag attribute | ✅ | `std-lib/i18n.md` |
+| Bidirectional text handling | ✅ | `stdlib/i18n.md` |
+| Language-tag attribute | ✅ | `stdlib/i18n.md` |
 | Locale-independent number formatting | ✅ | `core/canonical.md` |
 
 ## 8 — Streaming & scale
@@ -228,7 +228,7 @@ Status reflects branch HEAD, not the latest released version.
 | Vulnerability reporting policy | ✅ | `SECURITY.md` |
 | Threat model document | ✅ | `process/threat-model.md` |
 | Fuzz-testing harness | ✅ | `.github/workflows/fuzz.yml` (nightly 1h budget; `scripts/fuzz_cx.py` against parser + buffered eval + streaming eval + ABI-passthrough) |
-| Durable, attributed, queryable audit record of what the platform did | ✅ | `std-lib/audit.md` (#1422, RULED: 1422-a/1422-b) — the one closed-core record on the reserved `cx:audit` journal stream, a **boot** refusal for a required-but-unbound runtime, one cross-module fold for "what did this agent do, under whose grant", retention behind a signed snapshot and a re-derivable export; a hand-authored row on the sink refuses `CXER4623` |
+| Durable, attributed, queryable audit record of what the platform did | ✅ | `platform/audit.md` (#1422, RULED: 1422-a/1422-b) — the one closed-core record on the reserved `cx:audit` journal stream, a **boot** refusal for a required-but-unbound runtime, one cross-module fold for "what did this agent do, under whose grant", retention behind a signed snapshot and a re-derivable export; a hand-authored row on the sink refuses `CXER4623` |
 | External security audit | 📋 | v1.0 |
 | Reproducible builds | ✅ | `.github/workflows/reproducibility.yml` (per-tag + weekly double-build SHA-256 diff under fixed `SOURCE_DATE_EPOCH`) |
 

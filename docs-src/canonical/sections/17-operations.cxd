@@ -63,7 +63,7 @@
          journal-backed fabrics served to XSP-AUTH clients over raw
          XSP frames, configured the same way (`--config
          fabric.service.cx`; the fabric spec is
-         `spec/03-approved/std-lib/fabric.md`). The rest of this
+         `spec/03-approved/platform/fabric.md`). The rest of this
          subsection covers the store daemon. It is configured by a CX
          document and gated by the ordinary capability flags — serving
          binds a socket, so it needs `--allow-net`:"""]
