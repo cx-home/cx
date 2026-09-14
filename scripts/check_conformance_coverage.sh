@@ -37,8 +37,16 @@ grep -oE "'\.\./conformance/[A-Za-z0-9_./-]+\.cxd'" "$runner" | sed -E "s#'\.\./
   printf '%s\t%s\n' "$s" "test-vcx-conform (conform-all: $runner)"
 done >> "$claims"
 # 2. the eval step (in-code fixtures): code.cxd + every conformance/stdlib/*.cxd
-printf '%s\t%s\n' "conformance/code.cxd" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_test.v: parse_all_fixtures); also test-vcx-resilience-matrix, which runs that file by name -- but it reds 14 db.cxd fixtures by construction (no -d cx_db_sqlite/-d cx_db_redis in VFLAGS_VCX), so read its failure LIST, not its exit code" >> "$claims"
-for f in conformance/stdlib/*.cxd; do printf '%s\t%s\n' "$f" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_test.v: test_stdlib_module_fixtures); also test-vcx-resilience-matrix, which runs that file by name -- but it reds 14 db.cxd fixtures by construction (no -d cx_db_sqlite/-d cx_db_redis in VFLAGS_VCX), so read its failure LIST, not its exit code"; done >> "$claims"
+printf '%s\t%s\n' "conformance/code.cxd" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_test.v: parse_all_code_fixtures) or 'make fixtures'; also test-vcx-resilience-matrix and test-vcx-services, which run that file by name" >> "$claims"
+# #1448 (RULED: 1448-a): the stdlib corpus is graded by the SHARD test files,
+# not by code_eval_fixtures_test.v. Which shard grades which module file is
+# conformance/fixture_shards.cxd's business and `check-fixture-shard-manifest`
+# refuses a file in no shard or in two -- so the claim here is the step that
+# runs them all, and the guard that holds the partition complete. A map that
+# names the wrong step is worse than no map, because it is believed (the 2026-09-08
+# note below), and "code_eval_fixtures_test.v" would now be exactly that.
+for f in conformance/stdlib/*.cxd; do printf '%s\t%s\n' "$f" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_shard_<k>_test.v, partitioned by conformance/fixture_shards.cxd and held complete by check-fixture-shard-manifest) or 'make fixtures'"; done >> "$claims"
+printf '%s\t%s\n' "conformance/fixture_shards.cxd" "POLICY -- the partition of the stdlib corpus across the grader's shard test files, validated by check-fixture-shard-manifest (not a fixture suite)" >> "$claims"
 # 3. dedicated runners / steps
 {
   printf '%s\t%s\n' "conformance/diff.cxd" "test-vcx-conform (conform-diff: tests/runners/diff_lint/diff_lint_conform.v)"

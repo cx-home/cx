@@ -205,6 +205,9 @@ step_globs() {
     tools-export-gate)             echo 'conformance/tools-export/* vcx/* stdlib/*' ;;
     # the roster rows live in the Makefile and name files under vcx/
     check-serial-retry-rosters)    echo 'Makefile vcx/*' ;;
+    # #1448: the partition guard reads the manifest, the corpus it partitions
+    # and the shard test files it holds to it.
+    check-fixture-shard-manifest)  echo 'conformance/fixture_shards.cxd conformance/stdlib/* conformance/extended.cxd vcx/tests/code_eval_fixtures_shard_*_test.v scripts/check_fixture_shard_manifest.sh' ;;
     # #1370: the shim archives' alignment — the rules that write them and the checker.
     check-shim-archives)           echo 'vcx/Makefile scripts/check_archive_alignment.sh vcx/deps/re2_shim/* vcx/arrow/shim/*' ;;
     # pure shell over canned logs — its only inputs are the classifier and the
