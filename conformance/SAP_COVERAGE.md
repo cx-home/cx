@@ -104,7 +104,7 @@ The CXLS005 §7.3 lint (warn on a `[par]` body calling an impure builtin without
 a `[?bulkhead]` wrap) is **retired** (#94): `[par]` now owns its width as a
 bounded worker pool — `[par N]` / `[par max]` — so `[?bulkhead]` is no longer the
 concurrency-bounding mechanism. The underlying purity helper
-`code.node_calls_impure_builtin` is still used (by `cx-stdlib/journal`) and
+`code.node_calls_impure_builtin` is still used (by `cx-platform/journal`) and
 remains unit-tested in `vcx/tests/purity_checker_test.v`.
 
 ## §3 `cx-stdlib/fp` (all advisory — Phase C4)

@@ -3,14 +3,14 @@
 # Eat-our-own-dog-food: this gate is written entirely in CX and runs
 # as `cx <file>`. It verifies ONE invariant about the standard-library
 # catalog, whose single source of truth is the [module-meta ...] block
-# fenced near the top of each spec under spec/03-approved/std-lib/*.md:
+# fenced near the top of each spec under registry/modules.cxd:
 #
 #     SPEC_SET == (BUNDLE_SET union DISPATCH_SET)
 #
 # where
 #   SPEC_SET     = name= of every [module-meta] with status=current in the
 #                  spec pages registry/modules.cxd declares (RULED: 1427-f;
-#                  `spec/03-approved/std-lib/*.md` today, and wherever the
+#                  `registry/modules.cxd` today, and wherever the
 #                  #1427 split puts them tomorrow -- see catalog-spec-files
 #                  below). status=new modules (e.g. xap in spec/01-new) are
 #                  EXCLUDED -- not yet implemented.
@@ -54,7 +54,7 @@
 # catalog-spec-files: the spec pages this gate reads, taken from
 # registry/modules.cxd rather than from a directory glob (RULED: 1427-f).
 #
-# WHY NOT A GLOB. `spec/03-approved/std-lib/*.md` is a path this gate
+# WHY NOT A GLOB. `registry/modules.cxd` is a path this gate
 # happened to know; when #1427 splits that directory into `stdlib/` and
 # `platform/` a glob over it goes empty and this gate passes by finding
 # nothing -- the vacuous-step class the repo keeps paying for. The registry
@@ -64,8 +64,11 @@
 # The population is exactly the one the glob covered: a `codec` row is
 # EXEMPT by this gate's own rule (codec.md §3 is its normative text, not a
 # std-lib page), a `suite` row's spec belongs to something that is not a
-# module, and the `cx-x` tier is experimental and was never in SPEC_SET
-# (spec/03-approved/std-lib/README.md D3).
+# module, a `design` row is an approved design text with no surface of its
+# own (1427-a gave the two under platform/store/ the `kind=design`
+# module-meta the registry already declared, and a design text names no
+# module), and the `cx-x` tier is experimental and was never in SPEC_SET
+# (spec/03-approved/stdlib/README.md D3).
 [?def catalog-spec-files scope=private impure [returns any] ()
   [?let [= $reg [$cx:parse [$io:read-file "registry/modules.cxd"]]]
     [?for [in $m $reg//module]
@@ -75,6 +78,7 @@
       [where [not [= $spec "none"]]]
       [where [not [= $kind "codec"]]]
       [where [not [= $kind "suite"]]]
+      [where [not [= $kind "design"]]]
       [where [not [= $ns "cx-x"]]]
       [where [$io:exists $spec]]
       [yield $spec]]]]
@@ -111,9 +115,19 @@
 
 
 # -- SPEC_SET -----------------------------------------------------------
-# One [module-meta name=... tier=... status=...] line per spec file. Pull
-# the name= and status= via RE2; keep only status=current.
-[?let [= $meta-rx [$re:compile "\\[module-meta name=([a-z0-9_]+) tier=[A-D] status=([a-z]+)"]]
+# One [module-meta name=... status=...] line per spec file. Pull the name=
+# and status= via RE2; keep only status=current.
+#
+# The header carries more than it did. #1427-a put `ring=` on every
+# module-meta and `kind=` on the ones that are not modules, both between
+# `name=` and `tier=`, so a pattern that demanded `tier=` immediately after
+# the name matched NOTHING and emptied SPEC_SET — which this gate reports as
+# every bundle being an orphan, loudly, rather than as a pass. The two are
+# optional here so the pattern reads the headers on either side of the
+# cutover, and the name accepts a `-` because `http-client` has one
+# (RULED: 1427-e); `tier=x` is matched for completeness even though
+# catalog-spec-files filters the cx-x tier out before this point.
+[?let [= $meta-rx [$re:compile "\\[module-meta name=([a-z0-9_-]+)(?: ring=[0-9])?(?: kind=[a-z]+)? tier=[A-Dx] status=([a-z]+)"]]
       [= $synth-set [$cx-lines '--synthesized']]
       [= $codec-set [$cx-lines '--codecs']]
 
@@ -221,7 +235,7 @@
                           [yield [$concat "  [orphan synth]      " $y "  -- synthesized as a codec module but not a non-dialect text codec, or already served by a bundle/dispatch module"]]]]
                       [?let [= $synth-specced-lines
                         [?for [in $y $synth-specced]
-                          [yield [$concat "  [synth + spec page] " $y "  -- synthesized modules are EXEMPT from SPEC_SET (codec.md §3 is their normative text); spec/03-approved/std-lib/" $y ".md would be a second source"]]]]
+                          [yield [$concat "  [synth + spec page] " $y "  -- synthesized modules are EXEMPT from SPEC_SET (codec.md §3 is their normative text); spec/03-approved/stdlib/" $y ".md would be a second source"]]]]
 
                       [?let [= $n-violations
                         [+ [$count $missing]

@@ -435,7 +435,7 @@ author a new feature and compose it BESIDE the shared one — the two bases
 here, `thing` and `owner`, are that shape already, and the compose gate
 checks the seam between them.
 
-Run the model on this very scaffold: `conformance/stdlib/xap-compose.cxd`
+Run the model on this very scaffold: `conformance/xap/xap-compose.cxd`
 cases `xap-compose-128` through `-132` instantiate the `thing` feature above
 for two different tenants, ship a v2, re-bless one tenant onto it, and show
 the refinement that was legal against v1 refusing against v2.

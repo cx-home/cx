@@ -55,16 +55,21 @@ training data, so this layer is the context an assistant needs to write it
 correctly.
 #]]
 
+  [; #1427-c put a module's corpus in its RING's directory, so a suite is
+     named by the directory it is in: `stdlib/` is Ring 1, `platform/` is
+     Ring 2, `x/` and `xap/` are the tiers the ring split does not govern.
+     The `http` suite became two when 1427-e split the module. ]
   [suites [#
 code
 core
 llm/antipatterns
 operator_heads
-stdlib/store
-stdlib/journal
-stdlib/http
-stdlib/mcp
-stdlib/a2a
+platform/store
+platform/journal
+platform/http
+stdlib/http-client
+x/mcp
+x/a2a
 stdlib/strings
 stdlib/fp
 stdlib/json
@@ -76,13 +81,13 @@ stdlib/io
 stdlib/env
 stdlib/cx
 stdlib/format
-stdlib/authz
-stdlib/session
+platform/authz
+platform/session
 stdlib/log
-stdlib/ux
-stdlib/ux-web
-stdlib/xap-compose
-stdlib/xap-dist
+xap/ux
+xap/ux-web
+xap/xap-compose
+xap/xap-dist
 xml
 table
 identity

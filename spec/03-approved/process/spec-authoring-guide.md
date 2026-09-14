@@ -58,7 +58,7 @@ CX's mantra is **"easy to learn and fun to code."** The language carries real *c
 |---|---|---|
 | **1 — the first hour (≈5 things)** | values flow · absence (empty) flows inertly · `[?else]` for defaults · `[?pipe seed f g]` (bare-stage prefix pipe) for pipelines · `[?match]` to handle | **every** user; the *only* surface the guide intro/quickstart shows |
 | **2 — intermediate (opt-in)** | the four-channel model (`code.md §9.1.1`) · `[?fallback]` · `[?with-error-hook]` observability · capabilities (`security.md`) | reached when a real need appears |
-| **3 — advanced (opt-in, walled off)** | `std-lib/fp.md` (functor/monad/`traverse`) · effect-totality (`code.md §6.5`) · structured concurrency (`code.md §10`) · `--strict` typing / `[throws T]` (RESERVE) | power users; **never a prerequisite to be productive** |
+| **3 — advanced (opt-in, walled off)** | `stdlib/fp.md` (functor/monad/`traverse`) · effect-totality (`code.md §6.5`) · structured concurrency (`code.md §10`) · `--strict` typing / `[throws T]` (RESERVE) | power users; **never a prerequisite to be productive** |
 
 Three normative rules (gate: a guide/docs reviewer applies them, and the Tier-1 surface files are scanned by `scripts/check_docs_tier1_guardrail.py`):
 

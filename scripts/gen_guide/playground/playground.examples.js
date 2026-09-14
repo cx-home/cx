@@ -1484,7 +1484,7 @@
     },
     "182-fp-traverse-http": {
       label: "[182] fp \u2014 `[$fp:traverse]` over HTTP calls (http mode)",
-      input: "[?lib 'cx-stdlib/fp']\n[?lib 'cx-stdlib/http']\n\n[$fp:traverse (\"https://example.com/a\", \"https://example.com/b\")\n  [?fn ($u) [$http:get $u]]]",
+      input: "[?lib 'cx-stdlib/fp']\n[?lib 'cx-stdlib/http-client' :as http]\n\n[$fp:traverse (\"https://example.com/a\", \"https://example.com/b\")\n  [?fn ($u) [$http:get $u]]]",
       note:  "**Pattern:** the real-world `traverse` \u2014 fan a fallible effect across a list and collect results on the railway (all `[ok]` \u2192 one `[ok (\u2026)]`; first `[err]` short-circuits). **http mode only:** this makes live network calls \u2014 run it under `make guide-http` (or `cx --allow-net` in your terminal). The file:// wasm playground has no network/capabilities, so it returns a capability-denied `[err cx-err:CXER0271]`.",
       tags:  ["descendant", "fn", "lib"],
       section: "code/functions",

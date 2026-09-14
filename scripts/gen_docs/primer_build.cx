@@ -29,8 +29,10 @@
 #   {{DIRECTIVES}}              the NORMATIVE directive registry, projected
 #                               from the spec's own §4.1 table (name +
 #                               category; § references deliberately dropped)
-#   {{MODULES:stdlib}}          markdown table rows over stdlib/*.cx,
-#   {{MODULES:x}}               projected from each module's [module-doc]
+#   {{MODULES:stdlib}}          markdown table rows for one BUNDLED NAMESPACE
+#   {{MODULES:platform}}        (`cx-<name>`), its population read from
+#   {{MODULES:x}}               registry/modules.cxd and its prose projected
+#                               from each module's own [module-doc]
 #   {{CXHELP}}                  the binary's own `--help`, captured live
 #
 # The last three carry no example code and make no output claim; they are
@@ -379,11 +381,25 @@
         [= $i [$strings:find $flat ". "]]
     [?if [not [$present $i]] [then $flat] [else [$strings:slice $flat 1 [- [+ $i 1] 1]]]]]]
 
-# module-rows: a markdown table body over a bundle glob, projected from each
-# module's own [module-doc][scope] prose. Generated — never a hand-kept list,
-# so a new module appears here the moment it is bundled.
-[?def module-rows scope=public impure ($glob)
-  [$strings:join [?for [in $f [$io:glob $glob]]
+# module-rows: a markdown table body for ONE bundled namespace, projected from
+# each module's own [module-doc][scope] prose. Generated — never a hand-kept
+# list, so a new module appears here the moment it is bundled.
+#
+# The population comes from registry/modules.cxd, not from a directory glob
+# (RULED: 1427-f). #1427-b split the bundled surface into `cx-stdlib` (Ring 1)
+# and `cx-platform` (Ring 2) while BOTH rings' bundled sources still sit in
+# stdlib/*.cx — so a glob over that directory would print sixteen Ring-2
+# modules under an import line that no longer resolves, which is precisely
+# the invented-module-name poison this projection exists to prevent. The
+# registry is where a module's namespace is declared, so it is what is read.
+[?def module-rows scope=public impure ($ns)
+  [?let [= $reg [$cx:parse [$io:read-file "registry/modules.cxd"]]]
+  [$strings:join [?for [in $m $reg//module]
+    [= $f [$string [?else $m@source "none"]]]
+    [where [= [$string [?else $m@ns "none"]] $ns]]
+    [where [= [$string [?else $m@kind "module"]] "module"]]
+    [where [= [$string [?else $m@status "current"]] "current"]]
+    [where [not [= $f "none"]]]
     [= $txt [$io:read-file $f]]
     [= $i [$strings:find $txt "[module-doc"]]
     [where [$present $i]]
@@ -394,8 +410,8 @@
     [= $tail [$strings:slice $rest $from [$strings:length $rest]]]
     [= $b [$strings:find $tail '"""']]
     [where [$present $b]]
-    [yield [$concat "| `" [$path:stem $f] "` | "
-                    [$first-sentence [$strings:slice $tail 1 [- $b 1]]] " |"]]] "\n"]]
+    [yield [$concat "| `" [$string $m@name] "` | "
+                    [$first-sentence [$strings:slice $tail 1 [- $b 1]]] " |"]]] "\n"]]]
 
 # directive-rows: the NORMATIVE directive registry, projected from the spec's
 # own §4.1 table. The primer must not carry a hand-kept directive list — a
@@ -489,7 +505,7 @@
       [when [= $kind "CXHELP"]  [$cx-help $cxbin]]
       [when [= $kind "DIRECTIVES"] [$directive-rows]]
       [when [$strings:starts-with $kind "MODULES:"]
-        [$module-rows [$concat [$strings:slice $kind 9 [$strings:length $kind]] "/*.cx"]]]
+        [$module-rows [$concat "cx-" [$strings:slice $kind 9 [$strings:length $kind]]]]]
       [when [$strings:starts-with $kind "EXAMPLE:"]
         [$expand-example $parts $index $replays $where]]
       [when [$strings:starts-with $kind "PAIR:"]
