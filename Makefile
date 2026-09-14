@@ -854,6 +854,7 @@ ledger-index-check: build-vcx
 .PHONY: placement-gate
 placement-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
 placement-gate: build-vcx
+	@"$(CX_BIN)" --allow-all scripts/placement_gate.cx --self-test
 	@"$(CX_BIN)" --allow-all scripts/placement_gate.cx
 
 # ── tools-export golden gate (stream 18, #690) ────────────────────────────────
