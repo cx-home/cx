@@ -169,6 +169,9 @@ step_globs() {
     libcx-abi-gate)                echo "$RING_LIB $RING_SUP include/* tools/libcx-abi-gate.sh" ;;
     test-profile-gate)             echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED vcx/tests/runners/profile_gate/* conformance/*" ;;
     check-code-spec-consistency)   echo 'spec/* vcx/code/*' ;;
+    # ledger-index-check (#1438) regenerates ledger/README.md from the store and
+    # compares: its inputs are every ledger page and the generator itself.
+    ledger-index-check)            echo 'ledger/* scripts/ledger_index.cx' ;;
     stdlib-catalog-gate)           echo 'stdlib/* vcx/* docs-src/* registry/modules.cxd' ;;
     # the placement declaration and every artifact class it compares against
     # (RULED: 1427-f) — a spec, a corpus, a bundled source or a ring's V
