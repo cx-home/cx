@@ -24,3 +24,18 @@ registry's `-to` columns. Rows enter `registry/modules.cxd` as `planned` with th
   exactly this (connector.md §2.1).
 - DB is the second transport because its protocol module already exists; GraphQL is a codec over HTTP; SOAP is a
   codec plus WS-Security over HTTP; SFTP needs a socket module and comes last.
+
+## 1430-d — the kit is an OPEN adapter contract, wide and specialized (owner, 2026-09-14 ~05:35Z)
+
+Owner: *"the connector kit must make it easy and cheap to add and plug in ANY new protocol, db, approach, etc. If
+it's not sufficiently wide we get divergence and chaos. but it must allow specialization to take advantage of
+the various axes and technologies — don't try to shove them all into the same vanilla box where we lose control
+and details of the connection."*
+
+| Id | Decision |
+|---|---|
+| **1430-d** | **(owner)** The engine owns ONLY the loop invariants every connection shares — the walk's totality and stop rule, the budget arithmetic and its two ledgers, retry classification into the closed set, the credential chain (scheme + handle, value never in a document), the audit record's core, failure isolation, the bounds ceiling. EVERYTHING kind-specific is the adapter's and is DECLARED by it, not hard-coded in the core: (1) the `[gateway]` attributes and children a kind accepts (a kind ships its own schema fragment; the core schema carries only `name= kind= priority= auth= signing= rung=`); (2) its pagination styles — the four of §2.2 are `http`'s, a kind registers its own (a cursor column, a directory listing, a change-feed offset, a GraphQL connection) under the one stop rule; (3) its classification table (driver errors, SOAP faults, SSH status codes → the closed set); (4) its audit `[detail]` vocabulary; (5) its discovery (information schema, introspection, WSDL, a listing); (6) its capability needs and its own bounds beneath the ceiling; (7) its deployment-binding fields (a `base-url=`, a backend handle, a host key handle). Adding a kind = one adapter (spec section + corpus section + one V file registered in the kind table) and NOTHING else changes — the kit ships an **adapter conformance harness**: a generic corpus every adapter must pass (walk totality, budget, refusal semantics, the credential refusals, the audit core) plus the adapter's own cases; `make placement-gate` and the kind table's own check refuse an adapter with no spec section, no corpus section or no registered kind. The engine never sees a transport's bytes, and the connection's details (a DB's isolation level, an SFTP host key, a GraphQL operation name, a SOAP action) are first-class in the kind's declaration and audit detail — never flattened into a generic field. |
+
+Why: a kit that executes one transport is a client library; a kit that forces every transport through one
+vocabulary loses what makes each connection controllable. The seam is the kind table; the discipline is
+"declared by the adapter, enforced by the engine".
