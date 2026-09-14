@@ -111,6 +111,14 @@ becomes its own Ring-1 module.
        spec/03-approved/platform/composition.md §0. ────────────────────── ]
   [catalog ring=2 path=spec/03-approved/platform/composition.md]
 
+  [; ── The Ring 2 deployment-topology page (RULED: COMP-2). Beside the
+       composition page and declared for the same reason: it states where the
+       platform's runtimes run and what carries a seam between two of them,
+       declares no surface, and is claimed here as a catalog page rather than
+       read by `placement-gate` as an unclaimed spec. See
+       spec/03-approved/platform/deployment-topology.md §0. ───────────────── ]
+  [catalog ring=2 path=spec/03-approved/platform/deployment-topology.md]
+
   [; ── Ring 1 — cx-stdlib ───────────────────────────────────────────── ]
   [module name=array ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/array.md corpus=conformance/stdlib/array.cxd source=stdlib/array.cx code=vcx/code/stdlib_array.v half=none status=current]
   [module name=bytes ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/bytes.md corpus=conformance/stdlib/bytes.cxd source=stdlib/bytes.cx code=vcx/code/stdlib_bytes.v half=none status=current]
