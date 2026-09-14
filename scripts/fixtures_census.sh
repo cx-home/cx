@@ -19,7 +19,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 export LC_ALL=C
 
-MANIFEST=conformance/fixture_shards.cxd
+MANIFEST=vcx/tests/fixtures_grader/fixture_shards.cxd
 DIR=vcx/target/fixtures
 
 [ -f "$MANIFEST" ] || { echo "fixtures-census: no $MANIFEST" >&2; exit 1; }
