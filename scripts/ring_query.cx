@@ -50,11 +50,17 @@
       [= $lane-want   [?else [$env:var "LANE"]   "doc"]]
       [= $format-want [?else [$env:var "FORMAT"] "summary"]]
 
-      # The corpus: every fixture suite, top-level + stdlib. gates.cxd is
-      # the gate-policy manifest (no [test-suite] header) -- excluded.
+      # The corpus: every fixture suite, top-level + stdlib. Two files under
+      # conformance/ are MANIFESTS and not suites -- no [test-suite] header, no
+      # [case] -- and are excluded: gates.cxd, the gate-policy manifest, and
+      # fixture_shards.cxd, #1448's partition of the corpus across the grader's
+      # shard test files (RULED: 1448-a). A manifest has no ring because it is
+      # not graded in a ring lane; requiring one of it would put a meaningless
+      # attribute on the file every ring lane then has to ignore.
       [= $files
         [?for [in $f [$io:glob "conformance/**/*.cxd"]]
           [where [not [$strings:ends-with $f "gates.cxd"]]]
+          [where [not [$strings:ends-with $f "fixture_shards.cxd"]]]
           [yield $f]]]
 
       # One [suite-report ...] element per file. All per-case work
