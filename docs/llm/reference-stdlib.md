@@ -43,7 +43,6 @@ $ cx prog.cx
 | Module | Scope |
 |---|---|
 | `bytes` | Byte-level operations on the CX bytes scalar kind. |
-| `connector` | The connector kit: one engine every connector feature runs on, and the vocabulary that declaration is written in. |
 | `crypto` | Operations involving a key, a secret, or authentication. |
 | `csv` | Parse and emit CSV/TSV following RFC 4180 with Excel-pragmatic extensions. |
 | `diagram` | The §10.1.2 reference diagram renderer as a pure CX program (RULED #758, DR-1…DR-11). |

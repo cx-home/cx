@@ -1816,7 +1816,6 @@ imports a Ring-2 one.
 | Module | Scope |
 |---|---|
 | `bytes` | Byte-level operations on the CX bytes scalar kind. |
-| `connector` | The connector kit: one engine every connector feature runs on, and the vocabulary that declaration is written in. |
 | `crypto` | Operations involving a key, a secret, or authentication. |
 | `csv` | Parse and emit CSV/TSV following RFC 4180 with Excel-pragmatic extensions. |
 | `diagram` | The §10.1.2 reference diagram renderer as a pure CX program (RULED #758, DR-1…DR-11). |
@@ -1868,6 +1867,7 @@ visible in the import line.
 | `audit` | The audit sink: the one durable, attributed, append-only, queryable record of what the platform did, who asked, under whose authority, on what, and what was decided. |
 | `authz` | The XAP authority model as data plus a single decision function. |
 | `bus` | In-process publish/subscribe that delivers each published message to its matching subscribers synchronously and in a defined order. |
+| `connector` | The connector kit: one engine every connector feature runs on, and the vocabulary that declaration is written in. |
 | `did` | Decentralized identifiers (DIDs): the decentralized identity source that identifies a principal, counterpart to crypto's centralized JWT/JWKS. |
 | `flow` | General workflow on the saga substrate: flows as documents, runs as journaled records, and a runner that is a pure function rather than an engine. |
 | `http` | The HTTP/1.1 SERVER: an event-loop accept/respond surface over the `cx-platform/net` transport, with Server-Sent Events streaming for held-open push. |
@@ -3548,7 +3548,6 @@ $ cx prog.cx
 | Module | Scope |
 |---|---|
 | `bytes` | Byte-level operations on the CX bytes scalar kind. |
-| `connector` | The connector kit: one engine every connector feature runs on, and the vocabulary that declaration is written in. |
 | `crypto` | Operations involving a key, a secret, or authentication. |
 | `csv` | Parse and emit CSV/TSV following RFC 4180 with Excel-pragmatic extensions. |
 | `diagram` | The §10.1.2 reference diagram renderer as a pure CX program (RULED #758, DR-1…DR-11). |
