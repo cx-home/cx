@@ -51,11 +51,17 @@ for s in "$@"; do
   files=$((files + ${f:-0})); ran=$((ran + ${r:-0})); oer=$((oer + ${e:-0}))
 done
 
+# Sorted BY KEY, not by the rendered `key=count` pair: the single-threaded
+# walk sorted V string keys, where `xsp` precedes `xsp-auth` because it is a
+# prefix, while sorting the pairs puts `xsp-auth=16` first ('-' 0x2D sorts
+# before '=' 0x3D). The line is quoted verbatim in every pre-merge RESULTS.md,
+# so that one transposition is a byte difference in evidence that is supposed
+# to be comparable across the split.
 parts=$(for s in "$@"; do grep '^module:' "$DIR/$s.census" || true; done \
   | sed 's/^module://' \
-  | awk -F= '{c[$1]+=$2} END {for (k in c) print k "=" c[k]}' \
-  | sort \
-  | tr '\n' ' ')
+  | awk -F= '{c[$1]+=$2} END {for (k in c) printf "%s\t%s\n", k, c[k]}' \
+  | sort -t"$(printf '\t')" -k1,1 \
+  | awk -F'\t' '{printf "%s=%s ", $1, $2}')
 parts=${parts% }
 
 if [ "$files" -gt 0 ] && [ "$ran" -eq 0 ]; then

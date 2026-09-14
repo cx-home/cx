@@ -41,8 +41,8 @@ export LC_ALL=C
 sed '/\[doc \[#/,/#\]\]/d' "$MANIFEST" > "$tmp/rows"
 grep -oE '^[[:space:]]*\[shard[[:space:]]+name=[^][:space:]]+[[:space:]]+test=[^][:space:]]+' "$tmp/rows" \
   | sed -E 's/^[[:space:]]*\[shard[[:space:]]+name=//; s/[[:space:]]+test=/ /' > "$tmp/shards"
-grep -oE '^[[:space:]]*\[file[[:space:]]+name=[^]]+\]' "$tmp/rows" \
-  | sed -E 's/^[[:space:]]*\[file[[:space:]]+name=//; s/\]$//' > "$tmp/assigned"
+grep -oE '^[[:space:]]*\[file[[:space:]]+name=[^][:space:]]+' "$tmp/rows" \
+  | sed -E 's/^[[:space:]]*\[file[[:space:]]+name=//' > "$tmp/assigned"
 
 fail=0
 
