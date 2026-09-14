@@ -2085,6 +2085,7 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/process_pty_test.v \
                       vcx/tests/xap_umbrella_test.v \
                       vcx/tests/store_remote_umbrella_test.v \
+                      vcx/tests/connector_live_test.v \
                       vcx/tests/code_eval_fixtures_test.v
 
 # ── http_umbrella_test.v joins the real-socket class (#1445) ────────────────
@@ -2098,6 +2099,12 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
 # 5) passed. A real-socket request that gets no response under that load is the
 # class the row above already names; the assertion and its timeouts are not
 # changed.
+
+# ── connector_live_test.v is a real-socket lane by construction (#1430) ────
+# It boots `reference/acme/acme.mock.cx` — an in-tree [?http-service] — on a
+# loopback port and drives the example connector against it (connector.md §10,
+# §13.3), so it binds a port and contends for one under -j exactly as the
+# http/smtp/imap rows above do. Same class, same one serial retry.
 
 # ── The TIMING / EARLY EXIT UNDER LOAD class (#1432, RULED: 1432-a) ─────────
 # Two rows above carry this class rather than a socket or a daemon cause. Both
