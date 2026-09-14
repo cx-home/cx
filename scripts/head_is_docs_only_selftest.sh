@@ -11,6 +11,9 @@
 #   D  root README.md + ledger/                 → docs
 #   E  no last-passed head (empty base arg)     → FULL   (fail-safe)
 #   F  a .md UNDER spec/03-approved/            → FULL   (markdown is not the test)
+#   L  a .md under spec/03-approved/stdlib/    → FULL   (#1427 phase 2 split std-lib/
+#   M  a .md under spec/03-approved/platform/  → FULL    into stdlib/ + platform/;
+#                                                        the rule keys on the root)
 #   G  code + docs in the same head             → FULL   (one code path is enough)
 #   H  registry/README.md                       → docs   (prose beside the registry)
 #   I  a rename of a test file INTO docs/       → FULL   (--no-renames)
@@ -107,6 +110,20 @@ printf 'a normative clause\n' >> spec/03-approved/thing.md
 git add -A && git commit -qm "F"
 check F full "$BASE"
 
+# L — a .md under spec/03-approved/stdlib/ (#1427 phase 2 split std-lib/ into
+#     stdlib/ + platform/; the rule keys on the spec ROOT, so both are covered —
+#     these two fixtures are what says so out loud)
+mkdir -p spec/03-approved/stdlib
+printf 'a normative clause\n' > spec/03-approved/stdlib/json.md
+git add -A && git commit -qm "L"
+check L full "$BASE"
+
+# M — a .md under spec/03-approved/platform/
+mkdir -p spec/03-approved/platform
+printf 'a normative clause\n' > spec/03-approved/platform/audit.md
+git add -A && git commit -qm "M"
+check M full "$BASE"
+
 # G — code AND docs in one head
 printf 'fn test_new() {}\n' >> vcx/tests/thing_test.v
 printf 'and prose\n' >> ledger/seed.md
@@ -139,4 +156,4 @@ if [ "$fails" -ne 0 ]; then
 	echo "head_is_docs_only selftest: $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "head_is_docs_only selftest: 11/11 (docs A/D/H; full B/C/E/F/G/I/J/K)"
+echo "head_is_docs_only selftest: 13/13 (docs A/D/H; full B/C/E/F/G/I/J/K and L/M, the #1427 stdlib/ + platform/ split)"
