@@ -255,6 +255,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1427-a` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) | RULED: 1427-a…1427-j — the ring-legible tree (owner, 2026-09-12 ~13:40Z, option (a) on every dimension of the integrator's table) |
 | `1427-j` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) | RULED: 1427-a…1427-j — the ring-legible tree (owner, 2026-09-12 ~13:40Z, option (a) on every dimension of the integrator's table) |
 | `1430-b` | [rulings_2026_09_14_owner_letters_1430_1434.md](rulings_2026_09_14_owner_letters_1430_1434.md) | Owner letters 2026-09-14 ~04:50Z — #1430 and #1434 (RULED: 1430-b, 1434-b) |
+| `1430-c` | [rulings_2026_09_14_connector_transports_1430c.md](rulings_2026_09_14_connector_transports_1430c.md) | Owner letter 2026-09-14 ~05:20Z — the connector kit executes every protocol, DB included (RULED: 1430-c) |
 | `1431-a` | [rulings_2026_09_13_load_class_flaky_tests_1431_1432.md](rulings_2026_09_13_load_class_flaky_tests_1431_1432.md) | RULED: 1431-a, 1432-a — two load classes join the classified serial-retry policy |
 | `1431-a` | [rulings_2026_09_13_load_class_flaky_tests_1431_1432.md](rulings_2026_09_13_load_class_flaky_tests_1431_1432.md) | Why 1431-a |
 | `1432-a` | [rulings_2026_09_13_load_class_flaky_tests_1431_1432.md](rulings_2026_09_13_load_class_flaky_tests_1431_1432.md) | RULED: 1431-a, 1432-a — two load classes join the classified serial-retry policy |
@@ -504,6 +505,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ol-15` | [rulings_2026_09_12_audit_sink_1422.md](rulings_2026_09_12_audit_sink_1422.md) | 1. Placement, stated before any spec or code (OL-15) |
 | `ol-15` | [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md) | §4. Placement (OL-15) |
 | `ol-15` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) | Addendum, ~05:20Z — OL-14 and OL-15 (owner: "recommendations accepted for the library and repo plan"; "we can't keep making these big organization mistakes that cause refactoring and restructuring. its been very costly.") |
+| `ol-15` | [rulings_2026_09_14_connector_transports_1430c.md](rulings_2026_09_14_connector_transports_1430c.md) | Placement, decided here before spec or code (OL-15) |
 | `pb-1` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | PB-1 — how the runner performs a step's act — RULED (a) |
 | `pb-2` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | PB-2 — the run id preimage — RULED (a) |
 | `pb-3` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | PB-3 — the home stream default — RULED (a) |
@@ -1020,7 +1022,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `edl-1a` | [rulings_2026_08_21_diagram_vector_data.md](rulings_2026_08_21_diagram_vector_data.md), [rulings_2026_08_21_table_image.md](rulings_2026_08_21_table_image.md), [rulings_2026_08_22_gate_hygiene.md](rulings_2026_08_22_gate_hygiene.md) |
 | `ga-1a` | [rulings_2026_08_20_guest_attach.md](rulings_2026_08_20_guest_attach.md) |
 | `ga-1b` | [rulings_2026_08_20_guest_attach.md](rulings_2026_08_20_guest_attach.md) |
-| `gql-1` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
+| `gql-1` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_14_connector_transports_1430c.md](rulings_2026_09_14_connector_transports_1430c.md) |
 | `http-429` | [partition_remediation_register.md](partition_remediation_register.md) |
 | `ieee-754` | [partition_I5_stream17_runtime.md](partition_I5_stream17_runtime.md) |
 | `imap-1` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
@@ -1140,4 +1142,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*269 ledger pages; 547 ids declared, 340 cited only.*
+*270 ledger pages; 548 ids declared, 340 cited only.*
