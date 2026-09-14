@@ -4756,7 +4756,7 @@ Subcommands (`cx <subcommand> --help` for details):
   code-tree            Tree View JSON of a CX source.
   table                Table API over [table[...]] blocks (info / dump / load).
   scaffold             Typed, commented skeleton on stdout (config/data/doc/log/table).
-  xap                  XAP project tooling — scaffold (`init`) and check (`check-surface`).
+  xap                  XAP project tooling — scaffold a project (`init`), a composition pattern (`scaffold`), and check (`check-surface`).
   flow                 cx-platform/flow: the local profile (run / validate / simulate / status / diagram) and the standalone runner (serve).
   demo                 Self-contained showcase (no file I/O, no network, < 1s).
   lock                 Generate / verify cx.lock from [?lib] directives.
