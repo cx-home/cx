@@ -1625,6 +1625,66 @@ test:
 # causes resource contention.
 test-no-parallel: $(TEST_TARGETS)
 
+# ── test-docs — the DOC PIPELINE (RULED: INT-10) ──────────────────────────────
+# The post-merge pipeline is `make test` on the head (delivery grammar §4). On
+# 2026-09-13 three of the ten post-merge runs graded heads that could not change
+# a compiled test's outcome — two ledger-only heads and the docs half of a
+# third — for about two hours of the ONE post-merge runner. INT-10's answer is
+# this target: when the head's diff against the last head that PASSED is
+# confined to documentation, the runner runs THESE seven steps instead of the
+# whole TEST_TARGETS matrix.
+#
+# Which paths count is NOT decided here and not in the spec either — it is
+# scripts/head_is_docs_only.sh, with scripts/head_is_docs_only_selftest.sh
+# beside it, so the list has a test. This target only has to be the pipeline
+# that list selects.
+#
+# The seven steps are every TEST_TARGETS row that reads documentation, the
+# ledger, the approved spec tree or the version stamps, plus `verify-doc-links`,
+# which the release gate runs but TEST_TARGETS does not:
+#
+#   verify-doc-blocks        every fenced cx block in docs-src/ still runs
+#   verify-doc-links         every relative markdown link still resolves
+#   verify-readme-blocks     the README's own blocks still run
+#   docs-check               the generated docs/ layer is not stale
+#   spec-freeze-gate         a spec+impl commit carries its recorded ruling
+#   ledger-index-check       ledger/README.md still matches the decision store
+#   check-version-consistency  every stamped manifest still matches VERSION
+#
+# Four of them need the binary, so the serial `build-vcx` pre-build comes first
+# for the same reason it does in `test:` — concurrent sub-makes relinking
+# target/cx while a sibling step execs it is the v0.16.0 'Exec format error'
+# class.
+#
+# The LOCK is taken exactly the way `test` takes it. A doc run is still a
+# post-merge run: it holds the main checkout, it must not start inside another
+# gate, and check-gate-lock's stale detection (`kill -0` on the recorded pid)
+# is what releases a killed one. Nothing about INT-10 makes a doc run a second
+# concurrent gate.
+DOC_TARGETS := verify-doc-blocks verify-doc-links verify-readme-blocks docs-check \
+  spec-freeze-gate ledger-index-check check-version-consistency
+
+.PHONY: test-docs
+test-docs: export CX_GATE_OWNER := $(shell echo $$PPID)
+test-docs:
+	@if [ -f "$(CX_GATE_LOCK)" ]; then \
+	  o=$$(sed -n 1p "$(CX_GATE_LOCK)" 2>/dev/null); \
+	  if [ -n "$$o" ] && kill -0 "$$o" 2>/dev/null && [ "$$o" != "$(CX_GATE_OWNER)" ]; then \
+	    echo "make test-docs: another gate holds the lock (pid $$o) — refusing to run two gates at once."; \
+	    echo "  make gate-lock-status"; \
+	    exit 1; \
+	  fi; \
+	fi; \
+	printf '%s\n%s\n' "$(CX_GATE_OWNER)" "$(CURDIR)" > "$(CX_GATE_LOCK)"
+	@$(MAKE) build-vcx
+	@$(MAKE) -j$(TEST_JOBS) $(OUTPUT_SYNC) $(DOC_TARGETS)
+	# The summary line is the shape scripts/gate-status.sh reads under "finished
+	# steps" (`: <n> passed`) — a doc run writes no V-test summary, so without
+	# this the run reader had nothing to show for a run that had finished every
+	# step. The lock is released by the LAST recipe line, as in `test`.
+	@echo "test-docs: $(words $(DOC_TARGETS)) passed, 0 failed (doc pipeline — RULED: INT-10)"
+	@rm -f "$(CX_GATE_LOCK)"
+
 # ── gate 37.10 — code_diagram / code_tree conformance ────────────
 # Runs conformance/code_diagram.cxd through `cx code-diagram` and
 # `cx code-tree` with structural-equivalence comparison. An all-SKIP

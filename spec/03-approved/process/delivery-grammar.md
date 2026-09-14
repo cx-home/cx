@@ -42,7 +42,7 @@ it; fail gets a fix, or a flaky-test issue.
 | Term | Meaning |
 |---|---|
 | step | one command with a pass/fail exit (a make target, a test file) |
-| pipeline | an ordered set of steps; two exist — **pre-merge** (the branch's subset, in its worktree: `make test-changed BASE=<integration branch>` plus the branch's new steps) and **post-merge** (all of `make test`, on the head) |
+| pipeline | an ordered set of steps; two exist — **pre-merge** (the branch's subset, in its worktree: `make test-changed BASE=<integration branch>` plus the branch's new steps) and **post-merge** (all of `make test`, on the head). A head whose diff against the last head that **passed** touches only documentation runs the **doc pipeline** (`make test-docs`) instead of all of `make test`; the list of paths that counts as documentation lives in the runner, not here (RULED: INT-10). |
 | run | one pipeline on one commit; its status is pass, fail or cancelled |
 | runner | executes runs, one at a time; one per pipeline |
 | flaky test | a step that fails at the same commit with no code change; a known one is retried once |
