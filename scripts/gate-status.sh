@@ -80,9 +80,13 @@ show() {
 		"$(grep -cE '^FAIL' "$LOG")" "$(grep -cE '^make(\[[0-9]+\])?: \*\*\*' "$LOG")"
 
 	printf '\n── finished steps ────────────────────────────────────\n'
-	grep -E 'Summary for all V _test.v|passed, [0-9]+ failed|: [0-9]+ passed' "$LOG" \
-		| tail -8 | sed 's/^/  /' | cut -c1-100
-	[ -z "$(grep -E 'Summary for all V _test.v' "$LOG")" ] && printf '  (none yet — still building)\n'
+	# The fallback keys on THIS pattern, not on the V-test summary alone: a DOC
+	# run (`make test-docs`, RULED: INT-10) compiles no V test, so keying on
+	# 'Summary for all V _test.v' printed "still building" under a doc run that
+	# had already finished all seven of its steps.
+	SUMMARIES='Summary for all V _test.v|passed, [0-9]+ failed|: [0-9]+ passed'
+	grep -E "$SUMMARIES" "$LOG" | tail -8 | sed 's/^/  /' | cut -c1-100
+	[ -z "$(grep -E "$SUMMARIES" "$LOG")" ] && printf '  (none yet — still building)\n'
 
 	printf '\n── steps running now ─────────────────────────────────\n'
 	n=$(ps -eo args | grep -cE 'third_party/v/v |clang|/cc |[a-z_]+_test$')
