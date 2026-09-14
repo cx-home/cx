@@ -113,6 +113,9 @@ becomes its own Ring-1 module.
   [module name=math ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/math.md spec-to=spec/03-approved/stdlib/math.md corpus=conformance/stdlib/math.cxd source=stdlib/math.cx code=vcx/code/stdlib_math.v half=none status=current]
   [module name=mime ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/mime.md spec-to=spec/03-approved/stdlib/mime.md corpus=conformance/stdlib/mime.cxd source=stdlib/mime.cx code=vcx/code/stdlib_mime.v half=none status=current]
   [module name=oidc ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/oidc.md spec-to=spec/03-approved/stdlib/oidc.md corpus=conformance/stdlib/oidc.cxd source=stdlib/oidc.cx code=vcx/code/stdlib_oidc.v half=none status=current]
+  [; graphql, soap — the connector kit's codec transports (RULED: 1430-c, GQL-1): planned, spec first. ]
+  [module name=graphql ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/graphql.md spec-to=spec/03-approved/stdlib/graphql.md corpus=conformance/stdlib/graphql.cxd source=stdlib/graphql.cx code=vcx/code/stdlib_graphql.v half=none status=planned]
+  [module name=soap ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/soap.md spec-to=spec/03-approved/stdlib/soap.md corpus=conformance/stdlib/soap.cxd source=stdlib/soap.cx code=vcx/code/stdlib_soap.v half=none status=planned]
   [module name=path ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/path.md spec-to=spec/03-approved/stdlib/path.md corpus=conformance/stdlib/path.cxd source=stdlib/path.cx code=vcx/code/stdlib_path.v half=none status=current]
   [module name=process ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/process.md spec-to=spec/03-approved/stdlib/process.md corpus=conformance/stdlib/process.cxd source=stdlib/process.cx code=vcx/code/stdlib_process_notd_cx_no_pack_process.v half=none status=current]
   [module name=prof ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/std-lib/prof.md spec-to=spec/03-approved/stdlib/prof.md corpus=conformance/stdlib/prof.cxd source=stdlib/prof.cx code=vcx/code/stdlib_prof.v half=none status=current]
@@ -165,6 +168,9 @@ becomes its own Ring-1 module.
   [module name=session ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/session.md spec-to=spec/03-approved/platform/session.md corpus=conformance/stdlib/session.cxd corpus-to=conformance/platform/session.cxd source=stdlib/session.cx code=vcx/platform/stdlib_session.v half=none status=current]
   [; ftp — the connector kit's second file-transfer transport (RULED: 1430-e): planned, spec first. ]
   [module name=ftp ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/ftp.md spec-to=spec/03-approved/platform/ftp.md corpus=conformance/stdlib/ftp.cxd corpus-to=conformance/platform/ftp.cxd source=stdlib/ftp.cx code=vcx/platform/stdlib_ftp.v half=none status=planned]
+||||||| 7043c05bd
+  [; sftp — the connector kit's socket transport (RULED: 1430-c): planned, spec first. ]
+  [module name=sftp ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/sftp.md spec-to=spec/03-approved/platform/sftp.md corpus=conformance/stdlib/sftp.cxd corpus-to=conformance/platform/sftp.cxd source=stdlib/sftp.cx code=vcx/platform/stdlib_sftp.v half=none status=planned]
   [module name=smtp ring=2 ns=cx-stdlib ns-to=cx-platform kind=module spec=spec/03-approved/std-lib/smtp.md spec-to=spec/03-approved/platform/smtp.md corpus=conformance/stdlib/smtp.cxd corpus-to=conformance/platform/smtp.cxd suite-ring=1 source=stdlib/smtp.cx code=vcx/platform/stdlib_smtp_wire.v half='vcx/code/stdlib_smtp.v vcx/code/stdlib_smtp_server.v' status=current]
   [; sso — #1394's enterprise-SSO handler surface, pure CX over
      oidc/saml/scim/session; declared `incoming` before its merge (OL-15) and

@@ -254,6 +254,9 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1422-b` | [rulings_2026_09_12_audit_sink_1422.md](rulings_2026_09_12_audit_sink_1422.md) | ADDENDUM — RULED: 1422-b — the owner's two answers to the ⚠ rows, recorded before phase 2 touched a spec or a file |
 | `1427-a` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) | RULED: 1427-a…1427-j — the ring-legible tree (owner, 2026-09-12 ~13:40Z, option (a) on every dimension of the integrator's table) |
 | `1427-j` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) | RULED: 1427-a…1427-j — the ring-legible tree (owner, 2026-09-12 ~13:40Z, option (a) on every dimension of the integrator's table) |
+| `1430-b` | [rulings_2026_09_14_owner_letters_1430_1434.md](rulings_2026_09_14_owner_letters_1430_1434.md) | Owner letters 2026-09-14 ~04:50Z — #1430 and #1434 (RULED: 1430-b, 1434-b) |
+| `1430-c` | [rulings_2026_09_14_connector_transports_1430c.md](rulings_2026_09_14_connector_transports_1430c.md) | Owner letter 2026-09-14 ~05:20Z — the connector kit executes every protocol, DB included (RULED: 1430-c) |
+| `1430-d` | [rulings_2026_09_14_connector_transports_1430c.md](rulings_2026_09_14_connector_transports_1430c.md) | 1430-d — the kit is an OPEN adapter contract, wide and specialized (owner, 2026-09-14 ~05:35Z) |
 | `1430-e` | [rulings_2026_09_14_connector_catalog_1430e.md](rulings_2026_09_14_connector_catalog_1430e.md) | Owner letter 2026-09-14 ~05:50Z — every connection type, every database, the reference set (RULED: 1430-e, 1455-a, 1430-f) |
 | `1430-f` | [rulings_2026_09_14_connector_catalog_1430e.md](rulings_2026_09_14_connector_catalog_1430e.md) | Owner letter 2026-09-14 ~05:50Z — every connection type, every database, the reference set (RULED: 1430-e, 1455-a, 1430-f) |
 | `1431-a` | [rulings_2026_09_13_load_class_flaky_tests_1431_1432.md](rulings_2026_09_13_load_class_flaky_tests_1431_1432.md) | RULED: 1431-a, 1432-a — two load classes join the classified serial-retry policy |
@@ -263,6 +266,10 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1434-a` | [rulings_2026_09_13_incremental_sync_1434.md](rulings_2026_09_13_incremental_sync_1434.md) | Ruling 2026-09-13 — #1434 (#728 component 3): incremental sync — placement, decided before the spec (1434-a) |
 | `1434-a` | [rulings_2026_09_13_incremental_sync_1434.md](rulings_2026_09_13_incremental_sync_1434.md) | 1434-a — the module is `sync`, Ring 2, and where each of its four dimensions lives |
 | `1434-a` | [rulings_2026_09_13_incremental_sync_1434.md](rulings_2026_09_13_incremental_sync_1434.md) | The scope 1434-a fixes |
+| `1434-b` | [rulings_2026_09_14_owner_letters_1430_1434.md](rulings_2026_09_14_owner_letters_1430_1434.md) | Owner letters 2026-09-14 ~04:50Z — #1430 and #1434 (RULED: 1430-b, 1434-b) |
+| `1434-c` | [rulings_2026_09_14_owner_letters_1434c_1437_1451.md](rulings_2026_09_14_owner_letters_1434c_1437_1451.md) | Owner letters 2026-09-14 ~04:55Z — #1434 (5, 6), #1437, #1451 (RULED: 1434-c, 1437-a, 1451-a) |
+| `1437-a` | [rulings_2026_09_14_owner_letters_1434c_1437_1451.md](rulings_2026_09_14_owner_letters_1434c_1437_1451.md) | Owner letters 2026-09-14 ~04:55Z — #1434 (5, 6), #1437, #1451 (RULED: 1434-c, 1437-a, 1451-a) |
+| `1451-a` | [rulings_2026_09_14_owner_letters_1434c_1437_1451.md](rulings_2026_09_14_owner_letters_1434c_1437_1451.md) | Owner letters 2026-09-14 ~04:55Z — #1434 (5, 6), #1437, #1451 (RULED: 1434-c, 1437-a, 1451-a) |
 | `1455-a` | [rulings_2026_09_14_connector_catalog_1430e.md](rulings_2026_09_14_connector_catalog_1430e.md) | Owner letter 2026-09-14 ~05:50Z — every connection type, every database, the reference set (RULED: 1430-e, 1455-a, 1430-f) |
 | `192-gcm` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) | RULED: 1400-a, 1401-a — XML Encryption comes IN: `saml:verify` decrypts `EncryptedAssertion` / `EncryptedID` / `EncryptedAttribute` with `opts.decryption-keys`; `crypto` gains RSA key transport (OAEP, SHA-1 inside OAEP allowed; PKCS#1 v1.5 behind a loud opt-in with implicit rejection) and AES-CBC + AES-128/192-GCM; encryption is detected BEFORE the signature search |
 | `787-poc` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) | Ledger — #787 integration: the ONE rebase of impl/787-poc onto release/0.16.0 |
@@ -502,6 +509,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ol-15` | [rulings_2026_09_12_audit_sink_1422.md](rulings_2026_09_12_audit_sink_1422.md) | 1. Placement, stated before any spec or code (OL-15) |
 | `ol-15` | [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md) | §4. Placement (OL-15) |
 | `ol-15` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) | Addendum, ~05:20Z — OL-14 and OL-15 (owner: "recommendations accepted for the library and repo plan"; "we can't keep making these big organization mistakes that cause refactoring and restructuring. its been very costly.") |
+| `ol-15` | [rulings_2026_09_14_connector_transports_1430c.md](rulings_2026_09_14_connector_transports_1430c.md) | Placement, decided here before spec or code (OL-15) |
 | `pb-1` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | PB-1 — how the runner performs a step's act — RULED (a) |
 | `pb-2` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | PB-2 — the run id preimage — RULED (a) |
 | `pb-3` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | PB-3 — the home stream default — RULED (a) |
@@ -886,7 +894,6 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1427-g` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
 | `1427-h` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
 | `1427-i` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
-| `1430-d` | [rulings_2026_09_14_connector_catalog_1430e.md](rulings_2026_09_14_connector_catalog_1430e.md) |
 | `1433-a` | [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
 | `1433-b` | [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
 | `1433-c` | [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
@@ -1019,7 +1026,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `edl-1a` | [rulings_2026_08_21_diagram_vector_data.md](rulings_2026_08_21_diagram_vector_data.md), [rulings_2026_08_21_table_image.md](rulings_2026_08_21_table_image.md), [rulings_2026_08_22_gate_hygiene.md](rulings_2026_08_22_gate_hygiene.md) |
 | `ga-1a` | [rulings_2026_08_20_guest_attach.md](rulings_2026_08_20_guest_attach.md) |
 | `ga-1b` | [rulings_2026_08_20_guest_attach.md](rulings_2026_08_20_guest_attach.md) |
-| `gql-1` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
+| `gql-1` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_14_connector_transports_1430c.md](rulings_2026_09_14_connector_transports_1430c.md) |
 | `http-429` | [partition_remediation_register.md](partition_remediation_register.md) |
 | `ieee-754` | [partition_I5_stream17_runtime.md](partition_I5_stream17_runtime.md) |
 | `imap-1` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
@@ -1139,4 +1146,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*268 ledger pages; 545 ids declared, 341 cited only.*
+*271 ledger pages; 552 ids declared, 340 cited only.*
