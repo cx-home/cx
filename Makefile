@@ -225,6 +225,34 @@ build-vcx: check-gate-lock
 build-vcx-dev: check-gate-lock
 	$(MAKE) -C vcx build-dev CX_DFLAGS='$(CX_DFLAGS)'
 
+# ── The §4 PROFILE MATRIX as ordinary build steps (#1449, RULED: 1449-a) ─────
+# These used to be built nowhere: `test-profile-gate` built the whole matrix
+# from scratch inside the SERIAL TAIL of `make test`, after the -j block had
+# drained, and `test-extraction-gate` and `abi-gc-gate` each ran their own
+# `$(MAKE) -C vcx build-data-dev` inside the block — two concurrent recursive
+# sub-makes writing the same two artifacts, with nothing sequencing them.
+#
+# Both halves are fixed by naming the builds ONCE, here, as targets that
+# depend on `build-vcx` and on nothing else. Inside any single make invocation
+# the DAG then has exactly one node per artifact, so the data profile is built
+# once and both gates wait on it; and the profile matrix runs inside the -j
+# block, where it is ordinary parallel work, instead of at the head of the
+# serial tail. The vcx recipes carry the same relink guard `build-vcx` does
+# (#1449 at LIB_CORE_BUILD_ID), so the tail's own recursive build finds every
+# artifact current and skips it — make's freshness, not a second copy of the
+# list.
+#
+# `build-profiles-dev` re-enters vcx for the FULL matrix rather than naming the
+# embed/cli half here: the data half hits its guard and costs two `find`s, and
+# a hand-copied list one recipe away from vcx's own is exactly the drift the
+# roster gates exist to stop.
+.PHONY: build-profile-data build-profiles-dev
+build-profile-data: build-vcx
+	@$(MAKE) -C vcx build-data-dev
+
+build-profiles-dev: build-profile-data
+	@$(MAKE) -C vcx build-profiles-dev
+
 # v0.7.5 — build libcx.wasm + libcx.js (emscripten
 # loader) + cxlib.js (hand-written wrapper). Produces dist/wasm/.
 # Opt-in: not invoked by the default `build` target so contributors
@@ -1360,8 +1388,7 @@ LIBCX_CORE_ART := vcx/target/libcx-core.$(if $(filter Darwin,$(shell uname -s)),
 # These gates dlopen $(LIBCX_ART); pinning them to the -prod artifact makes
 # "which build is under test" a decision instead of a race, and it is the
 # only honest subject for a gate — the dev library is not what ships.
-test-extraction-gate: build-vcx
-	@$(MAKE) -C vcx build-data-dev
+test-extraction-gate: build-vcx build-profile-data
 	@mkdir -p vcx/target/extraction_gate
 	@$(V) -n -w -cc cc $(CX_GC) -o vcx/target/extraction_gate/probe vcx/tests/runners/extraction_gate/probe/
 	@$(V) -n -w -cc cc $(CX_GC) -o vcx/target/extraction_gate/cli_gate vcx/tests/runners/extraction_gate/cli/
@@ -1406,8 +1433,7 @@ address-baseline-capture:
 # These gates dlopen $(LIBCX_ART); pinning them to the -prod artifact makes
 # "which build is under test" a decision instead of a race, and it is the
 # only honest subject for a gate — the dev library is not what ships.
-abi-gc-gate: build-vcx
-	@$(MAKE) -C vcx build-data-dev
+abi-gc-gate: build-vcx build-profile-data
 	@mkdir -p vcx/target/extraction_gate
 	@$(V) -n -w -cc cc $(CX_GC) -o vcx/target/extraction_gate/abi_gc_gate vcx/tests/runners/abi_gc_gate/
 	@vcx/target/extraction_gate/abi_gc_gate $(LIBCX_ART)
@@ -1444,7 +1470,11 @@ libcx-abi-gate: build-vcx
 # profile_gate runner at the cli and embed engine compositions with binary
 # probes. The data profile's corpus clause is test-extraction-gate (I2).
 .PHONY: test-profile-gate
-test-profile-gate:
+# #1449 — the matrix is a prerequisite, not the first thing the recipe does:
+# inside one make invocation that puts the profile builds on the same DAG node
+# `build-profiles-dev` occupies in the -j block, so a selection that runs this
+# step beside test-extraction-gate builds each artifact once.
+test-profile-gate: build-profiles-dev
 	@$(MAKE) -C vcx test-profile-gate
 
 # ── PER-RING GATE STEPS (#700 structural relief, activated at I4) — run the
@@ -1598,7 +1628,17 @@ test:
 	# after the storm drains; the profile gate gets the same quiet context.
 	# Nothing is masked: a deterministic failure still reds the serial run,
 	# and the runner's classifier + named re-grade govern inside it.
-	@$(MAKE) -j$(TEST_JOBS) $(OUTPUT_SYNC) $(filter-out test-profile-gate test-vcx-timing test-code-diagram,$(TEST_TARGETS))
+	#
+	# Its BUILDS do not need that context (#1449, RULED: 1449-a). The three
+	# profile binaries and the embed libcx are ordinary V compiles with no
+	# probe and no wall-clock claim in them, and the quiet-context argument
+	# above is about a load-induced binary PROBE failure — so they ride in the
+	# storm as `build-profiles-dev` and the serial tail starts with binaries in
+	# hand. Measured on the post-merge run on 44f328b0e: the tail was 18.5 min
+	# of a 45.5-min run, the matrix builds at the head of it. The guard on each
+	# profile recipe (vcx/Makefile, LIB_CORE_BUILD_ID) is what makes the tail's
+	# own build a no-op rather than a second compile.
+	@$(MAKE) -j$(TEST_JOBS) $(OUTPUT_SYNC) build-profiles-dev $(filter-out test-profile-gate test-vcx-timing test-code-diagram,$(TEST_TARGETS))
 	@$(MAKE) test-profile-gate
 	# #1216: the WALL-CLOCK assertions (the #1055 boot budget, the #816 try-send /
 	# try-receive upper bounds) run serially AFTER the storm too — they are
