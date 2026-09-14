@@ -8,7 +8,7 @@
 #         tests/code_eval_fixtures_test.v
 #
 # and read the census off its stdout. The corpus is now graded by the driver
-# plus the shard files named in conformance/fixture_shards.cxd, so this script
+# plus the shard files named in vcx/tests/fixtures_grader/fixture_shards.cxd, so this script
 # is that line: it runs all of them IN PARALLEL under the same flags, prints
 # each one's output in manifest order (so a log is deterministic, not
 # interleaved), and prints the aggregated census line last. `make fixtures` is
@@ -24,7 +24,7 @@ ROOT=$(pwd)
 
 V=${V:-$ROOT/third_party/v/v}
 FLAGS="-cc cc -gc e -d cx_db_sqlite -d cx_db_redis ${FIXTURE_VFLAGS:-}"
-MANIFEST=conformance/fixture_shards.cxd
+MANIFEST=vcx/tests/fixtures_grader/fixture_shards.cxd
 OUT=vcx/target/fixtures
 
 [ -f "$MANIFEST" ] || { echo "make fixtures: no $MANIFEST" >&2; exit 1; }
