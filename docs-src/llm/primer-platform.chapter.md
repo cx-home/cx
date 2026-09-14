@@ -403,6 +403,35 @@ Each row is a defect of this page under COMP-1, recorded rather than hidden.
 | §3.1 poll–transform–sink | The poll and the sink are graded by **#1467** and **#1472**; the TRANSFORM is graded by no reference example — the `order-pipeline` document carries no `[compute …]` step, and the transform step's own conformance cases are advisory until the runner code lands (`flow.md` §4.4a, RULED: WF-42) | **#1472** — the one example whose document already orders two features' verbs, and so the one that can carry the mapping between them |
 | §3.3 async bulk export | The pattern named by `connector.md` §12.3 as the case that looks like a dependency on `flow` is demonstrated by none of the seven reference examples, and is not among the coverage gaps that document states (`../../../reference/connectors/README.md` §1.4) | **none** — no issue owes it today |
 
+**§3.9. The scaffold**
+
+`cx xap scaffold <pattern>` emits one pattern of §3 as a DECLARATION SKELETON
+(RULED: COMP-1). The contract is four sentences.
+
+**Input** is a pattern name and nothing else: one member of the closed set
+named by §3.1-§3.7, taken as a slug. **Output** is the declaration documents
+that pattern states — the flow document, the feature and gateway declarations,
+and the deployment binding — plus a README carrying the pattern's need, its
+modules, the §2 rows it crosses, the reference example that grades it, and the
+list below. Every emitted document parses.
+
+**The TODO rule.** What the pattern STATES becomes a declaration; what it does
+not state becomes an authoring TODO, never a guess — the discipline
+`connector.md` §6.3 fixes for every skeleton the toolchain
+emits (RULED: 1430-g), applied here to a composition instead of to an OpenAPI
+document. The feature names, the thresholds, the routes, the nouns, the verbs,
+every idempotency claim and every deployment fact are TODOs, and each says why
+it is one. The command is pure — a pattern name in, a skeleton out, with no
+network, no clock and nothing read from the tree.
+
+**The refusal.** A name outside the closed set is refused with the seven
+named, never with the nearest one: a composition an adopter needs that is not
+one of the seven is a decision for the owner, not a variation to improvise,
+and a scaffold that answered with something near it would hide that decision
+rather than raise it. The skeleton does not run as generated, and says so —
+`cx xap init` scaffolds a project that composes unedited because a project has
+a working shape, and a composition pattern is a shape.
+
 ### 12.5 The four runtimes — deployment-topology.md §1
 
 **§1. The runtimes**
