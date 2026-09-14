@@ -817,7 +817,7 @@ const flow_serve_helpers = "
 
 [?def fs--ingress scope=private impure [effects [read] [write] [clock]] [returns element] (\$j \$e \$fs \$bs \$act-path::string \$req)
   [?let [= \$p [\$string \$req@path]]
-    [= \$text [\$cxhttp:body-text \$req]]
+    [= \$text [\$cxhttpc:body-text \$req]]
     [?if [= \$p \$act-path]
       [then [fs--ingress-act \$j \$e \$fs \$text]]
       [else [?let [= \$hits [fs--webhook-row \$bs \$p]]
@@ -838,7 +838,18 @@ fn flow_serve_program(r FlowRunner, directives []string, acts []FlowCliAct, tick
 	b << "[?lib 'cx-platform/flow' :as cxflow]"
 	b << "[?lib 'cx-platform/store' :as cxstore]"
 	b << "[?lib 'cx-platform/journal' :as cxjournal]"
+	// BOTH halves of http, because this driver is both (RULED: 1427-e). It
+	// SERVES — `cxhttp:serve` below — and it READS A MESSAGE, `body-text`,
+	// which is a pure codec verb and went to the Ring-1 `http-client` module
+	// when the split happened. The migration tool writes exactly this pair for
+	// a CX program, but this program is assembled by CONCATENATING V string
+	// constants and the tool's V pass sees one literal at a time, so it could
+	// only ever pick one namespace for the whole driver: it picked the serve
+	// half, `body-text` stopped resolving, and every delivery answered 400
+	// with E_NO_CALLABLE (the post-merge red on 100989e09). The pair is
+	// written here by hand, in the shape the tool would have produced.
 	b << "[?lib 'cx-platform/http' :as cxhttp]"
+	b << "[?lib 'cx-stdlib/http-client' :as cxhttpc]"
 	b << "[?lib 'cx-stdlib/io' :as cxio]"
 	b << "[?lib 'cx-stdlib/re' :as cxre]"
 	b << "[?lib 'cx-stdlib/log' :as cxlog]"
