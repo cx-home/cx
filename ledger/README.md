@@ -263,6 +263,9 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1434-a` | [rulings_2026_09_13_incremental_sync_1434.md](rulings_2026_09_13_incremental_sync_1434.md) | 1434-a — the module is `sync`, Ring 2, and where each of its four dimensions lives |
 | `1434-a` | [rulings_2026_09_13_incremental_sync_1434.md](rulings_2026_09_13_incremental_sync_1434.md) | The scope 1434-a fixes |
 | `1434-b` | [rulings_2026_09_14_owner_letters_1430_1434.md](rulings_2026_09_14_owner_letters_1430_1434.md) | Owner letters 2026-09-14 ~04:50Z — #1430 and #1434 (RULED: 1430-b, 1434-b) |
+| `1434-c` | [rulings_2026_09_14_owner_letters_1434c_1437_1451.md](rulings_2026_09_14_owner_letters_1434c_1437_1451.md) | Owner letters 2026-09-14 ~04:55Z — #1434 (5, 6), #1437, #1451 (RULED: 1434-c, 1437-a, 1451-a) |
+| `1437-a` | [rulings_2026_09_14_owner_letters_1434c_1437_1451.md](rulings_2026_09_14_owner_letters_1434c_1437_1451.md) | Owner letters 2026-09-14 ~04:55Z — #1434 (5, 6), #1437, #1451 (RULED: 1434-c, 1437-a, 1451-a) |
+| `1451-a` | [rulings_2026_09_14_owner_letters_1434c_1437_1451.md](rulings_2026_09_14_owner_letters_1434c_1437_1451.md) | Owner letters 2026-09-14 ~04:55Z — #1434 (5, 6), #1437, #1451 (RULED: 1434-c, 1437-a, 1451-a) |
 | `192-gcm` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) | RULED: 1400-a, 1401-a — XML Encryption comes IN: `saml:verify` decrypts `EncryptedAssertion` / `EncryptedID` / `EncryptedAttribute` with `opts.decryption-keys`; `crypto` gains RSA key transport (OAEP, SHA-1 inside OAEP allowed; PKCS#1 v1.5 behind a loud opt-in with implicit rejection) and AES-CBC + AES-128/192-GCM; encryption is detected BEFORE the signature search |
 | `787-poc` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) | Ledger — #787 integration: the ONE rebase of impl/787-poc onto release/0.16.0 |
 | `ad-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-1 — `[selection …]` binds every consumption point, through the one PEP (#1181) |
@@ -1137,4 +1140,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*268 ledger pages; 544 ids declared, 340 cited only.*
+*269 ledger pages; 547 ids declared, 340 cited only.*
