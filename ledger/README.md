@@ -374,6 +374,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `co-8` | [rulings_2026_08_25_0170_closeout.md](rulings_2026_08_25_0170_closeout.md) | CO-8 (AMENDMENT 1 item 4, ruled 1a) — journal and fabric stay UNGUARDED |
 | `co-8` | [rulings_2026_08_25_0170_closeout.md](rulings_2026_08_25_0170_closeout.md) | CO-8 execution note — the exemption was defeated by its own plumbing |
 | `co-9` | [rulings_2026_08_25_0170_closeout.md](rulings_2026_08_25_0170_closeout.md) | CO-9 (#982, ruled 2a) — hosted bindings are DEPLOYMENT-DOCUMENT DATA |
+| `comp-1` | [rulings_2026_09_14_platform_composition_comp1.md](rulings_2026_09_14_platform_composition_comp1.md) | Owner letter 2026-09-14 ~17:05Z — the platform's composition is stated once, checked, and read by the agents that build on it (RULED: COMP-1) |
 | `cr-1` | [rulings_2026_08_30_codec_ring_layering.md](rulings_2026_08_30_codec_ring_layering.md) | CR-1 — where a codec's parse/emit core lives (#1126) (RULED: CR-1 = a) |
 | `cr-1` | [rulings_2026_08_30_codec_ring_layering.md](rulings_2026_08_30_codec_ring_layering.md) | CR-1 — where a codec's parse/emit core lives (#1126) (RULED: CR-1 = a) |
 | `cr-2` | [rulings_2026_08_30_codec_ring_layering.md](rulings_2026_08_30_codec_ring_layering.md) | CR-2 — one error conversion, one direction (RULED: CR-2 = a) |
@@ -1150,4 +1151,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*274 ledger pages; 555 ids declared, 341 cited only.*
+*275 ledger pages; 556 ids declared, 341 cited only.*

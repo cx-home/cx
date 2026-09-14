@@ -1001,7 +1001,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster fmt-sweep-gate test-playground-wasm-traps ledger-index-check
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster fmt-sweep-gate test-playground-wasm-traps ledger-index-check
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -1219,6 +1219,26 @@ check-no-adr-citations: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-no-adr-citations:
 	@"$(CX_BIN)" --allow-read --allow-write scripts/check_no_adr_citations.cx --self-test
 	@"$(CX_BIN)" --allow-read --allow-write scripts/check_no_adr_citations.cx
+
+# ── COMPOSITION-SEAMS step (RULED: COMP-1) — the platform's composition is
+# stated once, in spec/03-approved/platform/composition.md, and this step is
+# that page's §4 executed: it refuses a specification sentence naming a
+# dependency the page's §2.2 marks REFUSED (connector -> flow and sync -> flow,
+# CK-6; audit -> store; connector -> sched and sync -> sched, the cadence
+# refusals). It reads every *.md under the two ring trees, derives a file's
+# owning module from its path stem, and skips a line that STATES a refusal —
+# the specifications say "never depends on flow" in exactly those words, and a
+# check that read that as a violation would be turned off within a week.
+#
+# A TEST_TARGETS row on the INT-11 pattern: the step is SELF-SUFFICIENT — it
+# reads the tracked specification tree and nothing a build or a documentation
+# render would have produced. The self-test runs first, so a detector that
+# stopped detecting fails before the scan reports clean.
+.PHONY: check-composition-seams
+check-composition-seams: CX_BIN ?= $(CURDIR)/vcx/target/cx
+check-composition-seams:
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_composition_seams.cx --self-test
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_composition_seams.cx
 
 # ── NO-STUB-IMPL gate (global no-stub rule) — the stdlib impl bundle
 # (vcx/code/*.v) must contain no fake-success stub: an effectful prim returning
