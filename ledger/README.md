@@ -257,6 +257,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1430-b` | [rulings_2026_09_14_owner_letters_1430_1434.md](rulings_2026_09_14_owner_letters_1430_1434.md) | Owner letters 2026-09-14 ~04:50Z — #1430 and #1434 (RULED: 1430-b, 1434-b) |
 | `1430-c` | [rulings_2026_09_14_connector_transports_1430c.md](rulings_2026_09_14_connector_transports_1430c.md) | Owner letter 2026-09-14 ~05:20Z — the connector kit executes every protocol, DB included (RULED: 1430-c) |
 | `1430-d` | [rulings_2026_09_14_connector_transports_1430c.md](rulings_2026_09_14_connector_transports_1430c.md) | 1430-d — the kit is an OPEN adapter contract, wide and specialized (owner, 2026-09-14 ~05:35Z) |
+| `1430-e` | [rulings_2026_09_14_connector_catalog_1430e.md](rulings_2026_09_14_connector_catalog_1430e.md) | Owner letter 2026-09-14 ~05:50Z — every connection type, every database, the reference set (RULED: 1430-e, 1455-a, 1430-f) |
+| `1430-f` | [rulings_2026_09_14_connector_catalog_1430e.md](rulings_2026_09_14_connector_catalog_1430e.md) | Owner letter 2026-09-14 ~05:50Z — every connection type, every database, the reference set (RULED: 1430-e, 1455-a, 1430-f) |
 | `1431-a` | [rulings_2026_09_13_load_class_flaky_tests_1431_1432.md](rulings_2026_09_13_load_class_flaky_tests_1431_1432.md) | RULED: 1431-a, 1432-a — two load classes join the classified serial-retry policy |
 | `1431-a` | [rulings_2026_09_13_load_class_flaky_tests_1431_1432.md](rulings_2026_09_13_load_class_flaky_tests_1431_1432.md) | Why 1431-a |
 | `1432-a` | [rulings_2026_09_13_load_class_flaky_tests_1431_1432.md](rulings_2026_09_13_load_class_flaky_tests_1431_1432.md) | RULED: 1431-a, 1432-a — two load classes join the classified serial-retry policy |
@@ -268,6 +270,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1434-c` | [rulings_2026_09_14_owner_letters_1434c_1437_1451.md](rulings_2026_09_14_owner_letters_1434c_1437_1451.md) | Owner letters 2026-09-14 ~04:55Z — #1434 (5, 6), #1437, #1451 (RULED: 1434-c, 1437-a, 1451-a) |
 | `1437-a` | [rulings_2026_09_14_owner_letters_1434c_1437_1451.md](rulings_2026_09_14_owner_letters_1434c_1437_1451.md) | Owner letters 2026-09-14 ~04:55Z — #1434 (5, 6), #1437, #1451 (RULED: 1434-c, 1437-a, 1451-a) |
 | `1451-a` | [rulings_2026_09_14_owner_letters_1434c_1437_1451.md](rulings_2026_09_14_owner_letters_1434c_1437_1451.md) | Owner letters 2026-09-14 ~04:55Z — #1434 (5, 6), #1437, #1451 (RULED: 1434-c, 1437-a, 1451-a) |
+| `1455-a` | [rulings_2026_09_14_connector_catalog_1430e.md](rulings_2026_09_14_connector_catalog_1430e.md) | Owner letter 2026-09-14 ~05:50Z — every connection type, every database, the reference set (RULED: 1430-e, 1455-a, 1430-f) |
 | `192-gcm` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) | RULED: 1400-a, 1401-a — XML Encryption comes IN: `saml:verify` decrypts `EncryptedAssertion` / `EncryptedID` / `EncryptedAttribute` with `opts.decryption-keys`; `crypto` gains RSA key transport (OAEP, SHA-1 inside OAEP allowed; PKCS#1 v1.5 behind a loud opt-in with implicit rejection) and AES-CBC + AES-128/192-GCM; encryption is detected BEFORE the signature search |
 | `787-poc` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) | Ledger — #787 integration: the ONE rebase of impl/787-poc onto release/0.16.0 |
 | `ad-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-1 — `[selection …]` binds every consumption point, through the one PEP (#1181) |
@@ -1143,4 +1146,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*270 ledger pages; 549 ids declared, 340 cited only.*
+*271 ledger pages; 552 ids declared, 340 cited only.*
