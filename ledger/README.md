@@ -818,7 +818,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `122-one` | [rulings_2026_09_04_feature_verb_form_1217.md](rulings_2026_09_04_feature_verb_form_1217.md) |
 | `1228-q1a` | [rulings_2026_09_03_monitor_batch_terminal_1228.md](rulings_2026_09_03_monitor_batch_terminal_1228.md) |
 | `1233-q1ab` | [rulings_2026_09_03_alias_amplification_1233.md](rulings_2026_09_03_alias_amplification_1233.md) |
-| `1249-q1a` | [rulings_2026_09_04_perf_ratchet_at_cut_1249.md](rulings_2026_09_04_perf_ratchet_at_cut_1249.md) |
+| `1249-q1a` | [rulings_2026_09_04_perf_ratchet_at_cut_1249.md](rulings_2026_09_04_perf_ratchet_at_cut_1249.md), [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
 | `1259-d1` | [rulings_2026_09_09_composed_emits_of_1259.md](rulings_2026_09_09_composed_emits_of_1259.md) |
 | `1259-d3` | [rulings_2026_09_09_composed_emits_of_1259.md](rulings_2026_09_09_composed_emits_of_1259.md) |
 | `1259-e1` | [rulings_2026_09_09_composed_emits_of_1259.md](rulings_2026_09_09_composed_emits_of_1259.md) |
@@ -883,6 +883,9 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1427-g` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
 | `1427-h` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
 | `1427-i` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
+| `1433-a` | [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
+| `1433-b` | [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
+| `1433-c` | [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
 | `1448-a` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `170-cfg` | [rulings_2026_09_09_diagram_node_id_ordinals_1349.md](rulings_2026_09_09_diagram_node_id_ordinals_1349.md) |
 | `171-seq-mid` | [rulings_2026_09_08_let_cascade_lint_1170.md](rulings_2026_09_08_let_cascade_lint_1170.md), [rulings_2026_09_08_seq4_pin_page_sync_1170.md](rulings_2026_09_08_seq4_pin_page_sync_1170.md) |
@@ -1025,7 +1028,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `int-3` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-4` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-5` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_13_claude_context_audit.md](rulings_2026_09_13_claude_context_audit.md) |
-| `int-6` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
+| `int-6` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
 | `int-7` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-8` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-9` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
@@ -1132,4 +1135,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*266 ledger pages; 542 ids declared, 337 cited only.*
+*267 ledger pages; 542 ids declared, 340 cited only.*
