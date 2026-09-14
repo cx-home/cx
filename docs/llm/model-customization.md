@@ -592,7 +592,7 @@ Underneath, distribution supplies the immutability the pin relies on.
 (re-pointing is a market-rule violation; consumers pin hashes anyway)"*. So a
 new artifact is a new version, and a pin rollback is hash identity: "go back"
 is exact rather than approximate. (Both are pinned by
-`conformance/stdlib/xap-dist.cxd` cases `xap-dist-014-publish-released-alias-immutable`
+`conformance/xap/xap-dist.cxd` cases `xap-dist-014-publish-released-alias-immutable`
 and `xap-dist-020-pin-rollback-hash-identity`; they are cited by id rather than
 inlined here because they mint an ed25519 keypair, and this document's code
 blocks are replayed with no capability grants.)

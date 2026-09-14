@@ -2623,7 +2623,7 @@ Same as 62: `[name "Alice"]` is the document's name field, not the `[$name]` bui
   [section [# code/functions #]]
   [src [#
 [?lib 'cx-stdlib/fp']
-[?lib 'cx-stdlib/http']
+[?lib 'cx-stdlib/http-client' :as http]
 
 [$fp:traverse ("https://example.com/a", "https://example.com/b")
   [?fn ($u) [$http:get $u]]]

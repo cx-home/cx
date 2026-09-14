@@ -1,4 +1,4 @@
-// `cx flow serve` — the STANDALONE RUNNER of cx-stdlib/flow (flow.md §4.23;
+// `cx flow serve` — the STANDALONE RUNNER of cx-platform/flow (flow.md §4.23;
 // RULED: 789-WF-28, WF-28b, WF-29, WF-30 … WF-37).
 //
 // `cx flow serve RUNNER.cx` is a long-running process holding ONE journal and
@@ -835,10 +835,10 @@ const flow_serve_helpers = "
 // resolves here exactly as it resolves there.
 fn flow_serve_program(r FlowRunner, directives []string, acts []FlowCliAct, ticks i64, tick_ms i64) string {
 	mut b := []string{}
-	b << "[?lib 'cx-stdlib/flow' :as cxflow]"
-	b << "[?lib 'cx-stdlib/store' :as cxstore]"
-	b << "[?lib 'cx-stdlib/journal' :as cxjournal]"
-	b << "[?lib 'cx-stdlib/http' :as cxhttp]"
+	b << "[?lib 'cx-platform/flow' :as cxflow]"
+	b << "[?lib 'cx-platform/store' :as cxstore]"
+	b << "[?lib 'cx-platform/journal' :as cxjournal]"
+	b << "[?lib 'cx-platform/http' :as cxhttp]"
 	b << "[?lib 'cx-stdlib/io' :as cxio]"
 	b << "[?lib 'cx-stdlib/re' :as cxre]"
 	b << "[?lib 'cx-stdlib/log' :as cxlog]"
