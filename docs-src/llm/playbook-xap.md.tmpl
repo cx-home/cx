@@ -442,7 +442,7 @@ principal can never collide with an inherent-authority `principal:` id.
 
 ### Sessions bind a principal, immutably
 
-Below the host, `cx-stdlib/session` binds a `(principal, tenant)` pair for the
+Below the host, `cx-platform/session` binds a `(principal, tenant)` pair for the
 session's whole life. An anonymous floor is a real principal:
 
 {{EXAMPLE:session-057-attach-guest-floor-binding block}}
@@ -460,7 +460,7 @@ decides: there is one evaluator, not a credential path running beside the
 authority path, and a credential past its time of use denies at check.
 
 Those four cases carry full RFC key vectors and are long, so they are cited
-rather than printed. Read them in `conformance/stdlib/session.cxd`:
+rather than printed. Read them in `conformance/platform/session.cxd`:
 `session-045-attach-xsp-binds-proven-principal`,
 `session-047-attach-xsp-anonymous-no-floor-rejected`,
 `session-050-present-vc-compiles-to-permit`,

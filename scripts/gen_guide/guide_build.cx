@@ -290,9 +290,22 @@
    RING 0 HAS NO PACKS, and that is a fact about the architecture rather than
    an omission: Ring 0 has no evaluator, so it has nothing to call a pack
    from. Its surface is the format itself plus the bindings. #]
-[?def ring2-packs scope=public [returns string] ()
-  ' authz bus did email fabric http journal live net session store vc xap xsp ']
-[?def pack-ring scope=public [returns int] ($name)
+[# THE RING IS READ, NOT LISTED (RULED: 1427-f, OL-15). This used to be a
+   hand-kept `ring2-packs` string, and by #1427 it was already wrong in five
+   places — it still called `email` Ring 2 and had never heard of `audit`,
+   `sso`, `flow`, `smtp` or `imap`. A second list of where a module lives is
+   free to disagree with the first, which is the whole defect OL-15 names.
+   registry/modules.cxd is the ONE declaration; `make placement-gate` holds
+   the tree to it, and this page now reads the same row. #]
+[?def ring2-packs scope=public impure [returns string] ()
+  [?let [= $reg [$cx:parse [$io:read-file 'registry/modules.cxd']]]
+    [$cat (' ',
+      [$strings:join [?for [in $m $reg//module]
+        [where [= [$string [?else $m@kind 'module']] 'module']]
+        [where [= [$string $m@ring] '2']]
+        [yield [$string $m@name]]] ' '],
+      ' ')]]]
+[?def pack-ring scope=public impure [returns int] ($name)
   [?if [>= [$strings:find [$ring2-packs] [$cat (' ', $name, ' ')]] 0]
     [then 2] [else 1]]]
 [# lib-ring-items: the pack links for ONE ring, in name order.

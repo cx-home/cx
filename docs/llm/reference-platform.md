@@ -24,7 +24,7 @@ plain `cx` invocation:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [doc [item "hello"]]]] [$store:get-doc $s $h]]
 ```
 
@@ -39,7 +39,7 @@ not of insertion order:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]] [= $h1 [$store:put-doc $s [doc [item "hello"]]]] [= $h2 [$store:put-doc $s [doc [item "hello"]]]] [= $h1 $h2]]
 ```
 
@@ -52,7 +52,7 @@ Two different documents cannot collide into one handle:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]] [= $h1 [$store:put-doc $s [doc [item "a"]]]] [= $h2 [$store:put-doc $s [doc [item "b"]]]] [= $h1 $h2]]
 ```
 
@@ -67,7 +67,7 @@ distinct answers:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]] [$store:get-doc $s "sha2-256:0000000000000000000000000000000000000000000000000000000000000000"]]
 ```
 
@@ -78,7 +78,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]] [$store:get-doc $s "deadbeef"]]
 ```
 
@@ -91,7 +91,7 @@ Aliases give a mutable name over immutable content:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]] [= $h [$store:put-doc $s [doc [item "hello"]]]] [= $a [$store:set-alias $s "latest" $h]] [$store:get-alias $s "latest"]]
 ```
 
@@ -104,7 +104,7 @@ A read-only store refuses writes rather than accepting and dropping them:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open-opts "mem://" [map read-only="true"]]] [$store:put-doc $s [doc [item "x"]]]]
 ```
 
@@ -120,7 +120,7 @@ containing an `[err]` at any depth out of the program:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]]
       [= $rows ([row [v 2.5]], [err code=cx-err:CXER0100 message="a refusal at rest"], [row [v 4.5]])]
   [$store:put-doc $s [report [count [$count $rows]] [?splice $rows]]]]
@@ -138,7 +138,7 @@ vehicle). Blob and byte writes are exempt by construction — bytes carry no
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]]
       [= $h [$store:put-doc $s [report [err code=cx-err:CXER0100 message="stored deliberately"]] {errs: :permit}]]
   [$store:get-doc $s $h]]
@@ -151,7 +151,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]]
       [= $h [$store:put-doc $s [doc [item "x"]]]]
   [$store:modify-doc $s $h [append [err code=cx-err:CXER0100 message="injected"]]]]
@@ -174,7 +174,7 @@ the history is verifiable rather than merely stored.
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/journal']
+[?lib 'cx-platform/journal']
 [?let [= $j [$journal:open "mem://acme" "acme"]]
   [$journal:append $j [do :refund] {actor: "ops" authority: "d-77"}]]
 ```
@@ -186,7 +186,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/journal']
+[?lib 'cx-platform/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
 [= $e1 [$journal:append $j [a 1] {actor: "u" authority: "g"}]]
 [= $e2 [$journal:append $j [b 2] {actor: "u" authority: "g"}]]
@@ -202,7 +202,7 @@ Reading past the end is absence, not an error:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/journal']
+[?lib 'cx-platform/journal']
 [?let [= $j [$journal:open "mem://t" "acme"]]
   [$journal:read $j 5]]
 ```
@@ -220,7 +220,7 @@ separate error channel:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/http']
+[?lib 'cx-stdlib/http-client' :as http]
 [$http:status [response status=404]]
 ```
 
@@ -231,7 +231,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/http']
+[?lib 'cx-stdlib/http-client' :as http]
 [$http:ok [response status=404]]
 ```
 
@@ -257,7 +257,7 @@ admits an anonymous floor says so in its attach policy, and the floor is a
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/session']
+[?lib 'cx-platform/session']
 [?let [= $pair [$session:attach-guest [request scheme="https"] {anonymous-floor: "web-public" tenant: "shop"}]] [= $s [$first $pair]] [?let [= $p [$session:principal $s]] $p@id]]
 ```
 
@@ -271,7 +271,7 @@ clean typed refusal naming the policy — deny-by-default all the way down:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/session']
+[?lib 'cx-platform/session']
 [$session:attach-guest [request scheme="https"] {tenant: "shop"}]
 ```
 
@@ -285,7 +285,7 @@ names the chain it came through:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
@@ -303,7 +303,7 @@ implicit grant anywhere:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [$authz:check $az [authz-request [actor [agent ghost]] [capability refund-duplicate] [slice '/orders/9'] [tenant acme]]]]
 ```
@@ -315,7 +315,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
@@ -333,7 +333,7 @@ what makes an authority chain auditable rather than merely enforced:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
@@ -349,7 +349,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $dec [$authz:check $az [authz-request [actor [agent x]] [capability y] [tenant acme]]]]
   [$authz:explain $dec]]
@@ -572,7 +572,7 @@ tree is content-addressed, so entry order cannot change its identity:
 `prog.cx`
 ```cx
 [?lib 'cx-xap' :as xap]
-[?lib 'cx-stdlib/store' :as store]
+[?lib 'cx-platform/store' :as store]
 [?let [= $s [$store:open "mem://"]]
  [= $t1 [$xap:pkg-tree ([entry path='b.cx' 'bee'], [entry path='a.cx' 'ay'])]]
  [= $t2 [$xap:pkg-tree ([entry path='a.cx' 'ay'], [entry path='b.cx' 'bee'])]]

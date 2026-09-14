@@ -1984,7 +1984,7 @@ Live gate state was tracked in `spec/v0_8_0_status.md` (retired with the spec-tr
   constants, `:scope public` / `:scope private` visibility.
 - **Bundled `cx-stdlib`** — 14 sub-packages: strings / json / http /
   re / time / math / io / bytes / format / path / log / hash / env /
-  test. [`spec/03-approved/std-lib/`](spec/03-approved/std-lib/README.md).
+  test. [`spec/03-approved/std-lib/`](spec/03-approved/stdlib/README.md).
 - **Atom scalar kind** — `:NAME` literals with type-strict
   name-equality and a disjoint hash domain.
 - **`[expr]` general predicate body** + `:pure` / `:impure` modifier

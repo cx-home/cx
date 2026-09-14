@@ -179,7 +179,7 @@ step_globs() {
     placement-gate)                echo 'registry/modules.cxd scripts/placement_gate.cx spec/* conformance/* stdlib/* x/* vcx/code/* vcx/platform/*' ;;
     # the dogfood documents, the gate that reads them, and everything that can
     # move the vocabulary or the two subcommands it drives them through.
-    flow-dogfood-gate)             echo 'flows/* scripts/flow_dogfood_gate.cx stdlib/flow.cx vcx/cmd/* vcx/code/* vcx/cx/* spec/03-approved/std-lib/flow.md' ;;
+    flow-dogfood-gate)             echo 'flows/* scripts/flow_dogfood_gate.cx stdlib/flow.cx vcx/cmd/* vcx/code/* vcx/cx/* spec/03-approved/platform/flow.md' ;;
     address-baseline-gate)         echo "$RING_LIB $RING_SUP vcx/tests/runners/address_baseline/* conformance/*" ;;
     # #700 wave 1 (2026-08-24): five TEST_TARGETS steps had no row and so
     # always ran. Each row is the step's actual input surface, over-including

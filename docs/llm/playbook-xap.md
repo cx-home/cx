@@ -674,7 +674,7 @@ names the chain it travelled:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
@@ -694,7 +694,7 @@ expired:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [$authz:check $az [authz-request [actor [agent ghost]] [capability refund-duplicate] [slice '/orders/9'] [tenant acme]]]]
 ```
@@ -706,7 +706,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
@@ -721,7 +721,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
@@ -1015,7 +1015,7 @@ failing link** rather than reporting a bare denial:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $d [$authz:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
@@ -1031,7 +1031,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz']
 [?let [= $az [$authz:store {tenant: 'acme'}]]
   [= $dec [$authz:check $az [authz-request [actor [agent x]] [capability y] [tenant acme]]]]
   [$authz:explain $dec]]
@@ -1216,12 +1216,12 @@ principal can never collide with an inherent-authority `principal:` id.
 
 ### Sessions bind a principal, immutably
 
-Below the host, `cx-stdlib/session` binds a `(principal, tenant)` pair for the
+Below the host, `cx-platform/session` binds a `(principal, tenant)` pair for the
 session's whole life. An anonymous floor is a real principal:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/session']
+[?lib 'cx-platform/session']
 [?let [= $pair [$session:attach-guest [request scheme="https"] {anonymous-floor: "web-public" tenant: "shop"}]] [= $s [$first $pair]] [?let [= $p [$session:principal $s]] $p@id]]
 ```
 
@@ -1234,7 +1234,7 @@ web-public
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/session']
+[?lib 'cx-platform/session']
 [$session:attach-guest [request scheme="https"] {tenant: "shop"}]
 ```
 
@@ -1252,7 +1252,7 @@ decides: there is one evaluator, not a credential path running beside the
 authority path, and a credential past its time of use denies at check.
 
 Those four cases carry full RFC key vectors and are long, so they are cited
-rather than printed. Read them in `conformance/stdlib/session.cxd`:
+rather than printed. Read them in `conformance/platform/session.cxd`:
 `session-045-attach-xsp-binds-proven-principal`,
 `session-047-attach-xsp-anonymous-no-floor-rejected`,
 `session-050-present-vc-compiles-to-permit`,
@@ -1264,7 +1264,7 @@ Session ids are opaque and are **never** the raw token:
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/session']
+[?lib 'cx-platform/session']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/time']
 [?lib 'cx-stdlib/strings']
@@ -1278,7 +1278,7 @@ true
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/session']
+[?lib 'cx-platform/session']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/time']
 [?let [= $pair [$session:attach-cookie [request scheme="https" [headers [header name="Authorization" value="Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6InJzYS0xIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2lkcC5leGFtcGxlIiwic3ViIjoidXNlci0xIiwiYXVkIjoibXktYXBpIiwiZXhwIjoxNzAwMDAzNjAwLCJuYmYiOjE2OTk5OTk5OTAsImlhdCI6MTY5OTk5OTk5MH0.e4bn1A_a5Q0_4IZxKWipmmrUCCdmNkiTUs071mBMtMVXb68RGPtV2FTR1nRWvM3Zw2XTMuBsk_Y1HPinat_2JQkm3s90lltrErpYOky6Nwm6ha57BxQ0Sg5kWxuQF5KhWUqHzePIVDTfkr0WeN591nDTDn6VuajLaHn2pjXBsaJ0reT6mh6v40UQcBW-yy-XOfrsMeGVj_qZd1UmlE81XN957rjPENcPpH2E1SHfVhu3fQP3QZapxtdMADgWmryw_z5O2lDIIWb7miT0siXRCDjVEhDzKH6Hsf1aUPcYx9x44o1B5OBpX6z1uM1SP0qaOZu6x26H0AbHj84nIISE1A"]]] {jwks: [$crypto:jwks-parse "{\"keys\":[{\"kid\":\"rsa-1\",\"kty\":\"RSA\",\"alg\":\"RS256\",\"n\":\"jdwwBcaMZQLoSNYGNEm3l03HIQqpRIv0eqLUNUCkyv7ysVw4i6vZgdYxcdU0D3kSvUCIjH-icqk4PCDx5AwkeNp55Nqt6wKXDv9TH5pr-Wc3BWmZ1sEOEwyN8QlI8_5EpY3i1w5tysDdeFuiR7BOjpkD49RZzF0YajmocsB4_jXoZcldVNCOChXAbEfOw-BtjFJRN0N3EksymF4azkey8Q3rX07sXkRHavRfAOnowH119RL1V-Xmk_DUX8wSR-2zdlp8FxitJWPgbMmnszsTgEQrThTwsuMrndqzJ_nQ7HTnuK2LXEFmFwXw9NADspq2ZnQmZiN7CXnEYG8WCApzxw\",\"e\":\"AQAB\"}]}"] tenant-claim: "aud" now: [$time:datetime 2023 11 14 22 13 20]}]] [= $s [$first $pair]] [= $r [$session:rotate $s]] [= $s@id $r@id]]
@@ -2038,7 +2038,7 @@ the boundary, which is the only honest place. See `primer.md` §6.
 
 `prog.cx`
 ```cx
-[?lib 'cx-stdlib/store']
+[?lib 'cx-platform/store']
 [?let [= $s [$store:open "mem://"]]
       [= $rows ([row [v 2.5]], [err code=cx-err:CXER0100 message="a refusal at rest"], [row [v 4.5]])]
   [$store:put-doc $s [report [count [$count $rows]] [?splice $rows]]]]

@@ -118,7 +118,7 @@ bench/current.json
 bench/repr/.build/
 bench/repr/_corpus/
 
-# `cx flow run`'s default journal (#1265 W1; std-lib/flow.md §4.15): the local
+# `cx flow run`'s default journal (#1265 W1; platform/flow.md §4.15): the local
 # profile's runs live in a gitignored build-directory-shaped root in the
 # working directory. Durable across interrupts by design, machine-local by
 # nature — a committed run record would be another machine's half-finished
