@@ -795,6 +795,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `wf-38` | [rulings_2026_09_06_flow_resolver_idempotent_789.md](rulings_2026_09_06_flow_resolver_idempotent_789.md) | Ruling 2026-09-06 — #789, the resolver row carries `idempotent=` (WF-38) |
 | `wf-38` | [rulings_2026_09_06_flow_resolver_idempotent_789.md](rulings_2026_09_06_flow_resolver_idempotent_789.md) | WF-38 — how the `[idempotent]` disposition reaches `validate` — RULED: (a) |
 | `wf-4` | [rulings_2026_09_03_workflow_789.md](rulings_2026_09_03_workflow_789.md) | WF-4 — the performer axis: principal, agent and peer steps; deadlines; escalation (items 1+2) — RECOMMENDED: (a) |
+| `wf-42` | [rulings_2026_09_14_flow_step_data_binding_wf42.md](rulings_2026_09_14_flow_step_data_binding_wf42.md) | Owner letter 2026-09-14 ~16:50Z — a flow step binds its intent from the run record, and a `:runner` transform step maps one connector's result onto another's intent (RULED: WF-42) |
 | `wf-5` | [rulings_2026_09_03_workflow_789.md](rulings_2026_09_03_workflow_789.md) | WF-5 — authority: the advancer is a courier; racing advancers (items 2+4; X2) — RECOMMENDED: (a) |
 | `wf-6` | [rulings_2026_09_03_workflow_789.md](rulings_2026_09_03_workflow_789.md) | WF-6 — change management: versioning a flow while runs are in flight (item 1; stream 21) — RECOMMENDED: (a) |
 | `wf-7` | [rulings_2026_09_03_workflow_789.md](rulings_2026_09_03_workflow_789.md) | WF-7 — fleet observability (item 3) — RECOMMENDED: (a) |
@@ -1149,4 +1150,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*273 ledger pages; 554 ids declared, 341 cited only.*
+*274 ledger pages; 555 ids declared, 341 cited only.*
