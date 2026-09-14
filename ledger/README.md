@@ -258,6 +258,9 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1431-a` | [rulings_2026_09_13_load_class_flaky_tests_1431_1432.md](rulings_2026_09_13_load_class_flaky_tests_1431_1432.md) | Why 1431-a |
 | `1432-a` | [rulings_2026_09_13_load_class_flaky_tests_1431_1432.md](rulings_2026_09_13_load_class_flaky_tests_1431_1432.md) | RULED: 1431-a, 1432-a — two load classes join the classified serial-retry policy |
 | `1432-a` | [rulings_2026_09_13_load_class_flaky_tests_1431_1432.md](rulings_2026_09_13_load_class_flaky_tests_1431_1432.md) | Why 1432-a |
+| `1434-a` | [rulings_2026_09_13_incremental_sync_1434.md](rulings_2026_09_13_incremental_sync_1434.md) | Ruling 2026-09-13 — #1434 (#728 component 3): incremental sync — placement, decided before the spec (1434-a) |
+| `1434-a` | [rulings_2026_09_13_incremental_sync_1434.md](rulings_2026_09_13_incremental_sync_1434.md) | 1434-a — the module is `sync`, Ring 2, and where each of its four dimensions lives |
+| `1434-a` | [rulings_2026_09_13_incremental_sync_1434.md](rulings_2026_09_13_incremental_sync_1434.md) | The scope 1434-a fixes |
 | `192-gcm` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) | RULED: 1400-a, 1401-a — XML Encryption comes IN: `saml:verify` decrypts `EncryptedAssertion` / `EncryptedID` / `EncryptedAttribute` with `opts.decryption-keys`; `crypto` gains RSA key transport (OAEP, SHA-1 inside OAEP allowed; PKCS#1 v1.5 behind a loud opt-in with implicit rejection) and AES-CBC + AES-128/192-GCM; encryption is detected BEFORE the signature search |
 | `787-poc` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) | Ledger — #787 integration: the ONE rebase of impl/787-poc onto release/0.16.0 |
 | `ad-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-1 — `[selection …]` binds every consumption point, through the one PEP (#1181) |
@@ -875,11 +878,12 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1427-b` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
 | `1427-c` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
 | `1427-d` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
-| `1427-e` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
+| `1427-e` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md), [rulings_2026_09_13_incremental_sync_1434.md](rulings_2026_09_13_incremental_sync_1434.md) |
 | `1427-f` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
 | `1427-g` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
 | `1427-h` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
 | `1427-i` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
+| `1448-a` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `170-cfg` | [rulings_2026_09_09_diagram_node_id_ordinals_1349.md](rulings_2026_09_09_diagram_node_id_ordinals_1349.md) |
 | `171-seq-mid` | [rulings_2026_09_08_let_cascade_lint_1170.md](rulings_2026_09_08_let_cascade_lint_1170.md), [rulings_2026_09_08_seq4_pin_page_sync_1170.md](rulings_2026_09_08_seq4_pin_page_sync_1170.md) |
 | `172-seq` | [rulings_2026_08_26_wasm_eval_sweep.md](rulings_2026_08_26_wasm_eval_sweep.md), [rulings_2026_09_08_let_cascade_lint_1170.md](rulings_2026_09_08_let_cascade_lint_1170.md), [rulings_2026_09_08_seq4_pin_page_sync_1170.md](rulings_2026_09_08_seq4_pin_page_sync_1170.md) |
@@ -1016,12 +1020,15 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `imap-3` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `imap-4` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `imap-5` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
+| `int-10` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-2` | [rulings_2026_09_12_audit_sink_1422.md](rulings_2026_09_12_audit_sink_1422.md), [rulings_2026_09_12_fmt_1384_1391.md](rulings_2026_09_12_fmt_1384_1391.md), [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md), [rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md](rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md) |
 | `int-3` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-4` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-5` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_13_claude_context_audit.md](rulings_2026_09_13_claude_context_audit.md) |
 | `int-6` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-7` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
+| `int-8` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
+| `int-9` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `ir-1` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) |
 | `ir-2` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) |
 | `ir-3` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) |
@@ -1047,7 +1054,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ol-12` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
 | `ol-13` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
 | `ol-2` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
-| `ol-3` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
+| `ol-3` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
 | `ol-4` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
 | `ol-5` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
 | `ol-6` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
@@ -1125,4 +1132,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*265 ledger pages; 541 ids declared, 333 cited only.*
+*266 ledger pages; 542 ids declared, 337 cited only.*
