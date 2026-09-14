@@ -372,6 +372,16 @@ build-playground:
 wasm-fresh-gate:
 	@./scripts/wasm/check_wasm_fresh.sh
 
+# One shared prerequisite for every step that RUNS the playground bundle: build
+# it when stale, prove it fresh, once. Two steps each doing "check || build"
+# under -j raced on 2026-09-14 (run on 226a4ae27): one built, the other read
+# dist/wasm/cxlib.js mid-write and its shard died on "Unexpected end of
+# input". A prerequisite serializes the build ahead of both.
+.PHONY: wasm-bundle-fresh
+wasm-bundle-fresh:
+	@./scripts/wasm/check_wasm_fresh.sh >/dev/null 2>&1 || $(MAKE) build-playground
+	@./scripts/wasm/check_wasm_fresh.sh
+
 # Optional Apache Arrow C-Data interop library (libcx_arrow per ADR
 # 0015 D9 / spec/abi.md §2.11). Separate from libcx; bindings dlopen
 # this library independently. Built on demand by test-python-arrow
@@ -698,9 +708,7 @@ verify-playground-examples: build-vcx
 # or missing. Before this the gate read an untracked, gitignored dist/wasm —
 # a two-week-stale bundle produced one false red and could have hidden a real
 # one. In TEST_TARGETS since 1170-f, after #1349 landed every constant id.
-test-playground-mermaid:
-	@./scripts/wasm/check_wasm_fresh.sh >/dev/null 2>&1 || $(MAKE) build-playground
-	@./scripts/wasm/check_wasm_fresh.sh
+test-playground-mermaid: wasm-bundle-fresh
 	@node scripts/test_playground_mermaid.mjs
 
 # ── playground NAVIGATION gate (#1380) ───────────────────────────────────────
@@ -720,9 +728,7 @@ test-playground-nav:
 # are counted, not failed: parity is test-playground-wasm-eval's (Chrome).
 # Same bundle discipline as test-playground-mermaid: build or prove fresh.
 .PHONY: test-playground-wasm-traps
-test-playground-wasm-traps:
-	@./scripts/wasm/check_wasm_fresh.sh >/dev/null 2>&1 || $(MAKE) build-playground
-	@./scripts/wasm/check_wasm_fresh.sh
+test-playground-wasm-traps: wasm-bundle-fresh
 	@node scripts/test_playground_wasm_traps.mjs
 
 # ── playground wasm EVALUATION sweep (#1033) ──────────────────────────────────
