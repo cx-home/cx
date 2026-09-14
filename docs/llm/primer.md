@@ -1811,6 +1811,7 @@ assistant makes with a young language is inventing a plausible module name.
 | `authz` | The XAP authority model as data plus a single decision function. |
 | `bus` | In-process publish/subscribe that delivers each published message to its matching subscribers synchronously and in a defined order. |
 | `bytes` | Byte-level operations on the CX bytes scalar kind. |
+| `connector` | The connector kit: one engine every connector feature runs on, and the vocabulary that declaration is written in. |
 | `crypto` | Operations involving a key, a secret, or authentication. |
 | `csv` | Parse and emit CSV/TSV following RFC 4180 with Excel-pragmatic extensions. |
 | `diagram` | The §10.1.2 reference diagram renderer as a pure CX program (RULED #758, DR-1…DR-11). |
