@@ -305,8 +305,24 @@
         [where [= [$string $m@ring] '2']]
         [yield [$string $m@name]]] ' '],
       ' ')]]]
-[?def pack-ring scope=public impure [returns int] ($name)
-  [?if [>= [$strings:find [$ring2-packs] [$cat (' ', $name, ' ')]] 0]
+[# pack-ring answers a QUESTION ABOUT DATA, so it takes the data: the ring-2
+   name set its caller read once. That is not a style choice here. #1427-f
+   turned `ring2-packs` from a hand-kept string into a registry READ, which
+   made it impure and made this def impure with it — and this def is called
+   from inside a `[?for]`'s `[where]`, whose enclosing `[?def]` declares no
+   purity and is therefore PURE, so the guide stopped rendering at all
+   (CXER0233 E_PURITY_VIOLATION, the post-merge red on 100989e09). Marking the
+   caller impure is the honest half of the answer -- `lib-ring-items` and the
+   three defs above it (nav-html, wrap-page, index-body) DO transitively read a
+   file, and they say so now, terminating at the top level, which was always
+   impure. It is not the whole answer: left alone it would also parse the
+   registry once per FILE per RING per PAGE, from inside a `[where]` that
+   cannot legally call it at all. So the read is hoisted to one `[?let]` in
+   `lib-ring-items` and the SET is passed here -- the effect stays where the
+   read is, the predicate stays pure where a `[where]` needs it, and the
+   registry is parsed once per call instead of once per file. #]
+[?def pack-ring scope=public pure [returns int] ($packs::string $name::string)
+  [?if [>= [$strings:find $packs [$cat (' ', $name, ' ')]] 0]
     [then 2] [else 1]]]
 [# lib-ring-items: the pack links for ONE ring, in name order.
 
@@ -314,11 +330,12 @@
    with the packs indexed per ring, a single flat index is a second answer to
    "which packs exist" that is free to disagree with the ring pages — and it
    was the only page in the tree left reachable from nothing. #]
-[?def lib-ring-items scope=public ($libfiles $ring $active)
-  [$strings:join [?for [in $f $libfiles]
-    [where [and [and [not [$is-x-file $f]] [not [$is-synth-file $f]]]
-                [= [$pack-ring [$stdlib-slug $f]] $ring]]]
-    [yield [$nav-link [$cat ('lib-', [$stdlib-slug $f])] [$stdlib-slug $f] '' $active]]] '']]
+[?def lib-ring-items scope=public impure ($libfiles $ring $active)
+  [?let [= $packs [$ring2-packs]]
+    [$strings:join [?for [in $f $libfiles]
+      [where [and [and [not [$is-x-file $f]] [not [$is-synth-file $f]]]
+                  [= [$pack-ring $packs [$stdlib-slug $f]] $ring]]]
+      [yield [$nav-link [$cat ('lib-', [$stdlib-slug $f])] [$stdlib-slug $f] '' $active]]] '']]]
 
 [# x-tier-items: the experimental tier's own links, in name order. Its own
    group rather than a ring, because the tier is a STABILITY statement and not
@@ -345,7 +362,7 @@
    Ring 0 page sees what Ring 0 gives them and, in the same breath, that
    `http` is not among them. Ring order is inward-out, which is also the
    dependency order the import contract allows. #]
-[?def nav-html scope=public ($metas $libfiles $active)
+[?def nav-html scope=public impure ($metas $libfiles $active)
   [$cat (
     '<aside class="sidebar">\n',
     '  <a class="brand" href="index.html" aria-label="CX — home">\n',
@@ -390,7 +407,7 @@
    content, and a title-block footer on every page — the guide is a set of
    engineering sheets, and the title block is where a sheet says what it is,
    which revision, and who checked it. #]
-[?def wrap-page scope=public ($title $active $metas $libfiles $ver $body)
+[?def wrap-page scope=public impure ($title $active $metas $libfiles $ver $body)
   [$cat (
     '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n',
     '<meta name="viewport" content="width=device-width, initial-scale=1">\n',
@@ -525,7 +542,7 @@
 [# index-body: the landing page (docs/guide/index.html) body — the hero
    ("Four rings. One contract." + the Fig. 1 ring figure + the ring ladder),
    then the grouped table of contents (reusing nav-group), source note. #]
-[?def index-body scope=public ($metas $libfiles $ver)
+[?def index-body scope=public impure ($metas $libfiles $ver)
   [$cat (
     '<div class="hero">\n',
     '<div class="hero-text">\n',
