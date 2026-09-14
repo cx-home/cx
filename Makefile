@@ -2080,10 +2080,23 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/http_client_tls_transport_test.v \
                       vcx/tests/smtp_real_socket_test.v \
                       vcx/tests/imap_real_socket_test.v \
+                      vcx/tests/http_umbrella_test.v \
                       vcx/tests/process_pty_test.v \
                       vcx/tests/xap_umbrella_test.v \
                       vcx/tests/store_remote_umbrella_test.v \
                       vcx/tests/code_eval_fixtures_test.v
+
+# ── http_umbrella_test.v joins the real-socket class (#1445) ────────────────
+# The post-merge run on ca5cb0996 (2026-09-13 22:48Z–23:09Z) failed ONLY at
+# http_umbrella_test.v:1687 test_directive_resource_sees_post_body — "directive
+# POST #0 got no response" — with the 15-minute load average at 27 (six
+# pre-merge pipelines building after a session restart). The merge under test
+# touched the Makefile rosters, bench/repr/run.sh and a ledger page: nothing
+# under vcx/ or http. The same file had passed on 1076e6f57 minutes earlier and
+# in every run that day; the re-run on the same head (23:11Z–23:53Z, load under
+# 5) passed. A real-socket request that gets no response under that load is the
+# class the row above already names; the assertion and its timeouts are not
+# changed.
 
 # ── The TIMING / EARLY EXIT UNDER LOAD class (#1432, RULED: 1432-a) ─────────
 # Two rows above carry this class rather than a socket or a daemon cause. Both
@@ -2165,7 +2178,7 @@ RETRY_REASON_CASE = case "$$rel" in \
 	    reason="reference web client / store readiness bounds (calibrated ~30 s) exceeded only under the -j12 storm plus box load: measured 2026-09-09 OK 72 s alone, FAIL 98.7 s and 123 s with a step or build sharing the box" ;; \
 	  vcx/tests/store_remote_umbrella_test.v) \
 	    reason="\#1425 daemon start under the -j12 suite storm (the readiness window expires before the listener line); green in isolation and in every prior full run" ;; \
-	  vcx/tests/net_udp_read_deadline_test.v|vcx/tests/net_dtls_test.v|vcx/tests/net_real_socket_test.v|vcx/tests/a2a_real_test.v|vcx/tests/http_h2_serve_test.v|vcx/tests/http_client_tls_transport_test.v|vcx/tests/smtp_real_socket_test.v|vcx/tests/imap_real_socket_test.v) \
+	  vcx/tests/net_udp_read_deadline_test.v|vcx/tests/net_dtls_test.v|vcx/tests/net_real_socket_test.v|vcx/tests/a2a_real_test.v|vcx/tests/http_h2_serve_test.v|vcx/tests/http_client_tls_transport_test.v|vcx/tests/smtp_real_socket_test.v|vcx/tests/imap_real_socket_test.v|vcx/tests/http_umbrella_test.v) \
 	    reason="real-socket contention: ephemeral-port / deadline race under -j" ;; \
 	  vcx/platform/store_admin_plane_test.v|vcx/platform/store_grpc_live_test.v|vcx/platform/store_lazy_load_test.v) \
 	    reason="real-socket contention: live store/grpc endpoint under -j (\#648)" ;; \
