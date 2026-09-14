@@ -843,6 +843,35 @@ ledger-index-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
 ledger-index-check: build-vcx
 	@"$(CX_BIN)" --allow-read --allow-write scripts/ledger_index.cx --check
 
+# ── primer-platform / primer-platform-check (#1487, RULED: COMP-1) ────────────
+# `cx primer` is the door an adopter's agent walks through before it writes a
+# line, and its PLATFORM chapter is the material two specifications already
+# own: the seam table and the closed set of composition patterns
+# (spec/03-approved/platform/composition.md §1-§3) and the runtimes, the
+# carrier rule and what changes across a boundary
+# (spec/03-approved/platform/deployment-topology.md §1-§4). Transcribed by
+# hand it would drift the first time either page moved, so it is PROJECTED:
+# `primer-platform` regenerates docs-src/llm/primer-platform.chapter.md, which
+# docs-src/llm/primer.md.tmpl carries as its `{{PLATFORM-CHAPTER}}`
+# placeholder; `make docs` then folds it into docs/llm/primer.md and
+# `make build-vcx` embeds that.
+#
+# `primer-platform-check` is the drift step, the same shape as
+# `ledger-index-check` and `docs-check`: it re-projects in memory and fails
+# when the committed chapter and the two pages disagree. A spec change under
+# those sections lands with `make primer-platform && make docs` and the
+# regenerated files in the same commit. Both need `--allow-write`:
+# `write-line` to a standard stream is itself a write capability, and the
+# check writes no file.
+.PHONY: primer-platform primer-platform-check
+primer-platform: CX_BIN ?= $(CURDIR)/vcx/target/cx
+primer-platform: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/gen_docs/primer_platform.cx
+
+primer-platform-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
+primer-platform-check: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/gen_docs/primer_platform.cx --check
+
 # ── placement-gate (RULED: 1427-f, OL-15) ─────────────────────────────────────
 # registry/modules.cxd is where a module's RING is DECLARED. This step refuses
 # a tree where the spec's directory, the corpus's directory, the corpus's
@@ -1008,7 +1037,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster fmt-sweep-gate test-playground-wasm-traps ledger-index-check
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster fmt-sweep-gate test-playground-wasm-traps ledger-index-check
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
