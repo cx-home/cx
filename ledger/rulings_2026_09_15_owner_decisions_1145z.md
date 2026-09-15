@@ -1,0 +1,12 @@
+# Owner decisions 2026-09-15 ~11:45Z — "1a 2a 3 accepted 4a 5a 6a" (RULED: 1502-a, 1456-a, 1503-a, 1256-a, 1453-a)
+
+The six questions posed on #1354's boards of 06:05Z, 08:15Z, 09:15Z and 11:20Z, each answered by letter.
+
+| Id | Decision |
+|---|---|
+| **1502-a** | **(owner, letter 1(a))** `crypto:xml-sign` gains a DETACHED `Reference` mode in v0.18, as a `crypto` branch (spec `crypto.md` §3.11 option + `crypto.cxd` cases + code) landing BEFORE the `soap` code phase (#1456): `$opts` names the referenced node ids, the `Signature` is emitted standalone for the caller to place, `Reference URI="#id"` per node with exclusive c14n, the same two algorithms, no SHA-1. One signer — `soap`'s `sign` consumes it (#1502). |
+| **1456-a** | **(owner, letter 2(a))** `soap.md` §2.5 stands: the WS-Security UsernameToken `PasswordDigest` is admitted as the profile fixes it (SHA-1 over nonce + created + password — a digest, not a signature); a SHA-1 *signature* stays refused (`soap-062`). No opt-in knob. |
+| **reads** | **(owner, 3 accepted)** The spec-first reads owed are acknowledged: `stdlib/soap.md` + `connector.md` §3.12 (#1456), `core/db_access.md` §6.1 (#1494), `xap/xap_schema_as_data.md` (#1497), `xap_grammar_composition.md` §4.5 + `ux.md` §10.6 (#1496), `xap/vocabulary_authoring.md` (#1187). |
+| **1503-a** | **(owner, letter 4(a))** #1503 (sqlite: `sql-exec` answers `[result changes=0]` with exit 0 on a UNIQUE violation, no `CXER1120`) is IN v0.18 as a fix branch, fixture first — a `db.cxd` case pins `CXER1120` with `sqlite=19` — in the code slots after INT-2's remainder; the INT-13 class (a defect in a shipped surface). |
+| **1256-a** | **(owner, letter 5(a))** #1256 becomes a section of `xap/vocabulary_authoring.md` (#1187's page, landed `41b388978`): "where a computed value lives" — apply, fold, deriver, another feature's verb — indexing the four existing rules (distribution §1.2, composition §4/W7, `xap.md`'s fold, `CXER4875`) with the rule of thumb; no new rule; a small docs branch. |
+| **1453-a** | **(owner, letter 6(a))** `canonical.md` §2.3's bare-string rule gains one sentence truing it to the shipped emitter and to `core.cxd` 051: `=` is position-sensitive — an interior `=` at attribute-value position stays bare; a string containing `=` at body or collection-item position quotes (its bare image would re-read as an attribute); a string leading with `=` quotes in every position. Written with this page. |
