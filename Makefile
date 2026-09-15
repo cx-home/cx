@@ -2575,6 +2575,7 @@ fixtures:
 .PHONY: check-consolidation-manifests
 check-consolidation-manifests:
 	@scripts/consolidate_tests.sh audit all
+	@bash scripts/consolidate_tests_selftest.sh
 
 # ── #1212: every conformance suite is claimed by a named step ────────────────
 .PHONY: check-conformance-coverage
