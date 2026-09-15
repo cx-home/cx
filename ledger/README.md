@@ -494,6 +494,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `int-17` | [rulings_2026_09_15_default_in_campaign_int17.md](rulings_2026_09_15_default_in_campaign_int17.md) | Owner decision 2026-09-15 ~12:55Z — every open issue is IN v0.18 unless the owner rules it out (RULED: INT-17) |
 | `int-17` | [rulings_2026_09_15_default_in_campaign_int17.md](rulings_2026_09_15_default_in_campaign_int17.md) | Order (integrator, under INT-17) |
 | `int-18` | [rulings_2026_09_15_file_surface_placement_int18.md](rulings_2026_09_15_file_surface_placement_int18.md) | Integrator decision 2026-09-15 — the file-surface contract is its own normative page (RULED: INT-18) |
+| `int-19` | [rulings_2026_09_15_websocket_stream_placement_int19.md](rulings_2026_09_15_websocket_stream_placement_int19.md) | Integrator decision 2026-09-15 — where the WebSocket frame codec, the upgrade and `kind=stream` live (RULED: INT-19) |
 | `int-20` | [rulings_2026_09_15_owner_decisions_1830z.md](rulings_2026_09_15_owner_decisions_1830z.md) | Owner decisions 2026-09-15 ~18:30Z — "1a 2a 3a 4a" (RULED: INT-20, 1503-b, 1502-b, 1457-a) |
 | `int-3` | [rulings_2026_09_14_owner_letters_1451b_m2_patterns.md](rulings_2026_09_14_owner_letters_1451b_m2_patterns.md) | Owner letters 2026-09-14 ~19:20Z — "1c 2a 3a" (RULED: 1451-b, INT-3 addendum 2, COMP-1 addendum) |
 | `isw-1` | [rulings_2026_08_21_issue_sweep_893.md](rulings_2026_08_21_issue_sweep_893.md) | ISW-1 — the sweep's scope and its per-issue dispositions |
@@ -535,6 +536,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ol-15` | [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md) | §4. Placement (OL-15) |
 | `ol-15` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) | Addendum, ~05:20Z — OL-14 and OL-15 (owner: "recommendations accepted for the library and repo plan"; "we can't keep making these big organization mistakes that cause refactoring and restructuring. its been very costly.") |
 | `ol-15` | [rulings_2026_09_14_connector_transports_1430c.md](rulings_2026_09_14_connector_transports_1430c.md) | Placement, decided here before spec or code (OL-15) |
+| `ol-15` | [rulings_2026_09_15_websocket_stream_placement_int19.md](rulings_2026_09_15_websocket_stream_placement_int19.md) | Placement, decided here before spec or code (OL-15) |
 | `pb-1` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | PB-1 — how the runner performs a step's act — RULED (a) |
 | `pb-2` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | PB-2 — the run id preimage — RULED (a) |
 | `pb-3` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | PB-3 — the home stream default — RULED (a) |
@@ -1165,7 +1167,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `tg-8a` | [rulings_2026_08_26_playground_tree_gate_1049.md](rulings_2026_08_26_playground_tree_gate_1049.md) |
 | `utf-16` | [audit_2026_08_30_text_format_surface.md](audit_2026_08_30_text_format_surface.md), [rulings_2026_08_30_text_format_residuals.md](rulings_2026_08_30_text_format_residuals.md) |
 | `utf-7` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
-| `utf-8` | [audit_2026_08_30_text_format_surface.md](audit_2026_08_30_text_format_surface.md), [partition_I1_rebless.md](partition_I1_rebless.md), [partition_I5_stream17_runtime.md](partition_I5_stream17_runtime.md), [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md), [rulings_2026_08_28_zip_module_1078.md](rulings_2026_08_28_zip_module_1078.md), [rulings_2026_08_30_text_format_residuals.md](rulings_2026_08_30_text_format_residuals.md), [rulings_2026_09_11_saml_metadata_exchange_1402a.md](rulings_2026_09_11_saml_metadata_exchange_1402a.md), [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
+| `utf-8` | [audit_2026_08_30_text_format_surface.md](audit_2026_08_30_text_format_surface.md), [partition_I1_rebless.md](partition_I1_rebless.md), [partition_I5_stream17_runtime.md](partition_I5_stream17_runtime.md), [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md), [rulings_2026_08_28_zip_module_1078.md](rulings_2026_08_28_zip_module_1078.md), [rulings_2026_08_30_text_format_residuals.md](rulings_2026_08_30_text_format_residuals.md), [rulings_2026_09_11_saml_metadata_exchange_1402a.md](rulings_2026_09_11_saml_metadata_exchange_1402a.md), [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md), [rulings_2026_09_15_websocket_stream_placement_int19.md](rulings_2026_09_15_websocket_stream_placement_int19.md) |
 | `wave-3` | [rulings_2026_08_26_seq_classification.md](rulings_2026_08_26_seq_classification.md) |
 | `wf-26a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
 | `wf-27a` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
@@ -1179,4 +1181,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*287 ledger pages; 578 ids declared, 345 cited only.*
+*288 ledger pages; 579 ids declared, 345 cited only.*

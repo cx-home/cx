@@ -37,9 +37,11 @@ NOT WRITTEN YET is a different statement from NOT MOVED YET, and it is
 `status=planned`, never a `-to`. A planned row's columns name where the
 artifact WILL be, the check holds it to its ring and its directories but not
 to existence, and it refuses the row once every artifact is on disk — so the
-declaration cannot outlive the writing. Six rows are planned today: `connector`, `graphql`, `soap`, `ftp` and
-`sftp` (#1430 and its transports) and `sync` (#1434) — each spec-first by
-its own decision, none of them #1427's debt.
+declaration cannot outlive the writing. Six rows are planned today: `graphql`,
+`soap`, `ftp`, `sftp` and `ws` (#1430 and its transports, and #1086's frame
+codec beneath `kind=stream`) and `sync` (#1434) — each spec-first by its own
+decision, none of them #1427's debt. `connector` was a seventh until its code
+landed and its row read `current`.
 
 COLUMNS
   name    the surface's call-site prefix — `[?lib '<ns>/<name>']` binds it.
@@ -189,6 +191,11 @@ becomes its own Ring-1 module.
   [module name=url ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/url.md corpus=conformance/stdlib/url.cxd source=stdlib/url.cx code=vcx/code/stdlib_url.v half=none status=current]
   [module name=uuid ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/uuid.md corpus=conformance/stdlib/uuid.cxd source=stdlib/uuid.cx code=vcx/code/stdlib_uuid.v half=none status=current]
   [module name=validate ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/validate.md corpus=conformance/stdlib/validate.cxd source=stdlib/validate.cx code=vcx/code/stdlib_validate.v half=none status=current]
+  [; ws — the WebSocket frame codec beneath http.md §3.7's upgrade and the
+     connector kit's kind=stream (RULED: INT-19, #1086), spec first like every
+     other transport of #1430: planned, its columns naming where #1086 writes
+     them. Ring 1 because every def is pure — the connection is http's. ]
+  [module name=ws ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/ws.md corpus=conformance/stdlib/ws.cxd source=stdlib/ws.cx code=vcx/code/stdlib_ws.v half=none status=planned]
   [module name=zip ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/zip.md corpus=conformance/stdlib/zip.cxd source=stdlib/zip.cx code=vcx/code/stdlib_zip.v half=none status=current]
 
   [; ── Ring 2 — cx-platform (1427-b, spent) ─────────────────────────── ]
