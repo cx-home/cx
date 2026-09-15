@@ -32,12 +32,13 @@ already exist.
 
 ## The band, and why it is not the next free one
 
-`CXER6900–6999`. `CXER6700–6799` and `CXER6800–6899` are `sftp`'s and `ftp`'s on
-#1457's and #1458's branch, which is unmerged on the tree this branch was cut
-from — so they are **stepped over rather than reused**, exactly as `connector`
-stepped over `mailbox`'s `6100–6199` in #1430 rather than reusing a band a
-deferred branch had claimed. A band scan across `spec/`, `registry/` and
-`conformance/` on 2026-09-15 returned nothing at or above `6900` anywhere in the
+`CXER6900–6999`. `CXER6700–6799` and `CXER6800–6899` are `sftp`'s and `ftp`'s
+(#1457, #1458), which were unmerged on the tree this branch was cut from — so
+they are **stepped over rather than reused**, exactly as `connector` stepped over
+`mailbox`'s `6100–6199` in #1430 rather than reusing a band another branch had
+claimed. #1457 landed while this branch was in the queue, and the branch merged
+it: `6900` is now simply the next free hundred-block, and the scan across
+`spec/`, `registry/` and `conformance/` returns nothing at or above it on either
 tree.
 
 The upgrade takes `CXER4552–4561` out of the block `http.md` §8 reserved for
@@ -79,7 +80,9 @@ changes neither document's shape.
 
 ## Composition
 
-Two seam rows, added with the spec and before the dependency:
+Two seam rows, added with the spec and before the dependency. `S-33 … S-35` are
+#1457's and were unmerged when these numbers were taken; this branch merged them
+and the two sets do not collide:
 
 | # | Direction | Why it is new |
 |---|---|---|

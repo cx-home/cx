@@ -488,6 +488,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `int-16` | [rulings_2026_09_15_bug_tail_int16.md](rulings_2026_09_15_bug_tail_int16.md) | Owner decision 2026-09-15 ~12:20Z — the v0.18 bug tail: 17 open bugs pulled in, 8 stay out (RULED: INT-16) |
 | `int-17` | [rulings_2026_09_15_default_in_campaign_int17.md](rulings_2026_09_15_default_in_campaign_int17.md) | Owner decision 2026-09-15 ~12:55Z — every open issue is IN v0.18 unless the owner rules it out (RULED: INT-17) |
 | `int-17` | [rulings_2026_09_15_default_in_campaign_int17.md](rulings_2026_09_15_default_in_campaign_int17.md) | Order (integrator, under INT-17) |
+| `int-18` | [rulings_2026_09_15_file_surface_placement_int18.md](rulings_2026_09_15_file_surface_placement_int18.md) | Integrator decision 2026-09-15 — the file-surface contract is its own normative page (RULED: INT-18) |
 | `int-19` | [rulings_2026_09_15_websocket_stream_placement_int19.md](rulings_2026_09_15_websocket_stream_placement_int19.md) | Integrator decision 2026-09-15 — where the WebSocket frame codec, the upgrade and `kind=stream` live (RULED: INT-19) |
 | `int-3` | [rulings_2026_09_14_owner_letters_1451b_m2_patterns.md](rulings_2026_09_14_owner_letters_1451b_m2_patterns.md) | Owner letters 2026-09-14 ~19:20Z — "1c 2a 3a" (RULED: 1451-b, INT-3 addendum 2, COMP-1 addendum) |
 | `isw-1` | [rulings_2026_08_21_issue_sweep_893.md](rulings_2026_08_21_issue_sweep_893.md) | ISW-1 — the sweep's scope and its per-issue dispositions |
@@ -914,7 +915,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1427-d` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
 | `1427-e` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md), [rulings_2026_09_13_incremental_sync_1434.md](rulings_2026_09_13_incremental_sync_1434.md) |
 | `1427-f` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
-| `1427-g` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
+| `1427-g` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md), [rulings_2026_09_15_file_surface_placement_int18.md](rulings_2026_09_15_file_surface_placement_int18.md) |
 | `1427-h` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
 | `1427-i` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
 | `1433-a` | [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
@@ -1174,4 +1175,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*285 ledger pages; 572 ids declared, 345 cited only.*
+*286 ledger pages; 573 ids declared, 345 cited only.*
