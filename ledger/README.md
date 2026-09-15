@@ -47,7 +47,9 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1192-a` | [rulings_2026_09_10_else_no_callable_1192.md](rulings_2026_09_10_else_no_callable_1192.md) | RULED: 1192-a — `[?else]` does not coalesce E_NO_CALLABLE; every other failure and absence still does |
 | `1195-a` | [rulings_2026_09_07_contract_check_at_seal_and_boot_1195.md](rulings_2026_09_07_contract_check_at_seal_and_boot_1195.md) | RULED: 1195-a — the §1.2 runtime contract is checked wherever a package is |
 | `1196-a` | [rulings_2026_09_07_deployment_doc_two_stages_1196.md](rulings_2026_09_07_deployment_doc_two_stages_1196.md) | RULED: 1196-a — a deployment document has TWO STAGES, and `xap.cxs` describes |
+| `1197-a` | [rulings_2026_09_15_owner_decisions_1945z.md](rulings_2026_09_15_owner_decisions_1945z.md) | Owner decisions 2026-09-15 ~19:45Z — "5a 6a if those are the best cx long term" (RULED: 1197-a, 1220-a) |
 | `1198-a` | [rulings_2026_09_10_apply_refusal_shape_1198.md](rulings_2026_09_10_apply_refusal_shape_1198.md) | RULED: 1198-a — what `apply` may return, and a refusal the host does not recognise is SAID, never dropped |
+| `1220-a` | [rulings_2026_09_15_owner_decisions_1945z.md](rulings_2026_09_15_owner_decisions_1945z.md) | Owner decisions 2026-09-15 ~19:45Z — "5a 6a if those are the best cx long term" (RULED: 1197-a, 1220-a) |
 | `1221-a` | [rulings_2026_09_08_nav_item_nested_link_1221.md](rulings_2026_09_08_nav_item_nested_link_1221.md) | RULED: 1221-a — a `[ux:nav-item]` that swallows a nested `[ux:link]` refuses |
 | `1221-a` | [rulings_2026_09_08_nav_item_nested_link_1221.md](rulings_2026_09_08_nav_item_nested_link_1221.md) | 1221-a — `[ux:nav-item]` REFUSES a descendant `[ux:link]` |
 | `1221-b` | [rulings_2026_09_08_nav_item_nested_link_1221.md](rulings_2026_09_08_nav_item_nested_link_1221.md) | it instead. 1221-b (the `[$xap:serve]` option guard) is NOT ruled here: the |
@@ -1179,4 +1181,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*287 ledger pages; 577 ids declared, 345 cited only.*
+*288 ledger pages; 579 ids declared, 345 cited only.*
