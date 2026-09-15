@@ -485,6 +485,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `int-13` | [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md) | Integrator decisions, 2026-09-15 — INT-13 |
 | `int-14` | [rulings_2026_09_15_sd1_placement.md](rulings_2026_09_15_sd1_placement.md) | Integrator placement 2026-09-15 — where the schema-as-data feature kind lives (RULED: INT-14) |
 | `int-15` | [rulings_2026_09_15_integrator_decisions_int15.md](rulings_2026_09_15_integrator_decisions_int15.md) | Integrator decisions, 2026-09-15 — INT-15 |
+| `int-16` | [rulings_2026_09_15_bug_tail_int16.md](rulings_2026_09_15_bug_tail_int16.md) | Owner decision 2026-09-15 ~12:20Z — the v0.18 bug tail: 17 open bugs pulled in, 8 stay out (RULED: INT-16) |
 | `int-3` | [rulings_2026_09_14_owner_letters_1451b_m2_patterns.md](rulings_2026_09_14_owner_letters_1451b_m2_patterns.md) | Owner letters 2026-09-14 ~19:20Z — "1c 2a 3a" (RULED: 1451-b, INT-3 addendum 2, COMP-1 addendum) |
 | `isw-1` | [rulings_2026_08_21_issue_sweep_893.md](rulings_2026_08_21_issue_sweep_893.md) | ISW-1 — the sweep's scope and its per-issue dispositions |
 | `isw-1` | [rulings_2026_08_21_issue_sweep_893.md](rulings_2026_08_21_issue_sweep_893.md) | ISW-1.1 — #900: the fabric retention flake is a CLIENT that ignored a normative retry |
@@ -1169,4 +1170,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*282 ledger pages; 569 ids declared, 345 cited only.*
+*283 ledger pages; 570 ids declared, 345 cited only.*
