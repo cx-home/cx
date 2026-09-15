@@ -275,6 +275,7 @@ becomes its own Ring-1 module.
   [module name=erasure_compliance ring=2 ns=none kind=design spec=spec/03-approved/platform/store/erasure_compliance.md corpus=conformance/platform/store.cxd source=none code=none half=none status=current]
   [module name=db ring=2 ns=none kind=suite spec=spec/03-approved/core/db_access.md corpus=conformance/platform/db.cxd source=none code=none half=none status=current]
   [module name=xap-compose ring=2 ns=none kind=suite spec=spec/03-approved/xap/xap_grammar_composition.md corpus=conformance/xap/xap-compose.cxd source=none code=none half=none status=current]
+  [module name=xap-schema ring=2 ns=none kind=suite spec=spec/03-approved/xap/xap_schema_as_data.md corpus=conformance/xap/xap-schema.cxd source=none code=none half=none status=current]
   [module name=xap-on ring=2 ns=none kind=suite spec=spec/03-approved/xap/xap.md corpus=conformance/xap/xap-on.cxd source=none code=none half=none status=current]
   [module name=xml ring=0 ns=cx-stdlib kind=codec spec=spec/03-approved/core/codec.md corpus=conformance/xml_codec.cxd source=none code=vcx/code/stdlib_codec.v half=none status=current]
 
