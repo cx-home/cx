@@ -592,6 +592,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `rp-6` | [rulings_2026_09_02_cxdm_representation_1119.md](rulings_2026_09_02_cxdm_representation_1119.md) | Rulings 2026-09-02 — #1119 CXDM in-memory representation (RP-1..RP-6) |
 | `rp-6` | [rulings_2026_09_02_cxdm_representation_1119.md](rulings_2026_09_02_cxdm_representation_1119.md) | RP-6 — shape-shared record maps and columnar/lazy record arrays: ruled in principle, trigger-bound (RULED: RP-6 = a) |
 | `rp-6` | [rulings_2026_09_02_cxdm_representation_1119.md](rulings_2026_09_02_cxdm_representation_1119.md) | RP-6 — shape-shared record maps and columnar/lazy record arrays: ruled in principle, trigger-bound (RULED: RP-6 = a) |
+| `sd-1` | [rulings_2026_09_15_views_group_vg3_schema_sd1.md](rulings_2026_09_15_views_group_vg3_schema_sd1.md) | Owner letters 2026-09-15 ~01:20Z — the fourth clause of `[views]`, and the schema-as-data feature kind (RULED: VG-3, SD-1) |
 | `sea-1` | [rulings_2026_08_20_schema_evolution_automation.md](rulings_2026_08_20_schema_evolution_automation.md) | SEA-1 — the four automation gaps close; sound-refusal-first everywhere |
 | `sea-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-2 — contract evolution gets the SEA-1 treatment (#1182) |
 | `seq-1` | [rulings_2026_08_26_seq_classification.md](rulings_2026_08_26_seq_classification.md) | SEQ-1 — the filed mechanism is WRONG; this is not a port regression |
@@ -740,6 +741,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `vg-1` | [rulings_2026_09_04_view_grammar.md](rulings_2026_09_04_view_grammar.md) | VG-1 — where the noun declares what the clauses may do (RULED: VG-1 = a) |
 | `vg-2` | [rulings_2026_09_04_view_grammar.md](rulings_2026_09_04_view_grammar.md) | VG-2 — durable per-viewer view preferences (RULED: VG-2 = a) |
 | `vg-2` | [rulings_2026_09_04_view_grammar.md](rulings_2026_09_04_view_grammar.md) | VG-2 — durable per-viewer view preferences (RULED: VG-2 = a) |
+| `vg-3` | [rulings_2026_09_15_views_group_vg3_schema_sd1.md](rulings_2026_09_15_views_group_vg3_schema_sd1.md) | Owner letters 2026-09-15 ~01:20Z — the fourth clause of `[views]`, and the schema-as-data feature kind (RULED: VG-3, SD-1) |
 | `we-1` | [rulings_2026_08_26_wasm_eval_sweep.md](rulings_2026_08_26_wasm_eval_sweep.md) | WE-1 — the harness must be a real browser; the cheap one is dishonest |
 | `we-2` | [rulings_2026_08_26_wasm_eval_sweep.md](rulings_2026_08_26_wasm_eval_sweep.md) | WE-2 — the mechanism, and why the marker set is what it is |
 | `we-3` | [rulings_2026_08_26_wasm_eval_sweep.md](rulings_2026_08_26_wasm_eval_sweep.md) | WE-3 — a marker must be JUSTIFIED, in both directions |
@@ -1159,4 +1161,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*278 ledger pages; 560 ids declared, 344 cited only.*
+*279 ledger pages; 562 ids declared, 344 cited only.*
