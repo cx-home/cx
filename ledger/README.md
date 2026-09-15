@@ -477,6 +477,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `hyg-1` | [rulings_2026_08_20_hygiene_695.md](rulings_2026_08_20_hygiene_695.md) | Ruling HYG-1 (2026-08-20) — #695 stale-inventory reconciliation (pre-cut hygiene sweep) |
 | `int-1` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) | INT-1 — why |
 | `int-1` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) | INT-1 — the §6 reading |
+| `int-13` | [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md) | Integrator decisions, 2026-09-15 — INT-13 |
 | `int-3` | [rulings_2026_09_14_owner_letters_1451b_m2_patterns.md](rulings_2026_09_14_owner_letters_1451b_m2_patterns.md) | Owner letters 2026-09-14 ~19:20Z — "1c 2a 3a" (RULED: 1451-b, INT-3 addendum 2, COMP-1 addendum) |
 | `isw-1` | [rulings_2026_08_21_issue_sweep_893.md](rulings_2026_08_21_issue_sweep_893.md) | ISW-1 — the sweep's scope and its per-issue dispositions |
 | `isw-1` | [rulings_2026_08_21_issue_sweep_893.md](rulings_2026_08_21_issue_sweep_893.md) | ISW-1.1 — #900: the fabric retention flake is a CLIENT that ignored a normative retry |
@@ -906,6 +907,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1433-b` | [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
 | `1433-c` | [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
 | `1448-a` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
+| `1478-a` | [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md) |
+| `1494-a` | [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md) |
 | `170-cfg` | [rulings_2026_09_09_diagram_node_id_ordinals_1349.md](rulings_2026_09_09_diagram_node_id_ordinals_1349.md) |
 | `171-seq-mid` | [rulings_2026_09_08_let_cascade_lint_1170.md](rulings_2026_09_08_let_cascade_lint_1170.md), [rulings_2026_09_08_seq4_pin_page_sync_1170.md](rulings_2026_09_08_seq4_pin_page_sync_1170.md) |
 | `172-seq` | [rulings_2026_08_26_wasm_eval_sweep.md](rulings_2026_08_26_wasm_eval_sweep.md), [rulings_2026_09_08_let_cascade_lint_1170.md](rulings_2026_09_08_let_cascade_lint_1170.md), [rulings_2026_09_08_seq4_pin_page_sync_1170.md](rulings_2026_09_08_seq4_pin_page_sync_1170.md) |
@@ -985,6 +988,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `af-9b` | [partition_I5_audit.md](partition_I5_audit.md) |
 | `bf-1` | [partition_I2_extraction.md](partition_I2_extraction.md), [partition_I5_stream22_cleanroom.md](partition_I5_stream22_cleanroom.md) |
 | `choice-1` | [rulings_2026_08_21_array_separator.md](rulings_2026_08_21_array_separator.md), [rulings_2026_09_09_fmt_fingerprint_underscores_1347.md](rulings_2026_09_09_fmt_fingerprint_underscores_1347.md) |
+| `client-2` | [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md) |
 | `crc-32` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md), [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md), [rulings_2026_08_29_tar_module_1084.md](rulings_2026_08_29_tar_module_1084.md) |
 | `cve-2011` | [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md) |
 | `dist-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) |
@@ -1045,7 +1049,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `int-10` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-11` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-12` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
-| `int-2` | [rulings_2026_09_12_audit_sink_1422.md](rulings_2026_09_12_audit_sink_1422.md), [rulings_2026_09_12_fmt_1384_1391.md](rulings_2026_09_12_fmt_1384_1391.md), [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md), [rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md](rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md) |
+| `int-2` | [rulings_2026_09_12_audit_sink_1422.md](rulings_2026_09_12_audit_sink_1422.md), [rulings_2026_09_12_fmt_1384_1391.md](rulings_2026_09_12_fmt_1384_1391.md), [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md), [rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md](rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md), [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md) |
 | `int-4` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-5` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_13_claude_context_audit.md](rulings_2026_09_13_claude_context_audit.md) |
 | `int-6` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
@@ -1155,4 +1159,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*277 ledger pages; 559 ids declared, 341 cited only.*
+*278 ledger pages; 560 ids declared, 344 cited only.*
