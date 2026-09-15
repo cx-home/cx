@@ -402,4 +402,3 @@ per-loop measurement**. Its verdict moves with unrelated fixtures, which is
 exactly the behavior observed across the three gates. That is a defect in the
 assertion and it belongs to no ruling here — filed separately. #1358 is
 cleared.
-||||||| parent of aab032a89 (feat(1358): a fired timer's instant is recorded as fired-at= on the transition)

@@ -1771,7 +1771,7 @@ test-no-parallel: $(TEST_TARGETS)
 # is what releases a killed one. Nothing about INT-10 makes a doc run a second
 # concurrent gate.
 DOC_TARGETS := verify-doc-blocks verify-doc-links verify-readme-blocks docs-check \
-  spec-freeze-gate ledger-index-check check-version-consistency
+  spec-freeze-gate ledger-index-check check-version-consistency primer-platform-check
 
 .PHONY: test-docs
 test-docs: export CX_GATE_OWNER := $(shell echo $$PPID)
