@@ -15,12 +15,38 @@
 # steps via make, propagating the first failure.
 set -euo pipefail
 
-BASE="${1:?usage: test_changed.sh <base-ref> [--dry-run]}"
+BASE="${1:?usage: test_changed.sh <base-ref> [--dry-run] [--changed-files <file>]}"
+shift
 DRY=0
-[ "${2:-}" = "--dry-run" ] && DRY=1
+CHANGED_SRC=''
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dry-run) DRY=1 ;;
+    # --changed-files <file> (#1516) — take the change set from a file of paths,
+    # one per line, instead of from git. It is what lets the selftest prove a
+    # selection rule against the REAL Makefile, the REAL manifest rows and the
+    # REAL import graph over a change set no commit has to exist for. Only
+    # meaningful with --dry-run: a selection derived from a synthetic diff must
+    # never be allowed to RUN anything.
+    --changed-files)
+      shift
+      CHANGED_SRC="${1:?--changed-files needs a file}"
+      case "$CHANGED_SRC" in
+        /*) ;;
+        *) CHANGED_SRC="$(CDPATH= cd -- "$(dirname -- "$CHANGED_SRC")" && pwd)/$(basename -- "$CHANGED_SRC")" ;;
+      esac ;;
+    *) echo "test-changed: unknown argument '$1'" >&2; exit 2 ;;
+  esac
+  shift
+done
 cd "$(dirname "$0")/.."
 
-CHANGED=$(git diff --name-only "$BASE"...HEAD; git diff --name-only HEAD; git diff --name-only --cached)
+if [ -n "$CHANGED_SRC" ]; then
+  [ $DRY -eq 1 ] || { echo "test-changed: --changed-files is a --dry-run flag (a synthetic diff must never RUN a step)" >&2; exit 2; }
+  CHANGED=$(cat "$CHANGED_SRC")
+else
+  CHANGED=$(git diff --name-only "$BASE"...HEAD; git diff --name-only HEAD; git diff --name-only --cached)
+fi
 CHANGED=$(printf '%s\n' "$CHANGED" | sort -u | grep -v '^$' || true)
 if [ -z "$CHANGED" ]; then
   echo "test-changed: no changes vs $BASE — nothing to run (the full gate still applies at wave exits)"
@@ -95,10 +121,23 @@ step_globs() {
     # in-module tests for vcx/code + vcx/platform.
     test-vcx-code)                 echo "$RING_LIB $RING_SUP conformance/* stdlib/* x/*" ;;
     # vcx/tests/ is `module main` importing code + platform + cx + fixtures.
-    test-vcx-suite)                echo "$RING_LIB vcx/tests/* $RING_SUP conformance/* stdlib/* x/*" ;;
+    test-vcx-suite)                echo "$RING_LIB vcx/tests/* $RING_SUP conformance/* $RING_EMBED" ;;
     # #1216: the serial wall-clock step — the binary-driving closure plus its own dir.
     check-conformance-coverage)    echo 'conformance/* scripts/check_conformance_coverage.sh vcx/tests/runners/conformance/*' ;;
-    test-vcx-timing)               echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED vcx/timing/*" ;;
+    # ── THE SERIAL TAIL, narrowed (#1516, RULED: RUN-1) ─────────────────────
+    # These two run ALONE after the -j storm drains, so their minutes are
+    # wall-clock minutes nothing else overlaps: 660 s for the profile gate,
+    # and the tail is why the run on b9d79025d took two hours for a head that
+    # changed one x/ module's CSS and one corpus case.
+    #
+    # test-vcx-timing asserts a BOOT BUDGET and the try-send/try-receive
+    # budgets — properties of the compiled binary's start-up and channel
+    # fast paths, which is vcx/cx (the Ring-0 sink the boot path is) and
+    # vcx/code (the evaluator it boots into), plus the V pin that compiles
+    # them and its own runner directory. An embedded stdlib module, an x/
+    # module, a corpus case or a doc byte cannot move a boot budget: they
+    # change what the binary READS, not how long it takes to come up.
+    test-vcx-timing)               echo 'vcx/cx/* vcx/code/* vcx/timing/* third_party/*' ;;
     # vcx/cmd compiles with -d cx_platform, so it carries the full closure.
     test-vcx-cmd)                  echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP conformance/* stdlib/* x/*" ;;
     # the conformance aggregates drive the built cx binary over the corpus.
@@ -167,7 +206,18 @@ step_globs() {
     check-v-fork)                  echo 'third_party/* scripts/v_fork_register.cxd scripts/check_v_fork_patches.cx' ;;
     # reads the built library's export surface against include/cx.h.
     libcx-abi-gate)                echo "$RING_LIB $RING_SUP include/* tools/libcx-abi-gate.sh" ;;
-    test-profile-gate)             echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED vcx/tests/runners/profile_gate/* conformance/*" ;;
+    # test-profile-gate GRADES: it runs the corpus through each profile and
+    # compares. So its inputs are what is graded and what grades — vcx/code and
+    # vcx/cx (the parser and the evaluator every profile runs through), the
+    # embedded stdlib the profiles pack, conformance/code.cxd, the graded module
+    # corpora, the graders themselves and its own runner directory, plus the V
+    # pin. RING_LIB rather than the two named directories because the profile
+    # binaries compile from the whole libcx closure — a platform module's prims
+    # are packed into the profiles this step is comparing. What drops out is the
+    # CLI/cmd side, the embed estate beyond stdlib/, and the conformance files
+    # no shard grades: a CSS byte in an x/ module and a docs/llm regeneration
+    # grade nothing here, and they were selecting an 11-minute serial step.
+    test-profile-gate)             echo "$RING_LIB stdlib/* conformance/code.cxd conformance/stdlib/* conformance/platform/* conformance/x/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/runners/profile_gate/* vcx/tests/fixtures_grader/* third_party/*" ;;
     check-code-spec-consistency)   echo 'spec/* vcx/code/*' ;;
     # ledger-index-check (#1438) regenerates ledger/README.md from the store and
     # compares: its inputs are every ledger page and the generator itself.
@@ -232,8 +282,328 @@ step_globs() {
     # anywhere can move a verdict — the row is deliberately the whole tree,
     # plus the formatter, the sweep and its roster.
     fmt-sweep-gate)                echo '*.cx Makefile scripts/fmt_corpus_sweep.cx scripts/fmt_corpus_expected_errors.txt vcx/cx/*' ;;
+    # ── #1516 (RULED: RUN-1): the THIRTEEN TEST_TARGETS entries that carried no
+    # row and therefore ran on every head by deny-by-default. Measured on
+    # b9d79025d (a ux-web CSS + one corpus case): they were a third of the
+    # selected set. Each row below is derived from the step's own recipe and
+    # from the script that recipe runs — never guessed — and over-includes on
+    # doubt, the same direction every row above takes.
+    #
+    # `check-selection-manifest` is what keeps this list complete from here on:
+    # it fails when a TEST_TARGETS entry has no row, so deny-by-default stays
+    # the fallback for a step in flight and never the resting state.
+    #
+    # the adversarial -usecache proof (scripts/vcache_soundness_gate.sh): it
+    # REBUILDS the tree from source under mutated inputs and compares behaviour,
+    # so its surface is the whole compiled closure plus the gate itself.
+    check-selection-manifest)      echo 'Makefile scripts/test_changed.sh scripts/check_selection_manifest.sh scripts/test_changed_selftest.sh vcx/tests/* conformance/*' ;;
+    check-vcache-soundness)        echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/vcache_soundness_gate.sh" ;;
+    # #1272: the §1.2 normative body it fingerprints, the generated V constant
+    # it compares against, and the gate/generator pair that writes both.
+    check-contract-revision)       echo 'spec/* vcx/* scripts/check_contract_revision.sh scripts/gen_contract_revision.sh' ;;
+    # reads the BUILT artifacts' link surface (vcx/target/cx, libcx.dylib), so
+    # anything that changes what is linked into them is an input.
+    check-portable-links)          echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/check_portable_links.cx" ;;
+    # #1012's resurrection guards over the umbrella manifests: the manifests,
+    # the driver and its selftest, and the umbrella test files they hold to.
+    check-consolidation-manifests) echo 'scripts/consolidation/* scripts/consolidate_tests.sh scripts/consolidate_tests.cx scripts/consolidate_tests_selftest.sh vcx/tests/*' ;;
+    # the seam register against the platform + stdlib spec pages it is derived
+    # from (scripts/check_composition_seams.cx reads spec/03-approved/{platform,stdlib}).
+    check-composition-seams)       echo 'spec/* scripts/check_composition_seams.cx' ;;
+    # #1171: the directive registry (vcx/cx/program_tokens.v) on one side and
+    # every editor surface + the checked-in register under tooling/ on the other.
+    check-editor-surface-parity)   echo 'vcx/cx/* tooling/* scripts/check_editor_surface_parity.cx' ;;
+    # INT-11 (#1475): the four document sets the recipe walks — docs-src/,
+    # spec/03-approved/, the root prose files, and the generated LLM layer.
+    verify-doc-links)              echo 'docs-src/* spec/* docs/llm/* tools/verify-doc-links.sh README.md CONTRIBUTING.md ROADMAP.md SECURITY.md CODE_OF_CONDUCT.md CHANGELOG.md RELEASE_NOTES_v AGENTS.md CLAUDE.md AGENT-STANDING-RULES.md' ;;
+    # COMP-1 part 4: the chapter is GENERATED from the two platform spec pages,
+    # and the generator runs under the built binary.
+    primer-platform-check)         echo "spec/03-approved/platform/composition.md spec/03-approved/platform/deployment-topology.md docs-src/llm/primer-platform.chapter.md scripts/gen_docs/primer_platform.cx $RING_LIB $RING_SUP" ;;
+    # #1265: the vocabulary is flow.md's, the surface is stdlib/flow.cx, and the
+    # gate runs under the built binary's parser.
+    flow-vocabulary-gate)          echo 'spec/03-approved/platform/flow.md stdlib/flow.cx scripts/flow_vocabulary_gate.cx vcx/cx/* vcx/code/*' ;;
+    # #1380: a jsdom gate over the SHIPPED playground page and script — no wasm,
+    # no binary. Its inputs are that directory, the gate and its node modules.
+    test-playground-nav)           echo 'scripts/gen_guide/playground/* scripts/test_playground_nav.mjs scripts/playground-gate/*' ;;
+    # #1374: the same playground corpus evaluated in the WASM bundle, and the
+    # bundle is built from the ring closure (scripts/wasm/ + build-playground).
+    test-playground-wasm-traps)    echo "scripts/gen_guide/playground/* scripts/test_playground_wasm_traps.mjs scripts/wasm/* $RING_LIB $RING_SUP $RING_EMBED" ;;
+    # #1180: the binding_api fixture file, the four drivers under lang/, the
+    # public header they call through, and libcx's own closure.
+    test-binding-api-parity)       echo "conformance/binding_api.txt lang/* include/* scripts/test_binding_api_parity.sh scripts/compile_binding_api_fixtures.cx $RING_LIB $RING_SUP" ;;
+    # #1065: the rosters live in vcx/Makefile and are re-derived from the module
+    # set each artifact compiles, so any vcx/ module moving is an input.
+    check-build-input-roster)      echo 'vcx/Makefile vcx/*' ;;
     *)                             echo '' ;; # unknown step → ALWAYS RUN
   esac
+}
+
+# ── PER-FILE SUITE SELECTION (#1516, RULED: RUN-1) ──────────────────────────
+#
+# `test-vcx-suite` is ONE manifest row over 76 V test files and ~35 minutes at
+# -j12, so any head that touched vcx/, conformance/, stdlib/ or x/ bought the
+# whole thing. The row still decides whether the STEP runs; this decides which
+# FILES it runs when it does. `make test-vcx-suite` on its own is untouched —
+# SUITE_FILES defaults to `vcx/tests/` in the Makefile, which is the union.
+#
+# THE DEPENDENCY MODEL, and where each edge comes from.
+#
+#  * V IMPORTS. A test file depends on every vcx/ module it imports, transitively
+#    — the knowledge check-build-input-roster re-derives with `v -print-v-files`,
+#    read here straight from the `import` lines so the fast loop needs neither V
+#    nor a build. `tests.fixtures_grader` is the grader package under vcx/tests/;
+#    `transport.picoev` and its siblings resolve to vcx/transport.
+#
+#  * testenv DRIVES THE BUILT BINARY. 55 of the 76 files import `testenv` and run
+#    `testenv.cx_bin()` — the shipped `cx`. Import scanning alone would say they
+#    depend on nothing but vcx/testenv, which is the one unsound answer available
+#    here, so `testenv` carries an explicit edge to every ring directory the
+#    binary compiles from.
+#
+#  * THE CORPUS. A module's cases are graded by the shard that owns its corpus
+#    file, and which shard that is already has one authority:
+#    scripts/fixture_files_for_branch.sh resolves a module source or a corpus
+#    path to conformance/… files (its rules 1-4), and
+#    vcx/tests/fixtures_grader/fixture_shards.cxd maps those to shard test files.
+#    Both are reused rather than restated — a second copy of that resolution is a
+#    second thing to be wrong.
+#
+#  * NAMES. On top of the shard, any test file whose own source NAMES the module
+#    is selected: a module's behaviour reaches a test through the CX program the
+#    test embeds, and that program spells the module out.
+#
+# FAIL-SAFE IN BOTH DIRECTIONS. Anything that shapes the suite rather than being
+# tested by it — vcx/tests/ shared helpers, vcx/testenv, vcx/fixtures,
+# third_party/, the Makefiles, scripts/, vcx/v.mod, devbox — runs the WHOLE
+# suite, and so does any changed path no rule below classifies. Only an explicit
+# not-an-input list (spec/, docs-src/, ledger/, docs/ outside the generated LLM
+# layer, _gate_evidence/, .github/, root prose) selects nothing.
+SUITE_DIR='vcx/tests'
+# The vcx/ directories that are V modules a test file can import.
+VCX_MODULES='cx code platform cxstore arrow transport cli cmd cmd_data testenv fixtures timing tools bench fuzz'
+# The directories the shipped `cx` and libcx compile from — testenv's edge,
+# because a test that runs the binary runs all of this.
+BINARY_MODULES='cx code platform cxstore arrow transport cli cmd cmd_data'
+
+# vcx_module_of <import-name> — the vcx/ module directory it names, or nothing
+# when it is V's own stdlib (os, net, time, encoding.base64, x.json2, …). The V
+# pin is not consulted: a third_party/ change runs the whole suite.
+vcx_module_of() {
+  case "$1" in
+    tests.fixtures_grader) echo 'tests/fixtures_grader'; return 0 ;;
+    *.*) set -- "${1%%.*}" ;;
+  esac
+  case " $VCX_MODULES " in *" $1 "*) echo "$1" ;; esac
+}
+
+# read_imports <file…> — the vcx-local modules those V files import directly.
+read_imports() {
+  local imp
+  { grep -h '^import ' "$@" 2>/dev/null || true; } \
+    | sed 's/^import //; s/ as .*//; s/[[:space:]]*$//' \
+    | sort -u \
+    | while IFS= read -r imp; do vcx_module_of "$imp"; done
+}
+
+# module_direct_imports <module-dir-name> — its .v files' vcx-local imports. A
+# directory that does not exist (vcx/fuzz today) and a directory with no import
+# line are both the EMPTY answer, never a failure: `set -o pipefail` would
+# otherwise turn a missing optional module into an aborted selection.
+module_direct_imports() {
+  [ -d "vcx/$1" ] || return 0
+  read_imports $(find "vcx/$1" -name '*.v' -type f 2>/dev/null)
+}
+
+# The per-module direct-import sets, computed ONCE into shell variables (bash 3.2
+# has no associative arrays, and recomputing a find+grep over vcx/platform for
+# every one of 76 test files is the difference between a second and a minute).
+SUITE_GRAPH_READY=0
+suite_graph() {
+  [ $SUITE_GRAPH_READY -eq 1 ] && return 0
+  local m v
+  for m in $VCX_MODULES; do
+    v=$(module_direct_imports "$m" | tr '\n' ' ' || true)
+    [ "$m" = testenv ] && v="$v $BINARY_MODULES"
+    eval "SUITE_DI_$m=\$v"
+  done
+  # the grader package under vcx/tests/ imports the ring the same way
+  v=$(read_imports "$SUITE_DIR"/fixtures_grader/*.v | tr '\n' ' ' || true)
+  SUITE_DI_tests_fixtures_grader="$v"
+  SUITE_GRAPH_READY=1
+}
+
+# module_closure <module…> — the transitive vcx-local module set.
+module_closure() {
+  local seen="" frontier="$*" next m key
+  suite_graph
+  while [ -n "$frontier" ]; do
+    next=""
+    for m in $frontier; do
+      case " $seen " in *" $m "*) continue ;; esac
+      seen="$seen $m"
+      key=$(printf '%s' "$m" | tr '/.' '__')
+      eval "next=\"\$next \${SUITE_DI_$key:-}\""
+    done
+    frontier="$next"
+  done
+  printf '%s\n' $seen
+}
+
+# The closure of every test file, computed once: "<path> <module> <module>…".
+# ONE grep over the whole directory, not one per file: this runs on every dev
+# loop and 76 four-process pipelines is twenty seconds nobody agreed to spend.
+SUITE_CLOSURE=''
+suite_closure() {
+  [ -n "$SUITE_CLOSURE" ] && return 0
+  local t cur roots line f imp
+  cur=''
+  roots=''
+  while IFS= read -r line; do
+    f=${line%%:*}
+    imp=${line#*:import }
+    imp=${imp%% as *}
+    if [ "$f" != "$cur" ]; then
+      [ -n "$cur" ] && SUITE_CLOSURE="$SUITE_CLOSURE
+$cur $(module_closure $roots | tr '\n' ' ')"
+      cur=$f
+      roots=''
+    fi
+    roots="$roots $(vcx_module_of "$imp")"
+  done <<EOF
+$({ grep -H '^import ' "$SUITE_DIR"/*_test.v 2>/dev/null || true; } | sed 's/[[:space:]]*$//')
+EOF
+  [ -n "$cur" ] && SUITE_CLOSURE="$SUITE_CLOSURE
+$cur $(module_closure $roots | tr '\n' ' ')"
+  # a test file with no import line at all still has to be listed, or the awk
+  # below could never name it — it is selected by its own path, nothing else.
+  for t in "$SUITE_DIR"/*_test.v; do
+    [ -e "$t" ] || continue
+    case "$SUITE_CLOSURE" in
+      *"
+$t "*|*"
+$t") ;;
+      *) SUITE_CLOSURE="$SUITE_CLOSURE
+$t" ;;
+    esac
+  done
+  return 0
+}
+
+# tests_by_module <module-dir-name> — every test file whose closure holds it.
+tests_by_module() {
+  suite_closure
+  printf '%s\n' "$SUITE_CLOSURE" | awk -v want="$1" '
+    NF > 0 { for (i = 2; i <= NF; i++) if ($i == want) { print $1; break } }'
+}
+
+# tests_importing <path-relative-to-vcx> — the module rule for a changed vcx/ file.
+tests_importing() {
+  local d=${1%%/*}
+  case " $VCX_MODULES " in *" $d "*) ;; *) return 0 ;; esac
+  tests_by_module "$d"
+}
+
+# shard_test_for <conformance-path…> — the vcx/tests/ file that grades each, read
+# from the shard manifest scripts/run_fixture_shards.sh reads, with the same cut
+# of its own [doc] block.
+shard_test_for() {
+  local manifest="$SUITE_DIR/fixtures_grader/fixture_shards.cxd" owners c rel hit
+  [ -f "$manifest" ] || { echo ALL; return 0; }
+  owners=$(sed '/\[doc \[#/,/#\]\]/d' "$manifest" \
+    | { grep -oE '^[[:space:]]*\[(shard[[:space:]]+name=[^][:space:]]+[[:space:]]+test=[^][:space:]]+|file[[:space:]]+name=[^][:space:]]+)' \
+    | sed -E 's/^[[:space:]]*\[//' \
+    | awk '$1 == "shard" { sub(/^test=/, "", $3); stest = $3; next }
+           $1 == "file"  { sub(/^name=/, "", $2); print stest, $2 }' || true; })
+  [ -n "$owners" ] || { echo ALL; return 0; }
+  for c in "$@"; do
+    rel=${c#conformance/}
+    if [ "$rel" = code.cxd ]; then
+      # the DRIVER's own corpus: the driver grades it, and two more files pin the
+      # parser census and the parse fixtures against it (INT-15's page).
+      echo "$SUITE_DIR/code_eval_fixtures_test.v"
+      echo "$SUITE_DIR/code_parse_fixtures_test.v"
+      echo "$SUITE_DIR/cxparse_full_corpus_diff_test.v"
+      continue
+    fi
+    # `test=` in the manifest already spells the path from the repo root.
+    hit=$(printf '%s\n' "$owners" | awk -v r="$rel" '$2 == r { print $1 }')
+    # A corpus file no shard owns is check-fixture-shard-manifest's failure, not
+    # this script's to guess around: grade everything.
+    [ -n "$hit" ] || { echo ALL; return 0; }
+    printf '%s\n' "$hit"
+  done
+}
+
+# suite_files — prints ALL, or the selected vcx/tests/*_test.v paths, or nothing.
+suite_files() {
+  local sel='' f m cs corpus t names
+  # (a) the escalations — what shapes the suite rather than being tested by it.
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    case "$f" in
+      "$SUITE_DIR"/*_test.v) continue ;;
+      "$SUITE_DIR"/*|vcx/testenv/*|vcx/fixtures/*|third_party/*|Makefile|vcx/Makefile|vcx/v.mod|devbox.json|devbox.lock|scripts/*)
+        echo ALL; return 0 ;;
+    esac
+  done <<< "$CHANGED"
+  # The import graph and the per-file closure are built HERE, in this shell:
+  # every use of them below sits inside a command substitution, and a subshell's
+  # cache dies with it — priming them per test file cost 18 seconds of the first
+  # cut for a table that does not change.
+  suite_graph
+  suite_closure
+  # (b) the corpus side, through the one resolver that owns it.
+  cs=$(mktemp) || { echo ALL; return 0; }
+  printf '%s\n' "$CHANGED" > "$cs"
+  corpus=$(sh scripts/fixture_files_for_branch.sh --changed-files "$cs" 2>/dev/null)
+  rm -f "$cs"
+  case "$corpus" in
+    ALL) echo ALL; return 0 ;;
+    '') ;;
+    *) t=$(shard_test_for $corpus)
+       case " $(printf '%s' "$t" | tr '\n' ' ') " in *" ALL "*) echo ALL; return 0 ;; esac
+       sel="$sel $(printf '%s' "$t" | tr '\n' ' ')" ;;
+  esac
+  # (c) the per-path rules.
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    case "$f" in
+      "$SUITE_DIR"/*_test.v)
+        sel="$sel $f" ;;
+      stdlib/*.cx|x/*.cx|vcx/platform/stdlib_*.v|vcx/code/stdlib_*.v)
+        # the corpus side is already in `sel`; this is the NAME clause on top,
+        # plus the ring rule for the two V spellings.
+        case "$f" in
+          stdlib/*.cx|x/*.cx) m=${f##*/}; m=${m%.cx} ;;
+          *) m=${f##*/stdlib_}; m=${m%.v}; m=${m%.c}; m=$(printf '%s' "$m" | tr '_' '-') ;;
+        esac
+        names=$(grep -lF -- "$m" "$SUITE_DIR"/*_test.v 2>/dev/null | tr '\n' ' ' || true)
+        # NO ring edge here, deliberately. A `stdlib_<m>.v` is a LEAF of its
+        # module directory — one module's prims — and the whole of vcx/platform
+        # is not its blast radius; its cases are graded by the shard above and
+        # its behaviour reaches a test through the program that names it. The
+        # engine files beside it (the parser, the evaluator, the runtime) take
+        # the `vcx/*` rule below and do carry the ring edge. A module source
+        # that resolves to NO corpus file is shared infrastructure, and the
+        # resolver already answered ALL for it.
+        sel="$sel $names" ;;
+      vcx/*)
+        sel="$sel $(tests_importing "${f#vcx/}" | tr '\n' ' ')" ;;
+      conformance/*)
+        # in-walk corpus files are resolved in (b); anything else under
+        # conformance/ is read through the `fixtures` corpus loader.
+        sel="$sel $(tests_by_module fixtures | tr '\n' ' ')" ;;
+      docs/llm/*|VERSION)
+        # embedded in the binary, read only by its own doc/help surface.
+        sel="$sel $SUITE_DIR/cli_umbrella_test.v $SUITE_DIR/cli_default_eval_test.v" ;;
+      spec/*|docs-src/*|docs/*|ledger/*|_gate_evidence/*|.github/*|*.md|.gitignore|.editorconfig|LICENSE)
+        ;;
+      *)
+        echo ALL; return 0 ;;
+    esac
+  done <<< "$CHANGED"
+  [ -n "${sel# }" ] || return 0
+  printf '%s\n' $sel | sort -u
 }
 
 # Build-infra changes invalidate EVERY step (the Makefiles define the
@@ -305,6 +675,10 @@ prebuild() {
 # red names its own step.
 SERIAL_TAIL='test-profile-gate test-vcx-timing test-code-diagram'
 
+# The per-file narrowing of test-vcx-suite, filled in below when that step is
+# selected. Empty = the union, which is what the full-union path wants.
+SUITE_SEL=''
+
 # run_step_set STEP… — the storm for everything but the tail, then the tail,
 # serially. Propagates the FIRST failure, like the bare `make` it replaces.
 #
@@ -340,7 +714,14 @@ run_step_set() {
     return 0
   fi
   if [ ${#par[@]} -gt 0 ]; then
-    make $MAKEFLAGS_PAR "${par[@]}" || return $?
+    # SUITE_SEL is the per-file narrowing of test-vcx-suite (#1516). Empty means
+    # the union — the Makefile's own default — so the full-union path below and
+    # `make test-vcx-suite` by hand both behave exactly as they did.
+    if [ -n "$SUITE_SEL" ]; then
+      make $MAKEFLAGS_PAR SUITE_FILES="$SUITE_SEL" "${par[@]}" || return $?
+    else
+      make $MAKEFLAGS_PAR "${par[@]}" || return $?
+    fi
   fi
   [ ${#tailed[@]} -eq 0 ] && return 0
   for t in $SERIAL_TAIL; do
@@ -365,6 +746,13 @@ if [ $INFRA_HIT -eq 1 ]; then
   exit $?
 fi
 
+# PATHNAME EXPANSION OFF for the matching loop (#1516). `for g in $globs` was
+# GLOBBING the manifest's own patterns against the tree: `vcx/code/*` expanded
+# to the files that exist, so a row matched a path only while that path was on
+# disk. A DELETED input therefore matched nothing and its step was SKIPPED —
+# the one failure direction this manifest must not have. `case` does the
+# matching; the shell must not do it first.
+set -f
 run_steps=()
 skip_steps=()
 unlisted_steps=()
@@ -387,6 +775,37 @@ for step in $STEPS; do
   done
   if [ $hit -eq 1 ]; then run_steps+=("$step"); else skip_steps+=("$step"); fi
 done
+set +f
+
+# ── the per-file narrowing of test-vcx-suite (#1516, RULED: RUN-1) ──────────
+# The row above has already decided whether the STEP runs. This decides which
+# of its 76 files run, and drops the step entirely when the answer is none.
+suite_selected=0
+for s in "${run_steps[@]:-}"; do
+  [ "$s" = test-vcx-suite ] && suite_selected=1
+done
+if [ $suite_selected -eq 1 ]; then
+  sf=$(suite_files | tr '\n' ' ')
+  sf=${sf% }
+  if [ -z "$sf" ]; then
+    echo "test-changed: test-vcx-suite: NO test file reads what changed — dropping the step"
+    narrowed=()
+    for s2 in "${run_steps[@]}"; do
+      [ -n "$s2" ] || continue
+      if [ "$s2" = test-vcx-suite ]; then skip_steps+=("$s2"); continue; fi
+      narrowed+=("$s2")
+    done
+    if [ ${#narrowed[@]} -gt 0 ]; then run_steps=("${narrowed[@]}"); else run_steps=(); fi
+  else
+    case " $sf " in
+      *" ALL "*)
+        echo "test-changed: test-vcx-suite: the WHOLE suite — a shared helper, the V pin, a Makefile, scripts/ or an unclassified path changed" ;;
+      *)
+        SUITE_SEL="$sf"
+        echo "test-changed: test-vcx-suite: $(printf '%s\n' $sf | grep -c . || true) of $(ls "$SUITE_DIR"/*_test.v 2>/dev/null | grep -c . || true) test files: $sf" ;;
+    esac
+  fi
+fi
 
 echo "test-changed: SKIP (inputs unchanged): ${skip_steps[*]:-none}"
 echo "test-changed: RUN: ${run_steps[*]:-none}"
