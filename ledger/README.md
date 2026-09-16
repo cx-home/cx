@@ -912,6 +912,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1352-b` | [rulings_2026_09_09_agent_tool_projection_feature_verbs_1352.md](rulings_2026_09_09_agent_tool_projection_feature_verbs_1352.md), [rulings_2026_09_09_ux_form_subject_noun_1371.md](rulings_2026_09_09_ux_form_subject_noun_1371.md) |
 | `1358-f` | [rulings_2026_09_08_sched_wall_clock_1358.md](rulings_2026_09_08_sched_wall_clock_1358.md) |
 | `1359-a` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
+| `1359-b` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
 | `1383-a` | [rulings_2026_09_10_scim_attribute_projection_1103.md](rulings_2026_09_10_scim_attribute_projection_1103.md) |
 | `1406-a` | [rulings_2026_09_11_saml_binding_1402b_scim_1406b.md](rulings_2026_09_11_saml_binding_1402b_scim_1406b.md) |
 | `1409-a` | [rulings_2026_09_10_lane_s_sso_1394_1397_1399_1404_1408.md](rulings_2026_09_10_lane_s_sso_1394_1397_1399_1404_1408.md), [rulings_2026_09_11_oidc_hardening_1407.md](rulings_2026_09_11_oidc_hardening_1407.md) |
@@ -1065,6 +1066,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ga-1a` | [rulings_2026_08_20_guest_attach.md](rulings_2026_08_20_guest_attach.md) |
 | `ga-1b` | [rulings_2026_08_20_guest_attach.md](rulings_2026_08_20_guest_attach.md) |
 | `gql-1` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_14_connector_transports_1430c.md](rulings_2026_09_14_connector_transports_1430c.md) |
+| `half-1` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
 | `http-429` | [partition_remediation_register.md](partition_remediation_register.md) |
 | `ieee-754` | [partition_I5_stream17_runtime.md](partition_I5_stream17_runtime.md) |
 | `imap-1` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
@@ -1185,4 +1187,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*289 ledger pages; 579 ids declared, 348 cited only.*
+*289 ledger pages; 579 ids declared, 350 cited only.*
