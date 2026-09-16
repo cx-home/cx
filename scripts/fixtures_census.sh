@@ -15,6 +15,15 @@
 #   • no fixture exercised the [out-err …] channel — the negative lane is dead;
 #   • a shard the manifest names wrote NO census — that shard did not run, and
 #     a total short by one shard is worse than no total, because it is believed.
+#
+# #1513: under a `make fixtures FIXTURE_FILES=…` selection the expected shard
+# set is not the manifest's — the wrapper deliberately launches only the shards
+# that own a named file — so it writes the shards it launched to
+# vcx/target/fixtures/.selected-shards and this sums THOSE. The two refusals
+# that still mean something there (a launched shard writing no census; a
+# non-empty selection grading zero fixtures) stay; the [out-err …] refusal does
+# not, because a selection of two module files is not the corpus that claim is
+# about, and a selected run failing on it would be a false red.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export LC_ALL=C
@@ -26,9 +35,16 @@ DIR=vcx/target/fixtures
 
 # The manifest documents its own row shape in a [doc [# … #]] block; drop the
 # prose before reading the rows (see check_fixture_shard_manifest.sh).
-shards=$(sed '/\[doc \[#/,/#\]\]/d' "$MANIFEST" \
-  | grep -oE '^[[:space:]]*\[shard[[:space:]]+name=[^][:space:]]+' | sed -E 's/.*name=//')
-[ -n "$shards" ] || { echo "fixtures-census: $MANIFEST names no shard" >&2; exit 1; }
+SELECTED="$DIR/.selected-shards"
+if [ -f "$SELECTED" ]; then
+  selected=1
+  shards=$(cat "$SELECTED")
+else
+  selected=0
+  shards=$(sed '/\[doc \[#/,/#\]\]/d' "$MANIFEST" \
+    | grep -oE '^[[:space:]]*\[shard[[:space:]]+name=[^][:space:]]+' | sed -E 's/.*name=//')
+  [ -n "$shards" ] || { echo "fixtures-census: $MANIFEST names no shard" >&2; exit 1; }
+fi
 
 missing=""
 for s in $shards; do
@@ -68,7 +84,7 @@ if [ "$files" -gt 0 ] && [ "$ran" -eq 0 ]; then
   echo "fixtures-census: $files module file(s) assigned but ZERO fixtures ran" >&2
   exit 1
 fi
-if [ "$ran" -gt 0 ] && [ "$oer" -eq 0 ]; then
+if [ "$selected" -eq 0 ] && [ "$ran" -gt 0 ] && [ "$oer" -eq 0 ]; then
   echo "fixtures-census: no fixture exercised the [out-err …] channel — the negative lane is not running" >&2
   exit 1
 fi

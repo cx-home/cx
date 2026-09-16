@@ -2562,9 +2562,18 @@ check-fixture-shard-manifest:
 # `stdlib corpus: …` census line last. No build prerequisite, exactly as the
 # direct invocation had none: the grader links the `cx` module as SOURCE and
 # only READS vcx/target/cx's build-identity stamp (#1432).
+#
+# #1513: `make fixtures FIXTURE_FILES="conformance/xap/xap-on.cxd …"` grades
+# only the named corpus files, each through the shard that owns it, and prints
+# the census restricted to them under one `FIXTURE-FILES=` line. A name no
+# shard owns FAILS the step. Unset, the target is what it was — which is what
+# the post-merge run, and any branch touching the grader, vcx/code/,
+# stdlib/*.cx or the V pin, keeps running (INT-5, INT-21). The selection for a
+# branch is `sh scripts/fixture_files_for_branch.sh origin/release/0.18`.
+FIXTURE_FILES ?=
 .PHONY: fixtures
 fixtures:
-	@sh scripts/run_fixture_shards.sh
+	@FIXTURE_FILES="$(FIXTURE_FILES)" sh scripts/run_fixture_shards.sh
 
 # #700 consolidation absorbs a step file's tests into an umbrella and REMOVES
 # the original; every fix made to the umbrella afterwards then lives only
