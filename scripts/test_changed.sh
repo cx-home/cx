@@ -232,6 +232,58 @@ step_globs() {
     # anywhere can move a verdict — the row is deliberately the whole tree,
     # plus the formatter, the sweep and its roster.
     fmt-sweep-gate)                echo '*.cx Makefile scripts/fmt_corpus_sweep.cx scripts/fmt_corpus_expected_errors.txt vcx/cx/*' ;;
+    # ── #1516 (RULED: RUN-1): the THIRTEEN TEST_TARGETS entries that carried no
+    # row and therefore ran on every head by deny-by-default. Measured on
+    # b9d79025d (a ux-web CSS + one corpus case): they were a third of the
+    # selected set. Each row below is derived from the step's own recipe and
+    # from the script that recipe runs — never guessed — and over-includes on
+    # doubt, the same direction every row above takes.
+    #
+    # `check-selection-manifest` is what keeps this list complete from here on:
+    # it fails when a TEST_TARGETS entry has no row, so deny-by-default stays
+    # the fallback for a step in flight and never the resting state.
+    #
+    # the adversarial -usecache proof (scripts/vcache_soundness_gate.sh): it
+    # REBUILDS the tree from source under mutated inputs and compares behaviour,
+    # so its surface is the whole compiled closure plus the gate itself.
+    check-selection-manifest)      echo 'Makefile scripts/test_changed.sh scripts/check_selection_manifest.sh' ;;
+    check-vcache-soundness)        echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/vcache_soundness_gate.sh" ;;
+    # #1272: the §1.2 normative body it fingerprints, the generated V constant
+    # it compares against, and the gate/generator pair that writes both.
+    check-contract-revision)       echo 'spec/* vcx/* scripts/check_contract_revision.sh scripts/gen_contract_revision.sh' ;;
+    # reads the BUILT artifacts' link surface (vcx/target/cx, libcx.dylib), so
+    # anything that changes what is linked into them is an input.
+    check-portable-links)          echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/check_portable_links.cx" ;;
+    # #1012's resurrection guards over the umbrella manifests: the manifests,
+    # the driver and its selftest, and the umbrella test files they hold to.
+    check-consolidation-manifests) echo 'scripts/consolidation/* scripts/consolidate_tests.sh scripts/consolidate_tests.cx scripts/consolidate_tests_selftest.sh vcx/tests/*' ;;
+    # the seam register against the platform + stdlib spec pages it is derived
+    # from (scripts/check_composition_seams.cx reads spec/03-approved/{platform,stdlib}).
+    check-composition-seams)       echo 'spec/* scripts/check_composition_seams.cx' ;;
+    # #1171: the directive registry (vcx/cx/program_tokens.v) on one side and
+    # every editor surface + the checked-in register under tooling/ on the other.
+    check-editor-surface-parity)   echo 'vcx/cx/* tooling/* scripts/check_editor_surface_parity.cx' ;;
+    # INT-11 (#1475): the four document sets the recipe walks — docs-src/,
+    # spec/03-approved/, the root prose files, and the generated LLM layer.
+    verify-doc-links)              echo 'docs-src/* spec/* docs/llm/* tools/verify-doc-links.sh README.md CONTRIBUTING.md ROADMAP.md SECURITY.md CODE_OF_CONDUCT.md CHANGELOG.md RELEASE_NOTES_v AGENTS.md CLAUDE.md AGENT-STANDING-RULES.md' ;;
+    # COMP-1 part 4: the chapter is GENERATED from the two platform spec pages,
+    # and the generator runs under the built binary.
+    primer-platform-check)         echo "spec/03-approved/platform/composition.md spec/03-approved/platform/deployment-topology.md docs-src/llm/primer-platform.chapter.md scripts/gen_docs/primer_platform.cx $RING_LIB $RING_SUP" ;;
+    # #1265: the vocabulary is flow.md's, the surface is stdlib/flow.cx, and the
+    # gate runs under the built binary's parser.
+    flow-vocabulary-gate)          echo 'spec/03-approved/platform/flow.md stdlib/flow.cx scripts/flow_vocabulary_gate.cx vcx/cx/* vcx/code/*' ;;
+    # #1380: a jsdom gate over the SHIPPED playground page and script — no wasm,
+    # no binary. Its inputs are that directory, the gate and its node modules.
+    test-playground-nav)           echo 'scripts/gen_guide/playground/* scripts/test_playground_nav.mjs scripts/playground-gate/*' ;;
+    # #1374: the same playground corpus evaluated in the WASM bundle, and the
+    # bundle is built from the ring closure (scripts/wasm/ + build-playground).
+    test-playground-wasm-traps)    echo "scripts/gen_guide/playground/* scripts/test_playground_wasm_traps.mjs scripts/wasm/* $RING_LIB $RING_SUP $RING_EMBED" ;;
+    # #1180: the binding_api fixture file, the four drivers under lang/, the
+    # public header they call through, and libcx's own closure.
+    test-binding-api-parity)       echo "conformance/binding_api.txt lang/* include/* scripts/test_binding_api_parity.sh scripts/compile_binding_api_fixtures.cx $RING_LIB $RING_SUP" ;;
+    # #1065: the rosters live in vcx/Makefile and are re-derived from the module
+    # set each artifact compiles, so any vcx/ module moving is an input.
+    check-build-input-roster)      echo 'vcx/Makefile vcx/*' ;;
     *)                             echo '' ;; # unknown step → ALWAYS RUN
   esac
 }
