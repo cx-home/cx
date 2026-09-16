@@ -6796,7 +6796,7 @@ $ cx prog.cx
 
 ```console
 $ cx prog.cx
-'<table class="ux-table" id="cx-9488f4b5edb0421b" data-cx-frag="[frag\n  [route /o]\n  [feature orders]\n  [path /grid]\n]\n"><tbody class="ux-rows"><tr class="ux-row" id="cx-0c605a4e78d087b1" data-cx-frag="[frag\n  [route /o]\n  [feature orders]\n  [path \'/grid/row[r1]\']\n]\n"><td class="ux-cell">a</td></tr><tr class="ux-row"><td class="ux-cell">b</td></tr></tbody></table>'
+'<table class="ux-table" id="cx-9488f4b5edb0421b" data-cx-frag="[frag\n  [route /o]\n  [feature orders]\n  [path /grid]\n]\n"><tbody class="ux-rows"><tr class="ux-row" id="cx-0c605a4e78d087b1" data-cx-frag="[frag\n  [route /o]\n  [feature orders]\n  [path \'/grid/row[r1]\']\n]\n"><td class="ux-cell ux-cell-tight">a</td></tr><tr class="ux-row"><td class="ux-cell ux-cell-tight">b</td></tr></tbody></table>'
 ```
 
 Liveness comes from the render context's binding for a logical feed name,
