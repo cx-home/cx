@@ -1684,7 +1684,7 @@ cx-25ff65bbcc985af2
 
 ```console
 $ cx prog.cx
-[list [ux-refusal code=ux-address-reused id=cx-bfb773fba6d60c77]]
+[list [ux-refusal code=ux-address-reused address=same id=cx-bfb773fba6d60c77]]
 ```
 
 Rows key by their **declared key** or get no address at all. Positional row
@@ -1870,7 +1870,7 @@ A projection failure never reaches a browser as content:
 
 ```console
 $ cx prog.cx
-([err code=ux-refused [ux-refusal code=ux-renderer-private-attr element=ux:action attr=target]], [err code=ux-refused [ux-refusal code=ux-address-reused id=cx-fa5c41a015045bf8]])
+([err code=ux-refused [ux-refusal code=ux-renderer-private-attr element=ux:action attr=target]], [err code=ux-refused [ux-refusal code=ux-address-reused address=d id=cx-fa5c41a015045bf8]])
 ```
 
 A field-level refusal lands **on its own control**, with the message beside it
