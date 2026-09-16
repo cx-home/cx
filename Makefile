@@ -3609,8 +3609,33 @@ fmt-sweep-timed: build-vcx
 #
 # This number goes DOWN only. Each class wants its own issue; none is in
 # 1384-a's scope, which is the guard plus #1384's own two measured shapes.
-FMT_SWEEP_MAX_DECLINED ?= 34
-FMT_SWEEP_MAX_TREE_REFUSED ?= 17
+#
+# 2026-09-16 (#1436 in part, RULED: FMT-1) — four comment-placement strata of
+# the DECLINED class are fixed at the layout: a comment inside a DESCENDANT no
+# longer leaves an enclosing form free to fit the bound and be written flat; a
+# comment before a form's first child, and one trailing its last, are placed
+# for every form and not only for a `[?def]`; and a head that already runs past
+# the bound no longer refuses the break a comment needs. Measured on the
+# branch's own binary, the sweep's own count lines:
+#
+#   SWEEP-FILES=310 FORMATTED=283 DECLINED=12 TREE-REFUSED=10 UNSTABLE=0 ERROR=5
+#
+# DECLINED 34 -> 12 and TREE-REFUSED 17 -> 10, and both numbers below move to
+# the measurement in the same commit as the fix, which is what FMT-1 says a
+# ratchet move is. TREE-REFUSED falls by 9 (nine files whose interior comment
+# the layout used to RE-ORDER now keep it where it was) and rises by 2 —
+# `design/787/w5/shop/surface.cx` and `spec/…/oriel/surface.cx` stop declining
+# and land on the PRE-EXISTING attribute-after-body-text defect the class above
+# already names; `cx fmt` still refuses them, so nothing new is data-changing.
+#
+# #1436 does NOT close here. Seven files still decline on a comment the layout
+# cannot place — four of them on a comment inside a MAP literal, whose `, key: `
+# gap is the one gap `layout_separators` calls unbreakable (fmt-023 and fmt-037
+# pin that as fail-closed today), and three on shapes not yet reduced:
+# `design/787/w1/serve.cx`, `spec/…/oriel/tui.cx`, `x/ux-web.cx`. The other
+# five declines are the census's OTHER classes, none of them #1436's.
+FMT_SWEEP_MAX_DECLINED ?= 12
+FMT_SWEEP_MAX_TREE_REFUSED ?= 10
 FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
 .PHONY: fmt-sweep-gate
 fmt-sweep-gate: build-vcx
