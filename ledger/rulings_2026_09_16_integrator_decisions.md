@@ -1,0 +1,7 @@
+# Integrator decisions, 2026-09-16 — the 1503-b addendum
+
+Decisions the integrator took inside rules already ruled (the shape of `rulings_2026_09_15_integrator_decisions_int15.md`).
+
+| Id | Decision |
+|---|---|
+| **1503-b addendum** | **(integrator, 2026-09-16)** The sqlite clause of 1503-b (`rulings_2026_09_15_owner_decisions_1830z.md`) — "sqlite applies rows until the first refusal (row 1 in, `changes=0` on the refusal)" — was the integrator's inference, not a measurement, and it is WRONG for the default build: sqlite's default conflict resolution (`ON CONFLICT ABORT`) backs the refused statement's OWN rows out while everything written before that statement stays; only a conflict clause that resolves otherwise (`ON CONFLICT FAIL`) keeps the rows written before the refusal, because the resolution is the engine's. The decision's PRINCIPLE stands unchanged — a single statement's partial effect is the backend's, no implicit savepoint and no implicit `BEGIN`, a caller wanting all-or-nothing wraps the writes in §9's transaction — and `db_access.md` §9 states the measured truth per backend as the branch measured it (`db-031` sqlite enforced, `db-032` the transaction, `db-033`/`db-034` pg and mysql advisory), landed on the head `5810f892d`. The 18:30Z row is read with this addendum; its text is not rewritten. Lesson recorded: a decision row states the principle and lets the branch measure; a measurement the integrator did not make never enters a decision row. |
