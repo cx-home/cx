@@ -1037,7 +1037,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster fmt-sweep-gate test-playground-wasm-traps ledger-index-check
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -2620,9 +2620,18 @@ contract-revision-repin:
 test-vcx-timing: build-vcx-dev
 	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/timing/
 
+# SUITE_FILES (#1516, RULED: RUN-1) — what `v test` is pointed at. The default
+# is the DIRECTORY, so `make test-vcx-suite`, `make test` and every exit run are
+# the union they have always been. `scripts/test_changed.sh` overrides it with
+# the test files whose own path, an imported vcx/ module, or the corpus shard
+# that grades a changed module actually moved: one row over 76 files and 35
+# minutes was the pace of every post-merge run. The retry classifier below reads
+# the SAME log and is indifferent to how many files produced it.
+SUITE_FILES ?= vcx/tests/
+
 test-vcx-suite: build-vcx-dev check-serial-retry-rosters check-fixture-shard-manifest fixtures-census-reset skip-ledger-reset
 	@$(JS_CLOSE) log=vcx/target/test-suite-run.log; stf=vcx/target/test-suite-status; \
-	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/tests/ 2>&1; echo $$? > $$stf; } | tee $$log; \
+	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(SUITE_FILES) 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
 	  failed=$$(grep -aE '^FAIL ' $$log | grep -aoE '[^ ]+_test\.v$$' | sort -u); \
@@ -2659,7 +2668,11 @@ test-vcx-suite: build-vcx-dev check-serial-retry-rosters check-fixture-shard-man
 	  echo "──── $$(printf '%s\n' "$$skips" | wc -l | tr -d ' ') step(s) SKIPPED with a named reason (absent prerequisite, counted separately — NOT failures) ────"; \
 	  printf '%s\n' "$$skips"; \
 	fi; \
-	bash scripts/fixtures_census.sh || st=1; \
+	if [ "$(SUITE_FILES)" = "vcx/tests/" ]; then \
+	  bash scripts/fixtures_census.sh || st=1; \
+	else \
+	  echo "test-vcx-suite: SELECTED run (SUITE_FILES=$(SUITE_FILES)) — NO whole-corpus census, and this line is here so nobody reads one into it. The census sums the grader shards, only the union runs all of them, and `make test` plus every exit run are still the union (#1516)."; \
+	fi; \
 	exit $$st
 
 # White-box unit tests that live INSIDE the `code` module (vcx/code/*_test.v) —
@@ -2763,6 +2776,19 @@ CX_INMODULE_TESTS_EXCLUDED := vcx/cx/parser_multidoc_test.v
 .PHONY: check-build-input-roster
 check-build-input-roster:
 	@$(MAKE) -C vcx check-build-input-roster
+
+# check-selection-manifest (#1516, RULED: RUN-1) — the third roster of the same
+# family: every TEST_TARGETS entry has an input-glob row in
+# scripts/test_changed.sh. Deny-by-default keeps a rowless step RUNNING, so the
+# failure this guards is not a wrong answer but a silent one — thirteen steps
+# ran on every head for months because nothing compared the two lists.
+# The selftest runs HERE (10 s), the way check-consolidation-manifests runs its
+# own: a fixture no step executes proves nothing about the tree it was written
+# for, and the selection rules are exactly the kind of thing that rots quietly.
+.PHONY: check-selection-manifest
+check-selection-manifest:
+	@bash scripts/check_selection_manifest.sh
+	@sh scripts/test_changed_selftest.sh
 
 .PHONY: check-inmodule-test-roster
 check-inmodule-test-roster:

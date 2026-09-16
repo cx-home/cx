@@ -44,7 +44,7 @@
 #
 #  (3) The module corpus file of every module source the branch edits:
 #      vcx/platform/stdlib_<m>.v, vcx/platform/stdlib_<m>_*.v,
-#      vcx/code/stdlib_<m>.v and stdlib/<m>.cx. `<m>` is the V spelling with
+#      vcx/code/stdlib_<m>.v, stdlib/<m>.cx and x/<m>.cx. `<m>` is the V spelling with
 #      `_` read as `-`, resolved against the corpus BY NAME:
 #        * an exact `conformance/<ring>/<m>.cxd` (in any ring, and all of them
 #          when two rings carry the name — `term` is in stdlib/ and x/);
@@ -69,6 +69,7 @@ set -u
 
 usage() {
 	echo "usage: sh scripts/fixture_files_for_branch.sh <base>   (e.g. origin/release/0.18)" >&2
+	echo "       sh scripts/fixture_files_for_branch.sh --changed-files <file>" >&2
 }
 
 BASE=${1:-}
@@ -79,15 +80,40 @@ if [ -z "$BASE" ]; then
 	exit 0
 fi
 
+# --changed-files <file> (#1516) — take the change set from a FILE of paths, one
+# per line, instead of from git. Two callers need it: scripts/test_changed.sh,
+# which has already computed the change set and must not pay for a second diff,
+# and the selftests, which prove a rule over a change set no commit has to
+# exist for. The rules below are identical either way; only where the list
+# comes from moves.
+CHANGED_SRC=""
+if [ "$BASE" = "--changed-files" ]; then
+	CHANGED_SRC=${2:-}
+	if [ -z "$CHANGED_SRC" ] || [ ! -f "$CHANGED_SRC" ]; then
+		usage
+		echo ALL
+		exit 0
+	fi
+	# Absolute, because the cd below moves out from under a relative path.
+	case "$CHANGED_SRC" in
+	/*) ;;
+	*) CHANGED_SRC="$(CDPATH= cd -- "$(dirname -- "$CHANGED_SRC")" && pwd)/$(basename -- "$CHANGED_SRC")" ;;
+	esac
+fi
+
 # Resolve the repo from this script's OWN path, so the helper is relocatable —
 # the selftest copies it into a synthetic repo and the pipelines run it from a
 # worktree.
 cd "$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)" || { echo ALL; exit 0; }
 
-# --no-renames: both sides of a rename are judged. With rename detection on, a
-# corpus file moved between rings prints only its new name and the shard that
-# owned the old one goes ungraded.
-diff=$(git diff --no-renames --name-only "${BASE}...HEAD" 2>/dev/null) || { echo ALL; exit 0; }
+if [ -n "$CHANGED_SRC" ]; then
+	diff=$(cat "$CHANGED_SRC") || { echo ALL; exit 0; }
+else
+	# --no-renames: both sides of a rename are judged. With rename detection on, a
+	# corpus file moved between rings prints only its new name and the shard that
+	# owned the old one goes ungraded.
+	diff=$(git diff --no-renames --name-only "${BASE}...HEAD" 2>/dev/null) || { echo ALL; exit 0; }
+fi
 
 # The corpus this grader walks — derived from the directories, never listed, the
 # same way check_fixture_shard_manifest.sh derives it. A .cxd that lands in a
@@ -128,6 +154,16 @@ module_token() {
 	case "$1" in
 	stdlib/*.cx)
 		b=${1#stdlib/}
+		echo "${b%.cx}"
+		;;
+	# x/<m>.cx (#1516) — the x-tier modules are pure CX with no V counterpart,
+	# so nothing else in this table reaches them: before this line an edit to
+	# x/ux-web.cx selected NO fixture file at all and the shard that grades
+	# conformance/xap/ux-web.cxd was skipped on the one head that moved it.
+	# Their corpus is not under conformance/x/ by name — ux-web's sits in the
+	# xap ring — which is exactly why resolve_module asks every ring.
+	x/*.cx)
+		b=${1#x/}
 		echo "${b%.cx}"
 		;;
 	vcx/platform/stdlib_*.v | vcx/code/stdlib_*.v)
