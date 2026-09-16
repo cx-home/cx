@@ -2778,9 +2778,13 @@ check-build-input-roster:
 # scripts/test_changed.sh. Deny-by-default keeps a rowless step RUNNING, so the
 # failure this guards is not a wrong answer but a silent one — thirteen steps
 # ran on every head for months because nothing compared the two lists.
+# The selftest runs HERE (10 s), the way check-consolidation-manifests runs its
+# own: a fixture no step executes proves nothing about the tree it was written
+# for, and the selection rules are exactly the kind of thing that rots quietly.
 .PHONY: check-selection-manifest
 check-selection-manifest:
 	@bash scripts/check_selection_manifest.sh
+	@sh scripts/test_changed_selftest.sh
 
 .PHONY: check-inmodule-test-roster
 check-inmodule-test-roster:

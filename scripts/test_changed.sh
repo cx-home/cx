@@ -296,7 +296,7 @@ step_globs() {
     # the adversarial -usecache proof (scripts/vcache_soundness_gate.sh): it
     # REBUILDS the tree from source under mutated inputs and compares behaviour,
     # so its surface is the whole compiled closure plus the gate itself.
-    check-selection-manifest)      echo 'Makefile scripts/test_changed.sh scripts/check_selection_manifest.sh' ;;
+    check-selection-manifest)      echo 'Makefile scripts/test_changed.sh scripts/check_selection_manifest.sh scripts/test_changed_selftest.sh vcx/tests/* conformance/*' ;;
     check-vcache-soundness)        echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/vcache_soundness_gate.sh" ;;
     # #1272: the §1.2 normative body it fingerprints, the generated V constant
     # it compares against, and the gate/generator pair that writes both.

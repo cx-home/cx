@@ -44,7 +44,7 @@
 #
 #  (3) The module corpus file of every module source the branch edits:
 #      vcx/platform/stdlib_<m>.v, vcx/platform/stdlib_<m>_*.v,
-#      vcx/code/stdlib_<m>.v and stdlib/<m>.cx. `<m>` is the V spelling with
+#      vcx/code/stdlib_<m>.v, stdlib/<m>.cx and x/<m>.cx. `<m>` is the V spelling with
 #      `_` read as `-`, resolved against the corpus BY NAME:
 #        * an exact `conformance/<ring>/<m>.cxd` (in any ring, and all of them
 #          when two rings carry the name — `term` is in stdlib/ and x/);
@@ -154,6 +154,16 @@ module_token() {
 	case "$1" in
 	stdlib/*.cx)
 		b=${1#stdlib/}
+		echo "${b%.cx}"
+		;;
+	# x/<m>.cx (#1516) — the x-tier modules are pure CX with no V counterpart,
+	# so nothing else in this table reaches them: before this line an edit to
+	# x/ux-web.cx selected NO fixture file at all and the shard that grades
+	# conformance/xap/ux-web.cxd was skipped on the one head that moved it.
+	# Their corpus is not under conformance/x/ by name — ux-web's sits in the
+	# xap ring — which is exactly why resolve_module asks every ring.
+	x/*.cx)
+		b=${1#x/}
 		echo "${b%.cx}"
 		;;
 	vcx/platform/stdlib_*.v | vcx/code/stdlib_*.v)
