@@ -2274,7 +2274,9 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/code_eval_fixtures_shard_2_test.v \
                       vcx/tests/code_eval_fixtures_shard_3_test.v \
                       vcx/tests/code_eval_fixtures_shard_4_test.v \
-                      vcx/tests/code_eval_fixtures_shard_5_test.v
+                      vcx/tests/code_eval_fixtures_shard_5_test.v \
+                      vcx/tests/code_eval_fixtures_shard_6_test.v \
+                      vcx/tests/code_eval_fixtures_shard_7_test.v
 
 # ── the grader's SHARDS carry its roster row too (#1448, RULED: 1448-a) ─────
 # 1448-a split the eval lane's stdlib walk out of code_eval_fixtures_test.v and
