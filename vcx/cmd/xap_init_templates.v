@@ -427,7 +427,7 @@ fn xap_init_bundle_suite(name string) string {
    from two documents. Duplicates collapse on member identity and the closure
    is sorted by it, so one graph has one canonical value:
 
-     cx --allow-read bundle.cx
+     cx --allow-read --allow-random --allow-clock bundle.cx
 
    An [include] names a bundle VERSION. `${name}-core` version 2 does not
    silently widen this suite: growth is a re-issuance policy on the terms,
@@ -446,7 +446,11 @@ fn xap_init_bundle_suite(name string) string {
 fn xap_init_bundle_program(name string) string {
 	return "[; The two bundle documents beside this file, made live:
 
-     cx --allow-read bundle.cx
+     cx --allow-read --allow-random --allow-clock bundle.cx
+
+   (--allow-random is for the throwaway issuer keypair below and --allow-clock
+   for the verification clock; the closure itself is a pure walk over the
+   documents in the store and needs neither.)
 
    It publishes both into an in-memory store, computes the member set the suite
    DEFINES, and then answers the question a bundle exists to answer — does a
@@ -526,7 +530,7 @@ as generated — nothing to fix before it runs.
 
 ```bash
 cx --allow-read compose.cx
-cx --allow-read bundle.cx
+cx --allow-read --allow-random --allow-clock bundle.cx
 ```
 
 ## Three things the skeleton is trying to show you

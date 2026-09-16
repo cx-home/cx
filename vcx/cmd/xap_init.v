@@ -162,7 +162,7 @@ fn run_xap(args []string) {
 	}
 	println('')
 	println('Next: cx --allow-read ${os.join_path(dir, 'compose.cx')}')
-	println('      cx --allow-read ${os.join_path(dir, 'bundle.cx')}')
+	println('      cx --allow-read --allow-random --allow-clock ${os.join_path(dir, 'bundle.cx')}')
 	println('        (the bundle pair: the closure the suite defines, and the one')
 	println('         entitlement that reaches a member through the include)')
 	if want_client {
