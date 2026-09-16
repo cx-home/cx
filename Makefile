@@ -2668,7 +2668,11 @@ test-vcx-suite: build-vcx-dev check-serial-retry-rosters check-fixture-shard-man
 	  echo "──── $$(printf '%s\n' "$$skips" | wc -l | tr -d ' ') step(s) SKIPPED with a named reason (absent prerequisite, counted separately — NOT failures) ────"; \
 	  printf '%s\n' "$$skips"; \
 	fi; \
-	bash scripts/fixtures_census.sh || st=1; \
+	if [ "$(SUITE_FILES)" = "vcx/tests/" ]; then \
+	  bash scripts/fixtures_census.sh || st=1; \
+	else \
+	  echo "test-vcx-suite: SELECTED run (SUITE_FILES=$(SUITE_FILES)) — NO whole-corpus census, and this line is here so nobody reads one into it. The census sums the grader shards, only the union runs all of them, and `make test` plus every exit run are still the union (#1516)."; \
+	fi; \
 	exit $$st
 
 # White-box unit tests that live INSIDE the `code` module (vcx/code/*_test.v) —
