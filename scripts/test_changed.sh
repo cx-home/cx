@@ -124,7 +124,20 @@ step_globs() {
     test-vcx-suite)                echo "$RING_LIB vcx/tests/* $RING_SUP conformance/* $RING_EMBED" ;;
     # #1216: the serial wall-clock step — the binary-driving closure plus its own dir.
     check-conformance-coverage)    echo 'conformance/* scripts/check_conformance_coverage.sh vcx/tests/runners/conformance/*' ;;
-    test-vcx-timing)               echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED vcx/timing/*" ;;
+    # ── THE SERIAL TAIL, narrowed (#1516, RULED: RUN-1) ─────────────────────
+    # These two run ALONE after the -j storm drains, so their minutes are
+    # wall-clock minutes nothing else overlaps: 660 s for the profile gate,
+    # and the tail is why the run on b9d79025d took two hours for a head that
+    # changed one x/ module's CSS and one corpus case.
+    #
+    # test-vcx-timing asserts a BOOT BUDGET and the try-send/try-receive
+    # budgets — properties of the compiled binary's start-up and channel
+    # fast paths, which is vcx/cx (the Ring-0 sink the boot path is) and
+    # vcx/code (the evaluator it boots into), plus the V pin that compiles
+    # them and its own runner directory. An embedded stdlib module, an x/
+    # module, a corpus case or a doc byte cannot move a boot budget: they
+    # change what the binary READS, not how long it takes to come up.
+    test-vcx-timing)               echo 'vcx/cx/* vcx/code/* vcx/timing/* third_party/*' ;;
     # vcx/cmd compiles with -d cx_platform, so it carries the full closure.
     test-vcx-cmd)                  echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP conformance/* stdlib/* x/*" ;;
     # the conformance aggregates drive the built cx binary over the corpus.
@@ -193,7 +206,18 @@ step_globs() {
     check-v-fork)                  echo 'third_party/* scripts/v_fork_register.cxd scripts/check_v_fork_patches.cx' ;;
     # reads the built library's export surface against include/cx.h.
     libcx-abi-gate)                echo "$RING_LIB $RING_SUP include/* tools/libcx-abi-gate.sh" ;;
-    test-profile-gate)             echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED vcx/tests/runners/profile_gate/* conformance/*" ;;
+    # test-profile-gate GRADES: it runs the corpus through each profile and
+    # compares. So its inputs are what is graded and what grades — vcx/code and
+    # vcx/cx (the parser and the evaluator every profile runs through), the
+    # embedded stdlib the profiles pack, conformance/code.cxd, the graded module
+    # corpora, the graders themselves and its own runner directory, plus the V
+    # pin. RING_LIB rather than the two named directories because the profile
+    # binaries compile from the whole libcx closure — a platform module's prims
+    # are packed into the profiles this step is comparing. What drops out is the
+    # CLI/cmd side, the embed estate beyond stdlib/, and the conformance files
+    # no shard grades: a CSS byte in an x/ module and a docs/llm regeneration
+    # grade nothing here, and they were selecting an 11-minute serial step.
+    test-profile-gate)             echo "$RING_LIB stdlib/* conformance/code.cxd conformance/stdlib/* conformance/platform/* conformance/x/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/runners/profile_gate/* vcx/tests/fixtures_grader/* third_party/*" ;;
     check-code-spec-consistency)   echo 'spec/* vcx/code/*' ;;
     # ledger-index-check (#1438) regenerates ledger/README.md from the store and
     # compares: its inputs are every ledger page and the generator itself.
