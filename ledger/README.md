@@ -612,6 +612,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `rp-6` | [rulings_2026_09_02_cxdm_representation_1119.md](rulings_2026_09_02_cxdm_representation_1119.md) | Rulings 2026-09-02 — #1119 CXDM in-memory representation (RP-1..RP-6) |
 | `rp-6` | [rulings_2026_09_02_cxdm_representation_1119.md](rulings_2026_09_02_cxdm_representation_1119.md) | RP-6 — shape-shared record maps and columnar/lazy record arrays: ruled in principle, trigger-bound (RULED: RP-6 = a) |
 | `rp-6` | [rulings_2026_09_02_cxdm_representation_1119.md](rulings_2026_09_02_cxdm_representation_1119.md) | RP-6 — shape-shared record maps and columnar/lazy record arrays: ruled in principle, trigger-bound (RULED: RP-6 = a) |
+| `run-1` | [rulings_2026_09_16_run_selection_run1.md](rulings_2026_09_16_run_selection_run1.md) | Owner decision 2026-09-16 ~05:05Z — the post-merge run tests what changed and what reads it (RULED: RUN-1) |
 | `sd-1` | [rulings_2026_09_15_views_group_vg3_schema_sd1.md](rulings_2026_09_15_views_group_vg3_schema_sd1.md) | Owner letters 2026-09-15 ~01:20Z — the fourth clause of `[views]`, and the schema-as-data feature kind (RULED: VG-3, SD-1) |
 | `sea-1` | [rulings_2026_08_20_schema_evolution_automation.md](rulings_2026_08_20_schema_evolution_automation.md) | SEA-1 — the four automation gaps close; sound-refusal-first everywhere |
 | `sea-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-2 — contract evolution gets the SEA-1 treatment (#1182) |
@@ -1074,7 +1075,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `imap-3` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `imap-4` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `imap-5` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
-| `int-10` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
+| `int-10` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_16_run_selection_run1.md](rulings_2026_09_16_run_selection_run1.md) |
 | `int-11` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-12` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-2` | [rulings_2026_09_12_audit_sink_1422.md](rulings_2026_09_12_audit_sink_1422.md), [rulings_2026_09_12_fmt_1384_1391.md](rulings_2026_09_12_fmt_1384_1391.md), [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md), [rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md](rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md), [rulings_2026_09_15_default_in_campaign_int17.md](rulings_2026_09_15_default_in_campaign_int17.md), [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md), [rulings_2026_09_15_owner_decisions_1145z.md](rulings_2026_09_15_owner_decisions_1145z.md) |
@@ -1190,4 +1191,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*289 ledger pages; 579 ids declared, 353 cited only.*
+*290 ledger pages; 580 ids declared, 353 cited only.*
