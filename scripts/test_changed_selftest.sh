@@ -1,0 +1,162 @@
+#!/bin/sh
+# test_changed_selftest (#1516, RULED: RUN-1) — the detection power of the step
+# and suite selection, proved case by case.
+#
+# HOW IT PROVES THINGS. `scripts/test_changed.sh --dry-run --changed-files <f>`
+# takes the change set from a FILE and executes nothing, so every case below
+# runs against the REAL Makefile, the REAL manifest rows, the REAL V import
+# graph and the REAL shard manifest — the four things a synthetic two-commit
+# repo could only imitate, and imitating them is how a selection selftest goes
+# green over a manifest that is wrong. The one case that is about a tree rather
+# than about this tree — a TEST_TARGETS entry with no row — gets a synthetic
+# repo under mktemp, the shape scripts/head_is_docs_only_selftest.sh uses.
+#
+# THE CASES. The failure direction that matters is a FALSE SKIP, so each case
+# names both what must be selected and what must not.
+#
+#   A  one x/ module source (x/ux-web.cx)        the shard that GRADES its
+#                                                corpus, and no umbrella; the
+#                                                boot-budget step is not in the
+#                                                tail
+#   B  one engine file (vcx/code/…)              the suite, per file, AND both
+#                                                wall-clock tail steps
+#   C  one scripts/ file                         the FULL union (build infra)
+#   D  one module source (vcx/platform/          the shard grading its corpus +
+#      stdlib_journal.v)                         every test that NAMES it, and
+#                                                not the whole suite
+#   E  a vcx/tests/ shared helper                the WHOLE suite
+#   F  an input path that is NOT ON DISK         still selects its step (the
+#                                                deleted-input case: the rows
+#                                                must not be pathname-expanded)
+#   G  a TEST_TARGETS entry with no row          check-selection-manifest FAILS
+#
+# Exit 0 and the count line only when every case matches.
+set -u
+
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+TC="$ROOT/scripts/test_changed.sh"
+CSM="$ROOT/scripts/check_selection_manifest.sh"
+[ -f "$TC" ] || { echo "SELFTEST FAILED: no $TC" >&2; exit 1; }
+[ -f "$CSM" ] || { echo "SELFTEST FAILED: no $CSM" >&2; exit 1; }
+
+T=$(mktemp -d)
+trap 'rm -rf "$T"' EXIT
+fails=0
+cases=0
+
+# run <path…> — the selection output for a synthetic change set.
+run() {
+	: > "$T/changed"
+	for p in "$@"; do echo "$p" >> "$T/changed"; done
+	( cd "$ROOT" && sh scripts/test_changed.sh HEAD --dry-run --changed-files "$T/changed" 2>&1 )
+}
+
+targets() { grep '^test-changed: RUN:' "$1" | sed 's/^test-changed: RUN: //'; }
+suite_line() { grep '^test-changed: test-vcx-suite:' "$1"; }
+suite_files_of() { suite_line "$1" | tr ' ' '\n' | grep '_test\.v$' || true; }
+tail_of() { grep -- '--dry-run — serial tail:' "$1" | sed 's/.*serial tail: *//'; }
+
+ok() { cases=$((cases + 1)); printf '  %-3s ok   %s\n' "$1" "$2"; }
+bad() {
+	cases=$((cases + 1))
+	fails=$((fails + 1))
+	printf '  %-3s SELFTEST FAILED: %s\n' "$1" "$2" >&2
+}
+
+echo "test_changed selftest:"
+
+# ── A — one x/ module source ────────────────────────────────────────────────
+run x/ux-web.cx > "$T/a"
+a_files=$(suite_files_of "$T/a")
+a_n=$(printf '%s\n' "$a_files" | grep -c . || true)
+a_t=$(targets "$T/a" | wc -w | tr -d ' ')
+a_tail=$(tail_of "$T/a")
+if [ "$a_n" -ge 1 ] && [ "$a_n" -le 3 ] \
+	&& printf '%s\n' "$a_files" | grep -q 'code_eval_fixtures_shard_' \
+	&& ! printf '%s\n' "$a_files" | grep -q 'umbrella' \
+	&& [ "$a_t" -lt 30 ] \
+	&& ! printf '%s' "$a_tail" | grep -q 'test-vcx-timing'; then
+	ok A "$a_t targets, $a_n suite file(s) — its grading shard, no umbrella, no boot-budget step"
+else
+	bad A "x/ module source: $a_t targets, $a_n suite file(s), tail [$a_tail]"
+fi
+
+# ── B — one engine file ─────────────────────────────────────────────────────
+run vcx/code/eval_core.v > "$T/b"
+b_n=$(suite_files_of "$T/b" | grep -c . || true)
+b_tail=$(tail_of "$T/b")
+if [ "$b_n" -gt 20 ] \
+	&& printf '%s' "$b_tail" | grep -q 'test-profile-gate' \
+	&& printf '%s' "$b_tail" | grep -q 'test-vcx-timing'; then
+	ok B "$b_n suite files and both wall-clock tail steps"
+else
+	bad B "engine file: $b_n suite files, tail [$b_tail]"
+fi
+
+# ── C — one scripts/ file ───────────────────────────────────────────────────
+run scripts/some_gate.sh > "$T/c"
+if grep -q 'running the FULL step union' "$T/c"; then
+	ok C "build-infra change escalates to the full union"
+else
+	bad C "scripts/ change did not escalate to the union"
+fi
+
+# ── D — one module source ───────────────────────────────────────────────────
+run vcx/platform/stdlib_journal.v > "$T/d"
+d_files=$(suite_files_of "$T/d")
+d_n=$(printf '%s\n' "$d_files" | grep -c . || true)
+d_total=$(ls "$ROOT/vcx/tests"/*_test.v | wc -l | tr -d ' ')
+d_named=1
+for f in $d_files; do
+	case "$f" in *code_eval_fixtures_shard_*) continue ;; esac
+	grep -qF -- journal "$ROOT/$f" || d_named=0
+done
+if [ "$d_n" -ge 2 ] && [ "$d_n" -lt "$d_total" ] \
+	&& printf '%s\n' "$d_files" | grep -q 'code_eval_fixtures_shard_' \
+	&& [ "$d_named" -eq 1 ]; then
+	ok D "$d_n of $d_total suite files — its grading shard plus every test that names it"
+else
+	bad D "module source: $d_n of $d_total suite files, named-check $d_named"
+fi
+
+# ── E — a vcx/tests/ shared helper ──────────────────────────────────────────
+run vcx/tests/fixtures_grader/grade.v > "$T/e"
+if suite_line "$T/e" | grep -q 'the WHOLE suite'; then
+	ok E "a shared helper runs all $d_total files"
+else
+	bad E "shared helper did not escalate: [$(suite_line "$T/e")]"
+fi
+
+# ── F — an input that is not on disk ────────────────────────────────────────
+# A DELETED file is in the diff and not in the tree. While the rows were
+# pathname-expanded, `vcx/code/*` became the files that exist and a deleted one
+# matched none of them, so its steps were SKIPPED — the false skip this manifest
+# must never produce.
+run vcx/code/a_file_that_was_deleted.v > "$T/f"
+if targets "$T/f" | grep -q 'test-vcx-code'; then
+	ok F "a deleted input still selects the step that reads it"
+else
+	bad F "a path not on disk selected nothing: [$(targets "$T/f")]"
+fi
+
+# ── G — a TEST_TARGETS entry with no row ────────────────────────────────────
+# The only case that is about a TREE rather than about this tree, so it gets a
+# synthetic one: the checker resolves the repo from its own path, which also
+# proves it is relocatable.
+mkdir -p "$T/repo/scripts"
+cp "$CSM" "$T/repo/scripts/check_selection_manifest.sh"
+cp "$TC" "$T/repo/scripts/test_changed.sh"
+printf 'TEST_TARGETS := check-prod-build a-step-with-no-row\n' > "$T/repo/Makefile"
+if ( cd "$T/repo" && sh scripts/check_selection_manifest.sh > "$T/g" 2>&1 ); then
+	bad G "check-selection-manifest passed a TEST_TARGETS entry with no row"
+elif grep -q 'a-step-with-no-row' "$T/g"; then
+	ok G "check-selection-manifest names the rowless step and fails"
+else
+	bad G "check-selection-manifest failed without naming the rowless step"
+fi
+
+if [ "$fails" -ne 0 ]; then
+	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
+	exit 1
+fi
+echo "test_changed selftest: $cases/$cases (A x/ module; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step)"
