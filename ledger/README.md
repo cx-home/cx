@@ -284,6 +284,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1502-b` | [rulings_2026_09_15_owner_decisions_1830z.md](rulings_2026_09_15_owner_decisions_1830z.md) | Owner decisions 2026-09-15 ~18:30Z — "1a 2a 3a 4a" (RULED: INT-20, 1503-b, 1502-b, 1457-a) |
 | `1503-a` | [rulings_2026_09_15_owner_decisions_1145z.md](rulings_2026_09_15_owner_decisions_1145z.md) | Owner decisions 2026-09-15 ~11:45Z — "1a 2a 3 accepted 4a 5a 6a" (RULED: 1502-a, 1456-a, 1503-a, 1256-a, 1453-a) |
 | `1503-b` | [rulings_2026_09_15_owner_decisions_1830z.md](rulings_2026_09_15_owner_decisions_1830z.md) | Owner decisions 2026-09-15 ~18:30Z — "1a 2a 3a 4a" (RULED: INT-20, 1503-b, 1502-b, 1457-a) |
+| `1503-b` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) | Integrator decisions, 2026-09-16 — the 1503-b addendum |
 | `192-gcm` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) | RULED: 1400-a, 1401-a — XML Encryption comes IN: `saml:verify` decrypts `EncryptedAssertion` / `EncryptedID` / `EncryptedAttribute` with `opts.decryption-keys`; `crypto` gains RSA key transport (OAEP, SHA-1 inside OAEP allowed; PKCS#1 v1.5 behind a loud opt-in with implicit rejection) and AES-CBC + AES-128/192-GCM; encryption is detected BEFORE the signature search |
 | `787-poc` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) | Ledger — #787 integration: the ONE rebase of impl/787-poc onto release/0.16.0 |
 | `ad-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-1 — `[selection …]` binds every consumption point, through the one PEP (#1181) |
@@ -905,11 +906,14 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1314-c` | [rulings_2026_09_08_sched_wall_clock_1358.md](rulings_2026_09_08_sched_wall_clock_1358.md) |
 | `1324-sk-1` | [rulings_2026_09_06_sched_missed_one_shot_1324.md](rulings_2026_09_06_sched_missed_one_shot_1324.md) |
 | `1324-sk-2` | [rulings_2026_09_06_sched_missed_one_shot_1324.md](rulings_2026_09_06_sched_missed_one_shot_1324.md) |
+| `1329-a` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
 | `1349-a` | [rulings_2026_09_09_diagram_node_id_ordinals_1349.md](rulings_2026_09_09_diagram_node_id_ordinals_1349.md) |
 | `1349-b` | [rulings_2026_09_09_diagram_node_id_ordinals_1349.md](rulings_2026_09_09_diagram_node_id_ordinals_1349.md) |
 | `1349-c` | [rulings_2026_09_09_diagram_node_id_ordinals_1349.md](rulings_2026_09_09_diagram_node_id_ordinals_1349.md) |
 | `1352-b` | [rulings_2026_09_09_agent_tool_projection_feature_verbs_1352.md](rulings_2026_09_09_agent_tool_projection_feature_verbs_1352.md), [rulings_2026_09_09_ux_form_subject_noun_1371.md](rulings_2026_09_09_ux_form_subject_noun_1371.md) |
 | `1358-f` | [rulings_2026_09_08_sched_wall_clock_1358.md](rulings_2026_09_08_sched_wall_clock_1358.md) |
+| `1359-a` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
+| `1359-b` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
 | `1383-a` | [rulings_2026_09_10_scim_attribute_projection_1103.md](rulings_2026_09_10_scim_attribute_projection_1103.md) |
 | `1406-a` | [rulings_2026_09_11_saml_binding_1402b_scim_1406b.md](rulings_2026_09_11_saml_binding_1402b_scim_1406b.md) |
 | `1409-a` | [rulings_2026_09_10_lane_s_sso_1394_1397_1399_1404_1408.md](rulings_2026_09_10_lane_s_sso_1394_1397_1399_1404_1408.md), [rulings_2026_09_11_oidc_hardening_1407.md](rulings_2026_09_11_oidc_hardening_1407.md) |
@@ -1009,6 +1013,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `af-9` | [partition_I5_audit.md](partition_I5_audit.md), [partition_corpus_audit.md](partition_corpus_audit.md) |
 | `af-9a` | [partition_I5_audit.md](partition_I5_audit.md) |
 | `af-9b` | [partition_I5_audit.md](partition_I5_audit.md) |
+| `arch-0916` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
 | `bf-1` | [partition_I2_extraction.md](partition_I2_extraction.md), [partition_I5_stream22_cleanroom.md](partition_I5_stream22_cleanroom.md) |
 | `choice-1` | [rulings_2026_08_21_array_separator.md](rulings_2026_08_21_array_separator.md), [rulings_2026_09_09_fmt_fingerprint_underscores_1347.md](rulings_2026_09_09_fmt_fingerprint_underscores_1347.md) |
 | `client-2` | [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md) |
@@ -1062,6 +1067,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ga-1a` | [rulings_2026_08_20_guest_attach.md](rulings_2026_08_20_guest_attach.md) |
 | `ga-1b` | [rulings_2026_08_20_guest_attach.md](rulings_2026_08_20_guest_attach.md) |
 | `gql-1` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_14_connector_transports_1430c.md](rulings_2026_09_14_connector_transports_1430c.md) |
+| `half-1` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
 | `http-429` | [partition_remediation_register.md](partition_remediation_register.md) |
 | `ieee-754` | [partition_I5_stream17_runtime.md](partition_I5_stream17_runtime.md) |
 | `imap-1` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
@@ -1073,12 +1079,14 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `int-11` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-12` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-2` | [rulings_2026_09_12_audit_sink_1422.md](rulings_2026_09_12_audit_sink_1422.md), [rulings_2026_09_12_fmt_1384_1391.md](rulings_2026_09_12_fmt_1384_1391.md), [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md), [rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md](rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md), [rulings_2026_09_15_default_in_campaign_int17.md](rulings_2026_09_15_default_in_campaign_int17.md), [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md), [rulings_2026_09_15_owner_decisions_1145z.md](rulings_2026_09_15_owner_decisions_1145z.md) |
+| `int-21` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
+| `int-22` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
 | `int-4` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_15_owner_decisions_1830z.md](rulings_2026_09_15_owner_decisions_1830z.md) |
 | `int-5` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_13_claude_context_audit.md](rulings_2026_09_13_claude_context_audit.md) |
 | `int-6` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
 | `int-7` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
-| `int-8` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
-| `int-9` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_15_integrator_decisions_int15.md](rulings_2026_09_15_integrator_decisions_int15.md) |
+| `int-8` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
+| `int-9` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_15_integrator_decisions_int15.md](rulings_2026_09_15_integrator_decisions_int15.md), [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
 | `ir-1` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) |
 | `ir-2` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) |
 | `ir-3` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) |
@@ -1111,6 +1119,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ol-7` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
 | `ol-8` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
 | `ol-9` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
+| `ord-1` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
 | `pq-1a` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) |
 | `pq-1b` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) |
 | `pq-4a` | [rulings_2026_08_26_playground_quality_992.md](rulings_2026_08_26_playground_quality_992.md) |
@@ -1182,4 +1191,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*289 ledger pages; 580 ids declared, 345 cited only.*
+*290 ledger pages; 580 ids declared, 353 cited only.*
