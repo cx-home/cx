@@ -29,8 +29,10 @@ const xap_init_usage = [
 	'       cx xap check-surface [DIR]',
 	'',
 	'init scaffolds a XAP project: two base features, one composite that',
-	'joins them, the xap wiring layer, and a surface. The result composes',
-	'through the W1-W6 gate as generated — nothing to fix before it runs.',
+	'joins them, the xap wiring layer, a surface, and the market BUNDLE pair',
+	'(a core pack and the suite that includes it — catalog objects, never',
+	'features). The result composes through the W1-W6 gate as generated —',
+	'nothing to fix before it runs.',
 	'',
 	'  --dir DIR   where to create it (default: ./NAME)',
 	'  --client    also scaffold NAME-web-client/ as a SEPARATE project',
@@ -160,6 +162,9 @@ fn run_xap(args []string) {
 	}
 	println('')
 	println('Next: cx --allow-read ${os.join_path(dir, 'compose.cx')}')
+	println('      cx --allow-read ${os.join_path(dir, 'bundle.cx')}')
+	println('        (the bundle pair: the closure the suite defines, and the one')
+	println('         entitlement that reaches a member through the include)')
 	if want_client {
 		println('')
 		println('${dir}-web-client/ RUNS as generated — from that directory:')

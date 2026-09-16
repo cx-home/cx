@@ -15,7 +15,10 @@ fn xap_init_files(name string) map[string]string {
 		'thing-of-owner.feature.cxd': xap_init_composite(name)
 		'${name}.xap.cxd':            xap_init_xap(name)
 		'${name}.surface.cxd':        xap_init_surface(name)
+		'${name}-core.bundle.cxd':    xap_init_bundle_core(name)
+		'${name}.bundle.cxd':         xap_init_bundle_suite(name)
 		'compose.cx':                 xap_init_compose(name)
+		'bundle.cx':                  xap_init_bundle_program(name)
 		'README.md':                  xap_init_readme(name)
 	}
 }
@@ -372,6 +375,139 @@ fn xap_init_compose(name string) string {
 "
 }
 
+// ── §5.3 — the MARKET BUNDLE (#1258) ─────────────────────────────────────
+//
+// Two `[bundle …]` catalog objects, because one bundle teaches half the shape.
+// A bundle is a commercial grouping, NEVER a semantic composition — composites
+// join grammars, bundles join price tags — and nothing about it exists at
+// runtime. The pair is the shape an adopter otherwise invents: a core pack, and
+// a suite that INCLUDES it and adds what the tier above is worth paying for.
+// The set the suite DEFINES is the transitive closure of both.
+
+fn xap_init_bundle_core(name string) string {
+	return "[; ${name}-core.bundle.cxd — a CATALOG OBJECT, not a feature.
+
+   A bundle is a commercial grouping: a named, versioned MEMBER SET with its
+   own listing and terms. Nothing about it exists at runtime, and it is not a
+   composite — composites join grammars (see thing-of-owner.feature.cxd),
+   bundles join price tags.
+
+   The core pack is this project's two INDEPENDENT bases, sold as one. A member
+   is a package pin (`package=` + `versions=`, the manifest's [require]
+   spelling) or an instance binding (`name=` + `of=`, an [instance …]'s own two
+   identifying attributes) — one or the other, never both.
+
+   `version` is a STRING: a released (name, version) is immutable at a market,
+   and adding or removing a member makes a NEW bundle version rather than
+   editing this one. Quote it — `version=1` is an int and bundle.cxs refuses it.
+
+     cx validate --schema=…/xap_schemas/bundle.cxs ${name}-core.bundle.cxd ]
+[bundle name=${name}-core version='1'
+ [summary '${name} core — the two base features, sold as one.']
+ [; Terms are a REFERENCE (a store URI, an SPDX id, a market terms id), and a
+    bundle carries no price: price is a property of a LISTING, not of the
+    object. Entitlement VCs are issued under these terms. ]
+ [license-terms ref='market:terms/standard']
+ [members
+  [member package=thing versions='0.x']
+  [member package=owner versions='0.x']]]
+"
+}
+
+fn xap_init_bundle_suite(name string) string {
+	return "[; ${name}.bundle.cxd — the suite: the core pack PLUS the composite.
+
+   NESTING IS THE COMMON CASE, not an edge. A product ladder is tiers that
+   include tiers; a deployment is a product plus its own customization bundle.
+   Without [includes] every higher tier has to copy every lower tier's members,
+   which is exactly the drift a content-addressed estate exists to refuse.
+
+   The member set this bundle DEFINES is the TRANSITIVE CLOSURE of its own
+   [members] and the closure of every bundle it includes — here, three members
+   from two documents. Duplicates collapse on member identity and the closure
+   is sorted by it, so one graph has one canonical value:
+
+     cx --allow-read bundle.cx
+
+   An [include] names a bundle VERSION. `${name}-core` version 2 does not
+   silently widen this suite: growth is a re-issuance policy on the terms,
+   never a runtime effect. An include cycle refuses, and so does an include
+   naming a bundle the store does not carry. ]
+[bundle name=${name} version='1'
+ [summary '${name} — the core pack plus the composite that joins it.']
+ [license-terms ref='market:terms/standard']
+ [includes
+  [include bundle=${name}-core version='1']]
+ [members
+  [member package=thing-of-owner versions='0.x']]]
+"
+}
+
+fn xap_init_bundle_program(name string) string {
+	return "[; The two bundle documents beside this file, made live:
+
+     cx --allow-read bundle.cx
+
+   It publishes both into an in-memory store, computes the member set the suite
+   DEFINES, and then answers the question a bundle exists to answer — does a
+   tenant holding ONE entitlement get to enable a member that arrived through
+   the include?
+
+   THE DERIVATION RULE (§5.3). A tenant's entitled member set is the CLOSURE of
+   the bundles its entitlement VCs name. The two VC shapes differ exactly here:
+   a bundle-REFERENCE VC (bundle id + version, below) entitles the closure the
+   referenced version defines, includes and all; an *enumerated-members* VC
+   entitles the set AS PURCHASED, closed under nothing. That is what makes
+   `members are dependencies, not line items` computable rather than a slogan.
+
+   Install stays strictly PER-PACKAGE either way: a bundle bypasses no compose
+   gate and no consent. Bundling is a billing relationship, not an authority. ]
+[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/store' :as store]
+[?lib 'cx-platform/did' :as did]
+[?lib 'cx-stdlib/crypto' :as crypto]
+[?lib 'cx-stdlib/io' :as io]
+[?lib 'cx-stdlib/cx' :as cx]
+
+[?let
+  [; postfix `!` guards the BINDING, not the query: navigating an err yields
+     the EMPTY node-set (code.md §6.2), so without it a missing file reads as
+     a document with no bundle. Same reason compose.cx carries it. ]
+  [= \$cored  [\$cx:parse [\$io:read-file '${name}-core.bundle.cxd']!]]
+  [= \$suited [\$cx:parse [\$io:read-file '${name}.bundle.cxd']!]]
+  [= \$core  [\$first [?for [in \$n \$cored//bundle]  [yield \$n]]]]
+  [= \$suite [\$first [?for [in \$n \$suited//bundle] [yield \$n]]]]
+
+  [; A market store. `mem://` here so this runs with no service; the same
+     calls work against a file registry or a served cx-store:// head. ]
+  [= \$s  [\$store:open 'mem://']]
+  [= \$ch [\$store:put-doc \$s \$core]]
+  [= \$ca [\$store:set-alias \$s '${name}-core@1' \$ch]]
+  [= \$sh [\$store:put-doc \$s \$suite]]
+  [= \$sa [\$store:set-alias \$s '${name}@1' \$sh]]
+
+  [= \$closure [\$xap:bundle-members \$s '${name}@1']]
+
+  [; One credential over the whole set. The keypair is generated here only
+     because a scaffold has no publisher yet — a real market issues from the
+     seller's DID. ]
+  [= \$kp  [\$crypto:ed25519-keypair]]
+  [= \$pub [\$did:key-create \$kp@public]]
+  [= \$vc  [\$xap:license-issue \$pub \$kp@private 'principal:tenant'
+             {bundle: '${name}' bundle-version: '1'}]]
+  [= \$own     [\$xap:license-verify \$vc 'thing-of-owner' '0.1.0' {store: \$s}]]
+  [= \$through [\$xap:license-verify \$vc 'thing' '0.1.0' {store: \$s}]]
+
+  [${name}-bundle
+    [defines count=[\$count \$closure//member] \$closure]
+    [entitles
+      [; enumerated in the suite itself ]
+      [own-member      package=thing-of-owner status=\$own@status]
+      [; and reached THROUGH the include — the derivation rule ]
+      [via-the-include package=thing         status=\$through@status]]]]
+"
+}
+
 fn xap_init_readme(name string) string {
 	return "# ${name}
 
@@ -385,9 +521,12 @@ as generated — nothing to fix before it runs.
 | `thing-of-owner.feature.cxd` | **composite** — joins them, derives a noun neither has |
 | `${name}.xap.cxd` | wiring: features enabled, principals, the agent's dial |
 | `${name}.surface.cxd` | materialization: verbs bound to media |
+| `${name}-core.bundle.cxd` | **catalog object** — the core pack: the two bases |
+| `${name}.bundle.cxd` | **catalog object** — the suite: the core pack *plus* the composite |
 
 ```bash
 cx --allow-read compose.cx
+cx --allow-read bundle.cx
 ```
 
 ## Three things the skeleton is trying to show you
@@ -407,6 +546,14 @@ With both enabled, `[do list]` returns a value listing both candidates. A
 client turns that into a prompt; it may not auto-pick. The same pair shows
 that enabling a feature never silently changes what an existing utterance
 meant.
+
+**A bundle is a price tag, not a composition.** `${name}.bundle.cxd` groups
+the same three features commercially and nests: it INCLUDES the core pack,
+so the set it defines is the closure of both documents. `bundle.cx` prints
+that closure and then shows the rule that makes bundles worth having — one
+entitlement credential naming the suite enables a member that arrived
+*through* the include. Nothing about a bundle exists at runtime, and install
+stays strictly per-package: bundling bypasses no gate and no consent.
 
 ## Next
 
