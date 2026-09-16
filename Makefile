@@ -2620,9 +2620,18 @@ contract-revision-repin:
 test-vcx-timing: build-vcx-dev
 	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/timing/
 
+# SUITE_FILES (#1516, RULED: RUN-1) — what `v test` is pointed at. The default
+# is the DIRECTORY, so `make test-vcx-suite`, `make test` and every exit run are
+# the union they have always been. `scripts/test_changed.sh` overrides it with
+# the test files whose own path, an imported vcx/ module, or the corpus shard
+# that grades a changed module actually moved: one row over 76 files and 35
+# minutes was the pace of every post-merge run. The retry classifier below reads
+# the SAME log and is indifferent to how many files produced it.
+SUITE_FILES ?= vcx/tests/
+
 test-vcx-suite: build-vcx-dev check-serial-retry-rosters check-fixture-shard-manifest fixtures-census-reset skip-ledger-reset
 	@$(JS_CLOSE) log=vcx/target/test-suite-run.log; stf=vcx/target/test-suite-status; \
-	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/tests/ 2>&1; echo $$? > $$stf; } | tee $$log; \
+	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(SUITE_FILES) 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
 	  failed=$$(grep -aE '^FAIL ' $$log | grep -aoE '[^ ]+_test\.v$$' | sort -u); \

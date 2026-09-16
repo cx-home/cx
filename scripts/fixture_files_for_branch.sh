@@ -69,6 +69,7 @@ set -u
 
 usage() {
 	echo "usage: sh scripts/fixture_files_for_branch.sh <base>   (e.g. origin/release/0.18)" >&2
+	echo "       sh scripts/fixture_files_for_branch.sh --changed-files <file>" >&2
 }
 
 BASE=${1:-}
@@ -79,15 +80,40 @@ if [ -z "$BASE" ]; then
 	exit 0
 fi
 
+# --changed-files <file> (#1516) — take the change set from a FILE of paths, one
+# per line, instead of from git. Two callers need it: scripts/test_changed.sh,
+# which has already computed the change set and must not pay for a second diff,
+# and the selftests, which prove a rule over a change set no commit has to
+# exist for. The rules below are identical either way; only where the list
+# comes from moves.
+CHANGED_SRC=""
+if [ "$BASE" = "--changed-files" ]; then
+	CHANGED_SRC=${2:-}
+	if [ -z "$CHANGED_SRC" ] || [ ! -f "$CHANGED_SRC" ]; then
+		usage
+		echo ALL
+		exit 0
+	fi
+	# Absolute, because the cd below moves out from under a relative path.
+	case "$CHANGED_SRC" in
+	/*) ;;
+	*) CHANGED_SRC="$(CDPATH= cd -- "$(dirname -- "$CHANGED_SRC")" && pwd)/$(basename -- "$CHANGED_SRC")" ;;
+	esac
+fi
+
 # Resolve the repo from this script's OWN path, so the helper is relocatable —
 # the selftest copies it into a synthetic repo and the pipelines run it from a
 # worktree.
 cd "$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)" || { echo ALL; exit 0; }
 
-# --no-renames: both sides of a rename are judged. With rename detection on, a
-# corpus file moved between rings prints only its new name and the shard that
-# owned the old one goes ungraded.
-diff=$(git diff --no-renames --name-only "${BASE}...HEAD" 2>/dev/null) || { echo ALL; exit 0; }
+if [ -n "$CHANGED_SRC" ]; then
+	diff=$(cat "$CHANGED_SRC") || { echo ALL; exit 0; }
+else
+	# --no-renames: both sides of a rename are judged. With rename detection on, a
+	# corpus file moved between rings prints only its new name and the shard that
+	# owned the old one goes ungraded.
+	diff=$(git diff --no-renames --name-only "${BASE}...HEAD" 2>/dev/null) || { echo ALL; exit 0; }
+fi
 
 # The corpus this grader walks — derived from the directories, never listed, the
 # same way check_fixture_shard_manifest.sh derives it. A .cxd that lands in a
