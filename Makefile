@@ -1826,9 +1826,14 @@ test-code-diagram: build-vcx
 # data and program readers over the `in_cx` SECTIONS of the corpus and locks
 # bucket counts. This one reads the `.cxd` documents themselves — the position
 # the defect lived in, which no step read.
+#
+# No `$(JS_CLOSE)` here, deliberately: its `exec … 2>/dev/null` silences the
+# recipe shell's stderr for the whole line, and V's test runner reports a failed
+# assertion there — a step whose contract is to NAME the file and the divergence
+# printed eight lines of build chatter and nothing else until this came off.
 .PHONY: reader-parity
 reader-parity: build-vcx
-	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/tests/reader_parity_test.v
+	@$(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/tests/reader_parity_test.v
 
 # ── gate 28.5a — CXPath / XPath 3.1 alignment, CX side (RULED: VC-7, #945) ─
 # The half of the old gate 28.5 that needs no Docker and is real new signal:

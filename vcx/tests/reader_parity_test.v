@@ -185,6 +185,16 @@ fn test_case_id_parity_every_corpus_file() {
 		if want.len == 0 {
 			continue
 		}
+		// Ask the data reader for the WHOLE file first. `load_fixtures` panics
+		// on a parse error, and a panic names the loader, not the document — a
+		// swallow that runs to EOF (the #1521 shape when no later quote closes
+		// the region) surfaces as `stray ']' with no matching '['` at the last
+		// line of the file, which says nothing about where it began. Reading
+		// here turns that into the file's own name plus the reader's message.
+		cx.parse_cx(src) or {
+			assert false, 'reader-parity: ${rel} — the data reader (cx.parse_cx) REFUSES the corpus file: ${err.msg()} (RULED: CXF-5, #1521)'
+			continue
+		}
 		got := reader_case_ids(path)
 		assert want == got, 'reader-parity: ${rel} — the data reader (cx.parse_cx) and the file disagree:\n' +
 			'  ${first_divergence(want, got)}\n' +
@@ -313,22 +323,28 @@ fn test_python_reader_agrees_case_for_case() {
 }
 
 // bare_prose_title_lines — every `[title …]` line of a corpus file whose body
-// is PLAIN ASCII PROSE: letters, digits, spaces, `,`, `'` and `-`, and nothing
-// else. That is the population with exactly one right answer, and #1521's shape
-// is in it (`a pattern's captures join the group binder list in pattern source
-// order, left to right, depth first`).
+// is PLAIN ASCII PROSE: letters, digits, spaces, `'` and `-`, and nothing else.
+// That is the population with exactly one right answer today, and it is the
+// class #1521's apostrophe lives in (`the pattern's own source order`).
 //
-// Everything outside the class is left to the census that already owns it:
-//   • `[` `]` `$` `&` `#` — nested nodes, holes, entity refs, raw spans: the
-//     deliberate data/program forks `cxparse_full_corpus_diff_test.v` catalogues;
+// Everything outside the class is left to the census or to a filed issue:
+//   • `[` `]` `$` `&` `#` `"` — nested nodes, holes, entity refs, raw spans and
+//     quoted runs: the deliberate data/program forks
+//     `cxparse_full_corpus_diff_test.v` catalogues;
+//   • `,` — a §9 [L25c] comma element body is an ArrayNode to the data reader and
+//     a parse REFUSAL to the program reader, for every comma body in the corpus
+//     and not only for these: measured and filed as #1541. #1521's own title
+//     shape carries commas and is graded by the case-id step above, which is the
+//     step its defect shows up in;
 //   • `.` and `:` — the program lexer's GLUED-RESIDUE run (#935 / #1384) makes
 //     `world.` / `ab:c` one `.bare_value`, which reads as a string SCALAR and so
 //     blocks the §9 [L25b] prose join the data reading performs: the same defect
-//     class as #1521 in a different input, measured and filed as #1538. The
-//     exclusion goes when #1538 does;
+//     class as #1521 in a different input, measured and filed as #1538;
 //   • non-ASCII — an em dash is not a name character to the program lexer, which
 //     refuses the byte while the data reading carries it as prose (the census's
 //     `cx_only` bucket).
+//
+// Each exclusion goes when its issue does, and the class widens with it.
 fn bare_prose_title_lines(src string) []string {
 	mut out := []string{}
 	for line in src.split('\n') {
@@ -343,7 +359,7 @@ fn bare_prose_title_lines(src string) []string {
 		mut plain := true
 		for b in body.bytes() {
 			ok := (b >= `a` && b <= `z`) || (b >= `A` && b <= `Z`)
-				|| (b >= `0` && b <= `9`) || b == ` ` || b == `,` || b == `'` || b == `-`
+				|| (b >= `0` && b <= `9`) || b == ` ` || b == `'` || b == `-`
 			if !ok {
 				plain = false
 				break
