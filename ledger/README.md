@@ -954,6 +954,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1433-a` | [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
 | `1433-b` | [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
 | `1433-c` | [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
+| `1446-b` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) |
 | `1448-a` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_15_integrator_decisions_int15.md](rulings_2026_09_15_integrator_decisions_int15.md) |
 | `1453-id` | [rulings_2026_09_15_integrator_decisions_int15.md](rulings_2026_09_15_integrator_decisions_int15.md) |
 | `1478-a` | [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md) |
@@ -1212,4 +1213,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*293 ledger pages; 592 ids declared, 360 cited only.*
+*293 ledger pages; 592 ids declared, 361 cited only.*
