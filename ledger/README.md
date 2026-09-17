@@ -45,6 +45,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1170-f` | [rulings_2026_09_08_playground_output_pin_1170.md](rulings_2026_09_08_playground_output_pin_1170.md) | 1170-d / 1170-e / 1170-f — the mermaid gate joins the matrix (RULED, Fable 2026-09-09 05:07 ET) |
 | `1170-g` | [rulings_2026_09_09_playground_expect_check_1170g.md](rulings_2026_09_09_playground_expect_check_1170g.md) | RULED: 1170-g — §C4 is EXACT: an optional `[expect [#…#]]` per example pins a substring of its output; the note↔output check reads that field, never the prose |
 | `1172-q1` | [rulings_2026_09_04_head_bind_whole_element_1172.md](rulings_2026_09_04_head_bind_whole_element_1172.md) | Question 1172-Q1 — what does `[NAME$x]` mean? |
+| `1175-b` | [rulings_2026_09_17_owner_decisions_0410z.md](rulings_2026_09_17_owner_decisions_0410z.md) | Owner decisions 2026-09-17 ~04:10Z — chained destructuring gets a flat form: `[?match]` takes a chain (RULED: 1175-b) |
 | `1192-a` | [rulings_2026_09_10_else_no_callable_1192.md](rulings_2026_09_10_else_no_callable_1192.md) | RULED: 1192-a — `[?else]` does not coalesce E_NO_CALLABLE; every other failure and absence still does |
 | `1195-a` | [rulings_2026_09_07_contract_check_at_seal_and_boot_1195.md](rulings_2026_09_07_contract_check_at_seal_and_boot_1195.md) | RULED: 1195-a — the §1.2 runtime contract is checked wherever a package is |
 | `1196-a` | [rulings_2026_09_07_deployment_doc_two_stages_1196.md](rulings_2026_09_07_deployment_doc_two_stages_1196.md) | RULED: 1196-a — a deployment document has TWO STAGES, and `xap.cxs` describes |
@@ -870,7 +871,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1172-q1a` | [rulings_2026_09_04_head_bind_whole_element_1172.md](rulings_2026_09_04_head_bind_whole_element_1172.md), [rulings_2026_09_05_pattern_attr_rest_1270.md](rulings_2026_09_05_pattern_attr_rest_1270.md) |
 | `1173-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) |
 | `1174-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) |
-| `1175-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) |
+| `1175-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md), [rulings_2026_09_17_owner_decisions_0410z.md](rulings_2026_09_17_owner_decisions_0410z.md) |
 | `118-odd` | [rulings_2026_09_08_playground_output_pin_1170.md](rulings_2026_09_08_playground_output_pin_1170.md) |
 | `1190-a` | [rulings_2026_09_07_solitary_key_is_a_note_1190.md](rulings_2026_09_07_solitary_key_is_a_note_1190.md) |
 | `1190-b` | [rulings_2026_09_07_solitary_key_is_a_note_1190.md](rulings_2026_09_07_solitary_key_is_a_note_1190.md) |
@@ -1213,4 +1214,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*293 ledger pages; 592 ids declared, 361 cited only.*
+*294 ledger pages; 593 ids declared, 361 cited only.*
