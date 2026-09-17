@@ -23,6 +23,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1058-t1.7-c` | [rulings_2026_09_08_no_callable_code_and_builtin_content_type_1058.md](rulings_2026_09_08_no_callable_code_and_builtin_content_type_1058.md) | RULED: 1058-T1.6-b, 1058-T1.7-a, 1058-T1.7-c |
 | `1058-t1.8-a` | [rulings_2026_09_08_no_callable_code_and_builtin_content_type_1058.md](rulings_2026_09_08_no_callable_code_and_builtin_content_type_1058.md) | T1.8 — 1(a): the Content-Type fallback moves to the WIRE layer (RULED: 1058-T1.8-a, Fable 2026-09-09 04:09 ET) |
 | `1058-t1.9-a` | [rulings_2026_09_09_def_interior_comments_1058_t19.md](rulings_2026_09_09_def_interior_comments_1058_t19.md) | RULED: 1058-T1.9-a — def-body comments are RECORDED with their depth and PLACED by the width-bounded layout |
+| `1061-a` | [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md) | Owner decision 2026-09-17 ~19:15Z — `--probe` means the working tree: read/write path scoping (#1061) is pulled into lane 7's branch (the probe preset) (RULED: 1061-a) |
 | `1066-q1` | [rulings_2026_09_04_diagram_def_namespace_1066.md](rulings_2026_09_04_diagram_def_namespace_1066.md) | Question 1066-Q1 — what image mints the def namespace? |
 | `1068-a` | [rulings_2026_09_07_diagram_binding_bridge_1068.md](rulings_2026_09_07_diagram_binding_bridge_1068.md) | RULED 1068-A — the binding registry, and the for-comp anchor is `lh` |
 | `1068-b` | [rulings_2026_09_07_diagram_binding_bridge_1068.md](rulings_2026_09_07_diagram_binding_bridge_1068.md) | RULED 1068-B — golden movement authorized, 8 renders and 2 conformance rows |
@@ -1051,11 +1052,11 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `client-2` | [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md) |
 | `crc-32` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md), [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md), [rulings_2026_08_29_tar_module_1084.md](rulings_2026_08_29_tar_module_1084.md) |
 | `cve-2011` | [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md) |
-| `cxf-2` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) |
-| `cxf-3` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) |
+| `cxf-2` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md) |
+| `cxf-3` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md), [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) |
 | `cxf-4` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) |
 | `cxf-5` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) |
-| `cxf-6` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) |
+| `cxf-6` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md) |
 | `cxf-7` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) |
 | `dist-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) |
 | `dist-2` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md), [rulings_2026_09_06_connector_is_a_feature_728.md](rulings_2026_09_06_connector_is_a_feature_728.md) |
@@ -1228,4 +1229,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*298 ledger pages; 600 ids declared, 367 cited only.*
+*299 ledger pages; 601 ids declared, 367 cited only.*
