@@ -487,6 +487,8 @@ mut:
 	allow_common bool
 	allow_caps   []string
 	net_specs    []string
+	read_roots   []string
+	write_roots  []string
 }
 
 fn flow_cli_parse(args []string) FlowCliOpts {
@@ -519,6 +521,8 @@ fn flow_cli_parse(args []string) FlowCliOpts {
 			cap_name := rest.all_before('=')
 			if cap_name != '' {
 				refuse_unenforced_grant_scope('cx flow', a, cap_name, rest)
+				if r := opt_root(grant_scope_root(cap_name, rest, 'read')) { o.read_roots << r }
+				if w := opt_root(grant_scope_root(cap_name, rest, 'write')) { o.write_roots << w }
 				o.allow_caps << cap_name
 				if cap_name == 'net' && rest.contains('=') {
 					o.net_specs << rest.all_after('=')
@@ -585,6 +589,7 @@ fn flow_cli_install_caps(o FlowCliOpts) {
 	if o.net_specs.len > 0 {
 		code.caps_set_net_hosts(o.net_specs)
 	}
+	grant_scope_install(o.read_roots, o.write_roots)
 }
 
 // flow_cli_actor_default — §4.15: a checkout's own flows run under the runner,

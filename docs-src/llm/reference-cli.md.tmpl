@@ -123,10 +123,10 @@ guessing at a replacement. The tool knows what happened to it.
 ## Capability grants
 
 ```
---allow-read --allow-write --allow-net[=host[:port]] --allow-env
+--allow-read[=PATH] --allow-write[=PATH] --allow-net[=host[:port]] --allow-env
 --allow-clock --allow-random --allow-subprocess --allow-eval
 --allow-secret-reveal
---allow-common     # all of the above EXCEPT secret-reveal
+--allow-common     # every capability EXCEPT secret-reveal
 --allow-all        # including secret-reveal (declassifies secrets)
 ```
 
@@ -134,16 +134,26 @@ Deny-by-default, and a denial names the flag that would have allowed it:
 
 {{EXAMPLE:io-004-write-file-cap-denied block}}
 
-Grant the narrowest thing that works. `--allow-net` takes a scope; the others
-are all-or-nothing, which is a reason to prefer `--allow-read` over
-`--allow-common` in anything automated.
+Grant the narrowest thing that works. **Three grants take a scope** —
+`--allow-net=host[:port]`, `--allow-read=PATH` and `--allow-write=PATH` — and
+the rest are all-or-nothing, which is a reason to prefer a scoped
+`--allow-read=./data` over `--allow-common` in anything automated.
 
-`--allow-net` is the *only* grant that scopes. A resource suffix on
-`--allow-read`, `--allow-write` or `--allow-env` is a **usage error** (exit 2,
-before evaluation) naming the flag, the ignored suffix, and the bare spelling
-that is accepted — earlier versions took the suffix, discarded it, and granted
-the blanket capability, so the narrower-looking spelling silently bought wider
-authority. Real per-path/per-name scoping is unimplemented.
+A `PATH` scope is a **directory-component subtree root**: `--allow-read=/data`
+admits `/data` and `/data/x` and refuses `/database`. The flag repeats and the
+roots union; a bare `--allow-read` grants the whole filesystem, as it always
+did. Both the path as written and the path after symlinks must fall under a
+root, so a symlink out of the granted tree — and a symlink into it from outside
+— refuses. A path outside the roots is the ordinary capability refusal
+(`cx-err:CXER0271`), naming the path, the roots in force, and the flag to add.
+
+A resource suffix on any OTHER capability — `--allow-env=HOME`,
+`--allow-subprocess=/bin/ls` — is a **usage error** (exit 2, before
+evaluation) naming the flag, the suffix it would have ignored, and the bare
+spelling that is accepted. Earlier versions took such a suffix, discarded it,
+and granted the blanket capability, so the narrower-looking spelling silently
+bought wider authority; per-name and per-executable scoping is unimplemented,
+and the surface says so rather than pretending.
 
 ## Exit codes
 

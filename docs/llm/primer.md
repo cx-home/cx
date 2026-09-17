@@ -60,6 +60,7 @@ You can check every claim in this document. Do that rather than trusting it.
 ```console
 cx FILE.cx                       # run a program, or print a document
 cx --allow-read FILE.cx          # grant one capability
+cx --allow-read=./data FILE.cx   # …scoped to a directory subtree
 cx --allow-common FILE.cx        # the common working set (no secret-reveal)
 cx -e '[+ 1 2]'                  # a one-liner
 cx --data=input.cx prog.cx       # bind a document as $doc / $input
@@ -1791,11 +1792,17 @@ $ cx prog.cx
 ```
 
 `--allow-common` is everything except `secret-reveal`; `--allow-all` includes
-it and therefore declassifies secrets. `--allow-net` takes an optional scope
-(`--allow-net=example.com:443`) and is the **only** grant that scopes — a
-resource suffix on `--allow-read`, `--allow-write` or `--allow-env` is a usage
-error (exit 2, before evaluation), not a narrowing. Grant the narrowest thing
-that works.
+it and therefore declassifies secrets. Three grants take a scope:
+`--allow-net=example.com:443` a host, and `--allow-read=PATH` /
+`--allow-write=PATH` a directory-component **subtree root** —
+`--allow-read=/data` admits `/data/x` and refuses `/database`, the flag
+repeats and the roots union, a bare `--allow-read` still grants the whole
+filesystem, and a path outside the roots refuses with the same error value,
+naming the path and the roots. A resource suffix on any
+other capability (`--allow-env=HOME`) is a usage error (exit 2, before
+evaluation), not a narrowing — that scoping is unimplemented and the surface
+refuses rather than granting the blanket capability behind it. Grant the
+narrowest thing that works.
 
 `env:argv` and `env:parse-args` are **ungated** — reading your own arguments
 is not an effect.
