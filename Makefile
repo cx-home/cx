@@ -1322,6 +1322,18 @@ ring-import-gate:
 gates-manifest-gate:
 	@bash scripts/gates_manifest_gate.sh
 
+# ── DIAGNOSTICS CENSUS (RULED: CXF-3, #1522) — the diagnostics corpus
+# audit, written in CX (RULED: CXF-1). For every refusal code: its §9.6
+# band, its emission sites, the corpus cases that assert it and the three
+# columns judged from each expectation text (form / position / fix), plus
+# the class (silent / no-case / weak / covered). REPORTS, never fails: the
+# fix batches own the gate, so this target is NOT in TEST_TARGETS on the
+# audit branch. The document is the evidence the audit page quotes.
+.PHONY: diagnostics-census
+diagnostics-census: CX_BIN ?= $(CURDIR)/vcx/target/cx
+diagnostics-census: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/diagnostics_census.cx _gate_evidence/diagnostics_census.cxd
+
 # ── CXER REGISTRY GATE (corpus-audit G18; remediation register R3.7) —
 # every emitted CXER code must have a governance §9.6 registry row and no
 # registry-internal band overlap. --strict = the mechanical certainties.
