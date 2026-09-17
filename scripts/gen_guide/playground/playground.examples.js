@@ -1,4 +1,4 @@
-// CX Playground — 268 progressive eval examples (every entry CLI-audited).
+// CX Playground — 285 progressive eval examples (every entry CLI-audited).
 // Single ordered list, simple → complex:
 //   1-39   data / bindings / control flow      ·  40-60  comprehensions, map/reduce ([par])
 //   61-100 modify / pipe / cxpath / builtins   ·  concurrency / resilience
@@ -11,6 +11,8 @@
 //          [?const] + [?def], [?str], [?else], [?quote]
 //   246-268 everyday scripts: files and directories, text and regex,
 //          collections as scripts use them
+//   269-285 everyday scripts: CX documents as data, arguments /
+//          environment / processes, dates and durations, CLI errors
 // runnable:false marks an example that needs a wasm-unavailable capability
 // (net / subprocess / fs); it is exempt from the clean-run gate.
 // grants carries the capability flags the example names (RULED: CXF-2).
@@ -2188,6 +2190,150 @@
       note:  "**Introduces:** `[$fp:fold CONTAINER INIT FN]` (fp.md \u00a72) \u2014 the reduce, with the accumulator carrying a MAP so one pass answers several questions at once instead of one pass per column. The step function is an ordinary `[?fn ($acc $item) \u2026]` and each step builds a fresh map, so nothing is mutated and the fold reads the same whether the container is a sequence, an array or an option. `fold` is also the combinator that may INSPECT an err-holding item (\u00a74) rather than auto-propagating it, which is what makes it the right verb for a summary over rows that may have failed.",
       tags:  ["add", "attr", "eq", "fn", "let", "lib"],
       section: "everyday/collections",
+      runnable: true,
+    },
+    "269-read-a-cx-document-as-data": {
+      label: "[269] read a .cxd as data \u2014 count what is in it",
+      input: "[?lib 'cx-stdlib/io']\n[?lib 'cx-stdlib/path']\n[?const SUITE \"[suite name=parsing\\n [case id=p-1 level=core [in 'a'] [out 1]]\\n [case id=p-2 level=core [in 'b'] [out 2]]\\n [case id=p-3 level=deep [in 'c'] [out 3]]]\\n\"]\n[?let [= $dir [$io:temp-dir 'cx-play-']]\n      [= $f [$path:join $dir 'suite.cxd']]\n      [= $w [$io:write-file $f SUITE]]\n      [= $doc [$cx:parse [$string [$io:read-file $f]]]]\n      [= $rm [$io:remove-tree $dir]]\n  [document root=$doc@name\n            cases=[$count $doc//case]\n            elements=[$count [$cx:select $doc '//*']]\n            deep=[$count [$cx:select $doc \"//case[= $_@level 'deep']\"]]]]",
+      note:  "**Introduces:** `[$cx:parse TEXT]` (cx.md \u00a72.1) \u2014 the self-host module, always available with no `[?lib]`, which reads CX source into an ordinary navigable value. A `.cx` or `.cxd` file is therefore queryable as DATA with the same paths and counts you use on any element, which is what the Python reader-plus-regex reflex is really reaching for. `[$count $doc//case]` counts the matching cases and `[$cx:select $doc '//*']` counts every element in the tree; a predicate step (`//case[= $_@level 'deep']`) narrows it without a second pass. The example writes the file it reads into a `[$io:temp-dir]` and removes the tree, so it depends on nothing outside itself.",
+      tags:  ["attr", "const", "cxpath", "descendant", "eq", "let", "lib", "par"],
+      section: "everyday/documents",
+      grants: "--allow-read --allow-write",
+      runnable: false,
+    },
+    "270-query-a-document-with-a-path": {
+      label: "[270] query a document with a path \u2014 and the field-read trap",
+      input: "[?let [= $doc [$cx:parse \"[suite [case id=p-1 [in 'a']] [case id=p-2 [in 'b']]]\"]]\n      [= $one [$cx:parse \"[suite [case id=p-1 [in 'a'] [out 1]]]\"]]\n  [paths [ids [?splice [?for [in $c $doc//case] [yield [$string $c@id]]]]]\n         [attr-axis [?splice [$cx:select $doc '//case/@id']]]\n         matches=[$count $doc//case]\n         one-descendant=[$count $one//case]\n         one-field-read=[$count $one/case]\n         one-select=[$count [$cx:select $one '/case']]]]",
+      note:  "**Introduces:** the two ways to ask a document a question, and the one place they differ. `//case` is the descendant axis and `[$cx:select DOC PATH]` (cx.md \u00a72.1) is the same query as a runtime string \u2014 both answer a node-set, so `[$count]` over either is a MATCH COUNT. `$doc/case` is something else: the simple-field accessor of code.md \u00a76.2, which unwraps a single matching child to its CONTENT, so `[$count $one/case]` reports that one case's own arity (2) and not the number of matches (1). That is the settled field-read rule, not a defect \u2014 count matches with `//`, a predicate, or `[$cx:select]`, and reserve `/name` for reading a field you know is there.",
+      tags:  ["cxpath", "descendant", "eq", "for", "let", "par", "splice"],
+      section: "everyday/documents",
+      runnable: true,
+    },
+    "271-two-readers-over-one-file": {
+      label: "[271] two readers over one file \u2014 which cases does the parser see?",
+      input: "[?lib 'cx-stdlib/io']\n[?lib 'cx-stdlib/path']\n[?lib 'cx-stdlib/re']\n[?lib 'cx-stdlib/strings']\n[?const SUITE \"[suite name=readers\\n [case id=r-1 [in 1]]\\n [case id=r-2 [in 2]]\\n [case id=r-3 [in 3]]\\n [; [case id=r-4 [in 4]] \u2014 parked, not a case yet ]]\\n\"]\n[?let [= $dir [$io:temp-dir 'cx-play-']]\n      [= $f [$path:join $dir 'suite.cxd']]\n      [= $w [$io:write-file $f SUITE]]\n      [= $text [$string [$io:read-file $f]]]\n      [= $rx [$re:compile 'case id=([a-z0-9-]+)']]\n      [= $read [?for [in $c [$cx:parse $text]//case] [yield [$string $c@id]]]]\n      [= $marked [?for [in $l [$strings:split-lines $text]]\n                   [where [$strings:contains $l '[case id=']]\n                   [yield [$re:group [$re:find $rx $l] 1]]]]\n      [= $missing [?for [in $m $marked]\n                    [where [$empty [?for [in $p $read] [where [= $p $m]] [yield 1]]]]\n                    [yield $m]]]\n      [= $rm [$io:remove-tree $dir]]\n  [two-readers parser=[$count $read] markers=[$count $marked] agree=[= $read $marked]\n    [swallowed [?splice $missing]]]]",
+      note:  "**Introduces:** the probe that answers \"does the parser see every case I think I wrote?\" \u2014 one pass with `[$cx:parse]`, one pass over the raw lines, and the difference between them. This is the bisect an integrator reaches for when a suite silently grades fewer cases than its file appears to hold (#1523), and both halves are ordinary CX: the parser's ids come from `[?for]` over `//case`, the text's come from `[$re:find]` over the lines `[$strings:contains]` kept. Note `[$re:matches]` is NOT the filter to use here \u2014 re.md \u00a74 defines it as true only when the ENTIRE string matches, so a line containing the marker answers false; `find` searches. Here the parked case inside a `[; \u2026 ]` comment is invisible to the parser and visible to the text scan, which is exactly the divergence the probe exists to name.",
+      tags:  ["attr", "const", "descendant", "eq", "for", "let", "lib", "par", "splice"],
+      section: "everyday/documents",
+      grants: "--allow-read --allow-write",
+      runnable: false,
+    },
+    "272-diff-two-documents": {
+      label: "[272] diff two documents \u2014 what changed, and where",
+      input: "[?let [= $before [$cx:parse \"[suite [case id=d-1 level=core] [case id=d-2 level=core]]\"]]\n      [= $after  [$cx:parse \"[suite [case id=d-1 level=core] [case id=d-2 level=deep] [case id=d-3]]\"]]\n      [= $d [$cx:diff $before $after]]\n  [compare identical=[$cx:equal $before $after]\n           same-bytes=[= [$cx:serialize $before] [$cx:serialize $after]]\n           changes=[$count [$cx:select $d '//change']]\n    [kinds [?splice [?for [in $c $d//change] [yield [$string $c@kind]]]]]\n    [where [?splice [?for [in $c $d//change] [yield [$string $c@path]]]]]]]",
+      note:  "**Introduces:** `[$cx:equal A B]` and `[$cx:diff A B]` (cx.md \u00a72.1) \u2014 identity and the itemized difference, so \"are these two documents the same, and if not where\" needs no line differ and no normalizing pass. The diff is itself a navigable `[diff [change \u2026] \u2026]` value: each change carries `kind`, a CXPath `path` that addresses the change in the AFTER document, and a payload, so a report over the changes is an ordinary `[?for]`. `[$cx:serialize]` is the byte-level question underneath it \u2014 two documents can be `equal` as values while differing in source layout, so ask the one you actually mean.",
+      tags:  ["attr", "cxpath", "descendant", "eq", "for", "let", "par", "splice"],
+      section: "everyday/documents",
+      runnable: true,
+    },
+    "273-bisect-a-document-by-slicing-it": {
+      label: "[273] bisect a document \u2014 slice it, write it, read it back",
+      input: "[?lib 'cx-stdlib/io']\n[?lib 'cx-stdlib/path']\n[?lib 'cx-stdlib/strings']\n[?const SUITE \"[suite name=bisect [case id=b-1] [case id=b-2] [case id=b-3] [case id=b-4] [case id=b-5]]\"]\n[?let [= $dir [$io:temp-dir 'cx-play-']]\n      [= $f [$path:join $dir 'slice.cxd']]\n      [= $cases [?for [in $c [$cx:parse SUITE]//case] [yield $c]]]\n      [= $kept [?for [in $i (2, 3, 4)] [yield [$cx:serialize [$nth $cases $i]]]]]\n      [= $w [$io:write-file $f [$strings:join ('[suite name=slice', [$strings:join $kept ' '], ']') ' ']]]\n      [= $bytes [$io:size $f]]\n      [= $reread [$cx:parse [$string [$io:read-file $f]]]]\n      [= $rm [$io:remove-tree $dir]]\n  [bisect whole=[$count $cases] bytes=$bytes slice=[$count [$cx:select $reread '//case']]\n    [ids [?splice [?for [in $c $reread//case] [yield [$string $c@id]]]]]]]",
+      note:  "**Introduces:** the read-slice-write-reread loop \u2014 the bisect that narrows a large suite to the one case that misbehaves (#1524). The slice comes out of the parse as elements, `[$cx:serialize]` turns each back into source text, and `[$io:write-file]` puts the scratch suite somewhere the next `[$cx:parse]` can read it, so each round is a smaller file you can run for real. Note the binding discipline: a `[?let]` binding nobody reads SWALLOWS a failed effect (code.md \u00a78.14, which blesses `[?do]` for exactly this reason), so the answer here carries `[$io:size]` of the file it just wrote \u2014 if the write failed you learn it here, not three steps later as a confusing missing-file error.",
+      tags:  ["attr", "const", "cxpath", "descendant", "eq", "for", "let", "lib", "par", "splice"],
+      section: "everyday/documents",
+      grants: "--allow-read --allow-write",
+      runnable: false,
+    },
+    "274-parse-command-line-arguments": {
+      label: "[274] command-line arguments \u2014 flags and positionals",
+      input: "[?lib 'cx-stdlib/env']\n[?let [= $spec [argspec [flag name=verbose short=v type=bool]\n                        [flag name=limit short=n type=int default=10]\n                        [positional name=input type=string required=true]]]\n      [= $cli [$env-parse-args $spec ('report', '-v', '--limit=3', 'suite.cxd')]]\n  [run verbose=[$env:flag $cli 'verbose']\n       limit=[$env:flag $cli 'limit']\n       input=[$env:positional $cli 'input']\n       unknown=[?fallback [$env-parse-args $spec ('report', '--nope', 'x')]\n                 [recover-with [$string $err@code]]]]]",
+      note:  "**Introduces:** the argspec (env.md \u00a73.2) \u2014 you DECLARE the flags and positionals and the parser does the rest, rather than walking `argv` by hand. `[flag name=\u2026 short=\u2026 type=\u2026 default=\u2026]` gives you `--verbose`/`-v`, `--limit 3`, `--limit=3` and clustered shorts (`-vn 3`) for free, and `[positional name=\u2026 required=true]` makes a missing argument a refusal instead of an index error. An unknown flag is `cx-err:CXER2501` and a mistyped value is `CXER2502`, both naming the flag. The example passes an EXPLICIT argv to the `env-parse-args` primitive so its answer is the same everywhere; a real tool reads `[$env:argv]` (\u00a73.2) under `--allow-env` and passes that instead, and `[$env:usage SPEC]` prints the help text from the same declaration.",
+      tags:  ["attr", "eq", "fallback", "let", "lib", "parallel"],
+      section: "everyday/process",
+      runnable: true,
+    },
+    "275-an-environment-variable-with-a-default": {
+      label: "[275] an environment variable, with a default",
+      input: "[?lib 'cx-stdlib/env']\n[?let [= $name 'CX_PLAYGROUND_TIER']\n  [config tier=[$env:var-or-default $name 'dev']\n          retries=[$env:var-int 'CX_PLAYGROUND_RETRIES' 3]\n          debug=[$env:var-bool 'CX_PLAYGROUND_DEBUG' false]\n          set=[$env:has-var $name]\n          unset-is-absence=[$empty [$env:var $name]]]]",
+      note:  "**Introduces:** the typed-default readers of env.md \u00a73.1.1 \u2014 `var-or-default`, `var-int`, `var-float`, `var-bool` \u2014 so a configuration read is one call with the fallback written beside it rather than a get-then-test-then-cast. An UNSET variable is the absence channel (the empty sequence `()`), never `null` and never `''`, which is why `[$empty [$env:var NAME]]` is the question to ask and `[$env:has-var]` separates set-to-empty from unset. The whole module is capability-gated: with no `--allow-env` every one of these raises `cx-err:CXER0271` naming the grant, so a program cannot read the environment by accident.",
+      tags:  ["eq", "let", "lib"],
+      section: "everyday/process",
+      grants: "--allow-env",
+      runnable: false,
+    },
+    "276-read-standard-input": {
+      label: "[276] read standard input \u2014 a program fed by another",
+      input: "[?lib 'cx-stdlib/io']\n[?lib 'cx-stdlib/path']\n[?lib 'cx-stdlib/env']\n[?lib 'cx-stdlib/process']\n[?lib 'cx-stdlib/strings']\n[?const READER \"[?lib 'cx-stdlib/io']\\n[?lib 'cx-stdlib/env']\\n[?def drain impure [effects [read]] ($h $n)\\n  [?let [= $l [$io:read-line $h]] [?if [= $l ''] [then $n] [else [drain $h [+ $n 1]]]]]]\\n[?let [= $h [$env:stdin]] [= $first [$io:read-line $h]]\\n  [from-stdin first=$first rest=[drain $h 0]]]\\n\"]\n[?let [= $dir [$io:temp-dir 'cx-play-']]\n      [= $f [$path:join $dir 'reader.cx']]\n      [= $w [$io:write-file $f READER]]\n      [= $argv ([$env:executable-path], '--allow-read', $f)]\n      [= $r [$process:run $argv stdin=\"alpha\\nbeta\\ngamma\\n\"]]\n      [= $answer [$strings:trim [$string $r@stdout]]]\n      [= $rm [$io:remove-tree $dir]]\n  [piped exit=$r@exit-code answer=$answer]]",
+      note:  "**Introduces:** `[$env:stdin]` (env.md \u00a73.4), which answers a `[std-stream name=stdin fd=0]` handle you pass to `cx-stdlib/io` for the actual reading, and `[$process:run ARGV stdin=TEXT]` (process.md \u00a73.1), which feeds a child a fixed string. A program that reads stdin has no deterministic answer on its own, so the example supplies both halves: it writes a tiny reader, runs it with `stdin=`, and grades what came back. Two things are worth knowing before you write one. `[$io:read-all]` does NOT accept a std-stream handle today \u2014 it refuses with a missing-FILE diagnostic (#1535) \u2014 so the drain here is a `[$io:read-line]` recursion, and at end of input `read-line` answers `''`. And reading stdin needs `--allow-read`: the child is launched with it, which is why the grant list on this example is four flags long.",
+      tags:  ["add", "attr", "const", "def", "eq", "if", "let", "lib"],
+      section: "everyday/process",
+      grants: "--allow-read --allow-write --allow-env --allow-subprocess",
+      runnable: false,
+    },
+    "277-run-a-child-process": {
+      label: "[277] run a child process, read its output",
+      input: "[?lib 'cx-stdlib/process']\n[?lib 'cx-stdlib/strings']\n[?let [= $r [$process:run ('sh', '-c', 'printf \"gamma\\nalpha\\nbeta\\n\" | sort')]]\n      [= $bad [$process:run ('sh', '-c', 'printf \"boom\\n\" >&2; exit 3')]]\n  [children exit=$r@exit-code\n            failed-exit=$bad@exit-code\n            stderr=[$strings:trim [$string $bad@stderr]]\n    [sorted [?splice [$strings:split-lines [$strings:trim [$string $r@stdout]]]]]]]",
+      note:  "**Introduces:** `[$process:run ARGV]` (process.md \u00a73.1). The command is an ARGV ARRAY and there is no shell-string form \u2014 that is the structural defense against command injection, and it means arguments containing spaces or quotes need no escaping at all. The result is an element: `@exit-code`, `@stdout` and `@stderr`, all three available whether the child succeeded or not, so a failed child is data to branch on rather than an exception to catch. Pass `check=true` when a non-zero status should refuse instead, `timeout-ms` when it might hang, and `cwd`/`env` when it needs a different place to run. Every function in the module is gated on `--allow-subprocess`.",
+      tags:  ["attr", "eq", "let", "lib", "splice"],
+      section: "everyday/process",
+      grants: "--allow-subprocess",
+      runnable: false,
+    },
+    "278-set-the-exit-status": {
+      label: "[278] set the exit status \u2014 and what exit discards",
+      input: "[?lib 'cx-stdlib/env']\n[?let [= $rows 3]\n      [= $say [$env:write-line [?str 'summarized {$rows} rows']]]\n      [= $buffered [summary rows=$rows]]\n      [= $bye [$env:exit 0]]\n  [this-is-never-printed [?splice ($buffered,)]]]",
+      note:  "**Introduces:** `[$env:exit CODE]` and `[$env:write-line TEXT]` (env.md \u00a73.4, \u00a73.5), and the ordering rule between them that surprises everyone once. A program's top-level results are rendered when the program ENDS, so `[$env:exit]` \u2014 which ends it immediately \u2014 discards every one of them: `[summary rows=3]` is computed here and never printed. `write-line` writes to fd 1 and FLUSHES as it happens, which is why it survives the exit, and it needs no capability at all (RULED: 1316-c2 \u2014 stdout is the invocation's answer channel, not the filesystem). So: compute with results, but say anything that must outlive an early exit with `write-line`.",
+      tags:  ["eq", "let", "lib", "splice", "str"],
+      section: "everyday/process",
+      runnable: true,
+    },
+    "279-format-a-date": {
+      label: "[279] format a date \u2014 ISO, RFC 3339, a pattern",
+      input: "[?lib 'cx-stdlib/time']\n[?let [= $d [$time:date 2026 3 9]]\n      [= $dt [$time:datetime 2026 3 9 14 30 0]]\n  [formatted iso=[$time:format-iso8601 $d]\n             rfc3339=[$time:format-rfc3339 $dt]\n             eu=[$time:format-with-format $d 'dd/MM/yyyy']\n             long=[$time:format-with-format $d 'EEEE, d MMMM yyyy']\n             weekday=[$time:weekday $d]]]",
+      note:  "**Introduces:** `cx-stdlib/time`'s formatters (time.md \u00a73.7). `format-iso8601` and `format-rfc3339` are the two interchange spellings and take no pattern, so the common case has nothing to get wrong; `format-with-format` takes an LDML pattern (`dd/MM/yyyy`, `EEEE, d MMMM yyyy`) for the ones a human reads. Dates and datetimes are TYPED scalars, not strings \u2014 `[$time:date 2026 3 9]` is a `date` and renders bare \u2014 so the formatter is the only place a layout is chosen and no value carries one around. `[$time:weekday]` answers an ATOM (`:monday`), which compares and matches without any locale question.",
+      tags:  ["eq", "let", "lib"],
+      section: "everyday/time",
+      runnable: true,
+    },
+    "280-parse-a-date": {
+      label: "[280] parse a date \u2014 and what an ambiguous one earns",
+      input: "[?lib 'cx-stdlib/time']\n[?let [= $d [$time:parse-date '2026-03-09']]\n      [= $dt [$time:parse-rfc3339 '2026-03-09T14:30:00Z']]\n  [parsed year=[$time:year $d] month=[$time:month $d] day=[$time:day $d]\n          hour=[$time:hour $dt]\n          round-trip=[= [$time:format-iso8601 $d] '2026-03-09']\n          ambiguous=[?fallback [$time:parse-date '09/03/2026']\n                      [recover-with [$string $err@code]]]]]",
+      note:  "**Introduces:** the parsers of time.md \u00a73.6 \u2014 `parse-date`, `parse-datetime`, `parse-rfc3339`, `parse-with-format` \u2014 and the decomposition readers (\u00a73.3) that take a parsed value apart. Parsing is strict on purpose: `'09/03/2026'` is refused with `cx-err:CXER3301` rather than guessed at, because the day-first and month-first readings are both plausible and a silently wrong date is worse than a refusal. When the input really is in a local layout, say so with `parse-with-format` and its pattern. `[?fallback \u2026 [recover-with \u2026]]` is how a script turns that refusal into its own answer, with `$err` bound to the refusal inside the recovery.",
+      tags:  ["attr", "eq", "fallback", "let", "lib", "par", "parallel"],
+      section: "everyday/time",
+      runnable: true,
+    },
+    "281-add-days-and-months": {
+      label: "[281] add days and months \u2014 and the month-end rule",
+      input: "[?lib 'cx-stdlib/time']\n[?let [= $d [$time:date 2026 3 9]]\n      [= $jan31 [$time:date 2026 1 31]]\n  [arithmetic plus-30-days=[$time:add-days $d 30]\n              minus-a-week=[$time:add-days $d -7]\n              jan31-plus-a-month=[$time:add-months $jan31 1]\n              seconds-between=[$time:duration-total-s [$time:diff [$time:date 2026 4 8] $d]]\n              leap=[$time:is-leap-year 2026]\n              month-length=[$time:days-in-month 2026 2]]]",
+      note:  "**Introduces:** calendar arithmetic (time.md \u00a73.4) \u2014 `add-days`, `add-months`, `add-years`, and `diff`, which answers a `duration` rather than a number so the unit is never implicit. The month-end rule is the one to memorize: 31 January plus one month CLAMPS to the last day of February, because no other answer exists; `add-months-strict` refuses instead when a clamp would be a bug in your domain. `[$time:diff A B]` gives a duration you read with `duration-total-s` / `duration-total-ms` / `duration-parts`, and `days-in-month` / `is-leap-year` (\u00a73.9) answer the calendar questions you would otherwise be tempted to compute.",
+      tags:  ["eq", "let", "lib"],
+      section: "everyday/time",
+      runnable: true,
+    },
+    "282-measure-elapsed-time": {
+      label: "[282] measure elapsed time under the clock grant",
+      input: "[?lib 'cx-stdlib/time']\n[?let [= $t0 [$time:monotonic-now]]\n      [= $work [$count [?for [in $i (1, 2, 3, 4, 5, 6, 7, 8)] [yield [* $i $i]]]]]\n      [= $ns [- [$time:monotonic-now] $t0]]\n      [= $d [$time:duration-ms [$idiv $ns 1000000]]]\n  [elapsed steps=$work\n           moved-forward=[>= $ns 0]\n           class=[?if [< $ns 1000000000] [then :under-a-second] [else :slower]]\n           measured-is-a-duration=[$present $d]\n           ninety-minutes=[$time:format-duration [$time:duration-m 90]]]]",
+      note:  "**Introduces:** `[$time:monotonic-now]` (time.md \u00a73.1) \u2014 nanoseconds from a monotonic source, which is the clock to time WITH: it never jumps backwards when the system clock is adjusted, the way a wall-clock difference can. It needs `--allow-clock`; without it the call raises `cx-err:CXER0271` naming the grant, because reading a clock is an ambient-authority read like any other. The example prints a CLASS and not the measurement, which is the discipline any graded or asserted timing needs: the duration is real, so the number is different on every machine, and only the bound is a fact. Fixed durations (`duration-m 90`) are pure values and format identically everywhere.",
+      tags:  ["eq", "for", "ge", "if", "let", "lib", "lt", "mul", "sub"],
+      section: "everyday/time",
+      grants: "--allow-clock",
+      runnable: false,
+    },
+    "283-refuse-with-a-message-and-a-status": {
+      label: "[283] refuse with a message and a non-zero exit status",
+      input: "[?lib 'cx-stdlib/env']\n[?let [= $file 'report.cxd']\n      [= $rows 0]\n  [?if [> $rows 0]\n    [then [summary file=$file rows=$rows]]\n    [else [?let [= $say [$env:write-line\n                          [?str \"[err code='empty-input' message='{$file} has no rows \u2014 nothing to summarize' hint='write the file first, or pass --allow-empty']\"]]]\n                [= $bye [$env:exit 2]]\n            $say]]]]",
+      note:  "**Introduces:** the CLI refusal \u2014 a human-readable message on stdout and a non-zero exit status, which is what a caller's `&&` and a pipeline's failure test actually read. `[$env:write-line]` is the message channel because it flushes immediately and so survives `[$env:exit]` (a top-level result would not \u2014 example 278). The convention worth keeping: the line the program prints is itself an `[err \u2026]` element in CX text, so a caller can parse the refusal with `[$cx:parse]` instead of matching on prose, and a `hint=` attribute says what to DO. Status 2 is the usage-error convention the `cx` binary itself follows; reserve 1 for \"ran, and the answer is no\".",
+      tags:  ["eq", "gt", "if", "let", "lib", "str"],
+      section: "everyday/cli-errors",
+      runnable: true,
+    },
+    "284-retry-once-then-give-up": {
+      label: "[284] retry once, then give up \u2014 the railway",
+      input: "[?lib 'cx-stdlib/io']\n[?lib 'cx-stdlib/path']\n[?def fetch impure [effects [read] [write]] ($marker)\n  [?if [$io:exists $marker]\n    [then [ok source='the warm cache']]\n    [else [?let [= $w [$io:write-file $marker 'warm']]\n            [err code='cold-cache' message='the cache was cold \u2014 warmed it, ask again']]]]]\n[?let [= $dir [$io:temp-dir 'cx-play-']]\n      [= $m [$path:join $dir 'cache.marker']]\n      [= $settled [?retry max=2 backoff=constant delay=1ms jitter=none [fetch $m]]]\n      [= $never [?retry max=2 backoff=constant delay=1ms jitter=none [err code='always-down' message='no']]]\n      [= $rm [$io:remove-tree $dir]]\n  [railway [second-attempt $settled] give-up=[$string $never@code] attempts=$never@attempts]]",
+      note:  "**Introduces:** `[?retry max=N backoff=\u2026 delay=\u2026 jitter=\u2026]` (code.md \u00a710.2.1) \u2014 the resilience directive, so retrying is a wrapper around the step rather than a hand-rolled loop with its own bug. `max` counts TOTAL ATTEMPTS, not extra ones, so one retry is `max=2`; the budget running out is `cx-err:CXER0140` carrying `attempts=` and the last failure under `[cause \u2026]`, so giving up is still data you can report. The step here is genuinely fallible \u2014 the first call finds no cache and warms it, the second finds it \u2014 which is the shape retry is for: a step that a later attempt can legitimately win. `[?retry]` is impure, so a `[?def]` around one must say `impure`.",
+      tags:  ["attr", "def", "eq", "if", "let", "lib", "retry"],
+      section: "everyday/cli-errors",
+      grants: "--allow-read --allow-write",
+      runnable: false,
+    },
+    "285-a-refusal-as-one-line-of-diagnosis": {
+      label: "[285] turn a refusal into one line a user can act on",
+      input: "[?lib 'cx-stdlib/time']\n[?lib 'cx-stdlib/strings']\n[?let [= $rows (('due', '2026-03-09'), ('shipped', '09/03/2026'), ('closed', 'yesterday'))]\n      [= $lines [?for [in $r $rows]\n                  [yield [?let [= $field [$first $r]]\n                               [= $raw [$nth $r 2]]\n                               [= $got [?fallback [$time:parse-date $raw]\n                                         [recover-with [refused code=[$string $err@code]]]]]\n                           [?match $got\n                             [case [refused] [?str \"{$field}: '{$raw}' is not a date \u2014 cx reads ISO 8601 (yyyy-mm-dd) and refused with {$got@code}\"]]\n                             [else [?str \"{$field}: read as a date\"]]]]]]]\n      [= $good [?for [in $l $lines] [where [$strings:ends-with $l 'read as a date']] [yield 1]]]\n      [= $n [$count $good]]\n      [= $bad [?for [in $l $lines] [where [not [$strings:ends-with $l 'read as a date']]] [yield $l]]]\n  [report read=$n [diagnoses [?splice $bad]]]]",
+      note:  "**Introduces:** turning a refusal into a sentence its reader can act on. `[?fallback E [recover-with R]]` (code.md \u00a710.2.4) binds `$err` inside the recovery, so the diagnosis can name the code the runtime actually produced instead of a code you guessed. Put the `[?fallback]` DIRECTLY around the call that can refuse: wrap something larger \u2014 a `[?str]` that interpolates the parse, say \u2014 and the code you read back is `cx-err:CXER0100` from the interpolation, not the `CXER3301` the parser raised. The recovery answers a tagged element so `[?match]` can branch on it, which keeps \"did this fail\" out of string-matching; and every diagnosis carries the field, the input and the fix, because a user who gets only the code has to come back and ask.",
+      tags:  ["attr", "builtin", "eq", "fallback", "for", "let", "lib", "match", "not", "par", "splice", "str"],
+      section: "everyday/cli-errors",
       runnable: true,
     },
   };
