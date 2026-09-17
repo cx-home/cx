@@ -1053,7 +1053,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `crc-32` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md), [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md), [rulings_2026_08_29_tar_module_1084.md](rulings_2026_08_29_tar_module_1084.md) |
 | `cve-2011` | [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md) |
 | `cxf-2` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md) |
-| `cxf-3` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md), [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) |
+| `cxf-3` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_diagnostics_audit_1522.md](rulings_2026_09_17_diagnostics_audit_1522.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md), [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) |
 | `cxf-4` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) |
 | `cxf-5` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) |
 | `cxf-6` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md) |
@@ -1177,6 +1177,11 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `sha-256` | [partition_audit_spec_inventory.md](partition_audit_spec_inventory.md), [rulings_2026_08_29_saml_sp_1091.md](rulings_2026_08_29_saml_sp_1091.md) |
 | `sha-384` | [rulings_2026_08_28_jose_completeness_1093.md](rulings_2026_08_28_jose_completeness_1093.md) |
 | `sha-512` | [rulings_2026_08_28_jose_completeness_1093.md](rulings_2026_08_28_jose_completeness_1093.md) |
+| `silent-1` | [rulings_2026_09_17_diagnostics_audit_1522.md](rulings_2026_09_17_diagnostics_audit_1522.md) |
+| `silent-2` | [rulings_2026_09_17_diagnostics_audit_1522.md](rulings_2026_09_17_diagnostics_audit_1522.md) |
+| `silent-3` | [rulings_2026_09_17_diagnostics_audit_1522.md](rulings_2026_09_17_diagnostics_audit_1522.md) |
+| `silent-4` | [rulings_2026_09_17_diagnostics_audit_1522.md](rulings_2026_09_17_diagnostics_audit_1522.md) |
+| `silent-5` | [rulings_2026_09_17_diagnostics_audit_1522.md](rulings_2026_09_17_diagnostics_audit_1522.md) |
 | `smtp-1` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `smtp-2` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `smtp-3` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
@@ -1229,4 +1234,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*299 ledger pages; 601 ids declared, 367 cited only.*
+*300 ledger pages; 601 ids declared, 372 cited only.*
