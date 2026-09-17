@@ -22,6 +22,6 @@ decision the issue does not already carry is a LETTER from the agent, never a si
 
 ## Order of the two slots from here
 
-CXF-2 (c) → CXF-4 → **BB-T1** (#1520 at its head) → BB-T2 → BB-L1 → BB-S1, with CXF-7, lane 8 and the D-batches (after the answer on #
+CXF-2 (c) → CXF-4 → **BB-T1** (#1520 at its head) → BB-T2 → BB-L1 → BB-S1, with CXF-7, lane 8 and the D-batches (after the answer on issue
 1545; D9 after the answer on #1544) taking a slot between batches as the cx-first page orders them; then ORD-1's Ring 0 tail
 (#1239 → #1241 → #1387 → FMT-2 → #1207's W8 exit) and the rest of ORD-1.
