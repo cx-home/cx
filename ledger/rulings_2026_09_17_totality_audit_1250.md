@@ -128,7 +128,173 @@ still answering `CXER0100 … does not match item 2` — and
 `program-for-sigma-001` … `-017` back the shape classes, the barrier classes and
 the termination shape.
 
-<!-- AUDIT-TABLE -->
+| row | pattern shape | clause between | binds collected | predicate | placement | declined | termination |
+|---|---|---|---|---|---|---|---|
+| P1×K0 | anonymous source `[in SRC]` (binds `$_`) | none (σ directly after the generator) | `_` | total | kept at 1 (—) | — | fixed point |
+| P1×K1 | anonymous source `[in SRC]` (binds `$_`) | generator `[in $y SRC]` | `_` | total | moved 2 → 1 (sigma-placement) | — | fixed point |
+| P1×K2 | anonymous source `[in SRC]` (binds `$_`) | filter `[where …]` | `_` | total | kept at 2 (sigma-placement) | — | fixed point |
+| P1×K3 | anonymous source `[in SRC]` (binds `$_`) | binding `[= $z …]` | `_` | total | moved 2 → 1 (sigma-placement) | — | fixed point |
+| P1×K4 | anonymous source `[in SRC]` (binds `$_`) | order-by `[order-by …]` | `_` | total | moved 2 → 1 (sigma-pushdown-below-tau) | — | fixed point |
+| P1×K5 | anonymous source `[in SRC]` (binds `$_`) | group-by `[group-by …]` | `_` | total | kept at 2 (—) | — | fixed point |
+| P1×K6 | anonymous source `[in SRC]` (binds `$_`) | limit `[limit N]` | `_` | total | moved 2 → 1 (—) | — | fixed point |
+| P1×K7 | anonymous source `[in SRC]` (binds `$_`) | take `[take N]` | `_` | total | moved 2 → 1 (—) | — | fixed point |
+| P1×K8 | anonymous source `[in SRC]` (binds `$_`) | drop `[drop N]` | `_` | total | moved 2 → 1 (—) | — | fixed point |
+| P1×K9 | anonymous source `[in SRC]` (binds `$_`) | take-while `[take-while P]` | `_` | total | kept at 2 (—) | — | fixed point |
+| P1×K10 | anonymous source `[in SRC]` (binds `$_`) | drop-while `[drop-while P]` | `_` | total | kept at 2 (—) | — | fixed point |
+| P1×K11 | anonymous source `[in SRC]` (binds `$_`) | par `[par]` | `_` | total | moved 2 → 1 (—) | — | fixed point |
+| P1×K12 | anonymous source `[in SRC]` (binds `$_`) | lazy `[lazy]` | `_` | total | moved 2 → 1 (—) | — | fixed point |
+| P1×K13 | anonymous source `[in SRC]` (binds `$_`) | ordered `[ordered]` | `_` | total | moved 2 → 1 (—) | — | fixed point |
+| P1×K14 | anonymous source `[in SRC]` (binds `$_`) | fail-fast `[fail-fast]` | `_` | total | kept at 2 (—) | — | fixed point |
+| P2×K0 | bind-only `[in $x SRC]` | none (σ directly after the generator) | `x` | total | kept at 1 (—) | — | fixed point |
+| P2×K1 | bind-only `[in $x SRC]` | generator `[in $y SRC]` | `x` | total | moved 2 → 1 (sigma-placement) | — | fixed point |
+| P2×K2 | bind-only `[in $x SRC]` | filter `[where …]` | `x` | total | kept at 2 (sigma-placement) | — | fixed point |
+| P2×K3 | bind-only `[in $x SRC]` | binding `[= $z …]` | `x` | total | moved 2 → 1 (sigma-placement) | — | fixed point |
+| P2×K4 | bind-only `[in $x SRC]` | order-by `[order-by …]` | `x` | total | moved 2 → 1 (sigma-pushdown-below-tau) | — | fixed point |
+| P2×K5 | bind-only `[in $x SRC]` | group-by `[group-by …]` | `x` | total | kept at 2 (—) | — | fixed point |
+| P2×K6 | bind-only `[in $x SRC]` | limit `[limit N]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P2×K7 | bind-only `[in $x SRC]` | take `[take N]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P2×K8 | bind-only `[in $x SRC]` | drop `[drop N]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P2×K9 | bind-only `[in $x SRC]` | take-while `[take-while P]` | `x` | total | kept at 2 (—) | — | fixed point |
+| P2×K10 | bind-only `[in $x SRC]` | drop-while `[drop-while P]` | `x` | total | kept at 2 (—) | — | fixed point |
+| P2×K11 | bind-only `[in $x SRC]` | par `[par]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P2×K12 | bind-only `[in $x SRC]` | lazy `[lazy]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P2×K13 | bind-only `[in $x SRC]` | ordered `[ordered]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P2×K14 | bind-only `[in $x SRC]` | fail-fast `[fail-fast]` | `x` | total | kept at 2 (—) | — | fixed point |
+| P3×K0 | typed bind `[in $x::int SRC]` | none (σ directly after the generator) | `x` | total | kept at 1 (—) | — | fixed point |
+| P3×K1 | typed bind `[in $x::int SRC]` | generator `[in $y SRC]` | `x` | total | moved 2 → 1 (sigma-placement) | — | fixed point |
+| P3×K2 | typed bind `[in $x::int SRC]` | filter `[where …]` | `x` | total | kept at 2 (—) | sigma-placement | fixed point |
+| P3×K3 | typed bind `[in $x::int SRC]` | binding `[= $z …]` | `x` | total | moved 2 → 1 (sigma-placement) | — | fixed point |
+| P3×K4 | typed bind `[in $x::int SRC]` | order-by `[order-by …]` | `x` | total | moved 2 → 1 (sigma-pushdown-below-tau) | — | fixed point |
+| P3×K5 | typed bind `[in $x::int SRC]` | group-by `[group-by …]` | `x` | total | kept at 2 (—) | — | fixed point |
+| P3×K6 | typed bind `[in $x::int SRC]` | limit `[limit N]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P3×K7 | typed bind `[in $x::int SRC]` | take `[take N]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P3×K8 | typed bind `[in $x::int SRC]` | drop `[drop N]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P3×K9 | typed bind `[in $x::int SRC]` | take-while `[take-while P]` | `x` | total | kept at 2 (—) | — | fixed point |
+| P3×K10 | typed bind `[in $x::int SRC]` | drop-while `[drop-while P]` | `x` | total | kept at 2 (—) | — | fixed point |
+| P3×K11 | typed bind `[in $x::int SRC]` | par `[par]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P3×K12 | typed bind `[in $x::int SRC]` | lazy `[lazy]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P3×K13 | typed bind `[in $x::int SRC]` | ordered `[ordered]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P3×K14 | typed bind `[in $x::int SRC]` | fail-fast `[fail-fast]` | `x` | total | kept at 2 (—) | — | fixed point |
+| P4×K0 | wildcard `[in _ SRC]` | none (σ directly after the generator) | `— (none)` | total | kept at 1 (—) | sigma-placement | fixed point |
+| P4×K1 | wildcard `[in _ SRC]` | generator `[in $y SRC]` | `— (none)` | total | moved 2 → 1 (sigma-placement) | sigma-placement | fixed point |
+| P4×K2 | wildcard `[in _ SRC]` | filter `[where …]` | `— (none)` | total | kept at 2 (—) | sigma-placement | fixed point |
+| P4×K3 | wildcard `[in _ SRC]` | binding `[= $z …]` | `— (none)` | total | moved 2 → 1 (sigma-placement) | sigma-placement | fixed point |
+| P4×K4 | wildcard `[in _ SRC]` | order-by `[order-by …]` | `— (none)` | total | moved 2 → 1 (sigma-pushdown-below-tau) | sigma-placement | fixed point |
+| P4×K5 | wildcard `[in _ SRC]` | group-by `[group-by …]` | `— (none)` | total | kept at 2 (—) | — | fixed point |
+| P4×K6 | wildcard `[in _ SRC]` | limit `[limit N]` | `— (none)` | total | moved 2 → 1 (—) | sigma-placement | fixed point |
+| P4×K7 | wildcard `[in _ SRC]` | take `[take N]` | `— (none)` | total | moved 2 → 1 (—) | sigma-placement | fixed point |
+| P4×K8 | wildcard `[in _ SRC]` | drop `[drop N]` | `— (none)` | total | moved 2 → 1 (—) | sigma-placement | fixed point |
+| P4×K9 | wildcard `[in _ SRC]` | take-while `[take-while P]` | `— (none)` | total | kept at 2 (—) | — | fixed point |
+| P4×K10 | wildcard `[in _ SRC]` | drop-while `[drop-while P]` | `— (none)` | total | kept at 2 (—) | — | fixed point |
+| P4×K11 | wildcard `[in _ SRC]` | par `[par]` | `— (none)` | total | moved 2 → 1 (—) | sigma-placement | fixed point |
+| P4×K12 | wildcard `[in _ SRC]` | lazy `[lazy]` | `— (none)` | total | moved 2 → 1 (—) | sigma-placement | fixed point |
+| P4×K13 | wildcard `[in _ SRC]` | ordered `[ordered]` | `— (none)` | total | moved 2 → 1 (—) | sigma-placement | fixed point |
+| P4×K14 | wildcard `[in _ SRC]` | fail-fast `[fail-fast]` | `— (none)` | total | kept at 2 (—) | — | fixed point |
+| P5×K0 | scalar-literal pattern `[in 1 SRC]` | none (σ directly after the generator) | `— (none)` | total | kept at 1 (—) | sigma-placement | fixed point |
+| P5×K1 | scalar-literal pattern `[in 1 SRC]` | generator `[in $y SRC]` | `— (none)` | total | moved 2 → 1 (sigma-placement) | sigma-placement | fixed point |
+| P5×K2 | scalar-literal pattern `[in 1 SRC]` | filter `[where …]` | `— (none)` | total | kept at 2 (—) | sigma-placement | fixed point |
+| P5×K3 | scalar-literal pattern `[in 1 SRC]` | binding `[= $z …]` | `— (none)` | total | moved 2 → 1 (sigma-placement) | sigma-placement | fixed point |
+| P5×K4 | scalar-literal pattern `[in 1 SRC]` | order-by `[order-by …]` | `— (none)` | total | moved 2 → 1 (sigma-pushdown-below-tau) | sigma-placement | fixed point |
+| P5×K5 | scalar-literal pattern `[in 1 SRC]` | group-by `[group-by …]` | `— (none)` | total | kept at 2 (—) | — | fixed point |
+| P5×K6 | scalar-literal pattern `[in 1 SRC]` | limit `[limit N]` | `— (none)` | total | moved 2 → 1 (—) | sigma-placement | fixed point |
+| P5×K7 | scalar-literal pattern `[in 1 SRC]` | take `[take N]` | `— (none)` | total | moved 2 → 1 (—) | sigma-placement | fixed point |
+| P5×K8 | scalar-literal pattern `[in 1 SRC]` | drop `[drop N]` | `— (none)` | total | moved 2 → 1 (—) | sigma-placement | fixed point |
+| P5×K9 | scalar-literal pattern `[in 1 SRC]` | take-while `[take-while P]` | `— (none)` | total | kept at 2 (—) | — | fixed point |
+| P5×K10 | scalar-literal pattern `[in 1 SRC]` | drop-while `[drop-while P]` | `— (none)` | total | kept at 2 (—) | — | fixed point |
+| P5×K11 | scalar-literal pattern `[in 1 SRC]` | par `[par]` | `— (none)` | total | moved 2 → 1 (—) | sigma-placement | fixed point |
+| P5×K12 | scalar-literal pattern `[in 1 SRC]` | lazy `[lazy]` | `— (none)` | total | moved 2 → 1 (—) | sigma-placement | fixed point |
+| P5×K13 | scalar-literal pattern `[in 1 SRC]` | ordered `[ordered]` | `— (none)` | total | moved 2 → 1 (—) | sigma-placement | fixed point |
+| P5×K14 | scalar-literal pattern `[in 1 SRC]` | fail-fast `[fail-fast]` | `— (none)` | total | kept at 2 (—) | — | fixed point |
+| P6×K0 | element pattern in the slot `[in [row $x] SRC]` | none (σ directly after the generator) | `x` | total | kept at 1 (—) | — | fixed point |
+| P6×K1 | element pattern in the slot `[in [row $x] SRC]` | generator `[in $y SRC]` | `x` | total | moved 2 → 1 (sigma-placement) | — | fixed point |
+| P6×K2 | element pattern in the slot `[in [row $x] SRC]` | filter `[where …]` | `x` | total | kept at 2 (—) | sigma-placement | fixed point |
+| P6×K3 | element pattern in the slot `[in [row $x] SRC]` | binding `[= $z …]` | `x` | total | moved 2 → 1 (sigma-placement) | — | fixed point |
+| P6×K4 | element pattern in the slot `[in [row $x] SRC]` | order-by `[order-by …]` | `x` | total | moved 2 → 1 (sigma-pushdown-below-tau) | — | fixed point |
+| P6×K5 | element pattern in the slot `[in [row $x] SRC]` | group-by `[group-by …]` | `x` | total | kept at 2 (—) | — | fixed point |
+| P6×K6 | element pattern in the slot `[in [row $x] SRC]` | limit `[limit N]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P6×K7 | element pattern in the slot `[in [row $x] SRC]` | take `[take N]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P6×K8 | element pattern in the slot `[in [row $x] SRC]` | drop `[drop N]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P6×K9 | element pattern in the slot `[in [row $x] SRC]` | take-while `[take-while P]` | `x` | total | kept at 2 (—) | — | fixed point |
+| P6×K10 | element pattern in the slot `[in [row $x] SRC]` | drop-while `[drop-while P]` | `x` | total | kept at 2 (—) | — | fixed point |
+| P6×K11 | element pattern in the slot `[in [row $x] SRC]` | par `[par]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P6×K12 | element pattern in the slot `[in [row $x] SRC]` | lazy `[lazy]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P6×K13 | element pattern in the slot `[in [row $x] SRC]` | ordered `[ordered]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P6×K14 | element pattern in the slot `[in [row $x] SRC]` | fail-fast `[fail-fast]` | `x` | total | kept at 2 (—) | — | fixed point |
+| P7×K0 | element pattern SHORTCUT `[row $x]` (the pattern is the SOURCE) | none (σ directly after the generator) | `x` | total | kept at 1 (—) | — | fixed point |
+| P7×K1 | element pattern SHORTCUT `[row $x]` (the pattern is the SOURCE) | generator `[in $y SRC]` | `x` | total | moved 2 → 1 (sigma-placement) | — | fixed point |
+| P7×K2 | element pattern SHORTCUT `[row $x]` (the pattern is the SOURCE) | filter `[where …]` | `x` | total | kept at 2 (—) | sigma-placement | fixed point |
+| P7×K3 | element pattern SHORTCUT `[row $x]` (the pattern is the SOURCE) | binding `[= $z …]` | `x` | total | moved 2 → 1 (sigma-placement) | — | fixed point |
+| P7×K4 | element pattern SHORTCUT `[row $x]` (the pattern is the SOURCE) | order-by `[order-by …]` | `x` | total | moved 2 → 1 (sigma-pushdown-below-tau) | — | fixed point |
+| P7×K5 | element pattern SHORTCUT `[row $x]` (the pattern is the SOURCE) | group-by `[group-by …]` | `x` | total | kept at 2 (—) | — | fixed point |
+| P7×K6 | element pattern SHORTCUT `[row $x]` (the pattern is the SOURCE) | limit `[limit N]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P7×K7 | element pattern SHORTCUT `[row $x]` (the pattern is the SOURCE) | take `[take N]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P7×K8 | element pattern SHORTCUT `[row $x]` (the pattern is the SOURCE) | drop `[drop N]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P7×K9 | element pattern SHORTCUT `[row $x]` (the pattern is the SOURCE) | take-while `[take-while P]` | `x` | total | kept at 2 (—) | — | fixed point |
+| P7×K10 | element pattern SHORTCUT `[row $x]` (the pattern is the SOURCE) | drop-while `[drop-while P]` | `x` | total | kept at 2 (—) | — | fixed point |
+| P7×K11 | element pattern SHORTCUT `[row $x]` (the pattern is the SOURCE) | par `[par]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P7×K12 | element pattern SHORTCUT `[row $x]` (the pattern is the SOURCE) | lazy `[lazy]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P7×K13 | element pattern SHORTCUT `[row $x]` (the pattern is the SOURCE) | ordered `[ordered]` | `x` | total | moved 2 → 1 (—) | — | fixed point |
+| P7×K14 | element pattern SHORTCUT `[row $x]` (the pattern is the SOURCE) | fail-fast `[fail-fast]` | `x` | total | kept at 2 (—) | — | fixed point |
+| P8×K0 | sequence destructuring `[in ($k, $v) SRC]` | none (σ directly after the generator) | `k v` | total | kept at 1 (—) | — | fixed point |
+| P8×K1 | sequence destructuring `[in ($k, $v) SRC]` | generator `[in $y SRC]` | `k v` | total | moved 2 → 1 (sigma-placement) | — | fixed point |
+| P8×K2 | sequence destructuring `[in ($k, $v) SRC]` | filter `[where …]` | `k v` | total | kept at 2 (—) | sigma-placement | fixed point |
+| P8×K3 | sequence destructuring `[in ($k, $v) SRC]` | binding `[= $z …]` | `k v` | total | moved 2 → 1 (sigma-placement) | — | fixed point |
+| P8×K4 | sequence destructuring `[in ($k, $v) SRC]` | order-by `[order-by …]` | `k v` | total | moved 2 → 1 (sigma-pushdown-below-tau) | — | fixed point |
+| P8×K5 | sequence destructuring `[in ($k, $v) SRC]` | group-by `[group-by …]` | `k v` | total | kept at 2 (—) | — | fixed point |
+| P8×K6 | sequence destructuring `[in ($k, $v) SRC]` | limit `[limit N]` | `k v` | total | moved 2 → 1 (—) | — | fixed point |
+| P8×K7 | sequence destructuring `[in ($k, $v) SRC]` | take `[take N]` | `k v` | total | moved 2 → 1 (—) | — | fixed point |
+| P8×K8 | sequence destructuring `[in ($k, $v) SRC]` | drop `[drop N]` | `k v` | total | moved 2 → 1 (—) | — | fixed point |
+| P8×K9 | sequence destructuring `[in ($k, $v) SRC]` | take-while `[take-while P]` | `k v` | total | kept at 2 (—) | — | fixed point |
+| P8×K10 | sequence destructuring `[in ($k, $v) SRC]` | drop-while `[drop-while P]` | `k v` | total | kept at 2 (—) | — | fixed point |
+| P8×K11 | sequence destructuring `[in ($k, $v) SRC]` | par `[par]` | `k v` | total | moved 2 → 1 (—) | — | fixed point |
+| P8×K12 | sequence destructuring `[in ($k, $v) SRC]` | lazy `[lazy]` | `k v` | total | moved 2 → 1 (—) | — | fixed point |
+| P8×K13 | sequence destructuring `[in ($k, $v) SRC]` | ordered `[ordered]` | `k v` | total | moved 2 → 1 (—) | — | fixed point |
+| P8×K14 | sequence destructuring `[in ($k, $v) SRC]` | fail-fast `[fail-fast]` | `k v` | total | kept at 2 (—) | — | fixed point |
+| P9×K0 | array destructuring `[in [$a, $b] SRC]` | none (σ directly after the generator) | `a b` | total | kept at 1 (—) | — | fixed point |
+| P9×K1 | array destructuring `[in [$a, $b] SRC]` | generator `[in $y SRC]` | `a b` | total | moved 2 → 1 (sigma-placement) | — | fixed point |
+| P9×K2 | array destructuring `[in [$a, $b] SRC]` | filter `[where …]` | `a b` | total | kept at 2 (—) | sigma-placement | fixed point |
+| P9×K3 | array destructuring `[in [$a, $b] SRC]` | binding `[= $z …]` | `a b` | total | moved 2 → 1 (sigma-placement) | — | fixed point |
+| P9×K4 | array destructuring `[in [$a, $b] SRC]` | order-by `[order-by …]` | `a b` | total | moved 2 → 1 (sigma-pushdown-below-tau) | — | fixed point |
+| P9×K5 | array destructuring `[in [$a, $b] SRC]` | group-by `[group-by …]` | `a b` | total | kept at 2 (—) | — | fixed point |
+| P9×K6 | array destructuring `[in [$a, $b] SRC]` | limit `[limit N]` | `a b` | total | moved 2 → 1 (—) | — | fixed point |
+| P9×K7 | array destructuring `[in [$a, $b] SRC]` | take `[take N]` | `a b` | total | moved 2 → 1 (—) | — | fixed point |
+| P9×K8 | array destructuring `[in [$a, $b] SRC]` | drop `[drop N]` | `a b` | total | moved 2 → 1 (—) | — | fixed point |
+| P9×K9 | array destructuring `[in [$a, $b] SRC]` | take-while `[take-while P]` | `a b` | total | kept at 2 (—) | — | fixed point |
+| P9×K10 | array destructuring `[in [$a, $b] SRC]` | drop-while `[drop-while P]` | `a b` | total | kept at 2 (—) | — | fixed point |
+| P9×K11 | array destructuring `[in [$a, $b] SRC]` | par `[par]` | `a b` | total | moved 2 → 1 (—) | — | fixed point |
+| P9×K12 | array destructuring `[in [$a, $b] SRC]` | lazy `[lazy]` | `a b` | total | moved 2 → 1 (—) | — | fixed point |
+| P9×K13 | array destructuring `[in [$a, $b] SRC]` | ordered `[ordered]` | `a b` | total | moved 2 → 1 (—) | — | fixed point |
+| P9×K14 | array destructuring `[in [$a, $b] SRC]` | fail-fast `[fail-fast]` | `a b` | total | kept at 2 (—) | — | fixed point |
+| P10×K0 | map destructuring `[in {k: $m} SRC]` | none (σ directly after the generator) | `m` | total | kept at 1 (—) | — | fixed point |
+| P10×K1 | map destructuring `[in {k: $m} SRC]` | generator `[in $y SRC]` | `m` | total | moved 2 → 1 (sigma-placement) | — | fixed point |
+| P10×K2 | map destructuring `[in {k: $m} SRC]` | filter `[where …]` | `m` | total | kept at 2 (—) | sigma-placement | fixed point |
+| P10×K3 | map destructuring `[in {k: $m} SRC]` | binding `[= $z …]` | `m` | total | moved 2 → 1 (sigma-placement) | — | fixed point |
+| P10×K4 | map destructuring `[in {k: $m} SRC]` | order-by `[order-by …]` | `m` | total | moved 2 → 1 (sigma-pushdown-below-tau) | — | fixed point |
+| P10×K5 | map destructuring `[in {k: $m} SRC]` | group-by `[group-by …]` | `m` | total | kept at 2 (—) | — | fixed point |
+| P10×K6 | map destructuring `[in {k: $m} SRC]` | limit `[limit N]` | `m` | total | moved 2 → 1 (—) | — | fixed point |
+| P10×K7 | map destructuring `[in {k: $m} SRC]` | take `[take N]` | `m` | total | moved 2 → 1 (—) | — | fixed point |
+| P10×K8 | map destructuring `[in {k: $m} SRC]` | drop `[drop N]` | `m` | total | moved 2 → 1 (—) | — | fixed point |
+| P10×K9 | map destructuring `[in {k: $m} SRC]` | take-while `[take-while P]` | `m` | total | kept at 2 (—) | — | fixed point |
+| P10×K10 | map destructuring `[in {k: $m} SRC]` | drop-while `[drop-while P]` | `m` | total | kept at 2 (—) | — | fixed point |
+| P10×K11 | map destructuring `[in {k: $m} SRC]` | par `[par]` | `m` | total | moved 2 → 1 (—) | — | fixed point |
+| P10×K12 | map destructuring `[in {k: $m} SRC]` | lazy `[lazy]` | `m` | total | moved 2 → 1 (—) | — | fixed point |
+| P10×K13 | map destructuring `[in {k: $m} SRC]` | ordered `[ordered]` | `m` | total | moved 2 → 1 (—) | — | fixed point |
+| P10×K14 | map destructuring `[in {k: $m} SRC]` | fail-fast `[fail-fast]` | `m` | total | kept at 2 (—) | — | fixed point |
+| P11×K0 | rest bind `[in ($h, *$r) SRC]` | none (σ directly after the generator) | `h r` | total | kept at 1 (—) | — | fixed point |
+| P11×K1 | rest bind `[in ($h, *$r) SRC]` | generator `[in $y SRC]` | `h r` | total | moved 2 → 1 (sigma-placement) | — | fixed point |
+| P11×K2 | rest bind `[in ($h, *$r) SRC]` | filter `[where …]` | `h r` | total | kept at 2 (—) | sigma-placement | fixed point |
+| P11×K3 | rest bind `[in ($h, *$r) SRC]` | binding `[= $z …]` | `h r` | total | moved 2 → 1 (sigma-placement) | — | fixed point |
+| P11×K4 | rest bind `[in ($h, *$r) SRC]` | order-by `[order-by …]` | `h r` | total | moved 2 → 1 (sigma-pushdown-below-tau) | — | fixed point |
+| P11×K5 | rest bind `[in ($h, *$r) SRC]` | group-by `[group-by …]` | `h r` | total | kept at 2 (—) | — | fixed point |
+| P11×K6 | rest bind `[in ($h, *$r) SRC]` | limit `[limit N]` | `h r` | total | moved 2 → 1 (—) | — | fixed point |
+| P11×K7 | rest bind `[in ($h, *$r) SRC]` | take `[take N]` | `h r` | total | moved 2 → 1 (—) | — | fixed point |
+| P11×K8 | rest bind `[in ($h, *$r) SRC]` | drop `[drop N]` | `h r` | total | moved 2 → 1 (—) | — | fixed point |
+| P11×K9 | rest bind `[in ($h, *$r) SRC]` | take-while `[take-while P]` | `h r` | total | kept at 2 (—) | — | fixed point |
+| P11×K10 | rest bind `[in ($h, *$r) SRC]` | drop-while `[drop-while P]` | `h r` | total | kept at 2 (—) | — | fixed point |
+| P11×K11 | rest bind `[in ($h, *$r) SRC]` | par `[par]` | `h r` | total | moved 2 → 1 (—) | — | fixed point |
+| P11×K12 | rest bind `[in ($h, *$r) SRC]` | lazy `[lazy]` | `h r` | total | moved 2 → 1 (—) | — | fixed point |
+| P11×K13 | rest bind `[in ($h, *$r) SRC]` | ordered `[ordered]` | `h r` | total | moved 2 → 1 (—) | — | fixed point |
+| P11×K14 | rest bind `[in ($h, *$r) SRC]` | fail-fast `[fail-fast]` | `h r` | total | kept at 2 (—) | — | fixed point |
 
 ## What this audit does NOT establish
 
