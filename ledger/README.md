@@ -299,7 +299,9 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1503-a` | [rulings_2026_09_15_owner_decisions_1145z.md](rulings_2026_09_15_owner_decisions_1145z.md) | Owner decisions 2026-09-15 ~11:45Z — "1a 2a 3 accepted 4a 5a 6a" (RULED: 1502-a, 1456-a, 1503-a, 1256-a, 1453-a) |
 | `1503-b` | [rulings_2026_09_15_owner_decisions_1830z.md](rulings_2026_09_15_owner_decisions_1830z.md) | Owner decisions 2026-09-15 ~18:30Z — "1a 2a 3a 4a" (RULED: INT-20, 1503-b, 1502-b, 1457-a) |
 | `1503-b` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) | Integrator decisions, 2026-09-16 — the 1503-b addendum |
+| `1521-a` | [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md) | Owner decisions 2026-09-17 ~22:02Z — an unread err binding propagates (1537-a); the quote-opening rule becomes a lexicon sentence (1521-a) |
 | `1527-a` | [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) | The traps become fixtures — two batch branches for the CXF-8 defects, and the one ruling they need (RULED: TRAP-1, 1527-a) |
+| `1537-a` | [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md) | Owner decisions 2026-09-17 ~22:02Z — an unread err binding propagates (1537-a); the quote-opening rule becomes a lexicon sentence (1521-a) |
 | `192-gcm` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) | RULED: 1400-a, 1401-a — XML Encryption comes IN: `saml:verify` decrypts `EncryptedAssertion` / `EncryptedID` / `EncryptedAttribute` with `opts.decryption-keys`; `crypto` gains RSA key transport (OAEP, SHA-1 inside OAEP allowed; PKCS#1 v1.5 behind a loud opt-in with implicit rejection) and AES-CBC + AES-128/192-GCM; encryption is detected BEFORE the signature search |
 | `787-poc` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) | Ledger — #787 integration: the ONE rebase of impl/787-poc onto release/0.16.0 |
 | `ad-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-1 — `[selection …]` binds every consumption point, through the one PEP (#1181) |
@@ -424,6 +426,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `crs-1` | [rulings_2026_08_20_call_result_steps.md](rulings_2026_08_20_call_result_steps.md) | CRS-1 — call-result heads gain the [135a] compact-step subset |
 | `crs-1a` | [rulings_2026_08_20_call_result_steps.md](rulings_2026_08_20_call_result_steps.md) | CRS-1a rider — code.md §6.2 trued to BP-1 |
 | `cxf-1` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) | cx first — the decisions of the #1522 mini-campaign (owner, 2026-09-17 ~13:50Z: "highest priority"; RULED: CXF-1 … CXF-8) |
+| `cxf-2` | [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md) | 1537's branch takes the next free agent slot (prio:high); CXF-2 (c) and CXF-4 follow it; the cx-first page's order |
+| `cxf-4` | [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md) | 1537's branch takes the next free agent slot (prio:high); CXF-2 (c) and CXF-4 follow it; the cx-first page's order |
 | `cxf-8` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) | cx first — the decisions of the #1522 mini-campaign (owner, 2026-09-17 ~13:50Z: "highest priority"; RULED: CXF-1 … CXF-8) |
 | `cxf-8` | [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) | The traps become fixtures — two batch branches for the CXF-8 defects, and the one ruling they need (RULED: TRAP-1, 1527-a) |
 | `cxp-1` | [rulings_2026_08_20_cx_pragma_registry.md](rulings_2026_08_20_cx_pragma_registry.md) | Ruling CXP-1 (2026-08-20) — the [?cx] pragma key set closes (#879, owner "4a") |
@@ -1052,10 +1056,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `client-2` | [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md) |
 | `crc-32` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md), [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md), [rulings_2026_08_29_tar_module_1084.md](rulings_2026_08_29_tar_module_1084.md) |
 | `cve-2011` | [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md) |
-| `cxf-2` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md) |
-| `cxf-3` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md), [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) |
-| `cxf-4` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) |
-| `cxf-5` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) |
+| `cxf-3` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md), [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) |
+| `cxf-5` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md) |
 | `cxf-6` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md) |
 | `cxf-7` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) |
 | `dist-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) |
@@ -1229,4 +1231,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*299 ledger pages; 601 ids declared, 367 cited only.*
+*300 ledger pages; 605 ids declared, 365 cited only.*
