@@ -1,4 +1,4 @@
-[playground-example-outputs  # 245 audited answers, corpus order
+[playground-example-outputs  # 285 audited answers, corpus order
  [doc [#
 GENERATED — do not hand-edit. Written by
 scripts/gen_guide/playground/gen_examples.cx from a grant-free audit run
@@ -1473,6 +1473,223 @@ error: the result carries an error value — cx-err:CXER0100 at /err
  [ex key=245-csv-in-and-out chars=117
   [out-text [#
 [round-trip [rows 2] [head-row {sku: pen, qty: '2', price: '1.50'}] [back 'sku,qty,price\npen,2,1.50\nink,1,4.25\n']]
+#]]
+ ]
+ [ex key=246-read-a-files-lines chars=37
+  [out-text [#
+[read lines=3 first=alpha last=gamma]
+#]]
+ ]
+ [ex key=247-write-a-file chars=31
+  [out-text [#
+[wrote bytes=7 text='one\ntwo']
+#]]
+ ]
+ [ex key=248-append-to-a-file chars=24
+  [out-text [#
+[run-log 'start' 'done']
+#]]
+ ]
+ [ex key=249-walk-a-tree-and-filter-by-extension chars=38
+  [out-text [#
+[cx-files 'src/main.cx' 'src/util.cx']
+#]]
+ ]
+ [ex key=250-a-temp-file-that-cleans-itself-up chars=41
+  [out-text [#
+[temp-file text='scratch bytes' chars=13]
+#]]
+ ]
+ [ex key=251-take-a-path-apart chars=89
+  [out-text [#
+[path full='var/log/app.tar.gz' dir='var/log' base='app.tar.gz' ext='.gz' stem='app.tar']
+#]]
+ ]
+ [ex key=252-a-path-relative-to-a-root chars=83
+  [out-text [#
+[paths rel='posts/hello.md' inside=true escape=false sideways='../assets/logo.png']
+#]]
+ ]
+ [ex key=253-list-a-directory-and-filter chars=24
+  [out-text [#
+[corpus 'a.cxd' 'b.cxd']
+#]]
+ ]
+ [ex key=254-does-this-string-match chars=82
+  [out-text [#
+[check id=CX-1234 ok=false]
+[check id=ABC-1234 ok=true]
+[check id=ABC-12 ok=false]
+#]]
+ ]
+ [ex key=255-capture-groups-by-name chars=78
+  [out-text [#
+[entry level=WARN code='429' msg='rate limited' whole='WARN 429 rate limited']
+#]]
+ ]
+ [ex key=256-replace-with-a-capture chars=85
+  [out-text [#
+[dates iso='2026-09-17' us='09/17/2026' first-only='from <2026-09-17> to 2026-09-18']
+#]]
+ ]
+ [ex key=257-split-and-join chars=71
+  [out-text [#
+[split-join count=3 shown='sku | qty | price' rejoined='price,qty,sku']
+#]]
+ ]
+ [ex key=258-trim-and-case chars=89
+  [out-text [#
+[person clean='Ada Lovelace' upper='ADA LOVELACE' lower='ada lovelace' slug=ada-lovelace]
+#]]
+ ]
+ [ex key=259-a-str-template-per-row chars=40
+  [out-text [#
+'main.cx: 120 lines'
+'util.cx: 38 lines'
+#]]
+ ]
+ [ex key=260-pad-columns-for-a-table chars=62
+  [out-text [#
+'alpha.......     7'
+'b...........  1042'
+'gamma-ray...    13'
+#]]
+ ]
+ [ex key=261-sort-by-a-key chars=27
+  [out-text [#
+'main.cx'
+'util.cx'
+'io.cx'
+#]]
+ ]
+ [ex key=262-sort-descending chars=91
+  [out-text [#
+[row name='io.cx' bytes=4400]
+[row name='util.cx' bytes=980]
+[row name='main.cx' bytes=120]
+#]]
+ ]
+ [ex key=263-dedupe-keeping-order chars=82
+  [out-text [#
+[labels [first-seen 'beta' 'alpha' 'gamma'] [alphabetical 'alpha' 'beta' 'gamma']]
+#]]
+ ]
+ [ex key=264-top-n chars=41
+  [out-text [#
+[top path='/b' n=97]
+[top path='/c' n=45]
+#]]
+ ]
+ [ex key=265-zip-two-sequences chars=75
+  [out-text [#
+[pair name=alpha size=7]
+[pair name=beta size=42]
+[pair name=gamma size=13]
+#]]
+ ]
+ [ex key=266-enumerate-with-an-index chars=32
+  [out-text [#
+'1. fetch'
+'2. parse'
+'3. write'
+#]]
+ ]
+ [ex key=267-count-the-words chars=79
+  [out-text [#
+[word text=the n=3]
+[word text=cat n=1]
+[word text=hat n=1]
+[word text=end n=1]
+#]]
+ ]
+ [ex key=268-accumulate-into-one-answer chars=25
+  [out-text [#
+[summary rows=3 total=12]
+#]]
+ ]
+ [ex key=269-read-a-cx-document-as-data chars=50
+  [out-text [#
+[document root=parsing cases=3 elements=10 deep=1]
+#]]
+ ]
+ [ex key=270-query-a-document-with-a-path chars=116
+  [out-text [#
+[paths matches=2 one-descendant=1 one-field-read=2 one-select=1 [ids 'p-1' 'p-2'] [attr-axis [id 'p-1'] [id 'p-2']]]
+#]]
+ ]
+ [ex key=271-two-readers-over-one-file chars=62
+  [out-text [#
+[two-readers parser=3 markers=4 agree=false [swallowed 'r-4']]
+#]]
+ ]
+ [ex key=272-diff-two-documents chars=145
+  [out-text [#
+[compare identical=false same-bytes=false changes=2 [kinds 'attribute-changed' 'element-added'] [where '/suite/case[2]/@level' '/suite/case[3]']]
+#]]
+ ]
+ [ex key=273-bisect-a-document-by-slicing-it chars=57
+  [out-text [#
+[bisect whole=5 bytes=64 slice=3 [ids 'b-2' 'b-3' 'b-4']]
+#]]
+ ]
+ [ex key=274-parse-command-line-arguments chars=68
+  [out-text [#
+[run verbose=true limit=3 input='suite.cxd' unknown=cx-err:CXER2501]
+#]]
+ ]
+ [ex key=275-an-environment-variable-with-a-default chars=71
+  [out-text [#
+[config tier=dev retries=3 debug=false set=false unset-is-absence=true]
+#]]
+ ]
+ [ex key=276-read-standard-input chars=55
+  [out-text [#
+[piped exit=0 answer='[from-stdin first=alpha rest=2]']
+#]]
+ ]
+ [ex key=277-run-a-child-process chars=75
+  [out-text [#
+[children exit=0 failed-exit=3 stderr=boom [sorted 'alpha' 'beta' 'gamma']]
+#]]
+ ]
+ [ex key=278-set-the-exit-status chars=18
+  [out-text [#
+summarized 3 rows
+#]]
+ ]
+ [ex key=279-format-a-date chars=119
+  [out-text [#
+[formatted iso='2026-03-09' rfc3339='2026-03-09T14:30:00Z' eu='09/03/2026' long='Monday, 9 March 2026' weekday=:monday]
+#]]
+ ]
+ [ex key=280-parse-a-date chars=82
+  [out-text [#
+[parsed year=2026 month=3 day=9 hour=14 round-trip=true ambiguous=cx-err:CXER3301]
+#]]
+ ]
+ [ex key=281-add-days-and-months chars=141
+  [out-text [#
+[arithmetic plus-30-days=2026-04-08 minus-a-week=2026-03-02 jan31-plus-a-month=2026-02-28 seconds-between=2592000 leap=false month-length=28]
+#]]
+ ]
+ [ex key=282-measure-elapsed-time chars=109
+  [out-text [#
+[elapsed steps=8 moved-forward=true class=:under-a-second measured-is-a-duration=true ninety-minutes='1h30m']
+#]]
+ ]
+ [ex key=283-refuse-with-a-message-and-a-status chars=132
+  [out-text [#
+[err code='empty-input' message='report.cxd has no rows — nothing to summarize' hint='write the file first, or pass --allow-empty']
+#]]
+ ]
+ [ex key=284-retry-once-then-give-up chars=90
+  [out-text [#
+[railway give-up=cx-err:CXER0140 attempts=2 [second-attempt [ok source='the warm cache']]]
+#]]
+ ]
+ [ex key=285-a-refusal-as-one-line-of-diagnosis chars=233
+  [out-text [#
+[report read=1 [diagnoses "shipped: '09/03/2026' is not a date — cx reads ISO 8601 (yyyy-mm-dd) and refused with cx-err:CXER3301" "closed: 'yesterday' is not a date — cx reads ISO 8601 (yyyy-mm-dd) and refused with cx-err:CXER3301"]]
 #]]
  ]
 ]

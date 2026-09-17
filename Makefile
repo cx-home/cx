@@ -673,6 +673,14 @@ verify-playground-examples: build-vcx
 	@# expectation: the fixture corpus carries one right, one wrong and one
 	@# absent [expect]; the lint-only run has to exit 1 naming the wrong one,
 	@# or the check above is vacuous. Output captured; shown only on failure.
+	@#
+	@# RULED: CXF-2 (#1522) adds the [grants] pair, and it is asserted in both
+	@# directions. 04 names grants and a WRONG expectation: §C4 must red on it
+	@# too, so a granted child is graded like any other. 05 names the SAME
+	@# grants and the RIGHT expectation, so it must NOT be named: it can only
+	@# pass if the child really received `--allow-read --allow-write`, and a
+	@# silently dropped [grants] field would make that program answer CXER0271
+	@# and land 05 in this list. Green-05-beside-red-04 is the proof.
 	@out=$$(vcx/target/cx --allow-read --allow-write --allow-subprocess --allow-env \
 	  --allow-clock \
 	  scripts/gen_guide/playground/gen_examples.cx --lint-only \
@@ -680,7 +688,13 @@ verify-playground-examples: build-vcx
 	if [ "$$rc" -ne 1 ] || ! printf '%s' "$$out" | grep -q 'EXPECT 02-expect-wrong'; then \
 	  echo "verify-playground-examples: the [expect] check is VACUOUS (rc=$$rc; expected 1 naming 02-expect-wrong)"; \
 	  printf '%s\n' "$$out" | tail -8; exit 1; fi; \
-	echo "verify-playground-examples: [expect] red-proof OK (fixture corpus reds exactly 02-expect-wrong)"
+	if ! printf '%s' "$$out" | grep -q 'EXPECT 04-expect-wrong-under-grants'; then \
+	  echo "verify-playground-examples: the [expect] check does not grade a GRANTED entry (expected it to name 04-expect-wrong-under-grants)"; \
+	  printf '%s\n' "$$out" | tail -8; exit 1; fi; \
+	if printf '%s' "$$out" | grep -q 'EXPECT 05-expect-right-under-grants'; then \
+	  echo "verify-playground-examples: [grants] did not reach the audited child (05-expect-right-under-grants red; its program needs --allow-read --allow-write)"; \
+	  printf '%s\n' "$$out" | tail -8; exit 1; fi; \
+	echo "verify-playground-examples: [expect] red-proof OK (fixture corpus reds exactly 02-expect-wrong and 04-expect-wrong-under-grants; 05 proves [grants] reaches the child)"
 
 # ── playground diagram validity gate (#992) ───────────────────────────────────
 # Every diagram the playground can put on screen must PARSE:

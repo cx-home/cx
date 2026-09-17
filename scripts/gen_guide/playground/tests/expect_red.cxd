@@ -25,4 +25,44 @@
 [$concat "x" "y"]
 #]]
   [note [# No expectation pinned — not graded by §C4. #]]]
+ [; The [grants] pair (RULED: CXF-2, #1522). 04 and 05 run the SAME program
+    under the SAME declared grants and differ only in the pinned expectation,
+    so together they pin the field in both directions:
+      04 — a wrong expectation under grants still REDS, exactly as an
+           ungranted one does. §C4 does not soften for a granted child.
+      05 — the right expectation PASSES, which it can only do if the child
+           really received `--allow-read --allow-write`. Were the field
+           silently dropped, this program would answer CXER0271 and 05 would
+           red too — so a green 05 beside a red 04 is the proof that the
+           grants reach the child and that the check still grades it. ]
+ [ex key=04-expect-wrong-under-grants
+  [label [# wrong, under grants #]]
+  [grants [# --allow-read --allow-write #]]
+  [src [#
+[?lib 'cx-stdlib/io']
+[?lib 'cx-stdlib/path']
+[?let [= $d [$io:temp-dir 'cx-expect-red-']]
+      [= $f [$path:join $d 'x.txt']]
+      [= $w [$io:write-file $f 'granted']]
+      [= $back [$io:read-file $f]]
+      [= $rm [$io:remove-tree $d]]
+  [probe text=$back]]
+#]]
+  [note [# The program really writes and reads a temp file; the note promises `denied`, which it does not compute. #]]
+  [expect [# text=denied #]]]
+ [ex key=05-expect-right-under-grants
+  [label [# right, under grants #]]
+  [grants [# --allow-read --allow-write #]]
+  [src [#
+[?lib 'cx-stdlib/io']
+[?lib 'cx-stdlib/path']
+[?let [= $d [$io:temp-dir 'cx-expect-red-']]
+      [= $f [$path:join $d 'x.txt']]
+      [= $w [$io:write-file $f 'granted']]
+      [= $back [$io:read-file $f]]
+      [= $rm [$io:remove-tree $d]]
+  [probe text=$back]]
+#]]
+  [note [# The same program with the expectation the granted run actually produces. #]]
+  [expect [# text=granted #]]]
 ]
