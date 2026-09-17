@@ -564,7 +564,9 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ol-15` | [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) | Addendum, ~05:20Z — OL-14 and OL-15 (owner: "recommendations accepted for the library and repo plan"; "we can't keep making these big organization mistakes that cause refactoring and restructuring. its been very costly.") |
 | `ol-15` | [rulings_2026_09_14_connector_transports_1430c.md](rulings_2026_09_14_connector_transports_1430c.md) | Placement, decided here before spec or code (OL-15) |
 | `ol-15` | [rulings_2026_09_15_websocket_stream_placement_int19.md](rulings_2026_09_15_websocket_stream_placement_int19.md) | Placement, decided here before spec or code (OL-15) |
+| `ord-1` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md) | 1545's answer; D9 after #1544's) taking a slot between batches as the cx-first page orders them; then ORD-1's Ring 0 tail |
 | `ord-1` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | Sequencing (ORD-1) |
+| `ord-2` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md) | Owner decision 2026-09-17 ~23:34Z — the bug tail is worked in BATCHES of same-area bugs, tooling first with the nested `make test` at its head (RULED: ORD-2) |
 | `pb-1` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | PB-1 — how the runner performs a step's act — RULED (a) |
 | `pb-2` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | PB-2 — the run id preimage — RULED (a) |
 | `pb-3` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | PB-3 — the home stream default — RULED (a) |
@@ -1056,10 +1058,10 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `client-2` | [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md) |
 | `crc-32` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md), [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md), [rulings_2026_08_29_tar_module_1084.md](rulings_2026_08_29_tar_module_1084.md) |
 | `cve-2011` | [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md) |
-| `cxf-3` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md), [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) |
+| `cxf-3` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md), [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md), [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) |
 | `cxf-5` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md) |
-| `cxf-6` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md) |
-| `cxf-7` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) |
+| `cxf-6` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md), [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md) |
+| `cxf-7` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md), [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) |
 | `dist-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) |
 | `dist-2` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md), [rulings_2026_09_06_connector_is_a_feature_728.md](rulings_2026_09_06_connector_is_a_feature_728.md) |
 | `dr-2` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) |
@@ -1123,7 +1125,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `int-21` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
 | `int-22` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
 | `int-4` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_15_owner_decisions_1830z.md](rulings_2026_09_15_owner_decisions_1830z.md) |
-| `int-5` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_13_claude_context_audit.md](rulings_2026_09_13_claude_context_audit.md) |
+| `int-5` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_13_claude_context_audit.md](rulings_2026_09_13_claude_context_audit.md), [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md) |
 | `int-6` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
 | `int-7` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-8` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
@@ -1231,4 +1233,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*300 ledger pages; 605 ids declared, 365 cited only.*
+*301 ledger pages; 606 ids declared, 365 cited only.*
