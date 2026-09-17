@@ -555,6 +555,8 @@
   '//          [?const] + [?def], [?str], [?else], [?quote]',
   '//   246-268 everyday scripts: files and directories, text and regex,',
   '//          collections as scripts use them',
+  '//   269-285 everyday scripts: CX documents as data, arguments /',
+  '//          environment / processes, dates and durations, CLI errors',
   '// runnable:false marks an example that needs a wasm-unavailable capability',
   '// (net / subprocess / fs); it is exempt from the clean-run gate.',
   '// grants carries the capability flags the example names (RULED: CXF-2).',
@@ -817,7 +819,8 @@
   'code/comprehensions', 'code/paths', 'code/transforms', 'code/queries', 'code/errors',
   'code/effects', 'code/builtins', 'code/concurrency', 'code/resilience',
   'code/metaprogramming', 'code/diagrams',
-  'everyday/files', 'everyday/text', 'everyday/collections')]
+  'everyday/files', 'everyday/text', 'everyday/collections',
+  'everyday/documents', 'everyday/process', 'everyday/time', 'everyday/cli-errors')]
 
 # A member that is not there is an ERROR, not an absence: `$n.name` on a
 # `Scalar`/`Hole`/`RawText` node answers CXER0001 `no member "name"` and
