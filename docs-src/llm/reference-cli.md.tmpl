@@ -126,6 +126,7 @@ guessing at a replacement. The tool knows what happened to it.
 --allow-read[=PATH] --allow-write[=PATH] --allow-net[=host[:port]] --allow-env
 --allow-clock --allow-random --allow-subprocess --allow-eval
 --allow-secret-reveal
+--probe            # the preset: --allow-read=. --allow-clock
 --allow-common     # every capability EXCEPT secret-reveal
 --allow-all        # including secret-reveal (declassifies secrets)
 ```
@@ -146,6 +147,10 @@ did. Both the path as written and the path after symlinks must fall under a
 root, so a symlink out of the granted tree — and a symlink into it from outside
 — refuses. A path outside the roots is the ordinary capability refusal
 (`cx-err:CXER0271`), naming the path, the roots in force, and the flag to add.
+
+`--probe` is the preset for a read-only look around: it expands to
+`--allow-read=. --allow-clock`, and a probe that writes or reaches the network
+gets that same refusal.
 
 A resource suffix on any OTHER capability — `--allow-env=HOME`,
 `--allow-subprocess=/bin/ls` — is a **usage error** (exit 2, before

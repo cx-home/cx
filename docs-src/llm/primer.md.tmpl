@@ -61,6 +61,7 @@ You can check every claim in this document. Do that rather than trusting it.
 cx FILE.cx                       # run a program, or print a document
 cx --allow-read FILE.cx          # grant one capability
 cx --allow-read=./data FILE.cx   # …scoped to a directory subtree
+cx --probe FILE.cx               # the preset: --allow-read=. --allow-clock
 cx --allow-common FILE.cx        # the common working set (no secret-reveal)
 cx -e '[+ 1 2]'                  # a one-liner
 cx --data=input.cx prog.cx       # bind a document as $doc / $input
@@ -728,7 +729,9 @@ it and therefore declassifies secrets. Three grants take a scope:
 `--allow-read=/data` admits `/data/x` and refuses `/database`, the flag
 repeats and the roots union, a bare `--allow-read` still grants the whole
 filesystem, and a path outside the roots refuses with the same error value,
-naming the path and the roots. A resource suffix on any
+naming the path and the roots. `--probe` is the preset for looking around
+without changing anything: it expands to `--allow-read=. --allow-clock`, and a
+probe that writes or reaches the network refuses. A resource suffix on any
 other capability (`--allow-env=HOME`) is a usage error (exit 2, before
 evaluation), not a narrowing — that scoping is unimplemented and the surface
 refuses rather than granting the blanket capability behind it. Grant the

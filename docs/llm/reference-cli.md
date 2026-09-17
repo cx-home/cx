@@ -153,6 +153,9 @@ Run flags (the default action; flags bind BEFORE the resource):
      the flag repeats and the roots union; a bare grant is the whole
      filesystem. A resource suffix on any OTHER capability is a usage error,
      not a narrowing: that scoping is unimplemented, #1059.)
+    --probe is the preset for looking around without changing anything:
+     it expands to --allow-read=. --allow-clock, so a probe that writes or
+     reaches the network refuses with the ordinary capability error.
     --allow-common is the common working set WITHOUT secret-reveal;
     --allow-all additionally grants secret-reveal, which declassifies secrets.
 
@@ -295,6 +298,7 @@ guessing at a replacement. The tool knows what happened to it.
 --allow-read[=PATH] --allow-write[=PATH] --allow-net[=host[:port]] --allow-env
 --allow-clock --allow-random --allow-subprocess --allow-eval
 --allow-secret-reveal
+--probe            # the preset: --allow-read=. --allow-clock
 --allow-common     # every capability EXCEPT secret-reveal
 --allow-all        # including secret-reveal (declassifies secrets)
 ```
@@ -324,6 +328,10 @@ did. Both the path as written and the path after symlinks must fall under a
 root, so a symlink out of the granted tree — and a symlink into it from outside
 — refuses. A path outside the roots is the ordinary capability refusal
 (`cx-err:CXER0271`), naming the path, the roots in force, and the flag to add.
+
+`--probe` is the preset for a read-only look around: it expands to
+`--allow-read=. --allow-clock`, and a probe that writes or reaches the network
+gets that same refusal.
 
 A resource suffix on any OTHER capability — `--allow-env=HOME`,
 `--allow-subprocess=/bin/ls` — is a **usage error** (exit 2, before
