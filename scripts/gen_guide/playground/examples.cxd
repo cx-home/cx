@@ -18,6 +18,27 @@ Markdown note shown under the editor, flush-left, byte-verbatim
 RAWCLOSE]
   ]
 
+Optional fields on an [ex], each an inline raw-text payload:
+
+  [section RAWOPEN group/name RAWCLOSE]   the picker's subcategory (required
+                                          in practice: a closed list the
+                                          generator's §C5 check enforces)
+  [expect RAWOPEN literal RAWCLOSE]       a substring the audited answer must
+                                          contain (#1170 §C4)
+  [grants RAWOPEN --allow-read … RAWCLOSE] the capability flags THIS example
+                                          names (RULED: CXF-2, #1522)
+
+[grants] is what an example that touches the filesystem, the clock or the
+network says about itself. The audit launches THAT child — and only that
+child — with those flags, so the answer recorded in examples.out.cxd is a
+real one, produced by the shipped binary doing the real thing; every other
+example still runs with an empty capability set. Every token must be a
+`--allow-*` flag or the generator refuses the corpus. Only the `net` grant
+takes a scope argument today (cli.md §1.1's capability list), so the read
+and write grants are written bare. An entry carrying the field is rendered
+runnable:false and the page shows the reader `cx <grants> program.cx`
+rather than claiming the browser ran it.
+
 Payload convention (same as conformance/fixtures.cxs): label is inline
 RawText, taken verbatim; src and note payloads start on the line after
 the opening raw-text marker and the closing marker sits on its own line,
@@ -3478,4 +3499,406 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
 #]]
   [expect [# [rows 2] #]]]
 
+
+ [ex key=246-read-a-files-lines
+  [label [#[246] read a file's lines#]]
+  [section [# everyday/files #]]
+  [grants [# --allow-read --allow-write #]]
+  [src [#
+[?lib 'cx-stdlib/io']
+[?lib 'cx-stdlib/path']
+[?let [= $dir [$io:temp-dir 'cx-play-']]
+      [= $f [$path:join $dir 'notes.txt']]
+      [= $w [$io:write-file $f "alpha\nbeta\ngamma\n"]]
+      [= $lines [$io:read-file-lines $f]]
+      [= $rm [$io:remove-tree $dir]]
+  [read lines=[$count $lines] first=[$first $lines] last=[$nth $lines [$count $lines]]]]
+#]]
+  [note [#
+**Introduces:** `[$io:read-file-lines PATH]` (io.md §3.1) — the whole-file read that answers a `[sequence string]` with the line terminators already stripped, so `[$count]`, `[$first]` and `[$nth]` read it like any other sequence. Where Python reaches for `open(p).read().splitlines()`, CX names the shape it wants up front; for a file too large to hold, `[$io:line-iter]` (§3.4) is the lazy sibling with the same element type. The example makes its own `[$io:temp-dir]` (§3.8), writes what it is about to read, and removes the tree — so it is self-contained and leaves nothing behind. It runs under `cx --allow-read --allow-write`: every effect point is capability-gated (§7) and a missing grant is `cx-err:CXER0271`, never a silent no-op.
+#]]
+  [expect [# [read lines=3 first=alpha last=gamma] #]]
+ ]
+
+ [ex key=247-write-a-file
+  [label [#[247] write a file — lines in, bytes out#]]
+  [section [# everyday/files #]]
+  [grants [# --allow-read --allow-write #]]
+  [src [#
+[?lib 'cx-stdlib/io']
+[?lib 'cx-stdlib/path']
+[?let [= $dir [$io:temp-dir 'cx-play-']]
+      [= $f [$path:join $dir 'report.txt']]
+      [= $w [$io:write-file-lines $f ('one', 'two')]]
+      [= $bytes [$io:size $f]]
+      [= $back [$io:read-file $f]]
+      [= $rm [$io:remove-tree $dir]]
+  [wrote bytes=$bytes text=$back]]
+#]]
+  [note [#
+**Introduces:** the write half of io.md §3.1. `[$io:write-file PATH TEXT]` takes a string; `[$io:write-file-lines PATH LINES]` takes a `[sequence string]` and joins them with the separator, so a program that built a sequence never has to build the joined string too. `[$io:size]` (§3.5) reads the result back as a number — seven bytes here, because `write-file-lines` separates lines rather than terminating each one. Both verbs replace the file whole; §4.2 states the atomicity policy.
+#]]
+  [expect [# [wrote bytes=7 #]]
+ ]
+
+ [ex key=248-append-to-a-file
+  [label [#[248] append to a file#]]
+  [section [# everyday/files #]]
+  [grants [# --allow-read --allow-write #]]
+  [src [#
+[?lib 'cx-stdlib/io']
+[?lib 'cx-stdlib/path']
+[?let [= $dir [$io:temp-dir 'cx-play-']]
+      [= $f [$path:join $dir 'run.log']]
+      [= $w [$io:write-file $f "start\n"]]
+      [= $a [$io:append-file $f "done\n"]]
+      [= $lines [$io:read-file-lines $f]]
+      [= $rm [$io:remove-tree $dir]]
+  [run-log [?splice $lines]]]
+#]]
+  [note [#
+**Introduces:** `[$io:append-file PATH TEXT]` (io.md §3.1) — the one-call append, so a script adding a line to a log never opens a handle, seeks and closes. It creates the file when it is absent, which is why an append-only program needs no "does it exist yet" branch. Reach for `[$io:open]` with an append mode (§3.2) only when you are writing many times and want to pay for the open once. `[?splice]` drops the sequence into the element body as siblings rather than as one nested value.
+#]]
+  [expect [# [run-log 'start' 'done'] #]]
+ ]
+
+ [ex key=249-walk-a-tree-and-filter-by-extension
+  [label [#[249] walk a directory tree, keep one extension#]]
+  [section [# everyday/files #]]
+  [grants [# --allow-read --allow-write #]]
+  [src [#
+[?lib 'cx-stdlib/io']
+[?lib 'cx-stdlib/path']
+[?let [= $dir [$io:temp-dir 'cx-play-']]
+      [= $sub [$path:join $dir 'src']]
+      [= $mk [$io:make-dirs $sub]]
+      [= $w1 [$io:write-file [$path:join $dir 'readme.md'] 'x']]
+      [= $w2 [$io:write-file [$path:join $sub 'main.cx'] 'x']]
+      [= $w3 [$io:write-file [$path:join $sub 'util.cx'] 'x']]
+      [= $found [?for [in $e [$io:walk $dir]]
+                  [where $e@is-file]
+                  [where [= [$path:extension [$string $e@path]] '.cx']]
+                  [yield [$path:relative $dir [$string $e@path]]]]]
+      [= $rm [$io:remove-tree $dir]]
+  [cx-files [?splice [$sort $found]]]]
+#]]
+  [note [#
+**Introduces:** `[$io:walk ROOT]` (io.md §3.6) — a LAZY iterator yielding one `[dir-entry path=… is-file=… is-directory=… depth=…]` element per entry, so the filter is an ordinary `[?for]` with `[where]` clauses and no callback, no `os.walk` triple to unpack. Because the walk is lazy, a `[where]` that short-circuits or a `[take N]` stops the traversal instead of materializing the tree first. The result is made deterministic on purpose: the paths are reported relative to the root with `[$path:relative]` and `[$sort]`ed, so the answer cannot depend on the directory's on-disk order or on where the temp directory landed.
+#]]
+  [expect [# [cx-files 'src/main.cx' 'src/util.cx'] #]]
+ ]
+
+ [ex key=250-a-temp-file-that-cleans-itself-up
+  [label [#[250] a temp file that cleans itself up#]]
+  [section [# everyday/files #]]
+  [grants [# --allow-read --allow-write #]]
+  [src [#
+[?lib 'cx-stdlib/io']
+[?lib 'cx-stdlib/strings']
+[?let [= $h [$io:temp-file 'cx-play-' '.txt']]
+      [= $w [$io:write-string $h 'scratch bytes']]
+      [= $f [$io:flush $h]]
+      [= $s [$io:seek $h 0 :start]]
+      [= $back [$io:read-all $h]]
+      [= $c [$io:close $h]]
+  [temp-file text=$back chars=[$strings:length $back]]]
+#]]
+  [note [#
+**Introduces:** `[$io:temp-file PREFIX SUFFIX]` (io.md §3.8) — a fresh OPEN handle whose file is deleted when the handle closes, so the cleanup is the close and there is no path to leak, no name to collide on and nothing left under the system temp directory when the program exits. The handle is read and written through the §3.3 stream operations: `[$io:write-string]`, `[$io:flush]`, `[$io:seek H 0 :start]` to rewind, then `[$io:read-all]`. Its sibling `[$io:temp-dir]` answers a PATH instead, and a path is yours to remove — that is the trade the two verbs make.
+#]]
+  [expect [# [temp-file text='scratch bytes' chars=13] #]]
+ ]
+
+ [ex key=251-take-a-path-apart
+  [label [#[251] take a path apart — dir, base, extension, stem#]]
+  [section [# everyday/files #]]
+  [src [#
+[?lib 'cx-stdlib/path']
+[?let [= $p [$path:join 'var' 'log' 'app.tar.gz']]
+  [path full=$p dir=[$path:dirname $p] base=[$path:basename $p]
+        ext=[$path:extension $p] stem=[$path:stem $p]]]
+#]]
+  [note [#
+**Introduces:** `cx-stdlib/path` (path.md §3.1 extraction, §3.2 composition) — PURE string surgery that touches no filesystem, so it needs no grant and runs right here in the playground. `[$path:join]` is variadic and squeezes the separators, which is why `'a/'` and `'/b'` never produce a doubled slash. The last-suffix rule is worth memorizing: on `app.tar.gz` the extension is `'.gz'` and the stem is `'app.tar'` — the pair always re-joins to the basename, so there is no ambiguity to guess at.
+#]]
+  [expect [# ext='.gz' stem='app.tar' #]]
+ ]
+
+ [ex key=252-a-path-relative-to-a-root
+  [label [#[252] a path relative to a root — and is it inside?#]]
+  [section [# everyday/files #]]
+  [src [#
+[?lib 'cx-stdlib/path']
+[?let [= $root '/srv/site']
+      [= $post '/srv/site/posts/hello.md']
+  [paths rel=[$path:relative $root $post]
+         inside=[$path:is-within $root $post]
+         escape=[$path:is-within $root '/srv/site/../etc/passwd']
+         sideways=[$path:relative '/srv/site/posts' '/srv/site/assets/logo.png']]]
+#]]
+  [note [#
+**Introduces:** `[$path:relative FROM TO]` (path.md §3.3) and `[$path:is-within DIR CANDIDATE]` (§3.8). `relative` walks up with `..` when it has to, so a sibling directory reads as `'../assets/logo.png'` rather than as a refusal. `is-within` is the path-traversal check to write instead of a `starts-with` test: it normalizes first, so `'/srv/site/../etc/passwd'` answers `false` where a prefix comparison would have said yes. Both are pure and syntactic — they do not resolve symlinks, and §3.8 says to run `[$path:canonical]` first when you need that.
+#]]
+  [expect [# inside=true escape=false #]]
+ ]
+
+ [ex key=253-list-a-directory-and-filter
+  [label [#[253] list one directory, filter by suffix#]]
+  [section [# everyday/files #]]
+  [grants [# --allow-read --allow-write #]]
+  [src [#
+[?lib 'cx-stdlib/io']
+[?lib 'cx-stdlib/path']
+[?lib 'cx-stdlib/strings']
+[?let [= $dir [$io:temp-dir 'cx-play-']]
+      [= $w1 [$io:write-file [$path:join $dir 'b.cxd'] '']]
+      [= $w2 [$io:write-file [$path:join $dir 'a.cxd'] '']]
+      [= $w3 [$io:write-file [$path:join $dir 'notes.md'] '']]
+      [= $names [?for [in $n [$io:list-dir $dir]]
+                  [where [$strings:ends-with $n '.cxd']]
+                  [yield $n]]]
+      [= $rm [$io:remove-tree $dir]]
+  [corpus [?splice [$sort $names]]]]
+#]]
+  [note [#
+**Introduces:** `[$io:list-dir PATH]` (io.md §3.6) — ONE directory, not a recursive walk, answering the entry NAMES as a `[sequence string]`. That is the difference from example 249: use `list-dir` when the depth is one and `[$io:walk]` when it is not. The names come back in the filesystem's order, so a program whose output must be stable sorts them, exactly as here. `[$io:glob]` (§3.7) is the third option when the pattern is the whole filter.
+#]]
+  [expect [# [corpus 'a.cxd' 'b.cxd'] #]]
+ ]
+
+ [ex key=254-does-this-string-match
+  [label [#[254] does this string match? — `[$re:matches]`#]]
+  [section [# everyday/text #]]
+  [src [#
+[?lib 'cx-stdlib/re']
+[?let [= $rx [$re:compile '^[A-Z]{3}-[0-9]{4}$']]
+  [?for [in $s ('CX-1234', 'ABC-1234', 'ABC-12')]
+    [yield [check id=$s ok=[$re:matches $rx $s]]]]]
+#]]
+  [note [#
+**Introduces:** `cx-stdlib/re` (re.md §2) — the RE2 syntax, which is linear-time and therefore has no backreferences and no lookaround: a pattern that asks for one is refused at compile time with `cx-err:CXER3200` rather than accepted and then catastrophically slow. `[$re:compile]` answers a compiled pattern VALUE (§3), so hoist it out of the loop and pass it in, the way this example binds `$rx` once for three subjects. `'CX-1234'` is false on purpose — `{3}` means three letters, and `CX` is two.
+#]]
+  [expect [# [check id=ABC-1234 ok=true] #]]
+ ]
+
+ [ex key=255-capture-groups-by-name
+  [label [#[255] capture groups, read by name#]]
+  [section [# everyday/text #]]
+  [src [#
+[?lib 'cx-stdlib/re']
+[?let [= $rx [$re:compile '(?P<level>[A-Z]+) (?P<code>[0-9]+) (?P<msg>.+)']]
+      [= $m [$re:find $rx 'WARN 429 rate limited']]
+  [entry level=[$re:group-named $m 'level']
+         code=[$re:group-named $m 'code']
+         msg=[$re:group-named $m 'msg']
+         whole=[$re:group $m 0]]]
+#]]
+  [note [#
+**Introduces:** `[$re:find PATTERN SUBJECT]` and the two group readers (re.md §4). `[$re:group M 0]` is the whole match and `1`, `2`, … are the numbered captures; `[$re:group-named M NAME]` reads a `(?P<name>…)` capture, which is what to write when the pattern is long enough that counting parentheses is a bug waiting to happen. A group that does not exist is a refusal — `cx-err:CXER3202` — not an empty string, so a renamed capture fails where you wrote it. A pattern that does not match at all answers `[no-match]`, which `[?match]` or `[?else]` can branch on.
+#]]
+  [expect [# level=WARN code='429' msg='rate limited' #]]
+ ]
+
+ [ex key=256-replace-with-a-capture
+  [label [#[256] replace, reusing the captures#]]
+  [section [# everyday/text #]]
+  [src [#
+[?lib 'cx-stdlib/re']
+[?let [= $rx [$re:compile '([0-9]{4})-([0-9]{2})-([0-9]{2})']]
+  [dates iso='2026-09-17'
+         us=[$re:replace $rx '2026-09-17' '$2/$3/$1']
+         first-only=[$re:replace-first $rx 'from 2026-09-17 to 2026-09-18' '<$0>']]]
+#]]
+  [note [#
+**Introduces:** `[$re:replace PATTERN SUBJECT TEMPLATE]` (re.md §4). The template reads captures back as `$0` (the whole match), `$1`, `$2`, … and `${name}` for a named one; a literal dollar is `$$`. `replace` rewrites every match and `[$re:replace-first]` rewrites one — two verbs instead of a count argument, so the common case has no argument to get wrong. When the replacement has to COMPUTE something rather than rearrange it, `[$re:replace-fn]` takes a `[?fn ($m) …]` and hands it each match.
+#]]
+  [expect [# us='09/17/2026' #]]
+ ]
+
+ [ex key=257-split-and-join
+  [label [#[257] split a line, join it back#]]
+  [section [# everyday/text #]]
+  [src [#
+[?lib 'cx-stdlib/strings']
+[?let [= $line 'sku,qty,price']
+      [= $fields [$strings:split $line ',']]
+  [split-join count=[$count $fields]
+              shown=[$strings:join $fields ' | ']
+              rejoined=[$strings:join [$reverse $fields] ',']]]
+#]]
+  [note [#
+**Introduces:** `[$strings:split TEXT SEP]` and `[$strings:join SEQ SEP]` (strings.md §3) — the pair every script needs, with the sequence in between being an ordinary `[sequence string]` that `[$count]`, `[$reverse]` and a `[?for]` all read. Two siblings save a special case: `[$strings:split-whitespace]` collapses runs of blanks (example 267 uses it), and `[$strings:split-lines]` handles the line endings. For a separator that is a PATTERN rather than a literal, `[$re:split]` is the same shape one module over.
+#]]
+  [expect [# shown='sku | qty | price' #]]
+ ]
+
+ [ex key=258-trim-and-case
+  [label [#[258] trim, case, and a slug#]]
+  [section [# everyday/text #]]
+  [src [#
+[?lib 'cx-stdlib/strings']
+[?let [= $raw '   Ada Lovelace  ']
+      [= $clean [$strings:trim $raw]]
+  [person clean=$clean
+          upper=[$strings:upper $clean]
+          lower=[$strings:lower $clean]
+          slug=[$strings:replace [$strings:lower $clean] ' ' '-']]]
+#]]
+  [note [#
+**Introduces:** the tidy-up verbs of strings.md §3 — `trim` / `trim-start` / `trim-end` for whitespace, `trim-chars` when the thing to strip is a specific set, and `upper` / `lower` / `title` for case. `[$strings:replace]` is the LITERAL replace; it is the one to reach for when the pattern is a fixed string, and `[$re:replace]` when it is not. For case used as a comparison key rather than for display, `[$strings:case-fold]` is the Unicode-correct one — `lower` is for showing a human.
+#]]
+  [expect [# slug=ada-lovelace #]]
+ ]
+
+ [ex key=259-a-str-template-per-row
+  [label [#[259] one `[?str]` template per row#]]
+  [section [# everyday/text #]]
+  [src [#
+[?let [= $rows ([f name='main.cx' n=120], [f name='util.cx' n=38])]
+  [?for [in $r $rows]
+    [yield [?str "{$r@name}: {$r@n} lines"]]]]
+#]]
+  [note [#
+**Introduces:** `[?str]` (strings.md §8) as the reporting idiom: `{…}` takes a full expression, not just a bare name, so an attribute read like `{$r@n}` interpolates without a `[$concat]` chain and without a format-string's positional arguments to keep in step. Everything outside the braces is literal text. This is where a Python writer reaches for an f-string; the difference is that the braces here hold CX expressions, so a call, a path step or an arithmetic result is as welcome as a variable.
+#]]
+  [expect [# 'main.cx: 120 lines' #]]
+ ]
+
+ [ex key=260-pad-columns-for-a-table
+  [label [#[260] pad columns so a table lines up#]]
+  [section [# everyday/text #]]
+  [src [#
+[?lib 'cx-stdlib/strings']
+[?let [= $rows ([r name=alpha n=7], [r name=b n=1042], [r name=gamma-ray n=13])]
+  [?for [in $r $rows]
+    [yield [$concat [$strings:pad-end [$string $r@name] 12 '.']
+                    [$strings:pad-start [$string $r@n] 6 ' ']]]]]
+#]]
+  [note [#
+**Introduces:** `[$strings:pad-end TEXT WIDTH FILL]` and `[$strings:pad-start]` (strings.md §3) — left- and right-alignment in a fixed column, with the fill character explicit rather than assumed to be a space. Pad the label to the END and the number to the START and the decimal points line up, which is the whole trick behind a readable terminal table. `[$string]` is needed because the padders take text and `$r@n` is a number; `[$strings:center]` is the third member of the family.
+#]]
+  [expect [# 'b...........  1042' #]]
+ ]
+
+ [ex key=261-sort-by-a-key
+  [label [#[261] sort rows by a key#]]
+  [section [# everyday/collections #]]
+  [src [#
+[?let [= $files ([f name='util.cx' bytes=980], [f name='main.cx' bytes=120], [f name='io.cx' bytes=4400])]
+  [?for [in $f $files]
+    [order-by $f@bytes]
+    [yield [$string $f@name]]]]
+#]]
+  [note [#
+**Introduces:** `[order-by EXPR]` (code.md §7.2) — a CLAUSE of the comprehension, not a separate sorting call, so the key is an expression evaluated per item and there is no comparator function to write and no `key=lambda` to pass. Ascending is the default. Because it is a clause it composes: put a `[where]` before it to filter, a `[take N]` after it to keep a prefix, and the whole thing stays one form. `[$sort]` is the other tool, for when you already hold a sequence of scalars and the natural order is what you want.
+#]]
+  [expect [# 'main.cx' #]]
+ ]
+
+ [ex key=262-sort-descending
+  [label [#[262] sort descending — `[order-by … desc]`#]]
+  [section [# everyday/collections #]]
+  [src [#
+[?let [= $files ([f name='util.cx' bytes=980], [f name='main.cx' bytes=120], [f name='io.cx' bytes=4400])]
+  [?for [in $f $files]
+    [order-by $f@bytes desc]
+    [yield [row name=$f@name bytes=$f@bytes]]]]
+#]]
+  [note [#
+**Introduces:** the direction word. `[order-by EXPR desc]` reverses the order (code.md §7.2); `asc` is the default and may be written for symmetry. Spelling the direction beats the two habits it replaces — negating the key, which only works for numbers, and sorting then reversing, which costs a second pass and silently flips the order of equal keys. The yield here rebuilds a row so the sorted key is visible in the answer rather than implied by it.
+#]]
+  [expect [# [row name='io.cx' bytes=4400] #]]
+ ]
+
+ [ex key=263-dedupe-keeping-order
+  [label [#[263] dedupe, keeping first-seen order#]]
+  [section [# everyday/collections #]]
+  [src [#
+[?let [= $seen (beta, alpha, beta, gamma, alpha)]
+  [labels [first-seen [?splice [$distinct $seen]]]
+          [alphabetical [?splice [$sort [$distinct $seen]]]]]]
+#]]
+  [note [#
+**Introduces:** `[$distinct SEQ]` — dedupe that PRESERVES first-appearance order, which is the property a set loses and the reason a Python writer ends up with `dict.fromkeys`. Order is a promise here, not an accident: sort afterwards when you want alphabetical, as the second child does, and the two answers stay distinguishable. For elements rather than scalars, the `[group-by]` clause dedupes by a derived key instead (example 120).
+#]]
+  [expect [# [first-seen 'beta' 'alpha' 'gamma'] #]]
+ ]
+
+ [ex key=264-top-n
+  [label [#[264] top-N — order, then take#]]
+  [section [# everyday/collections #]]
+  [src [#
+[?let [= $hits ([h path='/a' n=12], [h path='/b' n=97], [h path='/c' n=45], [h path='/d' n=3])]
+  [?for [in $h $hits]
+    [order-by $h@n desc]
+    [take 2]
+    [yield [top path=$h@path n=$h@n]]]]
+#]]
+  [note [#
+**Introduces:** `[take N]` (code.md §7.2) after an `[order-by]` — the top-N shape, read in the order the clauses are written: sort by hits descending, keep two. `[limit N]` is the same truncation under the SQL name, and `[drop N]` skips a prefix, so a page of results is `[drop]` then `[take]`. Keep the clause order in mind: `[take]` before `[order-by]` would truncate the INPUT and sort the survivors, which is a different question.
+#]]
+  [expect [# [top path='/b' n=97] #]]
+ ]
+
+ [ex key=265-zip-two-sequences
+  [label [#[265] zip two sequences#]]
+  [section [# everyday/collections #]]
+  [src [#
+[?let [= $names (alpha, beta, gamma)]
+      [= $sizes (7, 42, 13)]
+  [?for [in $i [$range 1 [$count $names]]]
+    [yield [pair name=$names[$i] size=$sizes[$i]]]]]
+#]]
+  [note [#
+**Introduces:** the index generator. There is no `zip` verb; `[$range 1 [$count $xs]]` and the 1-based index step `$xs[$i]` pair any number of sequences in one `[?for]`, and adding a third list is one more attribute rather than a different function. Note the bound: `[$range]` is INCLUSIVE at both ends and CX sequences are indexed from 1, so `[$range 1 [$count …]]` is exactly the whole sequence with no off-by-one to reason about. A `[in $a $as] [in $b $bs]` pair of generators would give the Cartesian PRODUCT instead — that is §7.2's rule, and it is why the index is the zip.
+#]]
+  [expect [# [pair name=beta size=42] #]]
+ ]
+
+ [ex key=266-enumerate-with-an-index
+  [label [#[266] enumerate — number the steps#]]
+  [section [# everyday/collections #]]
+  [src [#
+[?let [= $steps ('fetch', 'parse', 'write')]
+  [?for [in $i [$range 1 [$count $steps]]]
+    [yield [?str "{$i}. {$steps[$i]}"]]]]
+#]]
+  [note [#
+**Introduces:** enumerate as the same index generator with the counter SHOWN rather than used for lookup only. Because CX indexes from 1, the number a reader sees and the number the program uses are the same value — no `i + 1` in the output line, which is the classic off-by-one in a numbered listing. `[?str]` interpolates both the counter and the looked-up item, so the line is one form.
+#]]
+  [expect [# '2. parse' #]]
+ ]
+
+ [ex key=267-count-the-words
+  [label [#[267] a counter — word to count, most frequent first#]]
+  [section [# everyday/collections #]]
+  [src [#
+[?lib 'cx-stdlib/strings']
+[?let [= $words [$strings:split-whitespace 'the cat the hat the end']]
+  [?for [in $w $words]
+    [group-by $w]
+    [order-by $count desc]
+    [yield [word text=$key n=$count]]]]
+#]]
+  [note [#
+**Introduces:** the `[group-by EXPR]` clause (code.md §7.2) as a counter. It hash-partitions the whole input by the key and binds three names inside the yield: `$key` is the partition key, `$count` its cardinality and `$group` the grouped frames. So a frequency table is the clause plus `$count` — no dictionary to initialize, no missing-key default, nothing Python's `Counter` exists to paper over. Group output order is first appearance, pinned, which is why the `[order-by $count desc]` here is a deliberate choice rather than a hope.
+#]]
+  [expect [# [word text=the n=3] #]]
+ ]
+
+ [ex key=268-accumulate-into-one-answer
+  [label [#[268] accumulate — fold rows into one summary#]]
+  [section [# everyday/collections #]]
+  [src [#
+[?lib 'cx-stdlib/fp']
+[?let [= $txs ([tx amt=10], [tx amt=-3], [tx amt=5])]
+      [= $acc [$fp:fold $txs {n: 0, total: 0}
+                [?fn ($a $t) {n: [+ $a.n 1], total: [+ $a.total $t@amt]}]]]
+  [summary rows=$acc.n total=$acc.total]]
+#]]
+  [note [#
+**Introduces:** `[$fp:fold CONTAINER INIT FN]` (fp.md §2) — the reduce, with the accumulator carrying a MAP so one pass answers several questions at once instead of one pass per column. The step function is an ordinary `[?fn ($acc $item) …]` and each step builds a fresh map, so nothing is mutated and the fold reads the same whether the container is a sequence, an array or an option. `fold` is also the combinator that may INSPECT an err-holding item (§4) rather than auto-propagating it, which is what makes it the right verb for a summary over rows that may have failed.
+#]]
+  [expect [# [summary rows=3 total=12] #]]
+ ]
 ]

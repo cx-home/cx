@@ -1,4 +1,4 @@
-// CX Playground — 245 progressive eval examples (every entry CLI-audited).
+// CX Playground — 268 progressive eval examples (every entry CLI-audited).
 // Single ordered list, simple → complex:
 //   1-39   data / bindings / control flow      ·  40-60  comprehensions, map/reduce ([par])
 //   61-100 modify / pipe / cxpath / builtins   ·  concurrency / resilience
@@ -9,8 +9,14 @@
 //          the map + array module surfaces, the read/construct split,
 //          [?group-by], [?with-caps [deny]], [?secret], checked int arithmetic,
 //          [?const] + [?def], [?str], [?else], [?quote]
+//   246-268 everyday scripts: files and directories, text and regex,
+//          collections as scripts use them
 // runnable:false marks an example that needs a wasm-unavailable capability
 // (net / subprocess / fs); it is exempt from the clean-run gate.
+// grants carries the capability flags the example names (RULED: CXF-2).
+// The native audit ran the example UNDER them, so the recorded answer is
+// real; the browser cannot grant them, so such an entry is runnable:false
+// and the page shows `cx <grants> program.cx` instead of claiming a run.
 // wasmUnsupported marks an example the SHIPPED wasm engine cannot reproduce
 // faithfully (#1033) — it refuses the program, or evaluates it to a different
 // value than native cx — carrying the reason the page shows the reader; the
@@ -1992,6 +1998,196 @@
       note:  "**Introduces:** `[$csv:parse]` reads the header row as the keys and answers one map per data row, so `[$count $rows]` is `2` and `[$first $rows]` is the first record (the output heads `rows` and `head-row` are plain data names \u2014 a bare `count` head would read as data, not a call). Cells stay STRINGS (`'2'`, `'1.50'`) \u2014 CSV carries no types; ascribe or convert when you need numbers, or parse with a schema. `[$csv:emit]` writes the rows back, header first.",
       tags:  ["eq", "let", "lib", "par"],
       section: "data/formats",
+      runnable: true,
+    },
+    "246-read-a-files-lines": {
+      label: "[246] read a file's lines",
+      input: "[?lib 'cx-stdlib/io']\n[?lib 'cx-stdlib/path']\n[?let [= $dir [$io:temp-dir 'cx-play-']]\n      [= $f [$path:join $dir 'notes.txt']]\n      [= $w [$io:write-file $f \"alpha\\nbeta\\ngamma\\n\"]]\n      [= $lines [$io:read-file-lines $f]]\n      [= $rm [$io:remove-tree $dir]]\n  [read lines=[$count $lines] first=[$first $lines] last=[$nth $lines [$count $lines]]]]",
+      note:  "**Introduces:** `[$io:read-file-lines PATH]` (io.md \u00a73.1) \u2014 the whole-file read that answers a `[sequence string]` with the line terminators already stripped, so `[$count]`, `[$first]` and `[$nth]` read it like any other sequence. Where Python reaches for `open(p).read().splitlines()`, CX names the shape it wants up front; for a file too large to hold, `[$io:line-iter]` (\u00a73.4) is the lazy sibling with the same element type. The example makes its own `[$io:temp-dir]` (\u00a73.8), writes what it is about to read, and removes the tree \u2014 so it is self-contained and leaves nothing behind. It runs under `cx --allow-read --allow-write`: every effect point is capability-gated (\u00a77) and a missing grant is `cx-err:CXER0271`, never a silent no-op.",
+      tags:  ["eq", "let", "lib"],
+      section: "everyday/files",
+      grants: "--allow-read --allow-write",
+      runnable: false,
+    },
+    "247-write-a-file": {
+      label: "[247] write a file \u2014 lines in, bytes out",
+      input: "[?lib 'cx-stdlib/io']\n[?lib 'cx-stdlib/path']\n[?let [= $dir [$io:temp-dir 'cx-play-']]\n      [= $f [$path:join $dir 'report.txt']]\n      [= $w [$io:write-file-lines $f ('one', 'two')]]\n      [= $bytes [$io:size $f]]\n      [= $back [$io:read-file $f]]\n      [= $rm [$io:remove-tree $dir]]\n  [wrote bytes=$bytes text=$back]]",
+      note:  "**Introduces:** the write half of io.md \u00a73.1. `[$io:write-file PATH TEXT]` takes a string; `[$io:write-file-lines PATH LINES]` takes a `[sequence string]` and joins them with the separator, so a program that built a sequence never has to build the joined string too. `[$io:size]` (\u00a73.5) reads the result back as a number \u2014 seven bytes here, because `write-file-lines` separates lines rather than terminating each one. Both verbs replace the file whole; \u00a74.2 states the atomicity policy.",
+      tags:  ["eq", "let", "lib"],
+      section: "everyday/files",
+      grants: "--allow-read --allow-write",
+      runnable: false,
+    },
+    "248-append-to-a-file": {
+      label: "[248] append to a file",
+      input: "[?lib 'cx-stdlib/io']\n[?lib 'cx-stdlib/path']\n[?let [= $dir [$io:temp-dir 'cx-play-']]\n      [= $f [$path:join $dir 'run.log']]\n      [= $w [$io:write-file $f \"start\\n\"]]\n      [= $a [$io:append-file $f \"done\\n\"]]\n      [= $lines [$io:read-file-lines $f]]\n      [= $rm [$io:remove-tree $dir]]\n  [run-log [?splice $lines]]]",
+      note:  "**Introduces:** `[$io:append-file PATH TEXT]` (io.md \u00a73.1) \u2014 the one-call append, so a script adding a line to a log never opens a handle, seeks and closes. It creates the file when it is absent, which is why an append-only program needs no \"does it exist yet\" branch. Reach for `[$io:open]` with an append mode (\u00a73.2) only when you are writing many times and want to pay for the open once. `[?splice]` drops the sequence into the element body as siblings rather than as one nested value.",
+      tags:  ["eq", "let", "lib", "splice"],
+      section: "everyday/files",
+      grants: "--allow-read --allow-write",
+      runnable: false,
+    },
+    "249-walk-a-tree-and-filter-by-extension": {
+      label: "[249] walk a directory tree, keep one extension",
+      input: "[?lib 'cx-stdlib/io']\n[?lib 'cx-stdlib/path']\n[?let [= $dir [$io:temp-dir 'cx-play-']]\n      [= $sub [$path:join $dir 'src']]\n      [= $mk [$io:make-dirs $sub]]\n      [= $w1 [$io:write-file [$path:join $dir 'readme.md'] 'x']]\n      [= $w2 [$io:write-file [$path:join $sub 'main.cx'] 'x']]\n      [= $w3 [$io:write-file [$path:join $sub 'util.cx'] 'x']]\n      [= $found [?for [in $e [$io:walk $dir]]\n                  [where $e@is-file]\n                  [where [= [$path:extension [$string $e@path]] '.cx']]\n                  [yield [$path:relative $dir [$string $e@path]]]]]\n      [= $rm [$io:remove-tree $dir]]\n  [cx-files [?splice [$sort $found]]]]",
+      note:  "**Introduces:** `[$io:walk ROOT]` (io.md \u00a73.6) \u2014 a LAZY iterator yielding one `[dir-entry path=\u2026 is-file=\u2026 is-directory=\u2026 depth=\u2026]` element per entry, so the filter is an ordinary `[?for]` with `[where]` clauses and no callback, no `os.walk` triple to unpack. Because the walk is lazy, a `[where]` that short-circuits or a `[take N]` stops the traversal instead of materializing the tree first. The result is made deterministic on purpose: the paths are reported relative to the root with `[$path:relative]` and `[$sort]`ed, so the answer cannot depend on the directory's on-disk order or on where the temp directory landed.",
+      tags:  ["attr", "eq", "for", "let", "lib", "splice"],
+      section: "everyday/files",
+      grants: "--allow-read --allow-write",
+      runnable: false,
+    },
+    "250-a-temp-file-that-cleans-itself-up": {
+      label: "[250] a temp file that cleans itself up",
+      input: "[?lib 'cx-stdlib/io']\n[?lib 'cx-stdlib/strings']\n[?let [= $h [$io:temp-file 'cx-play-' '.txt']]\n      [= $w [$io:write-string $h 'scratch bytes']]\n      [= $f [$io:flush $h]]\n      [= $s [$io:seek $h 0 :start]]\n      [= $back [$io:read-all $h]]\n      [= $c [$io:close $h]]\n  [temp-file text=$back chars=[$strings:length $back]]]",
+      note:  "**Introduces:** `[$io:temp-file PREFIX SUFFIX]` (io.md \u00a73.8) \u2014 a fresh OPEN handle whose file is deleted when the handle closes, so the cleanup is the close and there is no path to leak, no name to collide on and nothing left under the system temp directory when the program exits. The handle is read and written through the \u00a73.3 stream operations: `[$io:write-string]`, `[$io:flush]`, `[$io:seek H 0 :start]` to rewind, then `[$io:read-all]`. Its sibling `[$io:temp-dir]` answers a PATH instead, and a path is yours to remove \u2014 that is the trade the two verbs make.",
+      tags:  ["eq", "let", "lib"],
+      section: "everyday/files",
+      grants: "--allow-read --allow-write",
+      runnable: false,
+    },
+    "251-take-a-path-apart": {
+      label: "[251] take a path apart \u2014 dir, base, extension, stem",
+      input: "[?lib 'cx-stdlib/path']\n[?let [= $p [$path:join 'var' 'log' 'app.tar.gz']]\n  [path full=$p dir=[$path:dirname $p] base=[$path:basename $p]\n        ext=[$path:extension $p] stem=[$path:stem $p]]]",
+      note:  "**Introduces:** `cx-stdlib/path` (path.md \u00a73.1 extraction, \u00a73.2 composition) \u2014 PURE string surgery that touches no filesystem, so it needs no grant and runs right here in the playground. `[$path:join]` is variadic and squeezes the separators, which is why `'a/'` and `'/b'` never produce a doubled slash. The last-suffix rule is worth memorizing: on `app.tar.gz` the extension is `'.gz'` and the stem is `'app.tar'` \u2014 the pair always re-joins to the basename, so there is no ambiguity to guess at.",
+      tags:  ["eq", "let", "lib", "parallel"],
+      section: "everyday/files",
+      runnable: true,
+    },
+    "252-a-path-relative-to-a-root": {
+      label: "[252] a path relative to a root \u2014 and is it inside?",
+      input: "[?lib 'cx-stdlib/path']\n[?let [= $root '/srv/site']\n      [= $post '/srv/site/posts/hello.md']\n  [paths rel=[$path:relative $root $post]\n         inside=[$path:is-within $root $post]\n         escape=[$path:is-within $root '/srv/site/../etc/passwd']\n         sideways=[$path:relative '/srv/site/posts' '/srv/site/assets/logo.png']]]",
+      note:  "**Introduces:** `[$path:relative FROM TO]` (path.md \u00a73.3) and `[$path:is-within DIR CANDIDATE]` (\u00a73.8). `relative` walks up with `..` when it has to, so a sibling directory reads as `'../assets/logo.png'` rather than as a refusal. `is-within` is the path-traversal check to write instead of a `starts-with` test: it normalizes first, so `'/srv/site/../etc/passwd'` answers `false` where a prefix comparison would have said yes. Both are pure and syntactic \u2014 they do not resolve symlinks, and \u00a73.8 says to run `[$path:canonical]` first when you need that.",
+      tags:  ["eq", "let", "lib"],
+      section: "everyday/files",
+      runnable: true,
+    },
+    "253-list-a-directory-and-filter": {
+      label: "[253] list one directory, filter by suffix",
+      input: "[?lib 'cx-stdlib/io']\n[?lib 'cx-stdlib/path']\n[?lib 'cx-stdlib/strings']\n[?let [= $dir [$io:temp-dir 'cx-play-']]\n      [= $w1 [$io:write-file [$path:join $dir 'b.cxd'] '']]\n      [= $w2 [$io:write-file [$path:join $dir 'a.cxd'] '']]\n      [= $w3 [$io:write-file [$path:join $dir 'notes.md'] '']]\n      [= $names [?for [in $n [$io:list-dir $dir]]\n                  [where [$strings:ends-with $n '.cxd']]\n                  [yield $n]]]\n      [= $rm [$io:remove-tree $dir]]\n  [corpus [?splice [$sort $names]]]]",
+      note:  "**Introduces:** `[$io:list-dir PATH]` (io.md \u00a73.6) \u2014 ONE directory, not a recursive walk, answering the entry NAMES as a `[sequence string]`. That is the difference from example 249: use `list-dir` when the depth is one and `[$io:walk]` when it is not. The names come back in the filesystem's order, so a program whose output must be stable sorts them, exactly as here. `[$io:glob]` (\u00a73.7) is the third option when the pattern is the whole filter.",
+      tags:  ["eq", "for", "let", "lib", "splice"],
+      section: "everyday/files",
+      grants: "--allow-read --allow-write",
+      runnable: false,
+    },
+    "254-does-this-string-match": {
+      label: "[254] does this string match? \u2014 `[$re:matches]`",
+      input: "[?lib 'cx-stdlib/re']\n[?let [= $rx [$re:compile '^[A-Z]{3}-[0-9]{4}$']]\n  [?for [in $s ('CX-1234', 'ABC-1234', 'ABC-12')]\n    [yield [check id=$s ok=[$re:matches $rx $s]]]]]",
+      note:  "**Introduces:** `cx-stdlib/re` (re.md \u00a72) \u2014 the RE2 syntax, which is linear-time and therefore has no backreferences and no lookaround: a pattern that asks for one is refused at compile time with `cx-err:CXER3200` rather than accepted and then catastrophically slow. `[$re:compile]` answers a compiled pattern VALUE (\u00a73), so hoist it out of the loop and pass it in, the way this example binds `$rx` once for three subjects. `'CX-1234'` is false on purpose \u2014 `{3}` means three letters, and `CX` is two.",
+      tags:  ["eq", "for", "let", "lib"],
+      section: "everyday/text",
+      runnable: true,
+    },
+    "255-capture-groups-by-name": {
+      label: "[255] capture groups, read by name",
+      input: "[?lib 'cx-stdlib/re']\n[?let [= $rx [$re:compile '(?P<level>[A-Z]+) (?P<code>[0-9]+) (?P<msg>.+)']]\n      [= $m [$re:find $rx 'WARN 429 rate limited']]\n  [entry level=[$re:group-named $m 'level']\n         code=[$re:group-named $m 'code']\n         msg=[$re:group-named $m 'msg']\n         whole=[$re:group $m 0]]]",
+      note:  "**Introduces:** `[$re:find PATTERN SUBJECT]` and the two group readers (re.md \u00a74). `[$re:group M 0]` is the whole match and `1`, `2`, \u2026 are the numbered captures; `[$re:group-named M NAME]` reads a `(?P<name>\u2026)` capture, which is what to write when the pattern is long enough that counting parentheses is a bug waiting to happen. A group that does not exist is a refusal \u2014 `cx-err:CXER3202` \u2014 not an empty string, so a renamed capture fails where you wrote it. A pattern that does not match at all answers `[no-match]`, which `[?match]` or `[?else]` can branch on.",
+      tags:  ["eq", "let", "lib"],
+      section: "everyday/text",
+      runnable: true,
+    },
+    "256-replace-with-a-capture": {
+      label: "[256] replace, reusing the captures",
+      input: "[?lib 'cx-stdlib/re']\n[?let [= $rx [$re:compile '([0-9]{4})-([0-9]{2})-([0-9]{2})']]\n  [dates iso='2026-09-17'\n         us=[$re:replace $rx '2026-09-17' '$2/$3/$1']\n         first-only=[$re:replace-first $rx 'from 2026-09-17 to 2026-09-18' '<$0>']]]",
+      note:  "**Introduces:** `[$re:replace PATTERN SUBJECT TEMPLATE]` (re.md \u00a74). The template reads captures back as `$0` (the whole match), `$1`, `$2`, \u2026 and `${name}` for a named one; a literal dollar is `$$`. `replace` rewrites every match and `[$re:replace-first]` rewrites one \u2014 two verbs instead of a count argument, so the common case has no argument to get wrong. When the replacement has to COMPUTE something rather than rearrange it, `[$re:replace-fn]` takes a `[?fn ($m) \u2026]` and hands it each match.",
+      tags:  ["cxpath", "eq", "let", "lib"],
+      section: "everyday/text",
+      runnable: true,
+    },
+    "257-split-and-join": {
+      label: "[257] split a line, join it back",
+      input: "[?lib 'cx-stdlib/strings']\n[?let [= $line 'sku,qty,price']\n      [= $fields [$strings:split $line ',']]\n  [split-join count=[$count $fields]\n              shown=[$strings:join $fields ' | ']\n              rejoined=[$strings:join [$reverse $fields] ',']]]",
+      note:  "**Introduces:** `[$strings:split TEXT SEP]` and `[$strings:join SEQ SEP]` (strings.md \u00a73) \u2014 the pair every script needs, with the sequence in between being an ordinary `[sequence string]` that `[$count]`, `[$reverse]` and a `[?for]` all read. Two siblings save a special case: `[$strings:split-whitespace]` collapses runs of blanks (example 267 uses it), and `[$strings:split-lines]` handles the line endings. For a separator that is a PATTERN rather than a literal, `[$re:split]` is the same shape one module over.",
+      tags:  ["eq", "let", "lib"],
+      section: "everyday/text",
+      runnable: true,
+    },
+    "258-trim-and-case": {
+      label: "[258] trim, case, and a slug",
+      input: "[?lib 'cx-stdlib/strings']\n[?let [= $raw '   Ada Lovelace  ']\n      [= $clean [$strings:trim $raw]]\n  [person clean=$clean\n          upper=[$strings:upper $clean]\n          lower=[$strings:lower $clean]\n          slug=[$strings:replace [$strings:lower $clean] ' ' '-']]]",
+      note:  "**Introduces:** the tidy-up verbs of strings.md \u00a73 \u2014 `trim` / `trim-start` / `trim-end` for whitespace, `trim-chars` when the thing to strip is a specific set, and `upper` / `lower` / `title` for case. `[$strings:replace]` is the LITERAL replace; it is the one to reach for when the pattern is a fixed string, and `[$re:replace]` when it is not. For case used as a comparison key rather than for display, `[$strings:case-fold]` is the Unicode-correct one \u2014 `lower` is for showing a human.",
+      tags:  ["eq", "let", "lib"],
+      section: "everyday/text",
+      runnable: true,
+    },
+    "259-a-str-template-per-row": {
+      label: "[259] one `[?str]` template per row",
+      input: "[?let [= $rows ([f name='main.cx' n=120], [f name='util.cx' n=38])]\n  [?for [in $r $rows]\n    [yield [?str \"{$r@name}: {$r@n} lines\"]]]]",
+      note:  "**Introduces:** `[?str]` (strings.md \u00a78) as the reporting idiom: `{\u2026}` takes a full expression, not just a bare name, so an attribute read like `{$r@n}` interpolates without a `[$concat]` chain and without a format-string's positional arguments to keep in step. Everything outside the braces is literal text. This is where a Python writer reaches for an f-string; the difference is that the braces here hold CX expressions, so a call, a path step or an arithmetic result is as welcome as a variable.",
+      tags:  ["attr", "eq", "for", "let", "str"],
+      section: "everyday/text",
+      runnable: true,
+    },
+    "260-pad-columns-for-a-table": {
+      label: "[260] pad columns so a table lines up",
+      input: "[?lib 'cx-stdlib/strings']\n[?let [= $rows ([r name=alpha n=7], [r name=b n=1042], [r name=gamma-ray n=13])]\n  [?for [in $r $rows]\n    [yield [$concat [$strings:pad-end [$string $r@name] 12 '.']\n                    [$strings:pad-start [$string $r@n] 6 ' ']]]]]",
+      note:  "**Introduces:** `[$strings:pad-end TEXT WIDTH FILL]` and `[$strings:pad-start]` (strings.md \u00a73) \u2014 left- and right-alignment in a fixed column, with the fill character explicit rather than assumed to be a space. Pad the label to the END and the number to the START and the decimal points line up, which is the whole trick behind a readable terminal table. `[$string]` is needed because the padders take text and `$r@n` is a number; `[$strings:center]` is the third member of the family.",
+      tags:  ["attr", "eq", "for", "let", "lib"],
+      section: "everyday/text",
+      runnable: true,
+    },
+    "261-sort-by-a-key": {
+      label: "[261] sort rows by a key",
+      input: "[?let [= $files ([f name='util.cx' bytes=980], [f name='main.cx' bytes=120], [f name='io.cx' bytes=4400])]\n  [?for [in $f $files]\n    [order-by $f@bytes]\n    [yield [$string $f@name]]]]",
+      note:  "**Introduces:** `[order-by EXPR]` (code.md \u00a77.2) \u2014 a CLAUSE of the comprehension, not a separate sorting call, so the key is an expression evaluated per item and there is no comparator function to write and no `key=lambda` to pass. Ascending is the default. Because it is a clause it composes: put a `[where]` before it to filter, a `[take N]` after it to keep a prefix, and the whole thing stays one form. `[$sort]` is the other tool, for when you already hold a sequence of scalars and the natural order is what you want.",
+      tags:  ["attr", "eq", "for", "let"],
+      section: "everyday/collections",
+      runnable: true,
+    },
+    "262-sort-descending": {
+      label: "[262] sort descending \u2014 `[order-by \u2026 desc]`",
+      input: "[?let [= $files ([f name='util.cx' bytes=980], [f name='main.cx' bytes=120], [f name='io.cx' bytes=4400])]\n  [?for [in $f $files]\n    [order-by $f@bytes desc]\n    [yield [row name=$f@name bytes=$f@bytes]]]]",
+      note:  "**Introduces:** the direction word. `[order-by EXPR desc]` reverses the order (code.md \u00a77.2); `asc` is the default and may be written for symmetry. Spelling the direction beats the two habits it replaces \u2014 negating the key, which only works for numbers, and sorting then reversing, which costs a second pass and silently flips the order of equal keys. The yield here rebuilds a row so the sorted key is visible in the answer rather than implied by it.",
+      tags:  ["attr", "eq", "for", "let"],
+      section: "everyday/collections",
+      runnable: true,
+    },
+    "263-dedupe-keeping-order": {
+      label: "[263] dedupe, keeping first-seen order",
+      input: "[?let [= $seen (beta, alpha, beta, gamma, alpha)]\n  [labels [first-seen [?splice [$distinct $seen]]]\n          [alphabetical [?splice [$sort [$distinct $seen]]]]]]",
+      note:  "**Introduces:** `[$distinct SEQ]` \u2014 dedupe that PRESERVES first-appearance order, which is the property a set loses and the reason a Python writer ends up with `dict.fromkeys`. Order is a promise here, not an accident: sort afterwards when you want alphabetical, as the second child does, and the two answers stay distinguishable. For elements rather than scalars, the `[group-by]` clause dedupes by a derived key instead (example 120).",
+      tags:  ["eq", "let", "splice"],
+      section: "everyday/collections",
+      runnable: true,
+    },
+    "264-top-n": {
+      label: "[264] top-N \u2014 order, then take",
+      input: "[?let [= $hits ([h path='/a' n=12], [h path='/b' n=97], [h path='/c' n=45], [h path='/d' n=3])]\n  [?for [in $h $hits]\n    [order-by $h@n desc]\n    [take 2]\n    [yield [top path=$h@path n=$h@n]]]]",
+      note:  "**Introduces:** `[take N]` (code.md \u00a77.2) after an `[order-by]` \u2014 the top-N shape, read in the order the clauses are written: sort by hits descending, keep two. `[limit N]` is the same truncation under the SQL name, and `[drop N]` skips a prefix, so a page of results is `[drop]` then `[take]`. Keep the clause order in mind: `[take]` before `[order-by]` would truncate the INPUT and sort the survivors, which is a different question.",
+      tags:  ["attr", "eq", "for", "let"],
+      section: "everyday/collections",
+      runnable: true,
+    },
+    "265-zip-two-sequences": {
+      label: "[265] zip two sequences",
+      input: "[?let [= $names (alpha, beta, gamma)]\n      [= $sizes (7, 42, 13)]\n  [?for [in $i [$range 1 [$count $names]]]\n    [yield [pair name=$names[$i] size=$sizes[$i]]]]]",
+      note:  "**Introduces:** the index generator. There is no `zip` verb; `[$range 1 [$count $xs]]` and the 1-based index step `$xs[$i]` pair any number of sequences in one `[?for]`, and adding a third list is one more attribute rather than a different function. Note the bound: `[$range]` is INCLUSIVE at both ends and CX sequences are indexed from 1, so `[$range 1 [$count \u2026]]` is exactly the whole sequence with no off-by-one to reason about. A `[in $a $as] [in $b $bs]` pair of generators would give the Cartesian PRODUCT instead \u2014 that is \u00a77.2's rule, and it is why the index is the zip.",
+      tags:  ["eq", "for", "let"],
+      section: "everyday/collections",
+      runnable: true,
+    },
+    "266-enumerate-with-an-index": {
+      label: "[266] enumerate \u2014 number the steps",
+      input: "[?let [= $steps ('fetch', 'parse', 'write')]\n  [?for [in $i [$range 1 [$count $steps]]]\n    [yield [?str \"{$i}. {$steps[$i]}\"]]]]",
+      note:  "**Introduces:** enumerate as the same index generator with the counter SHOWN rather than used for lookup only. Because CX indexes from 1, the number a reader sees and the number the program uses are the same value \u2014 no `i + 1` in the output line, which is the classic off-by-one in a numbered listing. `[?str]` interpolates both the counter and the looked-up item, so the line is one form.",
+      tags:  ["eq", "for", "let", "str"],
+      section: "everyday/collections",
+      runnable: true,
+    },
+    "267-count-the-words": {
+      label: "[267] a counter \u2014 word to count, most frequent first",
+      input: "[?lib 'cx-stdlib/strings']\n[?let [= $words [$strings:split-whitespace 'the cat the hat the end']]\n  [?for [in $w $words]\n    [group-by $w]\n    [order-by $count desc]\n    [yield [word text=$key n=$count]]]]",
+      note:  "**Introduces:** the `[group-by EXPR]` clause (code.md \u00a77.2) as a counter. It hash-partitions the whole input by the key and binds three names inside the yield: `$key` is the partition key, `$count` its cardinality and `$group` the grouped frames. So a frequency table is the clause plus `$count` \u2014 no dictionary to initialize, no missing-key default, nothing Python's `Counter` exists to paper over. Group output order is first appearance, pinned, which is why the `[order-by $count desc]` here is a deliberate choice rather than a hope.",
+      tags:  ["eq", "for", "let", "lib"],
+      section: "everyday/collections",
+      runnable: true,
+    },
+    "268-accumulate-into-one-answer": {
+      label: "[268] accumulate \u2014 fold rows into one summary",
+      input: "[?lib 'cx-stdlib/fp']\n[?let [= $txs ([tx amt=10], [tx amt=-3], [tx amt=5])]\n      [= $acc [$fp:fold $txs {n: 0, total: 0}\n                [?fn ($a $t) {n: [+ $a.n 1], total: [+ $a.total $t@amt]}]]]\n  [summary rows=$acc.n total=$acc.total]]",
+      note:  "**Introduces:** `[$fp:fold CONTAINER INIT FN]` (fp.md \u00a72) \u2014 the reduce, with the accumulator carrying a MAP so one pass answers several questions at once instead of one pass per column. The step function is an ordinary `[?fn ($acc $item) \u2026]` and each step builds a fresh map, so nothing is mutated and the fold reads the same whether the container is a sequence, an array or an option. `fold` is also the combinator that may INSPECT an err-holding item (\u00a74) rather than auto-propagating it, which is what makes it the right verb for a summary over rows that may have failed.",
+      tags:  ["add", "attr", "eq", "fn", "let", "lib"],
+      section: "everyday/collections",
       runnable: true,
     },
   };

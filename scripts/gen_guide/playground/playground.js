@@ -16,6 +16,7 @@
     'code/bindings', 'code/control-flow', 'code/patterns', 'code/functions', 'code/comprehensions',
     'code/paths', 'code/transforms', 'code/queries', 'code/errors', 'code/effects', 'code/builtins',
     'code/concurrency', 'code/resilience', 'code/metaprogramming', 'code/diagrams',
+    'everyday/files', 'everyday/text', 'everyday/collections',
   ];
   const SECTION_NAMES = {
     'data/elements': ['CX data', 'Elements and attributes'],
@@ -39,6 +40,9 @@
     'code/resilience': ['CX code', 'Resilience'],
     'code/metaprogramming': ['CX code', 'Quoting and splicing'],
     'code/diagrams': ['CX code', 'Diagrams'],
+    'everyday/files': ['Everyday scripts', 'Files and directories'],
+    'everyday/text': ['Everyday scripts', 'Text and regex'],
+    'everyday/collections': ['Everyday scripts', 'Collections, as scripts use them'],
   };
   const sectionRank = (sec) => { const i = SECTION_ORDER.indexOf(sec); return i < 0 ? SECTION_ORDER.length : i; };
   const keyNumber = (key) => parseInt(String(key).split('-')[0], 10) || 0;
@@ -134,6 +138,18 @@
   // banner however the run STARTED, including a manual Run click, which
   // carries no options from loadExample().
   let wasmUnsupportedNote = '';
+  // grantsNote — the loaded example's corpus-declared capability flags
+  // (RULED: CXF-2), or ''. Same module-level reason as the marker above: an
+  // example that names grants must carry its "run it locally" line however
+  // the run STARTED, including a manual Run click. The native audit ran the
+  // program UNDER these grants, so the answer in the guide is real; this
+  // engine has no way to give them, so the page says so and shows the
+  // command line rather than presenting a capability-denied result as THE
+  // answer.
+  let grantsNote = '';
+  const grantsLine = (g) =>
+    'This example names the grants it needs; the wasm playground cannot give them. '
+    + `Run it locally: \`cx ${g} program.cx\``;
   // The remedy half of the banner, kept in ONE place rather than repeated
   // in every corpus entry: the corpus states the FACT about the example,
   // this states what the reader can do about it. cxlib loads the threaded
@@ -467,15 +483,23 @@
     const unstableNote = (typeof found.ex.noStableValue === 'string'
                           && found.ex.noStableValue.trim())
       ? found.ex.noStableValue.trim() : '';
+    // grants (RULED: CXF-2) is the SHARPEST of the three: the corpus states
+    // the exact command line, so the reader gets that rather than a generic
+    // "needs a capability" sentence. It is read before the generic
+    // runnable:false branch for exactly that reason.
+    grantsNote = (typeof found.ex.grants === 'string' && found.ex.grants.trim())
+      ? found.ex.grants.trim() : '';
     const capNote = wasmUnsupportedNote
       ? `${wasmUnsupportedNote} ${WASM_UNSUPPORTED_REMEDY}`
       : (unstableNote
         ? `This program has no single answer. ${unstableNote}`
-        : ((found.ex.runnable === false)
+        : (grantsNote
+          ? grantsLine(grantsNote)
+          : ((found.ex.runnable === false)
           ? 'This example needs a capability unavailable in the wasm playground '
             + '(network / subprocess / filesystem). Run it under `make guide-http` or '
             + '`cx --allow-net` in your terminal; here it returns a capability-denied result.'
-          : ''));
+          : '')));
     if (capNote) setStatus(capNote, 'pending');
     runProgram({ auto: true, capNote });
   }
@@ -541,8 +565,11 @@
   // (#1033). The marker is a claim about THAT program; once the reader has
   // changed the text, a refusal may be entirely their own, and labelling it
   // "not supported in this build" would be the same dishonesty in reverse.
+  // The grants line is retired for the same reason: it names the flags THAT
+  // program declared, and an edited program may need different ones.
   input.addEventListener('input', () => {
     wasmUnsupportedNote = '';
+    grantsNote = '';
     syncRender();
     refreshView();
   });
@@ -1844,14 +1871,20 @@
       applyOutputProjection();
       lastEvalRawCx = accumulated;
       refreshView();
+      // A grants example (RULED: CXF-2) never gets an "Evaluated — N bytes"
+      // line, whatever started the run: this engine cannot hold the
+      // capabilities the corpus named, so what came back is a
+      // capability-denied value, not the answer. The command line stands in
+      // for it — including on a manual Run click, which carries no capNote.
+      const note = o.capNote || (grantsNote ? grantsLine(grantsNote) : '');
       if (accumulated) {
-        setStatus(o.capNote || `Evaluated — ${accumulated.length} bytes.`,
-                  o.capNote ? 'pending' : 'ok');
+        setStatus(note || `Evaluated — ${accumulated.length} bytes.`,
+                  note ? 'pending' : 'ok');
       } else {
         // An empty result is a real answer (e.g. an empty comprehension),
         // but a blank pane looks like a failure — say so in the pane.
         showRefusal('// evaluated to nothing — this program produced no output');
-        setStatus(o.capNote || 'Evaluated — empty result.', o.capNote ? 'pending' : 'ok');
+        setStatus(note || 'Evaluated — empty result.', note ? 'pending' : 'ok');
       }
     } catch (err) {
       if (token !== runToken) return;
