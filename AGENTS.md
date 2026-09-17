@@ -73,8 +73,10 @@ them.
    single source of truth. Never write a second copy of a version string
    anywhere — derive it. A gate enforces this.
 6. **Tooling is written in CX.** New scripts are CX programs run with
-   `cx <file>`. Choosing another language needs a filed, argued reason. Eat
-   our own dog food.
+   `cx <file>`. Choosing another language needs a filed, argued reason: a
+   `cx-gap` issue — the task, the cx attempt, the gap by kind — filed BEFORE
+   the other language runs, for a probe, a bisect or a scratch script as much
+   as for a checked-in tool (RULED: CXF-1, #1522). Eat our own dog food.
 7. **Work lands on the current release branch, never on `main`.** Check
    `git branch --show-current` before committing, and branch first if you are
    on the default branch.
