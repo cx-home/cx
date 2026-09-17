@@ -298,6 +298,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1503-a` | [rulings_2026_09_15_owner_decisions_1145z.md](rulings_2026_09_15_owner_decisions_1145z.md) | Owner decisions 2026-09-15 ~11:45Z — "1a 2a 3 accepted 4a 5a 6a" (RULED: 1502-a, 1456-a, 1503-a, 1256-a, 1453-a) |
 | `1503-b` | [rulings_2026_09_15_owner_decisions_1830z.md](rulings_2026_09_15_owner_decisions_1830z.md) | Owner decisions 2026-09-15 ~18:30Z — "1a 2a 3a 4a" (RULED: INT-20, 1503-b, 1502-b, 1457-a) |
 | `1503-b` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) | Integrator decisions, 2026-09-16 — the 1503-b addendum |
+| `1527-a` | [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) | The traps become fixtures — two batch branches for the CXF-8 defects, and the one ruling they need (RULED: TRAP-1, 1527-a) |
 | `192-gcm` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) | RULED: 1400-a, 1401-a — XML Encryption comes IN: `saml:verify` decrypts `EncryptedAssertion` / `EncryptedID` / `EncryptedAttribute` with `opts.decryption-keys`; `crypto` gains RSA key transport (OAEP, SHA-1 inside OAEP allowed; PKCS#1 v1.5 behind a loud opt-in with implicit rejection) and AES-CBC + AES-128/192-GCM; encryption is detected BEFORE the signature search |
 | `787-poc` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) | Ledger — #787 integration: the ONE rebase of impl/787-poc onto release/0.16.0 |
 | `ad-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-1 — `[selection …]` binds every consumption point, through the one PEP (#1181) |
@@ -423,6 +424,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `crs-1a` | [rulings_2026_08_20_call_result_steps.md](rulings_2026_08_20_call_result_steps.md) | CRS-1a rider — code.md §6.2 trued to BP-1 |
 | `cxf-1` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) | cx first — the decisions of the #1522 mini-campaign (owner, 2026-09-17 ~13:50Z: "highest priority"; RULED: CXF-1 … CXF-8) |
 | `cxf-8` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) | cx first — the decisions of the #1522 mini-campaign (owner, 2026-09-17 ~13:50Z: "highest priority"; RULED: CXF-1 … CXF-8) |
+| `cxf-8` | [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) | The traps become fixtures — two batch branches for the CXF-8 defects, and the one ruling they need (RULED: TRAP-1, 1527-a) |
 | `cxp-1` | [rulings_2026_08_20_cx_pragma_registry.md](rulings_2026_08_20_cx_pragma_registry.md) | Ruling CXP-1 (2026-08-20) — the [?cx] pragma key set closes (#879, owner "4a") |
 | `df-1` | [rulings_2026_09_05_computed_fields.md](rulings_2026_09_05_computed_fields.md) | Rulings 2026-09-05 — computed field values, and how a slug is declared (DF-1, DF-2) |
 | `df-1` | [rulings_2026_09_05_computed_fields.md](rulings_2026_09_05_computed_fields.md) | DF-1 — may the grammar compute a field's value? — RULED (c): NO |
@@ -706,6 +708,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ti-1` | [rulings_2026_08_21_table_image.md](rulings_2026_08_21_table_image.md) | TI-1 — the image carries the table, because the seam already parsed it |
 | `tme-1` | [rulings_2026_08_22_typed_map_entry.md](rulings_2026_08_22_typed_map_entry.md) | TME-1 — a map key is a declaration site, so it takes the glued annotation |
 | `tme-1` | [rulings_2026_08_22_typed_map_entry.md](rulings_2026_08_22_typed_map_entry.md) | TME-1 is SUPERSEDED — its premise was FALSE (recorded 2026-08-22) |
+| `trap-1` | [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) | The traps become fixtures — two batch branches for the CXF-8 defects, and the one ruling they need (RULED: TRAP-1, 1527-a) |
 | `uom-1` | [rulings_2026_08_20_universal_object_model.md](rulings_2026_08_20_universal_object_model.md) | UOM-1 — the universal object/subtree model IS the store contract; execute |
 | `ux-1` | [rulings_2026_08_20_ux_spec_precut.md](rulings_2026_08_20_ux_spec_precut.md) | UX-1 — spec pre-cut, then documentation ("big miss but we caught it") |
 | `vc-1` | [rulings_2026_08_24_0170_campaign.md](rulings_2026_08_24_0170_campaign.md) | Ruling 2026-08-24 — the v0.16.1 campaign charter (VC-1..VC-5) |
@@ -1049,8 +1052,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `crc-32` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md), [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md), [rulings_2026_08_29_tar_module_1084.md](rulings_2026_08_29_tar_module_1084.md) |
 | `cve-2011` | [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md) |
 | `cxf-2` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) |
-| `cxf-3` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) |
-| `cxf-4` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) |
+| `cxf-3` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) |
+| `cxf-4` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) |
 | `cxf-5` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) |
 | `cxf-6` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) |
 | `cxf-7` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) |
@@ -1225,4 +1228,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*297 ledger pages; 598 ids declared, 367 cited only.*
+*298 ledger pages; 600 ids declared, 367 cited only.*
