@@ -45,6 +45,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1170-f` | [rulings_2026_09_08_playground_output_pin_1170.md](rulings_2026_09_08_playground_output_pin_1170.md) | 1170-d / 1170-e / 1170-f — the mermaid gate joins the matrix (RULED, Fable 2026-09-09 05:07 ET) |
 | `1170-g` | [rulings_2026_09_09_playground_expect_check_1170g.md](rulings_2026_09_09_playground_expect_check_1170g.md) | RULED: 1170-g — §C4 is EXACT: an optional `[expect [#…#]]` per example pins a substring of its output; the note↔output check reads that field, never the prose |
 | `1172-q1` | [rulings_2026_09_04_head_bind_whole_element_1172.md](rulings_2026_09_04_head_bind_whole_element_1172.md) | Question 1172-Q1 — what does `[NAME$x]` mean? |
+| `1173-b` | [rulings_2026_09_17_owner_decisions_0345z.md](rulings_2026_09_17_owner_decisions_0345z.md) | Owner decisions 2026-09-17 ~03:45Z — two of the integrator's declines reversed: libcx-sync gets an inline pump (1387-b), sets get a module (1173-b) |
 | `1175-b` | [rulings_2026_09_17_owner_decisions_0410z.md](rulings_2026_09_17_owner_decisions_0410z.md) | Owner decisions 2026-09-17 ~04:10Z — chained destructuring gets a flat form: `[?match]` takes a chain (RULED: 1175-b) |
 | `1192-a` | [rulings_2026_09_10_else_no_callable_1192.md](rulings_2026_09_10_else_no_callable_1192.md) | RULED: 1192-a — `[?else]` does not coalesce E_NO_CALLABLE; every other failure and absence still does |
 | `1195-a` | [rulings_2026_09_07_contract_check_at_seal_and_boot_1195.md](rulings_2026_09_07_contract_check_at_seal_and_boot_1195.md) | RULED: 1195-a — the §1.2 runtime contract is checked wherever a package is |
@@ -220,6 +221,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1384-a` | [rulings_2026_09_12_fmt_1384_1391.md](rulings_2026_09_12_fmt_1384_1391.md) | RULED: 1384-a — the contract is ENFORCED, and the two measured defects are fixed at the cause |
 | `1387-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | Integrator decisions, 2026-09-17 — the Ring 0 rulings owed (1363-b, 1387-a, FMT-2, GRADER-1, 1150-a, 1250-b) |
 | `1387-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | 1250 (1250-b, the same lineage) → #1222 (1222-a) → #1239 (1239-a) → #1241 (1241-a) → #1387 (1387-a) → #1436's |
+| `1387-b` | [rulings_2026_09_17_owner_decisions_0345z.md](rulings_2026_09_17_owner_decisions_0345z.md) | Owner decisions 2026-09-17 ~03:45Z — two of the integrator's declines reversed: libcx-sync gets an inline pump (1387-b), sets get a module (1173-b) |
 | `1391-a` | [rulings_2026_09_12_fmt_1384_1391.md](rulings_2026_09_12_fmt_1384_1391.md) | RULED: 1384-a, 1391-a — `cx fmt` enforces its own §1 contract with a second guard, fixes the two text-run/char-ref defects at the cause, formats a bracketed or collection value in argument and attribute position, and never declines silently again |
 | `1391-a` | [rulings_2026_09_12_fmt_1384_1391.md](rulings_2026_09_12_fmt_1384_1391.md) | RULED: 1391-a — argument and attribute position format, and a decline is never silent |
 | `1394-a` | [rulings_2026_09_10_lane_s_sso_1394_1397_1399_1404_1408.md](rulings_2026_09_10_lane_s_sso_1394_1397_1399_1404_1408.md) | RULED: Lane S, five forks — 1394-a, 1397-a, 1399-a, 1404-a, 1408-a; plus the 1409-b / 1410-b decision batch |
@@ -869,8 +871,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1170-b` | [rulings_2026_09_08_bare_builtin_head_lint_1170.md](rulings_2026_09_08_bare_builtin_head_lint_1170.md), [rulings_2026_09_08_let_cascade_lint_1170.md](rulings_2026_09_08_let_cascade_lint_1170.md), [rulings_2026_09_08_seq4_pin_page_sync_1170.md](rulings_2026_09_08_seq4_pin_page_sync_1170.md), [rulings_2026_09_09_playground_expect_check_1170g.md](rulings_2026_09_09_playground_expect_check_1170g.md) |
 | `1170-c` | [rulings_2026_09_08_let_cascade_lint_1170.md](rulings_2026_09_08_let_cascade_lint_1170.md), [rulings_2026_09_08_seq4_pin_page_sync_1170.md](rulings_2026_09_08_seq4_pin_page_sync_1170.md), [rulings_2026_09_09_diagram_node_id_ordinals_1349.md](rulings_2026_09_09_diagram_node_id_ordinals_1349.md) |
 | `1172-q1a` | [rulings_2026_09_04_head_bind_whole_element_1172.md](rulings_2026_09_04_head_bind_whole_element_1172.md), [rulings_2026_09_05_pattern_attr_rest_1270.md](rulings_2026_09_05_pattern_attr_rest_1270.md) |
-| `1173-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) |
-| `1174-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) |
+| `1173-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md), [rulings_2026_09_17_owner_decisions_0345z.md](rulings_2026_09_17_owner_decisions_0345z.md) |
+| `1174-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md), [rulings_2026_09_17_owner_decisions_0345z.md](rulings_2026_09_17_owner_decisions_0345z.md) |
 | `1175-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md), [rulings_2026_09_17_owner_decisions_0410z.md](rulings_2026_09_17_owner_decisions_0410z.md) |
 | `118-odd` | [rulings_2026_09_08_playground_output_pin_1170.md](rulings_2026_09_08_playground_output_pin_1170.md) |
 | `1190-a` | [rulings_2026_09_07_solitary_key_is_a_note_1190.md](rulings_2026_09_07_solitary_key_is_a_note_1190.md) |
@@ -1214,4 +1216,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*294 ledger pages; 593 ids declared, 361 cited only.*
+*295 ledger pages; 595 ids declared, 361 cited only.*
