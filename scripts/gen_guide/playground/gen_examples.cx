@@ -320,6 +320,7 @@
           no-stable-value=[$strings:trim [$section-of $kids 'no-stable-value']]
           bare-builtin-ok=[$strings:trim [$section-of $kids 'bare-builtin-ok']]
           expect=[$strings:trim [$section-of $kids 'expect']]
+          grants=[$strings:trim [$section-of $kids 'grants']]
           section=[$strings:trim [$section-of $kids 'section']]]]]]]]]]
 
 # ── audit (one isolated, grant-free child per example) ───────────────
@@ -387,7 +388,18 @@
 # result). `ms` is this child's measured wall time — reported on every
 # TIMEOUT and folded into the run's profile line, so "the bound fired" is
 # never again a claim without a number behind it.
-[?def audit scope=public impure ($cxbin $tmp $out-path $err-path $composed $bound)
+#
+# $grants is the entry's `[grants [# … #]]` field (RULED: CXF-2): the
+# capability flags THIS child is launched with, and only this child. The
+# audit stays one isolated process per example — an entry without the
+# field is launched exactly as before, with an empty capability set — so
+# a granted example can no more leak into its neighbour than a grant-free
+# one can. The flags ride in as `$5` and are deliberately UNQUOTED inside
+# the `sh -c` body so the shell word-splits them into separate argv
+# entries; every token is proved to start with `--allow-` before the
+# corpus is audited (see `grant-shape-bad` at the call site), so the
+# splitting can only ever produce grant flags.
+[?def audit scope=public impure ($cxbin $tmp $out-path $err-path $composed $bound $grants)
   [?let
     [= $w [$must 'writing audit tmp file' [$io:write-file $tmp $composed]]]
     # Truncate the capture files here, not just via the shell's `>`, so
@@ -401,8 +413,8 @@
     # the args ride in as $1..$4 so no path needs quoting by hand.
     [= $t0 [$time:monotonic-now]]
     [= $h [$must 'spawning cx' [$process:spawn
-        ('sh', '-c', 'exec "$1" "$2" >"$3" 2>"$4"', 'gen_examples-audit',
-         $cxbin, $tmp, $out-path, $err-path)]]]
+        ('sh', '-c', 'exec "$1" $5 "$2" >"$3" 2>"$4"', 'gen_examples-audit',
+         $cxbin, $tmp, $out-path, $err-path, $grants)]]]
     [= $rcw [$process:wait-timeout $h $bound]]
     [= $ms [$idiv [- [$time:monotonic-now] $t0] 1000000]]
     [?if [$empty $rcw]
@@ -496,9 +508,9 @@
 # The retry is CLASSIFIED: only a TIMEOUT is retried, never a parse/eval
 # failure, never an over-cap capture.
 [?def audit-bounded scope=public impure
-    ($cxbin $tmp $probe-tmp $out-path $err-path $key $composed $bound)
+    ($cxbin $tmp $probe-tmp $out-path $err-path $key $composed $bound $grants)
   [?let
-    [= $r0 [$audit $cxbin $tmp $out-path $err-path $composed $bound]]
+    [= $r0 [$audit $cxbin $tmp $out-path $err-path $composed $bound $grants]]
     [?if [not [$strings:starts-with [$string $r0@msg] 'TIMEOUT']]
       [then $r0]
       [else [?let
@@ -509,7 +521,7 @@
                             ' ms; re-probe measures ', [$string $p2],
                             ' ms, so retrying once under a ', [$string $b2],
                             ' ms bound')]]]
-        [= $r1 [$audit $cxbin $tmp $out-path $err-path $composed $b2]]
+        [= $r1 [$audit $cxbin $tmp $out-path $err-path $composed $b2 $grants]]
         [= $again [$strings:starts-with [$string $r1@msg] 'TIMEOUT']]
         [= $c2 [$cry [?if $again
             [then [$cat ('RETRY  ', $key, ' — TIMED OUT AGAIN at ',
@@ -541,8 +553,14 @@
   '//          the map + array module surfaces, the read/construct split,',
   '//          [?group-by], [?with-caps [deny]], [?secret], checked int arithmetic,',
   '//          [?const] + [?def], [?str], [?else], [?quote]',
+  '//   246-268 everyday scripts: files and directories, text and regex,',
+  '//          collections as scripts use them',
   '// runnable:false marks an example that needs a wasm-unavailable capability',
   '// (net / subprocess / fs); it is exempt from the clean-run gate.',
+  '// grants carries the capability flags the example names (RULED: CXF-2).',
+  '// The native audit ran the example UNDER them, so the recorded answer is',
+  '// real; the browser cannot grant them, so such an entry is runnable:false',
+  '// and the page shows `cx <grants> program.cx` instead of claiming a run.',
   '// wasmUnsupported marks an example the SHIPPED wasm engine cannot reproduce',
   '// faithfully (#1033) — it refuses the program, or evaluates it to a different',
   '// value than native cx — carrying the reason the page shows the reader; the',
@@ -570,8 +588,14 @@
 # not each grow an empty field. The page keys its honest banner off the
 # presence of this field; `make test-playground-wasm-eval` keeps the set
 # from drifting in either direction.
+# `grants` (RULED: CXF-2) is emitted only when the corpus carries the
+# field, and it forces `runnable: false` whatever the grant-free audit
+# said. The audit runs the example WITH those grants natively, so the
+# recorded answer is a real one; the browser has no way to give the same
+# capabilities, so the page must not claim it ran the program — it shows
+# the reader the command line the field spells instead.
 [?def render-block scope=public ($key $label $src $note $runnable $wasm-unsupported
-                                $no-stable-value $section)
+                                $no-stable-value $section $grants)
   [$strings:join [$seq-flat (
     [$cat ('    ', [$jstr $key], ': {')],
     [$cat ('      label: ', [$jstr $label], ',')],
@@ -579,7 +603,11 @@
     [$cat ('      note:  ', [$jstr $note], ',')],
     [$cat ('      tags:  ', [$jlist [$infer-tags $key $src $note]], ',')],
     [$cat ('      section: ', [$jstr $section], ',')],
-    [$cat ('      runnable: ', [?if $runnable [then 'true'] [else 'false']], ',')],
+    [?if [= $grants '']
+      [then ()]
+      [else ([$cat ('      grants: ', [$jstr $grants], ',')])]],
+    [$cat ('      runnable: ',
+           [?if [and $runnable [= $grants '']] [then 'true'] [else 'false']], ',')],
     [?if [= $wasm-unsupported '']
       [then ()]
       [else ([$cat ('      wasmUnsupported: ', [$jstr $wasm-unsupported], ',')])]],
@@ -788,7 +816,8 @@
   'code/bindings', 'code/control-flow', 'code/patterns', 'code/functions',
   'code/comprehensions', 'code/paths', 'code/transforms', 'code/queries', 'code/errors',
   'code/effects', 'code/builtins', 'code/concurrency', 'code/resilience',
-  'code/metaprogramming', 'code/diagrams')]
+  'code/metaprogramming', 'code/diagrams',
+  'everyday/files', 'everyday/text', 'everyday/collections')]
 
 # A member that is not there is an ERROR, not an absence: `$n.name` on a
 # `Scalar`/`Hole`/`RawText` node answers CXER0001 `no member "name"` and
@@ -895,6 +924,24 @@
       [then [$die [$cat ('gen_examples: no [ex] entries found in ', $data-path)]]]
       [else 0]]]
 
+  # ── the [grants] field is proved to be GRANTS before any child runs ──
+  # (RULED: CXF-2). `audit` hands the field to `sh -c` unquoted so the
+  # shell splits it into argv words; a token that is not a `--allow-*`
+  # flag would therefore become an arbitrary argument of the child cx.
+  # Checked here, once, over the whole corpus, before the first spawn:
+  # refuse by KEY rather than audit a corpus that can widen its own
+  # command line.
+  [= $grant-shape-bad [$seq-flat [?for [in $e $entries]
+      [= $g [$string $e@grants]]
+      [where [not [= $g '']]]
+      [yield [?for [in $tok [$strings:split-whitespace $g]]
+        [where [not [$strings:starts-with $tok '--allow-']]]
+        [yield [$cat ([$string $e@key], ' → ', [$jstr $tok])]]]]]]]
+  [= $grant-shape [?if [$empty $grant-shape-bad] [then 0]
+      [else [$die [$cat ('gen_examples: a [grants] field carries a token that ',
+                         'is not a --allow-* capability flag: ',
+                         [$strings:join $grant-shape-bad '; '])]]]]]
+
   # Calibrate BEFORE the corpus: one trivial evaluation on the shipped
   # binary sets the per-example bound for this run (see BOUND-FLOOR-MS).
   [= $probe0 [$probe-ms $cxbin $probe-tmp $out-path $err-path]]
@@ -906,8 +953,9 @@
       [= $key [$string $e@key]]
       [= $src [$string $e@src]]
       [= $note [$string $e@note]]
+      [= $grants [$string $e@grants]]
       [= $r [$audit-bounded $cxbin $tmp $probe-tmp $out-path $err-path $key
-               [$compose $src $note] $bound0]]
+               [$compose $src $note] $bound0 $grants]]
       [yield [row key=$key status=[$string $r@status] msg=[$string $r@msg]
                 ms=$r@ms
                 out=[$string $r@out] err=[$string $r@err]
@@ -916,7 +964,8 @@
                 section=[$string $e@section]
                 block=[?if [= [$string $r@status] 'ok']
                   [then [$render-block $key [$string $e@label] $src $note $r@runnable
-                          [$string $e@wasm-unsupported] [$string $e@no-stable-value] [$string $e@section]]]
+                          [$string $e@wasm-unsupported] [$string $e@no-stable-value]
+                          [$string $e@section] $grants]]
                   [else '']]
                 out-block=[?if [= [$string $r@status] 'ok']
                   [then [$render-out-block $key [$string $r@out] [$string $r@err]
