@@ -98,13 +98,18 @@ the registry singles added nothing new. The census's own `[band]` rows count
 | SILENT-2 | none | 1529 | fixed | `cx lint` arbitration reported the DATA-lane diagnostic and hid the program-lane failure |
 | SILENT-3 | `CXER0301` | 1436 | open | `cx fmt` names the FIRST comment rather than the one it could not place |
 | SILENT-4 | none | 1521 | merged at `d4d62ad9a`, closes on that run | the data parser swallowed the cases after a `[title]` holding an apostrophe |
-| SILENT-5 | none | 1537 | open, owner letters pending | an err bound by `[?let]` to a name nobody reads is swallowed |
+| SILENT-5 | none | 1537 | ruled 1537-a (owner, 22:02Z), branch sequenced first at `prio:high` | an err bound by `[?let]` to a name nobody reads is swallowed |
 
 Four of the five have **no refusal code at all**, which is the defect rather
 than an omission in the table: there is nothing for a case to assert, so the
 fix is a code and its case together. `CXER0301` is the exception and it has
 class `silent` and `cases=0` — the formatter's own declined-refusal code is
 asserted by nothing.
+
+SILENT-5 is ruled as of the owner's 22:02Z decisions (1537-a, on the head this
+branch merged): an err bound to a name no later binding and no part of the body
+reads becomes the `[?let]`'s answer. The row stays in the table because the
+issue is open until its own merge's run; the census document records the state.
 
 SILENT-5 was met twice while this tool was written. Both times an err bound to
 a name the program never reads made a whole section of the census come back
@@ -277,7 +282,7 @@ this audit measured, and repeating it would move a row from `no-case` to
 
 | batch | ring | codes / classes | what the batch does |
 |---|---|---|---|
-| D1 | 0 | SILENT-1, SILENT-2, SILENT-3 (`CXER0301`), SILENT-4, SILENT-5, `CXER0300` | the silent classes: each gets the refusal it owes, its code where it has none, and a case naming form, position and fix. `CXER0300`/`CXER0301` are the formatter's own and are asserted by nothing today |
+| D1 | 0 | SILENT-1, SILENT-2, SILENT-3 (`CXER0301`), SILENT-4, `CXER0300` | the silent classes that have no branch yet: each gets the refusal it owes, its code where it has none, and a case naming form, position and fix. `CXER0300`/`CXER0301` are the formatter's own and are asserted by nothing today. SILENT-5 is NOT in this batch — it is ruled (1537-a) and its branch is sequenced ahead of everything here |
 | D2 | 0 | `CXER0003`, `CXER0132`, `CXER0135`, `CXER0244`, `CXER0273`, `CXER0136` | the language core's four uncovered codes plus the RE2 shim's, and `CXER0136`'s misleading message (issue 1543) |
 | D3 | 0 | `CXER0271`, `CXER0101`, `CXER0290`, `CXER0291`, `CXER0233`, `CXER0104` | the highest-traffic weak codes of the core band — `CXER0271` alone is asserted by 283 cases, none of which names the grant, the effect or the flag |
 | D4 | 0 | the `L:C` carrier itself | the change every later batch depends on: an err value carries its position. Today `mk_err` builds `code=` and `message=` and nothing else, so 762 rows CANNOT answer the POSITION column. Spec sentence first, then `mk_err_attrs`, then the batches below can assert a position at all |

@@ -99,7 +99,7 @@
   [silent id=SILENT-4 code=none issue='1521' state=merged
      what='the data parser swallows the cases after a [title] holding an apostrophe'
      cases='core.cxd 035a..035c (conformance/core.cxd)'],
-  [silent id=SILENT-5 code=none issue='1537' state=open
+  [silent id=SILENT-5 code=none issue='1537' state=ruled-1537a
      what='an err bound by [?let] to a name nobody reads is swallowed'
      cases='none'])]
 
