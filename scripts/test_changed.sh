@@ -103,6 +103,10 @@ step_globs() {
   case "$1" in
     abi-c-test)                    echo "$RING_LIB $RING_SUP include/* lang/*" ;;
     test-python)                   echo "$RING_LIB $RING_SUP include/* lang/* conformance/*" ;;
+    # reader-parity (RULED: CXF-5, #1521): the three readers over the corpus
+    # FILES — libcx (lang/), the V data parser and the program reader (RING_LIB),
+    # the fixture loader (RING_SUP), every `.cxd` and the playground corpus.
+    reader-parity)                 echo "$RING_LIB $RING_SUP lang/* conformance/* scripts/gen_guide/playground/*" ;;
     test-rust)                     echo "$RING_LIB $RING_SUP include/* lang/*" ;;
     test-go)                       echo "$RING_LIB $RING_SUP include/* lang/*" ;;
     test-v)                        echo "$RING_LIB $RING_SUP lang/v/*" ;;

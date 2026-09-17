@@ -1,0 +1,480 @@
+# scripts/diagnostics_census.cx — the diagnostics corpus census (RULED: CXF-3).
+#
+# The audit tool for the diagnostics corpus is itself a CX program (RULED:
+# CXF-1): no Python, no shell pipeline doing the counting. The bash
+# predecessor `scripts/cxer_registry_report.sh` stays as the registry
+# COMPLETENESS report; this tool reuses its three definitions verbatim and
+# adds the coverage judgment the audit needs.
+#
+# Reused from the predecessor, deliberately unchanged:
+#   registry   — governance.md §9.6 rows, honoring sparse-list
+#                parentheticals: a "(sparse: …)" list REPLACES the row body,
+#                an "(… excluded/reserved …)" parenthetical SUBTRACTS.
+#   emissions  — every *.v under vcx/ except vcx/target/, with //-comment
+#                text stripped, plus every stdlib/*.cx with #-comment text
+#                stripped.
+#   assertions — every conformance/**/*.cxd fixture.
+# A count of this tool's that disagrees with the predecessor's is a FLAG in
+# the audit page, never a silent choice.
+#
+# What it adds, per refusal code:
+#   1. its registry band — the §9.6 row's range, owner module and spec file;
+#   2. where it is emitted — the site count and the distinct files;
+#   3. the corpus cases that ASSERT it, each judged on three columns read
+#      from the expectation text that names the code:
+#        FORM     — the expectation names the construct that was refused
+#                   (a bracketed directive/verb spelling, a backticked
+#                   spelling, or a symbolic E_* name beside the code);
+#        POSITION — it carries `line:col` or an "opened at L:C" site;
+#        FIX      — it says what the writer does next (one of the guidance
+#                   markers below).
+#      The judged text is the LINE of the expectation body carrying the
+#      code, not the whole body: a code buried in program output is judged
+#      on what the reader actually sees beside it.
+#      At most three case rows and three emission files are LISTED per code (the
+#      `cases=` / `files=` counts stay exact); the batches re-run the tool
+#      for a code's full list rather than carry 650 KB of it in the tree.
+#   4. the class: silent | no-case | weak | covered.
+#   5. position-carrier — how the code's diagnostic delivers position TODAY,
+#      read from the emission sites: `message-text` where the site returns a
+#      V error that the reader lane wraps (vcx/cx/error.v's `CxError.msg()`
+#      = `L:C: message`, with parser.v appending `(unterminated <head>
+#      opened at L:C)`), `attribute` where the site writes a `line=`/`col=`
+#      attribute, `none` where the site builds an err VALUE — `mk_err` /
+#      `mk_err_attrs` carry `code=` and `message=` and no position at all —
+#      and `none` for a code nothing emits. The site is read together with
+#      the line above it, so a constructor call split over two lines is
+#      classified; `unknown` is left for a site the rule cannot read (a
+#      code named inside a table, a help string or a test assertion).
+#
+# The output is DATA: a `.cxd`-shaped document written to the path given
+# (default `_gate_evidence/diagnostics_census.cxd`), and ONE summary line on
+# stdout that the evidence file and the audit page quote.
+#
+# Run:  cx --allow-read --allow-write scripts/diagnostics_census.cx [OUT.cxd]
+# (or:  make diagnostics-census)
+# Exit 0 on a completed census, 2 when an input is missing. The census
+# REPORTS; it does not fail a build — the fix batches own the gate.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/map'     as=map]
+[?lib 'cx-stdlib/array'   as=array]
+[?lib 'cx-stdlib/fp'      as=fp]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?const GOV 'spec/03-approved/process/governance.md']
+
+# The sections of a case that ASSERT a refusal. `in-code`, `meta` and `doc`
+# name a code without asserting it, so they are not assertions.
+[?const ASSERT-SECTIONS ('out-err','out-text','out-multiset','expected-refusal',
+                         'expect-diff','expected-error','out-stderr')]
+
+# FIX markers — a phrase that tells the writer what to do next.
+[?const FIX-MARKERS ('expected ','expects ','use ','instead','did you mean',
+                     'grant via','write ','must be','must name','give ',
+                     'to keep','to get','add ','remove ','rename','spell ',
+                     'declare','provide','try ','pass ','name the','wrap ',
+                     'filter by','replace ','set ')]
+
+# The SILENT classes of CXF-3 — a run that answers a value or an absence
+# where a refusal is due. Ruled data, not a measurement: each row names the
+# issue that carries its reproduction. `code=none` means the silence has no
+# refusal code at all yet, which is the defect.
+[?const SILENT-CLASSES (
+  [silent id=SILENT-1 code=none issue='1531' state=pinned
+     what='[?if] whose condition is an err value takes NEITHER branch'
+     cases='program-err-017..019 (conformance/code.cxd)'],
+  [silent id=SILENT-2 code=none issue='1529' state=fixed
+     what='cx lint arbitration reports the DATA-lane diagnostic and hides the program-lane failure'
+     cases='lint.cxd 080..082 (conformance/lint.cxd)'],
+  [silent id=SILENT-3 code=CXER0301 issue='1436' state=open
+     what='cx fmt names the FIRST comment rather than the one it could not place'
+     cases='none'],
+  [silent id=SILENT-4 code=none issue='1521' state=merged
+     what='the data parser swallows the cases after a [title] holding an apostrophe'
+     cases='core.cxd 035a..035c (conformance/core.cxd)'],
+  [silent id=SILENT-5 code=none issue='1537' state=ruled-1537a
+     what='an err bound by [?let] to a name nobody reads is swallowed'
+     cases='none'])]
+
+[?def member scope=public ($seq $x)
+  [> [$count [?for [in $s $seq] [where [= $s $x]] [yield $s]]] 0]]
+
+[?def to-arr scope=public ($s) [$fp:fold $s [] [?fn ($a $x) [$array:append $a $x]]]]
+
+# raw-of: the string payload of a section node carrying one [#…#] raw block.
+[?def raw-of scope=public ($rt)
+  [?let [= $s [$cx:serialize $rt]]
+        [= $i [$strings:find $s "[#"]]
+        [= $j [$strings:rfind $s "#]"]]
+    [?if [or [not [$present $i]] [not [$present $j]] [< $j $i]]
+      [then ""]
+      [else [$strings:slice $s [+ $i 2] [- $j 1]]]]]]
+
+[?def pad4 scope=public ($n)
+  [?let [= $s [$string $n]]
+    [?if [>= [$strings:length $s] 4] [then $s]
+      [else [$strings:slice [$concat "0000" $s]
+              [- [+ [$strings:length $s] 5] 4]
+              [+ [$strings:length $s] 4]]]]]]
+
+[?def code-of scope=public ($n) [$concat "CXER" [$pad4 $n]]]
+
+# ── strip a line's comment text ──────────────────────────────────────
+[?def strip-v-comment scope=public ($line)
+  [?let [= $i [$strings:find $line "//"]]
+    [?if [not [$present $i]] [then $line]
+      [else [?if [< $i 2] [then ""] [else [$strings:slice $line 1 [- $i 1]]]]]]]]
+
+[?def strip-cx-comment scope=public ($line)
+  [?let [= $i [?if [$strings:starts-with $line "#"] [then 1]
+                [else [?let [= $j [$strings:find $line " #"]]
+                        [?if [$present $j] [then [+ $j 1]] [else $j]]]]]]
+    [?if [not [$present $i]] [then $line]
+      [else [?if [< $i 2] [then ""] [else [$strings:slice $line 1 [- $i 1]]]]]]]]
+
+# ── §9.6 registry ────────────────────────────────────────────────────
+# A row's code column is everything up to the 2nd `|`; the owner column the
+# 3rd, the spec file the 4th. Ranges are scanned first and removed, then the
+# standalone codes (catching bare continuations like "CXER1500, 1502–1504").
+[?const RANGE-RX [$re:compile "([0-9]{4})(–|-)([0-9]{4})"]]
+[?const CODE-RX [$re:compile "[0-9]{4}"]]
+[?const SPARSE-RX [$re:compile "\\(sparse:[^)]*\\)"]]
+[?const EXCL-RX [$re:compile "\\([^)]*(excluded|reserved)[^)]*\\)"]]
+[?const CXER-RX [$re:compile "CXER[0-9]{4}"]]
+[?const LEX-RX [$re:compile "CXERLEX-[A-Z]+"]]
+[?const POS-RX [$re:compile "[0-9]+:[0-9]+"]]
+[?const FORM-RX [$re:compile "\\[[?$]?[a-zA-Z][a-zA-Z0-9:_-]*|`[^`]+`|\\bE_[A-Z0-9_]{3,}"]]
+
+# has-match: re.md §find answers `[match …]` OR `[no-match]` — both are
+# ELEMENTS, so `$present` is true on a miss and the verb applied to the
+# `[no-match]` refuses with a message naming a callable nobody wrote (#1543).
+# Every guard here reads the answer's NAME.
+[?def has-match scope=public ($m) [= [?else [$name $m] ""] "match"]]
+
+[?def scan-ranges scope=public ($s)
+  [?for [in $m [$re:find-all RANGE-RX $s]]
+    [yield {lo: [$strings:to-int [$re:group $m 1]],
+            hi: [$strings:to-int [$re:group $m 3]]}]]]
+
+[?def scan-singles scope=public ($s)
+  [?for [in $m [$re:find-all CODE-RX [$re:replace RANGE-RX $s " "]]]
+    [yield [$strings:to-int [$re:group $m 0]]]]]
+
+# The §9.6 rows, read as data: one comprehension per answer rather than one
+# fold carrying three accumulators — a sequence of rows is what the registry
+# is.
+[?def gov-rows scope=public impure ($gov-path)
+  [?for [in $ln [$strings:split-lines [$io:read-file $gov-path]]]
+    [where [$strings:starts-with $ln "| `CXER"]]
+    [yield $ln]]]
+
+[?def row-col scope=public ($ln $i)
+  [?let [= $parts [$strings:split $ln "|"]]
+    [?if [>= [$count $parts] $i] [then [$strings:trim [$nth $parts $i]]] [else ""]]]]
+
+[?def row-code-col scope=public ($ln) [$strings:replace [$row-col $ln 2] "CXER" ""]]
+
+# The effective body of a row's code column: a "(sparse: …)" list REPLACES it
+# (the row registers only its listed codes); otherwise the
+# "(… excluded/reserved …)" parentheticals are peeled off.
+[?def row-body scope=public ($ln)
+  [?let [= $sp [$re:find SPARSE-RX $ln]]
+    [?if [$has-match $sp]
+      [then [$re:group $sp 0]]
+      [else [$re:replace EXCL-RX [$row-code-col $ln] " "]]]]]
+
+[?def row-excl scope=public ($ln)
+  [$fp:flat-map [?for [in $m [$re:find-all EXCL-RX [$row-code-col $ln]]]
+                  [yield [$re:group $m 0]]]
+    [?fn ($p) [$scan-ranges $p]]]]
+
+[?def row-bands scope=public ($ln)
+  [$fp:flat-map ([$scan-ranges [$row-body $ln]],
+                 [?for [in $c [$scan-singles [$row-body $ln]]] [yield {lo: $c, hi: $c}]])
+    [?fn ($x) $x]]]
+
+# short-owner: the module name a §9.6 row opens with — the row's owner
+# column is prose paragraphs long, and the census carries the name, not the
+# essay (the spec file column stays the pointer to the full text).
+[?def short-owner scope=public ($s)
+  [?let [= $t [$strings:replace [$strings:trim $s] "`" ""]]
+        [= $i [$strings:find $t " ("]]
+        [= $u [?if [$present $i] [then [$strings:slice $t 1 [- $i 1]]] [else $t]]]
+        [= $j [$strings:find $u " — "]]
+        [= $v [?if [$present $j] [then [$strings:slice $u 1 [- $j 1]]] [else $u]]]
+    [?if [> [$strings:length $v] 60]
+      [then [$concat [$strings:slice $v 1 57] "..."]]
+      [else $v]]]]
+
+[?def band-for scope=public ($n $bands)
+  [?let [= $hits [?for [in $b $bands]
+                   [where [and [<= [$map:get $b "lo"] $n] [<= $n [$map:get $b "hi"]]]]
+                   [yield $b]]]
+    [?if [$empty $hits] [then {}] [else [$first $hits]]]]]
+
+[?def excluded-code scope=public ($n $excl)
+  [> [$count [?for [in $r $excl]
+       [where [and [<= [$map:get $r "lo"] $n] [<= $n [$map:get $r "hi"]]]]
+       [yield $r]]] 0]]
+
+# ── emissions ────────────────────────────────────────────────────────
+# carrier-of: how THIS site carries position (the rule is in the header).
+[?def carrier-of scope=public ($site)
+  [?if [or [$strings:contains $site "mk_err("] [$strings:contains $site "mk_err_attrs("]
+           [$strings:contains $site "mk_err_quiet("] [$strings:contains $site "_err_value("]
+           [$strings:contains $site "[err code="]]
+    [then "none"]
+    [else [?if [or [$strings:contains $site "line="] [$strings:contains $site "col="]]
+      [then "attribute"]
+      [else [?if [or [$strings:contains $site "opened at"] [$strings:contains $site "error("]
+               [$strings:contains $site "cx_error("]]
+        [then "message-text"]
+        [else "unknown"]]]]]]]
+
+[?def scan-file-emissions scope=public impure ($path $vlang)
+  [?let [= $src [$io:read-file $path]]
+    [?if [not [$strings:contains $src "CXER"]]
+      [then ()]
+      [else
+        [?let
+          [= $hits [$fp:fold [$strings:split-lines $src] {n: 0, out: [], prev: ""}
+            [?fn ($acc $raw)
+              [?let [= $n [+ 1 [$map:get $acc "n"]]]
+                    [= $ln [?if $vlang [then [$strip-v-comment $raw]] [else [$strip-cx-comment $raw]]]]
+                    [= $ctx [$concat [$map:get $acc "prev"] " " $ln]]
+                {n: $n, prev: $ln,
+                 out: [?if [not [$strings:contains $ln "CXER"]]
+                        [then [$map:get $acc "out"]]
+                        [else [$fp:fold
+                          [?for [in $m [$re:find-all CXER-RX $ln]] [yield [$re:group $m 0]]]
+                          [$map:get $acc "out"]
+                          [?fn ($a $c) [$array:append $a
+                            {code: $c, file: $path, line: $n,
+                             carrier: [$carrier-of $ctx]}]]]]]}]]]]
+          [$map:get $hits "out"]]]]]]
+
+# ── assertions ───────────────────────────────────────────────────────
+# judged-line: the line of an expectation body that carries the code.
+[?def judged-line scope=public ($body $code)
+  [?let [= $ls [?for [in $l [$strings:split-lines $body]]
+                 [where [$strings:contains $l $code]] [yield $l]]]
+    [?if [$empty $ls] [then ""] [else [$strings:trim [$first $ls]]]]]]
+
+# The three columns, judged from the line that names the code. The bare
+# `cx-err:CXERnnnn` body — the corpus's most common expectation — answers no
+# to all three, which is the audit's central finding and not a tool defect.
+[?def rest-of scope=public ($line $code)
+  [?let [= $i [$strings:find $line $code]]
+    [?if [not [$present $i]] [then $line]
+      [else [$strings:slice $line [+ $i [$strings:length $code]] [$strings:length $line]]]]]]
+
+[?def judge-form scope=public ($line $code)
+  [$has-match [$re:find FORM-RX [$strings:replace $line $code ""]]]]
+
+[?def judge-position scope=public ($line)
+  [or [$has-match [$re:find POS-RX [$re:replace CXER-RX $line " "]]]
+      [$strings:contains $line "opened at"]]]
+
+[?def judge-fix scope=public ($line)
+  [?let [= $low [$strings:lower $line]]
+    [> [$count [?for [in $m FIX-MARKERS]
+         [where [$strings:contains $low $m]] [yield $m]]] 0]]]
+
+[?def scan-file-assertions scope=public impure ($path)
+  [?let [= $src [$io:read-file $path]]
+    [?if [not [$strings:contains $src "CXER"]]
+      [then ()]
+      [else
+        [?for [in $c [$cx:select [$cx:parse $src] "//case"]]
+          [= $cid [$string [?else $c@id ""]]]
+          [in $k $c/*]
+          [= $sec [?else [$name $k] "?"]]
+          [where [$member ASSERT-SECTIONS $sec]]
+          [= $body [$raw-of $k]]
+          [where [$strings:contains $body "CXER"]]
+          [in $code [$distinct [?for [in $m [$re:find-all CXER-RX $body]]
+                      [yield [$re:group $m 0]]]]]
+          [= $line [$judged-line $body $code]]
+          [yield {code: $code, file: $path, case: $cid, section: $sec,
+                  form: [$judge-form $line $code],
+                  position: [$judge-position $line],
+                  fix: [$judge-fix $line]}]]]]]]
+
+[?def yn scope=public ($b) [?if $b [then "yes"] [else "no"]]]
+
+[?def attr scope=public ($k $v) [$concat $k "='" [$strings:replace [$string $v] "'" "\""] "'"]]
+
+# ── the census ───────────────────────────────────────────────────────
+[?let
+  [= $argv [$env:argv]]
+  [= $out-path [?if [>= [$count $argv] 2] [then [$nth $argv 2]]
+                 [else "_gate_evidence/diagnostics_census.cxd"]]]
+  [?if [not [$io:is-file GOV]]
+    [then [?let [= $_e [$cry [$concat "diagnostics-census: registry not found: " GOV]]]
+            [$env:exit 2]]]
+    [else
+      [?let
+        [= $gov-rows-txt [$to-arr [$gov-rows GOV]]]
+        [= $bands [$to-arr [?for [in $ln $gov-rows-txt]
+           [in $r [$row-bands $ln]]
+           [yield {lo: [$map:get $r "lo"], hi: [$map:get $r "hi"],
+                   label: [$strings:replace [$row-col $ln 2] "`" ""],
+                   owner: [$row-col $ln 3], spec: [$row-col $ln 4]}]]]]
+        [= $excl [$to-arr [$fp:flat-map $gov-rows-txt [?fn ($ln) [$row-excl $ln]]]]]
+        [= $singles [$to-arr [$fp:flat-map $gov-rows-txt
+           [?fn ($ln) [$scan-singles [$row-body $ln]]]]]]
+
+        [= $v-files [?for [in $p [$io:glob "vcx/**/*.v"]]
+           [where [not [$strings:starts-with $p "vcx/target/"]]] [yield $p]]]
+        [= $cx-files [$io:glob "stdlib/*.cx"]]
+        [= $cxd-files [$io:glob "conformance/**/*.cxd"]]
+
+        [= $emissions [$fp:flat-map $v-files
+           [?fn ($p) [$scan-file-emissions $p true]]]]
+        [= $emissions2 [$fp:flat-map $cx-files [?fn ($p) [$scan-file-emissions $p false]]]]
+        [= $all-emissions [$fp:flat-map ($emissions, $emissions2) [?fn ($x) $x]]]
+        [= $assertions [$fp:flat-map $cxd-files [?fn ($p) [$scan-file-assertions $p]]]]
+
+        # the universe: every code observed, plus every code a §9.6 row names
+        # singly in its code column (a registered code emitted nowhere is a
+        # row too).
+        [= $observed [$distinct [$fp:flat-map (
+             [?for [in $e $all-emissions] [yield [$map:get $e "code"]]],
+             [?for [in $a $assertions] [yield [$map:get $a "code"]]],
+             [?for [in $n $singles] [yield [$code-of $n]]])
+           [?fn ($x) $x]]]]
+        [= $universe [$sort [?for [in $c $observed]
+           [where [not [$member ('CXER0000','CXER9999') $c]]] [yield $c]]]]
+
+        # per-code indexes
+        [= $emit-by [$fp:fold $all-emissions {}
+           [?fn ($a $e) [?let [= $c [$map:get $e "code"]]
+             [$map:put $a $c [$array:append [?else [$map:get $a $c] []] $e]]]]]]
+        [= $case-by [$fp:fold $assertions {}
+           [?fn ($a $x) [?let [= $c [$map:get $x "code"]]
+             [$map:put $a $c [$array:append [?else [$map:get $a $c] []] $x]]]]]]
+        [= $silent-codes [?for [in $s SILENT-CLASSES]
+           [where [not [= [$string $s@code] "none"]]] [yield [$string $s@code]]]]
+
+        [= $rows [?for [in $c $universe]
+          [= $n [$strings:to-int [$strings:slice $c 5 8]]]
+          [= $b [$band-for $n $bands]]
+          [= $es [?else [$map:get $emit-by $c] []]]
+          [= $cs [?else [$map:get $case-by $c] []]]
+          [= $files [$distinct [?for [in $e $es] [yield [$map:get $e "file"]]]]]
+          [= $carriers [$distinct [?for [in $e $es] [yield [$map:get $e "carrier"]]]]]
+          [= $carrier [?if [$empty $es] [then "none"]
+                        [else [?if [$member $carriers "message-text"] [then "message-text"]
+                        [else [?if [$member $carriers "attribute"] [then "attribute"]
+                          [else [?if [$member $carriers "none"] [then "none"] [else "unknown"]]]]]]]]]
+          [= $form [> [$count [?for [in $x $cs] [where [$map:get $x "form"]] [yield $x]]] 0]]
+          [= $pos [> [$count [?for [in $x $cs] [where [$map:get $x "position"]] [yield $x]]] 0]]
+          [= $fix [> [$count [?for [in $x $cs] [where [$map:get $x "fix"]] [yield $x]]] 0]]
+          [= $full [> [$count [?for [in $x $cs]
+             [where [and [$map:get $x "form"] [$map:get $x "position"] [$map:get $x "fix"]]]
+             [yield $x]]] 0]]
+          [= $class [?if [$member $silent-codes $c] [then "silent"]
+                      [else [?if [$empty $cs] [then "no-case"]
+                        [else [?if $full [then "covered"] [else "weak"]]]]]]]
+          [yield {code: $c, n: $n,
+                  band: [?else [$map:get $b "label"] "unregistered"],
+                  owner: [?else [$map:get $b "owner"] ""],
+                  spec: [?else [$map:get $b "spec"] ""],
+                  registered: [and [not [$empty [$map:keys $b]]] [not [$excluded-code $n $excl]]],
+                  emitted: [$count $es], files: $files, carrier: $carrier,
+                  cases: $cs, form: $form, position: $pos, fix: $fix, class: $class}]]]
+
+        [= $n-registered [$count [?for [in $r $rows] [where [$map:get $r "registered"]] [yield $r]]]]
+        [= $n-emitted [$count [?for [in $r $rows] [where [> [$map:get $r "emitted"] 0]] [yield $r]]]]
+        [= $n-covered [$count [?for [in $r $rows] [where [= [$map:get $r "class"] "covered"]] [yield $r]]]]
+        [= $n-weak [$count [?for [in $r $rows] [where [= [$map:get $r "class"] "weak"]] [yield $r]]]]
+        [= $n-nocase [$count [?for [in $r $rows] [where [= [$map:get $r "class"] "no-case"]] [yield $r]]]]
+        [= $n-silent [$count SILENT-CLASSES]]
+
+        [= $summary [$concat "diagnostics census: " [$string [$count $rows]]
+           " codes registered; " [$string $n-emitted] " emitted; "
+           [$string $n-covered] " covered; " [$string $n-weak] " weak; "
+           [$string $n-nocase] " no-case; " [$string $n-silent] " silent"]]
+
+        # ── the document ──────────────────────────────────────────────
+        [= $band-rows [?for [in $b [$distinct [?for [in $x $bands]
+             [yield [$map:get $x "label"]]]]]
+           [= $in-band [?for [in $r $rows] [where [= [$map:get $r "band"] $b]] [yield $r]]]
+           [yield [$concat "  [band " [$attr "range" $b]
+             " codes=" [$string [$count $in-band]]
+             " emitted=" [$string [$count [?for [in $r $in-band]
+                 [where [> [$map:get $r "emitted"] 0]] [yield $r]]]]
+             " cases=" [$string [$count [?for [in $r $in-band]
+                 [where [not [$empty [$map:get $r "cases"]]]] [yield $r]]]]
+             " " [$attr "owner" [$short-owner [?else [$map:get [$first [$fp:flat-map (
+                 [?for [in $x $bands] [where [= [$map:get $x "label"] $b]] [yield $x]],
+                 ({owner: "", spec: ""},)) [?fn ($y) $y]]] "owner"] ""]]] "]"]]]]
+
+        [= $silent-lines [?for [in $s SILENT-CLASSES]
+           [yield [$concat "  [silent id=" [$string $s@id]
+             " code=" [$string $s@code]
+             " issue=#" [$string $s@issue]
+             " state=" [$string $s@state]
+             " " [$attr "cases" [$string $s@cases]]
+             " " [$attr "what" [$string $s@what]] "]"]]]]
+
+        [= $code-lines [?for [in $r $rows]
+           [= $head [$concat "  [code id=" [$map:get $r "code"]
+             " " [$attr "band" [$map:get $r "band"]]
+             " position-carrier=" [$map:get $r "carrier"]
+             " emitted=" [$string [$map:get $r "emitted"]]
+             " files=" [$string [$count [$map:get $r "files"]]]
+             " cases=" [$string [$count [$map:get $r "cases"]]]
+             " cases-listed=" [$string [$count [?for [in $x [$map:get $r "cases"]] [take 3] [yield $x]]]]
+             " form=" [$yn [$map:get $r "form"]]
+             " position=" [$yn [$map:get $r "position"]]
+             " fix=" [$yn [$map:get $r "fix"]]
+             " class=" [$map:get $r "class"]]]
+           [= $kids [$strings:join [?for [in $x [$map:get $r "cases"]] [take 3]
+              [yield [$concat "\n    [case id=" [$map:get $x "case"]
+                " " [$attr "file" [$map:get $x "file"]]
+                " section=" [$map:get $x "section"]
+                " form=" [$yn [$map:get $x "form"]]
+                " position=" [$yn [$map:get $x "position"]]
+                " fix=" [$yn [$map:get $x "fix"]] "]"]]] ""]]
+           [= $sites [$strings:join [?for [in $f [$map:get $r "files"]] [take 3]
+              [yield [$concat "\n    [emitted-in " [$attr "file" $f] "]"]]] ""]]
+           [yield [?if [and [$empty [$map:get $r "cases"]] [$empty [$map:get $r "files"]]]
+                    [then [$concat $head "]"]]
+                    [else [$concat $head $kids $sites "\n  ]"]]]]]]
+
+        [= $doc [$strings:join ([$concat "[diagnostics-census decision='CXF-3' issue='#1522'"
+             "\n  [doc [#"
+             "\ndiagnostics corpus census — written by scripts/diagnostics_census.cx."
+             "\nEvery refusal code observed in the tree or named singly by a"
+             "\ngovernance.md 9.6 row, with its band, its emission sites, the"
+             "\ncorpus cases that assert it and the three columns judged from"
+             "\neach case's expectation text (form / position / fix)."
+             "\n#]]"
+             "\n  [summary codes=" [$string [$count $rows]]
+             " registered=" [$string $n-registered]
+             " emitted=" [$string $n-emitted]
+             " covered=" [$string $n-covered]
+             " weak=" [$string $n-weak]
+             " no-case=" [$string $n-nocase]
+             " silent=" [$string $n-silent]
+             " registry-rows=" [$string [$count $gov-rows-txt]]
+             " bands=" [$string [$count $bands]]
+             " emission-sites=" [$string [$count $all-emissions]]
+             " assertion-sites=" [$string [$count $assertions]] "]"],
+           [$strings:join $silent-lines "\n"],
+           [$strings:join $band-rows "\n"],
+           [$strings:join $code-lines "\n"],
+           "]\n") "\n"]]
+
+        [= $_w [$io:write-file $out-path $doc]]
+        [= $_s [$say $summary]]
+        [= $_p [$say [$concat "diagnostics census: document written to " $out-path]]]
+        [$env:exit 0]]]]]

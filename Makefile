@@ -1051,7 +1051,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -1321,6 +1321,18 @@ ring-import-gate:
 .PHONY: gates-manifest-gate
 gates-manifest-gate:
 	@bash scripts/gates_manifest_gate.sh
+
+# ── DIAGNOSTICS CENSUS (RULED: CXF-3, #1522) — the diagnostics corpus
+# audit, written in CX (RULED: CXF-1). For every refusal code: its §9.6
+# band, its emission sites, the corpus cases that assert it and the three
+# columns judged from each expectation text (form / position / fix), plus
+# the class (silent / no-case / weak / covered). REPORTS, never fails: the
+# fix batches own the gate, so this target is NOT in TEST_TARGETS on the
+# audit branch. The document is the evidence the audit page quotes.
+.PHONY: diagnostics-census
+diagnostics-census: CX_BIN ?= $(CURDIR)/vcx/target/cx
+diagnostics-census: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/diagnostics_census.cx _gate_evidence/diagnostics_census.cxd
 
 # ── CXER REGISTRY GATE (corpus-audit G18; remediation register R3.7) —
 # every emitted CXER code must have a governance §9.6 registry row and no
@@ -1824,6 +1836,30 @@ test-docs:
 test-code-diagram: CX_RUNNER ?= $(CURDIR)/vcx/target/cx
 test-code-diagram: build-vcx
 	@"$(CX_RUNNER)" --allow-read --allow-write --allow-env --allow-subprocess scripts/check_code_diagram_fixtures.cx
+
+# ── reader parity — ONE READER (RULED: CXF-5, #1521; epic #1522) ──────────
+# CX has three doors into the same bytes: the DATA parser (vcx/cx/parser.v,
+# which libcx's C ABI exports and the V fixture grader reads through), the
+# PYTHON binding over that same libcx, and the PROGRAM reader
+# (vcx/cx/program_lexer.v + program_parser.v). #1521 measured them answering
+# three different things for one `[title …]` line — a swallow, a refusal, and a
+# different refusal — and the only step that noticed was a case COUNT in the
+# Python smoke. This step reads the corpus FILES through all three doors and
+# fails naming the file and the first divergent case id. It is the standing
+# form of CXF-5's rule, and it is in TEST_TARGETS.
+#
+# NOT a second copy of cxparse_full_corpus_diff_test.v: that census diffs the
+# data and program readers over the `in_cx` SECTIONS of the corpus and locks
+# bucket counts. This one reads the `.cxd` documents themselves — the position
+# the defect lived in, which no step read.
+#
+# No `$(JS_CLOSE)` here, deliberately: its `exec … 2>/dev/null` silences the
+# recipe shell's stderr for the whole line, and V's test runner reports a failed
+# assertion there — a step whose contract is to NAME the file and the divergence
+# printed eight lines of build chatter and nothing else until this came off.
+.PHONY: reader-parity
+reader-parity: build-vcx
+	@$(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/tests/reader_parity_test.v
 
 # ── gate 28.5a — CXPath / XPath 3.1 alignment, CX side (RULED: VC-7, #945) ─
 # The half of the old gate 28.5 that needs no Docker and is real new signal:
