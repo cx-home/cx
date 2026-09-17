@@ -59,12 +59,15 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1221-b-1a` | [rulings_2026_09_08_xap_serve_option_set_1221.md](rulings_2026_09_08_xap_serve_option_set_1221.md) | Ruled — 1221-b-1a: the closed set, `serve` ≠ `run` |
 | `1221-b-2a` | [rulings_2026_09_08_xap_serve_option_set_1221.md](rulings_2026_09_08_xap_serve_option_set_1221.md) | RULED: 1221-b-1a, 1221-b-2a — `[$xap:serve]` takes a CLOSED option set of |
 | `1221-b-2a` | [rulings_2026_09_08_xap_serve_option_set_1221.md](rulings_2026_09_08_xap_serve_option_set_1221.md) | Ruled — 1221-b-2a: no landed state shows a call the verb refuses |
+| `1222-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | 1250 (1250-b, the same lineage) → #1222 (1222-a) → #1239 (1239-a) → #1241 (1241-a) → #1387 (1387-a) → #1436's |
+| `1239-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | 1250 (1250-b, the same lineage) → #1222 (1222-a) → #1239 (1239-a) → #1241 (1241-a) → #1387 (1387-a) → #1436's |
 | `1240-q1` | [rulings_2026_09_04_map_lookup_1240.md](rulings_2026_09_04_map_lookup_1240.md) | Question 1240-Q1 — a hash index for wide maps (OPEN, owner ruling) |
 | `1240-q1` | [rulings_2026_09_04_map_lookup_1240.md](rulings_2026_09_04_map_lookup_1240.md) | 1240-Q1 — RULED (a) 2026-09-05: an EAGER index above a 64-entry threshold |
+| `1241-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | 1250 (1250-b, the same lineage) → #1222 (1222-a) → #1239 (1239-a) → #1241 (1241-a) → #1387 (1387-a) → #1436's |
 | `1241-q1` | [rulings_2026_09_04_immutable_append_1241.md](rulings_2026_09_04_immutable_append_1241.md) | Question 1241-Q1 — the asymptotic fix (OPEN, owner ruling — it changes a RULED carrier) |
 | `1249-q1` | [rulings_2026_09_04_perf_ratchet_at_cut_1249.md](rulings_2026_09_04_perf_ratchet_at_cut_1249.md) | Question 1249-Q1 — where does the throughput measurement live? |
 | `1250-b` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | Integrator decisions, 2026-09-17 — the Ring 0 rulings owed (1363-b, 1387-a, FMT-2, GRADER-1, 1150-a, 1250-b) |
-| `1250-b` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | 1250 (1250-b, the same lineage) → #1387 (1387-a) → #1436's residue (FMT-2) → #1515 (GRADER-1) → #1494's V-fork |
+| `1250-b` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | 1250 (1250-b, the same lineage) → #1222 (1222-a) → #1239 (1239-a) → #1241 (1241-a) → #1387 (1387-a) → #1436's |
 | `1250-q1` | [rulings_2026_09_05_comprehension_totality_1250.md](rulings_2026_09_05_comprehension_totality_1250.md) | 1250-Q1 — RULED (a): extend the EXISTING pass to the evaluator's `[?for]` |
 | `1253-a` | [rulings_2026_09_08_nav_item_current_and_rail_width_1253.md](rulings_2026_09_08_nav_item_current_and_rail_width_1253.md) | RULED: 1253-a / 1253-b — `current=` joins `ux:nav-item`; the side rail's width |
 | `1253-a` | [rulings_2026_09_08_nav_item_current_and_rail_width_1253.md](rulings_2026_09_08_nav_item_current_and_rail_width_1253.md) | 1253-a — `current=` is granted to `ux:nav-item` |
@@ -215,7 +218,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1384-a` | [rulings_2026_09_12_fmt_1384_1391.md](rulings_2026_09_12_fmt_1384_1391.md) | RULED: 1384-a, 1391-a — `cx fmt` enforces its own §1 contract with a second guard, fixes the two text-run/char-ref defects at the cause, formats a bracketed or collection value in argument and attribute position, and never declines silently again |
 | `1384-a` | [rulings_2026_09_12_fmt_1384_1391.md](rulings_2026_09_12_fmt_1384_1391.md) | RULED: 1384-a — the contract is ENFORCED, and the two measured defects are fixed at the cause |
 | `1387-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | Integrator decisions, 2026-09-17 — the Ring 0 rulings owed (1363-b, 1387-a, FMT-2, GRADER-1, 1150-a, 1250-b) |
-| `1387-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | 1250 (1250-b, the same lineage) → #1387 (1387-a) → #1436's residue (FMT-2) → #1515 (GRADER-1) → #1494's V-fork |
+| `1387-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | 1250 (1250-b, the same lineage) → #1222 (1222-a) → #1239 (1239-a) → #1241 (1241-a) → #1387 (1387-a) → #1436's |
 | `1391-a` | [rulings_2026_09_12_fmt_1384_1391.md](rulings_2026_09_12_fmt_1384_1391.md) | RULED: 1384-a, 1391-a — `cx fmt` enforces its own §1 contract with a second guard, fixes the two text-run/char-ref defects at the cause, formats a bracketed or collection value in argument and attribute position, and never declines silently again |
 | `1391-a` | [rulings_2026_09_12_fmt_1384_1391.md](rulings_2026_09_12_fmt_1384_1391.md) | RULED: 1391-a — argument and attribute position format, and a decline is never silent |
 | `1394-a` | [rulings_2026_09_10_lane_s_sso_1394_1397_1399_1404_1408.md](rulings_2026_09_10_lane_s_sso_1394_1397_1399_1404_1408.md) | RULED: Lane S, five forks — 1394-a, 1397-a, 1399-a, 1404-a, 1408-a; plus the 1409-b / 1410-b decision batch |
@@ -481,7 +484,6 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `fl-3` | [rulings_2026_08_20_columnar_lineage.md](rulings_2026_08_20_columnar_lineage.md) | FL-3 — the columnar backend joins the FL-1/FL-2 durability contract |
 | `fmt-1` | [rulings_2026_09_16_fmt_ratchet_fmt1.md](rulings_2026_09_16_fmt_ratchet_fmt1.md) | Integrator decision 2026-09-16 ~11:30Z — the fmt-sweep ratchet moves one way, and a decline fixed under it needs no spec sentence (RULED: FMT-1) |
 | `fmt-2` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | Integrator decisions, 2026-09-17 — the Ring 0 rulings owed (1363-b, 1387-a, FMT-2, GRADER-1, 1150-a, 1250-b) |
-| `fmt-2` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | 1250 (1250-b, the same lineage) → #1387 (1387-a) → #1436's residue (FMT-2) → #1515 (GRADER-1) → #1494's V-fork |
 | `ga-1` | [rulings_2026_08_20_guest_attach.md](rulings_2026_08_20_guest_attach.md) | Ruling GA-1 (2026-08-20) — attach-guest: the anonymous-floor transport (#857, owner "857a") |
 | `ge-0` | [rulings_2026_09_05_grammar_expression_env.md](rulings_2026_09_05_grammar_expression_env.md) | Rulings 2026-09-05 — the grammar-expression environment (GE-0..GE-3) |
 | `ge-0` | [rulings_2026_09_05_grammar_expression_env.md](rulings_2026_09_05_grammar_expression_env.md) | GE-0 — the caller-dependence is a DEFECT — RULED (a) |
@@ -494,7 +496,6 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `gen-1b` | [rulings_2026_08_20_fixture_generator_cx.md](rulings_2026_08_20_fixture_generator_cx.md) | GEN-1b — the port must RE-CREATE the Python generator's fail-loud behavior |
 | `gen-1c` | [rulings_2026_08_20_fixture_generator_cx.md](rulings_2026_08_20_fixture_generator_cx.md) | GEN-1c — the acceptance, measured |
 | `grader-1` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | Integrator decisions, 2026-09-17 — the Ring 0 rulings owed (1363-b, 1387-a, FMT-2, GRADER-1, 1150-a, 1250-b) |
-| `grader-1` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | 1250 (1250-b, the same lineage) → #1387 (1387-a) → #1436's residue (FMT-2) → #1515 (GRADER-1) → #1494's V-fork |
 | `hc-1` | [rulings_2026_09_04_host_context_1210.md](rulings_2026_09_04_host_context_1210.md) | HC-1 — the shape of "a journal beside the store" — RECOMMENDED: (a) |
 | `hc-1` | [rulings_2026_09_05_xap_queue.md](rulings_2026_09_05_xap_queue.md) | 1210 HC-1), `xap.md` §3.1.1, `std-lib/journal.md`. |
 | `hyg-1` | [rulings_2026_08_20_hygiene_695.md](rulings_2026_08_20_hygiene_695.md) | Ruling HYG-1 (2026-08-20) — #695 stale-inventory reconciliation (pre-cut hygiene sweep) |
@@ -851,12 +852,15 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | id | pages that name it |
 |---|---|
 | `1066-q1a` | [rulings_2026_09_04_diagram_def_namespace_1066.md](rulings_2026_09_04_diagram_def_namespace_1066.md) |
+| `107-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) |
 | `1075-q1a` | [rulings_2026_09_04_pipeline_rows_on_timeout_1075.md](rulings_2026_09_04_pipeline_rows_on_timeout_1075.md) |
 | `1085-c-1` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md), [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md) |
 | `1085-c-2` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md), [rulings_2026_09_12_audit_sink_1422.md](rulings_2026_09_12_audit_sink_1422.md) |
 | `1085-c-3` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `1085-c-4` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `1085-c-5` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
+| `1087-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) |
+| `1088-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) |
 | `1097-b` | [rulings_2026_09_11_email_world_class_agentic_1085.md](rulings_2026_09_11_email_world_class_agentic_1085.md) |
 | `114-set` | [rulings_2026_08_20_fixture_generator_cx.md](rulings_2026_08_20_fixture_generator_cx.md) |
 | `1161-q1a` | [rulings_2026_09_03_instance_of_pin_1161.md](rulings_2026_09_03_instance_of_pin_1161.md) |
@@ -864,6 +868,9 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1170-b` | [rulings_2026_09_08_bare_builtin_head_lint_1170.md](rulings_2026_09_08_bare_builtin_head_lint_1170.md), [rulings_2026_09_08_let_cascade_lint_1170.md](rulings_2026_09_08_let_cascade_lint_1170.md), [rulings_2026_09_08_seq4_pin_page_sync_1170.md](rulings_2026_09_08_seq4_pin_page_sync_1170.md), [rulings_2026_09_09_playground_expect_check_1170g.md](rulings_2026_09_09_playground_expect_check_1170g.md) |
 | `1170-c` | [rulings_2026_09_08_let_cascade_lint_1170.md](rulings_2026_09_08_let_cascade_lint_1170.md), [rulings_2026_09_08_seq4_pin_page_sync_1170.md](rulings_2026_09_08_seq4_pin_page_sync_1170.md), [rulings_2026_09_09_diagram_node_id_ordinals_1349.md](rulings_2026_09_09_diagram_node_id_ordinals_1349.md) |
 | `1172-q1a` | [rulings_2026_09_04_head_bind_whole_element_1172.md](rulings_2026_09_04_head_bind_whole_element_1172.md), [rulings_2026_09_05_pattern_attr_rest_1270.md](rulings_2026_09_05_pattern_attr_rest_1270.md) |
+| `1173-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) |
+| `1174-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) |
+| `1175-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) |
 | `118-odd` | [rulings_2026_09_08_playground_output_pin_1170.md](rulings_2026_09_08_playground_output_pin_1170.md) |
 | `1190-a` | [rulings_2026_09_07_solitary_key_is_a_note_1190.md](rulings_2026_09_07_solitary_key_is_a_note_1190.md) |
 | `1190-b` | [rulings_2026_09_07_solitary_key_is_a_note_1190.md](rulings_2026_09_07_solitary_key_is_a_note_1190.md) |
@@ -897,6 +904,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1265-pc-2` | [bench_flow_w1e_anchored_reader_2026_09_06.md](bench_flow_w1e_anchored_reader_2026_09_06.md), [rulings_2026_09_06_flow_snapshot_interval_1265.md](rulings_2026_09_06_flow_snapshot_interval_1265.md), [rulings_2026_09_09_flow_activation_seq_1316c1.md](rulings_2026_09_09_flow_activation_seq_1316c1.md) |
 | `1265-pc-3` | [rulings_2026_09_04_flow_w1_map_scale_1265.md](rulings_2026_09_04_flow_w1_map_scale_1265.md) |
 | `1265-pw-3` | [rulings_2026_09_04_flow_w3_performers_1265.md](rulings_2026_09_04_flow_w3_performers_1265.md) |
+| `1266-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) |
 | `1269-q1` | [rulings_2026_09_05_xap_queue.md](rulings_2026_09_05_xap_queue.md) |
 | `1272-q1` | [rulings_2026_09_05_xap_queue.md](rulings_2026_09_05_xap_queue.md) |
 | `128-bit` | [partition_I5_stream20_erasure.md](partition_I5_stream20_erasure.md), [rulings_2026_09_03_workflow_789.md](rulings_2026_09_03_workflow_789.md), [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) |
@@ -1204,4 +1212,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*293 ledger pages; 589 ids declared, 353 cited only.*
+*293 ledger pages; 592 ids declared, 360 cited only.*
