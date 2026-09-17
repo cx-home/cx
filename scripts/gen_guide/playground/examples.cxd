@@ -2900,7 +2900,7 @@ Compare the previous example's `age: ::int`, which declares a kind with NO value
 [?quote [+ 1 2]]
 #]]
   [note [#
-**Introduces:** `[?quote]` — and with it the homoiconicity story. `[+ 1 2]` is not evaluated; it is handed back as ITS OWN AST, in ordinary CX element syntax: `[cx:op name=add [cx:int '1'] [cx:int '2']]`. One bracketed element syntax serves documents, queries, programs, and the compiler's own tree — so a program can be read, matched with `[?match]`, and transformed with `[?modify]` using the same surface you use on data. Switch the Tree pane on to walk it.
+**Introduces:** `[?quote]` — and with it the homoiconicity story. `[+ 1 2]` is not evaluated; it is handed back as ITS OWN TREE, and that tree's text image is the ordinary CX source you wrote: `[+ 1 2]`. A quoted program is therefore an authorable CX document — you can re-parse it, hash it, and get the same content address as the equivalent data document. One bracketed element syntax serves documents, queries, programs, and the compiler's own tree — so a program can be read, matched with `[?match]`, and transformed with `[?modify]` using the same surface you use on data. Switch the Tree pane on to walk it.
 #]]
  ]
 

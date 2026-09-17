@@ -1653,7 +1653,7 @@
     "203-quote-homoiconic": {
       label: "[203] [?quote] \u2014 the program as data",
       input: "[?quote [+ 1 2]]",
-      note:  "**Introduces:** `[?quote]` \u2014 and with it the homoiconicity story. `[+ 1 2]` is not evaluated; it is handed back as ITS OWN AST, in ordinary CX element syntax: `[cx:op name=add [cx:int '1'] [cx:int '2']]`. One bracketed element syntax serves documents, queries, programs, and the compiler's own tree \u2014 so a program can be read, matched with `[?match]`, and transformed with `[?modify]` using the same surface you use on data. Switch the Tree pane on to walk it.",
+      note:  "**Introduces:** `[?quote]` \u2014 and with it the homoiconicity story. `[+ 1 2]` is not evaluated; it is handed back as ITS OWN TREE, and that tree's text image is the ordinary CX source you wrote: `[+ 1 2]`. A quoted program is therefore an authorable CX document \u2014 you can re-parse it, hash it, and get the same content address as the equivalent data document. One bracketed element syntax serves documents, queries, programs, and the compiler's own tree \u2014 so a program can be read, matched with `[?match]`, and transformed with `[?modify]` using the same surface you use on data. Switch the Tree pane on to walk it.",
       tags:  ["add", "quote"],
       section: "code/metaprogramming",
       runnable: true,

@@ -1242,9 +1242,9 @@ error: the result carries an error value — cx-err:CXER3000 at /err
 default
 #]]
  ]
- [ex key=203-quote-homoiconic chars=42
+ [ex key=203-quote-homoiconic chars=7
   [out-text [#
-[cx:op name=add [cx:int '1'] [cx:int '2']]
+[+ 1 2]
 #]]
  ]
  [ex key=204-partial-application-hole chars=1
