@@ -25,3 +25,11 @@ decision the issue does not already carry is a LETTER from the agent, never a si
 CXF-2 (c) → CXF-4 → **BB-T1** (#1520 at its head) → BB-T2 → BB-L1 → BB-S1, with CXF-7, lane 8 and the D-batches (after the answer on issue
 1545; D9 after the answer on #1544) taking a slot between batches as the cx-first page orders them; then ORD-1's Ring 0 tail
 (#1239 → #1241 → #1387 → FMT-2 → #1207's W8 exit) and the rest of ORD-1.
+
+## Amendment 2026-09-18 ~00:20Z (owner letter (a), on "are we stuck?")
+
+Measured on the run on `32e324ebb`: its suite's last file was the fixture shard grading `connector.cxd` (589 cases;
+1,383,835 ms measured on an idle box) at 97 % CPU for over an hour, beside a second copy of the same shard on an agent's
+runner — the per-case re-parse GRADER-1 rules away. **BB-T1 gains #1515 (GRADER-1, already ruled) beside #1520**: the two
+"pays back on every run" items travel together, and the batch records the census wall time and the selected run's
+duration before and after each. Rejected: (b) leaving #1515 in ORD-1's tooling tail — every run keeps paying that shard.
