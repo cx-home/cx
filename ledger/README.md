@@ -793,6 +793,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `vc-9` | [rulings_2026_08_24_0170_campaign.md](rulings_2026_08_24_0170_campaign.md) | VC-9 (4a) — #874: editor-tooling distribution STAYS PARKED |
 | `vc-9` | [rulings_2026_08_24_0170_campaign.md](rulings_2026_08_24_0170_campaign.md) | CORRECTION to VC-9 (same day, measured after the ruling) |
 | `verify-1` | [rulings_2026_09_18_owner_decisions_0235z.md](rulings_2026_09_18_owner_decisions_0235z.md) | Owner decision 2026-09-18 ~02:35Z — the eight-hour target: fifty more resolutions with two agents; batch branches verify through an inner loop, one graded run per merge point (RULED: VERIFY-1) |
+| `verify-1a` | [rulings_2026_09_18_owner_decisions_0250z.md](rulings_2026_09_18_owner_decisions_0250z.md) | Owner decision 2026-09-18 ~02:50Z — the eight-hour requirement amended: the order is the most recent issues first, then Ring 0, Ring 1, Ring 2; #1520 and #1515 ride the first batch; the fifty is a HARD REQUIREMENT (RULED: VERIFY-1a) |
 | `vf-1` | [rulings_2026_09_04_feature_verb_form_1217.md](rulings_2026_09_04_feature_verb_form_1217.md) | VF-1 — one projection, how many entries — RECOMMENDED: (a) |
 | `vg-0` | [rulings_2026_09_04_view_grammar.md](rulings_2026_09_04_view_grammar.md) | VG-0 — the reading (recorded, not a letter) |
 | `vg-1` | [rulings_2026_09_04_view_grammar.md](rulings_2026_09_04_view_grammar.md) | VG-1 — where the noun declares what the clauses may do (RULED: VG-1 = a) |
@@ -1067,8 +1068,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `cve-2011` | [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md) |
 | `cxf-3` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md), [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_diagnostics_audit_1522.md](rulings_2026_09_17_diagnostics_audit_1522.md), [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md), [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md), [rulings_2026_09_18_owner_decisions_0200z.md](rulings_2026_09_18_owner_decisions_0200z.md) |
 | `cxf-5` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md), [rulings_2026_09_18_owner_decisions_0155z.md](rulings_2026_09_18_owner_decisions_0155z.md), [rulings_2026_09_18_owner_decisions_0235z.md](rulings_2026_09_18_owner_decisions_0235z.md) |
-| `cxf-6` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md), [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md), [rulings_2026_09_18_owner_decisions_0235z.md](rulings_2026_09_18_owner_decisions_0235z.md) |
-| `cxf-7` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md), [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_18_owner_decisions_0200z.md](rulings_2026_09_18_owner_decisions_0200z.md) |
+| `cxf-6` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md), [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md), [rulings_2026_09_18_owner_decisions_0235z.md](rulings_2026_09_18_owner_decisions_0235z.md), [rulings_2026_09_18_owner_decisions_0250z.md](rulings_2026_09_18_owner_decisions_0250z.md) |
+| `cxf-7` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md), [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_18_owner_decisions_0200z.md](rulings_2026_09_18_owner_decisions_0200z.md), [rulings_2026_09_18_owner_decisions_0250z.md](rulings_2026_09_18_owner_decisions_0250z.md) |
 | `dist-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) |
 | `dist-2` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md), [rulings_2026_09_06_connector_is_a_feature_728.md](rulings_2026_09_06_connector_is_a_feature_728.md) |
 | `dr-2` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) |
@@ -1245,4 +1246,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*306 ledger pages; 612 ids declared, 370 cited only.*
+*307 ledger pages; 613 ids declared, 370 cited only.*
