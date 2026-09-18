@@ -1,0 +1,219 @@
+# scripts/bisect_batch.cx — which test/fix PAIR of a batch broke one V test
+# file (RULED: VERIFY-1, CXF-1).
+#
+# A batch branch is a run of `test(N)` / `fix(N)` commit pairs. When one V test
+# file reds at the branch tip, the question is which PAIR did it — and the
+# answer is worth a build per candidate rather than an afternoon of reading.
+# This walks the pairs OLDEST FIRST, checks each pair's tip out in a detached
+# temp worktree of the main checkout, builds it once through the caller's build
+# slot, runs that ONE test file, and STOPS at the first pair whose run fails:
+# the scan is a lazy comprehension, so the tip after the answer is never built.
+#
+# Why cx and not a shell script: CXF-1 (#1522) — probes, bisects and scratch
+# tools are written in cx. Nothing here needs another language: it is git
+# output, a worktree, a build and a test process, and `[$process:run]` runs
+# each one.
+#
+# Usage (program args are positional after the FILE, cli.md §3 / PYE-2):
+#   cx --allow-read --allow-write --allow-subprocess --allow-env \
+#     scripts/bisect_batch.cx --test=vcx/tests/cli_umbrella_test.v \
+#     --from=origin/release/0.18 --to=HEAD
+#
+# Exit codes:
+#   0 — a pair was found; its tip is named on stdout.
+#   1 — no pair in the range fails the test file (it was already red at --from,
+#       or the red is not in this range).
+#   2 — usage, git, or environment error. A BUILD failure at a tip is reported
+#       and that tip is SKIPPED, never read as the test failing: a tree that
+#       does not compile answers nothing about the test.
+#
+# It never writes in the main checkout's working tree (`git worktree add
+# --detach` only), and every worktree it makes gets `third_party/v` and
+# `third_party/re2` symlinked at the main checkout's submodules — the shape the
+# standing rules require, and the reason a build in one is a relink rather than
+# a fork rebuild.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/fp'      as=fp]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+# cat-seq: one flat sequence from a sequence of sequences. There is no builtin
+# for it (the same one-liner scripts/flow_dogfood_gate.cx carries).
+[?def cat-seq scope=public ($ss) [$fp:flat-map $ss [?fn ($x) $x]]]
+
+[?const USAGE [#
+bisect_batch.cx — which test/fix pair of a batch broke one V test file
+
+  cx --allow-read --allow-write --allow-subprocess --allow-env \
+    scripts/bisect_batch.cx --test=PATH --from=REV [--to=REV] [--repo=DIR] [--slot=DIR] [--keep]
+
+  --test=PATH    the ONE V test file to run at each pair's tip (required)
+  --from=REV     the revision the batch branched from (required; exclusive)
+  --to=REV       the branch tip (default HEAD)
+  --repo=DIR     the main checkout to make worktrees of
+                 (default /Users/ep/git-repos/cx/cx-private)
+  --slot=DIR     the build slot every build and test goes through
+                 (default $HOME/git-repos/cx/.build-slot-impl3)
+  --keep         leave each temp worktree behind (to look at the failure)
+  --help         this text
+
+Walks the `fix(N)` tips oldest first, builds each in a detached temp worktree
+and runs the one test file, stopping at the FIRST tip whose run fails.
+#]]
+
+# run: [$process:run] over a built argv, answering the result element. A
+# failure to SPAWN is an environment error and exits 2; a non-zero exit from
+# the process itself is data the caller reads off @exit-code.
+[?def run scope=public impure ($argv $what)
+  [?fallback [$process:run $argv]
+    [recover-with ([$cry [$cat ('bisect_batch: cannot run ', $what)]],
+                   [$env:exit 2], null)]]]
+
+# git: a git call in $repo whose failure means the environment is wrong.
+[?def git scope=public impure ($repo $rest $what)
+  [?let [= $r [$run [$cat-seq (('git', '-C', $repo), $rest)] $what]]
+    [?if [not [= [$string $r@exit-code] '0']]
+      [then [?let [= $_f ([$cry [$cat ('bisect_batch: git ', $what, ' failed (exit ',
+                                       [$string $r@exit-code], ')')]],
+                          [$cry [$string $r@stderr]])]
+              [?let [= $_x [$env:exit 2]] '']]]
+      [else [$string $r@stdout]]]]]
+
+# pair-tips: the `fix(N):` commits of the range, oldest first, as
+# `<sha>\t<subject>` rows. A batch's pair is (test(N), fix(N)) and the pair's
+# TIP is its fix — the first tree at which that pair is whole.
+[?def pair-tips scope=public ($rows)
+  [?to-sequence [?for [in $r $rows]
+    [where [not [= $r '']]]
+    [= $subject [?else [$nth [$strings:split $r "\t"] 2] '']]
+    [where [$strings:starts-with $subject 'fix(']]
+    [yield $r]]]]
+
+# link-third-party: replace the worktree's submodule directories with symlinks
+# at the main checkout's, which is what makes a build here a relink. A tree
+# whose `third_party/v/v` is missing cannot build, and the caller reports that
+# as a build failure rather than a test verdict.
+[?def link-third-party scope=public impure ($repo $dir)
+  [?to-sequence [?for [in $name ('v', 're2')]
+    [= $target [$path:join $repo 'third_party' $name]]
+    [= $here [$path:join $dir 'third_party' $name]]
+    [= $_rm [$run ('rm', '-rf', $here) 'rm third_party entry']]
+    [= $_ln [$run ('ln', '-s', $target, $here) 'ln -s third_party entry']]
+    [yield $name]]]]
+
+# tip-worktree: a detached worktree of $repo at $sha, with third_party
+# symlinked. Answers its path, or '' when the worktree could not be made.
+[?def tip-worktree scope=public impure ($repo $sha)
+  [?let [= $dir [$path:join [$path:dirname $repo] [$cat ('bisect-', $sha)]]]
+        [= $_rm [$run ('git', '-C', $repo, 'worktree', 'remove', '--force', $dir) 'worktree remove (stale)']]
+        [= $r [$run ('git', '-C', $repo, 'worktree', 'add', '--detach', $dir, $sha) 'worktree add']]
+    [?if [not [= [$string $r@exit-code] '0']]
+      [then [?let [= $_e ([$cry [$cat ('bisect_batch: cannot add a worktree at ', $sha)]],
+                          [$cry [$string $r@stderr]])] '']]
+      [else [?let [= $_l [$link-third-party $repo $dir]] $dir]]]]]
+
+# slot-run: one command through the build slot, so two agents never build at
+# once (the standing rules' one-runner discipline). Answers the exit code as
+# text.
+[?def slot-run scope=public impure ($slot $dir $rest $what)
+  [?let [= $argv [$cat-seq (('env', [$cat ('CX_BUILD_SLOT=', $slot)],
+                             'sh', [$path:join $dir 'scripts/build-slot.sh'],
+                             'devbox', 'run', '--'), $rest)]]
+        [= $r [$run $argv $what]]
+    [$string $r@exit-code]]]
+
+# verdict-at: build the tip, run the one test file, and answer
+# [tip sha= verdict= subject=]. The worktree is removed unless --keep.
+[?def verdict-at scope=public impure ($repo $slot $test-file $keep $sha $subject)
+  [?let [= $dir [$tip-worktree $repo $sha]]
+    [?if [= $dir '']
+      [then [tip sha=$sha verdict=:worktree-failed subject=$subject]]
+      [else [?let
+        [= $_b1 [$say [$cat ('  ', $sha, '  building — ', $subject)]]]
+        [= $build [$slot-run $slot $dir ('make', 'build-vcx') [$cat ('build at ', $sha)]]]
+        [= $_bd [?if [= $build '0']
+          [then [$slot-run $slot $dir ('make', 'build-vcx-dev') [$cat ('dev build at ', $sha)]]]
+          [else '']]]
+        [= $test [?if [= $build '0']
+          [then [$slot-run $slot $dir ('v', 'test', $test-file) [$cat ('test at ', $sha)]]]
+          [else '']]]
+        [= $_s [?if [= $build '0']
+          [then [$say [$cat ('  ', $sha, '  ', $test-file, ' exit ', $test)]]]
+          [else [$say [$cat ('  ', $sha, '  BUILD FAILED (exit ', $build,
+                             ') — skipped: a tree that does not compile answers nothing')]]]]]
+        [= $_k [?if $keep [then ''] [else [?let
+          [= $_r [$run ('git', '-C', $repo, 'worktree', 'remove', '--force', $dir) 'worktree remove']] '']]]]
+        [?if [not [= $build '0']]
+          [then [tip sha=$sha verdict=:build-failed subject=$subject]]
+          [else [?if [= $test '0']
+            [then [tip sha=$sha verdict=:passed subject=$subject]]
+            [else [tip sha=$sha verdict=:failed subject=$subject]]]]]]]]]]
+
+[?let
+  [= $args [?fallback [$env:parse-args [argspec
+              [flag name="test" type=string default=""]
+              [flag name="from" type=string default=""]
+              [flag name="to"   type=string default="HEAD"]
+              [flag name="repo" type=string default="/Users/ep/git-repos/cx/cx-private"]
+              [flag name="slot" type=string default=""]
+              [flag name="keep" type=bool]
+              [flag name="help" type=bool]]]
+             [recover-with ([$cry USAGE], [$env:exit 2], null)]]]
+  [= $_h [?if [?else [$env:flag $args 'help'] false]
+    [then ([$say USAGE], [$env:exit 0])]
+    [else ()]]]
+  [= $test-file [$string [?else [$env:flag $args 'test'] '']]]
+  [= $from [$string [?else [$env:flag $args 'from'] '']]]
+  [= $to   [$string [?else [$env:flag $args 'to'] 'HEAD']]]
+  [= $repo [$string [?else [$env:flag $args 'repo'] '']]]
+  [= $keep [?else [$env:flag $args 'keep'] false]]
+  [= $slot [?let [= $s [$string [?else [$env:flag $args 'slot'] '']]]
+    [?if [= $s '']
+      [then [$path:join [$env:var-or-default 'HOME' ''] 'git-repos/cx/.build-slot-impl3']]
+      [else $s]]]]
+
+  [= $_req [?if [or [= $test-file ''] [= $from '']]
+    [then ([$cry 'bisect_batch: --test=PATH and --from=REV are required'],
+           [$cry USAGE], [$env:exit 2])]
+    [else ()]]]
+
+  # ── the pairs, oldest first ─────────────────────────────────────────────
+  [= $log [$git $repo ('log', '--reverse', '--format=%H%x09%s', [$cat ($from, '..', $to)])
+            'log of the range']]
+  [= $tips [$pair-tips [$strings:split-lines $log]]]
+  [= $_none [?if [= [$count $tips] 0]
+    [then ([$cry [$cat ('bisect_batch: no `fix(N)` commit in ', $from, '..', $to)]],
+           [$env:exit 1])]
+    [else ()]]]
+  [= $_h1 [$say [$cat ([$string [$count $tips]], ' pair tip(s) in ', $from, '..', $to,
+                       '; running ', $test-file, ' at each, oldest first')]]]
+
+  # ── the scan ────────────────────────────────────────────────────────────
+  # `[?for]` is LAZY and `[$first]` forces only as far as it must, so the tip
+  # AFTER the answer is never built. That laziness is the early exit: a scan
+  # that built every tip would cost one full build per pair past the answer.
+  [= $hit [?else [$first [?for [in $row $tips]
+    [= $sha [$first [$strings:split $row "\t"]]]
+    [= $subject [?else [$nth [$strings:split $row "\t"] 2] '']]
+    [= $v [$verdict-at $repo $slot $test-file $keep $sha $subject]]
+    [where [= [$string $v@verdict] ':failed']]
+    [yield $v]]] ()]]
+
+  [?match $hit
+    [case [tip]
+      ([$say ''],
+       [$say [$cat ('FIRST FAILING PAIR: ', [$string $hit@sha], '  ', [$string $hit@subject])]],
+       [$say [$cat ('  ', $test-file, ' passes at every earlier pair tip in the range and fails here')]],
+       [$env:exit 0])]
+    [else
+      ([$say ''],
+       [$say [$cat ('no pair in ', $from, '..', $to, ' fails ', $test-file,
+                    ' — it was already red at ', $from, ', or the red is outside this range')]],
+       [$env:exit 1])]]]

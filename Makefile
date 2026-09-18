@@ -91,7 +91,21 @@ V := $(if $(wildcard $(CURDIR)/third_party/v/v),$(CURDIR)/third_party/v/v,v)
 # known leak, because the wedge's victim is the NEXT make rather than the step
 # that leaked — so "this step has no server fixture today" is not a property
 # worth betting a 90-minute gate on.
-JS_CLOSE := exec 3<&- 4<&- 5<&- 6<&- 2>/dev/null || true;
+# #1542: the `2>/dev/null` is SCOPED to the closes with a brace group. Written
+# as `exec 3<&- … 2>/dev/null`, a bare `exec` with only redirections applies
+# them to the SHELL, permanently — so every recipe carrying JS_CLOSE ran with
+# its stderr pointed at /dev/null for the rest of the line, and every
+# diagnostic after it was lost. Measured:
+#
+#   sh -c 'exec 3<&- 4<&- 5<&- 6<&- 2>/dev/null || true; echo x >&2'   → nothing
+#   sh -c '{ exec 3<&- 4<&- 5<&- 6<&- ; } 2>/dev/null || true; echo x >&2' → x
+#
+# The group's redirect lasts only for the group, while `exec`'s fd closes are
+# the shell's and outlive it — so the "bad file descriptor" noise the redirect
+# exists to swallow is still swallowed, and the recipe keeps its stderr. Under
+# `SHELL='sh -x'` the difference is the whole trace of every test step: the
+# nested-make hunt of #1520 could see nothing past this line.
+JS_CLOSE := { exec 3<&- 4<&- 5<&- 6<&- ; } 2>/dev/null || true;
 
 CONFORMANCE_CORE := conformance/core.cxd
 CONFORMANCE_EXT := conformance/extended.cxd
@@ -2624,6 +2638,32 @@ FIXTURE_FILES ?=
 .PHONY: fixtures
 fixtures:
 	@FIXTURE_FILES="$(FIXTURE_FILES)" sh scripts/run_fixture_shards.sh
+
+# ── check-no-nested-make (#1520) ──────────────────────────────────────────────
+# No step of the suite may spawn a nested `make test`. Measured twice on
+# 2026-09-17: inside a SELECTED run a child `make test` started 72 minutes into
+# `test-vcx-suite` and ran the whole TEST_TARGETS union for an hour and a half,
+# and in the second sighting it wrote the machine-wide gate lock and failed the
+# release's own run at check-gate-lock in five seconds.
+#
+# The probe runs a SUITE_FILES selection with `make` shadowed by a shim that
+# records every argv and REFUSES a `test` goal, then asserts none asked for one.
+# `NESTED_MAKE_SUITE_FILES` names the selection (default: the three
+# subprocess-heavy files); `NESTED_MAKE_KEEP=1` leaves `argv.log` behind.
+#
+# DELIBERATELY NOT IN TEST_TARGETS, and the reason is the defect itself: this
+# target RUNS `test-vcx-suite`, so inside `make test` it would nest a suite in
+# the matrix — the shape #1520 is about. It is a step the integrator or an agent
+# runs on purpose, and under a full-union selection it names the spawner in one
+# line of its own log.
+NESTED_MAKE_SUITE_FILES ?=
+NESTED_MAKE_KEEP ?=
+.PHONY: check-no-nested-make
+check-no-nested-make: build-vcx
+	@vcx/target/cx --allow-read --allow-write --allow-subprocess --allow-env \
+	  scripts/check_no_nested_make.cx \
+	  $(if $(NESTED_MAKE_SUITE_FILES),--suite-files="$(NESTED_MAKE_SUITE_FILES)",) \
+	  $(if $(NESTED_MAKE_KEEP),--keep,)
 
 # #700 consolidation absorbs a step file's tests into an umbrella and REMOVES
 # the original; every fix made to the umbrella afterwards then lives only
