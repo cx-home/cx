@@ -4371,6 +4371,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
  [ex key=290-a-snapshot-inside-one-run
   [label [#[290] a snapshot — record a value once, compare every later sighting#]]
   [section [# everyday/testing #]]
+  [grants [# --allow-read --allow-write #]]
   [src [#
 [?lib 'cx-stdlib/test']
 [?let [= $report [report [row tag='idea' n=1] [row tag='todo' n=2]]]
@@ -4383,7 +4384,7 @@ Diagnostics render values in canonical spelling everywhere, so the message and t
   [snapshot key='daily' agreed=true drift-caught=true]]
 #]]
   [note [#
-**Introduces:** `[$test:assert-snapshot VALUE snapshot-key='KEY']` (test.md §3.1) — the assertion you reach for when writing the expectation by hand would be longer than the code: the first sighting of a key RECORDS, every later sighting COMPARES, and a divergence raises `cx-err:CXER2203` naming both. The key is a **named** argument (`snapshot-key='daily'` — no `$`, and not positional) because the parameter is declared named-with-default, code.md §12.2; the spelling the module's own fn-doc carried was `$snapshot-key=…`, which does not parse, and this branch fixes it (#1553). Know the boundary before relying on it: the store lives for **one process**, so this catches a value two paths in the same run disagree about and NOT a value that changed since yesterday — the on-disk `__snapshots__/` store and `CX_TEST_UPDATE_SNAPSHOTS` that §3.1 specifies are #1554.
+**Introduces:** `[$test:assert-snapshot VALUE snapshot-key='KEY']` (test.md §3.1) — the assertion you reach for when writing the expectation by hand would be longer than the code: the first sighting of a key RECORDS, every later sighting COMPARES, and a divergence raises `cx-err:CXER2203` naming both. The key is a **named** argument (`snapshot-key='daily'` — no `$`, and not positional) because the parameter is declared named-with-default, code.md §12.2; the spelling the module's own fn-doc carried was `$snapshot-key=…`, which does not parse, and this branch fixes it (#1553). The store is on DISK (`__snapshots__/`, or §3.4's `snapshot-dir`), so a snapshot outlives the process and catches a value that changed since yesterday — which is what a snapshot is for (#1554). That is why this example carries `[grants]`: looking for the recorded file charges `read` and recording one charges `write`, the caller's own grants on the command line like any other file effect. `CX_TEST_UPDATE_SNAPSHOTS=1` re-records instead of comparing.
 #]]
   [expect [# [snapshot key=daily agreed=true drift-caught=true] #]]
  ]
