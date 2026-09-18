@@ -573,6 +573,15 @@ fn flow_cli_set(mut o FlowCliOpts, key string, val string) {
 	}
 }
 
+// flow_cli_install_caps installs the invocation's grants on the active set.
+//
+// It runs BEFORE the `--env` scan at every verb that has one, because the scan
+// resolves the env's `[?lib]` spans through the very loader that charges `read`
+// for a path-form module (#1539, RULED: 1061-a (5)). Scanning first charged
+// that read against the empty set, and `flow_cli_module_acts` answers no rows
+// for a lib that does not resolve — so a grant the command line CARRIED read
+// back as an act that resolves to nothing. The grants are facts of the
+// invocation; nothing that reads a program may run ahead of them.
 fn flow_cli_install_caps(o FlowCliOpts) {
 	if o.allow_all {
 		code.caps_set_all()
@@ -681,11 +690,11 @@ fn flow_cli_run(o FlowCliOpts) {
 	if o.env == '' {
 		flow_cli_die('run needs --env ENV.cx (the program whose module tree the acts resolve through)')
 	}
+	flow_cli_install_caps(o)
 	flow_src := flow_cli_read(o.positional[0], 'the flow document')
 	directives, acts := flow_cli_env_scan(o.env)
 	args_src := flow_cli_args(o.args, flow_cli_arg_types(flow_src))
 	url := if o.journal != '' { o.journal } else { flow_cli_journal_default }
-	flow_cli_install_caps(o)
 	program := [
 		flow_cli_prelude(true),
 		directives.join('\n'),
@@ -777,9 +786,9 @@ fn flow_cli_validate(o FlowCliOpts) {
 	if o.env == '' {
 		flow_cli_die('validate needs --env ENV.cx (the program whose module tree the acts resolve through)')
 	}
+	flow_cli_install_caps(o)
 	flow_src := flow_cli_read(o.positional[0], 'the flow document')
 	directives, acts := flow_cli_env_scan(o.env)
-	flow_cli_install_caps(o)
 	program := [
 		flow_cli_prelude(false),
 		directives.join('\n'),
@@ -977,6 +986,7 @@ fn flow_cli_simulate(o FlowCliOpts) {
 	if o.positional.len != 2 {
 		flow_cli_die('simulate takes FLOW.cx and RESULTS.cx')
 	}
+	flow_cli_install_caps(o)
 	flow_src := flow_cli_read(o.positional[0], 'the flow document')
 	results_src := flow_cli_read(o.positional[1], 'the result table')
 	mut directives := []string{}
@@ -985,7 +995,6 @@ fn flow_cli_simulate(o FlowCliOpts) {
 		directives, acts = flow_cli_env_scan(o.env)
 	}
 	args_src := flow_cli_args(o.args, flow_cli_arg_types(flow_src))
-	flow_cli_install_caps(o)
 	program := [
 		flow_cli_prelude(false),
 		directives.join('\n'),
