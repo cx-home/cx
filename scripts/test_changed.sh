@@ -221,7 +221,10 @@ step_globs() {
     # CLI/cmd side, the embed estate beyond stdlib/, and the conformance files
     # no shard grades: a CSS byte in an x/ module and a docs/llm regeneration
     # grade nothing here, and they were selecting an 11-minute serial step.
-    test-profile-gate)             echo "$RING_LIB stdlib/* conformance/code.cxd conformance/stdlib/* conformance/platform/* conformance/x/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/runners/profile_gate/* vcx/tests/fixtures_grader/* third_party/*" ;;
+    test-profile-gate)             echo "$RING_LIB stdlib/* conformance/code.cxd conformance/stdlib/* conformance/platform/* conformance/x/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/runners/profile_gate/* vcx/tests/fixtures_grader/* scripts/profile_gate_files_for_branch.sh third_party/*" ;;
+    # #1560 (RULED: VCOST-1): the selection self-test reads only the helper it
+    # pins and its own source, so it runs when either moves and not otherwise.
+    check-profile-gate-selection)  echo "scripts/profile_gate_files_for_branch.sh scripts/profile_gate_selection_selftest.sh" ;;
     check-code-spec-consistency)   echo 'spec/* vcx/code/*' ;;
     # ledger-index-check (#1438) regenerates ledger/README.md from the store and
     # compares: its inputs are every ledger page and the generator itself.
