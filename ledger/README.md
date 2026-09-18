@@ -293,6 +293,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1453-a` | [rulings_2026_09_15_owner_decisions_1145z.md](rulings_2026_09_15_owner_decisions_1145z.md) | Owner decisions 2026-09-15 ~11:45Z — "1a 2a 3 accepted 4a 5a 6a" (RULED: 1502-a, 1456-a, 1503-a, 1256-a, 1453-a) |
 | `1455-a` | [rulings_2026_09_14_connector_catalog_1430e.md](rulings_2026_09_14_connector_catalog_1430e.md) | Owner letter 2026-09-14 ~05:50Z — every connection type, every database, the reference set (RULED: 1430-e, 1455-a, 1430-f) |
 | `1456-a` | [rulings_2026_09_15_owner_decisions_1145z.md](rulings_2026_09_15_owner_decisions_1145z.md) | Owner decisions 2026-09-15 ~11:45Z — "1a 2a 3 accepted 4a 5a 6a" (RULED: 1502-a, 1456-a, 1503-a, 1256-a, 1453-a) |
+| `1456-b` | [rulings_2026_09_18_owner_decisions_1640z.md](rulings_2026_09_18_owner_decisions_1640z.md) | Owner decisions 2026-09-18 ~16:40Z — "recommendations accepted": twenty-one issues closed by the owner's word on the triage list (TRIAGE-1); the soap version is the string '1.1' (1575-b); unknown Security members are carried (1456-b) |
 | `1457-a` | [rulings_2026_09_15_owner_decisions_1830z.md](rulings_2026_09_15_owner_decisions_1830z.md) | Owner decisions 2026-09-15 ~18:30Z — "1a 2a 3a 4a" (RULED: INT-20, 1503-b, 1502-b, 1457-a) |
 | `1461-a` | [rulings_2026_09_18_owner_decisions_1620z.md](rulings_2026_09_18_owner_decisions_1620z.md) | Decisions 2026-09-18 ~16:20Z — the ws defs' placement between the two http halves (1461-a); an atom the renderer writes must read back (1575-a) |
 | `1502-a` | [rulings_2026_09_15_owner_decisions_1145z.md](rulings_2026_09_15_owner_decisions_1145z.md) | Owner decisions 2026-09-15 ~11:45Z — "1a 2a 3 accepted 4a 5a 6a" (RULED: 1502-a, 1456-a, 1503-a, 1256-a, 1453-a) |
@@ -321,6 +322,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1563-a` | [rulings_2026_09_18_owner_decisions_1220z.md](rulings_2026_09_18_owner_decisions_1220z.md) | Owner decisions 2026-09-18 ~12:20Z — "all recommendations": the work continues past the clock with umbrella steps for Ring 0 (VERIFY-2); the twelve open letters ruled (1563-a, 1559-a, 1515-a, 1566-c, 1534-a, 1552-a, 1556-a, 1540-a, 1551-b, 1544-b, 1509-a) and the integrator's 1559-d recorded |
 | `1566-c` | [rulings_2026_09_18_owner_decisions_1220z.md](rulings_2026_09_18_owner_decisions_1220z.md) | Owner decisions 2026-09-18 ~12:20Z — "all recommendations": the work continues past the clock with umbrella steps for Ring 0 (VERIFY-2); the twelve open letters ruled (1563-a, 1559-a, 1515-a, 1566-c, 1534-a, 1552-a, 1556-a, 1540-a, 1551-b, 1544-b, 1509-a) and the integrator's 1559-d recorded |
 | `1575-a` | [rulings_2026_09_18_owner_decisions_1620z.md](rulings_2026_09_18_owner_decisions_1620z.md) | Decisions 2026-09-18 ~16:20Z — the ws defs' placement between the two http halves (1461-a); an atom the renderer writes must read back (1575-a) |
+| `1575-b` | [rulings_2026_09_18_owner_decisions_1640z.md](rulings_2026_09_18_owner_decisions_1640z.md) | Owner decisions 2026-09-18 ~16:40Z — "recommendations accepted": twenty-one issues closed by the owner's word on the triage list (TRIAGE-1); the soap version is the string '1.1' (1575-b); unknown Security members are carried (1456-b) |
 | `192-gcm` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) | RULED: 1400-a, 1401-a — XML Encryption comes IN: `saml:verify` decrypts `EncryptedAssertion` / `EncryptedID` / `EncryptedAttribute` with `opts.decryption-keys`; `crypto` gains RSA key transport (OAEP, SHA-1 inside OAEP allowed; PKCS#1 v1.5 behind a loud opt-in with implicit rejection) and AES-CBC + AES-128/192-GCM; encryption is detected BEFORE the signature search |
 | `787-poc` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) | Ledger — #787 integration: the ONE rebase of impl/787-poc onto release/0.16.0 |
 | `ad-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-1 — `[selection …]` binds every consumption point, through the one PEP (#1181) |
@@ -738,6 +740,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `tme-1` | [rulings_2026_08_22_typed_map_entry.md](rulings_2026_08_22_typed_map_entry.md) | TME-1 — a map key is a declaration site, so it takes the glued annotation |
 | `tme-1` | [rulings_2026_08_22_typed_map_entry.md](rulings_2026_08_22_typed_map_entry.md) | TME-1 is SUPERSEDED — its premise was FALSE (recorded 2026-08-22) |
 | `trap-1` | [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) | The traps become fixtures — two batch branches for the CXF-8 defects, and the one ruling they need (RULED: TRAP-1, 1527-a) |
+| `triage-1` | [rulings_2026_09_18_owner_decisions_1640z.md](rulings_2026_09_18_owner_decisions_1640z.md) | Owner decisions 2026-09-18 ~16:40Z — "recommendations accepted": twenty-one issues closed by the owner's word on the triage list (TRIAGE-1); the soap version is the string '1.1' (1575-b); unknown Security members are carried (1456-b) |
 | `uom-1` | [rulings_2026_08_20_universal_object_model.md](rulings_2026_08_20_universal_object_model.md) | UOM-1 — the universal object/subtree model IS the store contract; execute |
 | `ux-1` | [rulings_2026_08_20_ux_spec_precut.md](rulings_2026_08_20_ux_spec_precut.md) | UX-1 — spec pre-cut, then documentation ("big miss but we caught it") |
 | `vc-1` | [rulings_2026_08_24_0170_campaign.md](rulings_2026_08_24_0170_campaign.md) | Ruling 2026-08-24 — the v0.16.1 campaign charter (VC-1..VC-5) |
@@ -979,6 +982,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1359-b` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
 | `1363-a` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) |
 | `1383-a` | [rulings_2026_09_10_scim_attribute_projection_1103.md](rulings_2026_09_10_scim_attribute_projection_1103.md) |
+| `1386-b` | [rulings_2026_09_18_owner_decisions_1640z.md](rulings_2026_09_18_owner_decisions_1640z.md) |
 | `1406-a` | [rulings_2026_09_11_saml_binding_1402b_scim_1406b.md](rulings_2026_09_11_saml_binding_1402b_scim_1406b.md) |
 | `1409-a` | [rulings_2026_09_10_lane_s_sso_1394_1397_1399_1404_1408.md](rulings_2026_09_10_lane_s_sso_1394_1397_1399_1404_1408.md), [rulings_2026_09_11_oidc_hardening_1407.md](rulings_2026_09_11_oidc_hardening_1407.md) |
 | `1413-b` | [rulings_2026_09_12_audit_sink_1422.md](rulings_2026_09_12_audit_sink_1422.md), [rulings_2026_09_12_owner_letters_batch.md](rulings_2026_09_12_owner_letters_batch.md) |
@@ -1078,7 +1082,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `af-9` | [partition_I5_audit.md](partition_I5_audit.md), [partition_corpus_audit.md](partition_corpus_audit.md) |
 | `af-9a` | [partition_I5_audit.md](partition_I5_audit.md) |
 | `af-9b` | [partition_I5_audit.md](partition_I5_audit.md) |
-| `arch-0916` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
+| `arch-0916` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md), [rulings_2026_09_18_owner_decisions_1640z.md](rulings_2026_09_18_owner_decisions_1640z.md) |
 | `bf-1` | [partition_I2_extraction.md](partition_I2_extraction.md), [partition_I5_stream22_cleanroom.md](partition_I5_stream22_cleanroom.md) |
 | `choice-1` | [rulings_2026_08_21_array_separator.md](rulings_2026_08_21_array_separator.md), [rulings_2026_09_09_fmt_fingerprint_underscores_1347.md](rulings_2026_09_09_fmt_fingerprint_underscores_1347.md) |
 | `client-2` | [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md) |
@@ -1264,4 +1268,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*310 ledger pages; 631 ids declared, 370 cited only.*
+*311 ledger pages; 634 ids declared, 371 cited only.*
