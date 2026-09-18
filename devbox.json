@@ -17,7 +17,8 @@
   },
   "env": {
     "CPATH": "$PWD/.devbox/nix/profile/default/include",
-    "LIBRARY_PATH": "$PWD/.devbox/nix/profile/default/lib"
+    "LIBRARY_PATH": "$PWD/.devbox/nix/profile/default/lib",
+    "RUSTUP_HOME": "$HOME/.cache/cx-devbox/rustup"
   },
   "shell": {
     "init_hook": [

@@ -155,8 +155,57 @@ else
 	bad G "check-selection-manifest failed without naming the rowless step"
 fi
 
+# ── H — an ESCALATED union is REFUSED under a pre-merge runner (#1489) ──────
+# Case C proves the selection escalates; this proves the escalated selection is
+# not EXECUTED on a shared box. It needs a non-dry run, and `--changed-files` is
+# a dry-run-only flag by construction, so it gets a synthetic repo the way G
+# does — with a TEST_TARGETS step that only touches a sentinel, so the arm that
+# is NOT refused costs nothing and its sentinel is the proof it ran.
+H="$T/h"
+mkdir -p "$H/scripts"
+cp "$TC" "$H/scripts/test_changed.sh"
+cat > "$H/Makefile" <<'MK'
+TEST_TARGETS := noop
+build-vcx: ; @true
+build-vcx-dev: ; @true
+noop: ; @touch ran.sentinel
+MK
+: > "$H/scripts/some_gate.sh"
+( cd "$H" && git init -q . && git add -A && git -c user.email=s@t -c user.name=s commit -qm base )
+# A TRACKED build-infra path, modified: the change set comes from git, so an
+# untracked file would not be in it and the case would prove nothing.
+echo '# escalate' >> "$H/scripts/some_gate.sh"
+
+h_run() { # $1 = the runner directory's basename
+	rm -f "$H/ran.sentinel"
+	( cd "$H" && env CX_BUILD_SLOT="$T/$1" sh scripts/test_changed.sh HEAD > "$T/h.log" 2>&1 ) || true
+}
+
+h_run .build-slot-impl2
+if grep -q 'TEST-CHANGED: escalated → post-merge (INT-5)' "$T/h.log" && [ ! -f "$H/ran.sentinel" ]; then
+	ok H1 "pre-merge runner: refused, nothing executed"
+else
+	bad H1 "pre-merge runner: no refusal line, or a step RAN (sentinel $( [ -f "$H/ran.sentinel" ] && echo present || echo absent ))"
+fi
+
+h_run .build-slot
+if ! grep -q 'escalated → post-merge' "$T/h.log" && [ -f "$H/ran.sentinel" ]; then
+	ok H2 "post-merge runner: not refused, the union ran"
+else
+	bad H2 "post-merge runner: refused, or the union did not run"
+fi
+
+rm -f "$H/ran.sentinel"
+( cd "$H" && env CX_BUILD_SLOT="$T/.build-slot-impl2" TEST_CHANGED_FORCE_UNION=1 \
+	sh scripts/test_changed.sh HEAD > "$T/h3.log" 2>&1 ) || true
+if [ -f "$H/ran.sentinel" ]; then
+	ok H3 "TEST_CHANGED_FORCE_UNION=1 overrides the refusal"
+else
+	bad H3 "TEST_CHANGED_FORCE_UNION=1 did not override the refusal"
+fi
+
 if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "test_changed selftest: $cases/$cases (A x/ module; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step)"
+echo "test_changed selftest: $cases/$cases (A x/ module; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner)"
