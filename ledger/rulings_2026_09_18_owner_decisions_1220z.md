@@ -28,7 +28,7 @@ The three `test_ast_e211_*` tests that 1536-a's projection flipped were resolved
 dispatch is lint's — the program reader is asked only where the data grammar has no production; the `cx:` XML lift stays XML-only;
 one test re-blessed by name, two kept), merged as a1d (`42b012eb1`).
 
-## Sequencing (VERIFY-1a's order, continued)
+## Sequencing (the amended order, continued)
 
 Agent A (Ring 0): the head's red (`1__0` in a binding value) → 1509-a → 1563-a → 1559-a (its own branch) → #1545 with 1566-c (one
 re-bless) → #1239. Agent B: the VCOST-1 branch (#1562, #1561) → b1c completed under 1544-b → 1551-b's V-fork branch → 1534-a → 1552-a
