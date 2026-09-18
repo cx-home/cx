@@ -2994,11 +2994,28 @@ else
 endif
 .PHONY: test-vcx-columnar
 test-vcx-columnar: build-vcx-dev skip-ledger-reset
+	# THREE lines, and the split is #1476's whole subject. GNU make EXECUTES a
+	# recipe line containing $(MAKE) even under `-n` — documented, and correct
+	# for a recursive make, which inherits -n through MAKEFLAGS and dry-runs in
+	# turn. What is not correct is what this recipe used to be: one `if … then
+	# $(MAKE) … && $(V) … test … ; fi` line, so `make -n test` executed the
+	# whole conditional, COMPILED AND RAN two V tests, aborted the listing
+	# before the serial tail, and did it outside the gate lock (-n skips
+	# check-gate-lock's recipe, which contains no $(MAKE), but not this one).
+	# Measured again on 2026-09-18 by an agent reading the -j goal list.
+	#
+	# So: the skip decision on its own line, the sub-make on its own line, and
+	# the V test on a line that contains no $(MAKE) at all — which is what make
+	# needs in order to honor -n for it. The three lines are sequenced through
+	# the skip ledger rather than through shell control flow, and that ledger is
+	# reset per run by the `skip-ledger-reset` prerequisite above, so the file's
+	# presence means "this run skipped", never "some earlier run did".
 	@$(JS_CLOSE) if ! PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" pkg-config --exists arrow parquet 2>/dev/null; then \
 	  line="SKIP test-vcx-columnar: Apache Arrow/Parquet not discoverable via pkg-config (absent prerequisite, #318 — brew install apache-arrow / apt libarrow-dev libparquet-dev)"; \
 	  echo "$$line"; mkdir -p $(CX_SKIP_DIR); echo "$$line" > $(call CX_SKIP_FILE,test-vcx-columnar); \
-	else \
-	  $(MAKE) -C vcx arrow-shim && \
+	fi
+	@$(JS_CLOSE) if [ ! -f "$(call CX_SKIP_FILE,test-vcx-columnar)" ]; then $(MAKE) -C vcx arrow-shim; fi
+	@$(JS_CLOSE) if [ ! -f "$(call CX_SKIP_FILE,test-vcx-columnar)" ]; then \
 	  PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test vcx/platform/store_columnar_test.v vcx/platform/store_columnar_lineage_test.v; \
 	fi
 
