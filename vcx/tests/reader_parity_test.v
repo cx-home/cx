@@ -323,9 +323,16 @@ fn test_python_reader_agrees_case_for_case() {
 }
 
 // bare_prose_title_lines — every `[title …]` line of a corpus file whose body
-// is PLAIN ASCII PROSE: letters, digits, spaces, `'` and `-`, and nothing else.
-// That is the population with exactly one right answer today, and it is the
-// class #1521's apostrophe lives in (`the pattern's own source order`).
+// is PLAIN ASCII PROSE: letters, digits, spaces, `'`, `-`, and — since #1538
+// closed the glued-residue half of the same rule — `.` and `:`, and nothing
+// else. That is the population with exactly one right answer today, and it is
+// the class #1521's apostrophe lives in (`the pattern's own source order`).
+//
+// The `.`/`:` widening IS #1538's evidence: `world.` and `ab:c` are one
+// `.bare_value` run whose KIND used to be the quoted case, so the §9 [L25b]
+// prose join declined and the body came back as N discrete items. Every title
+// in the corpus carrying a sentence-final period, a dotted run or a glued
+// QName is graded here now.
 //
 // Everything outside the class is left to the census or to a filed issue:
 //   • `[` `]` `$` `&` `#` `"` — nested nodes, holes, entity refs, raw spans and
@@ -336,10 +343,6 @@ fn test_python_reader_agrees_case_for_case() {
 //     and not only for these: measured and filed as #1541. #1521's own title
 //     shape carries commas and is graded by the case-id step above, which is the
 //     step its defect shows up in;
-//   • `.` and `:` — the program lexer's GLUED-RESIDUE run (#935 / #1384) makes
-//     `world.` / `ab:c` one `.bare_value`, which reads as a string SCALAR and so
-//     blocks the §9 [L25b] prose join the data reading performs: the same defect
-//     class as #1521 in a different input, measured and filed as #1538;
 //   • non-ASCII — an em dash is not a name character to the program lexer, which
 //     refuses the byte while the data reading carries it as prose (the census's
 //     `cx_only` bucket).
@@ -360,12 +363,24 @@ fn bare_prose_title_lines(src string) []string {
 		for b in body.bytes() {
 			ok := (b >= `a` && b <= `z`) || (b >= `A` && b <= `Z`)
 				|| (b >= `0` && b <= `9`) || b == ` ` || b == `'` || b == `-`
+				|| b == `.` || b == `:`
 			if !ok {
 				plain = false
 				break
 			}
 		}
 		if !plain {
+			continue
+		}
+		// A glued `::` inside bare prose is an ASCRIPTION to the program reader
+		// (`5::float` → 5.0e0) and prose text to the data reader, and RULED:
+		// 1384-a put `::` deliberately OUTSIDE the glued-residue run ("an
+		// ascription is a program construct and its `::` is not residue"). So
+		// whether a `::` in a comma-less bare-prose body is prose or an
+		// ascription contradicts a standing ruling and is not #1538's to
+		// settle: measured and filed as #1563, and excluded here until it is
+		// answered. Four titles of the 194 this class now grades carry it.
+		if body.contains('::') {
 			continue
 		}
 		// A token-INITIAL `-` is the program reading's minus / operator head
