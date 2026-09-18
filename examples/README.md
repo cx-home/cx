@@ -37,7 +37,7 @@ build flags, no scaffolding. Two kinds of file live here:
 | [`validate/`](validate/) | `.cxs` schema + `cx validate` — pass and fail runs with exact diagnostics | see [`validate/README.md`](validate/README.md) | passing |
 | [`comparisons/`](comparisons/) | CX vs JSON/YAML/CSV side-by-side, per-lane trade-offs | see [`comparisons/README.md`](comparisons/README.md) | passing |
 | [`cx/`](cx/) | Two tiny data fixtures (`greet.cx`, `users.cx`) | `cx examples/cx/users.cx` | passing |
-| [`cxstore/client-server/`](cxstore/client-server/) | Store client+server over CSRP, two real processes | `make -C examples/cxstore/client-server run` | passing |
+| [`cxstore/client-server/`](cxstore/client-server/) | Store client+server over the store wire, two real processes | `make -C examples/cxstore/client-server run` | passing |
 | [`cxstore/grpc/`](cxstore/grpc/) | Same store surface over gRPC via the `cx store-serve` daemon | `make -C examples/cxstore/grpc run` | passing |
 | [`cxstore/dir-sync/`](cxstore/dir-sync/) | Directory tree ⇄ content-addressed store (ingest / materialize / watch) | `make -C examples/cxstore/dir-sync run` | passing |
 | [`platform/`](platform/) | **Platform and enterprise components, and them working together** — SSO (OpenID Connect login and its refusals, SAML assertion → session, SCIM provisioning), attribute projection, `cx flow`, a XAP instance, and a composed scenario | see [`platform/README.md`](platform/README.md) | passing |

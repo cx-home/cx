@@ -41,7 +41,7 @@ A surface's ring is DECLARED once, in [`registry/modules.cxd`](../../registry/mo
 | `sqlite.md` | SQLite external integration. |
 | `tree-sitter.md` | tree-sitter external integration. |
 
-## `misc/` — host APIs + wire formats (8 files)
+## `misc/` — host APIs + wire formats (7 files)
 
 | File | Purpose |
 |---|---|
@@ -51,7 +51,6 @@ A surface's ring is DECLARED once, in [`registry/modules.cxd`](../../registry/mo
 | `debug.md` | Debugging surface (local + remote): breakpoints, stepping, DAP adapter, record-replay. |
 | `table-api.md` | Streaming table reader/writer API. |
 | `type-mapping.md` | CX ↔ host-language type mapping. |
-| `cxstore-remote-protocol.md` | cx-store remote wire protocol. |
 | `parity-matrix.md` | Per-binding parity matrix. |
 
 ## `process/` — governance + operational (4 files)
