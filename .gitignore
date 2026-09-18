@@ -124,3 +124,10 @@ bench/repr/_corpus/
 # nature — a committed run record would be another machine's half-finished
 # work.
 .cx/flow/
+# `cx-stdlib/test`'s snapshot store (#1554): `assert-snapshot` records under
+# `__snapshots__/` relative to the program, or to §3.4's `snapshot-dir`. A
+# tool run from the repo root — the playground example gate running everyday
+# example 290, a `cx test` invocation — therefore drops one here. A recorded
+# snapshot belongs with the test that records it, never as an untracked
+# artifact of running a gate.
+__snapshots__/

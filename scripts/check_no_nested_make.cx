@@ -57,20 +57,18 @@ vcx/tests/cli_umbrella_test.v vcx/tests/code_units_umbrella_test.v vcx/tests/mod
 # a shebang and near-zero cost — a `cx` process per `make` call would change the
 # very timing the probe observes. Writing it is a text edit, which the standing
 # rules put in the editor's language rather than behind a cx-gap issue.
-[?def shim-text scope=public ($log $real)
-  [$cat ('#!/bin/sh\n',
-         '# written by scripts/check_no_nested_make.cx (#1520) — records argv,\n',
-         '# refuses a `test` goal, forwards everything else to the real make.\n',
-         'printf \'%s\\t%s\\t%s\\t%s\\n\' "$PPID" "$PWD" "$*" \\\n',
-         '  "$(p=$PPID; n=0; while [ -n "$p" ] && [ "$p" != 0 ] && [ $n -lt 6 ]; do printf \'[%s] %s | \' "$p" "$(ps -o command= -p "$p" 2>/dev/null | cut -c1-120)"; p=$(ps -o ppid= -p "$p" 2>/dev/null | tr -d \' \'); n=$((n+1)); done | tr \'\\t\\n\' \'  \')" >> ', $log, '\n',
-         'printf \'    arg0=%s MAKELEVEL=%s MAKECMDGOALS=%s MAKEFLAGS=%s\\n\' \\\n',
-         '  "$0" "${MAKELEVEL-}" "${MAKECMDGOALS-}" "${MAKEFLAGS-}" >> ', $log, '\n',
-         'for a in "$@"; do\n',
-         '  case "$a" in\n',
-         '    test) echo "check-no-nested-make: REFUSED a nested \\`make test\\` (#1520)" >&2; exit 97 ;;\n',
-         '  esac\n',
-         'done\n',
-         'exec ', $real, ' "$@"\n')]]
+[?const SHIM-TEMPLATE 'scripts/nested_make_shim.sh.in']
+
+# shim-text reads the TEMPLATE and substitutes the two paths. The shell text
+# lives in its own file — a shell script is shell, and a cx string literal that
+# begins with `#` inside a sequence re-reads as a comment once `cx fmt`
+# round-trips it, which is how this probe landed on fmt-sweep-gate's refused
+# list (#1572). With the text out of the file there is nothing here to re-read.
+[?def shim-text scope=public impure ($log $real)
+  [?let [= $tpl [?fallback [$io:read-file SHIM-TEMPLATE]
+                  [recover-with ([$cry [$cat ('check-no-nested-make: cannot read ', SHIM-TEMPLATE)]],
+                                 [$env:exit 2], '')]]]
+    [$strings:replace [$strings:replace $tpl '@LOG@' $log] '@REAL@' $real]]]
 
 [?def run scope=public impure ($argv $what)
   [?fallback [$process:run $argv]

@@ -14,23 +14,28 @@
 # `cx` renders a string VALUE with its quotes, which is correct for a value
 # and wrong for a shell variable, so step 1's answer is unquoted here in the
 # open rather than by a flag that does not exist.
+# --allow-read=../.. because both programs import across the examples tree —
+# `actor.cx` takes `[?lib '../../sso/mock-idp/idp.cx']` and `order.env.cx` takes
+# `[?lib '../../flow/checkout/orders.cx']` — and a path-form module read off
+# disk charges `read`, judged by the granted roots (#1539, RULED: 1061-a (5)).
+# The root is `examples/platform`, the narrowest that covers both.
 set -u
 CX="${CX:-cx}"
 
-echo '$ cx actor.cx'
-"$CX" actor.cx; rc=$?
+echo '$ cx --allow-read=../.. actor.cx'
+"$CX" --allow-read=../.. actor.cx; rc=$?
 echo
 echo "exit=$rc"
 
-ACTOR=$("$CX" actor.cx | tr -d "'")
+ACTOR=$("$CX" --allow-read=../.. actor.cx | tr -d "'")
 echo
 echo "# the principal the login established, unquoted for the command line:"
 echo "ACTOR=$ACTOR"
 
 echo
-echo '$ cx flow run ../../flow/checkout/checkout.flow.cx --env order.env.cx --ephemeral --actor="$ACTOR" --sku=SKU-88 --qty=3 --unit=9.50'
+echo '$ cx flow run ../../flow/checkout/checkout.flow.cx --env order.env.cx --ephemeral --actor="$ACTOR" --sku=SKU-88 --qty=3 --unit=9.50 --allow-read=../..'
 "$CX" flow run ../../flow/checkout/checkout.flow.cx --env order.env.cx --ephemeral \
-      --actor="$ACTOR" --sku=SKU-88 --qty=3 --unit=9.50; rc=$?
+      --actor="$ACTOR" --sku=SKU-88 --qty=3 --unit=9.50 --allow-read=../..; rc=$?
 echo "exit=$rc"
 
 echo

@@ -1,0 +1,31 @@
+#!/bin/sh
+# written by scripts/check_no_nested_make.cx (issue 1520) — records argv,
+# refuses a `test` goal, forwards everything else to the real make.
+#
+# A TEMPLATE, not a runnable script: @LOG@ and @REAL@ are substituted when the
+# probe writes the shim. It lives here rather than as a string inside the cx
+# probe because a shell script is shell (the standing rules leave a text edit to
+# the editor's language), and because a literal beginning with `#` inside a cx
+# sequence re-reads as a comment after `cx fmt` round-trips it — which put the
+# probe on fmt-sweep-gate's refused list (#1572).
+printf '%s\t%s\t%s\t%s\n' "$PPID" "$PWD" "$*" \
+  "$(p=$PPID; n=0; while [ -n "$p" ] && [ "$p" != 0 ] && [ $n -lt 6 ]; do printf '[%s] %s | ' "$p" "$(ps -o command= -p "$p" 2>/dev/null | cut -c1-120)"; p=$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' '); n=$((n+1)); done | tr '\t\n' '  ')" >> @LOG@
+printf '    arg0=%s MAKELEVEL=%s MAKECMDGOALS=%s MAKEFLAGS=%s\n' \
+  "$0" "${MAKELEVEL-}" "${MAKECMDGOALS-}" "${MAKEFLAGS-}" >> @LOG@
+for a in "$@"; do
+  case "$a" in
+    test)
+      { echo "=== HIT pid=$$ ppid=$PPID cwd=$PWD argv=[$*] ==="
+        echo "--- parent argv, byte for byte ---"
+        ps -o args= -p "$PPID" 2>/dev/null | od -c
+        echo "--- the shim's own /dev/fd ---"
+        ls -l /dev/fd 2>/dev/null
+        echo "--- every process whose parent is $PPID ---"
+        ps -A -o pid,ppid,stat,args 2>/dev/null | awk -v p="$PPID" '$2==p'
+        echo "--- the whole tree under the suite make ---"
+        ps -A -o pid,ppid,stat,args 2>/dev/null
+      } >> @LOG@.hit 2>&1
+      echo "check-no-nested-make: REFUSED a nested \`make test\` (issue 1520)" >&2; exit 97 ;;
+  esac
+done
+exec @REAL@ "$@"
