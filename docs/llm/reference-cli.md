@@ -147,9 +147,15 @@ Run flags (the default action; flags bind BEFORE the resource):
   Capabilities are deny-by-default (spec/core/security.md); grant explicitly:
     --allow-read --allow-write --allow-net --allow-env --allow-clock
     --allow-random --allow-subprocess --allow-eval --allow-secret-reveal --allow-common --allow-all
-    (--allow-net takes an optional scope: --allow-net=host[:port] — it is the
-     ONLY grant whose scope is enforced. A resource suffix on --allow-read /
-     --allow-write / --allow-env is a usage error, not a narrowing: #1059)
+    (three grants take an enforced scope: --allow-net=host[:port],
+     --allow-read=PATH and --allow-write=PATH. A PATH is a directory-component
+     subtree root — --allow-read=/data admits /data/x and refuses /database;
+     the flag repeats and the roots union; a bare grant is the whole
+     filesystem. A resource suffix on any OTHER capability is a usage error,
+     not a narrowing: that scoping is unimplemented, #1059.)
+    --probe is the preset for looking around without changing anything:
+     it expands to --allow-read=. --allow-clock, so a probe that writes or
+     reaches the network refuses with the ordinary capability error.
     --allow-common is the common working set WITHOUT secret-reveal;
     --allow-all additionally grants secret-reveal, which declassifies secrets.
 
@@ -289,10 +295,11 @@ guessing at a replacement. The tool knows what happened to it.
 ## Capability grants
 
 ```
---allow-read --allow-write --allow-net[=host[:port]] --allow-env
+--allow-read[=PATH] --allow-write[=PATH] --allow-net[=host[:port]] --allow-env
 --allow-clock --allow-random --allow-subprocess --allow-eval
 --allow-secret-reveal
---allow-common     # all of the above EXCEPT secret-reveal
+--probe            # the preset: --allow-read=. --allow-clock
+--allow-common     # every capability EXCEPT secret-reveal
 --allow-all        # including secret-reveal (declassifies secrets)
 ```
 
@@ -309,16 +316,30 @@ $ cx prog.cx
 [err code=cx-err:CXER0271 message='E_CAP_DENIED: write capability required for io-write-file; none granted (grant via --allow-write)']
 ```
 
-Grant the narrowest thing that works. `--allow-net` takes a scope; the others
-are all-or-nothing, which is a reason to prefer `--allow-read` over
-`--allow-common` in anything automated.
+Grant the narrowest thing that works. **Three grants take a scope** —
+`--allow-net=host[:port]`, `--allow-read=PATH` and `--allow-write=PATH` — and
+the rest are all-or-nothing, which is a reason to prefer a scoped
+`--allow-read=./data` over `--allow-common` in anything automated.
 
-`--allow-net` is the *only* grant that scopes. A resource suffix on
-`--allow-read`, `--allow-write` or `--allow-env` is a **usage error** (exit 2,
-before evaluation) naming the flag, the ignored suffix, and the bare spelling
-that is accepted — earlier versions took the suffix, discarded it, and granted
-the blanket capability, so the narrower-looking spelling silently bought wider
-authority. Real per-path/per-name scoping is unimplemented.
+A `PATH` scope is a **directory-component subtree root**: `--allow-read=/data`
+admits `/data` and `/data/x` and refuses `/database`. The flag repeats and the
+roots union; a bare `--allow-read` grants the whole filesystem, as it always
+did. Both the path as written and the path after symlinks must fall under a
+root, so a symlink out of the granted tree — and a symlink into it from outside
+— refuses. A path outside the roots is the ordinary capability refusal
+(`cx-err:CXER0271`), naming the path, the roots in force, and the flag to add.
+
+`--probe` is the preset for a read-only look around: it expands to
+`--allow-read=. --allow-clock`, and a probe that writes or reaches the network
+gets that same refusal.
+
+A resource suffix on any OTHER capability — `--allow-env=HOME`,
+`--allow-subprocess=/bin/ls` — is a **usage error** (exit 2, before
+evaluation) naming the flag, the suffix it would have ignored, and the bare
+spelling that is accepted. Earlier versions took such a suffix, discarded it,
+and granted the blanket capability, so the narrower-looking spelling silently
+bought wider authority; per-name and per-executable scoping is unimplemented,
+and the surface says so rather than pretending.
 
 ## Exit codes
 
