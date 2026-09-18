@@ -820,7 +820,8 @@
   'code/effects', 'code/builtins', 'code/concurrency', 'code/resilience',
   'code/metaprogramming', 'code/diagrams',
   'everyday/files', 'everyday/text', 'everyday/collections',
-  'everyday/documents', 'everyday/process', 'everyday/time', 'everyday/cli-errors')]
+  'everyday/documents', 'everyday/process', 'everyday/time', 'everyday/cli-errors',
+  'everyday/testing', 'everyday/world')]
 
 # A member that is not there is an ERROR, not an absence: `$n.name` on a
 # `Scalar`/`Hole`/`RawText` node answers CXER0001 `no member "name"` and
