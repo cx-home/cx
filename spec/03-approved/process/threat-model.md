@@ -138,18 +138,18 @@ Without a strict parse, an attacker could submit a non-numeric string through `x
 
 **Mitigation:** every `xs:int*`, `xs:double`, `xs:float`, `xs:decimal`, `xs:nonNegativeInteger`, `xs:positiveInteger`, and `cast-as` target routes through a strict parse path. Inputs that don't parse as a number raise an `FORG0001`-class error carrying the offending value. Numeric scalar inputs pass through unchanged. Callers wanting lenient behaviour use explicit `[?match]` / `[?else]` / `[?castable-as]` guards.
 
-### T14 — CSRP network surface (`cx-store://`)
+### T14 — the store network surface (`cx-store://`)
 
-A network-deployed CXStore Remote Protocol server ([`../misc/cxstore-remote-protocol.md`](../misc/cxstore-remote-protocol.md), CSRP) is reachable from untrusted clients; the wire protocol carries auth tokens, query / mutation payloads, and result-set bytes that an attacker could intercept, replay, or amplify.
+A network-deployed store server (the retired protocol page is kept at [`../../_archived/cxstore-remote-protocol.md`](../../_archived/cxstore-remote-protocol.md)) is reachable from untrusted clients; the wire protocol carries auth tokens, query / mutation payloads, and result-set bytes that an attacker could intercept, replay, or amplify.
 
 **Mitigation:**
 
-- Bearer-token authentication per `cxstore-remote-protocol.md §2.1`; tokens are presented in `Authorization: Bearer <token>` headers. Token rotation policy is per deployment (not specified by CSRP) and the server returns `CXER5021 E_XSP_STORE_AUTHORITY` for missing tokens and `CXER5026 E_XSP_STORE_AUTHORITY` for bad ones.
+- Bearer-token authentication per the retired store protocol page §2.1; tokens are presented in `Authorization: Bearer <token>` headers. Token rotation policy is per deployment (not specified by the store HTTP plane) and the server returns `CXER5021 E_XSP_STORE_AUTHORITY` for missing tokens and `CXER5026 E_XSP_STORE_FORBIDDEN` for a credential the server authenticates but does not permit.
 - HTTPS-only is RECOMMENDED for any non-loopback deployment; plaintext HTTP is documented as dev-only. Transport security inherits from the deploying webserver / reverse proxy.
 - Server-side payload-size limits per the `capabilities` response (`max-request-bytes`, `max-response-bytes`); an over-cap request returns 413 with `CXER5016 E_XSP_STORE_BODY`.
 - Server-side rate limits per the `capabilities` response (`requests-per-minute`, `bytes-per-second`).
 - Doc-ID integrity verification on the client: the SHA-256 hash domain for a returned document is strict-canonical bytes (per `canonical.md §1.2`), and the client cross-checks the wire-claimed hash against the locally-computed hash before trusting the body. A mismatch raises `CXER5017 E_XSP_STORE_ADDRESS`.
-- Replay protection beyond Bearer-token freshness is the operator's responsibility (out of CSRP scope).
+- Replay protection beyond Bearer-token freshness is the operator's responsibility (out of the store wire's scope).
 
 Operator-network threats — DDoS, traffic analysis, infrastructure compromise — are inherited from the deployment substrate and are not covered by CX governance.
 
