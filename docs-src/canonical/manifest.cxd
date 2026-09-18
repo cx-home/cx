@@ -342,7 +342,7 @@
     [child n=18.2 id=store-embedded   title='The embedded workflow']
     [child n=18.3 id=store-porcelain  title='Porcelain — introspect, branch, replicate']
     [child n=18.4 id=store-service    title='The service tier — cx store-serve']
-    [child n=18.5 id=store-transports title='Transports — CSRP and gRPC']
+    [child n=18.5 id=store-transports title='Transports — the store wire and gRPC']
     [child n=18.6 id=store-security   title='Security and encryption at rest']
     [child n=18.7 id=store-console    title='The management console']]
   [section n=19 id=xap-distribution file='19-xap-distribution.cxd'

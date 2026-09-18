@@ -28,20 +28,21 @@
 # _gate_evidence/CHANGELOG records are excluded — those are immutable
 # historical records, not current-language claims.
 #
-# SECOND RETIRED TOKEN (#1544, RULED: 1544-a): the store remote protocol's
-# old name. 1544-a retires the page to spec/_archive/, retargets every emission
-# at the XSP store-profile codes BY MEANING and deletes the `E_CSRP_*` names —
-# and asks this guard to be extended so the token cannot come back. It is
-# scanned by the same machinery, in the same current-facing scope, with the
-# same token-awareness (the bare word only), and it is constructed at runtime
-# for the same reason the first one is.
+# SECOND RETIRED TOKEN (#1544, RULED: 1544-a, completed by 1544-b): the store
+# remote protocol's old name. 1544-a retired the page to spec/_archived/,
+# retargeted every emission at the XSP store-profile codes BY MEANING and
+# deleted the `E_CSRP_*` names; 1544-b added the three codes the band lacked
+# (CXER5026/5027/5028) so no meaning had to be dropped or widened. This guard
+# is the thing that stops the name coming back. It is scanned by the same
+# machinery, in the same current-facing scope, with the same token-awareness
+# (the bare word only), and it is constructed at runtime for the same reason
+# the first one is.
 #
-# It is RED TODAY, on purpose and by measurement: the retarget has not landed
-# (the three meanings with no XSP code are a letter on #1544), so the corpus
-# still carries the token. That red IS this extension's proof — a retired-term
-# guard that passes before the term is retired proves nothing. The target is
-# therefore NOT in TEST_TARGETS yet; it joins the union in the commit that
-# lands the retarget, when it goes green.
+# It was RED when the extension was written, on purpose and by measurement —
+# a retired-term guard that passes before the term is retired proves nothing.
+# It goes green with the retarget, in the same merge. The target was already a
+# TEST_TARGETS row and already carried its `step_globs()` `'*'` entry in
+# scripts/test_changed.sh for the first token; the second token rides both.
 #
 # Allowlist: whole files that legitimately REFERENCE a retired token as
 # history (none required for the first — the corpus is clean).
