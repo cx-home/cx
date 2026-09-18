@@ -1,4 +1,4 @@
-[playground-example-outputs  # 285 audited answers, corpus order
+[playground-example-outputs  # 295 audited answers, corpus order
  [doc [#
 GENERATED — do not hand-edit. Written by
 scripts/gen_guide/playground/gen_examples.cx from a grant-free audit run
@@ -1690,6 +1690,60 @@ summarized 3 rows
  [ex key=285-a-refusal-as-one-line-of-diagnosis chars=233
   [out-text [#
 [report read=1 [diagnoses "shipped: '09/03/2026' is not a date — cx reads ISO 8601 (yyyy-mm-dd) and refused with cx-err:CXER3301" "closed: 'yesterday' is not a date — cx reads ISO 8601 (yyyy-mm-dd) and refused with cx-err:CXER3301"]]
+#]]
+ ]
+ [ex key=286-assert-your-own-function chars=45
+  [out-text [#
+[checks assertions=3 [example 'hello-world']]
+#]]
+ ]
+ [ex key=287-a-table-of-cases-in-a-cxd chars=108
+  [out-text [#
+[graded cases=3 failures=0 [verdict id=c-1 pass=true] [verdict id=c-2 pass=true] [verdict id=c-3 pass=true]]
+#]]
+ ]
+ [ex key=288-assert-the-shape-not-the-value chars=48
+  [out-text [#
+[shape fields=3 accepted=true drift-caught=true]
+#]]
+ ]
+ [ex key=289-a-failing-assertion-is-the-exit-status chars=95 err-chars=67
+  [out-text [#
+[err code=cx-err:CXER2200 message='E_TEST_ASSERTION_FAILED: expected two_words, got two-words']
+#]]
+  [err-text [#
+error: the result carries an error value — cx-err:CXER2200 at /err
+#]]
+ ]
+ [ex key=290-a-snapshot-inside-one-run chars=50
+  [out-text [#
+[snapshot key=daily agreed=true drift-caught=true]
+#]]
+ ]
+ [ex key=291-http-get-with-a-header-and-json chars=72
+  [out-text [#
+[account status=200 ok=true plan=pro seats=12 saw-header=nightly-report]
+#]]
+ ]
+ [ex key=292-http-post-a-json-body chars=52
+  [out-text [#
+[created status=201 id=4821 name='desk lamp' tags=2]
+#]]
+ ]
+ [ex key=293-when-the-service-says-no chars=93
+  [out-text [#
+[lookup found=true item='desk lamp' missing-ok=false missing-status=404 answer-name=response]
+#]]
+ ]
+ [ex key=294-a-local-sqlite-file chars=128
+  [out-text [#
+[notes inserted=3 on-disk=true [by-tag [row [tag 'idea'] [n '1']] [row [tag 'todo'] [n '2']]] [first-idea [row [body 'maybe']]]]
+#]]
+ ]
+ [ex key=295-send-mail-to-a-server-you-started chars=134
+  [out-text [#
+the server received: nightly report
+[delivery accepted='true' [rcpt address='sam@b.test' code='250' enhanced='2.1.5' text='2.1.5 OK']]
 #]]
  ]
 ]
