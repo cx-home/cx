@@ -311,6 +311,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1540-a` | [rulings_2026_09_18_owner_decisions_1220z.md](rulings_2026_09_18_owner_decisions_1220z.md) | Owner decisions 2026-09-18 ~12:20Z — "all recommendations": the work continues past the clock with umbrella steps for Ring 0 (VERIFY-2); the twelve open letters ruled (1563-a, 1559-a, 1515-a, 1566-c, 1534-a, 1552-a, 1556-a, 1540-a, 1551-b, 1544-b, 1509-a) and the integrator's 1559-d recorded |
 | `1544-a` | [rulings_2026_09_18_owner_decisions_0155z.md](rulings_2026_09_18_owner_decisions_0155z.md) | Owner decisions 2026-09-18 ~01:55Z — CSRP does not exist in cx: every live reference goes (1544-a); the two readers' divergence is a named property and the em-dash refusal a lexer bug (1548-c) |
 | `1544-b` | [rulings_2026_09_18_owner_decisions_1220z.md](rulings_2026_09_18_owner_decisions_1220z.md) | Owner decisions 2026-09-18 ~12:20Z — "all recommendations": the work continues past the clock with umbrella steps for Ring 0 (VERIFY-2); the twelve open letters ruled (1563-a, 1559-a, 1515-a, 1566-c, 1534-a, 1552-a, 1556-a, 1540-a, 1551-b, 1544-b, 1509-a) and the integrator's 1559-d recorded |
+| `1544-c` | [rulings_2026_09_18_owner_decisions_2100z.md](rulings_2026_09_18_owner_decisions_2100z.md) | Owner decisions 2026-09-18 ~18:30Z–21:00Z — the design backlog leaves the release label (BACKLOG-1); the store's wire field is `wire-version` (1544-c); the sched restore cases carry their ring |
 | `1545-a` | [rulings_2026_09_18_owner_decisions_0200z.md](rulings_2026_09_18_owner_decisions_0200z.md) | Owner decision 2026-09-18 ~02:00Z — an err value carries its position (1545-a); the diagnostics audit's fix batches are decided (DIAG-1) |
 | `1548-c` | [rulings_2026_09_18_owner_decisions_0155z.md](rulings_2026_09_18_owner_decisions_0155z.md) | Owner decisions 2026-09-18 ~01:55Z — CSRP does not exist in cx: every live reference goes (1544-a); the two readers' divergence is a named property and the em-dash refusal a lexer bug (1548-c) |
 | `1551-b` | [rulings_2026_09_18_owner_decisions_1220z.md](rulings_2026_09_18_owner_decisions_1220z.md) | Owner decisions 2026-09-18 ~12:20Z — "all recommendations": the work continues past the clock with umbrella steps for Ring 0 (VERIFY-2); the twelve open letters ruled (1563-a, 1559-a, 1515-a, 1566-c, 1534-a, 1552-a, 1556-a, 1540-a, 1551-b, 1544-b, 1509-a) and the integrator's 1559-d recorded |
@@ -990,7 +991,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1422-b-2` | [rulings_2026_09_12_audit_sink_1422.md](rulings_2026_09_12_audit_sink_1422.md) |
 | `1422-b-3` | [rulings_2026_09_12_audit_sink_1422.md](rulings_2026_09_12_audit_sink_1422.md) |
 | `1427-b` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
-| `1427-c` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
+| `1427-c` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md), [rulings_2026_09_18_owner_decisions_2100z.md](rulings_2026_09_18_owner_decisions_2100z.md) |
 | `1427-d` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
 | `1427-e` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md), [rulings_2026_09_13_incremental_sync_1434.md](rulings_2026_09_13_incremental_sync_1434.md), [rulings_2026_09_18_owner_decisions_1620z.md](rulings_2026_09_18_owner_decisions_1620z.md) |
 | `1427-f` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
@@ -1268,4 +1269,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*311 ledger pages; 634 ids declared, 371 cited only.*
+*312 ledger pages; 635 ids declared, 371 cited only.*
