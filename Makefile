@@ -1695,7 +1695,7 @@ registry-publish: build-vcx-dev
 	@vcx/target/cx-dev --allow-all registry/publish.cx
 
 # Stage-2 served registry (distribution spec §4.2): the SAME store, re-hosted
-# behind the CSRP daemon on loopback. Consumers open
+# behind the store daemon on loopback. Consumers open
 # cx-store+http://127.0.0.1:8460/registry/ — hashes/signatures unchanged.
 .PHONY: registry-serve
 registry-serve: build-vcx-dev
@@ -2790,7 +2790,7 @@ test-vcx-suite: build-vcx-dev check-serial-retry-rosters check-fixture-shard-man
 # isolation, is the proven case).
 #
 # store_grpc_parity_test.v was dropped from this roster 2026-08-24: the file
-# has not existed since abaea9b9b retired the CSRP data plane, so the row
+# has not existed since abaea9b9b retired the store HTTP data plane, so the row
 # matched no step and was doing nothing. check-serial-retry-rosters (below)
 # is what found it, and is what stops the next one.
 #
