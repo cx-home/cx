@@ -303,6 +303,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1527-a` | [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) | The traps become fixtures — two batch branches for the CXF-8 defects, and the one ruling they need (RULED: TRAP-1, 1527-a) |
 | `1537-a` | [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md) | Owner decisions 2026-09-17 ~22:02Z — an unread err binding propagates (1537-a); the quote-opening rule becomes a lexicon sentence (1521-a) |
 | `1544-a` | [rulings_2026_09_18_owner_decisions_0155z.md](rulings_2026_09_18_owner_decisions_0155z.md) | Owner decisions 2026-09-18 ~01:55Z — CSRP does not exist in cx: every live reference goes (1544-a); the two readers' divergence is a named property and the em-dash refusal a lexer bug (1548-c) |
+| `1545-a` | [rulings_2026_09_18_owner_decisions_0200z.md](rulings_2026_09_18_owner_decisions_0200z.md) | Owner decision 2026-09-18 ~02:00Z — an err value carries its position (1545-a); the diagnostics audit's fix batches are decided (DIAG-1) |
 | `1548-c` | [rulings_2026_09_18_owner_decisions_0155z.md](rulings_2026_09_18_owner_decisions_0155z.md) | Owner decisions 2026-09-18 ~01:55Z — CSRP does not exist in cx: every live reference goes (1544-a); the two readers' divergence is a named property and the em-dash refusal a lexer bug (1548-c) |
 | `192-gcm` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) | RULED: 1400-a, 1401-a — XML Encryption comes IN: `saml:verify` decrypts `EncryptedAssertion` / `EncryptedID` / `EncryptedAttribute` with `opts.decryption-keys`; `crypto` gains RSA key transport (OAEP, SHA-1 inside OAEP allowed; PKCS#1 v1.5 behind a loud opt-in with implicit rejection) and AES-CBC + AES-128/192-GCM; encryption is detected BEFORE the signature search |
 | `787-poc` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) | Ledger — #787 integration: the ONE rebase of impl/787-poc onto release/0.16.0 |
@@ -451,6 +452,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `dgx-1f` | [rulings_2026_08_21_diagram_capabilities.md](rulings_2026_08_21_diagram_capabilities.md) | DGX-1f — what the effect graph cannot see, stated in the spec |
 | `dgx-2` | [rulings_2026_08_21_diagram_capabilities.md](rulings_2026_08_21_diagram_capabilities.md) | DGX-2 — `cd-erd-full`'s DOCUMENT box is POPULATED, and loses one row |
 | `dgx-2` | [rulings_2026_08_21_diagram_capabilities.md](rulings_2026_08_21_diagram_capabilities.md) | DGX-2 (the DOCUMENT box) — the movement, as adjudicated |
+| `diag-1` | [rulings_2026_09_18_owner_decisions_0200z.md](rulings_2026_09_18_owner_decisions_0200z.md) | Owner decision 2026-09-18 ~02:00Z — an err value carries its position (1545-a); the diagnostics audit's fix batches are decided (DIAG-1) |
 | `dr-1` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) | DR-1 … DR-11 — the design letter's eleven sub-rulings |
 | `dr-10` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) | DR-10 consult log (spec-sufficiency probe register) |
 | `dr-11` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) | DR-1 … DR-11 — the design letter's eleven sub-rulings |
@@ -569,6 +571,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ord-1` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | Sequencing (ORD-1) |
 | `ord-2` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md) | Owner decision 2026-09-17 ~23:34Z — the bug tail is worked in BATCHES of same-area bugs, tooling first with the nested `make test` at its head (RULED: ORD-2) |
 | `ord-2` | [rulings_2026_09_18_owner_decisions_0155z.md](rulings_2026_09_18_owner_decisions_0155z.md) | Sequencing (ORD-2 amended) |
+| `ord-2` | [rulings_2026_09_18_owner_decisions_0200z.md](rulings_2026_09_18_owner_decisions_0200z.md) | Sequencing (ORD-2 amended again) |
 | `pb-1` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | PB-1 — how the runner performs a step's act — RULED (a) |
 | `pb-2` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | PB-2 — the run id preimage — RULED (a) |
 | `pb-3` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) | PB-3 — the home stream default — RULED (a) |
@@ -1060,10 +1063,10 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `client-2` | [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md) |
 | `crc-32` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md), [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md), [rulings_2026_08_29_tar_module_1084.md](rulings_2026_08_29_tar_module_1084.md) |
 | `cve-2011` | [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md) |
-| `cxf-3` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md), [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_diagnostics_audit_1522.md](rulings_2026_09_17_diagnostics_audit_1522.md), [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md), [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md) |
+| `cxf-3` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md), [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_diagnostics_audit_1522.md](rulings_2026_09_17_diagnostics_audit_1522.md), [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md), [rulings_2026_09_17_trap_batches.md](rulings_2026_09_17_trap_batches.md), [rulings_2026_09_18_owner_decisions_0200z.md](rulings_2026_09_18_owner_decisions_0200z.md) |
 | `cxf-5` | [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_owner_decisions_2202z.md](rulings_2026_09_17_owner_decisions_2202z.md), [rulings_2026_09_18_owner_decisions_0155z.md](rulings_2026_09_18_owner_decisions_0155z.md) |
 | `cxf-6` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md), [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_17_probe_scoping_1061.md](rulings_2026_09_17_probe_scoping_1061.md) |
-| `cxf-7` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md), [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md) |
+| `cxf-7` | [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md), [rulings_2026_09_17_cx_first_1522.md](rulings_2026_09_17_cx_first_1522.md), [rulings_2026_09_18_owner_decisions_0200z.md](rulings_2026_09_18_owner_decisions_0200z.md) |
 | `dist-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) |
 | `dist-2` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md), [rulings_2026_09_06_connector_is_a_feature_728.md](rulings_2026_09_06_connector_is_a_feature_728.md) |
 | `dr-2` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md) |
@@ -1183,10 +1186,10 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `sha-256` | [partition_audit_spec_inventory.md](partition_audit_spec_inventory.md), [rulings_2026_08_29_saml_sp_1091.md](rulings_2026_08_29_saml_sp_1091.md) |
 | `sha-384` | [rulings_2026_08_28_jose_completeness_1093.md](rulings_2026_08_28_jose_completeness_1093.md) |
 | `sha-512` | [rulings_2026_08_28_jose_completeness_1093.md](rulings_2026_08_28_jose_completeness_1093.md) |
-| `silent-1` | [rulings_2026_09_17_diagnostics_audit_1522.md](rulings_2026_09_17_diagnostics_audit_1522.md) |
-| `silent-2` | [rulings_2026_09_17_diagnostics_audit_1522.md](rulings_2026_09_17_diagnostics_audit_1522.md) |
-| `silent-3` | [rulings_2026_09_17_diagnostics_audit_1522.md](rulings_2026_09_17_diagnostics_audit_1522.md) |
-| `silent-4` | [rulings_2026_09_17_diagnostics_audit_1522.md](rulings_2026_09_17_diagnostics_audit_1522.md) |
+| `silent-1` | [rulings_2026_09_17_diagnostics_audit_1522.md](rulings_2026_09_17_diagnostics_audit_1522.md), [rulings_2026_09_18_owner_decisions_0200z.md](rulings_2026_09_18_owner_decisions_0200z.md) |
+| `silent-2` | [rulings_2026_09_17_diagnostics_audit_1522.md](rulings_2026_09_17_diagnostics_audit_1522.md), [rulings_2026_09_18_owner_decisions_0200z.md](rulings_2026_09_18_owner_decisions_0200z.md) |
+| `silent-3` | [rulings_2026_09_17_diagnostics_audit_1522.md](rulings_2026_09_17_diagnostics_audit_1522.md), [rulings_2026_09_18_owner_decisions_0200z.md](rulings_2026_09_18_owner_decisions_0200z.md) |
+| `silent-4` | [rulings_2026_09_17_diagnostics_audit_1522.md](rulings_2026_09_17_diagnostics_audit_1522.md), [rulings_2026_09_18_owner_decisions_0200z.md](rulings_2026_09_18_owner_decisions_0200z.md) |
 | `silent-5` | [rulings_2026_09_17_diagnostics_audit_1522.md](rulings_2026_09_17_diagnostics_audit_1522.md) |
 | `smtp-1` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
 | `smtp-2` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) |
@@ -1240,4 +1243,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*303 ledger pages; 608 ids declared, 370 cited only.*
+*304 ledger pages; 610 ids declared, 370 cited only.*
