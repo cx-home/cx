@@ -47,6 +47,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1170-g` | [rulings_2026_09_09_playground_expect_check_1170g.md](rulings_2026_09_09_playground_expect_check_1170g.md) | RULED: 1170-g — §C4 is EXACT: an optional `[expect [#…#]]` per example pins a substring of its output; the note↔output check reads that field, never the prose |
 | `1172-q1` | [rulings_2026_09_04_head_bind_whole_element_1172.md](rulings_2026_09_04_head_bind_whole_element_1172.md) | Question 1172-Q1 — what does `[NAME$x]` mean? |
 | `1173-b` | [rulings_2026_09_17_owner_decisions_0345z.md](rulings_2026_09_17_owner_decisions_0345z.md) | Owner decisions 2026-09-17 ~03:45Z — three of the integrator's declines reversed: libcx-sync gets an inline pump (1387-b), sets get a module (1173-b), closure's bound gets a default (1174-b); #1389's close confirmed |
+| `1173-c` | [rulings_2026_09_18_owner_decisions_2345z.md](rulings_2026_09_18_owner_decisions_2345z.md) | Owner decisions 2026-09-18 ~23:45Z — the set module's code band (1173-c); the deployment binding's spelling enters connector.md §4.6 (1466-a); the adapter contract gains a `binding-of` hook (1483-a) |
 | `1174-b` | [rulings_2026_09_17_owner_decisions_0345z.md](rulings_2026_09_17_owner_decisions_0345z.md) | Owner decisions 2026-09-17 ~03:45Z — three of the integrator's declines reversed: libcx-sync gets an inline pump (1387-b), sets get a module (1173-b), closure's bound gets a default (1174-b); #1389's close confirmed |
 | `1175-b` | [rulings_2026_09_17_owner_decisions_0410z.md](rulings_2026_09_17_owner_decisions_0410z.md) | Owner decisions 2026-09-17 ~04:10Z — chained destructuring gets a flat form: `[?match]` takes a chain (RULED: 1175-b) |
 | `1192-a` | [rulings_2026_09_10_else_no_callable_1192.md](rulings_2026_09_10_else_no_callable_1192.md) | RULED: 1192-a — `[?else]` does not coalesce E_NO_CALLABLE; every other failure and absence still does |
@@ -296,6 +297,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1456-b` | [rulings_2026_09_18_owner_decisions_1640z.md](rulings_2026_09_18_owner_decisions_1640z.md) | Owner decisions 2026-09-18 ~16:40Z — "recommendations accepted": twenty-one issues closed by the owner's word on the triage list (TRIAGE-1); the soap version is the string '1.1' (1575-b); unknown Security members are carried (1456-b) |
 | `1457-a` | [rulings_2026_09_15_owner_decisions_1830z.md](rulings_2026_09_15_owner_decisions_1830z.md) | Owner decisions 2026-09-15 ~18:30Z — "1a 2a 3a 4a" (RULED: INT-20, 1503-b, 1502-b, 1457-a) |
 | `1461-a` | [rulings_2026_09_18_owner_decisions_1620z.md](rulings_2026_09_18_owner_decisions_1620z.md) | Decisions 2026-09-18 ~16:20Z — the ws defs' placement between the two http halves (1461-a); an atom the renderer writes must read back (1575-a) |
+| `1466-a` | [rulings_2026_09_18_owner_decisions_2345z.md](rulings_2026_09_18_owner_decisions_2345z.md) | Owner decisions 2026-09-18 ~23:45Z — the set module's code band (1173-c); the deployment binding's spelling enters connector.md §4.6 (1466-a); the adapter contract gains a `binding-of` hook (1483-a) |
+| `1483-a` | [rulings_2026_09_18_owner_decisions_2345z.md](rulings_2026_09_18_owner_decisions_2345z.md) | Owner decisions 2026-09-18 ~23:45Z — the set module's code band (1173-c); the deployment binding's spelling enters connector.md §4.6 (1466-a); the adapter contract gains a `binding-of` hook (1483-a) |
 | `1502-a` | [rulings_2026_09_15_owner_decisions_1145z.md](rulings_2026_09_15_owner_decisions_1145z.md) | Owner decisions 2026-09-15 ~11:45Z — "1a 2a 3 accepted 4a 5a 6a" (RULED: 1502-a, 1456-a, 1503-a, 1256-a, 1453-a) |
 | `1502-b` | [rulings_2026_09_15_owner_decisions_1830z.md](rulings_2026_09_15_owner_decisions_1830z.md) | Owner decisions 2026-09-15 ~18:30Z — "1a 2a 3a 4a" (RULED: INT-20, 1503-b, 1502-b, 1457-a) |
 | `1503-a` | [rulings_2026_09_15_owner_decisions_1145z.md](rulings_2026_09_15_owner_decisions_1145z.md) | Owner decisions 2026-09-15 ~11:45Z — "1a 2a 3 accepted 4a 5a 6a" (RULED: 1502-a, 1456-a, 1503-a, 1256-a, 1453-a) |
@@ -1269,4 +1272,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*312 ledger pages; 635 ids declared, 371 cited only.*
+*313 ledger pages; 638 ids declared, 371 cited only.*
