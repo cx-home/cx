@@ -241,6 +241,13 @@ step_globs() {
     check-code-fixtures)           echo 'conformance/* vcx/* spec/*' ;;
     # the SIGPIPE-PIPE gate reads every shell script in the tree
     check-pipefail-pipes)          echo '*' ;;
+    # #1542 (RULED: VERIFY-1): the unscoped bare-`exec` redirect gate scans BOTH
+    # Makefiles (where `$(JS_CLOSE)` lives, and every recipe that opens with it)
+    # and every shell script under scripts/. That is the same input surface as
+    # check-pipefail-pipes, its sibling in this family, so it takes the same
+    # over-including glob rather than a narrower list that would silently skip
+    # the step when a recipe grows a new `exec`. Its own source is an input too.
+    check-exec-redirect)           echo '*' ;;
     # RULED: 1170-d — the step now also carries the SEQ-4 page-sync guard, so a
     # playground-page edit and a golden-sidecar edit are both inputs to it. The
     # whole point of that guard is that a page edit to 171/172 reds something;
