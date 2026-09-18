@@ -91,7 +91,21 @@ V := $(if $(wildcard $(CURDIR)/third_party/v/v),$(CURDIR)/third_party/v/v,v)
 # known leak, because the wedge's victim is the NEXT make rather than the step
 # that leaked — so "this step has no server fixture today" is not a property
 # worth betting a 90-minute gate on.
-JS_CLOSE := exec 3<&- 4<&- 5<&- 6<&- 2>/dev/null || true;
+# #1542: the `2>/dev/null` is SCOPED to the closes with a brace group. Written
+# as `exec 3<&- … 2>/dev/null`, a bare `exec` with only redirections applies
+# them to the SHELL, permanently — so every recipe carrying JS_CLOSE ran with
+# its stderr pointed at /dev/null for the rest of the line, and every
+# diagnostic after it was lost. Measured:
+#
+#   sh -c 'exec 3<&- 4<&- 5<&- 6<&- 2>/dev/null || true; echo x >&2'   → nothing
+#   sh -c '{ exec 3<&- 4<&- 5<&- 6<&- ; } 2>/dev/null || true; echo x >&2' → x
+#
+# The group's redirect lasts only for the group, while `exec`'s fd closes are
+# the shell's and outlive it — so the "bad file descriptor" noise the redirect
+# exists to swallow is still swallowed, and the recipe keeps its stderr. Under
+# `SHELL='sh -x'` the difference is the whole trace of every test step: the
+# nested-make hunt of #1520 could see nothing past this line.
+JS_CLOSE := { exec 3<&- 4<&- 5<&- 6<&- ; } 2>/dev/null || true;
 
 CONFORMANCE_CORE := conformance/core.cxd
 CONFORMANCE_EXT := conformance/extended.cxd

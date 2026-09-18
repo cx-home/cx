@@ -61,7 +61,10 @@ vcx/tests/cli_umbrella_test.v vcx/tests/code_units_umbrella_test.v vcx/tests/mod
   [$cat ('#!/bin/sh\n',
          '# written by scripts/check_no_nested_make.cx (#1520) — records argv,\n',
          '# refuses a `test` goal, forwards everything else to the real make.\n',
-         'printf \'%s\\t%s\\t%s\\n\' "$PPID" "$PWD" "$*" >> ', $log, '\n',
+         'printf \'%s\\t%s\\t%s\\t%s\\n\' "$PPID" "$PWD" "$*" \\\n',
+         '  "$(p=$PPID; n=0; while [ -n "$p" ] && [ "$p" != 0 ] && [ $n -lt 6 ]; do printf \'[%s] %s | \' "$p" "$(ps -o command= -p "$p" 2>/dev/null | cut -c1-120)"; p=$(ps -o ppid= -p "$p" 2>/dev/null | tr -d \' \'); n=$((n+1)); done | tr \'\\t\\n\' \'  \')" >> ', $log, '\n',
+         'printf \'    arg0=%s MAKELEVEL=%s MAKECMDGOALS=%s MAKEFLAGS=%s\\n\' \\\n',
+         '  "$0" "${MAKELEVEL-}" "${MAKECMDGOALS-}" "${MAKEFLAGS-}" >> ', $log, '\n',
          'for a in "$@"; do\n',
          '  case "$a" in\n',
          '    test) echo "check-no-nested-make: REFUSED a nested \\`make test\\` (#1520)" >&2; exit 97 ;;\n',
@@ -109,7 +112,7 @@ vcx/tests/cli_umbrella_test.v vcx/tests/code_units_umbrella_test.v vcx/tests/mod
     [else ()]]]
   [= $keep [?else [$env:flag $args 'keep'] false]]
   [= $selection [?let [= $s [$strings:trim [$string [?else [$env:flag $args 'suite-files'] '']]]]
-    [?if [= $s ''] [then [$strings:trim DEFAULT_SUITE_FILES]] [else $s]]]]
+    [?if [= $s ''] [then [$strings:trim [$string DEFAULT_SUITE_FILES]]] [else $s]]]]
 
   [= $real [$real-make]]
   [= $probe [$path:join 'vcx/target' 'nested-make-probe']]
@@ -139,6 +142,12 @@ vcx/tests/cli_umbrella_test.v vcx/tests/code_units_umbrella_test.v vcx/tests/mod
   [= $hits [$asked-for-test $rows]]
   [= $_h3 [$say [$cat ('  ', [$string [$count $rows]], ' make invocation(s) recorded; ',
                        [$string [$count $hits]], ' asked for a `test` goal')]]]
+  [; Every recorded row is printed, not only the hits: the row ABOVE a hit is
+     usually the invocation that led to it, and two lines of context are the
+     difference between naming the spawner and guessing at it. ]
+  [= $_rows [?to-sequence [?for [in $r $rows]
+    [where [not [= [$strings:trim $r] '']]]
+    [yield [$say [$cat ('    recorded  ', $r)]]]]]]
   [= $_k [?if $keep
     [then [$say [$cat ('  kept: ', $log)]]]
     [else [?let [= $_r [$run ('rm', '-rf', $probe) 'rm the probe directory']] '']]]]
