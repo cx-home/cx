@@ -25,6 +25,7 @@
 [?lib 'cx-stdlib/time'    as=time]
 [?lib 'cx-stdlib/process' as=process]
 [?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/math'    as=math]
 
 [?def cat scope=public ($parts) [$strings:join $parts '']]
 [?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
@@ -57,7 +58,7 @@
             timeout-ms=120000]]
     [= $t1 [$time:monotonic-now]]
     [inv exit=[?match $r [case [err $e] -1] [else $r@exit-code]]
-         ms=[/ [- $t1 $t0] 1000000]
+         ms=[$math:round [/ [- $t1 $t0] 1000000.0]]
          out=[?match $r [case [err $e] [$string $e@message]]
                         [else [$cat ([$string $r@stdout], [$string $r@stderr])]]]]]]
 
@@ -72,6 +73,13 @@
                              'CX_BUILD_SLOT=', 'CX_GATE_OWNER=')
                   timeout-ms=$ms kill-on-timeout=true]]
     [?match $r [case [err $e] false] [else [?else $r@timed-out false]]]]]
+
+# refused — the subject here is `make`, not the recipe, and make answers 2 for
+# ANY failed recipe whatever that recipe's own exit was. So a refusal is
+# "non-zero", and asserting the recipe's literal 1 would be asserting a fact
+# about a process this selftest never sees. Measured: check-gate-lock exits 1,
+# make reports "Error 1" and exits 2.
+[?def refused scope=public ($exit) [> $exit 0]]
 
 # check — one assertion. Answers the failure text, or '' when it held.
 [?def check scope=public impure ($name $ok $detail)
@@ -97,8 +105,8 @@
   [= $_b1 [$plant $path [$process:pid $holder]]]
   [= $b [$ask $path '0']]
   [= $fb [$check 'fail-fast-at-zero'
-           [and [= $b@exit 1] [< $b@ms 5000]]
-           [$cat ('exit ', [$string $b@exit], ' after ', [$string $b@ms], ' ms (want 1, fast)')]]]
+           [and [$refused $b@exit] [< $b@ms 5000]]
+           [$cat ('exit ', [$string $b@exit], ' after ', [$string $b@ms], ' ms (want a refusal, fast)')]]]
 
   # C — the BUDGET is spent to the second, not to the next poll boundary. This
   # is the bug the replaced implementation shipped: a 3 s budget checked beside
@@ -108,8 +116,8 @@
   # this catches overshoots by the poll length, and a poll here is 1 s).
   [= $c [$ask $path '3']]
   [= $fc [$check 'budget-clamped'
-           [and [= $c@exit 1] [>= $c@ms 2500] [< $c@ms 8000]]
-           [$cat ('exit ', [$string $c@exit], ' after ', [$string $c@ms], ' ms (want 1 at ~3000)')]]]
+           [and [$refused $c@exit] [>= $c@ms 2500] [< $c@ms 8000]]
+           [$cat ('exit ', [$string $c@exit], ' after ', [$string $c@ms], ' ms (want a refusal at ~3000)')]]]
 
   # D — with NO budget the caller QUEUES instead of refusing. Proved by the
   # call STILL RUNNING six seconds into a live holder: before #1346 it exited 1
@@ -136,5 +144,5 @@
             [= $_h [$cry 'gate-lock-selftest: FAILED']]
             [= $_l [?for [in $f $fails] [yield [$cry [$cat ('  ', $f)]]]]]
             [$env:exit 1]]]
-    [else [?let [= $_ok [$say 'gate-lock-selftest: 4/4 — stale reclaim, fail-fast at 0, budget clamped, queues then proceeds']]
+    [else [?let [= $_ok [$say 'gate-lock-selftest: 4/4 — stale reclaim, fail-fast at 0, budget clamped, queues instead of refusing']]
             [$env:exit 0]]]]]
