@@ -154,7 +154,7 @@ becomes its own Ring-1 module.
   [; graphql, soap — the connector kit's codec transports (RULED: 1430-c, GQL-1),
      spec first like connector itself: planned, their columns naming where
      #1430 writes them. ]
-  [module name=graphql ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/graphql.md corpus=conformance/stdlib/graphql.cxd source=stdlib/graphql.cx code=vcx/code/stdlib_graphql.v half=none status=planned]
+  [module name=graphql ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/graphql.md corpus=conformance/stdlib/graphql.cxd source=stdlib/graphql.cx code=vcx/code/stdlib_graphql.v half=none status=current]
   [module name=hash ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/hash.md corpus=conformance/stdlib/hash.cxd source=stdlib/hash.cx code=vcx/code/stdlib_hash.v half=none status=current]
   [module name=html ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/html.md corpus=conformance/stdlib/html.cxd source=stdlib/html.cx code=vcx/code/stdlib_html.v half=none status=current]
   [; http-client is the Ring-1 half 1427-e promotes to a module of its own.
@@ -182,7 +182,7 @@ becomes its own Ring-1 module.
   [module name=sched ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/sched.md corpus=conformance/stdlib/sched.cxd source=stdlib/sched.cx code='vcx/code/stdlib_sched_notd_cx_no_pack_sched.v vcx/code/sched_close_d_cx_no_pack_sched.v' half=none status=current]
   [module name=scim ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/scim.md corpus=conformance/stdlib/scim.cxd source=stdlib/scim.cx code=vcx/code/stdlib_scim.v half=none status=current]
   [module name=similar ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/similar.md corpus=conformance/stdlib/similar.cxd source=stdlib/similar.cx code='vcx/code/stdlib_similar.v vcx/code/stdlib_similar_verbs.v vcx/code/stdlib_similar_assign.v vcx/code/stdlib_similar_metaphone.v' half=none status=current]
-  [module name=soap ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/soap.md corpus=conformance/stdlib/soap.cxd source=stdlib/soap.cx code=vcx/code/stdlib_soap.v half=none status=planned]
+  [module name=soap ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/soap.md corpus=conformance/stdlib/soap.cxd source=stdlib/soap.cx code=vcx/code/stdlib_soap.v half=none status=current]
   [module name=strings ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/strings.md corpus=conformance/stdlib/strings.cxd source=stdlib/strings.cx code=vcx/code/stdlib_strings.v half=none status=current]
   [module name=supervise ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/supervise.md corpus=conformance/stdlib/supervise.cxd source=stdlib/supervise.cx code=none half=none status=current]
   [module name=tar ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/tar.md corpus=conformance/stdlib/tar.cxd source=stdlib/tar.cx code=vcx/code/stdlib_tar.v half=none status=current]
@@ -195,7 +195,7 @@ becomes its own Ring-1 module.
      connector kit's kind=stream (RULED: INT-19, #1086), spec first like every
      other transport of #1430: planned, its columns naming where #1086 writes
      them. Ring 1 because every def is pure — the connection is http's. ]
-  [module name=ws ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/ws.md corpus=conformance/stdlib/ws.cxd source=stdlib/ws.cx code=vcx/code/stdlib_ws.v half=none status=planned]
+  [module name=ws ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/ws.md corpus=conformance/stdlib/ws.cxd source=stdlib/ws.cx code=vcx/code/stdlib_ws.v half=none status=current]
   [module name=zip ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/zip.md corpus=conformance/stdlib/zip.cxd source=stdlib/zip.cx code=vcx/code/stdlib_zip.v half=none status=current]
 
   [; ── Ring 2 — cx-platform (1427-b, spent) ─────────────────────────── ]

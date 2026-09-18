@@ -367,15 +367,15 @@ fn bare_prose_title_lines(src string) []string {
 		if !plain {
 			continue
 		}
-		// A glued `::` inside bare prose is an ASCRIPTION to the program reader
-		// (`5::float` → 5.0e0) and prose text to the data reader, and RULED:
-		// 1384-a put `::` deliberately OUTSIDE the glued-residue run ("an
-		// ascription is a program construct and its `::` is not residue"). So
-		// whether a `::` in a comma-less bare-prose body is prose or an
-		// ascription contradicts a standing ruling and is not #1538's to
-		// settle: measured and filed as #1563, and excluded here until it is
-		// answered. Four titles of the 194 this class now grades carry it.
-		if body.contains('::') {
+		// RULED: 1563-a (#1563) — a glued `::` inside a comma-less body §9
+		// [L25b] has classified as bare prose is PROSE, so the `::` exclusion
+		// is GONE and those titles are graded here now. What remains excluded
+		// is an ATOM-leading run (`:ok::atom`): a `:` at a token start opens an
+		// atom, which is self-delimiting, so [L25b]'s join declines and the
+		// program reading answers discrete items where the data reading
+		// answers one run. That is the position-driven entry 1559-a rules and
+		// its own branch carries; the exclusion cites it and goes with it.
+		if body.contains(' :') || body.starts_with(':') {
 			continue
 		}
 		// A token-INITIAL `-` is the program reading's minus / operator head
@@ -551,9 +551,13 @@ fn accepted_by_one_scan() ([]AcceptedByOne, map[string]string) {
 // syntax", and a program form the data grammar has no production for is not a
 // defect of either.
 
-const reason_1559 = '#1559 — an ASCII character [L70a] admits inside a BareValue that the bareword run still does not: a `\\`, and a token-initial `+` / `-` / `.` / `?` / `|` that program mode reads as an operator head or a path step. #1550 and the backtick / `;` / `4xx` half are FIXED (this column is the measurement: fourteen files left it); the tail contradicts the operator-head alphabet and a letter is open on the issue.'
+const reason_1576 = "#1576 — a parenthetical `(…)` or a COMMA inside a body §9 [L25b] has classified as bare prose. The data reader answers ONE prose run; the program reader applies ASP-3's structure-token rule (a ws-delimited `(…)` is discrete) and [L25c]'s comma-array rule, both of which are written for bodies that carry NO bareword. Which rule wins when a bareword IS present is what [L25b] does not say. Split from #1559 by 1559-a's measurement."
 
-const reason_1559_slash = "#1559 — a bare URL's `://` and a bare `tag:` URI. RULED: 1384-a keeps `/` OUT of the glued-residue run deliberately (`ns:x/y` is CXPath surface), so admitting it reverses a standing ruling rather than closing a gap: the letter on the issue asks which."
+const reason_1577 = "#1577 — a `[| … ]` BLOCK SPAN's content. The data reader carries it verbatim (ast.md's BlockContent); the program reader tokenizes inside it, so a `|` or a digit-led run in that content is read as program text — and in one of these the LEXER refuses before any parser could re-scan, which is why 1559-a's parser-driven span cannot reach it. Split from #1559."
+
+const reason_1578 = "#1578 — a bare URL in an ATTRIBUTE VALUE. 1559-a narrowed 1384-a's `/` sentence so a bare URL in a BODY is prose in both rings, but an attribute value is an EXPRESSION position (1559-d) and #923/BC-1's attr-value run sends a `/`-bearing value whose prefix reads as a path head to the CXPath lane. Whether that lane should prefer the data reading's string is the one question 1559-a's row does not settle; the refusal is at least loud and carries its own fix. Split from #1559."
+
+const reason_1579 = "#1579 — 1559-a's re-scan triggers on a parse REFUSAL, because a bareword head may be a CALL and that dispatch is decided at EVAL (a pre-emptive collapse destroyed cmd-030's arguments). These two prose bodies DO begin to parse — a leading `-`, a trailing `.` — and so reach a different tree instead of refusing, which means \"does it parse?\" is not by itself the discriminator the rule needs. Split from #1559."
 
 const reason_l25c_residue = '#1541 residue, REASONED not pending — a nested `[`/`(`/`{` in one comma slot. There the data reading leaves the array lane entirely and the comma becomes literal PROSE (`[xs a, [b 1], \'c\']` → `[xs \'a, \' [b 1] \',\' \'c\']`, measured), which is the data ring\'s prose classifier and not a tree a tokenizing reader can answer. The program reader refuses it BY NAME instead of inventing a third reading.'
 
@@ -580,16 +584,15 @@ const reason_prog = 'RECORDED EXCEPTION (1548-c) — a program document whose BR
 // judgement rather than asserted by a commit message.
 const accepted_by_one_table = [
 	// ── #1559 — an ASCII BareChar in prose the run does not admit (6) ──
-	AcceptedByOne{'conformance/code.cxd', .data, reason_1559},
-	AcceptedByOne{'conformance/lockfile.cxd', .data, reason_1559},
-	AcceptedByOne{'conformance/stdlib/array.cxd', .data, reason_1559},
-	AcceptedByOne{'conformance/yaml.cxd', .data, reason_1559},
-	AcceptedByOne{'examples/article.cx', .data, reason_1559},
-	AcceptedByOne{'examples/vcore.cx', .data, reason_1559},
+	AcceptedByOne{'conformance/code.cxd', .data, reason_1577},
+	AcceptedByOne{'conformance/lockfile.cxd', .data, reason_1576},
+	AcceptedByOne{'conformance/stdlib/array.cxd', .data, reason_1579},
+	AcceptedByOne{'conformance/yaml.cxd', .data, reason_1576},
+	AcceptedByOne{'examples/article.cx', .data, reason_1579},
+	AcceptedByOne{'examples/vcore.cx', .data, reason_1577},
 	// ── #1559 — a bare URL's `://` (RULED: 1384-a keeps `/` out of the run) (3) ──
-	AcceptedByOne{'examples/chapter.cx', .data, reason_1559_slash},
-	AcceptedByOne{'examples/config.cx', .data, reason_1559_slash},
-	AcceptedByOne{'examples/post.cx', .data, reason_1559_slash},
+	AcceptedByOne{'examples/chapter.cx', .data, reason_1578},
+	AcceptedByOne{'examples/post.cx', .data, reason_1578},
 	// ── #1541 residue — a nested node in a comma slot (3) ──
 	AcceptedByOne{'conformance/gates.cxd', .data, reason_l25c_residue},
 	AcceptedByOne{'conformance/platform/store.cxd', .data, reason_l25c_residue},

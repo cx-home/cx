@@ -1,11 +1,11 @@
-$ cx actor.cx
+$ cx --allow-read=../.. actor.cx
 'principal:user-42'
 exit=0
 
 # the principal the login established, unquoted for the command line:
 ACTOR=principal:user-42
 
-$ cx flow run ../../flow/checkout/checkout.flow.cx --env order.env.cx --ephemeral --actor="$ACTOR" --sku=SKU-88 --qty=3 --unit=9.50
+$ cx flow run ../../flow/checkout/checkout.flow.cx --env order.env.cx --ephemeral --actor="$ACTOR" --sku=SKU-88 --qty=3 --unit=9.50 --allow-read=../..
 [flow-run id='flow:sha2-256:36c67ec5f760b81770a6754c0705e30196cea3a024e2d51c8ade14a32fd21759' flow=sha2-256:e6f13f7c5f1c01042a4a1fa5b3d96c51876915703704d41ebc0a77f0d8dca90d version=1 status=:done actor=principal:user-42 authority=cli stream='flow:sha2-256:36c67ec5f760b81770a6754c0705e30196cea3a024e2d51c8ade14a32fd21759' [args [sku 'SKU-88'] [qty 3] [unit 9.50]] [step name=check status=:done pivot=true ord=3 activated=2 [result [checked sku=SKU-88 qty=3]] [do 'orders/check-order' [sku 'SKU-88'] [qty 3]]] [step name=price status=:done ord=5 activated=4 [result [priced qty=3 unit=9.50 total=28.50]] [do 'orders/price-order' [qty 3] [unit 9.50]]] [step name=confirm status=:done ord=7 activated=6 [result [confirmation sku=SKU-88 total=28.50]] [do 'orders/confirm-order' [sku 'SKU-88'] [total 28.50]]]]
 exit=0
 

@@ -52,6 +52,7 @@ $ cx prog.cx
 | `fp` | Functional composition over the four value channels. |
 | `ft` | In-program fulltext search with structured ranking and snippet generation. |
 | `geo` | Coordinate primitives without a new scalar kind — geometries are ordinary CXDM elements. |
+| `graphql` | The GraphQL client codec: text and values in, text and values out. |
 | `hash` | Content-addressable hashing — fixed-length digests of arbitrary byte payloads. |
 | `html` | HTML as a first-class document format: parse, sanitize, serialize, and extract text. |
 | `http-client` | HTTP/1.1 request/response semantics from the CLIENT side, plus the message codec both halves of HTTP share: method verbs, headers, materialized bodies, redirects, content decoding, connection pooling, and the Server-Sent Events read side. |
@@ -73,6 +74,7 @@ $ cx prog.cx
 | `sched` | Scheduled events and timers on the event loop. |
 | `scim` | SCIM 2.0 provisioning semantics — the PROVISIONING half of enterprise SSO, counterpart to cx-stdlib/oidc's login half. |
 | `similar` | Graded comparison as a generalization of exact equality: where = returns a boolean, the core ~ operator returns a score in [0,1] plus evidence, and a decision policy maps the score to :match / :review / :no-match bands. |
+| `soap` | The SOAP codec: octets and values in, octets and values out. |
 | `strings` | String inspection, search, and transformation for general text work. |
 | `supervise` | Restart policies over monitored workers: run a set of named children (each an arity-0 callable spawned as a worker) under a declared policy — strategy (:one-for-one, :one-for-all, :rest-for-one), restart intensity (max-restarts within a window), and per-child exponential backoff — restarting them when they die according to each child's restart type (:permanent, :transient, :temporary). |
 | `tar` | Tar archive codec over the CX bytes scalar kind. |
@@ -81,6 +83,7 @@ $ cx prog.cx
 | `url` | RFC 3986 and WHATWG-URL-aligned URL parsing, building, and component encoding. |
 | `uuid` | Generate, parse, format, and validate Universally Unique Identifiers. |
 | `validate` | Validate a CX data record against a record-schema at runtime, in the    JSON-Schema / pydantic style. |
+| `ws` | The RFC 6455 WebSocket frame codec: octets and values in, octets and values out. |
 | `zip` | Zip archive codec over the CX bytes scalar kind. |
 
 ## Experimental tier — `cx-x/<name>`
