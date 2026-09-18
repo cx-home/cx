@@ -419,3 +419,353 @@ fn test_program_reader_agrees_on_bare_prose_titles() {
 	assert checked > 0, 'reader-parity: no bare-prose `[title …]` line found in the corpus — refusing to vouch'
 	assert bad.len == 0, '${bad[0]}\n  ${bad.len} of ${checked} bare-prose titles diverge; every entry point answers the same element tree for the same bytes (RULED: CXF-5, #1521).'
 }
+
+// ── the THIRD column: accepted-by-one (RULED: 1548-c, #1548) ────────────────
+//
+// The two columns above grade bytes BOTH readers accept. They have nothing to
+// say about the bytes only one reader accepts, which is exactly where the two
+// readings drift apart unnoticed — the class that made `cx lint` answer 0 on a
+// document `cx FILE` refuses (#1546), and the reason #1521 existed.
+//
+// The owner's letter (c) on #1548: the data ring's bare-prose reading and the
+// code ring's strict tokenization are two grammars over one bracket syntax,
+// and their divergence on such bytes is a STATED PROPERTY — named by this
+// step and judged file by file. So every file one reader accepts and the other
+// refuses is LISTED below with the refusing reader and why, and the step fails
+// on an entry that is neither a filed issue nor a recorded, reasoned
+// exception. An unexplained entry is a red; so is a STALE one, because a table
+// nobody prunes stops being evidence.
+//
+// This is not the census in another spelling: `cxparse_full_corpus_diff_test`
+// diffs the two readers over the `in_cx` SECTIONS of the corpus and locks
+// bucket counts. This reads the FILES — the position a reader divergence
+// actually reaches a writer from.
+
+// AcceptedByOne is one file the readers disagree about ACCEPTING.
+struct AcceptedByOne {
+	path   string // repo-relative
+	by     Reader // the reader that ACCEPTS it
+	reason string // a filed issue (`#1541 …`) or a recorded exception's reason
+}
+
+enum Reader {
+	data
+	program
+}
+
+fn (r Reader) str() string {
+	return match r {
+		.data { 'data' }
+		.program { 'program' }
+	}
+}
+
+// parity_scan_files — the population this column judges: every corpus and
+// playground file the two columns above already read, plus every `.cx` under
+// `scripts/`, `stdlib/` and `examples/` (RULED: 1548-c), which is where a
+// program document a writer actually runs lives.
+fn parity_scan_files() []string {
+	root := repo_root()
+	mut out := corpus_files()
+	for dir in ['scripts', 'stdlib', 'examples'] {
+		mut stack := [os.join_path(root, dir)]
+		for stack.len > 0 {
+			d := stack.pop()
+			for e in os.ls(d) or { []string{} } {
+				p := os.join_path(d, e)
+				if os.is_dir(p) {
+					if e != 'node_modules' {
+						stack << p
+					}
+					continue
+				}
+				if e.ends_with('.cx') {
+					out << p.replace(root + '/', '')
+				}
+			}
+		}
+	}
+	out.sort()
+	return out
+}
+
+// accepted_by_one_scan classifies the population: for every file, does the
+// data reader accept it, does the program reader, and when exactly one does,
+// what did the other say. `.cxd` corpus files the program reader refuses are
+// the bulk and are reasoned by CLASS below, not one sentence per file.
+fn accepted_by_one_scan() ([]AcceptedByOne, map[string]string) {
+	root := repo_root()
+	mut rows := []AcceptedByOne{}
+	mut refusals := map[string]string{}
+	for rel in parity_scan_files() {
+		src := os.read_file(os.join_path(root, rel)) or { continue }
+		mut data_ok := true
+		mut data_msg := ''
+		cx.parse_cx(src) or {
+			data_ok = false
+			data_msg = err.msg()
+		}
+		mut prog_ok := true
+		mut prog_msg := ''
+		cx.parse_program(src) or {
+			prog_ok = false
+			prog_msg = err.msg()
+		}
+		if data_ok == prog_ok {
+			continue
+		}
+		if data_ok {
+			rows << AcceptedByOne{
+				path: rel
+				by:   .data
+			}
+			refusals[rel] = prog_msg
+		} else {
+			rows << AcceptedByOne{
+				path: rel
+				by:   .program
+			}
+			refusals[rel] = data_msg
+		}
+	}
+	return rows, refusals
+}
+
+// ── the reasons, one per class ──────────────────────────────────────────────
+//
+// A FILED ISSUE is named by number: the divergence is a defect and the step
+// carries it until the fix moves the file into the graded population above.
+// A RECORDED EXCEPTION states why the two readings are each their ring's own
+// correct answer — 1548-c's own words: "the data ring's bare-prose reading and
+// the code ring's strict tokenization are two grammars over one bracket
+// syntax", and a program form the data grammar has no production for is not a
+// defect of either.
+
+const reason_1550 = '#1550 — the program lexer refuses a MULTI-BYTE character [L70a] admits inside a BareValue (em dash, section sign, middle dot), so a bare-prose body the data reading carries as ONE text run is a CXER0100 to the program reader. 1548-c row (3) rules this a defect of the program lexer: prose is Unicode in both rings.'
+
+const reason_1559 = '#1559 — the ASCII half of the same bareword scan: a backtick, a `;`, a bare URL\'s `://` and a `4xx`-shaped bareword force-typed as a temporal literal. One change with #1550, which is why it is filed and not fixed alongside it.'
+
+const reason_1541 = '#1541 — a §9 [L25c] comma element body is an ArrayNode to the data reader and a parse refusal to the program reader, for every comma body in the corpus. [L25c] is normative and says both readers implement the one rule; one of them does.'
+
+const reason_entity = 'RECORDED EXCEPTION (1548-c) — an `&Name;` entity reference is a DATA body form (grammar [66]). A program document has no entity lane and `&` in program position is not a reference opener, so the program reader\'s refusal is the code ring\'s own correct answer, not a divergence to close.'
+
+const reason_ophead = 'RECORDED EXCEPTION (1548-c) — a token-initial `=` / `|` is an OPERATOR HEAD in program mode (the `program-ophead-*` family the cxparse census catalogues) and ordinary data content in the data ring. The same fork this step already excludes token-initial `-` for.'
+
+const reason_1536 = '#1536 — a call-shaped head (`[$mod:verb …]`) or a `$name` hole beside a ws-delimited `(…)`/`{…}` literal. RULED: TRAP-1 (#1529) states outright that a call-shaped program document is ALWAYS refused by the data reader, and [L83]-0 lists `[$` as the program-mode call opener; #1536 carries the open letter on whether `cx --ast` should arbitrate the two readings the way `cx lint` now does. Recorded here because the refusal is correct for the data ring under any letter.'
+
+const reason_attr = 'RECORDED EXCEPTION (1548-c) — a COMPUTED attribute `name=[EXPR]` is a program form (code.md §6): the value is evaluated at the call site. The data grammar\'s attributes are scalar-only by decision D2 (a node-valued attribute was GRADUATED out, 2026-06-03), so the data reader\'s E211 is the data ring stating its own rule, not a reader disagreeing with itself.'
+
+const reason_prog = 'RECORDED EXCEPTION (1548-c) — a program document whose BRACKET structure the data balancer cannot read: a `[?const]` spanning the file, a `[= …]` binding clause, a `]` inside program source. The TRAP-1 class again — one ring\'s syntax handed to the other ring\'s balancer, which is what a `.cx` PROGRAM is.'
+
+// accepted_by_one_table — the judged population (RULED: 1548-c). Grouped by
+// the REASON each entry carries, because the reasons cluster and a per-file
+// sentence eighty-six times over would be a table nobody reads. Adding a
+// corpus file or a `.cx` the two readers disagree about REDS this step until
+// the entry is here with a reason; removing the divergence reds it too, so a
+// fix cannot leave a stale excuse behind.
+const accepted_by_one_table = [
+	// ── #1550 — a MULTI-BYTE character [L70a] admits inside a BareValue (14) ──
+	AcceptedByOne{'conformance/code.cxd', .data, reason_1550},
+	AcceptedByOne{'conformance/conversions.cxd', .data, reason_1550},
+	AcceptedByOne{'conformance/fmt.cxd', .data, reason_1550},
+	AcceptedByOne{'conformance/identity.cxd', .data, reason_1550},
+	AcceptedByOne{'conformance/lockfile.cxd', .data, reason_1550},
+	AcceptedByOne{'conformance/stdlib/cx.cxd', .data, reason_1550},
+	AcceptedByOne{'conformance/x/tools.cxd', .data, reason_1550},
+	AcceptedByOne{'conformance/xap/ux.cxd', .data, reason_1550},
+	AcceptedByOne{'conformance/xap/xap-compose.cxd', .data, reason_1550},
+	AcceptedByOne{'conformance/xap/xap-dist.cxd', .data, reason_1550},
+	AcceptedByOne{'conformance/xml.cxd', .data, reason_1550},
+	AcceptedByOne{'conformance/yaml.cxd', .data, reason_1550},
+	AcceptedByOne{'examples/doc.cx', .data, reason_1550},
+	AcceptedByOne{'examples/post.cx', .data, reason_1550},
+	// ── #1559 — the ASCII half of the same bareword scan (9) ──
+	AcceptedByOne{'conformance/gates.cxd', .data, reason_1559},
+	AcceptedByOne{'conformance/platform/connector.cxd', .data, reason_1559},
+	AcceptedByOne{'conformance/platform/store.cxd', .data, reason_1559},
+	AcceptedByOne{'conformance/stdlib/array.cxd', .data, reason_1559},
+	AcceptedByOne{'conformance/stdlib/url.cxd', .data, reason_1559},
+	AcceptedByOne{'conformance/xml_codec.cxd', .data, reason_1559},
+	AcceptedByOne{'examples/article.cx', .data, reason_1559},
+	AcceptedByOne{'examples/chapter.cx', .data, reason_1559},
+	AcceptedByOne{'examples/config.cx', .data, reason_1559},
+	// ── #1541 — a §9 [L25c] comma element body (3) ──
+	AcceptedByOne{'conformance/core.cxd', .data, reason_1541},
+	AcceptedByOne{'conformance/operator_heads.cxd', .data, reason_1541},
+	AcceptedByOne{'conformance/schema_validate.cxd', .data, reason_1541},
+	// ── recorded exception — an `&Name;` entity reference (2) ──
+	AcceptedByOne{'examples/cx-tour.cx', .data, reason_entity},
+	AcceptedByOne{'examples/env.cx', .data, reason_entity},
+	// ── recorded exception — a token-initial operator head (2) ──
+	AcceptedByOne{'examples/logs.cx', .data, reason_ophead},
+	AcceptedByOne{'examples/vcore.cx', .data, reason_ophead},
+	// ── #1536 — a call-shaped head beside a ws-delimited literal (32) ──
+	AcceptedByOne{'examples/platform/scim/projection/project.cx', .program, reason_1536},
+	AcceptedByOne{'examples/platform/sso/deployment/deployment.cx', .program, reason_1536},
+	AcceptedByOne{'examples/platform/sso/mock-idp/idp.cx', .program, reason_1536},
+	AcceptedByOne{'examples/platform/sso/oidc-auth-code-pkce/login.cx', .program, reason_1536},
+	AcceptedByOne{'examples/platform/sso/oidc-auth-code-pkce/refusals.cx', .program, reason_1536},
+	AcceptedByOne{'examples/platform/sso/saml-assertion-session/session.cx', .program, reason_1536},
+	AcceptedByOne{'examples/platform/sso/saml-assertion-session/tampering.cx', .program, reason_1536},
+	AcceptedByOne{'examples/platform/sso/scim-provisioning/provision.cx', .program, reason_1536},
+	AcceptedByOne{'examples/platform/together/sso-flow-xap/actor.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/check_code_diagram_fixtures.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/check_code_fixtures.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/check_code_spec_consistency.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/check_completions_drift.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/check_composition_seams.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/check_no_adr_citations.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/check_no_cxl_token.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/check_null_absence_conflation.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/check_portable_links.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/check_xap_dist_absences.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/check_xpath_parity_fixtures.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/compare_bench.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/compile_binding_api_fixtures.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/fmt_corpus_sweep.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/gen_docs/primer_build.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/gen_guide/snippet_check.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/lang_stats.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/run_bench_json.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/sso_interop/deploy_drive.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/sso_interop/proxy.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/sso_interop/rp_drive.cx', .program, reason_1536},
+	AcceptedByOne{'stdlib/sso.cx', .program, reason_1536},
+	AcceptedByOne{'stdlib/supervise.cx', .program, reason_1536},
+	// ── recorded exception — a computed attribute `name=[EXPR]` (18) ──
+	AcceptedByOne{'examples/code-tour.cx', .program, reason_attr},
+	AcceptedByOne{'examples/cxpath-tour.cx', .program, reason_attr},
+	AcceptedByOne{'examples/htmx/serve.cx', .program, reason_attr},
+	AcceptedByOne{'examples/match-multi.cx', .program, reason_attr},
+	AcceptedByOne{'examples/modify-crud.cx', .program, reason_attr},
+	AcceptedByOne{'examples/platform/flow/checkout/orders.cx', .program, reason_attr},
+	AcceptedByOne{'examples/platform/scim/projection/no-leak.cx', .program, reason_attr},
+	AcceptedByOne{'examples/platform/scim/provisioning/provision.cx', .program, reason_attr},
+	AcceptedByOne{'examples/platform/xap/storefront/compose.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/check_lint_rules.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/check_no_stub_impl.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/consolidate_tests.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/gen_guide/guide_build.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/gen_guide/playground/gen_examples.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/ring_query.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/sso_interop/idp.cx', .program, reason_attr},
+	AcceptedByOne{'stdlib/diagram.cx', .program, reason_attr},
+	AcceptedByOne{'stdlib/flow.cx', .program, reason_attr},
+	// ── recorded exception — a program document the data balancer cannot read (6) ──
+	AcceptedByOne{'scripts/check_editor_surface_parity.cx', .program, reason_prog},
+	AcceptedByOne{'scripts/diagnostics_census.cx', .program, reason_prog},
+	AcceptedByOne{'scripts/flow_vocabulary_gate.cx', .program, reason_prog},
+	AcceptedByOne{'scripts/fuzz_cx.cx', .program, reason_prog},
+	AcceptedByOne{'scripts/gen_docs/primer_platform.cx', .program, reason_prog},
+	AcceptedByOne{'stdlib/connector.cx', .program, reason_prog},
+]
+
+// judge_accepted_by_one is the verdict, as a PURE function of the scan and the
+// table, so the red-proof below can plant an entry without touching the tree:
+// `unexplained` is every observed divergence the table does not carry (or
+// carries with the other reader accepting), `stale` every table entry the scan
+// no longer observes.
+fn judge_accepted_by_one(observed []AcceptedByOne, table []AcceptedByOne) ([]string, []string) {
+	mut declared := map[string]AcceptedByOne{}
+	for d in table {
+		declared[d.path] = d
+	}
+	mut seen := map[string]bool{}
+	mut unexplained := []string{}
+	for o in observed {
+		seen[o.path] = true
+		d := declared[o.path] or {
+			unexplained << 'reader-parity accepted-by-one: ${o.path} — the ${o.by.str()} reader accepts it and the other REFUSES it, and the step carries no reason for that. Add it to accepted_by_one_table with a filed issue number or a recorded exception (RULED: 1548-c, #1548).'
+			continue
+		}
+		if d.by != o.by {
+			unexplained << 'reader-parity accepted-by-one: ${o.path} — the table says the ${d.by.str()} reader accepts it; the scan says the ${o.by.str()} reader does. The divergence changed sides, so its reason no longer describes it (RULED: 1548-c, #1548).'
+		}
+	}
+	mut stale := []string{}
+	for d in table {
+		if d.path !in seen {
+			stale << 'reader-parity accepted-by-one: ${d.path} — the table carries a reason for a divergence the readers NO LONGER have. Remove the entry with the fix that closed it; an excuse nobody prunes stops being evidence (RULED: 1548-c, #1548).'
+		}
+	}
+	return unexplained, stale
+}
+
+fn test_accepted_by_one_is_named() {
+	observed, refusals := accepted_by_one_scan()
+	assert observed.len > 0, 'reader-parity accepted-by-one: the scan found no divergence at all across the corpus and every .cx under scripts/, stdlib/ and examples/ — refusing to vouch (the readers are not identical; a zero here means the scan broke)'
+	unexplained, stale := judge_accepted_by_one(observed, accepted_by_one_table)
+	if unexplained.len > 0 {
+		first := unexplained[0]
+		path := first.all_after('accepted-by-one: ').all_before(' —')
+		msg := refusals[path] or { '' }
+		assert false, '${first}\n  the refusing reader said: ${msg.all_before('\n')}\n  ${unexplained.len} unexplained of ${observed.len} observed.'
+	}
+	assert stale.len == 0, '${stale[0]}\n  ${stale.len} stale of ${accepted_by_one_table.len} declared.'
+}
+
+// The column's RED-PROOF (1548-c's fixture-first clause): a planted entry the
+// table does not carry fails the judgement, and a planted table row the scan
+// does not observe fails it too. Without this the column could be satisfied by
+// a judgement that never says no.
+fn test_accepted_by_one_red_proof() {
+	planted := [
+		AcceptedByOne{'conformance/nowhere-planted.cxd', .data, ''},
+	]
+	unexplained, _ := judge_accepted_by_one(planted, accepted_by_one_table)
+	assert unexplained.len == 1, 'the column must refuse an unexplained entry'
+	assert unexplained[0].contains('conformance/nowhere-planted.cxd'), unexplained[0]
+	assert unexplained[0].contains('carries no reason'), unexplained[0]
+
+	_, stale := judge_accepted_by_one([]AcceptedByOne{}, [
+		AcceptedByOne{'conformance/nowhere-planted.cxd', .data, reason_1550},
+	])
+	assert stale.len == 1, 'the column must refuse a reason for a divergence that is gone'
+	assert stale[0].contains('NO LONGER'), stale[0]
+
+	// and a divergence that changed sides is not silently re-labelled
+	side, _ := judge_accepted_by_one([
+		AcceptedByOne{'conformance/code.cxd', .program, ''},
+	], accepted_by_one_table)
+	assert side.len == 1, 'the column must refuse an entry whose accepting reader changed'
+	assert side[0].contains('changed sides'), side[0]
+}
+
+// ── #1548's own two reproductions, graded by BOTH readers in one step ───────
+//
+// 1548-c's fixture-first clause. The nested same-quote region is the FIRST
+// recorded exception (row 2 of the decision): a program form is not prose, so
+// the program reader's refusal is the ruled reading (1521-a, #1546) and the
+// data reader's prose reading of the same bytes is the data ring's own correct
+// answer. The em-dash body is the DEFECT half (row 3) and stays graded as one
+// until #1550 lands, at which point the expectation below flips WITH the fix.
+struct ShapeDisposition {
+	src        string
+	data_ok    bool
+	program_ok bool
+	reason     string
+}
+
+const accepted_by_one_shapes = [
+	ShapeDisposition{"[?element \"entry\" [?attr \"path\" \"door.feature.cxd\"] '[feature [want 'to unlock']]']", true, false, 'RECORDED EXCEPTION (1548-c row 2), the first one: the data reading takes the body as one verbatim prose Text and accepts it; the program reader refuses it as an unterminated string, which is the ruled reading (1521-a, #1546) because a program form is not prose.'},
+	ShapeDisposition{'[title an \u2014 dash]', true, false, '#1550 (1548-c row 3) — a DEFECT of the program lexer: prose is Unicode in both rings, so this flips to accepted-by-both when the bareword scan admits the character.'},
+]
+
+fn test_accepted_by_one_shapes_are_graded_by_both_readers() {
+	for sh in accepted_by_one_shapes {
+		mut data_ok := true
+		mut data_msg := ''
+		cx.parse_cx(sh.src) or {
+			data_ok = false
+			data_msg = err.msg()
+		}
+		mut prog_ok := true
+		mut prog_msg := ''
+		cx.parse_program(sh.src) or {
+			prog_ok = false
+			prog_msg = err.msg()
+		}
+		assert data_ok == sh.data_ok, 'reader-parity accepted-by-one shape: the DATA reader ${if data_ok { 'accepts' } else { 'refuses' }} `${sh.src}`, the step says it must ${if sh.data_ok { 'accept' } else { 'refuse' }} it: ${data_msg}\n  ${sh.reason}'
+		assert prog_ok == sh.program_ok, 'reader-parity accepted-by-one shape: the PROGRAM reader ${if prog_ok { 'accepts' } else { 'refuses' }} `${sh.src}`, the step says it must ${if sh.program_ok { 'accept' } else { 'refuse' }} it: ${prog_msg}\n  ${sh.reason}'
+	}
+}
