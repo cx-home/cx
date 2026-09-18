@@ -1,0 +1,121 @@
+# scripts/check_verification_budget.cx — the verification-cost BUDGET step
+# (#1562, RULED: VCOST-1, CXF-1).
+#
+# The owner's sentence is "the fixture grader ≤ 20 min, a selected post-merge
+# run ≤ 20 min, the union ≤ 60 min", and VCOST-1 says it out loud: a written
+# bound "has to be a step or it is a wish". This is the step.
+#
+# TWO inputs, both data:
+#   * scripts/verification_budget.cxd — the BOUNDS, one row each, carrying the
+#     measurement that set it and the issue that last moved it. A bound moves
+#     only in a commit that names why.
+#   * vcx/target/verification_timings.cxd — the MEASUREMENTS a run leaves
+#     behind: [timing name= seconds= load= at=]. Written by whatever ran, read
+#     here; absent, there is nothing to judge.
+#
+# IDLE vs LOADED, which is the whole reason this can be a gate at all. A time
+# measured while the box was busy says nothing about the software: the same
+# `make fixtures` read 3,168 s and 2,898 s on the same corpus hours apart
+# because another agent's grader had a core. So:
+#   * `load` at or below IDLE-LOAD  → the measurement JUDGES. Over its bound,
+#     the step FAILS.
+#   * `load` above it              → ADVISORY. Reported with the load beside
+#     it, never failing.
+# A timing with no `load` is treated as loaded: the fail-safe direction is the
+# one that does not red a run on a number nobody can defend.
+#
+# A bound with NO timing is reported as unmeasured and does not fail — a gate
+# that reds because a measurement is missing punishes the run that did not take
+# one, and the runs that take them are post-merge.
+#
+# Exit 0 when every judging measurement is within its bound; 1 when one is over;
+# 2 on a malformed manifest.
+#
+# `--allow-write` as well as `--allow-read`, and it is not decoration: the
+# report goes out through `[$io:write-line [$env:stdout] …]`, which charges
+# `write` like any other io. Run with `--allow-read` alone, EVERY report line is
+# a CXER0271 bound to a name nothing reads — so the step prints nothing and
+# exits 0, which is a gate that cannot speak. Measured here before it was
+# wired; the sibling gates all take both grants for the same reason.
+#
+#   cx --allow-read --allow-write scripts/check_verification_budget.cx
+#   (or: make check-verification-budget)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/fp'      as=fp]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+# IDLE-LOAD: the one-minute load average at or below which a measurement is
+# allowed to JUDGE. Two runnable things on this box is the pre-merge runner plus
+# the thing it is running; above that another agent is on the machine and the
+# number is theirs as much as ours.
+[?const IDLE-LOAD 2.0e0]
+
+[?const BOUNDS-FILE 'scripts/verification_budget.cxd']
+[?const TIMINGS-FILE 'vcx/target/verification_timings.cxd']
+
+# mins renders seconds as a minutes-and-seconds string for the report.
+[?def mins scope=public ($s) [$cat ([$string [$div $s 60]], 'm', [$string [$mod $s 60]], 's')]]
+
+[?let
+  [= $bsrc [?fallback [$io:read-file BOUNDS-FILE]
+             [recover-with ([$cry [$cat ('check-verification-budget: cannot read ', BOUNDS-FILE)]],
+                            [$env:exit 2], '')]]]
+  [= $bdoc [?fallback [$cx:parse $bsrc]
+             [recover-with ([$cry [$cat ('check-verification-budget: ', BOUNDS-FILE, ' does not parse')]],
+                            [$env:exit 2], null)]]]
+  [= $bounds [?to-sequence [?for [in $b $bdoc//bound] [yield $b]]]]
+  [= $_nb [?if [= [$count $bounds] 0]
+    [then ([$cry [$cat ('check-verification-budget: ', BOUNDS-FILE, ' declares no [bound] row')]],
+           [$env:exit 2])]
+    [else ()]]]
+
+  # The timings are optional: a tree that has run nothing has nothing to judge.
+  [= $tsrc [?fallback [$io:read-file TIMINGS-FILE] [recover-with '']]]
+  [= $tdoc [?if [= $tsrc ''] [then null] [else [?fallback [$cx:parse $tsrc] [recover-with null]]]]]
+  [= $timings [?if [= $tsrc ''] [then ()]
+    [else [?to-sequence [?for [in $t $tdoc//timing] [yield $t]]]]]]
+
+  [= $_h [$say [$cat ('check-verification-budget: ', [$string [$count $bounds]], ' bound(s), ',
+                      [$string [$count $timings]], ' measurement(s), idle-load ', [$string IDLE-LOAD])]]]
+
+  # One verdict per bound.
+  [= $over [?to-sequence [?for [in $b $bounds]
+    [= $name [$string $b@name]]
+    [= $limit [$str-to-int [$string $b@seconds]]]
+    [= $hits [?to-sequence [?for [in $t $timings]
+                [where [= [$string $t@name] $name]] [yield $t]]]]
+    [= $t [?if [= [$count $hits] 0] [then null] [else [$first $hits]]]]
+    [= $secs [?if [= [$count $hits] 0] [then 0] [else [$str-to-int [$string $t@seconds]]]]]
+    [= $load [?if [= [$count $hits] 0] [then 9.9e2]
+               [else [?fallback [$str-to-float [$string $t@load]] [recover-with 9.9e2]]]]]
+    [= $judges [and [> [$count $hits] 0] [<= $load IDLE-LOAD]]]
+    [= $line [?if [= [$count $hits] 0]
+      [then [$cat ('  ', $name, '  bound ', [$mins $limit], '  — NOT MEASURED (nothing to judge)')]]
+      [else [$cat ('  ', $name, '  bound ', [$mins $limit], '  measured ', [$mins $secs],
+                   '  load ', [$string $load],
+                   [?if $judges
+                     [then [?if [> $secs $limit] [then '  OVER BOUND'] [else '  ok']]]
+                     [else '  (ADVISORY — the box was loaded; this number judges nothing)']])]]]]
+    [= $_p [$say $line]]
+    [where [and $judges [> $secs $limit]]]
+    [yield [over name=$name limit=$limit measured=$secs]]]]]
+
+  [?if [> [$count $over] 0]
+    [then ([$cry ''],
+           [$cry [$cat ('check-verification-budget FAILED — ', [$string [$count $over]],
+                        ' idle-box measurement(s) over bound:')]],
+           [?for [in $o $over]
+             [yield [$cry [$cat ('  ', [$string $o@name], ': ', [$mins [$str-to-int [$string $o@measured]]],
+                                 ' against a bound of ', [$mins [$str-to-int [$string $o@limit]]])]]]],
+           [$cry '  The bound is not the thing to change. Raising a row because a run exceeded it'],
+           [$cry '  is the ratchet running backwards; a row moves only in a commit that names why'],
+           [$cry [$cat ('  (', BOUNDS-FILE, ' carries the measurement that set each and the issue that last moved it).')]],
+           [$env:exit 1])]
+    [else ([$say 'check-verification-budget OK — no idle-box measurement over its bound'],
+           [$env:exit 0])]]]

@@ -225,6 +225,11 @@ step_globs() {
     # #1560 (RULED: VCOST-1): the selection self-test reads only the helper it
     # pins and its own source, so it runs when either moves and not otherwise.
     check-profile-gate-selection)  echo "scripts/profile_gate_files_for_branch.sh scripts/profile_gate_selection_selftest.sh" ;;
+    # #1562 (RULED: VCOST-1): the budget step reads the bounds manifest and the
+    # timings a run leaves behind; the self-test reads the step and its own
+    # source. Neither reads the tree, so neither runs when the tree moves.
+    check-verification-budget)     echo "scripts/check_verification_budget.cx scripts/verification_budget.cxd" ;;
+    check-verification-budget-selftest) echo "scripts/check_verification_budget.cx scripts/verification_budget_selftest.sh" ;;
     check-code-spec-consistency)   echo 'spec/* vcx/code/*' ;;
     # ledger-index-check (#1438) regenerates ledger/README.md from the store and
     # compares: its inputs are every ledger page and the generator itself.
