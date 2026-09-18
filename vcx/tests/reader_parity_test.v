@@ -551,9 +551,11 @@ fn accepted_by_one_scan() ([]AcceptedByOne, map[string]string) {
 // syntax", and a program form the data grammar has no production for is not a
 // defect of either.
 
-const reason_1559 = '#1559 — an ASCII character [L70a] admits inside a BareValue that the bareword run still does not: a `\\`, and a token-initial `+` / `-` / `.` / `?` / `|` that program mode reads as an operator head or a path step. #1550 and the backtick / `;` / `4xx` half are FIXED (this column is the measurement: fourteen files left it); the tail contradicts the operator-head alphabet and a letter is open on the issue.'
+const reason_1559 = "#1559's TAIL, narrowed by 1559-a and measured file by file. The mechanism the row asks for is in: a body §9 [L25b] classifies as prose is re-scanned from its own SOURCE by the parser, so every [L70a] BareChar in it is prose — `+`, `-`, `.`, `?`, `|`, `\\\\`, a bare `://`, a glued `::`, a leading `:` — and the operator-head and path-step alphabets keep their meaning wherever an EXPRESSION is expected (program-body-bare-040/041 pin both halves). What each of these files still carries is a DIFFERENT mechanism the re-scan cannot reach, named per file: a parenthetical `(…)` inside prose, which [L25b]'s ASP-3 rule makes a discrete token and this span test therefore declines; a `[| … ]` BLOCK span, which is not a prose body at all; and a digit-led run the LEXER refuses before any parser can re-scan it. Each is its own next step, not this one's."
 
-const reason_1559_slash = "#1559 — a bare URL's `://` and a bare `tag:` URI. RULED: 1384-a keeps `/` OUT of the glued-residue run deliberately (`ns:x/y` is CXPath surface), so admitting it reverses a standing ruling rather than closing a gap: the letter on the issue asks which."
+
+const reason_1559_slash = "#1559's tail, the ATTRIBUTE-VALUE half. 1559-a narrows 1384-a's `/` sentence the way 1563-a narrowed its `::` one — prose in a [L25b] body, the path alphabet wherever an expression is expected — and a bare URL in a BODY now reads as prose in both rings (`[p see http://x.example/y now]`, measured). An attribute VALUE is an expression position by 1559-d, and #923/BC-1's attr-value run refuses a `/`-bearing value whose prefix reads as a path head, which is what these two carry (`href=https://…`, `=tag:…`). Whether that lane should read the DATA reading's string there is the one question 1559-a's row does not answer."
+
 
 const reason_l25c_residue = '#1541 residue, REASONED not pending — a nested `[`/`(`/`{` in one comma slot. There the data reading leaves the array lane entirely and the comma becomes literal PROSE (`[xs a, [b 1], \'c\']` → `[xs \'a, \' [b 1] \',\' \'c\']`, measured), which is the data ring\'s prose classifier and not a tree a tokenizing reader can answer. The program reader refuses it BY NAME instead of inventing a third reading.'
 
@@ -588,7 +590,6 @@ const accepted_by_one_table = [
 	AcceptedByOne{'examples/vcore.cx', .data, reason_1559},
 	// ── #1559 — a bare URL's `://` (RULED: 1384-a keeps `/` out of the run) (3) ──
 	AcceptedByOne{'examples/chapter.cx', .data, reason_1559_slash},
-	AcceptedByOne{'examples/config.cx', .data, reason_1559_slash},
 	AcceptedByOne{'examples/post.cx', .data, reason_1559_slash},
 	// ── #1541 residue — a nested node in a comma slot (3) ──
 	AcceptedByOne{'conformance/gates.cxd', .data, reason_l25c_residue},
