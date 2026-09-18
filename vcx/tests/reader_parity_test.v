@@ -324,8 +324,8 @@ fn test_python_reader_agrees_case_for_case() {
 
 // bare_prose_title_lines — every `[title …]` line of a corpus file whose body
 // is PLAIN ASCII PROSE: letters, digits, spaces, `'`, `-`, and — since #1538
-// closed the glued-residue half of the same rule — `.` and `:`, and nothing
-// else. That is the population with exactly one right answer today, and it is
+// closed the glued-residue half of the same rule and #1541 gave the program
+// reader §9 [L25c]'s comma body — `.`, `:` and `,`, and nothing else. That is the population with exactly one right answer today, and it is
 // the class #1521's apostrophe lives in (`the pattern's own source order`).
 //
 // The `.`/`:` widening IS #1538's evidence: `world.` and `ab:c` are one
@@ -338,11 +338,6 @@ fn test_python_reader_agrees_case_for_case() {
 //   • `[` `]` `$` `&` `#` `"` — nested nodes, holes, entity refs, raw spans and
 //     quoted runs: the deliberate data/program forks
 //     `cxparse_full_corpus_diff_test.v` catalogues;
-//   • `,` — a §9 [L25c] comma element body is an ArrayNode to the data reader and
-//     a parse REFUSAL to the program reader, for every comma body in the corpus
-//     and not only for these: measured and filed as #1541. #1521's own title
-//     shape carries commas and is graded by the case-id step above, which is the
-//     step its defect shows up in;
 //   • non-ASCII — an em dash is not a name character to the program lexer, which
 //     refuses the byte while the data reading carries it as prose (the census's
 //     `cx_only` bucket).
@@ -363,7 +358,7 @@ fn bare_prose_title_lines(src string) []string {
 		for b in body.bytes() {
 			ok := (b >= `a` && b <= `z`) || (b >= `A` && b <= `Z`)
 				|| (b >= `0` && b <= `9`) || b == ` ` || b == `'` || b == `-`
-				|| b == `.` || b == `:`
+				|| b == `.` || b == `:` || b == `,`
 			if !ok {
 				plain = false
 				break
@@ -560,8 +555,6 @@ const reason_1550 = '#1550 — the program lexer refuses a MULTI-BYTE character 
 
 const reason_1559 = '#1559 — the ASCII half of the same bareword scan: a backtick, a `;`, a bare URL\'s `://` and a `4xx`-shaped bareword force-typed as a temporal literal. One change with #1550, which is why it is filed and not fixed alongside it.'
 
-const reason_1541 = '#1541 — a §9 [L25c] comma element body is an ArrayNode to the data reader and a parse refusal to the program reader, for every comma body in the corpus. [L25c] is normative and says both readers implement the one rule; one of them does.'
-
 const reason_entity = 'RECORDED EXCEPTION (1548-c) — an `&Name;` entity reference is a DATA body form (grammar [66]). A program document has no entity lane and `&` in program position is not a reference opener, so the program reader\'s refusal is the code ring\'s own correct answer, not a divergence to close.'
 
 const reason_ophead = 'RECORDED EXCEPTION (1548-c) — a token-initial `=` / `|` is an OPERATOR HEAD in program mode (the `program-ophead-*` family the cxparse census catalogues) and ordinary data content in the data ring. The same fork this step already excludes token-initial `-` for.'
@@ -604,10 +597,12 @@ const accepted_by_one_table = [
 	AcceptedByOne{'examples/article.cx', .data, reason_1559},
 	AcceptedByOne{'examples/chapter.cx', .data, reason_1559},
 	AcceptedByOne{'examples/config.cx', .data, reason_1559},
-	// ── #1541 — a §9 [L25c] comma element body (3) ──
-	AcceptedByOne{'conformance/core.cxd', .data, reason_1541},
-	AcceptedByOne{'conformance/operator_heads.cxd', .data, reason_1541},
-	AcceptedByOne{'conformance/schema_validate.cxd', .data, reason_1541},
+	// ── #1541 — a §9 [L25c] comma element body: CLOSED, no entries ──
+	// The program reader implements [L25c] now, and #1564 stopped the `[`
+	// disambiguation claiming a comma array of atoms as a slice literal, so
+	// conformance/{core,operator_heads,schema_validate}.cxd left this column.
+	// The reason constant goes with them: an excuse nobody prunes stops being
+	// evidence, which is what the stale half of the judgement is for.
 	// ── recorded exception — an `&Name;` entity reference (2) ──
 	AcceptedByOne{'examples/cx-tour.cx', .data, reason_entity},
 	AcceptedByOne{'examples/env.cx', .data, reason_entity},
