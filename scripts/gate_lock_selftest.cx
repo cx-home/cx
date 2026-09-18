@@ -1,0 +1,140 @@
+# scripts/gate_lock_selftest.cx — the GATE LOCK's own test (#1346).
+#
+# The machine-wide gate lock (Makefile, CX_GATE_LOCK) had no test of any kind:
+# its two behaviors were read, not run, and the implementation it replaced got
+# two things wrong that only running would have caught — a give-up budget
+# checked once per poll interval (CX_GATE_LOCK_WAIT=6 waited 10 s because the
+# check sat next to a `sleep 10`) and a reclaim that stole the lock from a slow
+# but healthy acquirer. Both are asserted here.
+#
+# It drives `make check-gate-lock` against a PRIVATE lock path passed as a make
+# override, never /tmp/cx-gate.lock: a selftest that touched the real lock
+# would perturb whatever run holds it, which is the exact harm the lock exists
+# to prevent. CX_BUILD_SLOT and CX_GATE_OWNER are overridden empty for the same
+# reason a caller under a pre-merge runner is exempt — the selftest has to reach
+# the waiting code, so it must not present as exempt.
+#
+# Run from the repo root:
+#   vcx/target/cx --allow-read --allow-write --allow-subprocess --allow-clock \
+#     scripts/gate_lock_selftest.cx
+#
+# Exit 0 all assertions held; 1 with the failures named on stderr.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/time'    as=time]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+# lock-path — one private path per run, so two selftests on the same box never
+# collide and neither can be mistaken for the real lock.
+[?def lock-path scope=public impure ()
+  [$cat ('/tmp/cx-gate-selftest-', [$string [$env:pid]], '.lock')]]
+
+# plant — write the two-line holder record (pid, cwd) the lock format carries.
+# Same shape the Makefile writes, because the point is to test the READER.
+[?def plant scope=public impure ($path $pid)
+  [$io:write-file $path [$cat ([$string $pid], "\n/selftest\n")]]]
+
+# ask — run `make check-gate-lock` against $path with $wait as the budget, and
+# answer [inv exit=<int> ms=<int>]: the exit code and the WALL time it took,
+# which is the half the replaced implementation got wrong.
+#
+# CX_GATE_LOCK_POLL is squeezed to 1 s so the budget arithmetic is exercised at
+# a resolution the assertions can see without the selftest costing minutes.
+[?def ask scope=public impure ($path $wait)
+  [?let
+    [= $t0 [$time:monotonic-now]]
+    [= $r [$process:run ('make', 'check-gate-lock',
+                         [$cat ('CX_GATE_LOCK=', $path)],
+                         [$cat ('CX_GATE_LOCK_WAIT=', $wait)],
+                         'CX_GATE_LOCK_POLL=1',
+                         'CX_BUILD_SLOT=', 'CX_GATE_OWNER=')
+            timeout-ms=120000]]
+    [= $t1 [$time:monotonic-now]]
+    [inv exit=[?match $r [case [err $e] -1] [else $r@exit-code]]
+         ms=[/ [- $t1 $t0] 1000000]
+         out=[?match $r [case [err $e] [$string $e@message]]
+                        [else [$cat ([$string $r@stdout], [$string $r@stderr])]]]]]]
+
+# queued — run `make check-gate-lock` with NO budget under a $ms deadline and
+# answer whether it was STILL WAITING when the deadline struck. A caller that
+# refuses returns an exit code well inside the deadline; a caller that queues
+# has nothing to return, so the timeout IS the evidence.
+[?def queued scope=public impure ($path $ms)
+  [?let [= $r [$process:run ('make', 'check-gate-lock',
+                             [$cat ('CX_GATE_LOCK=', $path)],
+                             'CX_GATE_LOCK_WAIT=', 'CX_GATE_LOCK_POLL=1',
+                             'CX_BUILD_SLOT=', 'CX_GATE_OWNER=')
+                  timeout-ms=$ms kill-on-timeout=true]]
+    [?match $r [case [err $e] false] [else [?else $r@timed-out false]]]]]
+
+# check — one assertion. Answers the failure text, or '' when it held.
+[?def check scope=public impure ($name $ok $detail)
+  [?if $ok
+    [then [?let [= $_ [$say [$cat ('  ok   ', $name, ' — ', $detail)]]] '']]
+    [else [$cat ('FAILED ', $name, ' — ', $detail)]]]]
+
+[?let
+  [= $path [$lock-path]]
+
+  # A — a lock whose holder is GONE is reclaimed, not waited on. The stale-pid
+  # detection is the property every other behavior here is layered on top of;
+  # if queueing ever swallowed it, a dead run would block the box forever.
+  [= $_a1 [$plant $path 2147483646]]
+  [= $a [$ask $path '']]
+  [= $fa [$check 'stale-reclaim'
+           [and [= $a@exit 0] [< $a@ms 5000]]
+           [$cat ('exit ', [$string $a@exit], ' after ', [$string $a@ms], ' ms (want 0, fast)')]]]
+
+  # B — CX_GATE_LOCK_WAIT=0 is the pre-#1346 fail-fast, kept for a person at a
+  # keyboard. A live holder must refuse IMMEDIATELY, not queue.
+  [= $holder [$process:spawn ('sleep', '90') stdout=:discard stderr=:discard]]
+  [= $_b1 [$plant $path [$process:pid $holder]]]
+  [= $b [$ask $path '0']]
+  [= $fb [$check 'fail-fast-at-zero'
+           [and [= $b@exit 1] [< $b@ms 5000]]
+           [$cat ('exit ', [$string $b@exit], ' after ', [$string $b@ms], ' ms (want 1, fast)')]]]
+
+  # C — the BUDGET is spent to the second, not to the next poll boundary. This
+  # is the bug the replaced implementation shipped: a 3 s budget checked beside
+  # a longer sleep gives up at the sleep's granularity, not at 3 s. Lower bound
+  # 2.5 s proves it actually waited; upper bound 8 s proves it did not overrun
+  # the budget by a whole poll interval (generous for a loaded box — the defect
+  # this catches overshoots by the poll length, and a poll here is 1 s).
+  [= $c [$ask $path '3']]
+  [= $fc [$check 'budget-clamped'
+           [and [= $c@exit 1] [>= $c@ms 2500] [< $c@ms 8000]]
+           [$cat ('exit ', [$string $c@exit], ' after ', [$string $c@ms], ' ms (want 1 at ~3000)')]]]
+
+  # D — with NO budget the caller QUEUES instead of refusing. Proved by the
+  # call STILL RUNNING six seconds into a live holder: before #1346 it exited 1
+  # within a second of seeing that holder, so a run that timed out here is the
+  # behavior the issue asked for and could not have happened before.
+  #
+  # The holder is deliberately left alive and killed from outside, not waited
+  # on: a child that exits stays a ZOMBIE until its parent reaps it, and a
+  # zombie answers `kill -0` — so "wait for the holder to die and watch the
+  # queue drain" is a test that would hang on its own bookkeeping. The reclaim
+  # half is assertion A's subject anyway.
+  [= $d [$queued $path 6000]]
+  [= $fd [$check 'queues-not-refuses' $d
+           [$cat ('still waiting at 6 s with a live holder: ', [$string $d])]]]
+
+  [= $_z1 [?fallback [$process:kill $holder] [recover-with null]]]
+  [= $_z2 [?fallback [$process:wait $holder] [recover-with 0]]]
+  [= $_rm [?fallback [$io:remove $path] [recover-with null]]]
+
+  [= $fails [?to-sequence [?for [in $f ($fa, $fb, $fc, $fd)]
+                            [where [not [= $f '']]] [yield $f]]]]
+  [?if [> [$count $fails] 0]
+    [then [?let
+            [= $_h [$cry 'gate-lock-selftest: FAILED']]
+            [= $_l [?for [in $f $fails] [yield [$cry [$cat ('  ', $f)]]]]]
+            [$env:exit 1]]]
+    [else [?let [= $_ok [$say 'gate-lock-selftest: 4/4 — stale reclaim, fail-fast at 0, budget clamped, queues then proceeds']]
+            [$env:exit 0]]]]]
