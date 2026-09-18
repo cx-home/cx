@@ -31,7 +31,9 @@
 # SECOND RETIRED TOKEN (#1544, RULED: 1544-a, completed by 1544-b): the store
 # remote protocol's old name. 1544-a retired the page to spec/_archived/,
 # retargeted every emission at the XSP store-profile codes BY MEANING and
-# deleted the `E_CSRP_*` names; 1544-b added the three codes the band lacked
+# deleted that band's whole `E_*` mnemonic family (this comment cannot spell
+# it — the guard scans its own source, which is the point); 1544-b added the
+# three codes the band lacked
 # (CXER5026/5027/5028) so no meaning had to be dropped or widened. This guard
 # is the thing that stops the name coming back. It is scanned by the same
 # machinery, in the same current-facing scope, with the same token-awareness
