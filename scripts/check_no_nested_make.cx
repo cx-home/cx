@@ -1,0 +1,161 @@
+# scripts/check_no_nested_make.cx — no step of the suite may spawn a nested
+# `make test` (#1520, RULED: VERIFY-1, CXF-1).
+#
+# Measured twice on 2026-09-17: inside a SELECTED post-merge run, a child
+# `make test` started 72 minutes into `test-vcx-suite`, ran the whole
+# TEST_TARGETS union for an hour and a half, and — in the second sighting —
+# wrote `/tmp/cx-gate.lock` and failed the release's own run at
+# check-gate-lock in five seconds. Every selected run silently paid for a
+# second union, and the machine-wide gate lock changed hands inside a suite.
+#
+# This is the fixture the issue asks for first: run a SUITE_FILES selection
+# with `make` SHADOWED by a shim that records every argv and REFUSES a `test`
+# goal, then assert that no recorded argv ever asked for one. The shim refuses
+# rather than forwarding the union, so the probe can never take the gate lock
+# itself — the failure mode it exists to catch cannot be caused by looking.
+#
+# What it does NOT do, said out loud: it cannot by itself REPRODUCE the 2026-09-17
+# sighting. That nested make appeared 72 minutes into a 77-file selection, and
+# an agent may not run the full union pre-merge (INT-5). Over the selection it
+# is given it proves the invariant holds for those steps and records every
+# `make` any of them runs; run under the union it names the spawner in one line
+# of `argv.log`. Both readings are honest and the second is the integrator's to
+# schedule.
+#
+# Usage:
+#   cx --allow-read --allow-write --allow-subprocess --allow-env \
+#     scripts/check_no_nested_make.cx [--suite-files="a_test.v b_test.v"] [--keep]
+#   (or: make check-no-nested-make)
+#
+# Exit codes:
+#   0 — no recorded `make` invocation asked for a `test` goal.
+#   1 — one did; its argv, and the spawner's own line, are printed.
+#   2 — usage or environment error (the shim could not be written, `make` is
+#       not on PATH, the suite could not be started at all).
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def cat scope=public ($parts) [$strings:join $parts '']]
+[?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+
+# The default selection: the suite steps that run a subprocess of their own.
+# `cli_umbrella_test.v` is the ONLY V test file in the tree that runs `make`
+# (one `make -C vcx print-<name>` behind `2>/dev/null`, which is also the
+# invocation whose silenced stderr matches the sighting's), so it is the first
+# file any selection must carry; the other two drive the built binary hardest.
+[?const DEFAULT_SUITE_FILES [#
+vcx/tests/cli_umbrella_test.v vcx/tests/code_units_umbrella_test.v vcx/tests/modules_umbrella_test.v
+#]]
+
+# The shim. It is SHELL and not cx on purpose: `make` and every recipe reach it
+# through `execvp` on PATH, so it has to be a program the kernel can start with
+# a shebang and near-zero cost — a `cx` process per `make` call would change the
+# very timing the probe observes. Writing it is a text edit, which the standing
+# rules put in the editor's language rather than behind a cx-gap issue.
+[?def shim-text scope=public ($log $real)
+  [$cat ('#!/bin/sh\n',
+         '# written by scripts/check_no_nested_make.cx (#1520) — records argv,\n',
+         '# refuses a `test` goal, forwards everything else to the real make.\n',
+         'printf \'%s\\t%s\\t%s\\t%s\\n\' "$PPID" "$PWD" "$*" \\\n',
+         '  "$(p=$PPID; n=0; while [ -n "$p" ] && [ "$p" != 0 ] && [ $n -lt 6 ]; do printf \'[%s] %s | \' "$p" "$(ps -o command= -p "$p" 2>/dev/null | cut -c1-120)"; p=$(ps -o ppid= -p "$p" 2>/dev/null | tr -d \' \'); n=$((n+1)); done | tr \'\\t\\n\' \'  \')" >> ', $log, '\n',
+         'printf \'    arg0=%s MAKELEVEL=%s MAKECMDGOALS=%s MAKEFLAGS=%s\\n\' \\\n',
+         '  "$0" "${MAKELEVEL-}" "${MAKECMDGOALS-}" "${MAKEFLAGS-}" >> ', $log, '\n',
+         'for a in "$@"; do\n',
+         '  case "$a" in\n',
+         '    test) echo "check-no-nested-make: REFUSED a nested \\`make test\\` (#1520)" >&2; exit 97 ;;\n',
+         '  esac\n',
+         'done\n',
+         'exec ', $real, ' "$@"\n')]]
+
+[?def run scope=public impure ($argv $what)
+  [?fallback [$process:run $argv]
+    [recover-with ([$cry [$cat ('check-no-nested-make: cannot run ', $what)]],
+                   [$env:exit 2], null)]]]
+
+# real-make: the make the shim forwards to. Read once, before the shim is on
+# PATH, so the shim can never resolve to itself.
+[?def real-make scope=public impure ()
+  [?let [= $r [$run ('/usr/bin/which', 'make') 'which make']]
+    [?if [not [= [$string $r@exit-code] '0']]
+      [then [?let [= $_e [$cry 'check-no-nested-make: make is not on PATH']]
+              [?let [= $_x [$env:exit 2]] '']]]
+      [else [$strings:trim [$string $r@stdout]]]]]]
+
+# asked-for-test: the recorded rows whose argv names `test` as a goal. A row is
+# `<ppid>\t<cwd>\t<argv>`; the goal test is word-exact, so `test-vcx-suite`,
+# `print-CX_DIRTY` and `build-vcx` are not it.
+[?def asked-for-test scope=public ($rows)
+  [?to-sequence [?for [in $r $rows]
+    [where [not [= [$strings:trim $r] '']]]
+    [= $argv [?else [$nth [$strings:split $r "\t"] 3] '']]
+    [where [> [$count [?for [in $w [$strings:split-whitespace $argv]]
+                        [where [= $w 'test']] [yield $w]]] 0]]
+    [yield $r]]]]
+
+[?let
+  [= $args [?fallback [$env:parse-args [argspec
+              [flag name="suite-files" type=string default=""]
+              [flag name="keep" type=bool]
+              [flag name="help" type=bool]]]
+             [recover-with ([$cry 'usage: check_no_nested_make.cx [--suite-files="a_test.v …"] [--keep]'],
+                            [$env:exit 2], null)]]]
+  [= $_h [?if [?else [$env:flag $args 'help'] false]
+    [then ([$say 'check_no_nested_make.cx — no suite step may spawn a nested `make test` (#1520)'],
+           [$say '  --suite-files="a_test.v b_test.v"   the selection to run (default: the three subprocess-heavy files)'],
+           [$say '  --keep                              leave the probe directory and its argv.log behind'],
+           [$env:exit 0])]
+    [else ()]]]
+  [= $keep [?else [$env:flag $args 'keep'] false]]
+  [= $selection [?let [= $s [$strings:trim [$string [?else [$env:flag $args 'suite-files'] '']]]]
+    [?if [= $s ''] [then [$strings:trim [$string DEFAULT_SUITE_FILES]]] [else $s]]]]
+
+  [= $real [$real-make]]
+  [= $probe [$path:join 'vcx/target' 'nested-make-probe']]
+  [= $bin [$path:join $probe 'bin']]
+  [= $log [$path:join $probe 'argv.log']]
+  [= $_mk ([$run ('rm', '-rf', $probe) 'rm the probe directory'],
+           [$run ('mkdir', '-p', $bin) 'mkdir the probe bin'])]
+  [= $_w [$io:write-file [$path:join $bin 'make'] [$shim-text $log $real]]]
+  [= $_x [$run ('chmod', '+x', [$path:join $bin 'make']) 'chmod the shim']]
+  [= $_t [$io:write-file $log '']]
+
+  [= $_h1 [$say [$cat ('check-no-nested-make: shim at ', [$path:join $bin 'make'],
+                       ' forwarding to ', $real)]]]
+  [= $_h2 [$say [$cat ('  selection: ', $selection)]]]
+
+  # PATH puts the shim first for anything that resolves `make` by name, and
+  # `MAKE=` overrides what every recipe's own `$(MAKE)` expands to — a
+  # command-line override, so it rides MAKEFLAGS down to every sub-make. One
+  # without the other leaves half the invocations unrecorded.
+  [= $suite [$run ('env', [$cat ('PATH=', $bin, ':', [$env:var-or-default 'PATH' ''])],
+                   [$cat ('MAKE=', [$path:join $bin 'make'])],
+                   $real, 'test-vcx-suite', [$cat ('SUITE_FILES=', $selection)])
+              'the selected test-vcx-suite under the shim']]
+  [= $_s [$say [$cat ('  test-vcx-suite exit ', [$string $suite@exit-code])]]]
+
+  [= $rows [$strings:split-lines [?else [$io:read-file $log] '']]]
+  [= $hits [$asked-for-test $rows]]
+  [= $_h3 [$say [$cat ('  ', [$string [$count $rows]], ' make invocation(s) recorded; ',
+                       [$string [$count $hits]], ' asked for a `test` goal')]]]
+  [; Every recorded row is printed, not only the hits: the row ABOVE a hit is
+     usually the invocation that led to it, and two lines of context are the
+     difference between naming the spawner and guessing at it. ]
+  [= $_rows [?to-sequence [?for [in $r $rows]
+    [where [not [= [$strings:trim $r] '']]]
+    [yield [$say [$cat ('    recorded  ', $r)]]]]]]
+  [= $_k [?if $keep
+    [then [$say [$cat ('  kept: ', $log)]]]
+    [else [?let [= $_r [$run ('rm', '-rf', $probe) 'rm the probe directory']] '']]]]
+
+  [?if [= [$count $hits] 0]
+    [then ([$say 'check-no-nested-make OK — no step of this selection asked make for a `test` goal'],
+           [$env:exit 0])]
+    [else ([$cry 'check-no-nested-make: a step spawned a nested `make test` (#1520). Each row is <ppid>\t<cwd>\t<argv>:'],
+           [?for [in $h $hits] [yield [$cry [$cat ('  ', $h)]]]],
+           [$cry '  the ppid names the spawner; fix at the root rather than by shadowing make'],
+           [$env:exit 1])]]]
