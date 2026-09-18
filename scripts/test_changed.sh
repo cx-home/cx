@@ -8,6 +8,18 @@
 #   - the full `make test` union stays MANDATORY at wave/phase exits —
 #     this target NEVER substitutes for an exit gate (ledger discipline).
 #
+# ESCALATION, stated so that "escalated" is ONE measurable word (#1489):
+# the selection ESCALATES when a BUILD-INFRA path changed — `Makefile`,
+# `vcx/Makefile`, anything under `scripts/`, `VERSION`, or `devbox*`. That is
+# the only escalation to the full union; everything else narrows. An escalated
+# selection is the POST-MERGE run's (INT-5), and since #1489 this script
+# REFUSES to execute one under a pre-merge runner rather than leaving that to
+# discipline: it prints the selection, why it escalated, and
+# `TEST-CHANGED: escalated → post-merge (INT-5)`, then exits 0 having run
+# nothing. `TEST_CHANGED_FORCE_UNION=1` overrides. Note that the narrower
+# "the WHOLE suite" answer for `test-vcx-suite` is NOT an escalation in this
+# sense — it selects every file of one step, not every step.
+#
 # Usage:  scripts/test_changed.sh <base-ref>          (typically origin/<branch> or HEAD~N)
 #         make test-changed BASE=<base-ref>
 #
@@ -751,6 +763,38 @@ if [ $INFRA_HIT -eq 1 ]; then
   if [ $DRY -eq 1 ]; then
     echo "test-changed: --dry-run — would run: $STEPS"
     run_step_set $STEPS
+    exit 0
+  fi
+  # ── INT-5, made mechanical (#1489) ────────────────────────────────────────
+  # An ESCALATED selection is the post-merge run's and is never queued
+  # pre-merge. That was a rule, and a rule is not a mechanism: on 2026-09-14
+  # 17:12–17:33Z this script escalated silently on a branch, ran
+  # `make -j12 … 54 targets` on `.build-slot-impl2` while the post-merge run
+  # closing five issues was in its serial profile-gate tail, and took the
+  # 12-core box from 1-min load 154 to 218. The integrator killed the tree by
+  # hand — SIGTERM was ignored by make and bash, and the runners were
+  # re-parented to launchd and kept spawning compiles until killed by pid.
+  #
+  # WHO IS PRE-MERGE is INT-1's key, unchanged and deliberately the same one
+  # check-gate-lock reads: the runner directory the caller holds. `.build-slot`
+  # is the post-merge runner; anything else is a pre-merge one. A caller
+  # holding NO runner is a person at a keyboard and is not refused — this
+  # guards the shared box, not the operator.
+  #
+  # Exit 0, not 1: the escalation is the ANSWER, not a failure. The line below
+  # is what a branch's RESULTS.md records, and a pipeline that treated it as a
+  # red would have agents editing pipelines to route around it.
+  runner_dir="${CX_BUILD_SLOT:-${CX_RUNNER:-}}"
+  if [ -n "$runner_dir" ] && [ "$(basename "$runner_dir")" != ".build-slot" ] \
+     && [ -z "${TEST_CHANGED_FORCE_UNION:-}" ]; then
+    echo "test-changed: the selection ESCALATED to the full union of $(printf '%s\n' $STEPS | grep -c .) steps:"
+    printf '%s\n' $STEPS | sed 's/^/  /'
+    echo "test-changed: escalated because a build-infra path changed — one of Makefile, scripts/, VERSION, devbox:"
+    printf '%s\n' "$CHANGED" | grep -E '^(Makefile|vcx/Makefile|scripts/|VERSION|devbox)' | sed 's/^/  /' || true
+    echo "test-changed: runner $runner_dir is a PRE-MERGE runner (INT-1's key: anything but .build-slot)"
+    echo "TEST-CHANGED: escalated → post-merge (INT-5)"
+    echo "test-changed: nothing executed. Record the line above in RESULTS.md; the post-merge run grades the union."
+    echo "test-changed: TEST_CHANGED_FORCE_UNION=1 runs it anyway (it will contend with whatever else holds the box)."
     exit 0
   fi
   prebuild && run_step_set $STEPS
