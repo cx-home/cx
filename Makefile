@@ -1516,6 +1516,7 @@ test-extraction-gate: build-vcx build-profile-data
 	@cmp vcx/target/extraction_gate/transcript_monolith.txt vcx/target/extraction_gate/transcript_core.txt \
 	  && echo "extraction-gate ABI step OK — libcx-core transcript byte-identical to libcx ($$(wc -c < vcx/target/extraction_gate/transcript_monolith.txt | tr -d ' ') bytes)" \
 	  || { echo "extraction-gate ABI step FAILED — transcripts diverge (see vcx/target/extraction_gate/)"; exit 1; }
+	@vcx/target/extraction_gate/cli_gate --self-test
 	@vcx/target/extraction_gate/cli_gate vcx/target/cx vcx/target/profiles/data/cx conformance --min-cases=$(EXTRACTION_GATE_FLOOR) --jobs=$(EXTRACTION_GATE_JOBS)
 
 # ── ABI GC-LIVENESS GATE (remediation R3.8 discovery) — a dlopen'd libcx
