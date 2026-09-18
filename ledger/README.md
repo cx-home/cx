@@ -493,6 +493,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `fe-6` | [rulings_2026_08_30_functional_ergonomics.md](rulings_2026_08_30_functional_ergonomics.md) | FE-6 — computed-key map lookup (CONDITIONAL — probe first) |
 | `fe-7` | [rulings_2026_08_30_functional_ergonomics.md](rulings_2026_08_30_functional_ergonomics.md) | FE-7 — one canonical result image (RULED: FE-7 = a, BY OWNER 2026-08-31; #1148) |
 | `fe-7` | [rulings_2026_08_30_functional_ergonomics.md](rulings_2026_08_30_functional_ergonomics.md) | FE-7 — one canonical result image (RULED: FE-7 = a, BY OWNER 2026-08-31; #1148) |
+| `fix-1` | [rulings_2026_09_18_owner_decisions_0210z.md](rulings_2026_09_18_owner_decisions_0210z.md) | Owner decision 2026-09-18 ~02:10Z — find it, fix it: a small same-area defect is fixed in the branch that finds it (RULED: FIX-1) |
 | `fl-1` | [rulings_2026_08_20_columnar_lineage.md](rulings_2026_08_20_columnar_lineage.md) | FL-3 — the columnar backend joins the FL-1/FL-2 durability contract |
 | `fl-1` | [rulings_2026_08_20_feed_lineage.md](rulings_2026_08_20_feed_lineage.md) | FL-1 — data-plane feed positions become durable (the revocations-plane precedent) |
 | `fl-1` | [rulings_2026_08_20_s3_lineage.md](rulings_2026_08_20_s3_lineage.md) | FL-2 — bucket lineage: the s3 substrate joins the FL-1 durability contract |
@@ -1243,4 +1244,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*304 ledger pages; 610 ids declared, 370 cited only.*
+*305 ledger pages; 611 ids declared, 370 cited only.*
