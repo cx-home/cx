@@ -154,7 +154,7 @@ becomes its own Ring-1 module.
   [; graphql, soap — the connector kit's codec transports (RULED: 1430-c, GQL-1),
      spec first like connector itself: planned, their columns naming where
      #1430 writes them. ]
-  [module name=graphql ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/graphql.md corpus=conformance/stdlib/graphql.cxd source=stdlib/graphql.cx code=vcx/code/stdlib_graphql.v half=none status=planned]
+  [module name=graphql ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/graphql.md corpus=conformance/stdlib/graphql.cxd source=stdlib/graphql.cx code=vcx/code/stdlib_graphql.v half=none status=current]
   [module name=hash ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/hash.md corpus=conformance/stdlib/hash.cxd source=stdlib/hash.cx code=vcx/code/stdlib_hash.v half=none status=current]
   [module name=html ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/html.md corpus=conformance/stdlib/html.cxd source=stdlib/html.cx code=vcx/code/stdlib_html.v half=none status=current]
   [; http-client is the Ring-1 half 1427-e promotes to a module of its own.
