@@ -18,6 +18,7 @@
     'code/concurrency', 'code/resilience', 'code/metaprogramming', 'code/diagrams',
     'everyday/files', 'everyday/text', 'everyday/collections',
     'everyday/documents', 'everyday/process', 'everyday/time', 'everyday/cli-errors',
+    'everyday/testing', 'everyday/world',
   ];
   const SECTION_NAMES = {
     'data/elements': ['CX data', 'Elements and attributes'],
@@ -48,6 +49,8 @@
     'everyday/process': ['Everyday scripts', 'Arguments, environment, processes'],
     'everyday/time': ['Everyday scripts', 'Dates, times, durations'],
     'everyday/cli-errors': ['Everyday scripts', 'Errors in a command-line tool'],
+    'everyday/testing': ['Everyday scripts', 'Testing your own script'],
+    'everyday/world': ['Everyday scripts', 'The world: HTTP, a database, mail'],
   };
   const sectionRank = (sec) => { const i = SECTION_ORDER.indexOf(sec); return i < 0 ? SECTION_ORDER.length : i; };
   const keyNumber = (key) => parseInt(String(key).split('-')[0], 10) || 0;
