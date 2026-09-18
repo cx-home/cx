@@ -144,11 +144,11 @@ A network-deployed CXStore Remote Protocol server ([`../misc/cxstore-remote-prot
 
 **Mitigation:**
 
-- Bearer-token authentication per `cxstore-remote-protocol.md §2.1`; tokens are presented in `Authorization: Bearer <token>` headers. Token rotation policy is per deployment (not specified by CSRP) and the server returns `CXER1702 E_CSRP_AUTH_REQUIRED` for missing tokens and `CXER1703 E_CSRP_AUTH_INVALID` for bad ones.
+- Bearer-token authentication per `cxstore-remote-protocol.md §2.1`; tokens are presented in `Authorization: Bearer <token>` headers. Token rotation policy is per deployment (not specified by CSRP) and the server returns `CXER5021 E_XSP_STORE_AUTHORITY` for missing tokens and `CXER5026 E_XSP_STORE_AUTHORITY` for bad ones.
 - HTTPS-only is RECOMMENDED for any non-loopback deployment; plaintext HTTP is documented as dev-only. Transport security inherits from the deploying webserver / reverse proxy.
-- Server-side payload-size limits per the `capabilities` response (`max-request-bytes`, `max-response-bytes`); an over-cap request returns 413 with `CXER1705 E_CSRP_PAYLOAD_TOO_LARGE`.
+- Server-side payload-size limits per the `capabilities` response (`max-request-bytes`, `max-response-bytes`); an over-cap request returns 413 with `CXER5016 E_XSP_STORE_BODY`.
 - Server-side rate limits per the `capabilities` response (`requests-per-minute`, `bytes-per-second`).
-- Doc-ID integrity verification on the client: the SHA-256 hash domain for a returned document is strict-canonical bytes (per `canonical.md §1.2`), and the client cross-checks the wire-claimed hash against the locally-computed hash before trusting the body. A mismatch raises `CXER1720 E_CSRP_INTEGRITY_MISMATCH`.
+- Doc-ID integrity verification on the client: the SHA-256 hash domain for a returned document is strict-canonical bytes (per `canonical.md §1.2`), and the client cross-checks the wire-claimed hash against the locally-computed hash before trusting the body. A mismatch raises `CXER5017 E_XSP_STORE_ADDRESS`.
 - Replay protection beyond Bearer-token freshness is the operator's responsibility (out of CSRP scope).
 
 Operator-network threats — DDoS, traffic analysis, infrastructure compromise — are inherited from the deployment substrate and are not covered by CX governance.
