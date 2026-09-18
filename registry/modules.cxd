@@ -195,7 +195,7 @@ becomes its own Ring-1 module.
      connector kit's kind=stream (RULED: INT-19, #1086), spec first like every
      other transport of #1430: planned, its columns naming where #1086 writes
      them. Ring 1 because every def is pure — the connection is http's. ]
-  [module name=ws ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/ws.md corpus=conformance/stdlib/ws.cxd source=stdlib/ws.cx code=vcx/code/stdlib_ws.v half=none status=planned]
+  [module name=ws ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/ws.md corpus=conformance/stdlib/ws.cxd source=stdlib/ws.cx code=vcx/code/stdlib_ws.v half=none status=current]
   [module name=zip ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/zip.md corpus=conformance/stdlib/zip.cxd source=stdlib/zip.cx code=vcx/code/stdlib_zip.v half=none status=current]
 
   [; ── Ring 2 — cx-platform (1427-b, spent) ─────────────────────────── ]
