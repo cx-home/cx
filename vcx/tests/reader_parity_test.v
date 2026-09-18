@@ -551,15 +551,19 @@ fn accepted_by_one_scan() ([]AcceptedByOne, map[string]string) {
 // syntax", and a program form the data grammar has no production for is not a
 // defect of either.
 
-const reason_1550 = '#1550 — the program lexer refuses a MULTI-BYTE character [L70a] admits inside a BareValue (em dash, section sign, middle dot), so a bare-prose body the data reading carries as ONE text run is a CXER0100 to the program reader. 1548-c row (3) rules this a defect of the program lexer: prose is Unicode in both rings.'
+const reason_1559 = '#1559 — an ASCII character [L70a] admits inside a BareValue that the bareword run still does not: a `\\`, and a token-initial `+` / `-` / `.` / `?` / `|` that program mode reads as an operator head or a path step. #1550 and the backtick / `;` / `4xx` half are FIXED (this column is the measurement: fourteen files left it); the tail contradicts the operator-head alphabet and a letter is open on the issue.'
 
-const reason_1559 = '#1559 — the ASCII half of the same bareword scan: a backtick, a `;`, a bare URL\'s `://` and a `4xx`-shaped bareword force-typed as a temporal literal. One change with #1550, which is why it is filed and not fixed alongside it.'
+const reason_1559_slash = "#1559 — a bare URL's `://` and a bare `tag:` URI. RULED: 1384-a keeps `/` OUT of the glued-residue run deliberately (`ns:x/y` is CXPath surface), so admitting it reverses a standing ruling rather than closing a gap: the letter on the issue asks which."
+
+const reason_l25c_residue = '#1541 residue, REASONED not pending — a nested `[`/`(`/`{` in one comma slot. There the data reading leaves the array lane entirely and the comma becomes literal PROSE (`[xs a, [b 1], \'c\']` → `[xs \'a, \' [b 1] \',\' \'c\']`, measured), which is the data ring\'s prose classifier and not a tree a tokenizing reader can answer. The program reader refuses it BY NAME instead of inventing a third reading.'
 
 const reason_entity = 'RECORDED EXCEPTION (1548-c) — an `&Name;` entity reference is a DATA body form (grammar [66]). A program document has no entity lane and `&` in program position is not a reference opener, so the program reader\'s refusal is the code ring\'s own correct answer, not a divergence to close.'
 
-const reason_ophead = 'RECORDED EXCEPTION (1548-c) — a token-initial `=` / `|` is an OPERATOR HEAD in program mode (the `program-ophead-*` family the cxparse census catalogues) and ordinary data content in the data ring. The same fork this step already excludes token-initial `-` for.'
+const reason_ophead = 'RECORDED EXCEPTION (1548-c) — a token-initial `=` is an OPERATOR HEAD in program mode (the `program-ophead-*` family the cxparse census catalogues) and ordinary data content in the data ring. [L70a] excludes `=` from BareChar outright, so this one is the grammar agreeing with the fork.'
 
-const reason_1536 = '#1536 — a call-shaped head (`[$mod:verb …]`) or a `$name` hole beside a ws-delimited `(…)`/`{…}` literal. RULED: TRAP-1 (#1529) states outright that a call-shaped program document is ALWAYS refused by the data reader, and [L83]-0 lists `[$` as the program-mode call opener; #1536 carries the open letter on whether `cx --ast` should arbitrate the two readings the way `cx lint` now does. Recorded here because the refusal is correct for the data ring under any letter.'
+const reason_datalane = 'RECORDED EXCEPTION (1548-c) — a DATA-only lane the program grammar has no production for: a hex integer the data reader coerces per its own rule, the retired paren-call surface kept as DATA text, an element body the program reader closes differently because `=` and bare prose mean other things to it. The census (`cxparse_full_corpus_diff_test`) catalogues these as the data-only surface, which is what its `cx_only` bucket is named for.'
+
+const reason_1536 = '#1536 — a call-shaped head (`[$mod:verb …]`) or a `$name` hole beside a ws-delimited `(…)`/`{…}` literal. RULED: TRAP-1 (#1529) states outright that a call-shaped program document is ALWAYS refused by the data reader, and [L83]-0 lists `[$` as the program-mode call opener. RULED: 1536-a now makes `cx --ast` arbitrate the two readings, which is where these entries go.'
 
 const reason_attr = 'RECORDED EXCEPTION (1548-c) — a COMPUTED attribute `name=[EXPR]` is a program form (code.md §6): the value is evaluated at the call site. The data grammar\'s attributes are scalar-only by decision D2 (a node-valued attribute was GRADUATED out, 2026-06-03), so the data reader\'s E211 is the data ring stating its own rule, not a reader disagreeing with itself.'
 
@@ -567,48 +571,39 @@ const reason_prog = 'RECORDED EXCEPTION (1548-c) — a program document whose BR
 
 // accepted_by_one_table — the judged population (RULED: 1548-c). Grouped by
 // the REASON each entry carries, because the reasons cluster and a per-file
-// sentence eighty-six times over would be a table nobody reads. Adding a
+// sentence seventy-five times over would be a table nobody reads. Adding a
 // corpus file or a `.cx` the two readers disagree about REDS this step until
 // the entry is here with a reason; removing the divergence reds it too, so a
-// fix cannot leave a stale excuse behind.
+// fix cannot leave a stale excuse behind — which is how #1538, #1541, #1550,
+// #1559's fixed half and #1564 each proved themselves: eighty-six entries on
+// 2026-09-18 morning, seventy-five after, and every departure forced by this
+// judgement rather than asserted by a commit message.
 const accepted_by_one_table = [
-	// ── #1550 — a MULTI-BYTE character [L70a] admits inside a BareValue (14) ──
-	AcceptedByOne{'conformance/code.cxd', .data, reason_1550},
-	AcceptedByOne{'conformance/conversions.cxd', .data, reason_1550},
-	AcceptedByOne{'conformance/fmt.cxd', .data, reason_1550},
-	AcceptedByOne{'conformance/identity.cxd', .data, reason_1550},
-	AcceptedByOne{'conformance/lockfile.cxd', .data, reason_1550},
-	AcceptedByOne{'conformance/stdlib/cx.cxd', .data, reason_1550},
-	AcceptedByOne{'conformance/x/tools.cxd', .data, reason_1550},
-	AcceptedByOne{'conformance/xap/ux.cxd', .data, reason_1550},
-	AcceptedByOne{'conformance/xap/xap-compose.cxd', .data, reason_1550},
-	AcceptedByOne{'conformance/xap/xap-dist.cxd', .data, reason_1550},
-	AcceptedByOne{'conformance/xml.cxd', .data, reason_1550},
-	AcceptedByOne{'conformance/yaml.cxd', .data, reason_1550},
-	AcceptedByOne{'examples/doc.cx', .data, reason_1550},
-	AcceptedByOne{'examples/post.cx', .data, reason_1550},
-	// ── #1559 — the ASCII half of the same bareword scan (9) ──
-	AcceptedByOne{'conformance/gates.cxd', .data, reason_1559},
-	AcceptedByOne{'conformance/platform/connector.cxd', .data, reason_1559},
-	AcceptedByOne{'conformance/platform/store.cxd', .data, reason_1559},
+	// ── #1559 — an ASCII BareChar in prose the run does not admit (6) ──
+	AcceptedByOne{'conformance/code.cxd', .data, reason_1559},
+	AcceptedByOne{'conformance/lockfile.cxd', .data, reason_1559},
 	AcceptedByOne{'conformance/stdlib/array.cxd', .data, reason_1559},
-	AcceptedByOne{'conformance/stdlib/url.cxd', .data, reason_1559},
-	AcceptedByOne{'conformance/xml_codec.cxd', .data, reason_1559},
+	AcceptedByOne{'conformance/yaml.cxd', .data, reason_1559},
 	AcceptedByOne{'examples/article.cx', .data, reason_1559},
-	AcceptedByOne{'examples/chapter.cx', .data, reason_1559},
-	AcceptedByOne{'examples/config.cx', .data, reason_1559},
-	// ── #1541 — a §9 [L25c] comma element body: CLOSED, no entries ──
-	// The program reader implements [L25c] now, and #1564 stopped the `[`
-	// disambiguation claiming a comma array of atoms as a slice literal, so
-	// conformance/{core,operator_heads,schema_validate}.cxd left this column.
-	// The reason constant goes with them: an excuse nobody prunes stops being
-	// evidence, which is what the stale half of the judgement is for.
+	AcceptedByOne{'examples/vcore.cx', .data, reason_1559},
+	// ── #1559 — a bare URL's `://` (RULED: 1384-a keeps `/` out of the run) (3) ──
+	AcceptedByOne{'examples/chapter.cx', .data, reason_1559_slash},
+	AcceptedByOne{'examples/config.cx', .data, reason_1559_slash},
+	AcceptedByOne{'examples/post.cx', .data, reason_1559_slash},
+	// ── #1541 residue — a nested node in a comma slot (3) ──
+	AcceptedByOne{'conformance/gates.cxd', .data, reason_l25c_residue},
+	AcceptedByOne{'conformance/platform/store.cxd', .data, reason_l25c_residue},
+	AcceptedByOne{'examples/doc.cx', .data, reason_l25c_residue},
 	// ── recorded exception — an `&Name;` entity reference (2) ──
 	AcceptedByOne{'examples/cx-tour.cx', .data, reason_entity},
 	AcceptedByOne{'examples/env.cx', .data, reason_entity},
-	// ── recorded exception — a token-initial operator head (2) ──
+	// ── recorded exception — a token-initial operator head (1) ──
 	AcceptedByOne{'examples/logs.cx', .data, reason_ophead},
-	AcceptedByOne{'examples/vcore.cx', .data, reason_ophead},
+	// ── recorded exception — a DATA-only lane the program grammar has no form for (4) ──
+	AcceptedByOne{'conformance/conversions.cxd', .data, reason_datalane},
+	AcceptedByOne{'conformance/fmt.cxd', .data, reason_datalane},
+	AcceptedByOne{'conformance/xml.cxd', .data, reason_datalane},
+	AcceptedByOne{'conformance/xml_codec.cxd', .data, reason_datalane},
 	// ── #1536 — a call-shaped head beside a ws-delimited literal (32) ──
 	AcceptedByOne{'examples/platform/scim/projection/project.cx', .program, reason_1536},
 	AcceptedByOne{'examples/platform/sso/deployment/deployment.cx', .program, reason_1536},
@@ -728,7 +723,7 @@ fn test_accepted_by_one_red_proof() {
 	assert unexplained[0].contains('carries no reason'), unexplained[0]
 
 	_, stale := judge_accepted_by_one([]AcceptedByOne{}, [
-		AcceptedByOne{'conformance/nowhere-planted.cxd', .data, reason_1550},
+		AcceptedByOne{'conformance/nowhere-planted.cxd', .data, reason_entity},
 	])
 	assert stale.len == 1, 'the column must refuse a reason for a divergence that is gone'
 	assert stale[0].contains('NO LONGER'), stale[0]
@@ -758,7 +753,7 @@ struct ShapeDisposition {
 
 const accepted_by_one_shapes = [
 	ShapeDisposition{"[?element \"entry\" [?attr \"path\" \"door.feature.cxd\"] '[feature [want 'to unlock']]']", true, false, 'RECORDED EXCEPTION (1548-c row 2), the first one: the data reading takes the body as one verbatim prose Text and accepts it; the program reader refuses it as an unterminated string, which is the ruled reading (1521-a, #1546) because a program form is not prose.'},
-	ShapeDisposition{'[title an \u2014 dash]', true, false, '#1550 (1548-c row 3) — a DEFECT of the program lexer: prose is Unicode in both rings, so this flips to accepted-by-both when the bareword scan admits the character.'},
+	ShapeDisposition{'[title an \u2014 dash]', true, true, '#1550 (1548-c row 3) — FIXED: prose is Unicode in both rings, so the bareword scan admits the character and this shape flipped to accepted-by-BOTH, exactly as the decision said it would. The row stays, asserting both readers accept it, so a regression in either reader reds this step.'},
 ]
 
 fn test_accepted_by_one_shapes_are_graded_by_both_readers() {
