@@ -367,15 +367,15 @@ fn bare_prose_title_lines(src string) []string {
 		if !plain {
 			continue
 		}
-		// A glued `::` inside bare prose is an ASCRIPTION to the program reader
-		// (`5::float` → 5.0e0) and prose text to the data reader, and RULED:
-		// 1384-a put `::` deliberately OUTSIDE the glued-residue run ("an
-		// ascription is a program construct and its `::` is not residue"). So
-		// whether a `::` in a comma-less bare-prose body is prose or an
-		// ascription contradicts a standing ruling and is not #1538's to
-		// settle: measured and filed as #1563, and excluded here until it is
-		// answered. Four titles of the 194 this class now grades carry it.
-		if body.contains('::') {
+		// RULED: 1563-a (#1563) — a glued `::` inside a comma-less body §9
+		// [L25b] has classified as bare prose is PROSE, so the `::` exclusion
+		// is GONE and those titles are graded here now. What remains excluded
+		// is an ATOM-leading run (`:ok::atom`): a `:` at a token start opens an
+		// atom, which is self-delimiting, so [L25b]'s join declines and the
+		// program reading answers discrete items where the data reading
+		// answers one run. That is the position-driven entry 1559-a rules and
+		// its own branch carries; the exclusion cites it and goes with it.
+		if body.contains(' :') || body.starts_with(':') {
 			continue
 		}
 		// A token-INITIAL `-` is the program reading's minus / operator head
