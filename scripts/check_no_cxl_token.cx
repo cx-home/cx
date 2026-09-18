@@ -28,8 +28,23 @@
 # _gate_evidence/CHANGELOG records are excluded — those are immutable
 # historical records, not current-language claims.
 #
-# Allowlist: whole files that legitimately REFERENCE the retired token as
-# history (none required — the corpus is clean).
+# SECOND RETIRED TOKEN (#1544, RULED: 1544-a): the store remote protocol's
+# old name. 1544-a retires the page to spec/_archive/, retargets every emission
+# at the XSP store-profile codes BY MEANING and deletes the `E_CSRP_*` names —
+# and asks this guard to be extended so the token cannot come back. It is
+# scanned by the same machinery, in the same current-facing scope, with the
+# same token-awareness (the bare word only), and it is constructed at runtime
+# for the same reason the first one is.
+#
+# It is RED TODAY, on purpose and by measurement: the retarget has not landed
+# (the three meanings with no XSP code are a letter on #1544), so the corpus
+# still carries the token. That red IS this extension's proof — a retired-term
+# guard that passes before the term is retired proves nothing. The target is
+# therefore NOT in TEST_TARGETS yet; it joins the union in the commit that
+# lands the retarget, when it goes green.
+#
+# Allowlist: whole files that legitimately REFERENCE a retired token as
+# history (none required for the first — the corpus is clean).
 #
 # Exit 0 clean; 1 with hits. Run from the repo root:
 #   vcx/target/cx --allow-read --allow-write scripts/check_no_cxl_token.cx
@@ -63,6 +78,10 @@
   # codes), or `:` (the error prefix).
   [= $cxl-rx [$re:compile [$cat ("(?m)(?:^|[^A-Za-z])", $cxl, "(?:[^A-Za-z0-9:]|$)")]]]
 
+  # The retired store-protocol name (#1544), constructed the same way.
+  [= $csrp [$cat ("CS", "RP")]]
+  [= $csrp-rx [$re:compile [$cat ("(?m)(?:^|[^A-Za-z])", $csrp, "(?:[^A-Za-z0-9:]|$)")]]]
+
   # Whole files allowed to REFERENCE the retired token (historical records).
   # Empty — the corpus is clean; add a repo-relative path with a rationale.
   [= $allow-files ()]
@@ -84,25 +103,29 @@
   [= $hits
     [$fp:flat-map $files [?fn ($f)
       [?let [= $text [?fallback [$io:read-file $f] [recover-with ""]]]
-        [?if [not [$matched [$re:find $cxl-rx $text]]]
+        [?if [and [not [$matched [$re:find $cxl-rx $text]]]
+                  [not [$matched [$re:find $csrp-rx $text]]]]
           [then ()]
           [else
             [?let [= $lines [$strings:split-lines $text]]
               [?for [in $i [$range 1 [$count $lines]]]
                 [= $line $lines[$i]]
-                [where [$matched [$re:find $cxl-rx $line]]]
+                [where [or [$matched [$re:find $cxl-rx $line]]
+                           [$matched [$re:find $csrp-rx $line]]]]
                 [yield [$cat ($f, ":", [$string $i], ": ", [$strings:trim-end $line])]]]]]]]]]]
 
   [?if [> [$count $hits] 0]
     [then
       [?let
-        [= $_h [$say [$cat ("NO-STALE-VERSION gate FAILED — retired language name `", $cxl, "` found:")]]]
+        [= $_h [$say [$cat ("RETIRED-TERM gate FAILED — a retired name (`", $cxl, "` or `", $csrp, "`) found:")]]]
         [= $_l [?for [in $h $hits] [yield [$say [$cat ("  ", $h)]]]]]
         [= $_t [$say [$cat ([$string [$count $hits]],
                             " hit(s). CX is one language named `CX` ",
                             "(spec/core/code.md). `", $cxl, "` is retired terminology — use `CX`. ",
+                            "`", $csrp, "` is the retired store-protocol name (#1544, RULED: 1544-a) — ",
+                            "the emissions carry the XSP store-profile codes by meaning. ",
                             "Live identifiers cxlib / cxl: / ", $cxl, "S / ", $cxl, "ib are not matched.")]]]
         [$env:exit 1]]]
     [else
-      [?let [= $_ok [$say [$cat ("NO-STALE-VERSION gate OK — no retired `", $cxl, "` language name in corpus.")]]]
+      [?let [= $_ok [$say [$cat ("RETIRED-TERM gate OK — neither `", $cxl, "` nor `", $csrp, "` in the corpus.")]]]
         [$env:exit 0]]]]]
