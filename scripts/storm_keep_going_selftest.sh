@@ -25,6 +25,10 @@
 #      tail lines are still separate recipe lines after it (so a red storm
 #      still stops the gate before the tail).
 #
+#   C  the selftest's OWN environment cannot decide its answer: it re-runs
+#      itself under MAKEFLAGS='-k -j2' — the environment `make test`'s storm
+#      hands its children — and that run must pass too.
+#
 #   sh scripts/storm_keep_going_selftest.sh
 set -u
 
@@ -55,6 +59,18 @@ g2:
 	@: > g2.built
 PLANTED
 
+# The planted runs are given a CLEAN make environment, and that is the whole
+# reason this function exists (the post-merge run on baba91bbc, Makefile:1797).
+# Inside `make test`'s storm the child make inherits MAKEFLAGS — since RUN-2
+# that carries `-k`, beside `-j12 --output-sync` — so the CONTROL case, which
+# asserts that a run WITHOUT `-k` stops before g2, ran with `-k` anyway and
+# built g2. The step was green run by hand from a plain shell and red inside
+# the gate it guards, which is the worst way for a guard to be wrong.
+#
+# `-u MAKEFLAGS -u MFLAGS -u MAKELEVEL`: MAKEFLAGS is the one that carries the
+# flags, MFLAGS is its older twin that some makes still read, and MAKELEVEL
+# makes a child announce itself as a sub-make. All three are the parent's, and
+# none of them is this fixture's.
 run_planted() { # $1 = extra flags; prints the exit status, leaves the markers
 	rm -f "$T/g1.built" "$T/g2.built"
 	( cd "$T" && $MAKE $1 -j2 all ) > "$T/out.log" 2>&1
@@ -107,8 +123,22 @@ else
 	bad B2 "the serial tail (test-profile-gate, test-vcx-timing, test-code-diagram) is not three lines after the storm"
 fi
 
+# ── C — the selftest under the storm's own environment ──────────────────────
+# This is the row that would have caught it. The guard has to hold where it is
+# USED, and where it is used MAKEFLAGS carries `-k -j12 --output-sync`.
+if [ -z "${CX_STORM_SELFTEST_INNER:-}" ]; then
+	if MAKEFLAGS='-k -j2' MFLAGS='-k -j2' MAKELEVEL=1 CX_STORM_SELFTEST_INNER=1 \
+		sh "$0" > "$T/inner.log" 2>&1; then
+		ok C "it passes again under MAKEFLAGS='-k -j2' — the environment the storm hands its children"
+	else
+		bad C "under an inherited MAKEFLAGS the selftest fails: $(tail -3 "$T/inner.log" | tr '\n' ' ')"
+	fi
+else
+	ok C "inner run under an inherited MAKEFLAGS (the outer row is what grades it)"
+fi
+
 if [ "$fails" -ne 0 ]; then
 	echo "storm keep-going selftest: $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "storm keep-going selftest: 4/4 (planted -k runs past a red target and exits non-zero; the control without -k does not; the storm line carries -k; the serial tail is unchanged)"
+echo "storm keep-going selftest: 5/5 (planted -k runs past a red target and exits non-zero; the control without -k does not; the storm line carries -k; the serial tail is unchanged; and it holds under the storm's own MAKEFLAGS)"
