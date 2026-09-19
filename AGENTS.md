@@ -140,6 +140,21 @@ below all of these and never overrides one of them.
   where one run at a time is the point; everything else may use
   `.build-slot-impl2`. A branch never queues the same run on both.
   `CONTRIBUTING.md` §Testing has the mechanics.
+- **Exit statuses.** Read a command's status **directly**, or from **inside**
+  the script devbox runs — never from an inner shell that `devbox run` wraps
+  (#1570). Measured on `5a897f485` against a program that exits 7:
+  `devbox run -- <cmd>` then `$?` reports 7, and a pipeline's own
+  `"$@" > log 2>&1; echo "EXIT=$?"` reports 7; the same status read out of an
+  inner shell inside `devbox run` reports **0 — success, for a program that
+  failed**. `devbox run` executes its arguments through a generated
+  `.devbox/gen/scripts/.cmd.sh` and loses the inner command's status there,
+  while a bare `exit N` in that position survives, which is why the trap reads
+  as a cx defect rather than a wrapper one: it cost a wrong `prio:high` issue
+  (#1569, withdrawn), in which `[$env:exit N]` looked broken and a dozen
+  `TEST_TARGETS` gates looked vacuous. Both were fine.
+  [`scripts/exit_status_probe_gate.sh`](scripts/exit_status_probe_gate.sh) is
+  the step that holds the line; a probe that cannot be trusted is worse than no
+  probe, and this one is quiet.
 - **Words.** `decision` is the noun for a thing the owner has ruled;
   `RULED:` is the token that carries its id in a commit subject and in the
   ledger. Not "ruling", not "campaign", not "lane", not "gate run".

@@ -22,6 +22,21 @@
 # is dead is stale and is broken by the next waiter. Waiting is bounded
 # (BUILD_SLOT_TIMEOUT seconds, default 4 h) so a wait can never hang a run;
 # on timeout the wrapper exits 75 (EX_TEMPFAIL) without running the command.
+#
+# ── READING AN EXIT STATUS THROUGH THIS WRAPPER (#1570) ──────────────────────
+# Read it DIRECTLY from the command word, or from INSIDE the script devbox runs:
+#
+#   scripts/build-slot.sh devbox run -- vcx/target/cx p.cx   # then $? is real
+#   run() { "$@" > "$log" 2>&1; echo "EXIT=$?"; }            # inside pipeline.sh
+#
+# NEVER from an inner shell that `devbox run` wraps. Measured on 5a897f485
+# against a program that exits 7: the direct read and the in-script capture both
+# report 7; the inner-shell probe reports 0 — success, for a program that
+# failed. `devbox run` executes its arguments through a generated
+# .devbox/gen/scripts/.cmd.sh and the inner command's status is lost there,
+# while a bare `exit N` in the same position survives, which is what made the
+# trap so hard to see. It cost a wrong prio:high issue (#1569, withdrawn).
+# scripts/exit_status_probe_gate.sh is the step that holds this line.
 set -u
 SLOT=${CX_RUNNER:-${CX_BUILD_SLOT:-"$HOME/git-repos/cx/.build-slot"}}
 # The command we run must be able to see WHICH runner it is holding: the
