@@ -1173,7 +1173,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -1735,6 +1735,18 @@ check-verification-budget:
 check-verification-budget-selftest: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-verification-budget-selftest:
 	@CX_BIN="$(CX_BIN)" sh scripts/verification_budget_selftest.sh
+
+# ── check-storm-keep-going (RULED: RUN-2) ────────────────────────────────────
+# The -j storm of `make test` runs with `-k`, so ONE failed run names EVERY red
+# step instead of the first one. The selftest proves the semantics on two tiny
+# planted targets through a scratch makefile (and its control, the same
+# makefile without `-k`, proves the fixture discriminates) and then reads the
+# real recipe: the storm line carries `-k` and the three serial tail lines
+# still follow it as their own recipe lines, so a red storm still stops the
+# gate before the tail.
+.PHONY: check-storm-keep-going
+check-storm-keep-going:
+	@sh scripts/storm_keep_going_selftest.sh
 
 # ── PER-RING GATE STEPS (#700 structural relief, activated at I4) — run the
 # steps that cover the ring you touched instead of the full battery. Each

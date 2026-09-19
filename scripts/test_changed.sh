@@ -242,6 +242,9 @@ step_globs() {
     # source. Neither reads the tree, so neither runs when the tree moves.
     check-verification-budget)     echo "scripts/check_verification_budget.cx scripts/verification_budget.cxd" ;;
     check-verification-budget-selftest) echo "scripts/check_verification_budget.cx scripts/verification_budget_selftest.sh" ;;
+    # RULED: RUN-2: the keep-going selftest reads the `test:` recipe and its own
+    # source, and nothing else in the tree.
+    check-storm-keep-going)        echo "Makefile scripts/storm_keep_going_selftest.sh" ;;
     check-code-spec-consistency)   echo 'spec/* vcx/code/*' ;;
     # ledger-index-check (#1438) regenerates ledger/README.md from the store and
     # compares: its inputs are every ledger page and the generator itself.
