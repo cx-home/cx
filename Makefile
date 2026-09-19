@@ -1075,14 +1075,14 @@ examples-regen:
 # a stable JSON shape consumable by scripts/compare_bench.cx.
 bench-json: CX_BIN ?= $(CURDIR)/vcx/target/cx
 bench-json:
-	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-clock scripts/run_bench_json.cx
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-clock --allow-env scripts/run_bench_json.cx
 
 # V7 — bench regression comparison. Pass BASELINE= and CURRENT= as
 # paths to JSON files produced by bench-json. Default threshold is
 # 30%; pass STRICT=1 for the 10% threshold.
 bench-compare: CX_BIN ?= $(CURDIR)/vcx/target/cx
 bench-compare:
-	@"$(CX_BIN)" --allow-read --allow-write scripts/compare_bench.cx \
+	@"$(CX_BIN)" --allow-read --allow-write --allow-env scripts/compare_bench.cx \
 	  $(or $(BASELINE),bench/baseline.json) \
 	  $(or $(CURRENT),bench/current.json) \
 	  $(if $(STRICT),--strict,)
@@ -1094,9 +1094,20 @@ bench-compare:
 # bench/current.json to bench/baseline.json in the bump commit, so every cut
 # re-pins the floor to its own measurement. Wall-clock and machine-bound, so
 # NOT a TEST_TARGETS member — a decision instrument the cut invokes.
+#
+# #1450 — the ISOLATION guard. Holding the runner is not enough: it serialises
+# what goes through it, not the box. With `.build-slot-impl` HELD and six
+# pre-merge pipelines compiling beside it, `tooling.fmt_8k_ms` read 1902.1 ms
+# against a hot 1304 and four unrelated rows regressed 36-457 %
+# (impl/cx-A-1433 run 4, 2026-09-14). Both halves answer the load now:
+# run_bench_json.cx REFUSES TO MEASURE over CX_BENCH_MAX_LOAD (default 8 on this
+# 12-core box) and records the load either side of the run in the artifact, and
+# compare_bench.cx REFUSES TO JUDGE a current reading taken over that bound.
+# Both refusals exit 3, which is neither a pass nor a regression — and
+# scripts/tag_release.sh WAITS for the box rather than aborting a cut on one.
 .PHONY: perf-ratchet
 perf-ratchet: build-vcx
-	@"$(CURDIR)/vcx/target/cx" --allow-read --allow-write --allow-subprocess --allow-clock scripts/run_bench_json.cx -o bench/current.json
+	@"$(CURDIR)/vcx/target/cx" --allow-read --allow-write --allow-subprocess --allow-clock --allow-env scripts/run_bench_json.cx -o bench/current.json
 	@$(MAKE) bench-compare STRICT=1 CX_BIN=$(CURDIR)/vcx/target/cx
 
 # Documentation hygiene — every relative markdown link resolves.
@@ -1173,7 +1184,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -1250,6 +1261,17 @@ check-exec-redirect:
 check-exit-status-probe:
 	@scripts/exit_status_probe_gate.sh
 	@sh scripts/exit_status_probe_selftest.sh
+
+# ── check-bench-isolation (#1450) ────────────────────────────────────────────
+# `perf-ratchet` itself is wall-clock and machine-bound and is deliberately NOT
+# a TEST_TARGETS member. Its ISOLATION GUARD is neither: it plants artifacts
+# under mktemp and reads two exit codes, so it is held here like any other step.
+# Without it the guard is a sentence in a recipe comment — the same argument
+# VCOST-1 makes about a written bound.
+.PHONY: check-bench-isolation
+check-bench-isolation: CX_BIN ?= $(CURDIR)/vcx/target/cx
+check-bench-isolation:
+	@CX_BIN="$(CX_BIN)" sh scripts/bench_isolation_selftest.sh
 
 check-no-legacy-try: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-no-legacy-try:

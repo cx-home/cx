@@ -189,8 +189,31 @@ if [[ $DRY_RUN -eq 1 ]]; then
         fail "make perf-ratchet target missing"
     fi
 else
-    make perf-ratchet 2>&1 | tail -30
-    [[ ${PIPESTATUS[0]} -eq 0 ]] || fail "make perf-ratchet failed — a benchmark regressed past 10% of the previous cut (bench/baseline.json); fix or rule before cutting"
+    # #1450 — WAIT for a quiet box, do not abort on a busy one. The ratchet
+    # refuses (exit 3) rather than failing when the one-minute load is over
+    # CX_BENCH_MAX_LOAD, because a reading taken while other work compiles is
+    # not a reading: with the runner held and six pipelines beside it,
+    # tooling.fmt_8k_ms read 1902 ms against a hot 1304 and four unrelated rows
+    # regressed 36-457 % (impl/cx-A-1433 run 4). Promoting THAT to
+    # bench/baseline.json would re-pin the floor to a number that was never
+    # real, which is the ratchet running backwards — the one direction 1249-Q1a
+    # exists to prevent. So a refusal retries; only a real regression aborts.
+    ratchet_tries=${CX_RATCHET_TRIES:-12}
+    ratchet_wait=${CX_RATCHET_WAIT:-300}
+    ratchet_rc=3
+    for (( attempt = 1; attempt <= ratchet_tries; attempt++ )); do
+        make perf-ratchet 2>&1 | tail -30
+        ratchet_rc=${PIPESTATUS[0]}
+        [[ $ratchet_rc -ne 3 ]] && break
+        if (( attempt < ratchet_tries )); then
+            note "perf ratchet REFUSED to measure on a loaded box (#1450) — attempt $attempt of $ratchet_tries; waiting ${ratchet_wait}s for the box"
+            sleep "$ratchet_wait"
+        fi
+    done
+    if [[ $ratchet_rc -eq 3 ]]; then
+        fail "make perf-ratchet refused on every one of $ratchet_tries attempts — the box never went quiet (one-minute load over CX_BENCH_MAX_LOAD). Cut on an idle machine; never raise the bound to get a number."
+    fi
+    [[ $ratchet_rc -eq 0 ]] || fail "make perf-ratchet failed — a benchmark regressed past 10% of the previous cut (bench/baseline.json); fix or rule before cutting"
     cp bench/current.json bench/baseline.json
     note "perf ratchet green — bench/baseline.json re-pinned to this cut's measurement"
 fi
