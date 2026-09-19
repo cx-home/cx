@@ -67,7 +67,7 @@ check "connector.cxd db.cxd" "a module source and a corpus file together" "stdli
 check "ALL" "an evaluator core file still selects everything" "vcx/code/eval_core.v"
 check "ALL" "a platform file belonging to no module row selects everything" "vcx/platform/stdlib_unregistered_xyz.v"
 check "ALL" "a stdlib source with no registry row selects everything" "stdlib/not-a-registered-module.cx"
-check "ALL" "conformance/code.cxd is the shared corpus and selects everything" "conformance/code.cxd"
+check "code.cxd" "conformance/code.cxd stays selectable by name, as #1560 made it" "conformance/code.cxd"
 check "ALL" "an x/ surface still selects everything" "x/ux-web.cx"
 check "ALL" "a module source beside an ENGINE change is still ALL" "stdlib/map.cx" "vcx/cx/program_lexer.v"
 # And so does a change to what GRADES, or to the gate policy.
