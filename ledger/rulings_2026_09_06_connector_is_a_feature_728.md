@@ -225,7 +225,7 @@ the runner — which is the portability the ladder exists to deliver.
   unsignable; a grammar that changes under a running deployment defeats the
   compose gate and every W-check that was green at boot.
 
-### CK-4b — ingestion NEVER infers `idempotent=` — RULED: (a) under the standing letter-acceptance rule (owner veto open)
+### RULED: 728-CK-4b — ingestion NEVER infers `idempotent=` — RULED: (a) under the standing letter-acceptance rule (owner veto open)
 
 Raised by the vocabulary session after reading CK-1 … CK-6: CK-4 lists what
 ingestion produces and says nothing about `idempotent=`, yet under CK-3 that

@@ -47,7 +47,7 @@ on the new codec; `xsp.md` §3's lossless claim now true, under `RULED: 1269-Q1`
 
 ---
 
-## #1268 — an act's undeclared fields: RULED (b), refuse EXTRAS, tolerate MISSING
+## RULED: 1268-b — an act's undeclared fields: refuse EXTRAS, tolerate MISSING (#1268)
 
 Issue: #1268 (bug, area:xap, prio:medium). Spec: `xap/xap_grammar_composition.md` §6.1
 (N-COMPOSE-7), `xap.md`, distribution §1.2. Not ruled by #1260.

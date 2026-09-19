@@ -973,11 +973,18 @@ stdlib-catalog-gate: build-vcx
 .PHONY: ledger-index ledger-index-check
 ledger-index: CX_BIN ?= $(CURDIR)/vcx/target/cx
 ledger-index: build-vcx
-	@"$(CX_BIN)" --allow-read --allow-write scripts/ledger_index.cx
+	@"$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/ledger_index.cx
 
+# `--check` is also the SUBJECT rule (#1447): every id-shaped token in a
+# `(RULED: …)` clause on release/0.18 must resolve to a page, because a token
+# with no decision behind it dresses a choice nobody took in the store's
+# authority. Eleven did on 2026-09-19. `--allow-subprocess` is the `git log`
+# that reads the subjects; `--allow-env` is CX_LEDGER_SUBJECTS_FILE, which is
+# how the selftest plants subjects without a repository.
 ledger-index-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
 ledger-index-check: build-vcx
-	@"$(CX_BIN)" --allow-read --allow-write scripts/ledger_index.cx --check
+	@"$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/ledger_index.cx --check
+	@CX_BIN="$(CX_BIN)" sh scripts/ledger_subject_ids_selftest.sh
 
 # ── primer-platform / primer-platform-check (#1487, RULED: COMP-1) ────────────
 # `cx primer` is the door an adopter's agent walks through before it writes a

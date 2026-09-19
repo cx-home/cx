@@ -1,4 +1,4 @@
-# Ruling — `run`/`spawn` file dispositions are charged to `write` (#1074)
+# RULED: 1074-a — `run`/`spawn` file dispositions are charged to `write` (#1074)
 
 **Date:** 2026-09-01
 **Ruled by:** owner, letter **(a)**

@@ -1,4 +1,4 @@
-# RULED: 1352-a … 1352-f — the agent-tool projection projects feature VERBS beside `[?def]` commands (implementation record)
+# RULED: 1352-a, 1352-b, 1352-f — the agent-tool projection projects feature VERBS beside `[?def]` commands (implementation record)
 
 **Rulings:** owner + Fable, 2026-09-09 03:35–04:00 ET, on worker B's and worker
 A's letters (#1352); the six `## RULED:` comments on the issue are the record

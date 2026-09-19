@@ -468,8 +468,9 @@ through `cx canonical` (the data lane's bare-when-safe rule, #790's
 canonical output broadly, and is left for its own ruling rather than
 absorbed here.
 
-**§10 addendum — 831-1a′ (one string image for collection items; owner,
-2026-08-16):** `code.md` §11.1a **R6** is AUTHORIZED to redefine "bare-safe"
+### RULED: 831-1a′ — §10 addendum, one string image for collection items (owner, 2026-08-16)
+
+`code.md` §11.1a **R6** is AUTHORIZED to redefine "bare-safe"
 as the INTERSECTION of the two readings, and both the data emitter and the
 program result renderer are authorized to share one implementation of it.
 
