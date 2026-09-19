@@ -73,7 +73,7 @@ PLANTED
 # none of them is this fixture's.
 run_planted() { # $1 = extra flags; prints the exit status, leaves the markers
 	rm -f "$T/g1.built" "$T/g2.built"
-	( cd "$T" && $MAKE $1 -j2 all ) > "$T/out.log" 2>&1
+	( cd "$T" && env -u MAKEFLAGS -u MFLAGS -u MAKELEVEL $MAKE $1 -j2 all ) > "$T/out.log" 2>&1
 	echo $?
 }
 
