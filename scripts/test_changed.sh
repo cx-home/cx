@@ -273,6 +273,9 @@ step_globs() {
     # is exactly where the probe gets written. Same over-including glob as its
     # two siblings for the same reason.
     check-exit-status-probe)       echo '*' ;;
+    # #1450: the isolation guard reads the two bench scripts and its own source;
+    # it plants its artifacts, so nothing else in the tree is an input.
+    check-bench-isolation)         echo 'scripts/run_bench_json.cx scripts/compare_bench.cx scripts/bench_isolation_selftest.sh' ;;
     # RULED: 1170-d — the step now also carries the SEQ-4 page-sync guard, so a
     # playground-page edit and a golden-sidecar edit are both inputs to it. The
     # whole point of that guard is that a page edit to 171/172 reds something;
