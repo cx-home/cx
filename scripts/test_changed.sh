@@ -268,6 +268,11 @@ step_globs() {
     # over-including glob rather than a narrower list that would silently skip
     # the step when a recipe grows a new `exec`. Its own source is an input too.
     check-exec-redirect)           echo '*' ;;
+    # #1570: the third gate of the same family, and it scans one surface more —
+    # every committed `_gate_evidence/*/pipeline*.sh`, because a branch pipeline
+    # is exactly where the probe gets written. Same over-including glob as its
+    # two siblings for the same reason.
+    check-exit-status-probe)       echo '*' ;;
     # RULED: 1170-d — the step now also carries the SEQ-4 page-sync guard, so a
     # playground-page edit and a golden-sidecar edit are both inputs to it. The
     # whole point of that guard is that a page edit to 171/172 reds something;
