@@ -129,13 +129,58 @@ check_file() {
 SCEN_PASS=0
 SCEN_FAIL=0
 
+# load_1m — the one-minute load average, recorded beside a scenario's verdict
+# so a row in the run log is classifiable afterwards (#1477).
+load_1m() {
+	local l
+	if l="$(sysctl -n vm.loadavg 2>/dev/null)" && [ -n "$l" ]; then
+		printf '%s\n' "$l" | awk '{ gsub(/[{}]/, ""); print $1 + 0 }'
+		return 0
+	fi
+	[ -r /proc/loadavg ] && awk '{ print $1 + 0 }' /proc/loadavg && return 0
+	printf '%s\n' unknown
+}
+
+# scenario_never_connected — the DAEMON-START-UNDER-LOAD signature (#1477):
+# the scenario's server never answered, so either the readiness wait said so or
+# every request it made came back `status=000` (curl never connected). Both are
+# a statement about the box, not about the example — nineteen `status=000`
+# lines diffed against expected.txt on the post-merge run of bc9bfd24c at a
+# 15-minute load average of 69, and the same scenario had passed thirty minutes
+# earlier. A scenario that answered ANY request is not in this class.
+scenario_never_connected() {
+	local out="$1"
+	case "$out" in *scenario-wait-ready:*) return 0 ;; esac
+	case "$out" in *status=000*) ;; *) return 1 ;; esac
+	printf '%s\n' "$out" | grep -qE 'status=[0-9]{3}' || return 1
+	printf '%s\n' "$out" | grep -E 'status=[0-9]{3}' | grep -qv 'status=000' && return 1
+	return 0
+}
+
 check_scenario() {
 	local dir="$1"
 	local rel="${dir#$ROOT/}"
-	local out rc
+	local out rc load
 
 	out="$(cd "$dir" && CX="$CX" sh ./run.sh 2>&1)"
 	rc=$?
+	# The classified retry the V suite's load classes already have (1431-a /
+	# 1432-a), for the one class the platform scenarios can hit: the server
+	# never came up inside the scenario's window. It is a RE-RUN of the whole
+	# scenario, once, serially — not a loosened expectation and not a skip: the
+	# second run still has to match expected.txt exactly.
+	if scenario_never_connected "$out"; then
+		load="$(load_1m)"
+		echo "verify-examples: $rel — the server never answered (one-minute load $load); the #1477 daemon-start-under-load class. Re-running once, serially." >&2
+		out="$(cd "$dir" && CX="$CX" sh ./run.sh 2>&1)"
+		rc=$?
+		if scenario_never_connected "$out"; then
+			SCEN_FAIL=$((SCEN_FAIL + 1))
+			FAIL_DETAILS+=("$rel [the server never answered on EITHER run (one-minute load $load, then $(load_1m)) — #1477's class, but twice is not a flake: read the scenario's own readiness diagnosis above]")
+			return
+		fi
+		echo "verify-examples: $rel — passed the serial re-run (one-minute load $(load_1m))." >&2
+	fi
 	if [ "$rc" -ne 0 ]; then
 		SCEN_FAIL=$((SCEN_FAIL + 1))
 		FAIL_DETAILS+=("$rel/run.sh [driver exited $rc; a scenario driver must exit 0 and pin each command's own exit code in its output]")
