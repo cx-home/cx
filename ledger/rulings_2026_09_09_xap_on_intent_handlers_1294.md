@@ -10,7 +10,7 @@ of it was self-ruled.
 
 | letters | ruled by | on #1294 at |
 |---|---|---|
-| `1294-a` … `1294-f` | Fable + owner | 2026-09-08 16:25 ET (comment 20:04:54Z) |
+| `1294-a`, `1294-b`, `1294-c`, `1294-d`, `1294-e`, `1294-f` | Fable + owner | 2026-09-08 16:25 ET (comment 20:04:54Z) |
 | `1294-a2` | owner + Fable | 2026-09-08 17:50 ET (comment 21:41:41Z) |
 | `1294-g`, `1294-h` | owner + Fable | 2026-09-08 18:45 ET (comment 22:19:44Z) |
 

@@ -4,6 +4,7 @@
     "rustup": "latest",
     "python": "3.12",
     "jq": "latest",
+    "nodejs": "22",
     "hyperfine": "latest",
     "git": "latest",
     "lazygit": "latest",

@@ -46,17 +46,26 @@ Re-pinned at W5+W6 (RP-5): the RP-1 flip and RP-4's inline attribute type. From
 the pre-campaign baseline of 18.779 / 15.316 / 10.348 that is **-8.0% json,
 -48.1% xml, -26.8% cx**.
 
-| lane | measured (2026-09-02) | bound | carrier under test |
-|---|---|---|---|
-| json | 17.271× | 19.20 | the `__cx_map__` envelope — an `Element` per field (RP-3 still to come) |
-| xml | 7.942× | 9.40 | `Element` + `Attribute`; `AttributeMeta` retired by RP-4 |
-| cx | 7.576–7.580× | 9.00 | `MapNode` / `MapEntry` |
+The table is the LIVE block in `run.sh`, not a snapshot: a wave that improves a
+lane edits the bound there and this table in the same commit (RP-5). It read
+the W5+W6 numbers — json 17.271× against 19.20 with "RP-3 still to come" — for
+three re-pins after RP-3 had landed, which is the record disagreeing with the
+tree that issue 1251 filed.
+
+| lane | measured | bound | set by | carrier under test |
+|---|---|---|---|---|
+| json | 7.569× | 7.95 | `8c8da881c` (#1208, #1247) | the map carrier after RP-1/RP-3; measured +5 % |
+| xml | 7.941× | 8.35 | `8c8da881c` (#1208, #1247) | `Element` + `Attribute`; `AttributeMeta` retired by RP-4 |
+| cx | 7.577–7.588× | 8.00 | `8c8da881c` (#1208, #1247) | `MapNode` / `MapEntry` |
+| cxel | 7.600× | 8.00 | `13bd59056` (#1275) | an element corpus with atom / date / duration attribute columns; the autotyped attribute's type name rides inline, so `attr_meta=0` |
 
 Re-pinned 2026-09-04 (#1208 + #1247): bounds are **measured +5 %** — the `+1.0` for a retained input
 copy is gone (see below). json 7.569 → 7.95, xml 7.941 → 8.35, cx 7.577–7.588 → 8.00, and the new
 `cxel` lane (an element corpus with atom / date / duration attribute columns) 15.507 → 16.30 — it read
-16.325 before the per-parse scalar intern pool; what remains is one `AttributeMeta` record per autotyped
-attribute (128k of them), which is its own representation issue.
+16.325 before the per-parse scalar intern pool; what remained was one `AttributeMeta` record per autotyped
+attribute (128k of them). That last one is gone: #1275 (`13bd59056`) routes an autotyped attribute's type
+name inline through `set_data_type`'s guard, `attr_meta=0`, and the lane re-pinned 16.30 → 8.00 on a
+7.600× reading. The table above carries the live bounds.
 
 Re-pinned 2026-09-04 (#1275): `cxel` 15.507 → **7.600**, bound 8.00. Those 128k `AttributeMeta` records
 each held the attribute's type NAME as a string (`atom`, `date`, `duration`, `int`) — one 112-byte

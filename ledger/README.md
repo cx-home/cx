@@ -27,6 +27,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1066-q1` | [rulings_2026_09_04_diagram_def_namespace_1066.md](rulings_2026_09_04_diagram_def_namespace_1066.md) | Question 1066-Q1 — what image mints the def namespace? |
 | `1068-a` | [rulings_2026_09_07_diagram_binding_bridge_1068.md](rulings_2026_09_07_diagram_binding_bridge_1068.md) | RULED 1068-A — the binding registry, and the for-comp anchor is `lh` |
 | `1068-b` | [rulings_2026_09_07_diagram_binding_bridge_1068.md](rulings_2026_09_07_diagram_binding_bridge_1068.md) | RULED 1068-B — golden movement authorized, 8 renders and 2 conformance rows |
+| `1074-a` | [rulings_2026_09_01_process_disposition_caps_1074.md](rulings_2026_09_01_process_disposition_caps_1074.md) | RULED: 1074-a — `run`/`spawn` file dispositions are charged to `write` (#1074) |
 | `1075-q1` | [rulings_2026_09_04_pipeline_rows_on_timeout_1075.md](rulings_2026_09_04_pipeline_rows_on_timeout_1075.md) | Question 1075-Q1 — what row does a stage the deadline stopped before it started get? |
 | `1085-a` | [rulings_2026_09_11_email_world_class_agentic_1085.md](rulings_2026_09_11_email_world_class_agentic_1085.md) | RULED: 1085-a — v0.18 carries a WORLD-CLASS, AGENT-READY email system, client AND server: SMTP + IMAP as protocol modules with both halves, the mailbox as an XAP feature whose intents are the agent surface, delivery on the saga substrate |
 | `1085-b` | [rulings_2026_09_11_smtp_imap_drafts_1085b.md](rulings_2026_09_11_smtp_imap_drafts_1085b.md) | RULED: 1085-b — the ten open rulings in the `smtp.md` / `imap.md` working drafts, plus `cx-stdlib/sasl` as a shared module |
@@ -50,6 +51,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1173-c` | [rulings_2026_09_18_owner_decisions_2345z.md](rulings_2026_09_18_owner_decisions_2345z.md) | Owner decisions 2026-09-18 ~23:45Z — the set module's code band (1173-c); the deployment binding's spelling enters connector.md §4.6 (1466-a); the adapter contract gains a `binding-of` hook (1483-a) |
 | `1174-b` | [rulings_2026_09_17_owner_decisions_0345z.md](rulings_2026_09_17_owner_decisions_0345z.md) | Owner decisions 2026-09-17 ~03:45Z — three of the integrator's declines reversed: libcx-sync gets an inline pump (1387-b), sets get a module (1173-b), closure's bound gets a default (1174-b); #1389's close confirmed |
 | `1175-b` | [rulings_2026_09_17_owner_decisions_0410z.md](rulings_2026_09_17_owner_decisions_0410z.md) | Owner decisions 2026-09-17 ~04:10Z — chained destructuring gets a flat form: `[?match]` takes a chain (RULED: 1175-b) |
+| `1177-a` | [rulings_2026_09_01_index_base_1177.md](rulings_2026_09_01_index_base_1177.md) | RULED: 1177-a — #1177 index base: 1-based across the value surface |
 | `1192-a` | [rulings_2026_09_10_else_no_callable_1192.md](rulings_2026_09_10_else_no_callable_1192.md) | RULED: 1192-a — `[?else]` does not coalesce E_NO_CALLABLE; every other failure and absence still does |
 | `1195-a` | [rulings_2026_09_07_contract_check_at_seal_and_boot_1195.md](rulings_2026_09_07_contract_check_at_seal_and_boot_1195.md) | RULED: 1195-a — the §1.2 runtime contract is checked wherever a package is |
 | `1196-a` | [rulings_2026_09_07_deployment_doc_two_stages_1196.md](rulings_2026_09_07_deployment_doc_two_stages_1196.md) | RULED: 1196-a — a deployment document has TWO STAGES, and `xap.cxs` describes |
@@ -107,6 +109,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1265-wf-40b` | [rulings_2026_09_09_flow_pep_admission_1265_wf40b.md](rulings_2026_09_09_flow_pep_admission_1265_wf40b.md) | RULED: 1265-WF-40b — the PEP admission mechanism on the flow act path |
 | `1265-wf-41` | [rulings_2026_09_08_flow_serve_wf28.md](rulings_2026_09_08_flow_serve_wf28.md) | RULED: 1265-WF-40, 1265-WF-41 (Fable + owner, 2026-09-08 15:20 ET) |
 | `1265-wf-41` | [rulings_2026_09_08_flow_serve_wf28.md](rulings_2026_09_08_flow_serve_wf28.md) | 1265-WF-41 — rung 1 exits on §4.16 flow 3 alone |
+| `1268-b` | [rulings_2026_09_05_xap_queue.md](rulings_2026_09_05_xap_queue.md) | RULED: 1268-b — an act's undeclared fields: refuse EXTRAS, tolerate MISSING (#1268) |
 | `1268-c1` | [rulings_2026_09_08_pump_ingest_fields_1268.md](rulings_2026_09_08_pump_ingest_fields_1268.md) | 1268-c1 — YES, and the binding states the mapping (letter 1(a)) |
 | `1268-c2` | [rulings_2026_09_08_pump_ingest_fields_1268.md](rulings_2026_09_08_pump_ingest_fields_1268.md) | 1268-c2 — the parameter refusal lands FIRST in the §4.9 order (letter 2(a)) |
 | `1268-d` | [rulings_2026_09_08_pump_ingest_fields_1268.md](rulings_2026_09_08_pump_ingest_fields_1268.md) | RULED: 1268-d — the error code (Fable + owner, 2026-09-08 16:25 ET) |
@@ -129,6 +132,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1287-q1` | [rulings_2026_09_05_certificate_key_1287.md](rulings_2026_09_05_certificate_key_1287.md) | 1287-Q1 — RULED (a): `crypto:certificate-key` |
 | `1287-q2` | [rulings_2026_09_05_certificate_key_1287.md](rulings_2026_09_05_certificate_key_1287.md) | 1287-Q2 — RULED (b): `saml:verify` does NOT also accept a certificate |
 | `1292-a` | [rulings_2026_09_12_sessions_on_the_bridge_1292.md](rulings_2026_09_12_sessions_on_the_bridge_1292.md) | RULED: 1292-a — sessions on the served bridge: the request's session is the attribution; a bound runtime served without a session configuration refuses at boot; no configured stand-in principal |
+| `1295-a` | [rulings_2026_09_19_cited_ids_without_a_page_1447.md](rulings_2026_09_19_cited_ids_without_a_page_1447.md) | RULED: 1295-a — a coalesced pooled span inherits the OLDEST `pool_gen` of its parts |
 | `1310-a` | [rulings_2026_09_09_xap_correction_taxonomy_1310.md](rulings_2026_09_09_xap_correction_taxonomy_1310.md) | RULED: 1310-a, 1310-b, 1310-c — the xap slice folds the journal's correction taxonomy |
 | `1310-a` | [rulings_2026_09_09_xap_correction_taxonomy_1310.md](rulings_2026_09_09_xap_correction_taxonomy_1310.md) | 1310-a = Q1(a) — `hash=` on a slice record names the JOURNAL's entry address |
 | `1310-b` | [rulings_2026_09_09_xap_correction_taxonomy_1310.md](rulings_2026_09_09_xap_correction_taxonomy_1310.md) | RULED: 1310-a, 1310-b, 1310-c — the xap slice folds the journal's correction taxonomy |
@@ -137,6 +141,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1310-c` | [rulings_2026_09_09_xap_correction_taxonomy_1310.md](rulings_2026_09_09_xap_correction_taxonomy_1310.md) | 1310-c = Q3(a) — an engaged read that cannot resolve a linkage REFUSES |
 | `1310-c` | [rulings_2026_09_09_xap_correction_taxonomy_1310.md](rulings_2026_09_09_xap_correction_taxonomy_1310.md) | Question 4 — the stale spec text, rewritten under 1310-c |
 | `1310-d` | [rulings_2026_09_09_xap_correction_taxonomy_1310.md](rulings_2026_09_09_xap_correction_taxonomy_1310.md) | RULED: 1310-d — points 1, 3 and 4 landed; point 2 drafted back as a fork |
+| `1310-f` | [rulings_2026_09_19_cited_ids_without_a_page_1447.md](rulings_2026_09_19_cited_ids_without_a_page_1447.md) | 1310-f — NEVER RULED |
 | `1313-b` | [rulings_2026_09_08_local_runner_rearm_1313.md](rulings_2026_09_08_local_runner_rearm_1313.md) | RULED: 1313-b — `cx flow run` re-arms the WHOLE journal, each timer under its run's RECORDED basis |
 | `1313-c` | [rulings_2026_09_08_flow_run_overlay_1316b.md](rulings_2026_09_08_flow_run_overlay_1316b.md) | Implementation is SEQUENCED BEHIND #1313's `1313-c`, and this is measured |
 | `1313-d` | [rulings_2026_09_09_serve_completion_bound_1313d.md](rulings_2026_09_09_serve_completion_bound_1313d.md) | RULED: 1313-d — `test_flow_serve_four_kinds_and_the_nonce_rule` asserts completion BY IDENTITY, and bounds the schedule kind's in-flight count |
@@ -185,8 +190,12 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1350-c` | [rulings_2026_09_09_mermaid_golden_sidecars_1350.md](rulings_2026_09_09_mermaid_golden_sidecars_1350.md) | 1350-c — how does `diagram_mermaid_golden` acquire the sidecar half? |
 | `1351-a1` | [rulings_2026_09_08_err_classification_verb_1351.md](rulings_2026_09_08_err_classification_verb_1351.md) | RULED: 1351-a1, 1351-a2 — one public verb classifies an err result over TEXT |
 | `1351-a2` | [rulings_2026_09_08_err_classification_verb_1351.md](rulings_2026_09_08_err_classification_verb_1351.md) | RULED: 1351-a1, 1351-a2 — one public verb classifies an err result over TEXT |
-| `1352-a` | [rulings_2026_09_09_agent_tool_projection_feature_verbs_1352.md](rulings_2026_09_09_agent_tool_projection_feature_verbs_1352.md) | RULED: 1352-a … 1352-f — the agent-tool projection projects feature VERBS beside `[?def]` commands (implementation record) |
-| `1352-f` | [rulings_2026_09_09_agent_tool_projection_feature_verbs_1352.md](rulings_2026_09_09_agent_tool_projection_feature_verbs_1352.md) | RULED: 1352-a … 1352-f — the agent-tool projection projects feature VERBS beside `[?def]` commands (implementation record) |
+| `1352-a` | [rulings_2026_09_09_agent_tool_projection_feature_verbs_1352.md](rulings_2026_09_09_agent_tool_projection_feature_verbs_1352.md) | RULED: 1352-a, 1352-b, 1352-f — the agent-tool projection projects feature VERBS beside `[?def]` commands (implementation record) |
+| `1352-b` | [rulings_2026_09_09_agent_tool_projection_feature_verbs_1352.md](rulings_2026_09_09_agent_tool_projection_feature_verbs_1352.md) | RULED: 1352-a, 1352-b, 1352-f — the agent-tool projection projects feature VERBS beside `[?def]` commands (implementation record) |
+| `1352-c` | [rulings_2026_09_19_cited_ids_without_a_page_1447.md](rulings_2026_09_19_cited_ids_without_a_page_1447.md) | 1352-c, 1352-d, 1352-e — NEVER RULED |
+| `1352-d` | [rulings_2026_09_19_cited_ids_without_a_page_1447.md](rulings_2026_09_19_cited_ids_without_a_page_1447.md) | 1352-c, 1352-d, 1352-e — NEVER RULED |
+| `1352-e` | [rulings_2026_09_19_cited_ids_without_a_page_1447.md](rulings_2026_09_19_cited_ids_without_a_page_1447.md) | 1352-c, 1352-d, 1352-e — NEVER RULED |
+| `1352-f` | [rulings_2026_09_09_agent_tool_projection_feature_verbs_1352.md](rulings_2026_09_09_agent_tool_projection_feature_verbs_1352.md) | RULED: 1352-a, 1352-b, 1352-f — the agent-tool projection projects feature VERBS beside `[?def]` commands (implementation record) |
 | `1352-g` | [rulings_2026_09_09_agent_tool_projection_feature_verbs_1352.md](rulings_2026_09_09_agent_tool_projection_feature_verbs_1352.md) | RULED: 1352-g — `compose` carries `[summary]` / `[doc]` onto the composed verb (Fable, 2026-09-09 16:00 ET) |
 | `1353-b` | [rulings_2026_09_08_decimal_negative_zero_1353.md](rulings_2026_09_08_decimal_negative_zero_1353.md) | RULED: 1353-b, 1353-c, 1353-d — a decimal negative zero KEEPS its sign in |
 | `1353-c` | [rulings_2026_09_08_decimal_negative_zero_1353.md](rulings_2026_09_08_decimal_negative_zero_1353.md) | RULED: 1353-b, 1353-c, 1353-d — a decimal negative zero KEEPS its sign in |
@@ -329,6 +338,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1575-a` | [rulings_2026_09_18_owner_decisions_1620z.md](rulings_2026_09_18_owner_decisions_1620z.md) | Decisions 2026-09-18 ~16:20Z — the ws defs' placement between the two http halves (1461-a); an atom the renderer writes must read back (1575-a) |
 | `1575-b` | [rulings_2026_09_18_owner_decisions_1640z.md](rulings_2026_09_18_owner_decisions_1640z.md) | Owner decisions 2026-09-18 ~16:40Z — "recommendations accepted": twenty-one issues closed by the owner's word on the triage list (TRIAGE-1); the soap version is the string '1.1' (1575-b); unknown Security members are carried (1456-b) |
 | `192-gcm` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) | RULED: 1400-a, 1401-a — XML Encryption comes IN: `saml:verify` decrypts `EncryptedAssertion` / `EncryptedID` / `EncryptedAttribute` with `opts.decryption-keys`; `crypto` gains RSA key transport (OAEP, SHA-1 inside OAEP allowed; PKCS#1 v1.5 behind a loud opt-in with implicit rejection) and AES-CBC + AES-128/192-GCM; encryption is detected BEFORE the signature search |
+| `728-ck-4b` | [rulings_2026_09_06_connector_is_a_feature_728.md](rulings_2026_09_06_connector_is_a_feature_728.md) | RULED: 728-CK-4b — ingestion NEVER infers `idempotent=` — RULED: (a) under the standing letter-acceptance rule (owner veto open) |
 | `787-poc` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) | Ledger — #787 integration: the ONE rebase of impl/787-poc onto release/0.16.0 |
 | `ad-1` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-1 — `[selection …]` binds every consumption point, through the one PEP (#1181) |
 | `ad-10` | [rulings_2026_09_01_adoption_campaign.md](rulings_2026_09_01_adoption_campaign.md) | AD-10 — instantiation is CONTRACT-LEVEL by design, and an unservable `[add]` refuses (#1162) |
@@ -396,7 +406,6 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ck-2` | [rulings_2026_09_06_connector_is_a_feature_728.md](rulings_2026_09_06_connector_is_a_feature_728.md) | CK-2 — where the transport declaration lives — RULED: (a) |
 | `ck-3` | [rulings_2026_09_06_connector_is_a_feature_728.md](rulings_2026_09_06_connector_is_a_feature_728.md) | CK-3 — one road to a verb from both faces — RULED: (a) |
 | `ck-4` | [rulings_2026_09_06_connector_is_a_feature_728.md](rulings_2026_09_06_connector_is_a_feature_728.md) | CK-4 — OpenAPI ingestion: what it produces, and when — RULED: (a) |
-| `ck-4b` | [rulings_2026_09_06_connector_is_a_feature_728.md](rulings_2026_09_06_connector_is_a_feature_728.md) | CK-4b — ingestion NEVER infers `idempotent=` — RULED: (a) under the standing letter-acceptance rule (owner veto open) |
 | `ck-5` | [rulings_2026_09_06_connector_is_a_feature_728.md](rulings_2026_09_06_connector_is_a_feature_728.md) | CK-5 — where the engine lives — RULED: (a) |
 | `ck-6` | [rulings_2026_09_06_connector_is_a_feature_728.md](rulings_2026_09_06_connector_is_a_feature_728.md) | Rulings 2026-09-06 — #728 component 2: a connector is a feature (CK-1 … CK-6) |
 | `ck-6` | [rulings_2026_09_06_connector_is_a_feature_728.md](rulings_2026_09_06_connector_is_a_feature_728.md) | CK-6 — a connector feature does NOT depend on flow — RULED: (a) |
@@ -971,18 +980,19 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `128-gcm` | [rulings_2026_09_11_saml_xml_encryption_1400_1401.md](rulings_2026_09_11_saml_xml_encryption_1400_1401.md) |
 | `128-hex` | [partition_I5_stream4_xsp.md](partition_I5_stream4_xsp.md) |
 | `128-is-not` | [rulings_2026_09_04_pipeline_rows_on_timeout_1075.md](rulings_2026_09_04_pipeline_rows_on_timeout_1075.md) |
-| `1294-a` | [rulings_2026_09_09_xap_on_intent_handlers_1294.md](rulings_2026_09_09_xap_on_intent_handlers_1294.md) |
+| `1294-a` | [rulings_2026_09_09_xap_on_intent_handlers_1294.md](rulings_2026_09_09_xap_on_intent_handlers_1294.md), [rulings_2026_09_19_cited_ids_without_a_page_1447.md](rulings_2026_09_19_cited_ids_without_a_page_1447.md) |
 | `1294-a2` | [rulings_2026_09_09_xap_on_intent_handlers_1294.md](rulings_2026_09_09_xap_on_intent_handlers_1294.md) |
+| `1294-b` | [rulings_2026_09_09_xap_on_intent_handlers_1294.md](rulings_2026_09_09_xap_on_intent_handlers_1294.md), [rulings_2026_09_19_cited_ids_without_a_page_1447.md](rulings_2026_09_19_cited_ids_without_a_page_1447.md) |
 | `1294-c` | [rulings_2026_09_09_xap_on_intent_handlers_1294.md](rulings_2026_09_09_xap_on_intent_handlers_1294.md) |
 | `1294-d` | [rulings_2026_09_09_xap_on_intent_handlers_1294.md](rulings_2026_09_09_xap_on_intent_handlers_1294.md) |
 | `1294-e` | [rulings_2026_09_09_xap_on_intent_handlers_1294.md](rulings_2026_09_09_xap_on_intent_handlers_1294.md) |
-| `1294-f` | [rulings_2026_09_09_xap_on_intent_handlers_1294.md](rulings_2026_09_09_xap_on_intent_handlers_1294.md) |
+| `1294-f` | [rulings_2026_09_09_xap_on_intent_handlers_1294.md](rulings_2026_09_09_xap_on_intent_handlers_1294.md), [rulings_2026_09_19_cited_ids_without_a_page_1447.md](rulings_2026_09_19_cited_ids_without_a_page_1447.md) |
 | `1294-g` | [rulings_2026_09_09_xap_on_intent_handlers_1294.md](rulings_2026_09_09_xap_on_intent_handlers_1294.md) |
 | `1294-h` | [rulings_2026_09_09_xap_on_intent_handlers_1294.md](rulings_2026_09_09_xap_on_intent_handlers_1294.md) |
 | `1308-cg-2` | [rulings_2026_09_05_grammar_expression_env.md](rulings_2026_09_05_grammar_expression_env.md) |
 | `1308-cg-5` | [rulings_2026_09_05_grammar_expression_env.md](rulings_2026_09_05_grammar_expression_env.md) |
 | `1308-cg-n` | [rulings_2026_09_05_constraint_grammar_1308.md](rulings_2026_09_05_constraint_grammar_1308.md) |
-| `1310-e` | [rulings_2026_09_09_xap_correction_taxonomy_1310.md](rulings_2026_09_09_xap_correction_taxonomy_1310.md) |
+| `1310-e` | [rulings_2026_09_09_xap_correction_taxonomy_1310.md](rulings_2026_09_09_xap_correction_taxonomy_1310.md), [rulings_2026_09_19_cited_ids_without_a_page_1447.md](rulings_2026_09_19_cited_ids_without_a_page_1447.md) |
 | `1314-c` | [rulings_2026_09_08_sched_wall_clock_1358.md](rulings_2026_09_08_sched_wall_clock_1358.md) |
 | `1324-sk-1` | [rulings_2026_09_06_sched_missed_one_shot_1324.md](rulings_2026_09_06_sched_missed_one_shot_1324.md) |
 | `1324-sk-2` | [rulings_2026_09_06_sched_missed_one_shot_1324.md](rulings_2026_09_06_sched_missed_one_shot_1324.md) |
@@ -990,7 +1000,6 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1349-a` | [rulings_2026_09_09_diagram_node_id_ordinals_1349.md](rulings_2026_09_09_diagram_node_id_ordinals_1349.md) |
 | `1349-b` | [rulings_2026_09_09_diagram_node_id_ordinals_1349.md](rulings_2026_09_09_diagram_node_id_ordinals_1349.md) |
 | `1349-c` | [rulings_2026_09_09_diagram_node_id_ordinals_1349.md](rulings_2026_09_09_diagram_node_id_ordinals_1349.md) |
-| `1352-b` | [rulings_2026_09_09_agent_tool_projection_feature_verbs_1352.md](rulings_2026_09_09_agent_tool_projection_feature_verbs_1352.md), [rulings_2026_09_09_ux_form_subject_noun_1371.md](rulings_2026_09_09_ux_form_subject_noun_1371.md) |
 | `1358-f` | [rulings_2026_09_08_sched_wall_clock_1358.md](rulings_2026_09_08_sched_wall_clock_1358.md) |
 | `1359-a` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
 | `1359-b` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
@@ -1099,6 +1108,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `arch-0916` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md), [rulings_2026_09_18_owner_decisions_1640z.md](rulings_2026_09_18_owner_decisions_1640z.md) |
 | `bf-1` | [partition_I2_extraction.md](partition_I2_extraction.md), [partition_I5_stream22_cleanroom.md](partition_I5_stream22_cleanroom.md) |
 | `choice-1` | [rulings_2026_08_21_array_separator.md](rulings_2026_08_21_array_separator.md), [rulings_2026_09_09_fmt_fingerprint_underscores_1347.md](rulings_2026_09_09_fmt_fingerprint_underscores_1347.md) |
+| `ck-4b` | [rulings_2026_09_14_connector_ingest_1430g.md](rulings_2026_09_14_connector_ingest_1430g.md), [rulings_2026_09_19_cited_ids_without_a_page_1447.md](rulings_2026_09_19_cited_ids_without_a_page_1447.md) |
 | `client-2` | [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md) |
 | `crc-32` | [rulings_2026_08_20_diagram_renderer.md](rulings_2026_08_20_diagram_renderer.md), [rulings_2026_08_20_diagram_svg_capability.md](rulings_2026_08_20_diagram_svg_capability.md), [rulings_2026_08_29_tar_module_1084.md](rulings_2026_08_29_tar_module_1084.md) |
 | `cve-2011` | [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md) |
@@ -1282,4 +1292,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*315 ledger pages; 648 ids declared, 371 cited only.*
+*316 ledger pages; 657 ids declared, 372 cited only.*

@@ -17,6 +17,9 @@
 #     "run_id": "2026-05-18T14:00:00Z",
 #     "cx_commit": "abc1234",
 #     "uname": "Darwin 25.4.0 arm64",
+#     "load_1m_start": 0.8,   (#1450: -1 when this box's load cannot be read)
+#     "load_1m_end": 1.1,
+#     "load_1m_bound": 8.0,
 #     "benchmarks": {
 #       "streaming.buffered_ms":  { "median": 320.0, "unit": "ms" },
 #       "streaming.streaming_ms": { "median": 280.0, "unit": "ms" },
@@ -63,6 +66,63 @@
                           'op.to_range_10k')]
 
 [?def die scope=public impure ($msg) ([$cry $msg], [$env:exit 1], null)]
+
+# ── the ISOLATION guard (#1450) ──────────────────────────────────────────────
+#
+# Holding the runner is not enough. Measured on impl/cx-A-1433 (2026-09-14,
+# _gate_evidence/pipeline_1433/RESULTS.md): with `.build-slot-impl` HELD,
+# `tooling.fmt_8k_ms` read 1902.1 ms against a hot 1304 ms and four unrelated
+# rows regressed 36-457 %, because six pre-merge pipelines were compiling on the
+# OTHER runner and in worktrees. The runner serialises what goes through it; it
+# does not own the box.
+#
+# So a reading taken on a loaded box is not a reading. This runner REFUSES to
+# take one — a named refusal with its own exit code, never a FAIL — and records
+# the load either side of the measurement in the artifact, so any row in
+# bench/current.json can be classified afterwards from the file alone.
+#
+# The bound is CX_BENCH_MAX_LOAD, default 8 on this 12-core box. An UNREADABLE
+# load (no sysctl, no vm.loadavg) records -1 and measures anyway: the guard
+# exists to stop a bad number being believed, not to stop a cut on a platform
+# whose load this cannot read.
+[?const LOAD-UNREADABLE -1.0e0]
+[?const REFUSED-EXIT 3]
+
+[?def load-1m scope=public impure ()
+  [?let
+    [= $r [?fallback [$process:run ('sysctl', '-n', 'vm.loadavg')]
+            [recover-with [proc-result exit-code=1 stdout='']]]]
+    [= $txt [?if [= $r@exit-code 0]
+              [then [$strings:trim-chars [$strings:trim [$string $r@stdout]] '{} ']]
+              [else '']]]
+    [= $parts [?to-sequence [$strings:split-whitespace $txt]]]
+    [?if [> [$count $parts] 0]
+      [then [* [?else [$strings:to-number [$first $parts]] LOAD-UNREADABLE] 1.0e0]]
+      [else LOAD-UNREADABLE]]]]
+
+[?def max-load scope=public impure () [$env:var-float 'CX_BENCH_MAX_LOAD' 8.0e0]]
+
+[; a load average is read by a human at a cut, so it is rendered with one
+   decimal rather than as `1.7e2`. Round-half-even on the scaled value, the
+   same shape scripts/compare_bench.cx's `fixed1` uses. ]
+[?def load-str scope=public ($v)
+  [?let [= $n [$math:round-half-even [* [* $v 1.0e0] 10.0e0]]]
+        [= $neg [< $n 0]]
+        [= $a [?if $neg [then [- 0 $n]] [else $n]]]
+        [= $body [$cat ([$string [$div $a 10]], '.', [$string [$mod $a 10]])]]
+    [?if $neg [then [$cat ('-', $body)]] [else $body]]]]
+
+[?def refuse-if-loaded scope=public impure ($load $bound)
+  [?if [and [> $load LOAD-UNREADABLE] [> $load $bound]]
+    [then ([$cry [$cat ('run_bench_json: REFUSING TO MEASURE — the one-minute load average is ',
+                        [$load-str $load], ', over the bound of ', [$load-str $bound], '.')]],
+           [$cry '  A reading taken on a loaded box is not a reading: with the runner held and six'],
+           [$cry '  pipelines compiling beside it, tooling.fmt_8k_ms read 1902 ms against a hot 1304'],
+           [$cry '  and four unrelated rows regressed 36-457 % (#1450, impl/cx-A-1433 run 4).'],
+           [$cry '  This is a REFUSAL, not a regression: wait for the box, or raise CX_BENCH_MAX_LOAD'],
+           [$cry '  deliberately. scripts/tag_release.sh waits for the bound rather than aborting.'],
+           [$env:exit REFUSED-EXIT], null)]
+    [else null]]]
 
 [?def cx-commit scope=public impure ()
   [?let [= $r [?fallback [$process:run ('git', 'rev-parse', '--short', 'HEAD')]
@@ -271,15 +331,29 @@
   [= $output [?if [= $output-raw null] [then ''] [else $output-raw]]]
   [= $include-eval [?else [$env:flag $args 'include-eval'] false]]
 
+  [; #1450 — the isolation guard runs BEFORE the first harness, so a refusal
+     costs seconds rather than the whole bench suite. ]
+  [= $bound [$max-load]]
+  [= $load-start [$load-1m]]
+  [= $_guard [$refuse-if-loaded $load-start $bound]]
+
   [= $streaming [$map:merge ([$run-streaming-bench], [$run-code-streaming-bench], [$run-fmt-bench], [$run-convert-bench])]]
   [= $benchmarks [?if $include-eval
     [then [$map:merge ($streaming, [$run-eval-features-bench])]]
     [else $streaming]]]
 
+  [; the load either side of the measurement, so a row in this artifact is
+     classifiable from the file alone (#1450). load_1m_end is recorded and NOT
+     judged: a box that got busy during the run is visible in the artifact, and
+     a second refusal after the work is spent would only throw the reading away. ]
+  [= $load-end [$load-1m]]
   [= $report {schema_version: 1,
               run_id: [$run-id],
               cx_commit: [$cx-commit],
               uname: [$uname-str],
+              load_1m_start: $load-start,
+              load_1m_end: $load-end,
+              load_1m_bound: $bound,
               benchmarks: $benchmarks}]
   [= $text [$json:emit-with-opts $report {indent: 2, sort-keys: true}]]
   [?if [= $output '']

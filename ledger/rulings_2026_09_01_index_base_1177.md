@@ -1,4 +1,4 @@
-# Rulings 2026-09-01 — #1177 index base: 1-based across the value surface
+# RULED: 1177-a — #1177 index base: 1-based across the value surface
 
 **Status: RULED (a) BY OWNER 2026-09-01.** Recorded to `ledger/` on
 2026-09-01 as the first act of the implementation wave, per the #832

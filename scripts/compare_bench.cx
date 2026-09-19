@@ -22,6 +22,18 @@
 #   0 — no regressions past threshold.
 #   1 — at least one benchmark regressed past threshold.
 #   2 — baseline / current JSON malformed or missing keys.
+#   3 — REFUSED TO JUDGE: the current reading was taken on a loaded box (#1450).
+#
+# Exit 3 is deliberately not 1. A reading taken while six pipelines compiled
+# beside the runner read tooling.fmt_8k_ms at 1902 ms against a hot 1304 and
+# regressed four unrelated rows 36-457 % (impl/cx-A-1433 run 4, 2026-09-14).
+# Calling that a regression would abort a cut on a number that was never real,
+# and — the direction that actually costs — a cut that PASSED under load would
+# re-pin bench/baseline.json to an inflated floor, which is the ratchet running
+# backwards. So a loaded reading is refused, never judged and never promoted.
+# The bound is the `load_1m_bound` the artifact carries, or CX_BENCH_MAX_LOAD,
+# or 8. An artifact with no load recorded (a pre-#1450 baseline) is judged as
+# before: the guard classifies what it can see and never invents a verdict.
 
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
@@ -83,6 +95,14 @@
 [?def meta-str scope=public ($doc $key)
   [?else [$map:get $doc $key] '?']]
 
+[; #1450 — the isolation guard, read from the ARTIFACT. num-or returns the
+   named key as a float, or the fallback when the key is absent (a pre-#1450
+   artifact) or unreadable. -1 is the "load could not be read" marker
+   run_bench_json.cx writes; it is not a load and never refuses. ]
+[?def num-or scope=public ($doc $key $fallback)
+  [?let [= $v [$map:get $doc $key]]
+    [?if [$present $v] [then [* $v 1.0e0]] [else $fallback]]]]
+
 [?let
   [= $args [?fallback [$env:parse-args ARG_SPEC]
              [recover-with ([$cry 'usage: compare_bench.cx BASELINE.json CURRENT.json [--strict]'],
@@ -102,6 +122,22 @@
       ([$cry [$cat ('could not load ', $current-path)]], [$env:exit 2])]
     [else ()]]]
 
+  [; #1450 — refuse to JUDGE a current reading taken on a loaded box, before
+     any row is printed. The bound the artifact carries wins, so a reading is
+     judged against the bound it was taken under; CX_BENCH_MAX_LOAD then 8 are
+     the fallbacks. ]
+  [= $curr-load [$num-or $curr 'load_1m_start' -1.0e0]]
+  [= $load-bound [$num-or $curr 'load_1m_bound' [$env:var-float 'CX_BENCH_MAX_LOAD' 8.0e0]]]
+  [= $_iso [?if [and [> $curr-load -1.0e0] [> $curr-load $load-bound]]
+    [then ([$cry [$cat ('bench-compare: REFUSING TO JUDGE — ', $current-path,
+                        ' was measured at a one-minute load of ', [$fixed1 $curr-load],
+                        ', over the bound of ', [$fixed1 $load-bound], ' (#1450).')]],
+           [$cry '  A loaded reading is not a reading, and judging it costs BOTH ways: a false'],
+           [$cry '  regression aborts a good cut, and a false PASS re-pins bench/baseline.json to'],
+           [$cry '  an inflated floor — the ratchet running backwards. Re-measure on a quiet box.'],
+           [$env:exit 3])]
+    [else ()]]]
+
   [= $threshold [?if $strict [then 1.10e0] [else 1.30e0]]]
   [= $thr-pct [$fixed0 [* [- $threshold 1.0e0] 100.0e0]]]
 
@@ -117,6 +153,10 @@
                        [$meta-str $base 'uname'], ' (', [$meta-str $base 'run_id'], ')')]]]
   [= $_h3 [$say [$cat ('  current  ', [$meta-str $curr 'cx_commit'], ' on ',
                        [$meta-str $curr 'uname'], ' (', [$meta-str $curr 'run_id'], ')')]]]
+  [= $_h3b [$say [$cat ('  load     ', [?if [> $curr-load -1.0e0]
+                                         [then [$cat ([$fixed1 $curr-load], ' at the start of the current run, bound ',
+                                                      [$fixed1 $load-bound])]]
+                                         [else 'not recorded (a pre-#1450 artifact)']])]]]
   [= $_h4 [$say '']]
 
   [= $all-keys [$sort [$map:keys [$map:merge ($base-bm, $curr-bm)]]]]

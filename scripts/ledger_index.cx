@@ -34,6 +34,7 @@
 [?lib 'cx-stdlib/path'    as=path]
 [?lib 'cx-stdlib/strings' as=strings]
 [?lib 'cx-stdlib/array'   as=array]
+[?lib 'cx-stdlib/process' as=process]
 
 # -- helpers ------------------------------------------------------------
 # uniq-sorted: the distinct values of a sequence, ordered. `[?to-array]`
@@ -50,6 +51,35 @@
 # and every `|` escaped so the row cannot break the markdown table.
 [?def heading-text scope=private pure [returns string] ($line::string)
   [$strings:replace [$strings:trim [$strings:trim-start-chars [$strings:trim $line] "#"]] "|" "\\|"]]
+
+# -- the SUBJECT rule (#1447) -------------------------------------------
+# A `(RULED: <id>)` in a commit subject is a claim that a decision governs the
+# change. #1438's part 5 found seven ids claimed that way with no page behind
+# them; a re-measure over every subject on release/0.18 found eleven. A token
+# with no decision behind it is the failure mode this store exists to prevent,
+# so `--check` resolves them all and refuses on the first that cannot be.
+#
+# It scans only tokens that PARSE as decision ids. Much of the history's
+# `RULED:` clause is free prose -- `CR-1..CR-6 -- #1126 #1127 #1128`, `EN-4(i`,
+# `1573 class D` -- and refusing prose would red the union on three years of
+# subjects rather than on the thing #1447 is about.
+#
+# CX_LEDGER_SUBJECTS_FILE names a file of subjects, one per line, instead of
+# git: that is what lets the selftest prove the rule on planted subjects
+# without a repository, and it is the only way this reader takes its input
+# other than from `git log`.
+[?const SUBJECT-REF 'release/0.18']
+
+[?def subject-lines scope=private impure [returns any] ()
+  [?let [= $planted [$env:var-or-default 'CX_LEDGER_SUBJECTS_FILE' '']]
+    [?if [not [= $planted '']]
+      [then [$strings:split-lines [?fallback [$io:read-file $planted] [recover-with '']]]]
+      [else
+        [?let [= $r [?fallback [$process:run ('git', 'log', SUBJECT-REF, '--format=%s')]
+                      [recover-with [proc-result exit-code=1 stdout='']]]]
+          [?if [= $r@exit-code 0]
+            [then [$strings:split-lines [$string $r@stdout]]]
+            [else ()]]]]]]]
 
 # ledger-files: every ledger page except the generated index itself.
 [?def ledger-files scope=private impure [returns any] ()
@@ -119,15 +149,52 @@
 
   [?if $check
     [then [?let [= $on-disk [$io:read-file "ledger/README.md"]]
-            [?if [= $on-disk $text]
-              [then ([$io:write-line [$env:stdout]
-                       [$concat "ledger-index-check: ledger/README.md is current ("
-                                [$string [$count $declared-ids]] " declared, "
-                                [$string [$count $cited-only]] " cited only)"]],
-                     [$env:exit 0], ())]
+            [= $_drift [?if [= $on-disk $text]
+              [then ()]
               [else ([$io:write-line [$env:stderr]
                        "ledger-index-check: DRIFT -- ledger/README.md does not match what scripts/ledger_index.cx generates. Run `make ledger-index` and commit the result."],
-                     [$env:exit 1], ())]]]]
+                     [$env:exit 1], ())]]]
+            [; #1447 -- every id-shaped token in a subject's `RULED:` clause
+               resolves to a page. An id resolves when it is DECLARED (a
+               heading carries it) or CITED (a page names it in prose): both
+               tables of this index are an answer to "where do I read it". ]
+            [= $known [$uniq-sorted [?to-array [?for [in $xs ($declared-ids, $cited-only)]
+                                                 [in $x $xs] [yield $x]]]]]
+            [= $subject-ids [$uniq-sorted
+              [?for [in $l [$subject-lines]]
+                [in $clause [$re:find-all [$re:compile "\\(RULED:[^)]*\\)"] $l]]
+                [in $m [$re:find-all $id-rx [$re:group $clause 0]]]
+                [where [$is-id [$re:group $m 1]]]
+                [yield [$strings:lower [$re:group $m 1]]]]]]
+            [= $unresolved [?to-array [?for [in $id $subject-ids]
+              [where [= 0 [$count [?for [in $k $known] [where [= $k $id]] [yield $k]]]]]
+              [yield $id]]]]
+            [= $_unres [?if [> [$count $unresolved] 0]
+              [then ([$io:write-line [$env:stderr]
+                       [$concat "ledger-index-check: " [$string [$count $unresolved]]
+                                " decision id(s) cited in a commit subject on " SUBJECT-REF
+                                " resolve to NO page (#1447):"]],
+                     [?for [in $id $unresolved]
+                       [yield [$io:write-line [$env:stderr] [$concat "    " $id]]]],
+                     [$io:write-line [$env:stderr]
+                       "  A `RULED:` token with no decision behind it dresses a choice nobody took in"],
+                     [$io:write-line [$env:stderr]
+                       "  the store's authority. Give each one its page -- the decision recovered from"],
+                     [$io:write-line [$env:stderr]
+                       "  the issue or commit that made it, dated -- or record it as never-ruled with"],
+                     [$io:write-line [$env:stderr]
+                       "  the commits that cite it named. ledger/rulings_2026_09_19_cited_ids_without_a_page_1447.md"],
+                     [$io:write-line [$env:stderr]
+                       "  is the shape, and it carries the eleven this rule was written for."],
+                     [$env:exit 1], ())]
+              [else ()]]]
+            ([$io:write-line [$env:stdout]
+               [$concat "ledger-index-check: ledger/README.md is current ("
+                        [$string [$count $declared-ids]] " declared, "
+                        [$string [$count $cited-only]] " cited only); "
+                        [$string [$count $subject-ids]] " subject id(s) on " SUBJECT-REF
+                        " all resolve"]],
+             [$env:exit 0], ())]]
     [else [?let [= $_w [$io:write-file "ledger/README.md" $text]]
             ([$io:write-line [$env:stdout]
                [$concat "ledger-index: wrote ledger/README.md -- "
