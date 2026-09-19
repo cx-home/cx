@@ -180,6 +180,125 @@ build: build-vcx build-rust build-go
 # problem it solves. Override with CX_GATE_LOCK_OVERRIDE=1.
 CX_GATE_LOCK := /tmp/cx-gate.lock
 
+# ── QUEUE, don't refuse (#1346) ──────────────────────────────────────────────
+# A blocked caller WAITS for the lock instead of failing. Refusing is right for
+# a person at a keyboard and wrong for an unattended session, which then needs
+# somebody to notice and retry — and retrying is exactly the poll-and-hand-nurse
+# loop the lock exists to remove. Observed twice on 2026-09-06: a session queued
+# behind a sibling gate by hand, and the moment that gate exited a THIRD one
+# started, because nothing was holding a place in line. A gate is ~90 minutes
+# and the caller behind it wants a quiet box anyway, so waiting is not a
+# failure here.
+#
+#   CX_GATE_LOCK_WAIT unset  wait as long as it takes (the default: queue)
+#   CX_GATE_LOCK_WAIT=0      the pre-#1346 fail-fast, for a person at a keyboard
+#   CX_GATE_LOCK_WAIT=N      wait at most N seconds, then refuse as before
+#
+# The budget is spent in SHORT steps with the last one clamped to what is left,
+# not checked once per poll interval: the implementation this replaces waited
+# 10 s for `CX_GATE_LOCK_WAIT=6` because the check sat next to a `sleep 10`.
+# Nothing about the lock FILE changes — same path, same two lines (pid, cwd),
+# same stale-pid reclaim, same CX_GATE_LOCK_OVERRIDE — so gate-lock-status and
+# every existing reader still read it.
+CX_GATE_LOCK_WAIT ?=
+CX_GATE_LOCK_POLL := 2
+CX_GATE_LOCK_ANNOUNCE := 300
+
+# GATE_LOCK_WAIT_LOOP — block until $(CX_GATE_LOCK) is free (or reclaimable),
+# then fall through; refuse with exit 1 when the budget runs out. Shared by
+# check-gate-lock and by the acquisition in `test` / `test-docs`, which is why
+# it is a define and not three copies: the three copies it replaces had already
+# drifted (only one of them cleared a stale lock).
+#
+# $(1) is the caller's name, used in every message so a queued session says who
+# it is and who it is waiting for.
+#
+# An EMPTY owner line means an acquirer is between create and write. The
+# pre-#1346 code failed open there, which would let a waiter start inside a run
+# that was a millisecond from holding the lock; here it is a short GRACE — the
+# gap is one `printf` wide — and only a lock that stays unreadable past the
+# grace still fails open, which is the property that keeps a lock bug from
+# blocking every build on the box.
+define GATE_LOCK_WAIT_LOOP
+	gl_waited=0; gl_said=0; gl_blank=0; gl_budget='$(CX_GATE_LOCK_WAIT)'; \
+	while :; do \
+	  if [ ! -f "$(CX_GATE_LOCK)" ]; then break; fi; \
+	  gl_owner=$$(sed -n 1p "$(CX_GATE_LOCK)" 2>/dev/null); \
+	  gl_where=$$(sed -n 2p "$(CX_GATE_LOCK)" 2>/dev/null); \
+	  if [ -z "$$gl_owner" ]; then \
+	    gl_blank=$$((gl_blank + 1)); \
+	    if [ $$gl_blank -gt 2 ]; then \
+	      echo "$(1): lock file unreadable after $$gl_blank looks — proceeding (fails open)"; \
+	      break; \
+	    fi; \
+	    sleep 1; continue; \
+	  fi; \
+	  gl_blank=0; \
+	  if [ "$$gl_owner" = "$(CX_GATE_OWNER)" ]; then break; fi; \
+	  if ! kill -0 "$$gl_owner" 2>/dev/null; then \
+	    rm -f "$(CX_GATE_LOCK)" 2>/dev/null || true; \
+	    echo "$(1): cleared a stale lock (pid $$gl_owner gone)"; \
+	    break; \
+	  fi; \
+	  if [ "$$gl_budget" = "0" ] || { [ -n "$$gl_budget" ] && [ $$gl_waited -ge $$gl_budget ]; }; then \
+	    echo "$(1): a post-merge run is active (pid $$gl_owner, $$gl_where)."; \
+	    echo "  A step started now perturbs it — the http/pty steps fail under"; \
+	    echo "  concurrent load and a -j storm can deadlock. Wait for it, or run"; \
+	    echo "  your step under the pre-merge runner:"; \
+	    echo "    CX_BUILD_SLOT=\$$HOME/git-repos/cx/.build-slot-impl sh scripts/build-slot.sh make <target>"; \
+	    echo "  If you are certain the run is dead:  make gate-lock-status"; \
+	    echo "  To QUEUE instead of refusing, leave CX_GATE_LOCK_WAIT unset."; \
+	    exit 1; \
+	  fi; \
+	  if [ $$gl_said -eq 0 ]; then \
+	    echo "$(1): queued behind the post-merge run (pid $$gl_owner, $$gl_where) — waiting$$(if [ -n "$$gl_budget" ]; then printf ' up to %ss' "$$gl_budget"; fi)."; \
+	    gl_said=1; \
+	  fi; \
+	  gl_step=$(CX_GATE_LOCK_POLL); \
+	  if [ -n "$$gl_budget" ]; then \
+	    gl_left=$$((gl_budget - gl_waited)); \
+	    if [ $$gl_left -lt $$gl_step ]; then gl_step=$$gl_left; fi; \
+	  fi; \
+	  sleep $$gl_step; \
+	  gl_waited=$$((gl_waited + gl_step)); \
+	  if [ $$((gl_waited % $(CX_GATE_LOCK_ANNOUNCE))) -lt $$gl_step ]; then \
+	    echo "$(1): still queued behind pid $$gl_owner after $$gl_waited s."; \
+	  fi; \
+	done
+endef
+
+# GATE_LOCK_TAKE — queue for the lock, then claim it ATOMICALLY. `set -C`
+# (noclobber) makes the create O_EXCL, so two sessions that leave the wait loop
+# in the same instant cannot both believe they hold it; the loser goes back to
+# waiting. The pre-#1346 acquisition was a plain `>` redirection after a
+# separate existence test, which is a check-then-act race — rare, and its
+# consequence is two concurrent gates, the exact thing the lock is for.
+# $(1) is the caller's name.
+define GATE_LOCK_TAKE
+	while :; do \
+	  $(call GATE_LOCK_WAIT_LOOP,$(1)); \
+	  if ( set -C; printf '%s\n%s\n' "$(CX_GATE_OWNER)" "$(CURDIR)" > "$(CX_GATE_LOCK)" ) 2>/dev/null; then break; fi; \
+	  gl_o=$$(sed -n 1p "$(CX_GATE_LOCK)" 2>/dev/null); \
+	  if [ "$$gl_o" = "$(CX_GATE_OWNER)" ]; then break; fi; \
+	  if [ -z "$$gl_o" ] || ! kill -0 "$$gl_o" 2>/dev/null; then \
+	    rm -f "$(CX_GATE_LOCK)" 2>/dev/null || true; \
+	  fi; \
+	done
+endef
+
+# GATE_LOCK_TRAP — release the lock ON SIGNAL, not only on the last recipe line
+# (#1346 part 2). A gate stopped with Ctrl-C left the lock sitting until the
+# next caller happened to look and reclaim it in passing (twice on 2026-09-06);
+# the reclaim is a safety net, not a release. Prefixed to every long-running
+# line of `test` / `test-docs`, because each recipe line is its own shell and a
+# single header trap would not reach the lines below it.
+#
+# INT TERM HUP only — deliberately NOT EXIT. An intermediate line finishing
+# NORMALLY must leave the lock in place for the lines after it; trapping EXIT
+# here would hand the box away in the middle of the gate, which is the opposite
+# of what this lock is for.
+GATE_LOCK_TRAP := trap 'rm -f "$(CX_GATE_LOCK)"' INT TERM HUP;
+
 .PHONY: gate-lock-status
 gate-lock-status:
 	@if [ -f "$(CX_GATE_LOCK)" ]; then \
@@ -208,27 +327,16 @@ gate-lock-status:
 # 2026-09-12. The test is on the runner directory the caller is holding, which
 # scripts/build-slot.sh exports as CX_BUILD_SLOT: anything but `.build-slot`
 # itself is a pre-merge runner and passes.
+#
+# Since #1346 a step that is NOT exempt QUEUES rather than exiting 1 — see
+# GATE_LOCK_WAIT_LOOP above for the budget and its spellings. The two early
+# exits (override, pre-merge runner) are unchanged and still cost nothing.
 .PHONY: check-gate-lock
 check-gate-lock:
 	@if [ -n "$(CX_GATE_LOCK_OVERRIDE)" ]; then exit 0; fi; \
 	if [ -n "$(CX_BUILD_SLOT)" ] && [ "$(notdir $(CX_BUILD_SLOT))" != ".build-slot" ]; then exit 0; fi; \
 	if [ ! -f "$(CX_GATE_LOCK)" ]; then exit 0; fi; \
-	owner=$$(sed -n 1p "$(CX_GATE_LOCK)" 2>/dev/null); \
-	where=$$(sed -n 2p "$(CX_GATE_LOCK)" 2>/dev/null); \
-	if [ -z "$$owner" ]; then exit 0; fi; \
-	if [ "$$owner" = "$(CX_GATE_OWNER)" ]; then exit 0; fi; \
-	if ! kill -0 "$$owner" 2>/dev/null; then \
-	  rm -f "$(CX_GATE_LOCK)" 2>/dev/null || true; \
-	  echo "check-gate-lock: cleared a stale lock (pid $$owner gone)"; \
-	  exit 0; \
-	fi; \
-	echo "check-gate-lock: a post-merge run is active (pid $$owner, $$where)."; \
-	echo "  A step started now perturbs it — the http/pty steps fail under"; \
-	echo "  concurrent load and a -j storm can deadlock. Wait for it, or run"; \
-	echo "  your step under the pre-merge runner:"; \
-	echo "    CX_BUILD_SLOT=\$$HOME/git-repos/cx/.build-slot-impl sh scripts/build-slot.sh make <target>"; \
-	echo "  If you are certain the run is dead:  make gate-lock-status"; \
-	exit 1
+	$(call GATE_LOCK_WAIT_LOOP,check-gate-lock)
 
 build-vcx: check-gate-lock
 	$(MAKE) -C vcx build
@@ -1516,6 +1624,7 @@ test-extraction-gate: build-vcx build-profile-data
 	@cmp vcx/target/extraction_gate/transcript_monolith.txt vcx/target/extraction_gate/transcript_core.txt \
 	  && echo "extraction-gate ABI step OK — libcx-core transcript byte-identical to libcx ($$(wc -c < vcx/target/extraction_gate/transcript_monolith.txt | tr -d ' ') bytes)" \
 	  || { echo "extraction-gate ABI step FAILED — transcripts diverge (see vcx/target/extraction_gate/)"; exit 1; }
+	@vcx/target/extraction_gate/cli_gate --self-test
 	@vcx/target/extraction_gate/cli_gate vcx/target/cx vcx/target/profiles/data/cx conformance --min-cases=$(EXTRACTION_GATE_FLOOR) --jobs=$(EXTRACTION_GATE_JOBS)
 
 # ── ABI GC-LIVENESS GATE (remediation R3.8 discovery) — a dlopen'd libcx
@@ -1726,7 +1835,7 @@ registry-publish: build-vcx-dev
 	@vcx/target/cx-dev --allow-all registry/publish.cx
 
 # Stage-2 served registry (distribution spec §4.2): the SAME store, re-hosted
-# behind the CSRP daemon on loopback. Consumers open
+# behind the store daemon on loopback. Consumers open
 # cx-store+http://127.0.0.1:8460/registry/ — hashes/signatures unchanged.
 .PHONY: registry-serve
 registry-serve: build-vcx-dev
@@ -1743,20 +1852,18 @@ TEST_JOBS ?= $(shell sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 
 OUTPUT_SYNC := $(if $(filter output-sync,$(.FEATURES)),--output-sync=target,)
 test: export CX_GATE_OWNER := $(shell echo $$PPID)
 test:
-	# Take the machine-wide gate lock. Released by the last line of this
-	# recipe on a normal finish; a KILLED gate leaves the file behind, and
-	# that is handled by check-gate-lock's stale detection (`kill -0` on the
-	# recorded pid) rather than by a trap — each recipe line runs in its own
-	# shell, so a trap here would not cover the lines below it.
-	@if [ -f "$(CX_GATE_LOCK)" ]; then \
-	  o=$$(sed -n 1p "$(CX_GATE_LOCK)" 2>/dev/null); \
-	  if [ -n "$$o" ] && kill -0 "$$o" 2>/dev/null && [ "$$o" != "$(CX_GATE_OWNER)" ]; then \
-	    echo "make test: another gate holds the lock (pid $$o) — refusing to run two gates at once."; \
-	    echo "  make gate-lock-status"; \
-	    exit 1; \
-	  fi; \
-	fi; \
-	printf '%s\n%s\n' "$(CX_GATE_OWNER)" "$(CURDIR)" > "$(CX_GATE_LOCK)"
+	# Take the machine-wide gate lock, QUEUEING behind a live holder rather
+	# than refusing (#1346): a second gate wants a quiet box anyway, and the
+	# session that used to be told "no" had nothing to do but retry by hand.
+	# Released by the last line of this recipe on a normal finish, and by the
+	# GATE_LOCK_TRAP prefix on every long line below when the gate is
+	# INTERRUPTED — Ctrl-C, SIGTERM or a hangup — so the box is free the
+	# instant the gate stops instead of at whatever time somebody next tries
+	# to build. A trap cannot be installed once for the whole recipe (each
+	# line is its own shell), which is why it is a prefix and not a header;
+	# a hard kill or a crash still leaves the file, and that remains
+	# check-gate-lock's stale-pid reclaim to clear.
+	@$(call GATE_LOCK_TAKE,make test)
 	# Serial pre-build BEFORE the parallel fan-out: every step's recursive
 	# `$(MAKE) build-vcx` then hits the vcx Makefile's up-to-date guard and
 	# skips the relink — without this, concurrent sub-makes RELINKED
@@ -1768,7 +1875,7 @@ test:
 	# that SAME target/cx and clobber it back (#1312); it now writes
 	# target/cx-dev, so the two halves no longer share a mutable artifact and
 	# this pre-build is sufficient on its own.
-	@$(MAKE) build-vcx
+	@$(GATE_LOCK_TRAP) $(MAKE) build-vcx
 	# test-profile-gate runs SERIALLY AFTER the -j storm, not inside it. The
 	# original reason (sup-011's "#951 load-race" under gate-wide -j) is gone
 	# with #1228 — that was a deterministic evaluator defect, fixed — so the
@@ -1788,15 +1895,15 @@ test:
 	# of a 45.5-min run, the matrix builds at the head of it. The guard on each
 	# profile recipe (vcx/Makefile, LIB_CORE_BUILD_ID) is what makes the tail's
 	# own build a no-op rather than a second compile.
-	@$(MAKE) -j$(TEST_JOBS) $(OUTPUT_SYNC) build-profiles-dev $(filter-out test-profile-gate test-vcx-timing test-code-diagram,$(TEST_TARGETS))
-	@$(MAKE) test-profile-gate
+	@$(GATE_LOCK_TRAP) $(MAKE) -j$(TEST_JOBS) $(OUTPUT_SYNC) build-profiles-dev $(filter-out test-profile-gate test-vcx-timing test-code-diagram,$(TEST_TARGETS))
+	@$(GATE_LOCK_TRAP) $(MAKE) test-profile-gate
 	# #1216: the WALL-CLOCK assertions (the #1055 boot budget, the #816 try-send /
 	# try-receive upper bounds) run serially AFTER the storm too — they are
 	# properties of the binary, not of the box's load, and inside the -j
 	# umbrellas they red on eight of nine gates in one day while measuring
 	# 113 ms alone. Lower bounds ("timeout= actually waits") stay in the
 	# umbrellas: load can only ADD time.
-	@$(MAKE) test-vcx-timing
+	@$(GATE_LOCK_TRAP) $(MAKE) test-vcx-timing
 	# #1345 — test-code-diagram carries a 60 s wall-clock EMITTER budget, so it
 	# belongs in the same serial tail for the same reason. Measured 2026-09-06,
 	# same commit and binary: inside the -j12 storm `erd-001-empty` — the EMPTY
@@ -1807,7 +1914,7 @@ test:
 	# An absolute budget that only holds on an idle box is not a property of the
 	# binary, which is exactly what #1216 concluded for the two steps above; this
 	# one was simply missed when they moved.
-	@$(MAKE) test-code-diagram
+	@$(GATE_LOCK_TRAP) $(MAKE) test-code-diagram
 	@rm -f "$(CX_GATE_LOCK)"
 
 # Sequential fallback — useful for debugging output-order issues, sanitizer
@@ -1859,17 +1966,9 @@ DOC_TARGETS := verify-doc-blocks verify-doc-links verify-readme-blocks docs-chec
 .PHONY: test-docs
 test-docs: export CX_GATE_OWNER := $(shell echo $$PPID)
 test-docs:
-	@if [ -f "$(CX_GATE_LOCK)" ]; then \
-	  o=$$(sed -n 1p "$(CX_GATE_LOCK)" 2>/dev/null); \
-	  if [ -n "$$o" ] && kill -0 "$$o" 2>/dev/null && [ "$$o" != "$(CX_GATE_OWNER)" ]; then \
-	    echo "make test-docs: another gate holds the lock (pid $$o) — refusing to run two gates at once."; \
-	    echo "  make gate-lock-status"; \
-	    exit 1; \
-	  fi; \
-	fi; \
-	printf '%s\n%s\n' "$(CX_GATE_OWNER)" "$(CURDIR)" > "$(CX_GATE_LOCK)"
-	@$(MAKE) build-vcx
-	@$(MAKE) -j$(TEST_JOBS) $(OUTPUT_SYNC) $(DOC_TARGETS)
+	@$(call GATE_LOCK_TAKE,make test-docs)
+	@$(GATE_LOCK_TRAP) $(MAKE) build-vcx
+	@$(GATE_LOCK_TRAP) $(MAKE) -j$(TEST_JOBS) $(OUTPUT_SYNC) $(DOC_TARGETS)
 	# The summary line is the shape scripts/gate-status.sh reads under "finished
 	# steps" (`: <n> passed`) — a doc run writes no V-test summary, so without
 	# this the run reader had nothing to show for a run that had finished every
@@ -2821,7 +2920,7 @@ test-vcx-suite: build-vcx-dev check-serial-retry-rosters check-fixture-shard-man
 # isolation, is the proven case).
 #
 # store_grpc_parity_test.v was dropped from this roster 2026-08-24: the file
-# has not existed since abaea9b9b retired the CSRP data plane, so the row
+# has not existed since abaea9b9b retired the store HTTP data plane, so the row
 # matched no step and was doing nothing. check-serial-retry-rosters (below)
 # is what found it, and is what stops the next one.
 #
@@ -3024,11 +3123,28 @@ else
 endif
 .PHONY: test-vcx-columnar
 test-vcx-columnar: build-vcx-dev skip-ledger-reset
+	# THREE lines, and the split is #1476's whole subject. GNU make EXECUTES a
+	# recipe line containing $(MAKE) even under `-n` — documented, and correct
+	# for a recursive make, which inherits -n through MAKEFLAGS and dry-runs in
+	# turn. What is not correct is what this recipe used to be: one `if … then
+	# $(MAKE) … && $(V) … test … ; fi` line, so `make -n test` executed the
+	# whole conditional, COMPILED AND RAN two V tests, aborted the listing
+	# before the serial tail, and did it outside the gate lock (-n skips
+	# check-gate-lock's recipe, which contains no $(MAKE), but not this one).
+	# Measured again on 2026-09-18 by an agent reading the -j goal list.
+	#
+	# So: the skip decision on its own line, the sub-make on its own line, and
+	# the V test on a line that contains no $(MAKE) at all — which is what make
+	# needs in order to honor -n for it. The three lines are sequenced through
+	# the skip ledger rather than through shell control flow, and that ledger is
+	# reset per run by the `skip-ledger-reset` prerequisite above, so the file's
+	# presence means "this run skipped", never "some earlier run did".
 	@$(JS_CLOSE) if ! PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" pkg-config --exists arrow parquet 2>/dev/null; then \
 	  line="SKIP test-vcx-columnar: Apache Arrow/Parquet not discoverable via pkg-config (absent prerequisite, #318 — brew install apache-arrow / apt libarrow-dev libparquet-dev)"; \
 	  echo "$$line"; mkdir -p $(CX_SKIP_DIR); echo "$$line" > $(call CX_SKIP_FILE,test-vcx-columnar); \
-	else \
-	  $(MAKE) -C vcx arrow-shim && \
+	fi
+	@$(JS_CLOSE) if [ ! -f "$(call CX_SKIP_FILE,test-vcx-columnar)" ]; then $(MAKE) -C vcx arrow-shim; fi
+	@$(JS_CLOSE) if [ ! -f "$(call CX_SKIP_FILE,test-vcx-columnar)" ]; then \
 	  PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test vcx/platform/store_columnar_test.v vcx/platform/store_columnar_lineage_test.v; \
 	fi
 

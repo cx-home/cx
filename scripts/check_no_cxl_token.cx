@@ -28,8 +28,26 @@
 # _gate_evidence/CHANGELOG records are excluded — those are immutable
 # historical records, not current-language claims.
 #
-# Allowlist: whole files that legitimately REFERENCE the retired token as
-# history (none required — the corpus is clean).
+# SECOND RETIRED TOKEN (#1544, RULED: 1544-a, completed by 1544-b): the store
+# remote protocol's old name. 1544-a retired the page to spec/_archived/,
+# retargeted every emission at the XSP store-profile codes BY MEANING and
+# deleted that band's whole `E_*` mnemonic family (this comment cannot spell
+# it — the guard scans its own source, which is the point); 1544-b added the
+# three codes the band lacked
+# (CXER5026/5027/5028) so no meaning had to be dropped or widened. This guard
+# is the thing that stops the name coming back. It is scanned by the same
+# machinery, in the same current-facing scope, with the same token-awareness
+# (the bare word only), and it is constructed at runtime for the same reason
+# the first one is.
+#
+# It was RED when the extension was written, on purpose and by measurement —
+# a retired-term guard that passes before the term is retired proves nothing.
+# It goes green with the retarget, in the same merge. The target was already a
+# TEST_TARGETS row and already carried its `step_globs()` `'*'` entry in
+# scripts/test_changed.sh for the first token; the second token rides both.
+#
+# Allowlist: whole files that legitimately REFERENCE a retired token as
+# history (none required for the first — the corpus is clean).
 #
 # Exit 0 clean; 1 with hits. Run from the repo root:
 #   vcx/target/cx --allow-read --allow-write scripts/check_no_cxl_token.cx
@@ -63,6 +81,10 @@
   # codes), or `:` (the error prefix).
   [= $cxl-rx [$re:compile [$cat ("(?m)(?:^|[^A-Za-z])", $cxl, "(?:[^A-Za-z0-9:]|$)")]]]
 
+  # The retired store-protocol name (#1544), constructed the same way.
+  [= $csrp [$cat ("CS", "RP")]]
+  [= $csrp-rx [$re:compile [$cat ("(?m)(?:^|[^A-Za-z])", $csrp, "(?:[^A-Za-z0-9:]|$)")]]]
+
   # Whole files allowed to REFERENCE the retired token (historical records).
   # Empty — the corpus is clean; add a repo-relative path with a rationale.
   [= $allow-files ()]
@@ -84,25 +106,29 @@
   [= $hits
     [$fp:flat-map $files [?fn ($f)
       [?let [= $text [?fallback [$io:read-file $f] [recover-with ""]]]
-        [?if [not [$matched [$re:find $cxl-rx $text]]]
+        [?if [and [not [$matched [$re:find $cxl-rx $text]]]
+                  [not [$matched [$re:find $csrp-rx $text]]]]
           [then ()]
           [else
             [?let [= $lines [$strings:split-lines $text]]
               [?for [in $i [$range 1 [$count $lines]]]
                 [= $line $lines[$i]]
-                [where [$matched [$re:find $cxl-rx $line]]]
+                [where [or [$matched [$re:find $cxl-rx $line]]
+                           [$matched [$re:find $csrp-rx $line]]]]
                 [yield [$cat ($f, ":", [$string $i], ": ", [$strings:trim-end $line])]]]]]]]]]]
 
   [?if [> [$count $hits] 0]
     [then
       [?let
-        [= $_h [$say [$cat ("NO-STALE-VERSION gate FAILED — retired language name `", $cxl, "` found:")]]]
+        [= $_h [$say [$cat ("RETIRED-TERM gate FAILED — a retired name (`", $cxl, "` or `", $csrp, "`) found:")]]]
         [= $_l [?for [in $h $hits] [yield [$say [$cat ("  ", $h)]]]]]
         [= $_t [$say [$cat ([$string [$count $hits]],
                             " hit(s). CX is one language named `CX` ",
                             "(spec/core/code.md). `", $cxl, "` is retired terminology — use `CX`. ",
+                            "`", $csrp, "` is the retired store-protocol name (#1544, RULED: 1544-a) — ",
+                            "the emissions carry the XSP store-profile codes by meaning. ",
                             "Live identifiers cxlib / cxl: / ", $cxl, "S / ", $cxl, "ib are not matched.")]]]
         [$env:exit 1]]]
     [else
-      [?let [= $_ok [$say [$cat ("NO-STALE-VERSION gate OK — no retired `", $cxl, "` language name in corpus.")]]]
+      [?let [= $_ok [$say [$cat ("RETIRED-TERM gate OK — neither `", $cxl, "` nor `", $csrp, "` in the corpus.")]]]
         [$env:exit 0]]]]]

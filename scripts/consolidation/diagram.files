@@ -18,7 +18,7 @@
 # issue set — approved spec already cites identity_tier2_code_test.v,
 # identity_tier2_program_test.v, stdlib_skeleton_test.v,
 # stdlib_xap_pep_test.v, codec_surface_test.v, http_sse_test.v and
-# store_csrp_test.v, none of which have existed since that wave. One
+# the deleted store HTTP test, none of which have existed since that wave. One
 # authorization can true the whole set at once; until then the debt is
 # recorded here rather than hidden.
 #absorbed vcx/tests/code_diagram_golden_test.v

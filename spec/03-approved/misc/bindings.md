@@ -398,7 +398,7 @@ grammar/lexicon review at its archival): a `text/*` media type invites
 charset and line-ending normalization by intermediaries, and a normalized
 byte stream corrupts a content address.
 
-CSRP (`cxstore-remote-protocol.md`) uses `application/cx-astbin`,
+The retired store protocol (`spec/_archived/cxstore-remote-protocol.md`) used `application/cx-astbin`,
 `application/cx` (the canonical-text alternative), and
 `application/cx-frame-stream` for its request/response bodies and is
 the reference for HTTP-level CX content negotiation.
