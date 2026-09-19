@@ -746,6 +746,10 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `tg-6` | [rulings_2026_08_26_playground_tree_gate_1049.md](rulings_2026_08_26_playground_tree_gate_1049.md) | TG-6 — the bridge is round-tripped in BOTH directions |
 | `tg-7` | [rulings_2026_08_26_playground_tree_gate_1049.md](rulings_2026_08_26_playground_tree_gate_1049.md) | TG-7 — red-proven, three ways |
 | `tg-8` | [rulings_2026_08_26_playground_tree_gate_1049.md](rulings_2026_08_26_playground_tree_gate_1049.md) | TG-8 — placement, and what this lane does not claim |
+| `thru-1` | [rulings_2026_09_19_owner_decisions_0505z.md](rulings_2026_09_19_owner_decisions_0505z.md) | Owner decisions 2026-09-19 ~05:05Z — the throughput bar: two closures an hour or the project is suspended (THRU-1); READY is the branch's own tree, no head-merge re-set (THRU-2); the batch is the unit of work (THRU-3); the union window holds only load-sensitive steps (THRU-4) |
+| `thru-2` | [rulings_2026_09_19_owner_decisions_0505z.md](rulings_2026_09_19_owner_decisions_0505z.md) | Owner decisions 2026-09-19 ~05:05Z — the throughput bar: two closures an hour or the project is suspended (THRU-1); READY is the branch's own tree, no head-merge re-set (THRU-2); the batch is the unit of work (THRU-3); the union window holds only load-sensitive steps (THRU-4) |
+| `thru-3` | [rulings_2026_09_19_owner_decisions_0505z.md](rulings_2026_09_19_owner_decisions_0505z.md) | Owner decisions 2026-09-19 ~05:05Z — the throughput bar: two closures an hour or the project is suspended (THRU-1); READY is the branch's own tree, no head-merge re-set (THRU-2); the batch is the unit of work (THRU-3); the union window holds only load-sensitive steps (THRU-4) |
+| `thru-4` | [rulings_2026_09_19_owner_decisions_0505z.md](rulings_2026_09_19_owner_decisions_0505z.md) | Owner decisions 2026-09-19 ~05:05Z — the throughput bar: two closures an hour or the project is suspended (THRU-1); READY is the branch's own tree, no head-merge re-set (THRU-2); the batch is the unit of work (THRU-3); the union window holds only load-sensitive steps (THRU-4) |
 | `ti-1` | [rulings_2026_08_21_table_image.md](rulings_2026_08_21_table_image.md) | TI-1 — the image carries the table, because the seam already parsed it |
 | `tme-1` | [rulings_2026_08_22_typed_map_entry.md](rulings_2026_08_22_typed_map_entry.md) | TME-1 — a map key is a declaration site, so it takes the glued annotation |
 | `tme-1` | [rulings_2026_08_22_typed_map_entry.md](rulings_2026_08_22_typed_map_entry.md) | TME-1 is SUPERSEDED — its premise was FALSE (recorded 2026-08-22) |
@@ -1162,14 +1166,14 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `int-11` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-12` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-2` | [rulings_2026_09_12_audit_sink_1422.md](rulings_2026_09_12_audit_sink_1422.md), [rulings_2026_09_12_fmt_1384_1391.md](rulings_2026_09_12_fmt_1384_1391.md), [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_12_net_tls_accept_wrap_1421.md](rulings_2026_09_12_net_tls_accept_wrap_1421.md), [rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md](rulings_2026_09_13_mail_hosting_deferred_connector_line_1085e.md), [rulings_2026_09_15_default_in_campaign_int17.md](rulings_2026_09_15_default_in_campaign_int17.md), [rulings_2026_09_15_int13_downstream_requests.md](rulings_2026_09_15_int13_downstream_requests.md), [rulings_2026_09_15_owner_decisions_1145z.md](rulings_2026_09_15_owner_decisions_1145z.md) |
-| `int-21` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md), [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md) |
+| `int-21` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md), [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md), [rulings_2026_09_19_owner_decisions_0505z.md](rulings_2026_09_19_owner_decisions_0505z.md) |
 | `int-22` | [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
 | `int-4` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_15_owner_decisions_1830z.md](rulings_2026_09_15_owner_decisions_1830z.md) |
 | `int-5` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_13_claude_context_audit.md](rulings_2026_09_13_claude_context_audit.md), [rulings_2026_09_17_bug_batches_ord2.md](rulings_2026_09_17_bug_batches_ord2.md), [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md) |
 | `int-6` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
 | `int-7` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md) |
 | `int-8` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
-| `int-9` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_15_integrator_decisions_int15.md](rulings_2026_09_15_integrator_decisions_int15.md), [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md) |
+| `int-9` | [rulings_2026_09_12_integrator_decisions.md](rulings_2026_09_12_integrator_decisions.md), [rulings_2026_09_15_integrator_decisions_int15.md](rulings_2026_09_15_integrator_decisions_int15.md), [rulings_2026_09_16_integrator_decisions.md](rulings_2026_09_16_integrator_decisions.md), [rulings_2026_09_19_owner_decisions_0505z.md](rulings_2026_09_19_owner_decisions_0505z.md) |
 | `ir-1` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) |
 | `ir-2` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) |
 | `ir-3` | [rulings_2026_08_19_787_integration.md](rulings_2026_08_19_787_integration.md) |
@@ -1278,4 +1282,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*314 ledger pages; 644 ids declared, 371 cited only.*
+*315 ledger pages; 648 ids declared, 371 cited only.*
