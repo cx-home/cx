@@ -1726,10 +1726,15 @@ check-profile-gate-selection:
 # behind by whatever ran. An IDLE measurement over its bound fails the run; a
 # LOADED one is advisory with the load printed beside it; an absent one is
 # reported and fails nothing. A bound moves only in a commit that names why.
+#
+# `--allow-env` is issue 1582: the timings PATH is read from
+# $CX_VERIFICATION_TIMINGS when it is set, so the self-test plants under its own
+# mktemp directory instead of at the path this step reads beside it in the same
+# -j storm. Unset here, so this step reads the one real path as it always did.
 .PHONY: check-verification-budget
 check-verification-budget: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-verification-budget:
-	@"$(CX_BIN)" --allow-read --allow-write scripts/check_verification_budget.cx
+	@"$(CX_BIN)" --allow-read --allow-write --allow-env scripts/check_verification_budget.cx
 
 .PHONY: check-verification-budget-selftest
 check-verification-budget-selftest: CX_BIN ?= $(CURDIR)/vcx/target/cx

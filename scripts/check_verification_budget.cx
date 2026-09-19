@@ -38,7 +38,12 @@
 # exits 0, which is a gate that cannot speak. Measured here before it was
 # wired; the sibling gates all take both grants for the same reason.
 #
-#   cx --allow-read --allow-write scripts/check_verification_budget.cx
+# `--allow-env` joins them with issue 1582: the timings PATH is read from
+# $CX_VERIFICATION_TIMINGS when it is set, so the self-test can plant under its
+# own temporary directory instead of at the path a step running beside it in the
+# same storm is reading.
+#
+#   cx --allow-read --allow-write --allow-env scripts/check_verification_budget.cx
 #   (or: make check-verification-budget)
 
 [?lib 'cx-stdlib/io'      as=io]
@@ -57,7 +62,22 @@
 [?const IDLE-LOAD 2.0e0]
 
 [?const BOUNDS-FILE 'scripts/verification_budget.cxd']
-[?const TIMINGS-FILE 'vcx/target/verification_timings.cxd']
+
+# TIMINGS-DEFAULT is where a run leaves its measurements, and $CX_VERIFICATION_TIMINGS
+# names another file instead (issue 1582). The default does not move: the
+# Makefile step, the runner and the fixture grader all keep the one path.
+#
+# The override exists because the SELFTEST used to plant its five cases at that
+# very path, in the same -j storm as this step: an over-bound idle row planted
+# by the self-test, read by the step running beside it, reds a union on a
+# measurement nobody took. A test that writes the thing another step is reading
+# is not a test of either. With this, the self-test plants under its own mktemp
+# directory and the real path is never written by anything but a run.
+#
+# It is an override of a PATH, never of a verdict: a named file is read exactly
+# as the default one is, and a file that is not there is "nothing measured" the
+# same way.
+[?const TIMINGS-DEFAULT 'vcx/target/verification_timings.cxd']
 
 # mins renders seconds as a minutes-and-seconds string for the report.
 [?def mins scope=public ($s) [$cat ([$string [$div $s 60]], 'm', [$string [$mod $s 60]], 's')]]
@@ -76,13 +96,15 @@
     [else ()]]]
 
   # The timings are optional: a tree that has run nothing has nothing to judge.
-  [= $tsrc [?fallback [$io:read-file TIMINGS-FILE] [recover-with '']]]
+  [= $timings-file [$env:var-or-default 'CX_VERIFICATION_TIMINGS' TIMINGS-DEFAULT]]
+  [= $tsrc [?fallback [$io:read-file $timings-file] [recover-with '']]]
   [= $tdoc [?if [= $tsrc ''] [then null] [else [?fallback [$cx:parse $tsrc] [recover-with null]]]]]
   [= $timings [?if [= $tsrc ''] [then ()]
     [else [?to-sequence [?for [in $t $tdoc//timing] [yield $t]]]]]]
 
   [= $_h [$say [$cat ('check-verification-budget: ', [$string [$count $bounds]], ' bound(s), ',
-                      [$string [$count $timings]], ' measurement(s), idle-load ', [$string IDLE-LOAD])]]]
+                      [$string [$count $timings]], ' measurement(s), idle-load ', [$string IDLE-LOAD],
+                      ', timings ', $timings-file)]]]
 
   # One verdict per bound.
   [= $over [?to-sequence [?for [in $b $bounds]
