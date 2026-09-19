@@ -607,7 +607,7 @@ const accepted_by_one_table = [
 	AcceptedByOne{'conformance/fmt.cxd', .data, reason_datalane},
 	AcceptedByOne{'conformance/xml.cxd', .data, reason_datalane},
 	AcceptedByOne{'conformance/xml_codec.cxd', .data, reason_datalane},
-	// ── #1536 — a call-shaped head beside a ws-delimited literal (32) ──
+	// ── #1536 — a call-shaped head beside a ws-delimited literal (33) ──
 	AcceptedByOne{'examples/platform/scim/projection/project.cx', .program, reason_1536},
 	AcceptedByOne{'examples/platform/sso/deployment/deployment.cx', .program, reason_1536},
 	AcceptedByOne{'examples/platform/sso/mock-idp/idp.cx', .program, reason_1536},
@@ -631,6 +631,7 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/compare_bench.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/compile_binding_api_fixtures.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/fmt_corpus_sweep.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/gate_lock_selftest.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/gen_docs/primer_build.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/gen_guide/snippet_check.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/lang_stats.cx', .program, reason_1536},
@@ -659,7 +660,7 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/sso_interop/idp.cx', .program, reason_attr},
 	AcceptedByOne{'stdlib/diagram.cx', .program, reason_attr},
 	AcceptedByOne{'stdlib/flow.cx', .program, reason_attr},
-	// ── recorded exception — a program document the data balancer cannot read (6) ──
+	// ── recorded exception — a program document the data balancer cannot read (7) ──
 	AcceptedByOne{'scripts/bisect_batch.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/check_editor_surface_parity.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/diagnostics_census.cx', .program, reason_prog},
