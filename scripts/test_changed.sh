@@ -60,6 +60,27 @@ else
   CHANGED=$(git diff --name-only "$BASE"...HEAD; git diff --name-only HEAD; git diff --name-only --cached)
 fi
 CHANGED=$(printf '%s\n' "$CHANGED" | sort -u | grep -v '^$' || true)
+# ── every `while read` loop below reads from a FILE, never a here-string ────
+# The post-merge run on baba91bbc stalled 38 MINUTES inside this script under
+# the runner's nix bash 5.3: bash asleep at 0.01 s of CPU, no child, both ends
+# of a self-pipe held by the same shell, the log ending at the change list.
+# bash 5.1+ feeds a here-document or here-string through a PIPE instead of a
+# temp file, and a command substitution in a loop's BODY forks a child that
+# INHERITS that pipe's write end — so the reader never sees EOF while the
+# writer, bash itself, is blocked on a full buffer.
+#
+# Reproduced under bash 5.3.9 while fixing it: the old shape with a forking
+# body blocks from about 17 KB of content up, and `suite_closure`'s content is
+# 16,218 bytes against a 16,384-byte macOS pipe.
+#
+# A REGULAR FILE has no buffer to fill and no second end for a child to hold,
+# and — unlike `< <(…)`, which was the first fix and is a syntax error in POSIX
+# mode — it works when this file is run as `sh scripts/test_changed.sh`, which
+# is how every pipeline and gate.sh invokes it. The loops stay in THIS shell,
+# so their `return`s, `break`s and variable assignments are unchanged.
+TC_TMP=$(mktemp -d) || { echo "test-changed: cannot create a scratch directory" >&2; exit 2; }
+trap 'rm -rf "$TC_TMP"' EXIT
+printf '%s\n' "$CHANGED" > "$TC_TMP/changed"
 if [ -z "$CHANGED" ]; then
   echo "test-changed: no changes vs $BASE — nothing to run (the full gate still applies at wave exits)"
   exit 0
@@ -503,6 +524,8 @@ suite_closure() {
   local t cur roots line f imp
   cur=''
   roots=''
+  { grep -H '^import ' "$SUITE_DIR"/*_test.v 2>/dev/null || true; } \
+    | sed 's/[[:space:]]*$//' > "$TC_TMP/suite_imports"
   while IFS= read -r line; do
     f=${line%%:*}
     imp=${line#*:import }
@@ -514,9 +537,22 @@ $cur $(module_closure $roots | tr '\n' ' ')"
       roots=''
     fi
     roots="$roots $(vcx_module_of "$imp")"
-  done <<EOF
-$({ grep -H '^import ' "$SUITE_DIR"/*_test.v 2>/dev/null || true; } | sed 's/[[:space:]]*$//')
-EOF
+  # #1570-class stall, measured on the post-merge run of baba91bbc: this was a
+  # `done <<EOF` over a command substitution, and under the runner's nix bash
+  # 5.3 it DEADLOCKED for 38 minutes — bash asleep at 0.01 s of CPU, no child,
+  # both ends of a self-pipe held by the same shell, the log stopping right
+  # after the change list. bash 5.1+ feeds a here-document through a PIPE
+  # instead of a temp file, and the `$(module_closure …)` in this loop's body
+  # forks a child that INHERITS that pipe's write end, so the reader never sees
+  # EOF while the writer — bash itself — is blocked on a full buffer. The
+  # content here is 16,218 bytes against a 16,384-byte macOS pipe.
+  #
+  # Reproduced and fixed, both measured under bash 5.3.9: the old shape with a
+  # forking body blocks from about 17 KB up; process substitution runs 57 KB in
+  # seconds. It also keeps the loop in THIS shell, so the `return`s, the
+  # `break`s and every variable set below still work — which a `… | while` would
+  # not.
+  done < "$TC_TMP/suite_imports"
   [ -n "$cur" ] && SUITE_CLOSURE="$SUITE_CLOSURE
 $cur $(module_closure $roots | tr '\n' ' ')"
   # a test file with no import line at all still has to be listed, or the awk
@@ -590,7 +626,7 @@ suite_files() {
       "$SUITE_DIR"/*|vcx/testenv/*|vcx/fixtures/*|third_party/*|Makefile|vcx/Makefile|vcx/v.mod|devbox.json|devbox.lock|scripts/*)
         echo ALL; return 0 ;;
     esac
-  done <<< "$CHANGED"
+  done < "$TC_TMP/changed"
   # The import graph and the per-file closure are built HERE, in this shell:
   # every use of them below sits inside a command substitution, and a subshell's
   # cache dies with it — priming them per test file cost 18 seconds of the first
@@ -646,7 +682,7 @@ suite_files() {
       *)
         echo ALL; return 0 ;;
     esac
-  done <<< "$CHANGED"
+  done < "$TC_TMP/changed"
   [ -n "${sel# }" ] || return 0
   printf '%s\n' $sel | sort -u
 }
@@ -663,7 +699,12 @@ suite_files() {
 # be the fast loop. Same defaults as the Makefile (TEST_JOBS is overridable
 # there and here).
 TEST_JOBS="${TEST_JOBS:-$(sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 8)}"
-MAKEFLAGS_PAR="-j${TEST_JOBS}"
+# `-k` (RULED: RUN-2), the same rule `make test`'s storm carries: one failed
+# run must name EVERY red step. A SELECTED post-merge run is the common case
+# now, and without this an escalated selection stopped at its first red exactly
+# as the union used to — ten runs for seventeen classes on 2026-09-18. The
+# status is still non-zero on a red, so nothing downstream changes.
+MAKEFLAGS_PAR="-k -j${TEST_JOBS}"
 # --output-sync needs GNU make >= 4.0 (Apple ships 3.81), so it is probed, not
 # assumed. NOT `make --help | grep -q` — that is the exact SIGPIPE-PIPE class
 # check-pipefail-pipes refuses (RULED: SPG-1, #916): grep -q exits on the
@@ -679,7 +720,7 @@ while IFS= read -r f; do
   case "$f" in
     Makefile|vcx/Makefile|devbox.json|devbox.lock|VERSION|scripts/*) INFRA_HIT=1; break ;;
   esac
-done <<< "$CHANGED"
+done < "$TC_TMP/changed"
 
 # The authoritative step list comes from the Makefile so the manifest can
 # never silently miss a NEW step (an unlisted step always runs).
@@ -847,7 +888,7 @@ for step in $STEPS; do
       case "$f" in
         ${g}*|$g) hit=1; break ;;
       esac
-    done <<< "$CHANGED"
+    done < "$TC_TMP/changed"
     [ $hit -eq 1 ] && break
   done
   if [ $hit -eq 1 ]; then run_steps+=("$step"); else skip_steps+=("$step"); fi
