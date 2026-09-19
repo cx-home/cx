@@ -603,6 +603,12 @@ smoke-eval: build-vcx
 # 26 per-file readings and 8 platform scenarios, seconds in total.
 verify-examples: build-vcx
 	@tools/verify-examples.sh
+	# #1477 — the readiness wait and the daemon-start-under-load retry
+	# classifier, on planted servers. It runs BESIDE the step rather than as a
+	# TEST_TARGETS entry of its own because it is a test of this step's own
+	# harness, and the one scenario that binds a port (the sso deployment) is
+	# the only thing either piece serves.
+	@sh tools/scenario_wait_ready_selftest.sh
 
 # F6 — README's runnable code blocks must run.
 verify-readme-blocks: build-vcx
