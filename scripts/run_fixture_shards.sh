@@ -57,6 +57,19 @@ OUT=vcx/target/fixtures
 DRIVER=tests/code_eval_fixtures_test.v
 SELECTION=${FIXTURE_FILES:-}
 
+# The `fixture-grader` MEASUREMENT (issue 1583, RULED: RUN-5). #1562's bound is
+# "make fixtures, unselected — the grader shards over the whole module corpus",
+# so only an UNSELECTED run writes it: a selected run grades a branch's handful
+# of corpus files in about three minutes, and filing that under the same name
+# would tell the budget step the whole corpus had got twenty times faster. The
+# load is sampled HERE, at the start, for the same reason the runner samples it
+# at RUN-START — the idle/loaded rule is about the box the run was taken on.
+# shellcheck source=/dev/null
+. "$ROOT/scripts/verification_timings_lib.sh"
+TIMINGS=$ROOT/vcx/target/verification_timings.cxd
+GRADER_T0=$(date -u '+%s')
+GRADER_LOAD=$(sample_load_1m)
+
 [ -f "$MANIFEST" ] || { echo "make fixtures: no $MANIFEST" >&2; exit 1; }
 
 # The manifest documents its own row shapes inside a [doc [# … #]] block, so
@@ -168,4 +181,12 @@ done
 # The census is the evidence, so it prints even when a shard failed — a run
 # that graded 4,000 of 5,000 cases should say which 4,000.
 sh scripts/fixtures_census.sh || st=1
+
+# The measurement, unselected runs only (issue 1583, RULED: RUN-5). It is
+# written whatever the verdict: a red shard does not make the wall clock a
+# different number, and the budget step judges cost, not correctness.
+if [ -z "$SELECTION" ]; then
+	write_timing_row "$TIMINGS" fixture-grader \
+		"$(( $(date -u '+%s') - GRADER_T0 ))" "$GRADER_LOAD" "$(date -u +%FT%TZ)"
+fi
 exit $st

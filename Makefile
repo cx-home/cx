@@ -1173,7 +1173,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -1726,15 +1726,41 @@ check-profile-gate-selection:
 # behind by whatever ran. An IDLE measurement over its bound fails the run; a
 # LOADED one is advisory with the load printed beside it; an absent one is
 # reported and fails nothing. A bound moves only in a commit that names why.
+#
+# `--allow-env` is issue 1582: the timings PATH is read from
+# $CX_VERIFICATION_TIMINGS when it is set, so the self-test plants under its own
+# mktemp directory instead of at the path this step reads beside it in the same
+# -j storm. Unset here, so this step reads the one real path as it always did.
 .PHONY: check-verification-budget
 check-verification-budget: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-verification-budget:
-	@"$(CX_BIN)" --allow-read --allow-write scripts/check_verification_budget.cx
+	@"$(CX_BIN)" --allow-read --allow-write --allow-env scripts/check_verification_budget.cx
 
 .PHONY: check-verification-budget-selftest
 check-verification-budget-selftest: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-verification-budget-selftest:
 	@CX_BIN="$(CX_BIN)" sh scripts/verification_budget_selftest.sh
+
+# ── check-storm-keep-going (RULED: RUN-2) ────────────────────────────────────
+# The -j storm of `make test` runs with `-k`, so ONE failed run names EVERY red
+# step instead of the first one. The selftest proves the semantics on two tiny
+# planted targets through a scratch makefile (and its control, the same
+# makefile without `-k`, proves the fixture discriminates) and then reads the
+# real recipe: the storm line carries `-k` and the three serial tail lines
+# still follow it as their own recipe lines, so a red storm still stops the
+# gate before the tail.
+.PHONY: check-storm-keep-going
+check-storm-keep-going:
+	@sh scripts/storm_keep_going_selftest.sh
+
+# ── check-verification-timings (issue 1583, RULED: RUN-5) ────────────────────
+# #1562's budget step shipped with no WRITER: every bound read NOT MEASURED and
+# the step judged nothing. scripts/verification_timings_lib.sh is the writer the
+# post-merge runner and the fixture grader both call; this step is its selftest,
+# on planted files under mktemp and never at the real timings path.
+.PHONY: check-verification-timings
+check-verification-timings:
+	@sh scripts/verification_timings_selftest.sh
 
 # ── PER-RING GATE STEPS (#700 structural relief, activated at I4) — run the
 # steps that cover the ring you touched instead of the full battery. Each
@@ -1864,6 +1890,20 @@ test:
 	# a hard kill or a crash still leaves the file, and that remains
 	# check-gate-lock's stale-pid reclaim to clear.
 	@$(call GATE_LOCK_TAKE,make test)
+	#
+	# STEP-START / STEP-END (RULED: RUN-5, issue 1583). Every top-level line of
+	# this recipe brackets itself with
+	#
+	#     STEP-START <utc> <name>
+	#     STEP-END   <utc> <name> exit=<n>
+	#
+	# in the run log. Before this the 04:01Z pass on 84825d79f could only be
+	# broken down by FILE MODIFICATION TIMES — the log carried no timestamps at
+	# all — and "the serial tail was 02:37→04:01Z, the unselected profile gate
+	# about seventy minutes of it" was an inference from mtimes rather than a
+	# measurement. Five names, one per line below: prebuild, storm,
+	# profile-gate, timing, diagram. The status is captured and re-raised with
+	# `exit`, so a red line still fails the recipe exactly as it did.
 	# Serial pre-build BEFORE the parallel fan-out: every step's recursive
 	# `$(MAKE) build-vcx` then hits the vcx Makefile's up-to-date guard and
 	# skips the relink — without this, concurrent sub-makes RELINKED
@@ -1875,7 +1915,7 @@ test:
 	# that SAME target/cx and clobber it back (#1312); it now writes
 	# target/cx-dev, so the two halves no longer share a mutable artifact and
 	# this pre-build is sufficient on its own.
-	@$(GATE_LOCK_TRAP) $(MAKE) build-vcx
+	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) prebuild"; $(MAKE) build-vcx; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) prebuild exit=$$cx_step_rc"; exit $$cx_step_rc
 	# test-profile-gate runs SERIALLY AFTER the -j storm, not inside it. The
 	# original reason (sup-011's "#951 load-race" under gate-wide -j) is gone
 	# with #1228 — that was a deterministic evaluator defect, fixed — so the
@@ -1895,15 +1935,25 @@ test:
 	# of a 45.5-min run, the matrix builds at the head of it. The guard on each
 	# profile recipe (vcx/Makefile, LIB_CORE_BUILD_ID) is what makes the tail's
 	# own build a no-op rather than a second compile.
-	@$(GATE_LOCK_TRAP) $(MAKE) -j$(TEST_JOBS) $(OUTPUT_SYNC) build-profiles-dev $(filter-out test-profile-gate test-vcx-timing test-code-diagram,$(TEST_TARGETS))
-	@$(GATE_LOCK_TRAP) $(MAKE) test-profile-gate
+	#
+	# `-k` (RULED: RUN-2). `make` stops at the first red step, so ONE failed
+	# post-merge run named ONE class and the next run found the next one: on
+	# 2026-09-18 ten failed runs at about 1.5 h each found seventeen classes,
+	# under two per run, and the fix branch for a red head could only carry
+	# what the last log happened to name. With `-k` the storm runs every step
+	# it can and the log names EVERY red one, so the fix branch carries them
+	# all before the next tip. Nothing else moves: the sub-make's status is
+	# still non-zero on a red storm, so this recipe line still fails and the
+	# three serial tail lines below still run only after a GREEN storm.
+	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) storm"; $(MAKE) -k -j$(TEST_JOBS) $(OUTPUT_SYNC) build-profiles-dev $(filter-out test-profile-gate test-vcx-timing test-code-diagram,$(TEST_TARGETS)); cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) storm exit=$$cx_step_rc"; exit $$cx_step_rc
+	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) profile-gate"; $(MAKE) test-profile-gate; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) profile-gate exit=$$cx_step_rc"; exit $$cx_step_rc
 	# #1216: the WALL-CLOCK assertions (the #1055 boot budget, the #816 try-send /
 	# try-receive upper bounds) run serially AFTER the storm too — they are
 	# properties of the binary, not of the box's load, and inside the -j
 	# umbrellas they red on eight of nine gates in one day while measuring
 	# 113 ms alone. Lower bounds ("timeout= actually waits") stay in the
 	# umbrellas: load can only ADD time.
-	@$(GATE_LOCK_TRAP) $(MAKE) test-vcx-timing
+	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) timing"; $(MAKE) test-vcx-timing; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) timing exit=$$cx_step_rc"; exit $$cx_step_rc
 	# #1345 — test-code-diagram carries a 60 s wall-clock EMITTER budget, so it
 	# belongs in the same serial tail for the same reason. Measured 2026-09-06,
 	# same commit and binary: inside the -j12 storm `erd-001-empty` — the EMPTY
@@ -1914,7 +1964,7 @@ test:
 	# An absolute budget that only holds on an idle box is not a property of the
 	# binary, which is exactly what #1216 concluded for the two steps above; this
 	# one was simply missed when they moved.
-	@$(GATE_LOCK_TRAP) $(MAKE) test-code-diagram
+	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) diagram"; $(MAKE) test-code-diagram; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) diagram exit=$$cx_step_rc"; exit $$cx_step_rc
 	@rm -f "$(CX_GATE_LOCK)"
 
 # Sequential fallback — useful for debugging output-order issues, sanitizer
