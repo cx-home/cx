@@ -204,8 +204,82 @@ else
 	bad H3 "TEST_CHANGED_FORCE_UNION=1 did not override the refusal"
 fi
 
+# ── I — NO LOOP IN THIS SCRIPT IS FED BY A HERE-DOCUMENT OR HERE-STRING ─────
+# The post-merge run on baba91bbc stalled 38 MINUTES inside this script under
+# the runner's nix bash 5.3: bash asleep at 0.01 s of CPU, no child, both ends
+# of a self-pipe held by the same shell, the log ending at the change list.
+# bash 5.1+ feeds a here-document through a PIPE rather than a temp file, and a
+# command substitution in the loop's BODY forks a child that inherits that
+# pipe's write end — so the reader never sees EOF while the writer, bash
+# itself, is blocked on a full buffer.
+#
+# Measured under bash 5.3.9 while fixing it: the old shape with a forking body
+# blocks from about 17 KB of content up (the real `suite_closure` content is
+# 16,218 bytes against a 16,384-byte macOS pipe); process substitution runs
+# 57 KB in seconds. This row is the SHAPE guard, because the shape is the
+# defect — comments are stripped so the fix's own explanation cannot satisfy it.
+hd=$(sed 's/#.*//' "$TC" | grep -cE 'done[[:space:]]*<[[:space:]]*<|done[[:space:]]*<<' || true)
+if [ "$hd" = 0 ]; then
+	ok I "no loop is fed by a here-document, a here-string or a process substitution — each reads a regular file"
+else
+	bad I "$hd loop(s) still read from a here-document, a here-string or a process substitution — the bash 5.3 self-pipe stall (and `< <(…)` is a syntax error under `sh`, which is how every pipeline invokes this file)"
+fi
+
+# ── J — a change set far larger than any pipe buffer runs to completion ─────
+# The time bound is the regression guard the shape guard cannot be: it runs the
+# REAL script, under the newest bash on this box, over a change set of ~200 KB.
+BIG_BASH=$(command -v bash 2>/dev/null || echo /bin/bash)
+for cand in /nix/store/*-bash-5*/bin/bash; do
+	[ -x "$cand" ] && BIG_BASH=$cand && break
+done
+# ~70 KB in FEW lines: it is the BYTE SIZE that fills a pipe buffer, and the
+# per-file work of the selection is linear in the LINE count, so a change set
+# of 400 long paths exercises the hazard in seconds where 6,000 short ones
+# spent seven minutes proving nothing extra (measured while writing this).
+pad=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+pad="$pad$pad"
+: > "$T/changed_big"
+i=0
+while [ "$i" -lt 400 ]; do
+	printf 'vcx/code/%s_%04d.v\n' "$pad" "$i" >> "$T/changed_big"
+	i=$((i + 1))
+done
+bsz=$(wc -c < "$T/changed_big" | tr -d ' ')
+j0=$(date -u '+%s')
+( cd "$ROOT" && "$BIG_BASH" scripts/test_changed.sh HEAD --dry-run --changed-files "$T/changed_big" ) > "$T/j.log" 2>&1
+jrc=$?
+jel=$(( $(date -u '+%s') - j0 ))
+if [ "$jrc" -eq 0 ] && [ "$jel" -lt 30 ] && grep -q '^test-changed: RUN:' "$T/j.log"; then
+	ok J "a ${bsz}-byte change set through $(basename "$(dirname "$(dirname "$BIG_BASH")")") completed in ${jel}s"
+else
+	bad J "a ${bsz}-byte change set: exit $jrc after ${jel}s (want 0 within 30s) — $BIG_BASH"
+fi
+
+# ── K — the parallel make of a SELECTED run keeps going (RULED: RUN-2) ──────
+# `make test`'s storm carries `-k` so one failed run names every red step. A
+# selected post-merge run is the common case now and it runs its parallel set
+# from THIS script, so the same rule has to hold here or an escalated selection
+# stops at its first red exactly as the union used to.
+if grep -qE '^MAKEFLAGS_PAR="-k -j' "$TC"; then
+	ok K "the parallel make of a selected run runs -k"
+else
+	bad K "MAKEFLAGS_PAR does not carry -k: $(grep -m1 '^MAKEFLAGS_PAR=' "$TC")"
+fi
+
+# ── L — the script parses under `sh`, which is how it is actually invoked ───
+# The first fix for I used process substitution, `done < <(…)`. It keeps the
+# loop in the shell and removes the pipe hazard, and it is a SYNTAX ERROR in
+# POSIX mode — so `sh scripts/test_changed.sh`, which is what every pipeline,
+# gate.sh and case H above use, died at line 532. `bash -n` was clean and the
+# defect was still total. Both readings are asked for here.
+if sh -n "$TC" 2>"$T/shn.err" && bash -n "$TC" 2>>"$T/shn.err"; then
+	ok L "it parses under both sh and bash"
+else
+	bad L "it does not parse: $(tr '\n' ' ' < "$T/shn.err")"
+fi
+
 if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "test_changed selftest: $cases/$cases (A x/ module; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner)"
+echo "test_changed selftest: $cases/$cases (A x/ module; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh)"
