@@ -27,7 +27,7 @@ hour in vcost1 before its merge: the verification-budget step of issue 1562 has 
 | **AGENTS-1** | **(owner, Q4 letter (a))** Two agents, no more, Opus: Agent 1 takes `impl/cx-F-batch-c5` (the INT-21 re-set on the merged tree) then `impl/cx-F-batch-a5`; Agent 2 takes issue 1561 (the test-file consolidation — the storm's largest single cost) then `impl/cx-F-batch-e1` then `impl/cx-F-batch-f4`. Under the union window (RUN-START to RUN-EXIT in `vcx/target/gate-loop.log`) an agent builds, lints and edits; its test steps and graders queue for RUN-EXIT. A stopped agent is resumed by message on its own transcript, never replaced. |
 | **1562-a** | **(owner, Q5 letter (a); issues 1562 and 1583)** Issue 1562 stays OPEN until the writer of issue 1583 lands: the run on `22175ebaf` closes issue 1560 only. Closing the budget step on a run in which it measured nothing would close the sentence, not the measurement. |
 
-## Sequencing (the integrator's, under AGENTS-1)
+## Sequencing (the integrator's)
 
 The runner rows RUN-2, RUN-3 and RUN-5 (with issues 1582 and 1583) are tooling code and go FIRST on Agent 2's slot as one branch,
 `impl/cx-F-runner-2`, ahead of issue 1561: they shorten every later run, and issue 1561's measured before/after needs RUN-5's
