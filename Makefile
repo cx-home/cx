@@ -1885,6 +1885,20 @@ test:
 	# a hard kill or a crash still leaves the file, and that remains
 	# check-gate-lock's stale-pid reclaim to clear.
 	@$(call GATE_LOCK_TAKE,make test)
+	#
+	# STEP-START / STEP-END (RULED: RUN-5, issue 1583). Every top-level line of
+	# this recipe brackets itself with
+	#
+	#     STEP-START <utc> <name>
+	#     STEP-END   <utc> <name> exit=<n>
+	#
+	# in the run log. Before this the 04:01Z pass on 84825d79f could only be
+	# broken down by FILE MODIFICATION TIMES — the log carried no timestamps at
+	# all — and "the serial tail was 02:37→04:01Z, the unselected profile gate
+	# about seventy minutes of it" was an inference from mtimes rather than a
+	# measurement. Five names, one per line below: prebuild, storm,
+	# profile-gate, timing, diagram. The status is captured and re-raised with
+	# `exit`, so a red line still fails the recipe exactly as it did.
 	# Serial pre-build BEFORE the parallel fan-out: every step's recursive
 	# `$(MAKE) build-vcx` then hits the vcx Makefile's up-to-date guard and
 	# skips the relink — without this, concurrent sub-makes RELINKED
@@ -1896,7 +1910,7 @@ test:
 	# that SAME target/cx and clobber it back (#1312); it now writes
 	# target/cx-dev, so the two halves no longer share a mutable artifact and
 	# this pre-build is sufficient on its own.
-	@$(GATE_LOCK_TRAP) $(MAKE) build-vcx
+	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) prebuild"; $(MAKE) build-vcx; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) prebuild exit=$$cx_step_rc"; exit $$cx_step_rc
 	# test-profile-gate runs SERIALLY AFTER the -j storm, not inside it. The
 	# original reason (sup-011's "#951 load-race" under gate-wide -j) is gone
 	# with #1228 — that was a deterministic evaluator defect, fixed — so the
@@ -1926,15 +1940,15 @@ test:
 	# all before the next tip. Nothing else moves: the sub-make's status is
 	# still non-zero on a red storm, so this recipe line still fails and the
 	# three serial tail lines below still run only after a GREEN storm.
-	@$(GATE_LOCK_TRAP) $(MAKE) -k -j$(TEST_JOBS) $(OUTPUT_SYNC) build-profiles-dev $(filter-out test-profile-gate test-vcx-timing test-code-diagram,$(TEST_TARGETS))
-	@$(GATE_LOCK_TRAP) $(MAKE) test-profile-gate
+	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) storm"; $(MAKE) -k -j$(TEST_JOBS) $(OUTPUT_SYNC) build-profiles-dev $(filter-out test-profile-gate test-vcx-timing test-code-diagram,$(TEST_TARGETS)); cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) storm exit=$$cx_step_rc"; exit $$cx_step_rc
+	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) profile-gate"; $(MAKE) test-profile-gate; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) profile-gate exit=$$cx_step_rc"; exit $$cx_step_rc
 	# #1216: the WALL-CLOCK assertions (the #1055 boot budget, the #816 try-send /
 	# try-receive upper bounds) run serially AFTER the storm too — they are
 	# properties of the binary, not of the box's load, and inside the -j
 	# umbrellas they red on eight of nine gates in one day while measuring
 	# 113 ms alone. Lower bounds ("timeout= actually waits") stay in the
 	# umbrellas: load can only ADD time.
-	@$(GATE_LOCK_TRAP) $(MAKE) test-vcx-timing
+	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) timing"; $(MAKE) test-vcx-timing; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) timing exit=$$cx_step_rc"; exit $$cx_step_rc
 	# #1345 — test-code-diagram carries a 60 s wall-clock EMITTER budget, so it
 	# belongs in the same serial tail for the same reason. Measured 2026-09-06,
 	# same commit and binary: inside the -j12 storm `erd-001-empty` — the EMPTY
@@ -1945,7 +1959,7 @@ test:
 	# An absolute budget that only holds on an idle box is not a property of the
 	# binary, which is exactly what #1216 concluded for the two steps above; this
 	# one was simply missed when they moved.
-	@$(GATE_LOCK_TRAP) $(MAKE) test-code-diagram
+	@$(GATE_LOCK_TRAP) echo "STEP-START $$(date -u +%FT%TZ) diagram"; $(MAKE) test-code-diagram; cx_step_rc=$$?; echo "STEP-END $$(date -u +%FT%TZ) diagram exit=$$cx_step_rc"; exit $$cx_step_rc
 	@rm -f "$(CX_GATE_LOCK)"
 
 # Sequential fallback — useful for debugging output-order issues, sanitizer
