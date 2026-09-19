@@ -51,7 +51,25 @@ check "" "a docs-only change selects nothing" "docs-src/llm/primer.md.tmpl"
 # A `vcx/cx` change selects EVERYTHING — VCOST-1 names this rule.
 check "ALL" "a vcx/cx change selects everything" "vcx/cx/program_lexer.v"
 check "ALL" "an engine change selects everything" "vcx/code/eval.v"
-check "ALL" "a stdlib change selects everything" "stdlib/map.cx"
+# #1587 — a BUNDLED MODULE's own source maps to its own corpus file, through
+# registry/modules.cxd's row. Before this, every one of these answered ALL, so
+# #1560's selection never reached a stdlib branch: c5's profile-gate step was
+# the unselected 70-100 minute run and every stdlib branch paid the same.
+check "map.cxd" "a stdlib module's source selects ITS corpus file" "stdlib/map.cx"
+check "bytes.cxd" "a module's Ring-1 V half selects its corpus file" "vcx/code/stdlib_bytes.v"
+check "connector.cxd" "a module's Ring-2 V code selects its corpus file" "vcx/platform/stdlib_connector.v"
+check "imap.cxd" "a module's `half=` file selects its corpus file too" "vcx/code/stdlib_imap_server.v"
+check "bytes.cxd map.cxd" "two module sources select both corpus files" "stdlib/map.cx" "vcx/code/stdlib_bytes.v"
+check "connector.cxd db.cxd" "a module source and a corpus file together" "stdlib/connector.cx" "conformance/platform/db.cxd"
+
+# ALL still wins wherever a module cannot be named, and wherever the change is
+# the ENGINE rather than a module: those are the doubts the fail-safe exists for.
+check "ALL" "an evaluator core file still selects everything" "vcx/code/eval_core.v"
+check "ALL" "a platform file belonging to no module row selects everything" "vcx/platform/stdlib_unregistered_xyz.v"
+check "ALL" "a stdlib source with no registry row selects everything" "stdlib/not-a-registered-module.cx"
+check "code.cxd" "conformance/code.cxd stays selectable by name, as #1560 made it" "conformance/code.cxd"
+check "ALL" "an x/ surface still selects everything" "x/ux-web.cx"
+check "ALL" "a module source beside an ENGINE change is still ALL" "stdlib/map.cx" "vcx/cx/program_lexer.v"
 # And so does a change to what GRADES, or to the gate policy.
 check "ALL" "the runner itself selects everything" "vcx/tests/runners/profile_gate/profile_gate.v"
 check "ALL" "the gate policy selects everything" "conformance/gates.cxd"
@@ -62,4 +80,4 @@ if [ "$fails" -gt 0 ]; then
   echo "profile-gate selection self-test: $fails failure(s)"
   exit 1
 fi
-echo "profile-gate selection self-test OK — 9 rules"
+echo "profile-gate selection self-test OK — 20 rules (#1560 + #1587's module-to-corpus map)"
