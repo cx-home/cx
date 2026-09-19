@@ -1907,7 +1907,17 @@ test:
 	# of a 45.5-min run, the matrix builds at the head of it. The guard on each
 	# profile recipe (vcx/Makefile, LIB_CORE_BUILD_ID) is what makes the tail's
 	# own build a no-op rather than a second compile.
-	@$(GATE_LOCK_TRAP) $(MAKE) -j$(TEST_JOBS) $(OUTPUT_SYNC) build-profiles-dev $(filter-out test-profile-gate test-vcx-timing test-code-diagram,$(TEST_TARGETS))
+	#
+	# `-k` (RULED: RUN-2). `make` stops at the first red step, so ONE failed
+	# post-merge run named ONE class and the next run found the next one: on
+	# 2026-09-18 ten failed runs at about 1.5 h each found seventeen classes,
+	# under two per run, and the fix branch for a red head could only carry
+	# what the last log happened to name. With `-k` the storm runs every step
+	# it can and the log names EVERY red one, so the fix branch carries them
+	# all before the next tip. Nothing else moves: the sub-make's status is
+	# still non-zero on a red storm, so this recipe line still fails and the
+	# three serial tail lines below still run only after a GREEN storm.
+	@$(GATE_LOCK_TRAP) $(MAKE) -k -j$(TEST_JOBS) $(OUTPUT_SYNC) build-profiles-dev $(filter-out test-profile-gate test-vcx-timing test-code-diagram,$(TEST_TARGETS))
 	@$(GATE_LOCK_TRAP) $(MAKE) test-profile-gate
 	# #1216: the WALL-CLOCK assertions (the #1055 boot budget, the #816 try-send /
 	# try-receive upper bounds) run serially AFTER the storm too — they are
