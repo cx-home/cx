@@ -1,0 +1,29 @@
+[verification-budget
+  [; The verification-cost BOUNDS (#1562, RULED: VCOST-1). The owner's sentence
+     — "the fixture grader ≤ 20 min, a selected post-merge run ≤ 20 min, the
+     union ≤ 60 min" — has to be a step or it is a wish, and a step needs the
+     numbers in one place with the measurement that set each and the issue that
+     last moved it.
+
+     A bound moves ONLY in a commit that names why, and never to make a run
+     pass: raising one because a run exceeded it is the ratchet running
+     backwards, and `check-verification-budget` says so in its own refusal. ]
+
+  [bound name=fixture-grader seconds=1200
+    [what 'make fixtures, unselected — the seven grader shards over the whole module corpus']
+    [measured '1,384 s census on 2026-09-17; connector.cxd alone 2,898 s under load after #1515 (3,168 s before), which is why the shard split and the shared parse both count toward this row']
+    [moved-by 1515]
+    [note 'the residue is 260 harness cases waiting out real bounds — 89% of connector.cxd. Lowering this row further is #1515s letter, not a tightening here.']]
+
+  [bound name=selected-run seconds=1200
+    [what 'a SELECTED post-merge run — make test-changed BASE=<last passed head> plus the branch steps it selects']
+    [measured '1 h 40 min to 3 h under load on 2026-09-18 (VCOST-1s page); the nested make test of #1520 was a whole second union inside it and is gone']
+    [moved-by 1520]
+    [note 'the profile tail is the other half: #1560 makes it grade only what the change touches.']]
+
+  [bound name=union seconds=3600
+    [what 'make test — the whole TEST_TARGETS union, the merge gate']
+    [measured '5 h on 2026-09-18 (VCOST-1s page); 45.5 min on the post-merge run at 44f328b0e before the corpus and the suite grew']
+    [moved-by 1561]
+    [note 'the compile ratio is the open half: 648 CPU-min compiling against 205 running, 80 standalone test files. #1561 is what moves this row.']]
+]

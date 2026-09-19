@@ -1173,7 +1173,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -1702,8 +1702,39 @@ libcx-abi-gate: build-vcx
 # inside one make invocation that puts the profile builds on the same DAG node
 # `build-profiles-dev` occupies in the -j block, so a selection that runs this
 # step beside test-extraction-gate builds each artifact once.
+# #1560 (RULED: VCOST-1): `PROFILE_GATE_FILES="a.cxd b.cxd"` grades only the
+# named corpus files. UNSET, the step is exactly what it was and grades
+# everything — the unselected target and the union are untouched, and a selected
+# run is an ADDITIONAL entry point rather than a narrowing of the merge gate.
+# The selection a branch owes is
+# `sh scripts/profile_gate_files_for_branch.sh origin/release/0.18`, whose rules
+# are pinned by `make check-profile-gate-selection`.
+PROFILE_GATE_FILES ?=
 test-profile-gate: build-profiles-dev
-	@$(MAKE) -C vcx test-profile-gate
+	@$(MAKE) -C vcx test-profile-gate PROFILE_GATE_FILES="$(PROFILE_GATE_FILES)"
+
+.PHONY: check-profile-gate-selection
+check-profile-gate-selection:
+	@sh scripts/profile_gate_selection_selftest.sh
+
+# ── check-verification-budget (#1562, RULED: VCOST-1) ─────────────────────────
+# The owner's sentence — the fixture grader <= 20 min, a selected post-merge run
+# <= 20 min, the union <= 60 min — as a STEP, because "a written bound has to be
+# a step or it is a wish". The bounds live in scripts/verification_budget.cxd,
+# one row each carrying the measurement that set it and the issue that last
+# moved it; the measurements live in vcx/target/verification_timings.cxd, left
+# behind by whatever ran. An IDLE measurement over its bound fails the run; a
+# LOADED one is advisory with the load printed beside it; an absent one is
+# reported and fails nothing. A bound moves only in a commit that names why.
+.PHONY: check-verification-budget
+check-verification-budget: CX_BIN ?= $(CURDIR)/vcx/target/cx
+check-verification-budget:
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_verification_budget.cx
+
+.PHONY: check-verification-budget-selftest
+check-verification-budget-selftest: CX_BIN ?= $(CURDIR)/vcx/target/cx
+check-verification-budget-selftest:
+	@CX_BIN="$(CX_BIN)" sh scripts/verification_budget_selftest.sh
 
 # ── PER-RING GATE STEPS (#700 structural relief, activated at I4) — run the
 # steps that cover the ring you touched instead of the full battery. Each
