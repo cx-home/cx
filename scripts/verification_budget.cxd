@@ -15,15 +15,15 @@
     [moved-by 1515]
     [note 'the residue is 260 harness cases waiting out real bounds — 89% of connector.cxd. Lowering this row further is #1515s letter, not a tightening here.']]
 
-  [bound name=selected-run seconds=1200
+  [bound name=selected-run seconds=9263
     [what 'a SELECTED post-merge run — make test-changed BASE=<last passed head> plus the branch steps it selects']
-    [measured '1 h 40 min to 3 h under load on 2026-09-18 (VCOST-1s page); the nested make test of #1520 was a whole second union inside it and is gone']
-    [moved-by 1520]
+    [measured '154 min 23 s on the selected run on 884c05469, idle box (load 1.81), 2026-09-19 19:52Z — the first row the loop wrote; the row is raised to that measured value on the owner'"'"'s word of 2026-09-21 and ratchets DOWN only from here']
+    [moved-by 1561]
     [note 'the profile tail is the other half: #1560 makes it grade only what the change touches.']]
 
-  [bound name=union seconds=3600
+  [bound name=union seconds=10516
     [what 'make test — the whole TEST_TARGETS union, the merge gate']
-    [measured '5 h on 2026-09-18 (VCOST-1s page); 45.5 min on the post-merge run at 44f328b0e before the corpus and the suite grew']
+    [measured '175 min 16 s on the full union on 57745f541, idle box (load 1.46), 2026-09-19 21:40Z — the first row the loop wrote; raised to the measured value on the owner'"'"'s word of 2026-09-21, ratchets DOWN only; the 60-min target stands as the goal #1561 and the profile-gate sharding reach']
     [moved-by 1561]
     [note 'the compile ratio is the open half: 648 CPU-min compiling against 205 running, 80 standalone test files. #1561 is what moves this row.']]
 ]
