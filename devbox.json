@@ -31,7 +31,11 @@
       "build": "make build",
       "test": "make test",
       "conform": "make conform",
-      "gate-deps": "npm --prefix scripts/playground-gate ci --no-audit --no-fund"
+      "gate-deps": "npm --prefix scripts/playground-gate ci --no-audit --no-fund",
+      "runner": "mkdir -p ~/Library/LaunchAgents && cp scripts/runner/ai.cx.gate-loop.plist ~/Library/LaunchAgents/ && launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/ai.cx.gate-loop.plist && launchctl print gui/$(id -u)/ai.cx.gate-loop | grep -E 'state|pid'",
+      "runner-status": "launchctl print gui/$(id -u)/ai.cx.gate-loop | grep -E 'state|pid'; tail -3 vcx/target/gate-loop.log",
+      "runner-restart": "launchctl kickstart -k gui/$(id -u)/ai.cx.gate-loop",
+      "runner-stop": "launchctl bootout gui/$(id -u)/ai.cx.gate-loop"
     }
   }
 }
