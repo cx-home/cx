@@ -32,6 +32,8 @@
       "test": "make test",
       "conform": "make conform",
       "gate-deps": "npm --prefix scripts/playground-gate ci --no-audit --no-fund",
+      "setup": "git submodule update --init --recursive && make -C third_party/v && make build-vcx && make check-v-fork && vcx/target/cx --version",
+      "baseline": "start=$(date +%s); sh scripts/gate.sh; echo \"BASELINE $(tail -1 vcx/target/gate.log) elapsed $(( ($(date +%s) - start) / 60 )) min on $(hostname -s) at $(git rev-parse --short HEAD)\"",
       "runner": "mkdir -p ~/Library/LaunchAgents && cp scripts/runner/ai.cx.gate-loop.plist ~/Library/LaunchAgents/ && launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/ai.cx.gate-loop.plist && launchctl print gui/$(id -u)/ai.cx.gate-loop | grep -E 'state|pid'",
       "runner-status": "launchctl print gui/$(id -u)/ai.cx.gate-loop | grep -E 'state|pid'; tail -3 vcx/target/gate-loop.log",
       "runner-restart": "launchctl kickstart -k gui/$(id -u)/ai.cx.gate-loop",

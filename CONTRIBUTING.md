@@ -65,6 +65,18 @@ cx --version
 The Python binding has no separate build step — it loads `libcx` at
 import time.
 
+With devbox the whole first build is one verb, and so is the proof that a new
+box is sound:
+
+```sh
+devbox run setup      # submodules, the patched V, make build-vcx, make check-v-fork, cx --version
+devbox run baseline   # the whole post-merge pipeline once; prints the verdict and the elapsed minutes
+devbox run runner     # join as the post-merge runner (scripts/runner/README.md)
+```
+
+`setup` is idempotent. `baseline` is the row a new machine records on the
+split board (#1591) before it runs anything else.
+
 ---
 
 ## Testing
@@ -213,7 +225,8 @@ The loop that runs the post-merge pipeline on every new head lives under launchd
 as `ai.cx.gate-loop`, and its unit, the three runner directories and the
 install / status / restart / stop verbs are in
 [`scripts/runner/`](scripts/runner/README.md). A new box joins with
-`devbox run runner` once its first build is green (§First build above); a landed `scripts/gate-loop.sh`
+`devbox run runner` after `devbox run setup` and a green `devbox run baseline`
+(§First build above); a landed `scripts/gate-loop.sh`
 takes effect only after `devbox run runner-restart`, between runs.
 
 ### Adding a test file costs more than adding a test function
