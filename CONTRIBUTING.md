@@ -207,6 +207,15 @@ names (`gate.sh`, `gate.log`, `gate-loop.log`) have not moved either.
 state `running`/`passed`/`failed`/`cancelled`, how many steps are failing, which
 steps have finished, and what is running now.
 
+### The post-merge runner on a box
+
+The loop that runs the post-merge pipeline on every new head lives under launchd
+as `ai.cx.gate-loop`, and its unit, the three runner directories and the
+install / status / restart / stop verbs are in
+[`scripts/runner/`](scripts/runner/README.md). A new box joins with
+`devbox run runner` once its first build is green (§First build above); a landed `scripts/gate-loop.sh`
+takes effect only after `devbox run runner-restart`, between runs.
+
 ### Adding a test file costs more than adding a test function
 
 Test *files*, not test functions, are the unit of compile cost: every
