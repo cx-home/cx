@@ -175,9 +175,6 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='conformance/platform/vc.cxd' repo=cx-core-code]
   [path exact='conformance/platform/authz.cxd' repo=cx-core-code]
   [path exact='conformance/platform/xsp.cxd' repo=cx-core-code]
-  [path exact='x/term.cx' repo=cx-core-code why='raw-mode terminal input beside its natives; graduates to cx-stdlib/term']
-  [path exact='spec/03-approved/x/term.md' repo=cx-core-code]
-  [path exact='conformance/x/term.cxd' repo=cx-core-code]
 
   [; ── platform: store (engine + streams + server, as Postgres) ─────── ]
   [path prefix='vcx/cxstore/' repo=cx-platform-store]

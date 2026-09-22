@@ -46,7 +46,7 @@ landed and its row read `current`.
 COLUMNS
   name    the surface's call-site prefix — `[?lib '<ns>/<name>']` binds it.
           Unique per namespace, not globally: `term` is both a natives
-          family (ns=none) and an x-tier module (ns=cx-x)
+          family (ns=none) and a Ring-1 module (ns=cx-stdlib)
   ring    1 = pure/local, 2 = serves or reaches a store/protocol, 0 = a
           surface synthesized by the codec registry (codec.md §3). This is
           the DECLARED ring — the decision, not a location, so it has no
@@ -187,6 +187,11 @@ becomes its own Ring-1 module.
   [module name=strings ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/strings.md corpus=conformance/stdlib/strings.cxd source=stdlib/strings.cx code=vcx/code/stdlib_strings.v half=none status=current]
   [module name=supervise ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/supervise.md corpus=conformance/stdlib/supervise.cxd source=stdlib/supervise.cx code=none half=none status=current]
   [module name=tar ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/tar.md corpus=conformance/stdlib/tar.cxd source=stdlib/tar.cx code=vcx/code/stdlib_tar.v half=none status=current]
+  [; term (the MODULE) graduated from cx-x by the membership test (RULED: RS-5,
+     #1591 item 7): six pure [?def]s over the $term-* natives family below,
+     which keeps its own row (ns=none kind=natives) and its own pages
+     term.md / term.cxd — so this row names term-module.md / term-module.cxd. ]
+  [module name=term ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/term-module.md corpus=conformance/stdlib/term-module.cxd source=stdlib/term.cx code=none half=none status=current]
   [module name=test ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/test.md corpus=conformance/stdlib/test.cxd source=stdlib/test.cx code=vcx/code/stdlib_testkit.v half=none status=current]
   [module name=time ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/time.md corpus=conformance/stdlib/time.cxd source=stdlib/time.cx code='vcx/code/stdlib_time_notd_cx_no_pack_time.v vcx/code/datetime_core.v' half=none status=current]
   [module name=url ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/url.md corpus=conformance/stdlib/url.cxd source=stdlib/url.cx code=vcx/code/stdlib_url.v half=none status=current]
@@ -273,12 +278,6 @@ becomes its own Ring-1 module.
   [module name=mcp ring=1 ns=cx-x kind=module spec=spec/03-approved/x/mcp.md corpus=conformance/x/mcp.cxd source=x/mcp.cx code=none half=none status=current]
   [module name=mcp-server ring=2 ns=cx-x kind=module spec=spec/03-approved/x/mcp-server.md corpus=conformance/x/mcp-server.cxd source=x/mcp-server.cx code=none half=none status=current]
   [module name=run ring=1 ns=cx-x kind=module spec=spec/03-approved/x/run.md corpus=conformance/x/run.cxd source=x/run.cx code=none half=none status=current]
-  [; cx-x/term is a module over the $term-* natives, and it is the one
-     bundled surface in the tree with a spec and a source and NO fixtures.
-     1427-e's "term gets a corpus" names the natives family below (the row
-     with code and no corpus); this one is a second, smaller hole, recorded
-     here rather than left implicit. ]
-  [module name=term ring=1 ns=cx-x kind=module spec=spec/03-approved/x/term.md corpus=conformance/x/term.cxd source=x/term.cx code=none half=none status=current]
   [module name=tools ring=1 ns=cx-x kind=module spec=spec/03-approved/x/tools.md corpus=conformance/x/tools.cxd source=x/tools.cx code=none half=none status=current]
   [module name=ux ring=2 ns=cx-x kind=module spec=spec/03-approved/xap/ux.md corpus=conformance/xap/ux.cxd source=x/ux.cx code=none half=none status=current]
   [module name=ux-tui ring=2 ns=cx-x kind=module spec=spec/03-approved/xap/ux.md corpus=conformance/xap/ux-tui.cxd source=x/ux-tui.cx code=none half=none status=current]
