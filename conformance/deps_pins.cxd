@@ -44,7 +44,7 @@ ok
 
  [case id=deps-002-v-repository-row level=core
   [tags deps pins document canonical v-fork]
-  [title a V repository row -- repo, sha, module, the release tag it was taken from, and the V-fork sha it was built against]
+  [title a V repository row -- the repo the sha the module the release tag it was taken from and the V-fork sha it was built against]
   [in-cx [#
 [deps
   [dep repo="cx-core-data" sha="4d1a8f2b9c0e7a36d58b41f0c2e9a7b3d604158e" module="cx-core/data" tag="v1" v-fork="9f3c02a7e1b84d6509c7fa2138e6b05d4a71c3e2"]]
@@ -80,7 +80,7 @@ ok
 
  [case id=deps-004-doc-block-is-permitted level=core
   [tags deps pins document canonical doc]
-  [title a doc child is permitted beside the rows, and one row carries every module namespace its repository provides -- the pin is per repository, not per module]
+  [title a doc child is permitted beside the rows and one row carries every module namespace its repository provides -- the pin is per repository and not per module]
   [in-cx [#
 [deps
   [doc why these pins are what they are]
@@ -99,7 +99,7 @@ ok
 
  [case id=deps-010-unknown-key level=core
   [tags deps pins refusal unknown-key]
-  [title an unknown key on a row is REFUSED, not ignored -- the whole reason the transport is a document with a reader]
+  [title an unknown key on a row is REFUSED rather than ignored -- the whole reason the transport is a document with a reader]
   [in-cx [#
 [deps
   [dep repo="cx-platform-net" sha="2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f" module="cx-platform/net" branch="main"]]
@@ -116,7 +116,7 @@ unknown-key repo=cx-platform-net: branch
 
  [case id=deps-011-missing-sha level=core
   [tags deps pins refusal missing-sha]
-  [title a row with a tag and no sha is REFUSED -- a tag is a name the producer can move, so the sha is the pin (spec Sec 2.1)]
+  [title a row with a tag and no sha is REFUSED -- a tag is a name the producer can move so the sha is the pin; spec Sec 2.1]
   [in-cx [#
 [deps
   [dep repo="cx-platform-store" module="cx-platform/store" tag="v1"]]
@@ -240,7 +240,7 @@ unknown-root document: dependencies
 
  [case id=deps-018-every-refusal-in-one-document level=core
   [tags deps pins refusal order]
-  [title the refusals of one document, in the order the validator finds them -- document first, then row by row, then the whole-document duplicate check]
+  [title the refusals of one document in the order the validator finds them -- document first then row by row then the whole-document duplicate check]
   [in-cx [#
 [deps
   [dep repo="cx-platform-agent" sha="a4b5c6d7e8f90a1b2c3d4e5f6071829304152637" module="cx-platform/agent" pinned-by="hand"]
