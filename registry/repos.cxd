@@ -292,7 +292,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='stdlib/flow.cx' repo=cx-platform-flow]
   [path exact='spec/03-approved/platform/flow.md' repo=cx-platform-flow]
   [path exact='conformance/platform/flow.cxd' repo=cx-platform-flow]
-  [path prefix='vcx/cmd/flow' repo=cx-platform-flow why='the local profile verbs stay in the binary; owned by flow']
+  [path prefix='vcx/cmd/flow' repo=cx why='flow ships=package and vcx/cmd/flow*.v is V that only the front door compiles: the local profile verbs stay in the binary, so they stay in the repo that BUILDS the binary. Not owned by flow (RULED: RS-20)']
   [path prefix='flows/' repo=cx-platform-flow]
   [path prefix='vcx/tests/flow_' repo=cx-platform-flow]
   [path exact='scripts/flow_dogfood_gate.cx' repo=cx-platform-flow]
@@ -334,7 +334,8 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='vcx/tests/llm_' repo=cx-platform-agent]
 
   [; ── platform: xap (the host; the residue of vcx/platform) ────────── ]
-  [path prefix='vcx/platform/' repo=cx-platform-xap why='everything left in vcx/platform after the rows above: xap, xsp profiles, contract revision, coordination glue, the module init and Ring-2 registration']
+  [path exact='vcx/platform/coordination.v' repo=cx-platform-xap why='the coordination glue, AND the one act seam cx-platform/flow depends on: coord_flow_perform, the single builtin the flow runner acts through (RULED: 1265-PB-1), dispatched here as flow-perform. The flow module row reads code=none, so without this row nothing names the seam and neither a pin nor a gate can see that a package repo depends on a builtin another repo compiles in (RULED: RS-20)']
+  [path prefix='vcx/platform/' repo=cx-platform-xap why='everything left in vcx/platform after the rows above: xap, xsp profiles, contract revision, the module init and Ring-2 registration']
   [path prefix='vcx/cmd/xap' repo=cx-platform-xap]
   [path prefix='vcx/cmd/platform_verbs' repo=cx-platform-xap]
   [path exact='stdlib/xap.cx' repo=cx-platform-xap]
