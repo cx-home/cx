@@ -162,6 +162,15 @@
       # the dialer and the serve loop) — the catalog modules are `http` and
       # `smtp`. `ring2` is the seam probe itself, not a module, and is
       # excluded.
+      # A V identifier cannot carry a hyphen, so a module whose NAME has one
+      # spells its dispatch with an underscore: `xsp_auth_stdlib_builtin` is
+      # `cx-platform/xsp-auth`, `did_web_stdlib_builtin` is
+      # `cx-platform/did-web` (RULED: RS-14, RS-15). That is a spelling
+      # difference, not a second module, so an underscored name whose
+      # HYPHENATED form is a bundled module folds onto that module -- derived,
+      # not listed, so the next hyphenated module needs no edit here. A name
+      # with no hyphenated counterpart keeps its own spelling and is still
+      # reported if nothing specs it.
       [?let [= $dispatch-rx [$re:compile "([a-z0-9_]+)_stdlib_builtin"]]
              [= $dispatch-raw [$concat [$io:read-file "vcx/code/stdlib_dispatch.v"]
                                        [$io:read-file "vcx/platform/ring2_register.v"]]]
@@ -173,7 +182,9 @@
               [then "http"]
               [else [?if [= [$re:group $dm 1] "smtp_wire"]
                 [then "smtp"]
-                [else [$re:group $dm 1]]]]]]]]
+                [else [?if [$has-name $bundle-set [$strings:replace [$re:group $dm 1] "_" "-"]]
+                  [then [$strings:replace [$re:group $dm 1] "_" "-"]]
+                  [else [$re:group $dm 1]]]]]]]]]]
 
           # -- Direction (1): specced modules with no implementation.
           # A spec module is satisfied iff it is a member of BUNDLE_SET

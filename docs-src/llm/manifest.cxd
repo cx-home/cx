@@ -81,7 +81,8 @@ stdlib/io
 stdlib/env
 stdlib/cx
 stdlib/format
-platform/authz
+stdlib/authz
+platform/authz-store
 platform/session
 stdlib/log
 xap/ux
