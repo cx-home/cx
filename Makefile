@@ -370,10 +370,10 @@ build-vcx-dev: check-gate-lock
 # roster gates exist to stop.
 .PHONY: build-profile-data build-profiles-dev
 build-profile-data: build-vcx
-	@$(MAKE) -C vcx build-data-dev
+	@$(MAKE) -C vcx $(PROFILE_BUILD_J) build-data-dev
 
 build-profiles-dev: build-profile-data
-	@$(MAKE) -C vcx build-profiles-dev
+	@$(MAKE) -C vcx $(PROFILE_BUILD_J) build-profiles-dev
 
 # v0.7.5 — build libcx.wasm + libcx.js (emscripten
 # loader) + cxlib.js (hand-written wrapper). Produces dist/wasm/.
@@ -1656,7 +1656,17 @@ EXTRACTION_GATE_FLOOR := 1564
 # digest WITH one is ordinary corpus growth — and a comment that forbids ever
 # re-blessing turns into false authority the moment the corpus grows, which is
 # exactly what happened between 2026-08-25 and now.
-EXTRACTION_GATE_JOBS ?= 8
+#
+# SHARD COUNT (#1590). The default is the box's CORE COUNT — `TEST_JOBS`, the
+# same detection the storm's `-j` uses — not the 8 the sharded mode shipped
+# with: 8 was the 12-core devbox's number, and a 28-core box ran 8 shards with
+# 20 cores idle. `EXTRACTION_GATE_JOBS=N` in the environment or on the make line
+# caps it; `EXTRACTION_GATE_JOBS=1` is the serial mode, for a box sharing its
+# cores with a load-sensitive run (INT-8). The verdict does not depend on N:
+# every shard walks the same index sequence and the parent merges by index, so
+# the transcript — and its digest — is byte-identical for any N (proven by the
+# red-proof rows in _gate_evidence/pipeline_1590/RESULTS.md).
+EXTRACTION_GATE_JOBS ?= $(TEST_JOBS)
 LIBCX_ART      := vcx/target/$(LIB_NAME).$(if $(filter Darwin,$(shell uname -s)),dylib,so)
 LIBCX_CORE_ART := vcx/target/libcx-core.$(if $(filter Darwin,$(shell uname -s)),dylib,so)
 .PHONY: test-extraction-gate
