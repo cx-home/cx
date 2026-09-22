@@ -1,0 +1,194 @@
+# scripts/store_session_dep_gate.cx -- the STORE -> SESSION dependency check
+# (RULED: RS-6, #1591 item 8).
+#
+# Eat-our-own-dog-food: written entirely in CX; runs as `cx <file>`.
+#
+# RS-6 removes the store<->session cycle by having the store SERVER authenticate
+# through the Ring-1 trust primitives (did/vc verify, the authz decision) and
+# the daemon's own `[grants]` document, never through session tables. The
+# identity module keeps its edges INTO the store (a session record is a store
+# document -- `cx-platform-identity` pins `-store`); what must not exist is the
+# edge back out. Today both sides are `module platform`, so the V compiler
+# cannot state the rule: `ring-import-gate` works on directories, and these two
+# surfaces share one. This step states it at the file level instead, so the
+# seam cannot regress silently before `cx-platform-store` is extracted.
+#
+# THE RULE. No non-test `vcx/platform/store_*.v` file may name an identifier
+# that belongs to the identity module's session surface. The symbol set is
+# DERIVED from `vcx/platform/stdlib_session.v` -- every identifier in it that
+# begins with `session_` or `Session` -- so a session helper added tomorrow is
+# covered without editing this file, and the gate refuses to vouch for an empty
+# derivation. Deny-by-default on top of that: a `session_`/`Session`-prefixed
+# token in a store file that is in NO derived set is a violation too, because a
+# name that looks like the session surface and is not one is either a fresh
+# edge or a coincidence nobody should have to adjudicate at review time.
+#
+# WHAT IS NOT A VIOLATION. Comment text (everything from `//` to end of line is
+# dropped before tokenizing) and C FFI names, which are libssh2's and not the
+# identity module's: `C.libssh2_session_init_ex` tokenizes to `C` +
+# `libssh2_session_init_ex`, and neither is a session symbol. Tokenization is
+# exact -- a token matches a symbol only when it IS that symbol, never when it
+# merely contains it.
+#
+# Output: the census (files scanned, symbols derived) on stdout, then either
+# `store-session-dep: OK` or the violations on stderr.
+# Exit: 0 clean, 1 a store file names a session symbol, 2 an input is
+# unreadable or the derivation is empty.
+#
+# Run from the checkout root:
+#   vcx/target/cx --allow-all scripts/store_session_dep_gate.cx [--self-test]
+# (or: make store-session-dep-gate, which runs the self-test then the tree)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+
+# -- helpers ------------------------------------------------------------
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?def member scope=private pure [returns bool] ($x::string $xs)
+  [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+# code-of: one line with its `//` comment dropped. A comment that names a
+# session symbol is prose, not an edge -- this file's own header says
+# `session_kv` and must not fail its own rule.
+[?def code-of scope=private pure [returns string] ($line::string)
+  [$first [$strings:split-limit $line "//" 2]]]
+
+# blank-seps: every character that can bound a V identifier, turned into a
+# space. `_` and the digits stay -- they are identifier characters. `.` goes,
+# so a C FFI selector (`C.libssh2_session_free`) splits into its two names and
+# neither can be mistaken for a session symbol.
+[?def blank-seps scope=private pure [returns string] ($s::string)
+  [?let [= $a [$strings:replace $s "(" " "]] [= $b [$strings:replace $a ")" " "]]
+        [= $c [$strings:replace $b "[" " "]] [= $d [$strings:replace $c "]" " "]]
+        [= $e [$strings:replace $d "{" " "]] [= $f [$strings:replace $e "}" " "]]
+        [= $g [$strings:replace $f "," " "]] [= $h [$strings:replace $g ":" " "]]
+        [= $i [$strings:replace $h ";" " "]] [= $j [$strings:replace $i "." " "]]
+        [= $k [$strings:replace $j "=" " "]] [= $l [$strings:replace $k "<" " "]]
+        [= $m [$strings:replace $l ">" " "]] [= $n [$strings:replace $m "+" " "]]
+        [= $o [$strings:replace $n "-" " "]] [= $p [$strings:replace $o "*" " "]]
+        [= $q [$strings:replace $p "/" " "]] [= $r [$strings:replace $q "!" " "]]
+        [= $s2 [$strings:replace $r "&" " "]] [= $t [$strings:replace $s2 "|" " "]]
+        [= $u [$strings:replace $t "^" " "]] [= $v [$strings:replace $u "%" " "]]
+        [= $w [$strings:replace $v "?" " "]] [= $x [$strings:replace $w "#" " "]]
+        [= $y [$strings:replace $x "'" " "]] [= $z [$strings:replace $y '"' " "]]
+        [= $a2 [$strings:replace $z "@" " "]] [= $b2 [$strings:replace $a2 "$" " "]]
+    $b2]]
+
+# tokens: the identifier tokens of a V source text, comments dropped. Each
+# line is stripped and blanked FIRST, then the whole text is split once -- a
+# sequence is never element content in CX and nothing auto-splices, so the
+# flat list is built by joining, not by nesting two comprehensions.
+[?def tokens scope=private pure ($text::string)
+  [?for [in $t [$strings:split-whitespace
+                 [$strings:join
+                   [?for [in $line [$strings:split-lines $text]]
+                     [yield [$blank-seps [$code-of $line]]]]
+                   " "]]]
+    [where [not [= $t ""]]]
+    [yield $t]]]
+
+# session-shaped: does this token wear the identity module's session prefix?
+[?def session-shaped scope=private pure [returns bool] ($t::string)
+  [?if [$strings:starts-with $t "session_"]
+    [then true]
+    [else [$strings:starts-with $t "Session"]]]]
+
+# -- the check itself: pure over (the session source text, the store files) ---
+#
+# $files is a sequence of [file path=... text=...] elements. Answers
+#   [verdict [failures [row path= n= symbols= undeclared=]*] [derived n=] [scanned n=]]
+
+[?def check scope=private pure ($session-text::string $files)
+  [?let
+    [= $derived [?for [in $t [$tokens $session-text]]
+                  [where [$session-shaped $t]]
+                  [group-by $t] [order-by $key] [yield $key]]]
+    [= $rows
+       [?for [in $f $files]
+         [yield [?let
+           [= $bad [?for [in $t [$tokens [$string $f@text]]]
+                     [where [$session-shaped $t]]
+                     [group-by $t] [order-by $key] [yield $key]]]
+           [row path=[$string $f@path]
+                n=[$count $bad]
+                symbols=[$strings:join $bad ", "]
+                undeclared=[$strings:join
+                             [?for [in $b $bad] [where [not [$member $b $derived]]] [yield $b]]
+                             ", "]]]]]]
+    [verdict
+      [failures [?for [in $r $rows] [where [> $r@n 0]] [yield $r]]]
+      [derived n=[$count $derived]]
+      [scanned n=[$count $files]]]]]
+
+# -- the self-test: synthetic sources, each class red once ------------------
+
+[?if [$member "--self-test" [$env:argv]]
+  [then
+    [?let
+      [= $sess "module platform\nfn session_kv(name string) int { return 1 }\nstruct SessionStore { mut: x int }\nfn session_attach_xsp_impl(a int) int { return a }\n"]
+      [= $files ([file path="store_clean.v"
+                   text="module platform\n// a comment naming session_kv is prose, not an edge\nfn C.libssh2_session_free(s voidptr) int\nfn sx_ok() int { return C.libssh2_session_free(0) }\n"],
+                 [file path="store_violation.v"
+                   text="module platform\nfn sx_bad() int { return session_kv('x') }\n"],
+                 [file path="store_unknown.v"
+                   text="module platform\nfn sx_odd() int { return session_never_defined_anywhere(1) }\n"])]
+      [= $v [$check $sess $files]]
+      [= $hits [?for [in $f $v/failures/row]
+                 [order-by $f@path]
+                 [yield [$concat [$string $f@path] ":" [$string $f@symbols] ":" [$string $f@undeclared]]]]]
+      [= $want ("store_unknown.v:session_never_defined_anywhere:session_never_defined_anywhere",
+                "store_violation.v:session_kv:")]
+      [= $missing [?for [in $w $want] [where [not [$member $w $hits]]] [yield $w]]]
+      [= $extra   [?for [in $h $hits] [where [not [$member $h $want]]] [yield $h]]]
+      [= $derived-ok [= [$string $v/derived@n] "3"]]
+      [?if [?if [= [$count $missing] 0]
+             [then [?if [= [$count $extra] 0] [then $derived-ok] [else false]]]
+             [else false]]
+        [then [?let [= $_ [$say "store-session-dep self-test OK -- a synthetic store file calling session_kv is RED; an undeclared session_-shaped name is RED (deny-by-default); a comment naming session_kv and a libssh2 C FFI selector are CLEAN; 3 symbols derived."]]
+                [$env:exit 0]]]
+        [else [?let [= $_ [$cry [$concat "store-session-dep self-test FAILED -- missing: "
+                                          [$strings:join $missing "; "]
+                                          " | unexpected: " [$strings:join $extra "; "]
+                                          " | derived=" [$string $v/derived@n] " (want 3)"]]]
+                [$env:exit 1]]]]]]
+  [else ""]]
+
+# -- the tree ------------------------------------------------------------
+
+[?let [= $sess-path "vcx/platform/stdlib_session.v"]
+  [?if [not [$io:exists $sess-path]]
+    [then [?let [= $_ [$cry [$concat "store-session-dep: cannot read " $sess-path " -- run from the checkout root"]]]
+            [$env:exit 2]]]
+    [else ""]]]
+
+[?let
+  [= $sess-text [$io:read-file "vcx/platform/stdlib_session.v"]]
+  [= $paths [?for [in $p [$io:glob "vcx/platform/store_*.v"]]
+              [where [not [$strings:ends-with $p "_test.v"]]]
+              [order-by $p]
+              [yield $p]]]
+  [= $files [?for [in $p $paths] [yield [file path=$p text=[$io:read-file $p]]]]]
+  [= $v [$check $sess-text $files]]
+  [= $failures [?for [in $f $v/failures/row] [yield $f]]]
+  [= $_c1 [$say [$concat [$strings:pad-start [$string $v/scanned@n] 6 " "] "  non-test vcx/platform/store_*.v files scanned"]]]
+  [= $_c2 [$say [$concat [$strings:pad-start [$string $v/derived@n] 6 " "] "  session symbols derived from stdlib_session.v"]]]
+  [= $_g1 [?if [= [$count $paths] 0]
+            [then [?let [= $_ [$cry "store-session-dep: matched NO store source -- refusing to vouch for an empty scan"]]
+                    [$env:exit 2]]]
+            [else ""]]]
+  [= $_g2 [?if [= [$string $v/derived@n] "0"]
+            [then [?let [= $_ [$cry "store-session-dep: derived NO session symbols -- refusing to vouch"]]
+                    [$env:exit 2]]]
+            [else ""]]]
+  [?if [= [$count $failures] 0]
+    [then [?let [= $_ [$say "store-session-dep: OK -- no non-test store_*.v names a session symbol (RULED: RS-6)"]]
+            [$env:exit 0]]]
+    [else
+      [?let [= $_h [$cry [$concat "store-session-dep: " [$string [$count $failures]] " file(s) name a session symbol -- the store<->session cycle RS-6 removes"]]]
+            [= $_l [?for [in $f $failures] [order-by $f@path]
+                     [yield [$cry [$concat "  " [$string $f@path] " names " [$string $f@symbols]]]]]]
+        [$env:exit 1]]]]]
