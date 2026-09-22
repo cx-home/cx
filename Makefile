@@ -368,12 +368,29 @@ build-vcx-dev: check-gate-lock
 # embed/cli half here: the data half hits its guard and costs two `find`s, and
 # a hand-copied list one recipe away from vcx's own is exactly the drift the
 # roster gates exist to stop.
+#
+# CONCURRENT profile builds (#1590). The five dev artifacts are independent —
+# distinct output paths under target/profiles/, distinct `-d` sets, a build-id
+# guard each (#995, #1449) — and inside the storm they already build side by
+# side under the storm's `-j`. Outside it (a pre-merge `make test-profile-gate`,
+# `make test-extraction-gate`, `devbox run baseline`'s first build) the two
+# recipes below re-entered vcx SERIALLY: measured on dev2 (28 cores, VJOBS=14),
+# the five builds took 51 s one after another. So each re-entry carries `-j`
+# when — and only when — no jobserver is already in force: under the storm,
+# MAKEFLAGS carries the parent's jobserver and the sub-make joins it, which is
+# what it did before; forcing `-j` there would detach it from the storm's
+# budget and print `warning: -jN forced in submake`. PROFILE_BUILD_JOBS caps
+# the fan-out (five is the artifact count; there is nothing to gain above it).
+# The DAG is unchanged: build-profile-data is still one node, so the two gates
+# and the matrix never write the data artifacts concurrently (the #1449 rule).
+PROFILE_BUILD_JOBS ?= 5
+PROFILE_BUILD_J = $(if $(findstring jobserver,$(MAKEFLAGS)),,-j$(PROFILE_BUILD_JOBS))
 .PHONY: build-profile-data build-profiles-dev
 build-profile-data: build-vcx
-	@$(MAKE) -C vcx build-data-dev
+	@$(MAKE) -C vcx $(PROFILE_BUILD_J) build-data-dev
 
 build-profiles-dev: build-profile-data
-	@$(MAKE) -C vcx build-profiles-dev
+	@$(MAKE) -C vcx $(PROFILE_BUILD_J) build-profiles-dev
 
 # v0.7.5 — build libcx.wasm + libcx.js (emscripten
 # loader) + cxlib.js (hand-written wrapper). Produces dist/wasm/.
@@ -1667,7 +1684,17 @@ EXTRACTION_GATE_FLOOR := 1564
 # digest WITH one is ordinary corpus growth — and a comment that forbids ever
 # re-blessing turns into false authority the moment the corpus grows, which is
 # exactly what happened between 2026-08-25 and now.
-EXTRACTION_GATE_JOBS ?= 8
+#
+# SHARD COUNT (#1590). The default is the box's CORE COUNT — `TEST_JOBS`, the
+# same detection the storm's `-j` uses — not the 8 the sharded mode shipped
+# with: 8 was the 12-core devbox's number, and a 28-core box ran 8 shards with
+# 20 cores idle. `EXTRACTION_GATE_JOBS=N` in the environment or on the make line
+# caps it; `EXTRACTION_GATE_JOBS=1` is the serial mode, for a box sharing its
+# cores with a load-sensitive run (INT-8). The verdict does not depend on N:
+# every shard walks the same index sequence and the parent merges by index, so
+# the transcript — and its digest — is byte-identical for any N (proven by the
+# red-proof rows in _gate_evidence/pipeline_1590/RESULTS.md).
+EXTRACTION_GATE_JOBS ?= $(TEST_JOBS)
 LIBCX_ART      := vcx/target/$(LIB_NAME).$(if $(filter Darwin,$(shell uname -s)),dylib,so)
 LIBCX_CORE_ART := vcx/target/libcx-core.$(if $(filter Darwin,$(shell uname -s)),dylib,so)
 .PHONY: test-extraction-gate
