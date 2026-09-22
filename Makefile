@@ -1063,6 +1063,52 @@ repos-allocation-gate: build-vcx
 	@"$(CX_BIN)" --allow-all scripts/repos_allocation_gate.cx --self-test
 	@"$(CX_BIN)" --allow-all scripts/repos_allocation_gate.cx
 
+# ── the repository dependency pins (#1591 item 10, RULED: RS-7) ────────────
+# RS-7 rules the pin transport of the multi-repo shape: "a CX lock document
+# plus a CX-written `cx deps sync` (shallow fetch at SHA into an ignored
+# `deps/`, read by the V build via `-path`)". `deps.cxd` is the document,
+# scripts/deps_sync.cx is the program, and
+# spec/03-approved/process/repository-dependency-pins.md is the format.
+#
+# `deps-check` NEVER warns: a sha the remote no longer has, or a deps/
+# checkout that is not at its pin, fails. #1589's Risks records why — the
+# previous stale-copy arrangement in this project rotted within weeks because
+# nothing failed when it did.
+.PHONY: deps-sync deps-check
+deps-sync: CX_BIN ?= $(CURDIR)/vcx/target/cx
+deps-sync: build-vcx
+	@"$(CX_BIN)" --allow-all scripts/deps_sync.cx
+
+deps-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
+deps-check: build-vcx
+	@"$(CX_BIN)" --allow-all scripts/deps_sync.cx --check
+
+# ── test-deps-pins — the deps.cxd corpus ──────────────────────────────────
+# conformance/deps_pins.cxd pins the wire form, its canonical bytes and every
+# refusal the format names; scripts/check_deps_pins_fixtures.cx grades it, and
+# runs its own comparator self-test first — #1591: "Every moved gate is
+# red-proofed on a synthetic violation before its row moves."
+.PHONY: test-deps-pins
+test-deps-pins: CX_BIN ?= $(CURDIR)/vcx/target/cx
+test-deps-pins: build-vcx
+	@"$(CX_BIN)" --allow-read scripts/check_deps_pins_fixtures.cx --self-test
+	@"$(CX_BIN)" --allow-read scripts/check_deps_pins_fixtures.cx
+
+# ── make union (#1591 item 10, RULED: RS-7) ───────────────────────────────
+# The front door's union: SYNC THE PINS, THEN RUN THE SUITE — in that order and
+# in one step, so a stale pin fails before a single test compiles rather than
+# as a confusing failure an hour in. #1589's integration model: "`cx` is a
+# migration lane, not a gate. When any repo releases, `cx` tries the newest
+# mutually green set; green ⇒ the pins advance; red ⇒ the pins stay and the
+# finding lands on the repo that moved." This target is that attempt.
+#
+# It is NOT a TEST_TARGETS step and takes no selection-manifest row: it RUNS
+# the union rather than being part of it. `make test` remains what a step
+# roster grades.
+.PHONY: union
+union: deps-sync
+	@$(MAKE) test
+
 # ── tools-export golden gate (stream 18, #690) ────────────────────────────────
 # `cx tools export` over the checked-in M5 module must reproduce the checked-in
 # golden byte-for-byte — the offline registration step pinned end-to-end
@@ -1225,7 +1271,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate test-deps-pins flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
