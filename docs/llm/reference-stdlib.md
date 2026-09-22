@@ -42,11 +42,13 @@ $ cx prog.cx
 
 | Module | Scope |
 |---|---|
+| `authz` | The XAP authority model as data plus a single decision function. |
 | `bus` | In-process publish/subscribe that delivers each published message to its matching subscribers synchronously and in a defined order. |
 | `bytes` | Byte-level operations on the CX bytes scalar kind. |
 | `crypto` | Operations involving a key, a secret, or authentication. |
 | `csv` | Parse and emit CSV/TSV following RFC 4180 with Excel-pragmatic extensions. |
 | `diagram` | The §10.1.2 reference diagram renderer as a pure CX program (RULED #758, DR-1…DR-11). |
+| `did` | Decentralized identifiers (DIDs): the decentralized identity source that identifies a principal, counterpart to crypto's centralized JWT/JWKS. |
 | `email` | Parse and build RFC 5322 + MIME multipart email messages. |
 | `env` | Expose process-level metadata to CX code: environment variables, command-line arguments, and process identity. |
 | `format` | Emit CX values back to CX text in four forms: canonical, pretty, compact, and diff-friendly. |
@@ -85,7 +87,9 @@ $ cx prog.cx
 | `url` | RFC 3986 and WHATWG-URL-aligned URL parsing, building, and component encoding. |
 | `uuid` | Generate, parse, format, and validate Universally Unique Identifiers. |
 | `validate` | Validate a CX data record against a record-schema at runtime, in the    JSON-Schema / pydantic style. |
+| `vc` | Verifiable credentials: portable, signed, attenuating delegations that carry authority between DIDs and verify offline (the §22.2 delegation transport, counterpart to `did` for identity). |
 | `ws` | The RFC 6455 WebSocket frame codec: octets and values in, octets and values out. |
+| `xsp` | The XAP Stream Protocol frame codec — a self-describing, self-delimiting frame [version · type · stream-id · principal-DID · flags · len · payload] that carries XAP over any transport. |
 | `zip` | Zip archive codec over the CX bytes scalar kind. |
 
 ## Experimental tier — `cx-x/<name>`
