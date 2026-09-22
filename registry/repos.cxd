@@ -158,21 +158,21 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='scripts/check_code_diagram_fixtures.cx' repo=cx-tooling]
 
   [; ── modules that ENTER Ring 1 by the membership test (import nothing, no socket) ── ]
-  [path prefix='vcx/platform/stdlib_did' repo=cx-core-code why='pure; did:web resolution splits off to identity at the move']
-  [path prefix='vcx/platform/stdlib_vc' repo=cx-core-code why='pure signatures']
+  [path prefix='vcx/code/stdlib_did' repo=cx-core-code why='pure; did:web resolution split off to identity (RULED: RS-14)']
+  [path prefix='vcx/code/stdlib_vc' repo=cx-core-code why='pure signatures; the revocation journal split off to identity (RULED: RS-14)']
   [path prefix='vcx/platform/stdlib_authz' repo=cx-core-code why='the decision function imports nothing']
   [path exact='stdlib/did.cx' repo=cx-core-code]
   [path exact='stdlib/vc.cx' repo=cx-core-code]
   [path exact='stdlib/authz.cx' repo=cx-core-code]
   [path exact='stdlib/bus.cx' repo=cx-core-code]
   [path exact='stdlib/xsp.cx' repo=cx-core-code]
-  [path exact='spec/03-approved/platform/did.md' repo=cx-core-code]
-  [path exact='spec/03-approved/platform/vc.md' repo=cx-core-code]
+  [path exact='spec/03-approved/stdlib/did.md' repo=cx-core-code]
+  [path exact='spec/03-approved/stdlib/vc.md' repo=cx-core-code]
   [path exact='spec/03-approved/platform/authz.md' repo=cx-core-code]
   [path exact='spec/03-approved/stdlib/xsp.md' repo=cx-core-code]
   [path exact='spec/03-approved/xap/xsp.md' repo=cx-core-code why='the protocol page; the profiles stay with their owners']
-  [path exact='conformance/platform/did.cxd' repo=cx-core-code]
-  [path exact='conformance/platform/vc.cxd' repo=cx-core-code]
+  [path exact='conformance/stdlib/did.cxd' repo=cx-core-code]
+  [path exact='conformance/stdlib/vc.cxd' repo=cx-core-code]
   [path exact='conformance/platform/authz.cxd' repo=cx-core-code]
   [path exact='conformance/stdlib/xsp.cxd' repo=cx-core-code]
 
@@ -269,6 +269,22 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='vcx/platform/xsp_principal_mint' repo=cx-platform-identity]
   [path exact='stdlib/session.cx' repo=cx-platform-identity]
   [path exact='stdlib/xsp-auth.cx' repo=cx-platform-identity why='the handshake calculus became a module of its own (RULED: RS-15); its natives are already here']
+  [; RS-14's two new surfaces. did-web is #1589's own words — identity holds
+     "did:web resolution (the one impure did verb)" — so the module, its page,
+     its corpus and its natives land here. vc-revocation is NOT named by
+     #1589's per-repo bullets: the journal it appends to is the store's, but
+     the PRODUCT is credential lifecycle, and identity is where the credential
+     surface lives beside session, the handshake and the principal mint. The
+     alternative (cx-platform-store, on the substrate) is a LETTER on this
+     branch's RESULTS.md, not a settled reading. ]
+  [path prefix='vcx/platform/stdlib_did_web' repo=cx-platform-identity]
+  [path exact='stdlib/did-web.cx' repo=cx-platform-identity]
+  [path exact='spec/03-approved/platform/did-web.md' repo=cx-platform-identity]
+  [path exact='conformance/platform/did-web.cxd' repo=cx-platform-identity]
+  [path prefix='vcx/platform/stdlib_vc_revocation' repo=cx-platform-identity why='credential lifecycle is identity\'s product; the journal it writes to is the substrate, not the owner']
+  [path exact='stdlib/vc-revocation.cx' repo=cx-platform-identity]
+  [path exact='spec/03-approved/platform/vc-revocation.md' repo=cx-platform-identity]
+  [path exact='conformance/platform/vc-revocation.cxd' repo=cx-platform-identity]
   [path exact='spec/03-approved/platform/session.md' repo=cx-platform-identity]
   [path exact='spec/03-approved/xap/xap_identity_model.md' repo=cx-platform-identity]
   [path exact='spec/03-approved/xap/xsp-auth.md' repo=cx-platform-identity]

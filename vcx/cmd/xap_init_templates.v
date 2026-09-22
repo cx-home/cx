@@ -468,7 +468,7 @@ fn xap_init_bundle_program(name string) string {
    gate and no consent. Bundling is a billing relationship, not an authority. ]
 [?lib 'cx-xap' :as xap]
 [?lib 'cx-platform/store' :as store]
-[?lib 'cx-platform/did' :as did]
+[?lib 'cx-stdlib/did' :as did]
 [?lib 'cx-stdlib/crypto' :as crypto]
 [?lib 'cx-stdlib/io' :as io]
 [?lib 'cx-stdlib/cx' :as cx]
