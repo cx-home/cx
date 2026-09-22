@@ -21,8 +21,14 @@
 #   1  one or more cases FAILED, or no case passed (an empty selection)
 #   2  the corpus is missing or does not parse
 #
-# Run:  cx --allow-read scripts/check_deps_pins_fixtures.cx [--verbose]
-#       cx --allow-read scripts/check_deps_pins_fixtures.cx --self-test
+# Run:  cx --allow-read --allow-write scripts/check_deps_pins_fixtures.cx [--verbose]
+#       cx --allow-read --allow-write scripts/check_deps_pins_fixtures.cx --self-test
+#
+# BOTH GRANTS ARE LOAD-BEARING: it reads the corpus and it writes to stdout,
+# and a denied write bound to an unused [?let] binding is dropped silently
+# (#1608) -- under --allow-read alone this program grades every case, exits
+# with the right status and prints nothing at all.
+#
 # (or:  make test-deps-pins, which runs the self-test then the corpus)
 
 [?lib 'cx-stdlib/io'      as=io]
