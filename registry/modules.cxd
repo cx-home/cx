@@ -265,6 +265,13 @@ becomes its own Ring-1 module.
   [module name=vc ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/vc.md corpus=conformance/platform/vc.cxd source=stdlib/vc.cx code=vcx/platform/stdlib_vc.v half=none status=current]
   [module name=xap ring=2 ns=cx-xap kind=module spec=spec/03-approved/xap/xap_module.md corpus=conformance/xap/xap-serve.cxd source=stdlib/xap.cx code=vcx/platform/stdlib_xap.v half=none status=current]
   [module name=xsp ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/xsp.md corpus=conformance/platform/xsp.cxd source=stdlib/xsp.cx code=none half=vcx/code/stdlib_xsp.v status=current]
+  [; xsp-auth — the XSP-AUTH handshake calculus, a MODULE since RS-15 rather
+     than the natives family it was: the thirteen `auth-*` defs left
+     `stdlib/xsp.cx` for `stdlib/xsp-auth.cx`, and the page and corpus the
+     natives row already owned became this module's own. Ring 2 because its
+     natives are identity's `stdlib_xsp_auth.v` — which is exactly why
+     `cx-stdlib/xsp` could not carry them. ]
+  [module name=xsp-auth ring=2 ns=cx-platform kind=module spec=spec/03-approved/xap/xsp-auth.md corpus=conformance/xap/xsp-auth.cxd source=stdlib/xsp-auth.cx code=vcx/platform/stdlib_xsp_auth.v half=none status=current]
 
   [; ── The x tier — cx-x, its own namespace and its own spec directory.
        1427-b renames `cx-stdlib/X` and nothing else, so these rows carry no
@@ -287,7 +294,6 @@ becomes its own Ring-1 module.
        whose parent spec is not a module of its own (1427-e). ──────────── ]
   [module name=term ring=1 ns=none kind=natives spec=spec/03-approved/stdlib/term.md corpus=conformance/stdlib/term.cxd source=none code=vcx/code/stdlib_term_notd_cx_no_pack_term.v half=none status=current]
   [module name=xap_dist ring=2 ns=none kind=natives spec=spec/03-approved/xap/xap_dist.md corpus=conformance/xap/xap-dist.cxd source=none code=vcx/platform/stdlib_xap_dist.v half=none status=current]
-  [module name=xsp_auth ring=2 ns=none kind=natives spec=spec/03-approved/xap/xsp-auth.md corpus=conformance/xap/xsp-auth.cxd source=none code=vcx/platform/stdlib_xsp_auth.v half=none status=current]
   [module name=redis ring=2 ns=none kind=backend spec=spec/03-approved/platform/store/redis.md corpus=conformance/platform/db.cxd source=none code=vcx/platform/redis_d_cx_db_redis.v half=none status=current]
   [module name=sql ring=2 ns=none kind=backend spec=spec/03-approved/platform/store/sql.md corpus=conformance/platform/db.cxd source=none code=vcx/platform/sql.v half=none status=current]
   [module name=distributed_store ring=2 ns=none kind=design spec=spec/03-approved/platform/store/distributed_store.md corpus=conformance/platform/store.cxd source=none code=none half=none status=current]

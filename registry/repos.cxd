@@ -268,6 +268,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='vcx/platform/stdlib_xsp_auth' repo=cx-platform-identity]
   [path prefix='vcx/platform/xsp_principal_mint' repo=cx-platform-identity]
   [path exact='stdlib/session.cx' repo=cx-platform-identity]
+  [path exact='stdlib/xsp-auth.cx' repo=cx-platform-identity why='the handshake calculus became a module of its own (RULED: RS-15); its natives are already here']
   [path exact='spec/03-approved/platform/session.md' repo=cx-platform-identity]
   [path exact='spec/03-approved/xap/xap_identity_model.md' repo=cx-platform-identity]
   [path exact='spec/03-approved/xap/xsp-auth.md' repo=cx-platform-identity]
