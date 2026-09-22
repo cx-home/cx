@@ -615,7 +615,15 @@ pub fn grade_files(opts Options, names []string) Outcome {
 			// sched.md §3.3 loop-construction selector: the conformance harness runs the
 			// DETERMINISTIC clock (RULED: 1358-b). Production defaults to :wall, so
 			// without this every test-clock-advance case would answer CXER4970.
-			code.sched_set_manual_clock(opts.manual_clock)
+			//
+			// The call is compiled out on a composition that packs `sched` OUT
+			// (`-d cx_no_pack_sched`, the embed profile): the selector lives in
+			// code/stdlib_sched_notd_cx_no_pack_sched.v, so there is no clock to
+			// select and no case that needs one — every `packs=sched` case is
+			// skipped by name on that binary.
+			$if !cx_no_pack_sched ? {
+				code.sched_set_manual_clock(opts.manual_clock)
+			}
 			// strict-tag parity (stream 14, the audit note): the stdlib and
 			// package lanes honor 'strict-mode' exactly as the code.cxd lane
 			// does — a tagged fixture must never silently run un-strict.
