@@ -667,6 +667,7 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/flow_vocabulary_gate.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/fuzz_cx.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/gen_docs/primer_platform.cx', .program, reason_prog},
+	AcceptedByOne{'scripts/repos_allocation_gate.cx', .program, reason_prog},
 	AcceptedByOne{'stdlib/connector.cx', .program, reason_prog},
 ]
 

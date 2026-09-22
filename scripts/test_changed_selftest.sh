@@ -70,15 +70,22 @@ run x/ux-web.cx > "$T/a"
 a_files=$(suite_files_of "$T/a")
 a_n=$(printf '%s\n' "$a_files" | grep -c . || true)
 a_t=$(targets "$T/a" | wc -w | tr -d ' ')
+# repos-allocation-gate's manifest row is '*' (#1591 item 4): any added or
+# removed file can change the allocation, so it rides on EVERY selection by
+# design. The bound below counts the steps the CHANGE selected, so the
+# always-on row is taken out of the count and asserted present instead — the
+# union on cad2bb8b0 red this case at 30 targets the day the row merged.
+a_t_selected=$(targets "$T/a" | tr ' ' '\n' | grep -vc '^repos-allocation-gate$' || true)
 a_tail=$(tail_of "$T/a")
 if [ "$a_n" -ge 1 ] && [ "$a_n" -le 3 ] \
 	&& printf '%s\n' "$a_files" | grep -q 'code_eval_fixtures_shard_' \
 	&& ! printf '%s\n' "$a_files" | grep -q 'umbrella' \
-	&& [ "$a_t" -lt 30 ] \
+	&& [ "$a_t_selected" -lt 30 ] \
+	&& targets "$T/a" | tr ' ' '\n' | grep -q '^repos-allocation-gate$' \
 	&& ! printf '%s' "$a_tail" | grep -q 'test-vcx-timing'; then
-	ok A "$a_t targets, $a_n suite file(s) — its grading shard, no umbrella, no boot-budget step"
+	ok A "$a_t targets ($a_t_selected selected by the change + the always-on allocation row), $a_n suite file(s) — its grading shard, no umbrella, no boot-budget step"
 else
-	bad A "x/ module source: $a_t targets, $a_n suite file(s), tail [$a_tail]"
+	bad A "x/ module source: $a_t targets ($a_t_selected without the '*' row), $a_n suite file(s), tail [$a_tail]"
 fi
 
 # ── B — one engine file ─────────────────────────────────────────────────────
