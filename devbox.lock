@@ -1,6 +1,54 @@
 {
   "lockfile_version": "1",
   "packages": {
+    "emscripten@5.0.7": {
+      "last_modified": "2026-07-08T21:13:06Z",
+      "resolved": "github:NixOS/nixpkgs/389ed85304b281ca7f306cf8a1eb4378651ca44e#emscripten",
+      "source": "devbox-search",
+      "version": "5.0.7",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/p4z6jdpnlvwpsmhjxh116hlmhy5bdbqf-emscripten-5.0.7",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/p4z6jdpnlvwpsmhjxh116hlmhy5bdbqf-emscripten-5.0.7"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/5xiiz4d054hpd742nryzy6p8r473a2nq-emscripten-5.0.7",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/5xiiz4d054hpd742nryzy6p8r473a2nq-emscripten-5.0.7"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/i9x1679i94zpls4098w1pcjvwdh3d0w5-emscripten-5.0.7",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/i9x1679i94zpls4098w1pcjvwdh3d0w5-emscripten-5.0.7"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/n4lmp40q0irqij3fasw044fhfjsfk5l4-emscripten-5.0.7",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/n4lmp40q0irqij3fasw044fhfjsfk5l4-emscripten-5.0.7"
+        }
+      }
+    },
     "git@latest": {
       "last_modified": "2026-03-21T07:29:51Z",
       "resolved": "github:NixOS/nixpkgs/09061f748ee21f68a089cd5d91ec1859cd93d0be#git",
@@ -76,6 +124,54 @@
     "github:NixOS/nixpkgs/nixpkgs-unstable": {
       "last_modified": "2026-04-10T03:55:24Z",
       "resolved": "github:NixOS/nixpkgs/9d29d5f667d7467f98efc31881e824fa586c927e?lastModified=1775793324"
+    },
+    "go@1.26.1": {
+      "last_modified": "2026-04-16T08:46:55Z",
+      "resolved": "github:NixOS/nixpkgs/b86751bc4085f48661017fa226dee99fab6c651b#go",
+      "source": "devbox-search",
+      "version": "1.26.1",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/kh43nhaz1qcpwws2xq805lrmwpmn9i3k-go-1.26.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/kh43nhaz1qcpwws2xq805lrmwpmn9i3k-go-1.26.1"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/rz1pqbm5z3zfby250i0djfmfzzj7khg9-go-1.26.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/rz1pqbm5z3zfby250i0djfmfzzj7khg9-go-1.26.1"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/yv6jj27racylbfjw6a1cdr91ndxbgyf6-go-1.26.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/yv6jj27racylbfjw6a1cdr91ndxbgyf6-go-1.26.1"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/ckcq2mj8zk0drhaaacy6mp9d924hnr4m-go-1.26.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/ckcq2mj8zk0drhaaacy6mp9d924hnr4m-go-1.26.1"
+        }
+      }
     },
     "hyperfine@latest": {
       "last_modified": "2026-03-21T07:29:51Z",
@@ -291,7 +387,7 @@
     },
     "nodejs@22": {
       "last_modified": "2026-08-27T07:16:00Z",
-      "plugin_version": "0.0.4",
+      "plugin_version": "0.0.5",
       "resolved": "github:NixOS/nixpkgs/c27cdad491a991b11ed731760aa2ef8db0cb0410#nodejs_22",
       "source": "devbox-search",
       "version": "22.23.2",

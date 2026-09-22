@@ -5,6 +5,8 @@
     "python": "3.12",
     "jq": "latest",
     "nodejs": "22",
+    "go": "1.26.1",
+    "emscripten": "5.0.7",
     "hyperfine": "latest",
     "git": "latest",
     "lazygit": "latest",
