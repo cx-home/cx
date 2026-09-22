@@ -136,6 +136,7 @@ becomes its own Ring-1 module.
 
   [; ── Ring 1 — cx-stdlib ───────────────────────────────────────────── ]
   [module name=array ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/array.md corpus=conformance/stdlib/array.cxd source=stdlib/array.cx code=vcx/code/stdlib_array.v half=none status=current]
+  [module name=bus ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/bus.md corpus=conformance/stdlib/bus.cxd source=stdlib/bus.cx code=vcx/code/stdlib_bus.v half=none status=current]
   [module name=bytes ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/bytes.md corpus=conformance/stdlib/bytes.cxd source=stdlib/bytes.cx code=vcx/code/stdlib_bytes.v half=none status=current]
   [module name=crypto ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/crypto.md corpus=conformance/stdlib/crypto.cxd source=stdlib/crypto.cx code='vcx/code/stdlib_crypto.v vcx/code/stdlib_crypto_xmlsign.v vcx/code/stdlib_crypto_xmlenc.v vcx/code/crypto_x509.v' half=none status=current]
   [module name=csv ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/csv.md corpus=conformance/stdlib/csv.cxd source=stdlib/csv.cx code=vcx/code/stdlib_csv.v half=none status=current]
@@ -204,7 +205,6 @@ becomes its own Ring-1 module.
      (OL-15) and current since release/0.18 carries it (861ca66ec). ]
   [module name=audit ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/audit.md corpus=conformance/platform/audit.cxd source=stdlib/audit.cx code=vcx/platform/stdlib_audit.v half=none status=current]
   [module name=authz ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/authz.md corpus=conformance/platform/authz.cxd source=stdlib/authz.cx code=vcx/platform/stdlib_authz.v half=none status=current]
-  [module name=bus ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/bus.md corpus=conformance/platform/bus.cxd source=stdlib/bus.cx code=vcx/platform/stdlib_bus.v half=none status=current]
   [; connector — #1430's connector kit, spec-first: the spec and its 134-case
      attack corpus landed before any code, so this row read `planned` while
      its source and code columns named where #1430 would write them. #1430's
