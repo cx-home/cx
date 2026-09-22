@@ -375,8 +375,23 @@ else
 	bad N4 "a runner selected a step it is not an input to:$n_cross"
 fi
 
+# ── O — a module-only sso change still selects the interop lane ─────────────
+# The lane is the ONLY step that grades the networked half of the sso stack,
+# and until 2026-09-22 its row named the transport modules but not the module
+# itself: a change to exactly stdlib/sso.cx + conformance/platform/sso.cxd put
+# the step in the SKIP list (#1591 item 11, flag F-6). In cx-private that read
+# as defensible — the shard grades the module, the lane grades the network. In
+# cx-platform-sso the lane IS most of the gate, so a false skip there is the
+# whole gate going quiet on the change most likely to break it.
+run stdlib/sso.cx conformance/platform/sso.cxd > "$T/m"
+if targets "$T/m" | tr " " "\n" | grep -q "^test-sso-interop-lane$"; then
+	ok O "a module-only sso change selects test-sso-interop-lane"
+else
+	bad O "stdlib/sso.cx + conformance/platform/sso.cxd did not select test-sso-interop-lane: [$(targets "$T/m")]"
+fi
+
 if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "test_changed selftest: $cases/$cases (A x/ module; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step)"
+echo "test_changed selftest: $cases/$cases (A x/ module; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop lane)"
