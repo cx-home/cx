@@ -1,0 +1,210 @@
+# scripts/repos_allocation_gate.cx -- the REPO ALLOCATION check (#1589, #1591 item 4).
+#
+# Eat-our-own-dog-food: written entirely in CX; runs as `cx <file>`.
+#
+# registry/repos.cxd states, as data, which repository every tracked path
+# moves to under the approved multi-repo shape. This program is the check that
+# the statement is TOTAL and LIVE over the tree it sits in:
+#
+#   [unallocated]   a tracked file no `[path]` rule claims
+#   [dead rule]     a rule that is never the FIRST match for any file -- it is
+#                   shadowed by an earlier rule, or names a path that is gone
+#   [duplicate]     two rules with the same exact= / prefix=
+#   [undeclared]    a rule whose repo= has no `[repo]` row
+#   [empty repo]    a `[repo]` row that receives no file
+#   [split module]  a registry/modules.cxd row whose spec, corpus, source and
+#                   code files land in DIFFERENT repos -- a module moves whole
+#
+# A file belongs to the FIRST rule, in document order, whose exact= equals the
+# path or whose prefix= leads it. Nothing else is inferred.
+#
+# The file list is `git ls-files` (the tracked tree), or the lines of the file
+# named by REPOS_FILES= (one path per line) -- the selftest and a dry run over
+# another tree use that.
+#
+# Output: the census (files per repo, most first) on stdout, then either
+# `repos-allocation: OK` or the failures on stderr.
+# Exit: 0 clean, 1 the allocation is not total or has a stale rule, 2 the
+# registry or the file list is unreadable.
+#
+# Run from the checkout root:
+#   vcx/target/cx --allow-all scripts/repos_allocation_gate.cx [--self-test]
+# (or: make repos-allocation-gate, which runs the self-test then the tree)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+
+# -- helpers ------------------------------------------------------------
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?def member scope=private pure [returns bool] ($x::string $xs)
+  [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+# rule-key: the identity of a rule as text -- what [dead rule] and [duplicate]
+# reason over. exact= and prefix= are the only two shapes.
+[?def rule-key scope=private pure [returns string] ($r)
+  [?let [= $e [$string [?else $r@exact ""]]]
+        [= $p [$string [?else $r@prefix ""]]]
+    [?if [not [= $e ""]] [then [$concat "exact=" $e]] [else [$concat "prefix=" $p]]]]]
+
+# rule-matches: does rule $r claim path $f?
+[?def rule-matches scope=private pure [returns bool] ($r $f::string)
+  [?let [= $e [$string [?else $r@exact ""]]]
+        [= $p [$string [?else $r@prefix ""]]]
+    [?if [not [= $e ""]]
+      [then [= $e $f]]
+      [else [?if [not [= $p ""]]
+              [then [$strings:starts-with $f $p]]
+              [else false]]]]]]
+
+# first-rule: the rule that claims $f, as [hit repo= key=], or [miss] when none.
+[?def first-rule scope=private pure ($rules $f::string)
+  [?let [= $hits [?for [in $r $rules] [where [$rule-matches $r $f]]
+                   [yield [hit repo=[$string $r@repo] key=[$rule-key $r]]]]]
+    [?if [= [$count $hits] 0] [then [miss]] [else [$first $hits]]]]]
+
+# nonblank: the non-empty lines of a text, trimmed.
+[?def nonblank scope=private pure ($text::string)
+  [?for [in $l [$strings:split-lines $text]]
+    [where [not [= [$strings:trim $l] ""]]]
+    [yield [$strings:trim $l]]]]
+
+# -- the check itself: pure over (rules, repo rows, files) ---------------
+#
+# answers [verdict [failure kind=... what=...]* [census [row repo= n=]*]]
+
+[?def check scope=private pure ($rules $repos $files $modules)
+  [?let
+    [= $repo-names [?for [in $x $repos] [yield [$string $x@name]]]]
+    [= $allocs [?for [in $f $files]
+                 [yield [?let [= $h [$first-rule $rules $f]]
+                          [?match $h
+                            [case [miss] [alloc file=$f repo="" key=""]]
+                            [else [alloc file=$f repo=[$string $h@repo] key=[$string $h@key]]]]]]]]
+    [= $used-keys [?for [in $a $allocs] [where [not [= [$string $a@key] ""]]] [yield [$string $a@key]]]]
+    [= $rule-keys [?for [in $r $rules] [yield [$rule-key $r]]]]
+    [= $unallocated [?for [in $a $allocs] [where [= [$string $a@repo] ""]]
+                      [yield [failure kind="unallocated" what=[$string $a@file]]]]]
+    [= $dead [?for [in $r $rules] [where [not [$member [$rule-key $r] $used-keys]]]
+               [yield [failure kind="dead rule" what=[$concat [$rule-key $r] " -> " [$string $r@repo]]]]]]
+    [= $dups [?for [in $k $rule-keys]
+               [where [> [$count [?for [in $k2 $rule-keys] [where [= $k $k2]] [yield 1]]] 1]]
+               [yield [failure kind="duplicate" what=$k]]]]
+    [= $undeclared [?for [in $r $rules] [where [not [$member [$string $r@repo] $repo-names]]]
+                     [yield [failure kind="undeclared" what=[$concat [$rule-key $r] " -> " [$string $r@repo]]]]]]
+    [= $census [?for [in $a $allocs] [where [not [= [$string $a@repo] ""]]]
+                 [group-by [$string $a@repo]]
+                 [yield [row repo=$key n=$count]]]]
+    [= $filled [?for [in $c $census] [yield [$string $c@repo]]]]
+    [= $empty [?for [in $x $repos] [where [not [$member [$string $x@name] $filled]]]
+                [yield [failure kind="empty repo" what=[$string $x@name]]]]]
+    [= $split [?for [in $m $modules]
+                [yield [?let [= $paths [?for [in $col ([$string [?else $m@spec ""]], [$string [?else $m@corpus ""]], [$string [?else $m@source ""]], [$string [?else $m@code ""]])]
+                                          [in $p [$strings:split-whitespace $col]]
+                                          [where [not [= $p "none"]]]
+                                          [yield $p]]]
+                              [= $homes [?for [in $p $paths]
+                                          [yield [?let [= $h [$first-rule $rules $p]]
+                                                   [?match $h [case [miss] ""] [else [$string $h@repo]]]]]]]
+                              [= $distinct [?for [in $h $homes] [group-by $h] [yield $key]]]
+                         [?if [> [$count $distinct] 1]
+                           [then [failure kind="split module" what=[$concat [$string $m@name] " -> " [$strings:join $distinct " + "]]]]
+                           [else [ok]]]]]]]
+    [= $split-failures [?for [in $s $split] [where [?match $s [case [ok] false] [else true]]] [yield $s]]]
+    [verdict
+      [failures [?for [in $x $unallocated] [yield $x]]
+                [?for [in $x $dead] [yield $x]]
+                [?for [in $x $dups] [yield $x]]
+                [?for [in $x $undeclared] [yield $x]]
+                [?for [in $x $empty] [yield $x]]
+                [?for [in $x $split-failures] [yield $x]]]
+      [census [?for [in $c $census] [order-by $c@n desc] [yield $c]]]]]]
+
+# -- the self-test: synthetic rules over a synthetic file list ---------------
+
+[?if [$member "--self-test" [$env:argv]]
+  [then
+    [?let
+      [= $reg [$cx:parse "[repo-allocation
+        [repo name=a] [repo name=b] [repo name=ghost]
+        [path exact='x/one.md' repo=a]
+        [path prefix='x/' repo=b]
+        [path prefix='x/one' repo=a]
+        [path prefix='y/' repo=nowhere]
+        [path exact='x/one.md' repo=b]
+      ]"]]
+      [= $files ("x/one.md", "x/two.md", "y/three.md", "z/four.md")]
+      [= $mods [?for [in $m [$cx:parse "[r [module name=whole spec=x/one.md source=x/one.md code=none] [module name=torn spec=x/one.md code=y/three.md source=none]]"]//module] [yield $m]]]
+      [= $v [$check [?for [in $r $reg//path] [yield $r]]
+                    [?for [in $r $reg//repo] [yield $r]]
+                    $files $mods]]
+      [= $kinds [?for [in $f $v/failures/failure] [yield [$concat [$string $f@kind] ":" [$string $f@what]]]]]
+      [= $want ("unallocated:z/four.md",
+                "dead rule:prefix=x/one -> a",
+                "duplicate:exact=x/one.md",
+                "duplicate:exact=x/one.md",
+                "undeclared:prefix=y/ -> nowhere",
+                "empty repo:ghost",
+                "split module:torn -> a + nowhere")]
+      [= $missing [?for [in $w $want] [where [not [$member $w $kinds]]] [yield $w]]]
+      [= $extra   [?for [in $k $kinds] [where [not [$member $k $want]]] [yield $k]]]
+      [= $a-n [$first [?for [in $c $v/census/row] [where [= [$string $c@repo] "a"]] [yield [$string $c@n]]]]]
+      [= $b-n [$first [?for [in $c $v/census/row] [where [= [$string $c@repo] "b"]] [yield [$string $c@n]]]]]
+      [= $census-ok [?if [= $a-n "1"] [then [= $b-n "1"]] [else false]]]
+      [?if [?if [= [$count $missing] 0] [then [?if [= [$count $extra] 0] [then $census-ok] [else false]]] [else false]]
+        [then [?let [= $_ [$say "repos-allocation self-test OK -- unallocated, dead rule, duplicate, undeclared, empty repo, split module each caught once; a whole module passes; census a=1 b=1 (y/ counted under the undeclared rule's repo, as it must)."]]
+                [$env:exit 0]]]
+        [else [?let [= $_ [$cry [$concat "repos-allocation self-test FAILED -- missing: "
+                                          [$strings:join $missing "; "]
+                                          " | unexpected: " [$strings:join $extra "; "]
+                                          " | census a=" $a-n " b=" $b-n]]]
+                [$env:exit 1]]]]]]
+  [else ""]]
+
+# -- the tree ------------------------------------------------------------
+
+[?let [= $reg-path "registry/repos.cxd"]
+      [= $reg-ok [$io:exists $reg-path]]
+  [?if [not $reg-ok]
+    [then [?let [= $_ [$cry [$concat "repos-allocation: cannot read " $reg-path " -- run from the checkout root"]]]
+            [$env:exit 2]]]
+    [else ""]]]
+
+[?let
+  [= $reg [$cx:parse [$io:read-file "registry/repos.cxd"]]]
+  [= $rules [?for [in $r $reg//path] [yield $r]]]
+  [= $repos [?for [in $r $reg//repo] [yield $r]]]
+  [= $modules [?let [= $mreg [$cx:parse [$io:read-file "registry/modules.cxd"]]]
+                 [?for [in $m $mreg//module] [where [= [$string [?else $m@status "current"]] "current"]] [yield $m]]]]
+  [= $list-path [$string [$env:var-or-default "REPOS_FILES" ""]]]
+  [= $files [?if [= $list-path ""]
+              [then [?let [= $r [$process:run ("git", "ls-files")]]
+                      [?if [not [= [$string $r@exit-code] "0"]]
+                        [then [?let [= $_ [$cry [$concat "repos-allocation: git ls-files failed: " [$string $r@stderr]]]]
+                                [?let [= $_x [$env:exit 2]] ()]]]
+                        [else [$nonblank [$string $r@stdout]]]]]]
+              [else [$nonblank [$io:read-file $list-path]]]]]
+  [= $v [$check $rules $repos $files $modules]]
+  [= $failures [?for [in $f $v/failures/failure] [yield $f]]]
+  [= $_census [?for [in $c $v/census/row]
+                [yield [$say [$concat [$strings:pad-start [$string $c@n] 6 " "] "  " [$string $c@repo]]]]]]
+  [= $_detail [?if [= [$string [$env:var-or-default "REPOS_DETAIL" ""]] ""] [then ()]
+                [else [?for [in $a [?for [in $f $files] [yield [?let [= $h [$first-rule $rules $f]] [d repo=[?match $h [case [miss] ""] [else [$string $h@repo]]] top=[$first [$strings:split $f "/"]]]]]]]
+                         [group-by [$concat [$string $a@repo] "  " [$string $a@top]]]
+                         [order-by $key]
+                         [yield [$say [$concat "    " [$strings:pad-start [$string $count] 5 " "] "  " $key]]]]]]]
+  [= $_total [$say [$concat [$strings:pad-start [$string [$count $files]] 6 " "] "  tracked files, "
+                             [$string [$count $rules]] " rules, " [$string [$count $repos]] " repos"]]]
+  [?if [= [$count $failures] 0]
+    [then [?let [= $_ [$say "repos-allocation: OK -- every tracked file lands in exactly one repo; no dead, duplicate or undeclared rule; no empty repo"]]
+            [$env:exit 0]]]
+    [else
+      [?let [= $_h [$cry [$concat "repos-allocation: " [$string [$count $failures]] " failure(s)"]]]
+            [= $_l [?for [in $f $failures] [order-by $f@kind]
+                     [yield [$cry [$concat "  [" [$string $f@kind] "] " [$string $f@what]]]]]]
+        [$env:exit 1]]]]]
