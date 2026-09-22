@@ -254,6 +254,8 @@ the rule carries a `why=`. The recurring reasons, once:
   [; ── platform: mail ────────────────────────────────────────────────── ]
   [path prefix='vcx/platform/stdlib_smtp' repo=cx-platform-mail]
   [path prefix='vcx/platform/stdlib_imap' repo=cx-platform-mail]
+  [path prefix='vcx/code/stdlib_smtp' repo=cx-platform-mail why='the DECLARED Ring-1 half of the smtp module (modules.cxd half=): the pure ESMTP codec and server core, which decide MEANING and open nothing. A module moves whole, so the half travels with its wire half — as sasl already does (RULED: RS-19)']
+  [path prefix='vcx/code/stdlib_imap' repo=cx-platform-mail why='the DECLARED Ring-1 half of the imap module (modules.cxd half=): the pure IMAP codec and server core. Same rule as the smtp half above (RULED: RS-19)']
   [path exact='stdlib/smtp.cx' repo=cx-platform-mail]
   [path exact='stdlib/imap.cx' repo=cx-platform-mail]
   [path exact='spec/03-approved/platform/smtp.md' repo=cx-platform-mail]
