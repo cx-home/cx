@@ -1,9 +1,10 @@
-# RS-13…RS-17 — the repo split's first follow-up decisions (owner, 2026-09-22, in session on dev2)
+# RS-13…RS-17 and RS-21 — the repo split's follow-up decisions (owner, 2026-09-22/23, in session on dev2)
 
 **Status: RULED.** The owner answered each as a letter on the integrator's lettered options, in
 session on 2026-09-22 (recorded on [#1591](https://github.com/cx-home/cx-private/issues/1591)
 the same hour). They extend [`rulings_2026_09_21_repo_split_1589.md`](rulings_2026_09_21_repo_split_1589.md)
-(RS-1…RS-12) and take the calls that page did not make.
+(RS-1…RS-12) and take the calls that page did not make. RS-21 was answered the same way one day
+later, on 2026-09-23, against the store-auth branch's LETTER L1, and is recorded here beside them.
 
 ## RS-13 — `authz` splits along the RS-6 line (owner: D14a)
 
@@ -55,6 +56,40 @@ A long-lived evaluator's per-case cost must be flat: what a finished env leaves 
 `-gc e` is found and freed in the runtime/env teardown (measured on `f9706fe84`: the connector shard
 3,893 s with per-case cost growing 0.8 → 12–25 s under `-gc e`, 46 s at a flat ~80 ms under a tracing
 collector). No grader recycling, no per-kind corpus split, no collector swap for the graders.
+
+## RS-21 — a decision's design item may ADD spec text where the edit map is silent (owner: D22b)
+
+**The question.** `_gate_evidence/pipeline_storeauth/RESULTS.md` §7 LETTER L1 asked whether the
+store profile page may carry a normative `[grants]` document-shape section. The design item was
+already ruled — the store server authenticates through the Ring-1 trust primitives and the daemon's
+own `[grants]` table — but the repo-split page's spec-edit map lists no sentence on
+`spec/03-approved/xap/xsp_store_profile.md`, so every sentence of a new section sat beyond the map.
+The letter offered (a) leave it, with the operator-facing grammar of the daemon's only authority
+surface readable nowhere but the parser; (b) authorize one §6.2 under the design item; (c) move the
+shape to `platform/store.md`, its long-term home once the store extracts. The integrator
+recommended (b) now, (c) at the extraction.
+
+**The owner's answer (D22b, 2026-09-23, on [#1591](https://github.com/cx-home/cx-private/issues/1591)), verbatim:**
+"one normative §6.2 `[grants]` document-shape section on `xsp_store_profile.md`, under RS-6,
+cross-linked from `platform/store.md` §6.4."
+
+**The precedent.** A decision's design item MAY ADD spec text to a page the decision's edit map does
+not name, when the added text says what that design item already ruled and says it in the page's own
+voice. It may never MOVE or DELETE spec text there: a sentence the map does not name stays exactly
+where it is, and a page the map does not name keeps every sentence it already has. The silence of an
+edit map is therefore permission to write down a ruled design, never licence to rearrange a page
+around it. `AGENTS.md` rule 1 is unchanged — the spec is the only truth, and a spec edit happens
+inside a decision; what this decision settles is that the decision's own design items, not only its
+enumerated edit rows, are inside it. A sentence beyond the design item stays what it has always
+been: a flag in the agent's report, not an edit.
+
+**This instance, bounded.** Exactly two pages move. A new §6.2 on
+`spec/03-approved/xap/xsp_store_profile.md` states the `[grants]` document shape — its attributes,
+the capability classes §6.1 names, what an unmatched principal receives, the refusal codes, and the
+relation to the Ring-1 confirm primitive — with every claim carrying the id of a case that pins it.
+One sentence in `spec/03-approved/platform/store.md` §6.4 cross-links it. Nothing else in either
+page moves, and the letter's option (c) — the shape following the product into its own repository —
+is not taken here and stays open for the extraction.
 
 ## Also ruled in the same session, operational (no id; recorded)
 
