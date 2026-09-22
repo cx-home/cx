@@ -203,7 +203,13 @@ step_globs() {
     # vcx/cmd compiles with -d cx_platform, so it carries the full closure.
     test-vcx-cmd)                  echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP conformance/* stdlib/* x/*" ;;
     # the conformance aggregates drive the built cx binary over the corpus.
-    test-vcx-conform)              echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP conformance/* stdlib/* x/*" ;;
+    # #1598 — and they drive it through THREE runner programs: the recipe runs
+    # `conform-all` and `conform-data-bin-arrow` out of
+    # vcx/tests/runners/conformance/, `conform-fmt` out of runners/fmt/ and
+    # `conform-diff`/`conform-lint` out of runners/diff_lint/ (vcx/Makefile).
+    # A runner-only edit selected this step by nothing but the fail-safe arm of
+    # the suite classifier, which is not a row and does not survive #1598.
+    test-vcx-conform)              echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP conformance/* stdlib/* x/* vcx/tests/runners/conformance/* vcx/tests/runners/fmt/* vcx/tests/runners/diff_lint/*" ;;
     # `test-vcx` is no longer a TEST_TARGETS row (it stays the human entry
     # point). The row is kept so an explicit `test-changed` over a tree whose
     # Makefile still names it cannot fall through to deny-by-default.
@@ -264,6 +270,12 @@ step_globs() {
     # else narrows: over-include on doubt, a false RUN costs minutes and a
     # false SKIP costs correctness.
     test-extraction-gate)          echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED vcx/tests/runners/extraction_gate/* conformance/*" ;;
+    # #1598 asked whether abi-gc-gate and libcx-abi-gate read the extraction
+    # gate's runner too. They do not: abi-gc-gate compiles
+    # vcx/tests/runners/abi_gc_gate/ and libcx-abi-gate runs
+    # tools/libcx-abi-gate.sh, and both then dlopen $(LIBCX_ART). They share
+    # the OUTPUT directory vcx/target/extraction_gate/ with the step above and
+    # nothing else, so neither takes that runner's glob.
     abi-gc-gate)                   echo "$RING_LIB $RING_SUP $RING_EMBED vcx/tests/runners/abi_gc_gate/*" ;;
     check-v-fork)                  echo 'third_party/* scripts/v_fork_register.cxd scripts/check_v_fork_patches.cx' ;;
     # reads the built library's export surface against include/cx.h.
@@ -282,7 +294,12 @@ step_globs() {
     test-profile-gate)             echo "$RING_LIB stdlib/* conformance/code.cxd conformance/stdlib/* conformance/platform/* conformance/x/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/runners/profile_gate/* vcx/tests/fixtures_grader/* scripts/profile_gate_files_for_branch.sh third_party/*" ;;
     # #1560 (RULED: VCOST-1): the selection self-test reads only the helper it
     # pins and its own source, so it runs when either moves and not otherwise.
-    check-profile-gate-selection)  echo "scripts/profile_gate_files_for_branch.sh scripts/profile_gate_selection_selftest.sh" ;;
+    # #1598 adds the profile gate's runner directory: the helper's ALL rule is
+    # spelled `^vcx/tests/runners/profile_gate/` and the self-test pins that
+    # row by name, so the directory's shape — a file added to it, the directory
+    # renamed — is part of the pair's surface. One second of step, and the
+    # manifest over-includes on doubt.
+    check-profile-gate-selection)  echo "scripts/profile_gate_files_for_branch.sh scripts/profile_gate_selection_selftest.sh vcx/tests/runners/profile_gate/*" ;;
     # #1562 (RULED: VCOST-1): the budget step reads the bounds manifest and the
     # timings a run leaves behind; the self-test reads the step and its own
     # source. Neither reads the tree, so neither runs when the tree moves.
@@ -649,6 +666,24 @@ suite_files() {
     [ -n "$f" ] || continue
     case "$f" in
       "$SUITE_DIR"/*_test.v) continue ;;
+      # #1598 — a STEP RUNNER is a program of its own, not a suite input.
+      # `v test $(SUITE_FILES)` is pointed at vcx/tests/ and recurses, but not
+      # one file under vcx/tests/runners/ is a *_test.v, so this step compiles
+      # none of them: a runner edit that reached the fail-safe arm below was
+      # buying all 82 files for a step that does not read the file. What a
+      # runner IS an input to is the step that BUILDS it, and each directory
+      # named here is named by that step's own row above —
+      # test-extraction-gate, test-profile-gate + check-profile-gate-selection,
+      # test-vcx-conform + check-conformance-coverage. Measured 2026-09-22 on
+      # impl/cx-F-1590: two runner files, and the RUN-4 computed selection
+      # still asked for the whole suite, 81 files and 4,149 s.
+      #
+      # Only these three. A runner directory NO row names is still an
+      # unclassified vcx/tests/ path and still runs the whole suite — the
+      # fail-safe stays the resting state, and a new runner joins this list in
+      # the commit that gives its step a row.
+      "$SUITE_DIR"/runners/extraction_gate/*|"$SUITE_DIR"/runners/profile_gate/*|"$SUITE_DIR"/runners/conformance/*)
+        continue ;;
       "$SUITE_DIR"/*|vcx/testenv/*|vcx/fixtures/*|third_party/*|Makefile|vcx/Makefile|vcx/v.mod|devbox.json|devbox.lock|scripts/*)
         echo ALL; return 0 ;;
     esac
@@ -677,6 +712,12 @@ suite_files() {
     case "$f" in
       "$SUITE_DIR"/*_test.v)
         sel="$sel $f" ;;
+      # #1598 — the runner directories (a) vouched for: no test file of this
+      # step is compiled from them, so they select none. Stated rather than
+      # left to the `vcx/*` arm below, which answers nothing here only because
+      # `tests` is not in VCX_MODULES.
+      "$SUITE_DIR"/runners/*)
+        ;;
       stdlib/*.cx|x/*.cx|vcx/platform/stdlib_*.v|vcx/code/stdlib_*.v)
         # the corpus side is already in `sel`; this is the NAME clause on top,
         # plus the ring rule for the two V spellings.
