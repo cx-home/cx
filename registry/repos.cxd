@@ -321,7 +321,9 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='stdlib/sso.cx' repo=cx-platform-sso]
   [path exact='spec/03-approved/platform/sso.md' repo=cx-platform-sso]
   [path exact='conformance/platform/sso.cxd' repo=cx-platform-sso]
-  [path prefix='scripts/sso_interop' repo=cx-platform-sso]
+  [path prefix='scripts/sso_interop/' repo=cx-platform-sso]
+  [path exact='scripts/sso_interop_lane.sh' repo=cx-platform-sso why='the lane script, claimed by NAME: the prefix above carries its trailing slash so it claims the directory and nothing else (#1591 item 11, flag F-4)']
+  [path prefix='examples/platform/sso/' repo=cx-platform-sso why='the interop lane boots examples/platform/sso/deployment/deployment.cx, so the example travels with the module it exercises rather than the consumer pinning the repo above it -- a file dependency on cx-platform-xap would point the lowest package at the highest product and RS-1 requires the graph acyclic (#1591 item 11, flag F-1)']
   [path prefix='tools/sso_' repo=cx-platform-sso]
 
   [; ── platform: ux ──────────────────────────────────────────────────── ]
