@@ -29,6 +29,9 @@
 #                                                deleted-input case: the rows
 #                                                must not be pathname-expanded)
 #   G  a TEST_TARGETS entry with no row          check-selection-manifest FAILS
+#   M  a worktree whose third_party/* are        nothing is selected; a REAL
+#      SYMLINKS, gitlink unchanged (#1599)       gitlink move still runs the
+#                                                whole suite
 #
 # Exit 0 and the count line only when every case matches.
 set -u
@@ -285,8 +288,55 @@ else
 	bad L "it does not parse: $(tr '\n' ' ' < "$T/shn.err")"
 fi
 
+# ── M — a SYMLINKED third_party/ is not a pin move (#1599) ─────────────────
+# Every impl worktree carries third_party/re2 and third_party/v as SYMLINKS to
+# the main checkout's submodules (AGENT-STANDING-RULES.md §Git), and `git diff
+# HEAD` reports each as a TYPECHANGE — gitlink (mode 160000) → symbolic link
+# (120000). The worktree half of the change set folded those two paths in, so
+# on EVERY symlinked worktree the V-pin rows fired and test-vcx-suite widened
+# to all of its files whatever the branch touched: measured 2026-09-22 on
+# impl/cx-F-1515, a branch of one corpus file that graded the whole suite.
+#
+# A pin MOVES when the gitlink sha differs between the base and HEAD — the
+# COMMITTED diff — and nothing the working tree holds can say otherwise. Both
+# directions are proved on synthetic repos, the shape G and H use: the change
+# set comes from git here, so --changed-files cannot reach this rule at all.
+m_repo() { # $1 = directory, $2 = the gitlink sha its base commit records
+	mkdir -p "$1/scripts" "$1/vcx/tests" "$1/third_party" "$1/elsewhere"
+	cp "$TC" "$1/scripts/test_changed.sh"
+	printf 'TEST_TARGETS := test-vcx-suite\n' > "$1/Makefile"
+	: > "$1/vcx/tests/synthetic_test.v"
+	( cd "$1" \
+		&& git init -q . \
+		&& git add Makefile scripts vcx \
+		&& git update-index --add --cacheinfo "160000,$2,third_party/v" \
+		&& git -c user.email=s@t -c user.name=s commit -qm base ) >/dev/null 2>&1
+	ln -s "$1/elsewhere" "$1/third_party/v"
+}
+PIN_A=1111111111111111111111111111111111111111
+PIN_B=2222222222222222222222222222222222222222
+
+m_repo "$T/m1" "$PIN_A"
+( cd "$T/m1" && sh scripts/test_changed.sh HEAD --dry-run ) > "$T/m1.log" 2>&1
+if ! grep -q 'third_party/v' "$T/m1.log" && grep -q 'no changes vs HEAD' "$T/m1.log"; then
+	ok M1 "a symlinked third_party/ over an unchanged gitlink is no change at all"
+else
+	bad M1 "the symlink was read as a pin move: [$(grep -m1 -e 'third_party/v' -e 'WHOLE suite' "$T/m1.log")]"
+fi
+
+m_repo "$T/m2" "$PIN_A"
+( cd "$T/m2" \
+	&& git update-index --add --cacheinfo "160000,$PIN_B,third_party/v" \
+	&& git -c user.email=s@t -c user.name=s commit -qm 'pin bump' ) >/dev/null 2>&1
+( cd "$T/m2" && sh scripts/test_changed.sh HEAD~1 --dry-run ) > "$T/m2.log" 2>&1
+if grep -q '^  third_party/v$' "$T/m2.log" && suite_line "$T/m2.log" | grep -q 'the WHOLE suite'; then
+	ok M2 "a REAL gitlink move is still a pin move, symlinked worktree and all"
+else
+	bad M2 "a moved pin did not run the whole suite: [$(suite_line "$T/m2.log")]"
+fi
+
 if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "test_changed selftest: $cases/$cases (A x/ module; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh)"
+echo "test_changed selftest: $cases/$cases (A x/ module; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move)"
