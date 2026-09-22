@@ -1823,6 +1823,7 @@ imports a Ring-2 one.
 
 | Module | Scope |
 |---|---|
+| `bus` | In-process publish/subscribe that delivers each published message to its matching subscribers synchronously and in a defined order. |
 | `bytes` | Byte-level operations on the CX bytes scalar kind. |
 | `crypto` | Operations involving a key, a secret, or authentication. |
 | `csv` | Parse and emit CSV/TSV following RFC 4180 with Excel-pragmatic extensions. |
@@ -1859,6 +1860,7 @@ imports a Ring-2 one.
 | `strings` | String inspection, search, and transformation for general text work. |
 | `supervise` | Restart policies over monitored workers: run a set of named children (each an arity-0 callable spawned as a worker) under a declared policy — strategy (:one-for-one, :one-for-all, :rest-for-one), restart intensity (max-restarts within a window), and per-child exponential backoff — restarting them when they die according to each child's restart type (:permanent, :transient, :temporary). |
 | `tar` | Tar archive codec over the CX bytes scalar kind. |
+| `term` | Native raw-mode terminal input for interactive TUIs (#30; Ring 1 since    RS-5, #1591 item 7). |
 | `test` | Authoring primitives for unit-test-style programs written in CX: assertions, fixtures, lifecycle hooks, and structured reporting. |
 | `time` | Dates, datetimes, durations, and instants, with wall-clock and monotonic time sources. |
 | `url` | RFC 3986 and WHATWG-URL-aligned URL parsing, building, and component encoding. |
@@ -1877,7 +1879,6 @@ visible in the import line.
 |---|---|
 | `audit` | The audit sink: the one durable, attributed, append-only, queryable record of what the platform did, who asked, under whose authority, on what, and what was decided. |
 | `authz` | The XAP authority model as data plus a single decision function. |
-| `bus` | In-process publish/subscribe that delivers each published message to its matching subscribers synchronously and in a defined order. |
 | `connector` | The connector kit: one engine every connector feature runs on, and the vocabulary that declaration is written in. |
 | `did` | Decentralized identifiers (DIDs): the decentralized identity source that identifies a principal, counterpart to crypto's centralized JWT/JWKS. |
 | `flow` | General workflow on the saga substrate: flows as documents, runs as journaled records, and a runner that is a pure function rather than an engine. |
@@ -1907,7 +1908,6 @@ import line says so out loud.
 | `mcp` | A minimal MCP (Model Context Protocol) client (EXPERIMENTAL x/ tier, #6    S9). |
 | `mcp-server` | Minimal MCP server helpers (EXPERIMENTAL x/ tier, #6 Y1; stream 18) — the    server counterpart to cx-x/mcp, at the 2025-06-18 protocol revision (one    target). |
 | `run` | The Runnable convention + combinator library (EXPERIMENTAL x/ tier, #6    D2/M2). |
-| `term` | Native raw-mode terminal input for interactive TUIs (EXPERIMENTAL x/    tier, #30). |
 | `tools` | The agent-tool projection (EXPERIMENTAL x/ tier; stream 18): ONE    tool-descriptor model derived from command definitions ([effects]-bearing    [?def]s — clause presence is the discriminator) at list time, no    materialized manifest. |
 | `ux` | The SEMANTIC CORE of the UX projection (EXPERIMENTAL x/ tier;    #787): the vocabulary, the fragment addressing, the validation, the three    projections (command→form, query→table, feature-grammar→form/columns), the    hint claims, the patch algebra a live feed lowers onto, and the surface    document's routing correspondence. |
 | `ux-tui` | The TERMINAL RENDERER of the UX projection (EXPERIMENTAL x/ tier;    #787 W5): the second of two peers over `cx-x/ux`'s semantic vocabulary, and    the reason R5's renderer-agnostic claim is testable rather than asserted. |
@@ -2626,7 +2626,7 @@ it (§4).
 | S-37 | `http` → `ws` | the RFC 6455 frame codec `../stdlib/ws.md`: one frame encoded and decoded, the masking transform, fragmentation and assembly, the three control frames, and the `Sec-WebSocket-Accept` derivation §3.7's handshake compares | frame, mask, fragment or validate anything itself; re-code one of `ws`'s `CXER69xx` refusals into its own band; ask `ws` to know that a connection exists | `http.md` §3.7, §15; `../stdlib/ws.md` §1.1, §9 | in-process — a pure Ring 1 codec, no deployment data of its own |
 | S-38 | `connector` → `imap` | the session and the mailbox behind a `kind=imap` gateway: `select`, `search`, `fetch` and `sync` as the bytes, the `(UIDVALIDITY, UID)` addressing a page is a range of, the `MODSEQ` the resume point reads and the `UIDNEXT` it degrades to, the folder list the discovery and the ingest share, and the response classification — `CXER5813`, the epoch change, re-raised unchanged as the one refusal a walk answers directly | address a message by sequence number; re-parse a response the module parsed; re-code an epoch, size or syntax refusal into its own band; walk, retry, budget, record or wait — every one of those is the kit's, once (I-4) | `connector.md` §3.16.1, §3.16.2, §3.16.3, §3.16.9; `imap.md` §2.3, §2.4, §3.4, §8 | in-process — the deployment binds the server URL the declared `folders=` are read beneath (§4.6) |
 | S-39 | `connector` → `smtp` | the session and the submission behind a `kind=smtp` gateway: `send` and `submit` as the bytes, the `[envelope]` that is independent of the message's headers, the `[smtp-reply]` the 4xx/5xx classification reads, the `EHLO` answer the discovery and the ingest share, and the CRLF and dot-stuffing strictness that settles where a message ends | synthesize an envelope from a message's headers — that is how a `Bcc` leaks; hold a second opinion about which byte sequence terminates a body; re-code a line-ending, size or refusal code into its own band; own a send queue, a cadence or a wait | `connector.md` §3.17.1, §3.17.2, §3.17.3, §3.17.9; `smtp.md` §2.4, §5.3, §5.4, §8 | in-process — the deployment binds the submission URL the declared `envelope-from=` submits through (§4.6) |
-| S-40 | `connector` → `fabric` | the delivery layer behind a `kind=bus` gateway: `publish`, `subscribe` and the cumulative `ack` as the bytes, the durable plane whose stream IS a journal stream, the consumer group and its store-persisted offset as the resume identity the walk's stream sequence is read beneath, the subscription vocabulary `bus.md` §2.2 owns, and the §9.1 dead-letter policy the gateway declares rather than passes | add a delivery semantic to `cx-platform/bus`, whose contract `../xap/fabric.md` §8 pins as untouched; build a second durability story, a second dead-letter queue or a second offset store; wrap the §12.1 request–reply, which is a call and not a walk; walk, retry, budget, record or wait — every one of those is the kit's, once (I-4) | `connector.md` §3.18.1, §3.18.2, §3.18.3, §3.18.9; `../xap/fabric.md` §6, §7, §8, §9, §9.1 | in-process toward an EMBEDDED fabric; XSP XAP (the deployment's fabric URL) toward a served one. The NATS bridge is an integration edge to a non-CX party and is never this column's subject (`deployment-topology.md` §3) |
+| S-40 | `connector` → `fabric` | the delivery layer behind a `kind=bus` gateway: `publish`, `subscribe` and the cumulative `ack` as the bytes, the durable plane whose stream IS a journal stream, the consumer group and its store-persisted offset as the resume identity the walk's stream sequence is read beneath, the subscription vocabulary `bus.md` §2.2 owns, and the §9.1 dead-letter policy the gateway declares rather than passes | add a delivery semantic to `cx-stdlib/bus`, whose contract `../xap/fabric.md` §8 pins as untouched; build a second durability story, a second dead-letter queue or a second offset store; wrap the §12.1 request–reply, which is a call and not a walk; walk, retry, budget, record or wait — every one of those is the kit's, once (I-4) | `connector.md` §3.18.1, §3.18.2, §3.18.3, §3.18.9; `../xap/fabric.md` §6, §7, §8, §9, §9.1 | in-process toward an EMBEDDED fabric; XSP XAP (the deployment's fabric URL) toward a served one. The NATS bridge is an integration edge to a non-CX party and is never this column's subject (`deployment-topology.md` §3) |
 
 **§2.2. The refused directions**
 
