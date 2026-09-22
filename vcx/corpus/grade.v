@@ -540,6 +540,15 @@ pub fn grade_files(opts Options, names []string) Outcome {
 		// and V has no block-scoped defer.
 		mut pend_id := ''
 		mut csw := time.new_stopwatch()
+		// #1597 (RULED: RS-17): one env per case, and the finished one is TORN
+		// DOWN before the next is built — `env.close()` empties its shell and
+		// breaks the cycles in its module graph, so what a stale
+		// conservatively-scanned word can reach is a few empty maps, not the
+		// ~13 MB a connector load parses. Without it this walk paid 0.8 s for
+		// its first case and 12–25 s for its last (RSS 0.83 → 6.34 GB over 591
+		// cases). Declared here for the same reason `pend_id` is: the body
+		// `continue`s from a dozen places.
+		mut env := code.MatchEnv{}
 		for f in cases {
 			if failures.len > 0 && !identity_reported {
 				identity_reported = true
@@ -611,7 +620,8 @@ pub fn grade_files(opts Options, names []string) Outcome {
 				o.out_err_by_module[fname.all_before('.cxd')]++
 			}
 			adv_ids['${fname}/${f.id}'] = eff_gate == 'advisory'
-			mut env := code.new_env()
+			env.close()
+			env = code.new_env()
 			// sched.md §3.3 loop-construction selector: the conformance harness runs the
 			// DETERMINISTIC clock (RULED: 1358-b). Production defaults to :wall, so
 			// without this every test-clock-advance case would answer CXER4970.
@@ -726,6 +736,7 @@ pub fn grade_files(opts Options, names []string) Outcome {
 				}
 			}
 		}
+		env.close()
 		case_ms_line(fname, pend_id, csw)
 		if opts.file_ms {
 			ms_line('file', fname, ' cases=${o.ran - file_ran_at_entry}', fsw)
