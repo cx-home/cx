@@ -32,6 +32,8 @@
 #   M  a worktree whose third_party/* are        nothing is selected; a REAL
 #      SYMLINKS, gitlink unchanged (#1599)       gitlink move still runs the
 #                                                whole suite
+#   N  a step runner under vcx/tests/runners/    the step that BUILDS it, and
+#      (#1598)                                   not the whole suite
 #
 # Exit 0 and the count line only when every case matches.
 set -u
@@ -335,8 +337,46 @@ else
 	bad M2 "a moved pin did not run the whole suite: [$(suite_line "$T/m2.log")]"
 fi
 
+# ── N — a step runner under vcx/tests/runners/ (#1598) ─────────────────────
+# `v test vcx/tests/` compiles no file under vcx/tests/runners/ — not one of
+# them is a *_test.v — so a runner is not an input to test-vcx-suite at all.
+# It was reaching the suite's fail-safe arm as an unclassified vcx/tests/ path
+# and selecting all of its files: measured 2026-09-22 on impl/cx-F-1590, where
+# the RUN-4 computed selection over a two-runner branch still asked for the
+# whole suite. What a runner IS an input to is the step that BUILDS it, and
+# each of the three below is named by its step's own manifest row.
+n_case() { # $1 = case id, $2 = the changed runner file, $3… = the steps it must select
+	n_id="$1"; n_path="$2"; n_miss=''
+	shift 2
+	n_want="$*"
+	run "$n_path" > "$T/n_$n_id"
+	for want in $n_want; do
+		targets "$T/n_$n_id" | tr ' ' '\n' | grep -qx -- "$want" || n_miss="$n_miss $want"
+	done
+	if [ -z "$n_miss" ] && suite_line "$T/n_$n_id" | grep -q 'NO test file reads what changed'; then
+		ok "$n_id" "${n_path#vcx/tests/runners/} selects $n_want and drops the suite"
+	else
+		bad "$n_id" "${n_path#vcx/tests/runners/}: unselected [${n_miss:- none}]; suite [$(suite_line "$T/n_$n_id")]"
+	fi
+}
+n_case N1 vcx/tests/runners/extraction_gate/cli/extraction_gate_cli.v test-extraction-gate
+n_case N2 vcx/tests/runners/profile_gate/profile_gate.v test-profile-gate check-profile-gate-selection
+n_case N3 vcx/tests/runners/conformance/conformance_run.v test-vcx-conform check-conformance-coverage
+# and the three do not select EACH OTHER's step: the row is the runner's own.
+n_cross=0
+for pair in "N1 test-profile-gate" "N1 test-vcx-conform" "N2 test-extraction-gate" \
+	"N3 test-extraction-gate" "N3 test-profile-gate"; do
+	set -- $pair
+	if targets "$T/n_$1" | tr ' ' '\n' | grep -qx -- "$2"; then n_cross="$n_cross $pair,"; fi
+done
+if [ "$n_cross" = 0 ]; then
+	ok N4 "no runner selects another runner's step"
+else
+	bad N4 "a runner selected a step it is not an input to:$n_cross"
+fi
+
 if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "test_changed selftest: $cases/$cases (A x/ module; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move)"
+echo "test_changed selftest: $cases/$cases (A x/ module; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step)"
