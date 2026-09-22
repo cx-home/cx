@@ -12,8 +12,12 @@
 #   [duplicate]     two rules with the same exact= / prefix=
 #   [undeclared]    a rule whose repo= has no `[repo]` row
 #   [empty repo]    a `[repo]` row that receives no file
-#   [split module]  a registry/modules.cxd row whose spec, corpus, source and
-#                   code files land in DIFFERENT repos -- a module moves whole
+#   [split module]  a registry/modules.cxd row whose spec, corpus, source,
+#                   code and half= files land in DIFFERENT repos -- a module
+#                   moves whole. `half=` is the DECLARED Ring-1 half a Ring-2
+#                   module keeps in vcx/code for profile composition; it is
+#                   one of the module's files and is read here like the rest
+#                   (#1609)
 #
 # A file belongs to the FIRST rule, in document order, whose exact= equals the
 # path or whose prefix= leads it. Nothing else is inferred.
@@ -104,7 +108,7 @@
     [= $empty [?for [in $x $repos] [where [not [$member [$string $x@name] $filled]]]
                 [yield [failure kind="empty repo" what=[$string $x@name]]]]]
     [= $split [?for [in $m $modules]
-                [yield [?let [= $paths [?for [in $col ([$string [?else $m@spec ""]], [$string [?else $m@corpus ""]], [$string [?else $m@source ""]], [$string [?else $m@code ""]])]
+                [yield [?let [= $paths [?for [in $col ([$string [?else $m@spec ""]], [$string [?else $m@corpus ""]], [$string [?else $m@source ""]], [$string [?else $m@code ""]], [$string [?else $m@half ""]])]
                                           [in $p [$strings:split-whitespace $col]]
                                           [where [not [= $p "none"]]]
                                           [yield $p]]]
