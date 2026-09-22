@@ -46,7 +46,7 @@ landed and its row read `current`.
 COLUMNS
   name    the surface's call-site prefix — `[?lib '<ns>/<name>']` binds it.
           Unique per namespace, not globally: `term` is both a natives
-          family (ns=none) and an x-tier module (ns=cx-x)
+          family (ns=none) and a Ring-1 module (ns=cx-stdlib)
   ring    1 = pure/local, 2 = serves or reaches a store/protocol, 0 = a
           surface synthesized by the codec registry (codec.md §3). This is
           the DECLARED ring — the decision, not a location, so it has no
@@ -136,6 +136,7 @@ becomes its own Ring-1 module.
 
   [; ── Ring 1 — cx-stdlib ───────────────────────────────────────────── ]
   [module name=array ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/array.md corpus=conformance/stdlib/array.cxd source=stdlib/array.cx code=vcx/code/stdlib_array.v half=none status=current]
+  [module name=bus ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/bus.md corpus=conformance/stdlib/bus.cxd source=stdlib/bus.cx code=vcx/code/stdlib_bus.v half=none status=current]
   [module name=bytes ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/bytes.md corpus=conformance/stdlib/bytes.cxd source=stdlib/bytes.cx code=vcx/code/stdlib_bytes.v half=none status=current]
   [module name=crypto ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/crypto.md corpus=conformance/stdlib/crypto.cxd source=stdlib/crypto.cx code='vcx/code/stdlib_crypto.v vcx/code/stdlib_crypto_xmlsign.v vcx/code/stdlib_crypto_xmlenc.v vcx/code/crypto_x509.v' half=none status=current]
   [module name=csv ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/csv.md corpus=conformance/stdlib/csv.cxd source=stdlib/csv.cx code=vcx/code/stdlib_csv.v half=none status=current]
@@ -162,7 +163,7 @@ becomes its own Ring-1 module.
      its spec, corpus and bundled source are written by #1427 phase 2. ]
   [module name=http-client ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/http-client.md corpus=conformance/stdlib/http-client.cxd source=stdlib/http-client.cx code='vcx/code/stdlib_http_notd_cx_no_pack_http_client.v vcx/code/net_core_notd_cx_no_pack_http_client.v vcx/code/module_fetch_notd_cx_no_pack_http_client.v' half=none status=current]
   [module name=i18n ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/i18n.md corpus=conformance/stdlib/i18n.cxd source=stdlib/i18n.cx code=vcx/code/stdlib_i18n.v half=none status=current]
-  [module name=io ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/io.md corpus=conformance/stdlib/io.cxd source=stdlib/io.cx code=vcx/code/stdlib_io_notd_cx_no_pack_io.v half=none status=current]
+  [module name=io ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/io.md corpus=conformance/stdlib/io.cxd source=stdlib/io.cx code='vcx/code/stdlib_io_notd_cx_no_pack_io.v vcx/code/stdlib_iowatch.v vcx/code/stdlib_iowatch_dispatch_notd_cx_no_pack_io.v vcx/code/stdlib_iowatch_darwin.c.v vcx/code/stdlib_iowatch_linux.c.v' half=none status=current]
   [module name=json ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/json.md corpus=conformance/stdlib/json.cxd source=stdlib/json.cx code=vcx/code/stdlib_json.v half=none status=current]
   [module name=jsonrpc ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/jsonrpc.md corpus=conformance/stdlib/jsonrpc.cxd source=stdlib/jsonrpc.cx code=none half=none status=current]
   [module name=jsonschema ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/jsonschema.md corpus=conformance/stdlib/jsonschema.cxd source=stdlib/jsonschema.cx code='vcx/code/stdlib_jsonschema.v vcx/code/stdlib_schema_registry.v' half=none status=current]
@@ -186,6 +187,11 @@ becomes its own Ring-1 module.
   [module name=strings ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/strings.md corpus=conformance/stdlib/strings.cxd source=stdlib/strings.cx code=vcx/code/stdlib_strings.v half=none status=current]
   [module name=supervise ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/supervise.md corpus=conformance/stdlib/supervise.cxd source=stdlib/supervise.cx code=none half=none status=current]
   [module name=tar ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/tar.md corpus=conformance/stdlib/tar.cxd source=stdlib/tar.cx code=vcx/code/stdlib_tar.v half=none status=current]
+  [; term (the MODULE) graduated from cx-x by the membership test (RULED: RS-5,
+     #1591 item 7): six pure [?def]s over the $term-* natives family below,
+     which keeps its own row (ns=none kind=natives) and its own pages
+     term.md / term.cxd — so this row names term-module.md / term-module.cxd. ]
+  [module name=term ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/term-module.md corpus=conformance/stdlib/term-module.cxd source=stdlib/term.cx code=none half=none status=current]
   [module name=test ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/test.md corpus=conformance/stdlib/test.cxd source=stdlib/test.cx code=vcx/code/stdlib_testkit.v half=none status=current]
   [module name=time ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/time.md corpus=conformance/stdlib/time.cxd source=stdlib/time.cx code='vcx/code/stdlib_time_notd_cx_no_pack_time.v vcx/code/datetime_core.v' half=none status=current]
   [module name=url ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/url.md corpus=conformance/stdlib/url.cxd source=stdlib/url.cx code=vcx/code/stdlib_url.v half=none status=current]
@@ -204,7 +210,6 @@ becomes its own Ring-1 module.
      (OL-15) and current since release/0.18 carries it (861ca66ec). ]
   [module name=audit ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/audit.md corpus=conformance/platform/audit.cxd source=stdlib/audit.cx code=vcx/platform/stdlib_audit.v half=none status=current]
   [module name=authz ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/authz.md corpus=conformance/platform/authz.cxd source=stdlib/authz.cx code=vcx/platform/stdlib_authz.v half=none status=current]
-  [module name=bus ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/bus.md corpus=conformance/platform/bus.cxd source=stdlib/bus.cx code=vcx/platform/stdlib_bus.v half=none status=current]
   [; connector — #1430's connector kit, spec-first: the spec and its 134-case
      attack corpus landed before any code, so this row read `planned` while
      its source and code columns named where #1430 would write them. #1430's
@@ -259,7 +264,7 @@ becomes its own Ring-1 module.
   [module name=sync ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/sync.md corpus=conformance/platform/sync.cxd source=stdlib/sync.cx code=vcx/platform/stdlib_sync.v half=none status=planned]
   [module name=vc ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/vc.md corpus=conformance/platform/vc.cxd source=stdlib/vc.cx code=vcx/platform/stdlib_vc.v half=none status=current]
   [module name=xap ring=2 ns=cx-xap kind=module spec=spec/03-approved/xap/xap_module.md corpus=conformance/xap/xap-serve.cxd source=stdlib/xap.cx code=vcx/platform/stdlib_xap.v half=none status=current]
-  [module name=xsp ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/xsp.md corpus=conformance/platform/xsp.cxd source=stdlib/xsp.cx code=vcx/platform/stdlib_xsp.v half=none status=current]
+  [module name=xsp ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/xsp.md corpus=conformance/platform/xsp.cxd source=stdlib/xsp.cx code=none half=vcx/code/stdlib_xsp.v status=current]
 
   [; ── The x tier — cx-x, its own namespace and its own spec directory.
        1427-b renames `cx-stdlib/X` and nothing else, so these rows carry no
@@ -273,12 +278,6 @@ becomes its own Ring-1 module.
   [module name=mcp ring=1 ns=cx-x kind=module spec=spec/03-approved/x/mcp.md corpus=conformance/x/mcp.cxd source=x/mcp.cx code=none half=none status=current]
   [module name=mcp-server ring=2 ns=cx-x kind=module spec=spec/03-approved/x/mcp-server.md corpus=conformance/x/mcp-server.cxd source=x/mcp-server.cx code=none half=none status=current]
   [module name=run ring=1 ns=cx-x kind=module spec=spec/03-approved/x/run.md corpus=conformance/x/run.cxd source=x/run.cx code=none half=none status=current]
-  [; cx-x/term is a module over the $term-* natives, and it is the one
-     bundled surface in the tree with a spec and a source and NO fixtures.
-     1427-e's "term gets a corpus" names the natives family below (the row
-     with code and no corpus); this one is a second, smaller hole, recorded
-     here rather than left implicit. ]
-  [module name=term ring=1 ns=cx-x kind=module spec=spec/03-approved/x/term.md corpus=conformance/x/term.cxd source=x/term.cx code=none half=none status=current]
   [module name=tools ring=1 ns=cx-x kind=module spec=spec/03-approved/x/tools.md corpus=conformance/x/tools.cxd source=x/tools.cx code=none half=none status=current]
   [module name=ux ring=2 ns=cx-x kind=module spec=spec/03-approved/xap/ux.md corpus=conformance/xap/ux.cxd source=x/ux.cx code=none half=none status=current]
   [module name=ux-tui ring=2 ns=cx-x kind=module spec=spec/03-approved/xap/ux.md corpus=conformance/xap/ux-tui.cxd source=x/ux-tui.cx code=none half=none status=current]

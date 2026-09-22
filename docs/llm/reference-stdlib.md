@@ -42,6 +42,7 @@ $ cx prog.cx
 
 | Module | Scope |
 |---|---|
+| `bus` | In-process publish/subscribe that delivers each published message to its matching subscribers synchronously and in a defined order. |
 | `bytes` | Byte-level operations on the CX bytes scalar kind. |
 | `crypto` | Operations involving a key, a secret, or authentication. |
 | `csv` | Parse and emit CSV/TSV following RFC 4180 with Excel-pragmatic extensions. |
@@ -78,6 +79,7 @@ $ cx prog.cx
 | `strings` | String inspection, search, and transformation for general text work. |
 | `supervise` | Restart policies over monitored workers: run a set of named children (each an arity-0 callable spawned as a worker) under a declared policy — strategy (:one-for-one, :one-for-all, :rest-for-one), restart intensity (max-restarts within a window), and per-child exponential backoff — restarting them when they die according to each child's restart type (:permanent, :transient, :temporary). |
 | `tar` | Tar archive codec over the CX bytes scalar kind. |
+| `term` | Native raw-mode terminal input for interactive TUIs (#30; Ring 1 since    RS-5, #1591 item 7). |
 | `test` | Authoring primitives for unit-test-style programs written in CX: assertions, fixtures, lifecycle hooks, and structured reporting. |
 | `time` | Dates, datetimes, durations, and instants, with wall-clock and monotonic time sources. |
 | `url` | RFC 3986 and WHATWG-URL-aligned URL parsing, building, and component encoding. |
@@ -97,7 +99,6 @@ $ cx prog.cx
 | `mcp` | A minimal MCP (Model Context Protocol) client (EXPERIMENTAL x/ tier, #6    S9). |
 | `mcp-server` | Minimal MCP server helpers (EXPERIMENTAL x/ tier, #6 Y1; stream 18) — the    server counterpart to cx-x/mcp, at the 2025-06-18 protocol revision (one    target). |
 | `run` | The Runnable convention + combinator library (EXPERIMENTAL x/ tier, #6    D2/M2). |
-| `term` | Native raw-mode terminal input for interactive TUIs (EXPERIMENTAL x/    tier, #30). |
 | `tools` | The agent-tool projection (EXPERIMENTAL x/ tier; stream 18): ONE    tool-descriptor model derived from command definitions ([effects]-bearing    [?def]s — clause presence is the discriminator) at list time, no    materialized manifest. |
 | `ux` | The SEMANTIC CORE of the UX projection (EXPERIMENTAL x/ tier;    #787): the vocabulary, the fragment addressing, the validation, the three    projections (command→form, query→table, feature-grammar→form/columns), the    hint claims, the patch algebra a live feed lowers onto, and the surface    document's routing correspondence. |
 | `ux-tui` | The TERMINAL RENDERER of the UX projection (EXPERIMENTAL x/ tier;    #787 W5): the second of two peers over `cx-x/ux`'s semantic vocabulary, and    the reason R5's renderer-agnostic claim is testable rather than asserted. |

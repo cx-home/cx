@@ -53,13 +53,6 @@ while [ $# -gt 0 ]; do
 done
 cd "$(dirname "$0")/.."
 
-if [ -n "$CHANGED_SRC" ]; then
-  [ $DRY -eq 1 ] || { echo "test-changed: --changed-files is a --dry-run flag (a synthetic diff must never RUN a step)" >&2; exit 2; }
-  CHANGED=$(cat "$CHANGED_SRC")
-else
-  CHANGED=$(git diff --name-only "$BASE"...HEAD; git diff --name-only HEAD; git diff --name-only --cached)
-fi
-CHANGED=$(printf '%s\n' "$CHANGED" | sort -u | grep -v '^$' || true)
 # ── every `while read` loop below reads from a FILE, never a here-string ────
 # The post-merge run on baba91bbc stalled 38 MINUTES inside this script under
 # the runner's nix bash 5.3: bash asleep at 0.01 s of CPU, no child, both ends
@@ -80,6 +73,38 @@ CHANGED=$(printf '%s\n' "$CHANGED" | sort -u | grep -v '^$' || true)
 # so their `return`s, `break`s and variable assignments are unchanged.
 TC_TMP=$(mktemp -d) || { echo "test-changed: cannot create a scratch directory" >&2; exit 2; }
 trap 'rm -rf "$TC_TMP"' EXIT
+
+if [ -n "$CHANGED_SRC" ]; then
+  [ $DRY -eq 1 ] || { echo "test-changed: --changed-files is a --dry-run flag (a synthetic diff must never RUN a step)" >&2; exit 2; }
+  CHANGED=$(cat "$CHANGED_SRC")
+else
+  # ── A PIN MOVES IN A COMMIT, NEVER IN THE WORKING TREE (#1599) ────────────
+  # The change set is the committed diff plus the worktree's own, because an
+  # UNCOMMITTED source edit has to select its steps too. In an impl worktree
+  # that fold-in was reading the tree's own shape as a change: every such
+  # worktree carries third_party/re2 and third_party/v as SYMLINKS to the main
+  # checkout's submodules (AGENT-STANDING-RULES.md §Git), so `git diff HEAD`
+  # reports each as a TYPECHANGE — gitlink (mode 160000) on the HEAD side,
+  # symbolic link (120000) in the tree, status T — and the V-pin rows fired on
+  # every branch whatever it touched. Measured 2026-09-22 on impl/cx-F-1515, a
+  # branch of one corpus file: test-vcx-suite widened to all 82 files, whose
+  # last shard alone is ~65 minutes, and every agent's pre-merge run paid it.
+  #
+  # A pin moves when the GITLINK SHA differs between the base and HEAD, which
+  # is exactly what `git diff "$BASE"...HEAD` answers for a gitlink; the tree
+  # cannot say otherwise. So the gitlink→symlink typechanges are dropped from
+  # the WORKTREE half alone. A real pin bump still arrives, through the
+  # committed half, symlinked worktree and all — and a DIRTY submodule, which
+  # git reports as :160000 160000 … M, is untouched by this and still selects.
+  { git diff --raw HEAD 2>/dev/null || true; } \
+    | awk -F'\t' '{ split($1, m, " ");
+                    if (m[1] == ":160000" && m[2] == "120000" && m[5] == "T") print $2 }' \
+    > "$TC_TMP/gitlink_symlinks"
+  { git diff --name-only HEAD; git diff --name-only --cached; } > "$TC_TMP/worktree_changed"
+  CHANGED=$(git diff --name-only "$BASE"...HEAD
+            grep -Fxv -f "$TC_TMP/gitlink_symlinks" "$TC_TMP/worktree_changed" || true)
+fi
+CHANGED=$(printf '%s\n' "$CHANGED" | sort -u | grep -v '^$' || true)
 printf '%s\n' "$CHANGED" > "$TC_TMP/changed"
 if [ -z "$CHANGED" ]; then
   echo "test-changed: no changes vs $BASE — nothing to run (the full gate still applies at wave exits)"
@@ -178,7 +203,13 @@ step_globs() {
     # vcx/cmd compiles with -d cx_platform, so it carries the full closure.
     test-vcx-cmd)                  echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP conformance/* stdlib/* x/*" ;;
     # the conformance aggregates drive the built cx binary over the corpus.
-    test-vcx-conform)              echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP conformance/* stdlib/* x/*" ;;
+    # #1598 — and they drive it through THREE runner programs: the recipe runs
+    # `conform-all` and `conform-data-bin-arrow` out of
+    # vcx/tests/runners/conformance/, `conform-fmt` out of runners/fmt/ and
+    # `conform-diff`/`conform-lint` out of runners/diff_lint/ (vcx/Makefile).
+    # A runner-only edit selected this step by nothing but the fail-safe arm of
+    # the suite classifier, which is not a row and does not survive #1598.
+    test-vcx-conform)              echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP conformance/* stdlib/* x/* vcx/tests/runners/conformance/* vcx/tests/runners/fmt/* vcx/tests/runners/diff_lint/*" ;;
     # `test-vcx` is no longer a TEST_TARGETS row (it stays the human entry
     # point). The row is kept so an explicit `test-changed` over a tree whose
     # Makefile still names it cannot fall through to deny-by-default.
@@ -239,6 +270,12 @@ step_globs() {
     # else narrows: over-include on doubt, a false RUN costs minutes and a
     # false SKIP costs correctness.
     test-extraction-gate)          echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED vcx/tests/runners/extraction_gate/* conformance/*" ;;
+    # #1598 asked whether abi-gc-gate and libcx-abi-gate read the extraction
+    # gate's runner too. They do not: abi-gc-gate compiles
+    # vcx/tests/runners/abi_gc_gate/ and libcx-abi-gate runs
+    # tools/libcx-abi-gate.sh, and both then dlopen $(LIBCX_ART). They share
+    # the OUTPUT directory vcx/target/extraction_gate/ with the step above and
+    # nothing else, so neither takes that runner's glob.
     abi-gc-gate)                   echo "$RING_LIB $RING_SUP $RING_EMBED vcx/tests/runners/abi_gc_gate/*" ;;
     check-v-fork)                  echo 'third_party/* scripts/v_fork_register.cxd scripts/check_v_fork_patches.cx' ;;
     # reads the built library's export surface against include/cx.h.
@@ -257,7 +294,12 @@ step_globs() {
     test-profile-gate)             echo "$RING_LIB stdlib/* conformance/code.cxd conformance/stdlib/* conformance/platform/* conformance/x/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/runners/profile_gate/* vcx/tests/fixtures_grader/* scripts/profile_gate_files_for_branch.sh third_party/*" ;;
     # #1560 (RULED: VCOST-1): the selection self-test reads only the helper it
     # pins and its own source, so it runs when either moves and not otherwise.
-    check-profile-gate-selection)  echo "scripts/profile_gate_files_for_branch.sh scripts/profile_gate_selection_selftest.sh" ;;
+    # #1598 adds the profile gate's runner directory: the helper's ALL rule is
+    # spelled `^vcx/tests/runners/profile_gate/` and the self-test pins that
+    # row by name, so the directory's shape — a file added to it, the directory
+    # renamed — is part of the pair's surface. One second of step, and the
+    # manifest over-includes on doubt.
+    check-profile-gate-selection)  echo "scripts/profile_gate_files_for_branch.sh scripts/profile_gate_selection_selftest.sh vcx/tests/runners/profile_gate/*" ;;
     # #1562 (RULED: VCOST-1): the budget step reads the bounds manifest and the
     # timings a run leaves behind; the self-test reads the step and its own
     # source. Neither reads the tree, so neither runs when the tree moves.
@@ -627,6 +669,24 @@ suite_files() {
     [ -n "$f" ] || continue
     case "$f" in
       "$SUITE_DIR"/*_test.v) continue ;;
+      # #1598 — a STEP RUNNER is a program of its own, not a suite input.
+      # `v test $(SUITE_FILES)` is pointed at vcx/tests/ and recurses, but not
+      # one file under vcx/tests/runners/ is a *_test.v, so this step compiles
+      # none of them: a runner edit that reached the fail-safe arm below was
+      # buying all 82 files for a step that does not read the file. What a
+      # runner IS an input to is the step that BUILDS it, and each directory
+      # named here is named by that step's own row above —
+      # test-extraction-gate, test-profile-gate + check-profile-gate-selection,
+      # test-vcx-conform + check-conformance-coverage. Measured 2026-09-22 on
+      # impl/cx-F-1590: two runner files, and the RUN-4 computed selection
+      # still asked for the whole suite, 81 files and 4,149 s.
+      #
+      # Only these three. A runner directory NO row names is still an
+      # unclassified vcx/tests/ path and still runs the whole suite — the
+      # fail-safe stays the resting state, and a new runner joins this list in
+      # the commit that gives its step a row.
+      "$SUITE_DIR"/runners/extraction_gate/*|"$SUITE_DIR"/runners/profile_gate/*|"$SUITE_DIR"/runners/conformance/*)
+        continue ;;
       "$SUITE_DIR"/*|vcx/testenv/*|vcx/fixtures/*|third_party/*|Makefile|vcx/Makefile|vcx/v.mod|devbox.json|devbox.lock|scripts/*)
         echo ALL; return 0 ;;
     esac
@@ -655,6 +715,12 @@ suite_files() {
     case "$f" in
       "$SUITE_DIR"/*_test.v)
         sel="$sel $f" ;;
+      # #1598 — the runner directories (a) vouched for: no test file of this
+      # step is compiled from them, so they select none. Stated rather than
+      # left to the `vcx/*` arm below, which answers nothing here only because
+      # `tests` is not in VCX_MODULES.
+      "$SUITE_DIR"/runners/*)
+        ;;
       stdlib/*.cx|x/*.cx|vcx/platform/stdlib_*.v|vcx/code/stdlib_*.v)
         # the corpus side is already in `sel`; this is the NAME clause on top,
         # plus the ring rule for the two V spellings.

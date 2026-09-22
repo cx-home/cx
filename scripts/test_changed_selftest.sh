@@ -29,6 +29,11 @@
 #                                                deleted-input case: the rows
 #                                                must not be pathname-expanded)
 #   G  a TEST_TARGETS entry with no row          check-selection-manifest FAILS
+#   M  a worktree whose third_party/* are        nothing is selected; a REAL
+#      SYMLINKS, gitlink unchanged (#1599)       gitlink move still runs the
+#                                                whole suite
+#   N  a step runner under vcx/tests/runners/    the step that BUILDS it, and
+#      (#1598)                                   not the whole suite
 #
 # Exit 0 and the count line only when every case matches.
 set -u
@@ -285,7 +290,92 @@ else
 	bad L "it does not parse: $(tr '\n' ' ' < "$T/shn.err")"
 fi
 
-# ── M — a module-only sso change still selects the interop lane ─────────────
+# ── M — a SYMLINKED third_party/ is not a pin move (#1599) ─────────────────
+# Every impl worktree carries third_party/re2 and third_party/v as SYMLINKS to
+# the main checkout's submodules (AGENT-STANDING-RULES.md §Git), and `git diff
+# HEAD` reports each as a TYPECHANGE — gitlink (mode 160000) → symbolic link
+# (120000). The worktree half of the change set folded those two paths in, so
+# on EVERY symlinked worktree the V-pin rows fired and test-vcx-suite widened
+# to all of its files whatever the branch touched: measured 2026-09-22 on
+# impl/cx-F-1515, a branch of one corpus file that graded the whole suite.
+#
+# A pin MOVES when the gitlink sha differs between the base and HEAD — the
+# COMMITTED diff — and nothing the working tree holds can say otherwise. Both
+# directions are proved on synthetic repos, the shape G and H use: the change
+# set comes from git here, so --changed-files cannot reach this rule at all.
+m_repo() { # $1 = directory, $2 = the gitlink sha its base commit records
+	mkdir -p "$1/scripts" "$1/vcx/tests" "$1/third_party" "$1/elsewhere"
+	cp "$TC" "$1/scripts/test_changed.sh"
+	printf 'TEST_TARGETS := test-vcx-suite\n' > "$1/Makefile"
+	: > "$1/vcx/tests/synthetic_test.v"
+	( cd "$1" \
+		&& git init -q . \
+		&& git add Makefile scripts vcx \
+		&& git update-index --add --cacheinfo "160000,$2,third_party/v" \
+		&& git -c user.email=s@t -c user.name=s commit -qm base ) >/dev/null 2>&1
+	ln -s "$1/elsewhere" "$1/third_party/v"
+}
+PIN_A=1111111111111111111111111111111111111111
+PIN_B=2222222222222222222222222222222222222222
+
+m_repo "$T/m1" "$PIN_A"
+( cd "$T/m1" && sh scripts/test_changed.sh HEAD --dry-run ) > "$T/m1.log" 2>&1
+if ! grep -q 'third_party/v' "$T/m1.log" && grep -q 'no changes vs HEAD' "$T/m1.log"; then
+	ok M1 "a symlinked third_party/ over an unchanged gitlink is no change at all"
+else
+	bad M1 "the symlink was read as a pin move: [$(grep -m1 -e 'third_party/v' -e 'WHOLE suite' "$T/m1.log")]"
+fi
+
+m_repo "$T/m2" "$PIN_A"
+( cd "$T/m2" \
+	&& git update-index --add --cacheinfo "160000,$PIN_B,third_party/v" \
+	&& git -c user.email=s@t -c user.name=s commit -qm 'pin bump' ) >/dev/null 2>&1
+( cd "$T/m2" && sh scripts/test_changed.sh HEAD~1 --dry-run ) > "$T/m2.log" 2>&1
+if grep -q '^  third_party/v$' "$T/m2.log" && suite_line "$T/m2.log" | grep -q 'the WHOLE suite'; then
+	ok M2 "a REAL gitlink move is still a pin move, symlinked worktree and all"
+else
+	bad M2 "a moved pin did not run the whole suite: [$(suite_line "$T/m2.log")]"
+fi
+
+# ── N — a step runner under vcx/tests/runners/ (#1598) ─────────────────────
+# `v test vcx/tests/` compiles no file under vcx/tests/runners/ — not one of
+# them is a *_test.v — so a runner is not an input to test-vcx-suite at all.
+# It was reaching the suite's fail-safe arm as an unclassified vcx/tests/ path
+# and selecting all of its files: measured 2026-09-22 on impl/cx-F-1590, where
+# the RUN-4 computed selection over a two-runner branch still asked for the
+# whole suite. What a runner IS an input to is the step that BUILDS it, and
+# each of the three below is named by its step's own manifest row.
+n_case() { # $1 = case id, $2 = the changed runner file, $3… = the steps it must select
+	n_id="$1"; n_path="$2"; n_miss=''
+	shift 2
+	n_want="$*"
+	run "$n_path" > "$T/n_$n_id"
+	for want in $n_want; do
+		targets "$T/n_$n_id" | tr ' ' '\n' | grep -qx -- "$want" || n_miss="$n_miss $want"
+	done
+	if [ -z "$n_miss" ] && suite_line "$T/n_$n_id" | grep -q 'NO test file reads what changed'; then
+		ok "$n_id" "${n_path#vcx/tests/runners/} selects $n_want and drops the suite"
+	else
+		bad "$n_id" "${n_path#vcx/tests/runners/}: unselected [${n_miss:- none}]; suite [$(suite_line "$T/n_$n_id")]"
+	fi
+}
+n_case N1 vcx/tests/runners/extraction_gate/cli/extraction_gate_cli.v test-extraction-gate
+n_case N2 vcx/tests/runners/profile_gate/profile_gate.v test-profile-gate check-profile-gate-selection
+n_case N3 vcx/tests/runners/conformance/conformance_run.v test-vcx-conform check-conformance-coverage
+# and the three do not select EACH OTHER's step: the row is the runner's own.
+n_cross=0
+for pair in "N1 test-profile-gate" "N1 test-vcx-conform" "N2 test-extraction-gate" \
+	"N3 test-extraction-gate" "N3 test-profile-gate"; do
+	set -- $pair
+	if targets "$T/n_$1" | tr ' ' '\n' | grep -qx -- "$2"; then n_cross="$n_cross $pair,"; fi
+done
+if [ "$n_cross" = 0 ]; then
+	ok N4 "no runner selects another runner's step"
+else
+	bad N4 "a runner selected a step it is not an input to:$n_cross"
+fi
+
+# ── O — a module-only sso change still selects the interop lane ─────────────
 # The lane is the ONLY step that grades the networked half of the sso stack,
 # and until 2026-09-22 its row named the transport modules but not the module
 # itself: a change to exactly stdlib/sso.cx + conformance/platform/sso.cxd put
@@ -295,13 +385,13 @@ fi
 # whole gate going quiet on the change most likely to break it.
 run stdlib/sso.cx conformance/platform/sso.cxd > "$T/m"
 if targets "$T/m" | tr " " "\n" | grep -q "^test-sso-interop-lane$"; then
-	ok M "a module-only sso change selects test-sso-interop-lane"
+	ok O "a module-only sso change selects test-sso-interop-lane"
 else
-	bad M "stdlib/sso.cx + conformance/platform/sso.cxd did not select test-sso-interop-lane: [$(targets "$T/m")]"
+	bad O "stdlib/sso.cx + conformance/platform/sso.cxd did not select test-sso-interop-lane: [$(targets "$T/m")]"
 fi
 
 if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "test_changed selftest: $cases/$cases (A x/ module; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a module-only sso change selects the interop lane)"
+echo "test_changed selftest: $cases/$cases (A x/ module; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop lane)"
