@@ -4808,6 +4808,7 @@ Convert flags (the data reading; an explicit --from selects it):
 Subcommands (`cx <subcommand> --help` for details):
   fmt                  Lossless canonical formatter (preserves comments/anchors).
   canonical            Strict canonical text (strips presentation; data-equivalent).
+  corpus               Grade module corpus files (.cxd `[case …]` with [in-code …]) with this binary.
   schema               Schema verb family — infer a .cxs from a corpus; export to JSON Schema; classify compatibility.
   stdlib               Standard-library inventory — enumerate registered modules and print a module's registered source.
   tools                Agent-tool verb family — project command defs to MCP tool descriptors.
@@ -4863,6 +4864,7 @@ by intent.
 | `cx eq A B` / `cx diff A B` | semantic equality / semantic diff |
 | `cx lint FILE` | style and correctness findings |
 | `cx validate FILE --schema=S.cxs` | schema check |
+| `cx corpus FILE.cxd` | grade a module conformance corpus with this binary — the grader a repository runs with no toolchain |
 | `cx schema infer` / `export` / … | derive a `.cxs`, project it to JSON Schema, classify compatibility |
 | `cx select 'PATH' FILE` | one CXPath query, no program |
 | `cx --from=json --to=cx f.json` | the convert surface |

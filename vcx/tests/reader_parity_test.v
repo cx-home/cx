@@ -664,7 +664,7 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/sso_interop/idp.cx', .program, reason_attr},
 	AcceptedByOne{'stdlib/diagram.cx', .program, reason_attr},
 	AcceptedByOne{'stdlib/flow.cx', .program, reason_attr},
-	// ── recorded exception — a program document the data balancer cannot read (7) ──
+	// ── recorded exception — a program document the data balancer cannot read (8) ──
 	AcceptedByOne{'scripts/bisect_batch.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/check_editor_surface_parity.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/diagnostics_census.cx', .program, reason_prog},
@@ -672,6 +672,7 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/fuzz_cx.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/gen_docs/primer_platform.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/repos_allocation_gate.cx', .program, reason_prog},
+	AcceptedByOne{'scripts/store_session_dep_gate.cx', .program, reason_prog},
 	AcceptedByOne{'stdlib/connector.cx', .program, reason_prog},
 ]
 

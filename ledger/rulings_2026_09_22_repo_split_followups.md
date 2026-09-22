@@ -1,9 +1,13 @@
-# RS-13…RS-17 — the repo split's first follow-up decisions (owner, 2026-09-22, in session on dev2)
+# RS-13…RS-20 — the repo split's follow-up decisions (owner, 2026-09-22/23, in session on dev2)
 
 **Status: RULED.** The owner answered each as a letter on the integrator's lettered options, in
 session on 2026-09-22 (recorded on [#1591](https://github.com/cx-home/cx-private/issues/1591)
 the same hour). They extend [`rulings_2026_09_21_repo_split_1589.md`](rulings_2026_09_21_repo_split_1589.md)
 (RS-1…RS-12) and take the calls that page did not make.
+
+RS-19 and RS-20 were answered a day later, on 2026-09-23 and on the same issue, as letters on the
+five extraction preps' lettered flags (F-M1 for RS-19; F-F1 and F-F2 for RS-20); each section
+below quotes the owner's letter before it says what the letter moves.
 
 ## RS-13 — `authz` splits along the RS-6 line (owner: D14a)
 
@@ -55,6 +59,56 @@ A long-lived evaluator's per-case cost must be flat: what a finished env leaves 
 `-gc e` is found and freed in the runtime/env teardown (measured on `f9706fe84`: the connector shard
 3,893 s with per-case cost growing 0.8 → 12–25 s under `-gc e`, 46 s at a flat ~80 ms under a tracing
 collector). No grader recycling, no per-kind corpus split, no collector swap for the graders.
+
+## RS-19 — mail claims its smtp/imap pure halves, as `sasl` already is (owner: D19a)
+
+The owner's letter, on the mail extraction prep's F-M1 option (a):
+
+> mail claims its smtp/imap pure V halves (the 7,589 lines `modules.cxd`'s `half=` puts in
+> `vcx/code`) by `registry/repos.cxd` prefix rules, as `sasl` already is, so `cx-platform-mail`
+> travels whole
+
+`registry/modules.cxd` names, on the `smtp` and `imap` rows, a `half=` column — the pure Ring-1
+half AGENTS.md describes — holding `vcx/code/stdlib_smtp.v`, `vcx/code/stdlib_smtp_server.v`,
+`vcx/code/stdlib_imap.v` and `vcx/code/stdlib_imap_server.v`. `registry/repos.cxd` claimed only the
+two wire halves under `vcx/platform/`, so the four pure files fell to the general
+`[path prefix='vcx/code/' repo=cx-core-code]` rule: 7,589 lines, 62% of the two modules' V code,
+in a repository other than their module's. `stdlib/sasl.cx`'s Ring-1 code file was already claimed
+explicitly by `[path prefix='vcx/code/stdlib_sasl' repo=cx-platform-mail]` — the same shape with
+the other answer.
+
+The allocation gains `[path prefix='vcx/code/stdlib_smtp' repo=cx-platform-mail]` and
+`[path prefix='vcx/code/stdlib_imap' repo=cx-platform-mail]`, each with a `why=`, written above
+the general `vcx/code/` rule so the first-match rule reaches them. `cx-platform-mail` then owns
+both halves of both modules and travels whole. The halves import Ring 0 and `encoding.base64`
+only — no socket, no store, no clock — so nothing the membership test claims leaves
+`cx-core-code` with them.
+
+The gate's blind spot is a defect of its own and is filed as its own issue (the `[split module]`
+check read `spec`, `corpus`, `source` and `code` and not `half=`, so the torn module exited OK);
+the fixture for it lands before these rows do.
+
+## RS-20 — flow's CLI verbs stay in the front door, and the act seam gets a row (owner: D21a)
+
+The owner's letter, on the flow extraction prep's F-F1 and F-F2:
+
+> flow's CLI V lines (`vcx/cmd/flow*.v`, ~3,672 lines) stay in `cx` (the front door) as the local
+> profile, and the `flow-perform` act seam in xap's `coordination.v` gets a row/`why=` that names
+> it so a pin and a gate can see it
+
+`registry/repos.cxd` sent `vcx/cmd/flow*.v` to `cx-platform-flow` by a rule whose own `why=` read
+"the local profile verbs stay in the binary; owned by flow", while the `cx-platform-flow` row
+reads `ships=package` — a package repository owning V that only `cx`'s tree can compile. The rule
+now sends those files to `cx`, the distribution repository that builds the binary, and its `why=`
+says the verbs are the local profile. `cx-platform-flow` is then what `ships=package` says it is.
+
+`vcx/platform/coordination.v` holds `coord_flow_perform`, the one act seam of an otherwise pure-CX
+module (RULED: 1265-PB-1), and travels to `cx-platform-xap` inside the catch-all
+`[path prefix='vcx/platform/' repo=cx-platform-xap]` rule, where nothing names it: the `flow`
+module row reads `code=none`, so `make placement-gate` does not see the seam either. The file gains
+an `exact=` rule of its own, above the catch-all, whose `why=` names `flow-perform` and the
+repository that depends on it, so the seam is legible to a pin and to a gate without a reader
+opening the file.
 
 ## Also ruled in the same session, operational (no id; recorded)
 

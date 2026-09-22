@@ -72,6 +72,7 @@
         [tr [td 'cx diff A B'] [td 'Semantic diff over strict-canonical forms']]
         [tr [td 'cx lint FILE'] [td 'Style + correctness warnings']]
         [tr [td 'cx validate FILE --schema=S.cxs'] [td 'Schema validation']]
+        [tr [td 'cx corpus FILE'] [td 'Grade a module conformance corpus file (cases carrying an in-code program) with this binary — the grader a repository with no toolchain runs']]
         [tr [td 'cx table VERB'] [td 'Table API surface (info / dump / load)']]
         [tr [td 'cx schema VERB'] [td 'Schema verb family — infer a .cxs from a corpus; export to JSON Schema']]
         [tr [td 'cx tools VERB'] [td 'Agent-tool verb family — project command defs to MCP tool descriptors']]

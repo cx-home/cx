@@ -321,6 +321,7 @@ step_globs() {
     # directory moving is exactly what this step exists to catch.
     placement-gate)                echo 'registry/modules.cxd scripts/placement_gate.cx spec/* conformance/* stdlib/* x/* vcx/code/* vcx/platform/*' ;;
     repos-allocation-gate)         echo '*' ;;   # any added or removed file can change the allocation
+    store-session-dep-gate)        echo 'scripts/store_session_dep_gate.cx vcx/platform/store_*.v vcx/platform/stdlib_session.v' ;;
     # the pin document, its format module, its grader and the spec page it
     # implements -- nothing else changes what the corpus asserts.
     test-deps-pins)                echo 'conformance/deps_pins.cxd scripts/check_deps_pins_fixtures.cx scripts/deps_pins.cx scripts/deps_sync.cx deps.cxd spec/03-approved/process/repository-dependency-pins.md' ;;
