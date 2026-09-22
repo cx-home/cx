@@ -368,6 +368,23 @@ build-vcx-dev: check-gate-lock
 # embed/cli half here: the data half hits its guard and costs two `find`s, and
 # a hand-copied list one recipe away from vcx's own is exactly the drift the
 # roster gates exist to stop.
+#
+# CONCURRENT profile builds (#1590). The five dev artifacts are independent —
+# distinct output paths under target/profiles/, distinct `-d` sets, a build-id
+# guard each (#995, #1449) — and inside the storm they already build side by
+# side under the storm's `-j`. Outside it (a pre-merge `make test-profile-gate`,
+# `make test-extraction-gate`, `devbox run baseline`'s first build) the two
+# recipes below re-entered vcx SERIALLY: measured on dev2 (28 cores, VJOBS=14),
+# the five builds took 51 s one after another. So each re-entry carries `-j`
+# when — and only when — no jobserver is already in force: under the storm,
+# MAKEFLAGS carries the parent's jobserver and the sub-make joins it, which is
+# what it did before; forcing `-j` there would detach it from the storm's
+# budget and print `warning: -jN forced in submake`. PROFILE_BUILD_JOBS caps
+# the fan-out (five is the artifact count; there is nothing to gain above it).
+# The DAG is unchanged: build-profile-data is still one node, so the two gates
+# and the matrix never write the data artifacts concurrently (the #1449 rule).
+PROFILE_BUILD_JOBS ?= 5
+PROFILE_BUILD_J = $(if $(findstring jobserver,$(MAKEFLAGS)),,-j$(PROFILE_BUILD_JOBS))
 .PHONY: build-profile-data build-profiles-dev
 build-profile-data: build-vcx
 	@$(MAKE) -C vcx $(PROFILE_BUILD_J) build-data-dev
