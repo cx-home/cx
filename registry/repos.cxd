@@ -156,6 +156,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='vcx/tests/testdata/code_diagram_golden' repo=cx-tooling]
   [path prefix='vcx/tests/testdata/diagram_' repo=cx-tooling]
   [path exact='scripts/check_code_diagram_fixtures.cx' repo=cx-tooling]
+  [path prefix='tooling/web/' repo=cx-tooling why='the browser half of the same product: the <cx-diagram> reference web component, its demo page and the bracket-highlighting comparison. Nothing under it is a ux module surface, and no target reads it (the ux extraction prep, F-U2)']
 
   [; ── modules that ENTER Ring 1 by the membership test (import nothing, no socket) ── ]
   [path prefix='vcx/platform/stdlib_did' repo=cx-core-code why='pure; did:web resolution splits off to identity at the move']
@@ -322,7 +323,6 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='spec/03-approved/xap/ux.md' repo=cx-platform-ux]
   [path prefix='conformance/xap/ux' repo=cx-platform-ux]
   [path exact='scripts/oriel_lane.sh' repo=cx-platform-ux]
-  [path prefix='tooling/web/' repo=cx-platform-ux]
 
   [; ── platform: agent ───────────────────────────────────────────────── ]
   [path prefix='x/' repo=cx-platform-agent why='what remains of x/ after ux and term: tools, mcp, mcp-server, a2a, a2a-xap, llm, run, adjudicate']
