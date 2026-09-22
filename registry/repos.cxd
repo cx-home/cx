@@ -161,8 +161,6 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='vcx/platform/stdlib_did' repo=cx-core-code why='pure; did:web resolution splits off to identity at the move']
   [path prefix='vcx/platform/stdlib_vc' repo=cx-core-code why='pure signatures']
   [path prefix='vcx/platform/stdlib_authz' repo=cx-core-code why='the decision function imports nothing']
-  [path prefix='vcx/platform/stdlib_iowatch' repo=cx-core-code why='it IS cx-stdlib/io [io:watch], misfiled']
-  [path prefix='vcx/platform/cx_iowatch' repo=cx-core-code]
   [path exact='stdlib/did.cx' repo=cx-core-code]
   [path exact='stdlib/vc.cx' repo=cx-core-code]
   [path exact='stdlib/authz.cx' repo=cx-core-code]
