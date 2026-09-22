@@ -156,6 +156,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='vcx/tests/testdata/code_diagram_golden' repo=cx-tooling]
   [path prefix='vcx/tests/testdata/diagram_' repo=cx-tooling]
   [path exact='scripts/check_code_diagram_fixtures.cx' repo=cx-tooling]
+  [path prefix='tooling/web/' repo=cx-tooling why='the browser half of the same product: the <cx-diagram> reference web component, its demo page and the bracket-highlighting comparison. Nothing under it is a ux module surface, and no target reads it (the ux extraction prep, F-U2)']
 
   [; ── modules that ENTER Ring 1 by the membership test (import nothing, no socket) ── ]
   [path prefix='vcx/platform/stdlib_did' repo=cx-core-code why='pure; did:web resolution splits off to identity at the move']
@@ -254,6 +255,8 @@ the rule carries a `why=`. The recurring reasons, once:
   [; ── platform: mail ────────────────────────────────────────────────── ]
   [path prefix='vcx/platform/stdlib_smtp' repo=cx-platform-mail]
   [path prefix='vcx/platform/stdlib_imap' repo=cx-platform-mail]
+  [path prefix='vcx/code/stdlib_smtp' repo=cx-platform-mail why='the DECLARED Ring-1 half of the smtp module (modules.cxd half=): the pure ESMTP codec and server core, which decide MEANING and open nothing. A module moves whole, so the half travels with its wire half — as sasl already does (RULED: RS-19)']
+  [path prefix='vcx/code/stdlib_imap' repo=cx-platform-mail why='the DECLARED Ring-1 half of the imap module (modules.cxd half=): the pure IMAP codec and server core. Same rule as the smtp half above (RULED: RS-19)']
   [path exact='stdlib/smtp.cx' repo=cx-platform-mail]
   [path exact='stdlib/imap.cx' repo=cx-platform-mail]
   [path exact='spec/03-approved/platform/smtp.md' repo=cx-platform-mail]
@@ -290,7 +293,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='stdlib/flow.cx' repo=cx-platform-flow]
   [path exact='spec/03-approved/platform/flow.md' repo=cx-platform-flow]
   [path exact='conformance/platform/flow.cxd' repo=cx-platform-flow]
-  [path prefix='vcx/cmd/flow' repo=cx-platform-flow why='the local profile verbs stay in the binary; owned by flow']
+  [path prefix='vcx/cmd/flow' repo=cx why='flow ships=package and vcx/cmd/flow*.v is V that only the front door compiles: the local profile verbs stay in the binary, so they stay in the repo that BUILDS the binary. Not owned by flow (RULED: RS-20)']
   [path prefix='flows/' repo=cx-platform-flow]
   [path prefix='vcx/tests/flow_' repo=cx-platform-flow]
   [path exact='scripts/flow_dogfood_gate.cx' repo=cx-platform-flow]
@@ -320,7 +323,6 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='spec/03-approved/xap/ux.md' repo=cx-platform-ux]
   [path prefix='conformance/xap/ux' repo=cx-platform-ux]
   [path exact='scripts/oriel_lane.sh' repo=cx-platform-ux]
-  [path prefix='tooling/web/' repo=cx-platform-ux]
 
   [; ── platform: agent ───────────────────────────────────────────────── ]
   [path prefix='x/' repo=cx-platform-agent why='what remains of x/ after ux and term: tools, mcp, mcp-server, a2a, a2a-xap, llm, run, adjudicate']
@@ -332,7 +334,8 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='vcx/tests/llm_' repo=cx-platform-agent]
 
   [; ── platform: xap (the host; the residue of vcx/platform) ────────── ]
-  [path prefix='vcx/platform/' repo=cx-platform-xap why='everything left in vcx/platform after the rows above: xap, xsp profiles, contract revision, coordination glue, the module init and Ring-2 registration']
+  [path exact='vcx/platform/coordination.v' repo=cx-platform-xap why='the coordination glue, AND the one act seam cx-platform/flow depends on: coord_flow_perform, the single builtin the flow runner acts through (RULED: 1265-PB-1), dispatched here as flow-perform. The flow module row reads code=none, so without this row nothing names the seam and neither a pin nor a gate can see that a package repo depends on a builtin another repo compiles in (RULED: RS-20)']
+  [path prefix='vcx/platform/' repo=cx-platform-xap why='everything left in vcx/platform after the rows above: xap, xsp profiles, contract revision, the module init and Ring-2 registration']
   [path prefix='vcx/cmd/xap' repo=cx-platform-xap]
   [path prefix='vcx/cmd/platform_verbs' repo=cx-platform-xap]
   [path exact='stdlib/xap.cx' repo=cx-platform-xap]
@@ -345,6 +348,16 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='packages/' repo=cx-platform-xap why='the gtin sample package the registry publishes']
   [path prefix='reference/' repo=cx-platform-xap]
   [path prefix='examples/htmx/' repo=cx-platform-xap]
+  [; an examples/platform/<module>/ directory exercises ONE module and moves
+     with it -- a rule per module, not per file. What is left below exercises
+     the host or several products at once and stays with xap: the demos under
+     examples/platform/xap/, examples/platform/together/ (sso + flow + xap in
+     one deployment) and the directory README. The sso interop lane could not
+     boot its own deployment from a bare checkout before this (the sso
+     extraction prep, F-1; the ux prep reads it again as F-U1). ]
+  [path prefix='examples/platform/sso/' repo=cx-platform-sso why='the deployment scripts/sso_interop_lane.sh boots and the programs it drives: the sso module exercised as a SERVER a customer would run']
+  [path prefix='examples/platform/flow/' repo=cx-platform-flow why='the checkout and simulate examples of the flow module']
+  [path prefix='examples/platform/scim/' repo=cx-core-code why='scim is a shared codec that stays in the language repo, so its provisioning and projection examples go where the module is']
   [path prefix='examples/platform/' repo=cx-platform-xap]
   [path prefix='bench/xap/' repo=cx-platform-xap]
   [path exact='scripts/check_xap_dist_absences.cx' repo=cx-platform-xap]

@@ -12,8 +12,12 @@
 #   [duplicate]     two rules with the same exact= / prefix=
 #   [undeclared]    a rule whose repo= has no `[repo]` row
 #   [empty repo]    a `[repo]` row that receives no file
-#   [split module]  a registry/modules.cxd row whose spec, corpus, source and
-#                   code files land in DIFFERENT repos -- a module moves whole
+#   [split module]  a registry/modules.cxd row whose spec, corpus, source,
+#                   code and half= files land in DIFFERENT repos -- a module
+#                   moves whole. `half=` is the DECLARED Ring-1 half a Ring-2
+#                   module keeps in vcx/code for profile composition; it is
+#                   one of the module's files and is read here like the rest
+#                   (#1609)
 #
 # A file belongs to the FIRST rule, in document order, whose exact= equals the
 # path or whose prefix= leads it. Nothing else is inferred.
@@ -104,7 +108,7 @@
     [= $empty [?for [in $x $repos] [where [not [$member [$string $x@name] $filled]]]
                 [yield [failure kind="empty repo" what=[$string $x@name]]]]]
     [= $split [?for [in $m $modules]
-                [yield [?let [= $paths [?for [in $col ([$string [?else $m@spec ""]], [$string [?else $m@corpus ""]], [$string [?else $m@source ""]], [$string [?else $m@code ""]])]
+                [yield [?let [= $paths [?for [in $col ([$string [?else $m@spec ""]], [$string [?else $m@corpus ""]], [$string [?else $m@source ""]], [$string [?else $m@code ""]], [$string [?else $m@half ""]])]
                                           [in $p [$strings:split-whitespace $col]]
                                           [where [not [= $p "none"]]]
                                           [yield $p]]]
@@ -139,7 +143,7 @@
         [path exact='x/one.md' repo=b]
       ]"]]
       [= $files ("x/one.md", "x/two.md", "y/three.md", "z/four.md")]
-      [= $mods [?for [in $m [$cx:parse "[r [module name=whole spec=x/one.md source=x/one.md code=none] [module name=torn spec=x/one.md code=y/three.md source=none]]"]//module] [yield $m]]]
+      [= $mods [?for [in $m [$cx:parse "[r [module name=whole spec=x/one.md source=x/one.md code=none half=none] [module name=torn spec=x/one.md code=y/three.md source=none] [module name=halved spec=x/one.md source=x/one.md code=none half=x/two.md]]"]//module] [yield $m]]]
       [= $v [$check [?for [in $r $reg//path] [yield $r]]
                     [?for [in $r $reg//repo] [yield $r]]
                     $files $mods]]
@@ -150,14 +154,18 @@
                 "duplicate:exact=x/one.md",
                 "undeclared:prefix=y/ -> nowhere",
                 "empty repo:ghost",
-                "split module:torn -> a + nowhere")]
+                "split module:torn -> a + nowhere",
+                # #1609: the Ring-1 half of a Ring-2 module is one of the module's files.
+                # `halved` has spec and source in repo a and its half= in repo b; the row is
+                # torn exactly as `torn` is, and the check must say so.
+                "split module:halved -> a + b")]
       [= $missing [?for [in $w $want] [where [not [$member $w $kinds]]] [yield $w]]]
       [= $extra   [?for [in $k $kinds] [where [not [$member $k $want]]] [yield $k]]]
       [= $a-n [$first [?for [in $c $v/census/row] [where [= [$string $c@repo] "a"]] [yield [$string $c@n]]]]]
       [= $b-n [$first [?for [in $c $v/census/row] [where [= [$string $c@repo] "b"]] [yield [$string $c@n]]]]]
       [= $census-ok [?if [= $a-n "1"] [then [= $b-n "1"]] [else false]]]
       [?if [?if [= [$count $missing] 0] [then [?if [= [$count $extra] 0] [then $census-ok] [else false]]] [else false]]
-        [then [?let [= $_ [$say "repos-allocation self-test OK -- unallocated, dead rule, duplicate, undeclared, empty repo, split module each caught once; a whole module passes; census a=1 b=1 (y/ counted under the undeclared rule's repo, as it must)."]]
+        [then [?let [= $_ [$say "repos-allocation self-test OK -- unallocated, dead rule, duplicate, undeclared, empty repo, split module each caught once, and the split twice: a torn code= and a torn half= (#1609); a whole module passes; census a=1 b=1 (y/ counted under the undeclared rule's repo, as it must)."]]
                 [$env:exit 0]]]
         [else [?let [= $_ [$cry [$concat "repos-allocation self-test FAILED -- missing: "
                                           [$strings:join $missing "; "]
