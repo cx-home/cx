@@ -214,7 +214,12 @@ becomes its own Ring-1 module.
      the moment both exist, so the two statements cannot drift apart. This
      was NOT cutover debt: #1427 owes nothing. 1427-j: the branch that lands
      second adapts, so the spec and the corpus are in the Ring-2 directories
-     here. ]
+     here. RS-6 (#1589, #1591 item 9) moves the native half DOWN: eleven of
+     its twelve builtins are now named builtins of session and store (their
+     rows carry the two files), and the `code=` here is what is left — one
+     compile-time constant, `connector-test-build`, which has no verb in
+     either destination and so has no home RS-6 names. The column empties
+     when that is answered; RESULTS.md on the branch carries the options. ]
   [module name=connector ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/connector.md corpus=conformance/platform/connector.cxd source=stdlib/connector.cx code=vcx/platform/stdlib_connector.v half=none status=current]
   [module name=did ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/did.md corpus=conformance/platform/did.cxd source=stdlib/did.cx code=vcx/platform/stdlib_did.v half=none status=current]
   [; flow is a pure-CX orchestrator over the journal, sched and uuid
@@ -241,14 +246,14 @@ becomes its own Ring-1 module.
   [module name=journal ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/journal.md corpus=conformance/platform/journal.cxd source=stdlib/journal.cx code='vcx/platform/stdlib_journal.v vcx/platform/journal_ingest.v' half=none status=current]
   [module name=live ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/live.md corpus=conformance/platform/live.cxd source=stdlib/live.cx code=vcx/platform/stdlib_live.v half=none status=current]
   [module name=net ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/net.md corpus=conformance/platform/net.cxd source=stdlib/net.cx code=vcx/platform/stdlib_net.v half=none status=current]
-  [module name=session ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/session.md corpus=conformance/platform/session.cxd source=stdlib/session.cx code=vcx/platform/stdlib_session.v half=none status=current]
+  [module name=session ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/session.md corpus=conformance/platform/session.cxd source=stdlib/session.cx code='vcx/platform/stdlib_session.v vcx/platform/identity_connector_builtins.v' half=none status=current]
   [module name=sftp ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/sftp.md corpus=conformance/platform/sftp.cxd source=stdlib/sftp.cx code=vcx/platform/stdlib_sftp.v half=none status=planned]
   [module name=smtp ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/smtp.md corpus=conformance/platform/smtp.cxd source=stdlib/smtp.cx code=vcx/platform/stdlib_smtp_wire.v half='vcx/code/stdlib_smtp.v vcx/code/stdlib_smtp_server.v' status=current]
   [; sso — #1394's enterprise-SSO handler surface, pure CX over
      oidc/saml/scim/session; declared `incoming` before its merge (OL-15) and
      current since release/0.18 carries it. ]
   [module name=sso ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/sso.md corpus=conformance/platform/sso.cxd source=stdlib/sso.cx code=none half=none status=current]
-  [module name=store ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/store.md corpus=conformance/platform/store.cxd source=stdlib/store.cx code=vcx/platform/stdlib_store.v half=none status=current]
+  [module name=store ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/store.md corpus=conformance/platform/store.cxd source=stdlib/store.cx code='vcx/platform/stdlib_store.v vcx/platform/store_connector_builtins.v' half=none status=current]
   [; sync — #1434's incremental-sync module, spec-first like connector: the
      spec and its 132-case attack corpus landed before any code (RULED:
      1434-a, 1085-e), so this row is `planned` and its source and code
