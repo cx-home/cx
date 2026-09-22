@@ -348,6 +348,16 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='packages/' repo=cx-platform-xap why='the gtin sample package the registry publishes']
   [path prefix='reference/' repo=cx-platform-xap]
   [path prefix='examples/htmx/' repo=cx-platform-xap]
+  [; an examples/platform/<module>/ directory exercises ONE module and moves
+     with it -- a rule per module, not per file. What is left below exercises
+     the host or several products at once and stays with xap: the demos under
+     examples/platform/xap/, examples/platform/together/ (sso + flow + xap in
+     one deployment) and the directory README. The sso interop lane could not
+     boot its own deployment from a bare checkout before this (the sso
+     extraction prep, F-1; the ux prep reads it again as F-U1). ]
+  [path prefix='examples/platform/sso/' repo=cx-platform-sso why='the deployment scripts/sso_interop_lane.sh boots and the programs it drives: the sso module exercised as a SERVER a customer would run']
+  [path prefix='examples/platform/flow/' repo=cx-platform-flow why='the checkout and simulate examples of the flow module']
+  [path prefix='examples/platform/scim/' repo=cx-core-code why='scim is a shared codec that stays in the language repo, so its provisioning and projection examples go where the module is']
   [path prefix='examples/platform/' repo=cx-platform-xap]
   [path prefix='bench/xap/' repo=cx-platform-xap]
   [path exact='scripts/check_xap_dist_absences.cx' repo=cx-platform-xap]
