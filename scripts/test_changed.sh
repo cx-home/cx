@@ -53,13 +53,6 @@ while [ $# -gt 0 ]; do
 done
 cd "$(dirname "$0")/.."
 
-if [ -n "$CHANGED_SRC" ]; then
-  [ $DRY -eq 1 ] || { echo "test-changed: --changed-files is a --dry-run flag (a synthetic diff must never RUN a step)" >&2; exit 2; }
-  CHANGED=$(cat "$CHANGED_SRC")
-else
-  CHANGED=$(git diff --name-only "$BASE"...HEAD; git diff --name-only HEAD; git diff --name-only --cached)
-fi
-CHANGED=$(printf '%s\n' "$CHANGED" | sort -u | grep -v '^$' || true)
 # ── every `while read` loop below reads from a FILE, never a here-string ────
 # The post-merge run on baba91bbc stalled 38 MINUTES inside this script under
 # the runner's nix bash 5.3: bash asleep at 0.01 s of CPU, no child, both ends
@@ -80,6 +73,38 @@ CHANGED=$(printf '%s\n' "$CHANGED" | sort -u | grep -v '^$' || true)
 # so their `return`s, `break`s and variable assignments are unchanged.
 TC_TMP=$(mktemp -d) || { echo "test-changed: cannot create a scratch directory" >&2; exit 2; }
 trap 'rm -rf "$TC_TMP"' EXIT
+
+if [ -n "$CHANGED_SRC" ]; then
+  [ $DRY -eq 1 ] || { echo "test-changed: --changed-files is a --dry-run flag (a synthetic diff must never RUN a step)" >&2; exit 2; }
+  CHANGED=$(cat "$CHANGED_SRC")
+else
+  # ── A PIN MOVES IN A COMMIT, NEVER IN THE WORKING TREE (#1599) ────────────
+  # The change set is the committed diff plus the worktree's own, because an
+  # UNCOMMITTED source edit has to select its steps too. In an impl worktree
+  # that fold-in was reading the tree's own shape as a change: every such
+  # worktree carries third_party/re2 and third_party/v as SYMLINKS to the main
+  # checkout's submodules (AGENT-STANDING-RULES.md §Git), so `git diff HEAD`
+  # reports each as a TYPECHANGE — gitlink (mode 160000) on the HEAD side,
+  # symbolic link (120000) in the tree, status T — and the V-pin rows fired on
+  # every branch whatever it touched. Measured 2026-09-22 on impl/cx-F-1515, a
+  # branch of one corpus file: test-vcx-suite widened to all 82 files, whose
+  # last shard alone is ~65 minutes, and every agent's pre-merge run paid it.
+  #
+  # A pin moves when the GITLINK SHA differs between the base and HEAD, which
+  # is exactly what `git diff "$BASE"...HEAD` answers for a gitlink; the tree
+  # cannot say otherwise. So the gitlink→symlink typechanges are dropped from
+  # the WORKTREE half alone. A real pin bump still arrives, through the
+  # committed half, symlinked worktree and all — and a DIRTY submodule, which
+  # git reports as :160000 160000 … M, is untouched by this and still selects.
+  { git diff --raw HEAD 2>/dev/null || true; } \
+    | awk -F'\t' '{ split($1, m, " ");
+                    if (m[1] == ":160000" && m[2] == "120000" && m[5] == "T") print $2 }' \
+    > "$TC_TMP/gitlink_symlinks"
+  { git diff --name-only HEAD; git diff --name-only --cached; } > "$TC_TMP/worktree_changed"
+  CHANGED=$(git diff --name-only "$BASE"...HEAD
+            grep -Fxv -f "$TC_TMP/gitlink_symlinks" "$TC_TMP/worktree_changed" || true)
+fi
+CHANGED=$(printf '%s\n' "$CHANGED" | sort -u | grep -v '^$' || true)
 printf '%s\n' "$CHANGED" > "$TC_TMP/changed"
 if [ -z "$CHANGED" ]; then
   echo "test-changed: no changes vs $BASE — nothing to run (the full gate still applies at wave exits)"
