@@ -68,8 +68,17 @@
 # nested [?for] yields do NOT auto-splice — measured on v0.16.0).
 [?def seq-flat scope=public ($xs) [$fp:flat-map $xs [?fn ($x) $x]]]
 [?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
+# scratch-dir: this run's temp dir (the pid in the name — see `$tmpdir` in
+# main). finish: EVERY exit goes through here and removes it first (#1625: no
+# exit path did, and 62 of them were left under $TMPDIR on one box).
+[?def scratch-dir scope=public impure ()
+  [$cat ([$env:var-or-default 'TMPDIR' '/tmp'], '/cx-gen-examples-', [$string [$env:pid]])]]
+[?def finish scope=public impure ($code)
+  [?let [= $d [$scratch-dir]]
+        [= $rm [?if [$io:exists $d] [then [$io:remove-tree $d]] [else null]]]
+    [$env:exit $code]]]
 [?def die scope=public impure ($msg)
-  [?let [= $w [$cry $msg]] [$env:exit 2]]]
+  [?let [= $w [$cry $msg]] [$finish 2]]]
 [?def must scope=public impure ($ctx $x)
   [?match $x
     [case [err $e] [$die [$cat ('gen_examples: INTERNAL — ', $ctx, ': ', $e@message)]]]
@@ -927,7 +936,7 @@
   # §C2 lint flagged eight entries that were clean alone; at 00:44Z the same
   # collision made the gate's --check DISAGREE on three examples whose
   # answers had not moved. A fixed name is a race between any two checkers.
-  [= $tmpdir [$cat ([$env:var-or-default 'TMPDIR' '/tmp'], '/cx-gen-examples-', [$string [$env:pid]])]]
+  [= $tmpdir [$scratch-dir]]
   [= $mk [$must 'creating tmp dir' [$io:make-dirs $tmpdir]]]
   [= $tmp [$cat ($tmpdir, '/example.cx')]]
   # Per-example capture files — see `audit`: output goes to disk, never a
@@ -1200,10 +1209,10 @@
                          [$strings:slice [$string $x@msg] 1 240])]]]]]],
         1)]
       [else 0]]]
-  [= $lint [?if [or $c0-bad $c2-bad $c3-bad $c4-bad $c5-bad] [then [$env:exit 1]] [else 0]]]
+  [= $lint [?if [or $c0-bad $c2-bad $c3-bad $c4-bad $c5-bad] [then [$finish 1]] [else 0]]]
   # --lint-only stops here: the lints ARE the verdict and nothing is written.
   [= $lint-only-exit [?if $lint-only
-      [then ([$cry [$cat ('=== gen_examples --lint-only: ', [$string $n], ' entries, lints clean ===')]], [$env:exit 0])]
+      [then ([$cry [$cat ('=== gen_examples --lint-only: ', [$string $n], ' entries, lints clean ===')]], [$finish 0])]
       [else 0]]]
 
   # The raw-text payload has ONE limit and it is the corpus's own: a
@@ -1252,7 +1261,7 @@
           [then ([$cry [$cat ('=== gen_examples --check: OK — ', [$string $n],
                               ' examples clean & current, ', [$string $n],
                               ' answers unchanged ===')]],
-                 [$env:exit 0])]
+                 [$finish 0])]
           [else (
             [?if $js-ok [then ()]
               [else ([$cry '=== gen_examples --check: playground.examples.js is STALE ==='],)]],
@@ -1279,12 +1288,13 @@
                      [$cry '    Read the diff against each entry\'s [note] before accepting it:'],
                      [$cry '    a note promising an answer the pin contradicts is the defect (#1170).'])]],
             [$cry '    Run: make playground-examples-regen'],
-            [$env:exit 1])]]]]
+            [$finish 1])]]]]
       [else (
         [$must 'writing playground.examples.js' [$io:write-file $js-path $text]],
         [$cry [$cat ('=== wrote: ', $js-path)]],
         [$must 'writing examples.out.cxd' [$io:write-file $pin-path $pin-text]],
         [$cry [$cat ('=== wrote: ', $pin-path)]],
-        [$cry [$cat ('=== passing: ', [$string $n], '/', [$string $n], ' (all clean) ===')]])]]
+        [$cry [$cat ('=== passing: ', [$string $n], '/', [$string $n], ' (all clean) ===')]],
+        [$finish 0])]]
   )]
   [?if false [then '']]]
