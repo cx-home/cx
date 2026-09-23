@@ -64,7 +64,7 @@ CHANGED=$(git diff --name-only "$BASE"...HEAD 2>/dev/null; git diff --name-only 
 # NOT here: #1560 already made it selectable by name through rule (3), that row
 # is green in the self-test, and #1587 is the module map — not a re-reading of
 # what the shared corpus is.
-if printf '%s\n' "$CHANGED" | grep -qE '^(vcx/tests/runners/profile_gate/|vcx/tests/fixtures/|vcx/cx/|x/|third_party/v|conformance/gates\.cxd|conformance/fixtures\.cxs)'; then
+if printf '%s\n' "$CHANGED" | grep -qE '^(vcx/tests/runners/profile_gate/|vcx/tests/fixtures/|vcx/cx/|deps\.cxd|x/|third_party/v|conformance/gates\.cxd|conformance/fixtures\.cxs)'; then
   echo ALL
   exit 0
 fi

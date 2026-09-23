@@ -62,7 +62,8 @@
   [flag name="seed"     type=int default=0]]]
 
 [?const CRASH-DIR 'vcx/fuzz/crashes']
-[?const BENCH-DIR 'fixtures/bench']
+[; fixtures/ left this tree for cx-core-data's pinned checkout (RULED: RS-7, RS-12). ]
+[?const BENCH-DIR 'deps/cx-core-data/fixtures/bench']
 
 # The four fuzz targets (see the header note on why these, not the ABI three).
 [?const TARGETS ('parse', 'eval', 'emit_stream', 'canonical')]

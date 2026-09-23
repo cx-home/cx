@@ -107,10 +107,16 @@ V := $(if $(wildcard $(CURDIR)/third_party/v/v),$(CURDIR)/third_party/v/v,v)
 # nested-make hunt of #1520 could see nothing past this line.
 JS_CLOSE := { exec 3<&- 4<&- 5<&- 6<&- ; } 2>/dev/null || true;
 
-CONFORMANCE_CORE := conformance/core.cxd
-CONFORMANCE_EXT := conformance/extended.cxd
-CONFORMANCE_XML := conformance/xml.cxd
-CONFORMANCE_MD := conformance/md.cxd
+# cx-core-data's pinned checkout (RULED: RS-7, RS-12): its V modules are
+# compiled from here through -path (CX_V_SEARCH, beside DEPS_CX) and its
+# data-language corpus, fixtures/ and the vcx/cx and vcx/fixtures in-module
+# tests are graded from here. None of it is tracked in this tree; deps.cxd
+# names the sha and deps-present refuses a tree without it.
+CXD := deps/cx-core-data
+CONFORMANCE_CORE := $(CXD)/conformance/core.cxd
+CONFORMANCE_EXT := $(CXD)/conformance/extended.cxd
+CONFORMANCE_XML := $(CXD)/conformance/xml.cxd
+CONFORMANCE_MD := $(CXD)/conformance/md.cxd
 
 LIB_NAME := libcx
 VCX_DYLIB := vcx/target/$(LIB_NAME).dylib
@@ -1207,6 +1213,8 @@ DEPS_CX = $(if $(CX_BIN),$(CX_BIN),$(if $(wildcard $(CURDIR)/vcx/target/cx),$(CU
 # archives as $d() values whose defaults are @DIR-relative (its own
 # repository's layout), and the build that made them says where they are:
 # the same two files as before, vcx/Makefile's re2-shim and re2-static.
+# Module `arrow`'s file-I/O build names its shim archive the same way
+# (cx_arrow_shim_lib), read only when -d cx_arrow_files compiles that file.
 #
 # VFLAGS is how both reach every V compile this Makefile starts, including
 # `v test`'s per-file compiles and the V programs scripts/ build: V reads it
@@ -1216,7 +1224,7 @@ CX_DEPS_VPATH := $(shell "$(DEPS_CX)" --allow-all scripts/deps_sync.cx --vpath -
 endif
 export CX_DEPS_VPATH
 export CX_V_SEARCH := $(CURDIR)/vcx|$(or $(CX_DEPS_VPATH),@vmodules|@vlib)
-export CX_NATIVE_DEFINES := -d cx_re2_lib_dir=$(CURDIR)/vcx/target -d cx_re2_static=$(CURDIR)/third_party/re2/obj/libre2.a
+export CX_NATIVE_DEFINES := -d cx_re2_lib_dir=$(CURDIR)/vcx/target -d cx_re2_static=$(CURDIR)/third_party/re2/obj/libre2.a -d cx_arrow_shim_lib=$(CURDIR)/vcx/target/libcx_arrow_shim.a
 export VFLAGS := -path "$(CX_V_SEARCH)" $(CX_NATIVE_DEFINES)
 
 deps-sync: deps-cx
@@ -2538,7 +2546,7 @@ MAKE_PRINT_VCX = $(shell $(MAKE) -s --no-print-directory -C vcx print-$(1) 2>/de
 abi-c-test: build-vcx build-lib-arrow
 	$(CC) -std=c11 -Wall -Wextra -Werror -g -O1 \
 	 -fsanitize=$(ABI_C_TEST_SAN) \
-	 -I include -I vcx/arrow \
+	 -I include -I $(CXD)/vcx/arrow \
 	 tests/abi/c_abi_test.c \
 	 -L vcx/target -lcx -ldl \
 	 -o $(ABI_C_TEST_BIN)
@@ -3354,8 +3362,8 @@ test-vcx-cxstore: build-vcx-dev
 # roster is a variable and `check-inmodule-test-roster` now fails on any
 # vcx/cx/*_test.v that is in neither list, so the next addition cannot be
 # forgotten silently. Delete both lists and glob the directory when #737 closes.
-CX_INMODULE_TESTS := vcx/cx/program_interior_comments_test.v vcx/cx/program_layout_test.v vcx/cx/program_fmt_guard_test.v vcx/cx/program_emit_head_ascription_test.v vcx/cx/directive_emit_surface_test.v vcx/cx/anchor_resolve_test.v vcx/cx/numeric_exact_fast_test.v vcx/cx/atom_test.v vcx/cx/token_golden_test.v vcx/cx/version_stamp_test.v vcx/cx/html_url_codec_test.v vcx/cx/span_jump_test.v vcx/cx/feature_compat_test.v vcx/cx/name_pool_contract_test.v vcx/cx/schema_extensions_test.v vcx/cx/node_api_test.v
-CX_INMODULE_TESTS_EXCLUDED := vcx/cx/parser_multidoc_test.v
+CX_INMODULE_TESTS := $(CXD)/vcx/cx/program_interior_comments_test.v $(CXD)/vcx/cx/program_layout_test.v $(CXD)/vcx/cx/program_fmt_guard_test.v $(CXD)/vcx/cx/program_emit_head_ascription_test.v $(CXD)/vcx/cx/directive_emit_surface_test.v $(CXD)/vcx/cx/anchor_resolve_test.v $(CXD)/vcx/cx/numeric_exact_fast_test.v $(CXD)/vcx/cx/atom_test.v $(CXD)/vcx/cx/token_golden_test.v $(CXD)/vcx/cx/version_stamp_test.v $(CXD)/vcx/cx/html_url_codec_test.v $(CXD)/vcx/cx/span_jump_test.v $(CXD)/vcx/cx/feature_compat_test.v $(CXD)/vcx/cx/name_pool_contract_test.v $(CXD)/vcx/cx/schema_extensions_test.v $(CXD)/vcx/cx/node_api_test.v
+CX_INMODULE_TESTS_EXCLUDED := $(CXD)/vcx/cx/parser_multidoc_test.v
 
 # check-build-input-roster (#1065) — forwards to vcx/, where the per-artifact
 # input rosters live. It proves each guard watches every module its artifact
@@ -3393,7 +3401,7 @@ check-inmodule-test-roster:
 	  exit 1; \
 	fi; \
 	unlisted=""; \
-	for f in vcx/cx/*_test.v; do \
+	for f in $(CXD)/vcx/cx/*_test.v; do \
 	  case " $(CX_INMODULE_TESTS) $(CX_INMODULE_TESTS_EXCLUDED) " in \
 	    *" $$f "*) ;; \
 	    *) unlisted="$$unlisted $$f" ;; \
@@ -3424,7 +3432,7 @@ check-inmodule-test-roster:
 .PHONY: test-vcx-cx
 test-vcx-cx: build-vcx-dev
 	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) test $(CX_INMODULE_TESTS)
-	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) test vcx/fixtures/
+	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) test $(CXD)/vcx/fixtures/
 
 # White-box unit tests that live INSIDE the CLI module (vcx/cmd/*_test.v) —
 # they assert on the cmd module's own constants (e.g. the `cx scaffold`

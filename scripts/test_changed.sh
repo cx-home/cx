@@ -137,7 +137,11 @@ printf '%s\n' "$CHANGED" | sed 's/^/  /'
 # step, so the support/rare dirs (testenv fixtures deps bench fuzz tools +
 # v.mod) ride RING_SUP, which every compiled step carries. Over-include on
 # doubt: a false RUN costs minutes, a false SKIP costs correctness.
-RING0='vcx/cx/*'
+# RING0 carries deps.cxd (RULED: RS-7, RS-12): vcx/cx and the other cx-core-data
+# modules are compiled from the pin, so the change that moves them in THIS
+# repository is the pin moving. It over-selects for a pin that is not Ring 0's
+# (a package's), which is the safe direction.
+RING0='vcx/cx/* deps.cxd'
 RING_STORE='vcx/cxstore/*'
 RING1='vcx/code/*'
 RING_LEAF='vcx/arrow/* vcx/transport/*'
@@ -699,7 +703,9 @@ suite_files() {
       # the commit that gives its step a row.
       "$SUITE_DIR"/runners/extraction_gate/*|"$SUITE_DIR"/runners/profile_gate/*|"$SUITE_DIR"/runners/conformance/*)
         continue ;;
-      "$SUITE_DIR"/*|vcx/testenv/*|vcx/fixtures/*|third_party/*|Makefile|vcx/Makefile|vcx/v.mod|devbox.json|devbox.lock|scripts/*)
+      # deps.cxd: a moved pin moves the Ring 0 module every test compiles
+      # against, exactly as third_party/ moves the compiler (RULED: RS-12).
+      "$SUITE_DIR"/*|vcx/testenv/*|vcx/fixtures/*|third_party/*|deps.cxd|Makefile|vcx/Makefile|vcx/v.mod|devbox.json|devbox.lock|scripts/*)
         echo ALL; return 0 ;;
     esac
   done < "$TC_TMP/changed"

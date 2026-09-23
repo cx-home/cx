@@ -23,7 +23,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TARGETS=(
     "$ROOT/vcx/code"
     "$ROOT/vcx/platform"
-    "$ROOT/vcx/cx/cabi.v"
+    "$ROOT/deps/cx-core-data/vcx/cx/cabi.v"   # cx-core-data, pinned (RULED: RS-12)
     "$ROOT/vcx/cmd"
     "$ROOT/include/cx.h"
 )

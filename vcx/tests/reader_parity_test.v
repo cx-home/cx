@@ -62,12 +62,21 @@ fn conformance_dir() string {
 	return os.join_path(repo_root(), 'conformance')
 }
 
+// pinned_conformance_dir — the data-language suites left this tree for
+// cx-core-data (RULED: RS-7, RS-12) and are read from its pinned checkout, so
+// the readers are held to parity over them exactly as before. A tree without the
+// pin is a failure here, never a smaller population.
+fn pinned_conformance_dir() string {
+	return os.join_path(repo_root(), 'deps', 'cx-core-data', 'conformance')
+}
+
 // corpus_files — every `.cxd` under conformance/ (recursive) plus the
 // playground corpus, sorted, repo-relative.
 fn corpus_files() []string {
 	root := repo_root()
 	mut out := []string{}
-	mut stack := [conformance_dir()]
+	assert os.is_dir(pinned_conformance_dir()), '${pinned_conformance_dir()} is not there -- run `make deps-sync`'
+	mut stack := [conformance_dir(), pinned_conformance_dir()]
 	for stack.len > 0 {
 		dir := stack.pop()
 		entries := os.ls(dir) or { continue }
@@ -585,9 +594,9 @@ const reason_prog = 'RECORDED EXCEPTION (1548-c) — a program document whose BR
 const accepted_by_one_table = [
 	// ── #1559 — an ASCII BareChar in prose the run does not admit (6) ──
 	AcceptedByOne{'conformance/code.cxd', .data, reason_1577},
-	AcceptedByOne{'conformance/lockfile.cxd', .data, reason_1576},
+	AcceptedByOne{'deps/cx-core-data/conformance/lockfile.cxd', .data, reason_1576},
 	AcceptedByOne{'conformance/stdlib/array.cxd', .data, reason_1579},
-	AcceptedByOne{'conformance/yaml.cxd', .data, reason_1576},
+	AcceptedByOne{'deps/cx-core-data/conformance/yaml.cxd', .data, reason_1576},
 	AcceptedByOne{'examples/article.cx', .data, reason_1579},
 	AcceptedByOne{'examples/vcore.cx', .data, reason_1577},
 	// ── #1559 — a bare URL's `://` (RULED: 1384-a keeps `/` out of the run) (3) ──
@@ -603,9 +612,9 @@ const accepted_by_one_table = [
 	// ── recorded exception — a token-initial operator head (1) ──
 	AcceptedByOne{'examples/logs.cx', .data, reason_ophead},
 	// ── recorded exception — a DATA-only lane the program grammar has no form for (4) ──
-	AcceptedByOne{'conformance/conversions.cxd', .data, reason_datalane},
-	AcceptedByOne{'conformance/fmt.cxd', .data, reason_datalane},
-	AcceptedByOne{'conformance/xml.cxd', .data, reason_datalane},
+	AcceptedByOne{'deps/cx-core-data/conformance/conversions.cxd', .data, reason_datalane},
+	AcceptedByOne{'deps/cx-core-data/conformance/fmt.cxd', .data, reason_datalane},
+	AcceptedByOne{'deps/cx-core-data/conformance/xml.cxd', .data, reason_datalane},
 	AcceptedByOne{'conformance/xml_codec.cxd', .data, reason_datalane},
 	// ── #1536 — a call-shaped head beside a ws-delimited literal (22) ──
 	// 33 -> 22: eleven of these were cx-platform-sso's and left with the

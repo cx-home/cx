@@ -33,7 +33,7 @@ runner=vcx/tests/runners/conformance/conformance_run.v
 claims="$(mktemp "${TMPDIR:-/tmp}/cx-conf-claims.XXXXXX")"
 trap 'rm -f "$claims"' EXIT
 # 1. the document step: the runner's own suite list
-grep -oE "'\.\./conformance/[A-Za-z0-9_./-]+\.cxd'" "$runner" | sed -E "s#'\.\./##; s#'##" | while IFS= read -r s; do
+grep -oE "'\.\./(deps/cx-core-data/)?conformance/[A-Za-z0-9_./-]+\.cxd'" "$runner" | sed -E "s#'\.\./##; s#'##" | while IFS= read -r s; do
   printf '%s\t%s\n' "$s" "test-vcx-conform (conform-all: $runner)"
 done >> "$claims"
 # 2. the eval step (in-code fixtures): code.cxd + every module corpus. #1427-c
@@ -55,7 +55,7 @@ done >> "$claims"
 #    2026-09-08 note above), and "code_eval_fixtures_test.v" would now be
 #    exactly that.
 printf '%s\t%s\n' "conformance/code.cxd" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_test.v: parse_all_code_fixtures) or 'make fixtures'; also test-vcx-resilience-matrix and test-vcx-services, which run that file by name" >> "$claims"
-for f in conformance/stdlib/*.cxd conformance/platform/*.cxd conformance/x/*.cxd conformance/xap/*.cxd conformance/extended.cxd conformance/xml_codec.cxd; do printf '%s\t%s\n' "$f" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_shard_<k>_test.v, partitioned by vcx/tests/fixtures_grader/fixture_shards.cxd and held complete by check-fixture-shard-manifest) or 'make fixtures'"; done >> "$claims"
+for f in conformance/stdlib/*.cxd conformance/platform/*.cxd conformance/x/*.cxd conformance/xap/*.cxd deps/cx-core-data/conformance/extended.cxd conformance/xml_codec.cxd; do printf '%s\t%s\n' "$f" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_shard_<k>_test.v, partitioned by vcx/tests/fixtures_grader/fixture_shards.cxd and held complete by check-fixture-shard-manifest) or 'make fixtures'"; done >> "$claims"
 # The shard manifest itself needs NO claim row: it is not a conformance suite
 # and it does not live in conformance/. It sits beside the grader that reads it,
 # vcx/tests/fixtures_grader/fixture_shards.cxd, because every walker of
@@ -65,10 +65,10 @@ for f in conformance/stdlib/*.cxd conformance/platform/*.cxd conformance/x/*.cxd
 # conformance/. A file that PARTITIONS corpus files is not one of them.
 # 3. dedicated runners / steps
 {
-  printf '%s\t%s\n' "conformance/diff.cxd" "test-vcx-conform (conform-diff: tests/runners/diff_lint/diff_lint_conform.v)"
-  printf '%s\t%s\n' "conformance/lint.cxd" "test-vcx-conform (conform-lint: tests/runners/diff_lint/diff_lint_conform.v)"
-  printf '%s\t%s\n' "conformance/fmt.cxd" "test-vcx-conform (conform-fmt)"
-  printf '%s\t%s\n' "conformance/data_bin_arrow.cxd" "test-vcx-conform (conform-data-bin-arrow)"
+  printf '%s\t%s\n' "deps/cx-core-data/conformance/diff.cxd" "test-vcx-conform (conform-diff: tests/runners/diff_lint/diff_lint_conform.v)"
+  printf '%s\t%s\n' "deps/cx-core-data/conformance/lint.cxd" "test-vcx-conform (conform-lint: tests/runners/diff_lint/diff_lint_conform.v)"
+  printf '%s\t%s\n' "deps/cx-core-data/conformance/fmt.cxd" "test-vcx-conform (conform-fmt)"
+  printf '%s\t%s\n' "deps/cx-core-data/conformance/data_bin_arrow.cxd" "test-vcx-conform (conform-data-bin-arrow)"
   printf '%s\t%s\n' "conformance/code_diagram.cxd" "test-code-diagram (scripts/check_code_diagram_fixtures.cx)"
   printf '%s\t%s\n' "conformance/xpath_31_parity.cxd" "test-xpath-parity-cx (scripts/check_xpath_parity_fixtures.cx)"
   printf '%s\t%s\n' "conformance/binding_api.cxd" "test-binding-api-parity (scripts/test_binding_api_parity.sh)"
@@ -78,13 +78,24 @@ for f in conformance/stdlib/*.cxd conformance/platform/*.cxd conformance/x/*.cxd
 } >> "$claims"
 for f in conformance/llm/*.cxd; do [ -e "$f" ] && printf '%s\t%s\n' "$f" "docs-check (scripts/gen_docs/primer_build.cx — the LLM primer drift gate re-records every wrong/right pair, #938)"; done >> "$claims" || true
 for f in conformance/tools-export/*.cxd; do [ -e "$f" ] && printf '%s\t%s\n' "$f" "tools-export-gate"; done >> "$claims" || true
-# 4. sweep every suite file
+# 4. sweep every suite file — this tree's AND the pinned cx-core-data checkout's
+#    (RULED: RS-7, RS-12): the data-language suites left conformance/ and are
+#    graded from deps/cx-core-data/conformance/, so a suite added THERE and
+#    graded by no step here is exactly the failure this step exists to raise.
+#    A pinned suite this tree still carries under the same name is graded from
+#    this tree's copy (the rows the allocation assigns and this tree has not
+#    released yet), so it is swept once, here. A missing pin is a failure.
+[ -d deps/cx-core-data/conformance ] || {
+  echo "check-conformance-coverage: deps/cx-core-data/conformance is not there — run \`make deps-sync\`"
+  exit 1
+}
 unclaimed=""
 n=0
 while IFS= read -r f; do
+  case "$f" in deps/cx-core-data/conformance/*) [ -e "conformance/${f#deps/cx-core-data/conformance/}" ] && continue ;; esac
   n=$((n+1))
   if ! grep -qF "$f	" "$claims"; then unclaimed="$unclaimed $f"; fi
-done < <(find conformance -name '*.cxd' | sort)
+done < <(find conformance deps/cx-core-data/conformance -name '*.cxd' | sort)
 if [ -n "$unclaimed" ]; then
   echo "check-conformance-coverage: conformance suite(s) that NO step claims —"
   for f in $unclaimed; do echo "    $f"; done
