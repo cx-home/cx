@@ -186,11 +186,19 @@ fi
 
 # ── --tree DIR mode ─────────────────────────────────────────────────────────
 # Scans an arbitrary directory on disk rather than this repo's tracked files.
-# It exists for `scripts/publish.sh`, whose pre-commit guard was PATH-based
+# It existed for `scripts/publish.sh`, whose pre-commit guard was PATH-based
 # only: it asserted no forbidden PATH leaked, and could not see a banned term
 # sitting INSIDE an allowlisted file. That is not a hypothetical — `pb-ae`
 # reached the public repo through exactly that hole and is live there now, in
 # vcx/tests/xap_render_test.v, having passed the path guard every publish.
+#
+# THE MIRROR AND ITS GUARD RETIRED with the split (RULED: RS-11) and this mode
+# now has no caller. It is KEPT rather than deleted because the reading it
+# encodes outlives its caller: `cx` becoming a public repository (RS-11's
+# second sentence) makes THIS tree the published one, and --tree DIR is how a
+# tree other than the tracked set gets scanned before it is published. The
+# repo-scan mode above is what `make check-no-consumer-terms` runs and is
+# unchanged.
 #
 # The tracked-file lane below cannot serve this: at guard time the public
 # tree is not yet committed, so `git grep` (tracked files) sees nothing. Hence

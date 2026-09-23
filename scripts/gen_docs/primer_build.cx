@@ -666,8 +666,8 @@
 #
 # The freshness contract above covers every document the manifest DECLARES.
 # It cannot see one it does not know about — and a retired or renamed output
-# leaves exactly that: a file still committed, still published by
-# scripts/publish.sh, still linked from wherever it was linked, and never
+# leaves exactly that: a file still committed, still served from the site,
+# still linked from wherever it was linked, and never
 # again regenerated or drift-checked. That is a stale primer with the gate
 # green, which is the one failure this layer exists to make impossible. So
 # the SET OF FILES is part of what the gate checks, not just their bytes.

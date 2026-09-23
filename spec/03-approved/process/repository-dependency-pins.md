@@ -142,3 +142,68 @@ The wire form, its canonical bytes and every refusal in §3.1 are pinned by
 [`conformance/deps_pins.cxd`](../../../conformance/deps_pins.cxd), graded by the
 `test-deps-pins` step. A refusal this page names and that corpus does not carry is a defect in
 the corpus, not a discretionary omission.
+
+## 6 — The bundled CX sources
+
+RS-7's *"read by the V build via `-path`"* answers half of what a pin buys a
+build. The other half is the CX half, and it is the half that cannot be
+answered by pointing the build somewhere else.
+
+`cx` embeds every bundled CX module's bytes into the binary: one
+`$embed_file('../../stdlib/<name>.cx')` per module in `vcx/code/stdlib_bundle.v`,
+and the same shape for the `x/` estate. **An embed path is a compile-time
+literal.** V has no variable form of it, and the three CLI profiles and the two
+libraries all read the same literals. So when a module's source moves to its
+own repository, the bytes have to BE at that path when V reads it. Putting them
+there is composition, and `scripts/bundle_compose.cx` is the program that does
+it (`make bundle-compose`; `make deps-sync` runs it after the fetch).
+
+### 6.1 The three states and the four refusals
+
+For each module `registry/modules.cxd` gives a bundled `source=` for, two facts
+decide where its bytes come from: whether `registry/repos.cxd` allocates that
+path to a repository `deps.cxd` pins, and whether the path is still a tracked
+file of this repository.
+
+| pinned | tracked | `deps/<owner>/<path>` | verdict |
+|---|---|---|---|
+| no | yes | — | `own` — the front door's own source, embedded from `<path>` |
+| yes | no | present | `pinned` — composed into `<path>` from `deps/<owner>/<path>` |
+| yes | yes | — | `migrating` — the pin is taken and the source has not left yet |
+| yes | no | absent | **refused**: `missing-pinned-source` |
+| no | no | — | **refused**: `missing-source` |
+
+Two more refusals complete the set: `unowned`, a source no `[path]` rule
+claims, and `self-pinned`, the front door pinning itself.
+
+**`migrating` is a state and not a refusal** because an extraction is a copy and
+then a delete, in two repositories, and between them the source exists in both.
+The front door pins the new repository from the moment it releases — RS-7's
+migration lane — while the delete lands with the extraction. Refusing the window
+would mean no pin could be taken before the delete; ignoring it would mean
+nobody could tell a finished extraction from an unfinished one. So it is named,
+counted and printed on every run.
+
+**`missing-pinned-source` is a refusal and not a fallback** because the failure
+this table exists to prevent is a build that quietly produces a *smaller* binary
+than the pins describe. A fallback to "embed whatever is at `<path>`" is that
+failure. There is none: the composition refuses, and if it is bypassed the
+absent path fails V's `$embed_file` by name. Loud twice, silent never.
+
+### 6.2 Two refusals that need a tree
+
+`--check` writes nothing and adds the two refusals a document cannot state:
+
+| Kind | What it is |
+|---|---|
+| `composed-drift` | a composed `<path>` whose bytes are not the bytes of `deps/<owner>/<path>` — a private fork of another repository's source, the class RS-7 built the transport to avoid |
+| `not-ignored` | a composed `<path>` git does not ignore. Once a module's source belongs to another repository its path here is a BUILD OUTPUT; the extraction commit that deletes the tracked source adds its path to `.gitignore`, and this refusal is what says so when it does not |
+
+### 6.3 Conformance
+
+The table, its three states and its four document-level refusals are pinned by
+[`conformance/bundle_sources.cxd`](../../../conformance/bundle_sources.cxd),
+graded by the `test-bundle-sources` step. `make deps-sync && make build-vcx`
+therefore produces the same binary from a tree whose products live in `deps/`
+as from a tree that still holds them, and no arrangement in between produces a
+binary that is quietly missing a module.

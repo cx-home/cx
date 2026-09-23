@@ -506,7 +506,11 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='.gitignore' repo=cx]
   [path exact='.gitattributes' repo=cx]
   [path exact='.gitmodules' repo=cx]
-  [path exact='.publishignore' repo=cx why='the public-mirror allowlist inputs; retire with the mirror']
+  [; `.publishignore` and scripts/publish.sh retired with the mirror on the
+     front-door branch (RULED: RS-11): "Public or private is a setting per
+     repository." `.publishignore-v` stays -- it is scripts/publish_v.sh's
+     input, the V FORK's mirror, which is v-dependency-management.md's subject
+     and not the split's. ]
   [path exact='.publishignore-v' repo=cx]
   [path exact='.v-symlink-previous-target.txt' repo=cx]
 ]
