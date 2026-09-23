@@ -1,4 +1,4 @@
-# RS-13…RS-21 — the repo split's follow-up decisions (owner, 2026-09-22/23, in session on dev2)
+# RS-13…RS-23 — the repo split's follow-up decisions (owner, 2026-09-22/23, in session on dev2)
 
 **Status: RULED.** The owner answered each as a letter on the integrator's lettered options, in
 session on 2026-09-22 (recorded on [#1591](https://github.com/cx-home/cx-private/issues/1591)
@@ -9,6 +9,10 @@ RS-19 and RS-20 were answered a day later, on 2026-09-23 and on the same issue, 
 five extraction preps' lettered flags (F-M1 for RS-19; F-F1 and F-F2 for RS-20); each section
 below quotes the owner's letter before it says what the letter moves. RS-21 was answered the same way,
 on 2026-09-23, against the store-auth branch's LETTER L1, and is recorded here beside them.
+
+RS-22 and RS-23 were answered in the same 2026-09-23 pass, as letters on the two LETTERs the
+ring1b pipeline left (`_gate_evidence/pipeline_ring1b/RESULTS.md`): LETTER A for RS-22, LETTER B
+for RS-23. They are the last two calls the `authz` split left open.
 
 ## RS-13 — `authz` splits along the RS-6 line (owner: D14a)
 
@@ -144,6 +148,57 @@ relation to the Ring-1 confirm primitive — with every claim carrying the id of
 One sentence in `spec/03-approved/platform/store.md` §6.4 cross-links it. Nothing else in either
 page moves, and the letter's option (c) — the shape following the product into its own repository —
 is not taken here and stays open for the extraction.
+
+## RS-22 — `authz-store` and `vc-revocation` stay in `cx-platform-identity` (owner: D24a)
+
+The owner's letter, on the ring1b pipeline's LETTER A:
+
+> `cx-platform/authz-store` and `cx-platform/vc-revocation` live in `cx-platform-identity`
+> (confirming the allocation; no row moves — record only)
+
+LETTER A reported that neither module is derivable from the contents-per-repo bullets of issue
+[#1589](https://github.com/cx-home/cx-private/issues/1589): `did-web` and `xsp-auth` are named
+there by name, and these two are not. The ring1b branch allocated both to `cx-platform-identity`
+on the reading that the product is the authority/trust model and identity is where that model's
+other pieces already sit (session, the XSP-AUTH handshake, principal mint), and that RS-6 has the
+store server CONSUME the trust primitives rather than own them — which argues against
+`cx-platform-store`, the alternative the letter stated with its consequence (the trust ledger in
+the repository whose server must not own it, and identity's authority surface split across two
+repositories).
+
+The letter CONFIRMS what is on the tree. `registry/repos.cxd` keeps the rows it already carries,
+no `[path …]` row moves, and this section is the record that the reading was the owner's and not
+the branch's. The `cx-platform-store` ↔ `cx-platform-identity` pin direction carries authz as well
+as session, as the letter's first bullet states.
+
+## RS-23 — the decision half gets a pure `open` over an in-memory trust store (owner: D25b)
+
+The owner's letter, on the ring1b pipeline's LETTER B:
+
+> `cx-stdlib/authz` gets a PURE `open` over an in-memory store, so every one of its decision cases
+> grades in Ring 1 with no per-case `ring=` override
+
+LETTER B measured the cost of RS-13 as it merged: `store` — the OPEN verb — went to
+`cx-platform/authz-store` with everything that appends, so a program that only DECIDES still could
+not obtain an authority store without importing the platform module. The decision corpus therefore
+carried the per-case `ring=2` override on 35 of its 39 cases and the Ring-1 lane graded four
+`gate-wellformed` cases: `cx-core-code` shipped a module whose corpus was almost entirely graded at
+Ring 2. The letter's option (a) was to leave it, which is what merged; (b) was to return the
+UNBOUND tier's open to the decision half.
+
+The owner took (b), with the name the letter's own objection to it requires. `cx-stdlib/authz`
+gains **`open`** — a PURE constructor over an **in-memory** trust store, the capability-free
+substrate `mem://` is for `store` and `journal`. The JOURNALED constructor keeps its own name and
+its own module: `[$authz-store:store]` is still `cx-platform/authz-store`'s, still binds and
+replays the `authz` stream, and still is the only way to reach the durable tier. The two are not
+one verb on two modules — the thing RS-14 rejected for `did` — because they are spelled
+differently and answer for different tiers, and `authz.md` §3.1 says which is which.
+
+The decision half's corpus is then authored against the unbound tier (the letter's option (c)):
+every per-case `ring=` override in `conformance/stdlib/authz.cxd` is removed and every decision
+case grades in Ring 1 at every profile, which is the proof the override was hiding. A case whose
+SUBJECT is the durable tier — a journal replay, an append fault, a metered debit — is
+`conformance/platform/authz-store.cxd`'s and stays there.
 
 ## Also ruled in the same session, operational (no id; recorded)
 
