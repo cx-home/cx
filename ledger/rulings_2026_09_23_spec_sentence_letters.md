@@ -1,4 +1,4 @@
-# RS-26 — five spec-sentence authorizations the agents could not make (owner, 2026-09-23, in session on dev2)
+# RS-26…RS-29 — five spec-sentence authorizations, then the afternoon letters, then documentation and CI/CD (owner, 2026-09-23, in session on dev2)
 
 **Status: RULED (owner, 2026-09-23, confirmed letter by letter).** On 2026-09-23 the integrator posted
 five lettered letters on [#1591](https://github.com/cx-home/cx-private/issues/1591) — D39, D40, D41,
@@ -54,3 +54,116 @@ deliberately vanished stub pins it before the runtime changes.
 Whether the soap adapter's cases stay advisory is the connector kit's own question, not this page's.
 The choice between naming the seven classes in `cli.md` and pointing at §6.1 is the branch's, stated
 in its report. No ring, directory or allocation moves on this page.
+
+## RS-27 — the afternoon letters of 2026-09-23 (owner: D49a, D50a, D51d, D52a, D53a)
+
+**Status: RULED (owner, 2026-09-23 ~15:0xZ, in session).** The integrator posted five more lettered
+letters on [#1591](https://github.com/cx-home/cx-private/issues/1591) — D49, D50, D51, D52 and D53 —
+each with option (a) recommended except D51, whose recommended option was (d). The owner's word,
+verbatim: **"d49a d50a d51d d52a d53a"**. This page records that answer, in the letters' own order.
+
+**D49a — a suite's `gate=advisory` status lives on the suite element.** Once a suite leaves
+`cx-private` for its own component repository, its advisory status travels on the element itself
+(`[test-suite … gate=advisory reason=…]`), read by `cx corpus`; `conformance/gates.cxd` becomes a
+DERIVED cx-wide register checked for drift rather than the one place the status is declared. A
+per-repository `gates.cxd` fragment (b) and hand-marked advisory suites in each repository's Makefile
+(c) were refused: both add a second place to drift. Implemented on a separate branch,
+`impl/cx-F-1633-gate-on-suite` (#1633); nothing on this branch moves `conformance/gates.cxd`.
+
+**D50a — `xsp_store_profile.md` §6.2's stale sentence is brought current.** The sentence saying the
+shipped parser's `caps=` list "holds five of the seven" and that store-auth-015 "measures exactly
+that gap" was true before `4b8da199c` (#1607, RULED: RS-26/D41a) and false after: the `[grants]`
+parser, the `store-mint-principal` help row and the mint verb all read §6.1's seven capability
+classes now. One sentence changes; nothing else on the page. Filing alone (b) was refused — this is
+the one-line bring-current RS-21's reading of a design item already licenses.
+
+**D51d — the site assembly step copies the LLM text files into `docs/`, untracked.**
+`scripts/publish.sh` used to copy `llms.txt`/`llms-full.txt` to the site root — the llmstxt.org
+convention of serving them from the domain root — as part of assembling the allowlist mirror's public
+tree; RS-11 retired that mirror and nothing replaced the copy. Generating a second TRACKED pair under
+`docs/` (a) was refused as a 360 KB duplicate on every regeneration; relinking `AGENTS.md` and
+`release-verify` to a repo-root copy (b) was refused because the site root is `docs/`, where `CNAME`
+already lives, so a repo-root copy would serve nothing; dropping the root copy outright (c) was
+refused. The convention is kept the cheap way: the site assembly step copies `docs/llm/llms.txt` and
+`docs/llm/llms-full.txt` to `docs/llms.txt` and `docs/llms-full.txt` at release time, UNTRACKED — one
+source, no committed duplicate.
+
+**D52a — RS-1's leftover vocabulary is swept to group wording.** RS-1 ruled that "Ring 2" and "Ring 3"
+leave the vocabulary, and its own edit map named the sentences a branch would bring current — but it
+did not name every sentence. Measured by the integrator: 148 "Ring 2"/"Ring 3" mentions across 46
+files still outside the edit map (the rest of `cx_partition.md` §1 and its §3 bullets and §4's
+"Rings 0–2", the guide's "Ring 2 — Platform" label and its four-rings figure), plus 25 platform spec
+headers still carrying `ring=2`. One mechanical sweep branch (this one, sonnet) brings the prose and
+the 25 spec headers to group wording under RS-1, writing its own design text per
+[RS-21](rulings_2026_09_22_repo_split_followups.md)'s reading that a design item may state what a
+ruling already ruled. The `ring2_*` V identifiers are left for xap's turn (RS-24's split); leaving the
+whole sweep as unedited history (b) was refused — RS-1 says the words leave the vocabulary, and a tree
+that says both is exactly the drift the gates exist to end.
+
+**D53a — `vcx/cxnet/` and `vcx/cxdb/` are the two exceptions where vlib owns the name.** vlib already
+owns the top-level modules `net` and `db`, so a bare `vcx/net/` or `vcx/db/` would shadow them for
+every `import net` in the tree; the platform-modules branch used `vcx/cxnet/` (`module cxnet`) and
+`vcx/cxdb/` (`module cxdb`) instead. That is accepted as the two exceptions the V collision forces;
+every other product keeps its bare directory name (`vcx/mail`, `vcx/store`, `vcx/identity`,
+`vcx/fabric`, `vcx/xap`) — RS-24's layout, record only, since it names no directory this page's edit
+map did not already cover. A uniform `cx<product>` prefix on all seven (b) was refused: the collision
+is V's alone, and `vcx/cxstore` already names the store ENGINE's own module, so `store` would need yet
+another name under that option.
+
+## Not decided here (RS-27)
+
+Whether the seven kinds `cx corpus` still refuses (D55) and whether the DATA profile gets the document
+lane (D56) are open letters, not this page's. `vcx/tests/flow_umbrella_test.v`'s ownership (D54) is
+open. Nothing on this page moves a directory, a ring or an allocation beyond D53a's record of RS-24's
+already-ruled layout.
+
+## RS-28 — one site, thin repositories, and cx created by the recipe (owner: D57a, D58a, D59a)
+
+**Status: RULED (owner, 2026-09-23 ~15:2xZ, in session).** The integrator posted a design topic —
+documentation restructure with the split, the identity of `github.com/cx-home` and
+`cx-home.github.io/cx` (= `cxhome.org`), per-repo docs versus centralized, going public at v0.18 with
+only `cx-private` staying private, CI/CD driven by `cx flow` — as letters D57–D60 on
+[#1591](https://github.com/cx-home/cx-private/issues/1591). Already ruled and kept: RS-9 (docs follow
+the module; the site in `cx` indexes what was published) and RS-11 (public/private per repository).
+The owner's word, verbatim: **"d57a d58a d59a d60a"**. This page records D57a, D58a and D59a; D60a is
+RS-29 below.
+
+**D57a — one canonical site.** ONE site, `cxhome.org`, served from `cx`'s `docs/` by Pages; the org
+profile (`cx-home/.github`) is a one-screen pointer with the repository map, never a copy. Keeping two
+identical sites and syncing them by a release step was refused: two copies drift.
+
+**D58a — thin repositories, one narrative site.** Each component repository is thin: a README (what it
+is, install, what it pins, a link to its reference), CONTRIBUTING, and the generated docs fragment of
+RS-9 — nothing hand-authored beyond that. The narrative — the primer, the guide, the playbooks, the
+rendered decision pages — lives in ONE site, in `cx`, indexing every fragment. A Pages site per
+repository (20+ sites) was refused.
+
+**D59a — `cx` is created by the recipe; `cx-private` stays private as the orchestration repository.**
+This AMENDS RS-11's sentence *"cx-private becomes cx when it is no longer private."* Before this
+page, RS-11 read: `cx-private` becomes `cx` — the same repository, renamed public. It now reads: `cx`
+is CREATED by the extraction recipe from the allocation's `repo=cx` paths (filtered history, the front
+door's builds, pins and site) — the split's own mechanism, not an 8,000-commit history audit of
+`cx-private`. `cx-private` STAYS private as the orchestration repository, holding only what the
+allocation leaves it: boards, evidence, runner configuration, briefs. The component repositories flip
+to public at the v0.18.0 cut, in one pass, each after its own `check-no-consumer-terms` and a secrets
+scan over its tree. Renaming `cx-private` itself to `cx` and starting a new private ops repository (a
+history audit first) was refused, as was staying private past v0.18.
+
+This opens a documentation-restructure epic after the cut (with RS-29's flow-CI epic).
+
+## RS-29 — CI/CD is cx flow, documentation included (owner: D60a)
+
+**Status: RULED (owner, 2026-09-23 ~15:2xZ, in session, same answer as RS-28).**
+
+**D60a — CI/CD becomes `cx flow`.** Each repository's lanes become `ci/*.flow.cx`, run by `cx flow run`
+on the self-hosted runner; GitHub Actions becomes a one-step trigger rather than the orchestrator.
+The documentation pipeline — the per-repository fragment at release (RS-9), the site assembly in `cx`
+(D57a/D58a) — is itself a flow. The bootstrap is a released `cx` on the runner, which the release lane
+already uses. This is IMPLEMENTED AFTER the v0.18.0 cut — nothing before it is re-plumbed. Doing it
+before the cut (2–3 agent-days on the critical path) and keeping YAML were refused.
+
+## Not decided here (RS-28, RS-29)
+
+D54, D55 and D56 stay open. Nothing before 2026-09-26 changes because of this page: the `cx`
+repository is created at the residue step (item 21 of the split) by the recipe like every other
+repository, and both the documentation-restructure epic and the flow-CI epic open only after the cut.

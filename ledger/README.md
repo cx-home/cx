@@ -697,7 +697,14 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `rs-24` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-24 — `vcx/platform` splits by product, one V module per V product (owner: D28a) |
 | `rs-25` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-13…RS-25 — the repo split's follow-up decisions (owner, 2026-09-22/23, in session on dev2) |
 | `rs-25` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-25 — the mock adapter is declared by the kit's own CX, and the compile-time gate retires (owner: D30d) |
-| `rs-26` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-26 — five spec-sentence authorizations the agents could not make (owner, 2026-09-23, in session on dev2) |
+| `rs-26` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-26…RS-29 — five spec-sentence authorizations, then the afternoon letters, then documentation and CI/CD (owner, 2026-09-23, in session on dev2) |
+| `rs-27` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-27 — the afternoon letters of 2026-09-23 (owner: D49a, D50a, D51d, D52a, D53a) |
+| `rs-27` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | Not decided here (RS-27) |
+| `rs-28` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-28 — one site, thin repositories, and cx created by the recipe (owner: D57a, D58a, D59a) |
+| `rs-28` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | Not decided here (RS-28, RS-29) |
+| `rs-29` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-26…RS-29 — five spec-sentence authorizations, then the afternoon letters, then documentation and CI/CD (owner, 2026-09-23, in session on dev2) |
+| `rs-29` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-29 — CI/CD is cx flow, documentation included (owner: D60a) |
+| `rs-29` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | Not decided here (RS-28, RS-29) |
 | `run-1` | [rulings_2026_09_16_run_selection_run1.md](rulings_2026_09_16_run_selection_run1.md) | Owner decision 2026-09-16 ~05:05Z — the post-merge run tests what changed and what reads it (RULED: RUN-1) |
 | `run-2` | [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md) | Owner decisions 2026-09-19 ~04:45Z — a failed run reports every red class (RUN-2); the daily full union runs on an idle runner (RUN-3); an escalated branch runs the computed selection pre-merge (RUN-4); the run log carries step timing and the timings file (RUN-5); the two agents and their order (AGENTS-1); the budget step stays open until it measures (1562-a) |
 | `run-3` | [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md) | Owner decisions 2026-09-19 ~04:45Z — a failed run reports every red class (RUN-2); the daily full union runs on an idle runner (RUN-3); an escalated branch runs the computed selection pre-merge (RUN-4); the run log carries step timing and the timings file (RUN-5); the two agents and their order (AGENTS-1); the budget step stays open until it measures (1562-a) |
@@ -1245,7 +1252,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `ring-1` | [batch_796_post_gate_defects.md](batch_796_post_gate_defects.md), [partition_I3_ring12_split.md](partition_I3_ring12_split.md) |
 | `ring-2` | [partition_I3_ring12_split.md](partition_I3_ring12_split.md) |
 | `rs-10` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md) |
-| `rs-11` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md) |
+| `rs-11` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) |
 | `rs-2` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md) |
 | `rs-3` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
 | `rs-4` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_23_x_graduation_d45a.md](rulings_2026_09_23_x_graduation_d45a.md) |
@@ -1253,7 +1260,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `rs-6` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
 | `rs-7` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) |
 | `rs-8` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md) |
-| `rs-9` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md) |
+| `rs-9` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) |
 | `rsa-2048` | [rulings_2026_09_05_certificate_key_1287.md](rulings_2026_09_05_certificate_key_1287.md) |
 | `sea-1a` | [rulings_2026_08_20_schema_evolution_automation.md](rulings_2026_08_20_schema_evolution_automation.md) |
 | `sea-1b` | [rulings_2026_08_20_schema_evolution_automation.md](rulings_2026_08_20_schema_evolution_automation.md) |
@@ -1322,4 +1329,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*320 ledger pages; 673 ids declared, 384 cited only.*
+*320 ledger pages; 676 ids declared, 384 cited only.*

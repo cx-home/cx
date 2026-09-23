@@ -1,10 +1,10 @@
-[# Section 18c — event evolution: the Ring-2 half of
+[# Section 18c — event evolution: the platform-group half of
    spec/03-approved/core/schema_event_evolution.md — upcasting journals,
    fold identity, snapshot discipline, and stored-document migration.
    The Ring-0 half (compatibility, lineage) is section 4a. Authored
    2026-08-19 for #826 acceptance 3. #]
 
-[section id=event-evolution group='Ring 2 — Platform' n='18c' title='Event evolution'
+[section id=event-evolution group='The platform group' n='18c' title='Event evolution'
 
   [child id=ee-frame n=18c.1 title='Old events, new vocabulary'
     [intro

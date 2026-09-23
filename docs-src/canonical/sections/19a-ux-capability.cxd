@@ -1,4 +1,4 @@
-[section id=ux-capability group='Ring 2 — Platform' n='19a' title='Projected surfaces — the ux capability'
+[section id=ux-capability group='The platform group' n='19a' title='Projected surfaces — the ux capability'
 
   [intro
     """You define commands and queries; the platform projects the
@@ -23,7 +23,7 @@
        `[param-doc]` sources the tool descriptors consume."""]
 
     [; check=none — a projection sketch: the command's declaration is
-       contract-position, and [$ux:form] needs the Ring-2 pack loaded. ]
+       contract-position, and [$ux:form] needs the platform-group pack loaded. ]
     [example lang=cx check=none
       """[?def place-order impure ($sku $qty)
            [preconditions [in-stock $sku $qty]]
