@@ -103,7 +103,7 @@ Every one of these exits non-zero and names the row. None of them is a warning:
 | `malformed-sha` / `malformed-v-fork` | a value is not 40 lowercase hexadecimal characters |
 | `duplicate-repo` | two rows pin the same repository |
 | `fetch-failed` | the remote does not have `sha` — the pin is stale |
-| `checkout-drift` | `deps/<repo>/` is not at `sha` |
+| `checkout-drift` | `deps/<repo>/` is not at `sha` and has local changes — `sync` moves a clean one to the pin and refuses this one; under `--check`, which moves nothing, any checkout not at `sha` |
 | `missing-checkout` | under `--check`, `deps/<repo>/` is not there at all |
 
 `fetch-failed` and `checkout-drift` are the two the union step exists for. #1589's "Risks"
