@@ -242,8 +242,8 @@ becomes its own Ring-1 module.
   [; audit — #1422's audit sink, Ring 2 per audit.md §1 (RULED: 1422-a),
      cx-platform/audit at the cutover; declared `incoming` ahead of its merge
      (OL-15) and current since release/0.18 carries it (861ca66ec). ]
-  [module name=audit ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/audit.md corpus=conformance/platform/audit.cxd source=stdlib/audit.cx code=vcx/platform/stdlib_audit.v half=none status=current]
-  [module name=authz-store ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/authz-store.md corpus=conformance/platform/authz-store.cxd source=stdlib/authz-store.cx code=vcx/platform/stdlib_authz_store.v half=none status=current]
+  [module name=audit ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/audit.md corpus=conformance/platform/audit.cxd source=stdlib/audit.cx code='vcx/platform/stdlib_audit.v vcx/platform/stdlib_audit_register.v' half=none status=current]
+  [module name=authz-store ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/authz-store.md corpus=conformance/platform/authz-store.cxd source=stdlib/authz-store.cx code='vcx/platform/stdlib_authz_store.v vcx/platform/stdlib_authz_store_register.v' half=none status=current]
   [; connector — #1430's connector kit, spec-first: the spec and its 134-case
      attack corpus landed before any code, so this row read `planned` while
      its source and code columns named where #1430 would write them. #1430's
@@ -259,14 +259,14 @@ becomes its own Ring-1 module.
      compile-time constant, `connector-test-build`, which has no verb in
      either destination and so has no home RS-6 names. The column empties
      when that is answered; RESULTS.md on the branch carries the options. ]
-  [module name=connector ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/connector.md corpus=conformance/platform/connector.cxd source=stdlib/connector.cx code=vcx/platform/stdlib_connector.v half=none status=current]
+  [module name=connector ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/connector.md corpus=conformance/platform/connector.cxd source=stdlib/connector.cx code='vcx/platform/stdlib_connector.v vcx/platform/stdlib_connector_register.v' half=none status=current]
   [; did-web and vc-revocation — the halves RS-14 left above the rings when
      did and vc moved into Ring 1, each named for what leaves: did-web
      resolves a did:web over HTTPS (a socket), vc-revocation appends a
      revocation to a journal and folds it back (an effect that outlives the
      process). Their natives register under the `did` / `vc` index prefixes
      beside the Ring-1 dispatchers, with disjoint names. ]
-  [module name=did-web ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/did-web.md corpus=conformance/platform/did-web.cxd source=stdlib/did-web.cx code=vcx/platform/stdlib_did_web.v half=none status=current]
+  [module name=did-web ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/did-web.md corpus=conformance/platform/did-web.cxd source=stdlib/did-web.cx code='vcx/platform/stdlib_did_web.v vcx/platform/stdlib_did_web_register.v' half=none status=current]
   [; flow is a pure-CX orchestrator over the journal, sched and uuid
      primitives — Ring 2 by what it reaches, with no V file of its own. ]
   [module name=flow ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/flow.md corpus=conformance/platform/flow.cxd source=stdlib/flow.cx code=none half=none status=current]
@@ -275,25 +275,25 @@ becomes its own Ring-1 module.
      registered by name in new_seeded_module_table. 1427-b renames
      `cx-stdlib/X` and nothing else, so neither carries an ns-to: they are
      already outside the namespace that is splitting. ]
-  [module name=fabric ring=2 ns=cx-fabric kind=module spec=spec/03-approved/platform/fabric.md corpus=conformance/platform/fabric.cxd source=stdlib/fabric.cx code='vcx/platform/stdlib_fabric.v vcx/platform/stdlib_fabric_remote.v vcx/platform/fabric_service.v' half=none status=current]
+  [module name=fabric ring=2 ns=cx-fabric kind=module spec=spec/03-approved/platform/fabric.md corpus=conformance/platform/fabric.cxd source=stdlib/fabric.cx code='vcx/platform/stdlib_fabric.v vcx/platform/stdlib_fabric_remote.v vcx/platform/fabric_service.v vcx/platform/stdlib_fabric_register.v' half=none status=current]
   [; ftp and sftp — the connector kit's two file-transfer transports (RULED:
      1430-c, 1430-e), spec first: planned, their columns naming where #1430
      writes them. ]
   [module name=ftp ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/ftp.md corpus=conformance/platform/ftp.cxd source=stdlib/ftp.cx code=vcx/platform/stdlib_ftp.v half=none status=planned]
   [; http is the 1427-e split: the serve half stays here and keeps the name,
      the client+codec half is the `http-client` row above. ]
-  [module name=http ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/http.md corpus=conformance/platform/http.cxd source=stdlib/http.cx code='vcx/platform/stdlib_http_serve.v vcx/platform/http_h2_serve_notd_wasm32_emcc.v vcx/platform/serve_file.v' half=none status=current]
+  [module name=http ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/http.md corpus=conformance/platform/http.cxd source=stdlib/http.cx code='vcx/platform/stdlib_http_serve.v vcx/platform/http_h2_serve_notd_wasm32_emcc.v vcx/platform/serve_file.v vcx/platform/stdlib_http_serve_register.v vcx/platform/serve_file_register.v' half=none status=current]
   [; imap and smtp go whole to cx-platform (1427-e): they SERVE, and their
      client/codec halves stay declared in vcx/code until a Ring-1 consumer
      asks for a module of their own. Both corpora still carry the ring=1
      header the old tier-based placement gave them. ]
-  [module name=imap ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/imap.md corpus=conformance/platform/imap.cxd source=stdlib/imap.cx code=vcx/platform/stdlib_imap_wire.v half='vcx/code/stdlib_imap.v vcx/code/stdlib_imap_server.v' status=current]
-  [module name=journal ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/journal.md corpus=conformance/platform/journal.cxd source=stdlib/journal.cx code='vcx/platform/stdlib_journal.v vcx/platform/journal_ingest.v' half=none status=current]
-  [module name=live ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/live.md corpus=conformance/platform/live.cxd source=stdlib/live.cx code=vcx/platform/stdlib_live.v half=none status=current]
-  [module name=net ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/net.md corpus=conformance/platform/net.cxd source=stdlib/net.cx code=vcx/platform/stdlib_net.v half=none status=current]
-  [module name=session ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/session.md corpus=conformance/platform/session.cxd source=stdlib/session.cx code='vcx/platform/stdlib_session.v vcx/platform/identity_connector_builtins.v' half=none status=current]
+  [module name=imap ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/imap.md corpus=conformance/platform/imap.cxd source=stdlib/imap.cx code='vcx/platform/stdlib_imap_wire.v vcx/platform/stdlib_imap_wire_register.v' half='vcx/code/stdlib_imap.v vcx/code/stdlib_imap_server.v' status=current]
+  [module name=journal ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/journal.md corpus=conformance/platform/journal.cxd source=stdlib/journal.cx code='vcx/platform/stdlib_journal.v vcx/platform/journal_ingest.v vcx/platform/stdlib_journal_register.v' half=none status=current]
+  [module name=live ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/live.md corpus=conformance/platform/live.cxd source=stdlib/live.cx code='vcx/platform/stdlib_live.v vcx/platform/stdlib_live_register.v' half=none status=current]
+  [module name=net ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/net.md corpus=conformance/platform/net.cxd source=stdlib/net.cx code='vcx/platform/stdlib_net.v vcx/platform/stdlib_net_register.v' half=none status=current]
+  [module name=session ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/session.md corpus=conformance/platform/session.cxd source=stdlib/session.cx code='vcx/platform/stdlib_session.v vcx/platform/identity_connector_builtins.v vcx/platform/stdlib_session_register.v' half=none status=current]
   [module name=sftp ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/sftp.md corpus=conformance/platform/sftp.cxd source=stdlib/sftp.cx code=vcx/platform/stdlib_sftp.v half=none status=planned]
-  [module name=smtp ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/smtp.md corpus=conformance/platform/smtp.cxd source=stdlib/smtp.cx code=vcx/platform/stdlib_smtp_wire.v half='vcx/code/stdlib_smtp.v vcx/code/stdlib_smtp_server.v' status=current]
+  [module name=smtp ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/smtp.md corpus=conformance/platform/smtp.cxd source=stdlib/smtp.cx code='vcx/platform/stdlib_smtp_wire.v vcx/platform/stdlib_smtp_wire_register.v' half='vcx/code/stdlib_smtp.v vcx/code/stdlib_smtp_server.v' status=current]
   [; sso — #1394's enterprise-SSO handler surface, pure CX over
      oidc/saml/scim/session; declared `incoming` before its merge (OL-15) and
      current since release/0.18 carries it.
@@ -310,7 +310,7 @@ becomes its own Ring-1 module.
      the same `[missing]` it always was — named, with `make deps-sync` in the
      line, never a module quietly dropped. ]
   [module name=sso ring=2 ns=cx-platform kind=module repo=cx-platform-sso spec=deps/cx-platform-sso/spec/03-approved/platform/sso.md corpus=deps/cx-platform-sso/conformance/platform/sso.cxd source=deps/cx-platform-sso/stdlib/sso.cx code=none half=none status=current]
-  [module name=store ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/store.md corpus=conformance/platform/store.cxd source=stdlib/store.cx code='vcx/platform/stdlib_store.v vcx/platform/store_connector_builtins.v' half=none status=current]
+  [module name=store ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/store.md corpus=conformance/platform/store.cxd source=stdlib/store.cx code='vcx/platform/stdlib_store.v vcx/platform/store_connector_builtins.v vcx/platform/stdlib_store_register.v' half=none status=current]
   [; sync — #1434's incremental-sync module, spec-first like connector: the
      spec and its 132-case attack corpus landed before any code (RULED:
      1434-a, 1085-e), so this row is `planned` and its source and code
@@ -319,15 +319,15 @@ becomes its own Ring-1 module.
      std-lib/ and conformance/stdlib/ are in the Ring-2 directories here and
      its four `-to` columns are spent rather than carried. ]
   [module name=sync ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/sync.md corpus=conformance/platform/sync.cxd source=stdlib/sync.cx code=vcx/platform/stdlib_sync.v half=none status=planned]
-  [module name=vc-revocation ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/vc-revocation.md corpus=conformance/platform/vc-revocation.cxd source=stdlib/vc-revocation.cx code=vcx/platform/stdlib_vc_revocation.v half=none status=current]
-  [module name=xap ring=2 ns=cx-xap kind=module spec=spec/03-approved/xap/xap_module.md corpus=conformance/xap/xap-serve.cxd source=stdlib/xap.cx code=vcx/platform/stdlib_xap.v half=none status=current]
+  [module name=vc-revocation ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/vc-revocation.md corpus=conformance/platform/vc-revocation.cxd source=stdlib/vc-revocation.cx code='vcx/platform/stdlib_vc_revocation.v vcx/platform/stdlib_vc_revocation_register.v' half=none status=current]
+  [module name=xap ring=2 ns=cx-xap kind=module spec=spec/03-approved/xap/xap_module.md corpus=conformance/xap/xap-serve.cxd source=stdlib/xap.cx code='vcx/platform/stdlib_xap.v vcx/platform/stdlib_xap_register.v' half=none status=current]
   [; xsp-auth — the XSP-AUTH handshake calculus, a MODULE since RS-15 rather
      than the natives family it was: the thirteen `auth-*` defs left
      `stdlib/xsp.cx` for `stdlib/xsp-auth.cx`, and the page and corpus the
      natives row already owned became this module's own. Ring 2 because its
      natives are identity's `stdlib_xsp_auth.v` — which is exactly why
      `cx-stdlib/xsp` could not carry them. ]
-  [module name=xsp-auth ring=2 ns=cx-platform kind=module spec=spec/03-approved/xap/xsp-auth.md corpus=conformance/xap/xsp-auth.cxd source=stdlib/xsp-auth.cx code=vcx/platform/stdlib_xsp_auth.v half=none status=current]
+  [module name=xsp-auth ring=2 ns=cx-platform kind=module spec=spec/03-approved/xap/xsp-auth.md corpus=conformance/xap/xsp-auth.cxd source=stdlib/xsp-auth.cx code='vcx/platform/stdlib_xsp_auth.v vcx/platform/stdlib_xsp_auth_register.v' half=none status=current]
 
   [; ── The x tier — cx-x, its own namespace and its own spec directory.
        1427-b renames `cx-stdlib/X` and nothing else, so these rows carry no
@@ -351,7 +351,7 @@ becomes its own Ring-1 module.
   [module name=term ring=1 ns=none kind=natives spec=spec/03-approved/stdlib/term.md corpus=conformance/stdlib/term.cxd source=none code=vcx/code/stdlib_term_notd_cx_no_pack_term.v half=none status=current]
   [module name=xap_dist ring=2 ns=none kind=natives spec=spec/03-approved/xap/xap_dist.md corpus=conformance/xap/xap-dist.cxd source=none code=vcx/platform/stdlib_xap_dist.v half=none status=current]
   [module name=redis ring=2 ns=none kind=backend spec=spec/03-approved/platform/store/redis.md corpus=conformance/platform/db.cxd source=none code=vcx/platform/redis_d_cx_db_redis.v half=none status=current]
-  [module name=sql ring=2 ns=none kind=backend spec=spec/03-approved/platform/store/sql.md corpus=conformance/platform/db.cxd source=none code=vcx/platform/sql.v half=none status=current]
+  [module name=sql ring=2 ns=none kind=backend spec=spec/03-approved/platform/store/sql.md corpus=conformance/platform/db.cxd source=none code='vcx/platform/sql.v vcx/platform/sql_register.v' half=none status=current]
   [module name=distributed_store ring=2 ns=none kind=design spec=spec/03-approved/platform/store/distributed_store.md corpus=conformance/platform/store.cxd source=none code=none half=none status=current]
   [module name=erasure_compliance ring=2 ns=none kind=design spec=spec/03-approved/platform/store/erasure_compliance.md corpus=conformance/platform/store.cxd source=none code=none half=none status=current]
   [module name=db ring=2 ns=none kind=suite spec=spec/03-approved/core/db_access.md corpus=conformance/platform/db.cxd source=none code=none half=none status=current]

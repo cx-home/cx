@@ -5,10 +5,11 @@ session on 2026-09-22 (recorded on [#1591](https://github.com/cx-home/cx-private
 the same hour). They extend [`rulings_2026_09_21_repo_split_1589.md`](rulings_2026_09_21_repo_split_1589.md)
 (RS-1…RS-12) and take the calls that page did not make.
 
-RS-19 and RS-20 were answered a day later, on 2026-09-23 and on the same issue, as letters on the
-five extraction preps' lettered flags (F-M1 for RS-19; F-F1 and F-F2 for RS-20); each section
-below quotes the owner's letter before it says what the letter moves. RS-21 was answered the same way,
-on 2026-09-23, against the store-auth branch's LETTER L1, and is recorded here beside them.
+RS-18, RS-19 and RS-20 were answered a day later, on 2026-09-23 and on the same issue, as letters
+on the five extraction preps' lettered flags (F-D1 for RS-18; F-M1 for RS-19; F-F1 and F-F2 for
+RS-20); each section below quotes the owner's letter before it says what the letter moves. RS-21 was
+answered the same way, on 2026-09-23, against the store-auth branch's LETTER L1, and is recorded here
+beside them.
 
 RS-22 and RS-23 were answered in the same 2026-09-23 pass, as letters on the two LETTERs the
 ring1b pipeline left (`_gate_evidence/pipeline_ring1b/RESULTS.md`): LETTER A for RS-22, LETTER B
@@ -64,6 +65,57 @@ A long-lived evaluator's per-case cost must be flat: what a finished env leaves 
 `-gc e` is found and freed in the runtime/env teardown (measured on `f9706fe84`: the connector shard
 3,893 s with per-case cost growing 0.8 → 12–25 s under `-gc e`, 46 s at a flat ~80 ms under a tracing
 collector). No grader recycling, no per-kind corpus split, no collector swap for the graders.
+
+## RS-18 — builtin registration splits per family, before the db extracts (owner: D20a)
+
+The owner's letter, on #1591, verbatim: **"builtin registration splits per family before db
+extracts — each product registers its own builtins."**
+
+**The measurement it answers** is `extract-db/REPORT.md` flag **F-D1**, *"the drivers come, the
+dispatch that reaches them does not"*: `vcx/platform/ring2_register.v` is the ONE site in the
+tree that registers every platform family's `$verb`s — `ring2_builtin_register(sql_stdlib_builtin,
+'sql')`, the `$if cx_db_redis ?` redis arm, and the seven `sql-*` / `redis-*` names of the §2.1
+capability mirror — and `registry/repos.cxd` allocates that file to **`cx-platform-xap`** by the
+`[path prefix='vcx/platform/']` catch-all. `cx-platform-db` therefore ships four driver bodies and
+a state-code table that nothing can reach: `[$sql-open]` cannot resolve from db's own repository.
+The report's option **(a)** is the one the owner took, and its own consequence line is why —
+*"every other platform repository (net, store, fabric, identity, mail) hits the same wall next, so
+the refactor is not db's alone — it is the general shape"*. Measured on the tree this page sits on:
+the central file names **twenty** families whose files land in **eight** repositories, and every one
+of the seven non-xap repositories has the F-D1 shape.
+
+**The decision.** Registration splits PER FAMILY and lands in the family's own files, before any
+further extraction:
+
+1. **One register file per family**, named for the file that carries the family's dispatcher —
+   `vcx/platform/<dispatcher basename>_register.v` — so `repos.cxd`'s first-match rule sends the
+   registration to the same repository as the dispatcher it registers, with no new rule needed for
+   a family that already has one. A family's impure-verb classification, its env-free and
+   env-aware dispatch entries, its subscription ops, its iterator walkers, its per-program resets
+   and its half of the security.md §2.1 capability mirror all live in that one file.
+2. **`ring2_register.v` becomes the COMPOSER only** — it holds no family's names, calls each
+   family's registrar, and seals the registry. It stays allocated to `cx-platform-xap`, which is
+   where the composition of a binary from pinned repositories belongs (RS-3, RS-7).
+3. **`registry/modules.cxd` names the register file** in the owning row's `code=`, so the register
+   file is declared by the module whose surface it switches on and `placement-gate` grades it.
+4. **Behaviour is unchanged and the composer proves it by construction.** The registry's four
+   ordered lists (the env-free chain, the shared env chain, the main env chain, the per-program
+   resets) keep the exact order they had: no single family ordering can preserve all of them at
+   once — `store` precedes `smtp` in the env-free chain and follows it in the main env chain — so
+   the composer runs TWO phases, and each family's main-env entry is a second, separately ordered
+   registrar. The census is identical.
+5. **The precedent is item 7's.** `vcx/code/ring1_register.v` already registers the Ring-1 packs
+   from the code module's own `init()`, and iowatch's dispatch was split into an io-pack file so
+   the engine compiles in every profile. This is that shape applied to the platform families.
+
+**What this page does NOT decide.** V permits ONE `init()` per module, so the composer is a
+written list of registrars rather than a table each family fills by itself. Making the absence of a
+product remove its registrar without the composer naming it needs one of three mechanisms — a
+const-initializer self-registration, a per-family `-d cx_no_pack_<family>` file gate, or a composer
+generated from `registry/modules.cxd` behind a drift gate — and each buys a different cost. The
+integrator's letter on the implementing branch states the three with their consequences; until one
+is ruled, the composer names every family and a family's absence is a link error in `cx`, never a
+silently unreachable verb.
 
 ## RS-19 — mail claims its smtp/imap pure halves, as `sasl` already is (owner: D19a)
 

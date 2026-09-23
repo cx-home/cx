@@ -157,8 +157,10 @@
 
       # -- DISPATCH_SET -------------------------------------------------
       # every <name>_stdlib_builtin prefix across BOTH dispatch halves:
-      # the Ring-1 chain (vcx/code/stdlib_dispatch.v) and the Ring-2
-      # registrations (vcx/platform/ring2_register.v) — the I3 ring split
+      # the Ring-1 chain (vcx/code/stdlib_dispatch.v) and the platform
+      # registrations (every vcx/platform/*_register.v — RS-18 split the
+      # one central file into one register file per family, and the glob is
+      # what keeps this gate reading all of them) — the I3 ring split
       # moved the platform modules' dispatch behind the seam-G registry,
       # so reading only the code/ half reports them as unimplemented
       # (same both-halves rule as check-completions-drift). find-all
@@ -184,7 +186,10 @@
       # reported if nothing specs it.
       [?let [= $dispatch-rx [$re:compile "([a-z0-9_]+)_stdlib_builtin"]]
              [= $dispatch-raw [$concat [$io:read-file "vcx/code/stdlib_dispatch.v"]
-                                       [$io:read-file "vcx/platform/ring2_register.v"]]]
+                                       [$strings:join
+                                         [?for [in $rf [$io:glob "vcx/platform/*_register.v"]]
+                                           [yield [$io:read-file $rf]]]
+                                         "\n"]]]
         [?let [= $dispatch-set
           [?for [in $dm [$re:find-all $dispatch-rx $dispatch-raw]]
             [where [not [= [$re:group $dm 1] "ring2"]]]
