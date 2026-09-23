@@ -33,6 +33,9 @@
 #                                                whole suite
 #   N  a step runner under vcx/tests/runners/    the step that BUILDS it, and
 #      (#1598)                                   not the whole suite
+#   P  the shared grading core (vcx/corpus/,     the suite, the document step
+#      #1634)                                    and the cmd step — every step
+#                                                that runs it
 #
 # Exit 0 and the count line only when every case matches.
 set -u
@@ -389,6 +392,25 @@ if targets "$T/m" | tr " " "\n" | grep -q "^test-sso-interop-lane$"; then
 	ok O "an sso pin bump (deps.cxd) selects test-sso-interop-lane"
 else
 	bad O "deps.cxd did not select test-sso-interop-lane: [$(targets "$T/m")]"
+fi
+
+# ── P — the shipped grading core under vcx/corpus/ (#1634) ─────────────────
+# RS-16 moved the module-corpus grading loop into vcx/corpus/, which the cx
+# binary links for `cx corpus`, every fixtures shard calls, and (#1631) the
+# document runner reaches for its document-lane core (the profile gate is not
+# among them: profile_gate.v carries its own mirror and imports no corpus
+# module). No ring row named the directory, so a change to exactly that loop
+# SKIPPED every step that runs it — the false-skip direction this selftest
+# exists for.
+run vcx/corpus/grade.v > "$T/p"
+p_miss=""
+for st in test-vcx-suite test-vcx-conform test-vcx-cmd; do
+	targets "$T/p" | tr " " "\n" | grep -qx -- "$st" || p_miss="$p_miss $st"
+done
+if [ -z "$p_miss" ]; then
+	ok P "vcx/corpus/grade.v selects test-vcx-suite, test-vcx-conform and test-vcx-cmd"
+else
+	bad P "vcx/corpus/grade.v did not select:$p_miss"
 fi
 
 if [ "$fails" -ne 0 ]; then

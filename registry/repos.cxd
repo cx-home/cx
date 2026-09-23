@@ -14,7 +14,7 @@ cx_partition.md §5/§5.1 is item 5 on #1591. Until it lands this file states
 the plan, and the gate keeps the plan total over the tree.
 
 TWO KINDS OF ROW.
-  [repo name= group= ring= ships= about= status=? at=? why=?]
+  [repo name= group= ring= ships= about= status=? at=? pins=? vmodule=? why=?]
       one row per destination repository. `group` is the front-page group
       (core | platform | binding | ecosystem | dist), `ring` is 0, 1 or none,
       `ships` is how the repo reaches a user (binary | package | pypi | crate |
@@ -26,6 +26,15 @@ TWO KINDS OF ROW.
       refusal while adding the converse one (a `status=extracted` repo that is
       still the first match for a tracked file is an extraction stopped half
       way). Absent `status` means the plan is still a plan.
+      `pins='<repo> ...'` and `vmodule=<m>` are the V products' import
+      graph (RULED: RS-24, owner D28a): `pins` is the Pins column of the
+      #1589 table -- the repositories this one builds on, acyclic -- and
+      `vmodule` names the V module the repository compiles from `vcx/<m>/`
+      (D31a: flat; the residue `vcx/platform/`, `module platform`, is xap's
+      until xap's own turn). A product row gains `vmodule` in the commit that
+      splits it. scripts/product_import_gate.cx holds every import under a
+      vmodule directory to these pins; the rings (the `core` rows) are always
+      importable.
   [path prefix= repo=]  /  [path exact= repo=]
       one allocation rule. A tracked file belongs to the FIRST rule, in
       document order, whose `exact` equals the path or whose `prefix` is a
@@ -55,14 +64,14 @@ the rule carries a `why=`. The recurring reasons, once:
   [repo name=cx group=dist ring=none ships=binary about='the front door: pins every repo, builds the four cx builds and libcx-core/libcx, holds the site, the release, the installer']
   [repo name=cx-core-data group=core ring=0 ships=binary about='the data format: reader, writer, canonical form, schema, codecs, libcx-core, the data-only cx']
   [repo name=cx-core-code group=core ring=1 ships=binary about='the language: evaluator, stdlib, LSP, libcx, the cli and embed builds']
-  [repo name=cx-platform-net group=platform ring=none ships=binary about='sockets, TLS, the HTTP server, the XSP transport bindings, ftp, sftp, file_surface']
-  [repo name=cx-platform-mail group=platform ring=none ships=binary about='SMTP and IMAP, server and client cores, sasl']
-  [repo name=cx-platform-identity group=platform ring=none ships=binary about='sessions, the XSP-AUTH handshake, principal mint, did:web']
-  [repo name=cx-platform-store group=platform ring=none ships=binary about='the storage engine, its substrates, journal/live/audit, ft, and the store server']
-  [repo name=cx-platform-db group=platform ring=none ships=binary about='external database access: $sql-*, $redis-*, the drivers']
-  [repo name=cx-platform-fabric group=platform ring=none ships=binary about='messaging and fabric-serve']
-  [repo name=cx-platform-xap group=platform ring=none ships=binary about='the application host, compose, dist, schema, market, the reference deployments']
-  [repo name=cx-platform-flow group=platform ring=none ships=package about='workflow; its CLI verbs stay in the binary']
+  [repo name=cx-platform-net group=platform ring=none ships=binary vmodule=cxnet pins='cx-core-code' about='sockets, TLS, the HTTP server, the XSP transport bindings, ftp, sftp, file_surface']
+  [repo name=cx-platform-mail group=platform ring=none ships=binary vmodule=mail pins='cx-platform-net' about='SMTP and IMAP, server and client cores, sasl']
+  [repo name=cx-platform-identity group=platform ring=none ships=binary pins='cx-platform-store cx-platform-net' about='sessions, the XSP-AUTH handshake, principal mint, did:web']
+  [repo name=cx-platform-store group=platform ring=none ships=binary pins='cx-core-code cx-platform-net' about='the storage engine, its substrates, journal/live/audit, ft, and the store server']
+  [repo name=cx-platform-db group=platform ring=none ships=binary vmodule=cxdb pins='cx-core-code' about='external database access: $sql-*, $redis-*, the drivers']
+  [repo name=cx-platform-fabric group=platform ring=none ships=binary pins='cx-platform-store cx-platform-identity' about='messaging and fabric-serve']
+  [repo name=cx-platform-xap group=platform ring=none ships=binary vmodule=platform pins='cx-platform-net cx-platform-mail cx-platform-identity cx-platform-store cx-platform-db cx-platform-fabric' about='the application host, compose, dist, schema, market, the reference deployments']
+  [repo name=cx-platform-flow group=platform ring=none ships=package status=extracted at=78ea045510278dee3b0a522ab7f168e42e020fab about='workflow; its CLI verbs stay in the binary' why='EXTRACTED (RULED: RS-12, RS-20, #1591 item 15), the second of them. Its [path] rules are retired because it owns no tracked path here any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records. What RS-20 kept in `cx` is claimed by rules of its own and not by this row: the `cx flow` verbs (vcx/cmd/flow*.v, repo=cx) and the flow-perform act seam (vcx/platform/coordination.v, repo=cx-platform-xap)']
   [repo name=cx-platform-connector group=platform ring=none ships=package about='the connector kit and sync']
   [repo name=cx-platform-sso group=platform ring=none ships=package status=extracted at=1e814e5aae6327a8218cc3fe69b43a03517e92bf about='enterprise sign-on, the interop lane' why='EXTRACTED (RULED: RS-12, #1591 item 11), the first of them. It has no [path] rules because it owns no tracked path here any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records, and the gate exempts a status=extracted repo from the empty-repo refusal for exactly that reason -- the row is the pin\'s counterpart, not a plan waiting to be executed']
   [repo name=cx-platform-ux group=platform ring=none ships=package status=extracted at=ef9248093389d42f6726042bfc254351445db4bc about='the web and terminal surfaces' why='EXTRACTED (RULED: RS-12, #1591 item 12), with cx-platform-agent: the x/ graduation. It owns no tracked path here any more; cx reaches it through deps.cxd at the sha at= records, and registry/modules.cxd\'s ux, ux-web and ux-tui rows name the pinned checkout']
@@ -223,9 +232,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='bench/repr/' repo=cx-core-data why='the CXDM live-memory ratchet is a representation gauge']
 
   [; ── platform: db (external engines) ──────────────────────────────── ]
-  [path prefix='vcx/platform/sql' repo=cx-platform-db]
-  [path prefix='vcx/platform/redis' repo=cx-platform-db]
-  [path prefix='vcx/platform/db_state_code' repo=cx-platform-db]
+  [path prefix='vcx/cxdb/' repo=cx-platform-db why='db\'s V module, module cxdb (RULED: RS-24): the sql and redis dispatchers, the four drivers, the state-code table and sql_register.v, moved whole out of vcx/platform/. Spelled cxdb, not db, because vlib has a top-level db module that a vcx/db/ would shadow for the whole tree (the RS-24 branch\'s LETTER)']
   [path exact='spec/03-approved/core/db_access.md' repo=cx-platform-db]
   [path prefix='spec/03-approved/platform/store/sql.md' repo=cx-platform-db]
   [path prefix='spec/03-approved/platform/store/redis.md' repo=cx-platform-db]
@@ -233,14 +240,8 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='conformance/platform/db.cxd' repo=cx-platform-db]
 
   [; ── platform: net ─────────────────────────────────────────────────── ]
-  [path prefix='vcx/platform/stdlib_net' repo=cx-platform-net]
-  [path prefix='vcx/platform/stdlib_http_serve' repo=cx-platform-net]
-  [path prefix='vcx/platform/http_h2' repo=cx-platform-net]
-  [path prefix='vcx/platform/serve_file' repo=cx-platform-net]
-  [path prefix='vcx/platform/services' repo=cx-platform-net]
-  [path prefix='vcx/platform/iter_walks_net_http' repo=cx-platform-net]
-  [path exact='vcx/platform/mime.v' repo=cx-platform-net]
-  [path prefix='vcx/platform/platform_netwire' repo=cx-platform-net]
+  [path prefix='vcx/cxnet/' repo=cx-platform-net why='net\'s V module, module cxnet (RULED: RS-24): sockets, the HTTP server and its h2 lane, serve-file, the service listener, the live-source walkers, and the HTTP/2 frame and HPACK codec store\'s gRPC edge shares (moved down from vcx/platform/store_grpc_*, net being the lower of its two consumers, D34a). Spelled cxnet, not net, because vlib has a top-level net module that a vcx/net/ would shadow for the whole tree and that a module named net could not import (the RS-24 branch\'s LETTER)']
+  [path prefix='vcx/platform/platform_netwire' repo=cx-platform-store why='the store\'s net-importing in-module tests (store_grpc_concurrency, store_g13_parity, store_xsp_journal; scripts/consolidation/platform_netwire.files): every test in it drives store code, which is still module platform, so it stays in vcx/platform/ with its subject and follows the store. It was allocated to net by its name until RS-24 measured its content']
   [path prefix='vcx/transport/' repo=cx-platform-net]
   [path exact='stdlib/net.cx' repo=cx-platform-net]
   [path exact='stdlib/http.cx' repo=cx-platform-net]
@@ -260,8 +261,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='vcx/tests/testdata/h2_localhost' repo=cx-platform-net]
 
   [; ── platform: mail ────────────────────────────────────────────────── ]
-  [path prefix='vcx/platform/stdlib_smtp' repo=cx-platform-mail]
-  [path prefix='vcx/platform/stdlib_imap' repo=cx-platform-mail]
+  [path prefix='vcx/mail/' repo=cx-platform-mail why='mail\'s V module, module mail (RULED: RS-24): the smtp and imap wire halves, their register files, and the two live-source walkers that walk their folds (iter_walks_mail.v, moved out of net\'s walker file because net may not call mail, D34a)']
   [path prefix='vcx/code/stdlib_smtp' repo=cx-platform-mail why='the DECLARED Ring-1 half of the smtp module (modules.cxd half=): the pure ESMTP codec and server core, which decide MEANING and open nothing. A module moves whole, so the half travels with its wire half — as sasl already does (RULED: RS-19)']
   [path prefix='vcx/code/stdlib_imap' repo=cx-platform-mail why='the DECLARED Ring-1 half of the imap module (modules.cxd half=): the pure IMAP codec and server core. Same rule as the smtp half above (RULED: RS-19)']
   [path exact='stdlib/smtp.cx' repo=cx-platform-mail]
@@ -326,15 +326,15 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='tooling/cxfabric/' repo=cx-platform-fabric]
 
   [; ── platform: flow ────────────────────────────────────────────────── ]
-  [path exact='stdlib/flow.cx' repo=cx-platform-flow]
-  [path exact='spec/03-approved/platform/flow.md' repo=cx-platform-flow]
-  [path exact='conformance/platform/flow.cxd' repo=cx-platform-flow]
+  [; THE cx-platform-flow RULES ARE RETIRED (RULED: RS-12, RS-20, #1591 item
+     15), as sso's were. Its 30 paths -- the module, its spec, its corpus,
+     flows/ and its two gate programs, bench/flow/, the umbrella lane and
+     examples/platform/flow/ -- are tracked in that repository now and in no
+     tree this gate walks; a rule still naming one would be a [dead rule]. The
+     [repo] row above carries status=extracted and the sha deps.cxd pins it at.
+     The ONE rule left in this block is RS-20's: the `cx flow` verbs are the
+     local profile, V only the front door compiles, so they stay here. ]
   [path prefix='vcx/cmd/flow' repo=cx why='flow ships=package and vcx/cmd/flow*.v is V that only the front door compiles: the local profile verbs stay in the binary, so they stay in the repo that BUILDS the binary. Not owned by flow (RULED: RS-20)']
-  [path prefix='flows/' repo=cx-platform-flow]
-  [path prefix='vcx/tests/flow_' repo=cx-platform-flow]
-  [path exact='scripts/flow_dogfood_gate.cx' repo=cx-platform-flow]
-  [path exact='scripts/flow_vocabulary_gate.cx' repo=cx-platform-flow]
-  [path prefix='bench/flow/' repo=cx-platform-flow]
 
   [; ── platform: connector ───────────────────────────────────────────── ]
   [path exact='stdlib/connector.cx' repo=cx-platform-connector]
@@ -377,8 +377,11 @@ the rule carries a `why=`. The recurring reasons, once:
        lives in `vcx/platform/<its dispatcher's basename>_register.v`, so
        every rule above places a register file with the dispatcher it
        registers WITHOUT a rule of its own — `stdlib_store_register.v` goes to
-       cx-platform-store by the `stdlib_store` rule, `sql_register.v` to
-       cx-platform-db by the `sql` rule, and so on. That is the whole point of
+       cx-platform-store by the `stdlib_store` rule, and so on. Since RS-24
+       (owner D28a, D32a) a SPLIT product's register files moved unchanged
+       with their dispatchers into its `vcx/<vmodule>/` directory, where one
+       directory rule places all of them — `stdlib_net_register.v` is net's by
+       the `vcx/cxnet/` rule. That is the whole point of
        the naming rule and the answer to extract-db/REPORT.md's F-D1. Only
        `ring2_register.v` (now the COMPOSER, which names no family) and
        `stdlib_xap_register.v` reach the catch-all below; flow's
@@ -410,7 +413,7 @@ the rule carries a `why=`. The recurring reasons, once:
      boot its own deployment from a bare checkout before this (the sso
      extraction prep, F-1; the ux prep reads it again as F-U1). ]
   [; examples/platform/sso/ left with the extraction; see the retired sso block above. ]
-  [path prefix='examples/platform/flow/' repo=cx-platform-flow why='the checkout and simulate examples of the flow module']
+  [; examples/platform/flow/ left with the extraction; see the retired flow block above. ]
   [path prefix='examples/platform/scim/' repo=cx-core-code why='scim is a shared codec that stays in the language repo, so its provisioning and projection examples go where the module is']
   [path prefix='examples/platform/' repo=cx-platform-xap]
   [path prefix='bench/xap/' repo=cx-platform-xap]
@@ -511,6 +514,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='.githooks/' repo=cx]
   [path prefix='.claude/' repo=cx]
   [path prefix='third_party/' repo=cx why='the V fork pin and the README; every V repo pins the same SHA through its deps.cxd']
+  [path prefix='vcx/corpus/' repo=cx why='the corpus grading core RS-16 moved out of vcx/tests/ into a linked module (vcx/corpus/grade.v, module corpus). It reached this repository through the vcx/ guard rule below, whose why= names only the retired mirror files; the rule states that allocation rather than changing it, because RS-24\'s product-import gate refuses a module directory no row or directory rule owns. Its callers (vcx/cmd/corpus_verb.v, the fixtures grader) are cx-core-code\'s, so which repository owns it is #1624, not decided here']
   [path prefix='vcx/' repo=cx why='guard: vcx/.gitignore.cx-v and Makefile.cx-v, the retired mirror scripts']
   [path prefix='spec/03-approved/' repo=cx why='guard: a spec page no row above claims surfaces in the front door, never as unallocated']
   [path prefix='RELEASE_NOTES_' repo=cx]

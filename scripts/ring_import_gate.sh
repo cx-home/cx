@@ -8,10 +8,13 @@
 # Two rings, then groups (partition spec §2–§3, RULED: RS-1):
 #   Ring 0  = vcx/cx        — imports nothing internal (V stdlib only).
 #   Ring 1  = vcx/code      — MAY import Ring 0 (cx) only.
-#   platform group = vcx/platform — MAY import the rings (cx, code) and what
-#                             its manifest declares: the leaf siblings the
-#                             spec names for platform consumption (cxstore,
-#                             arrow, transport). Nothing else.
+#   platform group = vcx/platform (the residue) and the V product modules
+#                             split out of it (RS-24: each vcx/<vmodule>/
+#                             registry/repos.cxd declares) — MAY import the
+#                             rings (cx, code) and what its manifest declares:
+#                             the leaf siblings the spec names for platform
+#                             consumption (cxstore, arrow, transport) and one
+#                             another. Nothing else.
 #   leaves  = vcx/arrow, vcx/transport — consumed FROM the platform group;
 #                             themselves import Ring 0 (cx) only (+ their own
 #                             submodules).
@@ -19,8 +22,8 @@
 #   cli lyr = vcx/cli, vcx/cmd_data — the data/cli-profile surface: MUST stay
 #                             platform-FREE (no platform-group import), or the
 #                             data/cli profiles would pull the daemon stack (§4).
-# The pin direction BETWEEN platform products is not this gate's: it works on
-# directories, and every platform product is `module platform` today.
+# The pin direction BETWEEN platform products is not this gate's: that is
+# scripts/product_import_gate.cx (RULED: RS-24).
 #
 # Hardened per the adversarial audits:
 #   M34  — deny-sets are DERIVED from the live sibling-dir set under vcx/, so a
@@ -158,9 +161,29 @@ scan_ring "$VCX/cxstore" "store engine (cxstore)" 0 $(deny_but cx cxstore)
 # Ring 1 (vcx/code): MAY import Ring 0 (cx) only.
 scan_ring "$VCX/code" "Ring-1 (code)" 0 $(deny_but cx code)
 
-# The platform group (vcx/platform): MAY import the rings (cx, code) and its
-# declared graph (cxstore, arrow, transport) — RULED: RS-1.
-scan_ring "$VCX/platform" "platform group (platform)" 0 $(deny_but cx code cxstore arrow transport platform)
+# The V product modules (RULED: RS-24): vcx/platform split into one V module
+# per V product, each in the vcx/<vmodule>/ registry/repos.cxd declares. They
+# are the platform group exactly as vcx/platform is (RULED: RS-1), so the same
+# contract holds for each: the rings (cx, code), cxstore/arrow/transport, plus
+# one another -- WHICH product may import which is the pin graph, and
+# scripts/product_import_gate.cx holds that; this lane only keeps every
+# product off the non-platform siblings (cli, cmd, tests, ...) and off the
+# residue above it. Read grep-level from the registry so a product split is
+# gated the moment its row declares it; a tree with no registry (the
+# selftest's fake one without it) has no products.
+PRODUCTS=""
+if [ -f "$ROOT/registry/repos.cxd" ]; then
+  PRODUCTS="$( { grep -oE "vmodule=[a-z_][a-z0-9_]*" "$ROOT/registry/repos.cxd" || true; } | cut -d= -f2 | { grep -vx platform || true; } | LC_ALL=C sort -u | tr '
+' ' ')"
+fi
+
+# The platform group's residue (vcx/platform): MAY import the rings (cx, code),
+# its declared graph (cxstore, arrow, transport) and the product modules split
+# out of it — RULED: RS-1, RS-24.
+scan_ring "$VCX/platform" "platform group (platform)" 0 $(deny_but cx code cxstore arrow transport platform $PRODUCTS)
+for p in $PRODUCTS; do
+  scan_ring "$VCX/$p" "platform group product ($p)" 0 $(deny_but cx code cxstore arrow transport $PRODUCTS)
+done
 
 # Leaf siblings (vcx/arrow, vcx/transport): consumed FROM the platform group; import cx
 # (Ring 0) only, plus their own submodules (self kept in the allow-set).
@@ -179,5 +202,5 @@ if [ "$fail" -ne 0 ]; then
   echo "ring_import_gate: FAILED — a ring module violates its §3 import contract."
   exit 1
 fi
-echo "ring_import_gate: OK — Ring-0 strict sink; cxstore Ring-0-only+evaluator-free; code→cx only; platform group within the rings + cxstore/arrow/transport; arrow/transport→cx only; cli/cmd_data platform-free"
+echo "ring_import_gate: OK — Ring-0 strict sink; cxstore Ring-0-only+evaluator-free; code→cx only; platform group within the rings + cxstore/arrow/transport + the product modules; each product (${PRODUCTS% }) within the rings + cxstore/arrow/transport + the products; arrow/transport→cx only; cli/cmd_data platform-free"
 exit 0
