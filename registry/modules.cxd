@@ -355,23 +355,31 @@ needs becomes its own Ring-1 module.
      `cx-stdlib/xsp` could not carry them. ]
   [module name=xsp-auth ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/xap/xsp-auth.md corpus=conformance/xap/xsp-auth.cxd source=stdlib/xsp-auth.cx code='vcx/platform/stdlib_xsp_auth.v vcx/platform/stdlib_xsp_auth_register.v' half=none status=current]
 
-  [; ── The x tier — cx-x, its own namespace and its own spec directory.
-       1427-b renames `cx-stdlib/X` and nothing else, so these rows carry no
-       ns-to; what moves is their corpora, out of the one bin the tree used
-       to keep every suite in. Each row's ring is the one its own suite
-       header already declares, read through RS-1: a suite graded in the
-       platform lane (ring=2) is a `ring=1 group=platform` row. ─────────── ]
-  [module name=a2a ring=1 ns=cx-x kind=module spec=spec/03-approved/x/a2a.md corpus=conformance/x/a2a.cxd source=x/a2a.cx code=none half=none status=current]
-  [module name=a2a-xap ring=1 group=platform ns=cx-x kind=module spec=spec/03-approved/x/a2a-xap.md corpus=conformance/x/a2a-xap.cxd source=x/a2a-xap.cx code=none half=none status=current]
-  [module name=adjudicate ring=1 group=platform ns=cx-x kind=module spec=spec/03-approved/x/adjudicate.md corpus=conformance/x/adjudicate.cxd source=x/adjudicate.cx code=none half=none status=current]
-  [module name=llm ring=1 ns=cx-x kind=module spec=spec/03-approved/x/llm.md corpus=conformance/x/llm.cxd source=x/llm.cx code=none half=none status=current]
-  [module name=mcp ring=1 ns=cx-x kind=module spec=spec/03-approved/x/mcp.md corpus=conformance/x/mcp.cxd source=x/mcp.cx code=none half=none status=current]
-  [module name=mcp-server ring=1 group=platform ns=cx-x kind=module spec=spec/03-approved/x/mcp-server.md corpus=conformance/x/mcp-server.cxd source=x/mcp-server.cx code=none half=none status=current]
-  [module name=run ring=1 ns=cx-x kind=module spec=spec/03-approved/x/run.md corpus=conformance/x/run.cxd source=x/run.cx code=none half=none status=current]
-  [module name=tools ring=1 ns=cx-x kind=module spec=spec/03-approved/x/tools.md corpus=conformance/x/tools.cxd source=x/tools.cx code=none half=none status=current]
-  [module name=ux ring=1 group=platform ns=cx-x kind=module spec=spec/03-approved/xap/ux.md corpus=conformance/xap/ux.cxd source=x/ux.cx code=none half=none status=current]
-  [module name=ux-tui ring=1 group=platform ns=cx-x kind=module spec=spec/03-approved/xap/ux.md corpus=conformance/xap/ux-tui.cxd source=x/ux-tui.cx code=none half=none status=current]
-  [module name=ux-web ring=1 group=platform ns=cx-x kind=module spec=spec/03-approved/xap/ux.md corpus=conformance/xap/ux-web.cxd source=x/ux-web.cx code=none half=none status=current]
+  [; ── The x/ graduation (RULED: RS-4, RS-1 — owner D45a,
+       ledger/rulings_2026_09_23_x_graduation_d45a.md). These eleven were the
+       `cx-x` experimental tier; each imports as `cx-platform/<name>` now and
+       its row reads `ns=cx-platform group=platform`, the ring unchanged (1,
+       the ring of its highest verb). `cx-x/<name>` is a retired resolver name
+       the loader refuses with the new spelling (vcx/code/stdlib_bundle.v,
+       retired_bundled_names). The artifacts stay where the tier laid them out
+       — spec/03-approved/x/, conformance/x/, x/, and ux's page and corpora
+       under xap/ — because RS-1 and RS-4 do not move a graduated module's
+       directories; none of those is a ring directory, so the placement check
+       reads them as outside the split. Five suites (a2a, llm, mcp, run,
+       tools) grade in lane ring=1 by their own headers while the group's
+       lane is ring=2: their rows declare that with `suite-ring=1`, and the
+       header is the owning repository's to move. ─────────────────────────── ]
+  [module name=a2a ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/x/a2a.md corpus=conformance/x/a2a.cxd source=x/a2a.cx code=none half=none suite-ring=1 status=current]
+  [module name=a2a-xap ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/x/a2a-xap.md corpus=conformance/x/a2a-xap.cxd source=x/a2a-xap.cx code=none half=none status=current]
+  [module name=adjudicate ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/x/adjudicate.md corpus=conformance/x/adjudicate.cxd source=x/adjudicate.cx code=none half=none status=current]
+  [module name=llm ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/x/llm.md corpus=conformance/x/llm.cxd source=x/llm.cx code=none half=none suite-ring=1 status=current]
+  [module name=mcp ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/x/mcp.md corpus=conformance/x/mcp.cxd source=x/mcp.cx code=none half=none suite-ring=1 status=current]
+  [module name=mcp-server ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/x/mcp-server.md corpus=conformance/x/mcp-server.cxd source=x/mcp-server.cx code=none half=none status=current]
+  [module name=run ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/x/run.md corpus=conformance/x/run.cxd source=x/run.cx code=none half=none suite-ring=1 status=current]
+  [module name=tools ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/x/tools.md corpus=conformance/x/tools.cxd source=x/tools.cx code=none half=none suite-ring=1 status=current]
+  [module name=ux ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/xap/ux.md corpus=conformance/xap/ux.cxd source=x/ux.cx code=none half=none status=current]
+  [module name=ux-tui ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/xap/ux.md corpus=conformance/xap/ux-tui.cxd source=x/ux-tui.cx code=none half=none status=current]
+  [module name=ux-web ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/xap/ux.md corpus=conformance/xap/ux-web.cxd source=x/ux-web.cx code=none half=none status=current]
 
   [; ── Not modules: natives, backend engines, design texts, and the suites
        whose parent spec is not a module of its own (1427-e). ──────────── ]

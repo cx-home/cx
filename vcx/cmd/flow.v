@@ -260,7 +260,6 @@ fn flow_cli_env_scan(path string) ([]string, []FlowCliAct) {
 	}
 	mut table := code.new_module_table()
 	code.register_bundled_stdlib(mut table)
-	code.register_bundled_x(mut table)
 	mut directives := []string{}
 	mut acts := []FlowCliAct{}
 	for sp in spans {
