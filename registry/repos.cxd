@@ -73,7 +73,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [repo name=cx-platform-db group=platform ring=none ships=binary vmodule=cxdb pins='cx-core-code' about='external database access: $sql-*, $redis-*, the drivers']
   [repo name=cx-platform-fabric group=platform ring=none ships=binary pins='cx-platform-store cx-platform-identity' about='messaging and fabric-serve']
   [repo name=cx-platform-xap group=platform ring=none ships=binary vmodule=xap pins='cx-platform-net cx-platform-mail cx-platform-identity cx-platform-store cx-platform-db cx-platform-fabric' about='the application host, compose, dist, schema, market, the reference deployments']
-  [repo name=cx-platform-flow group=platform ring=none ships=package about='workflow; its CLI verbs stay in the binary']
+  [repo name=cx-platform-flow group=platform ring=none ships=package status=extracted at=78ea045510278dee3b0a522ab7f168e42e020fab about='workflow; its CLI verbs stay in the binary' why='EXTRACTED (RULED: RS-12, RS-20, #1591 item 15), the second of them. Its [path] rules are retired because it owns no tracked path here any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records. What RS-20 kept in `cx` is claimed by rules of its own and not by this row: the `cx flow` verbs (vcx/cmd/flow*.v, repo=cx) and the flow-perform act seam (vcx/platform/coordination.v, repo=cx-platform-xap)']
   [repo name=cx-platform-connector group=platform ring=none ships=package about='the connector kit and sync']
   [repo name=cx-platform-sso group=platform ring=none ships=package status=extracted at=1e814e5aae6327a8218cc3fe69b43a03517e92bf about='enterprise sign-on, the interop lane' why='EXTRACTED (RULED: RS-12, #1591 item 11), the first of them. It has no [path] rules because it owns no tracked path here any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records, and the gate exempts a status=extracted repo from the empty-repo refusal for exactly that reason -- the row is the pin\'s counterpart, not a plan waiting to be executed']
   [repo name=cx-platform-ux group=platform ring=none ships=package about='the web and terminal surfaces']
@@ -328,15 +328,15 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='tooling/cxfabric/' repo=cx-platform-fabric]
 
   [; ── platform: flow ────────────────────────────────────────────────── ]
-  [path exact='stdlib/flow.cx' repo=cx-platform-flow]
-  [path exact='spec/03-approved/platform/flow.md' repo=cx-platform-flow]
-  [path exact='conformance/platform/flow.cxd' repo=cx-platform-flow]
+  [; THE cx-platform-flow RULES ARE RETIRED (RULED: RS-12, RS-20, #1591 item
+     15), as sso's were. Its 30 paths -- the module, its spec, its corpus,
+     flows/ and its two gate programs, bench/flow/, the umbrella lane and
+     examples/platform/flow/ -- are tracked in that repository now and in no
+     tree this gate walks; a rule still naming one would be a [dead rule]. The
+     [repo] row above carries status=extracted and the sha deps.cxd pins it at.
+     The ONE rule left in this block is RS-20's: the `cx flow` verbs are the
+     local profile, V only the front door compiles, so they stay here. ]
   [path prefix='vcx/cmd/flow' repo=cx why='flow ships=package and vcx/cmd/flow*.v is V that only the front door compiles: the local profile verbs stay in the binary, so they stay in the repo that BUILDS the binary. Not owned by flow (RULED: RS-20)']
-  [path prefix='flows/' repo=cx-platform-flow]
-  [path prefix='vcx/tests/flow_' repo=cx-platform-flow]
-  [path exact='scripts/flow_dogfood_gate.cx' repo=cx-platform-flow]
-  [path exact='scripts/flow_vocabulary_gate.cx' repo=cx-platform-flow]
-  [path prefix='bench/flow/' repo=cx-platform-flow]
 
   [; ── platform: connector ───────────────────────────────────────────── ]
   [path exact='stdlib/connector.cx' repo=cx-platform-connector]
@@ -420,7 +420,7 @@ the rule carries a `why=`. The recurring reasons, once:
      boot its own deployment from a bare checkout before this (the sso
      extraction prep, F-1; the ux prep reads it again as F-U1). ]
   [; examples/platform/sso/ left with the extraction; see the retired sso block above. ]
-  [path prefix='examples/platform/flow/' repo=cx-platform-flow why='the checkout and simulate examples of the flow module']
+  [; examples/platform/flow/ left with the extraction; see the retired flow block above. ]
   [path prefix='examples/platform/scim/' repo=cx-core-code why='scim is a shared codec that stays in the language repo, so its provisioning and projection examples go where the module is']
   [path prefix='examples/platform/' repo=cx-platform-xap]
   [path prefix='bench/xap/' repo=cx-platform-xap]
