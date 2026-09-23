@@ -1618,14 +1618,21 @@ flow-dogfood-gate: build-vcx
 # no V build to run a V test with. So this step runs the pinned file against
 # THIS tree's module path (`-path` names vcx/, where `testenv` is; testenv
 # finds the binary under @VMODROOT, which is vcx/ whatever directory the test
-# file sits in) with test-vcx-suite's own flags, and refuses by name when the
-# checkout is absent — a skip and a pass would be the same line.
+# file sits in) with test-vcx-suite's gc and engine flags, and refuses by name
+# when the checkout is absent — a skip and a pass would be the same line.
+#
+# The module path is ABSOLUTE and the step carries no -usecache. Measured on
+# the xflow branch: with test-vcx-suite's `-usecache` and VFLAGS_VCX's relative
+# `vcx`, V's cache rebuild could not find the module ("builder error:
+# vcx/testenv doesn't exist ... could not rebuild cache module", run 4); with
+# this line the lane passes (run 5). A file outside vcx/ has no v.mod above it
+# to anchor a relative path to.
 .PHONY: test-flow-umbrella
 test-flow-umbrella: build-vcx-dev
 	@test -f deps/cx-platform-flow/vcx/tests/flow_umbrella_test.v || { \
 	  echo "test-flow-umbrella: deps/cx-platform-flow/ is not there — the lane lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
 	  exit 2; }
-	@$(JS_CLOSE) VFLAGS='$(VFLAGS_VCX)' $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test deps/cx-platform-flow/vcx/tests/flow_umbrella_test.v
+	@$(JS_CLOSE) VFLAGS='-cc cc -path "@vlib|@vmodules|$(CURDIR)/vcx"' $(V) -cc cc $(CX_GC) $(CX_ENGINES) test deps/cx-platform-flow/vcx/tests/flow_umbrella_test.v
 
 # ── check-code-fixtures (gate 4; repaired + wired by the #805 gate-truth
 # batch — it was RED and in no step, so no stream gate ever ran it). The
