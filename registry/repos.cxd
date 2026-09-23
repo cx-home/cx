@@ -369,14 +369,15 @@ the rule carries a `why=`. The recurring reasons, once:
        cx-platform-store by the `stdlib_store` rule, `sql_register.v` to
        cx-platform-db by the `sql` rule, and so on. That is the whole point of
        the naming rule and the answer to extract-db/REPORT.md's F-D1. Only
-       `ring2_register.v` (now the COMPOSER, which names no family) and the
-       register files of the two families whose dispatchers are already xap's
-       residue — `stdlib_xap_register.v` and `coordination_register.v` (flow's
-       one act seam, RS-20) — reach the catch-all below. Adding a rule per
-       register file would be a dead rule the allocation gate refuses. ───── ]
+       `ring2_register.v` (now the COMPOSER, which names no family) and
+       `stdlib_xap_register.v` reach the catch-all below; flow's
+       `coordination_register.v` gets an `exact=` rule beside the seam's own
+       (RS-20), for the reason that row states. Adding a rule per register
+       file would be a dead rule the allocation gate refuses. ──────────── ]
 
   [; ── platform: xap (the host; the residue of vcx/platform) ────────── ]
   [path exact='vcx/platform/coordination.v' repo=cx-platform-xap why='the coordination glue, AND the one act seam cx-platform/flow depends on: coord_flow_perform, the single builtin the flow runner acts through (RULED: 1265-PB-1), dispatched here as flow-perform. The flow module row reads code=none, so without this row nothing names the seam and neither a pin nor a gate can see that a package repo depends on a builtin another repo compiles in (RULED: RS-20)']
+  [path exact='vcx/platform/coordination_register.v' repo=cx-platform-xap why="the seam's REGISTRATION, beside the seam (RULED: RS-18): flow-perform's purity row and its env-aware hook. It is named for the same reason coordination.v above is — the flow module row reads code=none, so a rule is the only place a reader, a pin or a gate learns that a package repository depends on a builtin this repository compiles in"]
   [path prefix='vcx/platform/' repo=cx-platform-xap why='everything left in vcx/platform after the rows above: xap, xsp profiles, contract revision, the module init and the registration COMPOSER (RS-18: each family registers itself from its own file)']
   [path prefix='vcx/cmd/xap' repo=cx-platform-xap]
   [path prefix='vcx/cmd/platform_verbs' repo=cx-platform-xap]
