@@ -82,9 +82,19 @@
 #
 # answers [verdict [failure kind=... what=...]* [census [row repo= n=]*]]
 
-[?def check scope=private pure ($rules $repos $files $modules)
+# check: the whole judgement, pure. `$pins` is the repo= of every [dep] row in
+# deps.cxd -- the repositories `cx` actually builds on today. deps.cxd cannot be
+# the roster of the shape (the format refuses a placeholder row: `sha` is
+# required and 40 hexadecimal characters, and an unknown key is a refusal), so
+# the roster is the [repo] rows here and the JOIN is what says which of them
+# have been extracted. Two failures live on that join and nowhere else.
+[?def check scope=private pure ($rules $repos $files $modules $pins)
   [?let
     [= $repo-names [?for [in $x $repos] [yield [$string $x@name]]]]
+    [= $unpinnable [?for [in $p $pins] [where [not [$member $p $repo-names]]]
+                     [yield [failure kind="unpinnable" what=[$concat $p " is pinned by deps.cxd and is not a [repo] row here"]]]]]
+    [= $self-pinned [?for [in $p $pins] [where [= $p "cx"]]
+                      [yield [failure kind="self-pinned" what="deps.cxd pins cx, the front door itself"]]]]
     [= $allocs [?for [in $f $files]
                  [yield [?let [= $h [$first-rule $rules $f]]
                           [?match $h
@@ -121,13 +131,16 @@
                            [else [ok]]]]]]]
     [= $split-failures [?for [in $s $split] [where [?match $s [case [ok] false] [else true]]] [yield $s]]]
     [verdict
-      [failures [?for [in $x $unallocated] [yield $x]]
+      [failures [?for [in $x $unpinnable] [yield $x]]
+                [?for [in $x $self-pinned] [yield $x]]
+                [?for [in $x $unallocated] [yield $x]]
                 [?for [in $x $dead] [yield $x]]
                 [?for [in $x $dups] [yield $x]]
                 [?for [in $x $undeclared] [yield $x]]
                 [?for [in $x $empty] [yield $x]]
                 [?for [in $x $split-failures] [yield $x]]]
-      [census [?for [in $c $census] [order-by $c@n desc] [yield $c]]]]]]
+      [census [?for [in $c $census] [order-by $c@n desc] [yield $c]]]
+      [pins n=[$count $pins] of=[- [$count $repos] 1]]]]]
 
 # -- the self-test: synthetic rules over a synthetic file list ---------------
 
@@ -146,7 +159,8 @@
       [= $mods [?for [in $m [$cx:parse "[r [module name=whole spec=x/one.md source=x/one.md code=none half=none] [module name=torn spec=x/one.md code=y/three.md source=none] [module name=halved spec=x/one.md source=x/one.md code=none half=x/two.md]]"]//module] [yield $m]]]
       [= $v [$check [?for [in $r $reg//path] [yield $r]]
                     [?for [in $r $reg//repo] [yield $r]]
-                    $files $mods]]
+                    $files $mods
+                    ("a", "cx", "cx-nowhere")]]
       [= $kinds [?for [in $f $v/failures/failure] [yield [$concat [$string $f@kind] ":" [$string $f@what]]]]]
       [= $want ("unallocated:z/four.md",
                 "dead rule:prefix=x/one -> a",
@@ -158,14 +172,19 @@
                 # #1609: the Ring-1 half of a Ring-2 module is one of the module's files.
                 # `halved` has spec and source in repo a and its half= in repo b; the row is
                 # torn exactly as `torn` is, and the check must say so.
-                "split module:halved -> a + b")]
+                "split module:halved -> a + b",
+                # the join with deps.cxd: a pin naming no roster row, and the
+                # front door pinning itself (#1589 item 23).
+                "unpinnable:cx is pinned by deps.cxd and is not a [repo] row here",
+                "unpinnable:cx-nowhere is pinned by deps.cxd and is not a [repo] row here",
+                "self-pinned:deps.cxd pins cx, the front door itself")]
       [= $missing [?for [in $w $want] [where [not [$member $w $kinds]]] [yield $w]]]
       [= $extra   [?for [in $k $kinds] [where [not [$member $k $want]]] [yield $k]]]
       [= $a-n [$first [?for [in $c $v/census/row] [where [= [$string $c@repo] "a"]] [yield [$string $c@n]]]]]
       [= $b-n [$first [?for [in $c $v/census/row] [where [= [$string $c@repo] "b"]] [yield [$string $c@n]]]]]
       [= $census-ok [?if [= $a-n "1"] [then [= $b-n "1"]] [else false]]]
       [?if [?if [= [$count $missing] 0] [then [?if [= [$count $extra] 0] [then $census-ok] [else false]]] [else false]]
-        [then [?let [= $_ [$say "repos-allocation self-test OK -- unallocated, dead rule, duplicate, undeclared, empty repo, split module each caught once, and the split twice: a torn code= and a torn half= (#1609); a whole module passes; census a=1 b=1 (y/ counted under the undeclared rule's repo, as it must)."]]
+        [then [?let [= $_ [$say "repos-allocation self-test OK -- unallocated, dead rule, duplicate, undeclared, empty repo, split module each caught once, and the split twice: a torn code= and a torn half= (#1609); an unpinnable pin and a self-pin caught on the deps.cxd join (#1589 item 23); a whole module passes; census a=1 b=1 (y/ counted under the undeclared rule's repo, as it must)."]]
                 [$env:exit 0]]]
         [else [?let [= $_ [$cry [$concat "repos-allocation self-test FAILED -- missing: "
                                           [$strings:join $missing "; "]
@@ -197,7 +216,10 @@
                                 [?let [= $_x [$env:exit 2]] ()]]]
                         [else [$nonblank [$string $r@stdout]]]]]]
               [else [$nonblank [$io:read-file $list-path]]]]]
-  [= $v [$check $rules $repos $files $modules]]
+  [= $pins [?if [$io:exists "deps.cxd"]
+             [then [?for [in $d [$cx:parse [$io:read-file "deps.cxd"]]//dep] [yield [$string $d@repo]]]]
+             [else ()]]]
+  [= $v [$check $rules $repos $files $modules $pins]]
   [= $failures [?for [in $f $v/failures/failure] [yield $f]]]
   [= $_census [?for [in $c $v/census/row]
                 [yield [$say [$concat [$strings:pad-start [$string $c@n] 6 " "] "  " [$string $c@repo]]]]]]
@@ -208,6 +230,12 @@
                          [yield [$say [$concat "    " [$strings:pad-start [$string $count] 5 " "] "  " $key]]]]]]]
   [= $_total [$say [$concat [$strings:pad-start [$string [$count $files]] 6 " "] "  tracked files, "
                              [$string [$count $rules]] " rules, " [$string [$count $repos]] " repos"]]]
+  [; The pin census. deps.cxd holds only repositories that EXIST and have
+     released, so this line is how many of the shape have been extracted --
+     the roster's own count, minus `cx`, is the denominator. ]
+  [= $_pins [$say [$concat [$strings:pad-start [$string [$count $pins]] 6 " "] "  of "
+                           [$string [- [$count $repos] 1]]
+                           " other repositories pinned by deps.cxd (RULED: RS-7)"]]]
   [?if [= [$count $failures] 0]
     [then [?let [= $_ [$say "repos-allocation: OK -- every tracked file lands in exactly one repo; no dead, duplicate or undeclared rule; no empty repo"]]
             [$env:exit 0]]]

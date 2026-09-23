@@ -10,16 +10,44 @@ an ignored deps/<repo>/, and FAILS on a stale pin or a drifted checkout. It
 never warns (#1591; #1589 "Risks": the previous stale-copy arrangement rotted
 within weeks because nothing failed when it did).
 
-IT HAS NO ROWS YET, AND THAT IS THE TRUE STATE. RS-12 starts the extraction
-"quietest first" and #1591 item 11 is the first of them; until a repository
-exists to pin, `cx` is still the whole tree and pins nothing. The first row
-lands with the first extraction, and `make union` -- sync the pins, then the
-suite -- is live from now, so the day that row lands nobody has to remember to
-wire it.
+A ROW IS TAKEN WHEN THE REPOSITORY EXISTS AND HAS RELEASED, not before. There
+is no placeholder row and the format forbids one: Sec 2 makes `sha` required and
+40 lowercase hexadecimal characters, and refuses any key it does not list, so
+`sha=none` is `malformed-sha` and `status=not-yet-extracted` is `unknown-key`.
+That is the right refusal -- a pin that cannot be fetched is not a pin -- and
+it means THIS DOCUMENT IS NOT THE ROSTER OF THE SHAPE. The roster is
+registry/repos.cxd, which carries all twenty-eight [repo] rows including `cx`'s
+own; `make repos-allocation-gate` joins the two and prints how many of the
+twenty-seven other repositories are pinned today. A repository in the roster
+with no row here has not been extracted yet, and `cx` is still the whole tree
+for it.
+
+TODAY: one row. `cx-platform-sso` is the first extraction (#1591 item 11,
+RS-12's "quietest first") and the only repository of the shape that exists on
+GitHub. Its module's source has not left this tree yet, so
+`make bundle-compose` reports it `migrating` -- pinned, and embedded from the
+tracked copy until the extraction commit deletes it. The other twenty-six rows
+land with their extractions, in RS-12's order:
+
+  cx-core-data  cx-core-code
+  cx-platform-{net, mail, identity, store, db, fabric, xap}
+  cx-platform-{flow, connector, ux, agent}
+  cx-binding-{python, go, rust, v}
+  cx-binding-{typescript, java, kotlin, csharp, swift, ruby}   (archived)
+  cx-registry  cx-decisions  cx-tooling
+
+WHAT A PIN BUYS THE BUILD. `scripts/deps_sync.cx --vpath` turns the rows
+carrying a `v-fork` into V's `-path` value, and `scripts/bundle_compose.cx`
+turns the rest into the bundled CX sources the four `cx` builds embed --
+`make deps-sync && make build-vcx` is the whole story, and a pinned repository
+whose deps/ checkout is missing FAILS the build by name rather than producing a
+smaller binary (conformance/bundle_sources.cxd, case bundle-010).
 
 `cx` is a migration lane, never a gate (RS-7): when any repository releases,
 `cx` tries the newest mutually green set; green advances the pins, red leaves
 them and the finding lands on the repository that moved. No merge anywhere
 waits on `cx`. A release cut ships whatever is pinned.
 #]]
+
+  [dep repo=cx-platform-sso sha=d1b9d2bcca52c5ec7c66cd4a958d5a729cc7eddd module='cx-platform/sso']
 ]

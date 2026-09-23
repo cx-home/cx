@@ -1091,14 +1091,67 @@ store-session-dep-gate: build-vcx
 # checkout that is not at its pin, fails. #1589's Risks records why — the
 # previous stale-copy arrangement in this project rotted within weeks because
 # nothing failed when it did.
+#
+# `deps-sync` is the fetch AND the composition, in that order and in one step.
+# A fetch that leaves the bundled sources where they were is half a sync: the V
+# half of "read by the V build" is the `-path` value --vpath prints, the CX half
+# is scripts/bundle_compose.cx putting each pinned module's source where V's
+# `$embed_file` literal reads it. Two commands a person is trusted to run in
+# order is exactly what §4 of the format page refuses for the union.
 .PHONY: deps-sync deps-check
 deps-sync: CX_BIN ?= $(CURDIR)/vcx/target/cx
 deps-sync: build-vcx
 	@"$(CX_BIN)" --allow-all scripts/deps_sync.cx
+	@"$(CX_BIN)" --allow-all scripts/bundle_compose.cx
 
 deps-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
 deps-check: build-vcx
 	@"$(CX_BIN)" --allow-all scripts/deps_sync.cx --check
+	@"$(CX_BIN)" --allow-all scripts/bundle_compose.cx --check
+
+# ── the bundled CX sources of the four builds (#1589 item 23, RULED: RS-7) ─
+# vcx/code/stdlib_bundle.v embeds one `$embed_file('../../stdlib/<n>.cx')` per
+# bundled module, and an embed path is a COMPILE-TIME LITERAL — V has no
+# variable form of it, and the three CLI profiles and the two libraries all read
+# the same literals. So "the four builds from pins" cannot mean pointing the
+# build elsewhere; the bytes have to BE at that path when V reads it.
+# scripts/bundle_compose.cx puts them there from deps/<repo>/ for every module
+# whose repository has left the front door, and REFUSES when a pinned
+# repository's deps/ checkout is not there. Never a smaller binary: the
+# composition refuses, and if it is bypassed the absent path fails V's
+# `$embed_file` by name.
+#
+# `bundle-check` writes nothing. It is what a build step runs once the compose
+# has happened, and it adds the two refusals a tree can state and a document
+# cannot — a composed file edited in place (`composed-drift`) and a composed
+# file git does not ignore (`not-ignored`).
+.PHONY: bundle-compose bundle-check bundle-census
+bundle-compose: CX_BIN ?= $(CURDIR)/vcx/target/cx
+bundle-compose: build-vcx
+	@"$(CX_BIN)" --allow-all scripts/bundle_compose.cx
+
+bundle-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
+bundle-check: build-vcx
+	@"$(CX_BIN)" --allow-all scripts/bundle_compose.cx --check
+
+bundle-census: CX_BIN ?= $(CURDIR)/vcx/target/cx
+bundle-census: build-vcx
+	@"$(CX_BIN)" --allow-all scripts/bundle_compose.cx --census --verbose
+
+# ── test-bundle-sources — the bundled-source table's corpus ───────────────
+# conformance/bundle_sources.cxd pins the three legal states and every refusal
+# of scripts/bundle_sources.cx; scripts/check_bundle_sources_fixtures.cx grades
+# it and runs its own comparator self-test first — #1591: "Every moved gate is
+# red-proofed on a synthetic violation before its row moves."
+#
+# BOTH GRANTS ARE LOAD-BEARING, for the reason test-deps-pins below records:
+# a denied write bound to an unused [?let] binding is dropped silently (#1608),
+# so under --allow-read alone the grader prints nothing at all.
+.PHONY: test-bundle-sources
+test-bundle-sources: CX_BIN ?= $(CURDIR)/vcx/target/cx
+test-bundle-sources: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_bundle_sources_fixtures.cx --self-test
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_bundle_sources_fixtures.cx
 
 # ── test-deps-pins — the deps.cxd corpus ──────────────────────────────────
 # conformance/deps_pins.cxd pins the wire form, its canonical bytes and every
@@ -1128,6 +1181,12 @@ test-deps-pins: build-vcx
 # It is NOT a TEST_TARGETS step and takes no selection-manifest row: it RUNS
 # the union rather than being part of it. `make test` remains what a step
 # roster grades.
+#
+# ITS MEANING IS UNCHANGED by #1589 item 23: `deps-sync` then `make test`, in
+# that order. What `deps-sync` does grew — it now composes the bundled CX
+# sources after the fetch as well — and that is the same sentence, not a new
+# one: "synchronise the pins" is the whole of getting the tree to the state the
+# pins describe, and a fetch that left the sources where they were never was.
 .PHONY: union
 union: deps-sync
 	@$(MAKE) test
@@ -1294,7 +1353,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate test-deps-pins store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate test-deps-pins test-bundle-sources store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
