@@ -2669,6 +2669,7 @@ fixtures-census-reset:
 #     still a real failure: the retry re-runs the step, and a deterministic
 #     wrong answer fails again.
 SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
+                      vcx/tests/env_retention_test.v \
                       vcx/tests/net_dtls_test.v \
                       vcx/tests/net_real_socket_test.v \
                       vcx/tests/a2a_real_test.v \
