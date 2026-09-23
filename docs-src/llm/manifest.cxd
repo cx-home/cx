@@ -79,7 +79,7 @@ llm/antipatterns
 operator_heads
 platform/store
 platform/journal
-platform/http
+deps/cx-platform-net/conformance/platform/http
 stdlib/http-client
 deps/cx-platform-agent/conformance/x/mcp
 deps/cx-platform-agent/conformance/x/a2a

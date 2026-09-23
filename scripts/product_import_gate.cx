@@ -24,11 +24,20 @@
 #   [undeclared edge]  a file under vcx/<m>/ (m a declared vmodule) imports a
 #                      vcx/ module whose OWNING repository is neither its own,
 #                      a core repository (the rings: cx-core-data, cx-core-code)
-#                      nor one of its pins. The owner of a vcx/ module is the
-#                      row that declares it as its vmodule, else the rule
-#                      `[path prefix='vcx/<d>/' ...]` that allocates its whole
-#                      directory -- so `transport` is net's and `cxstore` is
-#                      store's, and an import of either is held to that pin
+#                      nor one of its pins. The owner of a vcx/ module PRESENT
+#                      in the tree is the row that declares it as its vmodule,
+#                      else the rule `[path prefix='vcx/<d>/' ...]` that
+#                      allocates its whole directory -- so `cxstore` is
+#                      store's, and an import of it is held to that pin. An
+#                      EXTRACTED module's directory is gone (RULED: RS-7,
+#                      RS-12): its vmodule row still resolves an import of the
+#                      module itself (net's cxnet), and a directory the same
+#                      pinned checkout carries with NO vmodule row of its own
+#                      (net's transport/) is found by asking which pin's
+#                      deps/<repo>/vcx/ actually holds it -- a `[path]` rule
+#                      would go stale and undetected the moment its directory
+#                      left, which is exactly the vacuity `[dead rule]` exists
+#                      to refuse in registry/repos.cxd's own gate
 #   [unknown import]   an import that names neither a vcx/ module nor a vlib
 #                      module -- nothing any repository could pin
 #   [cycle]            the declared pins are not acyclic (the repositories
@@ -152,7 +161,7 @@
 # $srcs: [src file=F dir=D module=M imps='<head> ...'] per V file read.
 # answers [verdict [failures [failure kind=K what=W]*] [census [line text=T]*]]
 
-[?def check scope=private pure ($repos $rules $srcs $dirs $vlib)
+[?def check scope=private pure ($repos $rules $srcs $dirs $vlib $deps-owned)
   [?let
     [= $names [?for [in $x $repos] [yield [$string $x@name]]]]
     [= $vrows [?for [in $x $repos] [where [not [= [$string [?else $x@vmodule ""]] ""]]] [yield $x]]]
@@ -203,7 +212,25 @@
                                    what=[$concat [$string $s@file] ": " [$string $s@dir] " (" $me ") -> " $h " ("
                                           [?if [= $o ""] [then "no repository"] [else $o]] ")"]]]]]]
                  [else [?if [$member $h $vlib] [then [ok]]
-                         [else [failure kind="unknown import" what=[$concat [$string $s@file] ": " $h]]]]]]]]]
+                         [else [?if [$member $h $vmods]
+                           [then [?let [= $o2 [$string [$first [?for [in $x $vrows] [where [= [$string $x@vmodule] $h]] [yield [$string $x@name]]]]]]
+                                   [?if [?if [= $o2 ""] [then false]
+                                          [else [?if [= $o2 $me] [then true]
+                                                  [else [?if [$member $o2 $core] [then true] [else [$member $o2 $mypins]]]]]]]
+                                     [then [ok]]
+                                     [else [failure kind="undeclared edge"
+                                             what=[$concat [$string $s@file] ": " [$string $s@dir] " (" $me ") -> " $h " ("
+                                                    [?if [= $o2 ""] [then "no repository"] [else $o2]] ", extracted)"]]]]]]
+                           [else [?if [> [$count [?for [in $d $deps-owned] [where [= [$string $d@mod] $h]] [yield 1]]] 0]
+                           [then [?let [= $o3 [$string [$first [?for [in $d $deps-owned] [where [= [$string $d@mod] $h]] [yield [$string $d@repo]]]]]]
+                                           [?if [?if [= $o3 ""] [then false]
+                                                  [else [?if [= $o3 $me] [then true]
+                                                          [else [?if [$member $o3 $core] [then true] [else [$member $o3 $mypins]]]]]]]
+                                             [then [ok]]
+                                             [else [failure kind="undeclared edge"
+                                                     what=[$concat [$string $s@file] ": " [$string $s@dir] " (" $me ") -> " $h " ("
+                                                            [?if [= $o3 ""] [then "no repository"] [else $o3]] ", extracted)"]]]]]]
+                           [else [failure kind="unknown import" what=[$concat [$string $s@file] ": " $h]]]]]]]]]]]]]
     [= $edge-failures [?for [in $c $edge-checks] [where [?match $c [case [ok] false] [else true]]] [yield $c]]]
     # the residue (vcx/platform/ once no row declares it as a vmodule): each
     # file is held to its OWN repository, and may not import a module whose
@@ -255,7 +282,8 @@
       [= $reg [$cx:parse "[repo-allocation
         [repo name=cx-core-data group=core]
         [repo name=cx-core-code group=core]
-        [repo name=cx-platform-net group=platform vmodule=cxnet pins='cx-core-code']
+        [repo name=cx-platform-net group=platform vmodule=cxnet pins='cx-core-code cx-platform-wire']
+        [repo name=cx-platform-wire group=platform pins='cx-core-code']
         [repo name=cx-platform-store group=platform vmodule=store pins='cx-core-code cx-platform-net']
         [repo name=cx-platform-mail group=platform vmodule=mail pins='cx-platform-net']
         [repo name=cx-platform-identity group=platform pins='cx-platform-store cx-platform-net']
@@ -289,11 +317,17 @@
                 [src file='vcx/platform/store_up.v' dir=platform module=platform imps='xap'],
                 [src file='vcx/xap/ok.v' dir=xap module=xap imps='cxnet store mail platform code cx'],
                 [src file='vcx/cxnet/up.v' dir=cxnet module=cxnet imps='xap'],
+                [src file='vcx/cxnet/wired.v' dir=cxnet module=cxnet imps='wire'],
+                [src file='vcx/mail/wired.v' dir=mail module=mail imps='wire'],
                 [src file='vcx/ghost/g.v' dir=ghost module=ghost imps='cx'],
                 [src file='vcx/cmd/main.v' dir=cmd module=main imps='platform'])]
       [= $dirs ("cx", "code", "transport", "cxnet", "store", "mail", "platform", "xap", "ghost", "cmd")]
       [= $vlib ("net", "os", "time")]
-      [= $v [$check [?for [in $r $reg//repo] [yield $r]] [?for [in $r $reg//path] [yield $r]] $srcs $dirs $vlib]]
+      # wire is DEPS-OWNED only (RS-7, RS-12, RS-24): no vmodule= row and no
+      # vcx/wire/ in $dirs -- it is net's transport/ shape, found by the pin
+      # cx-platform-net's checkout carries in the real tree.
+      [= $deps-owned ([dm mod=wire repo=cx-platform-wire])]
+      [= $v [$check [?for [in $r $reg//repo] [yield $r]] [?for [in $r $reg//path] [yield $r]] $srcs $dirs $vlib $deps-owned]]
       [= $kinds [?for [in $f $v/failures/failure] [yield [$concat [$string $f@kind] ":" [$string $f@what]]]]]
       [= $want ("undeclared pin:dangling pins cx-platform-nowhere",
                 "cycle:loop-a loop-b",
@@ -310,11 +344,15 @@
                 "undeclared edge:vcx/cxnet/up.v: cxnet (cx-platform-net) -> xap (cx-platform-xap)",
                 # ... and so does a residue file of the store reaching up into xap.
                 "residue up-edge:vcx/platform/store_up.v: platform (cx-platform-store) -> xap (cx-platform-xap, which builds on cx-platform-store)",
-                "unknown import:vcx/cxnet/typo.v: nosuchmod")]
+                "unknown import:vcx/cxnet/typo.v: nosuchmod",
+                # wire is deps-owned only (no vmodule=, absent from $dirs): mail does
+                # not pin cx-platform-wire, so importing it is the same defect as any
+                # other undeclared edge; cxnet DOES pin it, and vcx/cxnet/wired.v passes.
+                "undeclared edge:vcx/mail/wired.v: mail (cx-platform-mail) -> wire (cx-platform-wire, extracted)")]
       [= $missing [?for [in $w $want] [where [not [$member $w $kinds]]] [yield $w]]]
       [= $extra   [?for [in $k $kinds] [where [not [$member $k $want]]] [yield $k]]]
       [?if [?if [= [$count $missing] 0] [then [= [$count $extra] 0]] [else false]]
-        [then [?let [= $_ [$say "product-import-gate self-test OK -- the planted `import store` in a net file and a sideways net->mail import are undeclared edges; an unknown import, a pin cycle, a dangling pin, a product directory with no repository row, a file allocated away from its product directory and a vmodule shadowing vlib are each caught once; xap's split's two plants (a net file importing xap, a residue store file importing xap) are refused; own-leaf (transport), ring, vlib, pinned-product, xap-to-residue and residue-to-lower imports pass, and a module-main directory is not a product."]]
+        [then [?let [= $_ [$say "product-import-gate self-test OK -- the planted `import store` in a net file and a sideways net->mail import are undeclared edges; an unknown import, a pin cycle, a dangling pin, a product directory with no repository row, a file allocated away from its product directory and a vmodule shadowing vlib are each caught once; xap's split's two plants (a net file importing xap, a residue store file importing xap) are refused; own-leaf (transport), ring, vlib, pinned-product, xap-to-residue and residue-to-lower imports pass, a deps-owned (no-vmodule) extracted directory is a known, pin-checked import target and a module-main directory is not a product."]]
                 [$env:exit 0]]]
         [else [?let [= $_ [$cry [$concat "product-import-gate self-test FAILED -- missing: "
                                           [$strings:join $missing "; "]
@@ -353,7 +391,17 @@
              [= $text [$io:read-file [$string $f]]]
              [yield [src file=[$string $f] dir=$d module=[$module-of $text]
                          imps=[?if $whole [then [$strings:join [$import-heads $text] " "]] [else ""]]]]]]
-  [= $v [$check $repos $rules $srcs $dirs $vlib]]
+  # deps-owned: a module directory an EXTRACTED repository's pinned checkout
+  # carries but that owns no `vmodule=` row of its own (net's transport/,
+  # beside its cxnet/) -- read from the fetched pin itself (deps/<repo>/vcx/*),
+  # the same ground truth vcx/Makefile's DEPS_V_DIRS compiles from, computed
+  # here (impure) and handed to the pure `check` above as data.
+  [= $deps-owned
+    [?for [in $x $repos]
+      [in $p [$io:glob [$concat "deps/" [$string $x@name] "/vcx/*"]]]
+      [where [$io:is-directory $p]]
+      [yield [dm mod=[$dir-name $p [$concat "deps/" [$string $x@name] "/vcx/"]] repo=[$string $x@name]]]]]
+  [= $v [$check $repos $rules $srcs $dirs $vlib $deps-owned]]
   [= $failures [?for [in $f $v/failures/failure] [yield $f]]]
   [= $_census [?for [in $c $v/census/line] [yield [$say [$concat "  " [$string $c@text]]]]]]
   [?if [= [$count $failures] 0]

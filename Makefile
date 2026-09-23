@@ -368,7 +368,7 @@ check-gate-lock:
 .PHONY: deps-present
 deps-present:
 	@missing=""; \
-	for f in $$(grep -oE 'source=deps/[^] ]+' registry/modules.cxd | sed 's/^source=//' | sort -u); do \
+	for f in $$(grep '\[module ' registry/modules.cxd | grep -v 'status=planned' | grep -oE 'source=deps/[^] ]+' | sed 's/^source=//' | sort -u); do \
 	  [ -f "$$f" ] || missing="$$missing $$f"; \
 	done; \
 	if [ -n "$$missing" ]; then \
@@ -377,6 +377,27 @@ deps-present:
 	  echo "  registry/modules.cxd declares it under a repo= row and deps.cxd pins that repository." >&2; \
 	  echo "  Run \`make deps-sync\` (or \`make union\`, which does it first). The build does NOT" >&2; \
 	  echo "  continue without it: a cx binary missing a bundled module is not a smaller cx." >&2; \
+	  exit 1; \
+	fi; \
+	vbad=""; \
+	for r in $(CX_DEPS_V_REPOS); do \
+	  root="deps/$$r/vcx"; \
+	  if ! ls "$$root"/*/*.v >/dev/null 2>&1; then \
+	    vbad="$$vbad~$$root is not there -- deps.cxd pins $$r as a V repository (v-fork=) and its modules are compiled from it"; \
+	  else case "|$(CX_DEPS_VPATH)|" in *"|$(CURDIR)/$$root|"*) ;; \
+	    *) vbad="$$vbad~$$root is not on the V search path [$(CX_DEPS_VPATH)] -- the Makefile did not derive this row from deps.cxd";; esac; \
+	  fi; \
+	  for m in "$$root"/*/; do m=$$(basename "$$m"); \
+	    if [ -d "vcx/$$m" ] && [ -z "$$(git ls-files "vcx/$$m" 2>/dev/null | head -1)" ] && git rev-parse --git-dir >/dev/null 2>&1; then \
+	      vbad="$$vbad~vcx/$$m is on disk and tracks nothing -- a stale copy of a module that left this tree; V searches vcx/ before the pin, so it would compile in place of $$root/$$m (remove it)"; \
+	    fi; \
+	  done; \
+	done; \
+	if [ -n "$$vbad" ]; then \
+	  echo "deps-present: FAILED — a pinned V repository cannot be compiled from its pin:" >&2; \
+	  echo "$$vbad" | tr '~' '\n' | sed '/^$$/d; s/^/    /' >&2; \
+	  echo "  Run \`make deps-sync\` first. A build that compiled an older in-tree copy, or nothing, in" >&2; \
+	  echo "  place of the pinned module is the failure this refusal exists to prevent (RULED: RS-7)." >&2; \
 	  exit 1; \
 	fi
 
@@ -1198,6 +1219,17 @@ deps-cx:
 	exit 2
 
 DEPS_CX = $(if $(CX_BIN),$(CX_BIN),$(if $(wildcard $(CURDIR)/vcx/target/cx),$(CURDIR)/vcx/target/cx,cx))
+
+# ── the pinned V roots, at the ROOT Makefile's level (RULED: RS-7, RS-12) ───
+# The same mechanism vcx/Makefile carries (this branch's own; the shape
+# `impl/cx-F-extract-core-data` built for cx-core-data and this reuses): every
+# deps.cxd row with a v-fork= joins the V search path, so `v test`/`v run`
+# started from the repository root (VFLAGS_VCX, below) resolve a module that
+# left this tree — cx-platform-net's cxnet — from its pin.
+CX_EMPTY :=
+CX_SPACE := $(CX_EMPTY) $(CX_EMPTY)
+CX_DEPS_V_REPOS := $(shell grep -oE '\[dep [^]]*v-fork=[0-9a-f]+' deps.cxd 2>/dev/null | grep -oE 'repo=[^] ]+' | sed 's/^repo=//')
+CX_DEPS_VPATH := $(subst $(CX_SPACE),|,$(strip $(foreach r,$(CX_DEPS_V_REPOS),$(CURDIR)/deps/$(r)/vcx) @vmodules @vlib))
 
 # BOTH END ON THE BUNDLED SOURCES (#1589 item 23): once the pins are fetched
 # or verified, scripts/bundle_check.cx judges every bundled CX module against
@@ -2908,15 +2940,9 @@ fixtures-census-reset:
 #     assertion at all, not a case answering wrong. A case that FAILS there is
 #     still a real failure: the retry re-runs the step, and a deterministic
 #     wrong answer fails again.
-SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
-                      vcx/tests/env_retention_test.v \
-                      vcx/tests/net_dtls_test.v \
-                      vcx/tests/net_real_socket_test.v \
-                      vcx/tests/http_h2_serve_test.v \
-                      vcx/tests/http_client_tls_transport_test.v \
+SUITE_SERIAL_RETRY := vcx/tests/env_retention_test.v \
                       vcx/tests/smtp_real_socket_test.v \
                       vcx/tests/imap_real_socket_test.v \
-                      vcx/tests/http_umbrella_test.v \
                       vcx/tests/process_pty_test.v \
                       vcx/tests/xap_umbrella_test.v \
                       vcx/tests/store_remote_umbrella_test.v \
@@ -2941,7 +2967,7 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
 # to an existing file, and `check-fixture-shard-manifest` holds the shard set
 # and the manifest to each other.
 
-# ── http_umbrella_test.v joins the real-socket class (#1445) ────────────────
+# ── http_umbrella_test.v joined the real-socket class (#1445), historical ──
 # The post-merge run on ca5cb0996 (2026-09-13 22:48Z–23:09Z) failed ONLY at
 # http_umbrella_test.v:1687 test_directive_resource_sees_post_body — "directive
 # POST #0 got no response" — with the 15-minute load average at 27 (six
@@ -2951,7 +2977,11 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
 # in every run that day; the re-run on the same head (23:11Z–23:53Z, load under
 # 5) passed. A real-socket request that gets no response under that load is the
 # class the row above already names; the assertion and its timeouts are not
-# changed.
+# changed. RETIRED FROM THIS ROSTER (RULED: RS-12, RS-24, #1591 item 20):
+# http_umbrella_test.v, http_h2_serve_test.v, http_client_tls_transport_test.v,
+# net_dtls_test.v, net_real_socket_test.v and net_udp_read_deadline_test.v left
+# with cx-platform-net's leave step — its own CI grades them now, from the
+# same pin this tree compiles cxnet from.
 
 # ── connector_live_test.v is a real-socket lane by construction (#1430) ────
 # It boots `reference/acme/acme.mock.cx` — an in-tree [?http-service] — on a
@@ -3039,7 +3069,7 @@ RETRY_REASON_CASE = case "$$rel" in \
 	    reason="reference web client / store readiness bounds (calibrated ~30 s) exceeded only under the -j12 storm plus box load: measured 2026-09-09 OK 72 s alone, FAIL 98.7 s and 123 s with a step or build sharing the box" ;; \
 	  vcx/tests/store_remote_umbrella_test.v) \
 	    reason="\#1425 daemon start under the -j12 suite storm (the readiness window expires before the listener line); green in isolation and in every prior full run" ;; \
-	  vcx/tests/net_udp_read_deadline_test.v|vcx/tests/net_dtls_test.v|vcx/tests/net_real_socket_test.v|vcx/tests/http_h2_serve_test.v|vcx/tests/http_client_tls_transport_test.v|vcx/tests/smtp_real_socket_test.v|vcx/tests/imap_real_socket_test.v|vcx/tests/http_umbrella_test.v|vcx/tests/connector_live_test.v) \
+	  vcx/tests/smtp_real_socket_test.v|vcx/tests/imap_real_socket_test.v|vcx/tests/connector_live_test.v) \
 	    reason="real-socket contention: ephemeral-port / deadline race under -j" ;; \
 	  vcx/store/store_admin_plane_test.v|vcx/store/store_grpc_live_test.v|vcx/store/store_lazy_load_test.v) \
 	    reason="real-socket contention: live store/grpc endpoint under -j (\#648)" ;; \
@@ -3709,11 +3739,20 @@ test-vcx-sqlite: build-vcx-dev skip-ledger-reset
 # through `v test`'s per-file fork; setting it via `-path` directly on
 # `v run` also works. `@vlib` and `@vmodules` are the V-runtime
 # placeholders (stdlib + `$VMODULES`).
-V_MODULE_PATH := @vlib|@vmodules|vcx
+# Since cx-platform-net's cxnet left this tree (RULED: RS-12) vcx/ alone no
+# longer carries every module `v test`/`v run` from the root need: a pinned
+# V repository's roots (CX_DEPS_VPATH, above) join the path, vcx/ first
+# because V already searches it first for a file under it.
+V_MODULE_PATH := $(if $(CX_DEPS_V_REPOS),vcx|$(CX_DEPS_VPATH),@vlib|@vmodules|vcx)
 # `-cc cc` (clang): cx's patched builtin uses C11 atomics + `@[thread_local]` TLS
 # that tcc cannot compile on macOS (the V default cc for non-prod). Carried through
 # every `v test` / `v run` that uses VFLAGS_VCX so the conformance corpus builds.
 VFLAGS_VCX := -cc cc -path "$(V_MODULE_PATH)"
+# EXPORTED so a script this Makefile shells out to (scripts/run_fixture_shards.sh,
+# which invokes `v test` itself and reads no Makefile variable) inherits the
+# pinned search path too — V reads VFLAGS from the environment ahead of its own
+# arguments, so a module that left this tree (cxnet) still resolves there.
+export VFLAGS := -path "$(V_MODULE_PATH)"
 
 test-v: build-vcx
 	VFLAGS='$(VFLAGS_VCX)' v $(VFLAGS_VCX) run lang/v/conformance.v
@@ -3986,8 +4025,8 @@ bench-streamed-alloc: build-vcx
 # passed either way, so this only ever moved them in the passing direction —
 # but a gate that measures a build CX does not ship is not measuring the
 # threshold it claims to.
-bench-code-http: build-vcx
-	$(PATCHED_V) -enable-globals -prod run vcx/tests/runners/code_http_throughput_bench.v
+bench-code-http: build-vcx deps-present
+	$(PATCHED_V) -enable-globals -prod run deps/cx-platform-net/vcx/tests/runners/code_http_throughput_bench.v
 
 # HTTP backend-direction isolation bench — settles whether the ~10k
 # req/s ceiling is transport-bound (net.http socket stack) or
@@ -4000,8 +4039,8 @@ bench-code-http: build-vcx
 # transport-bound or interpreter-bound, and an unoptimised build inflates the
 # INTERPRETER leg specifically — so the unoptimised verdict is biased toward
 # the answer the bench is supposed to test for.
-bench-code-http-isolation: build-vcx
-	$(PATCHED_V) -enable-globals -prod run vcx/tests/runners/code_http_isolation_bench.v
+bench-code-http-isolation: build-vcx deps-present
+	$(PATCHED_V) -enable-globals -prod run deps/cx-platform-net/vcx/tests/runners/code_http_isolation_bench.v
 
 # Gate 7 — concurrency soak. Loops a buffered send/receive workload
 # detecting deadlocks (per-iter wall-clock cap) and registry leaks
