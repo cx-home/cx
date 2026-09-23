@@ -30,6 +30,10 @@
 #
 # Every temporary directory is removed before its case is judged (#1511).
 #
+# migrate-namespace: keep-file — the synthetic cases below are retired
+# spellings by construction, and a run of the tool over the tree must leave
+# them so (the marker is the tool's own, pinned by nsmig-009).
+#
 # Exit codes:
 #   0  at least one case PASSED and none FAILED
 #   1  one or more cases FAILED, or no case passed (an empty selection)
