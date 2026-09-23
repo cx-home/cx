@@ -14,8 +14,9 @@ drift.
 
 CX is a **homoiconic data-and-code language**: one bracketed element syntax
 serves documents, queries, programs, and the compiler's own AST. It is built
-in four rings — data, code, platform, ecosystem — and the import contract
-between them is enforced by the build, not by convention.
+in two rings, data and code, and the platform, bindings and ecosystem groups
+above them — and the import contract between them is enforced by the build,
+not by convention.
 
 CX post-dates every language model's training data. **Whatever you recall
 about a language called "CX" is not this one.** Nothing you assume about its
@@ -162,12 +163,15 @@ below all of these and never overrides one of them.
 
 ## Where a surface lives — the two rings
 
-The tree is ring-legible (RULED: 1427-a…j, OL-14/OL-15). A bundled module is
-**Ring 1** if it is pure or purely local and **Ring 2** if it serves, or
-reaches a store or a protocol — *a module lives in the ring of its highest
-verb* — and every artifact of it says so without a reader opening a file:
+The tree is ring-legible (RULED: 1427-a…j, OL-14/OL-15, RS-1). Ring 0 is the
+data format and Ring 1 the language; they are the only rings, and everything
+above them is a group. A bundled module is **Ring 1** if it is pure or purely
+local, and **Ring 1 in the platform group** if it serves, or reaches a store
+or a protocol — *a module lives in the ring of its highest verb, and the group
+is what lets it import the platform graph* — and every artifact of it says so
+without a reader opening a file:
 
-| Dimension | Ring 1 | Ring 2 |
+| Dimension | Ring 1 | Platform group (`ring=1 group=platform`) |
 |---|---|---|
 | namespace | `[?lib 'cx-stdlib/<name>']` | `[?lib 'cx-platform/<name>']` |
 | spec | `spec/03-approved/stdlib/` | `spec/03-approved/platform/` |
@@ -175,15 +179,16 @@ verb* — and every artifact of it says so without a reader opening a file:
 | V code | `vcx/code/` | `vcx/platform/`, and one `vcx/<vmodule>/` per V product split out of it (RULED: RS-24; `registry/repos.cxd` names each) |
 | catalog | `spec/03-approved/stdlib/README.md` | `spec/03-approved/platform/README.md` |
 
-A surface's ring is **DECLARED once**, in
+A surface's ring and group are **DECLARED once**, in
 [`registry/modules.cxd`](registry/modules.cxd) — one row per shipped surface,
-carrying its ring, namespace, spec, corpus, bundled source and code files —
-and `make placement-gate` refuses a tree where any of those disagrees with the
-row, or where an artifact under a ring directory has no row. So: **state a new
-module's ring and its directories in its DECISION, before any spec or code**
-(OL-15), then write the row, then the artifacts.
+carrying its ring, group, namespace, spec, corpus, bundled source and code
+files — and `make placement-gate` refuses a tree where any of those disagrees
+with the row, where an artifact under a ring or platform directory has no
+row, or where a row still says `ring=2`. So: **state a new module's ring, its
+group and its directories in its DECISION, before any spec or code** (OL-15),
+then write the row, then the artifacts.
 
-Two edges worth knowing. A Ring-2 module may keep a pure Ring-1 half in
+Two edges worth knowing. A platform module may keep a pure Ring-1 half in
 `vcx/code` for profile composition; the half is named in its row's `half=`
 column and is not a second surface — and the trigger to promote one into a
 module of its own is the first Ring-1 **consumer** of it (that is how
