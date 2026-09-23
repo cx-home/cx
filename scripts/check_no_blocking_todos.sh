@@ -23,6 +23,12 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TARGETS=(
     "$ROOT/vcx/code"
     "$ROOT/vcx/platform"
+)
+# RS-24: every split V product directory registry/repos.cxd declares (vmodule=).
+for _m in $( { grep -oE "vmodule=[a-z_][a-z0-9_]*" "$ROOT/registry/repos.cxd" 2>/dev/null || true; } | cut -d= -f2 | { grep -vx platform || true; }); do
+    TARGETS+=("$ROOT/vcx/$_m")
+done
+TARGETS+=(
     "$ROOT/vcx/cx/cabi.v"
     "$ROOT/vcx/cmd"
     "$ROOT/include/cx.h"

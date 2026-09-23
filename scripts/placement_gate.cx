@@ -4,9 +4,11 @@
 #
 # OL-15 asks for one place where a surface's placement is STATED, and a check
 # that refuses a tree where any artifact disagrees with it. The statement is
-# registry/modules.cxd. This program is the check. It reads no other
-# declaration: everything below is a registry row compared against what is
-# actually on disk.
+# registry/modules.cxd. This program is the check. It reads one other
+# declaration and only for one fact: registry/repos.cxd's `vmodule=` column,
+# which names the directories each split V product compiles from (RULED:
+# RS-24) -- Ring 2 as vcx/platform/ is. Everything else below is a
+# registry row compared against what is actually on disk.
 #
 # THE ONE THING TO UNDERSTAND. A row's path columns name where the artifact
 # IS; a `<column>-to` names where a move PUTS it, and exists only while that
@@ -40,7 +42,9 @@
 #                    exists, or a `suite-ring=` equal to the row's ring
 #   [code ring]      a code file outside its ring's V directory, with no
 #                    `code-to` declaring the move (Ring 0 and Ring 1 share
-#                    vcx/code; Ring 2 is vcx/platform)
+#                    vcx/code; Ring 2 is vcx/platform and, since RS-24,
+#                    each product's vcx/<vmodule>/ -- registry/repos.cxd
+#                    declares them; the one other declaration read here)
 #   [half ring]      a declared half outside vcx/code, or declared by a row
 #                    that is not Ring 2 -- a half exists only to let a Ring-2
 #                    module keep a pure Ring-1 piece
@@ -104,14 +108,19 @@
 # outside the ring-legible space (spec/03-approved/core, xap/, x/, the
 # top-level corpora -- none of which the stdlib/platform split touches).
 # `vcx/code` answers "01" because 1427-d puts Ring 0 and Ring 1 both there.
-[?def ring-of-dir scope=private pure [returns string] ($p::string)
+# `$pdirs` is the V product modules registry/repos.cxd declares (`vmodule=`,
+# RULED: RS-24): each `vcx/<vmodule>/` is Ring 2 exactly as vcx/platform/ is,
+# so a platform row's code under a split product's directory is held to its
+# ring rather than falling into the "" answer that agrees with every ring.
+[?def ring-of-dir scope=private pure [returns string] ($p::string $pdirs)
   [?if [$strings:starts-with $p "spec/03-approved/stdlib/"] [then "1"]
   [else [?if [$strings:starts-with $p "spec/03-approved/platform/"] [then "2"]
   [else [?if [$strings:starts-with $p "conformance/stdlib/"] [then "1"]
   [else [?if [$strings:starts-with $p "conformance/platform/"] [then "2"]
   [else [?if [$strings:starts-with $p "vcx/code/"] [then "01"]
   [else [?if [$strings:starts-with $p "vcx/platform/"] [then "2"]
-  [else ""]]]]]]]]]]]]]
+  [else [?if [> [$count [?for [in $d $pdirs] [where [$strings:starts-with $p [$concat "vcx/" $d "/"]]] [yield 1]]] 0] [then "2"]
+  [else ""]]]]]]]]]]]]]]]
 
 # dep-prefix: the `deps/<repo>/` a `repo=` row's every path begins with.
 [?def dep-prefix scope=private pure [returns string] ($repo::string)
@@ -136,8 +145,8 @@
 # ring-dir-ok: does this path sit in a directory that agrees with `ring`?
 # A path outside the ring-legible space agrees with every ring -- the split
 # does not reach it, and pretending otherwise would refuse core/codec.md.
-[?def ring-dir-ok scope=private pure [returns bool] ($p::string $ring::string)
-  [?let [= $d [$ring-of-dir $p]]
+[?def ring-dir-ok scope=private pure [returns bool] ($p::string $ring::string $pdirs)
+  [?let [= $d [$ring-of-dir $p $pdirs]]
     [?if [= $d ""] [then true] [else [$strings:contains $d $ring]]]]]
 
 # suite-ring-of: the `ring=` on a suite header, "" when the file is
@@ -190,7 +199,15 @@
       [= $f5 [?if [= [$in-repo "conformance/platform/store.cxd" ""] "conformance/platform/store.cxd"]
                [then ""]
                [else "FALSE POSITIVE: a row with no repo= is its own owner and its path is untouched"]]]
-      [= $failures [?for [in $x ($f1, $f2, $f3, $f4, $f5)] [where [not [= $x ""]]] [yield $x]]]
+      # RS-24: a split product's directory reads as Ring 2, and without the
+      # declaration it reads as nothing -- the vacuity [code ring] must not have.
+      [= $f6 [?if [= [$ring-of-dir "vcx/cxnet/stdlib_net.v" ("cxnet", "platform")] "2"]
+               [then ""]
+               [else "MISSED (should read Ring 2): a code file under a declared product directory (vmodule=)"]]]
+      [= $f7 [?if [= [$ring-of-dir "vcx/cxnet/stdlib_net.v" ("platform")] ""]
+               [then ""]
+               [else "FALSE POSITIVE: an undeclared directory under vcx/ must not read as a ring"]]]
+      [= $failures [?for [in $x ($f1, $f2, $f3, $f4, $f5, $f6, $f7)] [where [not [= $x ""]]] [yield $x]]]
       [?if [> [$count $failures] 0]
         [then
           [?let [= $_bad [$io:write-line [$env:stderr]
@@ -199,7 +216,7 @@
             [$env:exit 1]]]
         [else
           [?let [= $_ok [$io:write-line [$env:stdout]
-                  "placement-gate self-test OK -- 1 catch + 1 no-catch case for [integration map], and 1 catch + 2 no-catch cases for [dep path] and the ring read beneath deps/<repo>/ (RS-12), pass."]]
+                  "placement-gate self-test OK -- 1 catch + 1 no-catch case for [integration map], and 1 catch + 2 no-catch cases for [dep path] and the ring read beneath deps/<repo>/ (RS-12), and 1 catch + 1 no-catch case for a split product's directory reading as Ring 2 (RS-24), pass."]]
             [$env:exit 0]]]]]]
   [else ""]]
 
@@ -216,6 +233,12 @@
 
 [?let [= $reg [$cx:parse [$io:read-file $reg-path]]]
       [= $rows [?for [in $m $reg//module] [yield $m]]]
+      # the V product directories (RULED: RS-24): Ring 2, like vcx/platform/.
+      [= $pdirs [?if [$io:exists "registry/repos.cxd"]
+                   [then [?for [in $x [$cx:parse [$io:read-file "registry/repos.cxd"]]//repo]
+                           [where [not [= [$string [?else $x@vmodule ""]] ""]]]
+                           [yield [$string $x@vmodule]]]]
+                   [else ()]]]
       [= $moves [?for [in $m $reg//move] [yield $m]]]
       # the two ring catalogs (1427-a/g): a README is not a surface, so no
       # row can claim it, and a ring directory that lost its catalog would
@@ -355,12 +378,12 @@
               [else ""]]]
 
           # -- [code ring] / [half ring].
-          [= $want-code [?if [= $ring "2"] [then "vcx/platform/"] [else "vcx/code/"]]]
+          [= $want-code [?if [= $ring "2"] [then "vcx/platform/ or a product's vcx/<vmodule>/"] [else "vcx/code/"]]]
           [= $v-code-ring
             [?if [not [= $code-to ""]] [then ""]
               [else [$strings:join
                 [?for [in $f [$words $code]]
-                  [where [not [$ring-dir-ok $f $ring]]]
+                  [where [not [$ring-dir-ok $f $ring $pdirs]]]
                   [yield [$concat "  [code ring]      " $tag "  -- ring=" $ring
                            " wants " $want-code ", found " $f
                            " (a Ring-2 module's pure piece belongs in half=, not code=)"]]]
@@ -384,7 +407,7 @@
             [?if [not [= $spec-to ""]] [then ""]
               [else [$strings:join
                 [?for [in $f [$words $spec-r]]
-                  [where [not [$ring-dir-ok $f $ring]]]
+                  [where [not [$ring-dir-ok $f $ring $pdirs]]]
                   [yield [$concat "  [spec ring]      " $tag "  -- ring=" $ring
                            ", but " $f " is in the other ring's directory"]]]
                 "\n"]]]]
@@ -392,7 +415,7 @@
             [?if [not [= $corpus-to ""]] [then ""]
               [else [$strings:join
                 [?for [in $f [$words $corpus-r]]
-                  [where [not [$ring-dir-ok $f $ring]]]
+                  [where [not [$ring-dir-ok $f $ring $pdirs]]]
                   [yield [$concat "  [corpus ring]    " $tag "  -- ring=" $ring
                            ", but " $f " is in the other ring's directory"]]]
                 "\n"]]]]
@@ -409,7 +432,7 @@
                 [= $bad
                   [$strings:join
                     [?for [in $f [$words $to]]
-                      [where [not [$ring-dir-ok $f $ring]]]
+                      [where [not [$ring-dir-ok $f $ring $pdirs]]]
                       [yield $f]]
                     " "]]
                 [where [not [= $bad ""]]]

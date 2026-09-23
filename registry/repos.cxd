@@ -64,7 +64,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [repo name=cx group=dist ring=none ships=binary about='the front door: pins every repo, builds the four cx builds and libcx-core/libcx, holds the site, the release, the installer']
   [repo name=cx-core-data group=core ring=0 ships=binary about='the data format: reader, writer, canonical form, schema, codecs, libcx-core, the data-only cx']
   [repo name=cx-core-code group=core ring=1 ships=binary about='the language: evaluator, stdlib, LSP, libcx, the cli and embed builds']
-  [repo name=cx-platform-net group=platform ring=none ships=binary pins='cx-core-code' about='sockets, TLS, the HTTP server, the XSP transport bindings, ftp, sftp, file_surface']
+  [repo name=cx-platform-net group=platform ring=none ships=binary vmodule=cxnet pins='cx-core-code' about='sockets, TLS, the HTTP server, the XSP transport bindings, ftp, sftp, file_surface']
   [repo name=cx-platform-mail group=platform ring=none ships=binary pins='cx-platform-net' about='SMTP and IMAP, server and client cores, sasl']
   [repo name=cx-platform-identity group=platform ring=none ships=binary pins='cx-platform-store cx-platform-net' about='sessions, the XSP-AUTH handshake, principal mint, did:web']
   [repo name=cx-platform-store group=platform ring=none ships=binary pins='cx-core-code cx-platform-net' about='the storage engine, its substrates, journal/live/audit, ft, and the store server']
@@ -242,14 +242,8 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='conformance/platform/db.cxd' repo=cx-platform-db]
 
   [; ── platform: net ─────────────────────────────────────────────────── ]
-  [path prefix='vcx/platform/stdlib_net' repo=cx-platform-net]
-  [path prefix='vcx/platform/stdlib_http_serve' repo=cx-platform-net]
-  [path prefix='vcx/platform/http_h2' repo=cx-platform-net]
-  [path prefix='vcx/platform/serve_file' repo=cx-platform-net]
-  [path prefix='vcx/platform/services' repo=cx-platform-net]
-  [path prefix='vcx/platform/iter_walks_net_http' repo=cx-platform-net]
-  [path exact='vcx/platform/mime.v' repo=cx-platform-net]
-  [path prefix='vcx/platform/platform_netwire' repo=cx-platform-net]
+  [path prefix='vcx/cxnet/' repo=cx-platform-net why='net\'s V module, module cxnet (RULED: RS-24): sockets, the HTTP server and its h2 lane, serve-file, the service listener, the live-source walkers, and the HTTP/2 frame and HPACK codec store\'s gRPC edge shares (moved down from vcx/platform/store_grpc_*, net being the lower of its two consumers, D34a). Spelled cxnet, not net, because vlib has a top-level net module that a vcx/net/ would shadow for the whole tree and that a module named net could not import (the RS-24 branch\'s LETTER)']
+  [path prefix='vcx/platform/platform_netwire' repo=cx-platform-store why='the store\'s net-importing in-module tests (store_grpc_concurrency, store_g13_parity, store_xsp_journal; scripts/consolidation/platform_netwire.files): every test in it drives store code, which is still module platform, so it stays in vcx/platform/ with its subject and follows the store. It was allocated to net by its name until RS-24 measured its content']
   [path prefix='vcx/transport/' repo=cx-platform-net]
   [path exact='stdlib/net.cx' repo=cx-platform-net]
   [path exact='stdlib/http.cx' repo=cx-platform-net]
@@ -271,6 +265,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [; ── platform: mail ────────────────────────────────────────────────── ]
   [path prefix='vcx/platform/stdlib_smtp' repo=cx-platform-mail]
   [path prefix='vcx/platform/stdlib_imap' repo=cx-platform-mail]
+  [path prefix='vcx/platform/iter_walks_mail' repo=cx-platform-mail why='the smtp and imap live-source walkers and their registration (RULED: RS-24): they left net\'s iter_walks_net_http.v because net may not call mail (D34a), and they wait here, in vcx/platform/ beside the mail wire halves they walk, until mail\'s own split moves them']
   [path prefix='vcx/code/stdlib_smtp' repo=cx-platform-mail why='the DECLARED Ring-1 half of the smtp module (modules.cxd half=): the pure ESMTP codec and server core, which decide MEANING and open nothing. A module moves whole, so the half travels with its wire half — as sasl already does (RULED: RS-19)']
   [path prefix='vcx/code/stdlib_imap' repo=cx-platform-mail why='the DECLARED Ring-1 half of the imap module (modules.cxd half=): the pure IMAP codec and server core. Same rule as the smtp half above (RULED: RS-19)']
   [path exact='stdlib/smtp.cx' repo=cx-platform-mail]
@@ -391,8 +386,11 @@ the rule carries a `why=`. The recurring reasons, once:
        lives in `vcx/platform/<its dispatcher's basename>_register.v`, so
        every rule above places a register file with the dispatcher it
        registers WITHOUT a rule of its own — `stdlib_store_register.v` goes to
-       cx-platform-store by the `stdlib_store` rule, `sql_register.v` to
-       cx-platform-db by the `sql` rule, and so on. That is the whole point of
+       cx-platform-store by the `stdlib_store` rule, and so on. Since RS-24
+       (owner D28a, D32a) a SPLIT product's register files moved unchanged
+       with their dispatchers into its `vcx/<vmodule>/` directory, where one
+       directory rule places all of them — `stdlib_net_register.v` is net's by
+       the `vcx/cxnet/` rule. That is the whole point of
        the naming rule and the answer to extract-db/REPORT.md's F-D1. Only
        `ring2_register.v` (now the COMPOSER, which names no family) and
        `stdlib_xap_register.v` reach the catch-all below; flow's

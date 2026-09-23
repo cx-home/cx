@@ -3222,9 +3222,17 @@ CODE_SERIAL_RETRY := vcx/platform/store_admin_plane_test.v \
 # modules — vcx/code (Ring 1) and vcx/platform (Ring 2, where the
 # store/journal/grpc/service subjects moved). One step runs both.
 .PHONY: test-vcx-code
+# CODE_TEST_DIRS — the directories whose in-module tests this step runs. RS-24
+# (owner D28a) splits vcx/platform into one V module per V product, each in
+# its own vcx/<m>/ (registry/repos.cxd `vmodule=`), and a product's white-box
+# tests move with it. `v test` runs only what it is given, so every product
+# directory is listed here — check-inmodule-test-roster refuses a declared
+# vmodule missing from the list — and a directory with no test yet costs
+# nothing: V reports "0 total" and exits 0.
+CODE_TEST_DIRS := vcx/code/ vcx/platform/ vcx/cxnet/
 test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	@$(JS_CLOSE) log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
-	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/code/ vcx/platform/ 2>&1; echo $$? > $$stf; } | tee $$log; \
+	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(CODE_TEST_DIRS) 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
 	  failed=$$(grep -aE '^FAIL ' $$log | grep -aoE '[^ ]+_test\.v$$' | sort -u); \
@@ -3335,7 +3343,21 @@ check-inmodule-test-roster:
 	  echo "  the issue that owns the exclusion."; \
 	  exit 1; \
 	fi; \
-	echo "check-inmodule-test-roster OK — every vcx/cx/*_test.v is run or explicitly excluded"
+	unrun=""; \
+	for m in $$(grep -oE "vmodule=[a-z_][a-z0-9_]*" registry/repos.cxd | cut -d= -f2); do \
+	  case " $(CODE_TEST_DIRS) " in \
+	    *" vcx/$$m/ "*) ;; \
+	    *) unrun="$$unrun vcx/$$m/" ;; \
+	  esac; \
+	done; \
+	if [ -n "$$unrun" ]; then \
+	  echo "check-inmodule-test-roster: product module director(ies) whose in-module tests NO step runs —"; \
+	  for d in $$unrun; do echo "    $$d"; done; \
+	  echo "  registry/repos.cxd declares each as a V product (vmodule=, RULED: RS-24) and a"; \
+	  echo "  product's white-box tests live beside it; add the directory to CODE_TEST_DIRS."; \
+	  exit 1; \
+	fi; \
+	echo "check-inmodule-test-roster OK — every vcx/cx/*_test.v is run or explicitly excluded, and every product directory (vmodule=) is in test-vcx-code's CODE_TEST_DIRS"
 
 # White-box unit tests INSIDE the Ring-0 `cx` module (vcx/cx/*_test.v) plus
 # the `fixtures` test-support module (vcx/fixtures/ — the corpus loader,

@@ -166,7 +166,7 @@ module_token() {
 		b=${1#x/}
 		echo "${b%.cx}"
 		;;
-	vcx/platform/stdlib_*.v | vcx/code/stdlib_*.v)
+	vcx/platform/stdlib_*.v | vcx/cxnet/stdlib_*.v | vcx/code/stdlib_*.v)
 		b=${1##*/stdlib_}
 		b=${b%.v}
 		b=${b%.c} # stdlib_iowatch_darwin.c.v

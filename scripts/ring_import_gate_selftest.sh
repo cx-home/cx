@@ -29,6 +29,9 @@ trap 'rm -rf "$FAKE"' EXIT
 for d in cx code platform cxstore arrow transport cli cmd_data deps target fixtures testenv; do
   mkdir -p "$FAKE/vcx/$d"
 done
+# RS-24: one declared V product module, so the product lanes are probed too.
+mkdir -p "$FAKE/vcx/cxnet" "$FAKE/registry"
+printf '%s\n' "[repo-allocation [repo name=cx-platform-net vmodule=cxnet] [repo name=cx-platform-xap vmodule=platform]]" > "$FAKE/registry/repos.cxd"
 
 # probe <name> <relpath-under-fake-vcx> <content> — write into the FAKE tree,
 # expect the gate RED there, remove, expect the fake tree green again.
@@ -98,6 +101,21 @@ import cxstore'
 # ── Ring 1 (code) importing Ring 2 (platform) ──
 probe "code-imports-platform" "code/selftest_code_probe.v" \
   'module code
+import platform'
+
+# ── RS-24: Ring 1 importing a split product module ──
+probe "code-imports-product" "code/selftest_code_product_probe.v" \
+  'module code
+import cxnet'
+
+# ── RS-24: a product module importing a non-platform sibling ──
+probe "product-imports-cli" "cxnet/selftest_product_probe.v" \
+  'module cxnet
+import cli'
+
+# ── RS-24: a product module importing the residue above it ──
+probe "product-imports-residue" "cxnet/selftest_residue_probe.v" \
+  'module cxnet
 import platform'
 
 if [ "$rc_ok" -ne 0 ]; then

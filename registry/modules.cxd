@@ -282,7 +282,7 @@ becomes its own Ring-1 module.
   [module name=ftp ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/ftp.md corpus=conformance/platform/ftp.cxd source=stdlib/ftp.cx code=vcx/platform/stdlib_ftp.v half=none status=planned]
   [; http is the 1427-e split: the serve half stays here and keeps the name,
      the client+codec half is the `http-client` row above. ]
-  [module name=http ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/http.md corpus=conformance/platform/http.cxd source=stdlib/http.cx code='vcx/platform/stdlib_http_serve.v vcx/platform/http_h2_serve_notd_wasm32_emcc.v vcx/platform/serve_file.v vcx/platform/stdlib_http_serve_register.v vcx/platform/serve_file_register.v' half=none status=current]
+  [module name=http ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/http.md corpus=conformance/platform/http.cxd source=stdlib/http.cx code='vcx/cxnet/stdlib_http_serve.v vcx/cxnet/http_h2_serve_notd_wasm32_emcc.v vcx/cxnet/serve_file.v vcx/cxnet/stdlib_http_serve_register.v vcx/cxnet/serve_file_register.v' half=none status=current]
   [; imap and smtp go whole to cx-platform (1427-e): they SERVE, and their
      client/codec halves stay declared in vcx/code until a Ring-1 consumer
      asks for a module of their own. Both corpora still carry the ring=1
@@ -290,7 +290,7 @@ becomes its own Ring-1 module.
   [module name=imap ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/imap.md corpus=conformance/platform/imap.cxd source=stdlib/imap.cx code='vcx/platform/stdlib_imap_wire.v vcx/platform/stdlib_imap_wire_register.v' half='vcx/code/stdlib_imap.v vcx/code/stdlib_imap_server.v' status=current]
   [module name=journal ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/journal.md corpus=conformance/platform/journal.cxd source=stdlib/journal.cx code='vcx/platform/stdlib_journal.v vcx/platform/journal_ingest.v vcx/platform/stdlib_journal_register.v' half=none status=current]
   [module name=live ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/live.md corpus=conformance/platform/live.cxd source=stdlib/live.cx code='vcx/platform/stdlib_live.v vcx/platform/stdlib_live_register.v' half=none status=current]
-  [module name=net ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/net.md corpus=conformance/platform/net.cxd source=stdlib/net.cx code='vcx/platform/stdlib_net.v vcx/platform/stdlib_net_register.v' half=none status=current]
+  [module name=net ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/net.md corpus=conformance/platform/net.cxd source=stdlib/net.cx code='vcx/cxnet/stdlib_net.v vcx/cxnet/stdlib_net_register.v' half=none status=current]
   [module name=session ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/session.md corpus=conformance/platform/session.cxd source=stdlib/session.cx code='vcx/platform/stdlib_session.v vcx/platform/identity_connector_builtins.v vcx/platform/stdlib_session_register.v' half=none status=current]
   [module name=sftp ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/sftp.md corpus=conformance/platform/sftp.cxd source=stdlib/sftp.cx code=vcx/platform/stdlib_sftp.v half=none status=planned]
   [module name=smtp ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/smtp.md corpus=conformance/platform/smtp.cxd source=stdlib/smtp.cx code='vcx/platform/stdlib_smtp_wire.v vcx/platform/stdlib_smtp_wire_register.v' half='vcx/code/stdlib_smtp.v vcx/code/stdlib_smtp_server.v' status=current]
