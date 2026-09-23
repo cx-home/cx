@@ -638,8 +638,9 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/lang_stats.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/run_bench_json.cx', .program, reason_1536},
 	AcceptedByOne{'stdlib/supervise.cx', .program, reason_1536},
-	// ── recorded exception — a computed attribute `name=[EXPR]` (21) ──
+	// ── recorded exception — a computed attribute `name=[EXPR]` (22) ──
 	// 22 -> 21: scripts/sso_interop/idp.cx left with the sso extraction (RS-12).
+	// 21 -> 22: scripts/check_migrate_namespace_fixtures.cx, RS-4's sweep grader.
 	AcceptedByOne{'examples/code-tour.cx', .program, reason_attr},
 	AcceptedByOne{'examples/cxpath-tour.cx', .program, reason_attr},
 	AcceptedByOne{'examples/htmx/serve.cx', .program, reason_attr},
@@ -651,6 +652,7 @@ const accepted_by_one_table = [
 	AcceptedByOne{'examples/platform/xap/storefront/compose.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/check_deps_pins_fixtures.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/check_lint_rules.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/check_migrate_namespace_fixtures.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/check_no_stub_impl.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/consolidate_tests.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/deps_pins.cx', .program, reason_attr},
