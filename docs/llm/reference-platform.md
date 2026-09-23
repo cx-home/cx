@@ -506,7 +506,7 @@ oracle:
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -531,7 +531,7 @@ without collision:
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $chart
   [feature name=chart
    [frames [use frame=geo via=center]]
@@ -555,7 +555,7 @@ gate worse than no gate:
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [$xap:compose]
 ```
 
@@ -570,7 +570,7 @@ tree is content-addressed, so entry order cannot change its identity:
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?lib 'cx-platform/store' :as store]
 [?let [= $s [$store:open "mem://"]]
  [= $t1 [$xap:pkg-tree ([entry path='b.cx' 'bee'], [entry path='a.cx' 'ay'])]]
@@ -587,7 +587,7 @@ true
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [$xap:pkg-tree ([entry path='../evil.cx' 'x'])]
 ```
 
@@ -598,7 +598,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [$xap:pkg-tree ([entry path='a.cx' 'one'], [entry path='a.cx' 'two'])]
 ```
 
