@@ -3496,8 +3496,17 @@ CODE_SERIAL_RETRY := vcx/store/store_admin_plane_test.v \
 # tests move with it. `v test` runs only what it is given, so every product
 # directory is listed here — check-inmodule-test-roster refuses a declared
 # vmodule missing from the list — and a directory with no test yet costs
-# nothing: V reports "0 total" and exits 0.
-CODE_TEST_DIRS := vcx/code/ vcx/platform/ vcx/cxnet/ vcx/mail/ vcx/cxdb/ vcx/store/ vcx/xap/
+# nothing: V reports "0 total" and exits 0. A `status=extracted` vmodule is
+# the opposite failure mode and check-inmodule-test-roster exempts it: the
+# directory does not exist here any more (its whole product, code and
+# in-module test, moved to the repository — `deps/<repo>/vcx/<m>/`), and a
+# MISSING path mixed into one `v test a/ b/ missing/` invocation makes V
+# print its usage banner and exit 0 having run NOTHING — a silent-pass, not
+# a red, and worse than the "0 total" case this comment used to rely on
+# (found removing cx-platform-db's vcx/cxdb/, RULED: RS-12, RS-8, #1591 item
+# K3). The extracted product's own `v test` runs from the pin, same as its
+# `cx corpus`.
+CODE_TEST_DIRS := vcx/code/ vcx/platform/ vcx/cxnet/ vcx/mail/ vcx/store/ vcx/xap/
 test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	@$(JS_CLOSE) log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
 	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(CODE_TEST_DIRS) 2>&1; echo $$? > $$stf; } | tee $$log; \
@@ -3612,7 +3621,7 @@ check-inmodule-test-roster:
 	  exit 1; \
 	fi; \
 	unrun=""; \
-	for m in $$(grep -oE "vmodule=[a-z_][a-z0-9_]*" registry/repos.cxd | cut -d= -f2); do \
+	for m in $$(grep -E "vmodule=[a-z_][a-z0-9_]*" registry/repos.cxd | grep -v "status=extracted" | grep -oE "vmodule=[a-z_][a-z0-9_]*" | cut -d= -f2); do \
 	  case " $(CODE_TEST_DIRS) " in \
 	    *" vcx/$$m/ "*) ;; \
 	    *) unrun="$$unrun vcx/$$m/" ;; \
@@ -3623,6 +3632,7 @@ check-inmodule-test-roster:
 	  for d in $$unrun; do echo "    $$d"; done; \
 	  echo "  registry/repos.cxd declares each as a V product (vmodule=, RULED: RS-24) and a"; \
 	  echo "  product's white-box tests live beside it; add the directory to CODE_TEST_DIRS."; \
+	  echo "  (a status=extracted row is exempt: its directory left for deps/<repo>/vcx/<m>/.)"; \
 	  exit 1; \
 	fi; \
 	echo "check-inmodule-test-roster OK — every vcx/cx/*_test.v is run or explicitly excluded, and every product directory (vmodule=) is in test-vcx-code's CODE_TEST_DIRS"
