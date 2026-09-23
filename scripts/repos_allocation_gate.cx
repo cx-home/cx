@@ -11,7 +11,15 @@
 #                   shadowed by an earlier rule, or names a path that is gone
 #   [duplicate]     two rules with the same exact= / prefix=
 #   [undeclared]    a rule whose repo= has no `[repo]` row
-#   [empty repo]    a `[repo]` row that receives no file
+#   [empty repo]    a `[repo]` row that receives no file -- unless it says
+#                   `status=extracted`, which is the finished state of an
+#                   extraction (RULED: RS-12): the repository owns its paths
+#                   now, `deps.cxd` pins it, and owning nothing HERE is the
+#                   point rather than a hole
+#   [extracted repo still claims files]
+#                   the converse: a `status=extracted` row that is still the
+#                   first match for a tracked path -- an extraction stopped
+#                   half way, which every other check reads as green
 #   [split module]  a registry/modules.cxd row whose spec, corpus, source,
 #                   code and half= files land in DIFFERENT repos -- a module
 #                   moves whole. `half=` is the DECLARED Ring-1 half a Ring-2
@@ -115,8 +123,26 @@
                  [group-by [$string $a@repo]]
                  [yield [row repo=$key n=$count]]]]
     [= $filled [?for [in $c $census] [yield [$string $c@repo]]]]
+    # An EXTRACTED repository owns no tracked path here and must not (RULED:
+    # RS-12). `status=extracted` is that statement, and it is the ONLY thing
+    # that buys the exemption: a repository whose rules were deleted by
+    # accident still fails as an empty repo, because the row would not carry
+    # it. The direction the gate keeps is the other one too -- a rule naming a
+    # path that left is a [dead rule] on the same run, so the two refusals
+    # together mean an extraction is finished in this file or not started.
     [= $empty [?for [in $x $repos] [where [not [$member [$string $x@name] $filled]]]
+                [where [not [= [$string [?else $x@status ""]] "extracted"]]]
                 [yield [failure kind="empty repo" what=[$string $x@name]]]]]
+    # …and the converse: an extracted repository that still claims a tracked
+    # path is a half-done extraction, which reads as green under every check
+    # above. It is named here rather than left to [dead rule], which fires
+    # only when NO file matches.
+    [= $extracted-claims
+      [?for [in $x $repos]
+        [where [= [$string [?else $x@status ""]] "extracted"]]
+        [where [$member [$string $x@name] $filled]]
+        [yield [failure kind="extracted repo still claims files"
+                 what=[$string $x@name]]]]]
     [= $split [?for [in $m $modules]
                 [yield [?let [= $paths [?for [in $col ([$string [?else $m@spec ""]], [$string [?else $m@corpus ""]], [$string [?else $m@source ""]], [$string [?else $m@code ""]], [$string [?else $m@half ""]])]
                                           [in $p [$strings:split-whitespace $col]]
@@ -138,6 +164,7 @@
                 [?for [in $x $dups] [yield $x]]
                 [?for [in $x $undeclared] [yield $x]]
                 [?for [in $x $empty] [yield $x]]
+                [?for [in $x $extracted-claims] [yield $x]]
                 [?for [in $x $split-failures] [yield $x]]]
       [census [?for [in $c $census] [order-by $c@n desc] [yield $c]]]
       [pins n=[$count $pins] of=[- [$count $repos] 1]]]]]
@@ -149,13 +176,16 @@
     [?let
       [= $reg [$cx:parse "[repo-allocation
         [repo name=a] [repo name=b] [repo name=ghost]
+        [repo name=gone status=extracted]
+        [repo name=halfgone status=extracted]
         [path exact='x/one.md' repo=a]
         [path prefix='x/' repo=b]
         [path prefix='x/one' repo=a]
         [path prefix='y/' repo=nowhere]
         [path exact='x/one.md' repo=b]
+        [path exact='w/five.md' repo=halfgone]
       ]"]]
-      [= $files ("x/one.md", "x/two.md", "y/three.md", "z/four.md")]
+      [= $files ("x/one.md", "x/two.md", "y/three.md", "z/four.md", "w/five.md")]
       [= $mods [?for [in $m [$cx:parse "[r [module name=whole spec=x/one.md source=x/one.md code=none half=none] [module name=torn spec=x/one.md code=y/three.md source=none] [module name=halved spec=x/one.md source=x/one.md code=none half=x/two.md]]"]//module] [yield $m]]]
       [= $v [$check [?for [in $r $reg//path] [yield $r]]
                     [?for [in $r $reg//repo] [yield $r]]
@@ -168,6 +198,11 @@
                 "duplicate:exact=x/one.md",
                 "undeclared:prefix=y/ -> nowhere",
                 "empty repo:ghost",
+                # RS-12: `gone` is EXTRACTED and owns nothing here, which is the
+                # finished state and not a failure; `halfgone` says extracted and
+                # still claims a file, which is an extraction stopped half way and
+                # is green under every other check on this list.
+                "extracted repo still claims files:halfgone",
                 "split module:torn -> a + nowhere",
                 # #1609: the Ring-1 half of a Ring-2 module is one of the module's files.
                 # `halved` has spec and source in repo a and its half= in repo b; the row is
@@ -184,7 +219,7 @@
       [= $b-n [$first [?for [in $c $v/census/row] [where [= [$string $c@repo] "b"]] [yield [$string $c@n]]]]]
       [= $census-ok [?if [= $a-n "1"] [then [= $b-n "1"]] [else false]]]
       [?if [?if [= [$count $missing] 0] [then [?if [= [$count $extra] 0] [then $census-ok] [else false]]] [else false]]
-        [then [?let [= $_ [$say "repos-allocation self-test OK -- unallocated, dead rule, duplicate, undeclared, empty repo, split module each caught once, and the split twice: a torn code= and a torn half= (#1609); an unpinnable pin and a self-pin caught on the deps.cxd join (#1589 item 23); a whole module passes; census a=1 b=1 (y/ counted under the undeclared rule's repo, as it must)."]]
+        [then [?let [= $_ [$say "repos-allocation self-test OK -- unallocated, dead rule, duplicate, undeclared, empty repo, split module each caught once, and the split twice: a torn code= and a torn half= (#1609); an EXTRACTED repo that owns nothing is exempt and one that still claims a file is caught (RS-12); an unpinnable pin and a self-pin caught on the deps.cxd join (#1589 item 23); a whole module passes; census a=1 b=1 (y/ counted under the undeclared rule's repo, as it must)."]]
                 [$env:exit 0]]]
         [else [?let [= $_ [$cry [$concat "repos-allocation self-test FAILED -- missing: "
                                           [$strings:join $missing "; "]

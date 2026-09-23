@@ -82,7 +82,10 @@ each row, leaves `deps/<repo>/` a checkout of exactly `sha`:
 - **absent** — a fresh shallow fetch: an empty repository at `deps/<repo>/`, `url` as its
   remote, `git fetch --depth 1 <url> <sha>`, then a checkout of the fetched commit.
 - **present and at `sha`** — nothing is done.
-- **present and not at `sha`** — a refusal (`checkout-drift`).
+- **present and not at `sha`** — when the checkout has no local changes, the same shallow
+  fetch into it and a checkout of the fetched commit, so a pin moved in the consumer's own
+  change is an ordinary sync (RS-7); when it has local changes, a refusal (`checkout-drift`),
+  because the sync never discards an edit.
 
 `deps/` is ignored by the consumer's `.gitignore` and is read by the V build through `-path`.
 It is a build input, never a tracked one, and nothing in it is edited in place.

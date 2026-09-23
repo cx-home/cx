@@ -139,15 +139,28 @@
       [yield [$re:group $m 1]]]]
 
     # -- BUNDLE_SET -----------------------------------------------------
-    # basenames of stdlib/*.cx with the extension stripped.
+    # basenames of stdlib/*.cx with the extension stripped -- and of
+    # deps/*/stdlib/*.cx, which is the SAME set for a module that has been
+    # extracted into its own repository (RULED: RS-7, RS-12). The question
+    # this set answers is "does the binary bundle a source for this spec",
+    # and vcx/code/stdlib_bundle.v embeds a `repo=` row's source out of the
+    # pinned checkout exactly as it embeds stdlib/'s own. Reading only
+    # stdlib/ would report the first extracted module as `[specced, no
+    # impl]` while the binary demonstrably answers it -- a gate wrong about
+    # the tree it is gating, which is the failure mode this file exists
+    # against. registry/modules.cxd's `repo=` row is the declaration and
+    # `placement-gate` is what holds the path to it.
     [?let [= $bundle-set
-      [?for [in $b [$io:glob "stdlib/*.cx"]]
+      [?for [in $g ([$io:glob "stdlib/*.cx"], [$io:glob "deps/*/stdlib/*.cx"])]
+        [in $b $g]
         [yield [$path:stem $b]]]]
 
       # -- DISPATCH_SET -------------------------------------------------
       # every <name>_stdlib_builtin prefix across BOTH dispatch halves:
-      # the Ring-1 chain (vcx/code/stdlib_dispatch.v) and the Ring-2
-      # registrations (vcx/platform/ring2_register.v) — the I3 ring split
+      # the Ring-1 chain (vcx/code/stdlib_dispatch.v) and the platform
+      # registrations (every vcx/platform/*_register.v — RS-18 split the
+      # one central file into one register file per family, and the glob is
+      # what keeps this gate reading all of them) — the I3 ring split
       # moved the platform modules' dispatch behind the seam-G registry,
       # so reading only the code/ half reports them as unimplemented
       # (same both-halves rule as check-completions-drift). find-all
@@ -173,7 +186,10 @@
       # reported if nothing specs it.
       [?let [= $dispatch-rx [$re:compile "([a-z0-9_]+)_stdlib_builtin"]]
              [= $dispatch-raw [$concat [$io:read-file "vcx/code/stdlib_dispatch.v"]
-                                       [$io:read-file "vcx/platform/ring2_register.v"]]]
+                                       [$strings:join
+                                         [?for [in $rf [$io:glob "vcx/platform/*_register.v"]]
+                                           [yield [$io:read-file $rf]]]
+                                         "\n"]]]
         [?let [= $dispatch-set
           [?for [in $dm [$re:find-all $dispatch-rx $dispatch-raw]]
             [where [not [= [$re:group $dm 1] "ring2"]]]

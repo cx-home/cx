@@ -1,4 +1,4 @@
-$ cx --allow-read=../.. actor.cx
+$ cx --allow-read=../.. --allow-read=../../../../deps/cx-platform-sso/examples/platform/sso actor.cx
 'principal:user-42'
 exit=0
 

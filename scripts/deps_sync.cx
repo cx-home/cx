@@ -14,8 +14,22 @@
 #   absent                  -> `git init` + `git fetch --depth 1 <url> <sha>`
 #                              + a checkout of FETCH_HEAD
 #   present and at the sha  -> nothing
-#   present and not at it   -> REFUSED (checkout-drift)
-#   the remote has no sha   -> REFUSED (fetch-failed) — the pin is stale
+#   present, not at it,     -> the same fetch INTO the checkout + a checkout of
+#     and clean                FETCH_HEAD: the checkout is MOVED to the pin
+#   present, not at it,     -> REFUSED (checkout-drift) — the sync never
+#     with local changes       discards an edit, tracked or untracked
+#   the remote has no sha   -> REFUSED (fetch-failed) — the pin is stale, and a
+#                              checkout that was to move stays where it was
+# and under --check, which fetches nothing, present and not at the sha is
+# REFUSED (checkout-drift) whether the checkout is clean or not.
+#
+# WHY A CLEAN CHECKOUT MOVES (#1617). RS-7: consumers pull, and a pin moves in
+# the consumer's own change. So a checkout one pin behind is the NORMAL state of
+# every developer checkout the moment such a change merges; refusing it made
+# every pin bump a failure that only `rm -rf deps/<repo>` cleared, while a
+# fresh checkout (CI) never saw it. The strict reading stays where it belongs:
+# `--check` is what a build step runs after the fetch, and there a checkout
+# that is not at its pin is still a refusal.
 #
 # IT NEVER WARNS. #1591: "The union step in `cx` FAILS on a stale pin, never
 # warns (the `cx-v` lesson)" — #1589's Risks records the reading behind it: the
@@ -24,8 +38,9 @@
 #
 # Exit codes:
 #   0  every row is in sync
-#   1  one or more refusals — a malformed document, a stale pin, a drifted
-#      checkout, or (under --check) a checkout that is not there
+#   1  one or more refusals — a malformed document, a stale pin, a checkout
+#      with local changes that the pin has moved past, or (under --check) a
+#      checkout that is not there or not at its pin
 #   2  deps.cxd cannot be read, or the consumer's origin cannot be determined
 #
 # Run from the checkout root:
@@ -89,31 +104,47 @@
                     [then [ok]]
                     [else [failed what=[$string $co@err]]]]]]]]]]]]
 
+# has-changes: does the checkout carry anything a checkout of another commit
+# could lose — a modified tracked file or an untracked one (ignored files are
+# not the checkout's content)? A `git status` that fails answers true: a
+# checkout this program cannot read is not one it moves.
+[?def has-changes scope=private impure [returns bool] ($dir::string)
+  [?let [= $r [$git ("-C", $dir, "status", "--porcelain")]]
+    [or [not [= [$string $r@exit] "0"]] [not [= [$string $r@out] ""]]]]]
+
 # sync-row: everything this program does to one row, as a refusal or nothing.
+# A row already at its sha is left alone; under --check any other state is a
+# refusal; otherwise an absent checkout is fetched fresh and a clean one is
+# moved by the same fetch, and one with local changes is refused (#1617).
 [?def sync-row scope=private impure ($row $origin::string $root::string $check::bool)
   [?let
     [= $repo [$string $row@repo]]
     [= $sha  [$string $row@sha]]
     [= $dir  [$concat $root "/" $repo]]
     [= $at   [$head-of $dir]]
+    [= $here [not [= $at ""]]]
     [?if [= $at $sha]
       [then [in-sync repo=$repo]]
-      [else [?if [not [= $at ""]]
+      [else [?if [and $here $check]
         [then [refusal kind=checkout-drift row=[$concat "repo=" $repo]
                        what=[$concat $dir " is at " $at ", pinned at " $sha]]]
         [else [?if $check
           [then [refusal kind=missing-checkout row=[$concat "repo=" $repo]
                          what=[$concat $dir " is not a checkout — run the sync"]]]
-          [else [?let [= $url [$pins:url-for $row $origin]]
-                      [= $f [$fetch-at $dir $url $sha]]
-            [?match $f
-              [case [ok] [?let [= $now [$head-of $dir]]
-                           [?if [= $now $sha]
-                             [then [fetched repo=$repo]]
-                             [else [refusal kind=checkout-drift row=[$concat "repo=" $repo]
-                                            what=[$concat "fetched, but " $dir " is at " $now]]]]]]
-              [else [refusal kind=fetch-failed row=[$concat "repo=" $repo]
-                             what=[$concat $url " has no " $sha ": " [$string $f@what]]]]]]]]]]]]]]
+          [else [?if [and $here [$has-changes $dir]]
+            [then [refusal kind=checkout-drift row=[$concat "repo=" $repo]
+                           what=[$concat $dir " is at " $at ", pinned at " $sha
+                                         ", and has uncommitted changes -- the sync moves only a clean checkout"]]]
+            [else [?let [= $url [$pins:url-for $row $origin]]
+                        [= $f [$fetch-at $dir $url $sha]]
+              [?match $f
+                [case [ok] [?let [= $now [$head-of $dir]]
+                             [?if [= $now $sha]
+                               [then [?if $here [then [moved repo=$repo]] [else [fetched repo=$repo]]]]
+                               [else [refusal kind=checkout-drift row=[$concat "repo=" $repo]
+                                              what=[$concat "fetched, but " $dir " is at " $now]]]]]]
+                [else [refusal kind=fetch-failed row=[$concat "repo=" $repo]
+                               what=[$concat $url " has no " $sha ": " [$string $f@what]]]]]]]]]]]]]]]]
 
 # -- the run -------------------------------------------------------------
 
@@ -175,7 +206,7 @@
                    [yield [$say [$concat "  " [$name $x] "  " [$string $x@repo]]]]]]
            [else ()]]]
   [= $_census [$say [$concat "deps-sync: " [$string [$count $rows]] " pins, "
-                             [$string [$count [?for [in $x $results] [where [= [$name $x] "fetched"]] [yield 1]]]] " fetched, "
+                             [$string [$count [?for [in $x $results] [where [or [= [$name $x] "fetched"] [= [$name $x] "moved"]]] [yield 1]]]] " fetched, "
                              [$string [$count [?for [in $x $results] [where [= [$name $x] "in-sync"]] [yield 1]]]] " already at their sha, "
                              [$string [$count $refusals]] " refused"
                              [?if $check [then " (--check: nothing was fetched)"] [else ""]]]]]

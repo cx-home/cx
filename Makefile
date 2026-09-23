@@ -337,13 +337,47 @@ check-gate-lock:
 	if [ ! -f "$(CX_GATE_LOCK)" ]; then exit 0; fi; \
 	$(call GATE_LOCK_WAIT_LOOP,check-gate-lock)
 
-build-vcx: check-gate-lock
+# ── deps-present (RULED: RS-7, RS-12, #1591 item 11) ────────────────────────
+# A BUNDLED SOURCE THAT IS NOT IN THIS REPOSITORY. Since the first extraction,
+# `cx-platform/sso`'s module source is `deps/cx-platform-sso/stdlib/sso.cx` —
+# the checkout `deps.cxd` pins and `make deps-sync` fetches — and
+# vcx/code/stdlib_bundle.v embeds it into all four profile builds from there.
+#
+# So the build has a precondition it never had, and this is where it is stated.
+# `$embed_file` would refuse the missing path on its own, loudly enough, but
+# five hundred lines into a V compile and in V's words, not ours; and the
+# failure a reader must never see is the OTHER one — a `cx` that came out of a
+# tree with no `deps/` and quietly does not answer `[?lib 'cx-platform/sso']`.
+# That build cannot happen: the embed is a compile-time constant, so there is
+# no arm in which the module is dropped. This target is the sentence that says
+# which pin is missing and what to run, before V starts.
+#
+# It is DERIVED, not a second list: every `repo=` row of registry/modules.cxd
+# names its own pinned paths, and a row added there is covered here the day it
+# lands. The derivation is `grep`, not `cx`, on purpose — this runs BEFORE the
+# binary that would read the registry exists.
+.PHONY: deps-present
+deps-present:
+	@missing=""; \
+	for f in $$(grep -oE 'source=deps/[^] ]+' registry/modules.cxd | sed 's/^source=//' | sort -u); do \
+	  [ -f "$$f" ] || missing="$$missing $$f"; \
+	done; \
+	if [ -n "$$missing" ]; then \
+	  echo "deps-present: FAILED — a pinned repository's bundled source is not in this tree:" >&2; \
+	  for f in $$missing; do echo "    $$f" >&2; done; \
+	  echo "  registry/modules.cxd declares it under a repo= row and deps.cxd pins that repository." >&2; \
+	  echo "  Run \`make deps-sync\` (or \`make union\`, which does it first). The build does NOT" >&2; \
+	  echo "  continue without it: a cx binary missing a bundled module is not a smaller cx." >&2; \
+	  exit 1; \
+	fi
+
+build-vcx: check-gate-lock deps-present
 	$(MAKE) -C vcx build
 
 # Unoptimised dev build of libcx + cx (no -prod/-Os). Functionally
 # identical for tests but compiles far faster; the test path depends on
 # this instead of the -prod `build-vcx`. Shipped artifacts use `build-vcx`.
-build-vcx-dev: check-gate-lock
+build-vcx-dev: check-gate-lock deps-present
 	$(MAKE) -C vcx build-dev CX_DFLAGS='$(CX_DFLAGS)'
 
 # ── The §4 PROFILE MATRIX as ordinary build steps (#1449, RULED: 1449-a) ─────
@@ -1091,22 +1125,35 @@ store-session-dep-gate: build-vcx
 # previous stale-copy arrangement in this project rotted within weeks because
 # nothing failed when it did.
 #
-# `deps-sync` is the fetch AND the composition, in that order and in one step.
-# A fetch that leaves the bundled sources where they were is half a sync: the V
-# half of "read by the V build" is the `-path` value --vpath prints, the CX half
-# is scripts/bundle_compose.cx putting each pinned module's source where V's
-# `$embed_file` literal reads it. Two commands a person is trusted to run in
-# order is exactly what §4 of the format page refuses for the union.
-.PHONY: deps-sync deps-check
-deps-sync: CX_BIN ?= $(CURDIR)/vcx/target/cx
-deps-sync: build-vcx
-	@"$(CX_BIN)" --allow-all scripts/deps_sync.cx
-	@"$(CX_BIN)" --allow-all scripts/bundle_compose.cx
+# NEITHER TARGET BUILDS `cx` FIRST, and that is not an optimisation. Since the
+# first extraction (RULED: RS-12) a pinned repository carries a BUNDLED SOURCE
+# the profile builds embed, so `build-vcx` needs `deps/` — and `deps-sync` is
+# what makes `deps/`. A `deps-sync: build-vcx` edge is therefore a cycle, and
+# it would fail in the one situation the target exists for: a tree that has not
+# synced yet. So these two resolve a cx the way a COMPONENT repository's gate
+# does (tooling/repo-template/Makefile, `cx-present`): the one this tree built
+# if it is there, otherwise the one on PATH, and a named refusal if there is
+# neither. `cx deps sync` reads a document and runs `git`; any released cx can
+# do it, and that is the bootstrap.
+.PHONY: deps-sync deps-check deps-cx
+deps-cx:
+	@if [ -n "$(CX_BIN)" ] && [ -x "$(CX_BIN)" ]; then exit 0; fi; \
+	if [ -n "$(CX_BIN)" ]; then \
+	  echo "deps-sync: CX_BIN=$(CX_BIN) is not an executable cx" >&2; exit 2; fi; \
+	if [ -x "$(CURDIR)/vcx/target/cx" ] || command -v cx >/dev/null 2>&1; then exit 0; fi; \
+	echo "deps-sync: no cx to run the pin transport with — no $(CURDIR)/vcx/target/cx and none on PATH." >&2; \
+	echo "  This tree cannot build one first: deps.cxd pins a repository whose bundled source the" >&2; \
+	echo "  profile builds embed (registry/modules.cxd, repo=), so the build needs deps/ and deps/" >&2; \
+	echo "  needs this. Install a released cx, or pass CX_BIN=<path to one>." >&2; \
+	exit 2
 
-deps-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
-deps-check: build-vcx
-	@"$(CX_BIN)" --allow-all scripts/deps_sync.cx --check
-	@"$(CX_BIN)" --allow-all scripts/bundle_compose.cx --check
+DEPS_CX = $(if $(CX_BIN),$(CX_BIN),$(if $(wildcard $(CURDIR)/vcx/target/cx),$(CURDIR)/vcx/target/cx,cx))
+
+deps-sync: deps-cx
+	@"$(DEPS_CX)" --allow-all scripts/deps_sync.cx
+
+deps-check: deps-cx
+	@"$(DEPS_CX)" --allow-all scripts/deps_sync.cx --check
 
 # ── the bundled CX sources of the four builds (#1589 item 23, RULED: RS-7) ─
 # vcx/code/stdlib_bundle.v embeds one `$embed_file('../../stdlib/<n>.cx')` per
@@ -1163,11 +1210,14 @@ test-bundle-sources: build-vcx
 # under --allow-read alone this step graded 13 of 13 cases, exited 0, and
 # printed nothing — a step that says nothing on a pass says nothing on a
 # failure either. Measured on this branch, 2026-09-22.
+# --allow-subprocess (#1617): the deps-02x cases are scenarios run against
+# scripts/deps_sync.cx itself — git and the sync as subprocesses, over a
+# throwaway remote under a temporary root the grader removes.
 .PHONY: test-deps-pins
 test-deps-pins: CX_BIN ?= $(CURDIR)/vcx/target/cx
 test-deps-pins: build-vcx
-	@"$(CX_BIN)" --allow-read --allow-write scripts/check_deps_pins_fixtures.cx --self-test
-	@"$(CX_BIN)" --allow-read --allow-write scripts/check_deps_pins_fixtures.cx
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess scripts/check_deps_pins_fixtures.cx --self-test
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess scripts/check_deps_pins_fixtures.cx
 
 # ── make union (#1591 item 10, RULED: RS-7) ───────────────────────────────
 # The front door's union: SYNC THE PINS, THEN RUN THE SUITE — in that order and
@@ -1373,6 +1423,7 @@ TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-t
 BASE ?= HEAD
 .PHONY: test-changed
 test-changed:
+	@$(MAKE) deps-sync
 	@bash scripts/test_changed.sh $(BASE)
 
 .PHONY: test-changed-dry
@@ -2103,6 +2154,11 @@ test:
 	# line is its own shell), which is why it is a prefix and not a header;
 	# a hard kill or a crash still leaves the file, and that remains
 	# check-gate-lock's stale-pid reclaim to clear.
+	# The pins first (RULED: RS-7, RS-12): a head that pins a repository builds its
+	# bundled sources from deps/<repo>/, and build-vcx REFUSES at deps-present when
+	# they are absent — the post-merge run on 625389bda red in two minutes for it.
+	# deps-sync is idempotent and fast at the pinned sha; it never warns.
+	@$(MAKE) deps-sync
 	@$(call GATE_LOCK_TAKE,make test)
 	#
 	# STEP-START / STEP-END (RULED: RUN-5, issue 1583). Every top-level line of
@@ -2230,6 +2286,7 @@ DOC_TARGETS := verify-doc-blocks verify-doc-links verify-readme-blocks docs-chec
 .PHONY: test-docs
 test-docs: export CX_GATE_OWNER := $(shell echo $$PPID)
 test-docs:
+	@$(MAKE) deps-sync
 	@$(call GATE_LOCK_TAKE,make test-docs)
 	@$(GATE_LOCK_TRAP) $(MAKE) build-vcx
 	@$(GATE_LOCK_TRAP) $(MAKE) -j$(TEST_JOBS) $(OUTPUT_SYNC) $(DOC_TARGETS)
@@ -2727,6 +2784,7 @@ fixtures-census-reset:
 #     still a real failure: the retry re-runs the step, and a deterministic
 #     wrong answer fails again.
 SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
+                      vcx/tests/env_retention_test.v \
                       vcx/tests/net_dtls_test.v \
                       vcx/tests/net_real_socket_test.v \
                       vcx/tests/a2a_real_test.v \
@@ -4164,6 +4222,15 @@ fmt-sweep-timed: build-vcx
 #
 #   SWEEP-FILES=310 FORMATTED=283 DECLINED=12 TREE-REFUSED=10 UNSTABLE=0 ERROR=5
 #
+# 12 -> 11 by the sso extraction (RULED: RS-12, #1591 item 11), and the number
+# comes down here in the same landing per this block's own convention. The
+# sweep is `git ls-files '*.cx'` of THIS repository, so the module and the
+# seven example programs that left it are no longer swept; `stdlib/sso.cx` was
+# one of the twelve. It is not a formatter improvement and does not read as
+# one: the file still declines, in cx-platform-sso, where that repository's
+# own `make lint` is what sees it.
+#   SWEEP-FILES=306 FORMATTED=289 DECLINED=11 TREE-REFUSED=10 UNSTABLE=0 ERROR=5
+#
 # DECLINED 34 -> 12 and TREE-REFUSED 17 -> 10, and both numbers below move to
 # the measurement in the same commit as the fix, which is what FMT-1 says a
 # ratchet move is. TREE-REFUSED falls by 9 (nine files whose interior comment
@@ -4178,7 +4245,7 @@ fmt-sweep-timed: build-vcx
 # pin that as fail-closed today), and three on shapes not yet reduced:
 # `design/787/w1/serve.cx`, `spec/…/oriel/tui.cx`, `x/ux-web.cx`. The other
 # five declines are the census's OTHER classes, none of them #1436's.
-FMT_SWEEP_MAX_DECLINED ?= 12
+FMT_SWEEP_MAX_DECLINED ?= 11
 FMT_SWEEP_MAX_TREE_REFUSED ?= 10
 FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
 .PHONY: fmt-sweep-gate
@@ -4294,9 +4361,24 @@ test-oriel-lane: build-vcx
 ##                  end to end), tear down. Refuses if :8793 is already
 ##                  served. This is the ONLY step that grades the
 ##                  networked half of the SSO stack.
+##
+##                  THE LANE MOVED AND THE STEP DID NOT (RULED: RS-12,
+##                  #1591 item 11). The script and the four programs it
+##                  drives are cx-platform-sso's now; the step runs them
+##                  out of the pinned checkout deps.cxd names, against
+##                  THIS tree's binary. It stays here because it is the
+##                  only thing that grades the networked half against a
+##                  cx the front door built: the component repository's
+##                  own gate is `cx lint` plus `cx corpus` (RS-16) over a
+##                  RELEASED cx, which is a different question. The lane
+##                  cds to its own directory, so every path inside it
+##                  resolves in the checkout; CX_BIN is what crosses.
 .PHONY: test-sso-interop-lane
 test-sso-interop-lane: build-vcx
-	@bash scripts/sso_interop_lane.sh
+	@test -f deps/cx-platform-sso/scripts/sso_interop_lane.sh || { \
+	  echo "test-sso-interop-lane: deps/cx-platform-sso/ is not there — the lane lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
+	  exit 2; }
+	@CX_BIN="$(CURDIR)/vcx/target/cx" bash deps/cx-platform-sso/scripts/sso_interop_lane.sh
 
 # ── <cx-diagram> web-component offline step (#1015) ────────────────────────────
 # Sibling of the playground's no-CDN gate (#1007), for the OTHER surface that
