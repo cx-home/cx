@@ -30,7 +30,7 @@
 
    ## Adding a patch
 
-   1. Land the commit on cx-home/v-cx-patches and move the submodule pin.
+   1. Land the commit on cx-patches-0.18 and move the submodule pin.
    2. Add a `[patch sha=<full-40-char-sha> family=<id>]` row below.
    3. If no family fits, add a `[family]` element with a `reason=` that
       says why CX carries it permanently and what would retire it. An
