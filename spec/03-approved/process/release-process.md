@@ -34,28 +34,53 @@ existing building blocks rather than duplicating them.
 
 | # | Phase | What it does | Building block |
 |---|---|---|---|
-| 0 | Pre-flight | on `main`, clean tree, `RELEASE_NOTES_<tag>.md` present, tag free, `devbox`/`gh`/public-repo clones ready — else abort | `release.sh` |
+| 0 | Pre-flight | on the line branch, clean tree, `RELEASE_NOTES_<tag>.md` present, tag free, **the pins in sync** (`make deps-check` — RS-7's "a release cut ships whatever is pinned", and a cut that ships a stale pin ships a binary nobody can rebuild), `devbox`/`gh` and the `cx-v` clone ready — else abort | `release.sh` |
 | 1 | Gate | `make test` (the full version-agnostic `TEST_TARGETS`) + `make verify-doc-links` — **MUST** be green or the release aborts (no bump, no tag, no publish) | `tag_release.sh` under `devbox` |
 | 1b | Perf ratchet | `make perf-ratchet` — `bench-json` then `bench-compare STRICT=1` against the committed `bench/baseline.json`; any benchmark more than 10 % slower than the previous cut (or a `_mbps` throughput more than 10 % lower) **aborts the cut** like a red gate; on green the fresh `bench/current.json` becomes `bench/baseline.json` in the bump commit, so each cut re-pins the floor to its own measurement on the maintainer machine (#1249, RULED: 1249-Q1a) | `tag_release.sh` → `make perf-ratchet` |
 | 2 | Bump | `VERSION` + all manifests stamped, `check-version-consistency` verified, **bump committed before the build** so the artifact's stamped commit is the tag commit; the built binary's self-reported version+commit are then asserted clean (`-dirty` marks any tree that doesn't reproduce its stamp — #666) | `bump_version.sh` / `tag_release.sh` |
-| 3 | Build + package | `-prod` `cx`/`libcx`/`cx.h` for the maintainer platform → `cx-<tag>-<target>.tar.gz` + `cx-conformance-<tag>.zip` + `SHA256SUMS.txt` | `release.sh` |
+| 3 | Build + package | `-prod` `cx`/`libcx`/`cx.h` for the maintainer platform → `cx-<tag>-<target>.tar.gz` + `cx-conformance-<tag>.zip` + `SHA256SUMS.txt`, and the four §4 profile tarballs, **each built from the pins**: `make deps-sync` fetches every `[dep]` row into `deps/`, and a module whose repository has left is embedded from that checkout, so the four builds are the pinned set and nothing else | `release.sh` |
 | 4 | Tag + merge + push | annotated tag **on the release branch's bump commit**, then `release.sh` merges the branch to `main` (`--no-ff`) and pushes `main` + the branch + the tag together (#666) | `tag_release.sh` / `release.sh` |
-| 5 | GitHub release | `gh release create <tag>` with `RELEASE_NOTES_<tag>.md` + the artifacts | `release.sh` |
-| 6 | Mirror publish | publish the public `cx` + `cx-v` mirrors (allowlist copy), the org page, and the public tags | `make release-all` → `publish*.sh` |
+| 5 | GitHub release | `gh release create <tag>` with `RELEASE_NOTES_<tag>.md` and **every** artifact — the version-named tarballs, the conformance bundle, and the flat stable-named set the quickstart's `releases/latest/download/cx-<plat>.tar.gz` resolves to, with ONE `SHA256SUMS.txt` over both sets (the installer verifies against it) | `release.sh` |
+| 6 | The `cx-v` mirror and the org page | push and tag the V fork's mirror and sync the organisation profile README | `make release-all` → `publish_v.sh`, `publish_org.sh`, `tag_public.sh` |
 
 The gate (phase 1) is the **single source of release confidence**: because
 `release.sh` refuses to proceed on a red gate, a published tag is gate-green by
 construction (the `code.md §11.6` evidence contract).
 
-## 3 — The public mirrors
+## 3 — One repository, one release (RULED: RS-11)
 
-`cx-home/cx-private` is the **source**; the public `cx-home/cx` and
-`cx-home/cx-v` repositories are **generated** by `scripts/publish*.sh` (a
-default-deny allowlist copy — only curated paths are published; the spec process
-tree, gate evidence, and internal scratch stay private by construction). Phase 6
-stages, commits, pushes, and tags the mirrors. They are mirrors, never edited
-directly. Clones are expected at `$PUBLIC_ROOT` (default `~/git-repos/cx/cx`) and
-`$PUBLIC_V_ROOT` (default `~/git-repos/cx/cx-v`).
+There used to be an allowlist mirror: `cx-home/cx-private` was the source and
+the public `cx-home/cx` was generated from it by `scripts/publish.sh`, a
+default-deny copy of curated paths, with its own GitHub releases carrying the
+flat stable-named assets. RS-11 retires it — *"Public or private is a setting
+per repository. The allowlist mirror (`scripts/publish.sh`, `.publishignore*`,
+the guard) retires with the split; `cx-private` becomes `cx` when it is no
+longer private."*
+
+So there is **one** repository and **one** release. Phase 5 attaches both asset
+sets to it: the version-named tarballs and the conformance bundle from `dist/`,
+and the flat stable-named set and the four profile tarballs from `dist/public/`
+— a directory whose name says what those assets *are*, flat and stable, not
+where they go. The site files the mirror used to install (`CNAME`, the
+quickstart `install` script) live in `docs/`, the site root itself.
+
+What is NOT retired by that sentence is the **V fork's** mirror.
+`cx-home/cx-v` is generated by `scripts/publish_v.sh` from `third_party/v`; the
+fork is not a repository of the multi-repo shape and its distribution is
+[`v-dependency-management.md`](v-dependency-management.md)'s subject. Its clone
+is expected at `$PUBLIC_V_ROOT` (default `~/git-repos/cx/cx-v`), and
+`scripts/tag_public.sh` tags it.
+
+## 3.1 — What a cut ships is what is pinned
+
+RS-7: *"A release cut ships whatever is pinned."* `deps.cxd` names every
+repository `cx` builds on at a sha; `make deps-sync` fetches each into `deps/`,
+and a module whose repository has left this tree is embedded from that checkout
+([`repository-dependency-pins.md`](repository-dependency-pins.md) §6); the four
+§4 profile builds then read exactly that set. A stale pin or a drifted
+`deps/` checkout **aborts the cut in phase 0** — it never warns, and it is
+never resolved to "whatever is newest". What a release was built from is the
+`deps.cxd` of its tag commit, and the conformance bundle carries that file.
 
 ## 4 — CI status and the automatic path
 

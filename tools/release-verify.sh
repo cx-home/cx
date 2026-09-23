@@ -167,6 +167,24 @@ check "cx primer == docs/llm/primer.md (embed is fresh)" \
 check "llms.txt + llms-full.txt + AGENTS.md present and non-empty" \
  "test -s docs/llm/llms.txt && test -s docs/llm/llms-full.txt && test -s AGENTS.md && test -s CLAUDE.md"
 
+section "The pins (RULED: RS-7, #1589 item 23)"
+# "A release cut ships whatever is pinned." These rows are what makes that
+# sentence checkable BEFORE the tag rather than discoverable after it.
+#
+# deps-check: every deps/<repo> is at the sha deps.cxd names, and every bundled
+# CX module has exactly one source — its own tracked file, or the pinned
+# checkout its registry row names (scripts/bundle_check.cx). It writes
+# nothing, touches no network, and REFUSES — a stale pin, a drifted checkout, a
+# pinned checkout missing its source, a row naming an unpinned repository, a
+# pinned source committed here. None is a warning.
+check "the pins are in sync and every bundled CX module has one source" \
+ "make -s deps-check"
+# The four §4 builds, from that pinned tree. `build-profiles-dev` is the dev
+# matrix — the -prod matrix is phase 3's, and this row exists so a profile that
+# cannot be built at all fails BEFORE the tag instead of inside the cut.
+check "the four profiles build from the pinned tree" \
+ "make -s build-profiles-dev"
+
 section "Release assets"
 # RULED: PGL-1 (#741) — the R2.2 blocking per-profile install gate runs HERE,
 # pre-tag, instead of first executing inside the cut itself. Proves item 1 of

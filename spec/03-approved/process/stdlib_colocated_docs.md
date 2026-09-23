@@ -167,3 +167,39 @@ self-verifying.
 - Whether `[fn-doc]` should eventually be folded into the codec as structured
   program introspection (so `sig`/`scope`/`purity` need not be restated) is left
   open; the freshness gate makes the restatement safe in the interim.
+
+## §6. Every module in every repository — the documentation fragment (RULED: RS-9)
+
+RS-9: *"`stdlib_colocated_docs.md` extends to every module in every repository:
+a repository generates its own reference fragment from its own corpus at
+release; a `cx` build embeds the docs of exactly the module versions it
+compiles in; the site in `cx` indexes what was published. The closed `[output]`
+list of `docs-src/llm/manifest.cxd` becomes the union of per-repository doc
+manifests."*
+
+A component repository's release publishes **one** document at
+`docs/llm/manifest-fragment.cxd`, beside the rendered Markdown it names:
+
+```
+[llm-docs-fragment repo=<repo> version=<the release tag or sha>
+  [output id=<id> out=<basename>.md section=<start|build|reference> title=<title>
+    [summary one paragraph]]
+  [suites the conformance suites its documents cite, one per line]]
+```
+
+The contract is [`scripts/docs_fragment.cx`](../../../scripts/docs_fragment.cx).
+A fragment ships **rendered bytes**: an `[output]` carries no `template=`, and a
+document still holding an unexpanded example placeholder is refused — the front
+door copies and indexes what the producing repository's own gate rendered from
+its own corpus, and never runs another repository's generator. `out=` is a flat
+basename under `docs/llm/`, and `section` is the front door's closed vocabulary.
+
+`scripts/gen_docs/primer_build.cx` forms the union: the front door's own
+`[output]` rows plus the fragment of every repository `deps.cxd` pins, read
+**when present** — a pinned repository with no fragment contributes nothing and
+fails nothing ("nothing waits on the site"). A fragment that is present and does
+not conform, and two entries of the union claiming one `id` or one `out`, fail
+the docs step; nothing is half-indexed. The contract's refusals and the union's
+collisions are pinned by
+[`conformance/docs_fragment.cxd`](../../../conformance/docs_fragment.cxd),
+graded by the `test-docs-fragment` step.

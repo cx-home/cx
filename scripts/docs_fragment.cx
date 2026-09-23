@@ -1,0 +1,263 @@
+# scripts/docs_fragment.cx — the per-repository documentation fragment
+# (RULED: RS-9). Written in CX (AGENTS.md rule 6).
+#
+# RS-9: "Docs follow the module. `stdlib_colocated_docs.md` extends to every
+# module in every repository: a repository generates its own reference fragment
+# from its own corpus at release; a `cx` build embeds the docs of exactly the
+# module versions it compiles in; the site in `cx` indexes what was published.
+# The closed `[output]` list of `docs-src/llm/manifest.cxd` becomes the union of
+# per-repository doc manifests. Nothing waits on the site."
+#
+# This module is `cx`'s side of that sentence: the CONTRACT a fragment must
+# meet, as a reader and a validator, and the union of the front door's own
+# `[output]` list with the fragments of the repositories it pins.
+#
+#   [$frag:read TEXT]              -> the parsed fragment
+#   [$frag:validate DOC REPO]      -> [verdict [refusal kind= id= what=]*]
+#   [$frag:outputs DOC]            -> the [output] rows, in document order
+#   [$frag:suites DOC]             -> the conformance suites the fragment cites
+#   [$frag:ok VERDICT]             -> no refusals
+#   [$frag:render VERDICT]         -> one line per refusal ("ok" when none)
+#   [$frag:collisions OWN FRAGS]   -> the id collisions across a whole union
+#   [$frag:collect DEPS-ROWS DIR]  -> impure: every fragment under deps/, read
+#                                     and validated, as [found]/[refused] rows
+#
+# ── THE CONTRACT ───────────────────────────────────────────────────────────
+#
+# A component repository's release produces ONE document at
+# `docs/llm/manifest-fragment.cxd`, beside the rendered Markdown files it
+# names:
+#
+#   [llm-docs-fragment repo=<repo> version=<the release tag or sha>
+#     [doc [# why this fragment is what it is #]]
+#     [output id=<id> out='<basename>.md' section=reference title='<title>'
+#       [summary [# one paragraph, wrapped for a human #]]]
+#         -- or, for a one-liner, plain text: [summary one sentence]
+#     [suites [# conformance/<path> lines, one per suite the documents cite #]]
+#   ]
+#
+# `out=` is a FLAT BASENAME. It is what the file is called under `docs/llm/` in
+# `cx`, and a path with a separator in it would let a fragment write outside the
+# directory the front door owns.
+#
+# AN `[output]` HERE CARRIES NO `template=`. The front door renders its own
+# documents from `docs-src/llm/*.tmpl` against the conformance corpus; it does
+# NOT run another repository's generator. A fragment ships BYTES — rendered at
+# the producing repository's release, from that repository's own corpus, by
+# that repository's own gate — and `cx` copies them into the site and indexes
+# them. That is what "a `cx` build embeds the docs of exactly the module
+# versions it compiles in" means: the docs travel with the pin, at the pin.
+#
+# So a fragment's `.md` file carries no `{{EXAMPLE:…}}` placeholder either: an
+# unexpanded placeholder would mean the producer published a template and
+# called it a document. `unrendered-example` is that refusal, and it is a
+# tree-level one because it is about the file, not about this document.
+#
+# THE SECTION VOCABULARY IS CLOSED and it is the front door's — `start`,
+# `build`, `reference` — because `llms.txt` is the discovery surface and a
+# heading invented by one repository would file its documents where no index
+# lists them.
+#
+# ── WHAT IS REFUSED, AND WHY NOTHING IS IGNORED ────────────────────────────
+#
+# Every refusal below is a refusal and not a warning, for the reason RS-7 gives
+# the pin document it travels with: a manifest whose reader quietly ignores what
+# it does not understand is a manifest that can be wrong without anyone finding
+# out. A fragment that does not conform is not indexed AND the docs step fails;
+# it is never half-indexed.
+#
+# RULED: RS-9 (ledger/rulings_2026_09_21_repo_split_1589.md).
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def known-sections scope=public pure () ("start", "build", "reference")]
+
+[?def member scope=private pure [returns bool] ($x::string $xs)
+  [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+[?def attr-or scope=private pure [returns string] ($e $k::string $d::string)
+  [?let [= $hits [?for [in $a [$attrs $e]] [where [= [$string $a@name] $k]] [yield [$string $a]]]]
+    [?if [= [$count $hits] 0] [then $d] [else [$first $hits]]]]]
+
+# raw-of / normalize: the `[# … #]` projection, the same one
+# scripts/gen_docs/primer_build.cx uses for its own [summary] blocks — a raw
+# text child is read back out of the node's own serialization. A fragment's
+# summary is prose with newlines in it, so it is a raw block and not an
+# attribute.
+[?def raw-of scope=private pure ($rt)
+  [?let [= $s [$cx:serialize $rt]]
+        [= $i [$strings:find $s "[#"]]
+        [= $j [$strings:rfind $s "#]"]]
+    [?if [or [not [$present $i]] [not [$present $j]] [< $j $i]]
+      [then ""]
+      [else [$strings:slice $s [+ $i 2] [- $j 1]]]]]]
+
+# summary-of: the [summary] child's prose. TWO SPELLINGS, both legal and both
+# the same thing: a `[# … #]` raw block, which is what wrapped multi-line prose
+# needs, or plain text children for a one-liner. A raw block wins when there is
+# one; the text reading is the fallback, which is also what lets a fragment be
+# written inside another document's raw block -- a `#]` cannot be nested.
+[?def summary-of scope=public pure [returns string] ($o)
+  [?let
+    [= $raw [$strings:trim [$strings:join [?for [in $s $o/summary] [yield [$raw-of $s]]] ""]]]
+    [= $txt [$strings:trim [$strings:join [?for [in $s $o/summary] [yield [$string $s]]] " "]]]
+    [?if [not [= $raw ""]] [then $raw] [else $txt]]]]
+
+# -- reading -------------------------------------------------------------
+
+[?def read scope=public pure ($text::string) [$cx:parse $text]]
+
+[?def outputs scope=public pure ($doc) [?for [in $o $doc/output] [yield $o]]]
+
+[?def suites scope=public pure ($doc)
+  [?for [in $k $doc/suites] [in $l [$strings:split-lines [$string $k]]]
+    [where [not [= [$strings:trim $l] ""]]]
+    [yield [$strings:trim $l]]]]
+
+# -- validating ----------------------------------------------------------
+
+# maybe: one refusal, or none. The guard reads beside the refusal it produces
+# rather than three lines above it.
+[?def maybe scope=private pure ($cond::bool $r) [?if $cond [then ($r)] [else ()]]]
+
+[?def check-output scope=private pure ($o)
+  [?let
+    [= $id  [$attr-or $o "id" ""]]
+    [= $out [$attr-or $o "out" ""]]
+    [= $sec [$attr-or $o "section" "reference"]]
+    [= $ttl [$attr-or $o "title" ""]]
+    [= $tpl [$attr-or $o "template" ""]]
+    [= $nm  [?if [= $id ""] [then [$strings:trim [$cx:serialize $o]]] [else $id]]]
+    [found
+      [?splice [$maybe [= $id ""]
+                 [refusal kind=missing-id id=$nm what="no id= on the entry"]]]
+      [?splice [$maybe [= $out ""]
+                 [refusal kind=missing-out id=$nm what="no out= on the entry"]]]
+      [?splice [$maybe [= $ttl ""]
+                 [refusal kind=missing-title id=$nm what="no title= on the entry"]]]
+      [?splice [$maybe [= [$summary-of $o] ""]
+                 [refusal kind=missing-summary id=$nm
+                          what="no [summary] child -- llms.txt would have nothing to say about it"]]]
+      [?splice [$maybe [not [= $tpl ""]]
+                 [refusal kind=templated-output id=$nm
+                          what=[$concat "template=" $tpl " -- a fragment ships rendered bytes; cx does not run another repository's generator"]]]]
+      [?splice [$maybe [not [$member $sec [$known-sections]]]
+                 [refusal kind=unknown-section id=$nm what=$sec]]]
+      [?splice [$maybe [or [$strings:contains $out "/"] [$strings:contains $out ".."]]
+                 [refusal kind=out-escapes id=$nm
+                          what=[$concat $out " -- out= is a flat basename under docs/llm/"]]]]]]]
+
+[?def validate scope=public pure ($doc $repo::string)
+  [?let
+    [= $bad-root [?if [= [$name $doc] "llm-docs-fragment"]
+                   [then ()]
+                   [else ([refusal kind=unknown-root id=document what=[$name $doc]])]]]
+    [= $bad-child [?for [in $c $doc/*]
+                    [where [not [or [= [$name $c] "output"]
+                                    [or [= [$name $c] "suites"] [= [$name $c] "doc"]]]]]
+                    [yield [refusal kind=unknown-child id=document what=[$name $c]]]]]
+    [= $decl [$attr-or $doc "repo" ""]]
+    [= $bad-repo [?if [= $decl ""]
+                   [then ([refusal kind=missing-repo id=document what="no repo= on the fragment"])]
+                   [else [?if [or [= $repo ""] [= $decl $repo]]
+                           [then ()]
+                           [else ([refusal kind=repo-mismatch id=document
+                                           what=[$concat "declares repo=" $decl " and was found under " $repo]])]]]]]
+    [= $bad-version [?if [= [$attr-or $doc "version" ""] ""]
+                      [then ([refusal kind=missing-version id=document
+                                      what="no version= -- a fragment states the release it was generated at"])]
+                      [else ()]]]
+    [= $os [$outputs $doc]]
+    [= $none [?if [= [$count $os] 0]
+               [then ([refusal kind=no-outputs id=document
+                               what="a fragment with no [output] entry publishes nothing and is a producer defect, not an empty set"])]
+               [else ()]]]
+    [= $per [?for [in $o $os] [yield [$check-output $o]]]]
+    [= $ids [?for [in $o $os] [yield [$attr-or $o "id" ""]]]]
+    [= $dups [?for [in $q $ids]
+               [where [and [not [= $q ""]]
+                           [> [$count [?for [in $q2 $ids] [where [= $q $q2]] [yield 1]]] 1]]]
+               [group-by $q]
+               [yield [refusal kind=duplicate-id id=$key what=[$concat [$string $count] " entries in this fragment"]]]]]
+    [verdict
+      [?splice $bad-root]
+      [?splice $bad-child]
+      [?splice $bad-repo]
+      [?splice $bad-version]
+      [?splice $none]
+      [?for [in $f $per] [in $r $f/refusal] [yield $r]]
+      [?splice $dups]]]]
+
+[?def refusals scope=public pure ($v) [?for [in $r $v/refusal] [yield $r]]]
+[?def ok scope=public pure [returns bool] ($v) [= [$count [$refusals $v]] 0]]
+
+[?def render scope=public pure ($v)
+  [?if [$ok $v]
+    [then ("ok")]
+    [else [?for [in $r [$refusals $v]]
+            [yield [$concat [$string $r@kind] " " [$string $r@id] ": " [$string $r@what]]]]]]]
+
+# collisions: the union's own refusal. Two repositories may each publish a
+# document called `reference-store`; the front door indexes ONE `docs/llm/`, so
+# the second would silently overwrite the first. `id` and `out` are both
+# checked, because a collision in either is the same overwrite.
+[?def collisions scope=public pure ($ids $outs)
+  [?let
+    [= $dup-ids [?for [in $q $ids]
+                  [where [> [$count [?for [in $q2 $ids] [where [= $q $q2]] [yield 1]]] 1]]
+                  [group-by $q]
+                  [yield [refusal kind=id-collision id=$key
+                                  what=[$concat [$string $count] " entries across the union claim this id"]]]]]
+    [= $dup-outs [?for [in $q $outs]
+                   [where [> [$count [?for [in $q2 $outs] [where [= $q $q2]] [yield 1]]] 1]]
+                   [group-by $q]
+                   [yield [refusal kind=out-collision id=$key
+                                   what=[$concat [$string $count] " entries across the union write this file"]]]]]
+    [verdict [?splice $dup-ids] [?splice $dup-outs]]]]
+
+# -- the tree ------------------------------------------------------------
+#
+# collect: every pinned repository's fragment, read and validated. A pinned
+# repository with NO fragment is not an error — `ships=package` repositories
+# that document nothing exist, and RS-9's "nothing waits on the site" means the
+# front door indexes what was published rather than demanding publication. A
+# fragment that IS there and does not conform is a refusal.
+
+[?def fragment-path scope=public pure [returns string] ($dir::string $repo::string)
+  [$concat $dir "/" $repo "/docs/llm/manifest-fragment.cxd"]]
+
+[?def collect scope=public impure ($repos $dir::string)
+  [fragments
+    [?for [in $repo $repos]
+      [yield [?let [= $p [$fragment-path $dir $repo]]
+        [?if [not [$io:exists $p]]
+          [then [absent repo=$repo path=$p]]
+          [else [?let [= $doc [$read [$io:read-file $p]]]
+                      [= $v   [$validate $doc $repo]]
+            [?if [$ok $v]
+              [then [found repo=$repo path=$p version=[$attr-or $doc "version" ""]
+                      [?for [in $o [$outputs $doc]]
+                        [yield [entry id=[$attr-or $o "id" ""]
+                                      out=[$attr-or $o "out" ""]
+                                      section=[$attr-or $o "section" "reference"]
+                                      title=[$attr-or $o "title" ""]
+                                      repo=$repo
+                                      file=[$concat $dir "/" $repo "/docs/llm/" [$attr-or $o "out" ""]]
+                                      summary=[$summary-of $o]]]]]]
+              [else [refused repo=$repo path=$p
+                      [?for [in $l [$render $v]] [yield [line $l]]]]]]]]]]]]]]
+
+# entry-refusals: the file-level half of the contract, which needs the tree.
+# An entry whose `out=` is not beside the fragment, or whose bytes still carry a
+# `{{EXAMPLE:` placeholder, is a producer that published a template.
+[?def entry-refusals scope=public impure ($e)
+  [?let [= $f [$string $e@file]]
+    [?if [not [$io:exists $f]]
+      [then ([refusal kind=missing-file id=[$string $e@id]
+                      what=[$concat $f " is declared by the fragment and is not there"]])]
+      [else [?if [$strings:contains [$io:read-file $f] "{{EXAMPLE:"]
+        [then ([refusal kind=unrendered-example id=[$string $e@id]
+                        what=[$concat $f " still carries a {{EXAMPLE:…}} placeholder -- the producer published a template"]])]
+        [else ()]]]]]]

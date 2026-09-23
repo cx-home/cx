@@ -103,7 +103,7 @@ Every one of these exits non-zero and names the row. None of them is a warning:
 | `malformed-sha` / `malformed-v-fork` | a value is not 40 lowercase hexadecimal characters |
 | `duplicate-repo` | two rows pin the same repository |
 | `fetch-failed` | the remote does not have `sha` — the pin is stale |
-| `checkout-drift` | `deps/<repo>/` is not at `sha` |
+| `checkout-drift` | `deps/<repo>/` is not at `sha` and has local changes — `sync` moves a clean one to the pin and refuses this one; under `--check`, which moves nothing, any checkout not at `sha` |
 | `missing-checkout` | under `--check`, `deps/<repo>/` is not there at all |
 
 `fetch-failed` and `checkout-drift` are the two the union step exists for. #1589's "Risks"
@@ -152,3 +152,50 @@ The wire form, its canonical bytes and every refusal in §3.1 are pinned by
 [`conformance/deps_pins.cxd`](../../../conformance/deps_pins.cxd), graded by the
 `test-deps-pins` step. A refusal this page names and that corpus does not carry is a defect in
 the corpus, not a discretionary omission.
+
+## 6 — The bundled CX sources
+
+RS-7's *"read by the V build via `-path`"* answers half of what a pin buys a
+build. The other half is the bundled CX sources, and it cannot be answered by a
+search path.
+
+`cx` embeds every bundled CX module's bytes into the binary: one `$embed_file`
+per module in `vcx/code/stdlib_bundle.v`. **An embed path is a compile-time
+literal**, and the profile builds and the libraries all read the same literals.
+So a module whose repository has left this tree is embedded **from the pinned
+checkout itself**: its `registry/modules.cxd` row carries `repo=<repo>` and a
+`source=` under `deps/<repo>/`, and its embed literal names that same path.
+Nothing is copied into this repository's own tree — there is no composed file
+that could drift from the pinned bytes, and none a `git add` could commit back.
+
+### 6.1 The two states and the refusals
+
+For each module `registry/modules.cxd` gives a bundled `source=` for, the row's
+`repo=`, the pins, and the tree decide one verdict:
+
+| `repo=` | pinned | tracked here | on disk | verdict |
+|---|---|---|---|---|
+| none | — | yes | — | `own` — the front door's own source |
+| none | — | no | — | **refused**: `missing-source` |
+| `cx` | — | — | — | **refused**: `self-pinned` |
+| `<r>` | no | — | — | **refused**: `unpinned` — nothing fetches it |
+| `<r>` | yes | yes | — | **refused**: `tracked-pin` — another repository's source committed here |
+| `<r>` | yes | no | yes | `pinned` — embedded from `deps/<r>/` |
+| `<r>` | yes | no | no | **refused**: `missing-pinned-source` |
+
+Two rows naming one module are refused as `duplicate-module`.
+
+**`missing-pinned-source` is a refusal and not a fallback** because the failure
+this table exists to prevent is a build that quietly produces a *smaller*
+binary than the pins describe — a `deps/<repo>` never fetched, or fetched at a
+sha where the source is not where the row says. It is refused three times:
+`make deps-sync` and `make deps-check` apply the table after the fetch or the
+at-pin check; `make deps-present` states the build's precondition before V
+starts, needing no cx; and a build that bypasses both fails V's `$embed_file`
+on the absent path.
+
+### 6.2 Conformance
+
+The table and every refusal in it are pinned by
+[`conformance/bundle_sources.cxd`](../../../conformance/bundle_sources.cxd),
+graded by the `test-bundle-sources` step.
