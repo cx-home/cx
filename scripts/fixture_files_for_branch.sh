@@ -72,9 +72,11 @@
 #      and every walked corpus file that imports a module one of them provides
 #      (the row's `module=`, spelled `[?lib '<ns>/<name>' …]` in the file) is
 #      selected. A doc-block-only change moves no row and selects nothing. A
-#      changed row that names no `module=`, or a change set given by
-#      --changed-files (no base to compare the rows with), is ALL: the helper
-#      cannot tell who imports it.
+#      changed row that names no `module=`, a V repository's row (`v-fork=`, or
+#      a `module=` that is a repository name: what it provides is compiled into
+#      the binary every case runs through), or a change set given by
+#      --changed-files (no base to compare the rows with), is ALL. The rule is
+#      applied before rule (1) in the loop, so deps.cxd is judged row by row.
 #
 # scripts/fixture_files_for_branch_selftest.sh proves one case per rule on
 # synthetic repos.
@@ -206,6 +208,43 @@ sel=""
 outside=""
 
 for f in $diff; do
+	# (5) a pin — applied FIRST, before rule (1), so a deps.cxd change is judged
+	# row by row whatever rule (1) lists: the modules a changed row provides,
+	# and who imports them.
+	if [ "$f" = "deps.cxd" ]; then
+		if [ -n "$CHANGED_SRC" ] || ! git rev-parse -q --verify "${BASE}^{commit}" >/dev/null 2>&1; then
+			all=1
+			continue
+		fi
+		rows=$(changed_dep_rows)
+		# No changed row is a doc-block-only change: it selects nothing.
+		if [ -n "$rows" ]; then
+			mods=""
+			nomod=0
+			while IFS= read -r row; do
+				[ -n "$row" ] || continue
+				m=$(printf '%s\n' "$row" | sed -n "s/.*module='\([^']*\)'.*/\1/p")
+				[ -n "$m" ] || m=$(printf '%s\n' "$row" | sed -n 's/.*module=\([^] ]*\).*/\1/p')
+				# A V repository's row (v-fork=), or a module= that is not a
+				# '<ns>/<name>' spelling, provides what the binary itself is built
+				# from: every case runs through it, and no importer list covers it.
+				case "$row" in *" v-fork="*) nomod=1 ;; esac
+				case "$m" in */*) ;; *) nomod=1 ;; esac
+				if [ -z "$m" ]; then nomod=1; else mods="$mods $m"; fi
+			done <<ROWS
+$rows
+ROWS
+			if [ "$nomod" -eq 1 ]; then
+				all=1
+				continue
+			fi
+			for m in $mods; do
+				for h in $(importers_of "$m"); do sel="$sel $h"; done
+			done
+		fi
+		continue
+	fi
+
 	# (1) what grades, rather than what is graded
 	case "$f" in
 	vcx/tests/fixtures_grader/* | vcx/tests/code_eval_fixtures* | scripts/run_fixture_shards.sh | scripts/fixtures_census.sh | third_party/v | third_party/v/*)
@@ -225,37 +264,6 @@ for f in $diff; do
 		continue
 		;;
 	esac
-
-	# (5) a pin: the modules a changed deps.cxd row provides, and who imports them
-	if [ "$f" = "deps.cxd" ]; then
-		if [ -n "$CHANGED_SRC" ] || ! git rev-parse -q --verify "${BASE}^{commit}" >/dev/null 2>&1; then
-			all=1
-			continue
-		fi
-		rows=$(changed_dep_rows)
-		# A row gone from both spellings of the comparison is impossible; an empty
-		# list is a doc-only change and selects nothing.
-		if [ -n "$rows" ]; then
-			mods=""
-			nomod=0
-			while IFS= read -r row; do
-				[ -n "$row" ] || continue
-				m=$(printf '%s\n' "$row" | sed -n "s/.*module='\([^']*\)'.*/\1/p")
-				[ -n "$m" ] || m=$(printf '%s\n' "$row" | sed -n 's/.*module=\([^] ]*\).*/\1/p')
-				if [ -z "$m" ]; then nomod=1; else mods="$mods $m"; fi
-			done <<ROWS
-$rows
-ROWS
-			if [ "$nomod" -eq 1 ]; then
-				all=1
-				continue
-			fi
-			for m in $mods; do
-				for h in $(importers_of "$m"); do sel="$sel $h"; done
-			done
-		fi
-		continue
-	fi
 
 	# (4) the parser and the evaluator the whole corpus runs through
 	case "$f" in
