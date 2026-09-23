@@ -87,7 +87,16 @@ fn corpus_files() []string {
 				continue
 			}
 			if e.ends_with('.cxd') {
-				out << p.replace(root + '/', '')
+				rel := p.replace(root + '/', '')
+				// A pinned suite this tree still carries under the same path is read
+				// from this tree's copy (the files the allocation assigns and this tree
+				// has not released yet); the pinned copy is not a second population.
+				pinned_prefix := 'deps/cx-core-data/'
+				if rel.starts_with(pinned_prefix)
+					&& os.exists(os.join_path(root, rel.all_after(pinned_prefix))) {
+					continue
+				}
+				out << rel
 			}
 		}
 	}
