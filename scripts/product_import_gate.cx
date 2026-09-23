@@ -126,8 +126,8 @@
 
 # -- the check itself: pure over (repo rows, path rules, sources, vcx dirs, vlib)
 #
-# $srcs: [src file= dir= module= imps='<head> ...'] per V file read.
-# answers [verdict [failures [failure kind= what=]*] [census [line text=]*]]
+# $srcs: [src file=F dir=D module=M imps='<head> ...'] per V file read.
+# answers [verdict [failures [failure kind=K what=W]*] [census [line text=T]*]]
 
 [?def check scope=private pure ($repos $rules $srcs $dirs $vlib)
   [?let
