@@ -58,7 +58,15 @@ check "ALL" "an engine change selects everything" "vcx/code/eval.v"
 check "map.cxd" "a stdlib module's source selects ITS corpus file" "stdlib/map.cx"
 check "bytes.cxd" "a module's Ring-1 V half selects its corpus file" "vcx/code/stdlib_bytes.v"
 check "audit.cxd" "a module's Ring-2 V code selects its corpus file" "vcx/store/stdlib_audit.v"
-check "imap.cxd" "a module's `half=` file selects its corpus file too" "vcx/code/stdlib_imap_server.v"
+# "a module's `half=` file selects its corpus file too" RETIRED (RULED: RS-12,
+# #1591 item 20): imap and smtp were the only two `half=` rows in
+# registry/modules.cxd, and both extracted to cx-platform-mail with this
+# commit. Their half= files now read deps/cx-platform-mail/vcx/code/…, which
+# does not match this script's CANDIDATES regex (stdlib/, vcx/code/,
+# vcx/platform/ and the split V product directories only) — correctly, since
+# a change to that file can no longer happen inside this tree. No local
+# `half=` row remains to exercise this branch; the next one to land gets the
+# check back.
 check "bytes.cxd map.cxd" "two module sources select both corpus files" "stdlib/map.cx" "vcx/code/stdlib_bytes.v"
 check "connector.cxd db.cxd" "a module source and a corpus file together" "stdlib/connector.cx" "conformance/platform/db.cxd"
 

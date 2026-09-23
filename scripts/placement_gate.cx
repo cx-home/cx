@@ -498,12 +498,19 @@
                            " wants " $want-code ", found " $f
                            " (a platform module's pure piece belongs in half=, not code=)"]]]
                 "\n"]]]]
+          # A `repo=` row's declared half travels WITH its wire half (RULED:
+          # RS-19, #1591 item 20: "a module moves whole") -- half's still-Ring-1
+          # requirement then reads against the pinned checkout's own vcx/code/,
+          # the same `deps/<repo>/` prefix [dep path] already holds spec/
+          # corpus/source to.
+          [= $want-half-prefix
+            [?if [= $repo ""] [then "vcx/code/"] [else [$concat [$dep-prefix $repo] "vcx/code/"]]]]
           [= $v-half-ring
             [$strings:join
               [?for [in $f [$words $half]]
-                [where [not [$strings:starts-with $f "vcx/code/"]]]
+                [where [not [$strings:starts-with $f $want-half-prefix]]]
                 [yield [$concat "  [half ring]      " $tag
-                         "  -- a declared half is Ring 1 and lives in vcx/code/, found " $f]]]
+                         "  -- a declared half is Ring 1 and lives in " $want-half-prefix ", found " $f]]]
               "\n"]]
           [= $v-half-ring1
             [?if [= $group "platform"] [then ""]

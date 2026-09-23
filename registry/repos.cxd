@@ -67,7 +67,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [repo name=cx-core-data group=core ring=0 ships=binary about='the data format: reader, writer, canonical form, schema, codecs, libcx-core, the data-only cx']
   [repo name=cx-core-code group=core ring=1 ships=binary about='the language: evaluator, stdlib, LSP, libcx, the cli and embed builds']
   [repo name=cx-platform-net group=platform ring=none ships=binary vmodule=cxnet pins='cx-core-code' about='sockets, TLS, the HTTP server, the XSP transport bindings, ftp, sftp, file_surface']
-  [repo name=cx-platform-mail group=platform ring=none ships=binary vmodule=mail pins='cx-platform-net' about='SMTP and IMAP, server and client cores, sasl']
+  [repo name=cx-platform-mail group=platform ring=none ships=binary vmodule=mail pins='cx-platform-net' status=extracted at=68a5130e7be30ca4d970e9dc43949d85f2d9c0ef about='SMTP and IMAP, server and client cores, sasl' why='EXTRACTED (RULED: RS-12, #1591 item 20). It has no [path] rules because it owns no tracked path here any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records -- NOT YET PUSHED to cx-home/cx-platform-mail (component-repo pushes are the integrator\'s, RS-8; the commit is prepared in the mover\'s clone and named by sha in RESULTS.md, per the K3 brief) -- and the gate exempts a status=extracted repo from the empty-repo refusal for exactly that reason']
   [repo name=cx-platform-identity group=platform ring=none ships=binary pins='cx-platform-store cx-platform-net' about='sessions, the XSP-AUTH handshake, principal mint, did:web']
   [repo name=cx-platform-store group=platform ring=none ships=binary vmodule=store pins='cx-core-code cx-platform-net' about='the storage engine, its substrates, journal/live/audit, ft, and the store server']
   [repo name=cx-platform-db group=platform ring=none ships=binary vmodule=cxdb pins='cx-core-code' about='external database access: $sql-*, $redis-*, the drivers']
@@ -158,10 +158,6 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='spec/03-approved/stdlib/ft.md' repo=cx-platform-store]
   [path exact='conformance/stdlib/ft.cxd' repo=cx-platform-store]
   [path prefix='vcx/code/stdlib_ft' repo=cx-platform-store]
-  [path exact='stdlib/sasl.cx' repo=cx-platform-mail why='its callers are smtp and imap']
-  [path exact='spec/03-approved/stdlib/sasl.md' repo=cx-platform-mail]
-  [path exact='conformance/stdlib/sasl.cxd' repo=cx-platform-mail]
-  [path prefix='vcx/code/stdlib_sasl' repo=cx-platform-mail]
   [path exact='stdlib/diagram.cx' repo=cx-tooling why='developer tooling under active redesign (spec/02-working/diagram_renderer_cx.md)']
   [path exact='spec/03-approved/stdlib/diagram.md' repo=cx-tooling]
   [path exact='conformance/stdlib/diagram.cxd' repo=cx-tooling]
@@ -253,18 +249,15 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='vcx/tests/runners/code_http_' repo=cx-platform-net]
   [path prefix='vcx/tests/testdata/h2_localhost' repo=cx-platform-net]
 
-  [; ── platform: mail ────────────────────────────────────────────────── ]
-  [path prefix='vcx/mail/' repo=cx-platform-mail why='mail\'s V module, module mail (RULED: RS-24): the smtp and imap wire halves, their register files, and the two live-source walkers that walk their folds (iter_walks_mail.v, moved out of net\'s walker file because net may not call mail, D34a)']
-  [path prefix='vcx/code/stdlib_smtp' repo=cx-platform-mail why='the DECLARED Ring-1 half of the smtp module (modules.cxd half=): the pure ESMTP codec and server core, which decide MEANING and open nothing. A module moves whole, so the half travels with its wire half — as sasl already does (RULED: RS-19)']
-  [path prefix='vcx/code/stdlib_imap' repo=cx-platform-mail why='the DECLARED Ring-1 half of the imap module (modules.cxd half=): the pure IMAP codec and server core. Same rule as the smtp half above (RULED: RS-19)']
-  [path exact='stdlib/smtp.cx' repo=cx-platform-mail]
-  [path exact='stdlib/imap.cx' repo=cx-platform-mail]
-  [path exact='spec/03-approved/platform/smtp.md' repo=cx-platform-mail]
-  [path exact='spec/03-approved/platform/imap.md' repo=cx-platform-mail]
-  [path exact='conformance/platform/smtp.cxd' repo=cx-platform-mail]
-  [path exact='conformance/platform/imap.cxd' repo=cx-platform-mail]
-  [path prefix='vcx/tests/smtp_' repo=cx-platform-mail]
-  [path prefix='vcx/tests/imap_' repo=cx-platform-mail]
+  [; THE cx-platform-mail RULES ARE RETIRED (RULED: RS-12, #1591 item 20).
+     cx-platform-mail is EXTRACTED: its 22 paths -- sasl (source/spec/corpus/
+     code, formerly the "modules that LEAVE the frozen stdlib" block above),
+     the smtp and imap modules (source/spec/corpus, the wire halves in
+     vcx/mail/ and the declared Ring-1 halves vcx/code/stdlib_{smtp,imap}*),
+     and the two real-socket test files -- own no tracked path here any
+     more; `cx` reaches it through deps.cxd, which pins it at the sha `at=`
+     on the row above records, and registry/modules.cxd's sasl, imap and
+     smtp rows name the pinned checkout. ]
 
   [; ── platform: identity ────────────────────────────────────────────── ]
   [path prefix='vcx/platform/stdlib_session' repo=cx-platform-identity]
