@@ -3027,7 +3027,7 @@ RETRY_REASON_CASE = case "$$rel" in \
 	    reason="\#1425 daemon start under the -j12 suite storm (the readiness window expires before the listener line); green in isolation and in every prior full run" ;; \
 	  vcx/tests/net_udp_read_deadline_test.v|vcx/tests/net_dtls_test.v|vcx/tests/net_real_socket_test.v|vcx/tests/a2a_real_test.v|vcx/tests/http_h2_serve_test.v|vcx/tests/http_client_tls_transport_test.v|vcx/tests/smtp_real_socket_test.v|vcx/tests/imap_real_socket_test.v|vcx/tests/http_umbrella_test.v|vcx/tests/connector_live_test.v) \
 	    reason="real-socket contention: ephemeral-port / deadline race under -j" ;; \
-	  vcx/platform/store_admin_plane_test.v|vcx/platform/store_grpc_live_test.v|vcx/platform/store_lazy_load_test.v) \
+	  vcx/store/store_admin_plane_test.v|vcx/store/store_grpc_live_test.v|vcx/store/store_lazy_load_test.v) \
 	    reason="real-socket contention: live store/grpc endpoint under -j (\#648)" ;; \
 	  vcx/code/code_module_umbrella_test.v) \
 	    reason="\#1432 timing under load: test_retry_without_delay_does_not_suspend is a WALL-CLOCK control row (delay=0 must cost < 40 ms) and read 42 ms at load 190-218 while two pipelines built at -j; nothing in that head touched the retry path, and the bound is NOT loosened" ;; \
@@ -3360,9 +3360,9 @@ test-vcx-suite: build-vcx-dev check-serial-retry-rosters check-fixture-shard-man
 # the "timing / early exit under load" class documented beside the rosters
 # above — its wall-clock control row read 42 ms against 40 ms at a load average
 # of 200. No bound moved.
-CODE_SERIAL_RETRY := vcx/platform/store_admin_plane_test.v \
-                     vcx/platform/store_grpc_live_test.v \
-                     vcx/platform/store_lazy_load_test.v \
+CODE_SERIAL_RETRY := vcx/store/store_admin_plane_test.v \
+                     vcx/store/store_grpc_live_test.v \
+                     vcx/store/store_lazy_load_test.v \
                      vcx/code/code_module_umbrella_test.v
 
 # I3 module split (#651/#516): the in-module tests now live in TWO
@@ -3376,7 +3376,7 @@ CODE_SERIAL_RETRY := vcx/platform/store_admin_plane_test.v \
 # directory is listed here — check-inmodule-test-roster refuses a declared
 # vmodule missing from the list — and a directory with no test yet costs
 # nothing: V reports "0 total" and exits 0.
-CODE_TEST_DIRS := vcx/code/ vcx/platform/ vcx/cxnet/ vcx/mail/ vcx/cxdb/ vcx/xap/
+CODE_TEST_DIRS := vcx/code/ vcx/platform/ vcx/cxnet/ vcx/mail/ vcx/cxdb/ vcx/store/ vcx/xap/
 test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	@$(JS_CLOSE) log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
 	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(CODE_TEST_DIRS) 2>&1; echo $$? > $$stf; } | tee $$log; \
@@ -3599,7 +3599,7 @@ test-vcx-columnar: build-vcx-dev skip-ledger-reset
 	fi
 	@$(JS_CLOSE) if [ ! -f "$(call CX_SKIP_FILE,test-vcx-columnar)" ]; then $(MAKE) -C vcx arrow-shim; fi
 	@$(JS_CLOSE) if [ ! -f "$(call CX_SKIP_FILE,test-vcx-columnar)" ]; then \
-	  PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test vcx/platform/store_columnar_test.v vcx/platform/store_columnar_lineage_test.v; \
+	  PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test vcx/store/store_columnar_test.v vcx/store/store_columnar_lineage_test.v; \
 	fi
 
 # ── sqlite [$store] backend gate — #77 / #220 (concurrent-writer durability) ──
@@ -3662,7 +3662,7 @@ test-vcx-sqlite: build-vcx-dev skip-ledger-reset
 	  line="SKIP test-vcx-sqlite: libsqlite3 development headers not discoverable via pkg-config (absent prerequisite, #318 — brew install sqlite / apt libsqlite3-dev)"; \
 	  echo "$$line"; mkdir -p $(CX_SKIP_DIR); echo "$$line" > $(call CX_SKIP_FILE,test-vcx-sqlite); \
 	else \
-	  $(V) -cc cc $(CX_GC) -d cxstore_sqlite -cflags "$(SQLITE_CFLAGS)" -ldflags "$(SQLITE_LDFLAGS)" test vcx/platform/store_sqlite_test.v vcx/platform/store_sqlite_encryption_test.v vcx/platform/store_concurrent_writer_test.v; \
+	  $(V) -cc cc $(CX_GC) -d cxstore_sqlite -cflags "$(SQLITE_CFLAGS)" -ldflags "$(SQLITE_LDFLAGS)" test vcx/store/store_sqlite_test.v vcx/store/store_sqlite_encryption_test.v vcx/store/store_concurrent_writer_test.v; \
 	fi
 
 # V module search path. `lang/v/native/` + `lang/v/conformance.v` import

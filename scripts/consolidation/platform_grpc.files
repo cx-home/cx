@@ -24,3 +24,7 @@
 # store_grpc_hpack_test.v and store_grpc_huffman_test.v sections left this
 # umbrella with the codec they test (moved down into net) for
 # vcx/cxnet/cxnet_test.v, byte-for-byte; the rows above stay history.
+#
+# ── RS-24 (#1591, owner D28a), 2026-09-23: this umbrella moved whole, with its
+# product, to vcx/store/platform_grpc_umbrella_test.v (module store), where the
+# internals it tests are in-module; the rows above stay the history they are.

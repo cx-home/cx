@@ -268,7 +268,7 @@ needs becomes its own Ring-1 module.
   [; audit — #1422's audit sink, in the platform group per audit.md §1 (RULED: 1422-a),
      cx-platform/audit at the cutover; declared `incoming` ahead of its merge
      (OL-15) and current since release/0.18 carries it (861ca66ec). ]
-  [module name=audit ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/audit.md corpus=conformance/platform/audit.cxd source=stdlib/audit.cx code='vcx/platform/stdlib_audit.v vcx/platform/stdlib_audit_register.v' half=none status=current]
+  [module name=audit ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/audit.md corpus=conformance/platform/audit.cxd source=stdlib/audit.cx code='vcx/store/stdlib_audit.v vcx/store/stdlib_audit_register.v' half=none status=current]
   [module name=authz-store ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/authz-store.md corpus=conformance/platform/authz-store.cxd source=stdlib/authz-store.cx code='vcx/platform/stdlib_authz_store.v vcx/platform/stdlib_authz_store_register.v' half=none status=current]
   [; connector — #1430's connector kit, spec-first: the spec and its 134-case
      attack corpus landed before any code, so this row read `planned` while
@@ -324,8 +324,8 @@ needs becomes its own Ring-1 module.
      asks for a module of their own. Both corpora still carry the ring=1
      header the old tier-based placement gave them. ]
   [module name=imap ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/imap.md corpus=conformance/platform/imap.cxd source=stdlib/imap.cx code='vcx/mail/stdlib_imap_wire.v vcx/mail/stdlib_imap_wire_register.v' half='vcx/code/stdlib_imap.v vcx/code/stdlib_imap_server.v' status=current]
-  [module name=journal ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/journal.md corpus=conformance/platform/journal.cxd source=stdlib/journal.cx code='vcx/platform/stdlib_journal.v vcx/platform/journal_ingest.v vcx/platform/stdlib_journal_register.v' half=none status=current]
-  [module name=live ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/live.md corpus=conformance/platform/live.cxd source=stdlib/live.cx code='vcx/platform/stdlib_live.v vcx/platform/stdlib_live_register.v' half=none status=current]
+  [module name=journal ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/journal.md corpus=conformance/platform/journal.cxd source=stdlib/journal.cx code='vcx/store/stdlib_journal.v vcx/store/journal_ingest.v vcx/store/stdlib_journal_register.v' half=none status=current]
+  [module name=live ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/live.md corpus=conformance/platform/live.cxd source=stdlib/live.cx code='vcx/store/stdlib_live.v vcx/store/stdlib_live_register.v' half=none status=current]
   [module name=net ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/net.md corpus=conformance/platform/net.cxd source=stdlib/net.cx code='vcx/cxnet/stdlib_net.v vcx/cxnet/stdlib_net_register.v' half=none status=current]
   [module name=session ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/session.md corpus=conformance/platform/session.cxd source=stdlib/session.cx code='vcx/platform/stdlib_session.v vcx/platform/identity_connector_builtins.v vcx/platform/stdlib_session_register.v' half=none status=current]
   [module name=sftp ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/sftp.md corpus=conformance/platform/sftp.cxd source=stdlib/sftp.cx code=vcx/platform/stdlib_sftp.v half=none status=planned]
@@ -346,7 +346,7 @@ needs becomes its own Ring-1 module.
      the same `[missing]` it always was — named, with `make deps-sync` in the
      line, never a module quietly dropped. ]
   [module name=sso ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-sso spec=deps/cx-platform-sso/spec/03-approved/platform/sso.md corpus=deps/cx-platform-sso/conformance/platform/sso.cxd source=deps/cx-platform-sso/stdlib/sso.cx code=none half=none status=current]
-  [module name=store ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/store.md corpus=conformance/platform/store.cxd source=stdlib/store.cx code='vcx/platform/stdlib_store.v vcx/platform/store_connector_builtins.v vcx/platform/stdlib_store_register.v' half=none status=current]
+  [module name=store ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/store.md corpus=conformance/platform/store.cxd source=stdlib/store.cx code='vcx/store/stdlib_store.v vcx/store/store_connector_builtins.v vcx/store/stdlib_store_register.v' half=none status=current]
   [; sync — #1434's incremental-sync module, spec-first like connector: the
      spec and its 132-case attack corpus landed before any code (RULED:
      1434-a, 1085-e), so this row is `planned` and its source and code
@@ -360,10 +360,15 @@ needs becomes its own Ring-1 module.
   [; xsp-auth — the XSP-AUTH handshake calculus, a MODULE since RS-15 rather
      than the natives family it was: the thirteen `auth-*` defs left
      `stdlib/xsp.cx` for `stdlib/xsp-auth.cx`, and the page and corpus the
-     natives row already owned became this module's own. In the platform group because its
-     natives are identity's `stdlib_xsp_auth.v` — which is exactly why
-     `cx-stdlib/xsp` could not carry them. ]
-  [module name=xsp-auth ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/xap/xsp-auth.md corpus=conformance/xap/xsp-auth.cxd source=stdlib/xsp-auth.cx code='vcx/platform/stdlib_xsp_auth.v vcx/platform/stdlib_xsp_auth_register.v' half=none status=current]
+     natives row already owned became this module's own. In the platform group
+     because the surface is registered by identity (`stdlib_xsp_auth_register.v`)
+     — which is why `cx-stdlib/xsp` could not carry it. Its natives are the PURE
+     calculus, and since RS-24 (owner D34a) they are the row's declared `half=`
+     in vcx/code: the store server runs the handshake on its own XSP
+     connections and the store V module may not import identity. The module
+     still moves whole with identity (#1609), so the store's calls into the half
+     are the RS-24 store branch's LETTER to the owner. ]
+  [module name=xsp-auth ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/xap/xsp-auth.md corpus=conformance/xap/xsp-auth.cxd source=stdlib/xsp-auth.cx code=vcx/platform/stdlib_xsp_auth_register.v half=vcx/code/stdlib_xsp_auth.v status=current]
 
   [; ── The x tier — cx-x, its own namespace and its own spec directory.
        1427-b renames `cx-stdlib/X` and nothing else, so these rows carry no
