@@ -1258,11 +1258,16 @@ test-docs-fragment: build-vcx
 # --allow-subprocess (#1617): the deps-02x cases are scenarios run against
 # scripts/deps_sync.cx itself — git and the sync as subprocesses, over a
 # throwaway remote under a temporary root the grader removes.
+# The third line (#1643) is which cx `deps-sync` bootstraps with, on synthetic
+# trees: scripts/deps_cx_selftest.cx runs this Makefile's `deps-cx` step under a
+# cleared environment, one scenario per place a developer keeps a cx. Its own
+# file, not a deps_pins.cxd case: it grades a Makefile step, not the document.
 .PHONY: test-deps-pins
 test-deps-pins: CX_BIN ?= $(CURDIR)/vcx/target/cx
 test-deps-pins: build-vcx
 	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess scripts/check_deps_pins_fixtures.cx --self-test
 	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess scripts/check_deps_pins_fixtures.cx
+	@"$(CX_BIN)" --allow-all scripts/deps_cx_selftest.cx
 
 # ── test-migrate-namespace (RULED: RS-4, 1427-i) ─────────────────────────
 # conformance/migrate_namespace.cxd pins `cx --migrate-namespace --retired`:
