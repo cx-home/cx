@@ -353,7 +353,7 @@ checkout at new clean
 
  [case id=deps-030-vpath-names-the-vcx-root-of-a-v-repository-first level=core
   [tags deps vpath v-fork search-path]
-  [title a V repository row puts its checkout's vcx/ directory on the V search path AHEAD of @vmodules and @vlib -- a pinned module shadows a like-named library module, never the reverse]
+  [title a V repository row puts the vcx/ directory of its checkout on the V search path AHEAD of @vmodules and @vlib -- a pinned module shadows a like-named library module, never the reverse]
   [sync checkout=new dirty=false pin=new v-fork=true runs=vpath]
   [out-text [#
 run vpath

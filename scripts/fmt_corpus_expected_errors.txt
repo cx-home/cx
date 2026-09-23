@@ -15,12 +15,11 @@
 # Format: one repo-relative path per line. `#` comments and blank lines ignored.
 # Every entry carries its diagnostic, quoted from the census in lane_A_1348m.
 
-# Unterminated by design — these two ARE the fixtures for the unclosed-bracket
-# diagnostic, so `cx fmt` refusing them is the corpus working.
-#   5:1: expected ']' got EOF (cx-err:CXER0100) (unterminated [root] opened at 2:1)
-fixtures/errors/nested_unclosed.cx
-#   3:1: expected ']' got EOF (cx-err:CXER0100) (unterminated [server] opened at 2:1)
-fixtures/errors/unclosed.cx
+# fixtures/errors/{nested_unclosed,unclosed}.cx — unterminated by design, the
+# fixtures for the unclosed-bracket diagnostic — left this tree with fixtures/
+# for cx-core-data's pinned checkout (RULED: RS-7, RS-12). The sweep covers
+# this tree's tracked files, so their rows retire here; cx-core-data's own lint
+# excludes them for the same reason.
 
 # LSP diagnostic inputs — deliberately ill-formed, for the language server to
 # report on. Formatting them is not a thing anyone asks for.
