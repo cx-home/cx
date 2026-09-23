@@ -1,4 +1,4 @@
-# RS-13…RS-23 — the repo split's follow-up decisions (owner, 2026-09-22/23, in session on dev2)
+# RS-13…RS-25 — the repo split's follow-up decisions (owner, 2026-09-22/23, in session on dev2)
 
 **Status: RULED.** The owner answered each as a letter on the integrator's lettered options, in
 session on 2026-09-22 (recorded on [#1591](https://github.com/cx-home/cx-private/issues/1591)
@@ -14,6 +14,8 @@ beside them.
 RS-22 and RS-23 were answered in the same 2026-09-23 pass, as letters on the two LETTERs the
 ring1b pipeline left (`_gate_evidence/pipeline_ring1b/RESULTS.md`): LETTER A for RS-22, LETTER B
 for RS-23. They are the last two calls the `authz` split left open.
+
+RS-25 was answered on 2026-09-23 as D30d, the owner's letter (d) on the LETTER the connector-native pipeline left (`_gate_evidence/pipeline_connnative/RESULTS.md` §3), and is recorded at the end of this page.
 
 ## RS-13 — `authz` splits along the RS-6 line (owner: D14a)
 
@@ -258,3 +260,45 @@ D1a the RS page landed as drafted; D2a the XSP codec's home as drafted; D4a #159
 prio:medium; D5a #1594 closed, #1601 filed; D6a the runner derives `VJOBS` from the box (#1600);
 D10a agents run in parallel without a count cap on dev2, opus by default; D11a merges batch per
 union; D12a Fable only for the integrator session and for a runtime problem the owner names.
+
+## RS-25 — the mock adapter is declared by the kit's own CX, and the compile-time gate retires (owner: D30d)
+
+The owner's letter, in session on 2026-09-23 and recorded on
+[#1591](https://github.com/cx-home/cx-private/issues/1591) the same hour, on the LETTER in
+`_gate_evidence/pipeline_connnative/RESULTS.md` §3 (its option (d)):
+
+> `connector-test-build` retires as a compile-time gate; the mock adapter is registered from the
+> kit's own CX (`kind=mock` declared, not compiled in), so `cx-platform-connector` becomes pure CX
+> with no new Ring-1 surface.
+
+The LETTER reported the one placement the native-half move could not make: `connector-test-build`,
+a compile-time constant (`$if test`, or `-d cx_connector_mock`) that told the kind table whether this
+build was the kit's own test build, the one condition under which it registered the §10.1 mock
+adapter. It had no credential verb and no ledger verb, so neither identity nor store was its home,
+and the connector row in `registry/modules.cxd` kept a `code=` for it alone. The owner took the
+option that removes the question instead of answering where the constant lives.
+
+What moves:
+
+1. **The builtin retires.** `vcx/platform/stdlib_connector.v` (the constant and its dispatcher) and
+   `vcx/platform/stdlib_connector_register.v` (its registration) are deleted, and the composer
+   `vcx/platform/ring2_register.v` loses connector's call. No `$connector-test-build` exists in any
+   build, and no Ring-1 predicate replaces it: the letter's option (b) is not taken.
+2. **`kind=mock` is declared by the kit's CX.** `stdlib/connector.cx` puts the mock's row in the
+   kind table beside the release adapters, with §10.1's shapes unchanged, so it is registered in
+   every build that carries the kit and in none that does not. The harness cases that named the mock
+   lose their `packs=connector-mock` declaration and the profile gate its skip for it: the cli and
+   embed profiles now grade them like any other case.
+3. **The row's `code=` becomes `none`.** `cx-platform-connector` is pure CX, and the
+   `registry/repos.cxd` rule that sent `vcx/platform/stdlib_connector*` to it matches nothing and
+   goes with the files.
+4. **The spec sentence that changes** is `spec/03-approved/platform/connector.md` §10.1's "carried in
+   the kit's own test material and never in a release profile's module surface": the mock is
+   declared by the kit's own CX and is present wherever the kit is. The property that sentence
+   bought, a release binary answering `CXER6326` for `kind=mock`, is given up by this letter and
+   survives nowhere; `CXER6326` still answers a `kind=` with no adapter (§10.1's kind-seam row).
+   The placement paragraph's "Code `vcx/platform/stdlib_connector.v`" names a file this letter
+   deletes and changes with it.
+
+Nothing else in the spec moves. `identity_connector_builtins.v` and `store_connector_builtins.v`
+(the eleven builtins RS-6's move took down) are untouched.
