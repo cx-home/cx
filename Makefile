@@ -2998,8 +2998,6 @@ fixtures-census-reset:
 #     still a real failure: the retry re-runs the step, and a deterministic
 #     wrong answer fails again.
 SUITE_SERIAL_RETRY := vcx/tests/env_retention_test.v \
-                      vcx/tests/smtp_real_socket_test.v \
-                      vcx/tests/imap_real_socket_test.v \
                       vcx/tests/process_pty_test.v \
                       vcx/tests/xap_umbrella_test.v \
                       vcx/tests/store_remote_umbrella_test.v \
@@ -3126,7 +3124,7 @@ RETRY_REASON_CASE = case "$$rel" in \
 	    reason="reference web client / store readiness bounds (calibrated ~30 s) exceeded only under the -j12 storm plus box load: measured 2026-09-09 OK 72 s alone, FAIL 98.7 s and 123 s with a step or build sharing the box" ;; \
 	  vcx/tests/store_remote_umbrella_test.v) \
 	    reason="\#1425 daemon start under the -j12 suite storm (the readiness window expires before the listener line); green in isolation and in every prior full run" ;; \
-	  vcx/tests/smtp_real_socket_test.v|vcx/tests/imap_real_socket_test.v|vcx/tests/connector_live_test.v) \
+	  vcx/tests/connector_live_test.v) \
 	    reason="real-socket contention: ephemeral-port / deadline race under -j" ;; \
 	  vcx/store/store_admin_plane_test.v|vcx/store/store_grpc_live_test.v|vcx/store/store_lazy_load_test.v) \
 	    reason="real-socket contention: live store/grpc endpoint under -j (\#648)" ;; \
