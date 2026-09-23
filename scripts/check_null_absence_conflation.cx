@@ -46,6 +46,7 @@
 
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
 [?lib 'cx-stdlib/re'      as=re]
 [?lib 'cx-stdlib/strings' as=strings]
 [?lib 'cx-stdlib/path'    as=path]
@@ -78,7 +79,14 @@
     [$fp:flat-map ("spec/03-approved/stdlib", "spec/03-approved/platform")
       [?fn ($d) [$io:glob [$cat ($d, "/**/*.md")]]]]]
   [= $vcx-files
-    [$fp:flat-map ("vcx/code", "vcx/platform") [?fn ($d)
+    # vcx/code, vcx/platform and every split V product directory (RULED: RS-24;
+    # registry/repos.cxd `vmodule=`): mime.v and the stdlib_net/http_serve/smtp/
+    # imap bundle files moved with their products.
+    [$fp:flat-map [$fp:flat-map ("vcx/code",
+                                  [?for [in $x [$cx:parse [$io:read-file "registry/repos.cxd"]]//repo]
+                                    [where [not [= [$string [?else $x@vmodule ""]] ""]]]
+                                    [yield [$cat ("vcx/", [$string $x@vmodule])]]])
+                    [?fn ($x) $x]] [?fn ($d)
       [?for [in $p [$io:glob [$cat ($d, "/**/*.v")]]]
         [= $bn [$path:basename $p]]
         [where [or [$strings:contains $bn "stdlib_"]

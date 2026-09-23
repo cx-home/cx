@@ -1131,6 +1131,21 @@ repos-allocation-gate: build-vcx
 	@"$(CX_BIN)" --allow-all scripts/repos_allocation_gate.cx --self-test
 	@"$(CX_BIN)" --allow-all scripts/repos_allocation_gate.cx
 
+# ── the product import graph (RULED: RS-24, owner D28a) ──────────────────────
+# vcx/platform splits into one V module per V product, and registry/repos.cxd
+# declares, once, which repository compiles each module (`vmodule=`) and which
+# repositories it builds on (`pins=`, the Pins column of the #1589 table). The
+# step refuses an import under a product directory that runs against a pin, a
+# cycle in the pins, a product directory with no repository row, a file
+# allocated away from its product directory, and a vmodule that would shadow a
+# vlib module. The self-test runs first and carries the planted violation the
+# gate was red-proofed on (`import store` in a net file).
+.PHONY: product-import-gate
+product-import-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
+product-import-gate: build-vcx
+	@"$(CX_BIN)" --allow-all scripts/product_import_gate.cx --self-test
+	@"$(CX_BIN)" --allow-all scripts/product_import_gate.cx
+
 # ── the store→session dependency check (RULED: RS-6, #1591 item 8) ─────────
 # RS-6 puts the store SERVER's authentication on the Ring-1 trust primitives
 # (did/vc verify, the authz decision) and the daemon's own `[grants]`, so the
@@ -1447,7 +1462,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -1635,10 +1650,21 @@ check-code-spec-consistency: build-vcx
 # (cites its WF- ruling and says "not yet implemented" — the shape the W3
 # performer-axis refusal already uses). It also fails when its own inputs
 # do not parse, so it cannot go green over nothing.
+#
+# THE GATE MOVED AND THE STEP DID NOT (RULED: RS-12, #1591 item 15). The
+# program, flow.md and stdlib/flow.cx are cx-platform-flow's; the step runs the
+# program out of the pinned checkout deps.cxd names, from that checkout's root
+# (it reads `spec/03-approved/platform/flow.md` and `stdlib/flow.cx` relative
+# to where it runs), under THIS tree's binary. It stays here because the
+# repository's own `make check` is lint plus `cx corpus`, and the pair it
+# holds together is exactly the pair a pin bump moves.
 .PHONY: flow-vocabulary-gate
 flow-vocabulary-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
 flow-vocabulary-gate: build-vcx
-	@"$(CX_BIN)" --allow-read --allow-write scripts/flow_vocabulary_gate.cx
+	@test -f deps/cx-platform-flow/scripts/flow_vocabulary_gate.cx || { \
+	  echo "flow-vocabulary-gate: deps/cx-platform-flow/ is not there — the gate lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
+	  exit 2; }
+	@cd deps/cx-platform-flow && "$(CX_BIN)" --allow-read --allow-write scripts/flow_vocabulary_gate.cx
 
 # ── flow-dogfood-gate (#1265, ladder rung 1) — the DOGFOOD FLOW documents.
 # `flow.md` §4.16 makes three flows ABOUT THIS REPOSITORY the campaign's
@@ -1658,10 +1684,48 @@ flow-vocabulary-gate: build-vcx
 # with real acts: those acts are `make build-vcx` and `make <step>`, and
 # running them inside `make test` would nest make in the matrix and hand a
 # second make the jobserver. In TEST_TARGETS.
+#
+# THE DOCUMENTS MOVED AND THE STEP DID NOT (RULED: RS-12, RS-20, #1591 item
+# 15). flows/ and the gate program are cx-platform-flow's; the two verbs the
+# gate drives them through — `cx flow validate` and `cx flow simulate` — are
+# the local profile RS-20 kept in THIS repository. So the step runs the
+# program out of the pinned checkout, from its root, and CX_BIN is what
+# crosses: the program's own discovery looks for `vcx/target/cx` under where
+# it runs, which in the checkout is nothing, and it must grade this tree's
+# binary rather than find another.
 .PHONY: flow-dogfood-gate
 flow-dogfood-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
 flow-dogfood-gate: build-vcx
-	@"$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/flow_dogfood_gate.cx
+	@test -f deps/cx-platform-flow/scripts/flow_dogfood_gate.cx || { \
+	  echo "flow-dogfood-gate: deps/cx-platform-flow/ is not there — the gate lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
+	  exit 2; }
+	@cd deps/cx-platform-flow && CX_BIN="$(CX_BIN)" "$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/flow_dogfood_gate.cx
+
+# ── test-flow-umbrella — the `cx flow` lane, run out of the pinned checkout ──
+# vcx/tests/flow_umbrella_test.v was one file of test-vcx-suite's directory
+# until the extraction (RULED: RS-12, #1591 item 15) allocated it to
+# cx-platform-flow. What it grades did NOT move: eight real `cx` processes
+# advancing one journaled run, and the `cx flow` command line — argv, exit
+# codes, the stdout/stderr split, a run resuming between two processes. Those
+# are the local-profile verbs RS-20 kept in the binary, and the repository has
+# no V build to run a V test with. So this step runs the pinned file against
+# THIS tree's module path (`-path` names vcx/, where `testenv` is; testenv
+# finds the binary under @VMODROOT, which is vcx/ whatever directory the test
+# file sits in) with test-vcx-suite's gc and engine flags, and refuses by name
+# when the checkout is absent — a skip and a pass would be the same line.
+#
+# The module path is ABSOLUTE and the step carries no -usecache. Measured on
+# the xflow branch: with test-vcx-suite's `-usecache` and VFLAGS_VCX's relative
+# `vcx`, V's cache rebuild could not find the module ("builder error:
+# vcx/testenv doesn't exist ... could not rebuild cache module", run 4); with
+# this line the lane passes (run 5). A file outside vcx/ has no v.mod above it
+# to anchor a relative path to.
+.PHONY: test-flow-umbrella
+test-flow-umbrella: build-vcx-dev
+	@test -f deps/cx-platform-flow/vcx/tests/flow_umbrella_test.v || { \
+	  echo "test-flow-umbrella: deps/cx-platform-flow/ is not there — the lane lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
+	  exit 2; }
+	@$(JS_CLOSE) VFLAGS='-cc cc -path "@vlib|@vmodules|$(CURDIR)/vcx"' $(V) -cc cc $(CX_GC) $(CX_ENGINES) test deps/cx-platform-flow/vcx/tests/flow_umbrella_test.v
 
 # ── check-code-fixtures (gate 4; repaired + wired by the #805 gate-truth
 # batch — it was RED and in no step, so no stream gate ever ran it). The
@@ -2684,12 +2748,13 @@ test-vcx: build-vcx-dev test-vcx-gates test-vcx-suite test-vcx-code test-vcx-cmd
 # named step. check-conformance-coverage (in TEST_TARGETS) asserts that map on
 # every gate; the banner says it so a green here is read for what it covers.
 test-vcx-conform: build-vcx-dev
-	@echo "test-vcx-conform covers the DOCUMENT suites (conform-all's list) + fmt + data-bin-arrow + diff + lint; code.cxd and stdlib/*.cxd are the eval step's (test-vcx-code, test-profile-gate) — see check-conformance-coverage"
+	@echo "test-vcx-conform covers the DOCUMENT suites (conform-all's list) + fmt + data-bin-arrow + diff + lint + streaming-write; code.cxd and stdlib/*.cxd are the eval step's (test-vcx-code, test-profile-gate) — see check-conformance-coverage"
 	$(MAKE) -C vcx conform-all
 	$(MAKE) -C vcx conform-fmt
 	$(MAKE) -C vcx conform-data-bin-arrow
 	$(MAKE) -C vcx conform-diff
 	$(MAKE) -C vcx conform-lint
+	$(MAKE) -C vcx conform-streaming-write
 
 # Convenience wrapper: run the full V suite ONCE, stream live output to a
 # log, then print a digest of just the FAIL lines + per-file counts + the
@@ -3323,9 +3388,17 @@ CODE_SERIAL_RETRY := vcx/platform/store_admin_plane_test.v \
 # modules — vcx/code (Ring 1) and vcx/platform (Ring 2, where the
 # store/journal/grpc/service subjects moved). One step runs both.
 .PHONY: test-vcx-code
+# CODE_TEST_DIRS — the directories whose in-module tests this step runs. RS-24
+# (owner D28a) splits vcx/platform into one V module per V product, each in
+# its own vcx/<m>/ (registry/repos.cxd `vmodule=`), and a product's white-box
+# tests move with it. `v test` runs only what it is given, so every product
+# directory is listed here — check-inmodule-test-roster refuses a declared
+# vmodule missing from the list — and a directory with no test yet costs
+# nothing: V reports "0 total" and exits 0.
+CODE_TEST_DIRS := vcx/code/ vcx/platform/ vcx/cxnet/ vcx/mail/ vcx/cxdb/
 test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	@$(JS_CLOSE) log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
-	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/code/ vcx/platform/ 2>&1; echo $$? > $$stf; } | tee $$log; \
+	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(CODE_TEST_DIRS) 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
 	  failed=$$(grep -aE '^FAIL ' $$log | grep -aoE '[^ ]+_test\.v$$' | sort -u); \
@@ -3436,7 +3509,21 @@ check-inmodule-test-roster:
 	  echo "  the issue that owns the exclusion."; \
 	  exit 1; \
 	fi; \
-	echo "check-inmodule-test-roster OK — every vcx/cx/*_test.v is run or explicitly excluded"
+	unrun=""; \
+	for m in $$(grep -oE "vmodule=[a-z_][a-z0-9_]*" registry/repos.cxd | cut -d= -f2); do \
+	  case " $(CODE_TEST_DIRS) " in \
+	    *" vcx/$$m/ "*) ;; \
+	    *) unrun="$$unrun vcx/$$m/" ;; \
+	  esac; \
+	done; \
+	if [ -n "$$unrun" ]; then \
+	  echo "check-inmodule-test-roster: product module director(ies) whose in-module tests NO step runs —"; \
+	  for d in $$unrun; do echo "    $$d"; done; \
+	  echo "  registry/repos.cxd declares each as a V product (vmodule=, RULED: RS-24) and a"; \
+	  echo "  product's white-box tests live beside it; add the directory to CODE_TEST_DIRS."; \
+	  exit 1; \
+	fi; \
+	echo "check-inmodule-test-roster OK — every vcx/cx/*_test.v is run or explicitly excluded, and every product directory (vmodule=) is in test-vcx-code's CODE_TEST_DIRS"
 
 # White-box unit tests INSIDE the Ring-0 `cx` module (vcx/cx/*_test.v) plus
 # the `fixtures` test-support module (vcx/fixtures/ — the corpus loader,
@@ -4295,6 +4382,15 @@ fmt-sweep-timed: build-vcx
 # own `make lint` is what sees it.
 #   SWEEP-FILES=306 FORMATTED=289 DECLINED=11 TREE-REFUSED=10 UNSTABLE=0 ERROR=5
 #
+# TREE-REFUSED 10 -> 9 by the flow extraction (RULED: RS-12, #1591 item 15),
+# brought down in the same landing by the same convention: twenty `.cx`
+# files left with cx-platform-flow, and one of them,
+# examples/platform/flow/checkout/checkout.flow.cx, was the `/@a` -> `@a`
+# member of the program-surface class above. Not a formatter improvement; the
+# file is refused the same way in the repository that holds it. DECLINED is
+# unmoved (stdlib/flow.cx formats). Measured on the branch's own binary:
+#   SWEEP-FILES=297 FORMATTED=272 DECLINED=11 TREE-REFUSED=9 UNSTABLE=0 ERROR=5
+#
 # DECLINED 34 -> 12 and TREE-REFUSED 17 -> 10, and both numbers below move to
 # the measurement in the same commit as the fix, which is what FMT-1 says a
 # ratchet move is. TREE-REFUSED falls by 9 (nine files whose interior comment
@@ -4310,7 +4406,7 @@ fmt-sweep-timed: build-vcx
 # `design/787/w1/serve.cx`, `spec/…/oriel/tui.cx`, `x/ux-web.cx`. The other
 # five declines are the census's OTHER classes, none of them #1436's.
 FMT_SWEEP_MAX_DECLINED ?= 11
-FMT_SWEEP_MAX_TREE_REFUSED ?= 10
+FMT_SWEEP_MAX_TREE_REFUSED ?= 9
 FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
 .PHONY: fmt-sweep-gate
 fmt-sweep-gate: build-vcx
@@ -4383,15 +4479,26 @@ repr-guard: build-vcx
 # targets under `-j` — a duration floor there reds on a busy machine rather
 # than on a regression, which is how a gate stops being believed. bench/repr
 # earns its TEST_TARGETS seat because its quantity is a RATIO of live bytes.
-# The load-insensitive halves of this step ARE gated in `make test`: the two
-# per-item COUNT rows are pinned exactly in conformance/platform/flow.cxd
-# (flow-040), and the racing-advancer count in vcx/tests/flow_umbrella_test.v.
+# The load-insensitive halves of this step ARE gated: the two per-item COUNT
+# rows are pinned exactly in conformance/platform/flow.cxd (flow-040), which
+# cx-platform-flow's own gate grades with `cx corpus` since the extraction, and
+# the racing-advancer count in vcx/tests/flow_umbrella_test.v, which
+# `test-flow-umbrella` runs out of the pinned checkout in `make test`.
 # Run this target deliberately — before a release, and at every #1265 wave
 # exit, whose ledger row re-pins what it improved. Contract + numbers:
 # bench/flow/README.md.
+#
+# THE BENCH MOVED WITH THE MODULE (RULED: RS-12, #1591 item 15): bench/flow/,
+# the corpus row flow-040 and the umbrella are cx-platform-flow's, read out of
+# the pinned checkout. run.sh derives its REPO from its own path, so inside the
+# checkout it would look for a `vcx/target/cx-dev` that is not there; CX_BIN is
+# what crosses, and it names THIS tree's dev binary, the one the step builds.
 .PHONY: bench-flow
 bench-flow: build-vcx-dev
-	@bench/flow/run.sh
+	@test -f deps/cx-platform-flow/bench/flow/run.sh || { \
+	  echo "bench-flow: deps/cx-platform-flow/ is not there — the bench lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
+	  exit 2; }
+	@CX_BIN="$(CURDIR)/vcx/target/cx-dev" deps/cx-platform-flow/bench/flow/run.sh
 
 # ── Clean ──────────────────────────────────────────────────────────────────────
 
