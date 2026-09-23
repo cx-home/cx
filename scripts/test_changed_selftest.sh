@@ -119,7 +119,7 @@ else
 fi
 
 # ── D — one module source ───────────────────────────────────────────────────
-run vcx/platform/stdlib_journal.v > "$T/d"
+run vcx/store/stdlib_journal.v > "$T/d"
 d_files=$(suite_files_of "$T/d")
 d_n=$(printf '%s\n' "$d_files" | grep -c . || true)
 d_total=$(ls "$ROOT/vcx/tests"/*_test.v | wc -l | tr -d ' ')

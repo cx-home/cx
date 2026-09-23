@@ -20,3 +20,7 @@
 # byte-for-byte; the second with store_str, the store family's helper, spelled as
 # the cx.mk_string it wraps, since db does not pin store). The rows
 # above stay the history they are.
+#
+# ── RS-24, the store's split: the live_refs_feed_test.v section left this umbrella
+# with its product for vcx/store/store_test.v, in-module there (its local
+# `store` spelled `store_node`, which V requires inside a module of that name).
