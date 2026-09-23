@@ -128,8 +128,8 @@ printf '%s\n' "$CHANGED" | sed 's/^/  /'
 #   vcx/cxstore   <- cx
 #   vcx/code      Ring-1 <- cx
 #   vcx/arrow     <- cx        vcx/transport <- cx
-#   vcx/platform  Ring-2 <- cx code cxstore arrow transport cxnet mail cxdb
-#   vcx/cxnet, vcx/mail, vcx/cxdb   the V product modules split out of
+#   vcx/platform  Ring-2 <- cx code cxstore arrow transport cxnet mail cxdb store
+#   vcx/cxnet, vcx/mail, vcx/cxdb, vcx/store   the V product modules split out of
 #                 vcx/platform (RULED: RS-24) <- cx code transport + their pins
 #   vcx/cli, vcx/cmd_data      platform-free <- cx code cli cmd_data
 #   vcx/cmd       <- cli code cx platform
@@ -143,7 +143,7 @@ RING0='vcx/cx/*'
 RING_STORE='vcx/cxstore/*'
 RING1='vcx/code/*'
 RING_LEAF='vcx/arrow/* vcx/transport/*'
-RING2='vcx/platform/* vcx/cxnet/* vcx/mail/* vcx/cxdb/*'
+RING2='vcx/platform/* vcx/cxnet/* vcx/mail/* vcx/cxdb/* vcx/store/*'
 RING_CLI='vcx/cli/* vcx/cmd_data/*'
 RING_CMD='vcx/cmd/*'
 RING_SUP='vcx/testenv/* vcx/fixtures/* vcx/deps/* vcx/bench/* vcx/fuzz/* vcx/tools/* vcx/v.mod third_party/*'
@@ -216,11 +216,11 @@ step_globs() {
     # point). The row is kept so an explicit `test-changed` over a tree whose
     # Makefile still names it cannot fall through to deny-by-default.
     test-vcx)                      echo 'vcx/* stdlib/* x/* conformance/* third_party/*' ;;
-    test-vcx-columnar)             echo 'vcx/platform/store_columnar* vcx/platform/stdlib_store.v vcx/arrow/* third_party/*' ;;
+    test-vcx-columnar)             echo 'vcx/store/store_columnar* vcx/store/stdlib_store.v vcx/arrow/* third_party/*' ;;
     # the sqlite backend step (#989 wired it into TEST_TARGETS): the gated
     # store_sqlite_* suites plus the #220/#891 concurrent-writer + shared-open
     # stress, which drives the daemon dispatch path in stdlib_store.v.
-    test-vcx-sqlite)               echo 'vcx/platform/store_sqlite* vcx/platform/store_concurrent_writer_test.v vcx/platform/stdlib_store.v third_party/*' ;;
+    test-vcx-sqlite)               echo 'vcx/store/store_sqlite* vcx/store/store_concurrent_writer_test.v vcx/store/stdlib_store.v third_party/*' ;;
     check-no-legacy-try)           echo 'vcx/* conformance/* stdlib/* docs-src/*' ;;
     check-no-infix-range)          echo 'conformance/* stdlib/* docs-src/* examples/*' ;;
     check-no-cxl-token)            echo '*' ;;
@@ -323,12 +323,12 @@ step_globs() {
     # the placement declaration and every artifact class it compares against
     # (RULED: 1427-f) — a spec, a corpus, a bundled source or a ring's V
     # directory moving is exactly what this step exists to catch.
-    placement-gate)                echo 'registry/modules.cxd registry/repos.cxd scripts/placement_gate.cx spec/* conformance/* stdlib/* x/* vcx/code/* vcx/platform/* vcx/cxnet/* vcx/mail/* vcx/cxdb/*' ;;
+    placement-gate)                echo 'registry/modules.cxd registry/repos.cxd scripts/placement_gate.cx spec/* conformance/* stdlib/* x/* vcx/code/* vcx/platform/* vcx/cxnet/* vcx/mail/* vcx/cxdb/* vcx/store/*' ;;
     repos-allocation-gate)         echo '*' ;;   # any added or removed file can change the allocation
     # RS-24: any vcx/ file can move an import or make a module directory; the
     # vlib listing (the V pin) decides what an import that is not vcx/'s names.
     product-import-gate)           echo 'registry/repos.cxd scripts/product_import_gate.cx vcx/* third_party/*' ;;
-    store-session-dep-gate)        echo 'scripts/store_session_dep_gate.cx vcx/platform/store_*.v vcx/platform/stdlib_session.v' ;;
+    store-session-dep-gate)        echo 'scripts/store_session_dep_gate.cx vcx/store/* vcx/platform/stdlib_session.v' ;;
     # the pin document, its format module, its grader and the spec page it
     # implements -- nothing else changes what the corpus asserts.
     test-deps-pins)                echo 'conformance/deps_pins.cxd scripts/check_deps_pins_fixtures.cx scripts/deps_pins.cx scripts/deps_sync.cx deps.cxd spec/03-approved/process/repository-dependency-pins.md' ;;
@@ -517,10 +517,10 @@ step_globs() {
 # layer, _gate_evidence/, .github/, root prose) selects nothing.
 SUITE_DIR='vcx/tests'
 # The vcx/ directories that are V modules a test file can import.
-VCX_MODULES='cx code platform cxnet mail cxdb cxstore arrow transport cli cmd cmd_data testenv fixtures timing tools bench fuzz'
+VCX_MODULES='cx code platform cxnet mail cxdb store cxstore arrow transport cli cmd cmd_data testenv fixtures timing tools bench fuzz'
 # The directories the shipped `cx` and libcx compile from — testenv's edge,
 # because a test that runs the binary runs all of this.
-BINARY_MODULES='cx code platform cxnet mail cxdb cxstore arrow transport cli cmd cmd_data'
+BINARY_MODULES='cx code platform cxnet mail cxdb store cxstore arrow transport cli cmd cmd_data'
 
 # vcx_module_of <import-name> — the vcx/ module directory it names, or nothing
 # when it is V's own stdlib (os, net, time, encoding.base64, x.json2, …). The V
@@ -746,7 +746,7 @@ suite_files() {
       # `tests` is not in VCX_MODULES.
       "$SUITE_DIR"/runners/*)
         ;;
-      stdlib/*.cx|x/*.cx|vcx/platform/stdlib_*.v|vcx/cxnet/stdlib_*.v|vcx/mail/stdlib_*.v|vcx/code/stdlib_*.v)
+      stdlib/*.cx|x/*.cx|vcx/platform/stdlib_*.v|vcx/cxnet/stdlib_*.v|vcx/mail/stdlib_*.v|vcx/store/stdlib_*.v|vcx/code/stdlib_*.v)
         # the corpus side is already in `sel`; this is the NAME clause on top,
         # plus the ring rule for the two V spellings.
         case "$f" in

@@ -8,12 +8,13 @@
 # the daemon's own `[grants]` document, never through session tables. The
 # identity module keeps its edges INTO the store (a session record is a store
 # document -- `cx-platform-identity` pins `-store`); what must not exist is the
-# edge back out. Today both sides are `module platform`, so the V compiler
-# cannot state the rule: `ring-import-gate` works on directories, and these two
-# surfaces share one. This step states it at the file level instead, so the
-# seam cannot regress silently before `cx-platform-store` is extracted.
+# edge back out. Since RS-24 the store is its own V module (`vcx/store/`, module
+# store) and the product-import gate refuses an `import` of identity there; this
+# step keeps the finer rule the import gate cannot state -- no session-shaped
+# NAME in a store file, whatever module it would resolve to -- over the whole
+# store module (it scanned only `vcx/platform/store_*.v` before the split).
 #
-# THE RULE. No non-test `vcx/platform/store_*.v` file may name an identifier
+# THE RULE. No non-test `vcx/store/*.v` file may name an identifier
 # that belongs to the identity module's session surface. The symbol set is
 # DERIVED from `vcx/platform/stdlib_session.v` -- every identifier in it that
 # begins with `session_` or `Session` -- so a session helper added tomorrow is
@@ -167,14 +168,14 @@
 
 [?let
   [= $sess-text [$io:read-file "vcx/platform/stdlib_session.v"]]
-  [= $paths [?for [in $p [$io:glob "vcx/platform/store_*.v"]]
+  [= $paths [?for [in $p [$io:glob "vcx/store/*.v"]]
               [where [not [$strings:ends-with $p "_test.v"]]]
               [order-by $p]
               [yield $p]]]
   [= $files [?for [in $p $paths] [yield [file path=$p text=[$io:read-file $p]]]]]
   [= $v [$check $sess-text $files]]
   [= $failures [?for [in $f $v/failures/row] [yield $f]]]
-  [= $_c1 [$say [$concat [$strings:pad-start [$string $v/scanned@n] 6 " "] "  non-test vcx/platform/store_*.v files scanned"]]]
+  [= $_c1 [$say [$concat [$strings:pad-start [$string $v/scanned@n] 6 " "] "  non-test vcx/store/*.v files scanned"]]]
   [= $_c2 [$say [$concat [$strings:pad-start [$string $v/derived@n] 6 " "] "  session symbols derived from stdlib_session.v"]]]
   [= $_g1 [?if [= [$count $paths] 0]
             [then [?let [= $_ [$cry "store-session-dep: matched NO store source -- refusing to vouch for an empty scan"]]
@@ -185,7 +186,7 @@
                     [$env:exit 2]]]
             [else ""]]]
   [?if [= [$count $failures] 0]
-    [then [?let [= $_ [$say "store-session-dep: OK -- no non-test store_*.v names a session symbol (RULED: RS-6)"]]
+    [then [?let [= $_ [$say "store-session-dep: OK -- no non-test vcx/store/*.v names a session symbol (RULED: RS-6)"]]
             [$env:exit 0]]]
     [else
       [?let [= $_h [$cry [$concat "store-session-dep: " [$string [$count $failures]] " file(s) name a session symbol -- the store<->session cycle RS-6 removes"]]]
