@@ -249,8 +249,10 @@ step_globs() {
     # docs-check (#938) regenerates the LLM layer from the templates, the
     # conformance corpus, the spec's directive registry, the stdlib bundle's
     # [module-doc]s and the binary's own --help — so any of those moving can
-    # move its output. VERSION too: the primer's heading derives from it.
-    docs-check)                    echo 'docs-src/* docs/llm/* scripts/gen_docs/* conformance/* spec/* stdlib/* x/* vcx/* VERSION' ;;
+    # move its output. VERSION too: the primer's heading derives from it. And the
+    # documentation fragments of the pinned repositories (RULED: RS-9): the
+    # contract module, the pin reader, and deps.cxd, which says which to read.
+    docs-check)                    echo 'docs-src/* docs/llm/* scripts/gen_docs/* scripts/docs_fragment.cx scripts/deps_pins.cx deps.cxd conformance/* spec/* stdlib/* x/* vcx/* VERSION' ;;
     ring-import-gate)              echo 'vcx/* scripts/ring_import_gate* registry/repos.cxd' ;;
     gates-manifest-gate)           echo 'conformance/* scripts/gates_manifest_gate*' ;;
     ring-tag-gate)                 echo 'conformance/* scripts/*' ;;
@@ -330,6 +332,12 @@ step_globs() {
     # the pin document, its format module, its grader and the spec page it
     # implements -- nothing else changes what the corpus asserts.
     test-deps-pins)                echo 'conformance/deps_pins.cxd scripts/check_deps_pins_fixtures.cx scripts/deps_pins.cx scripts/deps_sync.cx deps.cxd spec/03-approved/process/repository-dependency-pins.md' ;;
+    # the bundled-source table and the grader that reads it -- the corpus is
+    # pure described trees, so nothing else changes what it asserts (#1589 item 23).
+    test-bundle-sources)           echo 'conformance/bundle_sources.cxd scripts/check_bundle_sources_fixtures.cx scripts/bundle_sources.cx spec/03-approved/process/repository-dependency-pins.md' ;;
+    # the fragment contract and the grader that reads it -- the corpus is pure
+    # documents, so nothing else changes what it asserts (RULED: RS-9).
+    test-docs-fragment)            echo 'conformance/docs_fragment.cxd scripts/check_docs_fragment_fixtures.cx scripts/docs_fragment.cx' ;;
     # the retired-name sweep (RULED: RS-4): its corpus, its grader, and the V
     # files that ARE the tool -- the retirement table it reads is the loader's.
     test-migrate-namespace)        echo 'conformance/migrate_namespace.cxd scripts/check_migrate_namespace_fixtures.cx vcx/code/namespace_migrate.v vcx/code/stdlib_bundle.v vcx/cmd/main.v' ;;
