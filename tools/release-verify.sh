@@ -166,6 +166,34 @@ check "cx primer == docs/llm/primer.md (embed is fresh)" \
 # going missing, and the whole value of these is that a fixed path answers.
 check "llms.txt + llms-full.txt + AGENTS.md present and non-empty" \
  "test -s docs/llm/llms.txt && test -s docs/llm/llms-full.txt && test -s AGENTS.md && test -s CLAUDE.md"
+# The site assembly step (RULED: RS-27, RS-11, D51d): `publish.sh` used to
+# copy these to the site root as part of the allowlist mirror it built; RS-11
+# retired that mirror and nothing replaced the copy. `docs/` is the site root
+# itself (CNAME lives there), so this is that copy — the llmstxt.org
+# convention served from the domain root — done here, at release-verify time,
+# UNTRACKED (gitignored: a committed duplicate would drift on every
+# regeneration). This row both assembles and checks: docs/llms.txt and
+# docs/llms-full.txt do not exist until release-verify runs.
+check "llms.txt + llms-full.txt copied to the site root (untracked)" \
+ "cp docs/llm/llms.txt docs/llms.txt && cp docs/llm/llms-full.txt docs/llms-full.txt && test -s docs/llms.txt && test -s docs/llms-full.txt"
+
+section "The pins (RULED: RS-7, #1589 item 23)"
+# "A release cut ships whatever is pinned." These rows are what makes that
+# sentence checkable BEFORE the tag rather than discoverable after it.
+#
+# deps-check: every deps/<repo> is at the sha deps.cxd names, and every bundled
+# CX module has exactly one source — its own tracked file, or the pinned
+# checkout its registry row names (scripts/bundle_check.cx). It writes
+# nothing, touches no network, and REFUSES — a stale pin, a drifted checkout, a
+# pinned checkout missing its source, a row naming an unpinned repository, a
+# pinned source committed here. None is a warning.
+check "the pins are in sync and every bundled CX module has one source" \
+ "make -s deps-check"
+# The four §4 builds, from that pinned tree. `build-profiles-dev` is the dev
+# matrix — the -prod matrix is phase 3's, and this row exists so a profile that
+# cannot be built at all fails BEFORE the tag instead of inside the cut.
+check "the four profiles build from the pinned tree" \
+ "make -s build-profiles-dev"
 
 section "Release assets"
 # RULED: PGL-1 (#741) — the R2.2 blocking per-profile install gate runs HERE,

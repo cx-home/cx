@@ -21,10 +21,10 @@
       [tr [td 'embed CX somewhere that must not run code'] [td 'Ring 0']]
       [tr [td 'query, transform, or generate with programs'] [td 'Ring 1']]
       [tr [td 'run a program with controlled access to files or the network'] [td 'Ring 1']]
-      [tr [td 'store data, keep history, or serve it'] [td 'Ring 2']]
-      [tr [td 'host an XAP feature'] [td 'Ring 2']]
-      [tr [td 'publish, discover, or install a feature'] [td 'Ring 3']]
-      [tr [td 'call CX from Go, Python, Rust, or V'] [td 'Ring 3']]]
+      [tr [td 'store data, keep history, or serve it'] [td 'the platform group']]
+      [tr [td 'host an XAP feature'] [td 'the platform group']]
+      [tr [td 'publish, discover, or install a feature'] [td 'the bindings and ecosystem groups']]
+      [tr [td 'call CX from Go, Python, Rust, or V'] [td 'the bindings and ecosystem groups']]]
 
     [body
       """If the table already answered you, jump to that ring's group in

@@ -1,9 +1,10 @@
 [# Section 4a — schema and its evolution: the Ring-0 half of
    spec/03-approved/core/schema_event_evolution.md (compatibility as a
    computable predicate, lineage, the always-additive headline). The
-   Ring-2 half (upcasting journals, fold identity, migration) is section
-   18c. Absorbs the schema-compatibility half of the old ABI-stability
-   concept page (was 9.8). Authored 2026-08-19 for #826 acceptance 3. #]
+   platform-group half (upcasting journals, fold identity, migration) is
+   section 18c. Absorbs the schema-compatibility half of the old
+   ABI-stability concept page (was 9.8). Authored 2026-08-19 for #826
+   acceptance 3. #]
 
 [section id=schema-evolution group='Ring 0 — Data' n='4a' title='Schema and its evolution'
 
@@ -25,7 +26,7 @@
          therefore always *additive*: new documents beside old ones, new
          readings of old events, never an in-place rewrite. (What that
          looks like operationally — upcasting journals, migrating stored
-         documents — is Ring 2's half: [[event-evolution]].)"""]]
+         documents — is the platform group's half: [[event-evolution]].)"""]]
 
   [child id=se-compat n=4a.2 title='Compatibility you can compute'
     [intro
@@ -123,8 +124,8 @@
     [body
       """The division of labor between the halves: Ring 0 owns the
          *vocabulary* — what compatible means, what a lineage claim is,
-         why addresses never move. Ring 2 owns the *machinery* — folds
-         that upcast, snapshots that remember which fold produced them,
-         and the honest failure when an entry no upcaster covers appears
-         mid-replay."""]]
+         why addresses never move. The platform group owns the
+         *machinery* — folds that upcast, snapshots that remember which
+         fold produced them, and the honest failure when an entry no
+         upcaster covers appears mid-replay."""]]
 ]

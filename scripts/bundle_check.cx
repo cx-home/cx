@@ -1,0 +1,125 @@
+# scripts/bundle_check.cx — every bundled CX module of the four `cx` builds has
+# exactly one source, and a pinned one is where the pin put it (RULED: RS-7).
+# Written in CX (AGENTS.md rule 6).
+#
+# #1589 item 23: "the four builds from pins". A module whose repository has
+# left the front door is embedded from the pinned checkout itself —
+# registry/modules.cxd's row carries `repo=<repo>` and a `source=` under
+# `deps/<repo>/`, and vcx/code/stdlib_bundle.v's `$embed_file` literal names
+# the same path. That is the ONE mechanism; nothing is copied into this tree.
+#
+# THIS PROGRAM APPLIES THE TABLE to the real tree: scripts/bundle_sources.cx,
+# graded by conformance/bundle_sources.cxd. It runs as the last half of
+# `make deps-sync` (after the fetch) and of `make deps-check` (after the
+# at-pin check), so the moment a pin is taken or verified the bundled sources
+# are judged with it. `missing-pinned-source` is the refusal the whole table
+# exists for: a pinned checkout without the source its row names — never
+# fetched, or fetched at a sha where the file moved — must FAIL, never produce
+# a smaller binary.
+#
+# `make deps-present` states the same precondition before V starts, with
+# `grep` over the same `source=deps/` rows, because it runs before any cx
+# exists (a `make clean` tree rebuilding from its deps/). It answers only
+# "is the byte there for `$embed_file`"; this program answers the pin
+# questions only a cx can: is the repository pinned at all, is its source
+# committed here by mistake, does every own module's source exist.
+#
+# WHAT IT READS
+#   registry/modules.cxd   one row per shipped surface; `source=` is the
+#                          bundled CX file (`none`: the module has none),
+#                          `repo=` the repository it has left for,
+#                          `status=planned` a module not written yet
+#   deps.cxd               the pins
+#   git ls-files           what is tracked HERE
+#
+# Exit codes:
+#   0  every bundled module has exactly one source
+#   1  one or more refusals
+#   2  a registry or the pin document cannot be read
+#
+# Run from the checkout root:
+#   cx --allow-all scripts/bundle_check.cx [--verbose]
+# (or: make deps-sync / make deps-check, which run it last)
+#
+# RULED: RS-7 (ledger/rulings_2026_09_21_repo_split_1589.md).
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+[; From the CHECKOUT ROOT — see #1604: code.md §12.1 says a `./`-form [?lib]
+   resolves against the importing module's directory, the resolver resolves it
+   against the process working directory. ]
+[?lib './scripts/bundle_sources.cx' as=bundle]
+[?lib './scripts/deps_pins.cx'      as=pins]
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?def member scope=private pure [returns bool] ($x::string $xs)
+  [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+[?def nonblank scope=private pure ($text::string)
+  [?for [in $l [$strings:split-lines $text]]
+    [where [not [= [$strings:trim $l] ""]]]
+    [yield [$strings:trim $l]]]]
+
+[?def git-out scope=private impure [returns string] ($argv)
+  [?let [= $r [$process:run [?for [in $a ("git", [?splice $argv])] [yield $a]]]]
+    [?if [= [$string $r@exit-code] "0"] [then [$string $r@stdout]] [else ""]]]]
+
+# -- the state document the table classifies -----------------------------
+
+[?def state-doc scope=private impure ($modules $pinned-repos $tracked)
+  [bundle-state
+    [?for [in $m $modules]
+      [where [not [= [$string [?else $m@source "none"]] "none"]]]
+      [where [= [$string [?else $m@status "current"]] "current"]]
+      [yield [?let
+        [= $src  [$string $m@source]]
+        [= $repo [$string [?else $m@repo ""]]]
+        [module name=[$string $m@name]
+                source=$src
+                repo=$repo
+                pinned=[$member $repo $pinned-repos]
+                tracked=[$member $src $tracked]
+                present=[$io:exists $src]]]]]]]
+
+# -- the run -------------------------------------------------------------
+
+[?let
+  [= $need ("registry/modules.cxd", "deps.cxd")]
+  [= $miss [?for [in $p $need] [where [not [$io:exists $p]]] [yield $p]]]
+  [?if [> [$count $miss] 0]
+    [then [?let [= $_ [$cry [$concat "bundle-check: cannot read " [$strings:join $miss " "]
+                                     " -- run from the checkout root"]]]
+            [$env:exit 2]]]
+    [else ""]]]
+
+[?let
+  [= $verbose [$member "--verbose" [$env:argv]]]
+  [= $modules [?for [in $m [$cx:parse [$io:read-file "registry/modules.cxd"]]/module] [yield $m]]]
+  [= $deps    [$pins:read [$io:read-file "deps.cxd"]]]
+  [= $dverdict [$pins:validate $deps]]
+  [= $_bad-pins [?if [not [$pins:ok $dverdict]]
+                  [then [?let [= $_h [$cry "bundle-check: deps.cxd is not a pin document"]]
+                              [= $_l [?for [in $l [$pins:render $dverdict]] [yield [$cry [$concat "  " $l]]]]]
+                          [$env:exit 2]]]
+                  [else ()]]]
+  [= $pinned-repos [?for [in $r [$pins:rows $deps]] [yield [$string $r@repo]]]]
+  [= $tracked [$nonblank [$git-out ("ls-files")]]]
+  [= $_no-tree [?if [= [$count $tracked] 0]
+                 [then [?let [= $_ [$cry "bundle-check: `git ls-files` named nothing -- refusing to vouch for a tree it cannot see"]]
+                         [$env:exit 2]]]
+                 [else ()]]]
+  [= $v [$bundle:classify [$state-doc $modules $pinned-repos $tracked]]]
+  [= $_v [?if $verbose
+           [then [?for [in $s [$bundle:states $v]]
+                   [yield [$say [$concat "  " [$string $s@kind] "  " [$string $s@module] "  " [$string $s@source]]]]]]
+           [else ()]]]
+  [= $_report [$say [$bundle:report $v]]]
+  [?if [$bundle:ok $v]
+    [then [$env:exit 0]]
+    [else [?let [= $_ [$cry "bundle-check: a bundled CX module has no single source -- this is a FAILURE, never a warning (RS-7)"]]
+            [$env:exit 1]]]]]

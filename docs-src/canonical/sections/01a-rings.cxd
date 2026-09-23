@@ -1,6 +1,9 @@
-[# Section 1a — The four rings.
+[# Section 1a — The rings and the platform group.
    WORKED EXAMPLE for the #826 restructure proposal
    (spec/_archived/docs_restructure_826.md §5). Authored 2026-08-17.
+   Brought current under RS-1/RS-27 (D52a): "Ring 2" and "Ring 3" left the
+   vocabulary — the platform, bindings and ecosystem GROUPS sit above the
+   two frozen rings instead (RULED: RS-1, RS-27).
 
    This section is the guide's own statement of the ring model, which it
    has never had. It is written value-first: a ring is presented as how
@@ -13,39 +16,42 @@
 
    Cross-links use [[anchor]] form. #]
 
-[section id=rings group='Start here' n='1a' title='The four rings'
+[section id=rings group='Start here' n='1a' title='The rings and the platform group'
 
   [child id=rings-idea n=1a.1 title='How much CX do you have to take on?'
     [intro
       """Most systems make you take all of themselves. You want a config
          format and you get a runtime; you want to parse a file and you
-         link a server. CX is built in four **rings**, and a ring answers
-         one question: **how much of CX do you have to take on to get the
-         thing you want?**"""]
+         link a server. CX is built on two **rings**, with the platform,
+         bindings and ecosystem **groups** layered above them, and each
+         answers one question: **how much of CX do you have to take on to
+         get the thing you want?**"""]
 
     [table
-      [tr [th 'Ring'] [th 'What it is'] [th 'What it cannot do']]
+      [tr [th 'Ring / group'] [th 'What it is'] [th 'What it cannot do']]
       [tr [td '**0 — Data**'] [td 'the format: values, identity, schema, conversions']
           [td 'execute anything — there is no evaluator in Ring 0']]
       [tr [td '**1 — Code**'] [td 'execution: programs, queries, capabilities']
           [td 'open a socket, start a server, or reach a database']]
-      [tr [td '**2 — Platform**'] [td 'the store, history, the wire, services']
+      [tr [td '**The platform group**'] [td 'the store, history, the wire, services']
           [td 'be embedded — you reach it over a network']]
-      [tr [td '**3 — Ecosystem**'] [td 'distribution, registries, the marketplace, bindings']
-          [td '(nothing structural — it is the outermost ring)']]]
+      [tr [td '**The bindings and ecosystem groups**'] [td 'distribution, registries, the marketplace, bindings']
+          [td '(nothing structural — they are declared acyclic graphs over the rings, not a further ring)']]]
 
     [body
-      """The order matters in one direction only. A ring may use the rings
-         below it and never the ones above. Ring 0 uses nothing of CX at
-         all. That single rule is why the small rings stay small: no
-         amount of growth in the platform can reach down and make the data
+      """The order matters in one direction only. A ring, or a group above
+         the rings, may use the rings below it and whatever its own
+         manifest declares, never the reverse. Ring 0 uses nothing of CX at
+         all. That single rule is why the rings stay small: no amount of
+         growth in the platform group can reach down and make the data
          format heavier."""]
 
     [note
       """**The boundary people get wrong.** The XAP *host* — the thing that
-         runs a feature — is Ring 2. The XAP *marketplace* — the thing you
-         discover and install a feature from — is Ring 3. Running is
-         platform; distributing is ecosystem."""]]
+         runs a feature — is in the platform group. The XAP *marketplace* —
+         the thing you discover and install a feature from — is in the
+         bindings and ecosystem groups. Running is platform; distributing
+         is ecosystem."""]]
 
   [child id=rings-ring0 n=1a.2 title='Ring 0 — data'
     [body
@@ -108,48 +114,53 @@
          language server; call the stdlib packs whose own imports stay
          inside Rings 0–1. See [[code]], [[tour-programs]]."""]]
 
-  [child id=rings-ring2 n=1a.4 title='Ring 2 — platform'
+  [child id=rings-ring2 n=1a.4 title='The platform group'
     [body
-      """Ring 2 is the **operating platform**: the store and its journal,
+      """The platform group is not a third ring — it is a declared acyclic
+         graph of modules over the two rings: the store and its journal,
          the XSP session layer and its profiles, the HTTP surface, the XAP
          host, the fabric, database drivers, session/authz/identity
          services. This is where data outlives a process and where more
          than one party is involved."""]
 
     [body
-      """Ring 2 is reached **over a network**, not embedded. That is the
-         boundary that keeps Rings 0 and 1 small and auditable: the store
-         engine itself imports Ring 0 only and stays evaluator-free, so
-         running a platform does not drag a server into every program that
-         merely reads data."""]
+      """The platform group is reached **over a network**, not embedded.
+         That is the boundary that keeps Rings 0 and 1 small and auditable:
+         the store engine itself imports Ring 0 only and stays
+         evaluator-free, so running a platform does not drag a server into
+         every program that merely reads data."""]
 
     [body
-      """What you can do with only Ring 2: persist and query; keep history
-         you can audit and replay; serve HTTP and XSP; host XAP features;
-         operate the whole thing. See [[store]], [[operations]]."""]]
+      """What you can do with only the platform group: persist and query;
+         keep history you can audit and replay; serve HTTP and XSP; host
+         XAP features; operate the whole thing. See [[store]],
+         [[operations]]."""]]
 
-  [child id=rings-ring3 n=1a.5 title='Ring 3 — ecosystem'
+  [child id=rings-ring3 n=1a.5 title='The bindings and ecosystem groups'
     [body
-      """Ring 3 is everything **around** CX: the registry, the marketplace,
-         feature distribution, native clients, and the packaging of the
-         language bindings. It is the ring most under construction, and
-         this guide says which parts are shipped and which are named."""]
+      """The bindings and ecosystem groups are everything **around** CX:
+         the registry, the marketplace, feature distribution, native
+         clients, and the packaging of the language bindings — groups on
+         the C ABI and the released binary, not a further ring. They are
+         the least settled part of the tree, and this guide says which
+         parts are shipped and which are named."""]
 
     [body
-      """What you can do with only Ring 3: seal, publish, and install
-         features; consume packages; reach CX from Go, Python, Rust, or V.
-         See [[xap-distribution]], [[bindings]]."""]]
+      """What you can do with only the bindings and ecosystem groups: seal,
+         publish, and install features; consume packages; reach CX from Go,
+         Python, Rust, or V. See [[xap-distribution]], [[bindings]]."""]]
 
   [child id=rings-contract n=1a.6 title='The import contract'
     [body
-      """The rings are not a convention — they are enforced. The contract
-         is one rule per ring:"""]
+      """The rings are not a convention — they are enforced. Ring 0 and
+         Ring 1 are frozen, one rule each; everything above them is a
+         declared, acyclic GROUP rather than a further ring:"""]
 
     [example lang=text
       """Ring 0  MUST import nothing internal.
          Ring 1  MAY import Ring 0.
-         Ring 2  MAY import Rings 0-1.
-         Ring 3  MAY import Rings 0-2."""]
+         Everything else imports the rings and what its manifest declares,
+         acyclic."""]
 
     [body
       """A component may depend on rings *below* its own without stacking
@@ -164,11 +175,12 @@
 
   [child id=rings-choosing n=1a.7 title='Where to go from here'
     [body
-      """Take the smallest ring that answers your question. You can always
-         move outward later — nothing you wrote against a lower ring has to
-         change, because the lower ring is unchanged by the higher one.
-         [[choosing]] is the router: a task table and four reader paths
-         (evaluator, data-format adopter, application author, platform
-         operator), each ending in something you can do. If you just want
-         to try CX first, start at [[quickstart]] — it runs entirely
-         inside Ring 0 before it shows you anything that executes."""]]]
+      """Take the smallest ring, or group, that answers your question. You
+         can always move outward later — nothing you wrote against a lower
+         ring has to change, because the lower ring is unchanged by the
+         higher one. [[choosing]] is the router: a task table and four
+         reader paths (evaluator, data-format adopter, application author,
+         platform operator), each ending in something you can do. If you
+         just want to try CX first, start at [[quickstart]] — it runs
+         entirely inside Ring 0 before it shows you anything that
+         executes."""]]]

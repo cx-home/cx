@@ -7,7 +7,10 @@ Read by scripts/gen_docs/primer_build.cx (`make docs`). Declares:
   [site]     the published base URL every llms.txt link is written against
   [tagline]  the one-line `>` blurb at the top of llms.txt
   [suites]   the conformance suites the templates may cite, one per line,
-             relative to conformance/ and without the .cxd extension.
+             relative to conformance/ and without the .cxd extension — or,
+             for a module extracted into its own repository, its PINNED
+             path `deps/<repo>/conformance/…` (RULED: RS-7, RS-12), the
+             checkout the build embeds the module from.
              Declaring them bounds the fixture index (code.cxd alone is
              ~1200 cases) and records the primer's provenance in one place.
   [doc]      this block — ignored by the generator.
@@ -44,8 +47,18 @@ is one the freshness contract cannot reach.
 
   [; `base` addresses the reference set; `root` is the SITE ROOT, where the
      two llmstxt.org files live (the convention is /llms.txt — a copy under
-     /llm/ is not discoverable and does not count). scripts/publish.sh puts
-     them in both places and asserts the root pair arrived. ]
+     /llm/ is not discoverable and does not count).
+
+     WHO PUTS THEM AT THE ROOT IS AN OPEN CALL. scripts/publish.sh did, and it
+     retired with the allowlist mirror (RULED: RS-11): there is no second tree
+     to copy into any more, and this repository's own docs/ is the site. The
+     three answers -- generate the pair into docs/ as well (a 360 KB duplicate
+     of llms-full.txt in every docs regeneration), MOVE it there (AGENTS.md is
+     Tier-1 and links docs/llm/llms.txt, and tools/release-verify.sh has a row
+     on the path), or move `root=` to the /llm/ subdirectory and give up the
+     llmstxt.org convention -- are the front-door branch's LETTER 2, in
+     _gate_evidence/pipeline_frontdoor/RESULTS.md. Until it is answered the
+     generator writes them where it always did. ]
   [site base='https://cxhome.org/llm/' root='https://cxhome.org/']
 
   [tagline [#
@@ -57,7 +70,7 @@ correctly.
 
   [; #1427-c put a module's corpus in its RING's directory, so a suite is
      named by the directory it is in: `stdlib/` is Ring 1, `platform/` is
-     Ring 2, `x/` and `xap/` are the tiers the ring split does not govern.
+     in the platform group, `x/` and `xap/` are the tiers the ring split does not govern.
      The `http` suite became two when 1427-e split the module. ]
   [suites [#
 code
@@ -68,8 +81,8 @@ platform/store
 platform/journal
 platform/http
 stdlib/http-client
-x/mcp
-x/a2a
+deps/cx-platform-agent/conformance/x/mcp
+deps/cx-platform-agent/conformance/x/a2a
 stdlib/strings
 stdlib/fp
 stdlib/json
@@ -85,8 +98,8 @@ stdlib/authz
 platform/authz-store
 platform/session
 stdlib/log
-xap/ux
-xap/ux-web
+deps/cx-platform-ux/conformance/xap/ux
+deps/cx-platform-ux/conformance/xap/ux-web
 xap/xap-compose
 xap/xap-dist
 xml
@@ -164,7 +177,8 @@ than as friction.
           template='reference-platform.md.tmpl'
           title='Reference: the platform and ecosystem rings'
     [summary [#
-Ring 2 (store, journal, HTTP, XAP host) and Ring 3 (agent interop, feature
-distribution, language bindings) — what is reachable and how.
+The platform group (store, journal, HTTP, XAP host) and the bindings and
+ecosystem groups (agent interop, feature distribution, language bindings) —
+what is reachable and how.
 #]]]
 ]

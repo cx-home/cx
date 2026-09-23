@@ -4,7 +4,7 @@
    guide and the corpus teach the same story. Authored 2026-08-19 for
    #826 acceptance 3. #]
 
-[section id=bitemporal group='Ring 2 — Platform' n='18a' title='Time: valid time and transaction time'
+[section id=bitemporal group='The platform group' n='18a' title='Time: valid time and transaction time'
 
   [child id=bt-two-axes n=18a.1 title='Two different questions about when'
     [intro

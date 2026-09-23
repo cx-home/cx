@@ -1,0 +1,154 @@
+# scripts/gates_register.cx — the derived gate register's check (D49a, #1633;
+# RULED: RS-27). Written in CX (AGENTS.md rule 6). A library: pure functions,
+# no effects; scripts/gates_register_check.cx reads the tree and calls it, and
+# conformance/gates_register.cxd is its executable half.
+#
+# THE RULE. A suite's gate status lives ON its element —
+# `[test-suite name=sync ring=2 gate=advisory reason='…']` — so it travels with
+# the file into whatever repository carries it, and the grading core
+# (vcx/corpus, which the fixture shards and `cx corpus` both call) reads it
+# there. conformance/gates.cxd stays as the cx-wide register of every suite's
+# status, and it is DERIVED: this check refuses
+#
+#   bad-gate      an element gate= other than enforced or advisory (pending and
+#                 skip are per-case toggles; a suite that means one says so on
+#                 each case);
+#   no-reason     an element gate=advisory with no reason= — an advisory suite
+#                 states why its failures do not block;
+#   drift         a register row whose gate= differs from its suite element's
+#                 (an absent element gate= is enforced, and so is an absent
+#                 row gate=), naming the row and the file;
+#   reason-drift  both advisory, with different reason= text — the register
+#                 copies the element's reason, byte for byte;
+#   unregistered  an advisory element with no register row at all — the
+#                 register lists every advisory suite.
+#
+# A register row whose suite FILE does not exist is not this check's: the
+# GATE-DANGLING step of scripts/gates_manifest_gate.sh refuses it by name, and
+# reporting it twice would make one defect read as two.
+#
+# The arguments:
+#   $policy   the register's [gate-policy …] element, exactly as
+#             conformance/gates.cxd writes it: [suite name=S [module name=M
+#             gate=G reason=R] …] children.
+#   $suites   [suites [suite-header suite=S module=M file=F gate=G reason=R] …]
+#             — one per corpus file, S the register suite that keys it
+#             (stdlib for conformance/{stdlib,platform,x,xap}/M.cxd, packages
+#             for packages/M/M.test.cxd), gate= and reason= copied off the
+#             file's [test-suite] element and ABSENT when the element has none.
+
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def attr-or scope=private pure [returns string] ($e $name::string)
+  [$string [?else [$attr $e $name] ""]]]
+
+# The effective gate of a register row or an element: absent is enforced.
+[?def effective scope=private pure [returns string] ($g::string)
+  [?if [= $g ""] [then "enforced"] [else $g]]]
+
+[?def valid-gate scope=private pure [returns bool] ($g::string)
+  [or [= $g ""] [= $g "enforced"] [= $g "advisory"]]]
+
+[?def rows scope=private pure ($policy)
+  [?for [in $s $policy/suite] [in $m $s/module]
+    [yield [row suite=[$attr-or $s "name"] module=[$attr-or $m "name"]
+                gate=[$attr-or $m "gate"] reason=[$attr-or $m "reason"]]]]]
+
+[?def headers scope=private pure ($suites)
+  [?for [in $h $suites/suite-header] [yield $h]]]
+
+[?def same-key scope=private pure [returns bool] ($r $h)
+  [and [= [$attr-or $r "suite"] [$attr-or $h "suite"]]
+       [= [$attr-or $r "module"] [$attr-or $h "module"]]]]
+
+[?def check scope=public pure ($policy $suites)
+  [?let
+    [= $rs [$rows $policy]]
+    [= $hs [$headers $suites]]
+    [= $bad
+      [?for [in $h $hs]
+        [= $g [$attr-or $h "gate"]]
+        [where [not [$valid-gate $g]]]
+        [yield [refusal kind=bad-gate module=[$attr-or $h "module"]
+                        file=[$attr-or $h "file"] gate=$g]]]]
+    [= $no-reason
+      [?for [in $h $hs]
+        [where [= [$attr-or $h "gate"] "advisory"]]
+        [where [= [$strings:trim [$attr-or $h "reason"]] ""]]
+        [yield [refusal kind=no-reason module=[$attr-or $h "module"]
+                        file=[$attr-or $h "file"]]]]]
+    [= $drift
+      [?for [in $r $rs] [in $h $hs]
+        [where [$same-key $r $h]]
+        [where [$valid-gate [$attr-or $h "gate"]]]
+        [= $rg [$effective [$attr-or $r "gate"]]]
+        [= $eg [$effective [$attr-or $h "gate"]]]
+        [where [not [= $rg $eg]]]
+        [yield [refusal kind=drift module=[$attr-or $h "module"]
+                        register=$rg suite=$eg file=[$attr-or $h "file"]]]]]
+    [= $reason-drift
+      [?for [in $r $rs] [in $h $hs]
+        [where [$same-key $r $h]]
+        [where [= [$attr-or $r "gate"] "advisory"]]
+        [where [= [$attr-or $h "gate"] "advisory"]]
+        [where [not [= [$attr-or $r "reason"] [$attr-or $h "reason"]]]]
+        [yield [refusal kind=reason-drift module=[$attr-or $h "module"]
+                        file=[$attr-or $h "file"]]]]]
+    [= $unregistered
+      [?for [in $h $hs]
+        [where [= [$attr-or $h "gate"] "advisory"]]
+        [where [= [$count [?for [in $r $rs] [where [$same-key $r $h]] [yield 1]]] 0]]
+        [yield [refusal kind=unregistered module=[$attr-or $h "module"]
+                        file=[$attr-or $h "file"]]]]]
+    [= $adv [$count [?for [in $h $hs] [where [= [$attr-or $h "gate"] "advisory"]] [yield 1]]]]
+    [verdict rows=[$count $rs] suites=[$count $hs] advisory=$adv
+      [?splice $bad]
+      [?splice $no-reason]
+      [?splice $drift]
+      [?splice $reason-drift]
+      [?splice $unregistered]]]]
+
+[?def refusals scope=public pure ($v) [?for [in $r $v/refusal] [yield $r]]]
+
+[?def ok scope=public pure [returns bool] ($v) [= [$count [$refusals $v]] 0]]
+
+# One line per refusal, naming the register row and the suite file.
+[?def message scope=public pure [returns string] ($r)
+  [?let
+    [= $k [$attr-or $r "kind"]]
+    [= $m [$attr-or $r "module"]]
+    [= $f [$attr-or $r "file"]]
+    [= $el [$concat "the [test-suite] element of " $f]]
+    [?match $k
+      [case "drift"
+        [$concat "GATE-DRIFT " $m ": conformance/gates.cxd says gate=" [$attr-or $r "register"]
+                 " and " $el " says gate=" [$attr-or $r "suite"]
+                 " -- the element is the source and the register is derived from it (D49a)"]]
+      [case "reason-drift"
+        [$concat "GATE-DRIFT " $m ": the reason= of the conformance/gates.cxd row differs from the reason= on "
+                 $el " -- copy the element reason into the register (D49a)"]]
+      [case "unregistered"
+        [$concat "GATE-UNREGISTERED " $m ": " $el
+                 " says gate=advisory and conformance/gates.cxd has no row for it -- the register lists every advisory suite (D49a)"]]
+      [case "bad-gate"
+        [$concat "GATE-SUITE-BADVALUE " $m ": " $el " carries gate=" [$attr-or $r "gate"]
+                 " -- a suite element takes gate=enforced or gate=advisory; pending and skip are per-case toggles (D49a)"]]
+      [case "no-reason"
+        [$concat "GATE-SUITE-NOREASON " $m ": " $el
+                 " carries gate=advisory with no reason= -- an advisory suite states why its failures do not block (D49a)"]]
+      [else [$concat "GATE-UNKNOWN " $m ": " $k]]]]]
+
+[?def census scope=public pure [returns string] ($v)
+  [$concat "gates register: " [$string $v@rows] " rows, "
+           [$string $v@suites] " suites, " [$string $v@advisory] " advisory, "
+           [$string [$count [$refusals $v]]] " refused"]]
+
+# The text the tree check prints: the census line, then `ok` or one line per
+# refusal. A function of the verdict alone, so the corpus pins what the step
+# prints.
+[?def report scope=public pure [returns string] ($v)
+  [?let
+    [= $lines [?if [$ok $v]
+                [then ("ok")]
+                [else [?for [in $r [$refusals $v]] [yield [$message $r]]]]]]
+    [$strings:join ([$census $v], [?splice $lines]) "\n"]]]

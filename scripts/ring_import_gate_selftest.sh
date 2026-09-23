@@ -29,6 +29,10 @@ trap 'rm -rf "$FAKE"' EXIT
 for d in cx code platform cxstore arrow transport cli cmd_data deps target fixtures testenv; do
   mkdir -p "$FAKE/vcx/$d"
 done
+# RS-24: two declared V product modules -- a lower one (net) and xap, the one
+# above the residue since xap's split -- so the product lanes are probed too.
+mkdir -p "$FAKE/vcx/cxnet" "$FAKE/vcx/xap" "$FAKE/registry"
+printf '%s\n' "[repo-allocation [repo name=cx-platform-net vmodule=cxnet] [repo name=cx-platform-xap vmodule=xap]]" > "$FAKE/registry/repos.cxd"
 
 # probe <name> <relpath-under-fake-vcx> <content> — write into the FAKE tree,
 # expect the gate RED there, remove, expect the fake tree green again.
@@ -95,10 +99,73 @@ probe "cmd_data-platform-free" "cmd_data/selftest_cmddata_probe.v" \
   'module main
 import cxstore'
 
-# ── Ring 1 (code) importing Ring 2 (platform) ──
+# ── Ring 1 (code) importing the platform group (platform) ──
 probe "code-imports-platform" "code/selftest_code_probe.v" \
   'module code
 import platform'
+
+# ── RS-24: Ring 1 importing a split product module ──
+probe "code-imports-product" "code/selftest_code_product_probe.v" \
+  'module code
+import cxnet'
+
+# ── RS-24: a product module importing a non-platform sibling ──
+probe "product-imports-cli" "cxnet/selftest_product_probe.v" \
+  'module cxnet
+import cli'
+
+# ── RS-24: a product module importing the residue above it ──
+probe "product-imports-residue" "cxnet/selftest_residue_probe.v" \
+  'module cxnet
+import platform'
+
+# ── RS-24, xap's split: a lower product or the residue importing xap ──
+probe "product-imports-xap" "cxnet/selftest_xap_probe.v" \
+  'module cxnet
+import xap'
+probe "residue-imports-xap" "platform/selftest_residue_xap_probe.v" \
+  'module platform
+import xap'
+
+# ── ...and xap importing the residue and a lower product stays GREEN ──
+printf '%s\n' 'module xap' 'import platform' 'import cxnet' > "$FAKE/vcx/xap/selftest_xap_down.v"
+if RING_GATE_ROOT="$FAKE" bash "$GATE" >/dev/null 2>&1; then
+  echo "  ok — xap-imports-residue (xap over the residue and a lower product is allowed)"
+else
+  echo "SELFTEST FAIL [xap-imports-residue]: the gate refused xap importing the residue it pins."
+  rc_ok=1
+fi
+rm -f "$FAKE/vcx/xap/selftest_xap_down.v"
+
+# ── RS-1: the platform GROUP imports the rings and what its manifest declares
+#    (cxstore, arrow, transport) — nothing else. The profile-surface dirs are
+#    not in its graph ──
+probe "platform-group-undeclared" "platform/selftest_group_probe.v" \
+  'module platform
+import cli'
+
+# ── RS-1: the words. Two rings, data and code, and the platform group above
+#    them; "Ring 2" left the vocabulary, so a violation in vcx/platform is
+#    reported as the platform group's, and neither the refusal nor the live
+#    OK line names a Ring 2 ──
+printf '%s\n' 'module platform' 'import cmd_data' > "$FAKE/vcx/platform/selftest_words_probe.v"
+words_out="$(RING_GATE_ROOT="$FAKE" bash "$GATE" 2>&1 || true)"
+rm -f "$FAKE/vcx/platform/selftest_words_probe.v"
+live_out="$(bash "$GATE" 2>&1 || true)"
+words_ok=0
+case "$words_out" in
+  *"platform group"*) : ;;
+  *) echo "SELFTEST FAIL [group-words]: a vcx/platform violation is not reported as the platform group's (RULED: RS-1)"; words_ok=1 ;;
+esac
+case "$words_out$live_out" in
+  *Ring-2*|*"Ring 2"*|*Ring-3*|*"Ring 3"*)
+    echo "SELFTEST FAIL [ring-words]: the gate still names a Ring 2/Ring 3 — two rings, then groups (RULED: RS-1)"; words_ok=1 ;;
+esac
+if [ "$words_ok" -eq 0 ]; then
+  echo "  ok — group-words (a vcx/platform refusal names the platform group; no Ring 2/3 in the gate's words)"
+else
+  rc_ok=1
+fi
 
 if [ "$rc_ok" -ne 0 ]; then
   echo "ring_import_gate selftest: FAILED — see the live bypasses above."

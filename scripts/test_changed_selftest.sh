@@ -14,10 +14,9 @@
 # THE CASES. The failure direction that matters is a FALSE SKIP, so each case
 # names both what must be selected and what must not.
 #
-#   A  one x/ module source (x/ux-web.cx)        the shard that GRADES its
-#                                                corpus, and no umbrella; the
-#                                                boot-budget step is not in the
-#                                                tail
+#   A  an agent/ux pin bump (deps.cxd)           the three steps that grade the
+#                                                graduated modules against this
+#                                                tree's binary
 #   B  one engine file (vcx/code/…)              the suite, per file, AND both
 #                                                wall-clock tail steps
 #   C  one scripts/ file                         the FULL union (build infra)
@@ -29,11 +28,18 @@
 #                                                deleted-input case: the rows
 #                                                must not be pathname-expanded)
 #   G  a TEST_TARGETS entry with no row          check-selection-manifest FAILS
+#   J0 case J's wall-clock bound (#988's       the floor at idle, floor x a
+#      shape, on fake clocks)                    same-process reference probe's
+#                                                ratio under load, a fired bound
+#                                                re-probed once before believed
 #   M  a worktree whose third_party/* are        nothing is selected; a REAL
 #      SYMLINKS, gitlink unchanged (#1599)       gitlink move still runs the
 #                                                whole suite
 #   N  a step runner under vcx/tests/runners/    the step that BUILDS it, and
 #      (#1598)                                   not the whole suite
+#   P  the shared grading core (vcx/corpus/,     the suite, the document step
+#      #1634)                                    and the cmd step — every step
+#                                                that runs it
 #
 # Exit 0 and the count line only when every case matches.
 set -u
@@ -70,27 +76,26 @@ bad() {
 
 echo "test_changed selftest:"
 
-# ── A — one x/ module source ────────────────────────────────────────────────
-run x/ux-web.cx > "$T/a"
-a_files=$(suite_files_of "$T/a")
-a_n=$(printf '%s\n' "$a_files" | grep -c . || true)
-a_t=$(targets "$T/a" | wc -w | tr -d ' ')
-# repos-allocation-gate's manifest row is '*' (#1591 item 4): any added or
-# removed file can change the allocation, so it rides on EVERY selection by
-# design. The bound below counts the steps the CHANGE selected, so the
-# always-on row is taken out of the count and asserted present instead — the
-# union on cad2bb8b0 red this case at 30 targets the day the row merged.
-a_t_selected=$(targets "$T/a" | tr ' ' '\n' | grep -vc '^repos-allocation-gate$' || true)
-a_tail=$(tail_of "$T/a")
-if [ "$a_n" -ge 1 ] && [ "$a_n" -le 3 ] \
-	&& printf '%s\n' "$a_files" | grep -q 'code_eval_fixtures_shard_' \
-	&& ! printf '%s\n' "$a_files" | grep -q 'umbrella' \
-	&& [ "$a_t_selected" -lt 30 ] \
-	&& targets "$T/a" | tr ' ' '\n' | grep -q '^repos-allocation-gate$' \
-	&& ! printf '%s' "$a_tail" | grep -q 'test-vcx-timing'; then
-	ok A "$a_t targets ($a_t_selected selected by the change + the always-on allocation row), $a_n suite file(s) — its grading shard, no umbrella, no boot-budget step"
+# ── A — a pin bump of the graduated x/ modules ───────────────────────────────
+# Until the x/ graduation left for cx-platform-agent and cx-platform-ux
+# (RULED: RS-4, RS-1 — D45a; RS-12, #1591 item 12) this case was one x/ module
+# source (x/ux-web.cx), the #1516 shape: an edit to it selected no fixture
+# file at all. No x/ source is in this repository any more, so that change
+# cannot happen here. Its successor is the PIN, as case O's is for sso:
+# `deps.cxd` moving is a new agent or ux release meeting this tree's binary,
+# and the three steps that grade those modules against it — the four
+# real-socket lanes, the tools-export golden and the ORIEL lane — must each be
+# selected by it. A false skip here is the #1516 defect one repository up.
+run deps.cxd > "$T/a"
+a_t=$(targets "$T/a")
+a_miss=''
+for s in test-agent-real-lanes tools-export-gate test-oriel-lane; do
+	printf '%s\n' $a_t | grep -q "^$s$" || a_miss="$a_miss $s"
+done
+if [ -z "$a_miss" ]; then
+	ok A "an agent/ux pin bump (deps.cxd) selects test-agent-real-lanes, tools-export-gate and test-oriel-lane"
 else
-	bad A "x/ module source: $a_t targets ($a_t_selected without the '*' row), $a_n suite file(s), tail [$a_tail]"
+	bad A "deps.cxd did not select:$a_miss — [$a_t]"
 fi
 
 # ── B — one engine file ─────────────────────────────────────────────────────
@@ -114,7 +119,7 @@ else
 fi
 
 # ── D — one module source ───────────────────────────────────────────────────
-run vcx/platform/stdlib_journal.v > "$T/d"
+run vcx/store/stdlib_journal.v > "$T/d"
 d_files=$(suite_files_of "$T/d")
 d_n=$(printf '%s\n' "$d_files" | grep -c . || true)
 d_total=$(ls "$ROOT/vcx/tests"/*_test.v | wc -l | tr -d ' ')
@@ -237,13 +242,134 @@ else
 	bad I "$hd loop(s) still read from a here-document, a here-string or a process substitution — the bash 5.3 self-pipe stall (and `< <(…)` is a syntax error under `sh`, which is how every pipeline invokes this file)"
 fi
 
-# ── J — a change set far larger than any pipe buffer runs to completion ─────
-# The time bound is the regression guard the shape guard cannot be: it runs the
-# REAL script, under the newest bash on this box, over a change set of ~200 KB.
+# ── the calibrated wall-clock bound case J runs under (J0 pins its shape) ───
+# BIG_BASH is the newest bash on this box: case J runs the real script under
+# it, and its $EPOCHREALTIME is the millisecond clock both J and its reference
+# probe are timed with (a one-second `date +%s` reading cannot resolve a probe
+# of a few seconds into a ratio; a bash without it falls back to that).
 BIG_BASH=$(command -v bash 2>/dev/null || echo /bin/bash)
 for cand in /nix/store/*-bash-5*/bin/bash; do
 	[ -x "$cand" ] && BIG_BASH=$cand && break
 done
+now_ms() {
+	"$BIG_BASH" -c 't=${EPOCHREALTIME:-}; if [ -n "$t" ]; then t=${t/[.,]/}; echo $((t / 1000)); else echo $(($(date +%s) * 1000)); fi'
+}
+# ms_s MS — a millisecond reading as seconds to one decimal, for the log line.
+ms_s() { echo "$(($1 / 1000)).$((($1 % 1000) / 100))"; }
+# J_FLOOR_MS is the IDLE bound — the 30 s case J always allowed. It is never
+# loosened: on a machine whose reference probe reads at or under its idle cost
+# the bound IS the floor, whatever the load average says.
+# J_PROBE_IDLE_MS is the reference probe's cost on an idle dev2 — the probe is
+# J's own work at one line instead of 400 (the same script, the same bash, a
+# path of the same shape), so contention stretches both by the same factor.
+# Measured 2026-09-23 on dev2: 2.67–2.75 s at load 12–15 (J 7.1–7.6 s beside
+# it), 4.2–4.5 s at load ~20 (J 9.6 s), 5.3–7.5 s at load ~50 (J 12–13 s); the
+# lowest reading is the reference, so an idle box keeps the floor and a
+# faster one reads under it and keeps it too.
+J_FLOOR_MS=30000
+J_PROBE_IDLE_MS=2700
+# j_bound PROBE_MS — the bound a probe reading earns: the floor stretched by
+# the probe's ratio to its idle cost, never below the floor.
+j_bound() {
+	jb_b=$((J_FLOOR_MS * $1 / J_PROBE_IDLE_MS))
+	[ "$jb_b" -lt "$J_FLOOR_MS" ] && jb_b=$J_FLOOR_MS
+	echo "$jb_b"
+}
+# j_calibrated PROBE_FN WORK_FN — PROBE_FN prints the reference probe's
+# elapsed ms; WORK_FN prints "<rc> <elapsed ms>" (rc 0: the work succeeded).
+# Probe, derive the bound, run the work. A reading AT OR OVER its bound is
+# not believed yet (#988): re-probe the machine once — a fresh reading carries
+# whatever contention arrived mid-run — re-derive the bound and re-run the
+# work once against it. Sets j_verdict (ok | starved | slow | failed),
+# j_reprobes, and every reading: j_p1 j_b1 j_rc1 j_w1, j_p2 j_b2 j_rc2 j_w2.
+j_calibrated() {
+	j_reprobes=0 j_p2=- j_b2=- j_rc2=- j_w2=-
+	j_p1=$("$1")
+	j_b1=$(j_bound "$j_p1")
+	j_out=$("$2")
+	j_rc1=${j_out%% *} j_w1=${j_out##* }
+	if [ "$j_rc1" -ne 0 ]; then j_verdict=failed; return 0; fi
+	if [ "$j_w1" -lt "$j_b1" ]; then j_verdict=ok; return 0; fi
+	j_reprobes=1
+	j_p2=$("$1")
+	j_b2=$(j_bound "$j_p2")
+	j_out=$("$2")
+	j_rc2=${j_out%% *} j_w2=${j_out##* }
+	if [ "$j_rc2" -ne 0 ]; then
+		j_verdict=failed
+	elif [ "$j_w2" -lt "$j_b2" ]; then
+		j_verdict=starved
+	else
+		j_verdict=slow
+	fi
+	return 0
+}
+
+# ── J0 — case J's wall-clock bound is CALIBRATED, never a bare constant ─────
+# J reads a WALL CLOCK, and a wall clock is load-blind: the post-merge run on
+# 684a12502 read J at 32 s against its 30 s bound at load ~50 while a dozen
+# agents built, and the same case took 11 s alone minutes later — nothing was
+# wrong with the selection. The tree already has the shape for a timing bound
+# under contention (scripts/gen_guide/playground/gen_examples.cx, #988):
+# measure the machine with a reference probe IN THE SAME PROCESS, derive the
+# bound from it, and re-measure before believing a bound that fired. This case
+# pins that shape on fake clocks, so it is exact and costs nothing:
+#
+#   j_bound P      = J_FLOOR_MS × P / J_PROBE_IDLE_MS, never below J_FLOOR_MS
+#                    (the floor is the IDLE bound J always had — never loosened)
+#   j_calibrated PROBE WORK
+#                  probe, bound, work; a work reading at or over its bound is
+#                  RE-PROBED ONCE and re-run once against the re-derived bound
+#                  — starved (re-probe slow, retry within) passes and says so;
+#                  slow (retry over its bound) fails; a failed work never
+#                  re-probes.
+j0_pop() {
+	j0_v=$(sed -n '1p' "$1")
+	sed '1d' "$1" > "$1.rest" && mv "$1.rest" "$1"
+	echo "$j0_v"
+}
+j0_probe() { j0_pop "$T/j0_probe"; }
+j0_work() { j0_pop "$T/j0_work"; }
+# j0_case NAME PROBES WORKS WANT-VERDICT WANT-REPROBES — PROBES/WORKS are
+# space-separated readings in call order; every one given must be consumed
+# (a re-probe that did not happen leaves one behind).
+j0_fails=""
+j0_case() {
+	printf '%s\n' $2 > "$T/j0_probe"
+	: > "$T/j0_work"
+	for j0_w in $3; do printf '%s\n' "$j0_w" | tr '/' ' ' >> "$T/j0_work"; done
+	j_calibrated j0_probe j0_work
+	j0_left=$(cat "$T/j0_probe" "$T/j0_work" | grep -c . || true)
+	if [ "${j_verdict:-}" != "$4" ] || [ "${j_reprobes:-}" != "$5" ] || [ "$j0_left" != 0 ]; then
+		j0_fails="$j0_fails [$1: verdict ${j_verdict:-none} reprobes ${j_reprobes:-none} unread $j0_left, want $4/$5/0]"
+	fi
+}
+if ! command -v j_bound > /dev/null 2>&1 || ! command -v j_calibrated > /dev/null 2>&1; then
+	bad J0 "no calibrated bound: j_bound / j_calibrated are not defined — case J reads a bare wall-clock constant"
+else
+	ji=$J_PROBE_IDLE_MS
+	[ "$(j_bound "$ji")" = "$J_FLOOR_MS" ] || j0_fails="$j0_fails [idle probe: bound $(j_bound "$ji"), want the floor $J_FLOOR_MS]"
+	[ "$(j_bound $((ji / 2)))" = "$J_FLOOR_MS" ] || j0_fails="$j0_fails [fast probe: bound $(j_bound $((ji / 2))), want the floor — never below it]"
+	[ "$(j_bound $((ji * 3)))" = $((J_FLOOR_MS * 3)) ] || j0_fails="$j0_fails [3x probe: bound $(j_bound $((ji * 3))), want $((J_FLOOR_MS * 3))]"
+	# readings: probe ms; work "rc/ms"
+	j0_case idle-pass    "$ji"                 "0/$((J_FLOOR_MS / 3))"                            ok      0
+	j0_case stretched    "$((ji * 2))"         "0/$((J_FLOOR_MS * 3 / 2))"                        ok      0
+	j0_case starved      "$ji $((ji * 2))"     "0/$((J_FLOOR_MS * 4 / 3)) 0/$((J_FLOOR_MS * 4 / 3))" starved 1
+	j0_case slow-at-idle "$ji $ji"             "0/$((J_FLOOR_MS * 4 / 3)) 0/$((J_FLOOR_MS * 4 / 3))" slow    1
+	j0_case at-bound     "$ji $ji"             "0/$J_FLOOR_MS 0/$J_FLOOR_MS"                      slow    1
+	j0_case failed       "$ji"                 "1/$((J_FLOOR_MS / 3))"                            failed  0
+	if [ -z "$j0_fails" ]; then
+		ok J0 "the bound is the floor at idle, floor x probe/idle under load, and a fired bound is re-probed once before it is believed"
+	else
+		bad J0 "the calibrated bound's shape:$j0_fails"
+	fi
+fi
+
+# ── J — a change set far larger than any pipe buffer runs to completion ─────
+# The time bound is the regression guard the shape guard cannot be: it runs the
+# REAL script, under the newest bash on this box, over a change set of ~70 KB,
+# against the CALIBRATED bound above (J0) — the 30 s floor at idle, stretched
+# only by the reference probe measured here, in this process, beside it.
 # ~70 KB in FEW lines: it is the BYTE SIZE that fills a pipe buffer, and the
 # per-file work of the selection is linear in the LINE count, so a change set
 # of 400 long paths exercises the hazard in seconds where 6,000 short ones
@@ -256,16 +382,35 @@ while [ "$i" -lt 400 ]; do
 	printf 'vcx/code/%s_%04d.v\n' "$pad" "$i" >> "$T/changed_big"
 	i=$((i + 1))
 done
+printf 'vcx/code/%s_probe.v\n' "$pad" > "$T/changed_probe"
 bsz=$(wc -c < "$T/changed_big" | tr -d ' ')
-j0=$(date -u '+%s')
-( cd "$ROOT" && "$BIG_BASH" scripts/test_changed.sh HEAD --dry-run --changed-files "$T/changed_big" ) > "$T/j.log" 2>&1
-jrc=$?
-jel=$(( $(date -u '+%s') - j0 ))
-if [ "$jrc" -eq 0 ] && [ "$jel" -lt 30 ] && grep -q '^test-changed: RUN:' "$T/j.log"; then
-	ok J "a ${bsz}-byte change set through $(basename "$(dirname "$(dirname "$BIG_BASH")")") completed in ${jel}s"
-else
-	bad J "a ${bsz}-byte change set: exit $jrc after ${jel}s (want 0 within 30s) — $BIG_BASH"
+j_probe_real() {
+	jp_t0=$(now_ms)
+	( cd "$ROOT" && "$BIG_BASH" scripts/test_changed.sh HEAD --dry-run --changed-files "$T/changed_probe" ) > "$T/jp.log" 2>&1
+	echo $(($(now_ms) - jp_t0))
+}
+j_work_real() {
+	jw_t0=$(now_ms)
+	( cd "$ROOT" && "$BIG_BASH" scripts/test_changed.sh HEAD --dry-run --changed-files "$T/changed_big" ) > "$T/j.log" 2>&1
+	jw_rc=$?
+	jw_el=$(($(now_ms) - jw_t0))
+	if [ "$jw_rc" -eq 0 ] && ! grep -q '^test-changed: RUN:' "$T/j.log"; then jw_rc=99; fi
+	echo "$jw_rc $jw_el"
+}
+j_calibrated j_probe_real j_work_real
+jbash=$(basename "$(dirname "$(dirname "$BIG_BASH")")")
+jr1="$(ms_s "$j_w1")s against a $(ms_s "$j_b1")s bound (reference probe $(ms_s "$j_p1")s, idle $(ms_s "$J_PROBE_IDLE_MS")s)"
+jr2="" jrc=$j_rc1
+if [ "$j_reprobes" = 1 ]; then
+	jrc=$j_rc2
+	jr2="re-probed $(ms_s "$j_p2")s → bound $(ms_s "$j_b2")s, the retry took $(ms_s "$j_w2")s"
 fi
+case "$j_verdict" in
+ok) ok J "a ${bsz}-byte change set through $jbash completed in $jr1" ;;
+starved) ok J "a ${bsz}-byte change set through $jbash read $jr1 — the bound fired under contention; $jr2, within it" ;;
+slow) bad J "a ${bsz}-byte change set: $jr1; $jr2 — want exit 0 within the calibrated bound (the $(ms_s "$J_FLOOR_MS")s floor at idle) — $BIG_BASH" ;;
+*) bad J "a ${bsz}-byte change set: exit $jrc (want 0, with a RUN: line) after $jr1 $jr2 — $BIG_BASH" ;;
+esac
 
 # ── K — the parallel make of a SELECTED run keeps going (RULED: RUN-2) ──────
 # `make test`'s storm carries `-k` so one failed run names every red step. A
@@ -393,8 +538,27 @@ else
 	bad O "deps.cxd did not select test-sso-interop-lane: [$(targets "$T/m")]"
 fi
 
+# ── P — the shipped grading core under vcx/corpus/ (#1634) ─────────────────
+# RS-16 moved the module-corpus grading loop into vcx/corpus/, which the cx
+# binary links for `cx corpus`, every fixtures shard calls, and (#1631) the
+# document runner reaches for its document-lane core (the profile gate is not
+# among them: profile_gate.v carries its own mirror and imports no corpus
+# module). No ring row named the directory, so a change to exactly that loop
+# SKIPPED every step that runs it — the false-skip direction this selftest
+# exists for.
+run vcx/corpus/grade.v > "$T/p"
+p_miss=""
+for st in test-vcx-suite test-vcx-conform test-vcx-cmd; do
+	targets "$T/p" | tr " " "\n" | grep -qx -- "$st" || p_miss="$p_miss $st"
+done
+if [ -z "$p_miss" ]; then
+	ok P "vcx/corpus/grade.v selects test-vcx-suite, test-vcx-conform and test-vcx-cmd"
+else
+	bad P "vcx/corpus/grade.v did not select:$p_miss"
+fi
+
 if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "test_changed selftest: $cases/$cases (A x/ module; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop lane)"
+echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop lane; P the vcx/corpus grading core selects the steps that run it)"

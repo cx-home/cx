@@ -69,7 +69,7 @@ element that is not there refuses rather than guessing:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $comps ([component name=hero], [component name=departments], [component name=promo], [component name=group container=true])]
   [= $l0 [ux:layout [placed id=hero component=hero] [placed id=promo component=promo] [placed id=depts component=departments]]]
@@ -84,7 +84,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [; R-A1 migration: envelope → spliced children (2026-08-25) ]
   [= $comps ([component name=hero])]
@@ -103,7 +103,7 @@ what makes an edit stream auditable and reversible rather than a diff:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $comps ([component name=hero], [component name=featured], [component name=promo], [component name=group container=true])]
   [= $l0 [ux:layout [placed id=hero component=hero] [placed id=featured component=featured]]]
@@ -127,7 +127,7 @@ A batch is atomic, so a tenant never lands half an edit:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $comps ([component name=hero])]
   [= $l0 [ux:layout [placed id=hero component=hero]]]
@@ -146,7 +146,7 @@ name refuses:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [; R-A1 migration: envelope → spliced children (2026-08-25) ]
   [= $comps ([component name=hero [param name=heading default="Everyday things." carrier=ux-heading]],
@@ -174,8 +174,8 @@ unsafe value refuses **the whole sheet** rather than emitting a partial one:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [?let
   [; R-A1 migration: envelope → spliced children (2026-08-25) ]
   [= $ok  [ux:theme [token name=bg value="#111"] [token name=fg value="white"]]]

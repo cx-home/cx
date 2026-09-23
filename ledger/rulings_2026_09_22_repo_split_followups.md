@@ -15,9 +15,13 @@ RS-22 and RS-23 were answered in the same 2026-09-23 pass, as letters on the two
 ring1b pipeline left (`_gate_evidence/pipeline_ring1b/RESULTS.md`): LETTER A for RS-22, LETTER B
 for RS-23. They are the last two calls the `authz` split left open.
 
+RS-24 was answered on 2026-09-23 in session, as D28a, and its layout and rules in the same day's
+batch (D31a, D32a, D34a, D35a); D33b and D32a answer RS-18's two LETTERs, recorded under RS-18.
+RS-24 is recorded here by its implementing branch's first commit.
+
 RS-25 was answered on 2026-09-23 as D30d, the owner's letter (d) on the LETTER the connector-native pipeline left (`_gate_evidence/pipeline_connnative/RESULTS.md` §3), and is recorded at the end of this page.
 
-## RS-13 — `authz` splits along the RS-6 line (owner: D14a)
+## RS-13 — `authz` splits along the store-auth design line (owner: D14a)
 
 `authz` is not Ring 1 whole: measured on `5bcf2afa9`, `stdlib_authz.v` reaches the journal at 20
 sites (the trust store binds and replays a journal handle) and names `SxConn` / `XapRuntime`. The
@@ -118,6 +122,18 @@ generated from `registry/modules.cxd` behind a drift gate — and each buys a di
 integrator's letter on the implementing branch states the three with their consequences; until one
 is ruled, the composer names every family and a family's absence is a link error in `cx`, never a
 silently unreachable verb.
+
+**LETTER-1 and LETTER-2 answered (owner D33b, D32a, 2026-09-23).** The owner's word on
+[#1591](https://github.com/cx-home/cx-private/issues/1591), recorded at 04:05Z, answers both letters
+the implementing branch left (`_gate_evidence/pipeline_regsplit/RESULTS.md` §7). LETTER-1, *which
+mechanism removes the written list*: the composer becomes **GENERATED from
+`registry/modules.cxd` behind a drift gate** — ruled now, and BUILT with the first V product's
+extraction, not before; until then the written list stays, and a missing product is a link error
+naming it. The other two mechanisms are REFUSED: no const-initializer self-registration and no
+per-family `-d cx_no_pack_<family>` gate. LETTER-2, *one register file per product or per
+dispatcher*: the per-dispatcher `*_register.v` files STAND, and when `vcx/platform` splits by
+product they move unchanged with their dispatcher into the product's directory (point 3 above
+stands; RS-24 below carries the move).
 
 ## RS-19 — mail claims its smtp/imap pure halves, as `sasl` already is (owner: D19a)
 
@@ -253,6 +269,78 @@ every per-case `ring=` override in `conformance/stdlib/authz.cxd` is removed and
 case grades in Ring 1 at every profile, which is the proof the override was hiding. A case whose
 SUBJECT is the durable tier — a journal replay, an append fault, a metered debit — is
 `conformance/platform/authz-store.cxd`'s and stays there.
+
+## RS-24 — `vcx/platform` splits by product, one V module per V product (owner: D28a)
+
+The owner's word, in session on 2026-09-23 and recorded on
+[#1591](https://github.com/cx-home/cx-private/issues/1591) at 00:48Z, verbatim:
+
+> **D28a** — `vcx/platform`'s one V package splits BY PRODUCT NOW: one V module per V product
+> (`net`, `store`, `identity`, `mail`, `db`, `fabric`, `xap`, `connector`), explicit `import` +
+> `pub` boundaries, dependency direction = the pin direction of cx-home/cx-private#1589's table
+> (acyclic), a product-import gate red-proofed before each row moves; each V product's extraction
+> is preceded by its module split.
+
+and, of its timing, "this decision is coming late".
+
+**The measurement it answers.** The four V extraction preps (fabric, net, store, identity; #1591,
+00:44Z) each found the same wall: every `vcx/platform/*.v` file declared `module platform`, so one
+V package was split across eight repositories by `registry/repos.cxd`'s path rules, and a bare
+same-module call crossed a repository line with no `import` for a pin to name — fabric's daemon
+reused store-serve's code, store called session's, identity called store's. V compiles a package
+as one unit, so no V product could build or run its own tests alone.
+
+**The decision.** `vcx/platform` splits into one V module per V product, each with explicit
+`import`s and a `pub` surface, and the only imports a product module may make are the rings
+(`cx`, `code`), vlib, and the products its PIN names — the Pins column of the #1589 table,
+declared once in `registry/repos.cxd`:
+
+| repository | pins |
+|---|---|
+| `cx-platform-net` | `cx-core-code` |
+| `cx-platform-db` | `cx-core-code` |
+| `cx-platform-mail` | `cx-platform-net` |
+| `cx-platform-store` | `cx-core-code`, `cx-platform-net` |
+| `cx-platform-identity` | `cx-platform-store`, `cx-platform-net` |
+| `cx-platform-fabric` | `cx-platform-store`, `cx-platform-identity` |
+| `cx-platform-xap` | every in-binary platform repository above |
+
+The graph is acyclic, and a product-import gate (`make product-import-gate`) refuses an import
+the pins do not name, a cycle in the pins, and a product directory no repository row declares.
+The gate is red-proofed before any file moves. Each V product's extraction is preceded by its
+split. Connector is on D28a's list, and its V half empties instead: the owner's D30d (2026-09-23)
+retires `connector-test-build` as a compile-time gate and registers the mock adapter from the
+kit's own CX, so `cx-platform-connector` becomes pure CX and has no V module to split.
+
+**Its layout and rules (owner, 2026-09-23 ~04:2xZ, "recommendations accepted" on the batch
+D31–D38, recorded on #1591 at 04:05Z):**
+
+1. **D31a — the layout is FLAT.** Each product is `vcx/<product>/` declaring `module <product>`
+   (net, mail, db, store, identity, fabric, xap). The residue stays `vcx/platform/`
+   (`module platform`) until xap's turn, when it becomes `vcx/xap/` and `vcx/platform/` is gone.
+2. **D32a — RS-18's register files move UNCHANGED.** Each per-dispatcher `*_register.v` moves
+   with its dispatcher into the product directory; `registry/modules.cxd`'s `code=` paths follow;
+   `ring2_register.v`, the composer (xap's), imports each product and calls its registrars in the
+   same two-phase order.
+3. **D34a — a call against the pin direction is fixed by the mover, never by inverting a pin.**
+   The callee moves down — into Ring 1's `vcx/code`, or into the lower product — or behind a hook
+   the lower product declares and the higher one registers. A move estimated at over a day is a
+   LETTER on the implementing branch, not a scope cut.
+4. **D35a — register files with no `modules.cxd` row stay rowless.** One issue is filed for them,
+   revisited when a product's own repository declares its plumbing.
+
+The first branch (`impl/cx-F-platform-modules`) delivers the declaration, the gate and the three
+leaves — net, mail, db; store, identity, fabric and xap follow in pin order, in parallel where the
+pins allow.
+
+**One name D31a gives cannot be spelled in V, measured by the implementing branch.** vlib has
+top-level modules named `net` and `db`, and V resolves a project directory before vlib: a
+`vcx/net/` directory shadows vlib's `net` for the whole tree (every `import net.mbedtls` breaks),
+and a `module net` may not import vlib's `net` at all ("cannot import `net` into a module with
+the same name"), which net's own sockets need. The branch therefore spells those two
+`vcx/cxnet/` (`module cxnet`) and `vcx/cxdb/` (`module cxdb`), after the tree's `vcx/cxstore`,
+and states it as a LETTER in its RESULTS.md; the other five names are D31a's as written. This
+paragraph records a measurement and the branch's interim spelling, not a decision.
 
 ## Also ruled in the same session, operational (no id; recorded)
 

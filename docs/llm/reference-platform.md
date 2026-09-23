@@ -4,17 +4,17 @@
 > conformance corpus. Every output was re-recorded from the `cx` v0.18.0-pre.1
 > binary. Read `primer.md` first.
 
-## Ring 2 — the platform
+## The platform group
 
-Ring 2 is where data outlives a process and where more than one party is
-involved: the store and its journal, the session layer, the HTTP surface, the
-XAP host, the fabric, database drivers.
+The platform group is where data outlives a process and where more than one
+party is involved: the store and its journal, the session layer, the HTTP
+surface, the XAP host, the fabric, database drivers.
 
-**Ring 2 is reached over a network, not embedded.** The store engine imports
-Ring 0 only and contains no evaluator, so running a platform does not drag a
-server into every program that merely reads data. That is the property that
-keeps Rings 0 and 1 auditable, and it is enforced by the build, not by
-convention.
+**The platform group is reached over a network, not embedded.** The store
+engine imports Ring 0 only and contains no evaluator, so running a platform
+does not drag a server into every program that merely reads data. That is the
+property that keeps Rings 0 and 1 auditable, and it is enforced by the build,
+not by convention.
 
 ### The store — content-addressed documents
 
@@ -407,11 +407,11 @@ does not answer "unknown subcommand"; it names its own retirement and points
 at the replacement. If you recall a store verb that is not in `cx --help`,
 run it: the tool will tell you what replaced it.
 
-## Ring 3 — the ecosystem
+## The bindings and ecosystem groups
 
-Ring 3 is everything *around* CX: feature distribution, the registry, the
-language bindings, and agent interop. It is the ring most under construction;
-what follows is what ships.
+The bindings and ecosystem groups are everything *around* CX: feature
+distribution, the registry, the language bindings, and agent interop. They
+are the least settled groups; what follows is what ships.
 
 ### Agent interop — MCP and A2A
 
@@ -421,7 +421,7 @@ to their wire form. Nothing here is a bespoke serializer:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/mcp' :as mcp]
+[?lib 'cx-platform/mcp' :as mcp]
 [?lib 'cx-stdlib/json' :as json]
 [$json:emit [$mcp:list-tools-request 2]]
 ```
@@ -433,7 +433,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/mcp' :as mcp]
+[?lib 'cx-platform/mcp' :as mcp]
 [?lib 'cx-stdlib/json' :as json]
 [$mcp:validate-args
   [$json:parse "{\"name\":\"w\",\"inputSchema\":{\"type\":\"object\",\"required\":[\"location\"],\"properties\":{\"location\":{\"type\":\"string\"}}}}"]
@@ -450,7 +450,7 @@ fails at the boundary:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/mcp' :as mcp]
+[?lib 'cx-platform/mcp' :as mcp]
 [?lib 'cx-stdlib/jsonschema' :as js]
 [?lib 'cx-stdlib/json' :as json]
 [$js:violation-paths
@@ -468,7 +468,7 @@ The A2A shapes are the same story on the agent-to-agent side:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/a2a' :as a2a]
+[?lib 'cx-platform/a2a' :as a2a]
 [?lib 'cx-stdlib/json' :as json]
 [$json:emit [$a2a:agent-card "greeter" "says hi" "http://x/" "0.1" ()]]
 ```
@@ -622,8 +622,8 @@ and "it works in Go" mean the same bytes came back.
 
 * **Ring 0** if the answer is already in the document.
 * **Ring 1** if the answer has to be computed.
-* **Ring 2** if the answer has to outlive the process or be shared.
-* **Ring 3** if the answer has to cross a language or a protocol boundary.
+* **The platform group** if the answer has to outlive the process or be shared.
+* **The bindings and ecosystem groups** if the answer has to cross a language or a protocol boundary.
 
 Take the smallest one. Moving outward later costs nothing, because a lower
 ring is never changed by a higher one.

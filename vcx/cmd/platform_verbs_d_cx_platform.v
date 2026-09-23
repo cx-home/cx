@@ -3,13 +3,14 @@ module main
 // platform_verbs_d_cx_platform.v — the PLATFORM-profile verb surface (I4,
 // #651/#516, spec §4): the store/fabric daemon + operator verbs, compiled
 // ONLY into the platform-profile cx (-d cx_platform). The blank-alias
-// platform import ALSO lives here: importing the Ring-2 module runs its
-// init(), registering every Ring-2 pack into the Ring-1 registries — so
+// xap import ALSO lives here: importing xap — the composer's module since
+// xap's split (RULED: RS-24, D31a) — runs its init(), registering every
+// Ring-2 pack into the Ring-1 registries — so
 // a cx built WITHOUT -d cx_platform has no Ring-2 code in the artifact
 // and every ring-2 name refuses as an undefined callable (the §4
 // profile-by-construction rule). The daemon implementations live in the
 // sibling *_d_cx_platform.v files.
-import platform as _
+import xap as _
 
 // platform_subcommands returns the platform-only SubcommandSpec entries,
 // appended to the shared registry by build_subcommands (cmd/main.v).
@@ -85,7 +86,8 @@ fn platform_subcommands() []SubcommandSpec {
 				'  --id NAME         principal name; derives the seed env var CX_XSP_SEED_<NAME>',
 				'  --seed-file PATH  where the 32-byte seed lands, as hex, mode 0600',
 				'  --caps CLASSES    REQUIRED for --for grant: space-separated capabilities',
-				'                    for the printed row (read write delete admin peer).',
+				'                    for the printed row — the §6.1 classes: read write',
+				'                    delete admin peer compute snapshot-sign.',
 				'                    There is no default — the authority a grant carries is',
 				'                    an explicit choice at mint time. Refused with',
 				'                    --for identity, whose row carries no caps.',

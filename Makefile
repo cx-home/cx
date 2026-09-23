@@ -128,10 +128,9 @@ PYTHON ?= $(shell if python3 -c 'import sys; sys.exit(0 if sys.version_info >= (
 .PHONY: all build build-wasm build-playground build-vcx build-vcx-dev build-lib build-lib-arrow build-rust build-rust-arrow \
  build-go build-go-arrow \
  build-vscode \
- publish publish-push \
  publish-v publish-v-push \
  publish-org \
- release release-v release-all \
+ release-v release-all \
  dist install uninstall install-cli uninstall-cli verify-cli promote-cli \
  test test-no-parallel test-python test-python-arrow test-vcx test-rust test-rust-arrow \
  test-rust-parquet test-rust-arrow-conformance \
@@ -357,6 +356,15 @@ check-gate-lock:
 # names its own pinned paths, and a row added there is covered here the day it
 # lands. The derivation is `grep`, not `cx`, on purpose — this runs BEFORE the
 # binary that would read the registry exists.
+#
+# It is the BUILD-TIME half of one mechanism (#1589 item 23): embed from
+# deps/, nothing copied. The pin-time half is scripts/bundle_check.cx at the
+# end of `deps-sync` and `deps-check`, which applies the table
+# conformance/bundle_sources.cxd grades — the same `missing-pinned-source`
+# class, plus the questions only a cx can answer (is the repository pinned at
+# all; is its source committed here by mistake). This half stays `grep` so a
+# `make clean` tree with its deps/ still rebuilds with no cx present
+# (scripts/reproduce_release.sh does exactly that).
 .PHONY: deps-present
 deps-present:
 	@missing=""; \
@@ -860,10 +868,25 @@ verify-playground-examples: build-vcx
 	@# pass if the child really received `--allow-read --allow-write`, and a
 	@# silently dropped [grants] field would make that program answer CXER0271
 	@# and land 05 in this list. Green-05-beside-red-04 is the proof.
-	@out=$$(vcx/target/cx --allow-read --allow-write --allow-subprocess --allow-env \
+	@#
+	@# #1620 adds the silent-failure pair, asserted by MESSAGE, not by key
+	@# alone: the post-merge run on a3b6593e5 printed a FAIL row with nothing
+	@# after the key. 06 exits 3 with both streams empty — its FAIL line must
+	@# carry `exit 3` and `stderr empty`; 07 answers an err value against a
+	@# success [expect] — its EXPECT line must carry the expectation and
+	@# `exit 1`. And no row may reach the report as `FAIL with no message`.
+	@#
+	@# #1625: the run gets a FRESH TMPDIR and must leave it empty — the
+	@# generator's per-run scratch dir is removed on every exit path (this run
+	@# exits 1 through the lint verdict).
+	@gtmp=$$(mktemp -d); \
+	out=$$(TMPDIR="$$gtmp" vcx/target/cx --allow-read --allow-write --allow-subprocess --allow-env \
 	  --allow-clock \
 	  scripts/gen_guide/playground/gen_examples.cx --lint-only \
 	  scripts/gen_guide/playground/tests/expect_red.cxd 2>&1); rc=$$?; \
+	left=$$(ls -A "$$gtmp"); rm -rf "$$gtmp"; \
+	if [ -n "$$left" ]; then \
+	  echo "verify-playground-examples: gen_examples left its scratch behind under TMPDIR: $$left"; exit 1; fi; \
 	if [ "$$rc" -ne 1 ] || ! printf '%s' "$$out" | grep -q 'EXPECT 02-expect-wrong'; then \
 	  echo "verify-playground-examples: the [expect] check is VACUOUS (rc=$$rc; expected 1 naming 02-expect-wrong)"; \
 	  printf '%s\n' "$$out" | tail -8; exit 1; fi; \
@@ -873,7 +896,18 @@ verify-playground-examples: build-vcx
 	if printf '%s' "$$out" | grep -q 'EXPECT 05-expect-right-under-grants'; then \
 	  echo "verify-playground-examples: [grants] did not reach the audited child (05-expect-right-under-grants red; its program needs --allow-read --allow-write)"; \
 	  printf '%s\n' "$$out" | tail -8; exit 1; fi; \
-	echo "verify-playground-examples: [expect] red-proof OK (fixture corpus reds exactly 02-expect-wrong and 04-expect-wrong-under-grants; 05 proves [grants] reaches the child)"
+	l06=$$(printf '%s\n' "$$out" | grep 'FAIL  06-silent-nonzero-exit'); \
+	if ! printf '%s' "$$l06" | grep -q 'exit 3' || ! printf '%s' "$$l06" | grep -q 'stderr empty'; then \
+	  echo "verify-playground-examples: a silent non-zero exit is not reported WITH a message (expected a FAIL line for 06-silent-nonzero-exit carrying 'exit 3' and 'stderr empty'; got: '$$l06')"; \
+	  printf '%s\n' "$$out" | tail -12; exit 1; fi; \
+	l07=$$(printf '%s\n' "$$out" | grep 'EXPECT 07-err-answer-vs-expect'); \
+	if ! printf '%s' "$$l07" | grep -q 'exit 1' || ! printf '%s' "$$l07" | grep -q "delivery accepted='true'"; then \
+	  echo "verify-playground-examples: an err answer against an [expect] is not reported with the expectation and the exit code (expected an EXPECT line for 07-err-answer-vs-expect; got: '$$l07')"; \
+	  printf '%s\n' "$$out" | tail -12; exit 1; fi; \
+	if printf '%s' "$$out" | grep -q 'FAIL with no message'; then \
+	  echo "verify-playground-examples: a FAIL row reached the report with an EMPTY message"; \
+	  printf '%s\n' "$$out" | tail -12; exit 1; fi; \
+	echo "verify-playground-examples: [expect] red-proof OK (fixture corpus reds exactly 02-expect-wrong and 04-expect-wrong-under-grants; 05 proves [grants] reaches the child; 06 and 07 are named with their exit codes and streams)"
 
 # ── playground diagram validity gate (#992) ───────────────────────────────────
 # Every diagram the playground can put on screen must PARSE:
@@ -1097,6 +1131,21 @@ repos-allocation-gate: build-vcx
 	@"$(CX_BIN)" --allow-all scripts/repos_allocation_gate.cx --self-test
 	@"$(CX_BIN)" --allow-all scripts/repos_allocation_gate.cx
 
+# ── the product import graph (RULED: RS-24, owner D28a) ──────────────────────
+# vcx/platform splits into one V module per V product, and registry/repos.cxd
+# declares, once, which repository compiles each module (`vmodule=`) and which
+# repositories it builds on (`pins=`, the Pins column of the #1589 table). The
+# step refuses an import under a product directory that runs against a pin, a
+# cycle in the pins, a product directory with no repository row, a file
+# allocated away from its product directory, and a vmodule that would shadow a
+# vlib module. The self-test runs first and carries the planted violation the
+# gate was red-proofed on (`import store` in a net file).
+.PHONY: product-import-gate
+product-import-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
+product-import-gate: build-vcx
+	@"$(CX_BIN)" --allow-all scripts/product_import_gate.cx --self-test
+	@"$(CX_BIN)" --allow-all scripts/product_import_gate.cx
+
 # ── the store→session dependency check (RULED: RS-6, #1591 item 8) ─────────
 # RS-6 puts the store SERVER's authentication on the Ring-1 trust primitives
 # (did/vc verify, the authz decision) and the daemon's own `[grants]`, so the
@@ -1150,11 +1199,50 @@ deps-cx:
 
 DEPS_CX = $(if $(CX_BIN),$(CX_BIN),$(if $(wildcard $(CURDIR)/vcx/target/cx),$(CURDIR)/vcx/target/cx,cx))
 
+# BOTH END ON THE BUNDLED SOURCES (#1589 item 23): once the pins are fetched
+# or verified, scripts/bundle_check.cx judges every bundled CX module against
+# them — the table conformance/bundle_sources.cxd grades — and refuses a pinned
+# checkout that does not carry the source its registry/modules.cxd row names
+# (`missing-pinned-source`), a row naming a repository deps.cxd does not pin
+# (`unpinned`), and a pinned source committed into this tree (`tracked-pin`).
 deps-sync: deps-cx
 	@"$(DEPS_CX)" --allow-all scripts/deps_sync.cx
+	@"$(DEPS_CX)" --allow-all scripts/bundle_check.cx
 
 deps-check: deps-cx
 	@"$(DEPS_CX)" --allow-all scripts/deps_sync.cx --check
+	@"$(DEPS_CX)" --allow-all scripts/bundle_check.cx
+
+# ── test-bundle-sources — the bundled-source table's corpus ───────────────
+# conformance/bundle_sources.cxd pins the two legal states and every refusal
+# of scripts/bundle_sources.cx — the table scripts/bundle_check.cx applies to
+# the real tree at the end of `deps-sync` and `deps-check`;
+# scripts/check_bundle_sources_fixtures.cx grades it and runs its own comparator self-test first — #1591: "Every moved gate is
+# red-proofed on a synthetic violation before its row moves."
+#
+# BOTH GRANTS ARE LOAD-BEARING, for the reason test-deps-pins below records:
+# a denied write bound to an unused [?let] binding is dropped silently (#1608),
+# so under --allow-read alone the grader prints nothing at all.
+.PHONY: test-bundle-sources
+test-bundle-sources: CX_BIN ?= $(CURDIR)/vcx/target/cx
+test-bundle-sources: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_bundle_sources_fixtures.cx --self-test
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_bundle_sources_fixtures.cx
+
+# ── test-docs-fragment — the per-repository documentation fragment ────────
+# conformance/docs_fragment.cxd pins the contract a component repository's
+# release meets when it publishes docs/llm/manifest-fragment.cxd, and the
+# union's collision refusal (RULED: RS-9: "the closed [output] list of
+# docs-src/llm/manifest.cxd becomes the union of per-repository doc
+# manifests"). scripts/docs_fragment.cx is the contract;
+# scripts/gen_docs/primer_build.cx runs the same functions over every fragment
+# under deps/ when `make docs` regenerates. The grader runs its comparator
+# self-test first. Both grants load-bearing, as for test-bundle-sources.
+.PHONY: test-docs-fragment
+test-docs-fragment: CX_BIN ?= $(CURDIR)/vcx/target/cx
+test-docs-fragment: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_docs_fragment_fixtures.cx --self-test
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_docs_fragment_fixtures.cx
 
 # ── test-deps-pins — the deps.cxd corpus ──────────────────────────────────
 # conformance/deps_pins.cxd pins the wire form, its canonical bytes and every
@@ -1203,23 +1291,38 @@ test-migrate-namespace: build-vcx
 # It is NOT a TEST_TARGETS step and takes no selection-manifest row: it RUNS
 # the union rather than being part of it. `make test` remains what a step
 # roster grades.
+#
+# ITS MEANING IS UNCHANGED by #1589 item 23: `deps-sync` then `make test`, in
+# that order. `deps-sync` now also judges the bundled CX sources against the
+# pins it fetched (scripts/bundle_check.cx), so a pinned checkout missing the
+# source a module row names fails here, before a single test compiles.
 .PHONY: union
 union: deps-sync
 	@$(MAKE) test
 
 # ── tools-export golden gate (stream 18, #690) ────────────────────────────────
-# `cx tools export` over the checked-in M5 module must reproduce the checked-in
-# golden byte-for-byte — the offline registration step pinned end-to-end
-# (cx-x/tools descriptors → cx-x/mcp-server adapter → JSON emission). A
-# projection change that moves these bytes is deliberate and regenerates the
-# golden via the verb itself in the same commit.
+# `cx tools export` over the M5 module must reproduce its golden byte-for-byte
+# — the offline registration step pinned end-to-end (cx-platform/tools
+# descriptors → cx-platform/mcp-server adapter → JSON emission). A projection
+# change that moves these bytes is deliberate and regenerates the golden via
+# the verb itself in the same commit.
+#
+# THE FIXTURE MOVED AND THE STEP DID NOT (RULED: RS-12, #1591 item 12). The
+# module and its golden are cx-platform-agent's now; the VERB is this tree's
+# (`vcx/cmd/tools_verb.v`), so the step runs it over the pinned checkout
+# deps.cxd names, the test-sso-interop-lane shape. It refuses with exit 2 and
+# names `make deps-sync` when the checkout is absent — never a skip.
+TOOLS_EXPORT_DIR := deps/cx-platform-agent/conformance/tools-export
 .PHONY: tools-export-gate
 tools-export-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
 tools-export-gate: build-vcx
-	@out=$$("$(CX_BIN)" tools export conformance/tools-export/refund_order.cx) || { echo "tools-export-gate: the verb FAILED"; exit 1; }; \
-	want=$$(cat conformance/tools-export/refund_order.tools.json); \
+	@test -f $(TOOLS_EXPORT_DIR)/refund_order.cx || { \
+	  echo "tools-export-gate: $(TOOLS_EXPORT_DIR)/ is not there — the fixture lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
+	  exit 2; }
+	@out=$$("$(CX_BIN)" tools export $(TOOLS_EXPORT_DIR)/refund_order.cx) || { echo "tools-export-gate: the verb FAILED"; exit 1; }; \
+	want=$$(cat $(TOOLS_EXPORT_DIR)/refund_order.tools.json); \
 	if [ "$$out" != "$$want" ]; then \
-	  echo "tools-export-gate: OUTPUT DIVERGES from conformance/tools-export/refund_order.tools.json"; \
+	  echo "tools-export-gate: OUTPUT DIVERGES from $(TOOLS_EXPORT_DIR)/refund_order.tools.json"; \
 	  echo "--- got:"; echo "$$out"; echo "--- want:"; echo "$$want"; \
 	  exit 1; \
 	fi; \
@@ -1369,7 +1472,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate test-deps-pins test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -1557,10 +1660,21 @@ check-code-spec-consistency: build-vcx
 # (cites its WF- ruling and says "not yet implemented" — the shape the W3
 # performer-axis refusal already uses). It also fails when its own inputs
 # do not parse, so it cannot go green over nothing.
+#
+# THE GATE MOVED AND THE STEP DID NOT (RULED: RS-12, #1591 item 15). The
+# program, flow.md and stdlib/flow.cx are cx-platform-flow's; the step runs the
+# program out of the pinned checkout deps.cxd names, from that checkout's root
+# (it reads `spec/03-approved/platform/flow.md` and `stdlib/flow.cx` relative
+# to where it runs), under THIS tree's binary. It stays here because the
+# repository's own `make check` is lint plus `cx corpus`, and the pair it
+# holds together is exactly the pair a pin bump moves.
 .PHONY: flow-vocabulary-gate
 flow-vocabulary-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
 flow-vocabulary-gate: build-vcx
-	@"$(CX_BIN)" --allow-read --allow-write scripts/flow_vocabulary_gate.cx
+	@test -f deps/cx-platform-flow/scripts/flow_vocabulary_gate.cx || { \
+	  echo "flow-vocabulary-gate: deps/cx-platform-flow/ is not there — the gate lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
+	  exit 2; }
+	@cd deps/cx-platform-flow && "$(CX_BIN)" --allow-read --allow-write scripts/flow_vocabulary_gate.cx
 
 # ── flow-dogfood-gate (#1265, ladder rung 1) — the DOGFOOD FLOW documents.
 # `flow.md` §4.16 makes three flows ABOUT THIS REPOSITORY the campaign's
@@ -1580,10 +1694,48 @@ flow-vocabulary-gate: build-vcx
 # with real acts: those acts are `make build-vcx` and `make <step>`, and
 # running them inside `make test` would nest make in the matrix and hand a
 # second make the jobserver. In TEST_TARGETS.
+#
+# THE DOCUMENTS MOVED AND THE STEP DID NOT (RULED: RS-12, RS-20, #1591 item
+# 15). flows/ and the gate program are cx-platform-flow's; the two verbs the
+# gate drives them through — `cx flow validate` and `cx flow simulate` — are
+# the local profile RS-20 kept in THIS repository. So the step runs the
+# program out of the pinned checkout, from its root, and CX_BIN is what
+# crosses: the program's own discovery looks for `vcx/target/cx` under where
+# it runs, which in the checkout is nothing, and it must grade this tree's
+# binary rather than find another.
 .PHONY: flow-dogfood-gate
 flow-dogfood-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
 flow-dogfood-gate: build-vcx
-	@"$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/flow_dogfood_gate.cx
+	@test -f deps/cx-platform-flow/scripts/flow_dogfood_gate.cx || { \
+	  echo "flow-dogfood-gate: deps/cx-platform-flow/ is not there — the gate lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
+	  exit 2; }
+	@cd deps/cx-platform-flow && CX_BIN="$(CX_BIN)" "$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/flow_dogfood_gate.cx
+
+# ── test-flow-umbrella — the `cx flow` lane, run out of the pinned checkout ──
+# vcx/tests/flow_umbrella_test.v was one file of test-vcx-suite's directory
+# until the extraction (RULED: RS-12, #1591 item 15) allocated it to
+# cx-platform-flow. What it grades did NOT move: eight real `cx` processes
+# advancing one journaled run, and the `cx flow` command line — argv, exit
+# codes, the stdout/stderr split, a run resuming between two processes. Those
+# are the local-profile verbs RS-20 kept in the binary, and the repository has
+# no V build to run a V test with. So this step runs the pinned file against
+# THIS tree's module path (`-path` names vcx/, where `testenv` is; testenv
+# finds the binary under @VMODROOT, which is vcx/ whatever directory the test
+# file sits in) with test-vcx-suite's gc and engine flags, and refuses by name
+# when the checkout is absent — a skip and a pass would be the same line.
+#
+# The module path is ABSOLUTE and the step carries no -usecache. Measured on
+# the xflow branch: with test-vcx-suite's `-usecache` and VFLAGS_VCX's relative
+# `vcx`, V's cache rebuild could not find the module ("builder error:
+# vcx/testenv doesn't exist ... could not rebuild cache module", run 4); with
+# this line the lane passes (run 5). A file outside vcx/ has no v.mod above it
+# to anchor a relative path to.
+.PHONY: test-flow-umbrella
+test-flow-umbrella: build-vcx-dev
+	@test -f deps/cx-platform-flow/vcx/tests/flow_umbrella_test.v || { \
+	  echo "test-flow-umbrella: deps/cx-platform-flow/ is not there — the lane lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
+	  exit 2; }
+	@$(JS_CLOSE) VFLAGS='-cc cc -path "@vlib|@vmodules|$(CURDIR)/vcx"' $(V) -cc cc $(CX_GC) $(CX_ENGINES) test deps/cx-platform-flow/vcx/tests/flow_umbrella_test.v
 
 # ── check-code-fixtures (gate 4; repaired + wired by the #805 gate-truth
 # batch — it was RED and in no step, so no stream gate ever ran it). The
@@ -1674,6 +1826,11 @@ ring-import-gate:
 # it parses, every gate= value is in-enum, and every [module name=X] row
 # resolves (suite-aware) to a real fixture. Nothing else validated this policy
 # file, and it governs whether every OTHER fixture blocks its gate.
+# Since D49a (#1633) it is also the DRIFT check of that file: a suite's status
+# lives on its [test-suite] element and the register is derived from the
+# elements — scripts/gates_register_check.cx refuses a row that disagrees,
+# after `cx corpus` has graded its corpus, conformance/gates_register.cxd.
+# Reads vcx/target/cx (or CX_BIN); it does not build it.
 .PHONY: gates-manifest-gate
 gates-manifest-gate:
 	@bash scripts/gates_manifest_gate.sh
@@ -2028,7 +2185,7 @@ ring-tag-gate: build-vcx
 	@FORMAT=count "$(CX_BIN)" --allow-read --allow-env --allow-write scripts/ring_query.cx >/dev/null && echo "ring-tag-gate OK — every suite header carries ring=, and every suite under a ring DIRECTORY agrees with it (RULED: 1427-c); steps queryable via 'make ring-query'"
 
 # Distribution-spec §9 checkable absences (fixture §11.8): the xap-dist engine
-# (vcx/code/stdlib_xap_dist.v) composes the store/did/vc/compose surfaces and
+# (vcx/xap/stdlib_xap_dist.v) composes the store/did/vc/compose surfaces and
 # ships NO parallel primitive — no own hashing, no archive format, no
 # transport, no second compose gate.
 .PHONY: check-xap-dist-absences
@@ -2606,12 +2763,13 @@ test-vcx: build-vcx-dev test-vcx-gates test-vcx-suite test-vcx-code test-vcx-cmd
 # named step. check-conformance-coverage (in TEST_TARGETS) asserts that map on
 # every gate; the banner says it so a green here is read for what it covers.
 test-vcx-conform: build-vcx-dev
-	@echo "test-vcx-conform covers the DOCUMENT suites (conform-all's list) + fmt + data-bin-arrow + diff + lint; code.cxd and stdlib/*.cxd are the eval step's (test-vcx-code, test-profile-gate) — see check-conformance-coverage"
+	@echo "test-vcx-conform covers the DOCUMENT suites (conform-all's list) + fmt + data-bin-arrow + diff + lint + streaming-write; code.cxd and stdlib/*.cxd are the eval step's (test-vcx-code, test-profile-gate) — see check-conformance-coverage"
 	$(MAKE) -C vcx conform-all
 	$(MAKE) -C vcx conform-fmt
 	$(MAKE) -C vcx conform-data-bin-arrow
 	$(MAKE) -C vcx conform-diff
 	$(MAKE) -C vcx conform-lint
+	$(MAKE) -C vcx conform-streaming-write
 
 # Convenience wrapper: run the full V suite ONCE, stream live output to a
 # log, then print a digest of just the FAIL lines + per-file counts + the
@@ -2754,7 +2912,6 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/env_retention_test.v \
                       vcx/tests/net_dtls_test.v \
                       vcx/tests/net_real_socket_test.v \
-                      vcx/tests/a2a_real_test.v \
                       vcx/tests/http_h2_serve_test.v \
                       vcx/tests/http_client_tls_transport_test.v \
                       vcx/tests/smtp_real_socket_test.v \
@@ -2882,14 +3039,16 @@ RETRY_REASON_CASE = case "$$rel" in \
 	    reason="reference web client / store readiness bounds (calibrated ~30 s) exceeded only under the -j12 storm plus box load: measured 2026-09-09 OK 72 s alone, FAIL 98.7 s and 123 s with a step or build sharing the box" ;; \
 	  vcx/tests/store_remote_umbrella_test.v) \
 	    reason="\#1425 daemon start under the -j12 suite storm (the readiness window expires before the listener line); green in isolation and in every prior full run" ;; \
-	  vcx/tests/net_udp_read_deadline_test.v|vcx/tests/net_dtls_test.v|vcx/tests/net_real_socket_test.v|vcx/tests/a2a_real_test.v|vcx/tests/http_h2_serve_test.v|vcx/tests/http_client_tls_transport_test.v|vcx/tests/smtp_real_socket_test.v|vcx/tests/imap_real_socket_test.v|vcx/tests/http_umbrella_test.v|vcx/tests/connector_live_test.v) \
+	  vcx/tests/net_udp_read_deadline_test.v|vcx/tests/net_dtls_test.v|vcx/tests/net_real_socket_test.v|vcx/tests/http_h2_serve_test.v|vcx/tests/http_client_tls_transport_test.v|vcx/tests/smtp_real_socket_test.v|vcx/tests/imap_real_socket_test.v|vcx/tests/http_umbrella_test.v|vcx/tests/connector_live_test.v) \
 	    reason="real-socket contention: ephemeral-port / deadline race under -j" ;; \
-	  vcx/platform/store_admin_plane_test.v|vcx/platform/store_grpc_live_test.v|vcx/platform/store_lazy_load_test.v) \
+	  vcx/store/store_admin_plane_test.v|vcx/store/store_grpc_live_test.v|vcx/store/store_lazy_load_test.v) \
 	    reason="real-socket contention: live store/grpc endpoint under -j (\#648)" ;; \
 	  vcx/code/code_module_umbrella_test.v) \
 	    reason="\#1432 timing under load: test_retry_without_delay_does_not_suspend is a WALL-CLOCK control row (delay=0 must cost < 40 ms) and read 42 ms at load 190-218 while two pipelines built at -j; nothing in that head touched the retry path, and the bound is NOT loosened" ;; \
 	  vcx/tests/code_eval_fixtures_test.v|vcx/tests/code_eval_fixtures_shard_*_test.v) \
 	    reason="\#1432 early exit under load: the grader runs 20+ minutes over 4583 fixtures, and the failing run exited after 13.8 s with NO assertion while a parallel step relinked libcx.dylib/cx; the step's first line and its first failure now name the cx build identity, so a mid-run relink says so itself" ;; \
+	  vcx/tests/env_retention_test.v) \
+	    reason="\#1597 memory gauge under load: the bytes twelve connector loads retain over what two retain, read after forced collections, moves with the -gc e collection point under a -j storm (3.6 in the -j28 storm on 7ac722830, 98.4x in the storm on 684a12502, 0.05 idle); the 3.0 bound is NOT loosened" ;; \
 	  bench/repr/run.sh) \
 	    reason="\#1431 memory gauge under load: live-bytes/input-bytes moves with the -gc e collection point under a -j storm (read 8.941x against 8.35x at load ~300 on a LEDGER-ONLY head byte-identical to one that passed the same step four hours earlier; the retry passed)" ;; \
 	  *) \
@@ -3019,11 +3178,21 @@ CACHE_ESCAPE_PROBE = \
 # a `v test` step path but the script `repr-guard` runs, and a row naming a
 # script that moved would silently disable that class exactly as a stale test
 # path does. Every roster the tree has is bound by this one target.
+#
+# And every row DECLARES WHY (FIX-1, #1597): RETRY_REASON_CASE's default arm
+# still retries a row with no reason, loudly, but a loud line in a failed run's
+# log is found after the run failed. The post-merge run on 684a12502 printed
+# "NO REASON DECLARED" for env_retention_test.v, which had joined
+# SUITE_SERIAL_RETRY (5672a1d2e) without its row here. A roster row whose
+# reason is the default arm is refused BEFORE the suite runs, beside the
+# missing-file refusal.
 .PHONY: check-serial-retry-rosters
 check-serial-retry-rosters:
-	@missing=""; \
+	@missing=""; undeclared=""; \
 	for t in $(SUITE_SERIAL_RETRY) $(CODE_SERIAL_RETRY) $(GAUGE_SERIAL_RETRY); do \
 	  [ -f "$$t" ] || missing="$$missing $$t"; \
+	  rel=$$t; $(RETRY_REASON_CASE); \
+	  case "$$reason" in "NO REASON DECLARED"*) undeclared="$$undeclared $$t" ;; esac; \
 	done; \
 	if [ -n "$$missing" ]; then \
 	  echo "check-serial-retry-rosters: retry roster names file(s) that do not exist —"; \
@@ -3032,7 +3201,14 @@ check-serial-retry-rosters:
 	  echo "  fix the roster in Makefile (SUITE_SERIAL_RETRY / CODE_SERIAL_RETRY / GAUGE_SERIAL_RETRY)."; \
 	  exit 1; \
 	fi; \
-	echo "check-serial-retry-rosters OK — every retry-roster row names an existing step"
+	if [ -n "$$undeclared" ]; then \
+	  echo "check-serial-retry-rosters: retry roster row(s) with NO declared reason —"; \
+	  echo "  the retry would print 'NO REASON DECLARED' in a failed run's log:"; \
+	  for t in $$undeclared; do echo "    $$t"; done; \
+	  echo "  declare each in RETRY_REASON_CASE in the Makefile (the issue and the class)."; \
+	  exit 1; \
+	fi; \
+	echo "check-serial-retry-rosters OK — every retry-roster row names an existing step and declares its reason"
 
 # ── check-fixture-shard-manifest (#1448, RULED: 1448-a) ─────────────────────
 # The same shape, one level down. 1448-a partitions the module corpus —
@@ -3217,18 +3393,26 @@ test-vcx-suite: build-vcx-dev check-serial-retry-rosters check-fixture-shard-man
 # the "timing / early exit under load" class documented beside the rosters
 # above — its wall-clock control row read 42 ms against 40 ms at a load average
 # of 200. No bound moved.
-CODE_SERIAL_RETRY := vcx/platform/store_admin_plane_test.v \
-                     vcx/platform/store_grpc_live_test.v \
-                     vcx/platform/store_lazy_load_test.v \
+CODE_SERIAL_RETRY := vcx/store/store_admin_plane_test.v \
+                     vcx/store/store_grpc_live_test.v \
+                     vcx/store/store_lazy_load_test.v \
                      vcx/code/code_module_umbrella_test.v
 
 # I3 module split (#651/#516): the in-module tests now live in TWO
 # modules — vcx/code (Ring 1) and vcx/platform (Ring 2, where the
 # store/journal/grpc/service subjects moved). One step runs both.
 .PHONY: test-vcx-code
+# CODE_TEST_DIRS — the directories whose in-module tests this step runs. RS-24
+# (owner D28a) splits vcx/platform into one V module per V product, each in
+# its own vcx/<m>/ (registry/repos.cxd `vmodule=`), and a product's white-box
+# tests move with it. `v test` runs only what it is given, so every product
+# directory is listed here — check-inmodule-test-roster refuses a declared
+# vmodule missing from the list — and a directory with no test yet costs
+# nothing: V reports "0 total" and exits 0.
+CODE_TEST_DIRS := vcx/code/ vcx/platform/ vcx/cxnet/ vcx/mail/ vcx/cxdb/ vcx/store/ vcx/xap/
 test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	@$(JS_CLOSE) log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
-	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/code/ vcx/platform/ 2>&1; echo $$? > $$stf; } | tee $$log; \
+	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(CODE_TEST_DIRS) 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
 	  failed=$$(grep -aE '^FAIL ' $$log | grep -aoE '[^ ]+_test\.v$$' | sort -u); \
@@ -3339,7 +3523,21 @@ check-inmodule-test-roster:
 	  echo "  the issue that owns the exclusion."; \
 	  exit 1; \
 	fi; \
-	echo "check-inmodule-test-roster OK — every vcx/cx/*_test.v is run or explicitly excluded"
+	unrun=""; \
+	for m in $$(grep -oE "vmodule=[a-z_][a-z0-9_]*" registry/repos.cxd | cut -d= -f2); do \
+	  case " $(CODE_TEST_DIRS) " in \
+	    *" vcx/$$m/ "*) ;; \
+	    *) unrun="$$unrun vcx/$$m/" ;; \
+	  esac; \
+	done; \
+	if [ -n "$$unrun" ]; then \
+	  echo "check-inmodule-test-roster: product module director(ies) whose in-module tests NO step runs —"; \
+	  for d in $$unrun; do echo "    $$d"; done; \
+	  echo "  registry/repos.cxd declares each as a V product (vmodule=, RULED: RS-24) and a"; \
+	  echo "  product's white-box tests live beside it; add the directory to CODE_TEST_DIRS."; \
+	  exit 1; \
+	fi; \
+	echo "check-inmodule-test-roster OK — every vcx/cx/*_test.v is run or explicitly excluded, and every product directory (vmodule=) is in test-vcx-code's CODE_TEST_DIRS"
 
 # White-box unit tests INSIDE the Ring-0 `cx` module (vcx/cx/*_test.v) plus
 # the `fixtures` test-support module (vcx/fixtures/ — the corpus loader,
@@ -3434,7 +3632,7 @@ test-vcx-columnar: build-vcx-dev skip-ledger-reset
 	fi
 	@$(JS_CLOSE) if [ ! -f "$(call CX_SKIP_FILE,test-vcx-columnar)" ]; then $(MAKE) -C vcx arrow-shim; fi
 	@$(JS_CLOSE) if [ ! -f "$(call CX_SKIP_FILE,test-vcx-columnar)" ]; then \
-	  PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test vcx/platform/store_columnar_test.v vcx/platform/store_columnar_lineage_test.v; \
+	  PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test vcx/store/store_columnar_test.v vcx/store/store_columnar_lineage_test.v; \
 	fi
 
 # ── sqlite [$store] backend gate — #77 / #220 (concurrent-writer durability) ──
@@ -3497,7 +3695,7 @@ test-vcx-sqlite: build-vcx-dev skip-ledger-reset
 	  line="SKIP test-vcx-sqlite: libsqlite3 development headers not discoverable via pkg-config (absent prerequisite, #318 — brew install sqlite / apt libsqlite3-dev)"; \
 	  echo "$$line"; mkdir -p $(CX_SKIP_DIR); echo "$$line" > $(call CX_SKIP_FILE,test-vcx-sqlite); \
 	else \
-	  $(V) -cc cc $(CX_GC) -d cxstore_sqlite -cflags "$(SQLITE_CFLAGS)" -ldflags "$(SQLITE_LDFLAGS)" test vcx/platform/store_sqlite_test.v vcx/platform/store_sqlite_encryption_test.v vcx/platform/store_concurrent_writer_test.v; \
+	  $(V) -cc cc $(CX_GC) -d cxstore_sqlite -cflags "$(SQLITE_CFLAGS)" -ldflags "$(SQLITE_LDFLAGS)" test vcx/store/store_sqlite_test.v vcx/store/store_sqlite_encryption_test.v vcx/store/store_concurrent_writer_test.v; \
 	fi
 
 # V module search path. `lang/v/native/` + `lang/v/conformance.v` import
@@ -3598,16 +3796,22 @@ demo-go: build-go
 demo-rust: build-rust
 	cargo run --example demo --manifest-path lang/rust/cxlib/Cargo.toml
 
-# ── Publish to public repo ────────────────────────────────────────────────────
-
-publish:
-	@bash scripts/publish.sh
-
-publish-dry-run:
-	@bash scripts/publish.sh --dry-run
-
-publish-push:
-	@bash scripts/publish_push.sh
+# ── Publish ───────────────────────────────────────────────────────────────────
+# THE ALLOWLIST MIRROR RETIRED with the split (RULED: RS-11): "Public or private
+# is a setting per repository. The allowlist mirror (`scripts/publish.sh`,
+# `.publishignore*`, the guard) retires with the split; `cx-private` becomes
+# `cx` when it is no longer private." There is no second tree to copy into any
+# more — this repository IS the one that ships — so `publish`, `publish-dry-run`,
+# `publish-push` and the `release` target that composed them are gone, with
+# scripts/publish.sh, scripts/publish_push.sh, .publishignore and the curated
+# public Makefile and workflows under scripts/public/. The site files the mirror
+# used to install (CNAME, the quickstart `install` script) moved to docs/, the
+# site root itself.
+#
+# WHAT REMAINS HERE IS NOT THE cx MIRROR. `publish-v` mirrors the V FORK to
+# cx-home/cx-v — the fork is not a repository of the shape and its distribution
+# is v-dependency-management.md's subject, not RS-11's — and `publish-org` syncs
+# the org profile README.
 
 publish-v:
 	@bash scripts/publish_v.sh
@@ -3618,19 +3822,18 @@ publish-v-push:
 publish-org:
 	@bash scripts/publish_org.sh
 
-release: publish publish-push
-
 release-v: publish-v publish-v-push
 
-# Tag the public mirrors (cx, cx-v) at the VERSION release version. Run AFTER
-# release + release-v so the tag lands on the pushed release content. Use
-# `make tag-public FORCE=--force` to move an existing published tag.
+# Tag the cx-v mirror at the VERSION release version. Run AFTER release-v so the
+# tag lands on the pushed content. Use `make tag-public FORCE=--force` to move an
+# existing published tag. It used to tag the cx mirror too; that mirror retired
+# with RS-11 and this repository's own tag is the release's tag.
 tag-public:
 	@bash scripts/tag_public.sh $(FORCE)
 
-# tag-public (the real release step) runs BEFORE publish-org (best-effort org
-# branding), so a failed/empty org-README sync can never block tagging a release.
-release-all: release release-v tag-public publish-org
+# tag-public runs BEFORE publish-org (best-effort org branding), so a failed or
+# empty org-README sync can never block tagging a release.
+release-all: release-v tag-public publish-org
 
 # ── The ONE end-to-end local release command ─────────────────────────────────
 # gate (make test + verify-doc-links) → bump → build → tag → push → GitHub
@@ -4193,6 +4396,21 @@ fmt-sweep-timed: build-vcx
 # own `make lint` is what sees it.
 #   SWEEP-FILES=306 FORMATTED=289 DECLINED=11 TREE-REFUSED=10 UNSTABLE=0 ERROR=5
 #
+# TREE-REFUSED 10 -> 9 by the flow extraction (RULED: RS-12, #1591 item 15),
+# brought down in the same landing by the same convention: twenty `.cx`
+# files left with cx-platform-flow, and one of them,
+# examples/platform/flow/checkout/checkout.flow.cx, was the `/@a` -> `@a`
+# member of the program-surface class above. Not a formatter improvement; the
+# file is refused the same way in the repository that holds it. DECLINED is
+# unmoved (stdlib/flow.cx formats). Measured on the branch's own binary:
+#   SWEEP-FILES=297 FORMATTED=272 DECLINED=11 TREE-REFUSED=9 UNSTABLE=0 ERROR=5
+#
+# 11 -> 9 by the agent and ux extractions (RULED: RS-12, #1591 item 12), the same
+# convention: `x/mcp-server.cx` and `x/ux-web.cx` were two of the eleven and
+# left this repository with the rest of x/. Not a formatter improvement — both
+# still decline, in cx-platform-agent and cx-platform-ux.
+#   SWEEP-FILES=291 FORMATTED=268 DECLINED=9 TREE-REFUSED=9 UNSTABLE=0 ERROR=5
+#
 # DECLINED 34 -> 12 and TREE-REFUSED 17 -> 10, and both numbers below move to
 # the measurement in the same commit as the fix, which is what FMT-1 says a
 # ratchet move is. TREE-REFUSED falls by 9 (nine files whose interior comment
@@ -4207,8 +4425,8 @@ fmt-sweep-timed: build-vcx
 # pin that as fail-closed today), and three on shapes not yet reduced:
 # `design/787/w1/serve.cx`, `spec/…/oriel/tui.cx`, `x/ux-web.cx`. The other
 # five declines are the census's OTHER classes, none of them #1436's.
-FMT_SWEEP_MAX_DECLINED ?= 11
-FMT_SWEEP_MAX_TREE_REFUSED ?= 10
+FMT_SWEEP_MAX_DECLINED ?= 9
+FMT_SWEEP_MAX_TREE_REFUSED ?= 9
 FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
 .PHONY: fmt-sweep-gate
 fmt-sweep-gate: build-vcx
@@ -4281,15 +4499,26 @@ repr-guard: build-vcx
 # targets under `-j` — a duration floor there reds on a busy machine rather
 # than on a regression, which is how a gate stops being believed. bench/repr
 # earns its TEST_TARGETS seat because its quantity is a RATIO of live bytes.
-# The load-insensitive halves of this step ARE gated in `make test`: the two
-# per-item COUNT rows are pinned exactly in conformance/platform/flow.cxd
-# (flow-040), and the racing-advancer count in vcx/tests/flow_umbrella_test.v.
+# The load-insensitive halves of this step ARE gated: the two per-item COUNT
+# rows are pinned exactly in conformance/platform/flow.cxd (flow-040), which
+# cx-platform-flow's own gate grades with `cx corpus` since the extraction, and
+# the racing-advancer count in vcx/tests/flow_umbrella_test.v, which
+# `test-flow-umbrella` runs out of the pinned checkout in `make test`.
 # Run this target deliberately — before a release, and at every #1265 wave
 # exit, whose ledger row re-pins what it improved. Contract + numbers:
 # bench/flow/README.md.
+#
+# THE BENCH MOVED WITH THE MODULE (RULED: RS-12, #1591 item 15): bench/flow/,
+# the corpus row flow-040 and the umbrella are cx-platform-flow's, read out of
+# the pinned checkout. run.sh derives its REPO from its own path, so inside the
+# checkout it would look for a `vcx/target/cx-dev` that is not there; CX_BIN is
+# what crosses, and it names THIS tree's dev binary, the one the step builds.
 .PHONY: bench-flow
 bench-flow: build-vcx-dev
-	@bench/flow/run.sh
+	@test -f deps/cx-platform-flow/bench/flow/run.sh || { \
+	  echo "bench-flow: deps/cx-platform-flow/ is not there — the bench lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
+	  exit 2; }
+	@CX_BIN="$(CURDIR)/vcx/target/cx-dev" deps/cx-platform-flow/bench/flow/run.sh
 
 # ── Clean ──────────────────────────────────────────────────────────────────────
 
@@ -4305,9 +4534,53 @@ clean:
 ##                  five asserting instruments (drive 38, keys 9, voice,
 ##                  nokernel, diff drift=0), tear down. bench stays
 ##                  measured-not-asserted. Refuses if :8790 is already served.
+##
+##                  THE LANE MOVED AND THE ESTATE DID NOT (RULED: RS-12,
+##                  #1591 item 12). scripts/oriel_lane.sh is cx-platform-ux's
+##                  now; the ORIEL estate it drives is still this tree's
+##                  (spec/03-approved/xap/demos/oriel/, cx-platform-xap's
+##                  allocation). So the step runs the script out of the
+##                  pinned checkout, against THIS tree's binary, with
+##                  ORIEL_ESTATE naming this checkout as the root it cds to.
+##                  It refuses with exit 2 and names `make deps-sync` when
+##                  the checkout is absent — never a skip.
 .PHONY: test-oriel-lane
 test-oriel-lane: build-vcx
-	@bash scripts/oriel_lane.sh
+	@test -f deps/cx-platform-ux/scripts/oriel_lane.sh || { \
+	  echo "test-oriel-lane: deps/cx-platform-ux/ is not there — the lane script lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
+	  exit 2; }
+	@ORIEL_ESTATE="$(CURDIR)" CX_BIN="$(CURDIR)/vcx/target/cx" bash deps/cx-platform-ux/scripts/oriel_lane.sh
+
+## test-agent-real-lanes  The agent modules' four real-socket lanes as their
+##                  own step (RULED: RS-12, #1591 item 12): mcp_real_test.v,
+##                  mcp_server_real_test.v, a2a_real_test.v, llm_real_test.v —
+##                  each drives THIS tree's cx through a real loopback round
+##                  trip (an MCP client and server, an A2A server and client,
+##                  an Ollama-shaped chat endpoint). The four files are
+##                  cx-platform-agent's since the extraction and ride the
+##                  test-vcx-suite directory walk no longer; they are V
+##                  programs that compile only against this tree's testenv, and
+##                  a package repository has no V build (ships=package), so
+##                  this step copies them out of the pinned checkout into
+##                  vcx/target/ — under vcx/v.mod, where `import testenv`
+##                  resolves — runs them against the binary this tree built,
+##                  and removes the copies. Real sockets: the shared runner's
+##                  step. It refuses with exit 2 and names `make deps-sync`
+##                  when the checkout is absent — never a skip. (Where these
+##                  files belong is flag F-A3 of the agent extraction.)
+AGENT_REAL_LANES := mcp_real_test.v mcp_server_real_test.v a2a_real_test.v llm_real_test.v
+AGENT_LANE_DIR := vcx/target/pinned-tests/cx-platform-agent
+.PHONY: test-agent-real-lanes
+test-agent-real-lanes: build-vcx-dev
+	@for t in $(AGENT_REAL_LANES); do \
+	  test -f deps/cx-platform-agent/vcx/tests/$$t || { \
+	    echo "test-agent-real-lanes: deps/cx-platform-agent/vcx/tests/$$t is not there — the lanes live in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
+	    exit 2; }; \
+	done
+	@rm -rf $(AGENT_LANE_DIR) && mkdir -p $(AGENT_LANE_DIR) && \
+	for t in $(AGENT_REAL_LANES); do cp deps/cx-platform-agent/vcx/tests/$$t $(AGENT_LANE_DIR)/$$t; done; \
+	st=0; $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(AGENT_LANE_DIR) || st=$$?; \
+	rm -rf $(AGENT_LANE_DIR); exit $$st
 
 ## test-sso-interop-lane  Identity-provider interop as its own CI step
 ##                  (#1403): boot the in-tree identity provider at

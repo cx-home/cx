@@ -152,7 +152,7 @@
          value** — same address, same cache hits, same approvals. Two
          records that differ in an effective date are **different
          values**, which is why validity dates are payload data and not
-         metadata (see [[bitemporal]] in Ring 2). And a claim about a
+         metadata (see [[bitemporal]] in the platform group). And a claim about a
          value — who produced it, who approved it, what schema it
          satisfied — is a first-class value of its own, keyed by the
          subject's address, so it can be signed, stored, and audited

@@ -33,6 +33,7 @@
 
 [?lib 'cx-stdlib/io'      as=io]
 [?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
 [?lib 'cx-stdlib/re'      as=re]
 [?lib 'cx-stdlib/strings' as=strings]
 [?lib 'cx-stdlib/fp'      as=fp]
@@ -43,7 +44,17 @@
 [?def matched scope=public ($m) [> [?else $m@start -1] -1]]
 
 [?let
-  [= $impl-dirs ("vcx/code", "vcx/platform")]
+  # vcx/code, vcx/platform and every V product directory registry/repos.cxd
+  # declares (`vmodule=`, RULED: RS-24) -- a split product's prims are the same
+  # implementation surface they were inside vcx/platform. Since xap's split
+  # no row declares vcx/platform (it is the residue of the products not yet
+  # split), so it is named here for as long as it exists.
+  [= $impl-dirs [$fp:flat-map ("vcx/code",
+                                [?if [$io:exists "vcx/platform"] [then ("vcx/platform")] [else ()]],
+                                [?for [in $x [$cx:parse [$io:read-file "registry/repos.cxd"]]//repo]
+                                  [where [not [= [$string [?else $x@vmodule ""]] ""]]]
+                                  [yield [$cat ("vcx/", [$string $x@vmodule])]]])
+                  [?fn ($x) $x]]]
 
   # Fake-success stub-confession phrases (case-insensitive). Each only shows
   # up when an effectful prim returns a deterministic fake instead of doing
@@ -118,5 +129,5 @@
                               " stub confession(s). Make it real or fail closed.")]]]
           [$env:exit 1]]]
       [else
-        [?let [= $_ok [$say "NO-STUB-IMPL gate: clean — no fake-success stub confessions in vcx/(code|platform)/*.v"]]
+        [?let [= $_ok [$say "NO-STUB-IMPL gate: clean — no fake-success stub confessions in vcx/code, vcx/platform or a product directory (vmodule=)"]]
           [$env:exit 0]]]]]]]]

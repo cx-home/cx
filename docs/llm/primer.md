@@ -302,18 +302,24 @@ $ cx --from=cx --to=cx input.cx
 ]
 ```
 
-## 3. The four rings — take the smallest one that answers your question
+## 3. Which `cx` build do I install — then the two rings
 
-CX is built in four rings. The ring answers *how much of CX you have to take
-on*. The import contract is enforced by the build, not by convention: Ring 0
-imports nothing internal, and no ring may ever reach upward.
+`cx` ships as four builds of one binary name. The build answers *how much of
+CX you have to take on*; take the smallest one that answers your question.
 
-| Your task | Ring | What you get | When NOT to use it |
+| Your task | Build | What you get | When NOT to use it |
 |---|---|---|---|
-| Read, write, convert, diff, hash, validate documents | **0 — data** | The reading and the canonical form. No evaluator exists in this ring, so nothing can execute | The moment you need a value computed rather than re-projected |
-| Query, transform, generate; run a program | **1 — code** | Directives, CXPath, comprehensions, the stdlib. Effects still need explicit grants | When the result must outlive the process, or a second party must see it |
-| Persist, audit, replay; serve HTTP/XSP; host features | **2 — platform** | Store + journal, session layer, HTTP surface, XAP host, drivers | For a value you are about to print — Ring 2 is reached over a network, not embedded |
-| Publish/install features; reach CX from another language; agent interop | **3 — ecosystem** | Registry, distribution, bindings, MCP/A2A projections | For anything internal; inside your own program the CX value is better currency |
+| Read, write, convert, diff, hash, validate documents — including untrusted ones | **`data`** | Ring 0 only: the reading, the canonical form, fmt, lint. No evaluator is compiled in, so nothing can execute | The moment you need a value computed rather than re-projected |
+| Run CX inside a host application | **`embed`** | Rings 0–1 core: directives, CXPath, comprehensions, the pure stdlib; no local-effect packs | When the program itself must read files, the clock or the network |
+| Query, transform, generate; run a program | **`cli`** | Rings 0–1 plus the local-effect packs (io, env, process, time, random, log, term) and the http client. Effects still need explicit grants | When the result must outlive the process, or a second party must see it |
+| Persist, audit, replay; serve HTTP/XSP; host features | **`platform`** | The rings plus the platform group: store + journal, session layer, HTTP surface, XAP host, drivers | For a value you are about to print — the platform is reached over a network, not embedded |
+
+Under every build sit **two rings**, and the import contract between them is
+enforced by the build, not by convention. Ring 0 is the data format: it
+imports nothing internal and cannot execute. Ring 1 is the language: it adds
+execution and cannot reach a socket, a store or a protocol. Everything above
+them is a **group** — the platform, the bindings, the ecosystem — that imports
+the rings and what its manifest declares, and nothing ever reaches upward.
 
 ### Ring 0 — the document *is* the answer
 
@@ -362,9 +368,9 @@ Read the pattern as a claim about the document: "for every `user` that has a
 errors.
 
 **When not to use it:** when the result has to survive the process, or more
-than one party must see it. That is Ring 2.
+than one party must see it. That is the platform group.
 
-### Ring 2 — state that outlives the program
+### The platform group — state that outlives the program
 
 The store is content-addressed: `put-doc` returns a handle derived from the
 document's canonical bytes, and `get-doc` returns the document. `mem://` is
@@ -386,15 +392,16 @@ Swap `mem://` for a real URL and the same two calls talk to a served store.
 **When not to use it:** for a value you are about to print. A store handle is
 a promise about durability and identity; if you need neither, stay in Ring 1.
 
-### Ring 3 — the ecosystem edge
+### The ecosystem and binding groups — the edge
 
-Ring 3 is where CX meets everything around it, including agent protocols. The
-MCP and A2A shapes are ordinary CX values projected to their wire form —
-there is no bespoke serializer anywhere in the path:
+These groups are where CX meets everything around it: the registry and
+distribution, the bindings that reach CX from another language, and agent
+protocols. The MCP and A2A shapes are ordinary CX values projected to their
+wire form — there is no bespoke serializer anywhere in the path:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/mcp' :as mcp]
+[?lib 'cx-platform/mcp' :as mcp]
 [?lib 'cx-stdlib/json' :as json]
 [$json:emit [$mcp:call-tool-request 1 "get_weather" {location: "NYC"}]]
 ```
@@ -404,8 +411,8 @@ $ cx prog.cx
 '{"id":1,"jsonrpc":"2.0","method":"tools/call","params":{"arguments":{"location":"NYC"},"name":"get_weather"}}'
 ```
 
-**When not to use it:** for anything internal. Ring 3 exists for crossing a
-boundary.
+**When not to use it:** for anything internal; inside your own program the CX
+value is better currency. These groups exist for crossing a boundary.
 
 ## 4. The complete directive registry
 
@@ -1299,10 +1306,10 @@ $ cx prog.cx
 ### Import with `[?lib]`
 
 `cx-stdlib/…` is the frozen standard set's **Ring 1** — pure or purely local;
-`cx-platform/…` is its **Ring 2** — the modules that serve, or that reach a
-store or a protocol. Both are bundled in the binary and both are frozen; the
-prefix tells you which ring a line reaches. `cx-x/…` is the experimental tier
-and says so in the import line too. `as=` renames.
+`cx-platform/…` is **the platform group** — the modules that serve, or that
+reach a store or a protocol. Both are bundled in the binary and both are
+frozen; the prefix tells you whether a line stays in Ring 1 or reaches the
+platform group. `as=` renames.
 
 `prog.cx`
 ```cx
@@ -1819,7 +1826,7 @@ assistant makes with a young language is inventing a plausible module name.
 ### Standard tier, Ring 1 — `[?lib 'cx-stdlib/<name>']`
 
 Pure or purely local: no serving, no store, no protocol. A Ring-1 module never
-imports a Ring-2 one.
+imports a platform-group one.
 
 | Module | Scope |
 |---|---|
@@ -1873,7 +1880,7 @@ imports a Ring-2 one.
 | `xsp` | The XAP Stream Protocol frame codec — a self-describing, self-delimiting frame [version · type · stream-id · principal-DID · flags · len · payload] that carries XAP over any transport. |
 | `zip` | Zip archive codec over the CX bytes scalar kind. |
 
-### Standard tier, Ring 2 — `[?lib 'cx-platform/<name>']`
+### Standard tier, the platform group — `[?lib 'cx-platform/<name>']`
 
 The modules that SERVE, or that reach a store or a protocol. Bundled and
 frozen exactly as Ring 1 is; the separate prefix is what makes the reach
@@ -1899,14 +1906,6 @@ visible in the import line.
 | `vc-revocation` | The durable half of credential lifecycle: recording that a verifiable credential is revoked, and reading back the set of revoked ids. |
 | `xap` | The XAP orchestrator — the experience layer at the top of the CX web stack. |
 | `xsp-auth` | The XSP-AUTH mutual proof-of-control handshake calculus — SIGMA-style signed ephemeral X25519 over four messages riding ordinary XSP v1 frames on stream 0, with the per-request possession proof and the rotation-continuity proof beside it. |
-
-### Experimental tier — `[?lib 'cx-x/<name>']`
-
-Bundled and conformance-gated, but exempt from the stability promise. The
-import line says so out loud.
-
-| Module | Scope |
-|---|---|
 | `a2a` | A minimal A2A (Agent-to-Agent) protocol client (EXPERIMENTAL x/ tier, #6    Y2) — completing the agentic triad (S9 MCP client, Y1 MCP server, Y2 A2A) on the    shared substrate (jsonrpc + http + json), no new transport. |
 | `a2a-xap` | A2A tasks over the xap substrate (EXPERIMENTAL x/ tier, #6 Y2b). |
 | `adjudicate` | Out-of-band agent adjudicator for the similar review band (EXPERIMENTAL    x/ tier; cx-private #376, similar.md §5.3 ruling Q4). |
@@ -2546,10 +2545,10 @@ invocation has misread every pattern below.
 
 **Each module owns exactly one thing, dependencies point downward, and a seam is
 DECLARED rather than reached for.** A module lives in the ring of its highest
-verb and a Ring-1 module never imports a Ring-2 one
+verb and a Ring-1 module never imports a platform-group one
 (`README.md` §1; `../stdlib/README.md` §1;
 `../core/cx_partition.md` §10), which is the downward
-direction stated structurally; within Ring 2 the same rule is stated seam by
+direction stated structurally; within the platform group the same rule is stated seam by
 seam in §2 below, where each module names what it USES of a neighbor and what it
 must NOT do to it — the shape
 `connector.md` §12 fixed and `flow.md` §6.1 adopted.
@@ -2661,7 +2660,7 @@ the distributed one alike, so no carrier can make it legal
 | R-12 | surface → a value the record does not hold | A surface READS the record, and a value it needs is recorded by a step | no | `flow.md` §6.1 | none — refused in both shapes |
 | R-13 | library → feature | A library never `uses` a feature: code does not depend on grammar, and authority cannot be smuggled through the code plane | no | `../xap/xap_feature_distribution_market.md` §1.1 (N-DIST-2) | none — refused in both shapes |
 | R-14 | feature → a co-tenant feature's bound host | Every invocation runs inside a resource-scoped `[deny net …]`; a feature reaching another's host refuses `CXER0271` naming it, and that scoped deny IS the isolation between co-tenant features | no | `../xap/xap_feature_distribution_market.md` §6.3 step 4 (RULED: CK-10, 1437-a) | none — refused in both shapes |
-| R-15 | Ring 1 → Ring 2 | A Ring-1 module never imports one of these; nothing in the Ring-1 directory imports the Ring-2 one | no | `README.md` §1; `../stdlib/README.md` §1 (RULED: 1427-a) | none — refused in both shapes |
+| R-15 | Ring 1 → the platform group | A Ring-1 module never imports one of these; nothing in the Ring-1 directory imports a platform-group one | no | `README.md` §1; `../stdlib/README.md` §1 (RULED: 1427-a) | none — refused in both shapes |
 
 **Why R-15 is not mechanical, stated rather than left to be rediscovered.** The
 two `[?lib 'cx-platform/…']` lines that stand in the Ring-1 tree today —

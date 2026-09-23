@@ -14,10 +14,13 @@
 # `cx` renders a string VALUE with its quotes, which is correct for a value
 # and wrong for a shell variable, so step 1's answer is unquoted here in the
 # open rather than by a flag that does not exist.
-# --allow-read=../.. because `order.env.cx` takes
-# `[?lib '../../flow/checkout/orders.cx']` — and a path-form module read off
-# disk charges `read`, judged by the granted roots (#1539, RULED: 1061-a (5)).
-# The root is `examples/platform`, the narrowest that covers it.
+# The flow run's --allow-read names the flow checkout example because
+# `order.env.cx` takes its `orders.cx` as a path-form `[?lib]` — and a
+# path-form module read off disk charges `read`, judged by the granted roots
+# (#1539, RULED: 1061-a (5)). Since the flow extraction (RULED: RS-12) that
+# example is cx-platform-flow's and is read out of the checkout deps.cxd pins,
+# so the root is `deps/cx-platform-flow/examples/platform/flow` — the narrowest
+# that covers it, and narrower than the `examples/platform` it replaced.
 #
 # actor.cx needs a SECOND root, and the reason is the extraction (RULED:
 # RS-12): the mock identity provider it imports is cx-platform-sso's now, so
@@ -39,9 +42,9 @@ echo "# the principal the login established, unquoted for the command line:"
 echo "ACTOR=$ACTOR"
 
 echo
-echo '$ cx flow run ../../flow/checkout/checkout.flow.cx --env order.env.cx --ephemeral --actor="$ACTOR" --sku=SKU-88 --qty=3 --unit=9.50 --allow-read=../..'
-"$CX" flow run ../../flow/checkout/checkout.flow.cx --env order.env.cx --ephemeral \
-      --actor="$ACTOR" --sku=SKU-88 --qty=3 --unit=9.50 --allow-read=../..; rc=$?
+echo '$ cx flow run ../../../../deps/cx-platform-flow/examples/platform/flow/checkout/checkout.flow.cx --env order.env.cx --ephemeral --actor="$ACTOR" --sku=SKU-88 --qty=3 --unit=9.50 --allow-read=../../../../deps/cx-platform-flow/examples/platform/flow'
+"$CX" flow run ../../../../deps/cx-platform-flow/examples/platform/flow/checkout/checkout.flow.cx --env order.env.cx --ephemeral \
+      --actor="$ACTOR" --sku=SKU-88 --qty=3 --unit=9.50 --allow-read=../../../../deps/cx-platform-flow/examples/platform/flow; rc=$?
 echo "exit=$rc"
 
 echo
