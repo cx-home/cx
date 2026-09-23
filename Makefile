@@ -3409,7 +3409,7 @@ CODE_SERIAL_RETRY := vcx/store/store_admin_plane_test.v \
 # directory is listed here — check-inmodule-test-roster refuses a declared
 # vmodule missing from the list — and a directory with no test yet costs
 # nothing: V reports "0 total" and exits 0.
-CODE_TEST_DIRS := vcx/code/ vcx/platform/ vcx/cxnet/ vcx/mail/ vcx/cxdb/ vcx/store/ vcx/xap/
+CODE_TEST_DIRS := vcx/code/ vcx/platform/ vcx/cxnet/ vcx/mail/ vcx/cxdb/ vcx/store/ vcx/identity/ vcx/xap/
 test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	@$(JS_CLOSE) log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
 	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(CODE_TEST_DIRS) 2>&1; echo $$? > $$stf; } | tee $$log; \

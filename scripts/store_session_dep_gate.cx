@@ -16,7 +16,7 @@
 #
 # THE RULE. No non-test `vcx/store/*.v` file may name an identifier
 # that belongs to the identity module's session surface. The symbol set is
-# DERIVED from `vcx/platform/stdlib_session.v` -- every identifier in it that
+# DERIVED from `vcx/identity/stdlib_session.v` -- every identifier in it that
 # begins with `session_` or `Session` -- so a session helper added tomorrow is
 # covered without editing this file, and the gate refuses to vouch for an empty
 # derivation. Deny-by-default on top of that: a `session_`/`Session`-prefixed
@@ -160,14 +160,14 @@
 
 # -- the tree ------------------------------------------------------------
 
-[?let [= $sess-path "vcx/platform/stdlib_session.v"]
+[?let [= $sess-path "vcx/identity/stdlib_session.v"]
   [?if [not [$io:exists $sess-path]]
     [then [?let [= $_ [$cry [$concat "store-session-dep: cannot read " $sess-path " -- run from the checkout root"]]]
             [$env:exit 2]]]
     [else ""]]]
 
 [?let
-  [= $sess-text [$io:read-file "vcx/platform/stdlib_session.v"]]
+  [= $sess-text [$io:read-file "vcx/identity/stdlib_session.v"]]
   [= $paths [?for [in $p [$io:glob "vcx/store/*.v"]]
               [where [not [$strings:ends-with $p "_test.v"]]]
               [order-by $p]

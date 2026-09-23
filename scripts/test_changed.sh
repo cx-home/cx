@@ -128,8 +128,8 @@ printf '%s\n' "$CHANGED" | sed 's/^/  /'
 #   vcx/cxstore   <- cx
 #   vcx/code      Ring-1 <- cx
 #   vcx/arrow     <- cx        vcx/transport <- cx
-#   vcx/platform  Ring-2 <- cx code cxstore arrow transport cxnet mail cxdb store
-#   vcx/cxnet, vcx/mail, vcx/cxdb, vcx/store, vcx/xap   the V product modules split out
+#   vcx/platform  Ring-2 <- cx code cxstore arrow transport cxnet mail cxdb store identity
+#   vcx/cxnet, vcx/mail, vcx/cxdb, vcx/store, vcx/identity, vcx/xap   the V product modules split out
 #                 of vcx/platform (RULED: RS-24) <- cx code transport + their
 #                 pins; xap, which pins every one, also <- platform (the residue)
 #   vcx/cli, vcx/cmd_data      platform-free <- cx code cli cmd_data
@@ -147,7 +147,7 @@ RING0='vcx/cx/*'
 RING_STORE='vcx/cxstore/*'
 RING1='vcx/code/*'
 RING_LEAF='vcx/arrow/* vcx/transport/*'
-RING2='vcx/platform/* vcx/cxnet/* vcx/mail/* vcx/cxdb/* vcx/store/* vcx/xap/*'
+RING2='vcx/platform/* vcx/cxnet/* vcx/mail/* vcx/cxdb/* vcx/store/* vcx/identity/* vcx/xap/*'
 RING_CLI='vcx/cli/* vcx/cmd_data/*'
 RING_CMD='vcx/cmd/*'
 RING_SUP='vcx/testenv/* vcx/fixtures/* vcx/corpus/* vcx/deps/* vcx/bench/* vcx/fuzz/* vcx/tools/* vcx/v.mod third_party/*'
@@ -327,12 +327,12 @@ step_globs() {
     # the placement declaration and every artifact class it compares against
     # (RULED: 1427-f) — a spec, a corpus, a bundled source or a ring's V
     # directory moving is exactly what this step exists to catch.
-    placement-gate)                echo 'registry/modules.cxd registry/repos.cxd scripts/placement_gate.cx spec/* conformance/* stdlib/* deps.cxd vcx/code/* vcx/platform/* vcx/cxnet/* vcx/mail/* vcx/cxdb/* vcx/store/* vcx/xap/*' ;;
+    placement-gate)                echo 'registry/modules.cxd registry/repos.cxd scripts/placement_gate.cx spec/* conformance/* stdlib/* deps.cxd vcx/code/* vcx/platform/* vcx/cxnet/* vcx/mail/* vcx/cxdb/* vcx/store/* vcx/identity/* vcx/xap/*' ;;
     repos-allocation-gate)         echo '*' ;;   # any added or removed file can change the allocation
     # RS-24: any vcx/ file can move an import or make a module directory; the
     # vlib listing (the V pin) decides what an import that is not vcx/'s names.
     product-import-gate)           echo 'registry/repos.cxd scripts/product_import_gate.cx vcx/* third_party/*' ;;
-    store-session-dep-gate)        echo 'scripts/store_session_dep_gate.cx vcx/store/* vcx/platform/stdlib_session.v' ;;
+    store-session-dep-gate)        echo 'scripts/store_session_dep_gate.cx vcx/store/* vcx/identity/stdlib_session.v' ;;
     # the pin document, its format module, its grader and the spec page it
     # implements -- nothing else changes what the corpus asserts.
     test-deps-pins)                echo 'conformance/deps_pins.cxd scripts/check_deps_pins_fixtures.cx scripts/deps_pins.cx scripts/deps_sync.cx deps.cxd spec/03-approved/process/repository-dependency-pins.md' ;;
@@ -354,7 +354,7 @@ step_globs() {
     flow-dogfood-gate)             echo 'deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
     # the pinned `cx flow` lane: the pin, the verbs and everything the eight
     # processes it spawns run through, and the module path it is compiled on.
-    test-flow-umbrella)            echo 'deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/* vcx/platform/* vcx/transport/* vcx/testenv/*' ;;
+    test-flow-umbrella)            echo 'deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/* vcx/platform/* vcx/identity/* vcx/transport/* vcx/testenv/*' ;;
     address-baseline-gate)         echo "$RING_LIB $RING_SUP vcx/tests/runners/address_baseline/* conformance/*" ;;
     # #700 wave 1 (2026-08-24): five TEST_TARGETS steps had no row and so
     # always ran. Each row is the step's actual input surface, over-including
@@ -399,7 +399,7 @@ step_globs() {
     # — a new sso release met by this tree's oidc, saml, session and transport.
     # `registry/modules.cxd` rides with it because that is where the pinned
     # paths the build reads are declared.
-    test-sso-interop-lane)         echo 'deps.cxd registry/modules.cxd stdlib/oidc.cx stdlib/saml.cx stdlib/session.cx stdlib/crypto.cx stdlib/http.cx stdlib/net.cx vcx/code/stdlib_oidc.v vcx/code/stdlib_saml*.v vcx/platform/stdlib_session.v vcx/code/stdlib_crypto.v vcx/code/stdlib_http_notd_cx_no_pack_http_client.v vcx/code/net_core_notd_cx_no_pack_http_client.v' ;;
+    test-sso-interop-lane)         echo 'deps.cxd registry/modules.cxd stdlib/oidc.cx stdlib/saml.cx stdlib/session.cx stdlib/crypto.cx stdlib/http.cx stdlib/net.cx vcx/code/stdlib_oidc.v vcx/code/stdlib_saml*.v vcx/identity/stdlib_session.v vcx/code/stdlib_crypto.v vcx/code/stdlib_http_notd_cx_no_pack_http_client.v vcx/code/net_core_notd_cx_no_pack_http_client.v' ;;
     tools-export-gate)             echo 'deps.cxd registry/modules.cxd vcx/* stdlib/*' ;;
     # the four agent real-socket lanes, run from the pinned checkout (RS-12)
     test-agent-real-lanes)         echo 'deps.cxd registry/modules.cxd vcx/* stdlib/*' ;;
@@ -532,12 +532,12 @@ step_globs() {
 # layer, _gate_evidence/, .github/, root prose) selects nothing.
 SUITE_DIR='vcx/tests'
 # The vcx/ directories that are V modules a test file can import.
-VCX_MODULES='cx code platform cxnet mail cxdb store xap cxstore arrow transport cli cmd cmd_data corpus testenv fixtures timing tools bench fuzz'
+VCX_MODULES='cx code platform cxnet mail cxdb store identity xap cxstore arrow transport cli cmd cmd_data corpus testenv fixtures timing tools bench fuzz'
 # The directories the shipped `cx` and libcx compile from — testenv's edge,
 # because a test that runs the binary runs all of this.
 # `corpus` (#1634) is both: `cmd` links it for `cx corpus`, and the fixtures
 # grader imports it for the shards.
-BINARY_MODULES='cx code platform cxnet mail cxdb store xap cxstore arrow transport cli cmd cmd_data corpus'
+BINARY_MODULES='cx code platform cxnet mail cxdb store identity xap cxstore arrow transport cli cmd cmd_data corpus'
 
 # vcx_module_of <import-name> — the vcx/ module directory it names, or nothing
 # when it is V's own stdlib (os, net, time, encoding.base64, x.json2, …). The V
@@ -766,7 +766,7 @@ suite_files() {
       # `tests` is not in VCX_MODULES.
       "$SUITE_DIR"/runners/*)
         ;;
-      stdlib/*.cx|vcx/platform/stdlib_*.v|vcx/cxnet/stdlib_*.v|vcx/mail/stdlib_*.v|vcx/store/stdlib_*.v|vcx/xap/stdlib_*.v|vcx/code/stdlib_*.v)
+      stdlib/*.cx|vcx/platform/stdlib_*.v|vcx/cxnet/stdlib_*.v|vcx/mail/stdlib_*.v|vcx/store/stdlib_*.v|vcx/identity/stdlib_*.v|vcx/xap/stdlib_*.v|vcx/code/stdlib_*.v)
         # the corpus side is already in `sel`; this is the NAME clause on top,
         # plus the ring rule for the two V spellings.
         case "$f" in
