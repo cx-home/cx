@@ -17,11 +17,11 @@ Three import prefixes:
 * **`cx-x/…`** — experimental. Bundled and conformance-gated, but exempt from
   the stability promise. If you are writing code meant to last, prefer the
   standard tier.
-* **`cx-xap`** — the XAP orchestrator, imported as a whole package
-  (`[?lib 'cx-platform/xap' :as xap]`), **not** as `cx-stdlib/xap`. It layers *above*
-  the standard library and adds no authority, transport, or markup logic of
-  its own. It appears in the standard-tier table below because it is bundled
-  from the same directory; its import line is the exception.
+* **`cx-platform/…`** — the platform modules: the ones that serve, or reach
+  a store or a protocol (`reference-platform.md`). The XAP orchestrator is one
+  of them (`[?lib 'cx-platform/xap' :as xap]`), and so is fabric
+  (`[?lib 'cx-platform/fabric']`); both had names of their own, `cx-xap` and
+  `cx-fabric`, which are retired and refuse naming the new spelling.
 
 A call is `[$module:fn args…]`. The `$` is not optional stylistically — it is
 the assertion that this is a call rather than an element you are building
