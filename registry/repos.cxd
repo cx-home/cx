@@ -517,7 +517,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='.githooks/' repo=cx]
   [path prefix='.claude/' repo=cx]
   [path prefix='third_party/' repo=cx why='the V fork pin and the README; every V repo pins the same SHA through its deps.cxd']
-  [path prefix='vcx/corpus/' repo=cx why='the corpus grading core RS-16 moved out of vcx/tests/ into a linked module (vcx/corpus/grade.v, module corpus). It reached this repository through the vcx/ guard rule below, whose why= names only the retired mirror files; the rule states that allocation rather than changing it, because RS-24\'s product-import gate refuses a module directory no row or directory rule owns. Its callers (vcx/cmd/corpus_verb.v, the fixtures grader) are cx-core-code\'s, so the allocation is a flag on the RS-24 branch, not decided here']
+  [path prefix='vcx/corpus/' repo=cx why='the corpus grading core RS-16 moved out of vcx/tests/ into a linked module (vcx/corpus/grade.v, module corpus). It reached this repository through the vcx/ guard rule below, whose why= names only the retired mirror files; the rule states that allocation rather than changing it, because RS-24\'s product-import gate refuses a module directory no row or directory rule owns. Its callers (vcx/cmd/corpus_verb.v, the fixtures grader) are cx-core-code\'s, so which repository owns it is #1624, not decided here']
   [path prefix='vcx/' repo=cx why='guard: vcx/.gitignore.cx-v and Makefile.cx-v, the retired mirror scripts']
   [path prefix='spec/03-approved/' repo=cx why='guard: a spec page no row above claims surfaces in the front door, never as unallocated']
   [path prefix='RELEASE_NOTES_' repo=cx]
