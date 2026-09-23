@@ -14,7 +14,12 @@
 [?lib 'cx-stdlib/oidc']
 [?lib 'cx-stdlib/crypto']
 [?lib 'cx-stdlib/time']
-[?lib '../../sso/mock-idp/idp.cx' :as idp]
+# The identity provider this login runs against is cx-platform-sso's now
+# (RULED: RS-12, #1591 item 11) and reaches this tree as the checkout
+# deps.cxd pins. The import says so in full rather than through a copy:
+# a composition whose component moved to another repository composes the
+# PINNED component or it is not the same composition.
+[?lib '../../../../deps/cx-platform-sso/examples/platform/sso/mock-idp/idp.cx' :as idp]
 
 [?let
   [= $config [$oidc:config [$idp:provider]

@@ -80,9 +80,17 @@ else
 fi
 
 # D — the scenario that was bitten actually calls the waiter now
-S=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)/examples/platform/sso/deployment/run.sh
-if [ -f "$S" ] && grep -q 'scenario_wait_ready.sh' "$S"; then
-  ok D "examples/platform/sso/deployment/run.sh waits through the shared waiter"
+#
+# It is cx-platform-sso's scenario since the extraction (RULED: RS-12, #1591
+# item 11), so it is read out of the checkout deps.cxd pins. The case is NOT
+# skipped when deps/ is absent: a skip and a pass are the same line in a log,
+# which is the defect #1477 was itself filed against. An absent checkout fails
+# here and says to sync, exactly as the build does.
+S=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)/deps/cx-platform-sso/examples/platform/sso/deployment/run.sh
+if [ ! -f "$S" ]; then
+  bad D "deps/cx-platform-sso/examples/platform/sso/deployment/run.sh is not there — the scenario moved with the module (RS-12); run \`make deps-sync\`"
+elif grep -q 'scenario_wait_ready.sh' "$S"; then
+  ok D "the pinned sso deployment scenario waits through the shared waiter"
 else
   bad D "the sso deployment scenario still carries its own silent readiness loop"
 fi

@@ -358,13 +358,21 @@ step_globs() {
     # the oriel surface step drives spec/03-approved/xap/demos/oriel/
     test-oriel-lane)               echo 'spec/03-approved/xap/demos/* vcx/* stdlib/* x/*' ;;
     # #1403 — the ONLY step that puts the SSO stack on a socket. Its inputs are
-    # the two programs it runs, the step script, and every module and native
-    # file the relying-party path bottoms out in: a change to oidc's request
-    # forming or saml's verification that nothing else catches gets caught here.
-    # The http CLIENT joined the row with #1396: the step's proxy and
-    # Retry-After rows grade the client's transport map, so a change there
-    # that never touches oidc must still re-run this step.
-    test-sso-interop-lane)         echo 'scripts/sso_interop/* scripts/sso_interop_lane.sh stdlib/sso.cx conformance/platform/sso.cxd stdlib/oidc.cx stdlib/saml.cx stdlib/session.cx stdlib/crypto.cx stdlib/http.cx stdlib/net.cx vcx/code/stdlib_oidc.v vcx/code/stdlib_saml*.v vcx/platform/stdlib_session.v vcx/code/stdlib_crypto.v vcx/code/stdlib_http_notd_cx_no_pack_http_client.v vcx/code/net_core_notd_cx_no_pack_http_client.v examples/platform/sso/*' ;;
+    # every module and native file the relying-party path bottoms out in: a
+    # change to oidc's request forming or saml's verification that nothing else
+    # catches gets caught here. The http CLIENT joined the row with #1396: the
+    # step's proxy and Retry-After rows grade the client's transport map, so a
+    # change there that never touches oidc must still re-run this step.
+    #
+    # THE FIRST INPUT IS NOW `deps.cxd` (RULED: RS-12, #1591 item 11). The lane
+    # script, the four programs it drives, the module and its corpus are
+    # cx-platform-sso's; they cannot appear in a diff of THIS repository, and a
+    # glob naming them would be a row that can never fire. What CAN appear is
+    # the pin, and a pin bump is precisely the change this step exists to judge
+    # — a new sso release met by this tree's oidc, saml, session and transport.
+    # `registry/modules.cxd` rides with it because that is where the pinned
+    # paths the build reads are declared.
+    test-sso-interop-lane)         echo 'deps.cxd registry/modules.cxd stdlib/oidc.cx stdlib/saml.cx stdlib/session.cx stdlib/crypto.cx stdlib/http.cx stdlib/net.cx vcx/code/stdlib_oidc.v vcx/code/stdlib_saml*.v vcx/platform/stdlib_session.v vcx/code/stdlib_crypto.v vcx/code/stdlib_http_notd_cx_no_pack_http_client.v vcx/code/net_core_notd_cx_no_pack_http_client.v' ;;
     tools-export-gate)             echo 'conformance/tools-export/* vcx/* stdlib/*' ;;
     # the roster rows live in the Makefile and name files under vcx/
     check-serial-retry-rosters)    echo 'Makefile vcx/*' ;;
