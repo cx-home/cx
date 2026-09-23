@@ -7,7 +7,10 @@ Read by scripts/gen_docs/primer_build.cx (`make docs`). Declares:
   [site]     the published base URL every llms.txt link is written against
   [tagline]  the one-line `>` blurb at the top of llms.txt
   [suites]   the conformance suites the templates may cite, one per line,
-             relative to conformance/ and without the .cxd extension.
+             relative to conformance/ and without the .cxd extension — or,
+             for a module extracted into its own repository, its PINNED
+             path `deps/<repo>/conformance/…` (RULED: RS-7, RS-12), the
+             checkout the build embeds the module from.
              Declaring them bounds the fixture index (code.cxd alone is
              ~1200 cases) and records the primer's provenance in one place.
   [doc]      this block — ignored by the generator.
@@ -78,8 +81,8 @@ platform/store
 platform/journal
 platform/http
 stdlib/http-client
-x/mcp
-x/a2a
+deps/cx-platform-agent/conformance/x/mcp
+deps/cx-platform-agent/conformance/x/a2a
 stdlib/strings
 stdlib/fp
 stdlib/json
@@ -95,8 +98,8 @@ stdlib/authz
 platform/authz-store
 platform/session
 stdlib/log
-xap/ux
-xap/ux-web
+deps/cx-platform-ux/conformance/xap/ux
+deps/cx-platform-ux/conformance/xap/ux-web
 xap/xap-compose
 xap/xap-dist
 xml

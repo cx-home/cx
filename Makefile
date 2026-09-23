@@ -1301,18 +1301,28 @@ union: deps-sync
 	@$(MAKE) test
 
 # ── tools-export golden gate (stream 18, #690) ────────────────────────────────
-# `cx tools export` over the checked-in M5 module must reproduce the checked-in
-# golden byte-for-byte — the offline registration step pinned end-to-end
-# (cx-x/tools descriptors → cx-x/mcp-server adapter → JSON emission). A
-# projection change that moves these bytes is deliberate and regenerates the
-# golden via the verb itself in the same commit.
+# `cx tools export` over the M5 module must reproduce its golden byte-for-byte
+# — the offline registration step pinned end-to-end (cx-platform/tools
+# descriptors → cx-platform/mcp-server adapter → JSON emission). A projection
+# change that moves these bytes is deliberate and regenerates the golden via
+# the verb itself in the same commit.
+#
+# THE FIXTURE MOVED AND THE STEP DID NOT (RULED: RS-12, #1591 item 12). The
+# module and its golden are cx-platform-agent's now; the VERB is this tree's
+# (`vcx/cmd/tools_verb.v`), so the step runs it over the pinned checkout
+# deps.cxd names, the test-sso-interop-lane shape. It refuses with exit 2 and
+# names `make deps-sync` when the checkout is absent — never a skip.
+TOOLS_EXPORT_DIR := deps/cx-platform-agent/conformance/tools-export
 .PHONY: tools-export-gate
 tools-export-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
 tools-export-gate: build-vcx
-	@out=$$("$(CX_BIN)" tools export conformance/tools-export/refund_order.cx) || { echo "tools-export-gate: the verb FAILED"; exit 1; }; \
-	want=$$(cat conformance/tools-export/refund_order.tools.json); \
+	@test -f $(TOOLS_EXPORT_DIR)/refund_order.cx || { \
+	  echo "tools-export-gate: $(TOOLS_EXPORT_DIR)/ is not there — the fixture lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
+	  exit 2; }
+	@out=$$("$(CX_BIN)" tools export $(TOOLS_EXPORT_DIR)/refund_order.cx) || { echo "tools-export-gate: the verb FAILED"; exit 1; }; \
+	want=$$(cat $(TOOLS_EXPORT_DIR)/refund_order.tools.json); \
 	if [ "$$out" != "$$want" ]; then \
-	  echo "tools-export-gate: OUTPUT DIVERGES from conformance/tools-export/refund_order.tools.json"; \
+	  echo "tools-export-gate: OUTPUT DIVERGES from $(TOOLS_EXPORT_DIR)/refund_order.tools.json"; \
 	  echo "--- got:"; echo "$$out"; echo "--- want:"; echo "$$want"; \
 	  exit 1; \
 	fi; \
@@ -1462,7 +1472,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -2897,7 +2907,6 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/env_retention_test.v \
                       vcx/tests/net_dtls_test.v \
                       vcx/tests/net_real_socket_test.v \
-                      vcx/tests/a2a_real_test.v \
                       vcx/tests/http_h2_serve_test.v \
                       vcx/tests/http_client_tls_transport_test.v \
                       vcx/tests/smtp_real_socket_test.v \
@@ -3025,7 +3034,7 @@ RETRY_REASON_CASE = case "$$rel" in \
 	    reason="reference web client / store readiness bounds (calibrated ~30 s) exceeded only under the -j12 storm plus box load: measured 2026-09-09 OK 72 s alone, FAIL 98.7 s and 123 s with a step or build sharing the box" ;; \
 	  vcx/tests/store_remote_umbrella_test.v) \
 	    reason="\#1425 daemon start under the -j12 suite storm (the readiness window expires before the listener line); green in isolation and in every prior full run" ;; \
-	  vcx/tests/net_udp_read_deadline_test.v|vcx/tests/net_dtls_test.v|vcx/tests/net_real_socket_test.v|vcx/tests/a2a_real_test.v|vcx/tests/http_h2_serve_test.v|vcx/tests/http_client_tls_transport_test.v|vcx/tests/smtp_real_socket_test.v|vcx/tests/imap_real_socket_test.v|vcx/tests/http_umbrella_test.v|vcx/tests/connector_live_test.v) \
+	  vcx/tests/net_udp_read_deadline_test.v|vcx/tests/net_dtls_test.v|vcx/tests/net_real_socket_test.v|vcx/tests/http_h2_serve_test.v|vcx/tests/http_client_tls_transport_test.v|vcx/tests/smtp_real_socket_test.v|vcx/tests/imap_real_socket_test.v|vcx/tests/http_umbrella_test.v|vcx/tests/connector_live_test.v) \
 	    reason="real-socket contention: ephemeral-port / deadline race under -j" ;; \
 	  vcx/platform/store_admin_plane_test.v|vcx/platform/store_grpc_live_test.v|vcx/platform/store_lazy_load_test.v) \
 	    reason="real-socket contention: live store/grpc endpoint under -j (\#648)" ;; \
@@ -4391,6 +4400,12 @@ fmt-sweep-timed: build-vcx
 # unmoved (stdlib/flow.cx formats). Measured on the branch's own binary:
 #   SWEEP-FILES=297 FORMATTED=272 DECLINED=11 TREE-REFUSED=9 UNSTABLE=0 ERROR=5
 #
+# 11 -> 9 by the agent and ux extractions (RULED: RS-12, #1591 item 12), the same
+# convention: `x/mcp-server.cx` and `x/ux-web.cx` were two of the eleven and
+# left this repository with the rest of x/. Not a formatter improvement — both
+# still decline, in cx-platform-agent and cx-platform-ux.
+#   SWEEP-FILES=291 FORMATTED=268 DECLINED=9 TREE-REFUSED=9 UNSTABLE=0 ERROR=5
+#
 # DECLINED 34 -> 12 and TREE-REFUSED 17 -> 10, and both numbers below move to
 # the measurement in the same commit as the fix, which is what FMT-1 says a
 # ratchet move is. TREE-REFUSED falls by 9 (nine files whose interior comment
@@ -4405,7 +4420,7 @@ fmt-sweep-timed: build-vcx
 # pin that as fail-closed today), and three on shapes not yet reduced:
 # `design/787/w1/serve.cx`, `spec/…/oriel/tui.cx`, `x/ux-web.cx`. The other
 # five declines are the census's OTHER classes, none of them #1436's.
-FMT_SWEEP_MAX_DECLINED ?= 11
+FMT_SWEEP_MAX_DECLINED ?= 9
 FMT_SWEEP_MAX_TREE_REFUSED ?= 9
 FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
 .PHONY: fmt-sweep-gate
@@ -4514,9 +4529,53 @@ clean:
 ##                  five asserting instruments (drive 38, keys 9, voice,
 ##                  nokernel, diff drift=0), tear down. bench stays
 ##                  measured-not-asserted. Refuses if :8790 is already served.
+##
+##                  THE LANE MOVED AND THE ESTATE DID NOT (RULED: RS-12,
+##                  #1591 item 12). scripts/oriel_lane.sh is cx-platform-ux's
+##                  now; the ORIEL estate it drives is still this tree's
+##                  (spec/03-approved/xap/demos/oriel/, cx-platform-xap's
+##                  allocation). So the step runs the script out of the
+##                  pinned checkout, against THIS tree's binary, with
+##                  ORIEL_ESTATE naming this checkout as the root it cds to.
+##                  It refuses with exit 2 and names `make deps-sync` when
+##                  the checkout is absent — never a skip.
 .PHONY: test-oriel-lane
 test-oriel-lane: build-vcx
-	@bash scripts/oriel_lane.sh
+	@test -f deps/cx-platform-ux/scripts/oriel_lane.sh || { \
+	  echo "test-oriel-lane: deps/cx-platform-ux/ is not there — the lane script lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
+	  exit 2; }
+	@ORIEL_ESTATE="$(CURDIR)" CX_BIN="$(CURDIR)/vcx/target/cx" bash deps/cx-platform-ux/scripts/oriel_lane.sh
+
+## test-agent-real-lanes  The agent modules' four real-socket lanes as their
+##                  own step (RULED: RS-12, #1591 item 12): mcp_real_test.v,
+##                  mcp_server_real_test.v, a2a_real_test.v, llm_real_test.v —
+##                  each drives THIS tree's cx through a real loopback round
+##                  trip (an MCP client and server, an A2A server and client,
+##                  an Ollama-shaped chat endpoint). The four files are
+##                  cx-platform-agent's since the extraction and ride the
+##                  test-vcx-suite directory walk no longer; they are V
+##                  programs that compile only against this tree's testenv, and
+##                  a package repository has no V build (ships=package), so
+##                  this step copies them out of the pinned checkout into
+##                  vcx/target/ — under vcx/v.mod, where `import testenv`
+##                  resolves — runs them against the binary this tree built,
+##                  and removes the copies. Real sockets: the shared runner's
+##                  step. It refuses with exit 2 and names `make deps-sync`
+##                  when the checkout is absent — never a skip. (Where these
+##                  files belong is flag F-A3 of the agent extraction.)
+AGENT_REAL_LANES := mcp_real_test.v mcp_server_real_test.v a2a_real_test.v llm_real_test.v
+AGENT_LANE_DIR := vcx/target/pinned-tests/cx-platform-agent
+.PHONY: test-agent-real-lanes
+test-agent-real-lanes: build-vcx-dev
+	@for t in $(AGENT_REAL_LANES); do \
+	  test -f deps/cx-platform-agent/vcx/tests/$$t || { \
+	    echo "test-agent-real-lanes: deps/cx-platform-agent/vcx/tests/$$t is not there — the lanes live in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
+	    exit 2; }; \
+	done
+	@rm -rf $(AGENT_LANE_DIR) && mkdir -p $(AGENT_LANE_DIR) && \
+	for t in $(AGENT_REAL_LANES); do cp deps/cx-platform-agent/vcx/tests/$$t $(AGENT_LANE_DIR)/$$t; done; \
+	st=0; $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(AGENT_LANE_DIR) || st=$$?; \
+	rm -rf $(AGENT_LANE_DIR); exit $$st
 
 ## test-sso-interop-lane  Identity-provider interop as its own CI step
 ##                  (#1403): boot the in-tree identity provider at

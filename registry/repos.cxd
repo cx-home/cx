@@ -74,8 +74,8 @@ the rule carries a `why=`. The recurring reasons, once:
   [repo name=cx-platform-flow group=platform ring=none ships=package status=extracted at=78ea045510278dee3b0a522ab7f168e42e020fab about='workflow; its CLI verbs stay in the binary' why='EXTRACTED (RULED: RS-12, RS-20, #1591 item 15), the second of them. Its [path] rules are retired because it owns no tracked path here any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records. What RS-20 kept in `cx` is claimed by rules of its own and not by this row: the `cx flow` verbs (vcx/cmd/flow*.v, repo=cx) and the flow-perform act seam (vcx/platform/coordination.v, repo=cx-platform-xap)']
   [repo name=cx-platform-connector group=platform ring=none ships=package about='the connector kit and sync']
   [repo name=cx-platform-sso group=platform ring=none ships=package status=extracted at=1e814e5aae6327a8218cc3fe69b43a03517e92bf about='enterprise sign-on, the interop lane' why='EXTRACTED (RULED: RS-12, #1591 item 11), the first of them. It has no [path] rules because it owns no tracked path here any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records, and the gate exempts a status=extracted repo from the empty-repo refusal for exactly that reason -- the row is the pin\'s counterpart, not a plan waiting to be executed']
-  [repo name=cx-platform-ux group=platform ring=none ships=package about='the web and terminal surfaces']
-  [repo name=cx-platform-agent group=platform ring=none ships=package about='tools, mcp, mcp-server, a2a, a2a-xap, llm, run, adjudicate']
+  [repo name=cx-platform-ux group=platform ring=none ships=package status=extracted at=ef9248093389d42f6726042bfc254351445db4bc about='the web and terminal surfaces' why='EXTRACTED (RULED: RS-12, #1591 item 12), with cx-platform-agent: the x/ graduation. It owns no tracked path here any more; cx reaches it through deps.cxd at the sha at= records, and registry/modules.cxd\'s ux, ux-web and ux-tui rows name the pinned checkout']
+  [repo name=cx-platform-agent group=platform ring=none ships=package status=extracted at=b4ab532f4e2cb55f31f3c895c1df501c8dcd9544 about='tools, mcp, mcp-server, a2a, a2a-xap, llm, run, adjudicate' why='EXTRACTED (RULED: RS-12, #1591 item 12), with cx-platform-ux: the x/ graduation. It owns no tracked path here any more; cx reaches it through deps.cxd at the sha at= records, and registry/modules.cxd\'s eight agent rows name the pinned checkout']
   [repo name=cx-binding-python group=binding ring=none ships=pypi about='cxlib for Python']
   [repo name=cx-binding-go group=binding ring=none ships=go-module about='cxlib for Go']
   [repo name=cx-binding-rust group=binding ring=none ships=crate about='cxlib for Rust']
@@ -362,20 +362,16 @@ the rule carries a `why=`. The recurring reasons, once:
      repository -- it produced the repository, and the repository is now the
      source of truth for what belongs to it. ]
 
-  [; ── platform: ux ──────────────────────────────────────────────────── ]
-  [path prefix='x/ux' repo=cx-platform-ux]
-  [path exact='spec/03-approved/xap/ux.md' repo=cx-platform-ux]
-  [path prefix='conformance/xap/ux' repo=cx-platform-ux]
-  [path exact='scripts/oriel_lane.sh' repo=cx-platform-ux]
-
-  [; ── platform: agent ───────────────────────────────────────────────── ]
-  [path prefix='x/' repo=cx-platform-agent why='what remains of x/ after ux and term: tools, mcp, mcp-server, a2a, a2a-xap, llm, run, adjudicate']
-  [path prefix='spec/03-approved/x/' repo=cx-platform-agent]
-  [path prefix='conformance/x/' repo=cx-platform-agent]
-  [path prefix='conformance/tools-export/' repo=cx-platform-agent]
-  [path prefix='vcx/tests/mcp_' repo=cx-platform-agent]
-  [path prefix='vcx/tests/a2a_' repo=cx-platform-agent]
-  [path prefix='vcx/tests/llm_' repo=cx-platform-agent]
+  [; ── platform: ux and agent — the x/ graduation ──────────────────────── ]
+  [; THE RULES ARE RETIRED, AS THE SSO RULES WERE (RULED: RS-12, #1591 item 12).
+     cx-platform-ux (x/ux*, spec/03-approved/xap/ux.md, conformance/xap/ux*,
+     scripts/oriel_lane.sh — 8 paths) and cx-platform-agent (the rest of x/,
+     spec/03-approved/x/, conformance/x/, conformance/tools-export/ and the
+     four vcx/tests/{mcp,a2a,llm}_* real-socket tests — 32 paths) are
+     EXTRACTED: those 40 paths are tracked in the two repositories now and in
+     no tree this gate walks, so a rule naming one of them would be a
+     [dead rule]. What is left is the two [repo] rows above, status=extracted
+     at the shas `cx` pins them at; deps.cxd is the live statement. ]
 
   [; ── RS-18 (owner D20a, #1591 item 12): a family's builtin REGISTRATION
        lives in `vcx/platform/<its dispatcher's basename>_register.v`, so

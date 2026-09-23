@@ -39,9 +39,12 @@ owes. A `-to` equal to its column, or naming a path that already exists, is
 refused: a stale declaration would hide exactly the drift this file exists
 to name.
 
-#1427's cutover is SPENT: no row carries a `-to`, an `ns-to` or a
-`suite-ring` any more, and the census the check prints reads zero on every
-dimension. The columns stay because the mechanism is not the cutover — the
+#1427's cutover is SPENT: no row carries a `-to` or an `ns-to` any more,
+and the census the check prints reads zero on every dimension but one: five
+rows carry a `suite-ring` again since the x/ graduation (RULED: RS-4, RS-1 —
+D45a) — their suites grade in lane ring=1 while their group's lane is 2 —
+so "5 corpus-header ring" is owed, by the repository that owns the headers.
+The columns stay because the mechanism is not the cutover — the
 next decision that moves an artifact writes one, and the same two refusals
 keep it from going stale.
 
@@ -88,7 +91,8 @@ COLUMNS
           suite    fixtures whose parent spec is not a module of its own
   spec    the normative text
   corpus  the graded fixtures
-  source  the bundled CX source (stdlib/*.cx, x/*.cx), or `none`
+  source  the bundled CX source (stdlib/*.cx, or the pinned deps/<repo>/… one
+          of a `repo=` row), or `none`
   repo    the REPOSITORY that owns the artifacts, when it is not this one
           (RULED: RS-7, RS-12). A module extracted into its own repository
           keeps its row here — the binary still ships the surface — and its
@@ -365,23 +369,36 @@ needs becomes its own Ring-1 module.
      `cx-stdlib/xsp` could not carry them. ]
   [module name=xsp-auth ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/xap/xsp-auth.md corpus=conformance/xap/xsp-auth.cxd source=stdlib/xsp-auth.cx code='vcx/platform/stdlib_xsp_auth.v vcx/platform/stdlib_xsp_auth_register.v' half=none status=current]
 
-  [; ── The x tier — cx-x, its own namespace and its own spec directory.
-       1427-b renames `cx-stdlib/X` and nothing else, so these rows carry no
-       ns-to; what moves is their corpora, out of the one bin the tree used
-       to keep every suite in. Each row's ring is the one its own suite
-       header already declares, read through RS-1: a suite graded in the
-       platform lane (ring=2) is a `ring=1 group=platform` row. ─────────── ]
-  [module name=a2a ring=1 ns=cx-x kind=module spec=spec/03-approved/x/a2a.md corpus=conformance/x/a2a.cxd source=x/a2a.cx code=none half=none status=current]
-  [module name=a2a-xap ring=1 group=platform ns=cx-x kind=module spec=spec/03-approved/x/a2a-xap.md corpus=conformance/x/a2a-xap.cxd source=x/a2a-xap.cx code=none half=none status=current]
-  [module name=adjudicate ring=1 group=platform ns=cx-x kind=module spec=spec/03-approved/x/adjudicate.md corpus=conformance/x/adjudicate.cxd source=x/adjudicate.cx code=none half=none status=current]
-  [module name=llm ring=1 ns=cx-x kind=module spec=spec/03-approved/x/llm.md corpus=conformance/x/llm.cxd source=x/llm.cx code=none half=none status=current]
-  [module name=mcp ring=1 ns=cx-x kind=module spec=spec/03-approved/x/mcp.md corpus=conformance/x/mcp.cxd source=x/mcp.cx code=none half=none status=current]
-  [module name=mcp-server ring=1 group=platform ns=cx-x kind=module spec=spec/03-approved/x/mcp-server.md corpus=conformance/x/mcp-server.cxd source=x/mcp-server.cx code=none half=none status=current]
-  [module name=run ring=1 ns=cx-x kind=module spec=spec/03-approved/x/run.md corpus=conformance/x/run.cxd source=x/run.cx code=none half=none status=current]
-  [module name=tools ring=1 ns=cx-x kind=module spec=spec/03-approved/x/tools.md corpus=conformance/x/tools.cxd source=x/tools.cx code=none half=none status=current]
-  [module name=ux ring=1 group=platform ns=cx-x kind=module spec=spec/03-approved/xap/ux.md corpus=conformance/xap/ux.cxd source=x/ux.cx code=none half=none status=current]
-  [module name=ux-tui ring=1 group=platform ns=cx-x kind=module spec=spec/03-approved/xap/ux.md corpus=conformance/xap/ux-tui.cxd source=x/ux-tui.cx code=none half=none status=current]
-  [module name=ux-web ring=1 group=platform ns=cx-x kind=module spec=spec/03-approved/xap/ux.md corpus=conformance/xap/ux-web.cxd source=x/ux-web.cx code=none half=none status=current]
+  [; ── The x/ graduation (RULED: RS-4, RS-1 — owner D45a,
+       ledger/rulings_2026_09_23_x_graduation_d45a.md). These eleven were the
+       `cx-x` experimental tier; each imports as `cx-platform/<name>` now and
+       its row reads `ns=cx-platform group=platform`, the ring unchanged (1,
+       the ring of its highest verb). `cx-x/<name>` is a retired resolver name
+       the loader refuses with the new spelling (vcx/code/stdlib_bundle.v,
+       retired_bundled_names). EXTRACTED (RULED: RS-12, #1591 item 12): the
+       eight agent modules are cx-platform-agent's and the three ux modules
+       cx-platform-ux's, so every path column names the pinned checkout
+       deps.cxd fetches, `deps/<repo>/…`, and vcx/code/stdlib_bundle.v embeds
+       each bundled source from there exactly as it embeds sso's. Inside each
+       repository the artifacts stay where the tier laid them out —
+       spec/03-approved/x/, conformance/x/, x/, and ux's page and corpora
+       under xap/ — because RS-1 and RS-4 do not move a graduated module's
+       directories; none of those is a ring directory, so the placement check
+       reads what follows the prefix as outside the split. Five suites (a2a,
+       llm, mcp, run, tools) grade in lane ring=1 by their own headers while
+       the group's lane is ring=2: their rows declare that with
+       `suite-ring=1`, and the header is the owning repository's to move. ── ]
+  [module name=a2a ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-agent spec=deps/cx-platform-agent/spec/03-approved/x/a2a.md corpus=deps/cx-platform-agent/conformance/x/a2a.cxd source=deps/cx-platform-agent/x/a2a.cx code=none half=none suite-ring=1 status=current]
+  [module name=a2a-xap ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-agent spec=deps/cx-platform-agent/spec/03-approved/x/a2a-xap.md corpus=deps/cx-platform-agent/conformance/x/a2a-xap.cxd source=deps/cx-platform-agent/x/a2a-xap.cx code=none half=none status=current]
+  [module name=adjudicate ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-agent spec=deps/cx-platform-agent/spec/03-approved/x/adjudicate.md corpus=deps/cx-platform-agent/conformance/x/adjudicate.cxd source=deps/cx-platform-agent/x/adjudicate.cx code=none half=none status=current]
+  [module name=llm ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-agent spec=deps/cx-platform-agent/spec/03-approved/x/llm.md corpus=deps/cx-platform-agent/conformance/x/llm.cxd source=deps/cx-platform-agent/x/llm.cx code=none half=none suite-ring=1 status=current]
+  [module name=mcp ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-agent spec=deps/cx-platform-agent/spec/03-approved/x/mcp.md corpus=deps/cx-platform-agent/conformance/x/mcp.cxd source=deps/cx-platform-agent/x/mcp.cx code=none half=none suite-ring=1 status=current]
+  [module name=mcp-server ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-agent spec=deps/cx-platform-agent/spec/03-approved/x/mcp-server.md corpus=deps/cx-platform-agent/conformance/x/mcp-server.cxd source=deps/cx-platform-agent/x/mcp-server.cx code=none half=none status=current]
+  [module name=run ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-agent spec=deps/cx-platform-agent/spec/03-approved/x/run.md corpus=deps/cx-platform-agent/conformance/x/run.cxd source=deps/cx-platform-agent/x/run.cx code=none half=none suite-ring=1 status=current]
+  [module name=tools ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-agent spec=deps/cx-platform-agent/spec/03-approved/x/tools.md corpus=deps/cx-platform-agent/conformance/x/tools.cxd source=deps/cx-platform-agent/x/tools.cx code=none half=none suite-ring=1 status=current]
+  [module name=ux ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-ux spec=deps/cx-platform-ux/spec/03-approved/xap/ux.md corpus=deps/cx-platform-ux/conformance/xap/ux.cxd source=deps/cx-platform-ux/x/ux.cx code=none half=none status=current]
+  [module name=ux-tui ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-ux spec=deps/cx-platform-ux/spec/03-approved/xap/ux.md corpus=deps/cx-platform-ux/conformance/xap/ux-tui.cxd source=deps/cx-platform-ux/x/ux-tui.cx code=none half=none status=current]
+  [module name=ux-web ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-ux spec=deps/cx-platform-ux/spec/03-approved/xap/ux.md corpus=deps/cx-platform-ux/conformance/xap/ux-web.cxd source=deps/cx-platform-ux/x/ux-web.cx code=none half=none status=current]
 
   [; ── Not modules: natives, backend engines, design texts, and the suites
        whose parent spec is not a module of its own (1427-e). ──────────── ]

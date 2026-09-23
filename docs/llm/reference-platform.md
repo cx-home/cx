@@ -421,7 +421,7 @@ to their wire form. Nothing here is a bespoke serializer:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/mcp' :as mcp]
+[?lib 'cx-platform/mcp' :as mcp]
 [?lib 'cx-stdlib/json' :as json]
 [$json:emit [$mcp:list-tools-request 2]]
 ```
@@ -433,7 +433,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/mcp' :as mcp]
+[?lib 'cx-platform/mcp' :as mcp]
 [?lib 'cx-stdlib/json' :as json]
 [$mcp:validate-args
   [$json:parse "{\"name\":\"w\",\"inputSchema\":{\"type\":\"object\",\"required\":[\"location\"],\"properties\":{\"location\":{\"type\":\"string\"}}}}"]
@@ -450,7 +450,7 @@ fails at the boundary:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/mcp' :as mcp]
+[?lib 'cx-platform/mcp' :as mcp]
 [?lib 'cx-stdlib/jsonschema' :as js]
 [?lib 'cx-stdlib/json' :as json]
 [$js:violation-paths
@@ -468,7 +468,7 @@ The A2A shapes are the same story on the agent-to-agent side:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/a2a' :as a2a]
+[?lib 'cx-platform/a2a' :as a2a]
 [?lib 'cx-stdlib/json' :as json]
 [$json:emit [$a2a:agent-card "greeter" "says hi" "http://x/" "0.1" ()]]
 ```

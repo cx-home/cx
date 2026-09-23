@@ -165,10 +165,21 @@
 # suites (the placeholder syntax names an id, not a suite/id pair), so a
 # collision would silently make one suite shadow another — it is a hard
 # failure instead, naming both files.
+#
+# A suite whose module has left for its own repository is declared by its
+# PINNED path, `deps/<repo>/conformance/<ring>/<name>` (RULED: RS-7, RS-12):
+# the corpus is the pinned repository's at the pinned sha, the same checkout
+# the build embeds the module from, so the example and the binary that replays
+# it cannot be from different versions. Until that repository publishes the
+# docs fragment RS-9 describes, this is how its cases stay citable here.
+[?def suite-path scope=private pure [returns string] ($s::string)
+  [?if [$strings:starts-with $s "deps/"] [then [$concat $s ".cxd"]]
+    [else [$concat "conformance/" $s ".cxd"]]]]
+
 [?def load-index scope=public impure ($suites)
   [$fp:fold $suites {}
     [?fn ($acc $s)
-      [?let [= $p [$concat "conformance/" $s ".cxd"]]
+      [?let [= $p [$suite-path $s]]
         [?if [not [$io:is-file $p]]
           [then [$die [$concat "declared suite not found: " $p]]]
           [else [?let

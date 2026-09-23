@@ -14,10 +14,9 @@
 # THE CASES. The failure direction that matters is a FALSE SKIP, so each case
 # names both what must be selected and what must not.
 #
-#   A  one x/ module source (x/ux-web.cx)        the shard that GRADES its
-#                                                corpus, and no umbrella; the
-#                                                boot-budget step is not in the
-#                                                tail
+#   A  an agent/ux pin bump (deps.cxd)           the three steps that grade the
+#                                                graduated modules against this
+#                                                tree's binary
 #   B  one engine file (vcx/code/…)              the suite, per file, AND both
 #                                                wall-clock tail steps
 #   C  one scripts/ file                         the FULL union (build infra)
@@ -77,27 +76,26 @@ bad() {
 
 echo "test_changed selftest:"
 
-# ── A — one x/ module source ────────────────────────────────────────────────
-run x/ux-web.cx > "$T/a"
-a_files=$(suite_files_of "$T/a")
-a_n=$(printf '%s\n' "$a_files" | grep -c . || true)
-a_t=$(targets "$T/a" | wc -w | tr -d ' ')
-# repos-allocation-gate's manifest row is '*' (#1591 item 4): any added or
-# removed file can change the allocation, so it rides on EVERY selection by
-# design. The bound below counts the steps the CHANGE selected, so the
-# always-on row is taken out of the count and asserted present instead — the
-# union on cad2bb8b0 red this case at 30 targets the day the row merged.
-a_t_selected=$(targets "$T/a" | tr ' ' '\n' | grep -vc '^repos-allocation-gate$' || true)
-a_tail=$(tail_of "$T/a")
-if [ "$a_n" -ge 1 ] && [ "$a_n" -le 3 ] \
-	&& printf '%s\n' "$a_files" | grep -q 'code_eval_fixtures_shard_' \
-	&& ! printf '%s\n' "$a_files" | grep -q 'umbrella' \
-	&& [ "$a_t_selected" -lt 30 ] \
-	&& targets "$T/a" | tr ' ' '\n' | grep -q '^repos-allocation-gate$' \
-	&& ! printf '%s' "$a_tail" | grep -q 'test-vcx-timing'; then
-	ok A "$a_t targets ($a_t_selected selected by the change + the always-on allocation row), $a_n suite file(s) — its grading shard, no umbrella, no boot-budget step"
+# ── A — a pin bump of the graduated x/ modules ───────────────────────────────
+# Until the x/ graduation left for cx-platform-agent and cx-platform-ux
+# (RULED: RS-4, RS-1 — D45a; RS-12, #1591 item 12) this case was one x/ module
+# source (x/ux-web.cx), the #1516 shape: an edit to it selected no fixture
+# file at all. No x/ source is in this repository any more, so that change
+# cannot happen here. Its successor is the PIN, as case O's is for sso:
+# `deps.cxd` moving is a new agent or ux release meeting this tree's binary,
+# and the three steps that grade those modules against it — the four
+# real-socket lanes, the tools-export golden and the ORIEL lane — must each be
+# selected by it. A false skip here is the #1516 defect one repository up.
+run deps.cxd > "$T/a"
+a_t=$(targets "$T/a")
+a_miss=''
+for s in test-agent-real-lanes tools-export-gate test-oriel-lane; do
+	printf '%s\n' $a_t | grep -q "^$s$" || a_miss="$a_miss $s"
+done
+if [ -z "$a_miss" ]; then
+	ok A "an agent/ux pin bump (deps.cxd) selects test-agent-real-lanes, tools-export-gate and test-oriel-lane"
 else
-	bad A "x/ module source: $a_t targets ($a_t_selected without the '*' row), $a_n suite file(s), tail [$a_tail]"
+	bad A "deps.cxd did not select:$a_miss — [$a_t]"
 fi
 
 # ── B — one engine file ─────────────────────────────────────────────────────
@@ -563,4 +561,4 @@ if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "test_changed selftest: $cases/$cases (A x/ module; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop lane; P the vcx/corpus grading core selects the steps that run it)"
+echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop lane; P the vcx/corpus grading core selects the steps that run it)"
