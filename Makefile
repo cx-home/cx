@@ -357,6 +357,16 @@ check-gate-lock:
 # names its own pinned paths, and a row added there is covered here the day it
 # lands. The derivation is `grep`, not `cx`, on purpose — this runs BEFORE the
 # binary that would read the registry exists.
+#
+# THE V HALF (RULED: RS-7, RS-12). A V repository's modules are not embedded,
+# they are COMPILED from the pin through -path (CX_DEPS_VPATH, beside
+# DEPS_CX). V has no `$embed_file` to fail on here: a module missing from the
+# search path is "cannot import module", or worse, a like-named module found
+# somewhere else. So for every deps.cxd row carrying a v-fork= this refuses,
+# before V starts, a tree whose deps/<repo>/vcx/ holds no module, a search path
+# that does not name that root, and — the silent case — a directory under vcx/
+# named like a pinned module that tracks no file: a copy left behind by the
+# module's own leave, which V would find first (vcx/ is its v.mod folder).
 .PHONY: deps-present
 deps-present:
 	@missing=""; \
@@ -369,6 +379,27 @@ deps-present:
 	  echo "  registry/modules.cxd declares it under a repo= row and deps.cxd pins that repository." >&2; \
 	  echo "  Run \`make deps-sync\` (or \`make union\`, which does it first). The build does NOT" >&2; \
 	  echo "  continue without it: a cx binary missing a bundled module is not a smaller cx." >&2; \
+	  exit 1; \
+	fi; \
+	vbad=""; \
+	for r in $$(grep -oE '\[dep [^]]*v-fork=[0-9a-f]+' deps.cxd | grep -oE 'repo=[^] ]+' | sed 's/^repo=//' | sort -u); do \
+	  root="deps/$$r/vcx"; \
+	  if ! ls "$$root"/*/*.v >/dev/null 2>&1; then \
+	    vbad="$$vbad|$$root is not there -- deps.cxd pins $$r as a V repository (v-fork=) and its modules are compiled from it"; \
+	  else case "|$(CX_DEPS_VPATH)|" in *"|$(CURDIR)/$$root|"*) ;; \
+	    *) vbad="$$vbad|$$root is not on the V search path [$(CX_DEPS_VPATH)] -- no cx answered \`cx deps sync --vpath\` (pass CX_BIN=<a cx>), or it answered without this row";; esac; \
+	  fi; \
+	  for m in "$$root"/*/; do m=$$(basename "$$m"); \
+	    if [ -d "vcx/$$m" ] && [ -z "$$(git ls-files "vcx/$$m" 2>/dev/null | head -1)" ] && git rev-parse --git-dir >/dev/null 2>&1; then \
+	      vbad="$$vbad|vcx/$$m is on disk and tracks nothing -- a stale copy of a module that left this tree; V searches vcx/ before the pin, so it would compile in place of $$root/$$m (remove it)"; \
+	    fi; \
+	  done; \
+	done; \
+	if [ -n "$$vbad" ]; then \
+	  echo "deps-present: FAILED — a pinned V repository cannot be compiled from its pin:" >&2; \
+	  echo "$$vbad" | tr '|' '\n' | sed '/^$$/d; s/^/    /' >&2; \
+	  echo "  Run \`make deps-sync\` first. A build that compiled an older in-tree copy, or nothing, in" >&2; \
+	  echo "  place of the pinned module is the failure this refusal exists to prevent (RULED: RS-7)." >&2; \
 	  exit 1; \
 	fi
 
@@ -1149,6 +1180,44 @@ deps-cx:
 	exit 2
 
 DEPS_CX = $(if $(CX_BIN),$(CX_BIN),$(if $(wildcard $(CURDIR)/vcx/target/cx),$(CURDIR)/vcx/target/cx,cx))
+
+# ── the V search path the pins produce (RULED: RS-7, RS-12) ─────────────────
+# RS-7: pins are "read by the V build via `-path`". CX_DEPS_VPATH is what
+# `cx deps sync --vpath` prints for deps.cxd — deps/<repo>/vcx for every V
+# repository row, then @vmodules|@vlib (spec §3.3) — with absolute roots, so a
+# V compile started from any directory reads the same ones. It is computed
+# ONCE per top-level make and exported, so the sub-makes (vcx/Makefile among
+# them) do not re-derive it; an empty value (no cx to ask yet) is recomputed.
+# A pin added to deps.cxd with a v-fork is on every V compile's path with
+# nothing else edited.
+#
+# CX_V_SEARCH puts this tree's vcx/ FIRST, the pinned roots next and V's
+# library last. That is the order V itself applies to a file under vcx/ (its
+# v.mod folder is searched before any -path entry); spelling it out makes a
+# compile of lang/v/ or tools/ resolve `import cx` exactly as vcx/cmd does. A
+# module that has LEFT this tree is found in its pin; a stale, untracked copy
+# left behind under vcx/ would win, and deps-present refuses that tree.
+#
+# CX_NATIVE_DEFINES — where the C archives module `cx` links are. vcx/cx/
+# regex_re2.v used to reach them as @VMODROOT/target and
+# @VMODROOT/../third_party/re2: THIS tree's layout. V resolves @VMODROOT
+# from the nearest v.mod above the file and stops at a .git, so inside a pinned
+# checkout it names nothing and V refuses the file (measured: "To use
+# @VMODROOT, you need to have a v.mod file"). The module now spells both
+# archives as $d() values whose defaults are @DIR-relative (its own
+# repository's layout), and the build that made them says where they are:
+# the same two files as before, vcx/Makefile's re2-shim and re2-static.
+#
+# VFLAGS is how both reach every V compile this Makefile starts, including
+# `v test`'s per-file compiles and the V programs scripts/ build: V reads it
+# ahead of its own arguments.
+ifndef CX_DEPS_VPATH
+CX_DEPS_VPATH := $(shell "$(DEPS_CX)" --allow-all scripts/deps_sync.cx --vpath --dir "$(CURDIR)/deps" 2>/dev/null)
+endif
+export CX_DEPS_VPATH
+export CX_V_SEARCH := $(CURDIR)/vcx|$(or $(CX_DEPS_VPATH),@vmodules|@vlib)
+export CX_NATIVE_DEFINES := -d cx_re2_lib_dir=$(CURDIR)/vcx/target -d cx_re2_static=$(CURDIR)/third_party/re2/obj/libre2.a
+export VFLAGS := -path "$(CX_V_SEARCH)" $(CX_NATIVE_DEFINES)
 
 deps-sync: deps-cx
 	@"$(DEPS_CX)" --allow-all scripts/deps_sync.cx
@@ -3511,11 +3580,17 @@ test-vcx-sqlite: build-vcx-dev skip-ledger-reset
 # through `v test`'s per-file fork; setting it via `-path` directly on
 # `v run` also works. `@vlib` and `@vmodules` are the V-runtime
 # placeholders (stdlib + `$VMODULES`).
-V_MODULE_PATH := @vlib|@vmodules|vcx
+#
+# Since the first V module left this tree (RULED: RS-12) the path is
+# CX_V_SEARCH: vcx/ first, then the pinned roots `cx deps sync --vpath` names,
+# then V's library -- see the block beside DEPS_CX. VFLAGS_VCX carries the
+# native link inputs too, because a recipe that sets VFLAGS replaces the
+# exported value rather than adding to it.
+V_MODULE_PATH := $(CX_V_SEARCH)
 # `-cc cc` (clang): cx's patched builtin uses C11 atomics + `@[thread_local]` TLS
 # that tcc cannot compile on macOS (the V default cc for non-prod). Carried through
 # every `v test` / `v run` that uses VFLAGS_VCX so the conformance corpus builds.
-VFLAGS_VCX := -cc cc -path "$(V_MODULE_PATH)"
+VFLAGS_VCX := -cc cc -path "$(V_MODULE_PATH)" $(CX_NATIVE_DEFINES)
 
 test-v: build-vcx
 	VFLAGS='$(VFLAGS_VCX)' v $(VFLAGS_VCX) run lang/v/conformance.v
@@ -3695,7 +3770,7 @@ bench-streaming: build-vcx
 # during collection and segfaults in -prod on macOS (the patched V carries the
 # hardened-runtime libgc bypass — same reason bench-streaming uses $(PATCHED_V)).
 bench-cxparse: build-vcx
-	VFLAGS='-path "@vlib|@vmodules|vcx"' $(PATCHED_V) -prod run vcx/tests/runners/cxparse_baseline_bench.v
+	VFLAGS='-path "$(V_MODULE_PATH)" $(CX_NATIVE_DEFINES)' $(PATCHED_V) -prod run vcx/tests/runners/cxparse_baseline_bench.v
 
 # T1 — Evaluator-feature microbench. Covers the v0.7.0 evaluator
 # surface additions (FLWOR clauses, ?fn calls, partial application,

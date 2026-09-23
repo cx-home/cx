@@ -33,4 +33,5 @@ organisation moves.
 #]]
 
   [dep repo=cx-platform-sso sha=c43dc5cd9c804dc3d34e3e1a5a1e4fa6969b5598 module='cx-platform/sso']
+  [dep repo=cx-core-data sha=a2c312b77932c3ddd7925bfb3b7c5ca1cf242eca module=cx-core-data v-fork=d51c31ccb2d49b2117215aee11ac38ef520e1ece]
 ]
