@@ -44,8 +44,18 @@ is one the freshness contract cannot reach.
 
   [; `base` addresses the reference set; `root` is the SITE ROOT, where the
      two llmstxt.org files live (the convention is /llms.txt — a copy under
-     /llm/ is not discoverable and does not count). scripts/publish.sh puts
-     them in both places and asserts the root pair arrived. ]
+     /llm/ is not discoverable and does not count).
+
+     WHO PUTS THEM AT THE ROOT IS AN OPEN CALL. scripts/publish.sh did, and it
+     retired with the allowlist mirror (RULED: RS-11): there is no second tree
+     to copy into any more, and this repository's own docs/ is the site. The
+     three answers -- generate the pair into docs/ as well (a 360 KB duplicate
+     of llms-full.txt in every docs regeneration), MOVE it there (AGENTS.md is
+     Tier-1 and links docs/llm/llms.txt, and tools/release-verify.sh has a row
+     on the path), or move `root=` to the /llm/ subdirectory and give up the
+     llmstxt.org convention -- are the front-door branch's LETTER 2, in
+     _gate_evidence/pipeline_frontdoor/RESULTS.md. Until it is answered the
+     generator writes them where it always did. ]
   [site base='https://cxhome.org/llm/' root='https://cxhome.org/']
 
   [tagline [#
