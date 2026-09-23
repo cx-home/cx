@@ -100,6 +100,36 @@ probe "code-imports-platform" "code/selftest_code_probe.v" \
   'module code
 import platform'
 
+# ── RS-1: the platform GROUP imports the rings and what its manifest declares
+#    (cxstore, arrow, transport) — nothing else. The profile-surface dirs are
+#    not in its graph ──
+probe "platform-group-undeclared" "platform/selftest_group_probe.v" \
+  'module platform
+import cli'
+
+# ── RS-1: the words. Two rings, data and code, and the platform group above
+#    them; "Ring 2" left the vocabulary, so a violation in vcx/platform is
+#    reported as the platform group's, and neither the refusal nor the live
+#    OK line names a Ring 2 ──
+printf '%s\n' 'module platform' 'import cmd_data' > "$FAKE/vcx/platform/selftest_words_probe.v"
+words_out="$(RING_GATE_ROOT="$FAKE" bash "$GATE" 2>&1 || true)"
+rm -f "$FAKE/vcx/platform/selftest_words_probe.v"
+live_out="$(bash "$GATE" 2>&1 || true)"
+words_ok=0
+case "$words_out" in
+  *"platform group"*) : ;;
+  *) echo "SELFTEST FAIL [group-words]: a vcx/platform violation is not reported as the platform group's (RULED: RS-1)"; words_ok=1 ;;
+esac
+case "$words_out$live_out" in
+  *Ring-2*|*"Ring 2"*|*Ring-3*|*"Ring 3"*)
+    echo "SELFTEST FAIL [ring-words]: the gate still names a Ring 2/Ring 3 — two rings, then groups (RULED: RS-1)"; words_ok=1 ;;
+esac
+if [ "$words_ok" -eq 0 ]; then
+  echo "  ok — group-words (a vcx/platform refusal names the platform group; no Ring 2/3 in the gate's words)"
+else
+  rc_ok=1
+fi
+
 if [ "$rc_ok" -ne 0 ]; then
   echo "ring_import_gate selftest: FAILED — see the live bypasses above."
   exit 1

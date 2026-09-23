@@ -160,7 +160,29 @@
                [where [$strings:contains $l "Integration map"]]
                [yield 1]]] 0]]
 
-# -- the self-test (RULED: COMP-1, RS-12) -------------------------------
+# -- the ring/group shape of one row (RULED: RS-1) ----------------------
+# ring-shape: the refusals a row's own `ring=`, `group=` and `ns=` earn,
+# joined with "; ", or "" when the triple is well formed. Today's rule: a
+# ring is 0, 1 or 2, and nothing is said about a group.
+[?def ring-shape scope=private pure [returns string] ($ring::string $group::string $ns::string)
+  [?if [or [= $ring "0"] [or [= $ring "1"] [= $ring "2"]]]
+    [then ""]
+    [else [$concat "ring=" $ring " is not a ring"]]]]
+
+# row-place: the directory family a row's artifacts must sit in -- what
+# `place-dir-ok` compares a path's directory against. Today: the ring.
+[?def row-place scope=private pure [returns string] ($ring::string $group::string)
+  $ring]
+
+# place-dir-ok: does this path sit in a directory that agrees with `place`?
+[?def place-dir-ok scope=private pure [returns bool] ($p::string $place::string)
+  [$ring-dir-ok $p $place]]
+
+# suite-lane: the `ring=` a row's corpus HEADER must carry. Today: the ring.
+[?def suite-lane scope=private pure [returns string] ($ring::string $group::string)
+  $ring]
+
+# -- the self-test (RULED: COMP-1, RS-12, RS-1) --------------------------
 # One catch and one no-catch case for [integration map], and the same pair for
 # the extracted-module prefix (RS-12) -- over strings: it touches no file, and
 # the tree scan below does not run under `--self-test`.
@@ -190,7 +212,53 @@
       [= $f5 [?if [= [$in-repo "conformance/platform/store.cxd" ""] "conformance/platform/store.cxd"]
                [then ""]
                [else "FALSE POSITIVE: a row with no repo= is its own owner and its path is untouched"]]]
-      [= $failures [?for [in $x ($f1, $f2, $f3, $f4, $f5)] [where [not [= $x ""]]] [yield $x]]]
+      # RS-1: two rings, then groups. `ring=2` left the vocabulary and is
+      # refused BY NAME; a cx-platform row carries group=platform; a
+      # cx-stdlib row carries none; cx-x (the experimental tier) and ns=none
+      # take either; a group this registry does not declare is refused.
+      [= $r1 [?if [$strings:contains [$ring-shape "2" "" "cx-platform"] "ring=2 left the vocabulary"]
+               [then ""]
+               [else "MISSED (should catch): a ring=2 row, refused by name -- ring=2 left the vocabulary"]]]
+      [= $r2 [?if [= [$ring-shape "1" "platform" "cx-platform"] ""]
+               [then ""]
+               [else "FALSE POSITIVE: ring=1 group=platform ns=cx-platform is the platform row's shape"]]]
+      [= $r3 [?if [= [$ring-shape "1" "" "cx-platform"] ""]
+               [then "MISSED (should catch): an ns=cx-platform row with no group=platform"]
+               [else ""]]]
+      [= $r4 [?if [= [$ring-shape "1" "platform" "cx-stdlib"] ""]
+               [then "MISSED (should catch): an ns=cx-stdlib row carrying group=platform -- cx-stdlib is the rings' own namespace"]
+               [else ""]]]
+      [= $r5 [?if [and [= [$ring-shape "1" "platform" "cx-x"] ""] [= [$ring-shape "1" "" "cx-x"] ""]]
+               [then ""]
+               [else "FALSE POSITIVE: cx-x is the experimental tier, with or without the platform group"]]]
+      [= $r6 [?if [= [$ring-shape "1" "dist" "none"] ""]
+               [then "MISSED (should catch): a group this registry does not declare"]
+               [else ""]]]
+      [= $r7 [?if [= [$ring-shape "0" "platform" "cx-platform"] ""]
+               [then ""]
+               [else "FALSE POSITIVE: a group=platform row's ring is the ring of its highest verb, 0 or 1"]]]
+      # the directories: a group=platform row sits in the platform
+      # directories, whatever its ring; a row with no group sits in the rings'.
+      [= $r8 [?if [$place-dir-ok "vcx/platform/stdlib_net.v" [$row-place "1" "platform"]]
+               [then ""]
+               [else "FALSE POSITIVE: a ring=1 group=platform row's code is in vcx/platform/"]]]
+      [= $r9 [?if [$place-dir-ok "vcx/platform/stdlib_net.v" [$row-place "1" ""]]
+               [then "MISSED (should catch): a ring=1 row with no group whose code is in vcx/platform/"]
+               [else ""]]]
+      [= $r10 [?if [$place-dir-ok "vcx/code/stdlib_json.v" [$row-place "1" "platform"]]
+                [then "MISSED (should catch): a group=platform row whose code= is in vcx/code/ (that is half=)"]
+                [else ""]]]
+      [= $r11 [?if [$place-dir-ok "spec/03-approved/platform/net.md" [$row-place "1" "platform"]]
+                [then ""]
+                [else "FALSE POSITIVE: a group=platform row's spec is in spec/03-approved/platform/"]]]
+      # the corpus header: its `ring=` is the corpus's own attribute -- the
+      # lane that grades it -- and RS-1 does not rename it. A group=platform
+      # row's corpus is graded in the platform lane, ring=2.
+      [= $r12 [?if [and [= [$suite-lane "1" "platform"] "2"]
+                        [and [= [$suite-lane "1" ""] "1"] [= [$suite-lane "0" ""] "0"]]]
+                [then ""]
+                [else "FALSE POSITIVE: a group=platform row's corpus header carries ring=2 (the platform lane); a row with no group, its ring"]]]
+      [= $failures [?for [in $x ($f1, $f2, $f3, $f4, $f5, $r1, $r2, $r3, $r4, $r5, $r6, $r7, $r8, $r9, $r10, $r11, $r12)] [where [not [= $x ""]]] [yield $x]]]
       [?if [> [$count $failures] 0]
         [then
           [?let [= $_bad [$io:write-line [$env:stderr]
@@ -199,7 +267,7 @@
             [$env:exit 1]]]
         [else
           [?let [= $_ok [$io:write-line [$env:stdout]
-                  "placement-gate self-test OK -- 1 catch + 1 no-catch case for [integration map], and 1 catch + 2 no-catch cases for [dep path] and the ring read beneath deps/<repo>/ (RS-12), pass."]]
+                  "placement-gate self-test OK -- 1 catch + 1 no-catch case for [integration map], 1 catch + 2 no-catch cases for [dep path] and the ring read beneath deps/<repo>/ (RS-12), and 6 catch + 6 no-catch cases for the two rings and the platform group (RS-1), pass."]]
             [$env:exit 0]]]]]]
   [else ""]]
 
