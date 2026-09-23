@@ -137,7 +137,10 @@ printf '%s\n' "$CHANGED" | sed 's/^/  /'
 # Every vcx/ subdir must be named by at least one row below. Narrowing the
 # old blanket `vcx/*` rows means a path named by NO row would skip every
 # step, so the support/rare dirs (testenv fixtures deps bench fuzz tools +
-# v.mod) ride RING_SUP, which every compiled step carries. Over-include on
+# v.mod) ride RING_SUP, which every compiled step carries. So does vcx/corpus
+# (#1634): the grading core the cx binary links for `cx corpus`, every fixtures
+# shard calls and the document runner reaches — named by no row from RS-16 to
+# #1634, so a change to exactly that loop skipped every step that runs it. Over-include on
 # doubt: a false RUN costs minutes, a false SKIP costs correctness.
 RING0='vcx/cx/*'
 RING_STORE='vcx/cxstore/*'
@@ -146,7 +149,7 @@ RING_LEAF='vcx/arrow/* vcx/transport/*'
 RING2='vcx/platform/* vcx/cxnet/* vcx/mail/* vcx/cxdb/* vcx/store/*'
 RING_CLI='vcx/cli/* vcx/cmd_data/*'
 RING_CMD='vcx/cmd/*'
-RING_SUP='vcx/testenv/* vcx/fixtures/* vcx/deps/* vcx/bench/* vcx/fuzz/* vcx/tools/* vcx/v.mod third_party/*'
+RING_SUP='vcx/testenv/* vcx/fixtures/* vcx/corpus/* vcx/deps/* vcx/bench/* vcx/fuzz/* vcx/tools/* vcx/v.mod third_party/*'
 # The $embed_file estates + the version stamp: these reach the BYTES of every
 # built cx binary (vcx/Makefile BUILD_INPUT_DIRS names ../stdlib ../x
 # ../docs/llm ../VERSION), so a step that BUILDS OR DRIVES a binary depends on
@@ -211,7 +214,7 @@ step_globs() {
     # `conform-diff`/`conform-lint` out of runners/diff_lint/ (vcx/Makefile).
     # A runner-only edit selected this step by nothing but the fail-safe arm of
     # the suite classifier, which is not a row and does not survive #1598.
-    test-vcx-conform)              echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP conformance/* stdlib/* x/* vcx/tests/runners/conformance/* vcx/tests/runners/fmt/* vcx/tests/runners/diff_lint/*" ;;
+    test-vcx-conform)              echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP conformance/* stdlib/* x/* vcx/tests/runners/conformance/* vcx/tests/runners/fmt/* vcx/tests/runners/diff_lint/* vcx/tests/runners/streaming_write/*" ;;
     # `test-vcx` is no longer a TEST_TARGETS row (it stays the human entry
     # point). The row is kept so an explicit `test-changed` over a tree whose
     # Makefile still names it cannot fall through to deny-by-default.
@@ -343,7 +346,14 @@ step_globs() {
     test-migrate-namespace)        echo 'conformance/migrate_namespace.cxd scripts/check_migrate_namespace_fixtures.cx vcx/code/namespace_migrate.v vcx/code/stdlib_bundle.v vcx/cmd/main.v' ;;
     # the dogfood documents, the gate that reads them, and everything that can
     # move the vocabulary or the two subcommands it drives them through.
-    flow-dogfood-gate)             echo 'flows/* scripts/flow_dogfood_gate.cx stdlib/flow.cx vcx/cmd/* vcx/code/* vcx/cx/* spec/03-approved/platform/flow.md' ;;
+    # Since the extraction (RULED: RS-12, #1591 item 15) the documents, the gate
+    # and the module are cx-platform-flow's and can never appear in a diff here;
+    # what can is the PIN (`deps.cxd`, with `registry/modules.cxd` where the
+    # pinned paths are declared) and the verbs RS-20 kept in vcx/cmd/.
+    flow-dogfood-gate)             echo 'deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
+    # the pinned `cx flow` lane: the pin, the verbs and everything the eight
+    # processes it spawns run through, and the module path it is compiled on.
+    test-flow-umbrella)            echo 'deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/* vcx/platform/* vcx/transport/* vcx/testenv/*' ;;
     address-baseline-gate)         echo "$RING_LIB $RING_SUP vcx/tests/runners/address_baseline/* conformance/*" ;;
     # #700 wave 1 (2026-08-24): five TEST_TARGETS steps had no row and so
     # always ran. Each row is the step's actual input surface, over-including
@@ -457,8 +467,10 @@ step_globs() {
     # and the generator runs under the built binary.
     primer-platform-check)         echo "spec/03-approved/platform/composition.md spec/03-approved/platform/deployment-topology.md docs-src/llm/primer-platform.chapter.md scripts/gen_docs/primer_platform.cx $RING_LIB $RING_SUP" ;;
     # #1265: the vocabulary is flow.md's, the surface is stdlib/flow.cx, and the
-    # gate runs under the built binary's parser.
-    flow-vocabulary-gate)          echo 'spec/03-approved/platform/flow.md stdlib/flow.cx scripts/flow_vocabulary_gate.cx vcx/cx/* vcx/code/*' ;;
+    # gate runs under the built binary's parser. All three inputs of its own are
+    # cx-platform-flow's since the extraction (RULED: RS-12): the pin stands in
+    # for them.
+    flow-vocabulary-gate)          echo 'deps.cxd registry/modules.cxd vcx/cx/* vcx/code/*' ;;
     # #1380: a jsdom gate over the SHIPPED playground page and script — no wasm,
     # no binary. Its inputs are that directory, the gate and its node modules.
     test-playground-nav)           echo 'scripts/gen_guide/playground/* scripts/test_playground_nav.mjs scripts/playground-gate/*' ;;
@@ -517,10 +529,12 @@ step_globs() {
 # layer, _gate_evidence/, .github/, root prose) selects nothing.
 SUITE_DIR='vcx/tests'
 # The vcx/ directories that are V modules a test file can import.
-VCX_MODULES='cx code platform cxnet mail cxdb store cxstore arrow transport cli cmd cmd_data testenv fixtures timing tools bench fuzz'
+VCX_MODULES='cx code platform cxnet mail cxdb store cxstore arrow transport cli cmd cmd_data corpus testenv fixtures timing tools bench fuzz'
 # The directories the shipped `cx` and libcx compile from — testenv's edge,
 # because a test that runs the binary runs all of this.
-BINARY_MODULES='cx code platform cxnet mail cxdb store cxstore arrow transport cli cmd cmd_data'
+# `corpus` (#1634) is both: `cmd` links it for `cx corpus`, and the fixtures
+# grader imports it for the shards.
+BINARY_MODULES='cx code platform cxnet mail cxdb store cxstore arrow transport cli cmd cmd_data corpus'
 
 # vcx_module_of <import-name> — the vcx/ module directory it names, or nothing
 # when it is V's own stdlib (os, net, time, encoding.base64, x.json2, …). The V
@@ -706,11 +720,14 @@ suite_files() {
       # impl/cx-F-1590: two runner files, and the RUN-4 computed selection
       # still asked for the whole suite, 81 files and 4,149 s.
       #
-      # Only these three. A runner directory NO row names is still an
+      # streaming_write/ joined with #1635, when test-vcx-conform began running
+      # conform-streaming-write and its row began naming the directory.
+      #
+      # Only these. A runner directory NO row names is still an
       # unclassified vcx/tests/ path and still runs the whole suite — the
       # fail-safe stays the resting state, and a new runner joins this list in
       # the commit that gives its step a row.
-      "$SUITE_DIR"/runners/extraction_gate/*|"$SUITE_DIR"/runners/profile_gate/*|"$SUITE_DIR"/runners/conformance/*)
+      "$SUITE_DIR"/runners/extraction_gate/*|"$SUITE_DIR"/runners/profile_gate/*|"$SUITE_DIR"/runners/conformance/*|"$SUITE_DIR"/runners/streaming_write/*)
         continue ;;
       "$SUITE_DIR"/*|vcx/testenv/*|vcx/fixtures/*|third_party/*|Makefile|vcx/Makefile|vcx/v.mod|devbox.json|devbox.lock|scripts/*)
         echo ALL; return 0 ;;

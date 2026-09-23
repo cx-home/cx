@@ -304,18 +304,24 @@ $ cx --from=cx --to=cx input.cx
 ]
 ```
 
-## 3. The four rings — take the smallest one that answers your question
+## 3. Which `cx` build do I install — then the two rings
 
-CX is built in four rings. The ring answers *how much of CX you have to take
-on*. The import contract is enforced by the build, not by convention: Ring 0
-imports nothing internal, and no ring may ever reach upward.
+`cx` ships as four builds of one binary name. The build answers *how much of
+CX you have to take on*; take the smallest one that answers your question.
 
-| Your task | Ring | What you get | When NOT to use it |
+| Your task | Build | What you get | When NOT to use it |
 |---|---|---|---|
-| Read, write, convert, diff, hash, validate documents | **0 — data** | The reading and the canonical form. No evaluator exists in this ring, so nothing can execute | The moment you need a value computed rather than re-projected |
-| Query, transform, generate; run a program | **1 — code** | Directives, CXPath, comprehensions, the stdlib. Effects still need explicit grants | When the result must outlive the process, or a second party must see it |
-| Persist, audit, replay; serve HTTP/XSP; host features | **2 — platform** | Store + journal, session layer, HTTP surface, XAP host, drivers | For a value you are about to print — Ring 2 is reached over a network, not embedded |
-| Publish/install features; reach CX from another language; agent interop | **3 — ecosystem** | Registry, distribution, bindings, MCP/A2A projections | For anything internal; inside your own program the CX value is better currency |
+| Read, write, convert, diff, hash, validate documents — including untrusted ones | **`data`** | Ring 0 only: the reading, the canonical form, fmt, lint. No evaluator is compiled in, so nothing can execute | The moment you need a value computed rather than re-projected |
+| Run CX inside a host application | **`embed`** | Rings 0–1 core: directives, CXPath, comprehensions, the pure stdlib; no local-effect packs | When the program itself must read files, the clock or the network |
+| Query, transform, generate; run a program | **`cli`** | Rings 0–1 plus the local-effect packs (io, env, process, time, random, log, term) and the http client. Effects still need explicit grants | When the result must outlive the process, or a second party must see it |
+| Persist, audit, replay; serve HTTP/XSP; host features | **`platform`** | The rings plus the platform group: store + journal, session layer, HTTP surface, XAP host, drivers | For a value you are about to print — the platform is reached over a network, not embedded |
+
+Under every build sit **two rings**, and the import contract between them is
+enforced by the build, not by convention. Ring 0 is the data format: it
+imports nothing internal and cannot execute. Ring 1 is the language: it adds
+execution and cannot reach a socket, a store or a protocol. Everything above
+them is a **group** — the platform, the bindings, the ecosystem — that imports
+the rings and what its manifest declares, and nothing ever reaches upward.
 
 ### Ring 0 — the document *is* the answer
 
@@ -364,9 +370,9 @@ Read the pattern as a claim about the document: "for every `user` that has a
 errors.
 
 **When not to use it:** when the result has to survive the process, or more
-than one party must see it. That is Ring 2.
+than one party must see it. That is the platform group.
 
-### Ring 2 — state that outlives the program
+### The platform group — state that outlives the program
 
 The store is content-addressed: `put-doc` returns a handle derived from the
 document's canonical bytes, and `get-doc` returns the document. `mem://` is
@@ -388,9 +394,11 @@ Swap `mem://` for a real URL and the same two calls talk to a served store.
 **When not to use it:** for a value you are about to print. A store handle is
 a promise about durability and identity; if you need neither, stay in Ring 1.
 
-### Ring 3 — the ecosystem edge
+### The ecosystem and binding groups — the edge
 
-Ring 3 is where CX meets everything around it, including agent protocols. The
+These groups are where CX meets everything around it: the registry and
+distribution, the bindings that reach CX from another language, and agent
+protocols. The
 MCP and A2A shapes are ordinary CX values projected to their wire form —
 there is no bespoke serializer anywhere in the path:
 
@@ -406,8 +414,8 @@ $ cx prog.cx
 '{"id":1,"jsonrpc":"2.0","method":"tools/call","params":{"arguments":{"location":"NYC"},"name":"get_weather"}}'
 ```
 
-**When not to use it:** for anything internal. Ring 3 exists for crossing a
-boundary.
+**When not to use it:** for anything internal; inside your own program the CX
+value is better currency. These groups exist for crossing a boundary.
 
 ## 4. The complete directive registry
 

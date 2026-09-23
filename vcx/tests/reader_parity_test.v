@@ -643,18 +643,18 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/lang_stats.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/run_bench_json.cx', .program, reason_1536},
 	AcceptedByOne{'stdlib/supervise.cx', .program, reason_1536},
-	// ── recorded exception — a computed attribute `name=[EXPR]` (27) ──
+	// ── recorded exception — a computed attribute `name=[EXPR]` (25) ──
 	// 22 -> 21: scripts/sso_interop/idp.cx left with the sso extraction (RS-12).
 	// 21 -> 22: scripts/check_migrate_namespace_fixtures.cx, RS-4's sweep grader.
 	// 22 -> 26: the front door's bundled-source table, its tree check, and the two
 	// graders (#1589 item 23, RULED: RS-7, RS-9).
 	// 26 -> 27: scripts/product_import_gate.cx, RS-24's product-import gate.
+	// 27 -> 25: stdlib/flow.cx and examples/platform/flow/checkout/orders.cx left with the flow extraction (RS-12).
 	AcceptedByOne{'examples/code-tour.cx', .program, reason_attr},
 	AcceptedByOne{'examples/cxpath-tour.cx', .program, reason_attr},
 	AcceptedByOne{'examples/htmx/serve.cx', .program, reason_attr},
 	AcceptedByOne{'examples/match-multi.cx', .program, reason_attr},
 	AcceptedByOne{'examples/modify-crud.cx', .program, reason_attr},
-	AcceptedByOne{'examples/platform/flow/checkout/orders.cx', .program, reason_attr},
 	AcceptedByOne{'examples/platform/scim/projection/no-leak.cx', .program, reason_attr},
 	AcceptedByOne{'examples/platform/scim/provisioning/provision.cx', .program, reason_attr},
 	AcceptedByOne{'examples/platform/xap/storefront/compose.cx', .program, reason_attr},
@@ -675,14 +675,13 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/repo_paths.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/ring_query.cx', .program, reason_attr},
 	AcceptedByOne{'stdlib/diagram.cx', .program, reason_attr},
-	AcceptedByOne{'stdlib/flow.cx', .program, reason_attr},
-	// ── recorded exception — a program document the data balancer cannot read (9) ──
+	// ── recorded exception — a program document the data balancer cannot read (8) ──
 	// 8 -> 9: scripts/docs_fragment.cx, the RS-9 fragment contract (a `"#]"` literal).
+	// 9 -> 8: scripts/flow_vocabulary_gate.cx left with the flow extraction (RS-12).
 	AcceptedByOne{'scripts/bisect_batch.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/check_editor_surface_parity.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/diagnostics_census.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/docs_fragment.cx', .program, reason_prog},
-	AcceptedByOne{'scripts/flow_vocabulary_gate.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/fuzz_cx.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/gen_docs/primer_platform.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/repos_allocation_gate.cx', .program, reason_prog},
