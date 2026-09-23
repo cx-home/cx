@@ -1167,11 +1167,14 @@ deps-check: deps-cx
 # under --allow-read alone this step graded 13 of 13 cases, exited 0, and
 # printed nothing — a step that says nothing on a pass says nothing on a
 # failure either. Measured on this branch, 2026-09-22.
+# --allow-subprocess (#1617): the deps-02x cases are scenarios run against
+# scripts/deps_sync.cx itself — git and the sync as subprocesses, over a
+# throwaway remote under a temporary root the grader removes.
 .PHONY: test-deps-pins
 test-deps-pins: CX_BIN ?= $(CURDIR)/vcx/target/cx
 test-deps-pins: build-vcx
-	@"$(CX_BIN)" --allow-read --allow-write scripts/check_deps_pins_fixtures.cx --self-test
-	@"$(CX_BIN)" --allow-read --allow-write scripts/check_deps_pins_fixtures.cx
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess scripts/check_deps_pins_fixtures.cx --self-test
+	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess scripts/check_deps_pins_fixtures.cx
 
 # ── make union (#1591 item 10, RULED: RS-7) ───────────────────────────────
 # The front door's union: SYNC THE PINS, THEN RUN THE SUITE — in that order and

@@ -10,6 +10,12 @@
 #                    runs, so a refusal the corpus pins is the refusal the sync
 #                    emits.
 #
+# A case carrying a [sync] child is a SCENARIO instead (#1617): the grader
+# builds a throwaway remote and deps/ under a temporary root, runs
+# scripts/deps_sync.cx against it with the binary running this program, and
+# compares the rendered runs with [out-text] -- the corpus header says what the
+# rendering is. The temporary root is removed before the case is judged.
+#
 # Rules carried from the graders this one is modelled on
 # (scripts/check_code_diagram_fixtures.cx):
 #
@@ -21,13 +27,14 @@
 #   1  one or more cases FAILED, or no case passed (an empty selection)
 #   2  the corpus is missing or does not parse
 #
-# Run:  cx --allow-read --allow-write scripts/check_deps_pins_fixtures.cx [--verbose]
-#       cx --allow-read --allow-write scripts/check_deps_pins_fixtures.cx --self-test
+# Run:  cx --allow-read --allow-write --allow-subprocess scripts/check_deps_pins_fixtures.cx [--verbose]
+#       cx --allow-read --allow-write --allow-subprocess scripts/check_deps_pins_fixtures.cx --self-test
 #
-# BOTH GRANTS ARE LOAD-BEARING: it reads the corpus and it writes to stdout,
+# EVERY GRANT IS LOAD-BEARING: it reads the corpus and it writes to stdout,
 # and a denied write bound to an unused [?let] binding is dropped silently
 # (#1608) -- under --allow-read alone this program grades every case, exits
-# with the right status and prints nothing at all.
+# with the right status and prints nothing at all. The sync scenarios run git
+# and scripts/deps_sync.cx as subprocesses and write their temporary root.
 #
 # (or:  make test-deps-pins, which runs the self-test then the corpus)
 
@@ -35,6 +42,7 @@
 [?lib 'cx-stdlib/env'     as=env]
 [?lib 'cx-stdlib/cx'      as=cx]
 [?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
 [; The path is spelled from the CHECKOUT ROOT, not from this file's directory.
    code.md §12.1 says a `./`-form [?lib] resolves against the importing
    module's directory; the resolver resolves it against the process working
@@ -114,6 +122,136 @@
           [else [graded id=$id status=[?if [= [$count $diffs] 0] [then pass] [else fail]]
                         [?splice $diffs]]]]]]]]]
 
+# -- the sync scenarios (#1617), impure ------------------------------------
+#
+# The fixture remote is a plain local repository reached as file://, which is
+# enough for `git fetch --depth 1 <url> <sha>`; its identity and signing are
+# pinned per command so no user configuration on the box reaches the commits.
+
+[?def git-in scope=private impure ($dir::string $argv)
+  [$process:run [?for [in $a ("git", "-C", $dir,
+                               "-c", "user.name=deps-fixture",
+                               "-c", "user.email=deps-fixture@example.invalid",
+                               "-c", "commit.gpgsign=false",
+                               [?splice $argv])]
+                  [yield $a]]]]
+
+[?def rev-of scope=private impure [returns string] ($dir::string)
+  [?let [= $r [$git-in $dir ("rev-parse", "HEAD")]]
+    [?if [= [$string $r@exit-code] "0"] [then [$strings:trim [$string $r@stdout]]] [else ""]]]]
+
+# make-remote: $root/remote with two commits, as [remote url= old= new=].
+[?def make-remote scope=private impure ($root::string)
+  [?let
+    [= $dir [$concat $root "/remote"]]
+    [= $_i  [$process:run ("git", "init", "-q", $dir)]]
+    [= $_w1 [$io:write-file [$concat $dir "/a.txt"] "one\n"]]
+    [= $_a  [$git-in $dir ("add", "a.txt")]]
+    [= $_c1 [$git-in $dir ("commit", "-q", "-m", "one")]]
+    [= $old [$rev-of $dir]]
+    [= $_w2 [$io:write-file [$concat $dir "/a.txt"] "two\n"]]
+    [= $_c2 [$git-in $dir ("commit", "-q", "-a", "-m", "two")]]
+    [= $new [$rev-of $dir]]
+    [remote url=[$concat "file://" $dir] old=$old new=$new]]]
+
+[?def write-pins scope=private impure ($doc::string $url::string $sha::string)
+  [$io:write-file $doc [$concat "[deps [dep repo=fixture sha=" $sha " module=fixture url='" $url "']]\n"]]]
+
+[?def run-sync scope=private impure ($cx::string $mode::string $doc::string $deps::string)
+  [?let [= $argv [?if [= $mode "check"]
+                   [then ($cx, "--allow-all", "scripts/deps_sync.cx", "--check", "--deps", $doc, "--dir", $deps)]
+                   [else ($cx, "--allow-all", "scripts/deps_sync.cx", "--deps", $doc, "--dir", $deps)]]]
+        [= $r [$process:run $argv]]
+    [ran exit=[$string $r@exit-code]
+         out=[$strings:trim [$string $r@stdout]]
+         err=[$string $r@stderr]]]]
+
+# machine-free: the temporary root and the two commits written as names.
+[?def machine-free scope=private pure [returns string] ($s::string $root::string $remote)
+  [$strings:replace [$strings:replace [$strings:replace $s $root "<root>"]
+                                      [$string $remote@old] "<old>"]
+                    [$string $remote@new] "<new>"]]
+
+[?def checkout-state scope=private impure [returns string] ($co::string $remote)
+  [?if [not [$io:is-directory [$concat $co "/.git"]]]
+    [then "checkout absent"]
+    [else [?let
+      [= $at [$rev-of $co]]
+      [= $where [?if [= $at [$string $remote@old]] [then "old"]
+                  [else [?if [= $at [$string $remote@new]] [then "new"]
+                    [else [?if [= $at ""] [then "none"] [else $at]]]]]]]
+      [= $st [$git-in $co ("status", "--porcelain", "--untracked-files=no")]]
+      [= $dirt [?if [= [$strings:trim [$string $st@stdout]] ""] [then "clean"] [else "dirty"]]]
+      [$concat "checkout at " $where " " $dirt]]]]]
+
+# render-run: one run of deps_sync as lines -- the mode, the exit status, the
+# census, each refusal line with its reason cut at the reason's own first
+# ": " (git's words after it vary by git version), the checkout afterwards.
+[?def render-run scope=private impure [returns string]
+    ($cx::string $mode::string $doc::string $deps::string $co::string $root::string $remote)
+  [?let
+    [= $r [$run-sync $cx $mode $doc $deps]]
+    [= $refusals [?for [in $l [$strings:split-lines [$string $r@err]]]
+                   [where [$strings:contains $l " repo=fixture: "]]
+                   [yield [?let [= $parts [$strings:split $l ": "]]
+                            [$machine-free [$concat [$nth $parts 1] ": " [$nth $parts 2]] $root $remote]]]]]
+    [$strings:join ([$concat "run " $mode],
+                    [$concat "exit " [$string $r@exit]],
+                    [$machine-free [$string $r@out] $root $remote],
+                    [?splice $refusals],
+                    [$checkout-state $co $remote])
+                   "\n"]]]
+
+# sync-case-text: build the scenario a [sync] child declares, run it, remove
+# the temporary root, and answer the rendered text.
+[?def sync-case-text scope=private impure [returns string] ($case $cx::string)
+  [?let
+    [= $s      [$first [?for [in $c $case/*] [where [= [$name $c] "sync"]] [yield $c]]]]
+    [= $root   [$io:temp-dir "cx-deps-sync-"]]
+    [= $remote [$make-remote $root]]
+    [= $deps   [$concat $root "/deps"]]
+    [= $co     [$concat $deps "/fixture"]]
+    [= $doc    [$concat $root "/deps.cxd"]]
+    [= $url    [$string $remote@url]]
+    [= $start  [$string $s@checkout]]
+    [= $seed   [?if [= $start "absent"]
+                 [then ()]
+                 [else [?let [= $_p [$write-pins $doc $url [?if [= $start "old"]
+                                                           [then [$string $remote@old]]
+                                                           [else [$string $remote@new]]]]]
+                             [= $r [$run-sync $cx "sync" $doc $deps]]
+                         [?if [= [$string $r@exit] "0"]
+                           [then ()]
+                           [else ([$concat "seed failed: " [$machine-free [$string $r@err] $root $remote]])]]]]]]
+    [= $_dirt  [?if [= [$string $s@dirty] "true"]
+                 [then [$io:write-file [$concat $co "/a.txt"] "a local edit\n"]]
+                 [else ()]]]
+    [= $_pin   [$write-pins $doc $url [?if [= [$string $s@pin] "unknown"]
+                                        [then "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"]
+                                        [else [$string $remote@new]]]]]
+    [= $runs   [?for [in $m [$strings:split-whitespace [$string $s@runs]]]
+                 [yield [$render-run $cx $m $doc $deps $co $root $remote]]]]
+    [= $_rm    [$io:remove-tree $root]]
+    [$strings:join [?for [in $x ([?splice $seed], [?splice $runs])] [yield $x]] "\n"]]]
+
+[?def is-sync-case scope=private pure [returns bool] ($case)
+  [> [$count [?for [in $c $case/*] [where [= [$name $c] "sync"]] [yield 1]]] 0]]
+
+# grade-sync: the judgement of one scenario case, in grade's shape.
+[?def grade-sync scope=private impure ($case $cx::string)
+  [?let
+    [= $id [$string $case@id]]
+    [= $wt [$block $case "out-text"]]
+    [?match $wt
+      [case [absent] [graded id=$id status=fail [diff what='no expectation on the case' want="" got=""]]]
+      [else [?let [= $want [$text-of $wt]] [= $got [$sync-case-text $case $cx]]
+              [?if [= $want $got]
+                [then [graded id=$id status=pass]]
+                [else [graded id=$id status=fail [diff what=sync want=$want got=$got]]]]]]]]]
+
+[?def grade-any scope=private impure ($case $cx::string)
+  [?if [$is-sync-case $case] [then [$grade-sync $case $cx]] [else [$grade $case]]]]
+
 # -- the self-test: the comparator itself, red on a synthetic violation ----
 #
 # #1591: "Every moved gate is red-proofed on a synthetic violation before its
@@ -136,14 +274,27 @@
       [= $no-expect [$first [?for [in $c [$cx:parse
           "[s [case id=t-no-expect [in-cx [#\n[deps]\n#]]]]"]/case]
           [yield $c]]]]
+      [; Two scenario cases over the one path the sync never changes the
+         outcome of -- no checkout, and --check -- so the comparator is proved
+         on a real run without depending on the behaviour the corpus grades. ]
+      [= $sync-good [$first [?for [in $c [$cx:parse
+          "[s [case id=t-sync-good [sync checkout=absent pin=new runs=check] [out-text [#\nrun check\nexit 1\ndeps-sync: 1 pins, 0 fetched, 0 already at their sha, 1 refused (--check: nothing was fetched)\nmissing-checkout repo=fixture: <root>/deps/fixture is not a checkout — run the sync\ncheckout absent\n#]]]]"]/case]
+          [yield $c]]]]
+      [= $sync-bad [$first [?for [in $c [$cx:parse
+          "[s [case id=t-sync-bad [sync checkout=absent pin=new runs=check] [out-text [#\nrun check\nexit 0\n#]]]]"]/case]
+          [yield $c]]]]
+      [= $cxbin [$env:executable-path]]
       [= $got ([$string [$grade $good]@status],
                [$string [$grade $bad-canonical]@status],
                [$string [$grade $bad-refusal]@status],
-               [$string [$grade $no-expect]@status])]
-      [= $want ("pass", "fail", "fail", "fail")]
+               [$string [$grade $no-expect]@status],
+               [$string [$grade-sync $sync-good $cxbin]@status],
+               [$string [$grade-sync $sync-bad $cxbin]@status])]
+      [= $want ("pass", "fail", "fail", "fail", "pass", "fail")]
       [?if [= [$strings:join $got " "] [$strings:join $want " "]]
         [then [?let [= $_ [$say [$concat "deps-pins self-test OK -- a matching pair passes; a wrong canonical form, "
-                                         "an unreported refusal and a case with no expectation each FAIL "
+                                         "an unreported refusal and a case with no expectation each FAIL; "
+                                         "a sync scenario whose rendering matches passes and one whose expectation is wrong FAILS "
                                          "(" [$strings:join $got " "] ")"]]]
                 [$env:exit 0]]]
         [else [?let [= $_ [$cry [$concat "deps-pins self-test FAILED -- want (" [$strings:join $want " "]
@@ -163,7 +314,8 @@
   [= $verbose [$member "--verbose" [$env:argv]]]
   [= $suite [$cx:parse [$io:read-file "conformance/deps_pins.cxd"]]]
   [= $cases [?for [in $c $suite/case] [yield $c]]]
-  [= $graded [?for [in $c $cases] [yield [$grade $c]]]]
+  [= $cxbin [$env:executable-path]]
+  [= $graded [?for [in $c $cases] [yield [$grade-any $c $cxbin]]]]
   [= $failed [?for [in $g $graded] [where [= [$string $g@status] "fail"]] [yield $g]]]
   [= $passed [?for [in $g $graded] [where [= [$string $g@status] "pass"]] [yield $g]]]
   [= $_v [?if $verbose

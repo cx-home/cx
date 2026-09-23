@@ -26,6 +26,20 @@
 #
 # Graded by `make test-deps-pins` (scripts/check_deps_pins_fixtures.cx), which
 # is the claim check_conformance_coverage.sh carries for this suite.
+#
+# THE SYNC CASES (deps-02x, #1617). A case carrying a [sync] child is not a
+# document to validate: it is a scenario run against scripts/deps_sync.cx
+# itself. The grader builds a throwaway remote with two commits -- `old` and
+# `new` -- writes a pin document naming it by url=, puts deps/fixture where
+# the scenario says (`absent`, or synced to `old` or `new`, then edited when
+# dirty=true), points the pin at `pin=` (`new`, or `unknown`: a sha the remote
+# does not have), and runs deps_sync once per word of `runs=` (`sync` or
+# `check`). Each run renders as its exit status, the census line, every
+# refusal line with its reason cut at the reason's own first colon (git's
+# words after it vary by git version), and the state of the checkout
+# afterwards. The temporary root, the two commits and nothing else
+# are written back as <root>, <old> and <new>, so the text is the same on
+# every machine.
 #]]
 
  [case id=deps-001-empty-document level=core
@@ -259,6 +273,74 @@ unknown-child document: note
 unknown-key repo=cx-platform-agent: pinned-by
 missing-sha repo=cx-platform-agent: no sha= on the row
 duplicate-repo repo=cx-platform-agent: 2 rows pin it
+#]]
+ ]
+
+ [case id=deps-020-sync-refuses-a-dirty-checkout-behind-the-pin level=core
+  [tags deps sync refusal checkout-drift dirty]
+  [title a checkout with uncommitted changes is REFUSED when the pin moves -- the sync moves only a clean checkout and never discards an edit]
+  [sync checkout=old dirty=true pin=new runs=sync]
+  [out-text [#
+run sync
+exit 1
+deps-sync: 1 pins, 0 fetched, 0 already at their sha, 1 refused
+checkout-drift repo=fixture: <root>/deps/fixture is at <old>, pinned at <new>, and has uncommitted changes -- the sync moves only a clean checkout
+checkout at old dirty
+#]]
+ ]
+
+ [case id=deps-021-sync-moves-a-clean-checkout-behind-the-pin level=core
+  [tags deps sync checkout-drift check]
+  [title a clean checkout behind a moved pin is refused by the check and MOVED by the sync -- a pin moved in a PR is the normal event and not a failure]
+  [sync checkout=old dirty=false pin=new runs='check sync check']
+  [out-text [#
+run check
+exit 1
+deps-sync: 1 pins, 0 fetched, 0 already at their sha, 1 refused (--check: nothing was fetched)
+checkout-drift repo=fixture: <root>/deps/fixture is at <old>, pinned at <new>
+checkout at old clean
+run sync
+exit 0
+deps-sync: 1 pins, 1 fetched, 0 already at their sha, 0 refused
+checkout at new clean
+run check
+exit 0
+deps-sync: 1 pins, 0 fetched, 1 already at their sha, 0 refused (--check: nothing was fetched)
+checkout at new clean
+#]]
+ ]
+
+ [case id=deps-022-sync-refuses-a-moved-pin-the-remote-lacks level=core
+  [tags deps sync refusal fetch-failed]
+  [title a pin moved to a sha the remote does not have is a stale pin and the checkout is left where it was]
+  [sync checkout=old dirty=false pin=unknown runs=sync]
+  [out-text [#
+run sync
+exit 1
+deps-sync: 1 pins, 0 fetched, 0 already at their sha, 1 refused
+fetch-failed repo=fixture: file://<root>/remote has no deadbeefdeadbeefdeadbeefdeadbeefdeadbeef
+checkout at old clean
+#]]
+ ]
+
+ [case id=deps-023-check-refuses-no-checkout-and-sync-fetches-it level=core
+  [tags deps sync refusal missing-checkout check]
+  [title with no checkout at all the check refuses and the sync makes a fresh one at the pin]
+  [sync checkout=absent pin=new runs='check sync check']
+  [out-text [#
+run check
+exit 1
+deps-sync: 1 pins, 0 fetched, 0 already at their sha, 1 refused (--check: nothing was fetched)
+missing-checkout repo=fixture: <root>/deps/fixture is not a checkout — run the sync
+checkout absent
+run sync
+exit 0
+deps-sync: 1 pins, 1 fetched, 0 already at their sha, 0 refused
+checkout at new clean
+run check
+exit 0
+deps-sync: 1 pins, 0 fetched, 1 already at their sha, 0 refused (--check: nothing was fetched)
+checkout at new clean
 #]]
  ]
 ]
