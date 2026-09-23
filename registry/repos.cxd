@@ -501,6 +501,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='conformance/deps_pins.cxd' repo=cx why='the deps.cxd pin document is the front door transport, not a data-format suite: cx holds the pins, the union and scripts/deps_sync.cx that grades against it (RULED: RS-7)']
   [path exact='conformance/bundle_sources.cxd' repo=cx why='where a bundled CX module source comes from is the front door build question -- cx builds the four from the pins and nothing below it has one (RULED: RS-7)']
   [path exact='conformance/docs_fragment.cxd' repo=cx why='the per-repository documentation fragment is the contract the front door site indexes; the component repositories produce fragments and cx reads them (RULED: RS-9)']
+  [path exact='conformance/gates_register.cxd' repo=cx why='the drift check of the cx-wide gate register: a suite status lives on its own [test-suite] element and conformance/gates.cxd is derived from the elements -- scripts/gates_register.cx is the check and this corpus its executable half (RULED: RS-27)']
   [path prefix='conformance/' repo=cx-core-data why='what remains of the root corpus after the rows above: the data suites and the corpus READMEs']
   [path prefix='fixtures/' repo=cx-core-data]
   [path prefix='_gate_evidence/' repo=cx]

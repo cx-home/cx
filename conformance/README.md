@@ -123,9 +123,11 @@ and undocumented — #707):
 ### Gate policy
 
 Per-case `gate=` (enforced | advisory | pending | skip) overrides the
-per-module policy in `gates.cxd`; unset everywhere = enforced. Advisory
-cases run and report but never block; pending/skip are excluded and
-counted.
+suite's own status, `[test-suite … gate=advisory reason='…']` on the suite
+element (enforced | advisory, a reason= required with advisory; D49a), which
+travels with the file and from which `gates.cxd` is derived; unset everywhere
+= enforced. Advisory cases run and report but never block; pending/skip are
+excluded and counted.
 
 ## Runners and gate lanes (reference implementation)
 

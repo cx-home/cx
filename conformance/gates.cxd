@@ -1,16 +1,31 @@
-[# Conformance gate policy (toggle manifest).
+[# Conformance gate policy — the cx-wide gate REGISTER (derived).
 
    DEFAULT = enforced (deny-by-default, mirroring spec/core/security.md's grant
-   model): a failing fixture BLOCKS its gate. A suite/module marked `advisory`
-   is the spec-first frontier — its failures are RUN and REPORTED but do NOT
-   block the gate. Promote `advisory -> enforced` as the implementation lands;
-   that promotion is the gate-progression control.
+   model): a failing fixture BLOCKS its gate. A suite marked `advisory` is the
+   spec-first frontier — its failures are RUN and REPORTED but do NOT block the
+   gate. Promote `advisory -> enforced` as the implementation lands; that
+   promotion is the gate-progression control.
+
+   WHERE A SUITE'S STATUS LIVES (D49a, #1633; RULED: RS-27). On the suite's own
+   element: `[test-suite name=sync ring=2 gate=advisory reason='…']` (gate= is
+   enforced | advisory; advisory carries a reason=). The status travels with
+   the file into whatever repository carries it, and the grading core
+   (vcx/corpus — the fixture shards and `cx corpus`) reads it there. The
+   [module] rows below are DERIVED from those elements: a row states the
+   element's gate= (an absent row or an absent element gate= is enforced) and
+   an advisory row copies the element's reason= byte for byte.
+   `make gates-manifest-gate` refuses a row that disagrees with its suite's
+   element (naming both), an advisory element with no row, and an element
+   gate= the grader refuses (scripts/gates_register_check.cx; its corpus is
+   conformance/gates_register.cxd). To change a suite's status, edit its
+   element and copy the change here; the element is the source.
 
    Resolution order for a fixture's effective gate (most specific wins):
-     per-case `gate=` attr  >  per-module entry here  >  per-suite default  >  enforced
+     per-case `gate=` attr  >  the suite element's `gate=`  >  per-suite default here  >  enforced
 
-   This manifest is module/suite-level. Per-case overrides live on the [case]
-   itself (gate=advisory|pending|skip). See conformance/stdlib/AUTHORING.md and
+   Per-case overrides live on the [case] itself (gate=advisory|pending|skip).
+   The per-suite default= rows (code, stdlib, packages, xpath-31-parity) are
+   read by the graders directly. See conformance/stdlib/AUTHORING.md and
    conformance/stdlib/SPEC-FINDINGS.md. #]
 
 [gate-policy default=enforced

@@ -1,0 +1,215 @@
+[test-suite name=gates-register ring=1
+  [doc [#
+# CX Conformance — the derived gate register (D49a, #1633; RULED: RS-27)
+#
+# THE SUBJECT. A suite's gate status lives ON its element:
+# `[test-suite name=sync ring=2 gate=advisory reason='…']`. The grading core
+# (vcx/corpus, which the fixture shards and `cx corpus` both call) reads it
+# there, so a component repository that carries only the suite file grades it
+# the way this tree does. conformance/gates.cxd stays as the cx-wide view of
+# every suite's status, and it is DERIVED: a row that disagrees with the
+# element of the suite it names is a refusal, and so is an advisory element
+# the register does not list.
+#
+# scripts/gates_register.cx is the check; this file is its executable half.
+# Each case hands `[$reg:check POLICY SUITES]` a register in the shape
+# conformance/gates.cxd has (`[gate-policy [suite name=… [module …]]]`) and
+# the suite headers the tree check reads off the corpus files
+# (`[suites [suite-header suite=… module=… file=… gate=… reason=…]]`), and
+# pins the verdict. scripts/gates_register_check.cx builds those two
+# arguments from the real tree and prints `[$reg:report …]` of the same
+# verdict, so a refusal pinned here is the refusal `make gates-manifest-gate`
+# prints.
+#
+# The element rules: gate= on a [test-suite] is enforced or advisory (pending
+# and skip are per-case toggles), and gate=advisory carries a reason=. An
+# absent gate= is enforced, and so is an absent register row.
+#
+# Graded by `make gates-manifest-gate` (`cx corpus conformance/gates_register.cxd`
+# from the checkout root), which is the claim check_conformance_coverage.sh
+# carries for this suite.
+#]]
+
+ [case id=gates-register-001-agree level=core
+  [tags gates-register agree]
+  [title every row agrees with its suite element -- the verdict carries no refusal]
+  [in-code [#
+[?lib './scripts/gates_register.cx' as=reg]
+[$reg:check
+  [gate-policy default=enforced
+    [suite name=stdlib default=enforced
+      [module name=alpha gate=advisory reason='not built yet']
+      [module name=beta gate=enforced reason='built']
+      [module name=gamma gate=enforced]]]
+  [suites
+    [suite-header suite=stdlib module=alpha file='conformance/platform/alpha.cxd' gate=advisory reason='not built yet']
+    [suite-header suite=stdlib module=beta file='conformance/stdlib/beta.cxd']
+    [suite-header suite=stdlib module=gamma file='conformance/stdlib/gamma.cxd' gate=enforced]
+    [suite-header suite=stdlib module=delta file='conformance/stdlib/delta.cxd']]]
+#]]
+  [out-text [#
+[verdict rows=3 suites=4 advisory=1]
+#]]
+ ]
+
+ [case id=gates-register-002-row-advisory-element-silent level=core
+  [tags gates-register drift]
+  [title the register says advisory and the suite element says nothing -- refused naming the row and the file]
+  [in-code [#
+[?lib './scripts/gates_register.cx' as=reg]
+[$reg:check
+  [gate-policy default=enforced
+    [suite name=stdlib default=enforced
+      [module name=alpha gate=advisory reason='not built yet']]]
+  [suites
+    [suite-header suite=stdlib module=alpha file='conformance/platform/alpha.cxd']]]
+#]]
+  [out-text [#
+[verdict rows=1 suites=1 advisory=0 [refusal kind=drift module=alpha register=advisory suite=enforced file='conformance/platform/alpha.cxd']]
+#]]
+ ]
+
+ [case id=gates-register-003-row-enforced-element-advisory level=core
+  [tags gates-register drift]
+  [title the suite element says advisory and the register row says enforced -- refused, the element is the source]
+  [in-code [#
+[?lib './scripts/gates_register.cx' as=reg]
+[$reg:check
+  [gate-policy default=enforced
+    [suite name=stdlib default=enforced
+      [module name=alpha gate=enforced]]]
+  [suites
+    [suite-header suite=stdlib module=alpha file='conformance/platform/alpha.cxd' gate=advisory reason='not built yet']]]
+#]]
+  [out-text [#
+[verdict rows=1 suites=1 advisory=1 [refusal kind=drift module=alpha register=enforced suite=advisory file='conformance/platform/alpha.cxd']]
+#]]
+ ]
+
+ [case id=gates-register-004-reason-differs level=core
+  [tags gates-register drift reason]
+  [title both say advisory and the reasons differ -- refused, the register copies the element reason]
+  [in-code [#
+[?lib './scripts/gates_register.cx' as=reg]
+[$reg:check
+  [gate-policy default=enforced
+    [suite name=stdlib default=enforced
+      [module name=alpha gate=advisory reason='an older reason']]]
+  [suites
+    [suite-header suite=stdlib module=alpha file='conformance/platform/alpha.cxd' gate=advisory reason='not built yet']]]
+#]]
+  [out-text [#
+[verdict rows=1 suites=1 advisory=1 [refusal kind=reason-drift module=alpha file='conformance/platform/alpha.cxd']]
+#]]
+ ]
+
+ [case id=gates-register-005-element-advisory-unregistered level=core
+  [tags gates-register unregistered]
+  [title an advisory suite element with no register row -- refused, the register lists every advisory suite]
+  [in-code [#
+[?lib './scripts/gates_register.cx' as=reg]
+[$reg:check
+  [gate-policy default=enforced
+    [suite name=stdlib default=enforced]]
+  [suites
+    [suite-header suite=stdlib module=alpha file='conformance/platform/alpha.cxd' gate=advisory reason='not built yet']]]
+#]]
+  [out-text [#
+[verdict rows=0 suites=1 advisory=1 [refusal kind=unregistered module=alpha file='conformance/platform/alpha.cxd']]
+#]]
+ ]
+
+ [case id=gates-register-006-element-gate-pending level=core
+  [tags gates-register element]
+  [title a suite element carrying gate=pending -- refused by value, and no drift is reported on top of it]
+  [in-code [#
+[?lib './scripts/gates_register.cx' as=reg]
+[$reg:check
+  [gate-policy default=enforced
+    [suite name=stdlib default=enforced
+      [module name=alpha gate=enforced]]]
+  [suites
+    [suite-header suite=stdlib module=alpha file='conformance/platform/alpha.cxd' gate=pending reason='later']]]
+#]]
+  [out-text [#
+[verdict rows=1 suites=1 advisory=0 [refusal kind=bad-gate module=alpha file='conformance/platform/alpha.cxd' gate=pending]]
+#]]
+ ]
+
+ [case id=gates-register-007-element-advisory-no-reason level=core
+  [tags gates-register element reason]
+  [title an advisory suite element with no reason= -- refused, an advisory suite states why]
+  [in-code [#
+[?lib './scripts/gates_register.cx' as=reg]
+[$reg:check
+  [gate-policy default=enforced
+    [suite name=stdlib default=enforced
+      [module name=alpha gate=advisory]]]
+  [suites
+    [suite-header suite=stdlib module=alpha file='conformance/platform/alpha.cxd' gate=advisory]]]
+#]]
+  [out-text [#
+[verdict rows=1 suites=1 advisory=1 [refusal kind=no-reason module=alpha file='conformance/platform/alpha.cxd']]
+#]]
+ ]
+
+ [case id=gates-register-008-rows-are-keyed-by-suite level=core
+  [tags gates-register drift packages]
+  [title a packages row is matched to the packages suite of that name, never to the stdlib one]
+  [in-code [#
+[?lib './scripts/gates_register.cx' as=reg]
+[$reg:check
+  [gate-policy default=enforced
+    [suite name=stdlib default=enforced
+      [module name=alpha gate=advisory reason='not built yet']]
+    [suite name=packages default=enforced
+      [module name=alpha gate=enforced]]]
+  [suites
+    [suite-header suite=stdlib module=alpha file='conformance/platform/alpha.cxd' gate=advisory reason='not built yet']
+    [suite-header suite=packages module=alpha file='packages/alpha/alpha.test.cxd' gate=advisory reason='a package frontier']]]
+#]]
+  [out-text [#
+[verdict rows=2 suites=2 advisory=2 [refusal kind=drift module=alpha register=enforced suite=advisory file='packages/alpha/alpha.test.cxd']]
+#]]
+ ]
+
+ [case id=gates-register-009-report-names-both-files level=core
+  [tags gates-register report]
+  [title the report the tree check prints -- the census line, then one line per refusal naming the register and the suite file]
+  [in-code [#
+[?lib './scripts/gates_register.cx' as=reg]
+[?lib 'cx-stdlib/strings' as=strings]
+[$strings:split-lines
+  [$reg:report
+    [$reg:check
+      [gate-policy default=enforced
+        [suite name=stdlib default=enforced
+          [module name=alpha gate=advisory reason='not built yet']]]
+      [suites
+        [suite-header suite=stdlib module=alpha file='conformance/platform/alpha.cxd']]]]]
+#]]
+  [out-text [#
+('gates register: 1 rows, 1 suites, 0 advisory, 1 refused', 'GATE-DRIFT alpha: conformance/gates.cxd says gate=advisory and the [test-suite] element of conformance/platform/alpha.cxd says gate=enforced -- the element is the source and the register is derived from it (D49a)')
+#]]
+ ]
+
+ [case id=gates-register-010-report-ok level=core
+  [tags gates-register report agree]
+  [title the report over a register that agrees with every suite -- the census line, then ok]
+  [in-code [#
+[?lib './scripts/gates_register.cx' as=reg]
+[?lib 'cx-stdlib/strings' as=strings]
+[$strings:split-lines
+  [$reg:report
+    [$reg:check
+      [gate-policy default=enforced
+        [suite name=stdlib default=enforced
+          [module name=alpha gate=advisory reason='not built yet']]]
+      [suites
+        [suite-header suite=stdlib module=alpha file='conformance/platform/alpha.cxd' gate=advisory reason='not built yet']]]]]
+#]]
+  [out-text [#
+('gates register: 1 rows, 1 suites, 1 advisory, 0 refused', ok)
+#]]
+ ]
+]

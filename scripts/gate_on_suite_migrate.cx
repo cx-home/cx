@@ -1,0 +1,83 @@
+# scripts/gate_on_suite_migrate.cx — writes each advisory register row's status
+# onto its suite's [test-suite] element (D49a, #1633; RULED: RS-27). Written in
+# CX (AGENTS.md rule 6).
+#
+# D49a moves a suite's gate status onto its element, where it travels with the
+# file; conformance/gates.cxd becomes the register derived from the elements.
+# This program performs the move for every `[module … gate=advisory …]` row of
+# the register's [suite name=stdlib]: it appends ` gate=advisory reason='…'` to
+# the first line of that module's corpus file (conformance/{stdlib,platform,x,
+# xap}/M.cxd), copying the row's `reason='…'` text BYTE FOR BYTE out of the
+# register's source line — escapes included — so the element's reason and the
+# row's are the same string and scripts/gates_register_check.cx finds no drift.
+#
+# Idempotent: a file whose first line already carries ` gate=` is left alone and
+# reported as such. Run from the checkout root:
+#   vcx/target/cx --allow-read --allow-write scripts/gate_on_suite_migrate.cx
+#
+# Exit: 0 every advisory row's file carries the element status; 2 a row whose
+# source line or corpus file cannot be found, or a file whose first line is not
+# a [test-suite header.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/strings' as=strings]
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+
+# The corpus file of register module M, or "" when no ring directory has one.
+[?def corpus-file scope=private impure [returns string] ($m::string)
+  [?let [= $hits [?for [in $d ("stdlib", "platform", "x", "xap")]
+                   [= $p [$concat "conformance/" $d "/" $m ".cxd"]]
+                   [where [$io:is-file $p]]
+                   [yield $p]]]
+    [?if [= [$count $hits] 0] [then ""] [else [$first $hits]]]]]
+
+# The `reason='…'` text of M's advisory row, verbatim from the register source:
+# everything after `gate=advisory ` up to the row's closing `]`.
+[?def reason-text scope=private pure [returns string] ($lines $m::string)
+  [?let [= $marker [$concat "[module name=" $m " gate=advisory reason="]]
+        [= $hits [?for [in $l $lines] [where [$strings:contains $l $marker]] [yield $l]]]
+    [?if [not [= [$count $hits] 1]]
+      [then ""]
+      [else [?let [= $l [$strings:trim-end [$first $hits]]]
+                  [= $i [$strings:find $l "reason="]]
+              [?if [not [$strings:ends-with $l "]"]]
+                [then ""]
+                [else [$strings:slice $l $i [- [$strings:length $l] 1]]]]]]]]]
+
+[?def migrate-one scope=private impure [returns string] ($lines $m::string)
+  [?let [= $file [$corpus-file $m]]
+        [= $reason [$reason-text $lines $m]]
+    [?if [= $file ""]
+      [then [$concat "FAILED " $m ": no conformance/{stdlib,platform,x,xap}/" $m ".cxd"]]
+      [else [?if [= $reason ""]
+        [then [$concat "FAILED " $m ": no single one-line [module name=" $m " gate=advisory reason=…] row in conformance/gates.cxd"]]
+        [else [?let [= $body [$io:read-file $file]]
+                    [= $nl [$strings:find $body "\n"]]
+                    [= $head [$strings:slice $body 1 [- $nl 1]]]
+                    [= $rest [$strings:slice $body $nl [$strings:length $body]]]
+                [?if [not [$strings:starts-with $head "[test-suite "]]
+                  [then [$concat "FAILED " $m ": " $file " does not open with a [test-suite header line"]]
+                  [else [?if [$strings:contains $head " gate="]
+                    [then [$concat "already " $file]]
+                    [else [?let [= $w [$io:write-file $file
+                                        [$concat $head " gate=advisory " $reason $rest]]]
+                            [$concat "migrated " $file]]]]]]]]]]]]]
+
+[?let
+  [= $src [$io:read-file "conformance/gates.cxd"]]
+  [= $doc [$cx:parse $src]]
+  [= $lines [$strings:split-lines $src]]
+  [= $names [?for [in $s $doc//suite]
+                  [where [= [$string $s@name] "stdlib"]]
+                  [in $row $s/module]
+                  [where [= [$string [?else $row@gate ""]] "advisory"]]
+              [yield [$string $row@name]]]]
+  [= $results [?for [in $m $names] [yield [$migrate-one $lines $m]]]]
+  [= $_s [?for [in $r $results] [yield [$say $r]]]]
+  [= $failed [$count [?for [in $r $results] [where [$strings:starts-with $r "FAILED"]] [yield 1]]]]
+  [= $_t [$say [$concat "gate_on_suite_migrate: " [$string [$count $names]] " advisory row(s), "
+                        [$string $failed] " failed"]]]
+  [$env:exit [?if [= $failed 0] [then 0] [else 2]]]]

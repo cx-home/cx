@@ -77,7 +77,8 @@ for f in conformance/stdlib/*.cxd conformance/platform/*.cxd conformance/x/*.cxd
   printf '%s\t%s\n' "conformance/bundle_sources.cxd" "test-bundle-sources (scripts/check_bundle_sources_fixtures.cx — where a bundled CX module's source comes from: the two legal states and every refusal, including the pinned checkout missing its source that would otherwise make a smaller binary)"
   printf '%s\t%s\n' "conformance/docs_fragment.cxd" "test-docs-fragment (scripts/check_docs_fragment_fixtures.cx — the per-repository documentation fragment a component release publishes, every refusal of its contract, and the union's id and file collisions)"
   printf '%s\t%s\n' "conformance/migrate_namespace.cxd" "test-migrate-namespace (scripts/check_migrate_namespace_fixtures.cx — cx --migrate-namespace --retired: the rewritten file, one line per site, and an idempotent second run)"
-  printf '%s\t%s\n' "conformance/gates.cxd" "POLICY — the enforced/advisory register every runner reads (not a fixture suite)"
+  printf '%s\t%s\n' "conformance/gates.cxd" "POLICY — the enforced/advisory register, DERIVED from the suites' [test-suite] elements and held equal to them by gates-manifest-gate (D49a; not a fixture suite)"
+  printf '%s\t%s\n' "conformance/gates_register.cxd" "gates-manifest-gate (cx corpus conformance/gates_register.cxd — the derived gate register's drift check, scripts/gates_register.cx: every refusal over described trees, D49a)"
 } >> "$claims"
 for f in conformance/llm/*.cxd; do [ -e "$f" ] && printf '%s\t%s\n' "$f" "docs-check (scripts/gen_docs/primer_build.cx — the LLM primer drift gate re-records every wrong/right pair, #938)"; done >> "$claims" || true
 for f in conformance/tools-export/*.cxd; do [ -e "$f" ] && printf '%s\t%s\n' "$f" "tools-export-gate"; done >> "$claims" || true
