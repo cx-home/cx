@@ -255,11 +255,11 @@ becomes its own Ring-1 module.
      second adapts, so the spec and the corpus are in the Ring-2 directories
      here. RS-6 (#1589, #1591 item 9) moves the native half DOWN: eleven of
      its twelve builtins are now named builtins of session and store (their
-     rows carry the two files), and the `code=` here is what is left — one
-     compile-time constant, `connector-test-build`, which has no verb in
-     either destination and so has no home RS-6 names. The column empties
-     when that is answered; RESULTS.md on the branch carries the options. ]
-  [module name=connector ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/connector.md corpus=conformance/platform/connector.cxd source=stdlib/connector.cx code='vcx/platform/stdlib_connector.v vcx/platform/stdlib_connector_register.v' half=none status=current]
+     rows carry the two files). The twelfth, the compile-time constant
+     `connector-test-build` that gated the §10.1 mock adapter, retired by
+     RS-25 (owner D30d): the mock is declared by the kit's own CX, so the kit
+     is pure CX and `code=` is none. ]
+  [module name=connector ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/connector.md corpus=conformance/platform/connector.cxd source=stdlib/connector.cx code=none half=none status=current]
   [; did-web and vc-revocation — the halves RS-14 left above the rings when
      did and vc moved into Ring 1, each named for what leaves: did-web
      resolves a did:web over HTTPS (a socket), vc-revocation appends a
