@@ -4,7 +4,8 @@
     One entry whose [expect] IS in the output (green on its own), one whose
     [expect] is NOT (the red this corpus exists to prove), one with no
     [expect] (ungraded). The checker must exit 1 and name `expect-wrong`
-    with both the expectation and the output. ]
+    with both the expectation and the output — and, since #1620, name every
+    failed example with a non-empty message (06, 07 below). ]
  [ex key=01-expect-right
   [label [# right #]]
   [src [#
@@ -65,4 +66,29 @@
 #]]
   [note [# The same program with the expectation the granted run actually produces. #]]
   [expect [# text=granted #]]]
+ [; The silent-failure pair (#1620). The post-merge run on a3b6593e5 printed
+    `FAIL  295-send-mail-to-a-server-you-started` and NOTHING after the key: a
+    child that exits non-zero with both captures empty left the row's message
+    empty, so the red named no exit code, no stream and no expectation.
+      06 — the child exits 3 and writes nothing to either stream. The checker
+           must name it as a FAIL whose message carries the exit code and says
+           `stderr empty`, never a bare key.
+      07 — the child's answer is an err VALUE (exit 1, the shape a refused
+           bind takes), and its [expect] promises the success answer. The
+           EXPECT line must carry the expectation, the actual output and the
+           exit code. ]
+ [ex key=06-silent-nonzero-exit
+  [label [# silent non-zero exit #]]
+  [src [#
+[?lib 'cx-stdlib/env']
+[$env:exit 3]
+#]]
+  [note [# Exits 3 with nothing on stdout or stderr. #]]]
+ [ex key=07-err-answer-vs-expect
+  [label [# err answer against an expectation #]]
+  [src [#
+[?let [= $e [err code='bind-refused' message='address in use']] [delivery $e]]
+#]]
+  [note [# The answer is the propagated err, not the delivery the expectation promises. #]]
+  [expect [# [delivery accepted='true' #]]]
 ]

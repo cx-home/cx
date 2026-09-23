@@ -860,10 +860,25 @@ verify-playground-examples: build-vcx
 	@# pass if the child really received `--allow-read --allow-write`, and a
 	@# silently dropped [grants] field would make that program answer CXER0271
 	@# and land 05 in this list. Green-05-beside-red-04 is the proof.
-	@out=$$(vcx/target/cx --allow-read --allow-write --allow-subprocess --allow-env \
+	@#
+	@# #1620 adds the silent-failure pair, asserted by MESSAGE, not by key
+	@# alone: the post-merge run on a3b6593e5 printed a FAIL row with nothing
+	@# after the key. 06 exits 3 with both streams empty — its FAIL line must
+	@# carry `exit 3` and `stderr empty`; 07 answers an err value against a
+	@# success [expect] — its EXPECT line must carry the expectation and
+	@# `exit 1`. And no row may reach the report as `FAIL with no message`.
+	@#
+	@# #1625: the run gets a FRESH TMPDIR and must leave it empty — the
+	@# generator's per-run scratch dir is removed on every exit path (this run
+	@# exits 1 through the lint verdict).
+	@gtmp=$$(mktemp -d); \
+	out=$$(TMPDIR="$$gtmp" vcx/target/cx --allow-read --allow-write --allow-subprocess --allow-env \
 	  --allow-clock \
 	  scripts/gen_guide/playground/gen_examples.cx --lint-only \
 	  scripts/gen_guide/playground/tests/expect_red.cxd 2>&1); rc=$$?; \
+	left=$$(ls -A "$$gtmp"); rm -rf "$$gtmp"; \
+	if [ -n "$$left" ]; then \
+	  echo "verify-playground-examples: gen_examples left its scratch behind under TMPDIR: $$left"; exit 1; fi; \
 	if [ "$$rc" -ne 1 ] || ! printf '%s' "$$out" | grep -q 'EXPECT 02-expect-wrong'; then \
 	  echo "verify-playground-examples: the [expect] check is VACUOUS (rc=$$rc; expected 1 naming 02-expect-wrong)"; \
 	  printf '%s\n' "$$out" | tail -8; exit 1; fi; \
@@ -873,7 +888,18 @@ verify-playground-examples: build-vcx
 	if printf '%s' "$$out" | grep -q 'EXPECT 05-expect-right-under-grants'; then \
 	  echo "verify-playground-examples: [grants] did not reach the audited child (05-expect-right-under-grants red; its program needs --allow-read --allow-write)"; \
 	  printf '%s\n' "$$out" | tail -8; exit 1; fi; \
-	echo "verify-playground-examples: [expect] red-proof OK (fixture corpus reds exactly 02-expect-wrong and 04-expect-wrong-under-grants; 05 proves [grants] reaches the child)"
+	l06=$$(printf '%s\n' "$$out" | grep 'FAIL  06-silent-nonzero-exit'); \
+	if ! printf '%s' "$$l06" | grep -q 'exit 3' || ! printf '%s' "$$l06" | grep -q 'stderr empty'; then \
+	  echo "verify-playground-examples: a silent non-zero exit is not reported WITH a message (expected a FAIL line for 06-silent-nonzero-exit carrying 'exit 3' and 'stderr empty'; got: '$$l06')"; \
+	  printf '%s\n' "$$out" | tail -12; exit 1; fi; \
+	l07=$$(printf '%s\n' "$$out" | grep 'EXPECT 07-err-answer-vs-expect'); \
+	if ! printf '%s' "$$l07" | grep -q 'exit 1' || ! printf '%s' "$$l07" | grep -q "delivery accepted='true'"; then \
+	  echo "verify-playground-examples: an err answer against an [expect] is not reported with the expectation and the exit code (expected an EXPECT line for 07-err-answer-vs-expect; got: '$$l07')"; \
+	  printf '%s\n' "$$out" | tail -12; exit 1; fi; \
+	if printf '%s' "$$out" | grep -q 'FAIL with no message'; then \
+	  echo "verify-playground-examples: a FAIL row reached the report with an EMPTY message"; \
+	  printf '%s\n' "$$out" | tail -12; exit 1; fi; \
+	echo "verify-playground-examples: [expect] red-proof OK (fixture corpus reds exactly 02-expect-wrong and 04-expect-wrong-under-grants; 05 proves [grants] reaches the child; 06 and 07 are named with their exit codes and streams)"
 
 # ── playground diagram validity gate (#992) ───────────────────────────────────
 # Every diagram the playground can put on screen must PARSE:
