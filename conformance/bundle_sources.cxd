@@ -1,0 +1,260 @@
+[test-suite name=bundle-sources ring=1
+  [doc [#
+# CX Conformance — where a bundled CX module's source comes from (RULED: RS-7)
+#
+# scripts/bundle_sources.cx is the table; this file is its executable half.
+#
+# THE SUBJECT. `cx` embeds every bundled CX module's bytes into the binary
+# (vcx/code/stdlib_bundle.v, one `$embed_file` per module). RS-7 moves those
+# modules into their own repositories and says the bytes arrive through "a
+# shallow fetch at SHA into an ignored `deps/`". The ONE mechanism is to embed
+# from that checkout itself: a moved module's registry/modules.cxd row carries
+# `repo=<repo>` and a `source=` under `deps/<repo>/`, and the embed literal
+# names the same path. So for each module there is a question with two legal
+# answers and six refusals, and this corpus is that question answered case by
+# case.
+#
+# Every case pins two things about one described tree:
+#
+#   [out-canonical]  the document is ordinary CX data -- it parses with the
+#                    data grammar and `cx canonical` is its identity. No new
+#                    lexer, parser or codec, exactly as RS-7 requires of the
+#                    pin document it sits beside.
+#   [out-text]       `[$bundle:report …]`: the census line, then the refusals
+#                    (or `ok`). This is the SAME function scripts/bundle_check.cx
+#                    prints at the end of `make deps-sync` and `make
+#                    deps-check`, so a refusal here is a refusal there.
+#
+# THE CLASS THIS FILE EXISTS TO CLOSE is `bundle-010`: a pinned repository
+# whose `deps/<repo>` checkout does not carry the source its row names --
+# never fetched, or fetched at a sha where the file moved. The wrong answer --
+# leaving the module out -- produces a binary SMALLER than the one the pins
+# describe, and nothing says so. There is no fallback in the table;
+# `bundle-010` is why.
+#
+# Graded by `make test-bundle-sources`
+# (scripts/check_bundle_sources_fixtures.cx), which is the claim
+# check_conformance_coverage.sh carries for this suite.
+#]]
+
+ [case id=bundle-001-empty-document level=core
+  [tags bundle sources document canonical]
+  [title a front door that bundles nothing -- the census reads zero on every state and refuses nothing]
+  [in-cx [#
+[bundle-state]
+#]]
+  [out-canonical [#
+[bundle-state]
+#]]
+  [out-text [#
+bundle: 0 modules, 0 own, 0 from pins, 0 refused
+ok
+#]]
+ ]
+
+ [case id=bundle-002-own-source level=core
+  [tags bundle sources own]
+  [title a module that names no repository and whose source is tracked here -- the front door's own source, embedded from its path as it always was]
+  [in-cx [#
+[bundle-state
+  [module name="json" source="stdlib/json.cx" repo="" pinned=false tracked=true present=true]]
+#]]
+  [out-canonical [#
+[bundle-state
+  [module name=json source=stdlib/json.cx repo='' pinned=false tracked=true present=true]
+]
+#]]
+  [out-text [#
+bundle: 1 modules, 1 own, 0 from pins, 0 refused
+ok
+#]]
+ ]
+
+ [case id=bundle-003-from-a-pin level=core
+  [tags bundle sources pinned deps]
+  [title the extracted state -- the row names its repository, deps.cxd pins it, and the pinned checkout carries the source the embed literal reads]
+  [in-cx [#
+[bundle-state
+  [module name="sso" source="deps/cx-platform-sso/stdlib/sso.cx" repo="cx-platform-sso" pinned=true tracked=false present=true]]
+#]]
+  [out-canonical [#
+[bundle-state
+  [module name=sso source=deps/cx-platform-sso/stdlib/sso.cx repo=cx-platform-sso pinned=true tracked=false present=true]
+]
+#]]
+  [out-text [#
+bundle: 1 modules, 0 own, 1 from pins, 0 refused
+ok
+#]]
+ ]
+
+ [case id=bundle-004-own-and-pinned-together level=core
+  [tags bundle sources own pinned doc]
+  [title the real shape of a front door mid-split -- own sources beside one embedded from a pin, and a doc child beside them]
+  [in-cx [#
+[bundle-state
+  [doc the two legal states, side by side]
+  [module name="json" source="stdlib/json.cx" repo="" pinned=false tracked=true present=true]
+  [module name="flow" source="stdlib/flow.cx" repo="" pinned=false tracked=true present=true]
+  [module name="sso" source="deps/cx-platform-sso/stdlib/sso.cx" repo="cx-platform-sso" pinned=true tracked=false present=true]]
+#]]
+  [out-canonical [#
+[bundle-state
+  [doc ['the two legal states', 'side by side']]
+  [module name=json source=stdlib/json.cx repo='' pinned=false tracked=true present=true]
+  [module name=flow source=stdlib/flow.cx repo='' pinned=false tracked=true present=true]
+  [module name=sso source=deps/cx-platform-sso/stdlib/sso.cx repo=cx-platform-sso pinned=true tracked=false present=true]
+]
+#]]
+  [out-text [#
+bundle: 3 modules, 2 own, 1 from pins, 0 refused
+ok
+#]]
+ ]
+
+ [case id=bundle-010-missing-pinned-source level=core
+  [tags bundle sources refusal missing-pinned-source deps]
+  [title THE class this corpus exists for -- a pinned repository whose deps/ checkout does not carry the source is REFUSED; there is no fallback, because the fallback is a silently smaller binary]
+  [in-cx [#
+[bundle-state
+  [module name="sso" source="deps/cx-platform-sso/stdlib/sso.cx" repo="cx-platform-sso" pinned=true tracked=false present=false]]
+#]]
+  [out-canonical [#
+[bundle-state
+  [module name=sso source=deps/cx-platform-sso/stdlib/sso.cx repo=cx-platform-sso pinned=true tracked=false present=false]
+]
+#]]
+  [out-text [#
+bundle: 0 modules, 0 own, 0 from pins, 1 refused
+missing-pinned-source sso: deps/cx-platform-sso/stdlib/sso.cx is not there -- run make deps-sync; the build would lose sso
+#]]
+ ]
+
+ [case id=bundle-011-missing-source level=core
+  [tags bundle sources refusal missing-source]
+  [title an own module whose source is not tracked here is REFUSED rather than dropped from the bundle]
+  [in-cx [#
+[bundle-state
+  [module name="sync" source="stdlib/sync.cx" repo="" pinned=false tracked=false present=false]]
+#]]
+  [out-canonical [#
+[bundle-state
+  [module name=sync source=stdlib/sync.cx repo='' pinned=false tracked=false present=false]
+]
+#]]
+  [out-text [#
+bundle: 0 modules, 0 own, 0 from pins, 1 refused
+missing-source sync: stdlib/sync.cx is neither tracked here nor named under a pinned repository
+#]]
+ ]
+
+ [case id=bundle-012-unpinned level=core
+  [tags bundle sources refusal unpinned deps]
+  [title a row naming a repository deps.cxd does not pin is REFUSED -- nothing would ever fetch its source, and a present file there is a stale checkout nobody vouches for]
+  [in-cx [#
+[bundle-state
+  [module name="ux" source="deps/cx-platform-ux/x/ux.cx" repo="cx-platform-ux" pinned=false tracked=false present=true]]
+#]]
+  [out-canonical [#
+[bundle-state
+  [module name=ux source=deps/cx-platform-ux/x/ux.cx repo=cx-platform-ux pinned=false tracked=false present=true]
+]
+#]]
+  [out-text [#
+bundle: 0 modules, 0 own, 0 from pins, 1 refused
+unpinned ux: cx-platform-ux has no [dep] row in deps.cxd -- nothing fetches deps/cx-platform-ux/x/ux.cx and the build would lose ux
+#]]
+ ]
+
+ [case id=bundle-013-self-pinned level=core
+  [tags bundle sources refusal self-pinned]
+  [title a row naming the front door as the repository its source left for is REFUSED -- a pin is a commit of another repository]
+  [in-cx [#
+[bundle-state
+  [module name="cx" source="deps/cx/stdlib/cx.cx" repo="cx" pinned=true tracked=false present=true]]
+#]]
+  [out-canonical [#
+[bundle-state
+  [module name=cx source=deps/cx/stdlib/cx.cx repo=cx pinned=true tracked=false present=true]
+]
+#]]
+  [out-text [#
+bundle: 0 modules, 0 own, 0 from pins, 1 refused
+self-pinned cx: the front door cannot pin itself
+#]]
+ ]
+
+ [case id=bundle-014-duplicate-module level=core
+  [tags bundle sources refusal duplicate-module]
+  [title two rows for one module are REFUSED -- two answers to where one module's bytes come from is no answer]
+  [in-cx [#
+[bundle-state
+  [module name="sso" source="stdlib/sso.cx" repo="" pinned=false tracked=true present=true]
+  [module name="sso" source="deps/cx-platform-sso/stdlib/sso.cx" repo="cx-platform-sso" pinned=true tracked=false present=true]]
+#]]
+  [out-canonical [#
+[bundle-state
+  [module name=sso source=stdlib/sso.cx repo='' pinned=false tracked=true present=true]
+  [module name=sso source=deps/cx-platform-sso/stdlib/sso.cx repo=cx-platform-sso pinned=true tracked=false present=true]
+]
+#]]
+  [out-text [#
+bundle: 2 modules, 1 own, 1 from pins, 1 refused
+duplicate-module sso: 2 rows name it
+#]]
+ ]
+
+ [case id=bundle-015-unknown-child level=core
+  [tags bundle sources refusal unknown-child]
+  [title a child that is not a [module] or a [doc] is REFUSED rather than ignored -- deny-by-default, the shape the pin document beside it takes]
+  [in-cx [#
+[bundle-state
+  [dep repo="cx-platform-sso"]]
+#]]
+  [out-canonical [#
+[bundle-state
+  [dep repo=cx-platform-sso]
+]
+#]]
+  [out-text [#
+bundle: 0 modules, 0 own, 0 from pins, 1 refused
+unknown-child document: dep
+#]]
+ ]
+
+ [case id=bundle-016-unknown-root level=core
+  [tags bundle sources refusal unknown-root]
+  [title a document whose root is not [bundle-state] is REFUSED even when its rows would classify -- the refusal is reported beside the rows, not instead of them]
+  [in-cx [#
+[bundle
+  [module name="json" source="stdlib/json.cx" repo="" pinned=false tracked=true present=true]]
+#]]
+  [out-canonical [#
+[bundle
+  [module name=json source=stdlib/json.cx repo='' pinned=false tracked=true present=true]
+]
+#]]
+  [out-text [#
+bundle: 1 modules, 1 own, 0 from pins, 1 refused
+unknown-root document: bundle
+#]]
+ ]
+
+ [case id=bundle-017-tracked-pin level=core
+  [tags bundle sources refusal tracked-pin deps]
+  [title a pinned repository's source committed into the front door is REFUSED -- deps/ is ignored, so a tracked file there was forced past the rule and is a private fork of another repository's bytes]
+  [in-cx [#
+[bundle-state
+  [module name="sso" source="deps/cx-platform-sso/stdlib/sso.cx" repo="cx-platform-sso" pinned=true tracked=true present=true]]
+#]]
+  [out-canonical [#
+[bundle-state
+  [module name=sso source=deps/cx-platform-sso/stdlib/sso.cx repo=cx-platform-sso pinned=true tracked=true present=true]
+]
+#]]
+  [out-text [#
+bundle: 0 modules, 0 own, 0 from pins, 1 refused
+tracked-pin sso: deps/cx-platform-sso/stdlib/sso.cx is tracked here -- a pinned repository's source committed into the front door
+#]]
+ ]
+]

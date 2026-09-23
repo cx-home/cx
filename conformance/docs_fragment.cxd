@@ -1,0 +1,380 @@
+[test-suite name=docs-fragment ring=1
+  [doc [#
+# CX Conformance -- the per-repository documentation fragment (RULED: RS-9)
+#
+# scripts/docs_fragment.cx is the contract; this file is its executable half.
+#
+# RS-9: "a repository generates its own reference fragment from its own corpus
+# at release; a `cx` build embeds the docs of exactly the module versions it
+# compiles in; the site in `cx` indexes what was published. The closed
+# `[output]` list of `docs-src/llm/manifest.cxd` becomes the union of
+# per-repository doc manifests."
+#
+# THE CONTRACT, in one shape. A component repository's release produces
+# `docs/llm/manifest-fragment.cxd` beside the rendered Markdown it names:
+#
+#   [llm-docs-fragment repo=<repo> version=<the release tag or sha>
+#     [output id=<id> out=<basename>.md section=reference title=<title>
+#       [summary one paragraph]]
+#     [suites the conformance suites its documents cite]]
+#
+# Each case pins two things: `cx canonical` over the document -- a fragment is
+# ordinary CX data, read by the data grammar, no new codec -- and the verdict of
+# `[$frag:validate …]` over it, rendered one line per refusal or `ok`. That
+# verdict is the SAME function the front door's docs step runs, so a refusal
+# here is a refusal there.
+#
+# The `frag-03x` cases grade the UNION instead: an `[llm-docs-union]` of
+# `[entry id= out= repo=]` rows, the front door's own [output] rows beside every
+# collected fragment's, and `[$frag:collisions …]` over them. Two entries
+# claiming one id or writing one file are the same silent overwrite of the one
+# docs/llm/ the front door indexes.
+#
+# The two FILE-LEVEL refusals (`missing-file`, a declared document not beside
+# its fragment; `unrendered-example`, a document still carrying an unexpanded
+# example placeholder) need a tree, not a document, and are left out of
+# this pure corpus by name; primer_build.cx runs them over deps/.
+#
+# Every `[summary]` below is written as PLAIN TEXT rather than as a raw text
+# block. Both spellings are legal and mean the same thing, and the plain one is
+# what lets a fragment be quoted inside this file's own raw blocks at all: a
+# raw block's closing delimiter cannot be nested inside another one. A real
+# fragment uses a raw block for wrapped prose.
+#
+# `under=` on a case is the repository directory the fragment was found in,
+# which is what `repo-mismatch` compares against. A case with no `under=` is
+# validated with no directory known, and the mismatch check does not fire.
+#
+# WHY EVERY REFUSAL IS A REFUSAL. The reading is RS-7`s, for the pin document
+# this contract travels with: a manifest whose reader quietly ignores what it
+# does not understand can be wrong without anyone finding out. A fragment that
+# does not conform is not indexed AND the docs step fails. It is never
+# half-indexed, because a site that lists some of a repository's documents is
+# worse than one that lists none -- the reader cannot tell which.
+#
+# Graded by `make test-docs-fragment`
+# (scripts/check_docs_fragment_fixtures.cx), which is the claim
+# check_conformance_coverage.sh carries for this suite.
+#]]
+ [case id=frag-001-a-conforming-fragment level=core under=cx-platform-sso
+  [tags fragment contract output suites]
+  [title the shape a component repository publishes at its release -- repo, the version it was generated at, one rendered document with its summary, and the suites it cites]
+  [in-cx [#
+[llm-docs-fragment repo="cx-platform-sso" version="c43dc5cd9c804dc3d34e3e1a5a1e4fa6969b5598"
+  [doc "the sso module's reference — rendered from its own corpus at its own release"]
+  [output id="reference-sso" out="reference-sso.md" section=reference title="Reference: enterprise sign-on"
+    [summary "The mountable handler verbs, the relying-party and service-provider halves, and the provisioning routes."]]
+  [suites "conformance/platform/sso.cxd"]
+]
+#]]
+  [out-canonical [#
+[llm-docs-fragment repo=cx-platform-sso version=c43dc5cd9c804dc3d34e3e1a5a1e4fa6969b5598
+  [doc the sso module's reference — rendered from its own corpus at its own release]
+  [output id=reference-sso out=reference-sso.md section=reference title='Reference: enterprise sign-on'
+    [summary 'The mountable handler verbs, the relying-party and service-provider halves, and the provisioning routes.']
+  ]
+  [suites conformance/platform/sso.cxd]
+]
+#]]
+  [out-text [#
+ok
+#]]
+ ]
+
+ [case id=frag-002-two-documents-two-sections level=core under=cx-platform-store
+  [tags fragment contract output section]
+  [title two documents from one repository -- one defaulting to the reference section and one filed under build; the section vocabulary is the front door’s and it is closed]
+  [in-cx [#
+[llm-docs-fragment repo="cx-platform-store" version="4d1a8f2b9c0e7a36d58b41f0c2e9a7b3d604158e"
+  [output id="reference-store" out="reference-store.md" title="Reference: the store"
+    [summary "The engine, its substrates, and the three streams."]]
+  [output id="playbook-store" out="playbook-store.md" section=build title="Playbook: running a store"
+    [summary "Mounting the server, granting a principal, replaying a journal."]]
+]
+#]]
+  [out-canonical [#
+[llm-docs-fragment repo=cx-platform-store version=4d1a8f2b9c0e7a36d58b41f0c2e9a7b3d604158e
+  [output id=reference-store out=reference-store.md title='Reference: the store'
+    [summary 'The engine, its substrates, and the three streams.']
+  ]
+  [output id=playbook-store out=playbook-store.md section=build title='Playbook: running a store'
+    [summary 'Mounting the server, granting a principal, replaying a journal.']
+  ]
+]
+#]]
+  [out-text [#
+ok
+#]]
+ ]
+
+ [case id=frag-010-unknown-root level=core under=cx-platform-sso
+  [tags fragment refusal unknown-root]
+  [title a document whose root is not [llm-docs-fragment] is REFUSED -- the front door indexes a contract, not whatever a repository leaves at the path]
+  [in-cx [#
+[llm-docs repo="cx-platform-sso" version="v1"
+  [output id="a" out="a.md" title="A" [summary "S"]]]
+#]]
+  [out-canonical [#
+[llm-docs repo=cx-platform-sso version=v1
+  [output id=a out=a.md title=A
+    [summary S]
+  ]
+]
+#]]
+  [out-text [#
+unknown-root document: llm-docs
+#]]
+ ]
+
+ [case id=frag-011-unknown-child level=core under=cx-platform-sso
+  [tags fragment refusal unknown-child]
+  [title a child the contract does not name is REFUSED rather than ignored -- a fragment cannot redeclare the site, and a reader that skips what it does not know can be wrong silently]
+  [in-cx [#
+[llm-docs-fragment repo="cx-platform-sso" version="v1"
+  [output id="a" out="a.md" title="A" [summary "S"]]
+  [site base="https://elsewhere.invalid/"]]
+#]]
+  [out-canonical [#
+[llm-docs-fragment repo=cx-platform-sso version=v1
+  [output id=a out=a.md title=A
+    [summary S]
+  ]
+  [site base=https://elsewhere.invalid/]
+]
+#]]
+  [out-text [#
+unknown-child document: site
+#]]
+ ]
+
+ [case id=frag-012-missing-repo level=core
+  [tags fragment refusal missing-repo]
+  [title a fragment that does not say which repository it is from is REFUSED -- the index records provenance per document]
+  [in-cx [#
+[llm-docs-fragment version="v1"
+  [output id="a" out="a.md" title="A" [summary "S"]]]
+#]]
+  [out-canonical [#
+[llm-docs-fragment version=v1
+  [output id=a out=a.md title=A
+    [summary S]
+  ]
+]
+#]]
+  [out-text [#
+missing-repo document: no repo= on the fragment
+#]]
+ ]
+
+ [case id=frag-013-repo-mismatch level=core under=cx-platform-sso
+  [tags fragment refusal repo-mismatch]
+  [title a fragment whose repo= is not the repository it was found under is REFUSED -- a mispinned or miscopied fragment would otherwise be indexed under the wrong name]
+  [in-cx [#
+[llm-docs-fragment repo="cx-platform-ux" version="v1"
+  [output id="a" out="a.md" title="A" [summary "S"]]]
+#]]
+  [out-canonical [#
+[llm-docs-fragment repo=cx-platform-ux version=v1
+  [output id=a out=a.md title=A
+    [summary S]
+  ]
+]
+#]]
+  [out-text [#
+repo-mismatch document: declares repo=cx-platform-ux and was found under cx-platform-sso
+#]]
+ ]
+
+ [case id=frag-014-missing-version level=core under=cx-platform-sso
+  [tags fragment refusal missing-version]
+  [title a fragment with no version= is REFUSED -- RS-9’s "a cx build embeds the docs of exactly the module versions it compiles in" is unanswerable without it]
+  [in-cx [#
+[llm-docs-fragment repo="cx-platform-sso"
+  [output id="a" out="a.md" title="A" [summary "S"]]]
+#]]
+  [out-canonical [#
+[llm-docs-fragment repo=cx-platform-sso
+  [output id=a out=a.md title=A
+    [summary S]
+  ]
+]
+#]]
+  [out-text [#
+missing-version document: no version= -- a fragment states the release it was generated at
+#]]
+ ]
+
+ [case id=frag-015-no-outputs level=core under=cx-platform-sso
+  [tags fragment refusal no-outputs]
+  [title a fragment that publishes nothing is a producer defect and not an empty set -- a repository with no documents ships no fragment at all]
+  [in-cx [#
+[llm-docs-fragment repo="cx-platform-sso" version="v1"
+  [doc nothing was published this release]]
+#]]
+  [out-canonical [#
+[llm-docs-fragment repo=cx-platform-sso version=v1
+  [doc nothing was published this release]
+]
+#]]
+  [out-text [#
+no-outputs document: a fragment with no [output] entry publishes nothing and is a producer defect, not an empty set
+#]]
+ ]
+
+ [case id=frag-016-an-entry-missing-everything level=core under=cx-platform-sso
+  [tags fragment refusal missing-id missing-out missing-title missing-summary]
+  [title every required key of an [output] is reported, each by name, and the entry is named by its own canonical text when it has no id to be named by]
+  [in-cx [#
+[llm-docs-fragment repo="cx-platform-sso" version="v1"
+  [output section=reference]]
+#]]
+  [out-canonical [#
+[llm-docs-fragment repo=cx-platform-sso version=v1
+  [output section=reference]
+]
+#]]
+  [out-text [#
+missing-id [output section=reference]: no id= on the entry
+missing-out [output section=reference]: no out= on the entry
+missing-title [output section=reference]: no title= on the entry
+missing-summary [output section=reference]: no [summary] child -- llms.txt would have nothing to say about it
+#]]
+ ]
+
+ [case id=frag-017-templated-output level=core under=cx-platform-sso
+  [tags fragment refusal templated-output]
+  [title an [output] carrying a template= is REFUSED -- a fragment ships bytes rendered by the producing repository’s own gate against its own corpus, and cx does not run another repository’s generator]
+  [in-cx [#
+[llm-docs-fragment repo="cx-platform-sso" version="v1"
+  [output id="a" out="a.md" title="A" template="a.md.tmpl" [summary "S"]]]
+#]]
+  [out-canonical [#
+[llm-docs-fragment repo=cx-platform-sso version=v1
+  [output id=a out=a.md title=A template=a.md.tmpl
+    [summary S]
+  ]
+]
+#]]
+  [out-text [#
+templated-output a: template=a.md.tmpl -- a fragment ships rendered bytes; cx does not run another repository's generator
+#]]
+ ]
+
+ [case id=frag-018-unknown-section level=core under=cx-platform-sso
+  [tags fragment refusal unknown-section]
+  [title a section outside the closed vocabulary is REFUSED -- llms.txt is the discovery surface and a heading one repository invents files its documents where no index lists them]
+  [in-cx [#
+[llm-docs-fragment repo="cx-platform-sso" version="v1"
+  [output id="a" out="a.md" title="A" section=appendix [summary "S"]]]
+#]]
+  [out-canonical [#
+[llm-docs-fragment repo=cx-platform-sso version=v1
+  [output id=a out=a.md title=A section=appendix
+    [summary S]
+  ]
+]
+#]]
+  [out-text [#
+unknown-section a: appendix
+#]]
+ ]
+
+ [case id=frag-019-out-escapes level=core under=cx-platform-sso
+  [tags fragment refusal out-escapes]
+  [title an out= with a path separator in it is REFUSED -- out= is the flat basename the document takes under docs/llm/, and a path would let a fragment write outside the directory the front door owns]
+  [in-cx [#
+[llm-docs-fragment repo="cx-platform-sso" version="v1"
+  [output id="a" out="../../../etc/a.md" title="A" [summary "S"]]]
+#]]
+  [out-canonical [#
+[llm-docs-fragment repo=cx-platform-sso version=v1
+  [output id=a out=../../../etc/a.md title=A
+    [summary S]
+  ]
+]
+#]]
+  [out-text [#
+out-escapes a: ../../../etc/a.md -- out= is a flat basename under docs/llm/
+#]]
+ ]
+
+ [case id=frag-020-duplicate-id level=core under=cx-platform-sso
+  [tags fragment refusal duplicate-id]
+  [title two entries with one id inside a fragment are REFUSED -- the id is what the union joins on]
+  [in-cx [#
+[llm-docs-fragment repo="cx-platform-sso" version="v1"
+  [output id="a" out="a.md" title="A" [summary "S"]]
+  [output id="a" out="b.md" title="B" [summary "T"]]]
+#]]
+  [out-canonical [#
+[llm-docs-fragment repo=cx-platform-sso version=v1
+  [output id=a out=a.md title=A
+    [summary S]
+  ]
+  [output id=a out=b.md title=B
+    [summary T]
+  ]
+]
+#]]
+  [out-text [#
+duplicate-id a: 2 entries in this fragment
+#]]
+ ]
+
+ [case id=frag-030-union-without-collision level=core
+  [tags fragment union collision]
+  [title the union of the front door's own rows and a pinned repository's fragment, every id and every file distinct -- nothing to refuse]
+  [in-cx [#
+[llm-docs-union
+  [entry id="reference-stdlib" out="reference-stdlib.md" repo="cx"]
+  [entry id="reference-sso" out="reference-sso.md" repo="cx-platform-sso"]]
+#]]
+  [out-canonical [#
+[llm-docs-union
+  [entry id=reference-stdlib out=reference-stdlib.md repo=cx]
+  [entry id=reference-sso out=reference-sso.md repo=cx-platform-sso]
+]
+#]]
+  [out-text [#
+ok
+#]]
+ ]
+
+ [case id=frag-031-union-id-collision level=core
+  [tags fragment union refusal id-collision]
+  [title two repositories claiming one id are REFUSED -- the front door indexes one docs/llm/, and the second entry would silently replace the first in llms.txt]
+  [in-cx [#
+[llm-docs-union
+  [entry id="reference-store" out="reference-store.md" repo="cx"]
+  [entry id="reference-store" out="reference-store-engine.md" repo="cx-platform-store"]]
+#]]
+  [out-canonical [#
+[llm-docs-union
+  [entry id=reference-store out=reference-store.md repo=cx]
+  [entry id=reference-store out=reference-store-engine.md repo=cx-platform-store]
+]
+#]]
+  [out-text [#
+id-collision reference-store: 2 entries across the union claim this id
+#]]
+ ]
+
+ [case id=frag-032-union-out-collision level=core
+  [tags fragment union refusal out-collision]
+  [title two entries writing one file are REFUSED even under different ids -- a collision in the file name is the same overwrite]
+  [in-cx [#
+[llm-docs-union
+  [entry id="reference-mail" out="reference-mail.md" repo="cx"]
+  [entry id="mail-reference" out="reference-mail.md" repo="cx-platform-mail"]]
+#]]
+  [out-canonical [#
+[llm-docs-union
+  [entry id=reference-mail out=reference-mail.md repo=cx]
+  [entry id=mail-reference out=reference-mail.md repo=cx-platform-mail]
+]
+#]]
+  [out-text [#
+out-collision reference-mail.md: 2 entries across the union write this file
+#]]
+ ]
+]
