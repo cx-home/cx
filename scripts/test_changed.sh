@@ -135,7 +135,10 @@ printf '%s\n' "$CHANGED" | sed 's/^/  /'
 # Every vcx/ subdir must be named by at least one row below. Narrowing the
 # old blanket `vcx/*` rows means a path named by NO row would skip every
 # step, so the support/rare dirs (testenv fixtures deps bench fuzz tools +
-# v.mod) ride RING_SUP, which every compiled step carries. Over-include on
+# v.mod) ride RING_SUP, which every compiled step carries. So does vcx/corpus
+# (#1634): the grading core the cx binary links for `cx corpus`, every fixtures
+# shard calls and the document runner reaches — named by no row from RS-16 to
+# #1634, so a change to exactly that loop skipped every step that runs it. Over-include on
 # doubt: a false RUN costs minutes, a false SKIP costs correctness.
 RING0='vcx/cx/*'
 RING_STORE='vcx/cxstore/*'
@@ -144,7 +147,7 @@ RING_LEAF='vcx/arrow/* vcx/transport/*'
 RING2='vcx/platform/*'
 RING_CLI='vcx/cli/* vcx/cmd_data/*'
 RING_CMD='vcx/cmd/*'
-RING_SUP='vcx/testenv/* vcx/fixtures/* vcx/deps/* vcx/bench/* vcx/fuzz/* vcx/tools/* vcx/v.mod third_party/*'
+RING_SUP='vcx/testenv/* vcx/fixtures/* vcx/corpus/* vcx/deps/* vcx/bench/* vcx/fuzz/* vcx/tools/* vcx/v.mod third_party/*'
 # The $embed_file estates + the version stamp: these reach the BYTES of every
 # built cx binary (vcx/Makefile BUILD_INPUT_DIRS names ../stdlib ../x
 # ../docs/llm ../VERSION), so a step that BUILDS OR DRIVES a binary depends on
@@ -504,10 +507,12 @@ step_globs() {
 # layer, _gate_evidence/, .github/, root prose) selects nothing.
 SUITE_DIR='vcx/tests'
 # The vcx/ directories that are V modules a test file can import.
-VCX_MODULES='cx code platform cxstore arrow transport cli cmd cmd_data testenv fixtures timing tools bench fuzz'
+VCX_MODULES='cx code platform cxstore arrow transport cli cmd cmd_data corpus testenv fixtures timing tools bench fuzz'
 # The directories the shipped `cx` and libcx compile from — testenv's edge,
 # because a test that runs the binary runs all of this.
-BINARY_MODULES='cx code platform cxstore arrow transport cli cmd cmd_data'
+# `corpus` (#1634) is both: `cmd` links it for `cx corpus`, and the fixtures
+# grader imports it for the shards.
+BINARY_MODULES='cx code platform cxstore arrow transport cli cmd cmd_data corpus'
 
 # vcx_module_of <import-name> — the vcx/ module directory it names, or nothing
 # when it is V's own stdlib (os, net, time, encoding.base64, x.json2, …). The V
