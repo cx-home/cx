@@ -338,7 +338,6 @@ the rule carries a `why=`. The recurring reasons, once:
 
   [; ── platform: connector ───────────────────────────────────────────── ]
   [path exact='stdlib/connector.cx' repo=cx-platform-connector]
-  [path prefix='vcx/platform/stdlib_connector' repo=cx-platform-connector why='what is LEFT of the native half after RS-6 moved eleven of its twelve builtins down to identity and store: the compile-time test-build constant that gates the mock adapter, which has no verb in either destination (the LETTER in the item-9 RESULTS.md)']
   [path exact='spec/03-approved/platform/connector.md' repo=cx-platform-connector]
   [path exact='spec/03-approved/platform/sync.md' repo=cx-platform-connector]
   [path exact='conformance/platform/connector.cxd' repo=cx-platform-connector]
