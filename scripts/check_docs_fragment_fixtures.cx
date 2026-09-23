@@ -1,15 +1,15 @@
 # scripts/check_docs_fragment_fixtures.cx — the grader for
-# conformance/docs_fragment.cxd (RULED: RS-7). Written in CX (AGENTS.md rule 6).
+# conformance/docs_fragment.cxd (RULED: RS-9). Written in CX (AGENTS.md rule 6).
 #
-# The suite pins two things about each `[bundle-state]` input:
+# The suite pins two things about each `[llm-docs-fragment]` input:
 #
-#   [out-canonical]  `cx canonical` over the input — the described tree is
-#                    ordinary CX data, read by the data grammar, no new codec.
-#   [out-text]       `[$bundle:report …]` over it: the census line, then one
-#                    line per module in the extraction window, then the
-#                    refusals (or `ok`). The SAME function
-#                    scripts/bundle_compose.cx prints, so a refusal the corpus
-#                    pins is the refusal the composition emits.
+#   [out-canonical]  `cx canonical` over the input — a fragment is ordinary CX
+#                    data, read by the data grammar, no new codec.
+#   [out-text]       `[$frag:validate …]` over it, rendered one line per
+#                    refusal (or `ok`). The SAME function
+#                    scripts/gen_docs/primer_build.cx runs over every fragment
+#                    under deps/, so a refusal the corpus pins is the refusal
+#                    `make docs` fails on.
 #
 # Rules carried from scripts/check_deps_pins_fixtures.cx, which this grader is
 # modelled on line for line:
@@ -81,8 +81,20 @@
 # per refusal or `ok`. `under=` is the repository DIRECTORY the fragment was
 # found in, which is what `repo-mismatch` compares against; a case with no
 # `under=` is validated with no directory known and that check does not fire.
+#
+# A case whose document is an `[llm-docs-union [entry id= out= repo=]*]`
+# grades the UNION's refusal instead: `[$frag:collisions …]` over every
+# entry's id and out, the check scripts/gen_docs/primer_build.cx runs over
+# the front door's own [output] rows plus every fragment it collected.
 [?def verdict-text-of scope=private pure [returns string] ($in::string $under::string)
-  [$strings:join [$frag:render [$frag:validate [$frag:read $in] $under]] "\n"]]
+  [?let [= $doc [$frag:read $in]]
+    [$strings:join
+      [$frag:render
+        [?if [= [$name $doc] "llm-docs-union"]
+          [then [$frag:collisions [?for [in $e $doc/entry] [yield [$string $e@id]]]
+                                  [?for [in $e $doc/entry] [yield [$string $e@out]]]]]
+          [else [$frag:validate $doc $under]]]]
+      "\n"]]]
 
 # grade: the whole judgement of one case, as data.
 # -> [graded id= status=pass|fail [diff want= got= what=]*]

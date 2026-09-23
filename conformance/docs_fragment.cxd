@@ -24,6 +24,17 @@
 # verdict is the SAME function the front door's docs step runs, so a refusal
 # here is a refusal there.
 #
+# The `frag-03x` cases grade the UNION instead: an `[llm-docs-union]` of
+# `[entry id= out= repo=]` rows, the front door's own [output] rows beside every
+# collected fragment's, and `[$frag:collisions …]` over them. Two entries
+# claiming one id or writing one file are the same silent overwrite of the one
+# docs/llm/ the front door indexes.
+#
+# The two FILE-LEVEL refusals (`missing-file`, a declared document not beside
+# its fragment; `unrendered-example`, a document still carrying an unexpanded
+# example placeholder) need a tree, not a document, and are left out of
+# this pure corpus by name; primer_build.cx runs them over deps/.
+#
 # Every `[summary]` below is written as PLAIN TEXT rather than as a raw text
 # block. Both spellings are legal and mean the same thing, and the plain one is
 # what lets a fragment be quoted inside this file's own raw blocks at all: a
@@ -49,7 +60,7 @@
   [tags fragment contract output suites]
   [title the shape a component repository publishes at its release -- repo, the version it was generated at, one rendered document with its summary, and the suites it cites]
   [in-cx [#
-[llm-docs-fragment repo="cx-platform-sso" version="v0.18.0"
+[llm-docs-fragment repo="cx-platform-sso" version="c43dc5cd9c804dc3d34e3e1a5a1e4fa6969b5598"
   [doc "the sso module's reference — rendered from its own corpus at its own release"]
   [output id="reference-sso" out="reference-sso.md" section=reference title="Reference: enterprise sign-on"
     [summary "The mountable handler verbs, the relying-party and service-provider halves, and the provisioning routes."]]
@@ -57,7 +68,7 @@
 ]
 #]]
   [out-canonical [#
-[llm-docs-fragment repo=cx-platform-sso version=v0.18.0
+[llm-docs-fragment repo=cx-platform-sso version=c43dc5cd9c804dc3d34e3e1a5a1e4fa6969b5598
   [doc the sso module's reference — rendered from its own corpus at its own release]
   [output id=reference-sso out=reference-sso.md section=reference title='Reference: enterprise sign-on'
     [summary 'The mountable handler verbs, the relying-party and service-provider halves, and the provisioning routes.']
@@ -307,6 +318,63 @@ out-escapes a: ../../../etc/a.md -- out= is a flat basename under docs/llm/
 #]]
   [out-text [#
 duplicate-id a: 2 entries in this fragment
+#]]
+ ]
+
+ [case id=frag-030-union-without-collision level=core
+  [tags fragment union collision]
+  [title the union of the front door's own rows and a pinned repository's fragment, every id and every file distinct -- nothing to refuse]
+  [in-cx [#
+[llm-docs-union
+  [entry id="reference-stdlib" out="reference-stdlib.md" repo="cx"]
+  [entry id="reference-sso" out="reference-sso.md" repo="cx-platform-sso"]]
+#]]
+  [out-canonical [#
+[llm-docs-union
+  [entry id=reference-stdlib out=reference-stdlib.md repo=cx]
+  [entry id=reference-sso out=reference-sso.md repo=cx-platform-sso]
+]
+#]]
+  [out-text [#
+ok
+#]]
+ ]
+
+ [case id=frag-031-union-id-collision level=core
+  [tags fragment union refusal id-collision]
+  [title two repositories claiming one id are REFUSED -- the front door indexes one docs/llm/, and the second entry would silently replace the first in llms.txt]
+  [in-cx [#
+[llm-docs-union
+  [entry id="reference-store" out="reference-store.md" repo="cx"]
+  [entry id="reference-store" out="reference-store-engine.md" repo="cx-platform-store"]]
+#]]
+  [out-canonical [#
+[llm-docs-union
+  [entry id=reference-store out=reference-store.md repo=cx]
+  [entry id=reference-store out=reference-store-engine.md repo=cx-platform-store]
+]
+#]]
+  [out-text [#
+id-collision reference-store: 2 entries across the union claim this id
+#]]
+ ]
+
+ [case id=frag-032-union-out-collision level=core
+  [tags fragment union refusal out-collision]
+  [title two entries writing one file are REFUSED even under different ids -- a collision in the file name is the same overwrite]
+  [in-cx [#
+[llm-docs-union
+  [entry id="reference-mail" out="reference-mail.md" repo="cx"]
+  [entry id="mail-reference" out="reference-mail.md" repo="cx-platform-mail"]]
+#]]
+  [out-canonical [#
+[llm-docs-union
+  [entry id=reference-mail out=reference-mail.md repo=cx]
+  [entry id=mail-reference out=reference-mail.md repo=cx-platform-mail]
+]
+#]]
+  [out-text [#
+out-collision reference-mail.md: 2 entries across the union write this file
 #]]
  ]
 ]

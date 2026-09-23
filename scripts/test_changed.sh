@@ -247,8 +247,10 @@ step_globs() {
     # docs-check (#938) regenerates the LLM layer from the templates, the
     # conformance corpus, the spec's directive registry, the stdlib bundle's
     # [module-doc]s and the binary's own --help — so any of those moving can
-    # move its output. VERSION too: the primer's heading derives from it.
-    docs-check)                    echo 'docs-src/* docs/llm/* scripts/gen_docs/* conformance/* spec/* stdlib/* x/* vcx/* VERSION' ;;
+    # move its output. VERSION too: the primer's heading derives from it. And the
+    # documentation fragments of the pinned repositories (RULED: RS-9): the
+    # contract module, the pin reader, and deps.cxd, which says which to read.
+    docs-check)                    echo 'docs-src/* docs/llm/* scripts/gen_docs/* scripts/docs_fragment.cx scripts/deps_pins.cx deps.cxd conformance/* spec/* stdlib/* x/* vcx/* VERSION' ;;
     ring-import-gate)              echo 'vcx/* scripts/ring_import_gate*' ;;
     gates-manifest-gate)           echo 'conformance/* scripts/gates_manifest_gate*' ;;
     ring-tag-gate)                 echo 'conformance/* scripts/*' ;;
@@ -328,6 +330,9 @@ step_globs() {
     # the bundled-source table and the grader that reads it -- the corpus is
     # pure described trees, so nothing else changes what it asserts (#1589 item 23).
     test-bundle-sources)           echo 'conformance/bundle_sources.cxd scripts/check_bundle_sources_fixtures.cx scripts/bundle_sources.cx spec/03-approved/process/repository-dependency-pins.md' ;;
+    # the fragment contract and the grader that reads it -- the corpus is pure
+    # documents, so nothing else changes what it asserts (RULED: RS-9).
+    test-docs-fragment)            echo 'conformance/docs_fragment.cxd scripts/check_docs_fragment_fixtures.cx scripts/docs_fragment.cx' ;;
     # the dogfood documents, the gate that reads them, and everything that can
     # move the vocabulary or the two subcommands it drives them through.
     flow-dogfood-gate)             echo 'flows/* scripts/flow_dogfood_gate.cx stdlib/flow.cx vcx/cmd/* vcx/code/* vcx/cx/* spec/03-approved/platform/flow.md' ;;

@@ -785,10 +785,17 @@
   [= $_f3 [?if [$frag:ok $collide] [then 0]
             [else [$die [$concat "the document union collides:\n"
                           [$strings:join [?for [in $l [$frag:render $collide]] [yield [$concat "  " $l]]] "\n"]]]]]]
-  [= $_f4 [$say [$concat "primer_build: " [$string [$count $own-docs]] " own document(s), "
-                         [$string [$count $frag-docs]] " published by "
-                         [$string [$count [?for [in $f $collected/found] [yield 1]]]] " of "
-                         [$string [$count $pinned]] " pinned repositor(ies) (RULED: RS-9)"]]]
+  [; A fragment is read WHEN PRESENT: with no deps/ checkout, or no pinned
+     repository publishing one, the union is the front door's own rows and the
+     line says `none` rather than a count of zero that reads like a failure. ]
+  [= $found-n [$count [?for [in $f $collected/found] [yield 1]]]]
+  [= $_f4 [$say [$concat "primer_build: " [$string [$count $own-docs]] " own documents; fragments from the pins: "
+                         [?if [= $found-n 0]
+                           [then "none"]
+                           [else [$concat [$string [$count $frag-docs]] " documents from "
+                                          [$string $found-n] " of " [$string [$count $pinned]]
+                                          " pinned repositories"]]]
+                         " (RULED: RS-9)"]]]
 
   [= $_s1 [?if [$empty $docs] [then [$die "manifest declares no [output] entries"]] [else 0]]]
   [= $_s2 [$check-sections $docs]]
