@@ -252,7 +252,7 @@ step_globs() {
     # contract module, the pin reader, and deps.cxd, which says which to read.
     docs-check)                    echo 'docs-src/* docs/llm/* scripts/gen_docs/* scripts/docs_fragment.cx scripts/deps_pins.cx deps.cxd conformance/* spec/* stdlib/* x/* vcx/* VERSION' ;;
     ring-import-gate)              echo 'vcx/* scripts/ring_import_gate*' ;;
-    gates-manifest-gate)           echo 'conformance/* scripts/gates_manifest_gate*' ;;
+    gates-manifest-gate)           echo 'conformance/* packages/* scripts/gates_manifest_gate* scripts/gates_register*' ;;
     ring-tag-gate)                 echo 'conformance/* scripts/*' ;;
     cxer-registry-gate)            echo 'vcx/* spec/* scripts/cxer_registry*' ;;
     spec-freeze-gate)              echo '*' ;;

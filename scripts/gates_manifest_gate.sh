@@ -19,6 +19,13 @@
 #        S=code            -> (no module rows; the suite default governs code.cxd)
 #        S=xpath-31-parity -> (no module rows; the suite default governs
 #                              conformance/xpath_31_parity.cxd — RULED: VC-7, #945)
+#   5. the register is DERIVED (D49a, #1633; RULED: RS-27): a suite's gate
+#      status lives on its own [test-suite] element, where the grading core
+#      reads it, and every [module] row must agree with the element of the
+#      suite it names — scripts/gates_register_check.cx refuses a row that
+#      disagrees (naming the row and the file), an advisory element with no
+#      row, and an element gate= the grader refuses; its corpus,
+#      conformance/gates_register.cxd, is graded first with `cx corpus`.
 #
 # The runtime consumers (vcx/tests/code_eval_fixtures_test.v for code/stdlib/
 # packages; scripts/check_xpath_parity_fixtures.cx for xpath-31-parity) are
@@ -133,9 +140,22 @@ while IFS= read -r line; do
   fi
 done < "$GATES"
 
+# (5) the derived register: the check's own corpus first (a check whose pinned
+# verdicts do not hold proves nothing about the tree), then the tree. Both run
+# from the checkout root — the corpus and the check import
+# ./scripts/gates_register.cx, which resolves against the working directory
+# (#1604).
+if ! ( cd "$ROOT" && "$CXBIN" corpus --quiet conformance/gates_register.cxd ); then
+  echo "GATE-REGISTER-CORPUS: conformance/gates_register.cxd does not pass — the drift check's pinned verdicts do not hold"
+  fail=1
+fi
+if ! ( cd "$ROOT" && "$CXBIN" --allow-read --allow-write scripts/gates_register_check.cx ); then
+  fail=1
+fi
+
 if [ "$fail" -ne 0 ]; then
   echo "gates_manifest_gate: FAILED"
   exit 1
 fi
-echo "gates_manifest_gate: OK — gates.cxd parses, every gate=/default= is in-enum, every suite is known, every single-file suite's fixture exists, every module row resolves to a real fixture."
+echo "gates_manifest_gate: OK — gates.cxd parses, every gate=/default= is in-enum, every suite is known, every single-file suite's fixture exists, every module row resolves to a real fixture, and every row agrees with its suite's [test-suite] element (the register is derived, D49a)."
 exit 0

@@ -1,0 +1,75 @@
+# scripts/gates_register_check.cx — the derived gate register, checked against
+# the suites it describes (D49a, #1633; RULED: RS-27). Written in CX
+# (AGENTS.md rule 6); one of the checks `make gates-manifest-gate` runs.
+#
+# A suite's gate status lives ON its [test-suite] element; conformance/gates.cxd
+# is the cx-wide register DERIVED from those elements. This program reads the
+# register's [gate-policy …] and the [test-suite] element of every corpus file
+# the register can name —
+#
+#   conformance/{stdlib,platform,x,xap}/M.cxd   keyed [suite name=stdlib] M
+#   packages/M/M.test.cxd                       keyed [suite name=packages] M
+#
+# — and prints `[$reg:report [$reg:check …]]` from scripts/gates_register.cx:
+# the census line, then `ok` or one line per refusal (a row that disagrees with
+# its element, an advisory element the register does not list, an element
+# gate= the grader refuses). conformance/gates_register.cxd pins every one of
+# those verdicts over described trees; this is the same function over the real
+# one.
+#
+# Run from the checkout root (the globs and the [?lib] below are cwd-relative,
+# #1604):
+#   vcx/target/cx --allow-read --allow-write scripts/gates_register_check.cx
+# BOTH GRANTS ARE LOAD-BEARING: it reads the tree and writes to stdout, and a
+# denied write bound to an unused binding is dropped silently (#1608).
+#
+# Exit: 0 the register agrees with every suite element; 1 a refusal;
+#       2 conformance/gates.cxd is missing or carries no [gate-policy].
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/path'    as=path]
+[?lib './scripts/gates_register.cx' as=reg]
+
+# The [test-suite] element of a parsed corpus file: the file IS the element
+# when it holds one top-level form, else the first [test-suite] in it.
+[?def suite-of scope=private pure ($t)
+  [?if [= [$name $t] "test-suite"]
+    [then $t]
+    [else [$first [?for [in $s $t//test-suite] [yield $s]]]]]]
+
+[?def header scope=private impure ($suite::string $module::string $file::string)
+  [?let
+    [= $s [$suite-of [$cx:parse [$io:read-file $file]]]]
+    [suite-header suite=$suite module=$module file=$file
+                  gate=[$string [?else $s@gate ""]]
+                  reason=[$string [?else $s@reason ""]]]]]
+
+[?if [not [$io:is-file "conformance/gates.cxd"]]
+  [then [?let [= $_e [$io:write-line [$env:stderr]
+                       "gates_register_check: no conformance/gates.cxd under the working directory -- run from the checkout root"]]
+          [$env:exit 2]]]
+  [else
+    [?let
+      [= $doc [$cx:parse [$io:read-file "conformance/gates.cxd"]]]
+      [= $policies [?for [in $p $doc//gate-policy] [yield $p]]]
+      [= $module-headers
+        [?for [in $dir ("stdlib", "platform", "x", "xap")]
+              [in $f [$io:glob [$concat "conformance/" $dir "/*.cxd"]]]
+          [yield [$header "stdlib" [$path:stem $f] $f]]]]
+      [= $package-headers
+        [?for [in $f [$io:glob "packages/*/*.test.cxd"]]
+          [= $pkg [$path:basename [$path:dirname $f]]]
+          [where [= [$path:basename $f] [$concat $pkg ".test.cxd"]]]
+          [yield [$header "packages" $pkg $f]]]]
+      [?if [= [$count $policies] 0]
+        [then [?let [= $_e [$io:write-line [$env:stderr]
+                             "gates_register_check: conformance/gates.cxd carries no [gate-policy …]"]]
+                [$env:exit 2]]]
+        [else
+          [?let
+            [= $v [$reg:check [$first $policies]
+                              [suites [?splice $module-headers] [?splice $package-headers]]]]
+            [= $_w [$io:write-line [$env:stdout] [$reg:report $v]]]
+            [$env:exit [?if [$reg:ok $v] [then 0] [else 1]]]]]]]]]

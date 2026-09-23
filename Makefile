@@ -1752,6 +1752,11 @@ ring-import-gate:
 # it parses, every gate= value is in-enum, and every [module name=X] row
 # resolves (suite-aware) to a real fixture. Nothing else validated this policy
 # file, and it governs whether every OTHER fixture blocks its gate.
+# Since D49a (#1633) it is also the DRIFT check of that file: a suite's status
+# lives on its [test-suite] element and the register is derived from the
+# elements — scripts/gates_register_check.cx refuses a row that disagrees,
+# after `cx corpus` has graded its corpus, conformance/gates_register.cxd.
+# Reads vcx/target/cx (or CX_BIN); it does not build it.
 .PHONY: gates-manifest-gate
 gates-manifest-gate:
 	@bash scripts/gates_manifest_gate.sh
