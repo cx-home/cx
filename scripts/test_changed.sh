@@ -128,7 +128,9 @@ printf '%s\n' "$CHANGED" | sed 's/^/  /'
 #   vcx/cxstore   <- cx
 #   vcx/code      Ring-1 <- cx
 #   vcx/arrow     <- cx        vcx/transport <- cx
-#   vcx/platform  Ring-2 <- cx code cxstore arrow transport
+#   vcx/platform  Ring-2 <- cx code cxstore arrow transport cxnet mail cxdb
+#   vcx/cxnet, vcx/mail, vcx/cxdb   the V product modules split out of
+#                 vcx/platform (RULED: RS-24) <- cx code transport + their pins
 #   vcx/cli, vcx/cmd_data      platform-free <- cx code cli cmd_data
 #   vcx/cmd       <- cli code cx platform
 #
@@ -141,7 +143,7 @@ RING0='vcx/cx/*'
 RING_STORE='vcx/cxstore/*'
 RING1='vcx/code/*'
 RING_LEAF='vcx/arrow/* vcx/transport/*'
-RING2='vcx/platform/*'
+RING2='vcx/platform/* vcx/cxnet/* vcx/mail/* vcx/cxdb/*'
 RING_CLI='vcx/cli/* vcx/cmd_data/*'
 RING_CMD='vcx/cmd/*'
 RING_SUP='vcx/testenv/* vcx/fixtures/* vcx/deps/* vcx/bench/* vcx/fuzz/* vcx/tools/* vcx/v.mod third_party/*'
@@ -225,10 +227,10 @@ step_globs() {
     check-no-consumer-terms)       echo '*' ;;
     check-version-consistency)     echo '*' ;;
     check-effect-alignment)        echo 'vcx/* spec/*' ;;
-    check-null-absence-conflation) echo 'vcx/*' ;;
+    check-null-absence-conflation) echo 'vcx/* registry/repos.cxd' ;;
     check-docs-tier1-guardrail)    echo 'docs-src/* docs/* spec/*' ;;
     check-no-adr-citations)        echo '*' ;;
-    check-no-stub-impl)            echo 'vcx/*' ;;
+    check-no-stub-impl)            echo 'vcx/* registry/repos.cxd' ;;
     check-xap-dist-absences)       echo 'vcx/* x/*' ;;
     check-completions-drift)       echo 'vcx/* tooling/*' ;;
     check-tmlanguage-sync)         echo 'tooling/*' ;;
@@ -251,7 +253,7 @@ step_globs() {
     # documentation fragments of the pinned repositories (RULED: RS-9): the
     # contract module, the pin reader, and deps.cxd, which says which to read.
     docs-check)                    echo 'docs-src/* docs/llm/* scripts/gen_docs/* scripts/docs_fragment.cx scripts/deps_pins.cx deps.cxd conformance/* spec/* stdlib/* x/* vcx/* VERSION' ;;
-    ring-import-gate)              echo 'vcx/* scripts/ring_import_gate*' ;;
+    ring-import-gate)              echo 'vcx/* scripts/ring_import_gate* registry/repos.cxd' ;;
     gates-manifest-gate)           echo 'conformance/* scripts/gates_manifest_gate*' ;;
     ring-tag-gate)                 echo 'conformance/* scripts/*' ;;
     cxer-registry-gate)            echo 'vcx/* spec/* scripts/cxer_registry*' ;;
@@ -317,12 +319,15 @@ step_globs() {
     # ledger-index-check (#1438) regenerates ledger/README.md from the store and
     # compares: its inputs are every ledger page and the generator itself.
     ledger-index-check)            echo 'ledger/* scripts/ledger_index.cx' ;;
-    stdlib-catalog-gate)           echo 'stdlib/* vcx/* docs-src/* registry/modules.cxd' ;;
+    stdlib-catalog-gate)           echo 'stdlib/* vcx/* docs-src/* registry/modules.cxd registry/repos.cxd' ;;
     # the placement declaration and every artifact class it compares against
     # (RULED: 1427-f) — a spec, a corpus, a bundled source or a ring's V
     # directory moving is exactly what this step exists to catch.
-    placement-gate)                echo 'registry/modules.cxd scripts/placement_gate.cx spec/* conformance/* stdlib/* x/* vcx/code/* vcx/platform/*' ;;
+    placement-gate)                echo 'registry/modules.cxd registry/repos.cxd scripts/placement_gate.cx spec/* conformance/* stdlib/* x/* vcx/code/* vcx/platform/* vcx/cxnet/* vcx/mail/* vcx/cxdb/*' ;;
     repos-allocation-gate)         echo '*' ;;   # any added or removed file can change the allocation
+    # RS-24: any vcx/ file can move an import or make a module directory; the
+    # vlib listing (the V pin) decides what an import that is not vcx/'s names.
+    product-import-gate)           echo 'registry/repos.cxd scripts/product_import_gate.cx vcx/* third_party/*' ;;
     store-session-dep-gate)        echo 'scripts/store_session_dep_gate.cx vcx/platform/store_*.v vcx/platform/stdlib_session.v' ;;
     # the pin document, its format module, its grader and the spec page it
     # implements -- nothing else changes what the corpus asserts.
@@ -409,7 +414,7 @@ step_globs() {
     repr-guard)                    echo 'vcx/cx/* vcx/v.mod third_party/* bench/repr/*' ;;
     # the in-module Ring-0 test roster guard (#1209) reads the Makefile roster
     # and the vcx/cx test files it must account for.
-    check-inmodule-test-roster)    echo 'Makefile vcx/cx/*' ;;
+    check-inmodule-test-roster)    echo 'Makefile vcx/cx/* registry/repos.cxd' ;;
     # fmt-sweep-gate (RULED: 1348-c) re-formats every tracked .cx, so ANY .cx
     # anywhere can move a verdict — the row is deliberately the whole tree,
     # plus the formatter, the sweep and its roster.
@@ -512,10 +517,10 @@ step_globs() {
 # layer, _gate_evidence/, .github/, root prose) selects nothing.
 SUITE_DIR='vcx/tests'
 # The vcx/ directories that are V modules a test file can import.
-VCX_MODULES='cx code platform cxstore arrow transport cli cmd cmd_data testenv fixtures timing tools bench fuzz'
+VCX_MODULES='cx code platform cxnet mail cxdb cxstore arrow transport cli cmd cmd_data testenv fixtures timing tools bench fuzz'
 # The directories the shipped `cx` and libcx compile from — testenv's edge,
 # because a test that runs the binary runs all of this.
-BINARY_MODULES='cx code platform cxstore arrow transport cli cmd cmd_data'
+BINARY_MODULES='cx code platform cxnet mail cxdb cxstore arrow transport cli cmd cmd_data'
 
 # vcx_module_of <import-name> — the vcx/ module directory it names, or nothing
 # when it is V's own stdlib (os, net, time, encoding.base64, x.json2, …). The V
@@ -741,7 +746,7 @@ suite_files() {
       # `tests` is not in VCX_MODULES.
       "$SUITE_DIR"/runners/*)
         ;;
-      stdlib/*.cx|x/*.cx|vcx/platform/stdlib_*.v|vcx/code/stdlib_*.v)
+      stdlib/*.cx|x/*.cx|vcx/platform/stdlib_*.v|vcx/cxnet/stdlib_*.v|vcx/mail/stdlib_*.v|vcx/code/stdlib_*.v)
         # the corpus side is already in `sel`; this is the NAME clause on top,
         # plus the ring rule for the two V spellings.
         case "$f" in

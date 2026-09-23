@@ -1131,6 +1131,21 @@ repos-allocation-gate: build-vcx
 	@"$(CX_BIN)" --allow-all scripts/repos_allocation_gate.cx --self-test
 	@"$(CX_BIN)" --allow-all scripts/repos_allocation_gate.cx
 
+# ── the product import graph (RULED: RS-24, owner D28a) ──────────────────────
+# vcx/platform splits into one V module per V product, and registry/repos.cxd
+# declares, once, which repository compiles each module (`vmodule=`) and which
+# repositories it builds on (`pins=`, the Pins column of the #1589 table). The
+# step refuses an import under a product directory that runs against a pin, a
+# cycle in the pins, a product directory with no repository row, a file
+# allocated away from its product directory, and a vmodule that would shadow a
+# vlib module. The self-test runs first and carries the planted violation the
+# gate was red-proofed on (`import store` in a net file).
+.PHONY: product-import-gate
+product-import-gate: CX_BIN ?= $(CURDIR)/vcx/target/cx
+product-import-gate: build-vcx
+	@"$(CX_BIN)" --allow-all scripts/product_import_gate.cx --self-test
+	@"$(CX_BIN)" --allow-all scripts/product_import_gate.cx
+
 # ── the store→session dependency check (RULED: RS-6, #1591 item 8) ─────────
 # RS-6 puts the store SERVER's authentication on the Ring-1 trust primitives
 # (did/vc verify, the authz decision) and the daemon's own `[grants]`, so the
@@ -1447,7 +1462,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -3304,9 +3319,17 @@ CODE_SERIAL_RETRY := vcx/platform/store_admin_plane_test.v \
 # modules — vcx/code (Ring 1) and vcx/platform (Ring 2, where the
 # store/journal/grpc/service subjects moved). One step runs both.
 .PHONY: test-vcx-code
+# CODE_TEST_DIRS — the directories whose in-module tests this step runs. RS-24
+# (owner D28a) splits vcx/platform into one V module per V product, each in
+# its own vcx/<m>/ (registry/repos.cxd `vmodule=`), and a product's white-box
+# tests move with it. `v test` runs only what it is given, so every product
+# directory is listed here — check-inmodule-test-roster refuses a declared
+# vmodule missing from the list — and a directory with no test yet costs
+# nothing: V reports "0 total" and exits 0.
+CODE_TEST_DIRS := vcx/code/ vcx/platform/ vcx/cxnet/ vcx/mail/ vcx/cxdb/
 test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	@$(JS_CLOSE) log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
-	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test vcx/code/ vcx/platform/ 2>&1; echo $$? > $$stf; } | tee $$log; \
+	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(CODE_TEST_DIRS) 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
 	  failed=$$(grep -aE '^FAIL ' $$log | grep -aoE '[^ ]+_test\.v$$' | sort -u); \
@@ -3417,7 +3440,21 @@ check-inmodule-test-roster:
 	  echo "  the issue that owns the exclusion."; \
 	  exit 1; \
 	fi; \
-	echo "check-inmodule-test-roster OK — every vcx/cx/*_test.v is run or explicitly excluded"
+	unrun=""; \
+	for m in $$(grep -oE "vmodule=[a-z_][a-z0-9_]*" registry/repos.cxd | cut -d= -f2); do \
+	  case " $(CODE_TEST_DIRS) " in \
+	    *" vcx/$$m/ "*) ;; \
+	    *) unrun="$$unrun vcx/$$m/" ;; \
+	  esac; \
+	done; \
+	if [ -n "$$unrun" ]; then \
+	  echo "check-inmodule-test-roster: product module director(ies) whose in-module tests NO step runs —"; \
+	  for d in $$unrun; do echo "    $$d"; done; \
+	  echo "  registry/repos.cxd declares each as a V product (vmodule=, RULED: RS-24) and a"; \
+	  echo "  product's white-box tests live beside it; add the directory to CODE_TEST_DIRS."; \
+	  exit 1; \
+	fi; \
+	echo "check-inmodule-test-roster OK — every vcx/cx/*_test.v is run or explicitly excluded, and every product directory (vmodule=) is in test-vcx-code's CODE_TEST_DIRS"
 
 # White-box unit tests INSIDE the Ring-0 `cx` module (vcx/cx/*_test.v) plus
 # the `fixtures` test-support module (vcx/fixtures/ — the corpus loader,

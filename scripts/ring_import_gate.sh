@@ -10,7 +10,9 @@
 #   Ring 1  = vcx/code      — MAY import Ring 0 (cx) only.
 #   Ring 2  = vcx/platform  — MAY import Rings 0–1 + the leaf siblings the spec
 #                             names for Ring-2 consumption (cxstore, arrow,
-#                             transport).
+#                             transport), and the V product modules split out
+#                             of it (RS-24: each vcx/<vmodule>/ registry/
+#                             repos.cxd declares, under the same contract).
 #   leaves  = vcx/arrow, vcx/transport — consumed FROM Ring 2; themselves
 #                             import Ring 0 (cx) only (+ their own submodules).
 #   engine  = vcx/cxstore   — Ring-0-only AND evaluator-free (spec §2).
@@ -154,8 +156,26 @@ scan_ring "$VCX/cxstore" "store engine (cxstore)" 0 $(deny_but cx cxstore)
 # Ring 1 (vcx/code): MAY import Ring 0 (cx) only.
 scan_ring "$VCX/code" "Ring-1 (code)" 0 $(deny_but cx code)
 
-# Ring 2 (vcx/platform): MAY import cx/code/cxstore/arrow/transport.
-scan_ring "$VCX/platform" "Ring-2 (platform)" 0 $(deny_but cx code cxstore arrow transport platform)
+# The V product modules (RULED: RS-24): vcx/platform split into one V module
+# per V product, each in the vcx/<vmodule>/ registry/repos.cxd declares. They
+# are the platform group exactly as vcx/platform is, so the same contract holds
+# for each: cx/code/cxstore/arrow/transport, plus one another -- WHICH product
+# may import which is the pin graph, and scripts/product_import_gate.cx holds
+# that; this lane only keeps every product off the non-platform siblings
+# (cli, cmd, tests, ...) and off the residue above it. Read grep-level from the
+# registry so a product split is gated the moment its row declares it; a tree
+# with no registry (the selftest's fake one without it) has no products.
+PRODUCTS=""
+if [ -f "$ROOT/registry/repos.cxd" ]; then
+  PRODUCTS="$( { grep -oE "vmodule=[a-z_][a-z0-9_]*" "$ROOT/registry/repos.cxd" || true; } | cut -d= -f2 | { grep -vx platform || true; } | LC_ALL=C sort -u | tr '\n' ' ')"
+fi
+
+# Ring 2 (vcx/platform, the residue): MAY import cx/code/cxstore/arrow/transport
+# and the product modules split out of it (RS-24).
+scan_ring "$VCX/platform" "Ring-2 (platform)" 0 $(deny_but cx code cxstore arrow transport platform $PRODUCTS)
+for p in $PRODUCTS; do
+  scan_ring "$VCX/$p" "platform product ($p)" 0 $(deny_but cx code cxstore arrow transport $PRODUCTS)
+done
 
 # Leaf siblings (vcx/arrow, vcx/transport): consumed FROM Ring 2; import cx
 # (Ring 0) only, plus their own submodules (self kept in the allow-set).
@@ -173,5 +193,5 @@ if [ "$fail" -ne 0 ]; then
   echo "ring_import_gate: FAILED — a ring module violates its §3 import contract."
   exit 1
 fi
-echo "ring_import_gate: OK — Ring-0 strict sink; cxstore Ring-0-only+evaluator-free; code→cx only; platform within cx/code/cxstore/arrow/transport; arrow/transport→cx only; cli/cmd_data platform-free"
+echo "ring_import_gate: OK — Ring-0 strict sink; cxstore Ring-0-only+evaluator-free; code→cx only; platform within cx/code/cxstore/arrow/transport + the product modules; each product (${PRODUCTS% }) within cx/code/cxstore/arrow/transport + the products; arrow/transport→cx only; cli/cmd_data platform-free"
 exit 0
