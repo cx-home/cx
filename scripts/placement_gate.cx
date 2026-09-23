@@ -52,6 +52,15 @@
 #                    row declares no move -- under the other ring's directory
 #   [orphan ...]     a spec, corpus or bundled source that no row and no
 #                    `[move]` claims
+#   [dep path]       a `repo=` row -- an EXTRACTED module (RULED: RS-7,
+#                    RS-12) -- whose spec, corpus or source does not begin
+#                    `deps/<repo>/`. The row still declares the surface the
+#                    binary ships; what moved is where the artifacts are, and
+#                    the pinned checkout is where they are. Without this the
+#                    ring checks below would go vacuous the day a module
+#                    leaves, because `ring-of-dir` answers "" -- agrees with
+#                    every ring -- for any path outside the ring-legible
+#                    space, and `deps/…` is outside it
 #   [integration map] a platform specification with no `Integration map`
 #                    heading (RULED: COMP-1) -- the section that restates
 #                    composition.md §2's rows for that module
@@ -104,6 +113,26 @@
   [else [?if [$strings:starts-with $p "vcx/platform/"] [then "2"]
   [else ""]]]]]]]]]]]]]
 
+# dep-prefix: the `deps/<repo>/` a `repo=` row's every path begins with.
+[?def dep-prefix scope=private pure [returns string] ($repo::string)
+  [?if [= $repo ""] [then ""] [else [$concat "deps/" $repo "/"]]]]
+
+# in-repo: the path as the OWNING repository spells it -- the ring-legible
+# path, with the pinned-checkout prefix taken off. A row with no `repo=` is
+# its own owner and the path is already that. This is what every ring check
+# reads, so an extracted module is held to its ring exactly as a tracked one
+# is rather than sliding into `ring-of-dir`'s "outside the split" answer.
+[?def in-repo scope=private pure [returns string] ($p::string $repo::string)
+  [?let [= $pre [$dep-prefix $repo]]
+    [?if [= $pre ""] [then $p]
+      [else [?if [$strings:starts-with $p $pre]
+              [then [$strings:slice $p [+ [$strings:length $pre] 1] [$strings:length $p]]]
+              [else $p]]]]]]
+
+# in-repo-all: `in-repo` over a whitespace-joined column.
+[?def in-repo-all scope=private pure [returns string] ($col::string $repo::string)
+  [$strings:join [?for [in $f [$words $col]] [yield [$in-repo $f $repo]]] " "]]
+
 # ring-dir-ok: does this path sit in a directory that agrees with `ring`?
 # A path outside the ring-legible space agrees with every ring -- the split
 # does not reach it, and pretending otherwise would refuse core/codec.md.
@@ -131,9 +160,10 @@
                [where [$strings:contains $l "Integration map"]]
                [yield 1]]] 0]]
 
-# -- the self-test (RULED: COMP-1) --------------------------------------
-# One catch and one no-catch case for [integration map], over strings: it
-# touches no file, and the tree scan below does not run under `--self-test`.
+# -- the self-test (RULED: COMP-1, RS-12) -------------------------------
+# One catch and one no-catch case for [integration map], and the same pair for
+# the extracted-module prefix (RS-12) -- over strings: it touches no file, and
+# the tree scan below does not run under `--self-test`.
 [?if [$member "--self-test" [$env:argv]]
   [then
     [?let
@@ -145,7 +175,22 @@
       [= $f2 [?if [$has-integration-map $clean]
                [then ""]
                [else "FALSE POSITIVE: a page whose §2 heading IS the integration map"]]]
-      [= $failures [?for [in $x ($f1, $f2)] [where [not [= $x ""]]] [yield $x]]]
+      # [dep path] and the ring read beneath it. The catch is the shape an
+      # extraction actually produces by accident: the row gained `repo=` and
+      # the path columns were left as they were, which would make the tree
+      # look fine while the artifacts are nowhere.
+      [= $f3 [?if [$strings:starts-with "spec/03-approved/platform/sso.md"
+                    [$dep-prefix "cx-platform-sso"]]
+               [then "MISSED (should catch): a repo= row whose spec column is still the old in-tree path"]
+               [else ""]]]
+      [= $f4 [?if [= [$in-repo "deps/cx-platform-sso/conformance/platform/sso.cxd" "cx-platform-sso"]
+                     "conformance/platform/sso.cxd"]
+               [then ""]
+               [else "FALSE POSITIVE: a pinned-checkout path must read its ring from what follows deps/<repo>/"]]]
+      [= $f5 [?if [= [$in-repo "conformance/platform/store.cxd" ""] "conformance/platform/store.cxd"]
+               [then ""]
+               [else "FALSE POSITIVE: a row with no repo= is its own owner and its path is untouched"]]]
+      [= $failures [?for [in $x ($f1, $f2, $f3, $f4, $f5)] [where [not [= $x ""]]] [yield $x]]]
       [?if [> [$count $failures] 0]
         [then
           [?let [= $_bad [$io:write-line [$env:stderr]
@@ -154,7 +199,7 @@
             [$env:exit 1]]]
         [else
           [?let [= $_ok [$io:write-line [$env:stdout]
-                  "placement-gate self-test OK -- 1 catch + 1 no-catch case for [integration map] pass."]]
+                  "placement-gate self-test OK -- 1 catch + 1 no-catch case for [integration map], and 1 catch + 2 no-catch cases for [dep path] and the ring read beneath deps/<repo>/ (RS-12), pass."]]
             [$env:exit 0]]]]]]
   [else ""]]
 
@@ -223,6 +268,33 @@
           [= $half      [$string [?else $m@half "none"]]]
           [= $suite-ring [$string [?else $m@suite-ring ""]]]
           [= $ns-to     [$string [?else $m@ns-to ""]]]
+          # `repo=` -- the module is EXTRACTED (RULED: RS-7, RS-12): its
+          # artifacts are tracked in that repository and reach this tree only
+          # as the pinned checkout deps.cxd names. Three path columns then
+          # begin `deps/<repo>/`, and the RING of each is read from what
+          # follows, so the checks below mean the same thing they meant
+          # before the module left.
+          [= $repo      [$string [?else $m@repo ""]]]
+          [= $spec-r    [$in-repo-all $spec   $repo]]
+          [= $corpus-r  [$in-repo-all $corpus $repo]]
+
+          # -- [dep path]: a `repo=` row's paths are the pinned checkout's.
+          [= $v-dep-path
+            [?if [= $repo ""] [then ""]
+              [else
+                [?let [= $pre [$dep-prefix $repo]]
+                      [= $bad
+                        [$strings:join
+                          [?for [in $d ($spec, $corpus, $source)]
+                            [in $f [$words $d]]
+                            [where [not [$strings:starts-with $f $pre]]]
+                            [yield $f]]
+                          " "]]
+                  [?if [= $bad ""] [then ""]
+                    [else [$concat "  [dep path]       " $tag
+                             "  -- repo=" $repo " says the artifacts are in that repository;"
+                             " every path column then names the pinned checkout " $pre
+                             ", and these do not: " $bad]]]]]]]
 
           # -- [stale planned]: a row written AHEAD of its artifacts says so
           #    with `status=planned`, and its columns name where they will
@@ -311,7 +383,7 @@
           [= $v-spec-ring
             [?if [not [= $spec-to ""]] [then ""]
               [else [$strings:join
-                [?for [in $f [$words $spec]]
+                [?for [in $f [$words $spec-r]]
                   [where [not [$ring-dir-ok $f $ring]]]
                   [yield [$concat "  [spec ring]      " $tag "  -- ring=" $ring
                            ", but " $f " is in the other ring's directory"]]]
@@ -319,7 +391,7 @@
           [= $v-corpus-ring
             [?if [not [= $corpus-to ""]] [then ""]
               [else [$strings:join
-                [?for [in $f [$words $corpus]]
+                [?for [in $f [$words $corpus-r]]
                   [where [not [$ring-dir-ok $f $ring]]]
                   [yield [$concat "  [corpus ring]    " $tag "  -- ring=" $ring
                            ", but " $f " is in the other ring's directory"]]]
@@ -377,7 +449,7 @@
             [?for [in $p ($v-stale-planned, $v-corpus-none, $v-suite, $v-stale-suite,
                           $v-code-ring, $v-half-ring, $v-half-ring1,
                           $v-spec-ring, $v-corpus-ring, $v-dest,
-                          $v-stale-to, $v-stale-ns)]
+                          $v-stale-to, $v-stale-ns, $v-dep-path)]
               [where [not [= $p ""]]]
               [yield $p]]]
           [yield [$strings:join $parts "\n"]]]]
@@ -398,6 +470,13 @@
           [= $g3 [$string [?else $m@source "none"]]]
           [= $g4 [$string [?else $m@code "none"]]]
           [= $g5 [$string [?else $m@half "none"]]]
+          [= $repo [$string [?else $m@repo ""]]]
+          # An EXTRACTED module's artifacts arrive as the pinned checkout, so
+          # the absence has one cause and one cure and the line says both.
+          # This is the loud half of RS-12's transport: a `cx` built without
+          # `deps/` does not drop the module quietly, it stops here by name.
+          [= $why [?if [= $repo ""] [then ""]
+                    [else [$concat "  (repo=" $repo "; run `make deps-sync`)"]]]]
           [= $files
             [?for [in $g ($g1, $g2, $g3, $g4, $g5)]
               [yield [$strings:join [$words $g] " "]]]]
@@ -405,7 +484,7 @@
             [$strings:join
               [?for [in $f [$strings:split-whitespace [$strings:join $files " "]]]
                 [where [not [$io:exists $f]]]
-                [yield [$concat "  [missing]        " $name " (" $ns ")  -- " $f]]]
+                [yield [$concat "  [missing]        " $name " (" $ns ")  -- " $f $why]]]
               "\n"]]
           [where [not [= $hit ""]]]
           [yield $hit]]]
