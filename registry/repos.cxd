@@ -70,7 +70,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [repo name=cx-platform-mail group=platform ring=none ships=binary vmodule=mail pins='cx-platform-net' about='SMTP and IMAP, server and client cores, sasl']
   [repo name=cx-platform-identity group=platform ring=none ships=binary pins='cx-platform-store cx-platform-net' about='sessions, the XSP-AUTH handshake, principal mint, did:web']
   [repo name=cx-platform-store group=platform ring=none ships=binary vmodule=store pins='cx-core-code cx-platform-net' about='the storage engine, its substrates, journal/live/audit, ft, and the store server']
-  [repo name=cx-platform-db group=platform ring=none ships=binary vmodule=cxdb pins='cx-core-code' about='external database access: $sql-*, $redis-*, the drivers']
+  [repo name=cx-platform-db group=platform ring=none ships=binary vmodule=cxdb pins='cx-core-code' status=extracted at=1834c802b4da2c4e6cba362ceb790f46b392157d about='external database access: $sql-*, $redis-*, the drivers' why='EXTRACTED (RULED: RS-12, RS-8; #1591 item K3), a V product: the RS-24 vcx/cxdb/ split (module cxdb) already stood alone from vcx/platform/, so extraction moved it out whole -- the sql, redis and db rows of registry/modules.cxd now name their spec, corpus and code under deps/cx-platform-db/, and xap (its only in-tree consumer, per its own pins=) reaches the dispatch registration through the pin, not a tracked path. It has no [path] rules any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records']
   [repo name=cx-platform-fabric group=platform ring=none ships=binary pins='cx-platform-store cx-platform-identity' about='messaging and fabric-serve']
   [repo name=cx-platform-xap group=platform ring=none ships=binary vmodule=xap pins='cx-platform-net cx-platform-mail cx-platform-identity cx-platform-store cx-platform-db cx-platform-fabric' about='the application host, compose, dist, schema, market, the reference deployments']
   [repo name=cx-platform-flow group=platform ring=none ships=package status=extracted at=78ea045510278dee3b0a522ab7f168e42e020fab about='workflow; its CLI verbs stay in the binary' why='EXTRACTED (RULED: RS-12, RS-20, #1591 item 15), the second of them. Its [path] rules are retired because it owns no tracked path here any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records. What RS-20 kept in `cx` is claimed by rules of its own and not by this row: the `cx flow` verbs (vcx/cmd/flow*.v, repo=cx) and the flow-perform act seam (vcx/platform/coordination.v, repo=cx-platform-xap)']
@@ -224,14 +224,6 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='docs-src/canonical/cxstore/' repo=cx-platform-store]
   [path prefix='bench/rowset/' repo=cx-platform-store]
   [path prefix='bench/repr/' repo=cx-core-data why='the CXDM live-memory ratchet is a representation gauge']
-
-  [; ── platform: db (external engines) ──────────────────────────────── ]
-  [path prefix='vcx/cxdb/' repo=cx-platform-db why='db\'s V module, module cxdb (RULED: RS-24): the sql and redis dispatchers, the four drivers, the state-code table and sql_register.v, moved whole out of vcx/platform/. Spelled cxdb, not db, because vlib has a top-level db module that a vcx/db/ would shadow for the whole tree (the RS-24 branch\'s LETTER)']
-  [path exact='spec/03-approved/core/db_access.md' repo=cx-platform-db]
-  [path prefix='spec/03-approved/platform/store/sql.md' repo=cx-platform-db]
-  [path prefix='spec/03-approved/platform/store/redis.md' repo=cx-platform-db]
-  [path exact='spec/03-approved/modules/sqlite.md' repo=cx-platform-db]
-  [path exact='conformance/platform/db.cxd' repo=cx-platform-db]
 
   [; ── platform: net ─────────────────────────────────────────────────── ]
   [path prefix='vcx/cxnet/' repo=cx-platform-net why='net\'s V module, module cxnet (RULED: RS-24): sockets, the HTTP server and its h2 lane, serve-file, the service listener, the live-source walkers, and the HTTP/2 frame and HPACK codec store\'s gRPC edge shares (moved down from vcx/platform/store_grpc_*, net being the lower of its two consumers, D34a). Spelled cxnet, not net, because vlib has a top-level net module that a vcx/net/ would shadow for the whole tree and that a module named net could not import (the RS-24 branch\'s LETTER)']
