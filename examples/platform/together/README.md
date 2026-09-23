@@ -34,7 +34,9 @@ authenticated.
 ## Nothing is copied
 
 The flow document and the acts module are the ones in
-`examples/platform/flow/checkout/`, unchanged — this directory adds only its
+`examples/platform/flow/checkout/` of cx-platform-flow, read out of the checkout
+`deps.cxd` pins (`deps/cx-platform-flow/`, since the extraction — RULED: RS-12;
+`make deps-sync` first), unchanged — this directory adds only its
 own `--env` program, because a relative `[?lib]` path resolves against the
 working directory. The XAP instance is the one in
 `examples/platform/xap/storefront/`, unchanged. If either moves, this
