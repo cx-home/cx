@@ -187,7 +187,7 @@
           [yield $f]]]
 
         # 2. Code surfaces — must DERIVE from the build define.
-        [= $derive-fails [?for [in $p ('vcx/cx/cabi.v', 'vcx/cmd/main.v')]
+        [= $derive-fails [?for [in $p ('deps/cx-core-data/vcx/cx/cabi.v', 'vcx/cmd/main.v')]
           [where [not [$strings:contains [$io:read-file $p] "$d('cx_version'"]]]
           [yield [$concat $p ": release version must derive via $d('cx_version'…), not a hardcoded literal"]]]]
 

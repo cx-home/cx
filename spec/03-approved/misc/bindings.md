@@ -9,9 +9,9 @@ Layer 1. Layer 1 is the conformance contract; Layer 2 is opt-in sugar.
 
 In-scope bindings: V (native reference), Python, Go, Rust.
 
-Companion specs: [`core/abi.md`](../core/abi.md) (C ABI),
+Companion specs: [`core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) (C ABI),
 [`core/code.md`](../core/code.md) (program surface),
-[`misc/api.md`](api.md) (Document API),
+[`misc/api.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/misc/api.md) (Document API),
 [`misc/parity-matrix.md`](parity-matrix.md) (per-binding gates).
 
 ---
@@ -83,8 +83,8 @@ against every binding; drift on any fixture blocks the release.
 | `Doc.select_all(cxpath)` | sequence | CXPath path-value evaluation |
 | `Doc.select(cxpath)` | optional Node | First match of `select_all` |
 | `Doc.modify(focus, action)` | Doc | Pure-functional update per [`core/code.md §8.10`](../core/code.md) |
-| `Doc.diff(other)` | Doc | Structured semantic diff document (wraps `cx_diff`, see [`core/abi.md §2.17`](../core/abi.md)) |
-| `Doc.lint(ruleset=None)` | Doc | Structured diagnostics document (wraps `cx_lint`, see [`core/abi.md §2.18`](../core/abi.md)); `ruleset` is an optional `.cxs` Document for custom rules |
+| `Doc.diff(other)` | Doc | Structured semantic diff document (wraps `cx_diff`, see [`core/abi.md §2.17`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md)) |
+| `Doc.lint(ruleset=None)` | Doc | Structured diagnostics document (wraps `cx_lint`, see [`core/abi.md §2.18`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md)); `ruleset` is an optional `.cxs` Document for custom rules |
 | `Doc.find_first(name)` | optional Node | Name-only convenience (no CXPath parse); first match |
 | `Doc.find_all(name)` | sequence | Name-only convenience (no CXPath parse); all matches |
 | `Doc.root()` | Node | Root element |
@@ -99,7 +99,7 @@ against every binding; drift on any fixture blocks the release.
 above this set (typed projections, streaming helpers, etc.) but the
 19 above MUST be present with identical names and semantics. The
 in-place build-mode methods (`set_attr`, `append`, etc.) are
-specified in [`misc/api.md §4.1`](api.md).
+specified in [`misc/api.md §4.1`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/misc/api.md).
 
 ### 2.2 CXPath strings as selector vocabulary
 
@@ -169,7 +169,7 @@ All Layer 1 methods raise host-native exceptions on error carrying:
 
 - `code` — CX error code (`cx-err:CXERnnnn` per
   [`core/code.md §9`](../core/code.md) and
-  [`core/abi.md §2.16.1`](../core/abi.md))
+  [`core/abi.md §2.16.1`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md))
 - `message` — human-readable
 - `position` — file / line / column when applicable
 
@@ -332,7 +332,7 @@ blocks the release. Tracked in
 Bindings MUST call `cx_init()` once at module load (idempotent).
 Host-spawned threads MUST call `cx_thread_register()` before any
 other `cx_*` call. Full details in
-[`core/abi.md §1.5.5`](../core/abi.md); this spec defers to it.
+[`core/abi.md §1.5.5`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md); this spec defers to it.
 
 | Binding | `cx_init` site | `cx_thread_register` site |
 |---|---|---|
@@ -348,7 +348,7 @@ other `cx_*` call. Full details in
 Each binding tracks the parent CX version. `Cargo.toml`,
 `pyproject.toml`, `go.mod`, V version constant all read the current
 release version. ABI cap bits (from `cx_features()`, per
-[`core/abi.md §3`](../core/abi.md)) provide forward compatibility — a
+[`core/abi.md §3`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md)) provide forward compatibility — a
 Layer-1 binding can advertise that it understands cap bit N and fall
 back gracefully if a newer libcx adds cap bit N+1.
 
@@ -364,7 +364,7 @@ exposed across an IPC or HTTP boundary.
 ### 7.1 Producer / consumer obligations
 
 - A producer MUST emit one of the named formats in
-  [`core/conversions.md`](../core/conversions.md) (`cx`, `xml`, `json`,
+  [`core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) (`cx`, `xml`, `json`,
   `yaml`, `toml`, `csv`, `tsv`, `psv`, `md`) or one of the binary wire
   formats (`ast_bin`, `data_bin`, events).
 - A consumer MUST accept any format whose tag it advertises through its

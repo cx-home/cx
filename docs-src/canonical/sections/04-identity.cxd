@@ -14,10 +14,10 @@
        those bytes), and the **binary wire formats** (ast-bin for AST
        transfer, data-bin for value transfer). This section is the
        working reference; normative depth in
-       [`spec/03-approved/core/canonical.md`](../../spec/03-approved/core/canonical.md),
-       [`spec/03-approved/core/cxdm.md`](../../spec/03-approved/core/cxdm.md) §4,
-       [`spec/03-approved/core/ast-bin.md`](../../spec/03-approved/core/ast-bin.md), and
-       [`spec/03-approved/core/data-bin.md`](../../spec/03-approved/core/data-bin.md)."""]
+       [`spec/03-approved/core/canonical.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md),
+       [`spec/03-approved/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md) §4,
+       [`spec/03-approved/core/ast-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/ast-bin.md), and
+       [`spec/03-approved/core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md)."""]
 
   [child id=canonical n=4.1 title='Canonical bytes'
     [intro
@@ -25,7 +25,7 @@
          are equal. Canonical bytes are the unique serialization
          produced by `cx canonical` — the rules are summarized in
          [[canonical-strict]] and stated normatively in
-         [`spec/03-approved/core/canonical.md`](../../spec/03-approved/core/canonical.md)."""]
+         [`spec/03-approved/core/canonical.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md)."""]
 
     [body
       """Why this matters: every distributed-systems primitive in CX —
@@ -234,7 +234,7 @@
          for in-process and cross-process transfer of parsed documents
          without re-parsing — bindings ship the AST over the C ABI
          rather than re-tokenizing text. Full spec in
-         [`spec/03-approved/core/ast-bin.md`](../../spec/03-approved/core/ast-bin.md)."""]
+         [`spec/03-approved/core/ast-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/ast-bin.md)."""]
 
     [body
       """ast-bin is **not** the canonical form. Canonical bytes are CX
@@ -251,7 +251,7 @@
            capability-bit block, no varints, and no trailer — feature
            negotiation happens out-of-band via `cx_features` (see
            [[ast-bin-capabilities]]), not inside every buffer. Layout
-           per [`spec/03-approved/core/ast-bin.md`](../../spec/03-approved/core/ast-bin.md)
+           per [`spec/03-approved/core/ast-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/ast-bin.md)
            §1–§3:"""]
       [list
         [item """**Size header (4 bytes):** `u32` little-endian byte
@@ -284,7 +284,7 @@
            library does not advertise. When a newer libcx adds a
            feature, it claims a new bit; bits are never re-assigned
            (retired bits stay reserved). The full table per
-           [`spec/03-approved/core/abi.md`](../../spec/03-approved/core/abi.md) §3:"""]
+           [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) §3:"""]
       [table
         [tr [th 'bit'] [th 'capability']]
         [tr [td '0'] [td 'ABI core conversion symbols (always set)']]
@@ -362,7 +362,7 @@
          structure. Where ast-bin carries AST nodes (with name / kind /
          child pointers), data-bin carries values (scalars, arrays,
          maps, tables) with optional schema-driven tag omission. Spec:
-         [`spec/03-approved/core/data-bin.md`](../../spec/03-approved/core/data-bin.md)."""]
+         [`spec/03-approved/core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md)."""]
 
     [child id=data-bin-self-describing n=4.4.1 title='Self-describing mode'
       [body
@@ -379,7 +379,7 @@
            containers; `0x50`–`0x5F` map containers; `0x60`–`0x6F`
            table containers. Canonical writers select the narrowest
            integer tag that preserves the value. Full tag table in
-           [`spec/03-approved/core/data-bin.md`](../../spec/03-approved/core/data-bin.md) §3."""]]
+           [`spec/03-approved/core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md) §3."""]]
 
     [child id=data-bin-schema-driven n=4.4.2 title='Schema-driven mode (cap bit 24)'
       [body
@@ -405,7 +405,7 @@
       [body
         """Tables that exceed memory get a dedicated wire form —
            the chunked table, tag `0x63` per
-           [`spec/03-approved/core/data-bin.md`](../../spec/03-approved/core/data-bin.md)
+           [`spec/03-approved/core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md)
            §3.11. Layout:"""]
       [list
         [item """**Column specs, once:** column count, then per-column
@@ -430,7 +430,7 @@
       [body
         """A row-group body may be wrapped in compression (the `0x90`
            body tag, per
-           [`spec/03-approved/core/data-bin.md`](../../spec/03-approved/core/data-bin.md)
+           [`spec/03-approved/core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md)
            §3.12; capability bit 22). Exactly one codec is defined:
            **zstd v1** (codec-id `0x01`); readers reject any other
            codec id with error D005. The wrapper applies only at the
@@ -447,7 +447,7 @@
       """The `#name` sigil (see [[id]]) declares a semantic identity on
          an element; the `@name` sigil references it. Identities are
          document-scoped. Normative spec:
-         [`spec/03-approved/core/cxdm.md`](../../spec/03-approved/core/cxdm.md) §4."""]
+         [`spec/03-approved/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md) §4."""]
 
     [child id=id-scoping n=4.5.1 title='Document-unique scoping'
       [body
@@ -489,14 +489,14 @@
            attributes). The semantic JSON / YAML / TOML lanes emit an
            ordinary `id` field and a `{"$ref": "…"}` envelope — a
            one-way, human-readable projection per
-           [`spec/03-approved/core/conversions.md`](../../spec/03-approved/core/conversions.md)
+           [`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md)
            §1.1."""]]
 
     [child id=id-cross-format n=4.5.3 title='Identity preservation across projections'
       [body
         """Only CX and XML carry the ID/IDREF mechanism losslessly;
            the other lanes flatten it into plain fields
-           ([`spec/03-approved/core/conversions.md`](../../spec/03-approved/core/conversions.md) §1.1):"""]
+           ([`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §1.1):"""]
       [table
         [tr [th 'format'] [th 'ID encoding'] [th 'IDREF encoding'] [th 'round-trip']]
         [tr [td 'CX (canonical)'] [td '#name on the element'] [td '@name in value position; [ref @name] in body'] [td 'lossless']]
@@ -514,7 +514,7 @@
          Rust, V Doc) is a host-language value. **Who owns the memory?
          When does it get freed?** This section is the developer-facing
          answer; the normative contract is
-         [`spec/03-approved/core/abi.md`](../../spec/03-approved/core/abi.md) §1.4–§1.5."""]
+         [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) §1.4–§1.5."""]
 
     [child id=ffi-doc-lifetime n=4.6.1 title='Ownership across the C ABI'
       [body
@@ -582,7 +582,7 @@
            exports `cx_init()` (call once per process at start) and
            `cx_thread_register()` (call per thread before first
            libcx call from that thread). Per
-           [`spec/03-approved/core/abi.md`](../../spec/03-approved/core/abi.md) §1.5."""]
+           [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) §1.5."""]
       [body
         """**Bindings handle this automatically** at the FFI chokepoint
            — every Layer-1 method has a per-thread guard that
@@ -679,7 +679,7 @@
            36 advertises the PathNode wire format (ast_bin v8);
            cap bit 3 advertises symmetric AST
            round-trip. The full bit table is in
-           [`spec/03-approved/core/abi.md`](../../spec/03-approved/core/abi.md)
+           [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md)
            §3."""]]
 
     [child id=data-bin-quickref n=4.7.5 title='data-bin quick reference (CXCol v1)'
@@ -691,7 +691,7 @@
            self-describing (default), schema-driven (cap bit 24 —
            header flag bit 1, schema referenced by the SHA-256 of
            its strict canonical text), chunked tables
-           ([`spec/03-approved/core/data-bin.md`](../../spec/03-approved/core/data-bin.md)
+           ([`spec/03-approved/core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md)
            §3.11, cap bit 21), and page-compressed (zstd v1, cap
            bit 22). Chunk boundaries are part of the canonical
            bytes, so chunked output is byte-stable across writers

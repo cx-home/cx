@@ -167,6 +167,37 @@ else
   rc_ok=1
 fi
 
+
+# ── the PINNED layout (RULED: RS-7, RS-12): cx-core-data's modules live in
+#    deps/cx-core-data/vcx/, not vcx/. A second fake tree has them ONLY there:
+#    it is green clean, red when the pinned Ring 0 imports a sibling (the gate
+#    reads the pin, it does not skip a vcx/ directory that is no longer there),
+#    and red when a pinned module is in neither place. ──
+PFAKE="$(mktemp -d "${TMPDIR:-/tmp}/ring_gate_selftest_pin.XXXXXX")"
+trap 'rm -rf "$FAKE" "$PFAKE"' EXIT
+for d in code platform cxstore transport target testenv; do mkdir -p "$PFAKE/vcx/$d"; done
+for d in cx arrow cli cmd_data deps fixtures; do mkdir -p "$PFAKE/deps/cx-core-data/vcx/$d"; done
+if ! RING_GATE_ROOT="$PFAKE" bash "$GATE" >/dev/null 2>&1; then
+  echo "SELFTEST FAIL [pinned-clean]: the pinned-layout fake tree is not green."
+  rc_ok=1
+else
+  printf 'module cx\nimport code\n' > "$PFAKE/deps/cx-core-data/vcx/cx/selftest_pinned_probe.v"
+  if RING_GATE_ROOT="$PFAKE" bash "$GATE" >/dev/null 2>&1; then
+    echo "SELFTEST FAIL [pinned-ring0]: the gate did NOT flag a violation in the PINNED Ring 0 — it stopped reading cx."
+    rc_ok=1
+  else
+    echo "  ok — pinned-ring0 (gate went red on a violation in deps/cx-core-data/vcx/cx)"
+  fi
+  rm -f "$PFAKE/deps/cx-core-data/vcx/cx/selftest_pinned_probe.v"
+  rmdir "$PFAKE/deps/cx-core-data/vcx/cli"
+  if RING_GATE_ROOT="$PFAKE" bash "$GATE" >/dev/null 2>&1; then
+    echo "SELFTEST FAIL [pinned-absent]: a module in neither vcx/ nor the pin passed — a ring the gate cannot read must fail."
+    rc_ok=1
+  else
+    echo "  ok — pinned-absent (gate went red on a module in neither vcx/ nor the pin)"
+  fi
+fi
+
 if [ "$rc_ok" -ne 0 ]; then
   echo "ring_import_gate selftest: FAILED — see the live bypasses above."
   exit 1

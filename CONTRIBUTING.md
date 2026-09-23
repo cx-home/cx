@@ -288,7 +288,7 @@ In practice: when you add a new public function in a binding,
  bytes (binary AST, binary data, or a handle), and
 - you decode those bytes once. No second parser, no JSON detour.
 
-The C ABI surface is documented in [`spec/03-approved/core/abi.md`](spec/03-approved/core/abi.md). If
+The C ABI surface is documented in [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md). If
 you need an operation without a binary-bytes symbol yet, the right
 move is to add one at the V core, not to chain two text converters
 in the binding.
@@ -340,7 +340,7 @@ finding or implements a spec section, name it.
 - If you added a new public function: every binding has it, with the
  strategy declared.
 - If you added a new C ABI symbol: it's documented in
- [`spec/03-approved/core/abi.md`](spec/03-approved/core/abi.md) with input/output framing.
+ [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) with input/output framing.
 
 ---
 

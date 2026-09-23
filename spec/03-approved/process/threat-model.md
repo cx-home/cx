@@ -11,12 +11,12 @@ Vulnerability reports are handled via [`SECURITY.md`](../../../SECURITY.md).
 ### In scope
 
 - The V reference implementation (`vcx/`).
-- The C ABI surface (every `cx_*` symbol declared in [`../core/abi.md`](../core/abi.md)).
+- The C ABI surface (every `cx_*` symbol declared in [`../core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md)).
 - The CX CLI.
 - All language bindings under `lang/` and the native V binding at `lang/v/native/`.
-- The CXCol v1 binary wire format ([`../core/data-bin.md`](../core/data-bin.md)).
-- The binary AST wire format ([`../core/ast-bin.md`](../core/ast-bin.md)).
-- The streaming event protocol ([`../core/streaming.md`](../core/streaming.md)).
+- The CXCol v1 binary wire format ([`../core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md)).
+- The binary AST wire format ([`../core/ast-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/ast-bin.md)).
+- The streaming event protocol ([`../core/streaming.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/streaming.md)).
 
 ### Out of scope
 
@@ -50,7 +50,7 @@ CX reads files from an attacker-controlled source. CX is not yet hardened for th
 CX participates in three trust boundaries. Hardening at one does not automatically protect another.
 
 1. **Input parser boundary.** Bytes from an external source enter the CX parser via `cx_to_data_bin` / `cx_to_data_bin_with_len`, the `cx_*_to_ast_bin` family (`cx_xml_to_ast_bin`, `cx_json_to_ast_bin`, `cx_yaml_to_ast_bin`, `cx_toml_to_ast_bin`, `cx_md_to_ast_bin`, plus the symmetric `cx_ast_bin_to_*` emitters), `cx_events_open` / `cx_events_open_fd` for the streaming surface, the CLI entry points (`cx parse`, `cx eval`, `cx fmt`, `cx canonical`, `cx hash`, `cx validate`), or any binding's `loads` / `parse` / `parse_xml` / `parse_json` / etc. The parser converts those bytes to in-process AST or data structures.
-2. **C ABI boundary.** Every binding crosses the FFI boundary into `libcx`. Inputs are passed as `(pointer, length)` byte buffers; outputs return as framed `[u32 LE size][payload]` buffers per [`../core/abi.md`](../core/abi.md).
+2. **C ABI boundary.** Every binding crosses the FFI boundary into `libcx`. Inputs are passed as `(pointer, length)` byte buffers; outputs return as framed `[u32 LE size][payload]` buffers per [`../core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md).
 3. **Inclusion boundary.** When a CX document contains `[?cx include=PATH]`, the parser opens and parses an additional file. Path resolution is part of this boundary; semantics are normative in [`../core/code.md`](../core/code.md) §13.
 
 ## 4 — Threat actors and scenarios
@@ -65,7 +65,7 @@ Crafted input designed to consume disproportionate CPU or memory: deeply nested 
 
 Crafted input or a binding API invocation that triggers an out-of-bounds read or write across the C ABI boundary (e.g., a malformed CXCol payload with a length prefix that exceeds the available buffer).
 
-**Mitigation:** length-prefixed framing on every binary buffer; each binding deserializes once with explicit bounds checks per [`../core/abi.md`](../core/abi.md); the V core uses bounds-checked array access; binding codecs use the host language's safe deserialization primitives.
+**Mitigation:** length-prefixed framing on every binary buffer; each binding deserializes once with explicit bounds checks per [`../core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md); the V core uses bounds-checked array access; binding codecs use the host language's safe deserialization primitives.
 
 ### T3 — Confused-deputy via include-path traversal
 
@@ -77,13 +77,13 @@ An attacker crafts `[?cx include=../../../etc/passwd]` or `[?cx include=https://
 
 An attacker exploits a CX-to-target-format conversion to coerce a value (e.g., an integer expected, but a string slips through silently due to a format round-trip).
 
-**Mitigation:** type fidelity through CXCol v1 is the design north star ([`../core/data-bin.md`](../core/data-bin.md)). String-format round-trips are forbidden on hot paths; type-bearing values cross format boundaries through binary AST, not text. Consumer code that re-derives types from JSON-emitted strings is on the consumer.
+**Mitigation:** type fidelity through CXCol v1 is the design north star ([`../core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md)). String-format round-trips are forbidden on hot paths; type-bearing values cross format boundaries through binary AST, not text. Consumer code that re-derives types from JSON-emitted strings is on the consumer.
 
 ### T5 — Hash-collision / canonical-form bypass
 
 An attacker crafts two CX documents that hash to the same value despite differing in semantically meaningful content.
 
-**Mitigation:** `cx hash` is SHA-256 of strict canonical bytes ([`../core/canonical.md §1.2`](../core/canonical.md)). Strict canonical removes comments, expands anchors/aliases, resolves merges, normalises datetime offsets to UTC, and preserves attribute and map-key order from source (canonical does NOT sort — see [`../core/canonical.md §2.1`](../core/canonical.md)); the binary lane (`cx_to_data_bin`, [`../core/canonical.md §4`](../core/canonical.md)) is the compact alternative when both sides agree to use it. Two semantically distinct documents producing the same SHA-256 input is an attack on SHA-256, not on CX. Cross-binding determinism is enforced by [`governance.md`](governance.md) §2.3.
+**Mitigation:** `cx hash` is SHA-256 of strict canonical bytes ([`../core/canonical.md §1.2`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md)). Strict canonical removes comments, expands anchors/aliases, resolves merges, normalises datetime offsets to UTC, and preserves attribute and map-key order from source (canonical does NOT sort — see [`../core/canonical.md §2.1`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md)); the binary lane (`cx_to_data_bin`, [`../core/canonical.md §4`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md)) is the compact alternative when both sides agree to use it. Two semantically distinct documents producing the same SHA-256 input is an attack on SHA-256, not on CX. Cross-binding determinism is enforced by [`governance.md`](governance.md) §2.3.
 
 ### T6 — Supply-chain / artifact tampering
 
@@ -95,17 +95,17 @@ An attacker compromises a published `libcx` binary, a registry-published binding
 
 An attacker probes a CX-using service with malformed input designed to elicit error messages that leak file paths, environment state, or service internals.
 
-**Mitigation:** `libcx` error messages are bounded in length and include line/column numbers but no file paths or runtime state ([`../core/abi.md`](../core/abi.md)). Bindings format their own errors on top of the libcx string; binding-level error wrapping should not include caller-supplied paths in default messages. Consumer applications that re-export CX errors verbatim to an external surface should sanitize first.
+**Mitigation:** `libcx` error messages are bounded in length and include line/column numbers but no file paths or runtime state ([`../core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md)). Bindings format their own errors on top of the libcx string; binding-level error wrapping should not include caller-supplied paths in default messages. Consumer applications that re-export CX errors verbatim to an external surface should sanitize first.
 
 ### T8 — Streaming-API resource exhaustion
 
 An attacker uses the events streaming API (`cx_events_open` / `next` / `close`) to hold a long-lived parser handle and starve the host process of file descriptors or memory.
 
-**Mitigation:** handle lifecycle is documented in [`../core/streaming.md`](../core/streaming.md); consumers set per-handle limits (max events, max bytes consumed). Each handle owns a bounded internal buffer.
+**Mitigation:** handle lifecycle is documented in [`../core/streaming.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/streaming.md); consumers set per-handle limits (max events, max bytes consumed). Each handle owns a bounded internal buffer.
 
 ### T9 — ReDoS via regex functions
 
-The `cx-stdlib/re` module ([`../stdlib/re.md`](../stdlib/re.md)) — `re:matches`, `re:find`, `re:find-all`, `re:replace`, `re:replace-first`, `re:replace-fn`, `re:split` — plus the schema `[pattern …]` constraint ([`../core/schema.md`](../core/schema.md) §7.1, rule `S008`) accept caller-supplied regex patterns. PCRE/Perl-style engines run for minutes on catastrophic-backtracking patterns such as `(a+)+$`.
+The `cx-stdlib/re` module ([`../stdlib/re.md`](../stdlib/re.md)) — `re:matches`, `re:find`, `re:find-all`, `re:replace`, `re:replace-first`, `re:replace-fn`, `re:split` — plus the schema `[pattern …]` constraint ([`../core/schema.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/schema.md) §7.1, rule `S008`) accept caller-supplied regex patterns. PCRE/Perl-style engines run for minutes on catastrophic-backtracking patterns such as `(a+)+$`.
 
 **Mitigation:** all regex call sites route through the vendored RE2 engine inside `libcx`. Matching is **linear-time in the input length** with no exposure to backtracking explosion. The same engine backs `cx-stdlib/re` and the schema `[pattern …]` constraint, so cross-binding regex-flavour drift is also eliminated.
 
@@ -127,7 +127,7 @@ The streaming evaluator takes a host-supplied callback invoked once per emitted 
 
 **Mitigation:** the streaming evaluator inherits T10 + T11 budgets. The sink callback is documented as synchronous-best-effort; the core does not enforce a per-chunk timer. Consumers wrapping the streaming API for untrusted-network sinks MUST apply their own timeout.
 
-**Streaming-write surface (symmetric threats).** The streaming-write API (`cx_events_writer_open` / `_emit` / `_close` per [`../core/streaming.md`](../core/streaming.md) §3) has two adjacent threat shapes that share T12's caller-responsibility framing:
+**Streaming-write surface (symmetric threats).** The streaming-write API (`cx_events_writer_open` / `_emit` / `_close` per [`../core/streaming.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/streaming.md) §3) has two adjacent threat shapes that share T12's caller-responsibility framing:
 
 - *Malicious-sink amplification.* A writer pointed at an attacker-controlled sink may be coerced into emitting unbounded bytes by interleaving cheap directives in the source program. The T10 (call-depth) and T11 (sequence-length) budgets bound per-call work but not aggregate bytes-out; the host MUST apply a byte-budget around the writer handle and apply per-emit wall-clock timeouts as in the buffered streaming case above.
 - *Partial-write resource pinning.* A writer that observes an attacker-pinned sink holds its internal buffer plus the underlying file-descriptor / socket until close. `cx_events_writer_close` releases every owned resource (buffer, fd, allocator arena) deterministically. `W009` ("emit not supported for this event kind / target") is **fail-closed** — the writer raises and aborts the streaming session before any partial-write side-effect, so a malformed source program cannot leak bytes nor pin the handle past the first invalid emit.
@@ -161,21 +161,21 @@ Defenses present at the V core and inherited by every binding, each testable thr
 |---|---|---|
 | Recursion limit | configurable depth cap (default 64), enforced at parse and AST traversal | [`../core/code.md`](../core/code.md) |
 | Element / attribute count caps | configurable per-document and per-element | [`../core/code.md`](../core/code.md) |
-| Payload-size cap | per-allocation budget on binary decoders | [`../core/data-bin.md`](../core/data-bin.md) |
-| Varint validation | overlong / truncated varints rejected | [`../core/data-bin.md`](../core/data-bin.md) |
-| External-entity rejection | DOCTYPE parsed but inert; no entity expansion | [`../core/grammar.ebnf`](../formal/grammar.ebnf) |
+| Payload-size cap | per-allocation budget on binary decoders | [`../core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md) |
+| Varint validation | overlong / truncated varints rejected | [`../core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md) |
+| External-entity rejection | DOCTYPE parsed but inert; no entity expansion | [`../core/grammar.ebnf`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/formal/grammar.ebnf) |
 | XXE / billion-laughs immunity | follows from external-entity rejection | (by-construction) |
 | Include-resolution scoping | path-only, caller-supplied root, depth cap, absolute-path refusal | [`../core/code.md`](../core/code.md) §13 |
-| UTF-8 validation | invalid UTF-8 in any input is an error | [`../core/abi.md`](../core/abi.md) |
-| Bounds-checked deserialization | every binding's CXCol / AST decoder validates length prefixes before allocation | [`../core/abi.md`](../core/abi.md); [`governance.md`](governance.md) §1.2 |
-| Type-preservation across formats | CXCol v1 binary, no string-format round-trips on hot paths | [`../core/data-bin.md`](../core/data-bin.md) |
-| Canonical-form determinism | `cx canonical` byte-stable across runs and bindings | [`../core/canonical.md`](../core/canonical.md); [`governance.md`](governance.md) §2.3 |
+| UTF-8 validation | invalid UTF-8 in any input is an error | [`../core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) |
+| Bounds-checked deserialization | every binding's CXCol / AST decoder validates length prefixes before allocation | [`../core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md); [`governance.md`](governance.md) §1.2 |
+| Type-preservation across formats | CXCol v1 binary, no string-format round-trips on hot paths | [`../core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md) |
+| Canonical-form determinism | `cx canonical` byte-stable across runs and bindings | [`../core/canonical.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md); [`governance.md`](governance.md) §2.3 |
 | Linear-time regex | all regex call sites route through the vendored RE2 shim | [`../stdlib/re.md`](../stdlib/re.md) |
 | Function-recursion budget | evaluator enforces configurable call-depth cap (default 256) | [`../core/code.md`](../core/code.md) |
 | Sequence-length budget | evaluator enforces configurable sequence-length cap (default 1,000,000) | [`../core/code.md`](../core/code.md) |
 | Strict xs: constructors | `xs:integer` / `xs:double` / `xs:decimal` / etc. raise on unparseable string inputs | [`../core/code.md`](../core/code.md) |
 | Capability-based sandboxing | deny-by-default capability set; no ambient authority; a program may only narrow its set, never widen it; denial raises `CXER0271` | [`../core/security.md`](../core/security.md) |
-| Secret redaction | secret values redact at every serialization / log / error / debug boundary unless declassified (`secret-reveal`) | [`../core/cxdm.md`](../core/cxdm.md) §12 |
+| Secret redaction | secret values redact at every serialization / log / error / debug boundary unless declassified (`secret-reveal`) | [`../core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md) §12 |
 
 ## 6 — Known unhardened areas
 
@@ -185,8 +185,8 @@ Defenses present at the V core and inherited by every binding, each testable thr
 | Reproducible `libcx` builds | partial (consumer SHA-256 verification ships; build determinism is roadmap) |
 | Signed release artifacts | absent (1.0 milestone) |
 | Streaming-write per-chunk timer | absent — caller responsibility (T12) |
-| BOM / line-ending policy | **defined** — UTF-8 mandatory; UTF-8 BOM tolerated on parse and never emitted; LF / CRLF / CR all tolerated on parse; canonical emit produces LF only (per [`../core/conversions.md §0.4`](../core/conversions.md), [`../core/canonical.md §2.2`](../core/canonical.md), and [`../core/code.md §3.1`](../core/code.md)) |
-| Unicode normalization policy | **defined** — input bytes preserved; NFC applied only for duplicate-key comparison, never to stored strings (per [`../core/abi.md §1.7`](../core/abi.md)) |
+| BOM / line-ending policy | **defined** — UTF-8 mandatory; UTF-8 BOM tolerated on parse and never emitted; LF / CRLF / CR all tolerated on parse; canonical emit produces LF only (per [`../core/conversions.md §0.4`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md), [`../core/canonical.md §2.2`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md), and [`../core/code.md §3.1`](../core/code.md)) |
+| Unicode normalization policy | **defined** — input bytes preserved; NFC applied only for duplicate-key comparison, never to stored strings (per [`../core/abi.md §1.7`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md)) |
 | Hard sandboxing for the evaluator | **defined by composition** — the purity classifier (`pure` modifier on `[?def]` per [`../core/code.md §12.2`](../core/code.md), enforced against the closed builtin-purity table at [`../core/code.md §6.5.x`](../core/code.md)) refuses any reach into impure surfaces; `cx:eval` runs adversary-controlled program fragments under the five-mitigation sandbox at [`../modules/cx.md §3`](../stdlib/cx.md) (impurity refusal, context-map isolation, library-set non-widening, recursion-depth cap, and shared T10/T11/T9 budgets — see §10 and §11 of this document). A process-level hard sandbox (cgroup / seccomp / ulimit) remains the caller's responsibility for adversary-controlled inputs. |
 
 Each row is tracked in `ROADMAP.md` and moves to §5 as it closes.

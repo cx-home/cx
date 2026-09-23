@@ -440,7 +440,7 @@
     [child id=ts-shape n=8.4.1 title='Grammar shape'
       [body
         """The grammar (`grammar.js`) covers everything in
-           [`spec/03-approved/formal/grammar.ebnf`](../../spec/03-approved/formal/grammar.ebnf) at the
+           [`spec/03-approved/formal/grammar.ebnf`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/formal/grammar.ebnf) at the
            **structural** level: bracketed elements, attribute key=value
            pairs, scalar literals (string / int / float / bool / date /
            datetime / null), sigil-prefixed attributes (`#id`,
@@ -895,7 +895,7 @@
 
       [body
         """ABI capability bits the wasm advertises (per
-           [`spec/03-approved/core/abi.md`](../../spec/03-approved/core/abi.md) §3):"""]
+           [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) §3):"""]
 
       [list
         [item """**Bit 31** — `_cx_code_diagram` (Mermaid
