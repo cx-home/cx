@@ -296,13 +296,15 @@
    `sso`, `flow`, `smtp` or `imap`. A second list of where a module lives is
    free to disagree with the first, which is the whole defect OL-15 names.
    registry/modules.cxd is the ONE declaration; `make placement-gate` holds
-   the tree to it, and this page now reads the same row. #]
+   the tree to it, and this page now reads the same row. Since RS-1 the rows
+   carry two rings and a group, and the platform packs are the rows whose
+   `group=` is `platform` (a platform row is `ring=1 group=platform`). #]
 [?def ring2-packs scope=public impure [returns string] ()
   [?let [= $reg [$cx:parse [$io:read-file 'registry/modules.cxd']]]
     [$cat (' ',
       [$strings:join [?for [in $m $reg//module]
         [where [= [$string [?else $m@kind 'module']] 'module']]
-        [where [= [$string $m@ring] '2']]
+        [where [= [$string [?else $m@group '']] 'platform']]
         [yield [$string $m@name]]] ' '],
       ' ')]]]
 [# pack-ring answers a QUESTION ABOUT DATA, so it takes the data: the ring-2

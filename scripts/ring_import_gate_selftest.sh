@@ -29,6 +29,9 @@ trap 'rm -rf "$FAKE"' EXIT
 for d in cx code platform cxstore arrow transport cli cmd_data deps target fixtures testenv; do
   mkdir -p "$FAKE/vcx/$d"
 done
+# RS-24: one declared V product module, so the product lanes are probed too.
+mkdir -p "$FAKE/vcx/cxnet" "$FAKE/registry"
+printf '%s\n' "[repo-allocation [repo name=cx-platform-net vmodule=cxnet] [repo name=cx-platform-xap vmodule=platform]]" > "$FAKE/registry/repos.cxd"
 
 # probe <name> <relpath-under-fake-vcx> <content> — write into the FAKE tree,
 # expect the gate RED there, remove, expect the fake tree green again.
@@ -95,10 +98,56 @@ probe "cmd_data-platform-free" "cmd_data/selftest_cmddata_probe.v" \
   'module main
 import cxstore'
 
-# ── Ring 1 (code) importing Ring 2 (platform) ──
+# ── Ring 1 (code) importing the platform group (platform) ──
 probe "code-imports-platform" "code/selftest_code_probe.v" \
   'module code
 import platform'
+
+# ── RS-24: Ring 1 importing a split product module ──
+probe "code-imports-product" "code/selftest_code_product_probe.v" \
+  'module code
+import cxnet'
+
+# ── RS-24: a product module importing a non-platform sibling ──
+probe "product-imports-cli" "cxnet/selftest_product_probe.v" \
+  'module cxnet
+import cli'
+
+# ── RS-24: a product module importing the residue above it ──
+probe "product-imports-residue" "cxnet/selftest_residue_probe.v" \
+  'module cxnet
+import platform'
+
+# ── RS-1: the platform GROUP imports the rings and what its manifest declares
+#    (cxstore, arrow, transport) — nothing else. The profile-surface dirs are
+#    not in its graph ──
+probe "platform-group-undeclared" "platform/selftest_group_probe.v" \
+  'module platform
+import cli'
+
+# ── RS-1: the words. Two rings, data and code, and the platform group above
+#    them; "Ring 2" left the vocabulary, so a violation in vcx/platform is
+#    reported as the platform group's, and neither the refusal nor the live
+#    OK line names a Ring 2 ──
+printf '%s\n' 'module platform' 'import cmd_data' > "$FAKE/vcx/platform/selftest_words_probe.v"
+words_out="$(RING_GATE_ROOT="$FAKE" bash "$GATE" 2>&1 || true)"
+rm -f "$FAKE/vcx/platform/selftest_words_probe.v"
+live_out="$(bash "$GATE" 2>&1 || true)"
+words_ok=0
+case "$words_out" in
+  *"platform group"*) : ;;
+  *) echo "SELFTEST FAIL [group-words]: a vcx/platform violation is not reported as the platform group's (RULED: RS-1)"; words_ok=1 ;;
+esac
+case "$words_out$live_out" in
+  *Ring-2*|*"Ring 2"*|*Ring-3*|*"Ring 3"*)
+    echo "SELFTEST FAIL [ring-words]: the gate still names a Ring 2/Ring 3 — two rings, then groups (RULED: RS-1)"; words_ok=1 ;;
+esac
+if [ "$words_ok" -eq 0 ]; then
+  echo "  ok — group-words (a vcx/platform refusal names the platform group; no Ring 2/3 in the gate's words)"
+else
+  rc_ok=1
+fi
+
 
 # ── the PINNED layout (RULED: RS-7, RS-12): cx-core-data's modules live in
 #    deps/cx-core-data/vcx/, not vcx/. A second fake tree has them ONLY there:

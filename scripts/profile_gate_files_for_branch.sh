@@ -70,13 +70,14 @@ if printf '%s\n' "$CHANGED" | grep -qE '^(vcx/tests/runners/profile_gate/|vcx/te
 fi
 
 # (2b) the module map (#1587). One pass over registry/modules.cxd: for each
-# changed path under stdlib/, vcx/code/ or vcx/platform/, find the row whose
+# changed path under stdlib/, vcx/code/, vcx/platform/ or a split V product's
+# directory (vcx/cxnet/, vcx/mail/, vcx/cxdb/ -- RULED: RS-24), find the row whose
 # `source=`, `code=` or `half=` names it and take that row's `corpus=`
 # basename. A path under those trees that no row names is the ENGINE, and the
 # answer is ALL.
 REG=registry/modules.cxd
 MODSEL=''
-CANDIDATES=$(printf '%s\n' "$CHANGED" | grep -E '^(stdlib/.*\.cx|vcx/code/.*\.v|vcx/platform/.*\.v)$' || true)
+CANDIDATES=$(printf '%s\n' "$CHANGED" | grep -E '^(stdlib/.*\.cx|vcx/code/.*\.v|vcx/platform/.*\.v|vcx/cxnet/.*\.v|vcx/mail/.*\.v|vcx/cxdb/.*\.v)$' || true)
 if [ -n "$CANDIDATES" ]; then
   [ -r "$REG" ] || { echo ALL; exit 0; }
   for f in $CANDIDATES; do

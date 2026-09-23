@@ -13,3 +13,10 @@
 # these bodies, and any fix made to the umbrella since exists only there.
 # Restoring an original to regenerate is refused by name —
 # `scripts/consolidate_tests.sh audit <area>`.
+#
+# ── RS-24 (#1591, owner D28a), 2026-09-23: the serve_file_fastpath_test.v and
+# sql_test.v sections left this umbrella with their products for
+# vcx/cxnet/cxnet_test.v and vcx/cxdb/cxdb_test.v, in-module there (the first
+# byte-for-byte; the second with store_str, the store family's helper, spelled as
+# the cx.mk_string it wraps, since db does not pin store). The rows
+# above stay the history they are.
