@@ -4385,7 +4385,7 @@ fmt-sweep-timed: build-vcx
 # convention: `x/mcp-server.cx` and `x/ux-web.cx` were two of the eleven and
 # left this repository with the rest of x/. Not a formatter improvement — both
 # still decline, in cx-platform-agent and cx-platform-ux.
-#   SWEEP-FILES=285 FORMATTED=262 DECLINED=9 TREE-REFUSED=9 UNSTABLE=0 ERROR=5
+#   SWEEP-FILES=291 FORMATTED=268 DECLINED=9 TREE-REFUSED=9 UNSTABLE=0 ERROR=5
 #
 # DECLINED 34 -> 12 and TREE-REFUSED 17 -> 10, and both numbers below move to
 # the measurement in the same commit as the fix, which is what FMT-1 says a
