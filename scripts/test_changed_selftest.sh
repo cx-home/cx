@@ -29,6 +29,10 @@
 #                                                deleted-input case: the rows
 #                                                must not be pathname-expanded)
 #   G  a TEST_TARGETS entry with no row          check-selection-manifest FAILS
+#   J0 case J's wall-clock bound (#988's       the floor at idle, floor x a
+#      shape, on fake clocks)                    same-process reference probe's
+#                                                ratio under load, a fired bound
+#                                                re-probed once before believed
 #   M  a worktree whose third_party/* are        nothing is selected; a REAL
 #      SYMLINKS, gitlink unchanged (#1599)       gitlink move still runs the
 #                                                whole suite
@@ -237,6 +241,66 @@ else
 	bad I "$hd loop(s) still read from a here-document, a here-string or a process substitution — the bash 5.3 self-pipe stall (and `< <(…)` is a syntax error under `sh`, which is how every pipeline invokes this file)"
 fi
 
+# ── J0 — case J's wall-clock bound is CALIBRATED, never a bare constant ─────
+# J reads a WALL CLOCK, and a wall clock is load-blind: the post-merge run on
+# 684a12502 read J at 32 s against its 30 s bound at load ~50 while a dozen
+# agents built, and the same case took 11 s alone minutes later — nothing was
+# wrong with the selection. The tree already has the shape for a timing bound
+# under contention (scripts/gen_guide/playground/gen_examples.cx, #988):
+# measure the machine with a reference probe IN THE SAME PROCESS, derive the
+# bound from it, and re-measure before believing a bound that fired. This case
+# pins that shape on fake clocks, so it is exact and costs nothing:
+#
+#   j_bound P      = J_FLOOR_MS × P / J_PROBE_IDLE_MS, never below J_FLOOR_MS
+#                    (the floor is the IDLE bound J always had — never loosened)
+#   j_calibrated PROBE WORK
+#                  probe, bound, work; a work reading at or over its bound is
+#                  RE-PROBED ONCE and re-run once against the re-derived bound
+#                  — starved (re-probe slow, retry within) passes and says so;
+#                  slow (retry over its bound) fails; a failed work never
+#                  re-probes.
+j0_pop() {
+	j0_v=$(sed -n '1p' "$1")
+	sed '1d' "$1" > "$1.rest" && mv "$1.rest" "$1"
+	echo "$j0_v"
+}
+j0_probe() { j0_pop "$T/j0_probe"; }
+j0_work() { j0_pop "$T/j0_work"; }
+# j0_case NAME PROBES WORKS WANT-VERDICT WANT-REPROBES — PROBES/WORKS are
+# space-separated readings in call order; every one given must be consumed
+# (a re-probe that did not happen leaves one behind).
+j0_fails=""
+j0_case() {
+	printf '%s\n' $2 > "$T/j0_probe"
+	: > "$T/j0_work"
+	for j0_w in $3; do printf '%s\n' "$j0_w" | tr '/' ' ' >> "$T/j0_work"; done
+	j_calibrated j0_probe j0_work
+	j0_left=$(cat "$T/j0_probe" "$T/j0_work" | grep -c . || true)
+	if [ "${j_verdict:-}" != "$4" ] || [ "${j_reprobes:-}" != "$5" ] || [ "$j0_left" != 0 ]; then
+		j0_fails="$j0_fails [$1: verdict ${j_verdict:-none} reprobes ${j_reprobes:-none} unread $j0_left, want $4/$5/0]"
+	fi
+}
+if ! command -v j_bound > /dev/null 2>&1 || ! command -v j_calibrated > /dev/null 2>&1; then
+	bad J0 "no calibrated bound: j_bound / j_calibrated are not defined — case J reads a bare wall-clock constant"
+else
+	ji=$J_PROBE_IDLE_MS
+	[ "$(j_bound "$ji")" = "$J_FLOOR_MS" ] || j0_fails="$j0_fails [idle probe: bound $(j_bound "$ji"), want the floor $J_FLOOR_MS]"
+	[ "$(j_bound $((ji / 2)))" = "$J_FLOOR_MS" ] || j0_fails="$j0_fails [fast probe: bound $(j_bound $((ji / 2))), want the floor — never below it]"
+	[ "$(j_bound $((ji * 3)))" = $((J_FLOOR_MS * 3)) ] || j0_fails="$j0_fails [3x probe: bound $(j_bound $((ji * 3))), want $((J_FLOOR_MS * 3))]"
+	# readings: probe ms; work "rc/ms"
+	j0_case idle-pass    "$ji"                 "0/$((J_FLOOR_MS / 3))"                            ok      0
+	j0_case stretched    "$((ji * 2))"         "0/$((J_FLOOR_MS * 3 / 2))"                        ok      0
+	j0_case starved      "$ji $((ji * 2))"     "0/$((J_FLOOR_MS * 4 / 3)) 0/$((J_FLOOR_MS * 4 / 3))" starved 1
+	j0_case slow-at-idle "$ji $ji"             "0/$((J_FLOOR_MS * 4 / 3)) 0/$((J_FLOOR_MS * 4 / 3))" slow    1
+	j0_case at-bound     "$ji $ji"             "0/$J_FLOOR_MS 0/$J_FLOOR_MS"                      slow    1
+	j0_case failed       "$ji"                 "1/$((J_FLOOR_MS / 3))"                            failed  0
+	if [ -z "$j0_fails" ]; then
+		ok J0 "the bound is the floor at idle, floor x probe/idle under load, and a fired bound is re-probed once before it is believed"
+	else
+		bad J0 "the calibrated bound's shape:$j0_fails"
+	fi
+fi
+
 # ── J — a change set far larger than any pipe buffer runs to completion ─────
 # The time bound is the regression guard the shape guard cannot be: it runs the
 # REAL script, under the newest bash on this box, over a change set of ~200 KB.
@@ -397,4 +461,4 @@ if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "test_changed selftest: $cases/$cases (A x/ module; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop lane)"
+echo "test_changed selftest: $cases/$cases (A x/ module; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop lane)"
