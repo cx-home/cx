@@ -3042,6 +3042,8 @@ RETRY_REASON_CASE = case "$$rel" in \
 	    reason="\#1432 timing under load: test_retry_without_delay_does_not_suspend is a WALL-CLOCK control row (delay=0 must cost < 40 ms) and read 42 ms at load 190-218 while two pipelines built at -j; nothing in that head touched the retry path, and the bound is NOT loosened" ;; \
 	  vcx/tests/code_eval_fixtures_test.v|vcx/tests/code_eval_fixtures_shard_*_test.v) \
 	    reason="\#1432 early exit under load: the grader runs 20+ minutes over 4583 fixtures, and the failing run exited after 13.8 s with NO assertion while a parallel step relinked libcx.dylib/cx; the step's first line and its first failure now name the cx build identity, so a mid-run relink says so itself" ;; \
+	  vcx/tests/env_retention_test.v) \
+	    reason="\#1597 memory gauge under load: the bytes twelve connector loads retain over what two retain, read after forced collections, moves with the -gc e collection point under a -j storm (3.6 in the -j28 storm on 7ac722830, 98.4x in the storm on 684a12502, 0.05 idle); the 3.0 bound is NOT loosened" ;; \
 	  bench/repr/run.sh) \
 	    reason="\#1431 memory gauge under load: live-bytes/input-bytes moves with the -gc e collection point under a -j storm (read 8.941x against 8.35x at load ~300 on a LEDGER-ONLY head byte-identical to one that passed the same step four hours earlier; the retry passed)" ;; \
 	  *) \
@@ -3171,11 +3173,21 @@ CACHE_ESCAPE_PROBE = \
 # a `v test` step path but the script `repr-guard` runs, and a row naming a
 # script that moved would silently disable that class exactly as a stale test
 # path does. Every roster the tree has is bound by this one target.
+#
+# And every row DECLARES WHY (FIX-1, #1597): RETRY_REASON_CASE's default arm
+# still retries a row with no reason, loudly, but a loud line in a failed run's
+# log is found after the run failed. The post-merge run on 684a12502 printed
+# "NO REASON DECLARED" for env_retention_test.v, which had joined
+# SUITE_SERIAL_RETRY (5672a1d2e) without its row here. A roster row whose
+# reason is the default arm is refused BEFORE the suite runs, beside the
+# missing-file refusal.
 .PHONY: check-serial-retry-rosters
 check-serial-retry-rosters:
-	@missing=""; \
+	@missing=""; undeclared=""; \
 	for t in $(SUITE_SERIAL_RETRY) $(CODE_SERIAL_RETRY) $(GAUGE_SERIAL_RETRY); do \
 	  [ -f "$$t" ] || missing="$$missing $$t"; \
+	  rel=$$t; $(RETRY_REASON_CASE); \
+	  case "$$reason" in "NO REASON DECLARED"*) undeclared="$$undeclared $$t" ;; esac; \
 	done; \
 	if [ -n "$$missing" ]; then \
 	  echo "check-serial-retry-rosters: retry roster names file(s) that do not exist —"; \
@@ -3184,7 +3196,14 @@ check-serial-retry-rosters:
 	  echo "  fix the roster in Makefile (SUITE_SERIAL_RETRY / CODE_SERIAL_RETRY / GAUGE_SERIAL_RETRY)."; \
 	  exit 1; \
 	fi; \
-	echo "check-serial-retry-rosters OK — every retry-roster row names an existing step"
+	if [ -n "$$undeclared" ]; then \
+	  echo "check-serial-retry-rosters: retry roster row(s) with NO declared reason —"; \
+	  echo "  the retry would print 'NO REASON DECLARED' in a failed run's log:"; \
+	  for t in $$undeclared; do echo "    $$t"; done; \
+	  echo "  declare each in RETRY_REASON_CASE in the Makefile (the issue and the class)."; \
+	  exit 1; \
+	fi; \
+	echo "check-serial-retry-rosters OK — every retry-roster row names an existing step and declares its reason"
 
 # ── check-fixture-shard-manifest (#1448, RULED: 1448-a) ─────────────────────
 # The same shape, one level down. 1448-a partitions the module corpus —
