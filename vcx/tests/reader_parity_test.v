@@ -640,6 +640,9 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/check_xpath_parity_fixtures.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/compare_bench.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/compile_binding_api_fixtures.cx', .program, reason_1536},
+	// 22 -> 23: scripts/deps_cx_selftest.cx, #1643's bootstrap self-test -- the
+	// class's own shape, `[$process:run ("sh", "-c", $script)]` (RULED: RS-7).
+	AcceptedByOne{'scripts/deps_cx_selftest.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/fmt_corpus_sweep.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/gate_lock_selftest.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/gen_docs/primer_build.cx', .program, reason_1536},
