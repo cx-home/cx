@@ -19,7 +19,7 @@ RS-24 was answered on 2026-09-23 in session, as D28a, and its layout and rules i
 batch (D31a, D32a, D34a, D35a); D33b and D32a answer RS-18's two LETTERs, recorded under RS-18.
 RS-24 is recorded here by its implementing branch's first commit.
 
-## RS-13 — `authz` splits along the RS-6 line (owner: D14a)
+## RS-13 — `authz` splits along the store-auth design line (owner: D14a)
 
 `authz` is not Ring 1 whole: measured on `5bcf2afa9`, `stdlib_authz.v` reaches the journal at 20
 sites (the trust store binds and replays a journal handle) and names `SxConn` / `XapRuntime`. The

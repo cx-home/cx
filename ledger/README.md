@@ -683,7 +683,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `rs-1` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md) | RS-1…RS-12 — the multi-repo split of cx-private (owner, 2026-09-21; shape approved in session) |
 | `rs-12` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md) | RS-1…RS-12 — the multi-repo split of cx-private (owner, 2026-09-21; shape approved in session) |
 | `rs-13` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-13…RS-24 — the repo split's follow-up decisions (owner, 2026-09-22/23, in session on dev2) |
-| `rs-13` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-13 — `authz` splits along the RS-6 line (owner: D14a) |
+| `rs-13` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-13 — `authz` splits along the store-auth design line (owner: D14a) |
 | `rs-14` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-14 — did/vc's impure remainder gets modules named for what leaves (owner: D15b) |
 | `rs-15` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-15 — the xsp `auth-*` defs become `cx-platform/xsp-auth` (owner: D16a) |
 | `rs-16` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-16 — the `cx` binary grades a corpus file (owner: D13a) |
@@ -696,7 +696,6 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `rs-23` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-23 — the decision half gets a pure `open` over an in-memory trust store (owner: D25b) |
 | `rs-24` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-13…RS-24 — the repo split's follow-up decisions (owner, 2026-09-22/23, in session on dev2) |
 | `rs-24` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-24 — `vcx/platform` splits by product, one V module per V product (owner: D28a) |
-| `rs-6` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-13 — `authz` splits along the RS-6 line (owner: D14a) |
 | `run-1` | [rulings_2026_09_16_run_selection_run1.md](rulings_2026_09_16_run_selection_run1.md) | Owner decision 2026-09-16 ~05:05Z — the post-merge run tests what changed and what reads it (RULED: RUN-1) |
 | `run-2` | [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md) | Owner decisions 2026-09-19 ~04:45Z — a failed run reports every red class (RUN-2); the daily full union runs on an idle runner (RUN-3); an escalated branch runs the computed selection pre-merge (RUN-4); the run log carries step timing and the timings file (RUN-5); the two agents and their order (AGENTS-1); the budget step stays open until it measures (1562-a) |
 | `run-3` | [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md) | Owner decisions 2026-09-19 ~04:45Z — a failed run reports every red class (RUN-2); the daily full union runs on an idle runner (RUN-3); an escalated branch runs the computed selection pre-merge (RUN-4); the run log carries step timing and the timings file (RUN-5); the two agents and their order (AGENTS-1); the budget step stays open until it measures (1562-a) |
@@ -1249,6 +1248,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `rs-3` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
 | `rs-4` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md) |
 | `rs-5` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
+| `rs-6` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
 | `rs-7` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
 | `rs-8` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md) |
 | `rs-9` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md) |
@@ -1320,4 +1320,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*318 ledger pages; 672 ids declared, 383 cited only.*
+*318 ledger pages; 671 ids declared, 384 cited only.*
