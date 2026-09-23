@@ -48,7 +48,7 @@
     [suite-header suite=stdlib module=delta file='conformance/stdlib/delta.cxd']]]
 #]]
   [out-text [#
-[verdict]
+[verdict rows=3 suites=4 advisory=1]
 #]]
  ]
 
@@ -65,7 +65,7 @@
     [suite-header suite=stdlib module=alpha file='conformance/platform/alpha.cxd']]]
 #]]
   [out-text [#
-[verdict [refusal kind=drift module=alpha register=advisory suite=enforced file='conformance/platform/alpha.cxd']]
+[verdict rows=1 suites=1 advisory=0 [refusal kind=drift module=alpha register=advisory suite=enforced file='conformance/platform/alpha.cxd']]
 #]]
  ]
 
@@ -82,7 +82,7 @@
     [suite-header suite=stdlib module=alpha file='conformance/platform/alpha.cxd' gate=advisory reason='not built yet']]]
 #]]
   [out-text [#
-[verdict [refusal kind=drift module=alpha register=enforced suite=advisory file='conformance/platform/alpha.cxd']]
+[verdict rows=1 suites=1 advisory=1 [refusal kind=drift module=alpha register=enforced suite=advisory file='conformance/platform/alpha.cxd']]
 #]]
  ]
 
@@ -99,7 +99,7 @@
     [suite-header suite=stdlib module=alpha file='conformance/platform/alpha.cxd' gate=advisory reason='not built yet']]]
 #]]
   [out-text [#
-[verdict [refusal kind=reason-drift module=alpha file='conformance/platform/alpha.cxd']]
+[verdict rows=1 suites=1 advisory=1 [refusal kind=reason-drift module=alpha file='conformance/platform/alpha.cxd']]
 #]]
  ]
 
@@ -115,7 +115,7 @@
     [suite-header suite=stdlib module=alpha file='conformance/platform/alpha.cxd' gate=advisory reason='not built yet']]]
 #]]
   [out-text [#
-[verdict [refusal kind=unregistered module=alpha file='conformance/platform/alpha.cxd']]
+[verdict rows=0 suites=1 advisory=1 [refusal kind=unregistered module=alpha file='conformance/platform/alpha.cxd']]
 #]]
  ]
 
@@ -132,7 +132,7 @@
     [suite-header suite=stdlib module=alpha file='conformance/platform/alpha.cxd' gate=pending reason='later']]]
 #]]
   [out-text [#
-[verdict [refusal kind=bad-gate module=alpha file='conformance/platform/alpha.cxd' gate=pending]]
+[verdict rows=1 suites=1 advisory=0 [refusal kind=bad-gate module=alpha file='conformance/platform/alpha.cxd' gate=pending]]
 #]]
  ]
 
@@ -149,7 +149,7 @@
     [suite-header suite=stdlib module=alpha file='conformance/platform/alpha.cxd' gate=advisory]]]
 #]]
   [out-text [#
-[verdict [refusal kind=no-reason module=alpha file='conformance/platform/alpha.cxd']]
+[verdict rows=1 suites=1 advisory=1 [refusal kind=no-reason module=alpha file='conformance/platform/alpha.cxd']]
 #]]
  ]
 
@@ -169,7 +169,7 @@
     [suite-header suite=packages module=alpha file='packages/alpha/alpha.test.cxd' gate=advisory reason='a package frontier']]]
 #]]
   [out-text [#
-[verdict [refusal kind=drift module=alpha register=enforced suite=advisory file='packages/alpha/alpha.test.cxd']]
+[verdict rows=2 suites=2 advisory=2 [refusal kind=drift module=alpha register=enforced suite=advisory file='packages/alpha/alpha.test.cxd']]
 #]]
  ]
 
