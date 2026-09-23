@@ -78,6 +78,11 @@
 [?lib 'cx-stdlib/process' as=process]
 [?lib 'cx-stdlib/math'    as=math]
 [?lib 'cx-stdlib/strings' as=strings]
+[; The per-repository documentation fragments (RULED: RS-9) and the pin
+   document that says which repositories to look in (RULED: RS-7). Both are
+   spelled from the CHECKOUT ROOT — see #1604. ]
+[?lib './scripts/docs_fragment.cx' as=frag]
+[?lib './scripts/deps_pins.cx'     as=pins]
 
 [?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
 [?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
@@ -634,10 +639,23 @@
 [?const OUT-DIR "docs/llm"]
 
 # The three fold steps, each named so its body stays one shallow expression.
+# A docref carries EITHER a `template`, which this generator renders against
+# the conformance corpus, OR a `file`, which is a document another repository
+# already rendered at its own release and published in its fragment (RS-9).
+# `cx` copies a published document; it does not run another repository's
+# generator, and a fragment carrying a `template=` is refused by
+# scripts/docs_fragment.cx before it reaches here.
+[?def published scope=public [returns bool] ($d) [not [= [$string [?else $d@file ""]] ""]]]
+
 [?def add-source scope=public impure ($acc $d)
-  [?let [= $p [$path:join SRC-DIR [$string $d@template]]]
+  [?let [= $p [?if [$published $d]
+                [then [$string $d@file]]
+                [else [$path:join SRC-DIR [$string $d@template]]]]]
     [?if [not [$io:is-file $p]]
-      [then [$die [$concat "template not found: " $p]]]
+      [then [$die [?if [$published $d]
+                    [then [$concat "the fragment of " [$string $d@repo]
+                                   " declares " [$string $d@out] " and " $p " is not there"]]
+                    [else [$concat "template not found: " $p]]]]]
       [else [$map:put $acc [$string $d@id] [$io:read-file $p]]]]]]
 
 [?def add-replay scope=public impure ($acc $id $index $cxbin $tmpdir)
@@ -648,9 +666,16 @@
 
 [?def add-body scope=public impure ($acc $d $sources $index $replays $version $cxbin)
   [?let [= $id [$string $d@id]]
-    [$map:put $acc $id
-      [$expand [$map:get $sources $id] $index $replays $version $cxbin
-               [$concat SRC-DIR "/" [$string $d@template]]]]]]
+    [?if [$published $d]
+      [; A published document's bytes are what the producing repository's gate
+         rendered from ITS corpus at ITS release. Expanding them here would be
+         this repository rendering another's documents against a corpus it does
+         not have — "the docs of exactly the module versions it compiles in"
+         means these bytes, unchanged. ]
+      [then [$map:put $acc $id [$map:get $sources $id]]]
+      [else [$map:put $acc $id
+              [$expand [$map:get $sources $id] $index $replays $version $cxbin
+                       [$concat SRC-DIR "/" [$string $d@template]]]]]]]]
 
 [?def total-chars scope=public ($docs $bodies)
   [$fp:fold $docs 0
@@ -711,14 +736,59 @@
       [yield [?for [in $l [$strings:split-lines [$normalize [$raw-of $k]]]]
                [where [not [= [$strings:trim $l] ""]]]
                [yield [$strings:trim $l]]]]] [?fn ($x) $x]]]
-  [= $docs [?for [in $k $manifest/*]
+  [= $own-docs [?for [in $k $manifest/*]
       [where [= [?else [$name $k] ""] "output"]]
       [yield [docref id=[$string $k@id] out=[$string $k@out]
                      template=[$string $k@template] title=[$string $k@title]
+                     file="" repo=cx
                      section=[$string [?else $k@section 'reference']]
                      summary=[$strings:join [?for [in $s $k/*]
                        [where [= [?else [$name $s] ""] "summary"]]
                        [yield [$normalize [$raw-of $s]]]] ""]]]]]
+
+  [; ── the union (RULED: RS-9) ───────────────────────────────────────────
+     "The closed [output] list of docs-src/llm/manifest.cxd becomes the union
+     of per-repository doc manifests." deps.cxd names the repositories this
+     one pins; each may publish docs/llm/manifest-fragment.cxd beside the
+     Markdown it rendered at its own release. A pinned repository with NO
+     fragment is not an error — "nothing waits on the site", and the front
+     door indexes what WAS published rather than demanding publication. A
+     fragment that is there and does not conform is a hard failure, because a
+     site that lists some of a repository's documents and not others is worse
+     than one that lists none: the reader cannot tell which. ]
+  [= $pinned [?if [$io:is-file "deps.cxd"]
+               [then [?for [in $r [$pins:rows [$pins:read [$io:read-file "deps.cxd"]]]]
+                       [yield [$string $r@repo]]]]
+               [else ()]]]
+  [= $collected [$frag:collect $pinned "deps"]]
+  [= $refused [?for [in $r $collected/refused] [yield $r]]]
+  [= $_f1 [?if [$empty $refused] [then 0]
+            [else [$die [$concat "a pinned repository's documentation fragment does not conform:\n"
+                          [$strings:join [?for [in $r $refused] [in $l $r/line]
+                            [yield [$concat "  " [$string $r@repo] ": " [$string $l]]]] "\n"]]]]]]
+  [= $frag-docs [?for [in $f $collected/found] [in $e $f/entry]
+      [yield [docref id=[$string $e@id] out=[$string $e@out]
+                     template="" title=[$string $e@title]
+                     file=[$string $e@file] repo=[$string $e@repo]
+                     section=[$string $e@section]
+                     summary=[$string $e@summary]]]]]
+  [= $frag-file-refusals [?for [in $f $collected/found] [in $e $f/entry]
+                           [in $r [$frag:entry-refusals $e]] [yield $r]]]
+  [= $_f2 [?if [$empty $frag-file-refusals] [then 0]
+            [else [$die [$concat "a published document is not where its fragment says, or is not rendered:\n"
+                          [$strings:join [?for [in $r $frag-file-refusals]
+                            [yield [$concat "  " [$string $r@kind] " " [$string $r@id] ": " [$string $r@what]]]] "\n"]]]]]]
+  [= $docs [$cat-seqs ($own-docs, $frag-docs)]]
+  [= $collide [$frag:collisions
+                [?for [in $d $docs] [yield [$string $d@id]]]
+                [?for [in $d $docs] [yield [$string $d@out]]]]]
+  [= $_f3 [?if [$frag:ok $collide] [then 0]
+            [else [$die [$concat "the document union collides:\n"
+                          [$strings:join [?for [in $l [$frag:render $collide]] [yield [$concat "  " $l]]] "\n"]]]]]]
+  [= $_f4 [$say [$concat "primer_build: " [$string [$count $own-docs]] " own document(s), "
+                         [$string [$count $frag-docs]] " published by "
+                         [$string [$count [?for [in $f $collected/found] [yield 1]]]] " of "
+                         [$string [$count $pinned]] " pinned repositor(ies) (RULED: RS-9)"]]]
 
   [= $_s1 [?if [$empty $docs] [then [$die "manifest declares no [output] entries"]] [else 0]]]
   [= $_s2 [$check-sections $docs]]

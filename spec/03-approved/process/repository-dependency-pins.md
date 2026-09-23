@@ -199,7 +199,23 @@ absent path fails V's `$embed_file` by name. Loud twice, silent never.
 | `composed-drift` | a composed `<path>` whose bytes are not the bytes of `deps/<owner>/<path>` — a private fork of another repository's source, the class RS-7 built the transport to avoid |
 | `not-ignored` | a composed `<path>` git does not ignore. Once a module's source belongs to another repository its path here is a BUILD OUTPUT; the extraction commit that deletes the tracked source adds its path to `.gitignore`, and this refusal is what says so when it does not |
 
-### 6.3 Conformance
+### 6.3 The V half is per product, not per group (RULED: RS-24)
+
+§3.3's `--vpath` answers the V half and is unchanged by this section: each
+pinned repository's checkout is one `-path` search root, and a V repository's
+row carries a `v-fork`. RS-24 splits `vcx/platform/` into one V module per
+product (`vcx/<product>/`, `module <product>`), so what a `-path` root provides
+is that repository's **product module** — `net`, `store`, `identity`, `mail`,
+`db`, `fabric`, `xap`, `connector` — and never one shared `platform` module.
+The dependency direction between those modules is the pin table itself.
+
+The two halves are independent and stay so. A product's V module arrives
+through `-path`; its bundled CX source arrives through §6.1's composition. A
+repository can be pinned for one, the other, or both, and the composition's
+table above is about the CX half only: a module with `source=none` in
+`registry/modules.cxd` never appears in it.
+
+### 6.4 Conformance
 
 The table, its three states and its four document-level refusals are pinned by
 [`conformance/bundle_sources.cxd`](../../../conformance/bundle_sources.cxd),
