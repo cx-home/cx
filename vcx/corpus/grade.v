@@ -194,16 +194,46 @@ pub fn clamp_section(s string) string {
 
 // parse_fixtures_in parses a fixtures file at an arbitrary path (same format
 // as conformance/code.cxd). Used by the per-module stdlib shards, by the
-// package lane and by `cx corpus`.
+// package lane and by `cx corpus`. A case's `gate` is its own `gate=`, else
+// its suite element's (D49a — the loader resolves it).
 pub fn parse_fixtures_in(path string) []ParsedFixture {
+	return parse_suite_in(path).cases
+}
+
+// ParsedSuite is one corpus file as the grading core reads it: the cases, the
+// suite element's gate status (D49a, #1633; RULED: RS-27) and, when that
+// element carries a gate= this core cannot grade, the refusal naming it.
+pub struct ParsedSuite {
+pub:
+	gate    string // the [test-suite] element's gate= ('' = unset, enforced)
+	reason  string // its reason=
+	refusal string // '' = gradeable; else why the element's gate= is refused
+	cases   []ParsedFixture
+}
+
+// parse_suite_in reads a corpus file's suite element and cases. A suite's gate
+// status lives ON its element — `[test-suite … gate=advisory reason='…']` — so
+// it travels with the file into whatever repository carries it; the loader has
+// already folded it into every case that carries no `gate=` of its own.
+// conformance/gates.cxd is the DERIVED cx-wide register (`make
+// gates-manifest-gate` holds it equal to the elements), and this core does not
+// read its module rows: a file graded in a component repository and the same
+// file graded here must get the same verdict from the same bytes.
+pub fn parse_suite_in(path string) ParsedSuite {
 	if !os.exists(path) {
-		return []
+		return ParsedSuite{}
 	}
+	s := fixtures.load_suite(path)
 	mut out := []ParsedFixture{}
-	for c in fixtures.load_fixtures(path) {
+	for c in s.cases {
 		out << parsed_from(c)
 	}
-	return out
+	return ParsedSuite{
+		gate:    s.gate
+		reason:  s.reason
+		refusal: s.gate_refusal()
+		cases:   out
+	}
 }
 
 // ── The comparators ─────────────────────────────────────────────────────────
@@ -330,10 +360,14 @@ pub fn bless_refusal() string {
 // for the given suite PLUS the suite's default= tier (falling back to the
 // [gate-policy] default=). Toggle: 'enforced' failures block the gate;
 // 'advisory' failures are reported but do NOT block (spec-first frontier /
-// unimplemented). Resolution order (the manifest's own header, #721):
-//   per-case gate= > per-module entry > per-suite default > enforced
+// unimplemented). Resolution order (D49a, #1633 — was #721's per-module tier):
+//   per-case gate= > the [test-suite] element's gate= > per-suite default > enforced
 // A fixture that resolves to '' at every tier is enforced (deny-by-default,
-// mirroring the capability grant model).
+// mirroring the capability grant model). The module->gate map is the DERIVED
+// register's rows: the grading loop below does not consult it (the element is
+// the source, and `make gates-manifest-gate` holds the rows equal to it). The
+// package lane (vcx/tests/code_eval_fixtures_test.v) still takes it, behind
+// the element it reads first through the same loader.
 //
 // An ABSENT policy file is the empty policy — every case enforced. That is the
 // deny-by-default answer, and it is what a repository with no `gates.cxd` gets.
@@ -519,7 +553,11 @@ pub fn grade_files(opts Options, names []string) Outcome {
 	// "Presumably green" is what that issue objects to, so the lane STATES
 	// its coverage instead: which modules exercised the err channel, and how
 	// many cases each contributed.
-	module_gate, suite_default := load_gate_policy_at(opts.gates_path, opts.suite)
+	// D49a (#1633): a suite's status is its [test-suite] element's gate=, which
+	// the loader has already folded into each case that carries none of its
+	// own. The policy document contributes its suite default= only — its
+	// module rows are the DERIVED register, never a second source.
+	_, suite_default := load_gate_policy_at(opts.gates_path, opts.suite)
 	packs_off := if opts.skip_packs { excluded_packs() } else { []string{} }
 	mut adv_ids := map[string]bool{}
 	mut failures := []string{}
@@ -527,14 +565,23 @@ pub fn grade_files(opts Options, names []string) Outcome {
 	mut identity_reported := false
 	for fpath in names {
 		// the label a failure / coverage row carries: `flow.cxd`, not
-		// `platform/flow.cxd` — the gate policy in conformance/gates.cxd is
+		// `platform/flow.cxd` — the register in conformance/gates.cxd is
 		// keyed on the module basename, which #1427-c's move did not change.
 		fname := os.base(fpath)
 		// #1448: the per-module-file reading the partition is derived from.
 		fsw := time.new_stopwatch()
 		file_ran_at_entry := o.ran
 		full := if opts.corpus_root == '' { fpath } else { os.join_path(opts.corpus_root, fpath) }
-		cases := parse_fixtures_in(full)
+		ps := parse_suite_in(full)
+		// D49a: an element gate= this core cannot grade (pending, skip, a typo,
+		// advisory with no reason=) fails the FILE as an enforced failure —
+		// guessing what a pending suite means would grade something nobody
+		// asked for. `cx corpus` refuses the same file with exit 2 before here.
+		if ps.refusal != '' {
+			failures << '${fname}: REFUSED — ${ps.refusal}'
+			continue
+		}
+		cases := ps.cases
 		// #1515: the previous case's reading is flushed HERE rather than at
 		// each of the body's exits — the body `continue`s from a dozen places
 		// and V has no block-scoped defer.
@@ -572,12 +619,10 @@ pub fn grade_files(opts Options, names []string) Outcome {
 				}
 				continue
 			}
-			// effective gate: per-case > per-module > per-suite default (>
+			// effective gate: per-case > the suite element (both in f.gate, the
+			// loader resolves them — D49a) > the policy's suite default (>
 			// enforced when every tier is '').
-			mut eff_gate := if f.gate != '' { f.gate } else { module_gate[fname.all_before('.cxd')] }
-			if eff_gate == '' {
-				eff_gate = suite_default
-			}
+			eff_gate := if f.gate != '' { f.gate } else { suite_default }
 			if eff_gate == 'skip' || eff_gate == 'pending' {
 				if opts.record {
 					o.records << CaseRecord{
@@ -742,8 +787,8 @@ pub fn grade_files(opts Options, names []string) Outcome {
 			ms_line('file', fname, ' cases=${o.ran - file_ran_at_entry}', fsw)
 		}
 	}
-	// Partition failures by the per-module gate policy (conformance/gates.cxd):
-	// 'advisory' modules are the spec-first frontier (unimplemented) — reported
+	// Partition failures by the effective gate (the suite element, D49a):
+	// 'advisory' suites are the spec-first frontier (unimplemented) — reported
 	// but NOT blocking; everything else is enforced (deny-by-default).
 	for fl in failures {
 		if adv_ids[fl.all_before(': ')] {

@@ -110,7 +110,8 @@ done < <(awk '$1 == "#absorbed" || $1 == "#retired" { print $2 }' "$manifest")
 
 # The umbrella's home. Normally the lane every pending row shares; when an
 # area has no pending rows left (fully absorbed) that is unavailable, so
-# fall back to the three lane dirs the tree actually uses.
+# fall back to the lane dirs the tree actually uses (vcx/store/ since RS-24
+# moved the store's umbrellas with their product).
 if [ "${#pending[@]}" -ge 1 ]; then
   lane_dir="$(dirname "${pending[0]}")"
   for f in "${pending[@]}"; do
@@ -120,7 +121,7 @@ if [ "${#pending[@]}" -ge 1 ]; then
 else
   lane_dir=""
   umbrella=""
-  for d in vcx/tests vcx/code vcx/platform; do
+  for d in vcx/tests vcx/code vcx/platform vcx/store; do
     cand="${d}/${area}_umbrella_test.v"
     # git as well as the filesystem: an umbrella DELETED from the worktree
     # is exactly the state R4 exists to catch, and a filesystem-only lookup

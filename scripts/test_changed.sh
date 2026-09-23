@@ -128,11 +128,12 @@ printf '%s\n' "$CHANGED" | sed 's/^/  /'
 #   vcx/cxstore   <- cx
 #   vcx/code      Ring-1 <- cx
 #   vcx/arrow     <- cx        vcx/transport <- cx
-#   vcx/platform  Ring-2 <- cx code cxstore arrow transport cxnet mail cxdb
-#   vcx/cxnet, vcx/mail, vcx/cxdb   the V product modules split out of
-#                 vcx/platform (RULED: RS-24) <- cx code transport + their pins
+#   vcx/platform  Ring-2 <- cx code cxstore arrow transport cxnet mail cxdb store
+#   vcx/cxnet, vcx/mail, vcx/cxdb, vcx/store, vcx/xap   the V product modules split out
+#                 of vcx/platform (RULED: RS-24) <- cx code transport + their
+#                 pins; xap, which pins every one, also <- platform (the residue)
 #   vcx/cli, vcx/cmd_data      platform-free <- cx code cli cmd_data
-#   vcx/cmd       <- cli code cx platform
+#   vcx/cmd       <- cli code cx platform xap
 #
 # Every vcx/ subdir must be named by at least one row below. Narrowing the
 # old blanket `vcx/*` rows means a path named by NO row would skip every
@@ -150,16 +151,16 @@ RING0='vcx/cx/* deps.cxd'
 RING_STORE='vcx/cxstore/*'
 RING1='vcx/code/*'
 RING_LEAF='vcx/arrow/* vcx/transport/*'
-RING2='vcx/platform/* vcx/cxnet/* vcx/mail/* vcx/cxdb/*'
+RING2='vcx/platform/* vcx/cxnet/* vcx/mail/* vcx/cxdb/* vcx/store/* vcx/xap/*'
 RING_CLI='vcx/cli/* vcx/cmd_data/*'
 RING_CMD='vcx/cmd/*'
 RING_SUP='vcx/testenv/* vcx/fixtures/* vcx/corpus/* vcx/deps/* vcx/bench/* vcx/fuzz/* vcx/tools/* vcx/v.mod third_party/*'
 # The $embed_file estates + the version stamp: these reach the BYTES of every
-# built cx binary (vcx/Makefile BUILD_INPUT_DIRS names ../stdlib ../x
-# ../docs/llm ../VERSION), so a step that BUILDS OR DRIVES a binary depends on
+# built cx binary (vcx/Makefile BUILD_INPUT_DIRS names ../stdlib, the pinned
+# sources deps.cxd moves, ../docs/llm ../VERSION), so a step that BUILDS OR DRIVES a binary depends on
 # them even when no .v file moved. Previously the binary-driving steps carried
 # `vcx/*` and picked these up only by accident of also listing stdlib/x.
-RING_EMBED='stdlib/* x/* docs/llm/* VERSION'
+RING_EMBED='stdlib/* deps.cxd docs/llm/* VERSION'
 # libcx is built from platform/ (vcx/Makefile:222) — the TOP of the DAG — so
 # every binding/ABI/prod step legitimately depends on the whole closure. This
 # is the honest bound on ring selection: it narrows those steps away from
@@ -190,7 +191,7 @@ step_globs() {
     # cxstore imports cx only.
     test-vcx-cxstore)              echo "$RING0 $RING_STORE $RING_SUP" ;;
     # in-module tests for vcx/code + vcx/platform.
-    test-vcx-code)                 echo "$RING_LIB $RING_SUP conformance/* stdlib/* x/*" ;;
+    test-vcx-code)                 echo "$RING_LIB $RING_SUP conformance/* stdlib/* deps.cxd" ;;
     # vcx/tests/ is `module main` importing code + platform + cx + fixtures.
     test-vcx-suite)                echo "$RING_LIB vcx/tests/* $RING_SUP conformance/* $RING_EMBED" ;;
     # #1216: the serial wall-clock step — the binary-driving closure plus its own dir.
@@ -210,7 +211,7 @@ step_globs() {
     # change what the binary READS, not how long it takes to come up.
     test-vcx-timing)               echo 'vcx/cx/* vcx/code/* vcx/timing/* third_party/*' ;;
     # vcx/cmd compiles with -d cx_platform, so it carries the full closure.
-    test-vcx-cmd)                  echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP conformance/* stdlib/* x/*" ;;
+    test-vcx-cmd)                  echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP conformance/* stdlib/* deps.cxd" ;;
     # the conformance aggregates drive the built cx binary over the corpus.
     # #1598 — and they drive it through THREE runner programs: the recipe runs
     # `conform-all` and `conform-data-bin-arrow` out of
@@ -218,16 +219,16 @@ step_globs() {
     # `conform-diff`/`conform-lint` out of runners/diff_lint/ (vcx/Makefile).
     # A runner-only edit selected this step by nothing but the fail-safe arm of
     # the suite classifier, which is not a row and does not survive #1598.
-    test-vcx-conform)              echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP conformance/* stdlib/* x/* vcx/tests/runners/conformance/* vcx/tests/runners/fmt/* vcx/tests/runners/diff_lint/* vcx/tests/runners/streaming_write/*" ;;
+    test-vcx-conform)              echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP conformance/* stdlib/* deps.cxd vcx/tests/runners/conformance/* vcx/tests/runners/fmt/* vcx/tests/runners/diff_lint/* vcx/tests/runners/streaming_write/*" ;;
     # `test-vcx` is no longer a TEST_TARGETS row (it stays the human entry
     # point). The row is kept so an explicit `test-changed` over a tree whose
     # Makefile still names it cannot fall through to deny-by-default.
-    test-vcx)                      echo 'vcx/* stdlib/* x/* conformance/* third_party/*' ;;
-    test-vcx-columnar)             echo 'vcx/platform/store_columnar* vcx/platform/stdlib_store.v vcx/arrow/* third_party/*' ;;
+    test-vcx)                      echo 'vcx/* stdlib/* deps.cxd conformance/* third_party/*' ;;
+    test-vcx-columnar)             echo 'vcx/store/store_columnar* vcx/store/stdlib_store.v vcx/arrow/* third_party/*' ;;
     # the sqlite backend step (#989 wired it into TEST_TARGETS): the gated
     # store_sqlite_* suites plus the #220/#891 concurrent-writer + shared-open
     # stress, which drives the daemon dispatch path in stdlib_store.v.
-    test-vcx-sqlite)               echo 'vcx/platform/store_sqlite* vcx/platform/store_concurrent_writer_test.v vcx/platform/stdlib_store.v third_party/*' ;;
+    test-vcx-sqlite)               echo 'vcx/store/store_sqlite* vcx/store/store_concurrent_writer_test.v vcx/store/stdlib_store.v third_party/*' ;;
     check-no-legacy-try)           echo 'vcx/* conformance/* stdlib/* docs-src/*' ;;
     check-no-infix-range)          echo 'conformance/* stdlib/* docs-src/* examples/*' ;;
     check-no-cxl-token)            echo '*' ;;
@@ -238,14 +239,14 @@ step_globs() {
     check-docs-tier1-guardrail)    echo 'docs-src/* docs/* spec/*' ;;
     check-no-adr-citations)        echo '*' ;;
     check-no-stub-impl)            echo 'vcx/* registry/repos.cxd' ;;
-    check-xap-dist-absences)       echo 'vcx/* x/*' ;;
+    check-xap-dist-absences)       echo 'vcx/*' ;;
     check-completions-drift)       echo 'vcx/* tooling/*' ;;
     check-tmlanguage-sync)         echo 'tooling/*' ;;
     guide-check)                   echo 'docs-src/* vcx/* stdlib/*' ;;
     # #1412 — the RENDERER, not the doc graders. Its inputs are the generator
     # itself, the canonical sources it reads, and the two module tiers whose
     # pages it projects (x/ included: an x/ module gets its own page).
-    guide-render-gate)             echo 'scripts/gen_guide/* docs-src/* stdlib/* x/*' ;;
+    guide-render-gate)             echo 'scripts/gen_guide/* docs-src/* stdlib/*' ;;
     directive-docs-check)          echo 'vcx/* docs-src/* spec/*' ;;
     verify-doc-blocks)             echo 'docs-src/* spec/* vcx/* stdlib/*' ;;
     # examples/ is graded per landing now, not only at a release cut. The row
@@ -259,9 +260,9 @@ step_globs() {
     # move its output. VERSION too: the primer's heading derives from it. And the
     # documentation fragments of the pinned repositories (RULED: RS-9): the
     # contract module, the pin reader, and deps.cxd, which says which to read.
-    docs-check)                    echo 'docs-src/* docs/llm/* scripts/gen_docs/* scripts/docs_fragment.cx scripts/deps_pins.cx deps.cxd conformance/* spec/* stdlib/* x/* vcx/* VERSION' ;;
+    docs-check)                    echo 'docs-src/* docs/llm/* scripts/gen_docs/* scripts/docs_fragment.cx scripts/deps_pins.cx deps.cxd conformance/* spec/* stdlib/* vcx/* VERSION' ;;
     ring-import-gate)              echo 'vcx/* scripts/ring_import_gate* registry/repos.cxd' ;;
-    gates-manifest-gate)           echo 'conformance/* scripts/gates_manifest_gate*' ;;
+    gates-manifest-gate)           echo 'conformance/* packages/* scripts/gates_manifest_gate* scripts/gates_register*' ;;
     ring-tag-gate)                 echo 'conformance/* scripts/*' ;;
     cxer-registry-gate)            echo 'vcx/* spec/* scripts/cxer_registry*' ;;
     spec-freeze-gate)              echo '*' ;;
@@ -302,7 +303,7 @@ step_globs() {
     # CLI/cmd side, the embed estate beyond stdlib/, and the conformance files
     # no shard grades: a CSS byte in an x/ module and a docs/llm regeneration
     # grade nothing here, and they were selecting an 11-minute serial step.
-    test-profile-gate)             echo "$RING_LIB stdlib/* conformance/code.cxd conformance/stdlib/* conformance/platform/* conformance/x/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/runners/profile_gate/* vcx/tests/fixtures_grader/* scripts/profile_gate_files_for_branch.sh third_party/*" ;;
+    test-profile-gate)             echo "$RING_LIB stdlib/* conformance/code.cxd conformance/stdlib/* conformance/platform/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/runners/profile_gate/* vcx/tests/fixtures_grader/* scripts/profile_gate_files_for_branch.sh third_party/*" ;;
     # #1560 (RULED: VCOST-1): the selection self-test reads only the helper it
     # pins and its own source, so it runs when either moves and not otherwise.
     # #1598 adds the profile gate's runner directory: the helper's ALL rule is
@@ -330,12 +331,12 @@ step_globs() {
     # the placement declaration and every artifact class it compares against
     # (RULED: 1427-f) — a spec, a corpus, a bundled source or a ring's V
     # directory moving is exactly what this step exists to catch.
-    placement-gate)                echo 'registry/modules.cxd registry/repos.cxd scripts/placement_gate.cx spec/* conformance/* stdlib/* x/* vcx/code/* vcx/platform/* vcx/cxnet/* vcx/mail/* vcx/cxdb/*' ;;
+    placement-gate)                echo 'registry/modules.cxd registry/repos.cxd scripts/placement_gate.cx spec/* conformance/* stdlib/* deps.cxd vcx/code/* vcx/platform/* vcx/cxnet/* vcx/mail/* vcx/cxdb/* vcx/store/* vcx/xap/*' ;;
     repos-allocation-gate)         echo '*' ;;   # any added or removed file can change the allocation
     # RS-24: any vcx/ file can move an import or make a module directory; the
     # vlib listing (the V pin) decides what an import that is not vcx/'s names.
     product-import-gate)           echo 'registry/repos.cxd scripts/product_import_gate.cx vcx/* third_party/*' ;;
-    store-session-dep-gate)        echo 'scripts/store_session_dep_gate.cx vcx/platform/store_*.v vcx/platform/stdlib_session.v' ;;
+    store-session-dep-gate)        echo 'scripts/store_session_dep_gate.cx vcx/store/* vcx/platform/stdlib_session.v' ;;
     # the pin document, its format module, its grader and the spec page it
     # implements -- nothing else changes what the corpus asserts.
     test-deps-pins)                echo 'conformance/deps_pins.cxd scripts/check_deps_pins_fixtures.cx scripts/deps_pins.cx scripts/deps_sync.cx deps.cxd spec/03-approved/process/repository-dependency-pins.md' ;;
@@ -386,7 +387,7 @@ step_globs() {
     # without these two globs the dev loop would skip the step that says so.
     test-code-diagram)             echo "conformance/* $RING_LIB $RING_CLI $RING_CMD $RING_SUP $RING_EMBED scripts/check_code_diagram_fixtures.cx scripts/gen_guide/playground/playground.examples.js vcx/tests/testdata/code_diagram_golden/*" ;;
     # the oriel surface step drives spec/03-approved/xap/demos/oriel/
-    test-oriel-lane)               echo 'spec/03-approved/xap/demos/* vcx/* stdlib/* x/*' ;;
+    test-oriel-lane)               echo 'spec/03-approved/xap/demos/* vcx/* stdlib/* deps.cxd' ;;
     # #1403 — the ONLY step that puts the SSO stack on a socket. Its inputs are
     # every module and native file the relying-party path bottoms out in: a
     # change to oidc's request forming or saml's verification that nothing else
@@ -403,12 +404,14 @@ step_globs() {
     # `registry/modules.cxd` rides with it because that is where the pinned
     # paths the build reads are declared.
     test-sso-interop-lane)         echo 'deps.cxd registry/modules.cxd stdlib/oidc.cx stdlib/saml.cx stdlib/session.cx stdlib/crypto.cx stdlib/http.cx stdlib/net.cx vcx/code/stdlib_oidc.v vcx/code/stdlib_saml*.v vcx/platform/stdlib_session.v vcx/code/stdlib_crypto.v vcx/code/stdlib_http_notd_cx_no_pack_http_client.v vcx/code/net_core_notd_cx_no_pack_http_client.v' ;;
-    tools-export-gate)             echo 'conformance/tools-export/* vcx/* stdlib/*' ;;
+    tools-export-gate)             echo 'deps.cxd registry/modules.cxd vcx/* stdlib/*' ;;
+    # the four agent real-socket lanes, run from the pinned checkout (RS-12)
+    test-agent-real-lanes)         echo 'deps.cxd registry/modules.cxd vcx/* stdlib/*' ;;
     # the roster rows live in the Makefile and name files under vcx/
     check-serial-retry-rosters)    echo 'Makefile vcx/*' ;;
     # #1448: the partition guard reads the manifest, the corpus it partitions
     # and the shard test files it holds to it.
-    check-fixture-shard-manifest)  echo 'vcx/tests/fixtures_grader/fixture_shards.cxd conformance/stdlib/* conformance/platform/* conformance/x/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/code_eval_fixtures_shard_*_test.v scripts/check_fixture_shard_manifest.sh' ;;
+    check-fixture-shard-manifest)  echo 'vcx/tests/fixtures_grader/fixture_shards.cxd conformance/stdlib/* conformance/platform/* conformance/xap/* conformance/extended.cxd conformance/xml_codec.cxd vcx/tests/code_eval_fixtures_shard_*_test.v scripts/check_fixture_shard_manifest.sh' ;;
     # #1370: the shim archives' alignment — the rules that write them and the checker.
     check-shim-archives)           echo 'vcx/Makefile scripts/check_archive_alignment.sh vcx/deps/re2_shim/* vcx/arrow/shim/*' ;;
     # pure shell over canned logs — its only inputs are the classifier and the
@@ -533,12 +536,12 @@ step_globs() {
 # layer, _gate_evidence/, .github/, root prose) selects nothing.
 SUITE_DIR='vcx/tests'
 # The vcx/ directories that are V modules a test file can import.
-VCX_MODULES='cx code platform cxnet mail cxdb cxstore arrow transport cli cmd cmd_data corpus testenv fixtures timing tools bench fuzz'
+VCX_MODULES='cx code platform cxnet mail cxdb store xap cxstore arrow transport cli cmd cmd_data corpus testenv fixtures timing tools bench fuzz'
 # The directories the shipped `cx` and libcx compile from — testenv's edge,
 # because a test that runs the binary runs all of this.
 # `corpus` (#1634) is both: `cmd` links it for `cx corpus`, and the fixtures
 # grader imports it for the shards.
-BINARY_MODULES='cx code platform cxnet mail cxdb cxstore arrow transport cli cmd cmd_data corpus'
+BINARY_MODULES='cx code platform cxnet mail cxdb store xap cxstore arrow transport cli cmd cmd_data corpus'
 
 # vcx_module_of <import-name> — the vcx/ module directory it names, or nothing
 # when it is V's own stdlib (os, net, time, encoding.base64, x.json2, …). The V
@@ -769,11 +772,11 @@ suite_files() {
       # `tests` is not in VCX_MODULES.
       "$SUITE_DIR"/runners/*)
         ;;
-      stdlib/*.cx|x/*.cx|vcx/platform/stdlib_*.v|vcx/cxnet/stdlib_*.v|vcx/mail/stdlib_*.v|vcx/code/stdlib_*.v)
+      stdlib/*.cx|vcx/platform/stdlib_*.v|vcx/cxnet/stdlib_*.v|vcx/mail/stdlib_*.v|vcx/store/stdlib_*.v|vcx/xap/stdlib_*.v|vcx/code/stdlib_*.v)
         # the corpus side is already in `sel`; this is the NAME clause on top,
         # plus the ring rule for the two V spellings.
         case "$f" in
-          stdlib/*.cx|x/*.cx) m=${f##*/}; m=${m%.cx} ;;
+          stdlib/*.cx) m=${f##*/}; m=${m%.cx} ;;
           *) m=${f##*/stdlib_}; m=${m%.v}; m=${m%.c}; m=$(printf '%s' "$m" | tr '_' '-') ;;
         esac
         names=$(grep -lF -- "$m" "$SUITE_DIR"/*_test.v 2>/dev/null | tr '\n' ' ' || true)

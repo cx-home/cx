@@ -1361,7 +1361,7 @@ verb no route offers is a refusal, not a lint warning:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $f [feature name=shop version="1"
           [nouns [noun name=order [field name=id type=text]]]
@@ -1390,7 +1390,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $ctx {route: "/orders", feature: "orders", path: "/"}]
   [= $ok  [ux:region feature=orders path="/live"
@@ -1432,7 +1432,7 @@ then the notice tones:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [; R-A1 migration: envelope → spliced children (2026-08-25) ]
 [list [?splice [$ux:vocabulary]] [?splice [$ux:renderer-private-attrs]] [?splice [$ux:tones]]]
 ```
@@ -1448,7 +1448,7 @@ both the element and the attribute:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $bad ([ux:action verb=v label=x disabled=true reason="out"],
            [ux:aside label=Basket name=basket],
@@ -1475,7 +1475,7 @@ code:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $r [$ux:refusals-of [ux:action verb=v target="#x"]]]
   [= $f [$first $r]]
@@ -1497,7 +1497,7 @@ clause — *projects* onto one:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $src """
 [?def place-order scope=public impure [effects [write]] [returns element]
@@ -1520,7 +1520,7 @@ between the XAP layer and the UX layer:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $f [feature name=commerce
              [types [type 'did::text'] [type 'money::decimal' [min 0]]]
@@ -1541,7 +1541,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $f [feature name=commerce
              [types [type 'did::text'] [type 'money::decimal' [min 0]]]
@@ -1569,7 +1569,7 @@ projects a group, and a refusal keeps what the user typed:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $feature [$cx:parse "[feature name=shop [nouns [noun name=product [field name=sku type=text] [field name=name type=text]] [noun name=line [field name=sku type=product label='Product' doc='chosen, never typed'] [field name=qty type=int label='Qty']] [noun name=order [field name=customer type=text label='Customer'] [field name=lines type=line repeats=true add-label='Add a line']]] [verbs [verb name=place-order [summary 'Place an order.'] [intent [do :place-order [customer] [lines]]] [writes order]]]]"]]
   [= $opts {options: ([options for=product [option value=ESC-18 label="Escapement"] [option value=BAL-9 label="Balance wheel"]]),
@@ -1585,7 +1585,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $feature [$cx:parse "[feature name=shop [nouns [noun name=product [field name=sku type=text] [field name=name type=text]] [noun name=line [field name=sku type=product label='Product' doc='chosen, never typed'] [field name=qty type=int label='Qty']] [noun name=order [field name=customer type=text label='Customer'] [field name=lines type=line repeats=true add-label='Add a line']]] [verbs [verb name=place-order [summary 'Place an order.'] [intent [do :place-order [customer] [lines]]] [writes order]]]]"]]
   [= $opts {options: ([options for=product [option value=ESC-18 label="Escapement"] [option value=BAL-9 label="Balance wheel"]]),
@@ -1601,7 +1601,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $feature [$cx:parse "[feature name=shop [nouns [noun name=product [field name=sku type=text] [field name=name type=text]] [noun name=line [field name=sku type=product label='Product' doc='chosen, never typed'] [field name=qty type=int label='Qty']] [noun name=order [field name=customer type=text label='Customer'] [field name=lines type=line repeats=true add-label='Add a line']]] [verbs [verb name=place-order [summary 'Place an order.'] [intent [do :place-order [customer] [lines]]] [writes order]]]]"]]
   [= $opts {options: ([options for=product [option value=ESC-18 label="Escapement"] [option value=BAL-9 label="Balance wheel"]]),
@@ -1624,7 +1624,7 @@ theme, locale, actor, session and data are *content*, never identity:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let [= $f [$ux:frag "/orders/o-1041" "orders" "/open-orders/status"]]
   [list [$ux:frag-address $f] [$ux:frag-id $f]]]
 ```
@@ -1636,7 +1636,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let [= $a [$ux:frag "/orders" "orders" "/open"]]
       [= $b [$ux:frag "/orders" "orders" "/open"]]
       [= $c [$ux:frag "/orders" "orders-b" "/open"]]
@@ -1653,7 +1653,7 @@ and a reused address is a refusal rather than a silent disambiguation:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $t [ux:region feature=orders path="/live"
           [ux:card id=open [ux:heading level=2 "Open"]]
@@ -1671,7 +1671,7 @@ cx-25ff65bbcc985af2
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $ctx {route: "/o", feature: "f", path: "/"}]
   [= $dup [ux:region feature=f path="/r" [ux:card id=same [ux:text "a"]] [ux:card id=same [ux:text "b"]]]]
@@ -1690,7 +1690,7 @@ identity is never minted:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $rows ([order id=o-1 customer="Ada"], [order id=o-2 customer="Lin"])]
   [$ux:table $rows {id: "open"}]]
@@ -1708,8 +1708,8 @@ It is the sole author of those attributes, and the list is closed:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [; R-A1 migration: envelope → spliced children (2026-08-25) ]
 [list [?splice [$web:htmx-subset]] [$web:htmx-allowed "hx-post"] [$web:htmx-allowed "hx-on"] [$web:htmx-allowed "hx-boost"]]
 ```
@@ -1726,8 +1726,8 @@ still goes red:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [; R-A1 migration: envelope → spliced children (2026-08-25) ]
 [list [?splice [$web:off-subset-attrs "<div hx-post=\"/x\" hx-target=\"#y\"></div>"]]
       [?splice [$web:off-subset-attrs "<div hx-on=\"click: x\" hx-boost=\"true\"></div>"]]]
@@ -1743,8 +1743,8 @@ there is no interpolation surface to inject into:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [$web:render
   [ux:card [ux:text "R & D <team> \"quoted\""] [ux:field label="A & B" "<script>alert(1)</script>"]]
   {route: "/o", feature: "f", path: "/"}]
@@ -1757,8 +1757,8 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [; R-A1 migration: envelope → spliced children (2026-08-25) ]
 [list [?splice [$web:csp-violations "<div style=\"x\"></div>"]]
       [?splice [$web:csp-violations "<script>alert(1)</script>"]]
@@ -1779,8 +1779,8 @@ semantic tree named a selector:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [?let
   [= $ctx {route: "/orders", feature: "orders", path: "/", bind: [ux:render-ctx [swap default=outerHTML]]}]
   [$web:render
@@ -1798,8 +1798,8 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [$web:render
   [ux:table id=grid
     [ux:rows [ux:row key=r1 [ux:cell "a"]] [ux:row [ux:cell "b"]]]]
@@ -1816,8 +1816,8 @@ never from the tree:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [?let
   [= $rctx [ux:render-ctx
              [feed name=orders endpoint="/stream" event="orders-changed"]
@@ -1835,8 +1835,8 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [?let
   [= $rctx [ux:render-ctx
              [feed name=layout endpoint="/stream" event="layout-changed" region-refetch="/home/body"]
@@ -1859,8 +1859,8 @@ A projection failure never reaches a browser as content:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [; R-A1 migration: envelope → spliced children (2026-08-25) ]
 ([$web:render [ux:action verb=v target="#x"] {route: "/o", feature: "f", path: "/"}],
  [$web:render [ux:region feature=f path="/r" [ux:card id=d] [ux:card id=d]] {route: "/o", feature: "f", path: "/"}])
@@ -1876,8 +1876,8 @@ and both reaching a screen reader:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [?let
   [= $t [ux:form verb=place-order
           [ux:input name=customer label="Customer" error="who is this order for?"]
@@ -1895,8 +1895,8 @@ script involved anywhere:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [?let
   [= $rctx [ux:render-ctx
              [feed name=orders endpoint="/stream" event="orders-changed"]
@@ -1935,7 +1935,7 @@ it:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let [= $t [ux:card
                 [ux:heading level=2 "Open orders"]
                 [ux:field label="Customer" "Ada"]
@@ -1952,8 +1952,8 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [?let
   [= $t [ux:card [ux:heading level=2 "Open"] [ux:field label="Customer" "Ada"]
                  [ux:badge tone=warn "late"] [ux:action verb=place-order label="Go"]]]

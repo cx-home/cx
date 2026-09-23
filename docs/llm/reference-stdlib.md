@@ -8,20 +8,20 @@
 ## Importing
 
 `[?lib 'cx-stdlib/strings']` binds the module under its own name.
-`[?lib 'cx-stdlib/strings' as=str]` renames it. `[?lib 'cx-x/tools' as=tools]`
-imports from the experimental tier, and says so in the import line.
+`[?lib 'cx-stdlib/strings' as=str]` renames it.
 
-Three import prefixes:
+Two import prefixes:
 
 * **`cx-stdlib/…`** — the frozen standard set. Stable surface.
-* **`cx-x/…`** — experimental. Bundled and conformance-gated, but exempt from
-  the stability promise. If you are writing code meant to last, prefer the
-  standard tier.
 * **`cx-platform/…`** — the platform modules: the ones that serve, or reach
   a store or a protocol (`reference-platform.md`). The XAP orchestrator is one
   of them (`[?lib 'cx-platform/xap' :as xap]`), and so is fabric
   (`[?lib 'cx-platform/fabric']`); both had names of their own, `cx-xap` and
-  `cx-fabric`, which are retired and refuse naming the new spelling.
+  `cx-fabric`, which are retired and refuse naming the new spelling. So are the
+  eleven modules that were the `cx-x/<name>` experimental tier (`run`, `llm`,
+  `mcp`, `mcp-server`, `a2a`, `a2a-xap`, `adjudicate`, `tools`, `ux`, `ux-web`,
+  `ux-tui`): each imports as `cx-platform/<name>`, and the old spelling refuses
+  naming the new one.
 
 A call is `[$module:fn args…]`. The `$` is not optional stylistically — it is
 the assertion that this is a call rather than an element you are building
@@ -91,22 +91,6 @@ $ cx prog.cx
 | `ws` | The RFC 6455 WebSocket frame codec: octets and values in, octets and values out. |
 | `xsp` | The XAP Stream Protocol frame codec — a self-describing, self-delimiting frame [version · type · stream-id · principal-DID · flags · len · payload] that carries XAP over any transport. |
 | `zip` | Zip archive codec over the CX bytes scalar kind. |
-
-## Experimental tier — `cx-x/<name>`
-
-| Module | Scope |
-|---|---|
-| `a2a` | A minimal A2A (Agent-to-Agent) protocol client (EXPERIMENTAL x/ tier, #6    Y2) — completing the agentic triad (S9 MCP client, Y1 MCP server, Y2 A2A) on the    shared substrate (jsonrpc + http + json), no new transport. |
-| `a2a-xap` | A2A tasks over the xap substrate (EXPERIMENTAL x/ tier, #6 Y2b). |
-| `adjudicate` | Out-of-band agent adjudicator for the similar review band (EXPERIMENTAL    x/ tier; cx-private #376, similar.md §5.3 ruling Q4). |
-| `llm` | A minimal LLM provider (EXPERIMENTAL x/ tier, #6 D2/S10) — the first    Runnable. |
-| `mcp` | A minimal MCP (Model Context Protocol) client (EXPERIMENTAL x/ tier, #6    S9). |
-| `mcp-server` | Minimal MCP server helpers (EXPERIMENTAL x/ tier, #6 Y1; stream 18) — the    server counterpart to cx-x/mcp, at the 2025-06-18 protocol revision (one    target). |
-| `run` | The Runnable convention + combinator library (EXPERIMENTAL x/ tier, #6    D2/M2). |
-| `tools` | The agent-tool projection (EXPERIMENTAL x/ tier; stream 18): ONE    tool-descriptor model derived from command definitions ([effects]-bearing    [?def]s — clause presence is the discriminator) at list time, no    materialized manifest. |
-| `ux` | The SEMANTIC CORE of the UX projection (EXPERIMENTAL x/ tier;    #787): the vocabulary, the fragment addressing, the validation, the three    projections (command→form, query→table, feature-grammar→form/columns), the    hint claims, the patch algebra a live feed lowers onto, and the surface    document's routing correspondence. |
-| `ux-tui` | The TERMINAL RENDERER of the UX projection (EXPERIMENTAL x/ tier;    #787 W5): the second of two peers over `cx-x/ux`'s semantic vocabulary, and    the reason R5's renderer-agnostic claim is testable rather than asserted. |
-| `ux-web` | The WEB RENDERER of the UX projection (EXPERIMENTAL x/ tier;    #787): one of two peers over `cx-x/ux`'s semantic vocabulary, not the    privileged one. |
 
 ## The packs that need a capability
 

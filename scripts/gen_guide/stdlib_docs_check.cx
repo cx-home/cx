@@ -1,7 +1,7 @@
 # scripts/gen_guide/stdlib_docs_check.cx -- co-located stdlib doc freshness gate.
 #
 # Eat-our-own-dog-food: written entirely in CX, run under `cx eval`. It
-# guards the co-located documentation in stdlib/*.cx AND x/*.cx (stream 18,
+# guards the co-located documentation in stdlib/*.cx AND the pinned sources (stream 18,
 # L143 -- a description that becomes agent-facing tool contract cannot be
 # ungated) ([module-doc] / [fn-doc]) against drift from the implementation
 # and the conformance corpus. It enforces, for every bundled module:
@@ -150,7 +150,10 @@
   # the two halves can never be from different versions. A tree with no deps/
   # would simply not see the module here -- which is why `placement-gate` fails
   # loudly on the missing path rather than leaving that silence to this step.
-  [?let [= $bundle-files [?for [in $g ([$io:glob "stdlib/*.cx"], [$io:glob "x/*.cx"], [$io:glob "deps/*/stdlib/*.cx"])] [in $f $g] [yield $f]]]
+  # `deps/*/x/*.cx` is the same set again for the eleven modules the x/ tier
+  # graduated (RULED: RS-4, RS-1 -- D45a), which cx-platform-agent and
+  # cx-platform-ux keep at the `x/` path the tier laid them out at (RS-12).
+  [?let [= $bundle-files [?for [in $g ([$io:glob "stdlib/*.cx"], [$io:glob "deps/*/stdlib/*.cx"], [$io:glob "deps/*/x/*.cx"])] [in $f $g] [yield $f]]]
 
     # Every module this gate grades, as {name, text} — a file on disk and a
     # synthesized surface are the same thing to every check below, which is

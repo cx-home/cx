@@ -521,8 +521,7 @@ A def is a first-class value, usable wherever a function is:
 `cx-platform/…` is **the platform group** — the modules that serve, or that
 reach a store or a protocol. Both are bundled in the binary and both are
 frozen; the prefix tells you whether a line stays in Ring 1 or reaches the
-platform group. `cx-x/…` is the experimental tier
-and says so in the import line too. `as=` renames.
+platform group. `as=` renames.
 
 {{EXAMPLE:strings-001-upper block}}
 
@@ -772,15 +771,6 @@ visible in the import line.
 | Module | Scope |
 |---|---|
 {{MODULES:platform}}
-
-### Experimental tier — `[?lib 'cx-x/<name>']`
-
-Bundled and conformance-gated, but exempt from the stability promise. The
-import line says so out loud.
-
-| Module | Scope |
-|---|---|
-{{MODULES:x}}
 
 ### Five you will reach for immediately
 
