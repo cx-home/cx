@@ -2121,7 +2121,7 @@ ring-tag-gate: build-vcx
 	@FORMAT=count "$(CX_BIN)" --allow-read --allow-env --allow-write scripts/ring_query.cx >/dev/null && echo "ring-tag-gate OK — every suite header carries ring=, and every suite under a ring DIRECTORY agrees with it (RULED: 1427-c); steps queryable via 'make ring-query'"
 
 # Distribution-spec §9 checkable absences (fixture §11.8): the xap-dist engine
-# (vcx/code/stdlib_xap_dist.v) composes the store/did/vc/compose surfaces and
+# (vcx/xap/stdlib_xap_dist.v) composes the store/did/vc/compose surfaces and
 # ships NO parallel primitive — no own hashing, no archive format, no
 # transport, no second compose gate.
 .PHONY: check-xap-dist-absences
@@ -3326,7 +3326,7 @@ CODE_SERIAL_RETRY := vcx/platform/store_admin_plane_test.v \
 # directory is listed here — check-inmodule-test-roster refuses a declared
 # vmodule missing from the list — and a directory with no test yet costs
 # nothing: V reports "0 total" and exits 0.
-CODE_TEST_DIRS := vcx/code/ vcx/platform/ vcx/cxnet/ vcx/mail/ vcx/cxdb/
+CODE_TEST_DIRS := vcx/code/ vcx/platform/ vcx/cxnet/ vcx/mail/ vcx/cxdb/ vcx/xap/
 test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	@$(JS_CLOSE) log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
 	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(CODE_TEST_DIRS) 2>&1; echo $$? > $$stf; } | tee $$log; \

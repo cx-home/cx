@@ -29,9 +29,10 @@ trap 'rm -rf "$FAKE"' EXIT
 for d in cx code platform cxstore arrow transport cli cmd_data deps target fixtures testenv; do
   mkdir -p "$FAKE/vcx/$d"
 done
-# RS-24: one declared V product module, so the product lanes are probed too.
-mkdir -p "$FAKE/vcx/cxnet" "$FAKE/registry"
-printf '%s\n' "[repo-allocation [repo name=cx-platform-net vmodule=cxnet] [repo name=cx-platform-xap vmodule=platform]]" > "$FAKE/registry/repos.cxd"
+# RS-24: two declared V product modules -- a lower one (net) and xap, the one
+# above the residue since xap's split -- so the product lanes are probed too.
+mkdir -p "$FAKE/vcx/cxnet" "$FAKE/vcx/xap" "$FAKE/registry"
+printf '%s\n' "[repo-allocation [repo name=cx-platform-net vmodule=cxnet] [repo name=cx-platform-xap vmodule=xap]]" > "$FAKE/registry/repos.cxd"
 
 # probe <name> <relpath-under-fake-vcx> <content> — write into the FAKE tree,
 # expect the gate RED there, remove, expect the fake tree green again.
@@ -117,6 +118,24 @@ import cli'
 probe "product-imports-residue" "cxnet/selftest_residue_probe.v" \
   'module cxnet
 import platform'
+
+# ── RS-24, xap's split: a lower product or the residue importing xap ──
+probe "product-imports-xap" "cxnet/selftest_xap_probe.v" \
+  'module cxnet
+import xap'
+probe "residue-imports-xap" "platform/selftest_residue_xap_probe.v" \
+  'module platform
+import xap'
+
+# ── ...and xap importing the residue and a lower product stays GREEN ──
+printf '%s\n' 'module xap' 'import platform' 'import cxnet' > "$FAKE/vcx/xap/selftest_xap_down.v"
+if RING_GATE_ROOT="$FAKE" bash "$GATE" >/dev/null 2>&1; then
+  echo "  ok — xap-imports-residue (xap over the residue and a lower product is allowed)"
+else
+  echo "SELFTEST FAIL [xap-imports-residue]: the gate refused xap importing the residue it pins."
+  rc_ok=1
+fi
+rm -f "$FAKE/vcx/xap/selftest_xap_down.v"
 
 if [ "$rc_ok" -ne 0 ]; then
   echo "ring_import_gate selftest: FAILED — see the live bypasses above."

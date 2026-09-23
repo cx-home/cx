@@ -170,11 +170,22 @@ if [ -f "$ROOT/registry/repos.cxd" ]; then
   PRODUCTS="$( { grep -oE "vmodule=[a-z_][a-z0-9_]*" "$ROOT/registry/repos.cxd" || true; } | cut -d= -f2 | { grep -vx platform || true; } | LC_ALL=C sort -u | tr '\n' ' ')"
 fi
 
+# xap is the one product ABOVE the residue (RS-24, D31a: once xap's split
+# makes it vcx/xap/, what is left in vcx/platform is the products not yet
+# split, every one of which xap pins). So xap may import the residue, and
+# neither the residue nor any other product may import xap.
+BELOW=""
+for p in $PRODUCTS; do [ "$p" = xap ] || BELOW="$BELOW$p "; done
+
 # Ring 2 (vcx/platform, the residue): MAY import cx/code/cxstore/arrow/transport
-# and the product modules split out of it (RS-24).
-scan_ring "$VCX/platform" "Ring-2 (platform)" 0 $(deny_but cx code cxstore arrow transport platform $PRODUCTS)
+# and the product modules split out of it (RS-24) -- all but xap, above it.
+scan_ring "$VCX/platform" "Ring-2 (platform)" 0 $(deny_but cx code cxstore arrow transport platform $BELOW)
 for p in $PRODUCTS; do
-  scan_ring "$VCX/$p" "platform product ($p)" 0 $(deny_but cx code cxstore arrow transport $PRODUCTS)
+  if [ "$p" = xap ]; then
+    scan_ring "$VCX/$p" "platform product ($p)" 0 $(deny_but cx code cxstore arrow transport platform $PRODUCTS)
+  else
+    scan_ring "$VCX/$p" "platform product ($p)" 0 $(deny_but cx code cxstore arrow transport $BELOW)
+  fi
 done
 
 # Leaf siblings (vcx/arrow, vcx/transport): consumed FROM Ring 2; import cx
@@ -193,5 +204,5 @@ if [ "$fail" -ne 0 ]; then
   echo "ring_import_gate: FAILED — a ring module violates its §3 import contract."
   exit 1
 fi
-echo "ring_import_gate: OK — Ring-0 strict sink; cxstore Ring-0-only+evaluator-free; code→cx only; platform within cx/code/cxstore/arrow/transport + the product modules; each product (${PRODUCTS% }) within cx/code/cxstore/arrow/transport + the products; arrow/transport→cx only; cli/cmd_data platform-free"
+echo "ring_import_gate: OK — Ring-0 strict sink; cxstore Ring-0-only+evaluator-free; code→cx only; platform within cx/code/cxstore/arrow/transport + the product modules below xap; each product (${PRODUCTS% }) within cx/code/cxstore/arrow/transport + the products, xap alone also over the residue and none into xap; arrow/transport→cx only; cli/cmd_data platform-free"
 exit 0

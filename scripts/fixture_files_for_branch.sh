@@ -43,7 +43,8 @@
 #      covered it.
 #
 #  (3) The module corpus file of every module source the branch edits:
-#      vcx/platform/stdlib_<m>.v, vcx/platform/stdlib_<m>_*.v,
+#      vcx/platform/stdlib_<m>.v, vcx/platform/stdlib_<m>_*.v (and the same
+#      under a split product's vcx/cxnet/, vcx/mail/, vcx/xap/ -- RULED: RS-24),
 #      vcx/code/stdlib_<m>.v, stdlib/<m>.cx and x/<m>.cx. `<m>` is the V spelling with
 #      `_` read as `-`, resolved against the corpus BY NAME:
 #        * an exact `conformance/<ring>/<m>.cxd` (in any ring, and all of them
@@ -166,7 +167,7 @@ module_token() {
 		b=${1#x/}
 		echo "${b%.cx}"
 		;;
-	vcx/platform/stdlib_*.v | vcx/cxnet/stdlib_*.v | vcx/mail/stdlib_*.v | vcx/code/stdlib_*.v)
+	vcx/platform/stdlib_*.v | vcx/cxnet/stdlib_*.v | vcx/mail/stdlib_*.v | vcx/xap/stdlib_*.v | vcx/code/stdlib_*.v)
 		b=${1##*/stdlib_}
 		b=${b%.v}
 		b=${b%.c} # stdlib_iowatch_darwin.c.v

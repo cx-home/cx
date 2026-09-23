@@ -46,8 +46,11 @@
 [?let
   # vcx/code, vcx/platform and every V product directory registry/repos.cxd
   # declares (`vmodule=`, RULED: RS-24) -- a split product's prims are the same
-  # implementation surface they were inside vcx/platform.
+  # implementation surface they were inside vcx/platform. Since xap's split
+  # no row declares vcx/platform (it is the residue of the products not yet
+  # split), so it is named here for as long as it exists.
   [= $impl-dirs [$fp:flat-map ("vcx/code",
+                                [?if [$io:exists "vcx/platform"] [then ("vcx/platform")] [else ()]],
                                 [?for [in $x [$cx:parse [$io:read-file "registry/repos.cxd"]]//repo]
                                   [where [not [= [$string [?else $x@vmodule ""]] ""]]]
                                   [yield [$cat ("vcx/", [$string $x@vmodule])]]])
