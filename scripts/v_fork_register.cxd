@@ -185,4 +185,7 @@
   [patch sha=9aecd458eb559a037b721734032e97da1ba959c4 family=checker]
   [patch sha=115487c7a4b8bb3b37f4dcdfb545312d7e47004e family=vgc]
   [patch sha=d51c31ccb2d49b2117215aee11ac38ef520e1ece family=net]
+  [patch sha=c9b2631179382af2ec128fde672e39627f028688 family=vgc issue='cx-private#1605']
+  [patch sha=4265e03b24a89c92b4ceec755dae7b4f6ece0904 family=vgc issue='cx-private#1605']
+  [patch sha=501ce6e5f92643eb909adc3f7a7b4c2d1adaeeec family=vgc issue='cx-private#1605']
 ]
