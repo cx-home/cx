@@ -1823,11 +1823,13 @@ imports a Ring-2 one.
 
 | Module | Scope |
 |---|---|
+| `authz` | The XAP authority model as data plus a single decision function. |
 | `bus` | In-process publish/subscribe that delivers each published message to its matching subscribers synchronously and in a defined order. |
 | `bytes` | Byte-level operations on the CX bytes scalar kind. |
 | `crypto` | Operations involving a key, a secret, or authentication. |
 | `csv` | Parse and emit CSV/TSV following RFC 4180 with Excel-pragmatic extensions. |
 | `diagram` | The §10.1.2 reference diagram renderer as a pure CX program (RULED #758, DR-1…DR-11). |
+| `did` | Decentralized identifiers (DIDs): the decentralized identity source that identifies a principal, counterpart to crypto's centralized JWT/JWKS. |
 | `email` | Parse and build RFC 5322 + MIME multipart email messages. |
 | `env` | Expose process-level metadata to CX code: environment variables, command-line arguments, and process identity. |
 | `format` | Emit CX values back to CX text in four forms: canonical, pretty, compact, and diff-friendly. |
@@ -1866,7 +1868,9 @@ imports a Ring-2 one.
 | `url` | RFC 3986 and WHATWG-URL-aligned URL parsing, building, and component encoding. |
 | `uuid` | Generate, parse, format, and validate Universally Unique Identifiers. |
 | `validate` | Validate a CX data record against a record-schema at runtime, in the    JSON-Schema / pydantic style. |
+| `vc` | Verifiable credentials: portable, signed, attenuating delegations that carry authority between DIDs and verify offline (the §22.2 delegation transport, counterpart to `did` for identity). |
 | `ws` | The RFC 6455 WebSocket frame codec: octets and values in, octets and values out. |
+| `xsp` | The XAP Stream Protocol frame codec — a self-describing, self-delimiting frame [version · type · stream-id · principal-DID · flags · len · payload] that carries XAP over any transport. |
 | `zip` | Zip archive codec over the CX bytes scalar kind. |
 
 ### Standard tier, Ring 2 — `[?lib 'cx-platform/<name>']`
@@ -1878,9 +1882,9 @@ visible in the import line.
 | Module | Scope |
 |---|---|
 | `audit` | The audit sink: the one durable, attributed, append-only, queryable record of what the platform did, who asked, under whose authority, on what, and what was decided. |
-| `authz` | The XAP authority model as data plus a single decision function. |
+| `authz-store` | The durable half of the XAP authority model: the trust store itself. |
 | `connector` | The connector kit: one engine every connector feature runs on, and the vocabulary that declaration is written in. |
-| `did` | Decentralized identifiers (DIDs): the decentralized identity source that identifies a principal, counterpart to crypto's centralized JWT/JWKS. |
+| `did-web` | Resolving a did:web — the one DID method whose document is not derivable from the identifier and has to be fetched. |
 | `flow` | General workflow on the saga substrate: flows as documents, runs as journaled records, and a runner that is a pure function rather than an engine. |
 | `http` | The HTTP/1.1 SERVER: an event-loop accept/respond surface over the `cx-platform/net` transport, with Server-Sent Events streaming for held-open push. |
 | `imap` | Both halves of IMAP4rev2 (RFC 9051) on one token grammar: the client an agent or a human client reads a mailbox with, and the server core a CX process serves a mailbox from. |
@@ -1891,8 +1895,8 @@ visible in the import line.
 | `smtp` | Both halves of ESMTP on one wire grammar: the submission client a CX program sends mail with (RFC 6409) and the receive server core it accepts mail with (RFC 5321 §4). |
 | `sso` | The enterprise-SSO deployment surface: the half of enterprise single sign-on that RECEIVES a request. |
 | `store` | A content-addressed object store with URL-dispatched backends. |
-| `vc` | Verifiable credentials: portable, signed, attenuating delegations that carry authority between DIDs and verify offline (the §22.2 delegation transport, counterpart to `did` for identity). |
-| `xsp` | The XAP Stream Protocol frame codec — a self-describing, self-delimiting frame [version · type · stream-id · principal-DID · flags · len · payload] that carries XAP over any transport. |
+| `vc-revocation` | The durable half of credential lifecycle: recording that a verifiable credential is revoked, and reading back the set of revoked ids. |
+| `xsp-auth` | The XSP-AUTH mutual proof-of-control handshake calculus — SIGMA-style signed ephemeral X25519 over four messages riding ordinary XSP v1 frames on stream 0, with the per-request possession proof and the rotation-continuity proof beside it. |
 
 ### Experimental tier — `[?lib 'cx-x/<name>']`
 

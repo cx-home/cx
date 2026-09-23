@@ -674,9 +674,10 @@ names the chain it travelled:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/authz']
-[?let [= $az [$authz:store {tenant: 'acme'}]]
-  [= $d [$authz:delegate $az
+[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz-store']
+[?let [= $az [$authz-store:store {tenant: 'acme'}]]
+  [= $d [$authz-store:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
       [capabilities [refund-duplicate]] [over '/orders'] [assurance :t1] [signature sig-dana]]]]
   [$authz:check $az [authz-request [actor [agent ops-1]] [capability refund-duplicate] [slice '/orders/9'] [tenant acme]]]]
@@ -694,8 +695,9 @@ expired:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/authz']
-[?let [= $az [$authz:store {tenant: 'acme'}]]
+[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz-store']
+[?let [= $az [$authz-store:store {tenant: 'acme'}]]
   [$authz:check $az [authz-request [actor [agent ghost]] [capability refund-duplicate] [slice '/orders/9'] [tenant acme]]]]
 ```
 
@@ -706,9 +708,10 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/authz']
-[?let [= $az [$authz:store {tenant: 'acme'}]]
-  [= $d [$authz:delegate $az
+[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz-store']
+[?let [= $az [$authz-store:store {tenant: 'acme'}]]
+  [= $d [$authz-store:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
       [capabilities [refund-duplicate]] [over '/orders'] [assurance :t1] [signature s]]]]
   [$authz:check $az [authz-request [actor [agent ops-1]] [capability refund-duplicate] [slice '/payments/9'] [tenant acme]]]]
@@ -721,9 +724,10 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/authz']
-[?let [= $az [$authz:store {tenant: 'acme'}]]
-  [= $d [$authz:delegate $az
+[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz-store']
+[?let [= $az [$authz-store:store {tenant: 'acme'}]]
+  [= $d [$authz-store:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
       [capabilities [refund]] [over '/orders'] [until 1700000000] [assurance :t1] [signature s]]]]
   [$authz:check $az [authz-request [actor [agent ops-1]] [capability refund] [slice '/orders/9'] [tenant acme] [as-of 1800000000]]]]
@@ -1015,9 +1019,10 @@ failing link** rather than reporting a bare denial:
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/authz']
-[?let [= $az [$authz:store {tenant: 'acme'}]]
-  [= $d [$authz:delegate $az
+[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz-store']
+[?let [= $az [$authz-store:store {tenant: 'acme'}]]
+  [= $d [$authz-store:delegate $az
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
       [capabilities [refund]] [over '/orders'] [assurance :t1] [signature s]]]]
   [= $dec [$authz:check $az [authz-request [actor [agent ops-1]] [capability refund] [slice '/orders/9'] [tenant acme]]]]
@@ -1031,8 +1036,9 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-platform/authz']
-[?let [= $az [$authz:store {tenant: 'acme'}]]
+[?lib 'cx-stdlib/authz']
+[?lib 'cx-platform/authz-store']
+[?let [= $az [$authz-store:store {tenant: 'acme'}]]
   [= $dec [$authz:check $az [authz-request [actor [agent x]] [capability y] [tenant acme]]]]
   [$authz:explain $dec]]
 ```

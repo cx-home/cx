@@ -641,7 +641,7 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/sso_interop/rp_drive.cx', .program, reason_1536},
 	AcceptedByOne{'stdlib/sso.cx', .program, reason_1536},
 	AcceptedByOne{'stdlib/supervise.cx', .program, reason_1536},
-	// ── recorded exception — a computed attribute `name=[EXPR]` (18) ──
+	// ── recorded exception — a computed attribute `name=[EXPR]` (22) ──
 	AcceptedByOne{'examples/code-tour.cx', .program, reason_attr},
 	AcceptedByOne{'examples/cxpath-tour.cx', .program, reason_attr},
 	AcceptedByOne{'examples/htmx/serve.cx', .program, reason_attr},
@@ -651,16 +651,20 @@ const accepted_by_one_table = [
 	AcceptedByOne{'examples/platform/scim/projection/no-leak.cx', .program, reason_attr},
 	AcceptedByOne{'examples/platform/scim/provisioning/provision.cx', .program, reason_attr},
 	AcceptedByOne{'examples/platform/xap/storefront/compose.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/check_deps_pins_fixtures.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/check_lint_rules.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/check_no_stub_impl.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/consolidate_tests.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/deps_pins.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/deps_sync.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/gen_guide/guide_build.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/gen_guide/playground/gen_examples.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/repo_paths.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/ring_query.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/sso_interop/idp.cx', .program, reason_attr},
 	AcceptedByOne{'stdlib/diagram.cx', .program, reason_attr},
 	AcceptedByOne{'stdlib/flow.cx', .program, reason_attr},
-	// ── recorded exception — a program document the data balancer cannot read (7) ──
+	// ── recorded exception — a program document the data balancer cannot read (8) ──
 	AcceptedByOne{'scripts/bisect_batch.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/check_editor_surface_parity.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/diagnostics_census.cx', .program, reason_prog},
@@ -668,6 +672,7 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/fuzz_cx.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/gen_docs/primer_platform.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/repos_allocation_gate.cx', .program, reason_prog},
+	AcceptedByOne{'scripts/store_session_dep_gate.cx', .program, reason_prog},
 	AcceptedByOne{'stdlib/connector.cx', .program, reason_prog},
 ]
 

@@ -1,0 +1,187 @@
+# scripts/deps_sync.cx — the pin transport of the multi-repo shape
+# (RULED: RS-7). Written in CX (AGENTS.md rule 6).
+#
+# RS-7: "Pin transport is a CX lock document plus a CX-written `cx deps sync`
+# (shallow fetch at SHA into an ignored `deps/`, read by the V build via
+# `-path`); not submodules, not vpm."
+#
+# The document is `deps.cxd`; its format and every refusal below are
+# spec/03-approved/process/repository-dependency-pins.md, implemented once in
+# scripts/deps_pins.cx and shared with the corpus grader.
+#
+# WHAT IT DOES. For each [dep] row, leave deps/<repo>/ a checkout of exactly
+# the pinned sha:
+#   absent                  -> `git init` + `git fetch --depth 1 <url> <sha>`
+#                              + a checkout of FETCH_HEAD
+#   present and at the sha  -> nothing
+#   present and not at it   -> REFUSED (checkout-drift)
+#   the remote has no sha   -> REFUSED (fetch-failed) — the pin is stale
+#
+# IT NEVER WARNS. #1591: "The union step in `cx` FAILS on a stale pin, never
+# warns (the `cx-v` lesson)" — #1589's Risks records the reading behind it: the
+# previous stale-copy arrangement in this project rotted within weeks because
+# nothing failed when it did. Every refusal here exits non-zero.
+#
+# Exit codes:
+#   0  every row is in sync
+#   1  one or more refusals — a malformed document, a stale pin, a drifted
+#      checkout, or (under --check) a checkout that is not there
+#   2  deps.cxd cannot be read, or the consumer's origin cannot be determined
+#
+# Run from the checkout root:
+#   cx --allow-all scripts/deps_sync.cx [--check] [--verbose]
+#                                       [--deps FILE] [--dir DIR]
+# (or: make deps-sync / make deps-check; `make union` runs it before the suite)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+[; From the CHECKOUT ROOT — see #1604: code.md §12.1 says a `./`-form [?lib]
+   resolves against the importing module's directory, the resolver resolves it
+   against the process working directory. ]
+[?lib './scripts/deps_pins.cx' as=pins]
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?def member scope=private pure [returns bool] ($x::string $xs)
+  [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+# flag-value: the argument after --<name>, or $d when it is not given.
+[?def flag-value scope=private pure [returns string] ($argv $name::string $d::string)
+  [?let [= $n [$count $argv]]
+        [= $hits [?for [in $i [$range 1 $n]]
+                   [where [= [$nth $argv $i] [$concat "--" $name]]]
+                   [where [< $i $n]]
+                   [yield [$nth $argv [+ $i 1]]]]]
+    [?if [= [$count $hits] 0] [then $d] [else [$first $hits]]]]]
+
+# git: run a git command, as [r exit= out= err=].
+[?def git scope=private impure ($argv)
+  [?let [= $r [$process:run [?for [in $a ("git", [?splice $argv])] [yield $a]]]]
+    [r exit=[$string $r@exit-code]
+       out=[$strings:trim [$string $r@stdout]]
+       err=[$strings:trim [$string $r@stderr]]]]]
+
+# head-of: the commit deps/<repo>/ is actually at, or "" when it is not a
+# checkout at all.
+[?def head-of scope=private impure [returns string] ($dir::string)
+  [?if [not [$io:is-directory [$concat $dir "/.git"]]]
+    [then ""]
+    [else [?let [= $r [$git ("-C", $dir, "rev-parse", "HEAD")]]
+            [?if [= [$string $r@exit] "0"] [then [$string $r@out]] [else ""]]]]]]
+
+# fetch-at: the shallow fetch of ONE commit into $dir. Returns [ok] or
+# [failed what=<git's own words>].
+[?def fetch-at scope=private impure ($dir::string $url::string $sha::string)
+  [?let
+    [= $_mk [$io:make-dirs $dir]]
+    [= $init [$git ("init", "-q", $dir)]]
+    [?if [not [= [$string $init@exit] "0"]]
+      [then [failed what=[$string $init@err]]]
+      [else [?let
+        [= $f [$git ("-C", $dir, "fetch", "--depth", "1", $url, $sha)]]
+        [?if [not [= [$string $f@exit] "0"]]
+          [then [failed what=[$strings:replace [$string $f@err] "\n" " / "]]]
+          [else [?let [= $co [$git ("-C", $dir, "checkout", "-q", "--detach", "FETCH_HEAD")]]
+                  [?if [= [$string $co@exit] "0"]
+                    [then [ok]]
+                    [else [failed what=[$string $co@err]]]]]]]]]]]]
+
+# sync-row: everything this program does to one row, as a refusal or nothing.
+[?def sync-row scope=private impure ($row $origin::string $root::string $check::bool)
+  [?let
+    [= $repo [$string $row@repo]]
+    [= $sha  [$string $row@sha]]
+    [= $dir  [$concat $root "/" $repo]]
+    [= $at   [$head-of $dir]]
+    [?if [= $at $sha]
+      [then [in-sync repo=$repo]]
+      [else [?if [not [= $at ""]]
+        [then [refusal kind=checkout-drift row=[$concat "repo=" $repo]
+                       what=[$concat $dir " is at " $at ", pinned at " $sha]]]
+        [else [?if $check
+          [then [refusal kind=missing-checkout row=[$concat "repo=" $repo]
+                         what=[$concat $dir " is not a checkout — run the sync"]]]
+          [else [?let [= $url [$pins:url-for $row $origin]]
+                      [= $f [$fetch-at $dir $url $sha]]
+            [?match $f
+              [case [ok] [?let [= $now [$head-of $dir]]
+                           [?if [= $now $sha]
+                             [then [fetched repo=$repo]]
+                             [else [refusal kind=checkout-drift row=[$concat "repo=" $repo]
+                                            what=[$concat "fetched, but " $dir " is at " $now]]]]]]
+              [else [refusal kind=fetch-failed row=[$concat "repo=" $repo]
+                             what=[$concat $url " has no " $sha ": " [$string $f@what]]]]]]]]]]]]]]
+
+# -- the run -------------------------------------------------------------
+
+[?let
+  [= $argv [$env:argv]]
+  [= $path [$flag-value $argv "deps" "deps.cxd"]]
+  [?if [not [$io:exists $path]]
+    [then [?let [= $_ [$cry [$concat "deps-sync: cannot read " $path " -- run from the checkout root"]]]
+            [$env:exit 2]]]
+    [else ""]]]
+
+# --vpath: the V `-path` value for this pin set, and nothing else. RS-7's
+# "read by the V build via `-path`" is a sentence about the build, so it is a
+# thing the transport ANSWERS rather than a comment somebody re-derives: every
+# row carrying a `v-fork=` is a V repository, and its checkout is a search
+# root. Printed on stdout with no census, so a Makefile can read it directly.
+[?if [$member "--vpath" [$env:argv]]
+  [then
+    [?let
+      [= $path [$flag-value [$env:argv] "deps" "deps.cxd"]]
+      [= $root [$flag-value [$env:argv] "dir" "deps"]]
+      [= $doc  [$pins:read [$io:read-file $path]]]
+      [= $v    [$pins:validate $doc]]
+      [?if [not [$pins:ok $v]]
+        [then [?let [= $_ [?for [in $l [$pins:render $v]] [yield [$cry [$concat "  " $l]]]]]
+                [$env:exit 1]]]
+        [else [?let
+          [= $roots [?for [in $r [$pins:rows $doc]] [where [$present $r@v-fork]]
+                      [yield [$concat $root "/" [$string $r@repo]]]]]
+          [= $_ [$say [$strings:join ("@vlib", "@vmodules", [?splice $roots]) "|"]]]
+          [$env:exit 0]]]]]]
+  [else ""]]
+
+[?let
+  [= $argv    [$env:argv]]
+  [= $check   [$member "--check" $argv]]
+  [= $verbose [$member "--verbose" $argv]]
+  [= $path    [$flag-value $argv "deps" "deps.cxd"]]
+  [= $root    [$flag-value $argv "dir" "deps"]]
+  [= $doc     [$pins:read [$io:read-file $path]]]
+  [= $verdict [$pins:validate $doc]]
+  [= $format-refusals [$pins:refusals $verdict]]
+  [= $_bad [?if [> [$count $format-refusals] 0]
+             [then [?let [= $_h [$cry [$concat "deps-sync: " $path " is not a pin document"]]]
+                         [= $_l [?for [in $l [$pins:render $verdict]] [yield [$cry [$concat "  " $l]]]]]
+                     [$env:exit 1]]]
+             [else ()]]]
+  [= $rows [$pins:rows $doc]]
+  [= $origin [?let [= $r [$git ("remote", "get-url", "origin")]]
+               [?if [= [$string $r@exit] "0"] [then [$string $r@out]] [else ""]]]]
+  [= $_no-origin [?if [and [= $origin ""] [> [$count [?for [in $r $rows] [where [not [$present $r@url]]] [yield 1]]] 0]]
+                   [then [?let [= $_ [$cry "deps-sync: no origin remote and a row carries no url= -- the fetch URL cannot be derived (spec §2.2)"]]
+                           [$env:exit 2]]]
+                   [else ()]]]
+  [= $results [?for [in $r $rows] [yield [$sync-row $r $origin $root $check]]]]
+  [= $refusals [?for [in $x $results] [where [= [$name $x] "refusal"]] [yield $x]]]
+  [= $_v [?if $verbose
+           [then [?for [in $x $results]
+                   [yield [$say [$concat "  " [$name $x] "  " [$string $x@repo]]]]]]
+           [else ()]]]
+  [= $_census [$say [$concat "deps-sync: " [$string [$count $rows]] " pins, "
+                             [$string [$count [?for [in $x $results] [where [= [$name $x] "fetched"]] [yield 1]]]] " fetched, "
+                             [$string [$count [?for [in $x $results] [where [= [$name $x] "in-sync"]] [yield 1]]]] " already at their sha, "
+                             [$string [$count $refusals]] " refused"
+                             [?if $check [then " (--check: nothing was fetched)"] [else ""]]]]]
+  [?if [= [$count $refusals] 0]
+    [then [$env:exit 0]]
+    [else [?let [= $_l [?for [in $x $refusals]
+                         [yield [$cry [$concat [$string $x@kind] " " [$string $x@row] ": " [$string $x@what]]]]]]
+                [= $_t [$cry "deps-sync: a pin is stale or a checkout has drifted -- this is a FAILURE, never a warning (#1591)"]]
+            [$env:exit 1]]]]]

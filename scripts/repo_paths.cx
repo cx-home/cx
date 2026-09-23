@@ -1,0 +1,196 @@
+# scripts/repo_paths.cx — the path list of ONE repository, for the history
+# filter (#1591 item 10, RULED: RS-7; RS-12 is the extraction order it feeds).
+#
+# Brought in from the sso extraction prep's tools/repo_files.cx (the first-match
+# path lister written for #1591 item 11) and extended here with the rename
+# closure its own REPORT.md flag F-10 asked for. The matcher below — rule-key,
+# rule-matches, first-rule — is scripts/repos_allocation_gate.cx's, unchanged,
+# so this program and the gate can never disagree about where a file lands:
+# they apply the same rule, in the same document order, to the same file list.
+#
+# Written in CX (AGENTS.md rule 6). Run from a cx-private checkout root:
+#
+#   cx --allow-all scripts/repo_paths.cx cx-platform-sso
+#   cx --allow-all scripts/repo_paths.cx cx-platform-sso --with-history
+#   cx --allow-all scripts/repo_paths.cx --self-test
+#
+# Output: one path per line on stdout, in `git ls-files` order, then a census
+# line on stderr. With REPO_PATHS_RULES=1 each line is `<path>\t<rule>`, so the
+# rule that placed a file reads off beside it.
+#
+# --with-history adds the paths the live ones USED to have, derived per file
+# with `git log --follow --diff-filter=AR`. Those paths no longer exist and no
+# allocation rule can name them, but `git filter-repo` needs them or it
+# silently truncates a file's history at its last rename — the sso prep found
+# exactly two (`spec/03-approved/std-lib/sso.md`, `conformance/stdlib/sso.cxd`,
+# both from the #1427 ring move) and without them the spec's and the corpus's
+# history stopped there. A truncated history is not a failure anyone sees.
+#
+# tooling/repo-template/HISTORY-FILTER.md is the `git filter-repo` invocation
+# that consumes this list.
+#
+# Exit: 0 the list was produced, 1 no repository named / no file allocated to
+# it, 2 the registry is unreadable.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?def member scope=private pure [returns bool] ($x::string $xs)
+  [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+# -- the matcher: scripts/repos_allocation_gate.cx's, unchanged --------------
+
+[?def rule-key scope=private pure [returns string] ($r)
+  [?let [= $e [$string [?else $r@exact ""]]]
+        [= $p [$string [?else $r@prefix ""]]]
+    [?if [not [= $e ""]] [then [$concat "exact=" $e]] [else [$concat "prefix=" $p]]]]]
+
+[?def rule-matches scope=private pure [returns bool] ($r $f::string)
+  [?let [= $e [$string [?else $r@exact ""]]]
+        [= $p [$string [?else $r@prefix ""]]]
+    [?if [not [= $e ""]]
+      [then [= $e $f]]
+      [else [?if [not [= $p ""]]
+              [then [$strings:starts-with $f $p]]
+              [else false]]]]]]
+
+[?def first-rule scope=private pure ($rules $f::string)
+  [?let [= $hits [?for [in $r $rules] [where [$rule-matches $r $f]]
+                   [yield [hit repo=[$string $r@repo] key=[$rule-key $r]]]]]
+    [?if [= [$count $hits] 0] [then [miss]] [else [$first $hits]]]]]
+
+[?def nonblank scope=private pure ($text::string)
+  [?for [in $l [$strings:split-lines $text]]
+    [where [not [= [$strings:trim $l] ""]]]
+    [yield [$strings:trim $l]]]]
+
+# allocs: every file with the repo the first matching rule sends it to.
+[?def allocs scope=private pure ($rules $files)
+  [?for [in $f $files]
+    [yield [?let [= $h [$first-rule $rules $f]]
+             [a file=$f
+                repo=[?match $h [case [miss] ""] [else [$string $h@repo]]]
+                key=[?match $h [case [miss] "<none>"] [else [$string $h@key]]]]]]]]
+
+# claimed: the files $rules send to $want, in the order they arrive.
+[?def claimed scope=private pure ($rules $files $want::string)
+  [?for [in $a [$allocs $rules $files]] [where [= [$string $a@repo] $want]] [yield $a]]]
+
+# -- the rename closure (the prep's flag F-10) ------------------------------
+
+# `git log --follow` restricts the walk to ONE file's chain, so every rename
+# line in its output is a link of that chain and the SOURCE of each is a path
+# the file used to have. Reading `--name-status` rather than `--name-only` is
+# what keeps it exact: `--name-only` also prints the other side of a rename
+# commit, and on this tree that put two unrelated `.gitkeep` paths in the list.
+[?def former-paths scope=private impure ($path::string)
+  [?let [= $r [$process:run ("git", "log", "--follow", "--name-status",
+                             "--format=", "--", $path)]]
+    [?if [not [= [$string $r@exit-code] "0"]]
+      [then ()]
+      [else [?for [in $l [$nonblank [$string $r@stdout]]]
+              [where [$strings:starts-with $l "R"]]
+              [in $f [?let [= $cols [$strings:split $l "\t"]]
+                       [?if [< [$count $cols] 2] [then ()] [else ([$nth $cols 2])]]]]
+              [yield $f]]]]]]
+
+# -- the self-test: the matcher, red on a synthetic violation ----------------
+#
+# #1591: "Every moved gate is red-proofed on a synthetic violation before its
+# row moves." The property here is that the emitted list is EXACTLY first-match
+# — specific rules above general ones win, a shadowed rule contributes nothing,
+# and a file no rule claims is in no list at all.
+
+[?if [$member "--self-test" [$env:argv]]
+  [then
+    [?let
+      [= $reg [$cx:parse "[repo-allocation
+        [repo name=a] [repo name=b]
+        [path exact='x/one.md' repo=a]
+        [path prefix='x/' repo=b]
+        [path prefix='x/one' repo=a]
+      ]"]]
+      [= $rules [?for [in $r $reg//path] [yield $r]]]
+      [= $files ("x/one.md", "x/two.md", "z/none.md")]
+      [= $a-list [?for [in $h [$claimed $rules $files "a"]] [yield [$string $h@file]]]]
+      [= $b-list [?for [in $h [$claimed $rules $files "b"]] [yield [$string $h@file]]]]
+      [= $got [$concat "a=[" [$strings:join $a-list " "] "] b=[" [$strings:join $b-list " "] "]"]]
+      [= $want "a=[x/one.md] b=[x/two.md]"]
+      [?if [= $got $want]
+        [then [?let [= $_ [$say [$concat "repo-paths self-test OK -- first match wins (x/one.md to a, not b), "
+                                         "the shadowed prefix=x/one rule adds nothing, and an unclaimed file "
+                                         "(z/none.md) is in no list: " $got]]]
+                [$env:exit 0]]]
+        [else [?let [= $_ [$cry [$concat "repo-paths self-test FAILED -- want " $want " got " $got]]]
+                [$env:exit 1]]]]]]
+  [else ""]]
+
+# -- the run ----------------------------------------------------------------
+
+[?let [= $reg-path "registry/repos.cxd"]
+  [?if [not [$io:exists $reg-path]]
+    [then [?let [= $_ [$cry [$concat "repo-paths: cannot read " $reg-path " -- run from the checkout root"]]]
+            [$env:exit 2]]]
+    [else ""]]]
+
+[?let
+  [= $argv [$env:argv]]
+  [= $want [$string [?else [$first [?for [in $x $argv]
+                                     [where [$strings:starts-with $x "cx-"]]
+                                     [yield $x]]] ""]]]
+  [= $_no-repo [?if [= $want ""]
+                 [then [?let [= $_ [$cry "repo-paths: name a repository, as registry/repos.cxd spells it (e.g. cx-platform-sso)"]]
+                         [$env:exit 1]]]
+                 [else ()]]]
+  [= $history [$member "--with-history" $argv]]
+  [= $withrules [= [$string [$env:var-or-default "REPO_PATHS_RULES" ""]] "1"]]
+  [= $reg [$cx:parse [$io:read-file "registry/repos.cxd"]]]
+  [= $rules [?for [in $r $reg//path] [yield $r]]]
+  [= $declared [?for [in $r $reg//repo] [yield [$string $r@name]]]]
+  [= $_undeclared [?if [not [$member $want $declared]]
+                    [then [?let [= $_ [$cry [$concat "repo-paths: " $want " has no [repo] row in registry/repos.cxd"]]]
+                            [$env:exit 1]]]
+                    [else ()]]]
+  [= $files [?let [= $r [$process:run ("git", "ls-files")]]
+              [?if [not [= [$string $r@exit-code] "0"]]
+                [then [?let [= $_ [$cry [$concat "repo-paths: git ls-files failed: " [$string $r@stderr]]]]
+                        [?let [= $_x [$env:exit 2]] ()]]]
+                [else [$nonblank [$string $r@stdout]]]]]]
+  [= $mine [$claimed $rules $files $want]]
+  [= $live [?for [in $h $mine] [yield [$string $h@file]]]]
+  [= $pairs [?if $history
+              [then [?for [in $p $live] [in $q [$former-paths $p]]
+                      [where [not [$member $q $live]]]
+                      [yield [f path=$q from=$p]]]]
+              [else ()]]]
+  [= $former [?for [in $x $pairs] [group-by [$string $x@path]] [yield $key]]]
+  [= $_p [?for [in $h $mine]
+           [yield [$say [?if $withrules
+                          [then [$concat [$string $h@file] "	" [$string $h@key]]]
+                          [else [$string $h@file]]]]]]]
+  [= $_h [?for [in $q $former]
+           [yield [$say [?if $withrules
+                          [then [$concat $q "	<renamed away; no rule claims it>"]]
+                          [else $q]]]]]]
+  # Every former path, on stderr, beside the live path `--follow` derived it
+  # from. READ THIS LIST. `--follow` can chase a rename between two files that
+  # merely have the same content: measured on this tree,
+  # examples/platform/sso/deployment/expected.txt follows back to
+  # spec/misc/.gitkeep at R100. A wrong entry carries an unrelated file's
+  # history into the new repository, which is why the list is reviewed rather
+  # than piped straight into `git filter-repo`.
+  [= $_hr [?for [in $x $pairs]
+            [yield [$cry [$concat "  " [$string $x@path] "  <- --follow from " [$string $x@from]]]]]]
+  [= $_c [$cry [$concat $want ": " [$string [$count $live]] " of " [$string [$count $files]] " tracked files"
+                        [?if $history
+                          [then [$concat ", plus " [$string [$count $former]] " former path(s) the rename closure adds"]]
+                          [else ""]]]]]
+  [?if [= [$count $live] 0]
+    [then [?let [= $_ [$cry [$concat "repo-paths: no tracked file lands in " $want]]] [$env:exit 1]]]
+    [else [$env:exit 0]]]]
