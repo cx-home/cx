@@ -304,24 +304,24 @@ $ cx --from=cx --to=cx input.cx
 ]
 ```
 
-## 3. Which `cx` build, then the two rings
+## 3. Which `cx` build do I install — then the two rings
 
-CX ships as a profile — a build that answers *how much of CX you have to take
-on* — over two frozen rings, with the platform, bindings and ecosystem
-**groups** layered above them as declared, acyclic import graphs rather than
-further rings.
+`cx` ships as four builds of one binary name. The build answers *how much of
+CX you have to take on*; take the smallest one that answers your question.
 
-| Your task | `cx` build | What you get | When NOT to use it |
+| Your task | Build | What you get | When NOT to use it |
 |---|---|---|---|
-| Read, write, convert, diff, hash, validate documents; untrusted input | **`data`** | Ring 0 only: the reading and the canonical form. No evaluator exists, so nothing can execute | The moment you need a value computed rather than re-projected |
-| Embed the evaluator in a host app | **`embed`** | Rings 0–1 core, no local-effect packs | When you need io/env/process/time or a served platform |
-| Query, transform, generate; run a program; develop and script | **`cli`** | Rings 0–1 + local-effect packs (io, env, process, time, random, log, term) + the http client pack | When the result must outlive the process, or a second party must see it |
-| Persist, audit, replay; serve HTTP/XSP; host features; operate | **`platform`** | The rings, plus the platform group: store + journal, session layer, HTTP surface, XAP host, drivers | For a value you are about to print — the platform group is reached over a network, not embedded |
+| Read, write, convert, diff, hash, validate documents — including untrusted ones | **`data`** | Ring 0 only: the reading, the canonical form, fmt, lint. No evaluator is compiled in, so nothing can execute | The moment you need a value computed rather than re-projected |
+| Run CX inside a host application | **`embed`** | Rings 0–1 core: directives, CXPath, comprehensions, the pure stdlib; no local-effect packs | When the program itself must read files, the clock or the network |
+| Query, transform, generate; run a program | **`cli`** | Rings 0–1 plus the local-effect packs (io, env, process, time, random, log, term) and the http client. Effects still need explicit grants | When the result must outlive the process, or a second party must see it |
+| Persist, audit, replay; serve HTTP/XSP; host features | **`platform`** | The rings plus the platform group: store + journal, session layer, HTTP surface, XAP host, drivers | For a value you are about to print — the platform is reached over a network, not embedded |
 
-The import contract is enforced by the build, not by convention: Ring 0
-imports nothing internal, Ring 1 may import Ring 0, and everything else — the
-platform, bindings and ecosystem groups — imports the rings and what its own
-manifest declares, never upward.
+Under every build sit **two rings**, and the import contract between them is
+enforced by the build, not by convention. Ring 0 is the data format: it
+imports nothing internal and cannot execute. Ring 1 is the language: it adds
+execution and cannot reach a socket, a store or a protocol. Everything above
+them is a **group** — the platform, the bindings, the ecosystem — that imports
+the rings and what its manifest declares, and nothing ever reaches upward.
 
 ### Ring 0 — the document *is* the answer
 
@@ -394,11 +394,12 @@ Swap `mem://` for a real URL and the same two calls talk to a served store.
 **When not to use it:** for a value you are about to print. A store handle is
 a promise about durability and identity; if you need neither, stay in Ring 1.
 
-### The bindings and ecosystem groups — the edge around CX
+### The ecosystem and binding groups — the edge
 
-This is where CX meets everything around it, including agent protocols. The
-MCP and A2A shapes are ordinary CX values projected to their wire form —
-there is no bespoke serializer anywhere in the path:
+These groups are where CX meets everything around it: the registry and
+distribution, the bindings that reach CX from another language, and agent
+protocols. The MCP and A2A shapes are ordinary CX values projected to their
+wire form — there is no bespoke serializer anywhere in the path:
 
 `prog.cx`
 ```cx
@@ -412,8 +413,8 @@ $ cx prog.cx
 '{"id":1,"jsonrpc":"2.0","method":"tools/call","params":{"arguments":{"location":"NYC"},"name":"get_weather"}}'
 ```
 
-**When not to use it:** for anything internal. The bindings and ecosystem
-groups exist for crossing a boundary.
+**When not to use it:** for anything internal; inside your own program the CX
+value is better currency. These groups exist for crossing a boundary.
 
 ## 4. The complete directive registry
 
