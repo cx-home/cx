@@ -346,7 +346,14 @@ step_globs() {
     test-migrate-namespace)        echo 'conformance/migrate_namespace.cxd scripts/check_migrate_namespace_fixtures.cx vcx/code/namespace_migrate.v vcx/code/stdlib_bundle.v vcx/cmd/main.v' ;;
     # the dogfood documents, the gate that reads them, and everything that can
     # move the vocabulary or the two subcommands it drives them through.
-    flow-dogfood-gate)             echo 'flows/* scripts/flow_dogfood_gate.cx stdlib/flow.cx vcx/cmd/* vcx/code/* vcx/cx/* spec/03-approved/platform/flow.md' ;;
+    # Since the extraction (RULED: RS-12, #1591 item 15) the documents, the gate
+    # and the module are cx-platform-flow's and can never appear in a diff here;
+    # what can is the PIN (`deps.cxd`, with `registry/modules.cxd` where the
+    # pinned paths are declared) and the verbs RS-20 kept in vcx/cmd/.
+    flow-dogfood-gate)             echo 'deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
+    # the pinned `cx flow` lane: the pin, the verbs and everything the eight
+    # processes it spawns run through, and the module path it is compiled on.
+    test-flow-umbrella)            echo 'deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/* vcx/platform/* vcx/transport/* vcx/testenv/*' ;;
     address-baseline-gate)         echo "$RING_LIB $RING_SUP vcx/tests/runners/address_baseline/* conformance/*" ;;
     # #700 wave 1 (2026-08-24): five TEST_TARGETS steps had no row and so
     # always ran. Each row is the step's actual input surface, over-including
@@ -460,8 +467,10 @@ step_globs() {
     # and the generator runs under the built binary.
     primer-platform-check)         echo "spec/03-approved/platform/composition.md spec/03-approved/platform/deployment-topology.md docs-src/llm/primer-platform.chapter.md scripts/gen_docs/primer_platform.cx $RING_LIB $RING_SUP" ;;
     # #1265: the vocabulary is flow.md's, the surface is stdlib/flow.cx, and the
-    # gate runs under the built binary's parser.
-    flow-vocabulary-gate)          echo 'spec/03-approved/platform/flow.md stdlib/flow.cx scripts/flow_vocabulary_gate.cx vcx/cx/* vcx/code/*' ;;
+    # gate runs under the built binary's parser. All three inputs of its own are
+    # cx-platform-flow's since the extraction (RULED: RS-12): the pin stands in
+    # for them.
+    flow-vocabulary-gate)          echo 'deps.cxd registry/modules.cxd vcx/cx/* vcx/code/*' ;;
     # #1380: a jsdom gate over the SHIPPED playground page and script — no wasm,
     # no binary. Its inputs are that directory, the gate and its node modules.
     test-playground-nav)           echo 'scripts/gen_guide/playground/* scripts/test_playground_nav.mjs scripts/playground-gate/*' ;;
