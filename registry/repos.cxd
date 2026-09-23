@@ -268,6 +268,7 @@ the rule carries a `why=`. The recurring reasons, once:
 
   [; ── platform: identity ────────────────────────────────────────────── ]
   [path prefix='vcx/platform/stdlib_session' repo=cx-platform-identity]
+  [path prefix='vcx/platform/identity_connector_builtins' repo=cx-platform-identity why='RS-6 (#1589, #1591 item 9): the credential binding, the token store and the secret handle that were the connector kit native half. The store half of the same move needs no rule — vcx/platform/store_connector_builtins.v is already led here by the vcx/platform/store_ prefix, and a second rule for it would be a dead one']
   [path prefix='vcx/platform/stdlib_xsp_auth' repo=cx-platform-identity]
   [path prefix='vcx/platform/xsp_principal_mint' repo=cx-platform-identity]
   [path exact='stdlib/session.cx' repo=cx-platform-identity]
@@ -330,7 +331,7 @@ the rule carries a `why=`. The recurring reasons, once:
 
   [; ── platform: connector ───────────────────────────────────────────── ]
   [path exact='stdlib/connector.cx' repo=cx-platform-connector]
-  [path prefix='vcx/platform/stdlib_connector' repo=cx-platform-connector why='the native half moves down to identity/store builtins at the extraction']
+  [path prefix='vcx/platform/stdlib_connector' repo=cx-platform-connector why='what is LEFT of the native half after RS-6 moved eleven of its twelve builtins down to identity and store: the compile-time test-build constant that gates the mock adapter, which has no verb in either destination (the LETTER in the item-9 RESULTS.md)']
   [path exact='spec/03-approved/platform/connector.md' repo=cx-platform-connector]
   [path exact='spec/03-approved/platform/sync.md' repo=cx-platform-connector]
   [path exact='conformance/platform/connector.cxd' repo=cx-platform-connector]

@@ -1,6 +1,6 @@
 # RS-1…RS-12 — the multi-repo split of cx-private (owner, 2026-09-21; shape approved in session)
 
-**Status: DRAFT for the owner's read.** This page lands on the owner's word and not before
+**Status: RULED (owner, D1a, 2026-09-22 — landed as drafted).** It was a draft until then; it landed on the owner's word
 (#1591 item 5). Until it lands, nothing below is binding, no commit subject cites an `RS-` id,
 and `registry/repos.cxd` states a plan the gate keeps total rather than a decision.
 
