@@ -690,6 +690,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `rs-17` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-17 — the `-gc e` per-case growth is fixed at the root (owner: D3b) |
 | `rs-19` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-19 — mail claims its smtp/imap pure halves, as `sasl` already is (owner: D19a) |
 | `rs-20` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-20 — flow's CLI verbs stay in the front door, and the act seam gets a row (owner: D21a) |
+| `rs-21` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-21 — a decision's design item may ADD spec text where the edit map is silent (owner: D22b) |
 | `rs-22` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-22 — `authz-store` and `vc-revocation` stay in `cx-platform-identity` (owner: D24a) |
 | `rs-23` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-13…RS-23 — the repo split's follow-up decisions (owner, 2026-09-22/23, in session on dev2) |
 | `rs-23` | [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) | RS-23 — the decision half gets a pure `open` over an in-memory trust store (owner: D25b) |
@@ -1315,4 +1316,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*318 ledger pages; 669 ids declared, 381 cited only.*
+*318 ledger pages; 670 ids declared, 381 cited only.*
