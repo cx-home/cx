@@ -1,15 +1,15 @@
 # RS-26 — five spec-sentence authorizations the agents could not make (owner, 2026-09-23, in session on dev2)
 
-**Status: RULED.** On 2026-09-23 the integrator posted five lettered letters on
-[#1591](https://github.com/cx-home/cx-private/issues/1591) — D39, D40, D41, D42 and D43, each a
-spec sentence that a branch had found stale or missing and that no decision's edit map named, each
-with option (a) recommended — and the owner answered the batch with one word, **"A"**. This page
-records that answer as option (a) of each of the five, which is how the integrator read it and how
-it was posted back on the issue the same hour; if the owner meant otherwise, the correction lands
-here and the branch that acted on the wrong reading reverts. Nothing on this page is a new design:
-every sentence below says what a decision already ruled, in the page's own voice, which is the
-precedent [RS-21](rulings_2026_09_22_repo_split_followups.md) set (a design item may ADD or bring
-current the text that states it; it may never move or delete a sentence the map does not name).
+**Status: RULED (owner, 2026-09-23, confirmed letter by letter).** On 2026-09-23 the integrator posted
+five lettered letters on [#1591](https://github.com/cx-home/cx-private/issues/1591) — D39, D40, D41,
+D42 and D43, each a spec sentence that a branch had found stale or missing and that no decision's
+edit map named, each with option (a) recommended. The owner first answered "A" (which the integrator
+read as (a) of each and said so), then said that word had answered something else, asked to see the
+five again with their recommendations, and answered, verbatim: **"Ok yes all (a)"**. This page
+records that answer: option (a) of each of the five. Nothing on this page is a new design: every
+sentence below says what a decision already ruled, in the page's own voice, which is the precedent
+[RS-21](rulings_2026_09_22_repo_split_followups.md) set (a design item may ADD or bring current the
+text that states it; it may never move or delete a sentence the map does not name).
 
 ## The five, and what each authorizes
 
