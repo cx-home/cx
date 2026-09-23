@@ -3503,7 +3503,7 @@ CODE_SERIAL_RETRY := vcx/store/store_admin_plane_test.v \
 # (found removing cx-platform-db's vcx/cxdb/, RULED: RS-12, RS-8, #1591 item
 # K3). The extracted product's own `v test` runs from the pin, same as its
 # `cx corpus`.
-CODE_TEST_DIRS := vcx/code/ vcx/platform/ vcx/cxnet/ vcx/mail/ vcx/store/ vcx/xap/
+CODE_TEST_DIRS := vcx/code/ vcx/platform/ vcx/store/ vcx/xap/
 test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	@$(JS_CLOSE) log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
 	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(CODE_TEST_DIRS) 2>&1; echo $$? > $$stf; } | tee $$log; \
@@ -3619,17 +3619,31 @@ check-inmodule-test-roster:
 	fi; \
 	unrun=""; \
 	for m in $$(grep -E "vmodule=[a-z_][a-z0-9_]*" registry/repos.cxd | grep -v "status=extracted" | grep -oE "vmodule=[a-z_][a-z0-9_]*" | cut -d= -f2); do \
+	  [ -d "vcx/$$m" ] || continue; \
 	  case " $(CODE_TEST_DIRS) " in \
 	    *" vcx/$$m/ "*) ;; \
 	    *) unrun="$$unrun vcx/$$m/" ;; \
 	  esac; \
+	done; \
+	orphaned=""; \
+	for d in $(CODE_TEST_DIRS); do \
+	  [ -d "$$d" ] || orphaned="$$orphaned $$d"; \
 	done; \
 	if [ -n "$$unrun" ]; then \
 	  echo "check-inmodule-test-roster: product module director(ies) whose in-module tests NO step runs —"; \
 	  for d in $$unrun; do echo "    $$d"; done; \
 	  echo "  registry/repos.cxd declares each as a V product (vmodule=, RULED: RS-24) and a"; \
 	  echo "  product's white-box tests live beside it; add the directory to CODE_TEST_DIRS."; \
-	  echo "  (a status=extracted row is exempt: its directory left for deps/<repo>/vcx/<m>/.)"; \
+	  echo "  (a status=extracted row, or one whose vcx/<m>/ does not exist on disk, is exempt:"; \
+	  echo "  its directory left for deps/<repo>/vcx/<m>/.)"; \
+	  exit 1; \
+	fi; \
+	if [ -n "$$orphaned" ]; then \
+	  echo "check-inmodule-test-roster: CODE_TEST_DIRS names director(ies) that do not exist —"; \
+	  for d in $$orphaned; do echo "    $$d"; done; \
+	  echo "  \`v test a/ b/ missing/\` prints its usage banner and exits 0 having run NOTHING"; \
+	  echo "  the moment one path is missing (found removing cx-platform-db's vcx/cxdb/, RULED:"; \
+	  echo "  RS-12, RS-8) — a silent pass, not a red. Drop the directory from CODE_TEST_DIRS."; \
 	  exit 1; \
 	fi; \
 	echo "check-inmodule-test-roster OK — every vcx/cx/*_test.v is run or explicitly excluded, and every product directory (vmodule=) is in test-vcx-code's CODE_TEST_DIRS"
