@@ -68,6 +68,7 @@ for f in conformance/stdlib/*.cxd conformance/platform/*.cxd conformance/x/*.cxd
   printf '%s\t%s\n' "conformance/diff.cxd" "test-vcx-conform (conform-diff: tests/runners/diff_lint/diff_lint_conform.v)"
   printf '%s\t%s\n' "conformance/lint.cxd" "test-vcx-conform (conform-lint: tests/runners/diff_lint/diff_lint_conform.v)"
   printf '%s\t%s\n' "conformance/fmt.cxd" "test-vcx-conform (conform-fmt)"
+  printf '%s\t%s\n' "conformance/streaming_write.cxd" "test-vcx-conform (conform-streaming-write: tests/runners/streaming_write/streaming_write_run.v — #1635: it was claimed through conform-all's list, where it passed vacuously)"
   printf '%s\t%s\n' "conformance/data_bin_arrow.cxd" "test-vcx-conform (conform-data-bin-arrow)"
   printf '%s\t%s\n' "conformance/code_diagram.cxd" "test-code-diagram (scripts/check_code_diagram_fixtures.cx)"
   printf '%s\t%s\n' "conformance/xpath_31_parity.cxd" "test-xpath-parity-cx (scripts/check_xpath_parity_fixtures.cx)"
