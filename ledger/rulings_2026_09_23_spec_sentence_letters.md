@@ -191,7 +191,7 @@ corpus example or a measured number beside it — so the excitement is checkable
 holds: what is measured is labelled measured). It applies to the documentation epic after the cut;
 nothing before 2026-09-26 changes because of it.
 
-## RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b)
+## RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1)
 
 **Status: RULED (owner, 2026-09-23, in session, letter by letter).** The integrator posted D54–D56 and
 D62–D67 on [#1591](https://github.com/cx-home/cx-private/issues/1591) through the afternoon. The owner
@@ -207,8 +207,9 @@ discussion of D64 and the revision of D65: **"d64 c d65 d"**. Each letter below 
 options as the board states them (the 17:36Z restatement, which is what the owner answered; where an
 earlier posting framed the options differently, that is said), the chosen option first. Two more
 letters of the same kind — allocation and directory decisions — followed at the next integrator
-session's start (posted 21:2xZ) and were answered ~21:4xZ: **D68 = (a)** and **D69 = (b)**; they are
-recorded last.
+session's start (posted 21:2xZ) and were answered ~21:4xZ: **D68 = (a)** and **D69 = (b)**; then D70
+(#1636), put again with its long-term consequences at the owner's request, was answered ~21:5xZ:
+**D70 = (a1)**. The three are recorded last.
 
 **D54c — `vcx/tests/flow_umbrella_test.v` splits by subject.** The umbrella's 16 functions shell out
 to `cx flow run/serve/--help` and read `$flow:status` — they test cx's CLI verbs AND flow's package.
@@ -309,11 +310,30 @@ the old name moving to it; `cx-home/v-cx-patches` stays untouched**; (c) leave i
 by sha, and a stale `branch=` misleads every future pin bump. Applied on the #1605 branch, not this
 page's.
 
+**D70a1 — `cx corpus`'s program lane owns the corpus vocabulary, after the cut; until then it refuses
+what it does not read (#1636).** The program lane graded cases whose sections it never reads
+(`[cli-argv]`, `[exit-code]`, `[init]`): `conformance/llm/antipatterns.cxd` showed three false FAILs
+and twenty exit codes passing unchecked. The options as first posted: (a) the program lane owns
+`[cli-argv]` / `[exit-code]` — it spawns the binary when `[cli-argv]` is present and checks the exit;
+a corpus-vocabulary spec sentence; the shards' contract and census move (RS-16's condition) — one
+grader for the whole vocabulary, every CLI example graded for real; (b) mirror #1631 — the program
+lane REFUSES by name a file carrying a section it does not read (`corpus.program.gradeable`),
+`antipatterns.cxd` stays graded by `primer_build.cx` — no false pass and no false fail, the CLI lane a
+later decision; (c) leave it — false FAILs and silent passes stay. **The owner's answer, (a1): (a) is
+the END STATE — the program lane owns every section the corpus vocabulary allows (`[cli-argv]`,
+`[exit-code]`, `[init]` …), spawning the binary when `[cli-argv]` is present and checking the exit —
+implemented AFTER the cut as its own design item, with its corpus-vocabulary spec sentence, the
+shards' contract and census moving then on a still tree (RS-16's condition met); MEANWHILE (b) merges
+in the next Ring-1 batch, so the false FAILs and the unchecked exit codes stop this week and
+`primer_build.cx` keeps grading that file.** The reason given: the ruling is what agents need today,
+and the timing keeps RS-16's contract still during the split. #1636 stays open until (a) merges.
+
 ## Not decided here (RS-30, RS-31)
 
 The order of work is the board's, not this page's: D55c, D56a, D62a and D63a are decision-free fixes
 for the next Ring-1 batch; D54c and D64c are the package-lanes work; D65d, D67a and the documentation
 epic under RS-30 open after the cut. D66a records placements the store split already made; D68a and
-D69b are applied by the branches named with them. D70 (#1636) was put to the owner again and is not
-ruled here. No
+D69b are applied by the branches named with them; D70a1's interim (b) is the next Ring-1 batch's and
+its end state (a) a design item after the cut. The spec sentence (a) needs is not written by this
+page. No
 sentence of any spec beyond the ones named above is authorized by this page.
