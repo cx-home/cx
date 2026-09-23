@@ -212,7 +212,7 @@ step_globs() {
     # `conform-diff`/`conform-lint` out of runners/diff_lint/ (vcx/Makefile).
     # A runner-only edit selected this step by nothing but the fail-safe arm of
     # the suite classifier, which is not a row and does not survive #1598.
-    test-vcx-conform)              echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP conformance/* stdlib/* x/* vcx/tests/runners/conformance/* vcx/tests/runners/fmt/* vcx/tests/runners/diff_lint/*" ;;
+    test-vcx-conform)              echo "$RING_LIB $RING_CLI $RING_CMD $RING_SUP conformance/* stdlib/* x/* vcx/tests/runners/conformance/* vcx/tests/runners/fmt/* vcx/tests/runners/diff_lint/* vcx/tests/runners/streaming_write/*" ;;
     # `test-vcx` is no longer a TEST_TARGETS row (it stays the human entry
     # point). The row is kept so an explicit `test-changed` over a tree whose
     # Makefile still names it cannot fall through to deny-by-default.
@@ -698,11 +698,14 @@ suite_files() {
       # impl/cx-F-1590: two runner files, and the RUN-4 computed selection
       # still asked for the whole suite, 81 files and 4,149 s.
       #
-      # Only these three. A runner directory NO row names is still an
+      # streaming_write/ joined with #1635, when test-vcx-conform began running
+      # conform-streaming-write and its row began naming the directory.
+      #
+      # Only these. A runner directory NO row names is still an
       # unclassified vcx/tests/ path and still runs the whole suite — the
       # fail-safe stays the resting state, and a new runner joins this list in
       # the commit that gives its step a row.
-      "$SUITE_DIR"/runners/extraction_gate/*|"$SUITE_DIR"/runners/profile_gate/*|"$SUITE_DIR"/runners/conformance/*)
+      "$SUITE_DIR"/runners/extraction_gate/*|"$SUITE_DIR"/runners/profile_gate/*|"$SUITE_DIR"/runners/conformance/*|"$SUITE_DIR"/runners/streaming_write/*)
         continue ;;
       "$SUITE_DIR"/*|vcx/testenv/*|vcx/fixtures/*|third_party/*|Makefile|vcx/Makefile|vcx/v.mod|devbox.json|devbox.lock|scripts/*)
         echo ALL; return 0 ;;
