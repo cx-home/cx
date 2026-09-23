@@ -1018,7 +1018,7 @@
       [h3 'Agent-parity']
       [p 'Agents are first-class peers. They emit the same intents as humans and are gated by the same authz dial — a delegation you can attenuate, time-bound, or revoke. Surfaces are medium-agnostic, so the same capability renders for a terminal, a browser, or an agent.']
       [h3 'Using it']
-      [p [code "[?lib 'cx-xap' :as xap]"] ' imports the runtime — it is bundled in the binary, no install. The four demos below are a ladder: one capability, surfaced through progressively more clients — each rung turns on exactly one more subsystem. Run each with the command on its page.']
+      [p [code "[?lib 'cx-platform/xap' :as xap]"] ' imports the runtime — it is bundled in the binary, no install. The four demos below are a ladder: one capability, surfaced through progressively more clients — each rung turns on exactly one more subsystem. Run each with the command on its page.']
       [h3 'The demo ladder']
       [ul [?for [in $d [$xap-demos]] [yield [$xap-ladder-item $d]]]]]]]]
 
