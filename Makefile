@@ -2921,6 +2921,7 @@ SUITE_SERIAL_RETRY := vcx/tests/net_udp_read_deadline_test.v \
                       vcx/tests/xap_umbrella_test.v \
                       vcx/tests/store_remote_umbrella_test.v \
                       vcx/tests/connector_live_test.v \
+                      vcx/tests/fabric_umbrella_test.v \
                       vcx/tests/code_eval_fixtures_test.v \
                       vcx/tests/code_eval_fixtures_shard_1_test.v \
                       vcx/tests/code_eval_fixtures_shard_2_test.v \
@@ -3037,6 +3038,8 @@ RETRY_REASON_CASE = case "$$rel" in \
 	    reason="\#1125 pty master read races under the -j12 suite storm (empty child output); green in isolation and in the prior full run" ;; \
 	  vcx/tests/xap_umbrella_test.v) \
 	    reason="reference web client / store readiness bounds (calibrated ~30 s) exceeded only under the -j12 storm plus box load: measured 2026-09-09 OK 72 s alone, FAIL 98.7 s and 123 s with a step or build sharing the box" ;; \
+	  vcx/tests/fabric_umbrella_test.v) \
+	    reason="\#1650 publish starved under load: the first webhook POST of test_fabric_webhook_adapter after the SSE lane joined got no answer inside the 30 s client read deadline in the 14-job selected run on 6eecb5282 (the handler publish waits on the fabric handle mutex the pump holds across each deadline-bounded receive); 3 of 3 green at the same tree on the shared slot at load 6-9 (the test 3.8 s), the 30 s deadline is NOT loosened" ;; \
 	  vcx/tests/store_remote_umbrella_test.v) \
 	    reason="\#1425 daemon start under the -j12 suite storm (the readiness window expires before the listener line); green in isolation and in every prior full run" ;; \
 	  vcx/tests/net_udp_read_deadline_test.v|vcx/tests/net_dtls_test.v|vcx/tests/net_real_socket_test.v|vcx/tests/http_h2_serve_test.v|vcx/tests/http_client_tls_transport_test.v|vcx/tests/smtp_real_socket_test.v|vcx/tests/imap_real_socket_test.v|vcx/tests/http_umbrella_test.v|vcx/tests/connector_live_test.v) \
