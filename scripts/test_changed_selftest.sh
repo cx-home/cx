@@ -241,6 +241,69 @@ else
 	bad I "$hd loop(s) still read from a here-document, a here-string or a process substitution — the bash 5.3 self-pipe stall (and `< <(…)` is a syntax error under `sh`, which is how every pipeline invokes this file)"
 fi
 
+# ── the calibrated wall-clock bound case J runs under (J0 pins its shape) ───
+# BIG_BASH is the newest bash on this box: case J runs the real script under
+# it, and its $EPOCHREALTIME is the millisecond clock both J and its reference
+# probe are timed with (a one-second `date +%s` reading cannot resolve a probe
+# of a few seconds into a ratio; a bash without it falls back to that).
+BIG_BASH=$(command -v bash 2>/dev/null || echo /bin/bash)
+for cand in /nix/store/*-bash-5*/bin/bash; do
+	[ -x "$cand" ] && BIG_BASH=$cand && break
+done
+now_ms() {
+	"$BIG_BASH" -c 't=${EPOCHREALTIME:-}; if [ -n "$t" ]; then t=${t/[.,]/}; echo $((t / 1000)); else echo $(($(date +%s) * 1000)); fi'
+}
+# ms_s MS — a millisecond reading as seconds to one decimal, for the log line.
+ms_s() { echo "$(($1 / 1000)).$((($1 % 1000) / 100))"; }
+# J_FLOOR_MS is the IDLE bound — the 30 s case J always allowed. It is never
+# loosened: on a machine whose reference probe reads at or under its idle cost
+# the bound IS the floor, whatever the load average says.
+# J_PROBE_IDLE_MS is the reference probe's cost on an idle dev2 — the probe is
+# J's own work at one line instead of 400 (the same script, the same bash, a
+# path of the same shape), so contention stretches both by the same factor.
+# Measured 2026-09-23 on dev2: 2.67–2.75 s at load 12–15 (J 7.1–7.6 s beside
+# it), 4.2–4.5 s at load ~20 (J 9.6 s), 5.3–7.5 s at load ~50 (J 12–13 s); the
+# lowest reading is the reference, so an idle box keeps the floor and a
+# faster one reads under it and keeps it too.
+J_FLOOR_MS=30000
+J_PROBE_IDLE_MS=2700
+# j_bound PROBE_MS — the bound a probe reading earns: the floor stretched by
+# the probe's ratio to its idle cost, never below the floor.
+j_bound() {
+	jb_b=$((J_FLOOR_MS * $1 / J_PROBE_IDLE_MS))
+	[ "$jb_b" -lt "$J_FLOOR_MS" ] && jb_b=$J_FLOOR_MS
+	echo "$jb_b"
+}
+# j_calibrated PROBE_FN WORK_FN — PROBE_FN prints the reference probe's
+# elapsed ms; WORK_FN prints "<rc> <elapsed ms>" (rc 0: the work succeeded).
+# Probe, derive the bound, run the work. A reading AT OR OVER its bound is
+# not believed yet (#988): re-probe the machine once — a fresh reading carries
+# whatever contention arrived mid-run — re-derive the bound and re-run the
+# work once against it. Sets j_verdict (ok | starved | slow | failed),
+# j_reprobes, and every reading: j_p1 j_b1 j_rc1 j_w1, j_p2 j_b2 j_rc2 j_w2.
+j_calibrated() {
+	j_reprobes=0 j_p2=- j_b2=- j_rc2=- j_w2=-
+	j_p1=$("$1")
+	j_b1=$(j_bound "$j_p1")
+	j_out=$("$2")
+	j_rc1=${j_out%% *} j_w1=${j_out##* }
+	if [ "$j_rc1" -ne 0 ]; then j_verdict=failed; return 0; fi
+	if [ "$j_w1" -lt "$j_b1" ]; then j_verdict=ok; return 0; fi
+	j_reprobes=1
+	j_p2=$("$1")
+	j_b2=$(j_bound "$j_p2")
+	j_out=$("$2")
+	j_rc2=${j_out%% *} j_w2=${j_out##* }
+	if [ "$j_rc2" -ne 0 ]; then
+		j_verdict=failed
+	elif [ "$j_w2" -lt "$j_b2" ]; then
+		j_verdict=starved
+	else
+		j_verdict=slow
+	fi
+	return 0
+}
+
 # ── J0 — case J's wall-clock bound is CALIBRATED, never a bare constant ─────
 # J reads a WALL CLOCK, and a wall clock is load-blind: the post-merge run on
 # 684a12502 read J at 32 s against its 30 s bound at load ~50 while a dozen
@@ -303,11 +366,9 @@ fi
 
 # ── J — a change set far larger than any pipe buffer runs to completion ─────
 # The time bound is the regression guard the shape guard cannot be: it runs the
-# REAL script, under the newest bash on this box, over a change set of ~200 KB.
-BIG_BASH=$(command -v bash 2>/dev/null || echo /bin/bash)
-for cand in /nix/store/*-bash-5*/bin/bash; do
-	[ -x "$cand" ] && BIG_BASH=$cand && break
-done
+# REAL script, under the newest bash on this box, over a change set of ~70 KB,
+# against the CALIBRATED bound above (J0) — the 30 s floor at idle, stretched
+# only by the reference probe measured here, in this process, beside it.
 # ~70 KB in FEW lines: it is the BYTE SIZE that fills a pipe buffer, and the
 # per-file work of the selection is linear in the LINE count, so a change set
 # of 400 long paths exercises the hazard in seconds where 6,000 short ones
@@ -320,16 +381,35 @@ while [ "$i" -lt 400 ]; do
 	printf 'vcx/code/%s_%04d.v\n' "$pad" "$i" >> "$T/changed_big"
 	i=$((i + 1))
 done
+printf 'vcx/code/%s_probe.v\n' "$pad" > "$T/changed_probe"
 bsz=$(wc -c < "$T/changed_big" | tr -d ' ')
-j0=$(date -u '+%s')
-( cd "$ROOT" && "$BIG_BASH" scripts/test_changed.sh HEAD --dry-run --changed-files "$T/changed_big" ) > "$T/j.log" 2>&1
-jrc=$?
-jel=$(( $(date -u '+%s') - j0 ))
-if [ "$jrc" -eq 0 ] && [ "$jel" -lt 30 ] && grep -q '^test-changed: RUN:' "$T/j.log"; then
-	ok J "a ${bsz}-byte change set through $(basename "$(dirname "$(dirname "$BIG_BASH")")") completed in ${jel}s"
-else
-	bad J "a ${bsz}-byte change set: exit $jrc after ${jel}s (want 0 within 30s) — $BIG_BASH"
+j_probe_real() {
+	jp_t0=$(now_ms)
+	( cd "$ROOT" && "$BIG_BASH" scripts/test_changed.sh HEAD --dry-run --changed-files "$T/changed_probe" ) > "$T/jp.log" 2>&1
+	echo $(($(now_ms) - jp_t0))
+}
+j_work_real() {
+	jw_t0=$(now_ms)
+	( cd "$ROOT" && "$BIG_BASH" scripts/test_changed.sh HEAD --dry-run --changed-files "$T/changed_big" ) > "$T/j.log" 2>&1
+	jw_rc=$?
+	jw_el=$(($(now_ms) - jw_t0))
+	if [ "$jw_rc" -eq 0 ] && ! grep -q '^test-changed: RUN:' "$T/j.log"; then jw_rc=99; fi
+	echo "$jw_rc $jw_el"
+}
+j_calibrated j_probe_real j_work_real
+jbash=$(basename "$(dirname "$(dirname "$BIG_BASH")")")
+jr1="$(ms_s "$j_w1")s against a $(ms_s "$j_b1")s bound (reference probe $(ms_s "$j_p1")s, idle $(ms_s "$J_PROBE_IDLE_MS")s)"
+jr2="" jrc=$j_rc1
+if [ "$j_reprobes" = 1 ]; then
+	jrc=$j_rc2
+	jr2="re-probed $(ms_s "$j_p2")s → bound $(ms_s "$j_b2")s, the retry took $(ms_s "$j_w2")s"
 fi
+case "$j_verdict" in
+ok) ok J "a ${bsz}-byte change set through $jbash completed in $jr1" ;;
+starved) ok J "a ${bsz}-byte change set through $jbash read $jr1 — the bound fired under contention; $jr2, within it" ;;
+slow) bad J "a ${bsz}-byte change set: $jr1; $jr2 — want exit 0 within the calibrated bound (the $(ms_s "$J_FLOOR_MS")s floor at idle) — $BIG_BASH" ;;
+*) bad J "a ${bsz}-byte change set: exit $jrc (want 0, with a RUN: line) after $jr1 $jr2 — $BIG_BASH" ;;
+esac
 
 # ── K — the parallel make of a SELECTED run keeps going (RULED: RUN-2) ──────
 # `make test`'s storm carries `-k` so one failed run names every red step. A
