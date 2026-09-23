@@ -143,7 +143,11 @@ printf '%s\n' "$CHANGED" | sed 's/^/  /'
 # shard calls and the document runner reaches — named by no row from RS-16 to
 # #1634, so a change to exactly that loop skipped every step that runs it. Over-include on
 # doubt: a false RUN costs minutes, a false SKIP costs correctness.
-RING0='vcx/cx/*'
+# RING0 carries deps.cxd (RULED: RS-7, RS-12): vcx/cx and the other cx-core-data
+# modules are compiled from the pin, so the change that moves them in THIS
+# repository is the pin moving. It over-selects for a pin that is not Ring 0's
+# (a package's), which is the safe direction.
+RING0='vcx/cx/* deps.cxd'
 RING_STORE='vcx/cxstore/*'
 RING1='vcx/code/*'
 RING_LEAF='vcx/arrow/* vcx/transport/*'
@@ -732,7 +736,9 @@ suite_files() {
       # the commit that gives its step a row.
       "$SUITE_DIR"/runners/extraction_gate/*|"$SUITE_DIR"/runners/profile_gate/*|"$SUITE_DIR"/runners/conformance/*|"$SUITE_DIR"/runners/streaming_write/*)
         continue ;;
-      "$SUITE_DIR"/*|vcx/testenv/*|vcx/fixtures/*|third_party/*|Makefile|vcx/Makefile|vcx/v.mod|devbox.json|devbox.lock|scripts/*)
+      # deps.cxd: a moved pin moves the Ring 0 module every test compiles
+      # against, exactly as third_party/ moves the compiler (RULED: RS-12).
+      "$SUITE_DIR"/*|vcx/testenv/*|vcx/fixtures/*|third_party/*|deps.cxd|Makefile|vcx/Makefile|vcx/v.mod|devbox.json|devbox.lock|scripts/*)
         echo ALL; return 0 ;;
     esac
   done < "$TC_TMP/changed"
