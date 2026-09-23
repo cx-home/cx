@@ -602,8 +602,13 @@ const accepted_by_one_table = [
 	AcceptedByOne{'examples/env.cx', .data, reason_entity},
 	// ── recorded exception — a token-initial operator head (1) ──
 	AcceptedByOne{'examples/logs.cx', .data, reason_ophead},
-	// ── recorded exception — a DATA-only lane the program grammar has no form for (4) ──
+	// ── recorded exception — a DATA-only lane the program grammar has no form for (6) ──
+	// 4 -> 6: the front door's two corpora (#1589 item 23, RULED: RS-7, RS-9) -- a
+	// [title] of bare prose carrying a word the program reader takes as a keyword
+	// (`module`, `shape`).
+	AcceptedByOne{'conformance/bundle_sources.cxd', .data, reason_datalane},
 	AcceptedByOne{'conformance/conversions.cxd', .data, reason_datalane},
+	AcceptedByOne{'conformance/docs_fragment.cxd', .data, reason_datalane},
 	AcceptedByOne{'conformance/fmt.cxd', .data, reason_datalane},
 	AcceptedByOne{'conformance/xml.cxd', .data, reason_datalane},
 	AcceptedByOne{'conformance/xml_codec.cxd', .data, reason_datalane},
@@ -638,9 +643,12 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/lang_stats.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/run_bench_json.cx', .program, reason_1536},
 	AcceptedByOne{'stdlib/supervise.cx', .program, reason_1536},
-	// ── recorded exception — a computed attribute `name=[EXPR]` (22) ──
+	// ── recorded exception — a computed attribute `name=[EXPR]` (27) ──
 	// 22 -> 21: scripts/sso_interop/idp.cx left with the sso extraction (RS-12).
 	// 21 -> 22: scripts/check_migrate_namespace_fixtures.cx, RS-4's sweep grader.
+	// 22 -> 26: the front door's bundled-source table, its tree check, and the two
+	// graders (#1589 item 23, RULED: RS-7, RS-9).
+	// 26 -> 27: scripts/product_import_gate.cx, RS-24's product-import gate.
 	AcceptedByOne{'examples/code-tour.cx', .program, reason_attr},
 	AcceptedByOne{'examples/cxpath-tour.cx', .program, reason_attr},
 	AcceptedByOne{'examples/htmx/serve.cx', .program, reason_attr},
@@ -650,7 +658,11 @@ const accepted_by_one_table = [
 	AcceptedByOne{'examples/platform/scim/projection/no-leak.cx', .program, reason_attr},
 	AcceptedByOne{'examples/platform/scim/provisioning/provision.cx', .program, reason_attr},
 	AcceptedByOne{'examples/platform/xap/storefront/compose.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/bundle_check.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/bundle_sources.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/check_bundle_sources_fixtures.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/check_deps_pins_fixtures.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/check_docs_fragment_fixtures.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/check_lint_rules.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/check_migrate_namespace_fixtures.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/check_no_stub_impl.cx', .program, reason_attr},
@@ -659,14 +671,17 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/deps_sync.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/gen_guide/guide_build.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/gen_guide/playground/gen_examples.cx', .program, reason_attr},
+	AcceptedByOne{'scripts/product_import_gate.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/repo_paths.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/ring_query.cx', .program, reason_attr},
 	AcceptedByOne{'stdlib/diagram.cx', .program, reason_attr},
 	AcceptedByOne{'stdlib/flow.cx', .program, reason_attr},
-	// ── recorded exception — a program document the data balancer cannot read (8) ──
+	// ── recorded exception — a program document the data balancer cannot read (9) ──
+	// 8 -> 9: scripts/docs_fragment.cx, the RS-9 fragment contract (a `"#]"` literal).
 	AcceptedByOne{'scripts/bisect_batch.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/check_editor_surface_parity.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/diagnostics_census.cx', .program, reason_prog},
+	AcceptedByOne{'scripts/docs_fragment.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/flow_vocabulary_gate.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/fuzz_cx.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/gen_docs/primer_platform.cx', .program, reason_prog},

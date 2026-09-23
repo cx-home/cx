@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 #
 # NO-CONSUMER-TERMS gate — downstream-consumer identity must never appear in
-# the repo tree, because the public release repos are CUT from this one and
-# anything here flows into them. The standing policy (2026-07-24 owner
-# ruling): CX addresses platform concerns independent of specific users;
+# the repo tree, because this repository is the one that is published (the
+# allowlist mirror retired, RULED: RS-11) and anything here flows out with it.
+# The standing policy (2026-07-24 owner ruling): CX addresses platform
+# concerns independent of specific users;
 # every artifact speaks in CX-generic workload terms (users, tracked
 # entities, events, streams, deployments) — never a consumer's name,
 # product, org, or business-domain vocabulary.
@@ -181,44 +182,6 @@ if [ "${1:-}" = "--gh-metadata" ]; then
 		exit "$fail"
 	fi
 	echo "check-no-consumer-terms(gh): OK — no consumer-identifying terms in labels, issue/PR bodies, or comments"
-	exit 0
-fi
-
-# ── --tree DIR mode ─────────────────────────────────────────────────────────
-# Scans an arbitrary directory on disk rather than this repo's tracked files.
-# It exists for `scripts/publish.sh`, whose pre-commit guard was PATH-based
-# only: it asserted no forbidden PATH leaked, and could not see a banned term
-# sitting INSIDE an allowlisted file. That is not a hypothetical — `pb-ae`
-# reached the public repo through exactly that hole and is live there now, in
-# vcx/tests/xap_render_test.v, having passed the path guard every publish.
-#
-# The tracked-file lane below cannot serve this: at guard time the public
-# tree is not yet committed, so `git grep` (tracked files) sees nothing. Hence
-# a filesystem walk. Excludes .git and the vendored submodule; nothing else,
-# because the publish allowlist has already decided what is in the payload —
-# a second, differently-worded exclusion set here is how the two gates would
-# drift apart and one of them would quietly stop protecting anything.
-if [ "${1:-}" = "--tree" ]; then
-	tree_root="${2:-}"
-	[ -n "$tree_root" ] || { echo "check-no-consumer-terms(tree): FAIL — usage: $0 --tree DIR"; exit 2; }
-	[ -d "$tree_root" ] || { echo "check-no-consumer-terms(tree): FAIL — not a directory: $tree_root"; exit 2; }
-	hits="$(grep -rInE "$pattern" "$tree_root" \
-		--exclude-dir=.git --exclude-dir=third_party 2>&1)"
-	grep_status=$?
-	# grep exits 1 on "no match" and >1 on a real error. A hard error must
-	# never read as clean — the same vacuous-pass rule as every other lane.
-	if [ "$grep_status" -gt 1 ]; then
-		echo "check-no-consumer-terms(tree): FAIL — grep errored (status $grep_status); refusing a vacuous pass"
-		printf '%s\n' "$hits" | head -3
-		exit 2
-	fi
-	if [ -n "$hits" ]; then
-		echo "check-no-consumer-terms(tree): FAIL — consumer-identifying terms in $tree_root:"
-		printf '%s\n' "$hits"
-		echo "(policy: sanitize to CX-generic workload language; see the gate header)"
-		exit 1
-	fi
-	echo "check-no-consumer-terms(tree): OK — no consumer-identifying terms in $tree_root"
 	exit 0
 fi
 
