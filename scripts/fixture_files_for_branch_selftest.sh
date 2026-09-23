@@ -26,6 +26,8 @@
 #   R  deps.cxd's doc block only              → empty (no row moved)
 #   S  a deps.cxd row that names no module=   → ALL   (it cannot tell)
 #   T  deps.cxd from --changed-files          → ALL   (no base to compare rows with)
+#   U  a V repository's row moves (v-fork=)   → ALL   (its modules are compiled into
+#                                                the binary every case runs through)
 #
 # Exit 0 and the count line only when every case matches.
 set -u
@@ -213,6 +215,14 @@ sed -i.bak "s/ module='cx-platform\/sso'//; s/c43dc5cd9c804dc3d34e3e1a5a1e4fa696
 git add -A && git commit -qm S
 check S "ALL"
 
+# U — a V repository's row (v-fork=, module= a repository name rather than a
+#     '<ns>/<name>' spelling): what it provides is compiled into the binary
+#     every case runs through, so no importer list covers it
+printf "  [dep repo=cx-core-data sha=3333333333333333333333333333333333333333 module=cx-core-data v-fork=d51c31ccb2d49b2117215aee11ac38ef520e1ece]\n" > "$T/row"
+awk -v row="$(cat "$T/row")" '/^\]$/ { print row } { print }' deps.cxd > "$T/deps" && cp "$T/deps" deps.cxd
+git add -A && git commit -qm U
+check U "ALL"
+
 # T — deps.cxd named by --changed-files: no base to compare its rows with
 printf 'deps.cxd\n' > "$T/changed.txt"
 got=$(sh "$SEL" --changed-files "$T/changed.txt" 2>/dev/null)
@@ -227,4 +237,4 @@ if [ "$fails" -ne 0 ]; then
 	echo "fixture_files_for_branch selftest: $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "fixture_files_for_branch selftest: 20/20 (ALL G/H/I/J/K/M/S/T; selections A/B/C/D/E/F/N/P/Q; empty L/O/R)"
+echo "fixture_files_for_branch selftest: 21/21 (ALL G/H/I/J/K/M/S/T/U; selections A/B/C/D/E/F/N/P/Q; empty L/O/R)"
