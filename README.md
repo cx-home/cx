@@ -137,7 +137,7 @@ curl -sSL https://cxhome.org/install | CX_PROFILE=data sh
 
 | Profile | Surface |
 |---|---|
-| `platform` (default) | Rings 0–2: evaluator + local-effect stdlib + store/fabric/XAP daemons |
+| `platform` (default) | the rings and the platform group: evaluator + local-effect stdlib + store/fabric/XAP daemons |
 | `cli` | Rings 0–1: evaluator + local-effect stdlib packs + http client; no servers |
 | `embed` | Rings 0–1 core: evaluator only, no local-effect packs; ships the embed-shape `libcx` |
 | `data` | Ring 0: parse/convert/canonical/hash/diff/validate — cannot execute programs (no evaluator in the artifact) |

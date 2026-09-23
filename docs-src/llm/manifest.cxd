@@ -67,7 +67,7 @@ correctly.
 
   [; #1427-c put a module's corpus in its RING's directory, so a suite is
      named by the directory it is in: `stdlib/` is Ring 1, `platform/` is
-     Ring 2, `x/` and `xap/` are the tiers the ring split does not govern.
+     in the platform group, `x/` and `xap/` are the tiers the ring split does not govern.
      The `http` suite became two when 1427-e split the module. The
      data-language suites are cx-core-data's and are read from its pinned
      checkout, spelled from conformance/ (RULED: RS-7, RS-9, RS-12): the docs
@@ -177,7 +177,8 @@ than as friction.
           template='reference-platform.md.tmpl'
           title='Reference: the platform and ecosystem rings'
     [summary [#
-Ring 2 (store, journal, HTTP, XAP host) and Ring 3 (agent interop, feature
-distribution, language bindings) — what is reachable and how.
+The platform group (store, journal, HTTP, XAP host) and the bindings and
+ecosystem groups (agent interop, feature distribution, language bindings) —
+what is reachable and how.
 #]]]
 ]

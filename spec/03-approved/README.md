@@ -27,7 +27,7 @@ The CX language and its companion specifications, organised into five directorie
 
 The `cx-stdlib` module specs: the modules that are pure or purely local. See [`stdlib/README.md`](stdlib/README.md) for the per-module index.
 
-## `platform/` — the bundled platform modules, Ring 2 (17 modules + README + `store/`)
+## `platform/` — the bundled platform modules, the platform group (17 modules + README + `store/`)
 
 The `cx-platform` module specs: the modules that serve, or that reach a store or a protocol. See [`platform/README.md`](platform/README.md) for the per-module index; `platform/store/` holds the external-engine catalog entries (`redis`, `sql`) and the two approved store design texts.
 
