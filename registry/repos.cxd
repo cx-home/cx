@@ -331,8 +331,22 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='vcx/tests/a2a_' repo=cx-platform-agent]
   [path prefix='vcx/tests/llm_' repo=cx-platform-agent]
 
+  [; ── RS-18 (owner D20a, #1591 item 12): a family's builtin REGISTRATION
+       lives in `vcx/platform/<its dispatcher's basename>_register.v`, so
+       every rule above places a register file with the dispatcher it
+       registers WITHOUT a rule of its own — `stdlib_store_register.v` goes to
+       cx-platform-store by the `stdlib_store` rule, `sql_register.v` to
+       cx-platform-db by the `sql` rule, and so on for all twenty-three. That
+       is the whole point of the naming rule and the answer to
+       extract-db/REPORT.md's F-D1. Only `ring2_register.v` (now the COMPOSER,
+       which names no family) and the register files of the two families whose
+       dispatchers are already xap's residue — `stdlib_xap_register.v` and
+       `coordination_register.v` (flow's one act seam, F-F2) — reach the
+       catch-all below. Adding a rule per register file would be a dead rule
+       the allocation gate refuses. ─────────────────────────────────────── ]
+
   [; ── platform: xap (the host; the residue of vcx/platform) ────────── ]
-  [path prefix='vcx/platform/' repo=cx-platform-xap why='everything left in vcx/platform after the rows above: xap, xsp profiles, contract revision, coordination glue, the module init and Ring-2 registration']
+  [path prefix='vcx/platform/' repo=cx-platform-xap why='everything left in vcx/platform after the rows above: xap, xsp profiles, contract revision, coordination glue, the module init and the registration COMPOSER (RS-18: each family registers itself from its own file)']
   [path prefix='vcx/cmd/xap' repo=cx-platform-xap]
   [path prefix='vcx/cmd/platform_verbs' repo=cx-platform-xap]
   [path exact='stdlib/xap.cx' repo=cx-platform-xap]
