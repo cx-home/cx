@@ -867,10 +867,18 @@ verify-playground-examples: build-vcx
 	@# carry `exit 3` and `stderr empty`; 07 answers an err value against a
 	@# success [expect] — its EXPECT line must carry the expectation and
 	@# `exit 1`. And no row may reach the report as `FAIL with no message`.
-	@out=$$(vcx/target/cx --allow-read --allow-write --allow-subprocess --allow-env \
+	@#
+	@# #1625: the run gets a FRESH TMPDIR and must leave it empty — the
+	@# generator's per-run scratch dir is removed on every exit path (this run
+	@# exits 1 through the lint verdict).
+	@gtmp=$$(mktemp -d); \
+	out=$$(TMPDIR="$$gtmp" vcx/target/cx --allow-read --allow-write --allow-subprocess --allow-env \
 	  --allow-clock \
 	  scripts/gen_guide/playground/gen_examples.cx --lint-only \
 	  scripts/gen_guide/playground/tests/expect_red.cxd 2>&1); rc=$$?; \
+	left=$$(ls -A "$$gtmp"); rm -rf "$$gtmp"; \
+	if [ -n "$$left" ]; then \
+	  echo "verify-playground-examples: gen_examples left its scratch behind under TMPDIR: $$left"; exit 1; fi; \
 	if [ "$$rc" -ne 1 ] || ! printf '%s' "$$out" | grep -q 'EXPECT 02-expect-wrong'; then \
 	  echo "verify-playground-examples: the [expect] check is VACUOUS (rc=$$rc; expected 1 naming 02-expect-wrong)"; \
 	  printf '%s\n' "$$out" | tail -8; exit 1; fi; \
