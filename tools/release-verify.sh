@@ -166,6 +166,16 @@ check "cx primer == docs/llm/primer.md (embed is fresh)" \
 # going missing, and the whole value of these is that a fixed path answers.
 check "llms.txt + llms-full.txt + AGENTS.md present and non-empty" \
  "test -s docs/llm/llms.txt && test -s docs/llm/llms-full.txt && test -s AGENTS.md && test -s CLAUDE.md"
+# The site assembly step (RULED: RS-27, RS-11, D51d): `publish.sh` used to
+# copy these to the site root as part of the allowlist mirror it built; RS-11
+# retired that mirror and nothing replaced the copy. `docs/` is the site root
+# itself (CNAME lives there), so this is that copy — the llmstxt.org
+# convention served from the domain root — done here, at release-verify time,
+# UNTRACKED (gitignored: a committed duplicate would drift on every
+# regeneration). This row both assembles and checks: docs/llms.txt and
+# docs/llms-full.txt do not exist until release-verify runs.
+check "llms.txt + llms-full.txt copied to the site root (untracked)" \
+ "cp docs/llm/llms.txt docs/llms.txt && cp docs/llm/llms-full.txt docs/llms-full.txt && test -s docs/llms.txt && test -s docs/llms-full.txt"
 
 section "The pins (RULED: RS-7, #1589 item 23)"
 # "A release cut ships whatever is pinned." These rows are what makes that
