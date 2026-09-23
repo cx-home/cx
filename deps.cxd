@@ -32,5 +32,5 @@ a question the default already answers correctly, and it would rot the day the
 organisation moves.
 #]]
 
-  [dep repo=cx-platform-sso sha=1e814e5aae6327a8218cc3fe69b43a03517e92bf module='cx-platform/sso']
+  [dep repo=cx-platform-sso sha=c43dc5cd9c804dc3d34e3e1a5a1e4fa6969b5598 module='cx-platform/sso']
 ]
