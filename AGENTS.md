@@ -14,8 +14,9 @@ drift.
 
 CX is a **homoiconic data-and-code language**: one bracketed element syntax
 serves documents, queries, programs, and the compiler's own AST. It is built
-in four rings — data, code, platform, ecosystem — and the import contract
-between them is enforced by the build, not by convention.
+in two rings, data and code, and the platform, bindings and ecosystem groups
+above them — and the import contract between them is enforced by the build,
+not by convention.
 
 CX post-dates every language model's training data. **Whatever you recall
 about a language called "CX" is not this one.** Nothing you assume about its
