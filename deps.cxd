@@ -36,5 +36,5 @@ organisation moves.
   [dep repo=cx-platform-ux sha=ef9248093389d42f6726042bfc254351445db4bc module='cx-platform/ux cx-platform/ux-web cx-platform/ux-tui']
   [dep repo=cx-platform-sso sha=c43dc5cd9c804dc3d34e3e1a5a1e4fa6969b5598 module='cx-platform/sso']
   [dep repo=cx-platform-flow sha=78ea045510278dee3b0a522ab7f168e42e020fab module='cx-platform/flow']
-  [dep repo=cx-platform-mail sha=68a5130e7be30ca4d970e9dc43949d85f2d9c0ef module='cx-platform/imap cx-platform/smtp cx-stdlib/sasl' v-fork=d51c31ccb2d49b2117215aee11ac38ef520e1ece]
+  [dep repo=cx-platform-mail sha=8afacaaeae929436dcd24074cabe8ae4cf8b50c4 module='cx-platform/imap cx-platform/smtp cx-stdlib/sasl' v-fork=d51c31ccb2d49b2117215aee11ac38ef520e1ece]
 ]

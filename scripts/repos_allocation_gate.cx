@@ -143,14 +143,33 @@
         [where [$member [$string $x@name] $filled]]
         [yield [failure kind="extracted repo still claims files"
                  what=[$string $x@name]]]]]
+    # A `repo=` row's code=/half= may stay LOCAL while spec/corpus/source
+    # move to deps/<repo>/ (RULED: RS-19's LETTER, _gate_evidence/
+    # pipeline_xmail/RESULTS.md §5): a declared Ring-1 half whose builtin is
+    # called INTRA-MODULE by vcx/code/stdlib_dispatch.v cannot physically
+    # leave the `code` V module without becoming a second module every such
+    # call site would then have to import and qualify -- modules.cxd's own
+    # schema anticipates exactly this ("half= ... stays in vcx/code", read
+    # unconditionally of repo=). A deps/<repo>/ path is by construction a
+    # [miss] against every LOCAL rule (repos.cxd has no `deps/` rows), so for
+    # a `repo=` row that miss reads as the row's OWN repo -- the file moved
+    # there -- rather than as "no repo" (which is what a miss means for the
+    # 4,900 rows below with no repo= at all, where it is still `[unallocated]`
+    # or a plain local file, never [split module]). A LOCAL code=/half= that
+    # a real repos.cxd rule allocates to a DIFFERENT repo than the row's own
+    # `repo=` is still a genuine split -- the normalization below only ever
+    # equates a miss with the row's own repo, never with anything else.
     [= $split [?for [in $m $modules]
+                [= $row-repo [$string [?else $m@repo ""]]]
                 [yield [?let [= $paths [?for [in $col ([$string [?else $m@spec ""]], [$string [?else $m@corpus ""]], [$string [?else $m@source ""]], [$string [?else $m@code ""]], [$string [?else $m@half ""]])]
                                           [in $p [$strings:split-whitespace $col]]
                                           [where [not [= $p "none"]]]
                                           [yield $p]]]
                               [= $homes [?for [in $p $paths]
                                           [yield [?let [= $h [$first-rule $rules $p]]
-                                                   [?match $h [case [miss] ""] [else [$string $h@repo]]]]]]]
+                                                   [?match $h
+                                                     [case [miss] [?if [= $row-repo ""] [then ""] [else $row-repo]]]
+                                                     [else [$string $h@repo]]]]]]]
                               [= $distinct [?for [in $h $homes] [group-by $h] [yield $key]]]
                          [?if [> [$count $distinct] 1]
                            [then [failure kind="split module" what=[$concat [$string $m@name] " -> " [$strings:join $distinct " + "]]]]
