@@ -23,5 +23,8 @@
 #
 # ── RS-24, xap's split, 2026-09-23: the xap_dist_exports_identity_test.v and
 # xap_log_reduce_test.v sections left this umbrella with xap for
-# vcx/xap/xap_test.v, in-module there, byte-for-byte. The rows above stay
-# the history they are.
+# vcx/xap/xap_test.v, in-module there, byte-for-byte; io_watch_test.v went
+# back to module code as vcx/code/io_watch_behavior_test.v (it tests Ring 1
+# alone), and the #705 content-type pins to vcx/cxnet/cxnet_test.v. What is
+# left is live_refs_feed_test.v, the store's. The rows above stay the history
+# they are.
