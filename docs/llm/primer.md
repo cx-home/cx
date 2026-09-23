@@ -402,7 +402,7 @@ there is no bespoke serializer anywhere in the path:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/mcp' :as mcp]
+[?lib 'cx-platform/mcp' :as mcp]
 [?lib 'cx-stdlib/json' :as json]
 [$json:emit [$mcp:call-tool-request 1 "get_weather" {location: "NYC"}]]
 ```
@@ -1309,8 +1309,7 @@ $ cx prog.cx
 `cx-stdlib/…` is the frozen standard set's **Ring 1** — pure or purely local;
 `cx-platform/…` is its **Ring 2** — the modules that serve, or that reach a
 store or a protocol. Both are bundled in the binary and both are frozen; the
-prefix tells you which ring a line reaches. `cx-x/…` is the experimental tier
-and says so in the import line too. `as=` renames.
+prefix tells you which ring a line reaches. `as=` renames.
 
 `prog.cx`
 ```cx
@@ -1907,14 +1906,6 @@ visible in the import line.
 | `vc-revocation` | The durable half of credential lifecycle: recording that a verifiable credential is revoked, and reading back the set of revoked ids. |
 | `xap` | The XAP orchestrator — the experience layer at the top of the CX web stack. |
 | `xsp-auth` | The XSP-AUTH mutual proof-of-control handshake calculus — SIGMA-style signed ephemeral X25519 over four messages riding ordinary XSP v1 frames on stream 0, with the per-request possession proof and the rotation-continuity proof beside it. |
-
-### Experimental tier — `[?lib 'cx-x/<name>']`
-
-Bundled and conformance-gated, but exempt from the stability promise. The
-import line says so out loud.
-
-| Module | Scope |
-|---|---|
 | `a2a` | A minimal A2A (Agent-to-Agent) protocol client (EXPERIMENTAL x/ tier, #6    Y2) — completing the agentic triad (S9 MCP client, Y1 MCP server, Y2 A2A) on the    shared substrate (jsonrpc + http + json), no new transport. |
 | `a2a-xap` | A2A tasks over the xap substrate (EXPERIMENTAL x/ tier, #6 Y2b). |
 | `adjudicate` | Out-of-band agent adjudicator for the similar review band (EXPERIMENTAL    x/ tier; cx-private #376, similar.md §5.3 ruling Q4). |

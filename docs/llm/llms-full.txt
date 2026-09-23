@@ -404,7 +404,7 @@ there is no bespoke serializer anywhere in the path:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/mcp' :as mcp]
+[?lib 'cx-platform/mcp' :as mcp]
 [?lib 'cx-stdlib/json' :as json]
 [$json:emit [$mcp:call-tool-request 1 "get_weather" {location: "NYC"}]]
 ```
@@ -1311,8 +1311,7 @@ $ cx prog.cx
 `cx-stdlib/…` is the frozen standard set's **Ring 1** — pure or purely local;
 `cx-platform/…` is its **Ring 2** — the modules that serve, or that reach a
 store or a protocol. Both are bundled in the binary and both are frozen; the
-prefix tells you which ring a line reaches. `cx-x/…` is the experimental tier
-and says so in the import line too. `as=` renames.
+prefix tells you which ring a line reaches. `as=` renames.
 
 `prog.cx`
 ```cx
@@ -1909,14 +1908,6 @@ visible in the import line.
 | `vc-revocation` | The durable half of credential lifecycle: recording that a verifiable credential is revoked, and reading back the set of revoked ids. |
 | `xap` | The XAP orchestrator — the experience layer at the top of the CX web stack. |
 | `xsp-auth` | The XSP-AUTH mutual proof-of-control handshake calculus — SIGMA-style signed ephemeral X25519 over four messages riding ordinary XSP v1 frames on stream 0, with the per-request possession proof and the rotation-continuity proof beside it. |
-
-### Experimental tier — `[?lib 'cx-x/<name>']`
-
-Bundled and conformance-gated, but exempt from the stability promise. The
-import line says so out loud.
-
-| Module | Scope |
-|---|---|
 | `a2a` | A minimal A2A (Agent-to-Agent) protocol client (EXPERIMENTAL x/ tier, #6    Y2) — completing the agentic triad (S9 MCP client, Y1 MCP server, Y2 A2A) on the    shared substrate (jsonrpc + http + json), no new transport. |
 | `a2a-xap` | A2A tasks over the xap substrate (EXPERIMENTAL x/ tier, #6 Y2b). |
 | `adjudicate` | Out-of-band agent adjudicator for the similar review band (EXPERIMENTAL    x/ tier; cx-private #376, similar.md §5.3 ruling Q4). |
@@ -4240,20 +4231,20 @@ includes it.
 ## Importing
 
 `[?lib 'cx-stdlib/strings']` binds the module under its own name.
-`[?lib 'cx-stdlib/strings' as=str]` renames it. `[?lib 'cx-x/tools' as=tools]`
-imports from the experimental tier, and says so in the import line.
+`[?lib 'cx-stdlib/strings' as=str]` renames it.
 
-Three import prefixes:
+Two import prefixes:
 
 * **`cx-stdlib/…`** — the frozen standard set. Stable surface.
-* **`cx-x/…`** — experimental. Bundled and conformance-gated, but exempt from
-  the stability promise. If you are writing code meant to last, prefer the
-  standard tier.
 * **`cx-platform/…`** — the platform modules: the ones that serve, or reach
   a store or a protocol (`reference-platform.md`). The XAP orchestrator is one
   of them (`[?lib 'cx-platform/xap' :as xap]`), and so is fabric
   (`[?lib 'cx-platform/fabric']`); both had names of their own, `cx-xap` and
-  `cx-fabric`, which are retired and refuse naming the new spelling.
+  `cx-fabric`, which are retired and refuse naming the new spelling. So are the
+  eleven modules that were the `cx-x/<name>` experimental tier (`run`, `llm`,
+  `mcp`, `mcp-server`, `a2a`, `a2a-xap`, `adjudicate`, `tools`, `ux`, `ux-web`,
+  `ux-tui`): each imports as `cx-platform/<name>`, and the old spelling refuses
+  naming the new one.
 
 A call is `[$module:fn args…]`. The `$` is not optional stylistically — it is
 the assertion that this is a call rather than an element you are building
@@ -4323,22 +4314,6 @@ $ cx prog.cx
 | `ws` | The RFC 6455 WebSocket frame codec: octets and values in, octets and values out. |
 | `xsp` | The XAP Stream Protocol frame codec — a self-describing, self-delimiting frame [version · type · stream-id · principal-DID · flags · len · payload] that carries XAP over any transport. |
 | `zip` | Zip archive codec over the CX bytes scalar kind. |
-
-## Experimental tier — `cx-x/<name>`
-
-| Module | Scope |
-|---|---|
-| `a2a` | A minimal A2A (Agent-to-Agent) protocol client (EXPERIMENTAL x/ tier, #6    Y2) — completing the agentic triad (S9 MCP client, Y1 MCP server, Y2 A2A) on the    shared substrate (jsonrpc + http + json), no new transport. |
-| `a2a-xap` | A2A tasks over the xap substrate (EXPERIMENTAL x/ tier, #6 Y2b). |
-| `adjudicate` | Out-of-band agent adjudicator for the similar review band (EXPERIMENTAL    x/ tier; cx-private #376, similar.md §5.3 ruling Q4). |
-| `llm` | A minimal LLM provider (EXPERIMENTAL x/ tier, #6 D2/S10) — the first    Runnable. |
-| `mcp` | A minimal MCP (Model Context Protocol) client (EXPERIMENTAL x/ tier, #6    S9). |
-| `mcp-server` | Minimal MCP server helpers (EXPERIMENTAL x/ tier, #6 Y1; stream 18) — the    server counterpart to cx-x/mcp, at the 2025-06-18 protocol revision (one    target). |
-| `run` | The Runnable convention + combinator library (EXPERIMENTAL x/ tier, #6    D2/M2). |
-| `tools` | The agent-tool projection (EXPERIMENTAL x/ tier; stream 18): ONE    tool-descriptor model derived from command definitions ([effects]-bearing    [?def]s — clause presence is the discriminator) at list time, no    materialized manifest. |
-| `ux` | The SEMANTIC CORE of the UX projection (EXPERIMENTAL x/ tier;    #787): the vocabulary, the fragment addressing, the validation, the three    projections (command→form, query→table, feature-grammar→form/columns), the    hint claims, the patch algebra a live feed lowers onto, and the surface    document's routing correspondence. |
-| `ux-tui` | The TERMINAL RENDERER of the UX projection (EXPERIMENTAL x/ tier;    #787 W5): the second of two peers over `cx-x/ux`'s semantic vocabulary, and    the reason R5's renderer-agnostic claim is testable rather than asserted. |
-| `ux-web` | The WEB RENDERER of the UX projection (EXPERIMENTAL x/ tier;    #787): one of two peers over `cx-x/ux`'s semantic vocabulary, not the    privileged one. |
 
 ## The packs that need a capability
 
@@ -6407,7 +6382,7 @@ verb no route offers is a refusal, not a lint warning:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $f [feature name=shop version="1"
           [nouns [noun name=order [field name=id type=text]]]
@@ -6436,7 +6411,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $ctx {route: "/orders", feature: "orders", path: "/"}]
   [= $ok  [ux:region feature=orders path="/live"
@@ -6478,7 +6453,7 @@ then the notice tones:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [; R-A1 migration: envelope → spliced children (2026-08-25) ]
 [list [?splice [$ux:vocabulary]] [?splice [$ux:renderer-private-attrs]] [?splice [$ux:tones]]]
 ```
@@ -6494,7 +6469,7 @@ both the element and the attribute:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $bad ([ux:action verb=v label=x disabled=true reason="out"],
            [ux:aside label=Basket name=basket],
@@ -6521,7 +6496,7 @@ code:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $r [$ux:refusals-of [ux:action verb=v target="#x"]]]
   [= $f [$first $r]]
@@ -6543,7 +6518,7 @@ clause — *projects* onto one:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $src """
 [?def place-order scope=public impure [effects [write]] [returns element]
@@ -6566,7 +6541,7 @@ between the XAP layer and the UX layer:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $f [feature name=commerce
              [types [type 'did::text'] [type 'money::decimal' [min 0]]]
@@ -6587,7 +6562,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $f [feature name=commerce
              [types [type 'did::text'] [type 'money::decimal' [min 0]]]
@@ -6615,7 +6590,7 @@ projects a group, and a refusal keeps what the user typed:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $feature [$cx:parse "[feature name=shop [nouns [noun name=product [field name=sku type=text] [field name=name type=text]] [noun name=line [field name=sku type=product label='Product' doc='chosen, never typed'] [field name=qty type=int label='Qty']] [noun name=order [field name=customer type=text label='Customer'] [field name=lines type=line repeats=true add-label='Add a line']]] [verbs [verb name=place-order [summary 'Place an order.'] [intent [do :place-order [customer] [lines]]] [writes order]]]]"]]
   [= $opts {options: ([options for=product [option value=ESC-18 label="Escapement"] [option value=BAL-9 label="Balance wheel"]]),
@@ -6631,7 +6606,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $feature [$cx:parse "[feature name=shop [nouns [noun name=product [field name=sku type=text] [field name=name type=text]] [noun name=line [field name=sku type=product label='Product' doc='chosen, never typed'] [field name=qty type=int label='Qty']] [noun name=order [field name=customer type=text label='Customer'] [field name=lines type=line repeats=true add-label='Add a line']]] [verbs [verb name=place-order [summary 'Place an order.'] [intent [do :place-order [customer] [lines]]] [writes order]]]]"]]
   [= $opts {options: ([options for=product [option value=ESC-18 label="Escapement"] [option value=BAL-9 label="Balance wheel"]]),
@@ -6647,7 +6622,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $feature [$cx:parse "[feature name=shop [nouns [noun name=product [field name=sku type=text] [field name=name type=text]] [noun name=line [field name=sku type=product label='Product' doc='chosen, never typed'] [field name=qty type=int label='Qty']] [noun name=order [field name=customer type=text label='Customer'] [field name=lines type=line repeats=true add-label='Add a line']]] [verbs [verb name=place-order [summary 'Place an order.'] [intent [do :place-order [customer] [lines]]] [writes order]]]]"]]
   [= $opts {options: ([options for=product [option value=ESC-18 label="Escapement"] [option value=BAL-9 label="Balance wheel"]]),
@@ -6670,7 +6645,7 @@ theme, locale, actor, session and data are *content*, never identity:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let [= $f [$ux:frag "/orders/o-1041" "orders" "/open-orders/status"]]
   [list [$ux:frag-address $f] [$ux:frag-id $f]]]
 ```
@@ -6682,7 +6657,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let [= $a [$ux:frag "/orders" "orders" "/open"]]
       [= $b [$ux:frag "/orders" "orders" "/open"]]
       [= $c [$ux:frag "/orders" "orders-b" "/open"]]
@@ -6699,7 +6674,7 @@ and a reused address is a refusal rather than a silent disambiguation:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $t [ux:region feature=orders path="/live"
           [ux:card id=open [ux:heading level=2 "Open"]]
@@ -6717,7 +6692,7 @@ cx-25ff65bbcc985af2
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $ctx {route: "/o", feature: "f", path: "/"}]
   [= $dup [ux:region feature=f path="/r" [ux:card id=same [ux:text "a"]] [ux:card id=same [ux:text "b"]]]]
@@ -6736,7 +6711,7 @@ identity is never minted:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $rows ([order id=o-1 customer="Ada"], [order id=o-2 customer="Lin"])]
   [$ux:table $rows {id: "open"}]]
@@ -6754,8 +6729,8 @@ It is the sole author of those attributes, and the list is closed:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [; R-A1 migration: envelope → spliced children (2026-08-25) ]
 [list [?splice [$web:htmx-subset]] [$web:htmx-allowed "hx-post"] [$web:htmx-allowed "hx-on"] [$web:htmx-allowed "hx-boost"]]
 ```
@@ -6772,8 +6747,8 @@ still goes red:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [; R-A1 migration: envelope → spliced children (2026-08-25) ]
 [list [?splice [$web:off-subset-attrs "<div hx-post=\"/x\" hx-target=\"#y\"></div>"]]
       [?splice [$web:off-subset-attrs "<div hx-on=\"click: x\" hx-boost=\"true\"></div>"]]]
@@ -6789,8 +6764,8 @@ there is no interpolation surface to inject into:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [$web:render
   [ux:card [ux:text "R & D <team> \"quoted\""] [ux:field label="A & B" "<script>alert(1)</script>"]]
   {route: "/o", feature: "f", path: "/"}]
@@ -6803,8 +6778,8 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [; R-A1 migration: envelope → spliced children (2026-08-25) ]
 [list [?splice [$web:csp-violations "<div style=\"x\"></div>"]]
       [?splice [$web:csp-violations "<script>alert(1)</script>"]]
@@ -6825,8 +6800,8 @@ semantic tree named a selector:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [?let
   [= $ctx {route: "/orders", feature: "orders", path: "/", bind: [ux:render-ctx [swap default=outerHTML]]}]
   [$web:render
@@ -6844,8 +6819,8 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [$web:render
   [ux:table id=grid
     [ux:rows [ux:row key=r1 [ux:cell "a"]] [ux:row [ux:cell "b"]]]]
@@ -6862,8 +6837,8 @@ never from the tree:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [?let
   [= $rctx [ux:render-ctx
              [feed name=orders endpoint="/stream" event="orders-changed"]
@@ -6881,8 +6856,8 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [?let
   [= $rctx [ux:render-ctx
              [feed name=layout endpoint="/stream" event="layout-changed" region-refetch="/home/body"]
@@ -6905,8 +6880,8 @@ A projection failure never reaches a browser as content:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [; R-A1 migration: envelope → spliced children (2026-08-25) ]
 ([$web:render [ux:action verb=v target="#x"] {route: "/o", feature: "f", path: "/"}],
  [$web:render [ux:region feature=f path="/r" [ux:card id=d] [ux:card id=d]] {route: "/o", feature: "f", path: "/"}])
@@ -6922,8 +6897,8 @@ and both reaching a screen reader:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [?let
   [= $t [ux:form verb=place-order
           [ux:input name=customer label="Customer" error="who is this order for?"]
@@ -6941,8 +6916,8 @@ script involved anywhere:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [?let
   [= $rctx [ux:render-ctx
              [feed name=orders endpoint="/stream" event="orders-changed"]
@@ -6981,7 +6956,7 @@ it:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let [= $t [ux:card
                 [ux:heading level=2 "Open orders"]
                 [ux:field label="Customer" "Ada"]
@@ -6998,8 +6973,8 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [?let
   [= $t [ux:card [ux:heading level=2 "Open"] [ux:field label="Customer" "Ada"]
                  [ux:badge tone=warn "late"] [ux:action verb=place-order label="Go"]]]
@@ -7240,7 +7215,7 @@ element that is not there refuses rather than guessing:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $comps ([component name=hero], [component name=departments], [component name=promo], [component name=group container=true])]
   [= $l0 [ux:layout [placed id=hero component=hero] [placed id=promo component=promo] [placed id=depts component=departments]]]
@@ -7255,7 +7230,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [; R-A1 migration: envelope → spliced children (2026-08-25) ]
   [= $comps ([component name=hero])]
@@ -7274,7 +7249,7 @@ what makes an edit stream auditable and reversible rather than a diff:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $comps ([component name=hero], [component name=featured], [component name=promo], [component name=group container=true])]
   [= $l0 [ux:layout [placed id=hero component=hero] [placed id=featured component=featured]]]
@@ -7298,7 +7273,7 @@ A batch is atomic, so a tenant never lands half an edit:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [= $comps ([component name=hero])]
   [= $l0 [ux:layout [placed id=hero component=hero]]]
@@ -7317,7 +7292,7 @@ name refuses:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
+[?lib 'cx-platform/ux' :as ux]
 [?let
   [; R-A1 migration: envelope → spliced children (2026-08-25) ]
   [= $comps ([component name=hero [param name=heading default="Everyday things." carrier=ux-heading]],
@@ -7345,8 +7320,8 @@ unsafe value refuses **the whole sheet** rather than emitting a partial one:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/ux' :as ux]
-[?lib 'cx-x/ux-web' :as web]
+[?lib 'cx-platform/ux' :as ux]
+[?lib 'cx-platform/ux-web' :as web]
 [?let
   [; R-A1 migration: envelope → spliced children (2026-08-25) ]
   [= $ok  [ux:theme [token name=bg value="#111"] [token name=fg value="white"]]]
@@ -8656,7 +8631,7 @@ to their wire form. Nothing here is a bespoke serializer:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/mcp' :as mcp]
+[?lib 'cx-platform/mcp' :as mcp]
 [?lib 'cx-stdlib/json' :as json]
 [$json:emit [$mcp:list-tools-request 2]]
 ```
@@ -8668,7 +8643,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/mcp' :as mcp]
+[?lib 'cx-platform/mcp' :as mcp]
 [?lib 'cx-stdlib/json' :as json]
 [$mcp:validate-args
   [$json:parse "{\"name\":\"w\",\"inputSchema\":{\"type\":\"object\",\"required\":[\"location\"],\"properties\":{\"location\":{\"type\":\"string\"}}}}"]
@@ -8685,7 +8660,7 @@ fails at the boundary:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/mcp' :as mcp]
+[?lib 'cx-platform/mcp' :as mcp]
 [?lib 'cx-stdlib/jsonschema' :as js]
 [?lib 'cx-stdlib/json' :as json]
 [$js:violation-paths
@@ -8703,7 +8678,7 @@ The A2A shapes are the same story on the agent-to-agent side:
 
 `prog.cx`
 ```cx
-[?lib 'cx-x/a2a' :as a2a]
+[?lib 'cx-platform/a2a' :as a2a]
 [?lib 'cx-stdlib/json' :as json]
 [$json:emit [$a2a:agent-card "greeter" "says hi" "http://x/" "0.1" ()]]
 ```

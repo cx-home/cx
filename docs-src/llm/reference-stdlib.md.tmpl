@@ -8,20 +8,20 @@
 ## Importing
 
 `[?lib 'cx-stdlib/strings']` binds the module under its own name.
-`[?lib 'cx-stdlib/strings' as=str]` renames it. `[?lib 'cx-platform/tools' as=tools]`
-imports from the experimental tier, and says so in the import line.
+`[?lib 'cx-stdlib/strings' as=str]` renames it.
 
-Three import prefixes:
+Two import prefixes:
 
 * **`cx-stdlib/…`** — the frozen standard set. Stable surface.
-* **`cx-x/…`** — experimental. Bundled and conformance-gated, but exempt from
-  the stability promise. If you are writing code meant to last, prefer the
-  standard tier.
 * **`cx-platform/…`** — the platform modules: the ones that serve, or reach
   a store or a protocol (`reference-platform.md`). The XAP orchestrator is one
   of them (`[?lib 'cx-platform/xap' :as xap]`), and so is fabric
   (`[?lib 'cx-platform/fabric']`); both had names of their own, `cx-xap` and
-  `cx-fabric`, which are retired and refuse naming the new spelling.
+  `cx-fabric`, which are retired and refuse naming the new spelling. So are the
+  eleven modules that were the `cx-x/<name>` experimental tier (`run`, `llm`,
+  `mcp`, `mcp-server`, `a2a`, `a2a-xap`, `adjudicate`, `tools`, `ux`, `ux-web`,
+  `ux-tui`): each imports as `cx-platform/<name>`, and the old spelling refuses
+  naming the new one.
 
 A call is `[$module:fn args…]`. The `$` is not optional stylistically — it is
 the assertion that this is a call rather than an element you are building
@@ -34,12 +34,6 @@ the assertion that this is a call rather than an element you are building
 | Module | Scope |
 |---|---|
 {{MODULES:stdlib}}
-
-## Experimental tier — `cx-x/<name>`
-
-| Module | Scope |
-|---|---|
-{{MODULES:x}}
 
 ## The packs that need a capability
 
