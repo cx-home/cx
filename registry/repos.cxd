@@ -14,11 +14,18 @@ cx_partition.md §5/§5.1 is item 5 on #1591. Until it lands this file states
 the plan, and the gate keeps the plan total over the tree.
 
 TWO KINDS OF ROW.
-  [repo name= group= ring= ships= about=]
+  [repo name= group= ring= ships= about= status=? at=? why=?]
       one row per destination repository. `group` is the front-page group
       (core | platform | binding | ecosystem | dist), `ring` is 0, 1 or none,
       `ships` is how the repo reaches a user (binary | package | pypi | crate |
       go-module | v-module | editor | none | archived).
+      `status=extracted` says the extraction is DONE (RULED: RS-12): the
+      repository exists, it owns its paths, and none of them is tracked here
+      any more -- so the row carries no `[path]` rules, `at=` records the sha
+      `cx` pins it at in deps.cxd, and the gate exempts it from the empty-repo
+      refusal while adding the converse one (a `status=extracted` repo that is
+      still the first match for a tracked file is an extraction stopped half
+      way). Absent `status` means the plan is still a plan.
   [path prefix= repo=]  /  [path exact= repo=]
       one allocation rule. A tracked file belongs to the FIRST rule, in
       document order, whose `exact` equals the path or whose `prefix` is a
@@ -57,7 +64,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [repo name=cx-platform-xap group=platform ring=none ships=binary about='the application host, compose, dist, schema, market, the reference deployments']
   [repo name=cx-platform-flow group=platform ring=none ships=package about='workflow; its CLI verbs stay in the binary']
   [repo name=cx-platform-connector group=platform ring=none ships=package about='the connector kit and sync']
-  [repo name=cx-platform-sso group=platform ring=none ships=package about='enterprise sign-on, the interop lane']
+  [repo name=cx-platform-sso group=platform ring=none ships=package status=extracted at=1e814e5aae6327a8218cc3fe69b43a03517e92bf about='enterprise sign-on, the interop lane' why='EXTRACTED (RULED: RS-12, #1591 item 11), the first of them. It has no [path] rules because it owns no tracked path here any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records, and the gate exempts a status=extracted repo from the empty-repo refusal for exactly that reason -- the row is the pin\'s counterpart, not a plan waiting to be executed']
   [repo name=cx-platform-ux group=platform ring=none ships=package about='the web and terminal surfaces']
   [repo name=cx-platform-agent group=platform ring=none ships=package about='tools, mcp, mcp-server, a2a, a2a-xap, llm, run, adjudicate']
   [repo name=cx-binding-python group=binding ring=none ships=pypi about='cxlib for Python']
@@ -341,12 +348,20 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='scripts/check_composition_seams.cx' repo=cx-platform-xap why='composition.md is the platform catalog page']
 
   [; ── platform: sso ─────────────────────────────────────────────────── ]
-  [path exact='stdlib/sso.cx' repo=cx-platform-sso]
-  [path exact='spec/03-approved/platform/sso.md' repo=cx-platform-sso]
-  [path exact='conformance/platform/sso.cxd' repo=cx-platform-sso]
-  [path prefix='scripts/sso_interop/' repo=cx-platform-sso]
-  [path exact='scripts/sso_interop_lane.sh' repo=cx-platform-sso why='the lane script, claimed by NAME: the prefix above carries its trailing slash so it claims the directory and nothing else (#1591 item 11, flag F-4)']
-  [path prefix='tools/sso_' repo=cx-platform-sso]
+  [; THE RULES ARE RETIRED, AND THE RETIREMENT IS THE EVIDENCE (RULED: RS-12,
+     #1591 item 11). cx-platform-sso is EXTRACTED: its 32 paths -- the module,
+     its spec, its corpus, its four interop programs, the lane script, the two
+     tools/sso_* scripts and examples/platform/sso/ -- are tracked in that
+     repository now and in no tree this gate walks. A rule that still named one
+     of them would be a [dead rule] here on the next run, which is exactly how
+     this file refuses to state a plan that is no longer true. What is left of
+     the allocation is the [repo] row above, carrying status=extracted and the
+     sha `cx` pins it at; deps.cxd is the live statement and
+     registry/modules.cxd's sso row says where the artifacts land in a built
+     tree. The history filter's path list (scripts/repo_paths.cx, and
+     tooling/repo-template/HISTORY-FILTER.md §1) is therefore SPENT for this
+     repository -- it produced the repository, and the repository is now the
+     source of truth for what belongs to it. ]
 
   [; ── platform: ux ──────────────────────────────────────────────────── ]
   [path prefix='x/ux' repo=cx-platform-ux]
@@ -385,7 +400,7 @@ the rule carries a `why=`. The recurring reasons, once:
      one deployment) and the directory README. The sso interop lane could not
      boot its own deployment from a bare checkout before this (the sso
      extraction prep, F-1; the ux prep reads it again as F-U1). ]
-  [path prefix='examples/platform/sso/' repo=cx-platform-sso why='the deployment scripts/sso_interop_lane.sh boots and the programs it drives: the sso module exercised as a SERVER a customer would run']
+  [; examples/platform/sso/ left with the extraction; see the retired sso block above. ]
   [path prefix='examples/platform/flow/' repo=cx-platform-flow why='the checkout and simulate examples of the flow module']
   [path prefix='examples/platform/scim/' repo=cx-core-code why='scim is a shared codec that stays in the language repo, so its provisioning and projection examples go where the module is']
   [path prefix='examples/platform/' repo=cx-platform-xap]

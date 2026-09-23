@@ -139,9 +139,20 @@
       [yield [$re:group $m 1]]]]
 
     # -- BUNDLE_SET -----------------------------------------------------
-    # basenames of stdlib/*.cx with the extension stripped.
+    # basenames of stdlib/*.cx with the extension stripped -- and of
+    # deps/*/stdlib/*.cx, which is the SAME set for a module that has been
+    # extracted into its own repository (RULED: RS-7, RS-12). The question
+    # this set answers is "does the binary bundle a source for this spec",
+    # and vcx/code/stdlib_bundle.v embeds a `repo=` row's source out of the
+    # pinned checkout exactly as it embeds stdlib/'s own. Reading only
+    # stdlib/ would report the first extracted module as `[specced, no
+    # impl]` while the binary demonstrably answers it -- a gate wrong about
+    # the tree it is gating, which is the failure mode this file exists
+    # against. registry/modules.cxd's `repo=` row is the declaration and
+    # `placement-gate` is what holds the path to it.
     [?let [= $bundle-set
-      [?for [in $b [$io:glob "stdlib/*.cx"]]
+      [?for [in $g ([$io:glob "stdlib/*.cx"], [$io:glob "deps/*/stdlib/*.cx"])]
+        [in $b $g]
         [yield [$path:stem $b]]]]
 
       # -- DISPATCH_SET -------------------------------------------------

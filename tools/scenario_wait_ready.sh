@@ -4,7 +4,7 @@
 # Wait until a platform scenario's server ANSWERS, or say loudly why it never
 # did. #1477.
 #
-# THE DEFECT THIS EXISTS FOR. `examples/platform/sso/deployment/run.sh` waited
+# THE DEFECT THIS EXISTS FOR. The sso deployment scenario's `run.sh` waited
 # for `/health` in a loop of 100 × 0.2 s and then simply FELL THROUGH — the
 # loop had no failure arm. So on the post-merge run of `bc9bfd24c` (2026-09-14,
 # 15-minute load average 69, five pre-merge pipelines on two runners beside the

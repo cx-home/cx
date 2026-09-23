@@ -375,19 +375,22 @@ else
 	bad N4 "a runner selected a step it is not an input to:$n_cross"
 fi
 
-# ── O — a module-only sso change still selects the interop lane ─────────────
+# ── O — a PIN BUMP selects the interop lane ────────────────────────────────
 # The lane is the ONLY step that grades the networked half of the sso stack,
 # and until 2026-09-22 its row named the transport modules but not the module
 # itself: a change to exactly stdlib/sso.cx + conformance/platform/sso.cxd put
-# the step in the SKIP list (#1591 item 11, flag F-6). In cx-private that read
-# as defensible — the shard grades the module, the lane grades the network. In
-# cx-platform-sso the lane IS most of the gate, so a false skip there is the
-# whole gate going quiet on the change most likely to break it.
-run stdlib/sso.cx conformance/platform/sso.cxd > "$T/m"
+# the step in the SKIP list (#1591 item 11, flag F-6).
+#
+# Since the extraction (RULED: RS-12) the module is not in this repository and
+# that shape of change cannot happen here. Its successor is the PIN: `deps.cxd`
+# moving is a new sso release meeting this tree's oidc, saml, session and
+# transport, which is the change most likely to break the lane and the one a
+# false skip would hide. Same defect, one repository up.
+run deps.cxd > "$T/m"
 if targets "$T/m" | tr " " "\n" | grep -q "^test-sso-interop-lane$"; then
-	ok O "a module-only sso change selects test-sso-interop-lane"
+	ok O "an sso pin bump (deps.cxd) selects test-sso-interop-lane"
 else
-	bad O "stdlib/sso.cx + conformance/platform/sso.cxd did not select test-sso-interop-lane: [$(targets "$T/m")]"
+	bad O "deps.cxd did not select test-sso-interop-lane: [$(targets "$T/m")]"
 fi
 
 if [ "$fails" -ne 0 ]; then
