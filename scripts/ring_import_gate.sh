@@ -5,18 +5,22 @@
 # contracts. This gate lands at I0 BEFORE any code moves, so the seam can never
 # regress silently — a synthetic violation MUST fail the lane.
 #
-# Ring membership (partition spec §3):
+# Two rings, then groups (partition spec §2–§3, RULED: RS-1):
 #   Ring 0  = vcx/cx        — imports nothing internal (V stdlib only).
 #   Ring 1  = vcx/code      — MAY import Ring 0 (cx) only.
-#   Ring 2  = vcx/platform  — MAY import Rings 0–1 + the leaf siblings the spec
-#                             names for Ring-2 consumption (cxstore, arrow,
-#                             transport).
-#   leaves  = vcx/arrow, vcx/transport — consumed FROM Ring 2; themselves
-#                             import Ring 0 (cx) only (+ their own submodules).
+#   platform group = vcx/platform — MAY import the rings (cx, code) and what
+#                             its manifest declares: the leaf siblings the
+#                             spec names for platform consumption (cxstore,
+#                             arrow, transport). Nothing else.
+#   leaves  = vcx/arrow, vcx/transport — consumed FROM the platform group;
+#                             themselves import Ring 0 (cx) only (+ their own
+#                             submodules).
 #   engine  = vcx/cxstore   — Ring-0-only AND evaluator-free (spec §2).
 #   cli lyr = vcx/cli, vcx/cmd_data — the data/cli-profile surface: MUST stay
-#                             platform-FREE (no Ring-2 import), or the data/cli
-#                             profiles would pull the daemon stack (§4).
+#                             platform-FREE (no platform-group import), or the
+#                             data/cli profiles would pull the daemon stack (§4).
+# The pin direction BETWEEN platform products is not this gate's: it works on
+# directories, and every platform product is `module platform` today.
 #
 # Hardened per the adversarial audits:
 #   M34  — deny-sets are DERIVED from the live sibling-dir set under vcx/, so a
@@ -154,18 +158,20 @@ scan_ring "$VCX/cxstore" "store engine (cxstore)" 0 $(deny_but cx cxstore)
 # Ring 1 (vcx/code): MAY import Ring 0 (cx) only.
 scan_ring "$VCX/code" "Ring-1 (code)" 0 $(deny_but cx code)
 
-# Ring 2 (vcx/platform): MAY import cx/code/cxstore/arrow/transport.
-scan_ring "$VCX/platform" "Ring-2 (platform)" 0 $(deny_but cx code cxstore arrow transport platform)
+# The platform group (vcx/platform): MAY import the rings (cx, code) and its
+# declared graph (cxstore, arrow, transport) — RULED: RS-1.
+scan_ring "$VCX/platform" "platform group (platform)" 0 $(deny_but cx code cxstore arrow transport platform)
 
-# Leaf siblings (vcx/arrow, vcx/transport): consumed FROM Ring 2; import cx
+# Leaf siblings (vcx/arrow, vcx/transport): consumed FROM the platform group; import cx
 # (Ring 0) only, plus their own submodules (self kept in the allow-set).
 scan_ring "$VCX/arrow" "leaf (arrow)" 1 $(deny_but cx arrow)
 scan_ring "$VCX/transport" "leaf (transport)" 0 $(deny_but cx transport)
 
 # Platform-free profile surface (vcx/cli, vcx/cmd_data): the data/cli profiles
-# MUST NOT pull Ring 2 — no import of platform or the Ring-2 leaf/engine
+# MUST NOT pull the platform group — no import of platform or its leaf/engine
 # siblings. cli imports cx (+ code, allowed for the cli profile); cmd_data
-# imports cli. Everything Ring-2 is denied. (F-17: was manual, now gated.)
+# imports cli. Everything in the platform group is denied. (F-17: was manual,
+# now gated.)
 scan_ring "$VCX/cli" "platform-free (cli)" 0 $(deny_but cx code cli cmd_data)
 scan_ring "$VCX/cmd_data" "platform-free (cmd_data)" 0 $(deny_but cx code cli cmd_data)
 
@@ -173,5 +179,5 @@ if [ "$fail" -ne 0 ]; then
   echo "ring_import_gate: FAILED — a ring module violates its §3 import contract."
   exit 1
 fi
-echo "ring_import_gate: OK — Ring-0 strict sink; cxstore Ring-0-only+evaluator-free; code→cx only; platform within cx/code/cxstore/arrow/transport; arrow/transport→cx only; cli/cmd_data platform-free"
+echo "ring_import_gate: OK — Ring-0 strict sink; cxstore Ring-0-only+evaluator-free; code→cx only; platform group within the rings + cxstore/arrow/transport; arrow/transport→cx only; cli/cmd_data platform-free"
 exit 0

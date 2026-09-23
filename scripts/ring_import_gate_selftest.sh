@@ -95,7 +95,7 @@ probe "cmd_data-platform-free" "cmd_data/selftest_cmddata_probe.v" \
   'module main
 import cxstore'
 
-# ── Ring 1 (code) importing Ring 2 (platform) ──
+# ── Ring 1 (code) importing the platform group (platform) ──
 probe "code-imports-platform" "code/selftest_code_probe.v" \
   'module code
 import platform'

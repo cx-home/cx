@@ -38,18 +38,36 @@
 #                    nor its declared `suite-ring=`
 #   [stale]          a `-to` equal to its column, a `-to` that already
 #                    exists, or a `suite-ring=` equal to the row's ring
-#   [code ring]      a code file outside its ring's V directory, with no
+#   [ring group]     a row whose own `ring=`, `group=` and `ns=` disagree
+#                    (RULED: RS-1): the rings are 0 and 1 and a `ring=2` is
+#                    refused by name; the one group this registry declares is
+#                    `platform`; an `ns=cx-platform` row carries
+#                    `group=platform` and an `ns=cx-stdlib` row carries none
+#                    (`cx-x`, the experimental tier, and `ns=none` take
+#                    either). The same rule reads every `[catalog]` row
+#   [code ring]      a code file outside its row's V directory, with no
 #                    `code-to` declaring the move (Ring 0 and Ring 1 share
-#                    vcx/code; Ring 2 is vcx/platform)
+#                    vcx/code; the platform group is vcx/platform)
 #   [half ring]      a declared half outside vcx/code, or declared by a row
-#                    that is not Ring 2 -- a half exists only to let a Ring-2
-#                    module keep a pure Ring-1 piece
+#                    that is not in the platform group -- a half exists only
+#                    to let a platform module keep a pure Ring-1 piece
 #   [spec ring] / [corpus ring]
-#                    an artifact under a RING DIRECTORY that belongs to the
-#                    other ring, with no `-to` declaring the move (1427-c:
-#                    the directory IS the ring)
+#                    an artifact under a directory that belongs to the other
+#                    side of the rings/platform line, with no `-to` declaring
+#                    the move (1427-c: the directory IS the placement)
 #   [dest ring]      a destination -- a `-to`, or the column itself when the
-#                    row declares no move -- under the other ring's directory
+#                    row declares no move -- under the other side's directory
+#
+# TWO RINGS, THEN GROUPS (RULED: RS-1). Ring 0 is the data format and Ring 1
+# the language; they are the only rings. Everything above them is a GROUP,
+# and the platform group is the one this registry carries: a `group=platform`
+# row's ring is the ring of its highest verb (0 or 1), and the group is what
+# says it may import the platform graph -- so its artifacts sit in the
+# platform directories whatever its ring. A row's PLACE is therefore
+# `platform` for a group=platform row and its ring otherwise, and every
+# directory check below compares places. A corpus header's `ring=` is a
+# DIFFERENT attribute -- the lane that grades the suite -- which RS-1 does not
+# rename: a group=platform row's corpus grades in the platform lane, ring=2.
 #   [orphan ...]     a spec, corpus or bundled source that no row and no
 #                    `[move]` claims
 #   [dep path]       a `repo=` row -- an EXTRACTED module (RULED: RS-7,
@@ -58,7 +76,7 @@
 #                    binary ships; what moved is where the artifacts are, and
 #                    the pinned checkout is where they are. Without this the
 #                    ring checks below would go vacuous the day a module
-#                    leaves, because `ring-of-dir` answers "" -- agrees with
+#                    leaves, because `place-of-dir` answers "" -- agrees with
 #                    every ring -- for any path outside the ring-legible
 #                    space, and `deps/…` is outside it
 #   [integration map] a platform specification with no `Integration map`
@@ -100,17 +118,18 @@
     [where [not [= $w "none"]]]
     [yield $w]]]
 
-# ring-of-dir: the ring a path's DIRECTORY declares, or "" when the path is
-# outside the ring-legible space (spec/03-approved/core, xap/, x/, the
-# top-level corpora -- none of which the stdlib/platform split touches).
-# `vcx/code` answers "01" because 1427-d puts Ring 0 and Ring 1 both there.
-[?def ring-of-dir scope=private pure [returns string] ($p::string)
+# place-of-dir: the place a path's DIRECTORY declares -- a ring ("1", or
+# "01" for `vcx/code`, where 1427-d puts Ring 0 and Ring 1 both) or the
+# platform group ("platform", RULED: RS-1) -- or "" when the path is outside
+# the ring-legible space (spec/03-approved/core, xap/, x/, the top-level
+# corpora -- none of which the stdlib/platform split touches).
+[?def place-of-dir scope=private pure [returns string] ($p::string)
   [?if [$strings:starts-with $p "spec/03-approved/stdlib/"] [then "1"]
-  [else [?if [$strings:starts-with $p "spec/03-approved/platform/"] [then "2"]
+  [else [?if [$strings:starts-with $p "spec/03-approved/platform/"] [then "platform"]
   [else [?if [$strings:starts-with $p "conformance/stdlib/"] [then "1"]
-  [else [?if [$strings:starts-with $p "conformance/platform/"] [then "2"]
+  [else [?if [$strings:starts-with $p "conformance/platform/"] [then "platform"]
   [else [?if [$strings:starts-with $p "vcx/code/"] [then "01"]
-  [else [?if [$strings:starts-with $p "vcx/platform/"] [then "2"]
+  [else [?if [$strings:starts-with $p "vcx/platform/"] [then "platform"]
   [else ""]]]]]]]]]]]]]
 
 # dep-prefix: the `deps/<repo>/` a `repo=` row's every path begins with.
@@ -121,7 +140,7 @@
 # path, with the pinned-checkout prefix taken off. A row with no `repo=` is
 # its own owner and the path is already that. This is what every ring check
 # reads, so an extracted module is held to its ring exactly as a tracked one
-# is rather than sliding into `ring-of-dir`'s "outside the split" answer.
+# is rather than sliding into `place-of-dir`'s "outside the split" answer.
 [?def in-repo scope=private pure [returns string] ($p::string $repo::string)
   [?let [= $pre [$dep-prefix $repo]]
     [?if [= $pre ""] [then $p]
@@ -133,12 +152,6 @@
 [?def in-repo-all scope=private pure [returns string] ($col::string $repo::string)
   [$strings:join [?for [in $f [$words $col]] [yield [$in-repo $f $repo]]] " "]]
 
-# ring-dir-ok: does this path sit in a directory that agrees with `ring`?
-# A path outside the ring-legible space agrees with every ring -- the split
-# does not reach it, and pretending otherwise would refuse core/codec.md.
-[?def ring-dir-ok scope=private pure [returns bool] ($p::string $ring::string)
-  [?let [= $d [$ring-of-dir $p]]
-    [?if [= $d ""] [then true] [else [$strings:contains $d $ring]]]]]
 
 # suite-ring-of: the `ring=` on a suite header, "" when the file is
 # unreadable or carries none.
@@ -162,25 +175,42 @@
 
 # -- the ring/group shape of one row (RULED: RS-1) ----------------------
 # ring-shape: the refusals a row's own `ring=`, `group=` and `ns=` earn,
-# joined with "; ", or "" when the triple is well formed. Today's rule: a
-# ring is 0, 1 or 2, and nothing is said about a group.
+# joined with "; ", or "" when the triple is well formed (RULED: RS-1).
 [?def ring-shape scope=private pure [returns string] ($ring::string $group::string $ns::string)
-  [?if [or [= $ring "0"] [or [= $ring "1"] [= $ring "2"]]]
-    [then ""]
-    [else [$concat "ring=" $ring " is not a ring"]]]]
+  [?let
+    [= $r [?if [or [= $ring "0"] [= $ring "1"]] [then ""]
+            [else [?if [= $ring "2"]
+              [then "ring=2 left the vocabulary (RULED: RS-1) -- write ring=1 group=platform or ring=0/1"]
+              [else [$concat "ring=" $ring " is not a ring -- the rings are 0 (data) and 1 (code) (RULED: RS-1)"]]]]]]
+    [= $g [?if [or [= $group ""] [= $group "platform"]] [then ""]
+            [else [$concat "group=" $group " is not a group this registry declares -- the one it carries is group=platform"]]]]
+    [= $n [?if [and [= $ns "cx-platform"] [not [= $group "platform"]]]
+            [then "ns=cx-platform is the platform group's namespace -- the row carries group=platform"]
+            [else [?if [and [= $ns "cx-stdlib"] [not [= $group ""]]]
+              [then [$concat "ns=cx-stdlib is the rings' own namespace -- a group=" $group " row is cx-platform (or cx-x)"]]
+              [else ""]]]]]
+    [$strings:join [?for [in $x ($r, $g, $n)] [where [not [= $x ""]]] [yield $x]] "; "]]]
 
 # row-place: the directory family a row's artifacts must sit in -- what
-# `place-dir-ok` compares a path's directory against. Today: the ring.
+# `place-dir-ok` compares a path's directory against. A group=platform row
+# sits in the platform directories whatever its ring; any other row, in its
+# ring's.
 [?def row-place scope=private pure [returns string] ($ring::string $group::string)
-  $ring]
+  [?if [= $group "platform"] [then "platform"] [else $ring]]]
 
 # place-dir-ok: does this path sit in a directory that agrees with `place`?
+# A path outside the ring-legible space agrees with every place -- the split
+# does not reach it, and pretending otherwise would refuse core/codec.md.
 [?def place-dir-ok scope=private pure [returns bool] ($p::string $place::string)
-  [$ring-dir-ok $p $place]]
+  [?let [= $d [$place-of-dir $p]]
+    [?if [= $d ""] [then true] [else [$strings:contains $d $place]]]]]
 
-# suite-lane: the `ring=` a row's corpus HEADER must carry. Today: the ring.
+# suite-lane: the `ring=` a row's corpus HEADER must carry -- the lane that
+# grades the suite, the corpus's own attribute, which RS-1 does not rename.
+# A group=platform row's corpus grades in the platform lane (ring=2); any
+# other row's, in its ring's.
 [?def suite-lane scope=private pure [returns string] ($ring::string $group::string)
-  $ring]
+  [?if [= $group "platform"] [then "2"] [else $ring]]]
 
 # -- the self-test (RULED: COMP-1, RS-12, RS-1) --------------------------
 # One catch and one no-catch case for [integration map], and the same pair for
@@ -319,10 +349,14 @@
         [?for [in $m $rows]
           [= $name    [$string $m@name]]
           [= $ring    [$string $m@ring]]
+          [= $group   [$string [?else $m@group ""]]]
           [= $ns      [$string [?else $m@ns "none"]]]
           [= $kind    [$string [?else $m@kind "module"]]]
           [= $status  [$string [?else $m@status "current"]]]
           [= $tag     [$concat $name " (" $ns ")"]]
+          [= $place   [$row-place $ring $group]]
+          [= $rg      [?if [= $group ""] [then [$concat "ring=" $ring]]
+                        [else [$concat "ring=" $ring " group=" $group]]]]
 
           # the five artifact dimensions, each as (column, destination)
           [= $spec      [$string [?else $m@spec "none"]]]
@@ -406,7 +440,8 @@
               [else ""]]]
 
           # -- [suite ring]: the corpus header against the row.
-          [= $want-suite [?if [= $suite-ring ""] [then $ring] [else $suite-ring]]]
+          [= $lane       [$suite-lane $ring $group]]
+          [= $want-suite [?if [= $suite-ring ""] [then $lane] [else $suite-ring]]]
           [= $v-suite
             [$strings:join
               [?for [in $c [$words $corpus]]
@@ -414,24 +449,29 @@
                 [where [not [= $sr ""]]]
                 [where [not [= $sr $want-suite]]]
                 [yield [$concat "  [suite ring]     " $tag "  -- " $c
-                         " carries ring=" $sr ", the row says ring=" $want-suite]]]
+                         " carries ring=" $sr ", the row (" $rg ") grades it in lane ring=" $want-suite]]]
               "\n"]]
           [= $v-stale-suite
-            [?if [= $suite-ring $ring]
+            [?if [= $suite-ring $lane]
               [then [$concat "  [stale]          " $tag
-                       "  -- suite-ring=" $suite-ring " repeats the row's ring; drop it"]]
+                       "  -- suite-ring=" $suite-ring " repeats the row's lane; drop it"]]
               [else ""]]]
 
           # -- [code ring] / [half ring].
-          [= $want-code [?if [= $ring "2"] [then "vcx/platform/"] [else "vcx/code/"]]]
+          # -- [ring group]: the row's own ring/group/ns (RULED: RS-1).
+          [= $shape [$ring-shape $ring $group $ns]]
+          [= $v-shape
+            [?if [= $shape ""] [then ""]
+              [else [$concat "  [ring group]     " $tag "  -- " $rg ": " $shape]]]]
+          [= $want-code [?if [= $place "platform"] [then "vcx/platform/"] [else "vcx/code/"]]]
           [= $v-code-ring
             [?if [not [= $code-to ""]] [then ""]
               [else [$strings:join
                 [?for [in $f [$words $code]]
-                  [where [not [$ring-dir-ok $f $ring]]]
-                  [yield [$concat "  [code ring]      " $tag "  -- ring=" $ring
+                  [where [not [$place-dir-ok $f $place]]]
+                  [yield [$concat "  [code ring]      " $tag "  -- " $rg
                            " wants " $want-code ", found " $f
-                           " (a Ring-2 module's pure piece belongs in half=, not code=)"]]]
+                           " (a platform module's pure piece belongs in half=, not code=)"]]]
                 "\n"]]]]
           [= $v-half-ring
             [$strings:join
@@ -441,10 +481,10 @@
                          "  -- a declared half is Ring 1 and lives in vcx/code/, found " $f]]]
               "\n"]]
           [= $v-half-ring1
-            [?if [= $ring "2"] [then ""]
+            [?if [= $group "platform"] [then ""]
               [else [?if [= [$count [$words $half]] 0] [then ""]
                 [else [$concat "  [half ring]      " $tag
-                         "  -- only a Ring-2 module declares a half; this row is ring=" $ring]]]]]]
+                         "  -- only a group=platform module declares a half; this row is " $rg]]]]]]
 
           # -- [spec ring] / [corpus ring]: the directory IS the ring, unless
           #    the row declares the move.
@@ -452,17 +492,17 @@
             [?if [not [= $spec-to ""]] [then ""]
               [else [$strings:join
                 [?for [in $f [$words $spec-r]]
-                  [where [not [$ring-dir-ok $f $ring]]]
-                  [yield [$concat "  [spec ring]      " $tag "  -- ring=" $ring
-                           ", but " $f " is in the other ring's directory"]]]
+                  [where [not [$place-dir-ok $f $place]]]
+                  [yield [$concat "  [spec ring]      " $tag "  -- " $rg
+                           ", but " $f " is in the other side's directory"]]]
                 "\n"]]]]
           [= $v-corpus-ring
             [?if [not [= $corpus-to ""]] [then ""]
               [else [$strings:join
                 [?for [in $f [$words $corpus-r]]
-                  [where [not [$ring-dir-ok $f $ring]]]
-                  [yield [$concat "  [corpus ring]    " $tag "  -- ring=" $ring
-                           ", but " $f " is in the other ring's directory"]]]
+                  [where [not [$place-dir-ok $f $place]]]
+                  [yield [$concat "  [corpus ring]    " $tag "  -- " $rg
+                           ", but " $f " is in the other side's directory"]]]
                 "\n"]]]]
 
           # -- [dest ring]: where the row SAYS the artifact goes must agree
@@ -477,11 +517,11 @@
                 [= $bad
                   [$strings:join
                     [?for [in $f [$words $to]]
-                      [where [not [$ring-dir-ok $f $ring]]]
+                      [where [not [$place-dir-ok $f $place]]]
                       [yield $f]]
                     " "]]
                 [where [not [= $bad ""]]]
-                [yield [$concat "  [dest ring]      " $tag "  -- ring=" $ring
+                [yield [$concat "  [dest ring]      " $tag "  -- " $rg
                          ", but " $d "-to names " $bad]]]
               "\n"]]
 
@@ -514,7 +554,7 @@
               [else ""]]]
 
           [= $parts
-            [?for [in $p ($v-stale-planned, $v-corpus-none, $v-suite, $v-stale-suite,
+            [?for [in $p ($v-shape, $v-stale-planned, $v-corpus-none, $v-suite, $v-stale-suite,
                           $v-code-ring, $v-half-ring, $v-half-ring1,
                           $v-spec-ring, $v-corpus-ring, $v-dest,
                           $v-stale-to, $v-stale-ns, $v-dep-path)]
@@ -606,17 +646,31 @@
           [where [not [$named $moved $s]]]
           [yield [$concat "  [orphan source]  " $s "  -- bundled, but no row claims it"]]]]
 
-      # -- the ring catalogs: declared, and on disk ---------------------
+      # -- the catalogs: declared, well formed, placed, and on disk -----
+      # A catalog row carries the same ring/group pair a module row does
+      # (RULED: RS-1), so `ring=2` is refused here too, and its page sits in
+      # the directory its place names.
       [= $catalog-lines
         [?for [in $m $catalogs]
           [= $p [$string [?else $m@path ""]]]
           [= $r [$string [?else $m@ring "?"]]]
-          [where [not [$io:exists $p]]]
-          [yield [$concat "  [catalog]        ring " $r
-                   "  -- the catalog page " $p " is declared and not on disk"]]]]
+          [= $g [$string [?else $m@group ""]]]
+          [= $rg [?if [= $g ""] [then [$concat "ring=" $r]] [else [$concat "ring=" $r " group=" $g]]]]
+          [= $shape [$ring-shape $r $g "none"]]
+          [= $l1 [?if [= $shape ""] [then ""]
+                   [else [$concat "  [ring group]     catalog " $p "  -- " $rg ": " $shape]]]]
+          [= $l2 [?if [$place-dir-ok $p [$row-place $r $g]] [then ""]
+                   [else [$concat "  [spec ring]      catalog " $p "  -- " $rg
+                           ", but the page is in the other side's directory"]]]]
+          [= $l3 [?if [$io:exists $p] [then ""]
+                   [else [$concat "  [catalog]        " $rg
+                           "  -- the catalog page " $p " is declared and not on disk"]]]]
+          [= $hit [$strings:join [?for [in $x ($l1, $l2, $l3)] [where [not [= $x ""]]] [yield $x]] "\n"]]
+          [where [not [= $hit ""]]]
+          [yield $hit]]]
 
       # -- the integration maps (RULED: COMP-1) -------------------------
-      # Every page under the Ring-2 spec directory except the ring catalog
+      # Every page under the platform group's spec directory except its catalog
       # states its own seams. The catalog is the one page that indexes the
       # modules instead of being one.
       [= $map-lines
@@ -651,8 +705,8 @@
 
       # -- the census: what the cutover still owes, counted from the rows.
       [= $n-ring1 [$count [?for [in $m $rows] [where [= [$string $m@ring] "1"]] [yield $m]]]]
-      [= $n-ring2 [$count [?for [in $m $rows] [where [= [$string $m@ring] "2"]] [yield $m]]]]
       [= $n-ring0 [$count [?for [in $m $rows] [where [= [$string $m@ring] "0"]] [yield $m]]]]
+      [= $n-platform [$count [?for [in $m $rows] [where [= [$string [?else $m@group ""]] "platform"]] [yield $m]]]]
       [= $n-spec-to   [$count [?for [in $m $rows] [where [not [= [$string [?else $m@spec-to ""]] ""]]] [yield $m]]]]
       [= $n-corpus-to [$count [?for [in $m $rows] [where [not [= [$string [?else $m@corpus-to ""]] ""]]] [yield $m]]]]
       [= $n-source-to [$count [?for [in $m $rows] [where [not [= [$string [?else $m@source-to ""]] ""]]] [yield $m]]]]
@@ -692,8 +746,8 @@
       [?let [= $_ok [$io:write-line [$env:stdout]
           [$concat "placement-gate OK -- " [$string [$count $rows]]
             " rows in registry/modules.cxd (" [$string $n-ring0] " ring 0, "
-            [$string $n-ring1] " ring 1, " [$string $n-ring2]
-            " ring 2); every artifact sits where its row says, every row's ring agrees with the directories it is not declared to be leaving, nothing under the ring directories is unclaimed, and every platform specification but the ring catalog carries an integration-map section (RULED: COMP-1).\n  " $census]]]
+            [$string $n-ring1] " ring 1; " [$string $n-platform]
+            " of them group=platform); every row's ring is 0 or 1 and its group and namespace agree (RULED: RS-1), every artifact sits where its row says, every row's place agrees with the directories it is not declared to be leaving, nothing under the ring and platform directories is unclaimed, and every platform specification but the platform catalog carries an integration-map section (RULED: COMP-1).\n  " $census]]]
         [$env:exit 0]]]
     [else
       [?let [= $_bad [$io:write-line [$env:stderr]
