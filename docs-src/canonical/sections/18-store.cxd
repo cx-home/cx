@@ -7,7 +7,7 @@
    this page was run against the branch-head binary before it landed
    here (issue #425 coverage gap: store platform user guide). #]
 
-[section id=store group='Ring 2 — Platform' n=18 title='The store platform'
+[section id=store group='The platform group' n=18 title='The store platform'
 
   [intro
     """The CX Store is the platform's persistence spine: a

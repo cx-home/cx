@@ -218,9 +218,8 @@ a promise about durability and identity; if you need neither, stay in Ring 1.
 
 These groups are where CX meets everything around it: the registry and
 distribution, the bindings that reach CX from another language, and agent
-protocols. The
-MCP and A2A shapes are ordinary CX values projected to their wire form —
-there is no bespoke serializer anywhere in the path:
+protocols. The MCP and A2A shapes are ordinary CX values projected to their
+wire form — there is no bespoke serializer anywhere in the path:
 
 {{EXAMPLE:mcp-001-call-tool-request-shape block}}
 
@@ -519,9 +518,10 @@ A def is a first-class value, usable wherever a function is:
 ### Import with `[?lib]`
 
 `cx-stdlib/…` is the frozen standard set's **Ring 1** — pure or purely local;
-`cx-platform/…` is its **Ring 2** — the modules that serve, or that reach a
-store or a protocol. Both are bundled in the binary and both are frozen; the
-prefix tells you which ring a line reaches. `cx-x/…` is the experimental tier
+`cx-platform/…` is **the platform group** — the modules that serve, or that
+reach a store or a protocol. Both are bundled in the binary and both are
+frozen; the prefix tells you whether a line stays in Ring 1 or reaches the
+platform group. `cx-x/…` is the experimental tier
 and says so in the import line too. `as=` renames.
 
 {{EXAMPLE:strings-001-upper block}}
@@ -757,13 +757,13 @@ assistant makes with a young language is inventing a plausible module name.
 ### Standard tier, Ring 1 — `[?lib 'cx-stdlib/<name>']`
 
 Pure or purely local: no serving, no store, no protocol. A Ring-1 module never
-imports a Ring-2 one.
+imports a platform-group one.
 
 | Module | Scope |
 |---|---|
 {{MODULES:stdlib}}
 
-### Standard tier, Ring 2 — `[?lib 'cx-platform/<name>']`
+### Standard tier, the platform group — `[?lib 'cx-platform/<name>']`
 
 The modules that SERVE, or that reach a store or a protocol. Bundled and
 frozen exactly as Ring 1 is; the separate prefix is what makes the reach

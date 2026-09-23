@@ -161,7 +161,7 @@ below all of these and never overrides one of them.
   ledger. Not "ruling", not "campaign", not "lane", not "gate run".
   `delivery-grammar.md` is the whole vocabulary and it is the only one.
 
-## Where a surface lives — the two rings
+## Where a surface lives — the rings and the platform group
 
 The tree is ring-legible (RULED: 1427-a…j, OL-14/OL-15, RS-1). Ring 0 is the
 data format and Ring 1 the language; they are the only rings, and everything

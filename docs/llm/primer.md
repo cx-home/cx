@@ -396,9 +396,8 @@ a promise about durability and identity; if you need neither, stay in Ring 1.
 
 These groups are where CX meets everything around it: the registry and
 distribution, the bindings that reach CX from another language, and agent
-protocols. The
-MCP and A2A shapes are ordinary CX values projected to their wire form —
-there is no bespoke serializer anywhere in the path:
+protocols. The MCP and A2A shapes are ordinary CX values projected to their
+wire form — there is no bespoke serializer anywhere in the path:
 
 `prog.cx`
 ```cx
@@ -1307,9 +1306,10 @@ $ cx prog.cx
 ### Import with `[?lib]`
 
 `cx-stdlib/…` is the frozen standard set's **Ring 1** — pure or purely local;
-`cx-platform/…` is its **Ring 2** — the modules that serve, or that reach a
-store or a protocol. Both are bundled in the binary and both are frozen; the
-prefix tells you which ring a line reaches. `cx-x/…` is the experimental tier
+`cx-platform/…` is **the platform group** — the modules that serve, or that
+reach a store or a protocol. Both are bundled in the binary and both are
+frozen; the prefix tells you whether a line stays in Ring 1 or reaches the
+platform group. `cx-x/…` is the experimental tier
 and says so in the import line too. `as=` renames.
 
 `prog.cx`
@@ -1827,7 +1827,7 @@ assistant makes with a young language is inventing a plausible module name.
 ### Standard tier, Ring 1 — `[?lib 'cx-stdlib/<name>']`
 
 Pure or purely local: no serving, no store, no protocol. A Ring-1 module never
-imports a Ring-2 one.
+imports a platform-group one.
 
 | Module | Scope |
 |---|---|
@@ -1881,7 +1881,7 @@ imports a Ring-2 one.
 | `xsp` | The XAP Stream Protocol frame codec — a self-describing, self-delimiting frame [version · type · stream-id · principal-DID · flags · len · payload] that carries XAP over any transport. |
 | `zip` | Zip archive codec over the CX bytes scalar kind. |
 
-### Standard tier, Ring 2 — `[?lib 'cx-platform/<name>']`
+### Standard tier, the platform group — `[?lib 'cx-platform/<name>']`
 
 The modules that SERVE, or that reach a store or a protocol. Bundled and
 frozen exactly as Ring 1 is; the separate prefix is what makes the reach
@@ -2554,10 +2554,10 @@ invocation has misread every pattern below.
 
 **Each module owns exactly one thing, dependencies point downward, and a seam is
 DECLARED rather than reached for.** A module lives in the ring of its highest
-verb and a Ring-1 module never imports a Ring-2 one
+verb and a Ring-1 module never imports a platform-group one
 (`README.md` §1; `../stdlib/README.md` §1;
 `../core/cx_partition.md` §10), which is the downward
-direction stated structurally; within Ring 2 the same rule is stated seam by
+direction stated structurally; within the platform group the same rule is stated seam by
 seam in §2 below, where each module names what it USES of a neighbor and what it
 must NOT do to it — the shape
 `connector.md` §12 fixed and `flow.md` §6.1 adopted.
@@ -2669,7 +2669,7 @@ the distributed one alike, so no carrier can make it legal
 | R-12 | surface → a value the record does not hold | A surface READS the record, and a value it needs is recorded by a step | no | `flow.md` §6.1 | none — refused in both shapes |
 | R-13 | library → feature | A library never `uses` a feature: code does not depend on grammar, and authority cannot be smuggled through the code plane | no | `../xap/xap_feature_distribution_market.md` §1.1 (N-DIST-2) | none — refused in both shapes |
 | R-14 | feature → a co-tenant feature's bound host | Every invocation runs inside a resource-scoped `[deny net …]`; a feature reaching another's host refuses `CXER0271` naming it, and that scoped deny IS the isolation between co-tenant features | no | `../xap/xap_feature_distribution_market.md` §6.3 step 4 (RULED: CK-10, 1437-a) | none — refused in both shapes |
-| R-15 | Ring 1 → Ring 2 | A Ring-1 module never imports one of these; nothing in the Ring-1 directory imports the Ring-2 one | no | `README.md` §1; `../stdlib/README.md` §1 (RULED: 1427-a) | none — refused in both shapes |
+| R-15 | Ring 1 → the platform group | A Ring-1 module never imports one of these; nothing in the Ring-1 directory imports a platform-group one | no | `README.md` §1; `../stdlib/README.md` §1 (RULED: 1427-a) | none — refused in both shapes |
 
 **Why R-15 is not mechanical, stated rather than left to be rediscovered.** The
 two `[?lib 'cx-platform/…']` lines that stand in the Ring-1 tree today —

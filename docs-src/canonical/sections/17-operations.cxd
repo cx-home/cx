@@ -5,7 +5,7 @@
    command and output on this page was run before it landed here
    (issue #425 coverage gap). #]
 
-[section id=operations group='Ring 2 — Platform' n=17 title='Operations'
+[section id=operations group='The platform group' n=17 title='Operations'
 
   [intro
     """CX in production is deliberately boring: a static binary, a
