@@ -150,9 +150,11 @@
 # -- the check itself: pure over (repo rows, path rules, sources, vcx dirs, vlib)
 #
 # $srcs: [src file=F dir=D module=M imps='<head> ...'] per V file read.
+# $pinned: [own dir=D repo=R] per module directory of a pinned V root
+# (deps/<R>/vcx/<D>/, a deps.cxd row carrying v-fork=, RULED: RS-7).
 # answers [verdict [failures [failure kind=K what=W]*] [census [line text=T]*]]
 
-[?def check scope=private pure ($repos $rules $srcs $dirs $vlib)
+[?def check scope=private pure ($repos $rules $srcs $dirs $vlib $pinned)
   [?let
     [= $names [?for [in $x $repos] [yield [$string $x@name]]]]
     [= $vrows [?for [in $x $repos] [where [not [= [$string [?else $x@vmodule ""]] ""]]] [yield $x]]]
@@ -290,10 +292,15 @@
                 [src file='vcx/xap/ok.v' dir=xap module=xap imps='cxnet store mail platform code cx'],
                 [src file='vcx/cxnet/up.v' dir=cxnet module=cxnet imps='xap'],
                 [src file='vcx/ghost/g.v' dir=ghost module=ghost imps='cx'],
-                [src file='vcx/cmd/main.v' dir=cmd module=main imps='platform'])]
+                [src file='vcx/cmd/main.v' dir=cmd module=main imps='platform'],
+                # a module compiled from a pinned V root (deps/<repo>/vcx/<m>/,
+                # RS-7's -path): a ring's passes, a product's is held to the pins.
+                [src file='vcx/store/pinned.v' dir=store module=store imps='cxp'],
+                [src file='vcx/cxnet/pinup.v' dir=cxnet module=cxnet imps='xpin'])]
+      [= $pinned ([own dir=cxp repo=cx-core-data], [own dir=xpin repo=cx-platform-xap])]
       [= $dirs ("cx", "code", "transport", "cxnet", "store", "mail", "platform", "xap", "ghost", "cmd")]
       [= $vlib ("net", "os", "time")]
-      [= $v [$check [?for [in $r $reg//repo] [yield $r]] [?for [in $r $reg//path] [yield $r]] $srcs $dirs $vlib]]
+      [= $v [$check [?for [in $r $reg//repo] [yield $r]] [?for [in $r $reg//path] [yield $r]] $srcs $dirs $vlib $pinned]]
       [= $kinds [?for [in $f $v/failures/failure] [yield [$concat [$string $f@kind] ":" [$string $f@what]]]]]
       [= $want ("undeclared pin:dangling pins cx-platform-nowhere",
                 "cycle:loop-a loop-b",
@@ -308,6 +315,8 @@
                 # xap's split: a lower product importing xap runs against the
                 # pins exactly as net -> store does ...
                 "undeclared edge:vcx/cxnet/up.v: cxnet (cx-platform-net) -> xap (cx-platform-xap)",
+                # a pinned V root's module is owned by the pinned repository.
+                "undeclared edge:vcx/cxnet/pinup.v: cxnet (cx-platform-net) -> xpin (cx-platform-xap)",
                 # ... and so does a residue file of the store reaching up into xap.
                 "residue up-edge:vcx/platform/store_up.v: platform (cx-platform-store) -> xap (cx-platform-xap, which builds on cx-platform-store)",
                 "unknown import:vcx/cxnet/typo.v: nosuchmod")]
@@ -353,7 +362,7 @@
              [= $text [$io:read-file [$string $f]]]
              [yield [src file=[$string $f] dir=$d module=[$module-of $text]
                          imps=[?if $whole [then [$strings:join [$import-heads $text] " "]] [else ""]]]]]]
-  [= $v [$check $repos $rules $srcs $dirs $vlib]]
+  [= $v [$check $repos $rules $srcs $dirs $vlib ()]]
   [= $failures [?for [in $f $v/failures/failure] [yield $f]]]
   [= $_census [?for [in $c $v/census/line] [yield [$say [$concat "  " [$string $c@text]]]]]]
   [?if [= [$count $failures] 0]
