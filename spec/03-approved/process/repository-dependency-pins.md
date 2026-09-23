@@ -130,6 +130,10 @@ directory on the path named like the import, and the V standard library carries 
 pinned repository also uses (`cli`): with `@vlib` ahead, the library would be compiled in place
 of the pinned module.
 
+A build that must run with no `cx` present — a clean rebuild of the front door from its source
+and its fetched `deps/` — may read the same value from the document itself; it then refuses to
+build when a `cx` is present and `--vpath` answers differently, so the document has one reading.
+
 ### 3.4 Where the program lives
 
 `cx` carries `scripts/deps_sync.cx` and `scripts/deps_pins.cx`. A component repository cannot

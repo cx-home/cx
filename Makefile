@@ -399,19 +399,25 @@ deps-present:
 	for r in $$(grep -oE '\[dep [^]]*v-fork=[0-9a-f]+' deps.cxd | grep -oE 'repo=[^] ]+' | sed 's/^repo=//' | sort -u); do \
 	  root="deps/$$r/vcx"; \
 	  if ! ls "$$root"/*/*.v >/dev/null 2>&1; then \
-	    vbad="$$vbad|$$root is not there -- deps.cxd pins $$r as a V repository (v-fork=) and its modules are compiled from it"; \
+	    vbad="$$vbad~$$root is not there -- deps.cxd pins $$r as a V repository (v-fork=) and its modules are compiled from it"; \
 	  else case "|$(CX_DEPS_VPATH)|" in *"|$(CURDIR)/$$root|"*) ;; \
-	    *) vbad="$$vbad|$$root is not on the V search path [$(CX_DEPS_VPATH)] -- no cx answered \`cx deps sync --vpath\` (pass CX_BIN=<a cx>), or it answered without this row";; esac; \
+	    *) vbad="$$vbad~$$root is not on the V search path [$(CX_DEPS_VPATH)] -- the Makefile did not derive this row from deps.cxd";; esac; \
 	  fi; \
 	  for m in "$$root"/*/; do m=$$(basename "$$m"); \
 	    if [ -d "vcx/$$m" ] && [ -z "$$(git ls-files "vcx/$$m" 2>/dev/null | head -1)" ] && git rev-parse --git-dir >/dev/null 2>&1; then \
-	      vbad="$$vbad|vcx/$$m is on disk and tracks nothing -- a stale copy of a module that left this tree; V searches vcx/ before the pin, so it would compile in place of $$root/$$m (remove it)"; \
+	      vbad="$$vbad~vcx/$$m is on disk and tracks nothing -- a stale copy of a module that left this tree; V searches vcx/ before the pin, so it would compile in place of $$root/$$m (remove it)"; \
 	    fi; \
 	  done; \
 	done; \
+	if command -v "$(DEPS_CX)" >/dev/null 2>&1; then \
+	  cxv=$$("$(DEPS_CX)" --allow-all scripts/deps_sync.cx --vpath --dir "$(CURDIR)/deps" 2>/dev/null); \
+	  if [ -n "$$cxv" ] && [ "$$cxv" != "$(CX_DEPS_VPATH)" ]; then \
+	    vbad="$$vbad~the V search path this Makefile derives [$(CX_DEPS_VPATH)] is not what \`cx deps sync --vpath\` answers [$$cxv] -- spec §3.3 read two ways"; \
+	  fi; \
+	fi; \
 	if [ -n "$$vbad" ]; then \
 	  echo "deps-present: FAILED — a pinned V repository cannot be compiled from its pin:" >&2; \
-	  echo "$$vbad" | tr '|' '\n' | sed '/^$$/d; s/^/    /' >&2; \
+	  echo "$$vbad" | tr '~' '\n' | sed '/^$$/d; s/^/    /' >&2; \
 	  echo "  Run \`make deps-sync\` first. A build that compiled an older in-tree copy, or nothing, in" >&2; \
 	  echo "  place of the pinned module is the failure this refusal exists to prevent (RULED: RS-7)." >&2; \
 	  exit 1; \
@@ -1222,14 +1228,19 @@ deps-cx:
 DEPS_CX = $(if $(CX_BIN),$(CX_BIN),$(if $(wildcard $(CURDIR)/vcx/target/cx),$(CURDIR)/vcx/target/cx,cx))
 
 # ── the V search path the pins produce (RULED: RS-7, RS-12) ─────────────────
-# RS-7: pins are "read by the V build via `-path`". CX_DEPS_VPATH is what
+# RS-7: pins are "read by the V build via `-path`". CX_DEPS_VPATH is the value
 # `cx deps sync --vpath` prints for deps.cxd — deps/<repo>/vcx for every V
-# repository row, then @vmodules|@vlib (spec §3.3) — with absolute roots, so a
-# V compile started from any directory reads the same ones. It is computed
-# ONCE per top-level make and exported, so the sub-makes (vcx/Makefile among
-# them) do not re-derive it; an empty value (no cx to ask yet) is recomputed.
+# repository row, in document order, then @vmodules|@vlib (spec §3.3) — with
+# absolute roots, so a V compile started from any directory reads the same ones.
 # A pin added to deps.cxd with a v-fork is on every V compile's path with
 # nothing else edited.
+#
+# IT IS DERIVED HERE WITHOUT A cx, by the same grep deps-present uses, because a
+# `make clean` tree with its deps/ must still build with no cx present
+# (scripts/reproduce_release.sh; deps-present's own rule): asking cx at parse
+# time made the first build of a fresh tree need one. It is not a second
+# reading of §3.3 that can drift: deps-present asks `cx deps sync --vpath`
+# whenever a cx is there and refuses a tree where the two disagree.
 #
 # CX_V_SEARCH puts this tree's vcx/ FIRST, the pinned roots next and V's
 # library last. That is the order V itself applies to a file under vcx/ (its
@@ -1253,10 +1264,10 @@ DEPS_CX = $(if $(CX_BIN),$(CX_BIN),$(if $(wildcard $(CURDIR)/vcx/target/cx),$(CU
 # VFLAGS is how both reach every V compile this Makefile starts, including
 # `v test`'s per-file compiles and the V programs scripts/ build: V reads it
 # ahead of its own arguments.
-ifndef CX_DEPS_VPATH
-CX_DEPS_VPATH := $(shell "$(DEPS_CX)" --allow-all scripts/deps_sync.cx --vpath --dir "$(CURDIR)/deps" 2>/dev/null)
-endif
-export CX_DEPS_VPATH
+CX_EMPTY :=
+CX_SPACE := $(CX_EMPTY) $(CX_EMPTY)
+CX_DEPS_V_REPOS := $(shell grep -oE '\[dep [^]]*v-fork=[0-9a-f]+' deps.cxd 2>/dev/null | grep -oE 'repo=[^] ]+' | sed 's/^repo=//')
+export CX_DEPS_VPATH := $(subst $(CX_SPACE),|,$(strip $(foreach r,$(CX_DEPS_V_REPOS),$(CURDIR)/deps/$(r)/vcx) @vmodules @vlib))
 export CX_V_SEARCH := $(CURDIR)/vcx|$(or $(CX_DEPS_VPATH),@vmodules|@vlib)
 export CX_NATIVE_DEFINES := -d cx_re2_lib_dir=$(CURDIR)/vcx/target -d cx_re2_static=$(CURDIR)/third_party/re2/obj/libre2.a -d cx_arrow_shim_lib=$(CURDIR)/vcx/target/libcx_arrow_shim.a
 export VFLAGS := -path "$(CX_V_SEARCH)" $(CX_NATIVE_DEFINES)
