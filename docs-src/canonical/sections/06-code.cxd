@@ -713,7 +713,7 @@
       [child id=ebv n=6.6.3.1 title='EBV — the Effective Boolean Value rule'
         [body
           """The EBV rule, applied in order (per
-             [`spec/core/cxdm.md`](../../spec/03-approved/core/cxdm.md) §4.6):"""]
+             [`spec/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md) §4.6):"""]
         [list
           [item """**Empty sequence** `()` → false."""]
           [item """**Single Scalar** of kind `bool` → that bool's
@@ -1200,7 +1200,7 @@
       [body
         """Nearby classes that are **not** CXER010x: anchor / merge
            errors are data-language `E` codes
-           ([`spec/core/cxdm.md`](../../spec/03-approved/core/cxdm.md) §11);
+           ([`spec/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md) §11);
            a sized-integer literal out of range is the lex-time
            `CXERLEX-RANGE` refusal; a failed `cast` is `CXER0290`
            (E_CAST_FAILED), recovered by matching on the code or
@@ -1792,7 +1792,7 @@
              `program-cxpath-fncall-slice-composition`
              verifies grammar disambiguation against the fused
              predicate-body closure
-             ([`spec/formal/grammar.ebnf`](../../spec/03-approved/formal/grammar.ebnf)
+             ([`spec/formal/grammar.ebnf`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/formal/grammar.ebnf)
              [159b]) — bare-fn-call, path predicate, and slice
              postfix coexist."""]
 
@@ -1831,7 +1831,7 @@
   [child id=cxpath-quickref n=6.12 title='CXPath reference — quick form'
     [intro
       """At-a-glance CXPath reference. The normative grammar lives
-         in [`spec/formal/grammar.ebnf`](../../spec/03-approved/formal/grammar.ebnf)
+         in [`spec/formal/grammar.ebnf`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/formal/grammar.ebnf)
          productions [130]/[131]/[135] (path steps / binding paths) and
          [159]/[160a] (general PredicateExpr + the `(bind $name)`
          step annotation). XPath 3.1 alignment and divergences are

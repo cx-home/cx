@@ -124,7 +124,7 @@ fi
 # is worth less than no guard. Hashing the inputs costs ~30 ms and cannot lie.
 mkdir -p "$BUILD"
 STAMP="$BUILD/inputs.sha"
-inputs_hash="$(cat "$HERE/repr.v" "$V" "$REPO"/vcx/cx/*.v 2>/dev/null | shasum -a 256 | cut -d' ' -f1)"
+inputs_hash="$(cat "$HERE/repr.v" "$V" "$REPO"/deps/cx-core-data/vcx/cx/*.v 2>/dev/null | shasum -a 256 | cut -d' ' -f1)"
 stale=0
 if [[ ! -x "$BIN" ]]; then
   stale=1
@@ -133,7 +133,7 @@ elif [[ ! -f "$STAMP" || "$(cat "$STAMP")" != "$inputs_hash" ]]; then
 fi
 if [[ "$stale" == "1" ]]; then
   echo "bench/repr: building the driver (v -gc e -prod over the cx module)…"
-  "$V" -path "@vlib|@vmodules|$REPO/vcx" -gc e -enable-globals -prod -o "$BIN" "$HERE/repr.v"
+  "$V" -path "${CX_V_SEARCH:-@vlib|@vmodules|$REPO/vcx}" -gc e -enable-globals -prod -o "$BIN" "$HERE/repr.v"
   printf '%s' "$inputs_hash" > "$STAMP"
 fi
 

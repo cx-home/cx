@@ -151,7 +151,7 @@ correctness.
 
 ## 5 — Public ABI policy
 
-See [`core/abi.md`](../core/abi.md) §1.1 for the symbol-prefix rule.
+See [`core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) §1.1 for the symbol-prefix rule.
 Additional governance:
 
 - Frozen v1 symbols are never signature-changed. Future signature
@@ -188,7 +188,7 @@ the canonical source extension is `.cx`. C ABI symbols all share the
 `cx_events_*` for streaming, `cx_table_*` for streaming tables,
 `cx_arrow_*` for Arrow interop, `cx_validate*` for schema validation,
 `cx_code_*` for the code-evaluator surface — see
-[`core/abi.md §2`](../core/abi.md)). V module identifiers, binding
+[`core/abi.md §2`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md)). V module identifiers, binding
 internal helpers, AST node types, and fixture filenames follow the
 unified `code` vocabulary for the code-evaluator surface.
 
@@ -202,7 +202,7 @@ unified `code` vocabulary for the code-evaluator surface.
 
 ### 6.1 Budgets
 
-Baseline budgets for the C ABI are in [`core/abi.md`](../core/abi.md)
+Baseline budgets for the C ABI are in [`core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md)
 §4. Bindings inherit these plus their own deserialization overhead:
 
 | Operation | Baseline (C ABI) | Per-binding cap |
@@ -328,7 +328,7 @@ directives:
   closed template set, loud residue, output oracle, fail-closed per file,
   never regex); **data** never migrates destructively — values, events,
   and stored docs evolve **additively** per
-  [`schema_event_evolution.md`](../core/schema_event_evolution.md)
+  [`schema_event_evolution.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/schema_event_evolution.md)
   (stream 21: identity is schema-independent; upcasters are read-side;
   migration is always additive — nothing a grammar major does can strand
   recorded history).
@@ -347,7 +347,7 @@ Declared by `cx_abi_version`:
 ### 9.3 Format version
 
 Declared in `cx_to_data_bin` header. Bumps follow the rules in
-[`core/data-bin.md`](../core/data-bin.md).
+[`core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md).
 
 ### 9.4 Library version
 

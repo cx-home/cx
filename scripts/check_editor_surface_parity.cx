@@ -44,7 +44,8 @@
 [?lib 'cx-stdlib/strings' as=strings]
 
 [?const REGISTER 'tooling/EDITOR_SURFACE_PARITY.md']
-[?const TOKENS   'vcx/cx/program_tokens.v']
+[; vcx/cx is cx-core-data's, read from its pinned checkout (RULED: RS-7, RS-12). ]
+[?const TOKENS   'deps/cx-core-data/vcx/cx/program_tokens.v']
 [?const LSP      'vcx/cmd/lsp_content.v']
 [?const TMLANG   'tooling/vscode/syntaxes/cx.tmLanguage.json']
 [?const SNIPPETS 'tooling/vscode/snippets/cx.json']

@@ -29,7 +29,7 @@ for _m in $( { grep -oE "vmodule=[a-z_][a-z0-9_]*" "$ROOT/registry/repos.cxd" 2>
     TARGETS+=("$ROOT/vcx/$_m")
 done
 TARGETS+=(
-    "$ROOT/vcx/cx/cabi.v"
+    "$ROOT/deps/cx-core-data/vcx/cx/cabi.v"   # cx-core-data, pinned (RULED: RS-12)
     "$ROOT/vcx/cmd"
     "$ROOT/include/cx.h"
 )

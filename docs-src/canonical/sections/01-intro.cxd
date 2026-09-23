@@ -71,7 +71,7 @@
          projection is idiomatic and lossy for mixed content; Markdown
          (and CSV) are lossy by design. The
          normative round-trip rules live in [[surfaces]] and in
-         [`spec/03-approved/core/canonical.md`](../../spec/03-approved/core/canonical.md)."""]
+         [`spec/03-approved/core/canonical.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md)."""]
 
     [body
       """**3. Pure-functional updates.** There is no in-place mutation in CX.
@@ -210,10 +210,10 @@
 
     [note
       """The normative grammar lives in
-         [`spec/03-approved/formal/grammar.ebnf`](../../spec/03-approved/formal/grammar.ebnf);
+         [`spec/03-approved/formal/grammar.ebnf`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/formal/grammar.ebnf);
          the directive registry is in
          [`spec/03-approved/core/code.md`](../../spec/03-approved/core/code.md);
          the C ABI surface is in
-         [`spec/03-approved/core/abi.md`](../../spec/03-approved/core/abi.md).
+         [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md).
          This guide is curated learning
          + reference path, not a replacement for those documents."""]]]

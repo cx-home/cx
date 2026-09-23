@@ -118,10 +118,21 @@ network. It is what a build step runs when the fetch has already happened.
 
 ### 3.3 The V search path
 
-`--vpath` prints the V `-path` value for the pin set and nothing else: `@vlib|@vmodules` followed
-by `deps/<repo>` for every row carrying a `v-fork`. RS-7's "read by the V build via `-path`" is a
-sentence about the build, so the transport answers it rather than leaving each repository's
-Makefile to re-derive it from the same document.
+`--vpath` prints the V `-path` value for the pin set and nothing else: `deps/<repo>/vcx` for every
+row carrying a `v-fork`, in document order, followed by `@vmodules|@vlib`. RS-7's "read by the V
+build via `-path`" is a sentence about the build, so the transport answers it rather than leaving
+each repository's Makefile to re-derive it from the same document.
+
+The root is the checkout's `vcx/` directory because a V repository is cut from this tree with its
+paths kept, so its modules sit at `vcx/<module>/` there as they did here, and V resolves
+`import <module>` as `<root>/<module>`. The pinned roots come first because V takes the first
+directory on the path named like the import, and the V standard library carries module names a
+pinned repository also uses (`cli`): with `@vlib` ahead, the library would be compiled in place
+of the pinned module.
+
+A build that must run with no `cx` present — a clean rebuild of the front door from its source
+and its fetched `deps/` — may read the same value from the document itself; it then refuses to
+build when a `cx` is present and `--vpath` answers differently, so the document has one reading.
 
 ### 3.4 Where the program lives
 
