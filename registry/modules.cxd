@@ -268,8 +268,18 @@ becomes its own Ring-1 module.
      beside the Ring-1 dispatchers, with disjoint names. ]
   [module name=did-web ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/did-web.md corpus=conformance/platform/did-web.cxd source=stdlib/did-web.cx code='vcx/platform/stdlib_did_web.v vcx/platform/stdlib_did_web_register.v' half=none status=current]
   [; flow is a pure-CX orchestrator over the journal, sched and uuid
-     primitives — Ring 2 by what it reaches, with no V file of its own. ]
-  [module name=flow ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/flow.md corpus=conformance/platform/flow.cxd source=stdlib/flow.cx code=none half=none status=current]
+     primitives — Ring 2 by what it reaches, with no V file of its own.
+
+     EXTRACTED (RULED: RS-12, RS-20, #1591 item 15), the second module to
+     leave, exactly as sso did: its spec, corpus and bundled source are
+     `cx-platform-flow`'s, which deps.cxd pins at a sha and `make deps-sync`
+     fetches into the ignored `deps/`. The row STAYS because the binary still
+     ships the surface. Two things stay HERE and are not on this row: the
+     `cx flow` verbs (vcx/cmd/flow*.v, the local profile, allocated to `cx` by
+     RS-20) and the one act seam the runner performs through, `flow-perform`
+     in vcx/platform/coordination.v, whose own registry/repos.cxd rule names
+     the dependency — `code=none` is still true of the module. ]
+  [module name=flow ring=2 ns=cx-platform kind=module repo=cx-platform-flow spec=deps/cx-platform-flow/spec/03-approved/platform/flow.md corpus=deps/cx-platform-flow/conformance/platform/flow.cxd source=deps/cx-platform-flow/stdlib/flow.cx code=none half=none status=current]
   [; fabric and xap (below) were bundled under names of their own, the whole
      resolver name being the namespace (`cx-fabric`, `cx-xap`). RS-4 put both
      under cx-platform like every other Ring-2 row; the bare names are retired
