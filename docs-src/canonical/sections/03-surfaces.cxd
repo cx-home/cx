@@ -11,8 +11,8 @@
        for JSON, YAML, TOML, XML, Markdown, and CSV/TSV/PSV.
        Every projection is defined as a transformation of canonical CX.
        The normative rules live in
-       [`spec/03-approved/core/canonical.md`](../../spec/03-approved/core/canonical.md) and
-       [`spec/03-approved/core/conversions.md`](../../spec/03-approved/core/conversions.md); this section
+       [`spec/03-approved/core/canonical.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md) and
+       [`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md); this section
        is the developer-facing working summary."""]
 
   [child id=cx-canonical n=3.1 title='CX — the canonical dialect'
@@ -21,7 +21,7 @@
          formatting (preserves comments, anchors, presentation), one for
          content-addressing (strips presentation, expands aliases,
          normalizes everything that doesn't change data). Per
-         [`spec/03-approved/core/canonical.md`](../../spec/03-approved/core/canonical.md) §1."""]
+         [`spec/03-approved/core/canonical.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md) §1."""]
 
     [child id=canonical-lossless n=3.1.1 title='Lossless canonical (cx fmt)'
       [body
@@ -86,8 +86,8 @@
       """JSON is the most common interchange surface. CX → JSON mapping
          is straightforward; JSON → CX is well-defined for the JSON
          subset that maps cleanly to CX's data model. Per
-         [`spec/03-approved/core/canonical.md`](../../spec/03-approved/core/canonical.md) §5 and
-         [`spec/03-approved/core/conversions.md`](../../spec/03-approved/core/conversions.md) §2.2 / §4."""]
+         [`spec/03-approved/core/canonical.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md) §5 and
+         [`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §2.2 / §4."""]
 
     [example lang=cx
       """[user id=42 email='ada@example.com' active=true
@@ -116,7 +116,7 @@
            the inline elements become sibling keys, so run order is not
            recoverable. Under `--lossless`, an element instead emits as
            the reserved `$tag` **envelope**
-           ([`spec/03-approved/core/conversions.md`](../../spec/03-approved/core/conversions.md) §2.2.1):
+           ([`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §2.2.1):
            `$children` is an ordered array of runs, so mixed content
            survives exactly."""]
       [example lang=cx
@@ -149,7 +149,7 @@
            strings, with the type recovered in lossless mode via the
            `cx:type` sidecar (map positions) or the per-item
            `{"cx:bigint": "…"}` carrier (array positions) — see
-           [`spec/03-approved/core/conversions.md`](../../spec/03-approved/core/conversions.md) §0.2.
+           [`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §0.2.
            Sized variants (`::i32`, `::u64`) keep their native number
            image; the width name rides the envelope's `$type` /
            `$attr-types` in lossless mode."""]
@@ -174,7 +174,7 @@
       """YAML follows the JSON projection but uses YAML's mapping and
          sequence syntax — including the lossless `$tag` envelope, which
          is the same encoding in both lanes
-         ([`spec/03-approved/core/conversions.md`](../../spec/03-approved/core/conversions.md) §2.3.1):
+         ([`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §2.3.1):
          CX anchors and merges ride the envelope's `$anchor` / `$merge`
          keys in lossless mode."""]
 
@@ -199,7 +199,7 @@
          the same value) is normalized on input: `yes`/`true`/`True`
          all map to canonical `true`, numeric strings stay strings,
          etc. The conversion is documented in
-         [`spec/03-approved/core/conversions.md`](../../spec/03-approved/core/conversions.md) §5."""]
+         [`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §5."""]
 
     [child id=yaml-tags n=3.3.1 title='YAML tags (!!binary and the !!cx: family)'
       [body
@@ -228,7 +228,7 @@
         """YAML-native anchors (`&name`) and aliases (`*name`) are
            resolved (expanded) on YAML → CX parse — the data content is
            preserved, the anchor/alias structure is not
-           ([`spec/03-approved/core/conversions.md`](../../spec/03-approved/core/conversions.md) §5.1).
+           ([`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §5.1).
            In the other direction the default YAML emit is symmetric:
            CX anchors and merges are **resolved** — aliases expand to
            their referent, merge hosts inherit — so the YAML carries the
@@ -243,7 +243,7 @@
          nested element becomes a section whose header is the
          **quoted dotted path** from the root, and repeated
          identically-named children become an array of tables. Per
-         [`spec/03-approved/core/conversions.md`](../../spec/03-approved/core/conversions.md) §2.4 / §6."""]
+         [`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §2.4 / §6."""]
 
     [example lang=cx
       """[config
@@ -292,8 +292,8 @@
       """XML is the closest projection — both CX and XML are
          element-with-attributes-and-body languages. The mapping is
          essentially one-to-one for element / attribute / text content.
-         Per [`spec/03-approved/core/canonical.md`](../../spec/03-approved/core/canonical.md) §8 and
-         [`spec/03-approved/core/conversions.md`](../../spec/03-approved/core/conversions.md) §2.1 / §3."""]
+         Per [`spec/03-approved/core/canonical.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md) §8 and
+         [`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §2.1 / §3."""]
 
     [example lang=cx
       '''[user id=42 email='ada@example.com'
@@ -345,7 +345,7 @@
   [child id=md n=3.6 title='Markdown projection'
     [intro
       """Markdown is a **typed-lossy codec**, not one of the lossless
-         data lanes ([`spec/03-approved/core/conversions.md`](../../spec/03-approved/core/conversions.md) §7).
+         data lanes ([`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §7).
          MD → CX yields a `[doc]`-rooted prose tree: headings become
          `[h1] [h2] …`; paragraphs become `[p]`; lists become `[ul]` /
          `[ol]` / `[li]`; inline code becomes `[code]`. The MD → CX → MD
@@ -391,7 +391,7 @@
         """In the other direction, a CX `[table[…]]` block (see
            [[tables]]) emits as a real GFM pipe table — header row from
            the declared column names, then one row per data row — per
-           [`spec/03-approved/core/conversions.md`](../../spec/03-approved/core/conversions.md) §7."""]]
+           [`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §7."""]]
 
     [child id=md-fences n=3.6.2 title='Fenced code with language'
       [body
@@ -441,8 +441,8 @@
       """CSV (comma-separated), TSV (tab-separated), and PSV
          (pipe-separated) all project via the same delimited-data
          pipeline. Per
-         [`spec/03-approved/core/canonical.md`](../../spec/03-approved/core/canonical.md) §9 and
-         [`spec/03-approved/core/conversions.md`](../../spec/03-approved/core/conversions.md) §8.
+         [`spec/03-approved/core/canonical.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md) §9 and
+         [`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §8.
          Delimited round-trip is well-defined but **lossy** (column
          types are not preserved on emit, only on the in-memory
          CX side)."""]
@@ -533,7 +533,7 @@
 
          For the lossy lanes the loss is documented and bounded — see
          the matrix below and
-         [`spec/03-approved/core/conversions.md`](../../spec/03-approved/core/conversions.md)."""]
+         [`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md)."""]
 
     [body
       """The conformance suite includes round-trip fixtures for every
@@ -542,7 +542,7 @@
          equality (or documented-divergence) per format."""]
 
     [body
-      """**Lossiness matrix** (reproduced from [`spec/03-approved/core/conversions.md`](../../spec/03-approved/core/conversions.md) §9):"""]
+      """**Lossiness matrix** (reproduced from [`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §9):"""]
 
     [table
       [tr [th 'from \\ to'] [th 'CX'] [th 'XML'] [th 'JSON'] [th 'YAML'] [th 'TOML'] [th 'MD'] [th 'CSV']]
@@ -565,7 +565,7 @@
               format."""]
       [item """**▣** — lossless under `--lossless`: the `$tag`
               structure envelope + value carriers
-              ([`spec/03-approved/core/conversions.md`](../../spec/03-approved/core/conversions.md) §2.2.1 / §2.3.1)
+              ([`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md) §2.2.1 / §2.3.1)
               recover element documents byte-identically
               (strict-canonical eq). The default (idiomatic) lane keeps
               the ◊ losses. Program directives are outside every

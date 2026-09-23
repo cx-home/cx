@@ -19,7 +19,7 @@
 CX is a homoiconic data language. Read it like XML, type it like TOML, query
 it like XPath, program it like Lisp. As a format, CX converts to and from
 JSON, YAML, TOML, XML, and CSV with spec-defined semantics
-([`spec/03-approved/core/conversions.md`](spec/03-approved/core/conversions.md)),
+([`spec/03-approved/core/conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md)),
 so you can adopt it incrementally without rewriting existing pipelines.
 
 ```cx
@@ -46,7 +46,7 @@ product, not "a format plus a separate language."
 **Data formats** — CX converts to and from JSON, YAML, TOML, XML, and
 CSV/TSV/PSV, and adds typed scalars, native tables, and a bracketed directive
 form. The conversion contract, exactly as the spec
-([`conversions.md`](spec/03-approved/core/conversions.md)) states it:
+([`conversions.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/conversions.md)) states it:
 
 - **XML** — lossless round-trip, working on the shipped CLI today
   (`cx --to=xml --lossless … | cx --from=xml` recovers the original document;
@@ -203,7 +203,7 @@ CX ships as an embeddable C library: `make install` installs `libcx`, the
 [`cx.pc.in`](cx.pc.in)) so `pkg-config --cflags --libs cx` works from any C
 consumer. The versioned C ABI contract — symbols, capability bits,
 memory/threading rules — is
-[`spec/03-approved/core/abi.md`](spec/03-approved/core/abi.md), and every
+[`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md), and every
 language binding under [`lang/`](lang/) is a worked example of embedding it.
 (Note: `examples/embedding_test.cx` is about embedding *foreign text in CX
 documents*, not about embedding libcx.)
