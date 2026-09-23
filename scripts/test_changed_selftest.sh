@@ -34,6 +34,9 @@
 #                                                whole suite
 #   N  a step runner under vcx/tests/runners/    the step that BUILDS it, and
 #      (#1598)                                   not the whole suite
+#   P  the shared grading core (vcx/corpus/,     the suite, the document step,
+#      #1634)                                    the cmd step and the profile
+#                                                gate — every step that runs it
 #
 # Exit 0 and the count line only when every case matches.
 set -u
@@ -393,8 +396,25 @@ else
 	bad O "deps.cxd did not select test-sso-interop-lane: [$(targets "$T/m")]"
 fi
 
+# ── P — the shipped grading core under vcx/corpus/ (#1634) ─────────────────
+# RS-16 moved the module-corpus grading loop into vcx/corpus/, which the cx
+# binary links for `cx corpus`, every fixtures shard calls, and (#1631) the
+# document runner reaches for its document-lane core. No ring row named the
+# directory, so a change to exactly that loop SKIPPED every step that runs it —
+# the false-skip direction this selftest exists for.
+run vcx/corpus/grade.v > "$T/p"
+p_miss=""
+for st in test-vcx-suite test-vcx-conform test-vcx-cmd test-profile-gate; do
+	targets "$T/p" | tr " " "\n" | grep -qx -- "$st" || p_miss="$p_miss $st"
+done
+if [ -z "$p_miss" ]; then
+	ok P "vcx/corpus/grade.v selects test-vcx-suite, test-vcx-conform, test-vcx-cmd and test-profile-gate"
+else
+	bad P "vcx/corpus/grade.v did not select:$p_miss"
+fi
+
 if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "test_changed selftest: $cases/$cases (A x/ module; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop lane)"
+echo "test_changed selftest: $cases/$cases (A x/ module; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop lane; P the vcx/corpus grading core selects the steps that run it)"
