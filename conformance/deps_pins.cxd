@@ -1,0 +1,264 @@
+[test-suite name=deps-pins ring=1
+  [doc [#
+# CX Conformance — the `deps.cxd` repository pin document (RULED: RS-7)
+#
+# spec/03-approved/process/repository-dependency-pins.md is the format; this
+# file is its executable half. RS-7 rules that pin transport across the
+# multi-repo shape is "a CX lock document plus a CX-written `cx deps sync`",
+# and #1591's rules state that the union step FAILS on a stale pin and never
+# warns. Both of those are properties of ONE reader, and the class this corpus
+# exists to close is the one the repo has paid for repeatedly: a manifest whose
+# reader quietly ignores what it does not understand.
+#
+# Every case pins three things about one input document:
+#
+#   [out-canonical]  the document is ordinary CX data -- it parses with the
+#                    data grammar and `cx canonical` is its identity. No new
+#                    lexer, parser or codec, exactly as RS-7 requires.
+#   [out-text]       the verdict of scripts/deps_pins.cx over it, rendered one
+#                    line per refusal, or `ok`. This is the SAME function the
+#                    sync program runs, so a refusal here is a refusal there.
+#
+# The refusal cases are the point of the file. `unknown-key` and `missing-sha`
+# are the two the board named; the rest are the refusals the spec's Sec 3.1
+# table lists, and a row in that table with no case here is a defect in this
+# file rather than a discretionary omission.
+#
+# Graded by `make test-deps-pins` (scripts/check_deps_pins_fixtures.cx), which
+# is the claim check_conformance_coverage.sh carries for this suite.
+#]]
+
+ [case id=deps-001-empty-document level=core
+  [tags deps pins document canonical]
+  [title a repository that pins nothing -- the legitimate state before the first extraction]
+  [in-cx [#
+[deps]
+#]]
+  [out-canonical [#
+[deps]
+#]]
+  [out-text [#
+ok
+#]]
+ ]
+
+ [case id=deps-002-v-repository-row level=core
+  [tags deps pins document canonical v-fork]
+  [title a V repository row -- the repo the sha the module the release tag it was taken from and the V-fork sha it was built against]
+  [in-cx [#
+[deps
+  [dep repo="cx-core-data" sha="4d1a8f2b9c0e7a36d58b41f0c2e9a7b3d604158e" module="cx-core/data" tag="v1" v-fork="9f3c02a7e1b84d6509c7fa2138e6b05d4a71c3e2"]]
+#]]
+  [out-canonical [#
+[deps
+  [dep repo=cx-core-data sha=4d1a8f2b9c0e7a36d58b41f0c2e9a7b3d604158e module=cx-core/data tag=v1 v-fork=9f3c02a7e1b84d6509c7fa2138e6b05d4a71c3e2]
+]
+#]]
+  [out-text [#
+ok
+#]]
+ ]
+
+ [case id=deps-003-package-row-and-url-override level=core
+  [tags deps pins document canonical url]
+  [title a package repository row -- no V-fork column -- beside one whose remote is not the default]
+  [in-cx [#
+[deps
+  [dep repo="cx-platform-sso" sha="1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e" module="cx-platform/sso"]
+  [dep repo="cx-tooling" sha="a0b1c2d3e4f506172839a4b5c6d7e8f90a1b2c3d" module="cx-tooling" url="git@example.invalid:elsewhere/cx-tooling.git"]]
+#]]
+  [out-canonical [#
+[deps
+  [dep repo=cx-platform-sso sha=1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e module=cx-platform/sso]
+  [dep repo=cx-tooling sha=a0b1c2d3e4f506172839a4b5c6d7e8f90a1b2c3d module=cx-tooling url=git@example.invalid:elsewhere/cx-tooling.git]
+]
+#]]
+  [out-text [#
+ok
+#]]
+ ]
+
+ [case id=deps-004-doc-block-is-permitted level=core
+  [tags deps pins document canonical doc]
+  [title a doc child is permitted beside the rows and one row carries every module namespace its repository provides -- the pin is per repository and not per module]
+  [in-cx [#
+[deps
+  [doc why these pins are what they are]
+  [dep repo="cx-core-code" sha="c1d2e3f405162738495a6b7c8d9e0f1a2b3c4d5e" module="cx-stdlib/json cx-stdlib/map cx-stdlib/fp"]]
+#]]
+  [out-canonical [#
+[deps
+  [doc why these pins are what they are]
+  [dep repo=cx-core-code sha=c1d2e3f405162738495a6b7c8d9e0f1a2b3c4d5e module='cx-stdlib/json cx-stdlib/map cx-stdlib/fp']
+]
+#]]
+  [out-text [#
+ok
+#]]
+ ]
+
+ [case id=deps-010-unknown-key level=core
+  [tags deps pins refusal unknown-key]
+  [title an unknown key on a row is REFUSED rather than ignored -- the whole reason the transport is a document with a reader]
+  [in-cx [#
+[deps
+  [dep repo="cx-platform-net" sha="2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f" module="cx-platform/net" branch="main"]]
+#]]
+  [out-canonical [#
+[deps
+  [dep repo=cx-platform-net sha=2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f module=cx-platform/net branch=main]
+]
+#]]
+  [out-text [#
+unknown-key repo=cx-platform-net: branch
+#]]
+ ]
+
+ [case id=deps-011-missing-sha level=core
+  [tags deps pins refusal missing-sha]
+  [title a row with a tag and no sha is REFUSED -- a tag is a name the producer can move so the sha is the pin; spec Sec 2.1]
+  [in-cx [#
+[deps
+  [dep repo="cx-platform-store" module="cx-platform/store" tag="v1"]]
+#]]
+  [out-canonical [#
+[deps
+  [dep repo=cx-platform-store module=cx-platform/store tag=v1]
+]
+#]]
+  [out-text [#
+missing-sha repo=cx-platform-store: no sha= on the row
+#]]
+ ]
+
+ [case id=deps-012-missing-repo-and-module level=core
+  [tags deps pins refusal missing-repo missing-module]
+  [title a row with no repo and no module -- a refusal names the row by its own canonical text when it has no repo to be named by]
+  [in-cx [#
+[deps
+  [dep sha="3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60"]]
+#]]
+  [out-canonical [#
+[deps
+  [dep sha=3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60]
+]
+#]]
+  [out-text [#
+missing-repo [dep sha=3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60]: no repo= on the row
+missing-module [dep sha=3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60]: no module= on the row
+#]]
+ ]
+
+ [case id=deps-013-malformed-sha level=core
+  [tags deps pins refusal malformed-sha]
+  [title a short sha is REFUSED rather than resolved -- a pin that has to be resolved before it can be compared is not a pin]
+  [in-cx [#
+[deps
+  [dep repo="cx-platform-db" sha="4e5f6071" module="cx-platform/db"]]
+#]]
+  [out-canonical [#
+[deps
+  [dep repo=cx-platform-db sha=4e5f6071 module=cx-platform/db]
+]
+#]]
+  [out-text [#
+malformed-sha repo=cx-platform-db: 4e5f6071
+#]]
+ ]
+
+ [case id=deps-014-malformed-v-fork level=core
+  [tags deps pins refusal malformed-v-fork]
+  [title the V-fork column is held to the same shape as the pin -- an uppercase sha is not the sha]
+  [in-cx [#
+[deps
+  [dep repo="cx-platform-mail" sha="5f60718293a4b5c6d7e8f90a1b2c3d4e5f607182" module="cx-platform/mail" v-fork="9F3C02A7E1B84D6509C7FA2138E6B05D4A71C3E2"]]
+#]]
+  [out-canonical [#
+[deps
+  [dep repo=cx-platform-mail sha=5f60718293a4b5c6d7e8f90a1b2c3d4e5f607182 module=cx-platform/mail v-fork=9F3C02A7E1B84D6509C7FA2138E6B05D4A71C3E2]
+]
+#]]
+  [out-text [#
+malformed-v-fork repo=cx-platform-mail: 9F3C02A7E1B84D6509C7FA2138E6B05D4A71C3E2
+#]]
+ ]
+
+ [case id=deps-015-duplicate-repo level=core
+  [tags deps pins refusal duplicate-repo]
+  [title two rows pinning one repository is a REFUSAL -- otherwise which sha wins is a reading order]
+  [in-cx [#
+[deps
+  [dep repo="cx-platform-flow" sha="60718293a4b5c6d7e8f90a1b2c3d4e5f60718293" module="cx-platform/flow"]
+  [dep repo="cx-platform-flow" sha="718293a4b5c6d7e8f90a1b2c3d4e5f6071829304" module="cx-platform/flow"]]
+#]]
+  [out-canonical [#
+[deps
+  [dep repo=cx-platform-flow sha=60718293a4b5c6d7e8f90a1b2c3d4e5f60718293 module=cx-platform/flow]
+  [dep repo=cx-platform-flow sha=718293a4b5c6d7e8f90a1b2c3d4e5f6071829304 module=cx-platform/flow]
+]
+#]]
+  [out-text [#
+duplicate-repo repo=cx-platform-flow: 2 rows pin it
+#]]
+ ]
+
+ [case id=deps-016-unknown-child level=core
+  [tags deps pins refusal unknown-child]
+  [title a child that is neither a dep row nor a doc block is REFUSED -- the document has exactly one row shape]
+  [in-cx [#
+[deps
+  [dep repo="cx-platform-xap" sha="8293a4b5c6d7e8f90a1b2c3d4e5f607182930415" module="cx-platform/xap"]
+  [include other.cxd]]
+#]]
+  [out-canonical [#
+[deps
+  [dep repo=cx-platform-xap sha=8293a4b5c6d7e8f90a1b2c3d4e5f607182930415 module=cx-platform/xap]
+  [include other.cxd]
+]
+#]]
+  [out-text [#
+unknown-child document: include
+#]]
+ ]
+
+ [case id=deps-017-unknown-root level=core
+  [tags deps pins refusal unknown-root]
+  [title the root element is deps and nothing else]
+  [in-cx [#
+[dependencies
+  [dep repo="cx-platform-fabric" sha="93a4b5c6d7e8f90a1b2c3d4e5f60718293041526" module="cx-platform/fabric"]]
+#]]
+  [out-canonical [#
+[dependencies
+  [dep repo=cx-platform-fabric sha=93a4b5c6d7e8f90a1b2c3d4e5f60718293041526 module=cx-platform/fabric]
+]
+#]]
+  [out-text [#
+unknown-root document: dependencies
+#]]
+ ]
+
+ [case id=deps-018-every-refusal-in-one-document level=core
+  [tags deps pins refusal order]
+  [title the refusals of one document in the order the validator finds them -- document first then row by row then the whole-document duplicate check]
+  [in-cx [#
+[deps
+  [dep repo="cx-platform-agent" sha="a4b5c6d7e8f90a1b2c3d4e5f6071829304152637" module="cx-platform/agent" pinned-by="hand"]
+  [dep repo="cx-platform-agent" module="cx-platform/agent"]
+  [note keep]]
+#]]
+  [out-canonical [#
+[deps
+  [dep repo=cx-platform-agent sha=a4b5c6d7e8f90a1b2c3d4e5f6071829304152637 module=cx-platform/agent pinned-by=hand]
+  [dep repo=cx-platform-agent module=cx-platform/agent]
+  [note keep]
+]
+#]]
+  [out-text [#
+unknown-child document: note
+unknown-key repo=cx-platform-agent: pinned-by
+missing-sha repo=cx-platform-agent: no sha= on the row
+duplicate-repo repo=cx-platform-agent: 2 rows pin it
+#]]
+ ]
+]

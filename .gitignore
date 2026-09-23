@@ -133,3 +133,10 @@ bench/repr/_corpus/
 # snapshot belongs with the test that records it, never as an untracked
 # artifact of running a gate.
 __snapshots__/
+
+# `cx deps sync`'s checkouts (RULED: RS-7, #1591 item 10). deps.cxd names every
+# pinned repository at a sha; scripts/deps_sync.cx fetches each one shallowly
+# into deps/<repo>/ and the V build reads them through `-path`. A pin is a sha
+# in a tracked document, never a tracked copy of the dependency — a checked-in
+# copy is the stale-copy class #1589's Risks names.
+deps/

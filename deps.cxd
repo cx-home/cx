@@ -1,0 +1,25 @@
+[deps
+  [doc [#
+The repositories `cx` builds on, each at a sha (RULED: RS-7).
+
+THE FORMAT is spec/03-approved/process/repository-dependency-pins.md. One [dep]
+row per pinned REPOSITORY -- not per module. `sha` is the pin; `tag` records
+the release it was taken from; `v-fork` is carried by a V repository's row.
+`cx scripts/deps_sync.cx` reads this document, fetches each pin shallowly into
+an ignored deps/<repo>/, and FAILS on a stale pin or a drifted checkout. It
+never warns (#1591; #1589 "Risks": the previous stale-copy arrangement rotted
+within weeks because nothing failed when it did).
+
+IT HAS NO ROWS YET, AND THAT IS THE TRUE STATE. RS-12 starts the extraction
+"quietest first" and #1591 item 11 is the first of them; until a repository
+exists to pin, `cx` is still the whole tree and pins nothing. The first row
+lands with the first extraction, and `make union` -- sync the pins, then the
+suite -- is live from now, so the day that row lands nobody has to remember to
+wire it.
+
+`cx` is a migration lane, never a gate (RS-7): when any repository releases,
+`cx` tries the newest mutually green set; green advances the pins, red leaves
+them and the finding lands on the repository that moved. No merge anywhere
+waits on `cx`. A release cut ships whatever is pinned.
+#]]
+]

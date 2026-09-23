@@ -156,25 +156,26 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='vcx/tests/testdata/code_diagram_golden' repo=cx-tooling]
   [path prefix='vcx/tests/testdata/diagram_' repo=cx-tooling]
   [path exact='scripts/check_code_diagram_fixtures.cx' repo=cx-tooling]
+  [path prefix='tooling/web/' repo=cx-tooling why='the browser half of the same product: the <cx-diagram> reference web component, its demo page and the bracket-highlighting comparison. Nothing under it is a ux module surface, and no target reads it (the ux extraction prep, F-U2)']
 
   [; ── modules that ENTER Ring 1 by the membership test (import nothing, no socket) ── ]
-  [path prefix='vcx/platform/stdlib_did' repo=cx-core-code why='pure; did:web resolution splits off to identity at the move']
-  [path prefix='vcx/platform/stdlib_vc' repo=cx-core-code why='pure signatures']
-  [path prefix='vcx/platform/stdlib_authz' repo=cx-core-code why='the decision function imports nothing']
+  [path prefix='vcx/code/stdlib_did' repo=cx-core-code why='pure; did:web resolution split off to identity (RULED: RS-14)']
+  [path prefix='vcx/code/stdlib_vc' repo=cx-core-code why='pure signatures; the revocation journal split off to identity (RULED: RS-14)']
+  [path prefix='vcx/code/stdlib_authz' repo=cx-core-code why='the decision function imports nothing (RULED: RS-13); the journaled store split off to identity']
   [path exact='stdlib/did.cx' repo=cx-core-code]
   [path exact='stdlib/vc.cx' repo=cx-core-code]
   [path exact='stdlib/authz.cx' repo=cx-core-code]
   [path exact='stdlib/bus.cx' repo=cx-core-code]
   [path exact='stdlib/xsp.cx' repo=cx-core-code]
-  [path exact='spec/03-approved/platform/did.md' repo=cx-core-code]
-  [path exact='spec/03-approved/platform/vc.md' repo=cx-core-code]
-  [path exact='spec/03-approved/platform/authz.md' repo=cx-core-code]
-  [path exact='spec/03-approved/platform/xsp.md' repo=cx-core-code]
+  [path exact='spec/03-approved/stdlib/did.md' repo=cx-core-code]
+  [path exact='spec/03-approved/stdlib/vc.md' repo=cx-core-code]
+  [path exact='spec/03-approved/stdlib/authz.md' repo=cx-core-code]
+  [path exact='spec/03-approved/stdlib/xsp.md' repo=cx-core-code]
   [path exact='spec/03-approved/xap/xsp.md' repo=cx-core-code why='the protocol page; the profiles stay with their owners']
-  [path exact='conformance/platform/did.cxd' repo=cx-core-code]
-  [path exact='conformance/platform/vc.cxd' repo=cx-core-code]
-  [path exact='conformance/platform/authz.cxd' repo=cx-core-code]
-  [path exact='conformance/platform/xsp.cxd' repo=cx-core-code]
+  [path exact='conformance/stdlib/did.cxd' repo=cx-core-code]
+  [path exact='conformance/stdlib/vc.cxd' repo=cx-core-code]
+  [path exact='conformance/stdlib/authz.cxd' repo=cx-core-code]
+  [path exact='conformance/stdlib/xsp.cxd' repo=cx-core-code]
 
   [; ── platform: store (engine + streams + server, as Postgres) ─────── ]
   [path prefix='vcx/cxstore/' repo=cx-platform-store]
@@ -254,6 +255,8 @@ the rule carries a `why=`. The recurring reasons, once:
   [; ── platform: mail ────────────────────────────────────────────────── ]
   [path prefix='vcx/platform/stdlib_smtp' repo=cx-platform-mail]
   [path prefix='vcx/platform/stdlib_imap' repo=cx-platform-mail]
+  [path prefix='vcx/code/stdlib_smtp' repo=cx-platform-mail why='the DECLARED Ring-1 half of the smtp module (modules.cxd half=): the pure ESMTP codec and server core, which decide MEANING and open nothing. A module moves whole, so the half travels with its wire half — as sasl already does (RULED: RS-19)']
+  [path prefix='vcx/code/stdlib_imap' repo=cx-platform-mail why='the DECLARED Ring-1 half of the imap module (modules.cxd half=): the pure IMAP codec and server core. Same rule as the smtp half above (RULED: RS-19)']
   [path exact='stdlib/smtp.cx' repo=cx-platform-mail]
   [path exact='stdlib/imap.cx' repo=cx-platform-mail]
   [path exact='spec/03-approved/platform/smtp.md' repo=cx-platform-mail]
@@ -268,6 +271,34 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='vcx/platform/stdlib_xsp_auth' repo=cx-platform-identity]
   [path prefix='vcx/platform/xsp_principal_mint' repo=cx-platform-identity]
   [path exact='stdlib/session.cx' repo=cx-platform-identity]
+  [path exact='stdlib/xsp-auth.cx' repo=cx-platform-identity why='the handshake calculus became a module of its own (RULED: RS-15); its natives are already here']
+  [; RS-14's two new surfaces. did-web is #1589's own words — identity holds
+     "did:web resolution (the one impure did verb)" — so the module, its page,
+     its corpus and its natives land here. vc-revocation is NOT named by
+     #1589's per-repo bullets: the journal it appends to is the store's, but
+     the PRODUCT is credential lifecycle, and identity is where the credential
+     surface lives beside session, the handshake and the principal mint. The
+     alternative (cx-platform-store, on the substrate) is a LETTER on this
+     branch's RESULTS.md, not a settled reading. ]
+  [path prefix='vcx/platform/stdlib_did_web' repo=cx-platform-identity]
+  [path exact='stdlib/did-web.cx' repo=cx-platform-identity]
+  [path exact='spec/03-approved/platform/did-web.md' repo=cx-platform-identity]
+  [path exact='conformance/platform/did-web.cxd' repo=cx-platform-identity]
+  [path prefix='vcx/platform/stdlib_vc_revocation' repo=cx-platform-identity why='credential lifecycle is identity\'s product; the journal it writes to is the substrate, not the owner']
+  [path exact='stdlib/vc-revocation.cx' repo=cx-platform-identity]
+  [path exact='spec/03-approved/platform/vc-revocation.md' repo=cx-platform-identity]
+  [path exact='conformance/platform/vc-revocation.cxd' repo=cx-platform-identity]
+  [; authz-store — the journaled trust store RS-13 cut out of authz. #1589's
+     per-repo bullets do not name it: the journal it appends to is the store's,
+     but the PRODUCT is the authority/trust model, and RS-6 has the store
+     server CONSUME the trust primitives rather than own them. Identity is
+     where that model sits, beside session, the handshake and the principal
+     mint. The alternative (cx-platform-store, on the substrate) is a LETTER on
+     this branch's RESULTS.md, not a settled reading. ]
+  [path prefix='vcx/platform/stdlib_authz_store' repo=cx-platform-identity]
+  [path exact='stdlib/authz-store.cx' repo=cx-platform-identity]
+  [path exact='spec/03-approved/platform/authz-store.md' repo=cx-platform-identity]
+  [path exact='conformance/platform/authz-store.cxd' repo=cx-platform-identity]
   [path exact='spec/03-approved/platform/session.md' repo=cx-platform-identity]
   [path exact='spec/03-approved/xap/xap_identity_model.md' repo=cx-platform-identity]
   [path exact='spec/03-approved/xap/xsp-auth.md' repo=cx-platform-identity]
@@ -290,7 +321,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='stdlib/flow.cx' repo=cx-platform-flow]
   [path exact='spec/03-approved/platform/flow.md' repo=cx-platform-flow]
   [path exact='conformance/platform/flow.cxd' repo=cx-platform-flow]
-  [path prefix='vcx/cmd/flow' repo=cx-platform-flow why='the local profile verbs stay in the binary; owned by flow']
+  [path prefix='vcx/cmd/flow' repo=cx why='flow ships=package and vcx/cmd/flow*.v is V that only the front door compiles: the local profile verbs stay in the binary, so they stay in the repo that BUILDS the binary. Not owned by flow (RULED: RS-20)']
   [path prefix='flows/' repo=cx-platform-flow]
   [path prefix='vcx/tests/flow_' repo=cx-platform-flow]
   [path exact='scripts/flow_dogfood_gate.cx' repo=cx-platform-flow]
@@ -312,7 +343,8 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='stdlib/sso.cx' repo=cx-platform-sso]
   [path exact='spec/03-approved/platform/sso.md' repo=cx-platform-sso]
   [path exact='conformance/platform/sso.cxd' repo=cx-platform-sso]
-  [path prefix='scripts/sso_interop' repo=cx-platform-sso]
+  [path prefix='scripts/sso_interop/' repo=cx-platform-sso]
+  [path exact='scripts/sso_interop_lane.sh' repo=cx-platform-sso why='the lane script, claimed by NAME: the prefix above carries its trailing slash so it claims the directory and nothing else (#1591 item 11, flag F-4)']
   [path prefix='tools/sso_' repo=cx-platform-sso]
 
   [; ── platform: ux ──────────────────────────────────────────────────── ]
@@ -320,7 +352,6 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='spec/03-approved/xap/ux.md' repo=cx-platform-ux]
   [path prefix='conformance/xap/ux' repo=cx-platform-ux]
   [path exact='scripts/oriel_lane.sh' repo=cx-platform-ux]
-  [path prefix='tooling/web/' repo=cx-platform-ux]
 
   [; ── platform: agent ───────────────────────────────────────────────── ]
   [path prefix='x/' repo=cx-platform-agent why='what remains of x/ after ux and term: tools, mcp, mcp-server, a2a, a2a-xap, llm, run, adjudicate']
@@ -332,7 +363,8 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='vcx/tests/llm_' repo=cx-platform-agent]
 
   [; ── platform: xap (the host; the residue of vcx/platform) ────────── ]
-  [path prefix='vcx/platform/' repo=cx-platform-xap why='everything left in vcx/platform after the rows above: xap, xsp profiles, contract revision, coordination glue, the module init and Ring-2 registration']
+  [path exact='vcx/platform/coordination.v' repo=cx-platform-xap why='the coordination glue, AND the one act seam cx-platform/flow depends on: coord_flow_perform, the single builtin the flow runner acts through (RULED: 1265-PB-1), dispatched here as flow-perform. The flow module row reads code=none, so without this row nothing names the seam and neither a pin nor a gate can see that a package repo depends on a builtin another repo compiles in (RULED: RS-20)']
+  [path prefix='vcx/platform/' repo=cx-platform-xap why='everything left in vcx/platform after the rows above: xap, xsp profiles, contract revision, the module init and Ring-2 registration']
   [path prefix='vcx/cmd/xap' repo=cx-platform-xap]
   [path prefix='vcx/cmd/platform_verbs' repo=cx-platform-xap]
   [path exact='stdlib/xap.cx' repo=cx-platform-xap]
@@ -345,6 +377,16 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='packages/' repo=cx-platform-xap why='the gtin sample package the registry publishes']
   [path prefix='reference/' repo=cx-platform-xap]
   [path prefix='examples/htmx/' repo=cx-platform-xap]
+  [; an examples/platform/<module>/ directory exercises ONE module and moves
+     with it -- a rule per module, not per file. What is left below exercises
+     the host or several products at once and stays with xap: the demos under
+     examples/platform/xap/, examples/platform/together/ (sso + flow + xap in
+     one deployment) and the directory README. The sso interop lane could not
+     boot its own deployment from a bare checkout before this (the sso
+     extraction prep, F-1; the ux prep reads it again as F-U1). ]
+  [path prefix='examples/platform/sso/' repo=cx-platform-sso why='the deployment scripts/sso_interop_lane.sh boots and the programs it drives: the sso module exercised as a SERVER a customer would run']
+  [path prefix='examples/platform/flow/' repo=cx-platform-flow why='the checkout and simulate examples of the flow module']
+  [path prefix='examples/platform/scim/' repo=cx-core-code why='scim is a shared codec that stays in the language repo, so its provisioning and projection examples go where the module is']
   [path prefix='examples/platform/' repo=cx-platform-xap]
   [path prefix='bench/xap/' repo=cx-platform-xap]
   [path exact='scripts/check_xap_dist_absences.cx' repo=cx-platform-xap]
@@ -434,6 +476,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='examples/' repo=cx]
   [path prefix='bench/' repo=cx]
   [path prefix='corpus/' repo=cx why='the rosetta corpus is documentation of the whole']
+  [path exact='conformance/deps_pins.cxd' repo=cx why='the deps.cxd pin document is the front door transport, not a data-format suite: cx holds the pins, the union and scripts/deps_sync.cx that grades against it (RULED: RS-7)']
   [path prefix='conformance/' repo=cx-core-data why='what remains of the root corpus after the rows above: the data suites and the corpus READMEs']
   [path prefix='fixtures/' repo=cx-core-data]
   [path prefix='_gate_evidence/' repo=cx]
@@ -445,6 +488,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='spec/03-approved/' repo=cx why='guard: a spec page no row above claims surfaces in the front door, never as unallocated']
   [path prefix='RELEASE_NOTES_' repo=cx]
   [path exact='VERSION' repo=cx]
+  [path exact='deps.cxd' repo=cx why='the front door pins every repository it builds the four cx builds from (RULED: RS-7)']
   [path exact='Makefile' repo=cx]
   [path exact='README.md' repo=cx]
   [path exact='LICENSE' repo=cx]

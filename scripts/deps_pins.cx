@@ -1,0 +1,138 @@
+# scripts/deps_pins.cx — the `deps.cxd` row format, as a reader and a validator.
+#
+# Written in CX and imported by path (AGENTS.md rule 6). It is the ONE place
+# the format of spec/03-approved/process/repository-dependency-pins.md is
+# implemented, so that `scripts/deps_sync.cx` (the program that fetches) and
+# `scripts/check_deps_pins_fixtures.cx` (the program that grades the corpus)
+# cannot drift apart: the refusal the corpus pins IS the refusal the sync
+# emits, because it is the same function.
+#
+# Everything here is PURE. Reading a file, fetching a repository and exiting
+# are the sync program's business; this module turns text into a verdict.
+#
+#   [$pins:read TEXT]          -> the parsed document
+#   [$pins:validate DOC]       -> [verdict [refusal kind= row= what=]*]
+#   [$pins:rows DOC]           -> the [dep] rows, in document order
+#   [$pins:render VERDICT]     -> one line per refusal ("ok" when there are none)
+#   [$pins:url-for ROW ORIGIN] -> the fetch URL of a row (spec §2.2)
+#
+# RULED: RS-7 (ledger/rulings_2026_09_21_repo_split_1589.md).
+
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/strings' as=strings]
+
+# -- the format, as data -------------------------------------------------
+#
+# Spec §2: the closed key set of a [dep]. An attribute outside it is
+# `unknown-key` -- deny-by-default, the shape the rest of this tree's
+# manifests take, and the reason RS-7 gives for the transport at all: a pin
+# document that quietly ignores what it does not understand can be wrong
+# without anyone finding out.
+
+[?def required-keys scope=public pure () ("repo", "sha", "module")]
+[?def optional-keys scope=public pure () ("tag", "url", "v-fork")]
+[?def known-keys    scope=public pure () ("repo", "sha", "module", "tag", "url", "v-fork")]
+
+# The two values that are commits: 40 lowercase hexadecimal characters. A short
+# sha is refused rather than resolved -- a pin that must be resolved before it
+# can be compared is not a pin.
+[?def sha-shaped scope=public pure [returns bool] ($s::string)
+  [$re:matches [$re:compile "^[0-9a-f]{40}$"] $s]]
+
+[?def member scope=private pure [returns bool] ($x::string $xs)
+  [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+[?def attr-or scope=private pure [returns string] ($e $k::string $d::string)
+  [?let [= $hits [?for [in $a [$attrs $e]] [where [= [$string $a@name] $k]] [yield [$string $a]]]]
+    [?if [= [$count $hits] 0] [then $d] [else [$first $hits]]]]]
+
+# -- reading -------------------------------------------------------------
+
+[?def read scope=public pure ($text::string) [$cx:parse $text]]
+
+[?def rows scope=public pure ($doc) [?for [in $r $doc/dep] [yield $r]]]
+
+# row-id: how a refusal names the row it is about. A row that HAS a repo= is
+# named by it. A row that has none can only be named by what it does carry, so
+# it is named by its own canonical text -- deterministic, and the one thing
+# that distinguishes two rowless rows from each other.
+[?def row-id scope=private pure [returns string] ($row)
+  [?let [= $repo [$attr-or $row "repo" ""]]
+    [?if [= $repo ""]
+      [then [$strings:trim [$cx:serialize $row]]]
+      [else [$concat "repo=" $repo]]]]]
+
+# -- validating ----------------------------------------------------------
+
+[?def check-row scope=private pure ($row)
+  [?let
+    [= $id [$row-id $row]]
+    [= $names [?for [in $a [$attrs $row]] [yield [$string $a@name]]]]
+    [= $unknown [?for [in $k $names] [where [not [$member $k [$known-keys]]]]
+                  [yield [refusal kind=unknown-key row=$id what=$k]]]]
+    [= $missing [?for [in $k [$required-keys]] [where [not [$member $k $names]]]
+                  [yield [refusal kind=[$concat "missing-" $k] row=$id
+                                  what=[$concat "no " $k "= on the row"]]]]]
+    [= $sha [$attr-or $row "sha" ""]]
+    [= $bad-sha [?if [and [not [= $sha ""]] [not [$sha-shaped $sha]]]
+                  [then ([refusal kind=malformed-sha row=$id what=$sha])]
+                  [else ()]]]
+    [= $vf [$attr-or $row "v-fork" ""]]
+    [= $bad-vf [?if [and [not [= $vf ""]] [not [$sha-shaped $vf]]]
+                 [then ([refusal kind=malformed-v-fork row=$id what=$vf])]
+                 [else ()]]]
+    [found [?splice $unknown] [?splice $missing] [?splice $bad-sha] [?splice $bad-vf]]]]
+
+[?def validate scope=public pure ($doc)
+  [?let
+    [= $bad-root [?if [= [$name $doc] "deps"]
+                   [then ()]
+                   [else ([refusal kind=unknown-root row=document what=[$name $doc]])]]]
+    [= $bad-child [?for [in $c $doc/*]
+                    [where [not [or [= [$name $c] "dep"] [= [$name $c] "doc"]]]]
+                    [yield [refusal kind=unknown-child row=document what=[$name $c]]]]]
+    [= $rs [$rows $doc]]
+    [= $per-row [?for [in $r $rs] [yield [$check-row $r]]]]
+    [= $repos [?for [in $r $rs] [yield [$attr-or $r "repo" ""]]]]
+    [= $dups [?for [in $q $repos]
+               [where [and [not [= $q ""]]
+                           [> [$count [?for [in $q2 $repos] [where [= $q $q2]] [yield 1]]] 1]]]
+               [group-by $q]
+               [yield [refusal kind=duplicate-repo row=[$concat "repo=" $key]
+                               what=[$concat [$string $count] " rows pin it"]]]]]
+    [verdict
+      [?splice $bad-root]
+      [?splice $bad-child]
+      [?for [in $f $per-row] [in $x $f/refusal] [yield $x]]
+      [?splice $dups]]]]
+
+[?def refusals scope=public pure ($verdict) [?for [in $r $verdict/refusal] [yield $r]]]
+
+[?def ok scope=public pure [returns bool] ($verdict) [= [$count [$refusals $verdict]] 0]]
+
+# render: the refusal text, one line per refusal, in the order validate found
+# them. This is what the corpus pins and what the sync program prints, so the
+# two can never say different things about the same document.
+[?def render scope=public pure ($verdict)
+  [?if [$ok $verdict]
+    [then ("ok")]
+    [else [?for [in $r [$refusals $verdict]]
+            [yield [$concat [$string $r@kind] " " [$string $r@row] ": " [$string $r@what]]]]]]]
+
+# -- the fetch URL (spec §2.2) -------------------------------------------
+#
+# A row's own `url` wins. Otherwise the consumer's own origin with its final
+# path segment replaced by `repo`, so a sibling repository needs no row of its
+# own and nothing is inferred from a name beyond that substitution.
+
+[?def url-for scope=public pure [returns string] ($row $origin::string)
+  [?let [= $own [$attr-or $row "url" ""]]
+    [?if [not [= $own ""]]
+      [then $own]
+      [else [?let
+        [= $repo [$attr-or $row "repo" ""]]
+        [= $bare [?if [$strings:ends-with $origin ".git"]
+                   [then [$strings:slice $origin 0 [- [$strings:length $origin] 4]]]
+                   [else $origin]]]
+        [$concat [$re:replace [$re:compile "[^/]+$"] $bare $repo] ".git"]]]]]]
