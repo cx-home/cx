@@ -305,8 +305,7 @@ implicit grant anywhere:
 `prog.cx`
 ```cx
 [?lib 'cx-stdlib/authz']
-[?lib 'cx-platform/authz-store']
-[?let [= $az [$authz-store:store {tenant: 'acme'}]]
+[?let [= $az [$authz:open {tenant: 'acme'}]]
   [$authz:check $az [authz-request [actor [agent ghost]] [capability refund-duplicate] [slice '/orders/9'] [tenant acme]]]]
 ```
 
@@ -318,11 +317,9 @@ $ cx prog.cx
 `prog.cx`
 ```cx
 [?lib 'cx-stdlib/authz']
-[?lib 'cx-platform/authz-store']
-[?let [= $az [$authz-store:store {tenant: 'acme'}]]
-  [= $d [$authz-store:delegate $az
+[?let [= $az [$authz:open {tenant: 'acme', grants:
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
-      [capabilities [refund-duplicate]] [over '/orders'] [assurance :t1] [signature s]]]]
+      [capabilities [refund-duplicate]] [over '/orders'] [assurance :t1] [signature s]]}]]
   [$authz:check $az [authz-request [actor [agent ops-1]] [capability refund-duplicate] [slice '/payments/9'] [tenant acme]]]]
 ```
 
@@ -337,11 +334,9 @@ what makes an authority chain auditable rather than merely enforced:
 `prog.cx`
 ```cx
 [?lib 'cx-stdlib/authz']
-[?lib 'cx-platform/authz-store']
-[?let [= $az [$authz-store:store {tenant: 'acme'}]]
-  [= $d [$authz-store:delegate $az
+[?let [= $az [$authz:open {tenant: 'acme', grants:
     [delegation d-1 [tenant acme] [from [principal dana]] [to [agent ops-1]]
-      [capabilities [refund]] [over '/orders'] [assurance :t1] [signature s]]]]
+      [capabilities [refund]] [over '/orders'] [assurance :t1] [signature s]]}]]
   [= $dec [$authz:check $az [authz-request [actor [agent ops-1]] [capability refund] [slice '/orders/9'] [tenant acme]]]]
   [$authz:explain $dec]]
 ```
@@ -354,8 +349,7 @@ $ cx prog.cx
 `prog.cx`
 ```cx
 [?lib 'cx-stdlib/authz']
-[?lib 'cx-platform/authz-store']
-[?let [= $az [$authz-store:store {tenant: 'acme'}]]
+[?let [= $az [$authz:open {tenant: 'acme'}]]
   [= $dec [$authz:check $az [authz-request [actor [agent x]] [capability y] [tenant acme]]]]
   [$authz:explain $dec]]
 ```
