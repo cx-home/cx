@@ -3097,11 +3097,21 @@ CACHE_ESCAPE_PROBE = \
 # a `v test` step path but the script `repr-guard` runs, and a row naming a
 # script that moved would silently disable that class exactly as a stale test
 # path does. Every roster the tree has is bound by this one target.
+#
+# And every row DECLARES WHY (FIX-1, #1597): RETRY_REASON_CASE's default arm
+# still retries a row with no reason, loudly, but a loud line in a failed run's
+# log is found after the run failed. The post-merge run on 684a12502 printed
+# "NO REASON DECLARED" for env_retention_test.v, which had joined
+# SUITE_SERIAL_RETRY (5672a1d2e) without its row here. A roster row whose
+# reason is the default arm is refused BEFORE the suite runs, beside the
+# missing-file refusal.
 .PHONY: check-serial-retry-rosters
 check-serial-retry-rosters:
-	@missing=""; \
+	@missing=""; undeclared=""; \
 	for t in $(SUITE_SERIAL_RETRY) $(CODE_SERIAL_RETRY) $(GAUGE_SERIAL_RETRY); do \
 	  [ -f "$$t" ] || missing="$$missing $$t"; \
+	  rel=$$t; $(RETRY_REASON_CASE); \
+	  case "$$reason" in "NO REASON DECLARED"*) undeclared="$$undeclared $$t" ;; esac; \
 	done; \
 	if [ -n "$$missing" ]; then \
 	  echo "check-serial-retry-rosters: retry roster names file(s) that do not exist —"; \
@@ -3110,7 +3120,14 @@ check-serial-retry-rosters:
 	  echo "  fix the roster in Makefile (SUITE_SERIAL_RETRY / CODE_SERIAL_RETRY / GAUGE_SERIAL_RETRY)."; \
 	  exit 1; \
 	fi; \
-	echo "check-serial-retry-rosters OK — every retry-roster row names an existing step"
+	if [ -n "$$undeclared" ]; then \
+	  echo "check-serial-retry-rosters: retry roster row(s) with NO declared reason —"; \
+	  echo "  the retry would print 'NO REASON DECLARED' in a failed run's log:"; \
+	  for t in $$undeclared; do echo "    $$t"; done; \
+	  echo "  declare each in RETRY_REASON_CASE in the Makefile (the issue and the class)."; \
+	  exit 1; \
+	fi; \
+	echo "check-serial-retry-rosters OK — every retry-roster row names an existing step and declares its reason"
 
 # ── check-fixture-shard-manifest (#1448, RULED: 1448-a) ─────────────────────
 # The same shape, one level down. 1448-a partitions the module corpus —
