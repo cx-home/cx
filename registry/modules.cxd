@@ -287,13 +287,13 @@ becomes its own Ring-1 module.
      client/codec halves stay declared in vcx/code until a Ring-1 consumer
      asks for a module of their own. Both corpora still carry the ring=1
      header the old tier-based placement gave them. ]
-  [module name=imap ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/imap.md corpus=conformance/platform/imap.cxd source=stdlib/imap.cx code='vcx/platform/stdlib_imap_wire.v vcx/platform/stdlib_imap_wire_register.v' half='vcx/code/stdlib_imap.v vcx/code/stdlib_imap_server.v' status=current]
+  [module name=imap ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/imap.md corpus=conformance/platform/imap.cxd source=stdlib/imap.cx code='vcx/mail/stdlib_imap_wire.v vcx/mail/stdlib_imap_wire_register.v' half='vcx/code/stdlib_imap.v vcx/code/stdlib_imap_server.v' status=current]
   [module name=journal ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/journal.md corpus=conformance/platform/journal.cxd source=stdlib/journal.cx code='vcx/platform/stdlib_journal.v vcx/platform/journal_ingest.v vcx/platform/stdlib_journal_register.v' half=none status=current]
   [module name=live ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/live.md corpus=conformance/platform/live.cxd source=stdlib/live.cx code='vcx/platform/stdlib_live.v vcx/platform/stdlib_live_register.v' half=none status=current]
   [module name=net ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/net.md corpus=conformance/platform/net.cxd source=stdlib/net.cx code='vcx/cxnet/stdlib_net.v vcx/cxnet/stdlib_net_register.v' half=none status=current]
   [module name=session ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/session.md corpus=conformance/platform/session.cxd source=stdlib/session.cx code='vcx/platform/stdlib_session.v vcx/platform/identity_connector_builtins.v vcx/platform/stdlib_session_register.v' half=none status=current]
   [module name=sftp ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/sftp.md corpus=conformance/platform/sftp.cxd source=stdlib/sftp.cx code=vcx/platform/stdlib_sftp.v half=none status=planned]
-  [module name=smtp ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/smtp.md corpus=conformance/platform/smtp.cxd source=stdlib/smtp.cx code='vcx/platform/stdlib_smtp_wire.v vcx/platform/stdlib_smtp_wire_register.v' half='vcx/code/stdlib_smtp.v vcx/code/stdlib_smtp_server.v' status=current]
+  [module name=smtp ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/smtp.md corpus=conformance/platform/smtp.cxd source=stdlib/smtp.cx code='vcx/mail/stdlib_smtp_wire.v vcx/mail/stdlib_smtp_wire_register.v' half='vcx/code/stdlib_smtp.v vcx/code/stdlib_smtp_server.v' status=current]
   [; sso — #1394's enterprise-SSO handler surface, pure CX over
      oidc/saml/scim/session; declared `incoming` before its merge (OL-15) and
      current since release/0.18 carries it.
