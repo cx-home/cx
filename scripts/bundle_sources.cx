@@ -1,0 +1,151 @@
+# scripts/bundle_sources.cx — where a bundled CX module's source comes from,
+# once the products have left the front door (RULED: RS-7).
+#
+# THE MECHANISM IS ONE: EMBED FROM deps/. `cx` embeds every bundled CX module's
+# bytes into the binary — vcx/code/stdlib_bundle.v carries one `$embed_file`
+# per module — and an embed path is a compile-time literal. A module whose
+# repository has left this tree is embedded from the pinned checkout ITSELF:
+# its registry/modules.cxd row carries `repo=<repo>` and a `source=` under
+# `deps/<repo>/`, and the embed literal names that same path
+# (`$embed_file('../../deps/cx-platform-sso/stdlib/sso.cx')`). Nothing is
+# copied into the front door's own tree, so there is no composed file that can
+# drift from the pinned bytes and none that `git add` could commit back.
+#
+# Everything here is PURE. Reading the registries, asking git and the disk, and
+# exiting are scripts/bundle_check.cx's business; this module turns a described
+# tree into a verdict, so that the program that checks the real tree and the
+# program that grades the corpus cannot come to hold two readings of the same
+# table — the shape scripts/deps_pins.cx set for the pin document.
+#
+#   [$bundle:classify DOC]   -> [verdict [state …]* [refusal …]*]
+#   [$bundle:states V]       -> the [state] rows, in document order
+#   [$bundle:refusals V]     -> the [refusal] rows
+#   [$bundle:ok V]           -> no refusals
+#   [$bundle:census V]       -> the one-line census
+#   [$bundle:report V]       -> the census, then the refusals ("ok" when none)
+#
+# THE INPUT is one `[bundle-state]` document, one `[module]` row per bundled
+# CX module, each carrying what the tree answers about it:
+#
+#   [module name=<n> source=<path> repo=<repo or ''>
+#           pinned=<bool> tracked=<bool> present=<bool>]
+#
+#   repo     the row's `repo=` column in registry/modules.cxd: the repository
+#            the module has left for, or '' for a module still in this tree
+#   pinned   that repository has a [dep] row in deps.cxd
+#   tracked  <path> is a tracked file of THIS repository
+#   present  <path> is on disk
+#
+# THE TABLE. Two legal states and six refusals; nothing else is a pass.
+#
+#   repo    pinned  tracked  present | verdict
+#   ------  ------  -------  ------- | ------------------------------------------
+#   ''        -      yes       -     | own        the front door's own source
+#   ''        -      no        -     | REFUSED    missing-source
+#   cx        -       -        -     | REFUSED    self-pinned
+#   <r>      no       -        -     | REFUSED    unpinned
+#   <r>      yes     yes       -     | REFUSED    tracked-pin
+#   <r>      yes     no       yes    | pinned     embedded from deps/<r>/
+#   <r>      yes     no       no     | REFUSED    missing-pinned-source
+#
+# plus `duplicate-module`, two rows naming one module, and the two document
+# shape refusals (`unknown-root`, `unknown-child`).
+#
+# WHY `missing-pinned-source` IS A REFUSAL AND NOT A FALLBACK. The failure this
+# whole table exists to prevent is a build that quietly produces a SMALLER
+# binary because a `deps/<repo>` was never fetched, or was fetched at a sha
+# where the source is not where the row says. A fallback to "leave the module
+# out" is exactly that failure. There is no fallback: `make deps-sync` refuses
+# by name after the fetch, `make deps-present` refuses before V starts, and if
+# both are bypassed the absent path fails V's `$embed_file` at compile time.
+#
+# WHY `unpinned` AND `tracked-pin` ARE HERE. A row that names a repository
+# deps.cxd does not pin has nothing that would ever fetch its source; and a
+# pinned repository's source committed into this tree (`git add -f` past the
+# `deps/` ignore rule) is a private fork of another repository's bytes — the
+# class RS-7 built the transport to avoid.
+#
+# RULED: RS-7 (ledger/rulings_2026_09_21_repo_split_1589.md).
+
+[?lib 'cx-stdlib/strings' as=strings]
+
+# -- classifying one row --------------------------------------------------
+
+[?def classify-one scope=private pure ($m)
+  [?let
+    [= $n       [$string [?else $m@name ""]]]
+    [= $src     [$string [?else $m@source ""]]]
+    [= $repo    [$string [?else $m@repo ""]]]
+    [= $pinned  [?else $m@pinned false]]
+    [= $tracked [?else $m@tracked false]]
+    [= $present [?else $m@present false]]
+    [?if [= $repo ""]
+      [then [?if $tracked
+        [then [found [state module=$n kind=own source=$src]]]
+        [else [found [refusal kind=missing-source module=$n
+                              what=[$concat $src " is neither tracked here nor named under a pinned repository"]]]]]]
+      [else [?if [= $repo "cx"]
+        [then [found [refusal kind=self-pinned module=$n
+                              what="the front door cannot pin itself"]]]
+        [else [?if [not $pinned]
+          [then [found [refusal kind=unpinned module=$n
+                                what=[$concat $repo " has no [dep] row in deps.cxd -- nothing fetches " $src
+                                              " and the build would lose " $n]]]]
+          [else [?if $tracked
+            [then [found [refusal kind=tracked-pin module=$n
+                                  what=[$concat $src " is tracked here -- a pinned repository's source committed into the front door"]]]]
+            [else [?if $present
+              [then [found [state module=$n kind=pinned repo=$repo source=$src]]]
+              [else [found [refusal kind=missing-pinned-source module=$n
+                                    what=[$concat $src " is not there -- run make deps-sync; the build would lose " $n]]]]]]]]]]]]]]]
+
+# -- the document ---------------------------------------------------------
+
+[?def classify scope=public pure ($doc)
+  [?let
+    [= $bad-root [?if [= [$name $doc] "bundle-state"]
+                   [then ()]
+                   [else ([refusal kind=unknown-root module=document what=[$name $doc]])]]]
+    [= $bad-child [?for [in $c $doc/*]
+                    [where [not [or [= [$name $c] "module"] [= [$name $c] "doc"]]]]
+                    [yield [refusal kind=unknown-child module=document what=[$name $c]]]]]
+    [= $ms [?for [in $m $doc/module] [yield $m]]]
+    [= $per [?for [in $m $ms] [yield [$classify-one $m]]]]
+    [= $names [?for [in $m $ms] [yield [$string [?else $m@name ""]]]]]
+    [= $dups [?for [in $q $names]
+               [where [and [not [= $q ""]]
+                           [> [$count [?for [in $q2 $names] [where [= $q $q2]] [yield 1]]] 1]]]
+               [group-by $q]
+               [yield [refusal kind=duplicate-module module=$key
+                               what=[$concat [$string $count] " rows name it"]]]]]
+    [verdict
+      [?splice $bad-root]
+      [?splice $bad-child]
+      [?for [in $f $per] [in $s $f/state] [yield $s]]
+      [?for [in $f $per] [in $r $f/refusal] [yield $r]]
+      [?splice $dups]]]]
+
+[?def states   scope=public pure ($v) [?for [in $s $v/state] [yield $s]]]
+[?def refusals scope=public pure ($v) [?for [in $r $v/refusal] [yield $r]]]
+
+[?def ok scope=public pure [returns bool] ($v) [= [$count [$refusals $v]] 0]]
+
+[?def count-kind scope=private pure ($v $k::string)
+  [$count [?for [in $s [$states $v]] [where [= [$string $s@kind] $k]] [yield 1]]]]
+
+[?def census scope=public pure [returns string] ($v)
+  [$concat "bundle: " [$string [$count [$states $v]]] " modules, "
+           [$string [$count-kind $v "own"]] " own, "
+           [$string [$count-kind $v "pinned"]] " from pins, "
+           [$string [$count [$refusals $v]]] " refused"]]
+
+[?def render scope=public pure ($v)
+  [?if [$ok $v]
+    [then ("ok")]
+    [else [?for [in $r [$refusals $v]]
+            [yield [$concat [$string $r@kind] " " [$string $r@module] ": " [$string $r@what]]]]]]]
+
+# report: what scripts/bundle_check.cx prints and what the corpus pins, so the
+# two can never say different things about the same tree.
+[?def report scope=public pure [returns string] ($v)
+  [$strings:join ([$census $v], [?splice [$render $v]]) "\n"]]

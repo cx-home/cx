@@ -1,0 +1,182 @@
+# scripts/check_bundle_sources_fixtures.cx — the grader for
+# conformance/bundle_sources.cxd (RULED: RS-7). Written in CX (AGENTS.md rule 6).
+#
+# The suite pins two things about each `[bundle-state]` input:
+#
+#   [out-canonical]  `cx canonical` over the input — the described tree is
+#                    ordinary CX data, read by the data grammar, no new codec.
+#   [out-text]       `[$bundle:report …]` over it: the census line, then one
+#                    line per refusal (or `ok`). The SAME function
+#                    scripts/bundle_check.cx prints at the end of `make
+#                    deps-sync` and `make deps-check`, so a refusal the corpus
+#                    pins is the refusal the tree check emits.
+#
+# Rules carried from scripts/check_deps_pins_fixtures.cx, which this grader is
+# modelled on line for line:
+#
+#   RULED: PYE-6 — an all-SKIP run is a FAILURE. Zero passes means the gate
+#   proved nothing, and a gate that proves nothing must not report success.
+#
+# Exit codes:
+#   0  at least one case PASSED and none FAILED
+#   1  one or more cases FAILED, or no case passed (an empty selection)
+#   2  the corpus is missing or does not parse
+#
+# Run:  cx --allow-read --allow-write scripts/check_bundle_sources_fixtures.cx [--verbose]
+#       cx --allow-read --allow-write scripts/check_bundle_sources_fixtures.cx --self-test
+#
+# BOTH GRANTS ARE LOAD-BEARING: it reads the corpus and it writes to stdout,
+# and a denied write bound to an unused [?let] binding is dropped silently
+# (#1608) — under --allow-read alone this program grades every case, exits with
+# the right status and prints nothing at all.
+#
+# (or:  make test-bundle-sources, which runs the self-test then the corpus)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/strings' as=strings]
+[; From the CHECKOUT ROOT — see #1604: code.md §12.1 says a `./`-form [?lib]
+   resolves against the importing module's directory, the resolver resolves it
+   against the process working directory. ]
+[?lib './scripts/bundle_sources.cx' as=bundle]
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?def member scope=private pure [returns bool] ($x::string $xs)
+  [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+# raw-of / normalize: the fixture-loader projection. Same shape as
+# scripts/check_deps_pins_fixtures.cx — a `[# … #]` raw-text child is read back
+# out of the node's own serialization.
+[?def raw-of scope=private pure ($rt)
+  [?let [= $s [$cx:serialize $rt]]
+        [= $i [$strings:find $s "[#"]]
+        [= $j [$strings:rfind $s "#]"]]
+    [?if [or [not [$present $i]] [not [$present $j]] [< $j $i]]
+      [then ""]
+      [else [$strings:slice $s [+ $i 2] [- $j 1]]]]]]
+
+[?def normalize scope=private pure ($raw)
+  [?let [= $a [?if [$strings:starts-with $raw "\n"]
+                [then [$strings:slice $raw 2 [$strings:length $raw]]]
+                [else $raw]]]
+    [$strings:trim-end-chars $a "\n"]]]
+
+[?def block scope=private pure ($case $tag::string)
+  [?let [= $hits [?for [in $c $case/*] [where [= [$name $c] $tag]] [yield $c]]]
+    [?if [= [$count $hits] 0]
+      [then [absent]]
+      [else [present text=[$normalize [$raw-of [$first $hits]]]]]]]]
+
+[?def text-of scope=private pure [returns string] ($b) [$string $b@text]]
+
+# -- the two comparisons, pure ------------------------------------------
+
+[?def canonical-of scope=private pure [returns string] ($in::string)
+  [$strings:trim-end-chars [$cx:canonical $in] "\n"]]
+
+[?def report-text-of scope=private pure [returns string] ($in::string)
+  [$bundle:report [$bundle:classify [$cx:parse $in]]]]
+
+# grade: the whole judgement of one case, as data.
+# -> [graded id= status=pass|fail [diff want= got= what=]*]
+[?def grade scope=private pure ($case)
+  [?let
+    [= $id [$string $case@id]]
+    [= $in [$block $case "in-cx"]]
+    [= $wc [$block $case "out-canonical"]]
+    [= $wt [$block $case "out-text"]]
+    [?if [?match $in [case [absent] true] [else false]]
+      [then [graded id=$id status=fail [diff what='no [in-cx] block' want="" got=""]]]
+      [else [?let
+        [= $src [$text-of $in]]
+        [= $dc [?match $wc
+                 [case [absent] ()]
+                 [else [?let [= $want [$text-of $wc]] [= $got [$canonical-of $src]]
+                         [?if [= $want $got] [then ()]
+                           [else ([diff what=out-canonical want=$want got=$got])]]]]]]
+        [= $dt [?match $wt
+                 [case [absent] ()]
+                 [else [?let [= $want [$text-of $wt]] [= $got [$report-text-of $src]]
+                         [?if [= $want $got] [then ()]
+                           [else ([diff what=out-text want=$want got=$got])]]]]]]
+        [= $diffs [?for [in $d ([?splice $dc], [?splice $dt])] [yield $d]]]
+        [= $none [?match $wc
+                   [case [absent] [?match $wt [case [absent] true] [else false]]]
+                   [else false]]]
+        [?if $none
+          [then [graded id=$id status=fail [diff what='no expectation on the case' want="" got=""]]]
+          [else [graded id=$id status=[?if [= [$count $diffs] 0] [then pass] [else fail]]
+                        [?splice $diffs]]]]]]]]]
+
+# -- the self-test: the comparator itself, red on a synthetic violation ----
+#
+# #1591: "Every moved gate is red-proofed on a synthetic violation before its
+# row moves." The gate here is `grade`, so the proof is that `grade` calls a
+# matching pair PASS and a one-character mismatch FAIL — on synthetic cases,
+# with no corpus involved.
+
+[?if [$member "--self-test" [$env:argv]]
+  [then
+    [?let
+      [= $good [$first [?for [in $c [$cx:parse
+          "[s [case id=t-good [in-cx [#\n[bundle-state]\n#]] [out-canonical [#\n[bundle-state]\n#]] [out-text [#\nbundle: 0 modules, 0 own, 0 from pins, 0 refused\nok\n#]]]]"]/case]
+          [yield $c]]]]
+      [= $bad-canonical [$first [?for [in $c [$cx:parse
+          "[s [case id=t-bad-canonical [in-cx [#\n[bundle-state]\n#]] [out-canonical [#\n[bundle]\n#]]]]"]/case]
+          [yield $c]]]]
+      [= $bad-refusal [$first [?for [in $c [$cx:parse
+          "[s [case id=t-bad-refusal [in-cx [#\n[bundle-state [module name=m source=deps/cx-x/stdlib/m.cx repo=cx-x pinned=true tracked=false present=false]]\n#]] [out-text [#\nok\n#]]]]"]/case]
+          [yield $c]]]]
+      [= $no-expect [$first [?for [in $c [$cx:parse
+          "[s [case id=t-no-expect [in-cx [#\n[bundle-state]\n#]]]]"]/case]
+          [yield $c]]]]
+      [= $got ([$string [$grade $good]@status],
+               [$string [$grade $bad-canonical]@status],
+               [$string [$grade $bad-refusal]@status],
+               [$string [$grade $no-expect]@status])]
+      [= $want ("pass", "fail", "fail", "fail")]
+      [?if [= [$strings:join $got " "] [$strings:join $want " "]]
+        [then [?let [= $_ [$say [$concat "bundle-sources self-test OK -- a matching pair passes; a wrong canonical form, "
+                                         "an unreported missing-pinned-source and a case with no expectation each FAIL "
+                                         "(" [$strings:join $got " "] ")"]]]
+                [$env:exit 0]]]
+        [else [?let [= $_ [$cry [$concat "bundle-sources self-test FAILED -- want (" [$strings:join $want " "]
+                                         ") got (" [$strings:join $got " "] ")"]]]
+                [$env:exit 1]]]]]]
+  [else ""]]
+
+# -- the corpus ----------------------------------------------------------
+
+[?let [= $p "conformance/bundle_sources.cxd"]
+  [?if [not [$io:exists $p]]
+    [then [?let [= $_ [$cry [$concat "bundle-sources: cannot read " $p " -- run from the checkout root"]]]
+            [$env:exit 2]]]
+    [else ""]]]
+
+[?let
+  [= $verbose [$member "--verbose" [$env:argv]]]
+  [= $suite [$cx:parse [$io:read-file "conformance/bundle_sources.cxd"]]]
+  [= $cases [?for [in $c $suite/case] [yield $c]]]
+  [= $graded [?for [in $c $cases] [yield [$grade $c]]]]
+  [= $failed [?for [in $g $graded] [where [= [$string $g@status] "fail"]] [yield $g]]]
+  [= $passed [?for [in $g $graded] [where [= [$string $g@status] "pass"]] [yield $g]]]
+  [= $_v [?if $verbose
+            [then [?for [in $g $graded]
+                    [yield [$say [$concat "  " [$string $g@status] "  " [$string $g@id]]]]]]
+            [else ()]]]
+  [= $_report [?for [in $g $failed] [in $d $g/diff]
+                [yield [$cry [$concat "bundle-sources: " [$string $g@id] " " [$string $d@what]
+                                      "\n  want:\n" [$string $d@want]
+                                      "\n  got:\n"  [$string $d@got]]]]]]
+  [= $_census [$say [$concat "bundle-sources corpus: " [$string [$count $passed]] " passed, "
+                             [$string [$count $failed]] " failed, "
+                             [$string [$count $cases]] " cases"]]]
+  [?if [and [= [$count $failed] 0] [> [$count $passed] 0]]
+    [then [$env:exit 0]]
+    [else [?let [= $_ [$cry [?if [= [$count $passed] 0]
+                          [then "bundle-sources: NO case passed -- a gate that proves nothing must not report success (RULED: PYE-6)"]
+                          [else "bundle-sources: the corpus is not met"]]]]
+            [$env:exit 1]]]]]

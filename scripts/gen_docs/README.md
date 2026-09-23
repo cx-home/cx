@@ -22,8 +22,10 @@ Three discovery doors serve the same generated text:
    convention. Hand-authored by nature (agents read it raw from the checkout,
    pre-build), so it stays minimal, carries no examples, and points here.
    A one-line `CLAUDE.md` defers to it.
-2. **`/llms.txt` + `/llms-full.txt`** at the published site root
-   (`scripts/publish.sh` copies both, and asserts their presence).
+2. **`/llms.txt` + `/llms-full.txt`** at the published site root. The
+   allowlist mirror that used to copy them there retired with the split
+   (RULED: RS-11); which of the three answers replaces it is an open letter,
+   recorded in `docs-src/llm/manifest.cxd` beside the `[site]` row.
 3. **`cx primer`** — the door that cannot go stale. `vcx/cmd/primer.v`
    `$embed_file()`s `docs/llm/primer.md` at compile time, so the text always
    matches the binary and the version header is self-diagnosing.
@@ -133,8 +135,8 @@ capability-free case, or give the case the `grant=` it truthfully needs.
 
 ## Relationship to `scripts/gen_guide`
 
-`gen_guide` builds the human-facing guide (`docs/guide/`, HTML, gitignored,
-promoted to the public site by `scripts/publish.sh`). `gen_docs` builds the
+`gen_guide` builds the human-facing guide (`docs/guide/`, HTML, gitignored;
+the mirror that used to promote it retired with the split, RULED: RS-11). `gen_docs` builds the
 machine-facing layer (`docs/llm/`, Markdown, committed, embedded in the
 binary). They share the dog-food principle and nothing else; neither reads the
 other's sources.

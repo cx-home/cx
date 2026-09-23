@@ -128,10 +128,9 @@ PYTHON ?= $(shell if python3 -c 'import sys; sys.exit(0 if sys.version_info >= (
 .PHONY: all build build-wasm build-playground build-vcx build-vcx-dev build-lib build-lib-arrow build-rust build-rust-arrow \
  build-go build-go-arrow \
  build-vscode \
- publish publish-push \
  publish-v publish-v-push \
  publish-org \
- release release-v release-all \
+ release-v release-all \
  dist install uninstall install-cli uninstall-cli verify-cli promote-cli \
  test test-no-parallel test-python test-python-arrow test-vcx test-rust test-rust-arrow \
  test-rust-parquet test-rust-arrow-conformance \
@@ -357,6 +356,15 @@ check-gate-lock:
 # names its own pinned paths, and a row added there is covered here the day it
 # lands. The derivation is `grep`, not `cx`, on purpose — this runs BEFORE the
 # binary that would read the registry exists.
+#
+# It is the BUILD-TIME half of one mechanism (#1589 item 23): embed from
+# deps/, nothing copied. The pin-time half is scripts/bundle_check.cx at the
+# end of `deps-sync` and `deps-check`, which applies the table
+# conformance/bundle_sources.cxd grades — the same `missing-pinned-source`
+# class, plus the questions only a cx can answer (is the repository pinned at
+# all; is its source committed here by mistake). This half stays `grep` so a
+# `make clean` tree with its deps/ still rebuilds with no cx present
+# (scripts/reproduce_release.sh does exactly that).
 .PHONY: deps-present
 deps-present:
 	@missing=""; \
@@ -1176,11 +1184,50 @@ deps-cx:
 
 DEPS_CX = $(if $(CX_BIN),$(CX_BIN),$(if $(wildcard $(CURDIR)/vcx/target/cx),$(CURDIR)/vcx/target/cx,cx))
 
+# BOTH END ON THE BUNDLED SOURCES (#1589 item 23): once the pins are fetched
+# or verified, scripts/bundle_check.cx judges every bundled CX module against
+# them — the table conformance/bundle_sources.cxd grades — and refuses a pinned
+# checkout that does not carry the source its registry/modules.cxd row names
+# (`missing-pinned-source`), a row naming a repository deps.cxd does not pin
+# (`unpinned`), and a pinned source committed into this tree (`tracked-pin`).
 deps-sync: deps-cx
 	@"$(DEPS_CX)" --allow-all scripts/deps_sync.cx
+	@"$(DEPS_CX)" --allow-all scripts/bundle_check.cx
 
 deps-check: deps-cx
 	@"$(DEPS_CX)" --allow-all scripts/deps_sync.cx --check
+	@"$(DEPS_CX)" --allow-all scripts/bundle_check.cx
+
+# ── test-bundle-sources — the bundled-source table's corpus ───────────────
+# conformance/bundle_sources.cxd pins the two legal states and every refusal
+# of scripts/bundle_sources.cx — the table scripts/bundle_check.cx applies to
+# the real tree at the end of `deps-sync` and `deps-check`;
+# scripts/check_bundle_sources_fixtures.cx grades it and runs its own comparator self-test first — #1591: "Every moved gate is
+# red-proofed on a synthetic violation before its row moves."
+#
+# BOTH GRANTS ARE LOAD-BEARING, for the reason test-deps-pins below records:
+# a denied write bound to an unused [?let] binding is dropped silently (#1608),
+# so under --allow-read alone the grader prints nothing at all.
+.PHONY: test-bundle-sources
+test-bundle-sources: CX_BIN ?= $(CURDIR)/vcx/target/cx
+test-bundle-sources: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_bundle_sources_fixtures.cx --self-test
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_bundle_sources_fixtures.cx
+
+# ── test-docs-fragment — the per-repository documentation fragment ────────
+# conformance/docs_fragment.cxd pins the contract a component repository's
+# release meets when it publishes docs/llm/manifest-fragment.cxd, and the
+# union's collision refusal (RULED: RS-9: "the closed [output] list of
+# docs-src/llm/manifest.cxd becomes the union of per-repository doc
+# manifests"). scripts/docs_fragment.cx is the contract;
+# scripts/gen_docs/primer_build.cx runs the same functions over every fragment
+# under deps/ when `make docs` regenerates. The grader runs its comparator
+# self-test first. Both grants load-bearing, as for test-bundle-sources.
+.PHONY: test-docs-fragment
+test-docs-fragment: CX_BIN ?= $(CURDIR)/vcx/target/cx
+test-docs-fragment: build-vcx
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_docs_fragment_fixtures.cx --self-test
+	@"$(CX_BIN)" --allow-read --allow-write scripts/check_docs_fragment_fixtures.cx
 
 # ── test-deps-pins — the deps.cxd corpus ──────────────────────────────────
 # conformance/deps_pins.cxd pins the wire form, its canonical bytes and every
@@ -1229,6 +1276,11 @@ test-migrate-namespace: build-vcx
 # It is NOT a TEST_TARGETS step and takes no selection-manifest row: it RUNS
 # the union rather than being part of it. `make test` remains what a step
 # roster grades.
+#
+# ITS MEANING IS UNCHANGED by #1589 item 23: `deps-sync` then `make test`, in
+# that order. `deps-sync` now also judges the bundled CX sources against the
+# pins it fetched (scripts/bundle_check.cx), so a pinned checkout missing the
+# source a module row names fails here, before a single test compiles.
 .PHONY: union
 union: deps-sync
 	@$(MAKE) test
@@ -1395,7 +1447,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate test-deps-pins test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -3624,16 +3676,22 @@ demo-go: build-go
 demo-rust: build-rust
 	cargo run --example demo --manifest-path lang/rust/cxlib/Cargo.toml
 
-# ── Publish to public repo ────────────────────────────────────────────────────
-
-publish:
-	@bash scripts/publish.sh
-
-publish-dry-run:
-	@bash scripts/publish.sh --dry-run
-
-publish-push:
-	@bash scripts/publish_push.sh
+# ── Publish ───────────────────────────────────────────────────────────────────
+# THE ALLOWLIST MIRROR RETIRED with the split (RULED: RS-11): "Public or private
+# is a setting per repository. The allowlist mirror (`scripts/publish.sh`,
+# `.publishignore*`, the guard) retires with the split; `cx-private` becomes
+# `cx` when it is no longer private." There is no second tree to copy into any
+# more — this repository IS the one that ships — so `publish`, `publish-dry-run`,
+# `publish-push` and the `release` target that composed them are gone, with
+# scripts/publish.sh, scripts/publish_push.sh, .publishignore and the curated
+# public Makefile and workflows under scripts/public/. The site files the mirror
+# used to install (CNAME, the quickstart `install` script) moved to docs/, the
+# site root itself.
+#
+# WHAT REMAINS HERE IS NOT THE cx MIRROR. `publish-v` mirrors the V FORK to
+# cx-home/cx-v — the fork is not a repository of the shape and its distribution
+# is v-dependency-management.md's subject, not RS-11's — and `publish-org` syncs
+# the org profile README.
 
 publish-v:
 	@bash scripts/publish_v.sh
@@ -3644,19 +3702,18 @@ publish-v-push:
 publish-org:
 	@bash scripts/publish_org.sh
 
-release: publish publish-push
-
 release-v: publish-v publish-v-push
 
-# Tag the public mirrors (cx, cx-v) at the VERSION release version. Run AFTER
-# release + release-v so the tag lands on the pushed release content. Use
-# `make tag-public FORCE=--force` to move an existing published tag.
+# Tag the cx-v mirror at the VERSION release version. Run AFTER release-v so the
+# tag lands on the pushed content. Use `make tag-public FORCE=--force` to move an
+# existing published tag. It used to tag the cx mirror too; that mirror retired
+# with RS-11 and this repository's own tag is the release's tag.
 tag-public:
 	@bash scripts/tag_public.sh $(FORCE)
 
-# tag-public (the real release step) runs BEFORE publish-org (best-effort org
-# branding), so a failed/empty org-README sync can never block tagging a release.
-release-all: release release-v tag-public publish-org
+# tag-public runs BEFORE publish-org (best-effort org branding), so a failed or
+# empty org-README sync can never block tagging a release.
+release-all: release-v tag-public publish-org
 
 # ── The ONE end-to-end local release command ─────────────────────────────────
 # gate (make test + verify-doc-links) → bump → build → tag → push → GitHub
