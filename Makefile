@@ -1371,6 +1371,7 @@ TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-t
 BASE ?= HEAD
 .PHONY: test-changed
 test-changed:
+	@$(MAKE) deps-sync
 	@bash scripts/test_changed.sh $(BASE)
 
 .PHONY: test-changed-dry
@@ -2101,6 +2102,11 @@ test:
 	# line is its own shell), which is why it is a prefix and not a header;
 	# a hard kill or a crash still leaves the file, and that remains
 	# check-gate-lock's stale-pid reclaim to clear.
+	# The pins first (RULED: RS-7, RS-12): a head that pins a repository builds its
+	# bundled sources from deps/<repo>/, and build-vcx REFUSES at deps-present when
+	# they are absent — the post-merge run on 625389bda red in two minutes for it.
+	# deps-sync is idempotent and fast at the pinned sha; it never warns.
+	@$(MAKE) deps-sync
 	@$(call GATE_LOCK_TAKE,make test)
 	#
 	# STEP-START / STEP-END (RULED: RUN-5, issue 1583). Every top-level line of
@@ -2228,6 +2234,7 @@ DOC_TARGETS := verify-doc-blocks verify-doc-links verify-readme-blocks docs-chec
 .PHONY: test-docs
 test-docs: export CX_GATE_OWNER := $(shell echo $$PPID)
 test-docs:
+	@$(MAKE) deps-sync
 	@$(call GATE_LOCK_TAKE,make test-docs)
 	@$(GATE_LOCK_TRAP) $(MAKE) build-vcx
 	@$(GATE_LOCK_TRAP) $(MAKE) -j$(TEST_JOBS) $(OUTPUT_SYNC) $(DOC_TARGETS)
