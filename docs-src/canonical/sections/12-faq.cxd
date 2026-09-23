@@ -118,7 +118,7 @@
       [output """(3, 2)"""]
       [body
         """The distinction is the **container vs atom** principle in
-           [`spec/03-approved/core/cxdm.md`](../../spec/03-approved/core/cxdm.md) §2.0. See
+           [`spec/03-approved/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md) §2.0. See
            [[container-atom]] for the full rules; sequences are flat,
            arrays are containers."""]]
 
@@ -281,7 +281,7 @@
            ABI directly from a host-spawned thread — that thread is
            opaque to libcx's Boehm GC until it registers. See
            [[ffi-thread-register]] and
-           [`spec/03-approved/core/abi.md`](../../spec/03-approved/core/abi.md) §1.6."""]]
+           [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) §1.6."""]]
 
     [child id=faq-python-memory title='Do I need to close a Python Doc to release memory?'
       [body

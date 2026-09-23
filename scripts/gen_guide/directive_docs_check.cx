@@ -62,12 +62,12 @@
             [= $codecxd [$io:read-file "conformance/code.cxd"]]
             [= $datacxd
               [$concat
-                [$io:read-file "conformance/core.cxd"]
-                [$io:read-file "conformance/atoms.cxd"]
-                [$io:read-file "conformance/table.cxd"]
-                [$io:read-file "conformance/namespaces.cxd"]
-                [$io:read-file "conformance/extended.cxd"]
-                [$io:read-file "conformance/identity.cxd"]]]
+                [$io:read-file "deps/cx-core-data/conformance/core.cxd"]
+                [$io:read-file "deps/cx-core-data/conformance/atoms.cxd"]
+                [$io:read-file "deps/cx-core-data/conformance/table.cxd"]
+                [$io:read-file "deps/cx-core-data/conformance/namespaces.cxd"]
+                [$io:read-file "deps/cx-core-data/conformance/extended.cxd"]
+                [$io:read-file "deps/cx-core-data/conformance/identity.cxd"]]]
 
         # --- (1) presence parity: every registry directive is documented ---
         [?let [= $missing

@@ -361,7 +361,7 @@
   [= $only [?for [in $a $args] [where [not [$is-flag $a]]] [yield $a]]]
 
   [= $fixture [$env:var-or-default 'CX_BENCH_FIXTURE' 'bench_medium.cx']]
-  [= $fixture-path [$cat ('fixtures/bench/', $fixture)]]
+  [= $fixture-path [$cat ('deps/cx-core-data/fixtures/bench/', $fixture)]]
   [= $fixture-size [?fallback [$io:size $fixture-path] [recover-with 0]]]
   [= $_h1 [$say 'CX Language Binding Report — Implementation × Performance']]
   [= $_h2 [$say [$cat ('Fixture: ', $fixture, '  (', [$grouped $fixture-size],

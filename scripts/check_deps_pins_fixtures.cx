@@ -154,13 +154,20 @@
     [= $new [$rev-of $dir]]
     [remote url=[$concat "file://" $dir] old=$old new=$new]]]
 
-[?def write-pins scope=private impure ($doc::string $url::string $sha::string)
-  [$io:write-file $doc [$concat "[deps [dep repo=fixture sha=" $sha " module=fixture url='" $url "']]\n"]]]
+# write-pins: the one-row pin document a scenario runs against. $vfork is ""
+# for a package row, or a 40-character sha for a V repository row, which is
+# what makes the checkout a V search root under --vpath (spec §3.3).
+[?def write-pins scope=private impure ($doc::string $url::string $sha::string $vfork::string)
+  [$io:write-file $doc [$concat "[deps [dep repo=fixture sha=" $sha " module=fixture url='" $url "'"
+                              [?if [= $vfork ""] [then ""] [else [$concat " v-fork=" $vfork]]]
+                              "]]\n"]]]
 
 [?def run-sync scope=private impure ($cx::string $mode::string $doc::string $deps::string)
   [?let [= $argv [?if [= $mode "check"]
                    [then ($cx, "--allow-all", "scripts/deps_sync.cx", "--check", "--deps", $doc, "--dir", $deps)]
-                   [else ($cx, "--allow-all", "scripts/deps_sync.cx", "--deps", $doc, "--dir", $deps)]]]
+                   [else [?if [= $mode "vpath"]
+                     [then ($cx, "--allow-all", "scripts/deps_sync.cx", "--vpath", "--deps", $doc, "--dir", $deps)]
+                     [else ($cx, "--allow-all", "scripts/deps_sync.cx", "--deps", $doc, "--dir", $deps)]]]]]
         [= $r [$process:run $argv]]
     [ran exit=[$string $r@exit-code]
          out=[$strings:trim [$string $r@stdout]]
@@ -214,11 +221,12 @@
     [= $doc    [$concat $root "/deps.cxd"]]
     [= $url    [$string $remote@url]]
     [= $start  [$string $s@checkout]]
+    [= $vfork  [?if [= [$string [?else $s@v-fork ""]] "true"] [then "0123456789abcdef0123456789abcdef01234567"] [else ""]]]
     [= $seed   [?if [= $start "absent"]
                  [then ()]
                  [else [?let [= $_p [$write-pins $doc $url [?if [= $start "old"]
                                                            [then [$string $remote@old]]
-                                                           [else [$string $remote@new]]]]]
+                                                           [else [$string $remote@new]]] $vfork]]
                              [= $r [$run-sync $cx "sync" $doc $deps]]
                          [?if [= [$string $r@exit] "0"]
                            [then ()]
@@ -228,7 +236,7 @@
                  [else ()]]]
     [= $_pin   [$write-pins $doc $url [?if [= [$string $s@pin] "unknown"]
                                         [then "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"]
-                                        [else [$string $remote@new]]]]]
+                                        [else [$string $remote@new]]] $vfork]]
     [= $runs   [?for [in $m [$strings:split-whitespace [$string $s@runs]]]
                  [yield [$render-run $cx $m $doc $deps $co $root $remote]]]]
     [= $_rm    [$io:remove-tree $root]]
