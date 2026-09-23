@@ -3,6 +3,7 @@
 One runnable scenario.
 
 ```sh
+make deps-sync   # the login half is cx-platform-sso's now (RULED: RS-12)
 cd examples/platform/together/sso-flow-xap && CX=cx sh run.sh
 ```
 

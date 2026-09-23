@@ -10,16 +10,27 @@ an ignored deps/<repo>/, and FAILS on a stale pin or a drifted checkout. It
 never warns (#1591; #1589 "Risks": the previous stale-copy arrangement rotted
 within weeks because nothing failed when it did).
 
-IT HAS NO ROWS YET, AND THAT IS THE TRUE STATE. RS-12 starts the extraction
-"quietest first" and #1591 item 11 is the first of them; until a repository
-exists to pin, `cx` is still the whole tree and pins nothing. The first row
-lands with the first extraction, and `make union` -- sync the pins, then the
-suite -- is live from now, so the day that row lands nobody has to remember to
-wire it.
+THE FIRST ROW IS HERE (RULED: RS-12, #1591 item 11). `cx-platform-sso` is the
+first extraction -- quietest first -- and this row is what makes `cx` a
+consumer of it rather than its owner. The pinned checkout is a BUILD INPUT:
+registry/modules.cxd's sso row names its spec, corpus and bundled source under
+deps/cx-platform-sso/, vcx/code/stdlib_bundle.v embeds that source into the
+four profile builds, and `make test-sso-interop-lane` runs the lane script out
+of the same checkout. So `make deps-sync` is not a convenience here -- a tree
+without deps/ cannot build the profile that carries sso, and it says so by
+name instead of dropping the module (Makefile, `deps-present`).
 
 `cx` is a migration lane, never a gate (RS-7): when any repository releases,
 `cx` tries the newest mutually green set; green advances the pins, red leaves
 them and the finding lands on the repository that moved. No merge anywhere
 waits on `cx`. A release cut ships whatever is pinned.
+
+NO `url=` ON THE ROW, and that is deliberate: §2.2's default is this
+repository's own `origin` with the final path segment replaced by `repo`, which
+is exactly where cx-platform-sso is. A `url=` here would be a second answer to
+a question the default already answers correctly, and it would rot the day the
+organisation moves.
 #]]
+
+  [dep repo=cx-platform-sso sha=c43dc5cd9c804dc3d34e3e1a5a1e4fa6969b5598 module='cx-platform/sso']
 ]

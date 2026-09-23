@@ -267,9 +267,13 @@ cx vX.Y.Z-dev+3ed9ade5
          that table. It is kept honest by two lanes, and
          the split between them is the reason the table can be trusted:
          `make test-sso-interop-lane` runs on every commit against an
-         identity provider that lives in this repository
-         (`scripts/sso_interop/idp.cx`), and `tools/sso_interop_real.sh
-         PROVIDER` runs against a real tenant at release time. A cell
+         identity provider that ships with the sso module itself. Since
+         the module was extracted into its own repository that provider
+         reaches a `cx` build as the pinned checkout `deps.cxd` names
+         (`deps/cx-platform-sso/scripts/sso_interop/idp.cx`, after `make
+         deps-sync`), and the lane still runs against the binary this
+         tree built. `tools/sso_interop_real.sh PROVIDER`, in the same
+         repository, runs against a real tenant at release time. A cell
          that names neither is an unverified cell, and it says so. A
          PARTIAL verdict names exactly which rows it rests on — in the
          OIDC and client-auth columns, not folded into the verdict word
@@ -296,7 +300,7 @@ cx vX.Y.Z-dev+3ed9ade5
       [tr [td 'PingFederate / PingOne'] [td '--'] [td '--'] [td '--'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/sso_interop_real.sh ping -- pending a tenant'] [td '--']]
       [tr [td 'ADFS'] [td '--'] [td '--'] [td '--'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/sso_interop_real.sh adfs -- pending a tenant'] [td '--']]
       [tr [td 'Keycloak'] [td '--'] [td '--'] [td '--'] [td '--'] [td 'NOT YET VERIFIED'] [td 'tools/sso_interop_real.sh keycloak -- pending a tenant'] [td '--']]
-      [tr [td 'cx reference IdP (in-tree, scripts/sso_interop/idp.cx)'] [td 'yes -- code, state, nonce, S256 challenge, and the RFC 9207 iss parameter on the authorization response'] [td 'all four'] [td 'assertion-signed: fetched over http and attached, in plaintext and as an EncryptedAssertion (AES-256-CBC under RSA-OAEP-MGF1P) the relying party decrypts with its own private half; response-signed and the ACS POST binding are NOT graded'] [td 'not exercised -- this lane is the login half'] [td 'verified per commit -- test-sso-interop-lane'] [td 'rows: discover, mixup, login-none, login-secret-basic, login-secret-post, login-private-key-jwt, wrong-secret, pkce-mismatch, rotation, refresh, client-credentials, saml-over-wire, saml-encrypted-over-wire'] [td 'every commit']]]
+      [tr [td 'cx reference IdP (deps/cx-platform-sso/scripts/sso_interop/idp.cx)'] [td 'yes -- code, state, nonce, S256 challenge, and the RFC 9207 iss parameter on the authorization response'] [td 'all four'] [td 'assertion-signed: fetched over http and attached, in plaintext and as an EncryptedAssertion (AES-256-CBC under RSA-OAEP-MGF1P) the relying party decrypts with its own private half; response-signed and the ACS POST binding are NOT graded'] [td 'not exercised -- this lane is the login half'] [td 'verified per commit -- test-sso-interop-lane'] [td 'rows: discover, mixup, login-none, login-secret-basic, login-secret-post, login-private-key-jwt, wrong-secret, pkce-mismatch, rotation, refresh, client-credentials, saml-over-wire, saml-encrypted-over-wire'] [td 'every commit']]]
     [note
       """Entra groups OVERAGE, recorded rather than left silent (RULED:
          1406-b). Above its threshold Entra stops emitting the `groups`

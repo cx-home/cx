@@ -607,15 +607,16 @@ const accepted_by_one_table = [
 	AcceptedByOne{'conformance/fmt.cxd', .data, reason_datalane},
 	AcceptedByOne{'conformance/xml.cxd', .data, reason_datalane},
 	AcceptedByOne{'conformance/xml_codec.cxd', .data, reason_datalane},
-	// ── #1536 — a call-shaped head beside a ws-delimited literal (33) ──
+	// ── #1536 — a call-shaped head beside a ws-delimited literal (22) ──
+	// 33 -> 22: eleven of these were cx-platform-sso's and left with the
+	// extraction (RULED: RS-12, #1591 item 11) -- the module, the four interop
+	// programs' three judged files and the seven example programs. The scan
+	// walks scripts/, stdlib/ and examples/ of THIS tree and does not follow
+	// deps/, so the pinned checkout is not judged here: the repository that
+	// owns those files judges its own reader parity, or nothing does, and
+	// RESULTS.md says which. `examples/platform/together/sso-flow-xap/actor.cx`
+	// stays -- it is cx's composition, not sso's.
 	AcceptedByOne{'examples/platform/scim/projection/project.cx', .program, reason_1536},
-	AcceptedByOne{'examples/platform/sso/deployment/deployment.cx', .program, reason_1536},
-	AcceptedByOne{'examples/platform/sso/mock-idp/idp.cx', .program, reason_1536},
-	AcceptedByOne{'examples/platform/sso/oidc-auth-code-pkce/login.cx', .program, reason_1536},
-	AcceptedByOne{'examples/platform/sso/oidc-auth-code-pkce/refusals.cx', .program, reason_1536},
-	AcceptedByOne{'examples/platform/sso/saml-assertion-session/session.cx', .program, reason_1536},
-	AcceptedByOne{'examples/platform/sso/saml-assertion-session/tampering.cx', .program, reason_1536},
-	AcceptedByOne{'examples/platform/sso/scim-provisioning/provision.cx', .program, reason_1536},
 	AcceptedByOne{'examples/platform/together/sso-flow-xap/actor.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/check_code_diagram_fixtures.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/check_code_fixtures.cx', .program, reason_1536},
@@ -636,12 +637,9 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/gen_guide/snippet_check.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/lang_stats.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/run_bench_json.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/sso_interop/deploy_drive.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/sso_interop/proxy.cx', .program, reason_1536},
-	AcceptedByOne{'scripts/sso_interop/rp_drive.cx', .program, reason_1536},
-	AcceptedByOne{'stdlib/sso.cx', .program, reason_1536},
 	AcceptedByOne{'stdlib/supervise.cx', .program, reason_1536},
-	// ── recorded exception — a computed attribute `name=[EXPR]` (22) ──
+	// ── recorded exception — a computed attribute `name=[EXPR]` (21) ──
+	// 22 -> 21: scripts/sso_interop/idp.cx left with the sso extraction (RS-12).
 	AcceptedByOne{'examples/code-tour.cx', .program, reason_attr},
 	AcceptedByOne{'examples/cxpath-tour.cx', .program, reason_attr},
 	AcceptedByOne{'examples/htmx/serve.cx', .program, reason_attr},
@@ -661,7 +659,6 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/gen_guide/playground/gen_examples.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/repo_paths.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/ring_query.cx', .program, reason_attr},
-	AcceptedByOne{'scripts/sso_interop/idp.cx', .program, reason_attr},
 	AcceptedByOne{'stdlib/diagram.cx', .program, reason_attr},
 	AcceptedByOne{'stdlib/flow.cx', .program, reason_attr},
 	// ── recorded exception — a program document the data balancer cannot read (8) ──

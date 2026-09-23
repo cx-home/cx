@@ -139,7 +139,18 @@
 [?def def-rx () [$re:compile "\\[\\?def\\s+([a-z0-9-]+)\\s+scope=public(\\s+(pure|impure))?"]]
 
 [?let [= $rx [$def-rx]]
-  [?let [= $bundle-files [?for [in $g ([$io:glob "stdlib/*.cx"], [$io:glob "x/*.cx"])] [in $f $g] [yield $f]]]
+  # The bundled sources, wherever the build reads them from. `deps/*/stdlib/*.cx`
+  # is not a second directory to keep in step: it is the SAME set, for the
+  # modules that have been extracted into their own repositories (RULED: RS-7,
+  # RS-12). registry/modules.cxd's `repo=` row names the pinned path, the
+  # profile builds embed it, and this check reads it -- so a module does not
+  # stop owing its [fn-doc]s the day it moves. The corpus each example is
+  # matched against comes from the same row (`corpus-path` below reads
+  # `source=`), which is the pinned repository's corpus at the pinned sha, so
+  # the two halves can never be from different versions. A tree with no deps/
+  # would simply not see the module here -- which is why `placement-gate` fails
+  # loudly on the missing path rather than leaving that silence to this step.
+  [?let [= $bundle-files [?for [in $g ([$io:glob "stdlib/*.cx"], [$io:glob "x/*.cx"], [$io:glob "deps/*/stdlib/*.cx"])] [in $f $g] [yield $f]]]
 
     # Every module this gate grades, as {name, text} — a file on disk and a
     # synthesized surface are the same thing to every check below, which is

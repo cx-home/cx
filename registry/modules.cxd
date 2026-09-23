@@ -66,6 +66,15 @@ COLUMNS
   spec    the normative text
   corpus  the graded fixtures
   source  the bundled CX source (stdlib/*.cx, x/*.cx), or `none`
+  repo    the REPOSITORY that owns the artifacts, when it is not this one
+          (RULED: RS-7, RS-12). A module extracted into its own repository
+          keeps its row here — the binary still ships the surface — and its
+          spec, corpus and source columns name the pinned checkout
+          `deps/<repo>/…` that `deps.cxd` pins and `make deps-sync` fetches.
+          Absent means the artifacts are tracked in this repository, which is
+          every other row. `placement-gate` refuses a `repo=` row whose path
+          does not begin `deps/<repo>/`, and reads the ring of what follows
+          the prefix, so an extraction cannot turn a ring check vacuous
   code    the V file(s) carrying the dispatch, or `none` for a pure-CX
           module — every one under the ring's own directory
   half    a DECLARED Ring-1 half of a Ring-2 module (1427-d): the pure codec
@@ -287,8 +296,20 @@ becomes its own Ring-1 module.
   [module name=smtp ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/smtp.md corpus=conformance/platform/smtp.cxd source=stdlib/smtp.cx code='vcx/platform/stdlib_smtp_wire.v vcx/platform/stdlib_smtp_wire_register.v' half='vcx/code/stdlib_smtp.v vcx/code/stdlib_smtp_server.v' status=current]
   [; sso — #1394's enterprise-SSO handler surface, pure CX over
      oidc/saml/scim/session; declared `incoming` before its merge (OL-15) and
-     current since release/0.18 carries it. ]
-  [module name=sso ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/sso.md corpus=conformance/platform/sso.cxd source=stdlib/sso.cx code=none half=none status=current]
+     current since release/0.18 carries it.
+
+     IT IS THE FIRST EXTRACTED MODULE (RULED: RS-12, #1591 item 11). Its spec,
+     corpus and bundled source are not tracked here any more: they are in
+     `cx-platform-sso`, which deps.cxd pins at a sha and `make deps-sync`
+     fetches into the ignored `deps/`. The row STAYS, because the binary still
+     ships the surface and this file is one row per SHIPPED surface — what
+     moved is where the artifacts are, and `repo=` plus three `deps/`-prefixed
+     path columns is that statement. `placement-gate` holds them to it: a
+     `repo=` row's every path must begin `deps/<repo>/`, the ring of what
+     follows is checked exactly as a tracked path's is, and an absent file is
+     the same `[missing]` it always was — named, with `make deps-sync` in the
+     line, never a module quietly dropped. ]
+  [module name=sso ring=2 ns=cx-platform kind=module repo=cx-platform-sso spec=deps/cx-platform-sso/spec/03-approved/platform/sso.md corpus=deps/cx-platform-sso/conformance/platform/sso.cxd source=deps/cx-platform-sso/stdlib/sso.cx code=none half=none status=current]
   [module name=store ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/store.md corpus=conformance/platform/store.cxd source=stdlib/store.cx code='vcx/platform/stdlib_store.v vcx/platform/store_connector_builtins.v vcx/platform/stdlib_store_register.v' half=none status=current]
   [; sync — #1434's incremental-sync module, spec-first like connector: the
      spec and its 132-case attack corpus landed before any code (RULED:

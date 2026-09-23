@@ -14,20 +14,26 @@
 # `cx` renders a string VALUE with its quotes, which is correct for a value
 # and wrong for a shell variable, so step 1's answer is unquoted here in the
 # open rather than by a flag that does not exist.
-# --allow-read=../.. because both programs import across the examples tree —
-# `actor.cx` takes `[?lib '../../sso/mock-idp/idp.cx']` and `order.env.cx` takes
+# --allow-read=../.. because `order.env.cx` takes
 # `[?lib '../../flow/checkout/orders.cx']` — and a path-form module read off
 # disk charges `read`, judged by the granted roots (#1539, RULED: 1061-a (5)).
-# The root is `examples/platform`, the narrowest that covers both.
+# The root is `examples/platform`, the narrowest that covers it.
+#
+# actor.cx needs a SECOND root, and the reason is the extraction (RULED:
+# RS-12): the mock identity provider it imports is cx-platform-sso's now, so
+# it is read out of the checkout deps.cxd pins. The grant names that checkout
+# exactly — `deps/cx-platform-sso/examples/platform/sso` — and nothing wider.
+# Two roots rather than one repo-root grant, because the whole point of a
+# granted root is that it is the narrowest one that covers the read.
 set -u
 CX="${CX:-cx}"
 
-echo '$ cx --allow-read=../.. actor.cx'
-"$CX" --allow-read=../.. actor.cx; rc=$?
+echo '$ cx --allow-read=../.. --allow-read=../../../../deps/cx-platform-sso/examples/platform/sso actor.cx'
+"$CX" --allow-read=../.. --allow-read=../../../../deps/cx-platform-sso/examples/platform/sso actor.cx; rc=$?
 echo
 echo "exit=$rc"
 
-ACTOR=$("$CX" --allow-read=../.. actor.cx | tr -d "'")
+ACTOR=$("$CX" --allow-read=../.. --allow-read=../../../../deps/cx-platform-sso/examples/platform/sso actor.cx | tr -d "'")
 echo
 echo "# the principal the login established, unquoted for the command line:"
 echo "ACTOR=$ACTOR"
