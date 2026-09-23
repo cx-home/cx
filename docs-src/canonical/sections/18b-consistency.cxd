@@ -3,7 +3,7 @@
    spec/03-approved/core/consistency_vocabulary.md. Authored 2026-08-19
    for #826 acceptance 3. #]
 
-[section id=consistency group='Ring 2 — Platform' n='18b' title='Consistency, in the words we use'
+[section id=consistency group='The platform group' n='18b' title='Consistency, in the words we use'
 
   [child id=cons-idea n=18b.1 title='Declare what you need; the platform satisfies or refuses'
     [intro

@@ -160,14 +160,15 @@ below all of these and never overrides one of them.
   ledger. Not "ruling", not "campaign", not "lane", not "gate run".
   `delivery-grammar.md` is the whole vocabulary and it is the only one.
 
-## Where a surface lives — the two rings
+## Where a surface lives — the rings and the platform group
 
 The tree is ring-legible (RULED: 1427-a…j, OL-14/OL-15). A bundled module is
-**Ring 1** if it is pure or purely local and **Ring 2** if it serves, or
-reaches a store or a protocol — *a module lives in the ring of its highest
-verb* — and every artifact of it says so without a reader opening a file:
+**Ring 1** if it is pure or purely local and lives **in the platform group**
+if it serves, or reaches a store or a protocol — *a module lives in the ring
+or group of its highest verb* — and every artifact of it says so without a
+reader opening a file:
 
-| Dimension | Ring 1 | Ring 2 |
+| Dimension | Ring 1 | The platform group |
 |---|---|---|
 | namespace | `[?lib 'cx-stdlib/<name>']` | `[?lib 'cx-platform/<name>']` |
 | spec | `spec/03-approved/stdlib/` | `spec/03-approved/platform/` |
@@ -175,15 +176,16 @@ verb* — and every artifact of it says so without a reader opening a file:
 | V code | `vcx/code/` | `vcx/platform/` |
 | catalog | `spec/03-approved/stdlib/README.md` | `spec/03-approved/platform/README.md` |
 
-A surface's ring is **DECLARED once**, in
+A surface's ring or group is **DECLARED once**, in
 [`registry/modules.cxd`](registry/modules.cxd) — one row per shipped surface,
-carrying its ring, namespace, spec, corpus, bundled source and code files —
-and `make placement-gate` refuses a tree where any of those disagrees with the
-row, or where an artifact under a ring directory has no row. So: **state a new
-module's ring and its directories in its DECISION, before any spec or code**
-(OL-15), then write the row, then the artifacts.
+carrying its ring or group, namespace, spec, corpus, bundled source and code
+files — and `make placement-gate` refuses a tree where any of those disagrees
+with the row, or where an artifact under a ring or group directory has no
+row. So: **state a new module's ring or group and its directories in its
+DECISION, before any spec or code** (OL-15), then write the row, then the
+artifacts.
 
-Two edges worth knowing. A Ring-2 module may keep a pure Ring-1 half in
+Two edges worth knowing. A platform-group module may keep a pure Ring-1 half in
 `vcx/code` for profile composition; the half is named in its row's `half=`
 column and is not a second surface — and the trigger to promote one into a
 module of its own is the first Ring-1 **consumer** of it (that is how

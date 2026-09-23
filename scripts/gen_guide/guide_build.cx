@@ -279,10 +279,10 @@
         
    THE ASSIGNMENT IS DERIVED, NOT CURATED. cx_partition.md §2's membership
    test is "every stdlib pack whose imports stay within Rings 0-1" is Ring 1,
-   and Ring 2 owns the protocol/service packs. A pack is a thin CX wrapper
-   over native `$<pack>-*` builtins, so the ring it belongs to is the ring of
+   and the platform group owns the protocol/service packs. A pack is a thin CX wrapper
+   over native `$<pack>-*` builtins, so the ring or group it belongs to is the ring of
    the vcx tree that IMPLEMENTS those builtins — `vcx/code` is Ring 1,
-   `vcx/platform` and `vcx/cxstore` are Ring 2. That derivation resolved 44 of
+   `vcx/platform` and `vcx/cxstore` are in the platform group. That derivation resolved 44 of
    46 packs mechanically; `test` resolved to vcx/code/stdlib_testkit.v (Ring 1)
    and `jsonrpc` is pure CX over [$json:…] with no native builtins (Ring 1).
    Re-derive rather than hand-edit when a pack moves.
@@ -292,7 +292,7 @@
    from. Its surface is the format itself plus the bindings. #]
 [# THE RING IS READ, NOT LISTED (RULED: 1427-f, OL-15). This used to be a
    hand-kept `ring2-packs` string, and by #1427 it was already wrong in five
-   places — it still called `email` Ring 2 and had never heard of `audit`,
+   places — it still put `email` in the platform group and had never heard of `audit`,
    `sso`, `flow`, `smtp` or `imap`. A second list of where a module lives is
    free to disagree with the first, which is the whole defect OL-15 names.
    registry/modules.cxd is the ONE declaration; `make placement-gate` holds
@@ -385,12 +385,12 @@
     [$nav-section 'Ring 1 — Code'
       [$cat ([$group-nav-items $metas 'Ring 1 — Code' $active],
              [$lib-ring-items $libfiles 1 $active])]],
-    [$nav-section 'Ring 2 — Platform'
-      [$cat ([$group-nav-items $metas 'Ring 2 — Platform' $active],
+    [$nav-section 'The platform group'
+      [$cat ([$group-nav-items $metas 'The platform group' $active],
              [$lib-ring-items $libfiles 2 $active],
              [$xap-nav-items $active])]],
-    [$nav-section 'Ring 3 — Ecosystem'
-      [$cat ([$group-nav-items $metas 'Ring 3 — Ecosystem' $active],
+    [$nav-section 'The bindings and ecosystem groups'
+      [$cat ([$group-nav-items $metas 'The bindings and ecosystem groups' $active],
              [$lib-ring-items $libfiles 3 $active])]],
     [$nav-section 'Codecs — core, synthesized'
       [$codec-tier-items $libfiles $active]],
@@ -577,12 +577,12 @@
     [$nav-section 'Ring 1 — Code'
       [$cat ([$group-nav-items $metas 'Ring 1 — Code' ''],
              [$lib-ring-items $libfiles 1 ''])]],
-    [$nav-section 'Ring 2 — Platform'
-      [$cat ([$group-nav-items $metas 'Ring 2 — Platform' ''],
+    [$nav-section 'The platform group'
+      [$cat ([$group-nav-items $metas 'The platform group' ''],
              [$lib-ring-items $libfiles 2 ''],
              [$xap-nav-items ''])]],
-    [$nav-section 'Ring 3 — Ecosystem'
-      [$cat ([$group-nav-items $metas 'Ring 3 — Ecosystem' ''],
+    [$nav-section 'The bindings and ecosystem groups'
+      [$cat ([$group-nav-items $metas 'The bindings and ecosystem groups' ''],
              [$lib-ring-items $libfiles 3 ''])]],
     [$nav-section 'Codecs — core, synthesized'
       [$codec-tier-items $libfiles '']],
