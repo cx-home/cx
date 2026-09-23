@@ -14,7 +14,7 @@ cx_partition.md §5/§5.1 is item 5 on #1591. Until it lands this file states
 the plan, and the gate keeps the plan total over the tree.
 
 TWO KINDS OF ROW.
-  [repo name= group= ring= ships= about= status=? at=? why=?]
+  [repo name= group= ring= ships= about= status=? at=? pins=? vmodule=? why=?]
       one row per destination repository. `group` is the front-page group
       (core | platform | binding | ecosystem | dist), `ring` is 0, 1 or none,
       `ships` is how the repo reaches a user (binary | package | pypi | crate |
@@ -26,6 +26,15 @@ TWO KINDS OF ROW.
       refusal while adding the converse one (a `status=extracted` repo that is
       still the first match for a tracked file is an extraction stopped half
       way). Absent `status` means the plan is still a plan.
+      `pins='<repo> ...'` and `vmodule=<m>` are the V products' import
+      graph (RULED: RS-24, owner D28a): `pins` is the Pins column of the
+      #1589 table -- the repositories this one builds on, acyclic -- and
+      `vmodule` names the V module the repository compiles from `vcx/<m>/`
+      (D31a: flat; the residue `vcx/platform/`, `module platform`, is xap's
+      until xap's own turn). A product row gains `vmodule` in the commit that
+      splits it. scripts/product_import_gate.cx holds every import under a
+      vmodule directory to these pins; the rings (the `core` rows) are always
+      importable.
   [path prefix= repo=]  /  [path exact= repo=]
       one allocation rule. A tracked file belongs to the FIRST rule, in
       document order, whose `exact` equals the path or whose `prefix` is a
@@ -55,13 +64,13 @@ the rule carries a `why=`. The recurring reasons, once:
   [repo name=cx group=dist ring=none ships=binary about='the front door: pins every repo, builds the four cx builds and libcx-core/libcx, holds the site, the release, the installer']
   [repo name=cx-core-data group=core ring=0 ships=binary about='the data format: reader, writer, canonical form, schema, codecs, libcx-core, the data-only cx']
   [repo name=cx-core-code group=core ring=1 ships=binary about='the language: evaluator, stdlib, LSP, libcx, the cli and embed builds']
-  [repo name=cx-platform-net group=platform ring=none ships=binary about='sockets, TLS, the HTTP server, the XSP transport bindings, ftp, sftp, file_surface']
-  [repo name=cx-platform-mail group=platform ring=none ships=binary about='SMTP and IMAP, server and client cores, sasl']
-  [repo name=cx-platform-identity group=platform ring=none ships=binary about='sessions, the XSP-AUTH handshake, principal mint, did:web']
-  [repo name=cx-platform-store group=platform ring=none ships=binary about='the storage engine, its substrates, journal/live/audit, ft, and the store server']
-  [repo name=cx-platform-db group=platform ring=none ships=binary about='external database access: $sql-*, $redis-*, the drivers']
-  [repo name=cx-platform-fabric group=platform ring=none ships=binary about='messaging and fabric-serve']
-  [repo name=cx-platform-xap group=platform ring=none ships=binary about='the application host, compose, dist, schema, market, the reference deployments']
+  [repo name=cx-platform-net group=platform ring=none ships=binary pins='cx-core-code' about='sockets, TLS, the HTTP server, the XSP transport bindings, ftp, sftp, file_surface']
+  [repo name=cx-platform-mail group=platform ring=none ships=binary pins='cx-platform-net' about='SMTP and IMAP, server and client cores, sasl']
+  [repo name=cx-platform-identity group=platform ring=none ships=binary pins='cx-platform-store cx-platform-net' about='sessions, the XSP-AUTH handshake, principal mint, did:web']
+  [repo name=cx-platform-store group=platform ring=none ships=binary pins='cx-core-code cx-platform-net' about='the storage engine, its substrates, journal/live/audit, ft, and the store server']
+  [repo name=cx-platform-db group=platform ring=none ships=binary pins='cx-core-code' about='external database access: $sql-*, $redis-*, the drivers']
+  [repo name=cx-platform-fabric group=platform ring=none ships=binary pins='cx-platform-store cx-platform-identity' about='messaging and fabric-serve']
+  [repo name=cx-platform-xap group=platform ring=none ships=binary vmodule=platform pins='cx-platform-net cx-platform-mail cx-platform-identity cx-platform-store cx-platform-db cx-platform-fabric' about='the application host, compose, dist, schema, market, the reference deployments']
   [repo name=cx-platform-flow group=platform ring=none ships=package about='workflow; its CLI verbs stay in the binary']
   [repo name=cx-platform-connector group=platform ring=none ships=package about='the connector kit and sync']
   [repo name=cx-platform-sso group=platform ring=none ships=package status=extracted at=1e814e5aae6327a8218cc3fe69b43a03517e92bf about='enterprise sign-on, the interop lane' why='EXTRACTED (RULED: RS-12, #1591 item 11), the first of them. It has no [path] rules because it owns no tracked path here any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records, and the gate exempts a status=extracted repo from the empty-repo refusal for exactly that reason -- the row is the pin\'s counterpart, not a plan waiting to be executed']
@@ -514,6 +523,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='.githooks/' repo=cx]
   [path prefix='.claude/' repo=cx]
   [path prefix='third_party/' repo=cx why='the V fork pin and the README; every V repo pins the same SHA through its deps.cxd']
+  [path prefix='vcx/corpus/' repo=cx why='the corpus grading core RS-16 moved out of vcx/tests/ into a linked module (vcx/corpus/grade.v, module corpus). It reached this repository through the vcx/ guard rule below, whose why= names only the retired mirror files; the rule states that allocation rather than changing it, because RS-24\'s product-import gate refuses a module directory no row or directory rule owns. Its callers (vcx/cmd/corpus_verb.v, the fixtures grader) are cx-core-code\'s, so the allocation is a flag on the RS-24 branch, not decided here']
   [path prefix='vcx/' repo=cx why='guard: vcx/.gitignore.cx-v and Makefile.cx-v, the retired mirror scripts']
   [path prefix='spec/03-approved/' repo=cx why='guard: a spec page no row above claims surfaces in the front door, never as unallocated']
   [path prefix='RELEASE_NOTES_' repo=cx]

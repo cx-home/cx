@@ -321,6 +321,9 @@ step_globs() {
     # directory moving is exactly what this step exists to catch.
     placement-gate)                echo 'registry/modules.cxd scripts/placement_gate.cx spec/* conformance/* stdlib/* x/* vcx/code/* vcx/platform/*' ;;
     repos-allocation-gate)         echo '*' ;;   # any added or removed file can change the allocation
+    # RS-24: any vcx/ file can move an import or make a module directory; the
+    # vlib listing (the V pin) decides what an import that is not vcx/'s names.
+    product-import-gate)           echo 'registry/repos.cxd scripts/product_import_gate.cx vcx/* third_party/*' ;;
     store-session-dep-gate)        echo 'scripts/store_session_dep_gate.cx vcx/platform/store_*.v vcx/platform/stdlib_session.v' ;;
     # the pin document, its format module, its grader and the spec page it
     # implements -- nothing else changes what the corpus asserts.

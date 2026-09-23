@@ -1,0 +1,308 @@
+# scripts/product_import_gate.cx -- the PRODUCT IMPORT check (RULED: RS-24).
+#
+# Eat-our-own-dog-food: written entirely in CX; runs as `cx <file>`.
+#
+# RS-24 (owner D28a, #1591) splits vcx/platform's one V package into one V
+# module per V product, and fixes the direction every import between them may
+# run: the Pins column of the #1589 table. registry/repos.cxd DECLARES that
+# graph, once, on its `[repo ...]` rows:
+#
+#   vmodule=<m>   the V module a repository compiles from vcx/<m>/ (D31a: the
+#                 layout is flat; the residue is vcx/platform/, xap's, until
+#                 xap's own turn)
+#   pins='<repo> ...'
+#                 the repositories it builds on (RS-7's deps.cxd pins, as a
+#                 declaration the tree is held to before the repository exists)
+#
+# This program is the check that every V import a product makes runs along a
+# declared pin:
+#
+#   [undeclared edge]  a file under vcx/<m>/ (m a declared vmodule) imports a
+#                      vcx/ module whose OWNING repository is neither its own,
+#                      a core repository (the rings: cx-core-data, cx-core-code)
+#                      nor one of its pins. The owner of a vcx/ module is the
+#                      row that declares it as its vmodule, else the rule
+#                      `[path prefix='vcx/<d>/' ...]` that allocates its whole
+#                      directory -- so `transport` is net's and `cxstore` is
+#                      store's, and an import of either is held to that pin
+#   [unknown import]   an import that names neither a vcx/ module nor a vlib
+#                      module -- nothing any repository could pin
+#   [cycle]            the declared pins are not acyclic (the repositories
+#                      left when every sink has been peeled away)
+#   [undeclared pin]   a pin naming no `[repo]` row
+#   [no repo row]      a vcx/<d>/ directory whose V files declare `module <d>`
+#                      and that no row declares as its vmodule and no
+#                      directory rule allocates -- a product directory made
+#                      without a repository to own it
+#   [dir owner]        a file under a product directory vcx/<m>/ that the
+#                      allocation (repos.cxd's first-match rule) sends to a
+#                      repository other than the one declaring vmodule=<m>. The
+#                      residue vcx/platform/ is exempt: it IS the one directory
+#                      eight repositories share until each product's split
+#                      moves its files out (D31a)
+#   [vlib shadow]      a declared vmodule that is also a top-level vlib module.
+#                      V resolves a project directory before vlib, so a
+#                      vcx/net/ would shadow vlib's `net` for the whole tree,
+#                      and a `module net` may not import vlib's `net` at all
+#
+# Test files are held to the same rule: a product's tests travel with the
+# product into its repository and build there against its pins.
+#
+# Output: one line per product module (its repository and the vcx/ modules it
+# imports) on stdout, then `product-import-gate: OK` or the failures on stderr.
+# Exit: 0 clean, 1 an import against the declared graph, 2 the registry or vlib
+# is unreadable.
+#
+# Run from the checkout root:
+#   vcx/target/cx --allow-all scripts/product_import_gate.cx [--self-test]
+# (or: make product-import-gate, which runs the self-test then the tree)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/strings' as=strings]
+
+# -- helpers ------------------------------------------------------------
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?def member scope=private pure [returns bool] ($x::string $xs)
+  [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+# words: a whitespace-separated attribute as a sequence (an absent one is empty).
+[?def words scope=private pure ($v::string)
+  [?for [in $w [$strings:split-whitespace $v]] [where [not [= $w ""]]] [yield $w]]]
+
+# basename-after: the path with a known leading prefix taken off.
+[?def after scope=private pure [returns string] ($p::string $pre::string)
+  [$strings:slice $p [+ [$strings:length $pre] 1] [$strings:length $p]]]
+
+# dir-name: a globbed directory path, the known prefix and any trailing slash
+# taken off (`$io:glob` answers `vcx/code/` for a directory).
+[?def dir-name scope=private pure [returns string] ($p::string $pre::string)
+  [?let [= $n [$after $p $pre]]
+    [?if [$strings:ends-with $n "/"] [then [$strings:slice $n 1 [- [$strings:length $n] 1]]] [else $n]]]]
+
+# module-of: the name a V source declares on its `module` line, or "".
+[?def module-of scope=private pure [returns string] ($text::string)
+  [?let [= $ms [?for [in $l [$strings:split-lines $text]]
+                 [where [$strings:starts-with $l "module "]]
+                 [yield [$first [$strings:split-whitespace [$after $l "module "]]]]]]
+    [?if [= [$count $ms] 0] [then ""] [else [$string [$first $ms]]]]]]
+
+# import-heads: the first path segment of every top-level `import` line --
+# `import code {` is code, `import transport.picoev` is transport,
+# `import net.mbedtls` is net, `import platform as _` is platform.
+[?def import-heads scope=private pure ($text::string)
+  [?for [in $l [$strings:split-lines $text]]
+    [where [$strings:starts-with $l "import "]]
+    [= $tok [$first [$strings:split-whitespace [$after $l "import "]]]]
+    [yield [$first [$strings:split [$string $tok] "."]]]]]
+
+# rule-matches / first-repo: repos.cxd's first-match allocation rule, the one
+# scripts/repos_allocation_gate.cx applies (exact= equals, prefix= leads).
+[?def rule-matches scope=private pure [returns bool] ($r $f::string)
+  [?let [= $e [$string [?else $r@exact ""]]]
+        [= $p [$string [?else $r@prefix ""]]]
+    [?if [not [= $e ""]]
+      [then [= $e $f]]
+      [else [?if [not [= $p ""]] [then [$strings:starts-with $f $p]] [else false]]]]]]
+
+[?def first-repo scope=private pure [returns string] ($rules $f::string)
+  [?let [= $hits [?for [in $r $rules] [where [$rule-matches $r $f]] [yield [$string $r@repo]]]]
+    [?if [= [$count $hits] 0] [then ""] [else [$string [$first $hits]]]]]]
+
+# peel: the nodes left when sinks are removed until none is -- empty when the
+# graph is acyclic, else exactly the nodes on or behind a cycle.
+[?def peel scope=private pure ($nodes $edges)
+  [?let [= $live [?for [in $n $nodes]
+                   [where [> [$count [?for [in $e $edges]
+                                       [where [= [$string $e@from] $n]]
+                                       [where [$member [$string $e@to] $nodes]]
+                                       [yield 1]]] 0]]
+                   [yield $n]]]
+    [?if [= [$count $live] [$count $nodes]] [then $nodes] [else [$peel $live $edges]]]]]
+
+# -- the check itself: pure over (repo rows, path rules, sources, vcx dirs, vlib)
+#
+# $srcs: [src file= dir= module= imps='<head> ...'] per V file read.
+# answers [verdict [failures [failure kind= what=]*] [census [line text=]*]]
+
+[?def check scope=private pure ($repos $rules $srcs $dirs $vlib)
+  [?let
+    [= $names [?for [in $x $repos] [yield [$string $x@name]]]]
+    [= $vrows [?for [in $x $repos] [where [not [= [$string [?else $x@vmodule ""]] ""]]] [yield $x]]]
+    [= $vmods [?for [in $x $vrows] [yield [$string $x@vmodule]]]]
+    [= $core [?for [in $x $repos] [where [= [$string [?else $x@group ""]] "core"]] [yield [$string $x@name]]]]
+    # owner of a vcx/ module directory: its vmodule row, else its directory rule.
+    [= $owners [?for [in $d $dirs]
+                 [yield [?let [= $v [?for [in $x $vrows] [where [= [$string $x@vmodule] $d]] [yield [$string $x@name]]]]
+                               [= $r [?for [in $x $rules] [where [= [$string [?else $x@prefix ""]] [$concat "vcx/" $d "/"]]] [yield [$string $x@repo]]]]
+                          [own dir=$d repo=[?if [> [$count $v] 0] [then [$string [$first $v]]]
+                                            [else [?if [> [$count $r] 0] [then [$string [$first $r]]] [else ""]]]]]]]]]
+    [= $edges [?for [in $x $repos] [in $p [$words [$string [?else $x@pins ""]]]] [yield [e from=[$string $x@name] to=$p]]]]
+    [= $undeclared-pins [?for [in $e $edges] [where [not [$member [$string $e@to] $names]]]
+                          [yield [failure kind="undeclared pin" what=[$concat [$string $e@from] " pins " [$string $e@to]]]]]]
+    [= $graph-nodes [?for [in $x $repos] [where [not [= [$string [?else $x@pins ""]] ""]]] [yield [$string $x@name]]]]
+    [= $stuck [$peel $graph-nodes $edges]]
+    [= $cycles [?if [= [$count $stuck] 0] [then ()]
+                 [else [failure kind="cycle" what=[$strings:join $stuck " "]]]]]
+    [= $shadows [?for [in $x $vrows] [where [$member [$string $x@vmodule] $vlib]]
+                  [yield [failure kind="vlib shadow"
+                           what=[$concat [$string $x@name] ": vmodule=" [$string $x@vmodule]]]]]]
+    [= $module-dirs [?for [in $s $srcs] [where [= [$string $s@module] [$string $s@dir]]]
+                      [group-by [$string $s@dir]] [yield $key]]]
+    [= $rowless [?for [in $d $module-dirs]
+                  [where [= [$string [$first [?for [in $o $owners] [where [= [$string $o@dir] $d]] [yield [$string $o@repo]]]]] ""]]
+                  [yield [failure kind="no repo row" what=[$concat "vcx/" $d "/ (module " $d ")"]]]]]
+    [= $product-srcs [?for [in $s $srcs] [where [$member [$string $s@dir] $vmods]] [yield $s]]]
+    [= $misplaced [?for [in $s $product-srcs]
+                    [where [not [= [$string $s@dir] "platform"]]]
+                    [= $mine [$string [$first [?for [in $x $vrows] [where [= [$string $x@vmodule] [$string $s@dir]]] [yield [$string $x@name]]]]]]
+                    [= $got [$first-repo $rules [$string $s@file]]]
+                    [where [not [= $got $mine]]]
+                    [yield [failure kind="dir owner"
+                             what=[$concat [$string $s@file] " -> " $got ", but vcx/" [$string $s@dir] "/ is " $mine "'s"]]]]]
+    [= $edge-checks
+      [?for [in $s $product-srcs]
+        [= $me [$string [$first [?for [in $x $vrows] [where [= [$string $x@vmodule] [$string $s@dir]]] [yield [$string $x@name]]]]]]
+        [= $mypins [$words [$string [$first [?for [in $x $vrows] [where [= [$string $x@vmodule] [$string $s@dir]]] [yield [$string [?else $x@pins ""]]]]]]]]
+        [in $h [$words [$string $s@imps]]]
+        [where [not [= $h [$string $s@dir]]]]
+        [yield [?if [$member $h $dirs]
+                 [then [?let [= $o [$string [$first [?for [in $w $owners] [where [= [$string $w@dir] $h]] [yield [$string $w@repo]]]]]]
+                         [?if [?if [= $o ""] [then false]
+                                [else [?if [= $o $me] [then true]
+                                        [else [?if [$member $o $core] [then true] [else [$member $o $mypins]]]]]]]
+                           [then [ok]]
+                           [else [failure kind="undeclared edge"
+                                   what=[$concat [$string $s@file] ": " [$string $s@dir] " (" $me ") -> " $h " ("
+                                          [?if [= $o ""] [then "no repository"] [else $o]] ")"]]]]]]
+                 [else [?if [$member $h $vlib] [then [ok]]
+                         [else [failure kind="unknown import" what=[$concat [$string $s@file] ": " $h]]]]]]]]]
+    [= $edge-failures [?for [in $c $edge-checks] [where [?match $c [case [ok] false] [else true]]] [yield $c]]]
+    [= $census [?for [in $m $vmods]
+                 [yield [line text=[$concat $m " ("
+                                    [$string [$first [?for [in $x $vrows] [where [= [$string $x@vmodule] $m]] [yield [$string $x@name]]]]]
+                                    ") imports: "
+                                    [$strings:join [$sort [$distinct [?for [in $s $product-srcs] [where [= [$string $s@dir] $m]]
+                                                                      [in $h [$words [$string $s@imps]]]
+                                                                      [where [$member $h $dirs]]
+                                                                      [yield $h]]]] " "]]]]]]
+    [verdict
+      [failures [?for [in $x $undeclared-pins] [yield $x]]
+                [?for [in $x $cycles] [yield $x]]
+                [?for [in $x $shadows] [yield $x]]
+                [?for [in $x $rowless] [yield $x]]
+                [?for [in $x $misplaced] [yield $x]]
+                [?for [in $x $edge-failures] [yield $x]]]
+      [census [?for [in $c $census] [yield $c]]]]]]
+
+# -- the self-test: a synthetic registry over synthetic sources ---------------
+#
+# The planted violation RS-24 asks the gate to be red-proofed on before any
+# file moves is here as `vcx/cxnet/planted.v` -- `import store` in a net file.
+
+[?if [$member "--self-test" [$env:argv]]
+  [then
+    [?let
+      [= $reg [$cx:parse "[repo-allocation
+        [repo name=cx-core-data group=core]
+        [repo name=cx-core-code group=core]
+        [repo name=cx-platform-net group=platform vmodule=cxnet pins='cx-core-code']
+        [repo name=cx-platform-store group=platform vmodule=store pins='cx-core-code cx-platform-net']
+        [repo name=cx-platform-mail group=platform vmodule=mail pins='cx-platform-net']
+        [repo name=cx-platform-xap group=platform vmodule=platform pins='cx-platform-net cx-platform-store cx-platform-mail']
+        [repo name=loop-a group=platform pins='loop-b']
+        [repo name=loop-b group=platform pins='loop-a']
+        [repo name=shadow group=platform vmodule=net pins='cx-core-code']
+        [repo name=dangling group=platform pins='cx-platform-nowhere']
+        [path prefix='vcx/cx/' repo=cx-core-data]
+        [path prefix='vcx/code/' repo=cx-core-code]
+        [path prefix='vcx/transport/' repo=cx-platform-net]
+        [path exact='vcx/mail/stray.v' repo=cx-platform-store]
+        [path prefix='vcx/cxnet/' repo=cx-platform-net]
+        [path prefix='vcx/store/' repo=cx-platform-store]
+        [path prefix='vcx/mail/' repo=cx-platform-mail]
+        [path prefix='vcx/platform/store_' repo=cx-platform-store]
+        [path prefix='vcx/platform/' repo=cx-platform-xap]
+      ]"]]
+      [= $srcs ([src file='vcx/cxnet/ok.v' dir=cxnet module=cxnet imps='code cx net os transport'],
+                [src file='vcx/cxnet/planted.v' dir=cxnet module=cxnet imps='store'],
+                [src file='vcx/cxnet/sideways.v' dir=cxnet module=cxnet imps='mail'],
+                [src file='vcx/cxnet/typo.v' dir=cxnet module=cxnet imps='nosuchmod'],
+                [src file='vcx/mail/ok.v' dir=mail module=mail imps='cxnet code transport time'],
+                [src file='vcx/mail/stray.v' dir=mail module=mail imps='code'],
+                [src file='vcx/store/ok.v' dir=store module=store imps='cxnet cx'],
+                [src file='vcx/platform/ok.v' dir=platform module=platform imps='cxnet store mail cx'],
+                [src file='vcx/platform/store_x.v' dir=platform module=platform imps='cxnet'],
+                [src file='vcx/ghost/g.v' dir=ghost module=ghost imps='cx'],
+                [src file='vcx/cmd/main.v' dir=cmd module=main imps='platform'])]
+      [= $dirs ("cx", "code", "transport", "cxnet", "store", "mail", "platform", "ghost", "cmd")]
+      [= $vlib ("net", "os", "time")]
+      [= $v [$check [?for [in $r $reg//repo] [yield $r]] [?for [in $r $reg//path] [yield $r]] $srcs $dirs $vlib]]
+      [= $kinds [?for [in $f $v/failures/failure] [yield [$concat [$string $f@kind] ":" [$string $f@what]]]]]
+      [= $want ("undeclared pin:dangling pins cx-platform-nowhere",
+                "cycle:loop-a loop-b",
+                "vlib shadow:shadow: vmodule=net",
+                "no repo row:vcx/ghost/ (module ghost)",
+                "dir owner:vcx/mail/stray.v -> cx-platform-store, but vcx/mail/ is cx-platform-mail's",
+                # the planted violation: a net file importing the store, which
+                # pins net -- the edge runs against the declared direction.
+                "undeclared edge:vcx/cxnet/planted.v: cxnet (cx-platform-net) -> store (cx-platform-store)",
+                # sideways: mail pins net, so net importing mail is the same defect.
+                "undeclared edge:vcx/cxnet/sideways.v: cxnet (cx-platform-net) -> mail (cx-platform-mail)",
+                "unknown import:vcx/cxnet/typo.v: nosuchmod")]
+      [= $missing [?for [in $w $want] [where [not [$member $w $kinds]]] [yield $w]]]
+      [= $extra   [?for [in $k $kinds] [where [not [$member $k $want]]] [yield $k]]]
+      [?if [?if [= [$count $missing] 0] [then [= [$count $extra] 0]] [else false]]
+        [then [?let [= $_ [$say "product-import-gate self-test OK -- the planted `import store` in a net file and a sideways net->mail import are undeclared edges; an unknown import, a pin cycle, a dangling pin, a product directory with no repository row, a file allocated away from its product directory and a vmodule shadowing vlib are each caught once; own-leaf (transport), ring, vlib, pinned-product and residue imports pass, and a module-main directory is not a product."]]
+                [$env:exit 0]]]
+        [else [?let [= $_ [$cry [$concat "product-import-gate self-test FAILED -- missing: "
+                                          [$strings:join $missing "; "]
+                                          " | unexpected: " [$strings:join $extra "; "]]]]
+                [$env:exit 1]]]]]]
+  [else ""]]
+
+# -- the tree ------------------------------------------------------------
+
+[?let [= $reg-ok [$io:exists "registry/repos.cxd"]]
+  [?if [not $reg-ok]
+    [then [?let [= $_ [$cry "product-import-gate: cannot read registry/repos.cxd -- run from the checkout root"]]
+            [$env:exit 2]]]
+    [else ""]]]
+
+[?let
+  [= $reg [$cx:parse [$io:read-file "registry/repos.cxd"]]]
+  [= $repos [?for [in $r $reg//repo] [yield $r]]]
+  [= $rules [?for [in $r $reg//path] [yield $r]]]
+  [= $vmods [?for [in $x $repos] [where [not [= [$string [?else $x@vmodule ""]] ""]]] [yield [$string $x@vmodule]]]]
+  [= $vlib [?for [in $p [$io:glob "third_party/v/vlib/*"]] [where [$io:is-directory $p]]
+             [yield [$dir-name $p "third_party/v/vlib/"]]]]
+  [= $_vlib-ok [?if [= [$count $vlib] 0]
+                 [then [?let [= $_ [$cry "product-import-gate: third_party/v/vlib lists no module -- the V pin is not checked out, and an import cannot be told from a vlib one without it"]]
+                         [$env:exit 2]]]
+                 [else ""]]]
+  [= $dirs [?for [in $p [$io:glob "vcx/*"]] [where [$io:is-directory $p]] [yield [$dir-name $p "vcx/"]]]]
+  # Every file of a product directory is read for its imports; any OTHER vcx/
+  # directory only for the module its first file declares ([no repo row]).
+  [= $srcs [?for [in $d $dirs]
+             [= $files [$io:glob [$concat "vcx/" $d "/*.v"]]]
+             [in $f [?if [$member $d $vmods] [then $files]
+                      [else [?if [= [$count $files] 0] [then ()] [else [$first $files]]]]]]
+             [= $text [$io:read-file [$string $f]]]
+             [yield [src file=[$string $f] dir=$d module=[$module-of $text]
+                         imps=[?if [$member $d $vmods] [then [$strings:join [$import-heads $text] " "]] [else ""]]]]]]
+  [= $v [$check $repos $rules $srcs $dirs $vlib]]
+  [= $failures [?for [in $f $v/failures/failure] [yield $f]]]
+  [= $_census [?for [in $c $v/census/line] [yield [$say [$concat "  " [$string $c@text]]]]]]
+  [?if [= [$count $failures] 0]
+    [then [?let [= $_ [$say [$concat "product-import-gate: OK -- " [$string [$count $vmods]]
+                                     " product module(s); every import runs along a declared pin (registry/repos.cxd), the pins are acyclic, every product directory has its repository row, and no vmodule shadows vlib"]]]
+            [$env:exit 0]]]
+    [else
+      [?let [= $_h [$cry [$concat "product-import-gate: " [$string [$count $failures]] " failure(s)"]]]
+            [= $_l [?for [in $f $failures] [order-by $f@kind]
+                     [yield [$cry [$concat "  [" [$string $f@kind] "] " [$string $f@what]]]]]]
+        [$env:exit 1]]]]]
