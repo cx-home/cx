@@ -1886,6 +1886,7 @@ visible in the import line.
 | `connector` | The connector kit: one engine every connector feature runs on, and the vocabulary that declaration is written in. |
 | `did-web` | Resolving a did:web — the one DID method whose document is not derivable from the identifier and has to be fetched. |
 | `flow` | General workflow on the saga substrate: flows as documents, runs as journaled records, and a runner that is a pure function rather than an engine. |
+| `fabric` | Platform-level eventing over the shipped primitives: one subscribe/emit surface with an explicit durability axis. |
 | `http` | The HTTP/1.1 SERVER: an event-loop accept/respond surface over the `cx-platform/net` transport, with Server-Sent Events streaming for held-open push. |
 | `imap` | Both halves of IMAP4rev2 (RFC 9051) on one token grammar: the client an agent or a human client reads a mailbox with, and the server core a CX process serves a mailbox from. |
 | `journal` | An append-only, hash-chained, tenant-partitioned event log and the deterministic projection of that log into state. |
@@ -1896,6 +1897,7 @@ visible in the import line.
 | `sso` | The enterprise-SSO deployment surface: the half of enterprise single sign-on that RECEIVES a request. |
 | `store` | A content-addressed object store with URL-dispatched backends. |
 | `vc-revocation` | The durable half of credential lifecycle: recording that a verifiable credential is revoked, and reading back the set of revoked ids. |
+| `xap` | The XAP orchestrator — the experience layer at the top of the CX web stack. |
 | `xsp-auth` | The XSP-AUTH mutual proof-of-control handshake calculus — SIGMA-style signed ephemeral X25519 over four messages riding ordinary XSP v1 frames on stream 0, with the per-request possession proof and the rotation-continuity proof beside it. |
 
 ### Experimental tier — `[?lib 'cx-x/<name>']`

@@ -50,7 +50,7 @@ its `effect` class, the `[intent]` that reaches it, and what it `[reads]` or
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $chart
   [feature name=chart
    [frames [use frame=geo via=center]]
@@ -92,7 +92,7 @@ composed grammar's Tier-1 hash is the equality oracle that proves it:
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -116,7 +116,7 @@ true
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $a
   [feature name=a
    [nouns [noun name=an [field name=x type=int]]]
@@ -145,7 +145,7 @@ true
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -165,7 +165,7 @@ name, because qualification already separated them:
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -196,7 +196,7 @@ the gate reports **all** of them rather than stopping at the first:
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -217,7 +217,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -239,7 +239,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -271,7 +271,7 @@ only if compose-report says `ok=false`**:
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -299,7 +299,7 @@ reports green:
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [$xap:compose]
 ```
 
@@ -313,7 +313,7 @@ diverge into "the check passes but the build fails":
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [$xap:compose-report]
 ```
 
@@ -332,7 +332,7 @@ one owner it resolves:
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -358,7 +358,7 @@ A qualified term bypasses resolution entirely:
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -382,7 +382,7 @@ And ambiguity is **a value listing the candidates — never a guess**:
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -404,7 +404,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -430,7 +430,7 @@ A **composite** feature `[uses]` other features and declares nouns that are
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $own-ship
   [feature name=own-ship
    [types [type 'deg::decimal' [range 0 360]] [type 'knots::decimal' [min 0]]]
@@ -470,7 +470,7 @@ refuses:
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -495,7 +495,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -519,7 +519,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -546,7 +546,7 @@ the only producer is the declared deriver:
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -575,7 +575,7 @@ weaker than what it composes:
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -607,7 +607,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $chart
   [feature name=chart
    [nouns [noun name=viewport singular=true [field name=center type=geo-point]]]
@@ -743,7 +743,7 @@ derived verb requires the grants of every **leaf constituent**, transitively:
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $door
   [feature name=door
    [nouns [noun name=door singular=true [field name=locked type=int]]]
@@ -779,7 +779,7 @@ never consulted:
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $door
   [feature name=door
    [nouns [noun name=door singular=true [field name=locked type=int]]]
@@ -814,7 +814,7 @@ Dial every leaf and the same emit is admitted:
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $door
   [feature name=door
    [nouns [noun name=door singular=true [field name=locked type=int]]]
@@ -850,7 +850,7 @@ Nesting does not dilute it — an *intermediate* grant is still insufficient:
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $door
   [feature name=door
    [nouns [noun name=door singular=true [field name=locked type=int]]]
@@ -893,7 +893,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $door
   [feature name=door
    [nouns [noun name=door singular=true [field name=locked type=int]]]
@@ -942,7 +942,7 @@ used, so the explanation cannot drift from the decision:
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $door
   [feature name=door
    [nouns [noun name=door singular=true [field name=locked type=int]]]
@@ -976,7 +976,7 @@ $ cx prog.cx
 
 `prog.cx`
 ```cx
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?let [= $door
   [feature name=door
    [nouns [noun name=door singular=true [field name=locked type=int]]]

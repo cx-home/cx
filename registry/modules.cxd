@@ -51,10 +51,10 @@ COLUMNS
           surface synthesized by the codec registry (codec.md §3). This is
           the DECLARED ring — the decision, not a location, so it has no
           `-to`: what moves is the artifact, never the ruling
-  ns      the resolver namespace TODAY: `cx-stdlib`, `cx-x`, or — for the two
-          packages bundled under a name of their own, where the namespace IS
-          the whole resolver name — `cx-xap` and `cx-fabric`. `none` = no
-          `[?lib]` surface at all (natives, backend engines, design texts)
+  ns      the resolver namespace TODAY: `cx-stdlib`, `cx-platform` or `cx-x`
+          (RS-4 retired the two whole-name namespaces `cx-xap` and
+          `cx-fabric`). `none` = no `[?lib]` surface at all (natives, backend
+          engines, design texts)
   ns-to   the namespace 1427-b moves it to (`cx-platform` for every Ring-2
           module; nothing else is renamed)
   kind    module   a `[?lib]`-resolvable module
@@ -270,12 +270,12 @@ becomes its own Ring-1 module.
   [; flow is a pure-CX orchestrator over the journal, sched and uuid
      primitives — Ring 2 by what it reaches, with no V file of its own. ]
   [module name=flow ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/flow.md corpus=conformance/platform/flow.cxd source=stdlib/flow.cx code=none half=none status=current]
-  [; fabric and xap (below) are each bundled as their OWN package rather than
-     as a name inside cx-stdlib — `[?lib 'cx-fabric']`, `[?lib 'cx-xap']`,
-     registered by name in new_seeded_module_table. 1427-b renames
-     `cx-stdlib/X` and nothing else, so neither carries an ns-to: they are
-     already outside the namespace that is splitting. ]
-  [module name=fabric ring=2 ns=cx-fabric kind=module spec=spec/03-approved/platform/fabric.md corpus=conformance/platform/fabric.cxd source=stdlib/fabric.cx code='vcx/platform/stdlib_fabric.v vcx/platform/stdlib_fabric_remote.v vcx/platform/fabric_service.v vcx/platform/stdlib_fabric_register.v' half=none status=current]
+  [; fabric and xap (below) were bundled under names of their own, the whole
+     resolver name being the namespace (`cx-fabric`, `cx-xap`). RS-4 put both
+     under cx-platform like every other Ring-2 row; the bare names are retired
+     and the loader refuses them naming the new spelling. Their spec, corpus,
+     source and code columns did not move with the namespace. ]
+  [module name=fabric ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/fabric.md corpus=conformance/platform/fabric.cxd source=stdlib/fabric.cx code='vcx/platform/stdlib_fabric.v vcx/platform/stdlib_fabric_remote.v vcx/platform/fabric_service.v vcx/platform/stdlib_fabric_register.v' half=none status=current]
   [; ftp and sftp — the connector kit's two file-transfer transports (RULED:
      1430-c, 1430-e), spec first: planned, their columns naming where #1430
      writes them. ]
@@ -320,7 +320,7 @@ becomes its own Ring-1 module.
      its four `-to` columns are spent rather than carried. ]
   [module name=sync ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/sync.md corpus=conformance/platform/sync.cxd source=stdlib/sync.cx code=vcx/platform/stdlib_sync.v half=none status=planned]
   [module name=vc-revocation ring=2 ns=cx-platform kind=module spec=spec/03-approved/platform/vc-revocation.md corpus=conformance/platform/vc-revocation.cxd source=stdlib/vc-revocation.cx code='vcx/platform/stdlib_vc_revocation.v vcx/platform/stdlib_vc_revocation_register.v' half=none status=current]
-  [module name=xap ring=2 ns=cx-xap kind=module spec=spec/03-approved/xap/xap_module.md corpus=conformance/xap/xap-serve.cxd source=stdlib/xap.cx code='vcx/platform/stdlib_xap.v vcx/platform/stdlib_xap_register.v' half=none status=current]
+  [module name=xap ring=2 ns=cx-platform kind=module spec=spec/03-approved/xap/xap_module.md corpus=conformance/xap/xap-serve.cxd source=stdlib/xap.cx code='vcx/platform/stdlib_xap.v vcx/platform/stdlib_xap_register.v' half=none status=current]
   [; xsp-auth — the XSP-AUTH handshake calculus, a MODULE since RS-15 rather
      than the natives family it was: the thirteen `auth-*` defs left
      `stdlib/xsp.cx` for `stdlib/xsp-auth.cx`, and the page and corpus the

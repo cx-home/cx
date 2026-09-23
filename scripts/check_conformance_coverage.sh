@@ -73,6 +73,7 @@ for f in conformance/stdlib/*.cxd conformance/platform/*.cxd conformance/x/*.cxd
   printf '%s\t%s\n' "conformance/xpath_31_parity.cxd" "test-xpath-parity-cx (scripts/check_xpath_parity_fixtures.cx)"
   printf '%s\t%s\n' "conformance/binding_api.cxd" "test-binding-api-parity (scripts/test_binding_api_parity.sh)"
   printf '%s\t%s\n' "conformance/deps_pins.cxd" "test-deps-pins (scripts/check_deps_pins_fixtures.cx — the deps.cxd pin document: wire form, canonical bytes and every refusal the format names)"
+  printf '%s\t%s\n' "conformance/migrate_namespace.cxd" "test-migrate-namespace (scripts/check_migrate_namespace_fixtures.cx — cx --migrate-namespace --retired: the rewritten file, one line per site, and an idempotent second run)"
   printf '%s\t%s\n' "conformance/gates.cxd" "POLICY — the enforced/advisory register every runner reads (not a fixture suite)"
 } >> "$claims"
 for f in conformance/llm/*.cxd; do [ -e "$f" ] && printf '%s\t%s\n' "$f" "docs-check (scripts/gen_docs/primer_build.cx — the LLM primer drift gate re-records every wrong/right pair, #938)"; done >> "$claims" || true

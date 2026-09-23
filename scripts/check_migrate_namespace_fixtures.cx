@@ -1,0 +1,225 @@
+# scripts/check_migrate_namespace_fixtures.cx — the grader for
+# conformance/migrate_namespace.cxd (RULED: RS-4, 1427-i). Written in CX
+# (AGENTS.md rule 6).
+#
+# The suite pins what `cx --migrate-namespace --retired -w FILE` does to one
+# file: the file afterwards ([out-text]) and what the run prints ([out-report]
+# -- one line per rewritten site, then the census). Each case is run against
+# the binary running THIS program ([$env:executable-path]), so the grader
+# grades the toolchain it is run by and never a stale one on PATH.
+#
+# Every case is then run a SECOND time, and the second run must leave the
+# file byte-identical and print `0/1 file(s) changed -- nothing to migrate`:
+# 1427-i rules the tool idempotent, and a sweep a consumer runs at its pin
+# bump has to be safe to run again.
+#
+# The corpus header says why `[%#` / `#%]` stand for `[#` / `#]` inside the
+# two text blocks.
+#
+# Rules carried from the graders this one is modelled on
+# (scripts/check_deps_pins_fixtures.cx):
+#
+#   RULED: PYE-6 — an all-SKIP run is a FAILURE. Zero passes means the gate
+#   proved nothing, and a gate that proves nothing must not report success.
+#
+#   #1591: "Every moved gate is red-proofed on a synthetic violation before its
+#   row moves." `--self-test` grades synthetic cases through the SAME path the
+#   corpus takes, and requires the ones that must fail to fail -- among them
+#   an expectation that rewrote a retired name written as a word in a string,
+#   which is the rewrite this tool must never make.
+#
+# Every temporary directory is removed before its case is judged (#1511).
+#
+# migrate-namespace: keep-file — the synthetic cases below are retired
+# spellings by construction, and a run of the tool over the tree must leave
+# them so (the marker is the tool's own, pinned by nsmig-009).
+#
+# Exit codes:
+#   0  at least one case PASSED and none FAILED
+#   1  one or more cases FAILED, or no case passed (an empty selection)
+#   2  the corpus is missing
+#
+# Run:  cx --allow-read --allow-write --allow-subprocess scripts/check_migrate_namespace_fixtures.cx [--verbose]
+#       cx --allow-read --allow-write --allow-subprocess scripts/check_migrate_namespace_fixtures.cx --self-test
+#
+# EVERY GRANT IS LOAD-BEARING: it reads the corpus, writes each case's file
+# and stdout (a denied write bound to an unused [?let] binding is dropped
+# silently, #1608), and runs the tool as a subprocess.
+#
+# (or:  make test-migrate-namespace, which runs the self-test then the corpus)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?def member scope=private pure [returns bool] ($x::string $xs)
+  [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+# raw-of / normalize: the fixture-loader projection shared with
+# scripts/check_deps_pins_fixtures.cx — a `[# … #]` raw-text child is read
+# back out of the node's own serialization.
+[?def raw-of scope=private pure ($rt)
+  [?let [= $s [$cx:serialize $rt]]
+        [= $i [$strings:find $s "[#"]]
+        [= $j [$strings:rfind $s "#]"]]
+    [?if [or [not [$present $i]] [not [$present $j]] [< $j $i]]
+      [then ""]
+      [else [$strings:slice $s [+ $i 2] [- $j 1]]]]]]
+
+[?def normalize scope=private pure ($raw)
+  [?let [= $a [?if [$strings:starts-with $raw "\n"]
+                [then [$strings:slice $raw 2 [$strings:length $raw]]]
+                [else $raw]]]
+    [$strings:trim-end-chars $a "\n"]]]
+
+# block: the normalized raw text of the FIRST child of $case named $tag, or
+# absent when the case carries none.
+[?def block scope=private pure ($case $tag::string)
+  [?let [= $hits [?for [in $c $case/*] [where [= [$name $c] $tag]] [yield $c]]]
+    [?if [= [$count $hits] 0]
+      [then [absent]]
+      [else [present text=[$normalize [$raw-of [$first $hits]]]]]]]]
+
+[?def has-block scope=private pure [returns bool] ($b)
+  [?match $b [case [absent] false] [else true]]]
+
+[?def text-of scope=private pure [returns string] ($b) [$string $b@text]]
+
+# unmask / mask: the corpus spelling of a raw block inside a text block.
+[?def unmask scope=private pure [returns string] ($s::string)
+  [$strings:replace [$strings:replace $s "[%#" "[#"] "#%]" "#]"]]
+
+[?def mask scope=private pure [returns string] ($s::string)
+  [$strings:replace [$strings:replace $s "[#" "[%#"] "#]" "#%]"]]
+
+[?def trim-nl scope=private pure [returns string] ($s::string)
+  [$strings:trim-end-chars $s "\n"]]
+
+# run-tool: one `--migrate-namespace --retired -w` over one file, as
+# [ran exit= out=] with the file's path written back as <file>.
+[?def run-tool scope=private impure ($cx::string $path::string)
+  [?let [= $argv ($cx, "--migrate-namespace", "--retired", "-w", $path)]
+        [= $r [$process:run $argv]]
+    [ran exit=[$string $r@exit-code]
+         out=[$trim-nl [$strings:replace [$string $r@stdout] $path "<file>"]]
+         err=[$trim-nl [$strings:replace [$string $r@stderr] $path "<file>"]]]]]
+
+# grade: the whole judgement of one case, as data.
+# -> [graded id= status=pass|fail [diff want= got= what=]*]
+[?def grade scope=private impure ($case $cx::string)
+  [?let
+    [= $id   [$string $case@id]]
+    [= $kind [$string [?else $case@kind "cx"]]]
+    [= $in   [$block $case "in-text"]]
+    [= $wt   [$block $case "out-text"]]
+    [= $wr   [$block $case "out-report"]]
+    [?if [not [and [$has-block $in] [$has-block $wt] [$has-block $wr]]]
+      [then [graded id=$id status=fail
+              [diff what='a case needs [in-text], [out-text] and [out-report]' want="" got=""]]]
+      [else [?let
+        [= $root  [$io:temp-dir "cx-nsmig-"]]
+        [= $path  [$concat $root "/case." $kind]]
+        [= $_w    [$io:write-file $path [$concat [$unmask [$text-of $in]] "\n"]]]
+        [= $r1    [$run-tool $cx $path]]
+        [= $after [$trim-nl [$io:read-file $path]]]
+        [= $r2    [$run-tool $cx $path]]
+        [= $again [$trim-nl [$io:read-file $path]]]
+        [= $_rm   [$io:remove-tree $root]]
+        [= $got-text [$mask $after]]
+        [= $got-rep  [?if [= [$string $r1@exit] "0"]
+                       [then [$string $r1@out]]
+                       [else [$concat "exit " [$string $r1@exit] "\n" [$string $r1@err]]]]]
+        [= $d1 [?if [= [$text-of $wt] $got-text] [then ()]
+                 [else ([diff what=out-text want=[$text-of $wt] got=$got-text])]]]
+        [= $d2 [?if [= [$text-of $wr] $got-rep] [then ()]
+                 [else ([diff what=out-report want=[$text-of $wr] got=$got-rep])]]]
+        [= $want-again "0/1 file(s) changed -- nothing to migrate"]
+        [= $got-again [?if [= [$string $r2@exit] "0"]
+                        [then [$string $r2@out]]
+                        [else [$concat "exit " [$string $r2@exit] "\n" [$string $r2@err]]]]]
+        [= $d3 [?if [and [= $again $after] [= $got-again $want-again]] [then ()]
+                 [else ([diff what='second run (idempotence)'
+                              want=[$concat $want-again " and the file unchanged"]
+                              got=[$concat $got-again [?if [= $again $after] [then ""] [else " -- and the file CHANGED"]]]])]]]
+        [= $diffs [?for [in $d ([?splice $d1], [?splice $d2], [?splice $d3])] [yield $d]]]
+        [graded id=$id status=[?if [= [$count $diffs] 0] [then pass] [else fail]]
+                [?splice $diffs]]]]]]]
+
+# -- the self-test: the comparator itself, red on a synthetic violation ----
+
+[?def synthetic scope=private pure ($src::string)
+  [$first [?for [in $c [$cx:parse $src]/case] [yield $c]]]]
+
+[?if [$member "--self-test" [$env:argv]]
+  [then
+    [?let
+      [= $cxbin [$env:executable-path]]
+      [= $good [$synthetic
+          "[s [case id=t-good kind=cx [in-text [#\n[?lib 'cx-xap' :as xap]\n[$xap:boot]\n#]] [out-text [#\n[?lib 'cx-platform/xap' :as xap]\n[$xap:boot]\n#]] [out-report [#\n<file>:1: [?lib] cx-xap -> cx-platform/xap\n1/1 file(s) changed, 1 retired-name site(s)\n#]]]]"]]
+      [; the rewrite this tool must never make: a retired name written as a
+         WORD inside a string. An expectation that asks for it must FAIL. ]
+      [= $word [$synthetic
+          "[s [case id=t-word kind=cx [in-text [#\n[?lib 'cx-xap' :as xap]\n[done \"cx-xap: ready\"]\n#]] [out-text [#\n[?lib 'cx-platform/xap' :as xap]\n[done \"cx-platform/xap: ready\"]\n#]] [out-report [#\n<file>:1: [?lib] cx-xap -> cx-platform/xap\n1/1 file(s) changed, 1 retired-name site(s)\n#]]]]"]]
+      [; …and the rewrite it must always make: a raw block's import. An
+         expectation that leaves it alone must FAIL. ]
+      [= $raw [$synthetic
+          "[s [case id=t-raw kind=cxd [in-text [#\n[case [in-code [%#\n[?lib 'cx-fabric' :as fabric]\n#%]]]\n#]] [out-text [#\n[case [in-code [%#\n[?lib 'cx-fabric' :as fabric]\n#%]]]\n#]] [out-report [#\n0/1 file(s) changed -- nothing to migrate\n#]]]]"]]
+      [= $bad-report [$synthetic
+          "[s [case id=t-bad-report kind=cx [in-text [#\n[?lib 'cx-xap' :as xap]\n#]] [out-text [#\n[?lib 'cx-platform/xap' :as xap]\n#]] [out-report [#\n1/1 file(s) changed\n#]]]]"]]
+      [= $no-expect [$synthetic
+          "[s [case id=t-no-expect kind=cx [in-text [#\n[done]\n#]]]]"]]
+      [= $got ([$string [$grade $good $cxbin]@status],
+               [$string [$grade $word $cxbin]@status],
+               [$string [$grade $raw $cxbin]@status],
+               [$string [$grade $bad-report $cxbin]@status],
+               [$string [$grade $no-expect $cxbin]@status])]
+      [= $want ("pass", "fail", "fail", "fail", "fail")]
+      [?if [= [$strings:join $got " "] [$strings:join $want " "]]
+        [then [?let [= $_ [$say [$concat "migrate-namespace self-test OK -- a matching case passes; an expectation that rewrites "
+                                         "the name written as a word in a string, one that leaves a raw block's import alone, "
+                                         "an unpinned site line and a case with no expectation each FAIL "
+                                         "(" [$strings:join $got " "] ")"]]]
+                [$env:exit 0]]]
+        [else [?let [= $_ [$cry [$concat "migrate-namespace self-test FAILED -- want (" [$strings:join $want " "]
+                                         ") got (" [$strings:join $got " "] ")"]]]
+                [$env:exit 1]]]]]]
+  [else ""]]
+
+# -- the corpus ----------------------------------------------------------
+
+[?let [= $p "conformance/migrate_namespace.cxd"]
+  [?if [not [$io:exists $p]]
+    [then [?let [= $_ [$cry [$concat "migrate-namespace: cannot read " $p " -- run from the checkout root"]]]
+            [$env:exit 2]]]
+    [else ""]]]
+
+[?let
+  [= $verbose [$member "--verbose" [$env:argv]]]
+  [= $suite [$cx:parse [$io:read-file "conformance/migrate_namespace.cxd"]]]
+  [= $cases [?for [in $c $suite/case] [yield $c]]]
+  [= $cxbin [$env:executable-path]]
+  [= $graded [?for [in $c $cases] [yield [$grade $c $cxbin]]]]
+  [= $failed [?for [in $g $graded] [where [= [$string $g@status] "fail"]] [yield $g]]]
+  [= $passed [?for [in $g $graded] [where [= [$string $g@status] "pass"]] [yield $g]]]
+  [= $_v [?if $verbose
+            [then [?for [in $g $graded]
+                    [yield [$say [$concat "  " [$string $g@status] "  " [$string $g@id]]]]]]
+            [else ()]]]
+  [= $_report [?for [in $g $failed] [in $d $g/diff]
+                [yield [$cry [$concat "migrate-namespace: " [$string $g@id] " " [$string $d@what]
+                                      "\n  want:\n" [$string $d@want]
+                                      "\n  got:\n"  [$string $d@got]]]]]]
+  [= $_census [$say [$concat "migrate-namespace corpus: " [$string [$count $passed]] " passed, "
+                             [$string [$count $failed]] " failed, "
+                             [$string [$count $cases]] " cases"]]]
+  [?if [and [= [$count $failed] 0] [> [$count $passed] 0]]
+    [then [$env:exit 0]]
+    [else [?let [= $_ [$cry [?if [= [$count $passed] 0]
+                          [then "migrate-namespace: NO case passed -- a gate that proves nothing must not report success (RULED: PYE-6)"]
+                          [else "migrate-namespace: the corpus is not met"]]]]
+            [$env:exit 1]]]]]

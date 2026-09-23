@@ -330,6 +330,9 @@ step_globs() {
     # the pin document, its format module, its grader and the spec page it
     # implements -- nothing else changes what the corpus asserts.
     test-deps-pins)                echo 'conformance/deps_pins.cxd scripts/check_deps_pins_fixtures.cx scripts/deps_pins.cx scripts/deps_sync.cx deps.cxd spec/03-approved/process/repository-dependency-pins.md' ;;
+    # the retired-name sweep (RULED: RS-4): its corpus, its grader, and the V
+    # files that ARE the tool -- the retirement table it reads is the loader's.
+    test-migrate-namespace)        echo 'conformance/migrate_namespace.cxd scripts/check_migrate_namespace_fixtures.cx vcx/code/namespace_migrate.v vcx/code/stdlib_bundle.v vcx/cmd/main.v' ;;
     # the dogfood documents, the gate that reads them, and everything that can
     # move the vocabulary or the two subcommands it drives them through.
     flow-dogfood-gate)             echo 'flows/* scripts/flow_dogfood_gate.cx stdlib/flow.cx vcx/cmd/* vcx/code/* vcx/cx/* spec/03-approved/platform/flow.md' ;;
