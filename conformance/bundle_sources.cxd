@@ -1,0 +1,262 @@
+[test-suite name=bundle-sources ring=1
+  [doc [#
+# CX Conformance — where a bundled CX module's source comes from (RULED: RS-7)
+#
+# scripts/bundle_sources.cx is the table; this file is its executable half.
+#
+# THE SUBJECT. `cx` embeds every bundled CX module's bytes into the binary
+# (vcx/code/stdlib_bundle.v, one `$embed_file` per module). RS-7 moves those
+# modules into their own repositories and says the bytes arrive through "a
+# shallow fetch at SHA into an ignored `deps/`". So for each module there is
+# now a question with three legal answers and four refusals, and this corpus is
+# that question answered case by case.
+#
+# Every case pins two things about one described tree:
+#
+#   [out-canonical]  the document is ordinary CX data -- it parses with the
+#                    data grammar and `cx canonical` is its identity. No new
+#                    lexer, parser or codec, exactly as RS-7 requires of the
+#                    pin document it sits beside.
+#   [out-text]       `[$bundle:report …]`: the census line, then one line per
+#                    module in the extraction window, then the refusals (or
+#                    `ok`). This is the SAME function scripts/bundle_compose.cx
+#                    prints, so a refusal here is a refusal there.
+#
+# THE CLASS THIS FILE EXISTS TO CLOSE is `bundle-010`: a pinned repository
+# whose `deps/<repo>` was never fetched. The wrong answer -- embedding whatever
+# happens to be at the path, or embedding nothing -- produces a binary that is
+# SMALLER than the one the pins describe, and nothing says so. There is no
+# fallback in the table; `bundle-010` is why.
+#
+# `bundle-004` and `bundle-005` pin the other half of that: the extraction
+# window, where a repository is pinned and its source has not left this tree
+# yet, is a NAMED and PRINTED state rather than either a refusal or a silence.
+#
+# Graded by `make test-bundle-sources`
+# (scripts/check_bundle_sources_fixtures.cx), which is the claim
+# check_conformance_coverage.sh carries for this suite.
+#]]
+
+ [case id=bundle-001-empty-document level=core
+  [tags bundle sources document canonical]
+  [title a front door that bundles nothing -- the census reads zero on every state and refuses nothing]
+  [in-cx [#
+[bundle-state]
+#]]
+  [out-canonical [#
+[bundle-state]
+#]]
+  [out-text [#
+bundle: 0 modules, 0 own, 0 from pins, 0 migrating, 0 refused
+ok
+#]]
+ ]
+
+ [case id=bundle-002-own-source level=core
+  [tags bundle sources own]
+  [title a module whose repository is not pinned and whose source is tracked here -- the front door's own source, embedded from its path as it always was]
+  [in-cx [#
+[bundle-state
+  [module name="json" source="stdlib/json.cx" owner="cx-core-code" pinned=false tracked=true staged=false]]
+#]]
+  [out-canonical [#
+[bundle-state
+  [module name=json source=stdlib/json.cx owner=cx-core-code pinned=false tracked=true staged=false]
+]
+#]]
+  [out-text [#
+bundle: 1 modules, 1 own, 0 from pins, 0 migrating, 0 refused
+ok
+#]]
+ ]
+
+ [case id=bundle-003-from-a-pin level=core
+  [tags bundle sources pinned deps]
+  [title the finished state -- the repository is pinned, its source has left this tree, and deps/<repo>/ carries it]
+  [in-cx [#
+[bundle-state
+  [module name="sso" source="stdlib/sso.cx" owner="cx-platform-sso" pinned=true tracked=false staged=true]]
+#]]
+  [out-canonical [#
+[bundle-state
+  [module name=sso source=stdlib/sso.cx owner=cx-platform-sso pinned=true tracked=false staged=true]
+]
+#]]
+  [out-text [#
+bundle: 1 modules, 0 own, 1 from pins, 0 migrating, 0 refused
+ok
+#]]
+ ]
+
+ [case id=bundle-004-migrating level=core
+  [tags bundle sources migrating extraction]
+  [title the extraction window -- the repository is pinned and its source is STILL tracked here; the state is named and printed, never a refusal and never a silence]
+  [in-cx [#
+[bundle-state
+  [module name="sso" source="stdlib/sso.cx" owner="cx-platform-sso" pinned=true tracked=true staged=false]]
+#]]
+  [out-canonical [#
+[bundle-state
+  [module name=sso source=stdlib/sso.cx owner=cx-platform-sso pinned=true tracked=true staged=false]
+]
+#]]
+  [out-text [#
+bundle: 1 modules, 0 own, 0 from pins, 1 migrating, 0 refused
+migrating sso: cx-platform-sso is pinned, but stdlib/sso.cx is still tracked here -- the binary embeds the tracked copy
+ok
+#]]
+ ]
+
+ [case id=bundle-005-three-states-together level=core
+  [tags bundle sources own pinned migrating doc]
+  [title the real shape of a front door mid-split -- one own source, one composed from a pin, one in the window -- and a doc child beside them]
+  [in-cx [#
+[bundle-state
+  [doc the three legal states, side by side]
+  [module name="json" source="stdlib/json.cx" owner="cx-core-code" pinned=false tracked=true staged=false]
+  [module name="flow" source="stdlib/flow.cx" owner="cx-platform-flow" pinned=true tracked=false staged=true]
+  [module name="sso" source="stdlib/sso.cx" owner="cx-platform-sso" pinned=true tracked=true staged=true]]
+#]]
+  [out-canonical [#
+[bundle-state
+  [doc ['the three legal states', 'side by side']]
+  [module name=json source=stdlib/json.cx owner=cx-core-code pinned=false tracked=true staged=false]
+  [module name=flow source=stdlib/flow.cx owner=cx-platform-flow pinned=true tracked=false staged=true]
+  [module name=sso source=stdlib/sso.cx owner=cx-platform-sso pinned=true tracked=true staged=true]
+]
+#]]
+  [out-text [#
+bundle: 3 modules, 1 own, 1 from pins, 1 migrating, 0 refused
+migrating sso: cx-platform-sso is pinned, but stdlib/sso.cx is still tracked here -- the binary embeds the tracked copy
+ok
+#]]
+ ]
+
+ [case id=bundle-010-missing-pinned-source level=core
+  [tags bundle sources refusal missing-pinned-source deps]
+  [title THE class this corpus exists for -- a pinned repository whose deps/ checkout is not there is REFUSED; there is no fallback, because the fallback is a silently smaller binary]
+  [in-cx [#
+[bundle-state
+  [module name="ux" source="x/ux.cx" owner="cx-platform-ux" pinned=true tracked=false staged=false]]
+#]]
+  [out-canonical [#
+[bundle-state
+  [module name=ux source=x/ux.cx owner=cx-platform-ux pinned=true tracked=false staged=false]
+]
+#]]
+  [out-text [#
+bundle: 0 modules, 0 own, 0 from pins, 0 migrating, 1 refused
+missing-pinned-source ux: deps/cx-platform-ux/x/ux.cx is not there -- the build would lose ux
+#]]
+ ]
+
+ [case id=bundle-011-missing-source level=core
+  [tags bundle sources refusal missing-source]
+  [title a module nothing provides -- not tracked here and its repository is not pinned -- is REFUSED rather than dropped from the bundle]
+  [in-cx [#
+[bundle-state
+  [module name="sync" source="stdlib/sync.cx" owner="cx-platform-connector" pinned=false tracked=false staged=false]]
+#]]
+  [out-canonical [#
+[bundle-state
+  [module name=sync source=stdlib/sync.cx owner=cx-platform-connector pinned=false tracked=false staged=false]
+]
+#]]
+  [out-text [#
+bundle: 0 modules, 0 own, 0 from pins, 0 migrating, 1 refused
+missing-source sync: stdlib/sync.cx is neither tracked here nor provided by a pinned repository
+#]]
+ ]
+
+ [case id=bundle-012-unowned level=core
+  [tags bundle sources refusal unowned allocation]
+  [title a source no allocation rule claims is REFUSED -- the composition cannot decide where bytes come from for a path that belongs to no repository]
+  [in-cx [#
+[bundle-state
+  [module name="mystery" source="elsewhere/mystery.cx" owner="" pinned=false tracked=true staged=false]]
+#]]
+  [out-canonical [#
+[bundle-state
+  [module name=mystery source=elsewhere/mystery.cx owner='' pinned=false tracked=true staged=false]
+]
+#]]
+  [out-text [#
+bundle: 0 modules, 0 own, 0 from pins, 0 migrating, 1 refused
+unowned mystery: elsewhere/mystery.cx matches no [path] rule in registry/repos.cxd
+#]]
+ ]
+
+ [case id=bundle-013-self-pinned level=core
+  [tags bundle sources refusal self-pinned]
+  [title the front door pinning itself is REFUSED -- a pin is a commit of another repository and `cx` has no release of its own to fetch]
+  [in-cx [#
+[bundle-state
+  [module name="cx" source="stdlib/cx.cx" owner="cx" pinned=true tracked=true staged=false]]
+#]]
+  [out-canonical [#
+[bundle-state
+  [module name=cx source=stdlib/cx.cx owner=cx pinned=true tracked=true staged=false]
+]
+#]]
+  [out-text [#
+bundle: 0 modules, 0 own, 0 from pins, 0 migrating, 1 refused
+self-pinned cx: the front door cannot pin itself
+#]]
+ ]
+
+ [case id=bundle-014-duplicate-module level=core
+  [tags bundle sources refusal duplicate-module]
+  [title two rows for one module are REFUSED -- two answers to where one module's bytes come from is no answer]
+  [in-cx [#
+[bundle-state
+  [module name="json" source="stdlib/json.cx" owner="cx-core-code" pinned=false tracked=true staged=false]
+  [module name="json" source="deps/cx-core-code/stdlib/json.cx" owner="cx-core-code" pinned=true tracked=false staged=true]]
+#]]
+  [out-canonical [#
+[bundle-state
+  [module name=json source=stdlib/json.cx owner=cx-core-code pinned=false tracked=true staged=false]
+  [module name=json source=deps/cx-core-code/stdlib/json.cx owner=cx-core-code pinned=true tracked=false staged=true]
+]
+#]]
+  [out-text [#
+bundle: 2 modules, 1 own, 1 from pins, 0 migrating, 1 refused
+duplicate-module json: 2 rows name it
+#]]
+ ]
+
+ [case id=bundle-015-unknown-child level=core
+  [tags bundle sources refusal unknown-child]
+  [title a child that is not a [module] or a [doc] is REFUSED rather than ignored -- deny-by-default, the shape the pin document beside it takes]
+  [in-cx [#
+[bundle-state
+  [dep repo="cx-platform-sso"]]
+#]]
+  [out-canonical [#
+[bundle-state
+  [dep repo=cx-platform-sso]
+]
+#]]
+  [out-text [#
+bundle: 0 modules, 0 own, 0 from pins, 0 migrating, 1 refused
+unknown-child document: dep
+#]]
+ ]
+
+ [case id=bundle-016-unknown-root level=core
+  [tags bundle sources refusal unknown-root]
+  [title a document whose root is not [bundle-state] is REFUSED even when its rows would classify -- the refusal is reported beside the rows, not instead of them]
+  [in-cx [#
+[bundle
+  [module name="json" source="stdlib/json.cx" owner="cx-core-code" pinned=false tracked=true staged=false]]
+#]]
+  [out-canonical [#
+[bundle
+  [module name=json source=stdlib/json.cx owner=cx-core-code pinned=false tracked=true staged=false]
+]
+#]]
+  [out-text [#
+bundle: 1 modules, 1 own, 0 from pins, 0 migrating, 1 refused
+unknown-root document: bundle
+#]]
+ ]
+]
