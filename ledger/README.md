@@ -1037,7 +1037,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1427-f` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
 | `1427-g` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md), [rulings_2026_09_15_file_surface_placement_int18.md](rulings_2026_09_15_file_surface_placement_int18.md) |
 | `1427-h` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md) |
-| `1427-i` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md), [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md) |
+| `1427-i` | [rulings_2026_09_12_ring_legible_tree_1427.md](rulings_2026_09_12_ring_legible_tree_1427.md), [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_23_x_graduation_d45a.md](rulings_2026_09_23_x_graduation_d45a.md) |
 | `1433-a` | [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
 | `1433-b` | [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
 | `1433-c` | [rulings_2026_09_13_fmt_perf_1433.md](rulings_2026_09_13_fmt_perf_1433.md) |
@@ -1246,7 +1246,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `rs-11` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md) |
 | `rs-2` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md) |
 | `rs-3` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
-| `rs-4` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md) |
+| `rs-4` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_23_x_graduation_d45a.md](rulings_2026_09_23_x_graduation_d45a.md) |
 | `rs-5` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md) |
 | `rs-7` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md), [rulings_2026_09_22_repo_split_followups.md](rulings_2026_09_22_repo_split_followups.md), [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) |
 | `rs-8` | [rulings_2026_09_21_repo_split_1589.md](rulings_2026_09_21_repo_split_1589.md) |
@@ -1319,4 +1319,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*319 ledger pages; 673 ids declared, 381 cited only.*
+*320 ledger pages; 673 ids declared, 381 cited only.*
