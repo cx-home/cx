@@ -18,7 +18,7 @@ Three import prefixes:
   the stability promise. If you are writing code meant to last, prefer the
   standard tier.
 * **`cx-xap`** — the XAP orchestrator, imported as a whole package
-  (`[?lib 'cx-xap' :as xap]`), **not** as `cx-stdlib/xap`. It layers *above*
+  (`[?lib 'cx-platform/xap' :as xap]`), **not** as `cx-stdlib/xap`. It layers *above*
   the standard library and adds no authority, transport, or markup logic of
   its own. It appears in the standard-tier table below because it is bundled
   from the same directory; its import line is the exception.

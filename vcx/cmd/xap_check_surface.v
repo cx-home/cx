@@ -136,7 +136,7 @@ fn xap_check_surface_path_ok(p string) {
 // whatever the project holds.
 fn xap_check_surface_program(xap_path string, surface_path string, feature_paths []string, modules []string) string {
 	mut b := []string{}
-	b << "[?lib 'cx-xap' :as xap]"
+	b << "[?lib 'cx-platform/xap' :as xap]"
 	b << "[?lib 'cx-stdlib/io' :as io]"
 	b << "[?lib 'cx-stdlib/cx' :as cx]"
 	b << "[?lib 'cx-stdlib/strings' :as strings]"

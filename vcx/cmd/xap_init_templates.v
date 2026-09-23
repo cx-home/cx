@@ -337,7 +337,7 @@ fn xap_init_compose(name string) string {
    failing FILE at the point it fails, where the compose refusal below can
    only tell you the composition ended up empty. Two guards, and they
    report different things on purpose. ]
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?lib 'cx-stdlib/io' :as io]
 [?lib 'cx-stdlib/cx' :as cx]
 
@@ -466,7 +466,7 @@ fn xap_init_bundle_program(name string) string {
 
    Install stays strictly PER-PACKAGE either way: a bundle bypasses no compose
    gate and no consent. Bundling is a billing relationship, not an authority. ]
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?lib 'cx-platform/store' :as store]
 [?lib 'cx-stdlib/did' :as did]
 [?lib 'cx-stdlib/crypto' :as crypto]
@@ -736,7 +736,7 @@ fn xap_init_client_serve(name string) string {
    web's anonymous intents through. Attributed durable commits over the
    web want [\$xap:host], which carries auth. ]
 
-[?lib 'cx-xap' :as xap]
+[?lib 'cx-platform/xap' :as xap]
 [?lib 'cx-stdlib/io' :as io]
 [?lib 'cx-stdlib/cx' :as cx]
 [?lib 'cx-stdlib/env' :as env]
