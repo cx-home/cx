@@ -29,7 +29,9 @@
 #                      `[path prefix='vcx/<d>/' ...]` that allocates its whole
 #                      directory -- so `transport` is net's and `cxstore` is
 #                      store's, and an import of either is held to that pin
-#   [unknown import]   an import that names neither a vcx/ module nor a vlib
+#   [unknown import]   an import that names neither a vcx/ module, a module of
+#                      a pinned V root (deps/<repo>/vcx/<m>/ for a deps.cxd row
+#                      carrying v-fork=, owned by that repository) nor a vlib
 #                      module -- nothing any repository could pin
 #   [cycle]            the declared pins are not acyclic (the repositories
 #                      left when every sink has been peeled away)
@@ -154,18 +156,24 @@
 # (deps/<R>/vcx/<D>/, a deps.cxd row carrying v-fork=, RULED: RS-7).
 # answers [verdict [failures [failure kind=K what=W]*] [census [line text=T]*]]
 
-[?def check scope=private pure ($repos $rules $srcs $dirs $vlib $pinned)
+[?def check scope=private pure ($repos $rules $srcs $vdirs $vlib $pinned)
   [?let
+    # a module is a vcx/ directory or a pinned V root's; a vcx/ one wins (and
+    # deps-present refuses a tree where one shadows the other).
+    [= $pinned-only [?for [in $o $pinned] [where [not [$member [$string $o@dir] $vdirs]]] [yield $o]]]
+    [= $dirs [?for [in $g ($vdirs, [?for [in $o $pinned-only] [yield [$string $o@dir]]])] [in $d $g] [yield $d]]]
     [= $names [?for [in $x $repos] [yield [$string $x@name]]]]
     [= $vrows [?for [in $x $repos] [where [not [= [$string [?else $x@vmodule ""]] ""]]] [yield $x]]]
     [= $vmods [?for [in $x $vrows] [yield [$string $x@vmodule]]]]
     [= $core [?for [in $x $repos] [where [= [$string [?else $x@group ""]] "core"]] [yield [$string $x@name]]]]
     # owner of a vcx/ module directory: its vmodule row, else its directory rule.
-    [= $owners [?for [in $d $dirs]
+    [= $vowners [?for [in $d $vdirs]
                  [yield [?let [= $v [?for [in $x $vrows] [where [= [$string $x@vmodule] $d]] [yield [$string $x@name]]]]
                                [= $r [?for [in $x $rules] [where [= [$string [?else $x@prefix ""]] [$concat "vcx/" $d "/"]]] [yield [$string $x@repo]]]]
                           [own dir=$d repo=[?if [> [$count $v] 0] [then [$string [$first $v]]]
                                             [else [?if [> [$count $r] 0] [then [$string [$first $r]]] [else ""]]]]]]]]]
+    # ... and of a pinned root's: the pinned repository.
+    [= $owners [?for [in $g ($vowners, $pinned-only)] [in $o $g] [yield $o]]]
     [= $edges [?for [in $x $repos] [in $p [$words [$string [?else $x@pins ""]]]] [yield [e from=[$string $x@name] to=$p]]]]
     [= $undeclared-pins [?for [in $e $edges] [where [not [$member [$string $e@to] $names]]]
                           [yield [failure kind="undeclared pin" what=[$concat [$string $e@from] " pins " [$string $e@to]]]]]]
@@ -351,6 +359,19 @@
                          [$env:exit 2]]]
                  [else ""]]]
   [= $dirs [?for [in $p [$io:glob "vcx/*"]] [where [$io:is-directory $p]] [yield [$dir-name $p "vcx/"]]]]
+  # The pinned V roots (RULED: RS-7): every deps.cxd row carrying v-fork= is a
+  # V repository whose modules compile from deps/<repo>/vcx/<m>/ through -path,
+  # and the pinned repository owns each of them. An absent checkout cannot be
+  # told from an unknown import, so it is refused, as deps-present refuses it.
+  [= $vroots [?if [$io:exists "deps.cxd"]
+               [then [?for [in $r [$cx:parse [$io:read-file "deps.cxd"]]//dep]
+                       [where [not [= [$string [?else $r@v-fork ""]] ""]]] [yield [$string $r@repo]]]]
+               [else ()]]]
+  [= $_roots-ok [?for [in $r $vroots] [where [not [$io:is-directory [$concat "deps/" $r "/vcx"]]]]
+                  [yield [?let [= $_ [$cry [$concat "product-import-gate: deps/" $r "/vcx is not there -- deps.cxd pins " $r " as a V repository (v-fork=); run `make deps-sync`"]]]
+                           [$env:exit 2]]]]]
+  [= $pinned [?for [in $r $vroots] [in $p [$io:glob [$concat "deps/" $r "/vcx/*"]]] [where [$io:is-directory $p]]
+               [yield [own dir=[$dir-name $p [$concat "deps/" $r "/vcx/"]] repo=$r]]]]
   # Every file of a product directory and of the residue vcx/platform/ is read
   # for its imports; any OTHER vcx/ directory only for the module its first
   # file declares ([no repo row]).
@@ -362,7 +383,7 @@
              [= $text [$io:read-file [$string $f]]]
              [yield [src file=[$string $f] dir=$d module=[$module-of $text]
                          imps=[?if $whole [then [$strings:join [$import-heads $text] " "]] [else ""]]]]]]
-  [= $v [$check $repos $rules $srcs $dirs $vlib ()]]
+  [= $v [$check $repos $rules $srcs $dirs $vlib $pinned]]
   [= $failures [?for [in $f $v/failures/failure] [yield $f]]]
   [= $_census [?for [in $c $v/census/line] [yield [$say [$concat "  " [$string $c@text]]]]]]
   [?if [= [$count $failures] 0]
