@@ -149,80 +149,46 @@ the corpus, not a discretionary omission.
 ## 6 — The bundled CX sources
 
 RS-7's *"read by the V build via `-path`"* answers half of what a pin buys a
-build. The other half is the CX half, and it is the half that cannot be
-answered by pointing the build somewhere else.
+build. The other half is the bundled CX sources, and it cannot be answered by a
+search path.
 
-`cx` embeds every bundled CX module's bytes into the binary: one
-`$embed_file('../../stdlib/<name>.cx')` per module in `vcx/code/stdlib_bundle.v`,
-and the same shape for the `x/` estate. **An embed path is a compile-time
-literal.** V has no variable form of it, and the three CLI profiles and the two
-libraries all read the same literals. So when a module's source moves to its
-own repository, the bytes have to BE at that path when V reads it. Putting them
-there is composition, and `scripts/bundle_compose.cx` is the program that does
-it (`make bundle-compose`; `make deps-sync` runs it after the fetch).
+`cx` embeds every bundled CX module's bytes into the binary: one `$embed_file`
+per module in `vcx/code/stdlib_bundle.v`. **An embed path is a compile-time
+literal**, and the profile builds and the libraries all read the same literals.
+So a module whose repository has left this tree is embedded **from the pinned
+checkout itself**: its `registry/modules.cxd` row carries `repo=<repo>` and a
+`source=` under `deps/<repo>/`, and its embed literal names that same path.
+Nothing is copied into this repository's own tree — there is no composed file
+that could drift from the pinned bytes, and none a `git add` could commit back.
 
-### 6.1 The three states and the four refusals
+### 6.1 The two states and the refusals
 
-For each module `registry/modules.cxd` gives a bundled `source=` for, two facts
-decide where its bytes come from: whether `registry/repos.cxd` allocates that
-path to a repository `deps.cxd` pins, and whether the path is still a tracked
-file of this repository.
+For each module `registry/modules.cxd` gives a bundled `source=` for, the row's
+`repo=`, the pins, and the tree decide one verdict:
 
-| pinned | tracked | `deps/<owner>/<path>` | verdict |
-|---|---|---|---|
-| no | yes | — | `own` — the front door's own source, embedded from `<path>` |
-| yes | no | present | `pinned` — composed into `<path>` from `deps/<owner>/<path>` |
-| yes | yes | — | `migrating` — the pin is taken and the source has not left yet |
-| yes | no | absent | **refused**: `missing-pinned-source` |
-| no | no | — | **refused**: `missing-source` |
+| `repo=` | pinned | tracked here | on disk | verdict |
+|---|---|---|---|---|
+| none | — | yes | — | `own` — the front door's own source |
+| none | — | no | — | **refused**: `missing-source` |
+| `cx` | — | — | — | **refused**: `self-pinned` |
+| `<r>` | no | — | — | **refused**: `unpinned` — nothing fetches it |
+| `<r>` | yes | yes | — | **refused**: `tracked-pin` — another repository's source committed here |
+| `<r>` | yes | no | yes | `pinned` — embedded from `deps/<r>/` |
+| `<r>` | yes | no | no | **refused**: `missing-pinned-source` |
 
-Two more refusals complete the set: `unowned`, a source no `[path]` rule
-claims, and `self-pinned`, the front door pinning itself.
-
-**`migrating` is a state and not a refusal** because an extraction is a copy and
-then a delete, in two repositories, and between them the source exists in both.
-The front door pins the new repository from the moment it releases — RS-7's
-migration lane — while the delete lands with the extraction. Refusing the window
-would mean no pin could be taken before the delete; ignoring it would mean
-nobody could tell a finished extraction from an unfinished one. So it is named,
-counted and printed on every run.
+Two rows naming one module are refused as `duplicate-module`.
 
 **`missing-pinned-source` is a refusal and not a fallback** because the failure
-this table exists to prevent is a build that quietly produces a *smaller* binary
-than the pins describe. A fallback to "embed whatever is at `<path>`" is that
-failure. There is none: the composition refuses, and if it is bypassed the
-absent path fails V's `$embed_file` by name. Loud twice, silent never.
+this table exists to prevent is a build that quietly produces a *smaller*
+binary than the pins describe — a `deps/<repo>` never fetched, or fetched at a
+sha where the source is not where the row says. It is refused three times:
+`make deps-sync` and `make deps-check` apply the table after the fetch or the
+at-pin check; `make deps-present` states the build's precondition before V
+starts, needing no cx; and a build that bypasses both fails V's `$embed_file`
+on the absent path.
 
-### 6.2 Two refusals that need a tree
+### 6.2 Conformance
 
-`--check` writes nothing and adds the two refusals a document cannot state:
-
-| Kind | What it is |
-|---|---|
-| `composed-drift` | a composed `<path>` whose bytes are not the bytes of `deps/<owner>/<path>` — a private fork of another repository's source, the class RS-7 built the transport to avoid |
-| `not-ignored` | a composed `<path>` git does not ignore. Once a module's source belongs to another repository its path here is a BUILD OUTPUT; the extraction commit that deletes the tracked source adds its path to `.gitignore`, and this refusal is what says so when it does not |
-
-### 6.3 The V half is per product, not per group (RULED: RS-24)
-
-§3.3's `--vpath` answers the V half and is unchanged by this section: each
-pinned repository's checkout is one `-path` search root, and a V repository's
-row carries a `v-fork`. RS-24 splits `vcx/platform/` into one V module per
-product (`vcx/<product>/`, `module <product>`), so what a `-path` root provides
-is that repository's **product module** — `net`, `store`, `identity`, `mail`,
-`db`, `fabric`, `xap`, `connector` — and never one shared `platform` module.
-The dependency direction between those modules is the pin table itself.
-
-The two halves are independent and stay so. A product's V module arrives
-through `-path`; its bundled CX source arrives through §6.1's composition. A
-repository can be pinned for one, the other, or both, and the composition's
-table above is about the CX half only: a module with `source=none` in
-`registry/modules.cxd` never appears in it.
-
-### 6.4 Conformance
-
-The table, its three states and its four document-level refusals are pinned by
+The table and every refusal in it are pinned by
 [`conformance/bundle_sources.cxd`](../../../conformance/bundle_sources.cxd),
-graded by the `test-bundle-sources` step. `make deps-sync && make build-vcx`
-therefore produces the same binary from a tree whose products live in `deps/`
-as from a tree that still holds them, and no arrangement in between produces a
-binary that is quietly missing a module.
+graded by the `test-bundle-sources` step.

@@ -325,10 +325,9 @@ step_globs() {
     # the pin document, its format module, its grader and the spec page it
     # implements -- nothing else changes what the corpus asserts.
     test-deps-pins)                echo 'conformance/deps_pins.cxd scripts/check_deps_pins_fixtures.cx scripts/deps_pins.cx scripts/deps_sync.cx deps.cxd spec/03-approved/process/repository-dependency-pins.md' ;;
-    # the bundled-source table, the grader that reads it, the program that
-    # applies it, and the two registries plus the pin document whose join it is
-    # -- nothing else changes what the corpus asserts (#1589 item 23).
-    test-bundle-sources)           echo 'conformance/bundle_sources.cxd scripts/check_bundle_sources_fixtures.cx scripts/bundle_sources.cx scripts/bundle_compose.cx registry/modules.cxd registry/repos.cxd deps.cxd spec/03-approved/process/repository-dependency-pins.md' ;;
+    # the bundled-source table and the grader that reads it -- the corpus is
+    # pure described trees, so nothing else changes what it asserts (#1589 item 23).
+    test-bundle-sources)           echo 'conformance/bundle_sources.cxd scripts/check_bundle_sources_fixtures.cx scripts/bundle_sources.cx spec/03-approved/process/repository-dependency-pins.md' ;;
     # the dogfood documents, the gate that reads them, and everything that can
     # move the vocabulary or the two subcommands it drives them through.
     flow-dogfood-gate)             echo 'flows/* scripts/flow_dogfood_gate.cx stdlib/flow.cx vcx/cmd/* vcx/code/* vcx/cx/* spec/03-approved/platform/flow.md' ;;

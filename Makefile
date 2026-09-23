@@ -356,6 +356,15 @@ check-gate-lock:
 # names its own pinned paths, and a row added there is covered here the day it
 # lands. The derivation is `grep`, not `cx`, on purpose — this runs BEFORE the
 # binary that would read the registry exists.
+#
+# It is the BUILD-TIME half of one mechanism (#1589 item 23): embed from
+# deps/, nothing copied. The pin-time half is scripts/bundle_check.cx at the
+# end of `deps-sync` and `deps-check`, which applies the table
+# conformance/bundle_sources.cxd grades — the same `missing-pinned-source`
+# class, plus the questions only a cx can answer (is the repository pinned at
+# all; is its source committed here by mistake). This half stays `grep` so a
+# `make clean` tree with its deps/ still rebuilds with no cx present
+# (scripts/reproduce_release.sh does exactly that).
 .PHONY: deps-present
 deps-present:
 	@missing=""; \
@@ -1149,45 +1158,25 @@ deps-cx:
 
 DEPS_CX = $(if $(CX_BIN),$(CX_BIN),$(if $(wildcard $(CURDIR)/vcx/target/cx),$(CURDIR)/vcx/target/cx,cx))
 
+# BOTH END ON THE BUNDLED SOURCES (#1589 item 23): once the pins are fetched
+# or verified, scripts/bundle_check.cx judges every bundled CX module against
+# them — the table conformance/bundle_sources.cxd grades — and refuses a pinned
+# checkout that does not carry the source its registry/modules.cxd row names
+# (`missing-pinned-source`), a row naming a repository deps.cxd does not pin
+# (`unpinned`), and a pinned source committed into this tree (`tracked-pin`).
 deps-sync: deps-cx
 	@"$(DEPS_CX)" --allow-all scripts/deps_sync.cx
+	@"$(DEPS_CX)" --allow-all scripts/bundle_check.cx
 
 deps-check: deps-cx
 	@"$(DEPS_CX)" --allow-all scripts/deps_sync.cx --check
-
-# ── the bundled CX sources of the four builds (#1589 item 23, RULED: RS-7) ─
-# vcx/code/stdlib_bundle.v embeds one `$embed_file('../../stdlib/<n>.cx')` per
-# bundled module, and an embed path is a COMPILE-TIME LITERAL — V has no
-# variable form of it, and the three CLI profiles and the two libraries all read
-# the same literals. So "the four builds from pins" cannot mean pointing the
-# build elsewhere; the bytes have to BE at that path when V reads it.
-# scripts/bundle_compose.cx puts them there from deps/<repo>/ for every module
-# whose repository has left the front door, and REFUSES when a pinned
-# repository's deps/ checkout is not there. Never a smaller binary: the
-# composition refuses, and if it is bypassed the absent path fails V's
-# `$embed_file` by name.
-#
-# `bundle-check` writes nothing. It is what a build step runs once the compose
-# has happened, and it adds the two refusals a tree can state and a document
-# cannot — a composed file edited in place (`composed-drift`) and a composed
-# file git does not ignore (`not-ignored`).
-.PHONY: bundle-compose bundle-check bundle-census
-bundle-compose: CX_BIN ?= $(CURDIR)/vcx/target/cx
-bundle-compose: build-vcx
-	@"$(CX_BIN)" --allow-all scripts/bundle_compose.cx
-
-bundle-check: CX_BIN ?= $(CURDIR)/vcx/target/cx
-bundle-check: build-vcx
-	@"$(CX_BIN)" --allow-all scripts/bundle_compose.cx --check
-
-bundle-census: CX_BIN ?= $(CURDIR)/vcx/target/cx
-bundle-census: build-vcx
-	@"$(CX_BIN)" --allow-all scripts/bundle_compose.cx --census --verbose
+	@"$(DEPS_CX)" --allow-all scripts/bundle_check.cx
 
 # ── test-bundle-sources — the bundled-source table's corpus ───────────────
-# conformance/bundle_sources.cxd pins the three legal states and every refusal
-# of scripts/bundle_sources.cx; scripts/check_bundle_sources_fixtures.cx grades
-# it and runs its own comparator self-test first — #1591: "Every moved gate is
+# conformance/bundle_sources.cxd pins the two legal states and every refusal
+# of scripts/bundle_sources.cx — the table scripts/bundle_check.cx applies to
+# the real tree at the end of `deps-sync` and `deps-check`;
+# scripts/check_bundle_sources_fixtures.cx grades it and runs its own comparator self-test first — #1591: "Every moved gate is
 # red-proofed on a synthetic violation before its row moves."
 #
 # BOTH GRANTS ARE LOAD-BEARING, for the reason test-deps-pins below records:
@@ -1232,10 +1221,9 @@ test-deps-pins: build-vcx
 # roster grades.
 #
 # ITS MEANING IS UNCHANGED by #1589 item 23: `deps-sync` then `make test`, in
-# that order. What `deps-sync` does grew — it now composes the bundled CX
-# sources after the fetch as well — and that is the same sentence, not a new
-# one: "synchronise the pins" is the whole of getting the tree to the state the
-# pins describe, and a fetch that left the sources where they were never was.
+# that order. `deps-sync` now also judges the bundled CX sources against the
+# pins it fetched (scripts/bundle_check.cx), so a pinned checkout missing the
+# source a module row names fails here, before a single test compiles.
 .PHONY: union
 union: deps-sync
 	@$(MAKE) test

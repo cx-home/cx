@@ -7,12 +7,20 @@
 #   - cx-conformance-<tag>.zip
 #
 # FROM THE PINS (#1589 item 23, RULED: RS-7). `deps.cxd` names every repository
-# this one builds on at a sha. `make deps-sync` fetches each into `deps/` and
-# composes the bundled CX sources of the modules whose repositories have left
-# this tree, so what the four builds compile is the pinned set and nothing else.
-# A stale pin or a missing `deps/<repo>` FAILS the job — RS-7's transport never
-# warns, and `$embed_file` fails the compile by name if the composition is
-# bypassed, so no arrangement here produces a quietly smaller binary.
+# this one builds on at a sha. `make deps-sync` fetches each into `deps/`, and a
+# module whose repository has left this tree is embedded from that checkout
+# (its `$embed_file` literal names the `deps/<repo>/` path), so what the four
+# builds compile is the pinned set and nothing else. A stale pin, or a pinned
+# checkout missing the source its registry row names, FAILS the job — RS-7's
+# transport never warns, `make deps-present` refuses before V starts, and
+# `$embed_file` fails the compile by name if both are bypassed, so no
+# arrangement here produces a quietly smaller binary.
+#
+# THE BOOTSTRAP. The build needs `deps/` and `deps/` needs a cx to run the pin
+# transport, so this tree cannot build its own first. The job installs the
+# latest released cx with the site's own installer (docs/install, the
+# `cli` profile) into the runner's temp directory and passes it as CX_BIN —
+# the Makefile's `deps-cx` names exactly this as the way out.
 #
 # ONE RELEASE, on this repository. The allowlist mirror that used to carry a
 # second one retired with the split (RULED: RS-11).
@@ -75,13 +83,13 @@ jobs:
           third_party/v/v version
 
       # The pins, before anything is compiled from them. `deps-sync` is the
-      # fetch AND the composition; `deps-check` then asserts the tree is where
-      # deps.cxd says, writing nothing. Both refuse; neither warns.
-      - name: Synchronise the pins (fetch + compose the bundled CX sources)
+      # fetch and the bundled-source check; `deps-check` then asserts the tree
+      # is where deps.cxd says, writing nothing. Both refuse; neither warns.
+      - name: Synchronise the pins (fetch + check the bundled CX sources)
         run: |
-          make build-vcx                   # the bootstrap cx that reads deps.cxd
-          make deps-sync
-          make deps-check
+          PREFIX="$RUNNER_TEMP/cx-bootstrap" CX_PROFILE=cli sh docs/install
+          make deps-sync  CX_BIN="$RUNNER_TEMP/cx-bootstrap/bin/cx"
+          make deps-check CX_BIN="$RUNNER_TEMP/cx-bootstrap/bin/cx"
 
       - name: Build libcx + cx CLI (-prod, against the fork, from the pins)
         run: |
@@ -91,7 +99,7 @@ jobs:
 
       # The four §4 builds (cx_partition.md §4: data, cli, embed, platform).
       # `build-profiles` is the -prod matrix; the monolith built above is the
-      # platform profile. They compile the same composed tree, so a module that
+      # platform profile. They compile the same pinned tree, so a module that
       # arrived through a pin is in all four or in none.
       - name: Build the four profiles from the pins
         run: make build-profiles

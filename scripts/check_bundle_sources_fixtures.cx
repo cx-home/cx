@@ -6,10 +6,10 @@
 #   [out-canonical]  `cx canonical` over the input — the described tree is
 #                    ordinary CX data, read by the data grammar, no new codec.
 #   [out-text]       `[$bundle:report …]` over it: the census line, then one
-#                    line per module in the extraction window, then the
-#                    refusals (or `ok`). The SAME function
-#                    scripts/bundle_compose.cx prints, so a refusal the corpus
-#                    pins is the refusal the composition emits.
+#                    line per refusal (or `ok`). The SAME function
+#                    scripts/bundle_check.cx prints at the end of `make
+#                    deps-sync` and `make deps-check`, so a refusal the corpus
+#                    pins is the refusal the tree check emits.
 #
 # Rules carried from scripts/check_deps_pins_fixtures.cx, which this grader is
 # modelled on line for line:
@@ -122,13 +122,13 @@
   [then
     [?let
       [= $good [$first [?for [in $c [$cx:parse
-          "[s [case id=t-good [in-cx [#\n[bundle-state]\n#]] [out-canonical [#\n[bundle-state]\n#]] [out-text [#\nbundle: 0 modules, 0 own, 0 from pins, 0 migrating, 0 refused\nok\n#]]]]"]/case]
+          "[s [case id=t-good [in-cx [#\n[bundle-state]\n#]] [out-canonical [#\n[bundle-state]\n#]] [out-text [#\nbundle: 0 modules, 0 own, 0 from pins, 0 refused\nok\n#]]]]"]/case]
           [yield $c]]]]
       [= $bad-canonical [$first [?for [in $c [$cx:parse
           "[s [case id=t-bad-canonical [in-cx [#\n[bundle-state]\n#]] [out-canonical [#\n[bundle]\n#]]]]"]/case]
           [yield $c]]]]
       [= $bad-refusal [$first [?for [in $c [$cx:parse
-          "[s [case id=t-bad-refusal [in-cx [#\n[bundle-state [module name=m source=stdlib/m.cx owner=cx-x pinned=true tracked=false staged=false]]\n#]] [out-text [#\nok\n#]]]]"]/case]
+          "[s [case id=t-bad-refusal [in-cx [#\n[bundle-state [module name=m source=deps/cx-x/stdlib/m.cx repo=cx-x pinned=true tracked=false present=false]]\n#]] [out-text [#\nok\n#]]]]"]/case]
           [yield $c]]]]
       [= $no-expect [$first [?for [in $c [$cx:parse
           "[s [case id=t-no-expect [in-cx [#\n[bundle-state]\n#]]]]"]/case]

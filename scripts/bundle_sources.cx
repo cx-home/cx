@@ -1,17 +1,19 @@
 # scripts/bundle_sources.cx — where a bundled CX module's source comes from,
 # once the products have left the front door (RULED: RS-7).
 #
-# THE PROBLEM. `cx` embeds every bundled CX module's bytes into the binary:
-# vcx/code/stdlib_bundle.v carries one `$embed_file('../../stdlib/<n>.cx')`
-# per module and vcx/cmd does the same for the `x/` estate. An embed path is a
-# compile-time literal, so when a module's source moves to its own repository
-# the bytes have to arrive at that path before V reads it. RS-7 says where they
-# come from — "a shallow fetch at SHA into an ignored `deps/`" — and this
-# module is the decision that says, per module, WHICH of the two it is.
+# THE MECHANISM IS ONE: EMBED FROM deps/. `cx` embeds every bundled CX module's
+# bytes into the binary — vcx/code/stdlib_bundle.v carries one `$embed_file`
+# per module — and an embed path is a compile-time literal. A module whose
+# repository has left this tree is embedded from the pinned checkout ITSELF:
+# its registry/modules.cxd row carries `repo=<repo>` and a `source=` under
+# `deps/<repo>/`, and the embed literal names that same path
+# (`$embed_file('../../deps/cx-platform-sso/stdlib/sso.cx')`). Nothing is
+# copied into the front door's own tree, so there is no composed file that can
+# drift from the pinned bytes and none that `git add` could commit back.
 #
-# Everything here is PURE. Reading the registries, running git, copying a file
-# and exiting are scripts/bundle_compose.cx's business; this module turns a
-# described tree into a verdict, so that the program that composes and the
+# Everything here is PURE. Reading the registries, asking git and the disk, and
+# exiting are scripts/bundle_check.cx's business; this module turns a described
+# tree into a verdict, so that the program that checks the real tree and the
 # program that grades the corpus cannot come to hold two readings of the same
 # table — the shape scripts/deps_pins.cx set for the pin document.
 #
@@ -20,51 +22,48 @@
 #   [$bundle:refusals V]     -> the [refusal] rows
 #   [$bundle:ok V]           -> no refusals
 #   [$bundle:census V]       -> the one-line census
-#   [$bundle:report V]       -> census, then the migrating lines, then the
-#                               refusals ("ok" when there are none)
+#   [$bundle:report V]       -> the census, then the refusals ("ok" when none)
 #
 # THE INPUT is one `[bundle-state]` document, one `[module]` row per bundled
 # CX module, each carrying what the tree answers about it:
 #
-#   [module name=<n> source=<path> owner=<repo>
-#           pinned=<bool> tracked=<bool> staged=<bool>]
+#   [module name=<n> source=<path> repo=<repo or ''>
+#           pinned=<bool> tracked=<bool> present=<bool>]
 #
-#   owner    the repository registry/repos.cxd's first-match rule gives <path>
+#   repo     the row's `repo=` column in registry/modules.cxd: the repository
+#            the module has left for, or '' for a module still in this tree
 #   pinned   that repository has a [dep] row in deps.cxd
 #   tracked  <path> is a tracked file of THIS repository
-#   staged   deps/<owner>/<path> is on disk
+#   present  <path> is on disk
 #
-# THE TABLE. Three legal states and four refusals; nothing else is a pass.
+# THE TABLE. Two legal states and six refusals; nothing else is a pass.
 #
-#   pinned  tracked  staged | verdict
-#   ------  -------  ------ | -------------------------------------------------
-#     no      yes      -    | own        the front door's own source, embedded
-#                           |            from <path> as it always was
-#     yes     no       yes  | pinned     the source is the pinned repository's;
-#                           |            it is composed into <path> from
-#                           |            deps/<owner>/<path> before the build
-#     yes     yes      -    | migrating  the repository is pinned but its source
-#                           |            has NOT left this tree yet; the tracked
-#                           |            copy is what the binary embeds, and the
-#                           |            state is PRINTED on every run so nobody
-#                           |            reads the window as finished
-#     yes     no       no   | REFUSED    missing-pinned-source
-#     no      no       -    | REFUSED    missing-source
+#   repo    pinned  tracked  present | verdict
+#   ------  ------  -------  ------- | ------------------------------------------
+#   ''        -      yes       -     | own        the front door's own source
+#   ''        -      no        -     | REFUSED    missing-source
+#   cx        -       -        -     | REFUSED    self-pinned
+#   <r>      no       -        -     | REFUSED    unpinned
+#   <r>      yes     yes       -     | REFUSED    tracked-pin
+#   <r>      yes     no       yes    | pinned     embedded from deps/<r>/
+#   <r>      yes     no       no     | REFUSED    missing-pinned-source
 #
-# WHY `migrating` IS A STATE AND NOT A REFUSAL. An extraction is a copy and
-# then a delete, in two repositories, and between them the source exists in
-# both. The front door pins the new repository from the moment it releases —
-# RS-7's "`cx` is a migration lane" — while the delete lands with the extraction
-# branch. Refusing the window would mean no pin could be taken before the
-# delete; ignoring it would mean nobody could tell a finished extraction from an
-# unfinished one. So it is named, counted and printed.
+# plus `duplicate-module`, two rows naming one module, and the two document
+# shape refusals (`unknown-root`, `unknown-child`).
 #
 # WHY `missing-pinned-source` IS A REFUSAL AND NOT A FALLBACK. The failure this
 # whole table exists to prevent is a build that quietly produces a SMALLER
-# binary because a `deps/<repo>` was never fetched. A fallback to "embed
-# whatever is at <path>" is exactly that failure. There is no fallback: the
-# compose refuses, and if it is bypassed the absent <path> fails V's
-# `$embed_file` at compile time. Loud twice, silent never.
+# binary because a `deps/<repo>` was never fetched, or was fetched at a sha
+# where the source is not where the row says. A fallback to "leave the module
+# out" is exactly that failure. There is no fallback: `make deps-sync` refuses
+# by name after the fetch, `make deps-present` refuses before V starts, and if
+# both are bypassed the absent path fails V's `$embed_file` at compile time.
+#
+# WHY `unpinned` AND `tracked-pin` ARE HERE. A row that names a repository
+# deps.cxd does not pin has nothing that would ever fetch its source; and a
+# pinned repository's source committed into this tree (`git add -f` past the
+# `deps/` ignore rule) is a private fork of another repository's bytes — the
+# class RS-7 built the transport to avoid.
 #
 # RULED: RS-7 (ledger/rulings_2026_09_21_repo_split_1589.md).
 
@@ -74,31 +73,31 @@
 
 [?def classify-one scope=private pure ($m)
   [?let
-    [= $n     [$string [?else $m@name ""]]]
-    [= $src   [$string [?else $m@source ""]]]
-    [= $owner [$string [?else $m@owner ""]]]
+    [= $n       [$string [?else $m@name ""]]]
+    [= $src     [$string [?else $m@source ""]]]
+    [= $repo    [$string [?else $m@repo ""]]]
     [= $pinned  [?else $m@pinned false]]
     [= $tracked [?else $m@tracked false]]
-    [= $staged  [?else $m@staged false]]
-    [?if [= $owner ""]
-      [then [found [refusal kind=unowned module=$n
-                            what=[$concat $src " matches no [path] rule in registry/repos.cxd"]]]]
-      [else [?if [and $pinned [= $owner "cx"]]
+    [= $present [?else $m@present false]]
+    [?if [= $repo ""]
+      [then [?if $tracked
+        [then [found [state module=$n kind=own source=$src]]]
+        [else [found [refusal kind=missing-source module=$n
+                              what=[$concat $src " is neither tracked here nor named under a pinned repository"]]]]]]
+      [else [?if [= $repo "cx"]
         [then [found [refusal kind=self-pinned module=$n
                               what="the front door cannot pin itself"]]]
-        [else [?if $pinned
-          [then [?if $tracked
-            [then [found [state module=$n kind=migrating owner=$owner source=$src from=$src]]]
-            [else [?if $staged
-              [then [found [state module=$n kind=pinned owner=$owner source=$src
-                                  from=[$concat "deps/" $owner "/" $src]]]]
-              [else [found [refusal kind=missing-pinned-source module=$n
-                                    what=[$concat "deps/" $owner "/" $src
-                                                  " is not there -- the build would lose " $n]]]]]]]]
+        [else [?if [not $pinned]
+          [then [found [refusal kind=unpinned module=$n
+                                what=[$concat $repo " has no [dep] row in deps.cxd -- nothing fetches " $src
+                                              " and the build would lose " $n]]]]
           [else [?if $tracked
-            [then [found [state module=$n kind=own owner=$owner source=$src from=$src]]]
-            [else [found [refusal kind=missing-source module=$n
-                                  what=[$concat $src " is neither tracked here nor provided by a pinned repository"]]]]]]]]]]]]]
+            [then [found [refusal kind=tracked-pin module=$n
+                                  what=[$concat $src " is tracked here -- a pinned repository's source committed into the front door"]]]]
+            [else [?if $present
+              [then [found [state module=$n kind=pinned repo=$repo source=$src]]]
+              [else [found [refusal kind=missing-pinned-source module=$n
+                                    what=[$concat $src " is not there -- run make deps-sync; the build would lose " $n]]]]]]]]]]]]]]]
 
 # -- the document ---------------------------------------------------------
 
@@ -131,12 +130,6 @@
 
 [?def ok scope=public pure [returns bool] ($v) [= [$count [$refusals $v]] 0]]
 
-# pinned-states: the rows scripts/bundle_compose.cx actually copies. A caller
-# asks the verdict rather than re-deriving the condition, so "which files does
-# the compose touch" has one answer.
-[?def pinned-states scope=public pure ($v)
-  [?for [in $s [$states $v]] [where [= [$string $s@kind] "pinned"]] [yield $s]]]
-
 [?def count-kind scope=private pure ($v $k::string)
   [$count [?for [in $s [$states $v]] [where [= [$string $s@kind] $k]] [yield 1]]]]
 
@@ -144,17 +137,7 @@
   [$concat "bundle: " [$string [$count [$states $v]]] " modules, "
            [$string [$count-kind $v "own"]] " own, "
            [$string [$count-kind $v "pinned"]] " from pins, "
-           [$string [$count-kind $v "migrating"]] " migrating, "
            [$string [$count [$refusals $v]]] " refused"]]
-
-# migrating-lines: one line per module in the extraction window. These are not
-# refusals and they are not silence either — the window is legitimate and
-# temporary, and a temporary state nobody prints becomes a permanent one.
-[?def migrating-lines scope=public pure ($v)
-  [?for [in $s [$states $v]] [where [= [$string $s@kind] "migrating"]]
-    [yield [$concat "migrating " [$string $s@module] ": " [$string $s@owner]
-                    " is pinned, but " [$string $s@source]
-                    " is still tracked here -- the binary embeds the tracked copy"]]]]
 
 [?def render scope=public pure ($v)
   [?if [$ok $v]
@@ -162,9 +145,7 @@
     [else [?for [in $r [$refusals $v]]
             [yield [$concat [$string $r@kind] " " [$string $r@module] ": " [$string $r@what]]]]]]]
 
-# report: what the compose program prints and what the corpus pins, so the two
-# can never say different things about the same tree.
+# report: what scripts/bundle_check.cx prints and what the corpus pins, so the
+# two can never say different things about the same tree.
 [?def report scope=public pure [returns string] ($v)
-  [$strings:join ([$census $v],
-                  [?splice [$migrating-lines $v]],
-                  [?splice [$render $v]]) "\n"]]
+  [$strings:join ([$census $v], [?splice [$render $v]]) "\n"]]
