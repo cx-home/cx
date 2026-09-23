@@ -54,6 +54,13 @@ make promote-cli # install the `cx` CLI to /usr/local/bin
 cx --version
 ```
 
+**The pins come first (#1643).** The build embeds the bundled sources of the
+repositories `deps.cxd` pins, so it needs `deps/`, and `make deps-sync` fetches
+it with a cx: `CX_BIN=` when given, else this tree's `vcx/target/cx`, the main
+checkout's (the first row of `git worktree list`, which is what a new worktree
+has), a `cx` on `PATH`, then `~/.local/bin/cx` — and it says which it used. A
+box with none of them installs a released cx, or passes `CX_BIN=<path to one>`.
+
 `make build` is incremental. Sub-targets:
 
 | target | builds |
