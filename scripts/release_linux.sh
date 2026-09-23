@@ -177,4 +177,4 @@ fi
 
 echo
 echo "Done. Upload with the release: gh release upload $TAG dist/public/cx-*linux*.tar.gz --clobber"
-echo "(and refresh dist/public/SHA256SUMS.txt to include the linux tarballs before uploading it)"
+echo "(and refresh dist/SHA256SUMS.txt — scripts/release.sh write_sums — to include the linux tarballs before uploading it)"
