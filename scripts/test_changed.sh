@@ -352,9 +352,9 @@ step_globs() {
     # what can is the PIN (`deps.cxd`, with `registry/modules.cxd` where the
     # pinned paths are declared) and the verbs RS-20 kept in vcx/cmd/.
     flow-dogfood-gate)             echo 'deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/*' ;;
-    # the pinned `cx flow` lane: the pin, the verbs and everything the eight
-    # processes it spawns run through, and the module path it is compiled on.
-    test-flow-umbrella)            echo 'deps.cxd registry/modules.cxd vcx/cmd/* vcx/code/* vcx/cx/* vcx/platform/* vcx/transport/* vcx/testenv/*' ;;
+    # the pinned flow lanes (RS-31, D54c): CX programs run by this tree's
+    # binary, so the pin and everything that builds the binary.
+    test-flow-umbrella)            echo 'deps.cxd registry/modules.cxd vcx/* stdlib/*' ;;
     address-baseline-gate)         echo "$RING_LIB $RING_SUP vcx/tests/runners/address_baseline/* conformance/*" ;;
     # #700 wave 1 (2026-08-24): five TEST_TARGETS steps had no row and so
     # always ran. Each row is the step's actual input surface, over-including
@@ -401,7 +401,8 @@ step_globs() {
     # paths the build reads are declared.
     test-sso-interop-lane)         echo 'deps.cxd registry/modules.cxd stdlib/oidc.cx stdlib/saml.cx stdlib/session.cx stdlib/crypto.cx stdlib/http.cx stdlib/net.cx vcx/code/stdlib_oidc.v vcx/code/stdlib_saml*.v vcx/platform/stdlib_session.v vcx/code/stdlib_crypto.v vcx/code/stdlib_http_notd_cx_no_pack_http_client.v vcx/code/net_core_notd_cx_no_pack_http_client.v' ;;
     tools-export-gate)             echo 'deps.cxd registry/modules.cxd vcx/* stdlib/*' ;;
-    # the four agent real-socket lanes, run from the pinned checkout (RS-12)
+    # the four agent real-socket lanes, CX programs run from the pinned
+    # checkout by this tree's binary (RS-12, RS-31)
     test-agent-real-lanes)         echo 'deps.cxd registry/modules.cxd vcx/* stdlib/*' ;;
     # the roster rows live in the Makefile and name files under vcx/
     check-serial-retry-rosters)    echo 'Makefile vcx/*' ;;
