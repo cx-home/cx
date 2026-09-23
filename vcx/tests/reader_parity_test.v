@@ -1,7 +1,7 @@
 module main
 
 import code
-import platform as _
+import xap as _
 import cx
 import fixtures
 import crypto.sha1

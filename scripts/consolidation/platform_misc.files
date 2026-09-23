@@ -21,6 +21,16 @@
 # the cx.mk_string it wraps, since db does not pin store). The rows
 # above stay the history they are.
 #
+# ── RS-24, xap's split, 2026-09-23: the xap_dist_exports_identity_test.v and
+# xap_log_reduce_test.v sections left this umbrella with xap for
+# vcx/xap/xap_test.v, in-module there, byte-for-byte; io_watch_test.v went
+# back to module code as vcx/code/io_watch_behavior_test.v (it tests Ring 1
+# alone), and the #705 content-type pins to vcx/cxnet/cxnet_test.v. The
+# rows above stay the history they are.
+#
 # ── RS-24, the store's split: the live_refs_feed_test.v section left this umbrella
 # with its product for vcx/store/store_test.v, in-module there (its local
 # `store` spelled `store_node`, which V requires inside a module of that name).
+# ── Both splits merged (store, then xap), 2026-09-23: every section has its
+# product's home and platform_misc_umbrella_test.v is gone; the rows above are
+# history only.

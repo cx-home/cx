@@ -176,7 +176,7 @@ without a reader opening a file:
 | namespace | `[?lib 'cx-stdlib/<name>']` | `[?lib 'cx-platform/<name>']` |
 | spec | `spec/03-approved/stdlib/` | `spec/03-approved/platform/` |
 | corpus | `conformance/stdlib/` | `conformance/platform/` |
-| V code | `vcx/code/` | `vcx/platform/`, and one `vcx/<vmodule>/` per V product split out of it (RULED: RS-24; `registry/repos.cxd` names each) |
+| V code | `vcx/code/` | `vcx/<product>/` — one V module per V product, `vcx/xap/` the one that composes them (RULED: RS-24, D31a; `registry/repos.cxd`'s `vmodule=` names each); `vcx/platform/` holds only the products whose split has not merged yet |
 | catalog | `spec/03-approved/stdlib/README.md` | `spec/03-approved/platform/README.md` |
 
 A surface's ring and group are **DECLARED once**, in
