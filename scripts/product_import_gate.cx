@@ -420,10 +420,17 @@
   # repository owns, read for its imports -- a ring imports its own modules
   # and vlib only ([ring up-edge]).
   [= $core-names [?for [in $x $repos] [where [= [$string [?else $x@group ""]] "core"]] [yield [$string $x@name]]]]
+  # A core repository can carry a directory that is not a ring module at all
+  # (cx-core-code's vcx/tests/, vcx/tools/, vcx/bench/, vcx/timing/, vcx/testenv/
+  # beside code and cmd, K7a) -- the same "module main file is not a product
+  # module" reasoning qsrcs already applies below, so a file whose own
+  # `module` does not match its directory name is not a ring module either.
   [= $psrcs [?for [in $o $pinned] [where [$member [$string $o@repo] $core-names]]
               [in $f [$io:glob [$concat "deps/" [$string $o@repo] "/vcx/" [$string $o@dir] "/*.v"]]]
+              [= $text [$io:read-file [$string $f]]]
+              [where [= [$module-of $text] [$string $o@dir]]]
               [yield [src file=[$string $f] dir=[$string $o@dir] repo=[$string $o@repo]
-                          imps=[$strings:join [$import-heads [$io:read-file [$string $f]]] " "]]]]]
+                          imps=[$strings:join [$import-heads $text] " "]]]]]
   # The pinned PRODUCTS' files (D65d): every V file of a pinned root a
   # non-core repository owns that declares its directory's module, read for
   # its imports and held to that repository's pins ([pinned edge]) -- a
