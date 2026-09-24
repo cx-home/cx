@@ -1228,13 +1228,33 @@ store-session-dep-gate: build-vcx
 # if it is there, otherwise the one on PATH, and a named refusal if there is
 # neither. `cx deps sync` reads a document and runs `git`; any released cx can
 # do it, and that is the bootstrap.
+#
+# WHERE IT LOOKS (#1643). A fresh worktree has no vcx/target/cx of its own, so
+# every agent and developer worktree used to hit the refusal first and pass
+# CX_BIN= by hand. It now looks where a developer already has one, in this
+# order, and SAYS which it used: CX_BIN= when given; this tree's build; the MAIN
+# checkout's build (the first row of `git worktree list`); a cx on PATH;
+# ~/.local/bin/cx. The refusal stays for a box with none of them.
+# scripts/deps_cx_selftest.cx (run by test-deps-pins) proves each place.
+DEPS_CX_GIVEN := $(CX_BIN)
+DEPS_CX_MAIN = $(shell git -C "$(CURDIR)" worktree list --porcelain 2>/dev/null | sed -n '1s/^worktree //p')
+DEPS_CX_FOUND = $(shell for c in "$(CURDIR)/vcx/target/cx" "$(DEPS_CX_MAIN)/vcx/target/cx" "$$(command -v cx 2>/dev/null)" "$(HOME)/.local/bin/cx"; do [ -n "$$c" ] && [ -x "$$c" ] && { echo "$$c"; break; }; done)
+deps-sync deps-check deps-cx deps-present: CX_BIN ?= $(DEPS_CX_FOUND)
+
 .PHONY: deps-sync deps-check deps-cx
 deps-cx:
-	@if [ -n "$(CX_BIN)" ] && [ -x "$(CX_BIN)" ]; then exit 0; fi; \
+	@if [ -n "$(DEPS_CX_GIVEN)" ] && [ -x "$(DEPS_CX_GIVEN)" ]; then echo "deps-sync: using $(DEPS_CX_GIVEN) (CX_BIN)" >&2; exit 0; fi; \
+	if [ -z "$(DEPS_CX_GIVEN)" ] && [ -n "$(CX_BIN)" ] && [ -x "$(CX_BIN)" ]; then \
+	  case "$(CX_BIN)" in \
+	  "$(CURDIR)/vcx/target/cx") why="this tree's build" ;; \
+	  "$(DEPS_CX_MAIN)/vcx/target/cx") why="the main checkout's build: git worktree list" ;; \
+	  "$(HOME)/.local/bin/cx") why="~/.local/bin/cx" ;; \
+	  *) why="cx on PATH" ;; \
+	  esac; \
+	  echo "deps-sync: using $(CX_BIN) ($$why)" >&2; exit 0; fi; \
 	if [ -n "$(CX_BIN)" ]; then \
 	  echo "deps-sync: CX_BIN=$(CX_BIN) is not an executable cx" >&2; exit 2; fi; \
-	if [ -x "$(CURDIR)/vcx/target/cx" ] || command -v cx >/dev/null 2>&1; then exit 0; fi; \
-	echo "deps-sync: no cx to run the pin transport with — no $(CURDIR)/vcx/target/cx and none on PATH." >&2; \
+	echo "deps-sync: no cx to run the pin transport with — none in this tree, the main checkout, on PATH or at ~/.local/bin/cx." >&2; \
 	echo "  This tree cannot build one first: deps.cxd pins a repository whose bundled source the" >&2; \
 	echo "  profile builds embed (registry/modules.cxd, repo=), so the build needs deps/ and deps/" >&2; \
 	echo "  needs this. Install a released cx, or pass CX_BIN=<path to one>." >&2; \
@@ -1347,11 +1367,16 @@ test-docs-fragment: build-vcx
 # --allow-subprocess (#1617): the deps-02x cases are scenarios run against
 # scripts/deps_sync.cx itself — git and the sync as subprocesses, over a
 # throwaway remote under a temporary root the grader removes.
+# The third line (#1643) is which cx `deps-sync` bootstraps with, on synthetic
+# trees: scripts/deps_cx_selftest.cx runs this Makefile's `deps-cx` step under a
+# cleared environment, one scenario per place a developer keeps a cx. Its own
+# file, not a deps_pins.cxd case: it grades a Makefile step, not the document.
 .PHONY: test-deps-pins
 test-deps-pins: CX_BIN ?= $(CURDIR)/vcx/target/cx
 test-deps-pins: build-vcx
 	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess scripts/check_deps_pins_fixtures.cx --self-test
 	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess scripts/check_deps_pins_fixtures.cx
+	@"$(CX_BIN)" --allow-all scripts/deps_cx_selftest.cx
 
 # ── test-migrate-namespace (RULED: RS-4, 1427-i) ─────────────────────────
 # conformance/migrate_namespace.cxd pins `cx --migrate-namespace --retired`:

@@ -45,8 +45,9 @@
 #                    refused by name; the one group this registry declares is
 #                    `platform`; an `ns=cx-platform` row carries
 #                    `group=platform` and an `ns=cx-stdlib` row carries none
-#                    (`cx-x`, the experimental tier, and `ns=none` take
-#                    either). The same rule reads every `[catalog]` row
+#                    (`ns=none` takes either); `ns=cx-x`, the experimental
+#                    tier, retired with no member left and is refused by
+#                    name (RULED: RS-31, D63a). The same rule reads every `[catalog]` row
 #   [code ring]      a code file outside its row's V directory, with no
 #                    `code-to` declaring the move (Ring 0 and Ring 1 share
 #                    vcx/code; the platform group is vcx/platform and, since
@@ -197,8 +198,10 @@
     [= $n [?if [and [= $ns "cx-platform"] [not [= $group "platform"]]]
             [then "ns=cx-platform is the platform group's namespace -- the row carries group=platform"]
             [else [?if [and [= $ns "cx-stdlib"] [not [= $group ""]]]
-              [then [$concat "ns=cx-stdlib is the rings' own namespace -- a group=" $group " row is cx-platform (or cx-x)"]]
-              [else ""]]]]]
+              [then [$concat "ns=cx-stdlib is the rings' own namespace -- a group=" $group " row is cx-platform"]]
+              [else [?if [= $ns "cx-x"]
+                [then "ns=cx-x was the experimental tier, retired with no member left (RULED: RS-31, D63a) -- a module is cx-stdlib or cx-platform"]
+                [else ""]]]]]]]
     [$strings:join [?for [in $x ($r, $g, $n)] [where [not [= $x ""]]] [yield $x]] "; "]]]
 
 # row-place: the directory family a row's artifacts must sit in -- what
@@ -254,7 +257,8 @@
                [else "FALSE POSITIVE: a row with no repo= is its own owner and its path is untouched"]]]
       # RS-1: two rings, then groups. `ring=2` left the vocabulary and is
       # refused BY NAME; a cx-platform row carries group=platform; a
-      # cx-stdlib row carries none; cx-x (the experimental tier) and ns=none
+      # cx-stdlib row carries none; ns=none takes either; ns=cx-x (the retired
+      # experimental tier) is refused by name;
       # take either; a group this registry does not declare is refused.
       [= $r1 [?if [$strings:contains [$ring-shape "2" "" "cx-platform"] "ring=2 left the vocabulary"]
                [then ""]
@@ -268,9 +272,12 @@
       [= $r4 [?if [= [$ring-shape "1" "platform" "cx-stdlib"] ""]
                [then "MISSED (should catch): an ns=cx-stdlib row carrying group=platform -- cx-stdlib is the rings' own namespace"]
                [else ""]]]
-      [= $r5 [?if [and [= [$ring-shape "1" "platform" "cx-x"] ""] [= [$ring-shape "1" "" "cx-x"] ""]]
+      [; D63a (RULED: RS-31): the experimental tier retired with no member left, so
+         an ns=cx-x row is refused by name, with or without the platform group. ]
+      [= $r5 [?if [and [$strings:contains [$ring-shape "1" "platform" "cx-x"] "ns=cx-x"]
+                       [$strings:contains [$ring-shape "1" "" "cx-x"] "ns=cx-x"]]
                [then ""]
-               [else "FALSE POSITIVE: cx-x is the experimental tier, with or without the platform group"]]]
+               [else "MISSED (should catch): an ns=cx-x row -- the experimental tier retired (RULED: RS-31, D63a)"]]]
       [= $r6 [?if [= [$ring-shape "1" "dist" "none"] ""]
                [then "MISSED (should catch): a group this registry does not declare"]
                [else ""]]]
@@ -329,7 +336,7 @@
             [$env:exit 1]]]
         [else
           [?let [= $_ok [$io:write-line [$env:stdout]
-                  "placement-gate self-test OK -- 1 catch + 1 no-catch case for [integration map], 1 catch + 2 no-catch cases for [dep path] and the ring read beneath deps/<repo>/ (RS-12), 1 catch + 1 no-catch case for a split product's directory reading as the platform group (RS-24), 1 catch + 1 no-catch case for a catalog row's own repo= (RS-12), and 6 catch + 6 no-catch cases for the two rings and the platform group (RS-1), pass."]]
+                  "placement-gate self-test OK -- 1 catch + 1 no-catch case for [integration map], 1 catch + 2 no-catch cases for [dep path] and the ring read beneath deps/<repo>/ (RS-12), 1 catch + 1 no-catch case for a split product's directory reading as the platform group (RS-24), 1 catch + 1 no-catch case for a catalog row's own repo= (RS-12), and 7 catch + 5 no-catch cases for the two rings and the platform group (RS-1, RS-31), pass."]]
             [$env:exit 0]]]]]]
   [else ""]]
 

@@ -21,6 +21,13 @@
 #   N  a module source with a FAMILY and no exact file (stdlib_xap.v) → the family
 #   O  docs only                              → empty (the branch owes nothing)
 #   P  two corpus files at once               → both, sorted, deduplicated
+#   Q  a deps.cxd pin bump (#1641)            → every walked corpus file that
+#                                                imports a module the row provides
+#   R  deps.cxd's doc block only              → empty (no row moved)
+#   S  a deps.cxd row that names no module=   → ALL   (it cannot tell)
+#   T  deps.cxd from --changed-files          → ALL   (no base to compare rows with)
+#   U  a V repository's row moves (v-fork=)   → ALL   (its modules are compiled into
+#                                                the binary every case runs through)
 #
 # Exit 0 and the count line only when every case matches.
 set -u
@@ -70,6 +77,20 @@ printf 'pin\n' > third_party/v/keep
 printf 'module source\n' > stdlib/flow.cx
 printf 'module source\n' > stdlib/codec.cx
 printf 'prose\n' > docs/index.html
+# #1641: a pinned module and the corpus files that import it — diagram.cxd
+# imports cx-platform/flow (as the real one does), http.cxd imports nothing
+# pinned, and flow-extra names a DIFFERENT module that only shares the prefix.
+printf "[test-suite ring=1]\n[case id=d [in-code [?lib 'cx-platform/flow' as=flow] 1]]\n" > conformance/platform/diagram.cxd
+printf "[test-suite ring=1]\n[case id=e [in-code [?lib 'cx-platform/flow-extra'] 1]]\n" > conformance/stdlib/json.cxd
+cat > deps.cxd <<'DEPS'
+[deps
+  [doc [#
+The repositories this tree pins.
+#]]
+  [dep repo=cx-platform-flow sha=78ea045510278dee3b0a522ab7f168e42e020fab module='cx-platform/flow']
+  [dep repo=cx-platform-sso sha=c43dc5cd9c804dc3d34e3e1a5a1e4fa6969b5598 module='cx-platform/sso']
+]
+DEPS
 git add -A && git commit -qm seed
 BASE=$(git rev-parse --short HEAD)
 
@@ -179,8 +200,41 @@ printf 'a case\n' >> conformance/stdlib/saml.cxd
 git add -A && git commit -qm P
 check P "conformance/platform/connector.cxd conformance/stdlib/saml.cxd"
 
+# Q — a pin bump: the flow row's sha moves; diagram.cxd imports cx-platform/flow
+sed -i.bak 's/78ea045510278dee3b0a522ab7f168e42e020fab/1111111111111111111111111111111111111111/' deps.cxd && rm -f deps.cxd.bak
+git add -A && git commit -qm Q
+check Q "conformance/platform/diagram.cxd"
+
+# R — the doc block alone moves: no row changed, nothing to grade
+sed -i.bak 's/The repositories this tree pins./The repositories this tree pins, each at a sha./' deps.cxd && rm -f deps.cxd.bak
+git add -A && git commit -qm R
+check R ""
+
+# S — a changed row that names no module=: the helper cannot tell who imports it
+sed -i.bak "s/ module='cx-platform\/sso'//; s/c43dc5cd9c804dc3d34e3e1a5a1e4fa6969b5598/2222222222222222222222222222222222222222/" deps.cxd && rm -f deps.cxd.bak
+git add -A && git commit -qm S
+check S "ALL"
+
+# U — a V repository's row (v-fork=, module= a repository name rather than a
+#     '<ns>/<name>' spelling): what it provides is compiled into the binary
+#     every case runs through, so no importer list covers it
+printf "  [dep repo=cx-core-data sha=3333333333333333333333333333333333333333 module=cx-core-data v-fork=d51c31ccb2d49b2117215aee11ac38ef520e1ece]\n" > "$T/row"
+awk -v row="$(cat "$T/row")" '/^\]$/ { print row } { print }' deps.cxd > "$T/deps" && cp "$T/deps" deps.cxd
+git add -A && git commit -qm U
+check U "ALL"
+
+# T — deps.cxd named by --changed-files: no base to compare its rows with
+printf 'deps.cxd\n' > "$T/changed.txt"
+got=$(sh "$SEL" --changed-files "$T/changed.txt" 2>/dev/null)
+if [ "$got" = "ALL" ]; then
+	printf '  %-3s ok   %s\n' T "$got"
+else
+	printf '  %-3s SELFTEST FAILED: got [%s], wanted [ALL]\n' T "$got" >&2
+	fails=$((fails + 1))
+fi
+
 if [ "$fails" -ne 0 ]; then
 	echo "fixture_files_for_branch selftest: $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "fixture_files_for_branch selftest: 16/16 (ALL G/H/I/J/K/M; selections A/B/C/D/E/F/N/P; empty L/O)"
+echo "fixture_files_for_branch selftest: 21/21 (ALL G/H/I/J/K/M/S/T/U; selections A/B/C/D/E/F/N/P/Q; empty L/O/R)"

@@ -1,0 +1,118 @@
+# scripts/deps_cx_selftest.cx -- which cx `make deps-sync` runs the pin transport
+# with, proved on synthetic trees (#1643, RULED: RS-7). Written in CX (AGENTS.md
+# rule 6); it runs the real Makefile's `deps-cx` step, which is shell because it
+# is the one step that must work before any cx exists.
+#
+# A fresh worktree has no vcx/target/cx and cannot build one before deps/ exists
+# (the build embeds the pinned sources), so `deps-sync` must find a cx a
+# developer already has: CX_BIN= when given, this tree's build, the MAIN
+# checkout's build (the first row of `git worktree list`), a cx on PATH, then
+# ~/.local/bin/cx -- saying which it used -- and refuse by name only when there
+# is none. Each scenario builds a main repository and a worktree of it under a
+# temporary root, places fake cx executables where the scenario says, and runs
+# `make -s -C <worktree> -f <this Makefile> deps-cx` under a cleared environment
+# (PATH = the scenario's bin/ when it has one, then /usr/bin:/bin; HOME = the
+# scenario's home), reading the step's exit status and its first stderr line.
+#
+# Exit 0 when every scenario matches, 1 otherwise.
+#
+# Run from the checkout root:  cx --allow-all scripts/deps_cx_selftest.cx
+# (or: make test-deps-pins, which runs it after the deps corpus)
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+
+[?def has-word scope=private pure [returns bool] ($w::string $ws)
+  [> [$count [?for [in $x $ws] [where [= $x $w]] [yield 1]]] 0]]
+
+[?def sh scope=private impure ($script::string)
+  [$process:run ("sh", "-c", $script)]]
+
+[?def real-path scope=private impure [returns string] ($dir::string)
+  [$strings:trim [$string [$sh [$concat "cd '" $dir "' && pwd -P"]]@stdout]]]
+
+# fake-cx: an executable that is a cx only by name -- deps-cx never runs it.
+[?def fake-cx scope=private impure ($path::string)
+  [?let [= $_d [$sh [$concat "mkdir -p \"$(dirname '" $path "')\""]]]
+        [= $_w [$io:write-file $path "#!/bin/sh\necho fake-cx\n"]]
+    [$process:run ("chmod", "+x", $path)]]]
+
+# make-trees: <root>/main (a repository with one commit) and <root>/wt, a
+# worktree of it -- the shape every agent and developer worktree has.
+[?def make-trees scope=private impure ($root::string)
+  [?let
+    [= $main [$concat $root "/main"]]
+    [= $_i [$process:run ("git", "init", "-q", $main)]]
+    [= $_f [$io:write-file [$concat $main "/README"] "seed\n"]]
+    [= $_a [$process:run ("git", "-C", $main, "add", "README")]]
+    [= $_c [$process:run ("git", "-C", $main, "-c", "user.name=deps-cx", "-c", "user.email=deps-cx@example.invalid",
+                          "-c", "commit.gpgsign=false", "commit", "-q", "-m", "seed")]]
+    [= $_w [$process:run ("git", "-C", $main, "worktree", "add", "-q", "--detach", [$concat $root "/wt"])]]
+    ""]]
+
+# scenario: place the fakes `places` names (tree main path home, and `bad` for a
+# non-executable CX_BIN), run deps-cx, answer "exit <n> | <first stderr line>"
+# with the root written as <root>.
+[?def scenario scope=private impure [returns string] ($makefile::string $places::string $cxbin::string)
+  [?let
+    [= $tmp  [$io:temp-dir "cx-deps-cx-"]]
+    [= $root [$real-path $tmp]]
+    [= $_t   [$make-trees $root]]
+    [= $ws   [$strings:split-whitespace $places]]
+    [= $_1 [?if [$has-word "tree" $ws] [then [$fake-cx [$concat $root "/wt/vcx/target/cx"]]] [else ""]]]
+    [= $_2 [?if [$has-word "main" $ws] [then [$fake-cx [$concat $root "/main/vcx/target/cx"]]] [else ""]]]
+    [= $_3 [?if [$has-word "path" $ws] [then [$fake-cx [$concat $root "/bin/cx"]]] [else ""]]]
+    [= $_4 [?if [$has-word "home" $ws] [then [$fake-cx [$concat $root "/home/.local/bin/cx"]]] [else ""]]]
+    [= $_5 [?if [$has-word "given" $ws] [then [$fake-cx [$concat $root "/given/cx"]]] [else ""]]]
+    [= $_6 [?if [$has-word "bad" $ws]
+             [then [?let [= $_m [$sh [$concat "mkdir -p '" $root "/given'"]]]
+                     [$io:write-file [$concat $root "/given/cx"] "not executable\n"]]]
+             [else ""]]]
+    [= $path [?if [$has-word "path" $ws] [then [$concat $root "/bin:/usr/bin:/bin"]] [else "/usr/bin:/bin"]]]
+    [= $argv [?if [= $cxbin ""]
+               [then ("make", "-s", "-C", [$concat $root "/wt"], "-f", $makefile, "deps-cx")]
+               [else ("make", "-s", "-C", [$concat $root "/wt"], "-f", $makefile, "deps-cx",
+                      [$concat "CX_BIN=" [$strings:replace $cxbin "<root>" $root]])]]]
+    [= $r [$process:run $argv env=[map PATH=$path HOME=[$concat $root "/home"]] env-clear=true]]
+    [= $first [$first ([?splice [$strings:split-lines [$string $r@stderr]]], "")]]
+    [= $_rm [$io:remove-tree $tmp]]
+    [$strings:replace [$concat "exit " [$string $r@exit-code] " | " $first] $root "<root>"]]]
+
+[?let
+  [= $makefile [$concat [$real-path "."] "/Makefile"]]
+  [= $cases (
+      [c id=given places='given main' cxbin='<root>/given/cx'
+         want='exit 0 | deps-sync: using <root>/given/cx (CX_BIN)'],
+      [c id=bad-given places='bad main' cxbin='<root>/given/cx'
+         want='exit 2 | deps-sync: CX_BIN=<root>/given/cx is not an executable cx'],
+      [c id=tree-first places='tree main path home' cxbin=''
+         want="exit 0 | deps-sync: using <root>/wt/vcx/target/cx (this tree's build)"],
+      [c id=main-checkout places='main path home' cxbin=''
+         want="exit 0 | deps-sync: using <root>/main/vcx/target/cx (the main checkout's build: git worktree list)"],
+      [c id=on-path places='path home' cxbin=''
+         want='exit 0 | deps-sync: using <root>/bin/cx (cx on PATH)'],
+      [c id=home-local places='home' cxbin=''
+         want='exit 0 | deps-sync: using <root>/home/.local/bin/cx (~/.local/bin/cx)'],
+      [c id=none places='' cxbin=''
+         want='exit 2 | deps-sync: no cx to run the pin transport with — none in this tree, the main checkout, on PATH or at ~/.local/bin/cx.'])]
+  [= $results [?for [in $c $cases]
+                [yield [?let [= $got [$scenario $makefile [$string $c@places] [$string $c@cxbin]]]
+                         [r id=[$string $c@id] ok=[= $got [$string $c@want]] got=$got want=[$string $c@want]]]]]]
+  [= $bad [?for [in $r $results] [where [not $r@ok]] [yield $r]]]
+  [= $_out [?for [in $r $results]
+             [yield [?if $r@ok
+                      [then [$say [$concat "  ok    " [$string $r@id]]]]
+                      [else [$cry [$concat "  FAIL  " [$string $r@id] "\n    want: " [$string $r@want]
+                                           "\n    got:  " [$string $r@got]]]]]]]]
+  [?if [= [$count $bad] 0]
+    [then [?let [= $_ [$say [$concat "deps-cx selftest: " [$string [$count $results]] "/" [$string [$count $results]]
+                                     " (CX_BIN, a non-executable CX_BIN, this tree, the main checkout, PATH, ~/.local/bin, none)"]]]
+            [$env:exit 0]]]
+    [else [?let [= $_ [$cry [$concat "deps-cx selftest: " [$string [$count $bad]] " of "
+                                     [$string [$count $results]] " scenario(s) FAILED"]]]
+            [$env:exit 1]]]]]

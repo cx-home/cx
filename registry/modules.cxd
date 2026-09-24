@@ -75,12 +75,13 @@ COLUMNS
           whatever its ring, and its corpus header grades in the platform
           lane (`ring=2` — the CORPUS's attribute, the lane that grades the
           suite, which RS-1 does not rename). Namespace and group agree:
-          `cx-stdlib` ↔ no group, `cx-platform` ↔ `group=platform`, `cx-x`
-          (the experimental tier) and `none` ↔ either
-  ns      the resolver namespace TODAY: `cx-stdlib`, `cx-platform` or `cx-x`
-          (RS-4 retired the two whole-name namespaces `cx-xap` and
-          `cx-fabric`). `none` = no `[?lib]` surface at all (natives, backend
-          engines, design texts)
+          `cx-stdlib` ↔ no group, `cx-platform` ↔ `group=platform`, `none`
+          ↔ either
+  ns      the resolver namespace TODAY: `cx-stdlib` or `cx-platform` (RS-4
+          retired the two whole-name namespaces `cx-xap` and `cx-fabric`, and
+          RS-31's D63a the `cx-x` experimental tier, which had no member
+          left; placement-gate refuses a row naming any of them). `none` = no
+          `[?lib]` surface at all (natives, backend engines, design texts)
   ns-to   the namespace 1427-b moves it to (`cx-platform` for every
           group=platform module; nothing else is renamed)
   kind    module   a `[?lib]`-resolvable module

@@ -192,9 +192,7 @@ Two edges worth knowing. A platform module may keep a pure Ring-1 half in
 `vcx/code` for profile composition; the half is named in its row's `half=`
 column and is not a second surface — and the trigger to promote one into a
 module of its own is the first Ring-1 **consumer** of it (that is how
-`cx-stdlib/http-client` split out of `cx-platform/http`). And `cx-x/<name>` is
-the experimental tier, exempt from the frozen-stability promise, with its
-specs in `spec/03-approved/x/` and its corpora in `conformance/x/`.
+`cx-stdlib/http-client` split out of `cx-platform/http`).
 
 ## Working in this repo
 
