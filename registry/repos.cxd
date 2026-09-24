@@ -64,14 +64,14 @@ the rule carries a `why=`. The recurring reasons, once:
 
   [; ── the destinations ─────────────────────────────────────────────── ]
   [repo name=cx group=dist ring=none ships=binary about='the front door: pins every repo, builds the four cx builds and libcx-core/libcx, holds the site, the release, the installer']
-  [repo name=cx-core-data group=core ring=0 ships=binary status=extracted at=2ddcf938395e812d93b229b63c925334b0d4d5ab about='the data format: reader, writer, canonical form, schema, codecs, libcx-core, the data-only cx' why='EXTRACTED (RULED: RS-7, RS-12, D68a), the first V repository: deps.cxd pins it with a v-fork, its V modules (cx, cli, fixtures, arrow, cmd_data, the re2 shim) are compiled from deps/cx-core-data/vcx through -path, and its data-language corpus and fixtures are graded from the pin. It owns no tracked path here any more: the 87 allotted files this tree grades, builds or documents are re-allocated by D68a to cx and cx-core-code in the block below, each with its reason, and their copies left the repository at the sha at= records']
+  [repo name=cx-core-data group=core ring=0 ships=binary status=extracted at=2ddcf938395e812d93b229b63c925334b0d4d5ab about='the data format: reader, writer, canonical form, schema, codecs, libcx-core, the data-only cx' why='EXTRACTED (RULED: RS-7, RS-12, D68a), the first V repository: deps.cxd pins it with a v-fork, its V modules (cx, cli, fixtures, arrow, cmd_data, the re2 shim, and since D56a grading -- the corpus grading cores and the cx corpus body both profiles run) are compiled from deps/cx-core-data/vcx through -path, and its data-language corpus and fixtures are graded from the pin. It owns no tracked path here any more: the 87 allotted files this tree grades, builds or documents are re-allocated by D68a to cx and cx-core-code in the block below, each with its reason, and their copies left the repository at the sha at= records']
   [repo name=cx-core-code group=core ring=1 ships=binary about='the language: evaluator, stdlib, LSP, libcx, the cli and embed builds']
   [repo name=cx-platform-net group=platform ring=none ships=binary vmodule=cxnet status=extracted at=0a4f2114af1e29a19362b24069061c913c9a0374 pins='cx-core-code' about='sockets, TLS, the HTTP server, the XSP transport bindings, ftp, sftp, file_surface' why='EXTRACTED (RULED: RS-12, RS-24, #1591 item 20), the third V product (after core-data): its own vcx/cxnet/ (module cxnet) and vcx/transport/ leave with it. It owns no tracked path here any more; cx reaches it through deps.cxd, which pins it at the sha at= records, and registry/modules.cxd\'s http, net, ftp and sftp rows -- plus the file_surface catalog row -- name the pinned checkout']
   [repo name=cx-platform-mail group=platform ring=none ships=binary vmodule=mail status=extracted at=d0d27c1d11cd8ca70b6f94f8fa86b5a83d1634e0 pins='cx-platform-net' about='SMTP and IMAP, server and client cores, sasl' why='EXTRACTED (RULED: RS-12, RS-19, D71a, D76c; #1591 item 20): its V module vcx/mail/ (module mail) compiles from deps/cx-platform-mail/vcx through -path and its spec, corpus and source are graded from the pin. The four files that stayed until D71a -- the declared pure halves of imap and smtp, once called INTRA-MODULE by vcx/code/stdlib_dispatch.v -- left with the builtin-dispatch registration hook: code exposes register_stdlib_builtin and mail\'s own init() registers smtp and imap. sasl\'s V dispatch, vcx/code/stdlib_sasl.v, is the core\'s (D76c: Ring 1 and pure), while its spec, corpus and source stay here. It owns no tracked path here any more; cx reaches it through deps.cxd, which pins it at the sha at= records, and registry/modules.cxd\'s sasl, imap and smtp rows name the pinned checkout']
   [repo name=cx-platform-identity group=platform ring=none ships=binary vmodule=identity pins='cx-platform-store cx-platform-net' at=4cfa0234d63bf86dacbbafe53f7dab29e9bd4add about='sessions, the XSP-AUTH handshake, did:web, authz-store, vc-revocation' why='PARTLY EXTRACTED (RULED: RS-12, RS-8; #1591 item K3): deps.cxd pins it with a v-fork -- NOT YET PUSHED to cx-home/cx-platform-identity (component-repo pushes are the integrator\'s, RS-8; the commit is prepared in the mover\'s clone and named by sha in RESULTS.md, per the K3 brief) -- its V module (vcx/identity/, module identity) compiles from deps/cx-platform-identity/vcx through -path, and its session/authz-store/did-web/vc-revocation/xsp-auth spec/corpus/source are graded from the pin. One file remains below: xsp-auth\'s declared Ring-1 half (modules.cxd half=), vcx/code/stdlib_xsp_auth.v -- a permanent architecture split (RS-24/D34a: the store server runs it and the store V module may not import identity), not a discovered same-module wall awaiting a hook, so it is named here and in K3\'s RESULTS.md, not a LETTER. The row takes status=extracted the day it is pushed']
   [repo name=cx-platform-store group=platform ring=none ships=binary vmodule=store pins='cx-core-code cx-platform-net' at=36bdd0fb08ac793fde1a567a62e1e518d010c1c9 about='the storage engine, its substrates, journal/live/audit, ft, and the store server' why='PARTLY EXTRACTED (RULED: RS-12, RS-8, D71a, D73a; #1591 item K3): the RS-24 vcx/store/ split (module store) already stood alone from vcx/platform/, so extraction moved it, vcx/cxstore/ and vcx/cmd/store_ whole out -- store\'s, journal\'s, live\'s and audit\'s spec, corpus and source now name deps/cx-platform-store/ in registry/modules.cxd, and so does ft\'s CX-level surface (stdlib/ft.cx, its spec, its corpus), even though ft is a Ring-1 cx-stdlib module the store repository merely carries as its only consumer. One file remains: vcx/code/stdlib_ft.v, ft\'s V dispatch half -- code\'s stdlib_dispatch.v names ft_stdlib_builtin() and both of eval.v\'s env chains name ft_stdlib_builtin_env(); the D71a hook carries the env-free half as is, the env half needs the hook\'s env-aware twin first (a follow-up branch, named in _gate_evidence/pipeline_dispatch/RESULTS.md). The three vcx/cmd/store_{serve,rotate,principal}_d_cx_platform.v files that stayed with it left under D73a: code exposes register_cli_verb and the store\'s own init() registers store-serve, store-health, store-rotate-kek and store-mint-principal into cmd\'s verb table. The row takes status=extracted the day ft\'s half leaves or is re-allocated']
   [repo name=cx-platform-db group=platform ring=none ships=binary vmodule=cxdb pins='cx-core-code' status=extracted at=1834c802b4da2c4e6cba362ceb790f46b392157d about='external database access: $sql-*, $redis-*, the drivers' why='EXTRACTED (RULED: RS-12, RS-8; #1591 item K3), a V product: the RS-24 vcx/cxdb/ split (module cxdb) already stood alone from vcx/platform/, so extraction moved it out whole -- the sql, redis and db rows of registry/modules.cxd now name their spec, corpus and code under deps/cx-platform-db/, and xap (its only in-tree consumer, per its own pins=) reaches the dispatch registration through the pin, not a tracked path. It has no [path] rules any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records']
-  [repo name=cx-platform-fabric group=platform ring=none ships=binary vmodule=fabric pins='cx-platform-store cx-platform-identity cx-platform-net' about='messaging and fabric-serve']
+  [repo name=cx-platform-fabric group=platform ring=none ships=binary vmodule=fabric pins='cx-platform-store cx-platform-identity cx-platform-net' status=extracted at=6e455f86eeaaa6e6451319fc35884ac22c67978d about='messaging and fabric-serve' why='EXTRACTED (RULED: RS-12, RS-8, D73a; #1591 item K3): its V module vcx/fabric/ (module fabric) compiles from deps/cx-platform-fabric/vcx through -path and its spec, corpus and source are graded from the pin. vcx/cmd/fabric_serve_d_cx_platform.v left through the CLI-verb-registry hook D73a already gives cx-platform-store: code exposes register_cli_verb and fabric\'s own init() registers fabric-serve into cmd\'s verb table. NOT YET PUSHED to cx-home/cx-platform-fabric (component-repo pushes are the integrator\'s, RS-8; the commit is prepared in the mover\'s clone and named by sha in RESULTS.md, per the K3 brief). It owns no tracked path here any more; cx reaches it through deps.cxd, which pins it at the sha `at=` records']
   [repo name=cx-platform-xap group=platform ring=none ships=binary vmodule=xap pins='cx-platform-net cx-platform-mail cx-platform-identity cx-platform-store cx-platform-db cx-platform-fabric' at=0a7a2aa2558a353e8192963ba8fe8c2800e5341c about='the application host, compose, dist, schema, market, the reference deployments' why="PARTLY EXTRACTED (RULED: RS-12, RS-8, RS-7, RS-20; #1591 item K3): deps.cxd pins it with a v-fork -- git-init'd + two commits (a skeleton, then the catch-up at this repository's own head), not filter-repo (no history to carry). cx-home/cx-platform-xap's main is 87a10940c (the integrator's push of the mover's first two corrections: dropping seven module-main files a prefix match misallocated, named below, then dropping examples/platform/together/ -- the sso-flow-xap multi-repo demo and its README -- the #1536 precedent's shape when sso left applied here too); this row's at= is a THIRD correction on top, NOT YET PUSHED (the integrator pushes it, RS-8): D77 (owner ruling (d), 2026-09-24) -- a minimal registry-store fixture of xap's own (conformance/xap/fixtures/registry-store/, gtin@0.1.0) replaces the read of cx-registry's checkout the four xap-dist cases never pinned; `make corpus` there is 246/246 (223 enforced + 23 xap-schema advisory-red, unchanged). Its V module (vcx/xap/, module xap: the composer, coordination incl. the flow-perform seam, dist, the contract revision) compiles from deps/cx-platform-xap/vcx through -path, and xap's spec/corpus/source (spec/03-approved/xap/ and the platform catalog remainder, conformance/xap/, stdlib/xap.cx), market/, packages/ (the gtin sample), reference/, examples/htmx/ and examples/platform/xap/, bench/xap/ and its three xap-named scripts are graded from the pin. Seven files stay: vcx/cmd/xap_{check_surface,compat,init,init_templates,scaffold,scaffold_templates}.v and platform_verbs_d_cx_platform.v are `module main`, called intra-module from vcx/cmd/main.v's plain (non-platform-gated) subcommands list -- the store-verbs wall before D73a, not crossed here (a base cx keeps `cx xap init/scaffold/...` without a platform pin). The row takes status=extracted the day this correction is pushed"]
   [repo name=cx-platform-flow group=platform ring=none ships=package status=extracted at=2ed490d6ab328cad54071a46b2d1dbc4231144aa about='workflow; its CLI verbs stay in the binary' why='EXTRACTED (RULED: RS-12, RS-20, #1591 item 15), the second of them. Its [path] rules are retired because it owns no tracked path here any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records. What RS-20 kept in `cx` is claimed by rules of its own and not by this row: the `cx flow` verbs (vcx/cmd/flow*.v, repo=cx) and the flow-perform act seam (vcx/platform/coordination.v, repo=cx-platform-xap)']
   [repo name=cx-platform-connector group=platform ring=none ships=package status=extracted at=5d4bebe7fc0d00b18e8b69fa8c257afa89ff834c about='the connector kit and sync' why='EXTRACTED (RULED: RS-12, RS-8, RS-27; #1591 item K3), a pure-CX package (RS-25: connector\'s twelfth native builtin retired with the mock\'s own declaration, so code=none). stdlib/connector.cx, spec/03-approved/platform/{connector,sync}.md, conformance/platform/{connector,sync}.cxd and reference/connectors/ leave whole; registry/modules.cxd\'s connector and sync rows now name deps/cx-platform-connector/ directly. The two real-socket lane V test files (vcx/tests/connector_live_test.v, connector_webhook_test.v) leave too, byte-identical, into the pinned repository\'s own vcx/tests/ -- but a ships=package repo carries no V toolchain of its own (RS-25), so the LANE MOVED AND THE STEP DID NOT, the test-sso-interop-lane shape (RULED: RS-12, #1591 item 11): make target test-connector-real-lanes runs them out of deps/cx-platform-connector/vcx/tests/, against THIS tree\'s binary. It has no [path] rules any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records']
@@ -90,7 +90,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [repo name=cx-binding-ruby group=binding ring=none ships=archived about='archived at the ABI it was frozen with; lang/_archived/README.md names the version']
   [repo name=cx-registry group=ecosystem ring=none ships=none about='the package index: the store, publisher keys, the publish program']
   [repo name=cx-decisions group=ecosystem ring=none ships=none about='the ledger, the process specs, the standing rules, design texts']
-  [repo name=cx-tooling group=ecosystem ring=none ships=editor about='vscode, neovim, tree-sitter, completions, syntax, the installer, diagram']
+  [repo name=cx-tooling group=ecosystem ring=none ships=editor at=9ec93d70e464b90593bfaf24aae7752eaf3fefb4 about='vscode, neovim, tree-sitter, completions, syntax, the installer, diagram' why='PARTLY EXTRACTED (RULED: RS-12, RS-8, D59a; #1591 item K3): the editor surface under tooling/, the tree-sitter spec, scripts/retry_nvim_treesitter_pr.sh, and cx-stdlib/diagram\'s CX-level surface (stdlib/diagram.cx, its spec, its corpus) and the web component left for cx-tooling, which deps.cxd pins at the sha at= records -- NOT YET PUSHED to cx-home/cx-tooling (component-repo pushes are the integrator\'s, RS-8; the commit is prepared in the mover\'s clone and named by sha in _gate_evidence/pipeline_xtooling/RESULTS.md). registry/modules.cxd\'s diagram row names the pinned checkout. What remains below is the diagram V half with its V tests, its goldens and its own corpus, conformance/code_diagram.cxd (cx corpus refuses it; its one grader is this tree\'s test-code-diagram): libcx\'s C ABI exports it, a permanent consequence of where the ABI lives rather than a wall a hook removes, so the row takes status=extracted when the owner re-allocates it (the LETTER in that RESULTS.md) or the ABI changes. D59a keeps in cx-private the four scripts a step of this tree runs (check_completions_drift, check_editor_surface_parity, check_editor_distribution, check_code_diagram_fixtures); the three editor checks read the editor files from deps/cx-tooling/']
 
   [; ── what the data format's extraction could not release (RULED: D68a): cx-core-data is
      status=extracted and owns no path here; these rules re-allocate the files it was
@@ -134,19 +134,22 @@ the rule carries a `why=`. The recurring reasons, once:
      deps/cx-platform-store/ for spec=/corpus=/source=. Its V dispatch half did not: the
      rule below stays, unchanged, because the file does not leave (D71a). ]
   [path prefix='vcx/code/stdlib_ft' repo=cx-platform-store why='ft\'s V dispatch half: code\'s stdlib_dispatch.v calls ft_stdlib_builtin() as a same-module V function call, not an import -- it cannot leave without stdlib_dispatch.v importing and qualifying a second module (D71a, the mail leave step\'s LETTER shape); moves through the registration hook once impl/cx-F-dispatch-registry merges']
-  [path exact='stdlib/diagram.cx' repo=cx-tooling why='developer tooling under active redesign (spec/02-working/diagram_renderer_cx.md)']
-  [path exact='spec/03-approved/stdlib/diagram.md' repo=cx-tooling]
-  [path exact='conformance/stdlib/diagram.cxd' repo=cx-tooling]
-  [path exact='conformance/code_diagram.cxd' repo=cx-tooling]
-  [path prefix='vcx/code/stdlib_diagram' repo=cx-tooling]
-  [path prefix='vcx/code/diagram' repo=cx-tooling]
-  [path prefix='vcx/code/code_diagram' repo=cx-tooling]
-  [path prefix='vcx/tests/diagram_umbrella' repo=cx-tooling]
-  [path prefix='vcx/tests/code_diagram_roundtrip' repo=cx-tooling]
-  [path prefix='vcx/tests/testdata/code_diagram_golden' repo=cx-tooling]
-  [path prefix='vcx/tests/testdata/diagram_' repo=cx-tooling]
-  [path exact='scripts/check_code_diagram_fixtures.cx' repo=cx-tooling]
-  [path prefix='tooling/web/' repo=cx-tooling why='the browser half of the same product: the <cx-diagram> reference web component, its demo page and the bracket-highlighting comparison. Nothing under it is a ux module surface, and no target reads it (the ux extraction prep, F-U2)']
+  [; stdlib/diagram.cx, spec/03-approved/stdlib/diagram.md, conformance/stdlib/diagram.cxd and
+     tooling/web/ RETIRED (RULED: RS-12, D59a; #1591 item K3) -- cx-stdlib/diagram's CX-level
+     surface and the web component left with the extraction of cx-tooling; registry/modules.cxd's
+     diagram row names deps/cx-tooling/ for spec=/corpus=/source= and vcx/code/stdlib_bundle.v
+     embeds the pinned source (ft's shape under the store leave).
+     scripts/check_code_diagram_fixtures.cx is no longer claimed here: it is the step
+     test-code-diagram runs in THIS tree, so it falls to the scripts/ rule (repo=cx). The V half
+     below does not leave, named in _gate_evidence/pipeline_xtooling/RESULTS.md. ]
+  [path prefix='vcx/code/stdlib_diagram' repo=cx-tooling why='the diagram V half does not leave with the CX surface: libcx exports cx_code_diagram, cx_code_diagram_with_level and cx_code_diagram_with_view_level (vcx/code/cabi.v, include/cx.h, scripts/wasm/cxlib.js), code\'s api.v renders `cx diagram` through render_diagram, and `cx code-diagram` (vcx/cmd/diagram.v) calls code_diagram_with_view_level -- same-module V calls, not a registration a hook can carry (D71a\'s table: blocked). Moving it changes the C ABI; a LETTER in the leave step\'s RESULTS.md']
+  [path prefix='vcx/code/diagram' repo=cx-tooling why='the diagram V half: see vcx/code/stdlib_diagram above']
+  [path prefix='vcx/code/code_diagram' repo=cx-tooling why='the diagram V half: see vcx/code/stdlib_diagram above']
+  [path prefix='vcx/tests/diagram_umbrella' repo=cx-tooling why='compiles against module code and grades the V half above; stays with it']
+  [path prefix='vcx/tests/code_diagram_roundtrip' repo=cx-tooling why='compiles against module code and grades the V half above; stays with it']
+  [path prefix='vcx/tests/testdata/code_diagram_golden' repo=cx-tooling why='the byte-level pins diagram_umbrella_test.v compares the V half against; stays with it']
+  [path prefix='vcx/tests/testdata/diagram_' repo=cx-tooling why='the byte-level pins diagram_umbrella_test.v compares the V half against; stays with it']
+  [path exact='conformance/code_diagram.cxd' repo=cx-tooling why='the V half\'s own corpus: it grades `cx code-diagram` and `cx code-tree` (vcx/cmd over code_diagram.v), and `cx corpus` refuses it (all 52 cases are of a kind no document lane grades, exit 2), so its one grader is test-code-diagram, scripts/check_code_diagram_fixtures.cx against THIS tree\'s binary -- in cx-tooling nothing would grade it. It stays with the V half']
 
   [; ── modules that ENTER Ring 1 by the membership test (import nothing, no socket) ── ]
   [path prefix='vcx/code/stdlib_did' repo=cx-core-code why='pure; did:web resolution split off to identity (RULED: RS-14)']
@@ -199,15 +202,18 @@ the rule carries a `why=`. The recurring reasons, once:
      auth rows, which name deps/cx-platform-identity/ directly. ]
   [path prefix='vcx/code/stdlib_xsp_auth' repo=cx-platform-identity why='the DECLARED Ring-1 half of cx-platform/xsp-auth (modules.cxd half=): the pure XSP-AUTH calculus, which RS-24 moved into vcx/code because the store server runs it and the store V module may not import identity (D34a). A module moves whole (#1609), so the half stays with the module, as the smtp/imap halves do (RS-19); it is the ONE identity-allocated path that stays tracked here (K3\'s RESULTS.md names it by name, not a LETTER — this is a declared architecture split, not a discovered wall); the store\'s calls into it are the RS-24 store branch\'s LETTER']
 
-  [; ── platform: fabric ──────────────────────────────────────────────── ]
-  [path prefix='vcx/fabric/' repo=cx-platform-fabric why='fabric\'s V module, module fabric (RULED: RS-24, D31a, D32a): the fabric dispatcher (embedded tier), its remote tier, the served tier fabric-serve runs (fabric_service.v) and the register file (unchanged), moved whole out of vcx/platform/ (two prefix rules became this one); it imports store, identity, cxnet and the rings only']
-  [path prefix='vcx/cmd/fabric_serve' repo=cx-platform-fabric]
-  [path exact='stdlib/fabric.cx' repo=cx-platform-fabric]
-  [path exact='spec/03-approved/platform/fabric.md' repo=cx-platform-fabric]
-  [path exact='spec/03-approved/xap/fabric.md' repo=cx-platform-fabric]
-  [path exact='conformance/platform/fabric.cxd' repo=cx-platform-fabric]
-  [path prefix='vcx/tests/fabric_' repo=cx-platform-fabric]
-  [path prefix='tooling/cxfabric/' repo=cx-platform-fabric]
+  [; ── platform: fabric RETIRED (RULED: RS-12, RS-8, D73a; #1591 item K3) ──
+     Every rule of this block left with cx-platform-fabric's leave step:
+     vcx/fabric/ (module fabric; the dispatcher, remote tier, the served tier
+     fabric-serve runs and the register file), vcx/cmd/fabric_serve_d_cx_
+     platform.v (moved through the D73a CLI-verb-registry hook, byte for
+     byte but for the module line, the dropped self-import and its unqualified
+     calls — cx-platform-store's own store_serve_d_cx_platform.v shape),
+     stdlib/fabric.cx, its two specs, its corpus and vcx/tests/fabric_
+     umbrella_test.v, and tooling/cxfabric/. The repository's own row (above)
+     carries `at=`, `status=extracted` and its full why=; the module's new
+     home is registry/modules.cxd's fabric row, which names deps/cx-platform-
+     fabric/ directly. ]
 
   [; ── platform: flow ────────────────────────────────────────────────── ]
   [; THE cx-platform-flow RULES ARE RETIRED (RULED: RS-12, RS-20, #1591 item
@@ -337,7 +343,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='spec/03-approved/core/delivery.md' repo=cx-core-code]
   [path exact='spec/03-approved/misc/cli.md' repo=cx-core-code]
   [path exact='spec/03-approved/misc/debug.md' repo=cx-core-code]
-  [path exact='spec/03-approved/modules/tree-sitter.md' repo=cx-tooling]
+  [; spec/03-approved/modules/tree-sitter.md RETIRED (RULED: RS-12, D59a): it left with cx-tooling, beside the grammar it specifies. ]
   [path exact='cx.pc.in' repo=cx-core-code why='pkg-config for libcx']
 
   [; ── bindings ─────────────────────────────────────────────────────── ]
@@ -376,11 +382,16 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='AGENTS.md' repo=cx why='read from a fresh clone of the front door; each repo carries a short one pointing here']
   [path exact='CLAUDE.md' repo=cx]
   [path prefix='docs/internal/' repo=cx-decisions]
-  [path prefix='tooling/' repo=cx-tooling]
-  [path exact='scripts/check_editor_distribution.cx' repo=cx-tooling]
-  [path exact='scripts/check_editor_surface_parity.cx' repo=cx-tooling]
-  [path exact='scripts/check_completions_drift.cx' repo=cx-tooling]
-  [path exact='scripts/retry_nvim_treesitter_pr.sh' repo=cx-tooling]
+  [; tooling/ (but tooling/cxfabric/ and tooling/binding_native_status.json, claimed above)
+     and scripts/retry_nvim_treesitter_pr.sh RETIRED (RULED: RS-12, D59a; #1591 item K3):
+     the editor surface -- vscode, neovim, tree-sitter, completions, syntax, lsp configs,
+     linguist, the editor installer, the repo template, the web component -- left with the
+     extraction of cx-tooling. Three scripts it was allotted do NOT leave, because a step of
+     THIS tree runs each (D59a: cx-private keeps the orchestration): check_completions_drift.cx
+     (check-completions-drift reads vcx/cmd's verb table), check_editor_surface_parity.cx
+     (check-editor-surface-parity reads the lexer and the LSP) and check_editor_distribution.cx
+     (a tools/release-verify.sh row). Their rules are retired, so they fall to the scripts/
+     rule below (repo=cx); each reads the editor files from deps/cx-tooling/. ]
 
   [; ── the distribution: build, release, site, evidence, everything else ── ]
   [path prefix='scripts/' repo=cx why='the gate, pipeline, release and generator machinery of the whole; each extraction carries its own steps out']
@@ -406,7 +417,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='.githooks/' repo=cx]
   [path prefix='.claude/' repo=cx]
   [path prefix='third_party/' repo=cx why='the V fork pin and the README; every V repo pins the same SHA through its deps.cxd']
-  [path prefix='vcx/corpus/' repo=cx why='the corpus grading core RS-16 moved out of vcx/tests/ into a linked module (vcx/corpus/grade.v, module corpus). It reached this repository through the vcx/ guard rule below, whose why= names only the retired mirror files; the rule states that allocation rather than changing it, because RS-24\'s product-import gate refuses a module directory no row or directory rule owns. Its callers (vcx/cmd/corpus_verb.v, the fixtures grader) are cx-core-code\'s, so which repository owns it is #1624, not decided here']
+  [path prefix='vcx/corpus/' repo=cx why='the PROGRAM lane of the corpus grading core RS-16 moved out of vcx/tests/ into a linked module (vcx/corpus/grade.v, module corpus -- it imports code, the evaluator). The data-side cores that sat beside it (the document, diff/lint, fmt and streaming-write lanes) and the verb body moved to cx-core-data\'s vcx/grading/ (RULED: D56a, which answers #1624 for them); the program lane and the CX-program graders stay in cx, as D56a rules']
   [path prefix='vcx/' repo=cx why='guard: vcx/.gitignore.cx-v and Makefile.cx-v, the retired mirror scripts']
   [path prefix='spec/03-approved/' repo=cx why='guard: a spec page no row above claims surfaces in the front door, never as unallocated']
   [path prefix='RELEASE_NOTES_' repo=cx]

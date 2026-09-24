@@ -39,7 +39,7 @@ A surface's ring is DECLARED once, in [`registry/modules.cxd`](../../registry/mo
 |---|---|
 | `cx.md` | `cx:` self-host introspection module. |
 | `sqlite.md` | SQLite external integration. |
-| `tree-sitter.md` | tree-sitter external integration. |
+| [`tree-sitter.md`](https://github.com/cx-home/cx-tooling/blob/main/spec/03-approved/modules/tree-sitter.md) | tree-sitter external integration; in cx-tooling, beside the grammar, since its leave (RULED: RS-12, D59a). |
 
 ## `misc/` — host APIs + wire formats (7 files)
 

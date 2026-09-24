@@ -240,8 +240,9 @@ step_globs() {
     check-no-adr-citations)        echo '*' ;;
     check-no-stub-impl)            echo 'vcx/* registry/repos.cxd' ;;
     check-xap-dist-absences)       echo 'vcx/*' ;;
-    check-completions-drift)       echo 'vcx/* tooling/*' ;;
-    check-tmlanguage-sync)         echo 'tooling/*' ;;
+    # the completions are cx-tooling's since its leave (RULED: RS-12, D59a): a moved
+    # completion file reaches this tree as a deps.cxd pin bump.
+    check-completions-drift)       echo 'vcx/* deps.cxd scripts/check_completions_drift.cx' ;;
     guide-check)                   echo 'docs-src/* vcx/* stdlib/*' ;;
     # #1412 — the RENDERER, not the doc graders. Its inputs are the generator
     # itself, the canonical sources it reads, and the two module tiers whose
@@ -470,8 +471,9 @@ step_globs() {
     # from (scripts/check_composition_seams.cx reads spec/03-approved/{platform,stdlib}).
     check-composition-seams)       echo 'spec/* scripts/check_composition_seams.cx' ;;
     # #1171: the directive registry (vcx/cx/program_tokens.v) on one side and
-    # every editor surface + the checked-in register under tooling/ on the other.
-    check-editor-surface-parity)   echo 'vcx/cx/* tooling/* scripts/check_editor_surface_parity.cx' ;;
+    # every editor surface + the checked-in register, cx-tooling's since its leave
+    # (a deps.cxd bump), on the other; vcx/cmd/lsp_content.v is the LSP column.
+    check-editor-surface-parity)   echo 'vcx/cx/* vcx/cmd/* deps.cxd scripts/check_editor_surface_parity.cx' ;;
     # INT-11 (#1475): the four document sets the recipe walks — docs-src/,
     # spec/03-approved/, the root prose files, and the generated LLM layer.
     verify-doc-links)              echo 'docs-src/* spec/* docs/llm/* tools/verify-doc-links.sh README.md CONTRIBUTING.md ROADMAP.md SECURITY.md CODE_OF_CONDUCT.md CHANGELOG.md RELEASE_NOTES_v AGENTS.md CLAUDE.md AGENT-STANDING-RULES.md' ;;
@@ -541,12 +543,14 @@ step_globs() {
 # layer, _gate_evidence/, .github/, root prose) selects nothing.
 SUITE_DIR='vcx/tests'
 # The vcx/ directories that are V modules a test file can import.
-VCX_MODULES='cx code cxnet mail cxdb store identity fabric xap cxstore arrow transport cli cmd cmd_data corpus testenv fixtures timing tools bench fuzz'
+VCX_MODULES='cx code cxnet mail cxdb store identity fabric xap cxstore arrow transport cli cmd cmd_data corpus grading testenv fixtures timing tools bench fuzz'
 # The directories the shipped `cx` and libcx compile from — testenv's edge,
 # because a test that runs the binary runs all of this.
 # `corpus` (#1634) is both: `cmd` links it for `cx corpus`, and the fixtures
-# grader imports it for the shards.
-BINARY_MODULES='cx code cxnet mail cxdb store identity fabric xap cxstore arrow transport cli cmd cmd_data corpus'
+# grader imports it for the shards. `grading` (RULED: D56a) is cx-core-data's:
+# the document / diff / lint / fmt / streaming-write cores and the `cx corpus`
+# body `cmd` links, compiled from the pin (a pin move is deps.cxd, which is ALL).
+BINARY_MODULES='cx code cxnet mail cxdb store identity fabric xap cxstore arrow transport cli cmd cmd_data corpus grading'
 
 # vcx_module_of <import-name> — the vcx/ module directory it names, or nothing
 # when it is V's own stdlib (os, net, time, encoding.base64, x.json2, …). The V

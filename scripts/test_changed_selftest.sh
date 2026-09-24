@@ -121,18 +121,32 @@ fi
 # ── D — one module source ───────────────────────────────────────────────────
 # vcx/identity/stdlib_authz_store.v RETIRED as this case's example (RULED:
 # RS-12, RS-8; #1591 item K3): vcx/identity/ left with the extraction of
-# cx-platform-identity. vcx/fabric/stdlib_fabric.v (vcx/platform/ until fabric's
-# split, RS-24) is the same shape (a
-# module source graded through one fixture shard AND named literally by
-# umbrella tests outside it).
-run vcx/fabric/stdlib_fabric.v > "$T/d"
+# cx-platform-identity. vcx/fabric/stdlib_fabric.v (vcx/platform/ until
+# fabric's split, RS-24) replaced it there and was RETIRED in turn (RULED:
+# RS-12, RS-8; #1591 item K3): vcx/fabric/ left with the extraction of
+# cx-platform-fabric. vcx/xap/stdlib_xap.v (the composer, RS-24) replaced it
+# and is now ITSELF RETIRED (RULED: RS-12, RS-8, RS-7, RS-20; #1591 item K3):
+# vcx/xap/ left with the extraction of cx-platform-xap, and with it went
+# every remaining platform PRODUCT directory (RULED: RS-12) -- vcx/ now
+# carries only code/, the Ring-1 core, so a module source in it selects the
+# generic core graders (code_eval_fixtures_test.v, code_parse_fixtures_test.v,
+# cxparse_full_corpus_diff_test.v, reader_parity_test.v — every one of vcx/code/'s
+# own files, not this module's), beside its own shard and its named umbrellas.
+# vcx/code/stdlib_crypto.v: its shard is stdlib-4, and four umbrella tests name
+# it literally outside that shard -- cli, identity, modules, stdlib. The
+# named-check now reads only the `*_umbrella_test.v` files the selection
+# carries (the literal-name promise this case is about), skipping the shard
+# file and the generic whole-of-code graders every vcx/code/ change pulls in.
+run vcx/code/stdlib_crypto.v > "$T/d"
 d_files=$(suite_files_of "$T/d")
 d_n=$(printf '%s\n' "$d_files" | grep -c . || true)
 d_total=$(ls "$ROOT/vcx/tests"/*_test.v | wc -l | tr -d ' ')
 d_named=1
 for f in $d_files; do
-	case "$f" in *code_eval_fixtures_shard_*) continue ;; esac
-	grep -qF -- fabric "$ROOT/$f" || d_named=0
+	case "$f" in
+	*_umbrella_test.v) grep -qF -- crypto "$ROOT/$f" || d_named=0 ;;
+	*) continue ;;
+	esac
 done
 if [ "$d_n" -ge 2 ] && [ "$d_n" -lt "$d_total" ] \
 	&& printf '%s\n' "$d_files" | grep -q 'code_eval_fixtures_shard_' \

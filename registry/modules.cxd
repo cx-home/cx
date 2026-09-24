@@ -198,7 +198,7 @@ needs becomes its own Ring-1 module.
   [module name=crypto ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/crypto.md corpus=conformance/stdlib/crypto.cxd source=stdlib/crypto.cx code='vcx/code/stdlib_crypto.v vcx/code/stdlib_crypto_xmlsign.v vcx/code/stdlib_crypto_xmlenc.v vcx/code/crypto_x509.v' half=none status=current]
   [module name=csv ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/csv.md corpus=conformance/stdlib/csv.cxd source=stdlib/csv.cx code=vcx/code/stdlib_csv.v half=none status=current]
   [module name=cx ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/cx.md corpus=conformance/stdlib/cx.cxd source=none code='vcx/code/stdlib_cx.v vcx/code/stdlib_cx_analysis.v' half=none status=current]
-  [module name=diagram ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/diagram.md corpus=conformance/stdlib/diagram.cxd source=stdlib/diagram.cx code='vcx/code/stdlib_diagram.v vcx/code/diagram.v vcx/code/diagram_cx_seam.v' half=none status=current]
+  [module name=diagram ring=1 ns=cx-stdlib kind=module repo=cx-tooling spec=deps/cx-tooling/spec/03-approved/stdlib/diagram.md corpus=deps/cx-tooling/conformance/stdlib/diagram.cxd source=deps/cx-tooling/stdlib/diagram.cx code='vcx/code/stdlib_diagram.v vcx/code/diagram.v vcx/code/diagram_cx_seam.v' half=none status=current]
   [; email is the 1427-e re-classification: pure RFC 5322/MIME codec, its V
      file importing nothing from the platform half, so the import test puts
      it in Ring 1 — and its code file and its corpus header are both still
@@ -325,7 +325,7 @@ needs becomes its own Ring-1 module.
      under cx-platform like every other platform row; the bare names are retired
      and the loader refuses them naming the new spelling. Their spec, corpus,
      source and code columns did not move with the namespace. ]
-  [module name=fabric ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/fabric.md corpus=conformance/platform/fabric.cxd source=stdlib/fabric.cx code='vcx/fabric/stdlib_fabric.v vcx/fabric/stdlib_fabric_remote.v vcx/fabric/fabric_service.v vcx/fabric/stdlib_fabric_register.v' half=none status=current]
+  [module name=fabric ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-fabric spec=deps/cx-platform-fabric/spec/03-approved/platform/fabric.md corpus=deps/cx-platform-fabric/conformance/platform/fabric.cxd source=deps/cx-platform-fabric/stdlib/fabric.cx code='deps/cx-platform-fabric/vcx/fabric/stdlib_fabric.v deps/cx-platform-fabric/vcx/fabric/stdlib_fabric_remote.v deps/cx-platform-fabric/vcx/fabric/fabric_service.v deps/cx-platform-fabric/vcx/fabric/stdlib_fabric_register.v' half=none status=current]
   [; ftp and sftp — the connector kit's two file-transfer transports (RULED:
      1430-c, 1430-e), spec first: planned, their columns naming where #1430
      writes them. ]

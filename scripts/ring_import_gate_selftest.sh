@@ -26,7 +26,7 @@ fi
 # fake tree: the sibling-dir set the deny-set derivation needs, empty.
 FAKE="$(mktemp -d "${TMPDIR:-/tmp}/ring_gate_selftest.XXXXXX")"
 trap 'rm -rf "$FAKE"' EXIT
-for d in cx code cxstore arrow transport cli cmd_data deps target fixtures testenv; do
+for d in cx code cxstore arrow transport cli cmd_data grading deps target fixtures testenv; do
   mkdir -p "$FAKE/vcx/$d"
 done
 # RS-24: two declared V product modules -- a lower one (net) and xap, the one
@@ -99,6 +99,22 @@ probe "cmd_data-platform-free" "cmd_data/selftest_cmddata_probe.v" \
   'module main
 import cxstore'
 
+# ── D56a: the corpus grading cores are Ring 0 — the evaluator is denied ──
+probe "grading-imports-code" "grading/selftest_grading_probe.v" \
+  'module grading
+import code'
+
+# ── ...and grading over cx + fixtures, with cmd_data importing grading, stays GREEN ──
+printf '%s\n' 'module grading' 'import cx' 'import fixtures' > "$FAKE/vcx/grading/selftest_grading_ok.v"
+printf '%s\n' 'module main' 'import grading' > "$FAKE/vcx/cmd_data/selftest_cmddata_grading.v"
+if RING_GATE_ROOT="$FAKE" bash "$GATE" >/dev/null 2>&1; then
+  echo "  ok — grading-over-data-ring (grading importing cx and fixtures, cmd_data importing grading, is allowed)"
+else
+  echo "SELFTEST FAIL [grading-over-data-ring]: the gate refused grading over cx + fixtures or cmd_data importing grading."
+  rc_ok=1
+fi
+rm -f "$FAKE/vcx/grading/selftest_grading_ok.v" "$FAKE/vcx/cmd_data/selftest_cmddata_grading.v"
+
 # ── Ring 1 (code) importing the platform group's composer (xap) ──
 probe "code-imports-xap" "code/selftest_code_probe.v" \
   'module code
@@ -169,7 +185,7 @@ fi
 PFAKE="$(mktemp -d "${TMPDIR:-/tmp}/ring_gate_selftest_pin.XXXXXX")"
 trap 'rm -rf "$FAKE" "$PFAKE"' EXIT
 for d in code cxstore transport target testenv; do mkdir -p "$PFAKE/vcx/$d"; done
-for d in cx arrow cli cmd_data deps fixtures; do mkdir -p "$PFAKE/deps/cx-core-data/vcx/$d"; done
+for d in cx arrow cli cmd_data grading deps fixtures; do mkdir -p "$PFAKE/deps/cx-core-data/vcx/$d"; done
 if ! RING_GATE_ROOT="$PFAKE" bash "$GATE" >/dev/null 2>&1; then
   echo "SELFTEST FAIL [pinned-clean]: the pinned-layout fake tree is not green."
   rc_ok=1
@@ -182,6 +198,14 @@ else
     echo "  ok — pinned-ring0 (gate went red on a violation in deps/cx-core-data/vcx/cx)"
   fi
   rm -f "$PFAKE/deps/cx-core-data/vcx/cx/selftest_pinned_probe.v"
+  printf 'module grading\nimport code\n' > "$PFAKE/deps/cx-core-data/vcx/grading/selftest_pinned_grading.v"
+  if RING_GATE_ROOT="$PFAKE" bash "$GATE" >/dev/null 2>&1; then
+    echo "SELFTEST FAIL [pinned-grading]: the gate did NOT flag an import of code in the PINNED grading module (D56a)."
+    rc_ok=1
+  else
+    echo "  ok — pinned-grading (gate went red on an import of code in deps/cx-core-data/vcx/grading)"
+  fi
+  rm -f "$PFAKE/deps/cx-core-data/vcx/grading/selftest_pinned_grading.v"
   rmdir "$PFAKE/deps/cx-core-data/vcx/cli"
   if RING_GATE_ROOT="$PFAKE" bash "$GATE" >/dev/null 2>&1; then
     echo "SELFTEST FAIL [pinned-absent]: a module in neither vcx/ nor the pin passed — a ring the gate cannot read must fail."
