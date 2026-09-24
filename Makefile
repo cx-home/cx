@@ -1586,7 +1586,7 @@ release-verify:
 # whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
 # under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
 # 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -2284,7 +2284,7 @@ check-verification-timings:
 test-ring0: test-vcx-cx test-extraction-gate libcx-abi-gate ring-import-gate ring-tag-gate gates-manifest-gate
 test-ring1: test-ring0 test-vcx-code test-profile-gate check-effect-alignment
 	@$(MAKE) -C vcx conform-fmt
-test-ring2: test-ring1 test-vcx-suite test-vcx-cxstore test-vcx-cmd
+test-ring2: test-ring1 test-vcx-suite test-vcx-cmd
 	@$(MAKE) -C vcx conform-all
 
 # ── RING QUERY (corpus audit §2 tagging mechanics; C8 repair, I0) — the
@@ -2821,7 +2821,7 @@ test-vcx-gates: build-vcx-dev
 	@"$(CX_BIN)" --allow-all scripts/stdlib_catalog_gate.cx
 	@bash scripts/cxer_registry_report.sh --strict
 
-test-vcx: build-vcx-dev test-vcx-gates test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cxstore test-vcx-cx
+test-vcx: build-vcx-dev test-vcx-gates test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx
 	$(MAKE) -C vcx conform-all
 	$(MAKE) -C vcx conform-fmt
 	$(MAKE) -C vcx conform-data-bin-arrow
@@ -3028,7 +3028,6 @@ fixtures-census-reset:
 SUITE_SERIAL_RETRY := vcx/tests/env_retention_test.v \
                       vcx/tests/process_pty_test.v \
                       vcx/tests/xap_umbrella_test.v \
-                      vcx/tests/store_remote_umbrella_test.v \
                       vcx/tests/connector_live_test.v \
                       vcx/tests/fabric_umbrella_test.v \
                       vcx/tests/code_eval_fixtures_test.v \
@@ -3509,10 +3508,14 @@ test-vcx-suite: build-vcx-dev check-serial-retry-rosters check-fixture-shard-man
 # the "timing / early exit under load" class documented beside the rosters
 # above — its wall-clock control row read 42 ms against 40 ms at a load average
 # of 200. No bound moved.
-CODE_SERIAL_RETRY := vcx/store/store_admin_plane_test.v \
-                     vcx/store/store_grpc_live_test.v \
-                     vcx/store/store_lazy_load_test.v \
-                     vcx/code/code_module_umbrella_test.v
+# store_admin_plane_test.v, store_grpc_live_test.v and store_lazy_load_test.v
+# RETIRED from this roster (RULED: RS-12, RS-8; #1591 item K3): vcx/store/ left
+# with the extraction of cx-platform-store; check-serial-retry-rosters would
+# otherwise refuse these three rows as naming files that no longer exist here
+# (the same shape check-inmodule-test-roster's directory check catches for
+# CODE_TEST_DIRS above). The repository's own gate carries whatever retry
+# discipline these tests still need.
+CODE_SERIAL_RETRY := vcx/code/code_module_umbrella_test.v
 
 # I3 module split (#651/#516): the in-module tests now live in TWO
 # modules — vcx/code (Ring 1) and vcx/platform (Ring 2, where the
@@ -3534,7 +3537,7 @@ CODE_SERIAL_RETRY := vcx/store/store_admin_plane_test.v \
 # (found removing cx-platform-db's vcx/cxdb/, RULED: RS-12, RS-8, #1591 item
 # K3). The extracted product's own `v test` runs from the pin, same as its
 # `cx corpus`.
-CODE_TEST_DIRS := vcx/code/ vcx/store/ vcx/identity/ vcx/fabric/ vcx/xap/
+CODE_TEST_DIRS := vcx/code/ vcx/identity/ vcx/fabric/ vcx/xap/
 test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	@$(JS_CLOSE) log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
 	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(CODE_TEST_DIRS) 2>&1; echo $$? > $$stf; } | tee $$log; \
@@ -3570,17 +3573,16 @@ test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	  fi; \
 	fi; exit $$st
 
-# White-box unit tests for the `cxstore` module (vcx/cxstore/*_test.v) — the
-# content-addressed object store internals (pack/seqtree/bloom/index/gc/reflog/
-# repo/planner/retention/mmap/compression + the cx adapter + round-trip). Like
-# test-vcx-code, `v test` only runs the directory it is given, so neither
-# vcx/tests/ nor vcx/code/ pulls these in; this dedicated target wires the
-# cxstore in-module suite into the gate (same default -gc e memory model).
-# (The dead `cxsqlite/` subdir this glob used to dodge was deleted at I2 —
-# the live sqlite store backend is vcx/code/store_sqlite_d_cxstore_sqlite.v.)
-.PHONY: test-vcx-cxstore
-test-vcx-cxstore: build-vcx-dev
-	@$(JS_CLOSE) $(V) -cc cc $(CX_GC) test vcx/cxstore/*_test.v
+# test-vcx-cxstore RETIRED (RULED: RS-12, RS-8; #1591 item K3): vcx/cxstore/
+# left whole with the extraction of cx-platform-store — the content-addressed
+# object store internals this target's `v test vcx/cxstore/*_test.v` glob
+# graded (pack/seqtree/bloom/index/gc/reflog/repo/planner/retention/mmap/
+# compression + the cx adapter + round-trip). A directory-glob target left
+# pointing at a directory that no longer exists is not the CODE_TEST_DIRS
+# silent-pass shape (a `v test path/*_test.v` glob that matches nothing is a
+# build error, not a quiet 0), but it is still dead: the repository's own gate
+# grades these tests now, from the same pin this tree compiles cx-platform-
+# store from. Dropped from TEST_TARGETS below; the target itself removed.
 
 # The in-module Ring-0 test roster (#1209). Listed EXPLICITLY, never globbed:
 # vcx/cx/parser_multidoc_test.v segfaults under the shipped `-gc e` model

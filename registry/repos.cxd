@@ -69,7 +69,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [repo name=cx-platform-net group=platform ring=none ships=binary vmodule=cxnet status=extracted at=0a4f2114af1e29a19362b24069061c913c9a0374 pins='cx-core-code' about='sockets, TLS, the HTTP server, the XSP transport bindings, ftp, sftp, file_surface' why='EXTRACTED (RULED: RS-12, RS-24, #1591 item 20), the third V product (after core-data): its own vcx/cxnet/ (module cxnet) and vcx/transport/ leave with it. It owns no tracked path here any more; cx reaches it through deps.cxd, which pins it at the sha at= records, and registry/modules.cxd\'s http, net, ftp and sftp rows -- plus the file_surface catalog row -- name the pinned checkout']
   [repo name=cx-platform-mail group=platform ring=none ships=binary vmodule=mail pins='cx-platform-net' at=8afacaaeae929436dcd24074cabe8ae4cf8b50c4 about='SMTP and IMAP, server and client cores, sasl' why='PARTLY EXTRACTED (RULED: RS-12, RS-19, #1591 item 20): deps.cxd pins it with a v-fork -- NOT YET PUSHED to cx-home/cx-platform-mail (component-repo pushes are the integrator\'s, RS-8; the commit is prepared in the mover\'s clone and named by sha in RESULTS.md, per the K3 brief) -- its wire V module (vcx/mail/, module mail) compiles from deps/cx-platform-mail/vcx through -path, and its spec/corpus/source are graded from the pin. Five files remain below: the declared Ring-1 halves of imap and smtp and sasl\'s own dispatch, each still called INTRA-MODULE by vcx/code/stdlib_dispatch.v (sasl_stdlib_builtin, smtp_stdlib_builtin, imap_stdlib_builtin) -- a plain same-module V call, not an `import`, so the file cannot physically leave the `code` V module without becoming a second module those call sites would then have to import and qualify. Named, with why, in the LETTER of _gate_evidence/pipeline_xmail/RESULTS.md; the row takes status=extracted the day they leave or are re-allocated']
   [repo name=cx-platform-identity group=platform ring=none ships=binary vmodule=identity pins='cx-platform-store cx-platform-net' about='sessions, the XSP-AUTH handshake, principal mint, did:web']
-  [repo name=cx-platform-store group=platform ring=none ships=binary vmodule=store pins='cx-core-code cx-platform-net' about='the storage engine, its substrates, journal/live/audit, ft, and the store server']
+  [repo name=cx-platform-store group=platform ring=none ships=binary vmodule=store pins='cx-core-code cx-platform-net' at=57cd960b901ac5be0828619cfa718f706143f0d4 about='the storage engine, its substrates, journal/live/audit, ft, and the store server' why='PARTLY EXTRACTED (RULED: RS-12, RS-8, D71a; #1591 item K3): the RS-24 vcx/store/ split (module store) already stood alone from vcx/platform/, so extraction moved it, vcx/cxstore/ and vcx/cmd/store_ whole out -- store\'s, journal\'s, live\'s and audit\'s spec, corpus and source now name deps/cx-platform-store/ in registry/modules.cxd, and so does ft\'s CX-level surface (stdlib/ft.cx, its spec, its corpus), even though ft is a Ring-1 cx-stdlib module the store repository merely carries as its only consumer. Four files remain: vcx/code/stdlib_ft.v, ft\'s V dispatch half -- code\'s stdlib_dispatch.v calls ft_stdlib_builtin() as a same-module V function call, not an import (D71a, the same wall the mail leave step\'s LETTER found for imap/smtp/sasl); and vcx/cmd/store_{serve,rotate,principal}_d_cx_platform.v, found building this branch (RS-8): platform_verbs_d_cx_platform.v (module main, the platform verb table) calls run_store_serve/run_store_rotate_kek/run_store_mint_principal intra-module, the identical wall one level up the tree. All four stay cx-private\'s; the code half moves through the registration hook once impl/cx-F-dispatch-registry merges, the cmd half has no such hook yet (a LETTER: the same registration-hook shape D71a names would let a product register its own verbs into platform_verbs_d_cx_platform.v\'s table instead of being called by name from it). The row takes status=extracted the day all four leave or are re-allocated']
   [repo name=cx-platform-db group=platform ring=none ships=binary vmodule=cxdb pins='cx-core-code' status=extracted at=1834c802b4da2c4e6cba362ceb790f46b392157d about='external database access: $sql-*, $redis-*, the drivers' why='EXTRACTED (RULED: RS-12, RS-8; #1591 item K3), a V product: the RS-24 vcx/cxdb/ split (module cxdb) already stood alone from vcx/platform/, so extraction moved it out whole -- the sql, redis and db rows of registry/modules.cxd now name their spec, corpus and code under deps/cx-platform-db/, and xap (its only in-tree consumer, per its own pins=) reaches the dispatch registration through the pin, not a tracked path. It has no [path] rules any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records']
   [repo name=cx-platform-fabric group=platform ring=none ships=binary vmodule=fabric pins='cx-platform-store cx-platform-identity cx-platform-net' about='messaging and fabric-serve']
   [repo name=cx-platform-xap group=platform ring=none ships=binary vmodule=xap pins='cx-platform-net cx-platform-mail cx-platform-identity cx-platform-store cx-platform-db cx-platform-fabric' about='the application host, compose, dist, schema, market, the reference deployments']
@@ -128,10 +128,15 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='vcx/tests/testdata/v015_pack_compat' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
 
   [; ── modules that LEAVE the frozen stdlib for the product that consumes them ── ]
-  [path exact='stdlib/ft.cx' repo=cx-platform-store why='its consumer is store_ft.v']
-  [path exact='spec/03-approved/stdlib/ft.md' repo=cx-platform-store]
-  [path exact='conformance/stdlib/ft.cxd' repo=cx-platform-store]
-  [path prefix='vcx/code/stdlib_ft' repo=cx-platform-store]
+  [; stdlib/ft.cx, spec/03-approved/stdlib/ft.md and conformance/stdlib/ft.cxd RETIRED
+     (RULED: RS-12, RS-8; #1591 item K3) -- ft's CX-level surface left whole with the
+     extraction of cx-platform-store; registry/modules.cxd's ft row now names
+     deps/cx-platform-store/ for spec=/corpus=/source=. Its V dispatch half did not: the
+     rule below stays, unchanged, because the file does not leave (D71a). ]
+  [path prefix='vcx/code/stdlib_ft' repo=cx-platform-store why='ft\'s V dispatch half: code\'s stdlib_dispatch.v calls ft_stdlib_builtin() as a same-module V function call, not an import -- it cannot leave without stdlib_dispatch.v importing and qualifying a second module (D71a, the mail leave step\'s LETTER shape); moves through the registration hook once impl/cx-F-dispatch-registry merges']
+  [path exact='vcx/cmd/store_serve_d_cx_platform.v' repo=cx-platform-store why='run_store_serve is called intra-module (module main) by vcx/cmd/platform_verbs_d_cx_platform.v, the platform verb table -- found building this branch (RS-8): the file cannot leave without platform_verbs_d_cx_platform.v importing and qualifying a second module, the same wall D71a names for vcx/code/stdlib_ft.v. ALLOCATED to cx-platform-store still, tracked here still']
+  [path exact='vcx/cmd/store_rotate_d_cx_platform.v' repo=cx-platform-store why='run_store_rotate_kek is called intra-module by vcx/cmd/platform_verbs_d_cx_platform.v, same wall as its store_serve sibling above']
+  [path exact='vcx/cmd/store_principal_d_cx_platform.v' repo=cx-platform-store why='run_store_mint_principal is called intra-module by vcx/cmd/platform_verbs_d_cx_platform.v, same wall as its store_serve sibling above']
   [path exact='stdlib/diagram.cx' repo=cx-tooling why='developer tooling under active redesign (spec/02-working/diagram_renderer_cx.md)']
   [path exact='spec/03-approved/stdlib/diagram.md' repo=cx-tooling]
   [path exact='conformance/stdlib/diagram.cxd' repo=cx-tooling]
@@ -165,34 +170,21 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='conformance/stdlib/authz.cxd' repo=cx-core-code]
   [path exact='conformance/stdlib/xsp.cxd' repo=cx-core-code]
 
-  [; ── platform: store (engine + streams + server, as Postgres) ─────── ]
-  [path prefix='vcx/cxstore/' repo=cx-platform-store]
-  [path prefix='vcx/store/' repo=cx-platform-store why='store\'s V module, module store (RULED: RS-24): the store, journal, live, audit and ft dispatchers with their register files, the store server (HTTP bootstrap, gRPC, XSP), the remotes and substrates, their in-module tests and umbrellas, moved whole out of vcx/platform/ (nine prefix rules became this one); and, moved DOWN into it because the store calls them and may not import their old owners (D34a), fabric-serve\'s XSP frame reader (store_xsp_frame.v), the CX_FABRIC_TRACE switch, and identity\'s offline principal mint behind `cx store-mint-principal` (xsp_principal_mint.v)']
-  [path prefix='vcx/cmd/store_' repo=cx-platform-store]
-  [path exact='stdlib/store.cx' repo=cx-platform-store]
-  [path exact='stdlib/journal.cx' repo=cx-platform-store]
-  [path exact='stdlib/live.cx' repo=cx-platform-store]
-  [path exact='stdlib/audit.cx' repo=cx-platform-store]
-  [path exact='spec/03-approved/platform/store.md' repo=cx-platform-store]
-  [path prefix='spec/03-approved/platform/store/distributed_store.md' repo=cx-platform-store]
-  [path prefix='spec/03-approved/platform/store/erasure_compliance.md' repo=cx-platform-store]
-  [path exact='spec/03-approved/platform/journal.md' repo=cx-platform-store]
-  [path exact='spec/03-approved/platform/live.md' repo=cx-platform-store]
-  [path exact='spec/03-approved/platform/audit.md' repo=cx-platform-store]
-  [path exact='spec/03-approved/xap/xsp_store_profile.md' repo=cx-platform-store why='the store profile is the store server wire']
-  [path prefix='spec/03-approved/misc/cxstore' repo=cx-platform-store]
-  [path exact='spec/03-approved/misc/store_management_console.md' repo=cx-platform-store]
-  [path exact='conformance/platform/store.cxd' repo=cx-platform-store]
-  [path exact='conformance/platform/journal.cxd' repo=cx-platform-store]
-  [path exact='conformance/platform/live.cxd' repo=cx-platform-store]
-  [path exact='conformance/platform/audit.cxd' repo=cx-platform-store]
-  [path prefix='vcx/tests/store_' repo=cx-platform-store]
-  [path prefix='vcx/tests/sse_xsp_downstream' repo=cx-platform-store]
-  [path prefix='examples/cxstore/' repo=cx-platform-store]
-  [path prefix='tooling/cxstore/' repo=cx-platform-store]
-  [path exact='registry/cxstore.service.cx' repo=cx-platform-store]
-  [path prefix='docs-src/canonical/cxstore/' repo=cx-platform-store]
-  [path prefix='bench/rowset/' repo=cx-platform-store]
+  [; ── platform: store RETIRED (RULED: RS-12, RS-8; #1591 item K3) ───────
+     Every rule of this block left with cx-platform-store's leave step: vcx/cxstore/,
+     vcx/store/ (module store; the store, journal, live, audit and ft dispatchers with
+     their register files, the store server, the remotes and substrates, their
+     in-module tests and umbrellas; and fabric-serve's XSP frame reader
+     (store_xsp_frame.v), the CX_FABRIC_TRACE switch, and identity's offline principal
+     mint (xsp_principal_mint.v), moved DOWN into it per D34a), vcx/cmd/store_,
+     stdlib/{store,journal,live,audit}.cx, their specs (including
+     spec/03-approved/platform/store/{distributed_store,erasure_compliance}.md and
+     xap/xsp_store_profile.md), their corpora, vcx/tests/store_ and
+     vcx/tests/sse_xsp_downstream, examples/cxstore/, tooling/cxstore/,
+     registry/cxstore.service.cx, docs-src/canonical/cxstore/ and bench/rowset/. The
+     repository's own row (above) carries `at=` and its full why=; each artifact's
+     new home is registry/modules.cxd's store/journal/live/audit rows, which name
+     deps/cx-platform-store/ directly. ]
   [path prefix='bench/repr/' repo=cx why='the CXDM live-memory ratchet writes into its own directory and builds with third_party/v at the repository root; bench/ is the front door\'s (RULED: D68a)']
 
   [; THE cx-platform-mail RULES BELOW COVER ONLY WHAT REMAINS (RULED: RS-12,
