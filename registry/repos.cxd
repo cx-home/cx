@@ -32,9 +32,9 @@ TWO KINDS OF ROW.
       `vmodule` names the V module the repository compiles from `vcx/<m>/`
       (D31a: flat). A product row gains `vmodule` in the commit that splits
       it. xap's split made xap `vcx/xap/` (`module xap`, the composer with
-      it); what is left in `vcx/platform/` (`module platform`) is the RESIDUE
-      of the products whose own split has not merged, each file allocated by
-      its rule below, and the last split empties it. scripts/product_import_gate.cx holds every import under a
+      it); fabric's split, the last, emptied `vcx/platform/` (`module platform`,
+      the RESIDUE the not-yet-split products shared) and xap's PHASE B retired
+      it with its catch-all rule. scripts/product_import_gate.cx holds every import under a
       vmodule directory to these pins; the rings (the `core` rows) are always
       importable.
   [path prefix= repo=]  /  [path exact= repo=]
@@ -322,11 +322,10 @@ the rule carries a `why=`. The recurring reasons, once:
        rule beside the seam's own (RS-20), for the reason that row states. Adding a rule per register
        file would be a dead rule the allocation gate refuses. ──────────── ]
 
-  [; ── platform: xap (the host; the residue of vcx/platform) ────────── ]
+  [; ── platform: xap (the host) ─────────────────────────────────────── ]
   [path exact='vcx/xap/coordination.v' repo=cx-platform-xap why='the coordination glue, AND the one act seam cx-platform/flow depends on: coord_flow_perform, the single builtin the flow runner acts through (RULED: 1265-PB-1), dispatched here as flow-perform. The flow module row reads code=none, so without this row nothing names the seam and neither a pin nor a gate can see that a package repo depends on a builtin another repo compiles in (RULED: RS-20)']
   [path exact='vcx/xap/coordination_register.v' repo=cx-platform-xap why="the seam's REGISTRATION, beside the seam (RULED: RS-18): flow-perform's purity row and its env-aware hook. It is named for the same reason coordination.v above is — the flow module row reads code=none, so a rule is the only place a reader, a pin or a gate learns that a package repository depends on a builtin this repository compiles in"]
   [path prefix='vcx/xap/' repo=cx-platform-xap why='xap\'s V module, module xap (RULED: RS-24, D31a): the host, its serve and auth halves, the dist engine, the contract revision, coordination (the two exact rules above name the flow seam), the module init() that composes the platform, and the registration COMPOSER ring2_register.v (RS-18: each family registers itself from its own file; D32a: the composer moves with xap). Its in-module tests are xap_test.v']
-  [path prefix='vcx/platform/' repo=cx-platform-xap why='the RESIDUE (RULED: RS-24, D31a): what is left in vcx/platform/ once xap moved to vcx/xap/, the store to vcx/store/, identity to vcx/identity/ and fabric to vcx/fabric/, and that no rule above sends to a lower product -- the residue init() (platform_init.v, whose init() holds no statement since identity\'s split took its line). Kept until PHASE B, which runs once fabric\'s split has emptied vcx/platform/ of every product file; it retires with the directory (_gate_evidence/pipeline_split_xap/phase_b.sh)']
   [path prefix='vcx/cmd/xap' repo=cx-platform-xap]
   [path prefix='vcx/cmd/platform_verbs' repo=cx-platform-xap]
   [path exact='stdlib/xap.cx' repo=cx-platform-xap]

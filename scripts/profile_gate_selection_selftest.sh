@@ -65,7 +65,7 @@ check "connector.cxd db.cxd" "a module source and a corpus file together" "stdli
 # ALL still wins wherever a module cannot be named, and wherever the change is
 # the ENGINE rather than a module: those are the doubts the fail-safe exists for.
 check "ALL" "an evaluator core file still selects everything" "vcx/code/eval_core.v"
-check "ALL" "a platform file belonging to no module row selects everything" "vcx/platform/stdlib_unregistered_xyz.v"
+check "ALL" "a product file belonging to no module row selects everything" "vcx/fabric/stdlib_unregistered_xyz.v"
 check "ALL" "a stdlib source with no registry row selects everything" "stdlib/not-a-registered-module.cx"
 check "code.cxd" "conformance/code.cxd stays selectable by name, as #1560 made it" "conformance/code.cxd"
 check "ALL" "an x/ surface still selects everything" "x/ux-web.cx"

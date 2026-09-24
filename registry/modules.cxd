@@ -16,8 +16,8 @@ import the platform graph), and `placement-gate` refuses a `ring=2` by name.
 
 Before this file a surface's placement was stated in four places by
 implication — the spec's directory, the corpus's `ring=` header, the
-directory its V code sits in (`vcx/code` = the rings, `vcx/platform` = the
-platform),
+directory its V code sits in (`vcx/code` = the rings, a product's
+`vcx/<vmodule>/` = the platform, RULED: RS-24),
 and its `[?lib]` namespace — and nothing compared them. #1077 and OL-14
 record what that costs. This file is the declaration; `make placement-gate`
 (scripts/placement_gate.cx) refuses a tree where any of the four disagrees
@@ -71,7 +71,8 @@ COLUMNS
           it may import the platform graph above the rings (RULED: RS-1).
           Absent means no group: the module imports only the rings. A
           group=platform row sits in the platform directories
-          (spec/03-approved/platform/, conformance/platform/, vcx/platform/)
+          (spec/03-approved/platform/, conformance/platform/, its product's
+          vcx/<vmodule>/ -- registry/repos.cxd names it, RULED: RS-24)
           whatever its ring, and its corpus header grades in the platform
           lane (`ring=2` — the CORPUS's attribute, the lane that grades the
           suite, which RS-1 does not rename). Namespace and group agree:
@@ -104,7 +105,7 @@ COLUMNS
           the prefix, so an extraction cannot turn a ring check vacuous
   code    the V file(s) carrying the dispatch, or `none` for a pure-CX
           module — every one under the row's own directory (vcx/code for
-          the rings, vcx/platform for group=platform)
+          the rings, the product's vcx/<vmodule>/ for group=platform)
   half    a DECLARED Ring-1 half of a group=platform module (1427-d): the pure codec
           or client a Ring-1 consumer may need for profile composition. It
           stays in vcx/code and is named HERE, so the placement check reads

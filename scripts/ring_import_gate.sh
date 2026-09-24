@@ -8,9 +8,9 @@
 # Two rings, then groups (partition spec §2–§3, RULED: RS-1):
 #   Ring 0  = vcx/cx        — imports nothing internal (V stdlib only).
 #   Ring 1  = vcx/code      — MAY import Ring 0 (cx) only.
-#   platform group = vcx/platform (the residue) and the V product modules
-#                             split out of it (RS-24: each vcx/<vmodule>/
-#                             registry/repos.cxd declares) — MAY import the
+#   platform group = the V product modules (RS-24: each vcx/<vmodule>/
+#                             registry/repos.cxd declares; the residue
+#                             vcx/platform they split out of is gone) — MAY import the
 #                             rings (cx, code) and what its manifest declares:
 #                             the leaf siblings the spec names for platform
 #                             consumption (cxstore, arrow, transport) and one
@@ -181,35 +181,29 @@ scan_ring "$VCX/cxstore" "store engine (cxstore)" 0 $(deny_but cx cxstore)
 scan_ring "$VCX/code" "Ring-1 (code)" 0 $(deny_but cx code)
 
 # The V product modules (RULED: RS-24): vcx/platform split into one V module
-# per V product, each in the vcx/<vmodule>/ registry/repos.cxd declares. They
-# are the platform group exactly as vcx/platform is (RULED: RS-1), so the same
-# contract holds for each: the rings (cx, code), cxstore/arrow/transport, plus
-# one another -- WHICH product may import which is the pin graph, and
-# scripts/product_import_gate.cx holds that; this lane only keeps every
-# product off the non-platform siblings (cli, cmd, tests, ...) and off the
-# residue above it. Read grep-level from the registry so a product split is
-# gated the moment its row declares it; a tree with no registry (the
-# selftest's fake one without it) has no products.
+# per V product, each in the vcx/<vmodule>/ registry/repos.cxd declares, and
+# the shared vcx/platform/ (the residue) is gone since xap's PHASE B. They are
+# the platform group (RULED: RS-1), so the same contract holds for each: the
+# rings (cx, code), cxstore/arrow/transport, plus one another -- WHICH product
+# may import which is the pin graph, and scripts/product_import_gate.cx holds
+# that; this lane only keeps every product off the non-platform siblings (cli,
+# cmd, tests, ...) and off xap above it. Read grep-level from the registry so
+# a product split is gated the moment its row declares it; a tree with no
+# registry has no products.
 PRODUCTS=""
 if [ -f "$ROOT/registry/repos.cxd" ]; then
-  PRODUCTS="$( { grep -oE "vmodule=[a-z_][a-z0-9_]*" "$ROOT/registry/repos.cxd" || true; } | cut -d= -f2 | { grep -vx platform || true; } | LC_ALL=C sort -u | tr '
+  PRODUCTS="$( { grep -oE "vmodule=[a-z_][a-z0-9_]*" "$ROOT/registry/repos.cxd" || true; } | cut -d= -f2 | LC_ALL=C sort -u | tr '
 ' ' ')"
 fi
 
-# xap is the one product ABOVE the residue (RS-24, D31a: once xap's split
-# makes it vcx/xap/, what is left in vcx/platform is the products not yet
-# split, every one of which xap pins). So xap may import the residue, and
-# neither the residue nor any other product may import xap.
+# xap is the one product above the others (RS-24, D31a): it pins every one.
+# So xap may import every product, and no other product may import xap.
 BELOW=""
 for p in $PRODUCTS; do [ "$p" = xap ] || BELOW="$BELOW$p "; done
 
-# The platform group's residue (vcx/platform): MAY import the rings (cx, code),
-# its declared graph (cxstore, arrow, transport) and the product modules split
-# out of it -- all but xap, above it — RULED: RS-1, RS-24.
-scan_ring "$VCX/platform" "platform group (platform)" 0 $(deny_but cx code cxstore arrow transport platform $BELOW)
 for p in $PRODUCTS; do
   if [ "$p" = xap ]; then
-    scan_ring "$VCX/$p" "platform group product ($p)" 0 $(deny_but cx code cxstore arrow transport platform $PRODUCTS)
+    scan_ring "$VCX/$p" "platform group product ($p)" 0 $(deny_but cx code cxstore arrow transport $PRODUCTS)
   else
     scan_ring "$VCX/$p" "platform group product ($p)" 0 $(deny_but cx code cxstore arrow transport $BELOW)
   fi
@@ -232,5 +226,5 @@ if [ "$fail" -ne 0 ]; then
   echo "ring_import_gate: FAILED — a ring module violates its §3 import contract."
   exit 1
 fi
-echo "ring_import_gate: OK — Ring-0 strict sink; cxstore Ring-0-only+evaluator-free; code→cx only; platform group within the rings + cxstore/arrow/transport + the product modules below xap; each product (${PRODUCTS% }) within the rings + cxstore/arrow/transport + the products, xap alone also over the residue and none into xap; arrow/transport→cx only; cli/cmd_data platform-free"
+echo "ring_import_gate: OK — Ring-0 strict sink; cxstore Ring-0-only+evaluator-free; code→cx only; each platform-group product (${PRODUCTS% }) within the rings + cxstore/arrow/transport + the products, none into xap; arrow/transport→cx only; cli/cmd_data platform-free"
 exit 0

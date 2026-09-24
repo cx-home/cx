@@ -35,7 +35,7 @@
 #      (#1587). `registry/modules.cxd` already carries the mapping, one row per
 #      module, in its `source=` / `code=` / `half=` / `corpus=` columns, so this
 #      reads the registry rather than guessing from a filename. It covers
-#      `stdlib/<m>.cx`, `vcx/platform/stdlib_<m>.v`, `vcx/code/stdlib_<m>.v` and
+#      `stdlib/<m>.cx`, a product's `vcx/<vmodule>/stdlib_<m>.v`, `vcx/code/stdlib_<m>.v` and
 #      every file a row's `half=` names.
 #
 #      Why it is owed: before it, EVERY branch that edited `stdlib/*.cx` — which
@@ -44,7 +44,7 @@
 #      one-module change, and so did every stdlib branch of the campaign.
 #
 #      A source file NO row names is ALL, and so is a `vcx/code/` or
-#      `vcx/platform/` file that is not some row's `code=` or `half=`: those are
+#      product `vcx/<vmodule>/` file that is not some row's `code=` or `half=`: those are
 #      the engine, and the doubt resolves upward as every other rule here does.
 #      The unselected gate is unchanged — the post-merge union passes no
 #      PROFILE_GATE_FILES at all and still grades everything.
@@ -70,14 +70,14 @@ if printf '%s\n' "$CHANGED" | grep -qE '^(vcx/tests/runners/profile_gate/|vcx/te
 fi
 
 # (2b) the module map (#1587). One pass over registry/modules.cxd: for each
-# changed path under stdlib/, vcx/code/, vcx/platform/ or a split V product's
+# changed path under stdlib/, vcx/code/ or a split V product's
 # directory (vcx/cxnet/, vcx/mail/, vcx/cxdb/, vcx/store/, vcx/identity/, vcx/fabric/, vcx/xap/ -- RULED: RS-24), find the row whose
 # `source=`, `code=` or `half=` names it and take that row's `corpus=`
 # basename. A path under those trees that no row names is the ENGINE, and the
 # answer is ALL.
 REG=registry/modules.cxd
 MODSEL=''
-CANDIDATES=$(printf '%s\n' "$CHANGED" | grep -E '^(stdlib/.*\.cx|vcx/code/.*\.v|vcx/platform/.*\.v|vcx/cxnet/.*\.v|vcx/mail/.*\.v|vcx/cxdb/.*\.v|vcx/store/.*\.v|vcx/identity/.*\.v|vcx/fabric/.*\.v|vcx/xap/.*\.v)$' || true)
+CANDIDATES=$(printf '%s\n' "$CHANGED" | grep -E '^(stdlib/.*\.cx|vcx/code/.*\.v|vcx/cxnet/.*\.v|vcx/mail/.*\.v|vcx/cxdb/.*\.v|vcx/store/.*\.v|vcx/identity/.*\.v|vcx/fabric/.*\.v|vcx/xap/.*\.v)$' || true)
 if [ -n "$CANDIDATES" ]; then
   [ -r "$REG" ] || { echo ALL; exit 0; }
   for f in $CANDIDATES; do
