@@ -618,11 +618,13 @@
 # SEQ-4 regression for the shape that historically broke.
 #
 # It lives in this lane and not in the V umbrella for a packaging reason:
-# `scripts/gen_guide/` is not rsynced into the relocated cx-v package
-# (scripts/publish_v.sh), and `diagram_umbrella_test.v` IS published, so a
-# hard dependency on the page from there would either break the package smoke
-# test or need a silent skip — the vacuous-gate shape this ruling exists to
-# remove. This lane always runs from the repo root.
+# `scripts/gen_guide/` does not travel with the diagram module's extracted
+# package (`cx-core-code`, RULED: D78a; the retired cx-v mirror carried the
+# same exclusion before it), and `diagram_umbrella_test.v` IS published with
+# that package, so a hard dependency on the page from there would either
+# break the package smoke test or need a silent skip — the vacuous-gate
+# shape this ruling exists to remove. This lane always runs from the repo
+# root.
 [?def seq4-page-input-literal scope=public ($lines $key)
   [?let [= $marker [$concat '"' $key '": {']]
         [= $starts [?for [in $i [$range 1 [$count $lines]]]

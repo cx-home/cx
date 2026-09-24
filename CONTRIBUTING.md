@@ -245,8 +245,7 @@ umbrella that already owns the area — the roster is
 [`scripts/consolidation/`](scripts/consolidation)`/<area>.files` and
 `scripts/consolidate_tests.sh absorb <area>` folds a stray file in — and
 introduce a standalone `*_test.v` only when the step genuinely needs process
-isolation (a real socket, a serial-retry class, an exclusion in
-`scripts/publish_v.sh`).
+isolation (a real socket, a serial-retry class).
 
 ### A cited fixture carries its docs regeneration
 

@@ -12,7 +12,12 @@
 #
 #   cx --allow-all scripts/repo_paths.cx cx-platform-sso
 #   cx --allow-all scripts/repo_paths.cx cx-platform-sso --with-history
+#   cx --allow-all scripts/repo_paths.cx cx
 #   cx --allow-all scripts/repo_paths.cx --self-test
+#
+# The repository is the argument EQUAL to a `[repo name=]` of the registry (the
+# first such name in document order), so the front door `cx` is named like any
+# other; an argument naming no row gets the usage refusal (#1658).
 #
 # Output: one path per line on stdout, in `git ls-files` order, then a census
 # line on stderr. With REPO_PATHS_RULES=1 each line is `<path>\t<rule>`, so the
@@ -82,6 +87,19 @@
 [?def claimed scope=private pure ($rules $files $want::string)
   [?for [in $a [$allocs $rules $files]] [where [= [$string $a@repo] $want]] [yield $a]]]
 
+# -- which repository the command line names --------------------------------
+
+# pick-repo: the repository the arguments name -- the first declared name, in
+# registry/repos.cxd's document order, that some argument EQUALS; "" when none
+# does (the caller refuses with the usage line). #1658: the front door's row
+# is [repo name=cx] and the working tree's is [repo name=cx-private], so the
+# prefix test this replaced (the first argument starting `cx-`) could name
+# neither, and it took an undeclared `cx-` word for a repository.
+[?def pick-repo scope=private pure [returns string] ($argv $declared)
+  [$string [?else [$first [?for [in $n $declared]
+                             [where [$member $n $argv]]
+                             [yield $n]]] ""]]]
+
 # -- the rename closure (the prep's flag F-10) ------------------------------
 
 # `git log --follow` restricts the walk to ONE file's chain, so every rename
@@ -122,12 +140,28 @@
       [= $b-list [?for [in $h [$claimed $rules $files "b"]] [yield [$string $h@file]]]]
       [= $got [$concat "a=[" [$strings:join $a-list " "] "] b=[" [$strings:join $b-list " "] "]"]]
       [= $want "a=[x/one.md] b=[x/two.md]"]
-      [?if [= $got $want]
+      # The front door (#1658): the argument is the one EQUAL to a declared
+      # name, in the registry's document order -- `cx` and `cx-private` are
+      # names like any other, a flag or an undeclared `cx-` word is not.
+      [= $names ("cx", "cx-platform-sso", "cx-private")]
+      [= $picks ([$pick-repo ("cx") $names],
+                 [$pick-repo ("--with-history", "cx") $names],
+                 [$pick-repo ("cx-private", "--with-history") $names],
+                 [$pick-repo ("cx-private", "cx") $names],
+                 [$pick-repo ("cx-nope") $names],
+                 [$pick-repo ("--with-history") $names])]
+      [= $got-pick [$strings:join $picks "|"]]
+      [= $want-pick "cx|cx|cx-private|cx||"]
+      [?if [and [= $got $want] [= $got-pick $want-pick]]
         [then [?let [= $_ [$say [$concat "repo-paths self-test OK -- first match wins (x/one.md to a, not b), "
                                          "the shadowed prefix=x/one rule adds nothing, and an unclaimed file "
-                                         "(z/none.md) is in no list: " $got]]]
+                                         "(z/none.md) is in no list: " $got
+                                         "; the argument equal to a declared name is the repository, in "
+                                         "document order (cx and cx-private included, a flag or an undeclared "
+                                         "cx- word refused): " $got-pick]]]
                 [$env:exit 0]]]
-        [else [?let [= $_ [$cry [$concat "repo-paths self-test FAILED -- want " $want " got " $got]]]
+        [else [?let [= $_ [$cry [$concat "repo-paths self-test FAILED -- want " $want " got " $got
+                                         "; picks want " $want-pick " got " $got-pick]]]
                 [$env:exit 1]]]]]]
   [else ""]]
 
@@ -141,22 +175,16 @@
 
 [?let
   [= $argv [$env:argv]]
-  [= $want [$string [?else [$first [?for [in $x $argv]
-                                     [where [$strings:starts-with $x "cx-"]]
-                                     [yield $x]]] ""]]]
+  [= $reg [$cx:parse [$io:read-file "registry/repos.cxd"]]]
+  [= $rules [?for [in $r $reg//path] [yield $r]]]
+  [= $declared [?for [in $r $reg//repo] [yield [$string $r@name]]]]
+  [= $want [$pick-repo $argv $declared]]
   [= $_no-repo [?if [= $want ""]
-                 [then [?let [= $_ [$cry "repo-paths: name a repository, as registry/repos.cxd spells it (e.g. cx-platform-sso)"]]
+                 [then [?let [= $_ [$cry "repo-paths: name a repository, as registry/repos.cxd spells it (e.g. cx, cx-platform-sso) -- no argument equals a [repo name=] there"]]
                          [$env:exit 1]]]
                  [else ()]]]
   [= $history [$member "--with-history" $argv]]
   [= $withrules [= [$string [$env:var-or-default "REPO_PATHS_RULES" ""]] "1"]]
-  [= $reg [$cx:parse [$io:read-file "registry/repos.cxd"]]]
-  [= $rules [?for [in $r $reg//path] [yield $r]]]
-  [= $declared [?for [in $r $reg//repo] [yield [$string $r@name]]]]
-  [= $_undeclared [?if [not [$member $want $declared]]
-                    [then [?let [= $_ [$cry [$concat "repo-paths: " $want " has no [repo] row in registry/repos.cxd"]]]
-                            [$env:exit 1]]]
-                    [else ()]]]
   [= $files [?let [= $r [$process:run ("git", "ls-files")]]
               [?if [not [= [$string $r@exit-code] "0"]]
                 [then [?let [= $_ [$cry [$concat "repo-paths: git ls-files failed: " [$string $r@stderr]]]]
