@@ -169,7 +169,7 @@ name = "svc1"
 
  [case id=abi-011-json-to-cx level=core
   [tags abi cx_json_to_cx conversion]
-  [title cx_json_to_cx: a generic JSON object imports as a CX map, not an Element — the semantic (non-lossless) lane is not a round-trip inverse of abi-007]
+  [title cx_json_to_cx: a generic JSON object imports as a CX map rather than an Element — the semantic non-lossless lane does not invert the to_json of abi-007]
   [in-json [#
 {"user": {"id": 1, "name": "Alice"}}
 #]]
@@ -180,7 +180,7 @@ name = "svc1"
 
  [case id=abi-012-xml-malformed-refused level=core
   [tags abi cx_xml_to_cx conversion error]
-  [title cx_xml_to_cx: an unclosed start tag is refused, not silently repaired]
+  [title cx_xml_to_cx: an unclosed start tag is refused rather than silently repaired]
   [in-xml [#
 <user id="1"
 #]]
@@ -277,7 +277,7 @@ bob,0.88
 
  [case id=abi-019-table-reader-open-bad-header level=core
   [tags abi cx_table_reader_open data_bin error]
-  [title cx_table_reader_open: a well-framed but too-short payload is refused, not read out of bounds — restates tests/abi/c_abi_test.c's test_table_reader_bad_input]
+  [title cx_table_reader_open: a well-framed but too-short payload is refused rather than read out of bounds — restates test_table_reader_bad_input in tests/abi/c_abi_test.c]
   [in-data-bin-hex [#
 00 00 00 00    # 4 zero bytes: shorter than the 12-byte CXCol header
 #]]
