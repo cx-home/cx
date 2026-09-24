@@ -1932,7 +1932,7 @@ check-no-stub-impl:
 # attributed file) runs first, so a detector that stopped detecting fails
 # before the scan ever reports clean.
 .PHONY: check-no-ai-attribution
-check-no-ai-attribution: CX_BIN ?= $(CURDIR)/vcx/target/cx
+check-no-ai-attribution: CX_BIN ?= $(CURDIR)/deps/cx-core-code/vcx/target/cx
 check-no-ai-attribution:
 	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-env scripts/check_no_ai_attribution.cx --self-test
 	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-env scripts/check_no_ai_attribution.cx
