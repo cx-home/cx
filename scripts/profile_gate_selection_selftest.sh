@@ -69,9 +69,12 @@ check "bytes.cxd" "a module's Ring-1 V half selects its corpus file" "vcx/code/s
 # path (deps/cx-platform-fabric/vcx/fabric/stdlib_fabric.v), which this
 # rule's exact string match against a LOCAL vcx/fabric/ path can no longer
 # reach — as it should not: nothing under vcx/fabric/ exists here to touch
-# any more. xap's own code is the same shape and has not left (xap is the
-# composer, RS-24, and stays in cx-private).
-check "xap-serve.cxd" "a module's Ring-2 V code selects its corpus file" "vcx/xap/stdlib_xap.v"
+# any more. xap's own vcx/xap/stdlib_xap.v RETIRED as this example too
+# (RULED: RS-12, RS-8; #1591 item K3): xap left cx-private with cx-platform-
+# xap's extraction (3952c620e), its row names the pinned path
+# (deps/cx-platform-xap/vcx/xap/stdlib_xap.v), and with it the last product
+# V file in this tree -- no LOCAL path can stand in for a product's V code any
+# more, so the case goes rather than pointing at a file that is not here.
 # xsp-auth's own vcx/code/stdlib_xsp_auth.v RETIRED as this example (RULED:
 # D65d, RS-31): it was the last declared `half=` in registry/modules.cxd, and it
 # left cx-private with the whole of cx-platform/xsp-auth for cx-platform-xsp's
