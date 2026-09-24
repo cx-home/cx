@@ -191,7 +191,7 @@ corpus example or a measured number beside it — so the excitement is checkable
 holds: what is measured is labelled measured). It applies to the documentation epic after the cut;
 nothing before 2026-09-26 changes because of it.
 
-## RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1)
+## RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c)
 
 **Status: RULED (owner, 2026-09-23, in session, letter by letter).** The integrator posted D54–D56 and
 D62–D67 on [#1591](https://github.com/cx-home/cx-private/issues/1591) through the afternoon. The owner
@@ -209,7 +209,7 @@ earlier posting framed the options differently, that is said), the chosen option
 letters of the same kind — allocation and directory decisions — followed at the next integrator
 session's start (posted 21:2xZ) and were answered ~21:4xZ: **D68 = (a)** and **D69 = (b)**; then D70
 (#1636), put again with its long-term consequences at the owner's request, was answered ~21:5xZ:
-**D70 = (a1)**. The three are recorded last.
+**D70 = (a1)**. The three are recorded last. Three more followed after midnight (2026-09-24, posted on the board and answered there): **D71 = (a)** (~01:0xZ), **D72 = (a)** (~01:2xZ) and a second letter under D56a, on where its grading cores live (~02:1xZ, answered **(a)**); they are recorded after D70a1. Two more were answered ~03:5xZ the same morning: **D73 = (a)** and **D74 = (c)**, recorded last. D76, the consequence the D71a branch measured, was answered ~08:0xZ: **D76 = (c)**, recorded after them. D75 followed ~08:1xZ: **D75 = (a)**, recorded last.
 
 **D54c — `vcx/tests/flow_umbrella_test.v` splits by subject.** The umbrella's 16 functions shell out
 to `cx flow run/serve/--help` and read `$flow:status` — they test cx's CLI verbs AND flow's package.
@@ -328,12 +328,73 @@ in the next Ring-1 batch, so the false FAILs and the unchecked exit codes stop t
 `primer_build.cx` keeps grading that file.** The reason given: the ruling is what agents need today,
 and the timing keeps RS-16's contract still during the split. #1636 stays open until (a) merges.
 
+**D71a — the builtin-dispatch registration hook.** Five mail files could not leave with
+cx-platform-mail (`vcx/code/stdlib_{imap,imap_server,smtp,smtp_server,sasl}.v`):
+`vcx/code/stdlib_dispatch.v` calls their `*_stdlib_builtin()` as plain intra-module V functions (the
+pre-RS-18 dispatch, never migrated to the per-family `ring2_register.v` shape), and a V module is one
+directory, so a file move cannot compile them outside `code`. The same pattern meets every V product
+whose row declares a `half=`. The options, as the board posted them (2026-09-23 ~22:4xZ): **(a) the
+registration hook — `code` exposes a builtin-dispatch registry; each product's own `init()` registers
+its `*_stdlib_builtin` (the shape every other split product already uses through `ring2_register.v`);
+the five files move to `vcx/mail/`, the rows' `half=` becomes `none`; one branch (RS-19's owed
+refactor) before the halves of any product leave. Long-term: `code` knows no product by name; every
+product registers the same way; a product repository holds ALL of its code**; (b) the five stay in
+`vcx/code`, re-allocated to `cx-core-code` with a `why=` each (a `half=` is a Ring-1 half by the
+AGENTS.md doctrine; sasl's row is Ring 1 already) — SMTP/IMAP server logic then lives in the core
+repository forever, and `code` keeps a by-name call into each product; (c) leave it —
+`cx-platform-mail`'s row stays partial, with the stale-copy risk and a lie in `repos.cxd`. The owner
+answered (a) (~01:0xZ); the survey of every `half=` row rides the same branch.
+
+**D72a — a `status=planned` row may carry `repo=`.** The net extraction gave the ftp and sftp rows
+`status=planned` beside `repo=` — no row had combined the two before, and `registry/modules.cxd`'s own
+comment described `repo=` without mentioning `status=planned`; the branch flagged it as a judgment,
+not a rule. The answer, as the board records it (~01:2xZ): **(a) a `status=planned` row may carry
+`repo=` — the repository where the module lands when it ships; one sentence in the registry README
+says so; `deps-present` skips planned rows.** The board recorded the answer only; the letter's other
+options were not posted there. Authorized sentence: one, in the registry README, saying the above.
+
+**D56a, its second letter — the Ring-0 grading cores move into cx-core-data (#1624).** Since the
+core-data leave, the data cx is built from `deps/cx-core-data/vcx/cmd_data`, which cannot import this
+tree's `vcx/corpus/` (allocated to `cx`; which repository owns the grading cores is #1624), and the
+ring-import gate's `cmd_data` contract admits `cx code cli cmd_data` only — so D56a above could not be
+implemented as written. The options, as the Ring-1 batch posted them (2026-09-24 ~02:0xZ): **(a) move
+`vcx/corpus/document`, `difflint` and `streaming` (Ring 0; `fmtlane` stays, it needs the evaluator)
+into cx-core-data as modules both `cmd_data` and `cx` import, then give the data cx the verb and
+`cx_partition.md` §4 the word — cx-core-data grades 25 of its 26 files with its own build**; (b) keep
+the cores in cx; the data cx stays without `cx corpus` and cx-core-data grades itself with the full
+cx. The owner answered (a) (~02:1xZ): `cx corpus` means the same in both repositories, and #1624's
+ownership question resolves the same way (the data-side cores are cx-core-data's). Its branch follows
+the D71a hook.
+
+**D73a — the registration hook extends to the CLI verb table.** The store's leave (merged as
+`7b96250b2`) left three files by name: `vcx/cmd/store_{serve,rotate,principal}_d_cx_platform.v`, whose
+`run_store_serve` / `run_store_rotate_kek` / `run_store_mint_principal` the platform verb table in
+`vcx/cmd/platform_verbs_d_cx_platform.v` calls intra-module — the D71 wall one level up the tree (a
+scratch build that moved them failed `undefined ident: run_store_serve`). The options, as the store
+leave's RESULTS posted them (board, 2026-09-24 ~03:2xZ): **(a) extend the D71a branch's hook to the
+verb table, so a product registers its own CLI verbs from its own `init()`, and the three files move to
+cx-platform-store**; (b) leave the three files permanently allocated to `cx-core-code`/`cx`
+(re-allocate them in `repos.cxd`, drop the store's claim) if no other product ever needs the same
+shape; (c) leave them as they are, tracked here, `why='PARTLY EXTRACTED'`, indefinitely. The owner
+answered (a) (~03:5xZ): the second part of the D71a branch, or its follow-up branch.
+
+**D74c — pace: the weekly limit does not bind.** The integrator reported usage (5-hour 41 %, weekly
+50 % → 71 % in one window) and asked whether pace should drop before the weekly limit. The answer, as
+the board records it (~03:5xZ): **(c) the weekly limit does not bind — extra usage covers it — and full
+pace resumes**; the four bindings' leave and D56a's branch launch, the registry-editing branches wait
+for the leaves that edit the registries. The board recorded the answer only; the letter's other options
+were not posted there. No code, spec or allocation moves under it.
+
+**D76c — sasl stays in `vcx/code`; the ring decides where a module lives.** Moving the five mail files under D71a took the sasl, smtp and imap natives out of every composition without cx-platform-mail — the `cli` and `embed` profiles, libcx and the wasm build — where they had answered inside `code`: measured on the D71a branch, `[$sasl:mechanisms …]` refused there as `CXER0136 no callable "sasl-mechanisms"`. sasl's own row reads `ring=1 ns=cx-stdlib` (pure, no network) yet its code was allocated to cx-platform-mail. The options, as the D71a branch's RESULTS posted them (board, 2026-09-24 ~07:1xZ): (a) accept: re-row sasl into the platform group (its only callers are smtp and imap, RS-5) — the profiles refuse all three like any platform name; (b) a second V module in cx-platform-mail holding the three pure halves (importing only `code` and `cx`) that the cli, embed and libcx compositions import — the Ring-1 halves stay in every profile and the product keeps its code, but `cmd`'s cli profile then imports a product module; **(c) sasl alone returns to `vcx/code` (cx-core-code) and smtp and imap stay moved.** The owner answered (c) (~08:0xZ): sasl is Ring 1 and pure, so it lives in `vcx/code` and its `registry/repos.cxd` allocation moves from cx-platform-mail to cx-core-code; smtp and imap stay in cx-platform-mail, and their absence from the embed profile is by design. The branch recommended (a); the owner chose (c). Applied on `impl/cx-F-dispatch-registry`.
+
+**D75a — binding-API parity: cx publishes the ABI test vectors, each binding grades itself.** The four bindings' leave (merged as `b648d8839`) retired `test-binding-api-parity` with its inputs, and no successor grades four-way binding-API parity: each binding repository's own gate runs `deps-check` alone, and `conformance/binding_api.cxd` and its three scripts stay tracked in cx, unwired (the leave's RESULTS, `_gate_evidence/pipeline_xbindings/RESULTS.md`; board, 2026-09-24 ~05:4xZ, which posted the gap as the letter). The answer, as the board records it (~08:1xZ): **(a) cx publishes the ABI test vectors — `tests/abi`'s cases as a corpus file — and each binding repository grades itself against them in its own lane with the released cx; parity becomes a property each binding proves alone.** The board recorded the answer and the gap only; the letter's other options were not posted there. A small item after the cut (queued with cx-platform-xsp, the reference-apps repository, the documentation and CI); nothing moves under it before then.
+
 ## Not decided here (RS-30, RS-31)
 
 The order of work is the board's, not this page's: D55c, D56a, D62a and D63a are decision-free fixes
 for the next Ring-1 batch; D54c and D64c are the package-lanes work; D65d, D67a and the documentation
 epic under RS-30 open after the cut. D66a records placements the store split already made; D68a and
 D69b are applied by the branches named with them; D70a1's interim (b) is the next Ring-1 batch's and
-its end state (a) a design item after the cut. The spec sentence (a) needs is not written by this
+its end state (a) a design item after the cut. D71a is its own branch, before any product's `half=` leaves; D72a's README sentence rides the next registry-touching branch; D56a's second letter is a branch after D71a's. The spec sentence (a) needs is not written by this
 page. No
 sentence of any spec beyond the ones named above is authorized by this page.

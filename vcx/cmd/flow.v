@@ -51,7 +51,7 @@ module main
 import os
 import crypto.sha256
 import cx
-import code
+import code { grant_scope_install, grant_scope_root, opt_root, refuse_unenforced_grant_scope }
 
 // the journal tenant the local profile writes under: one token, stable, so
 // `cx flow status` reads back what `cx flow run` wrote.

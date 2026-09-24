@@ -105,7 +105,11 @@ COLUMNS
           the prefix, so an extraction cannot turn a ring check vacuous
   code    the V file(s) carrying the dispatch, or `none` for a pure-CX
           module — every one under the row's own directory (vcx/code for
-          the rings, vcx/platform for group=platform)
+          the rings, vcx/platform for group=platform), or, on a `repo=` row,
+          the pinned deps/<repo>/vcx/<vmodule>/ files — a module whose
+          dispatch lives in a product is reached through code's
+          builtin-dispatch registry, which the product's own init() fills,
+          and never by name from vcx/code (RULED: D71a)
   half    a DECLARED Ring-1 half of a group=platform module (1427-d): the pure codec
           or client a Ring-1 consumer may need for profile composition. It
           stays in vcx/code and is named HERE, so the placement check reads
@@ -125,6 +129,10 @@ COLUMNS
                    and its directories, not to existence — and REFUSED once
                    every artifact exists, which is the commit that flips it
                    to current
+                   A planned row may carry `repo=`: the repository the
+                   module lands in when it ships, its columns then naming
+                   deps/<repo>/ paths; `deps-present` skips planned rows
+                   (RULED: D72a)
           incoming the artifacts arrive with another branch's merge; the row
                    is here so that merge does not fail this check. Graded
                    when present, not required
@@ -324,17 +332,20 @@ needs becomes its own Ring-1 module.
   [; http is the 1427-e split: the serve half stays here and keeps the name,
      the client+codec half is the `http-client` row above. ]
   [module name=http ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-net spec=deps/cx-platform-net/spec/03-approved/platform/http.md corpus=deps/cx-platform-net/conformance/platform/http.cxd source=deps/cx-platform-net/stdlib/http.cx code='deps/cx-platform-net/vcx/cxnet/stdlib_http_serve.v deps/cx-platform-net/vcx/cxnet/http_h2_serve_notd_wasm32_emcc.v deps/cx-platform-net/vcx/cxnet/serve_file.v deps/cx-platform-net/vcx/cxnet/stdlib_http_serve_register.v deps/cx-platform-net/vcx/cxnet/serve_file_register.v' half=none status=current]
-  [; imap and smtp go whole to cx-platform (1427-e): they SERVE, and their
-     client/codec halves stay declared in vcx/code until a Ring-1 consumer
-     asks for a module of their own. Both corpora still carry the ring=1
-     header the old tier-based placement gave them. ]
-  [module name=imap ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-mail spec=deps/cx-platform-mail/spec/03-approved/platform/imap.md corpus=deps/cx-platform-mail/conformance/platform/imap.cxd source=deps/cx-platform-mail/stdlib/imap.cx code='deps/cx-platform-mail/vcx/mail/stdlib_imap_wire.v deps/cx-platform-mail/vcx/mail/stdlib_imap_wire_register.v' half='vcx/code/stdlib_imap.v vcx/code/stdlib_imap_server.v' status=current]
+  [; imap and smtp go whole to cx-platform (1427-e): they SERVE. Their
+     client/codec halves were declared in vcx/code (`half=`) until D71a:
+     since then they live with the wire halves in cx-platform-mail's
+     vcx/mail/, and mail's own init() registers them through code's
+     builtin-dispatch registry, so `half=none` and `code=` names all five of
+     each row's pinned files (RULED: D71a, RS-19, RS-18). Both corpora still
+     carry the ring=1 header the old tier-based placement gave them. ]
+  [module name=imap ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-mail spec=deps/cx-platform-mail/spec/03-approved/platform/imap.md corpus=deps/cx-platform-mail/conformance/platform/imap.cxd source=deps/cx-platform-mail/stdlib/imap.cx code='deps/cx-platform-mail/vcx/mail/stdlib_imap_wire.v deps/cx-platform-mail/vcx/mail/stdlib_imap_wire_register.v deps/cx-platform-mail/vcx/mail/stdlib_imap.v deps/cx-platform-mail/vcx/mail/stdlib_imap_server.v deps/cx-platform-mail/vcx/mail/stdlib_imap_register.v' half=none status=current]
   [module name=journal ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-store spec=deps/cx-platform-store/spec/03-approved/platform/journal.md corpus=deps/cx-platform-store/conformance/platform/journal.cxd source=deps/cx-platform-store/stdlib/journal.cx code='deps/cx-platform-store/vcx/store/stdlib_journal.v deps/cx-platform-store/vcx/store/journal_ingest.v deps/cx-platform-store/vcx/store/stdlib_journal_register.v' half=none status=current]
   [module name=live ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-store spec=deps/cx-platform-store/spec/03-approved/platform/live.md corpus=deps/cx-platform-store/conformance/platform/live.cxd source=deps/cx-platform-store/stdlib/live.cx code='deps/cx-platform-store/vcx/store/stdlib_live.v deps/cx-platform-store/vcx/store/stdlib_live_register.v' half=none status=current]
   [module name=net ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-net spec=deps/cx-platform-net/spec/03-approved/platform/net.md corpus=deps/cx-platform-net/conformance/platform/net.cxd source=deps/cx-platform-net/stdlib/net.cx code='deps/cx-platform-net/vcx/cxnet/stdlib_net.v deps/cx-platform-net/vcx/cxnet/stdlib_net_register.v' half=none status=current]
   [module name=session ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-identity spec=deps/cx-platform-identity/spec/03-approved/platform/session.md corpus=deps/cx-platform-identity/conformance/platform/session.cxd source=deps/cx-platform-identity/stdlib/session.cx code='deps/cx-platform-identity/vcx/identity/stdlib_session.v deps/cx-platform-identity/vcx/identity/identity_connector_builtins.v deps/cx-platform-identity/vcx/identity/stdlib_session_register.v' half=none status=current]
   [module name=sftp ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-net spec=deps/cx-platform-net/spec/03-approved/platform/sftp.md corpus=deps/cx-platform-net/conformance/platform/sftp.cxd source=deps/cx-platform-net/stdlib/sftp.cx code=deps/cx-platform-net/vcx/cxnet/stdlib_sftp.v half=none status=planned]
-  [module name=smtp ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-mail spec=deps/cx-platform-mail/spec/03-approved/platform/smtp.md corpus=deps/cx-platform-mail/conformance/platform/smtp.cxd source=deps/cx-platform-mail/stdlib/smtp.cx code='deps/cx-platform-mail/vcx/mail/stdlib_smtp_wire.v deps/cx-platform-mail/vcx/mail/stdlib_smtp_wire_register.v' half='vcx/code/stdlib_smtp.v vcx/code/stdlib_smtp_server.v' status=current]
+  [module name=smtp ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-mail spec=deps/cx-platform-mail/spec/03-approved/platform/smtp.md corpus=deps/cx-platform-mail/conformance/platform/smtp.cxd source=deps/cx-platform-mail/stdlib/smtp.cx code='deps/cx-platform-mail/vcx/mail/stdlib_smtp_wire.v deps/cx-platform-mail/vcx/mail/stdlib_smtp_wire_register.v deps/cx-platform-mail/vcx/mail/stdlib_smtp.v deps/cx-platform-mail/vcx/mail/stdlib_smtp_server.v deps/cx-platform-mail/vcx/mail/stdlib_smtp_register.v' half=none status=current]
   [; sso — #1394's enterprise-SSO handler surface, pure CX over
      oidc/saml/scim/session; declared `incoming` before its merge (OL-15) and
      current since release/0.18 carries it.
