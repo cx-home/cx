@@ -67,7 +67,15 @@ check "bytes.cxd" "a module's Ring-1 V half selects its corpus file" "vcx/code/s
 check "fabric.cxd" "a module's Ring-2 V code selects its corpus file" "vcx/platform/stdlib_fabric.v"
 check "xsp-auth.cxd" "a module's `half=` file selects its corpus file too" "vcx/code/stdlib_xsp_auth.v"
 check "bytes.cxd map.cxd" "two module sources select both corpus files" "stdlib/map.cx" "vcx/code/stdlib_bytes.v"
-check "connector.cxd db.cxd" "a module source and a corpus file together" "stdlib/connector.cx" "conformance/platform/db.cxd"
+# connector's own stdlib/connector.cx RETIRED as this example (RULED: RS-12,
+# RS-8, RS-27; #1591 item K3): connector left cx-private with
+# cx-platform-connector's extraction, and registry/modules.cxd's row now
+# names the pinned path (deps/cx-platform-connector/stdlib/connector.cx),
+# which this rule's exact string match against a LOCAL stdlib/ path can no
+# longer reach — as it should not: nothing under stdlib/connector.cx exists
+# here to touch any more. geo's own source is the same shape and has not
+# left (the d2cec18fa/fabric.cxd precedent, applied here).
+check "db.cxd geo.cxd" "a module source and a corpus file together" "stdlib/geo.cx" "conformance/platform/db.cxd"
 
 # ALL still wins wherever a module cannot be named, and wherever the change is
 # the ENGINE rather than a module: those are the doubts the fail-safe exists for.
