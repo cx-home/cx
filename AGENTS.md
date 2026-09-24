@@ -99,11 +99,12 @@ them said which one governs. This is the order (RULED: CFG-1, #1438):
 
 1. **The owner's live word**, in the session or on the issue.
 2. **This file** — the rules that do not bend, above.
-3. [`AGENT-STANDING-RULES.md`](AGENT-STANDING-RULES.md) — the standing rules
+3. `AGENT-STANDING-RULES.md` — the standing rules
    every agent working a v0.18 issue reads before its brief: how to stay
    alive, the git and worktree rules, the shared pre-merge runner, the
    pipeline shape, and what `READY` means. It is tracked content, edited
-   through a branch like anything else. Where it is *more specific* than this
+   through a branch like anything else, in the private orchestration
+   repository's root — the public `cx` does not carry it (RULED: D82a). Where it is *more specific* than this
    file it governs; where it *contradicts* a rule above, this file wins and
    the contradiction is a defect to file, not a choice to make.
 4. **The process specs** —

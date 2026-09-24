@@ -1511,7 +1511,10 @@ verify-doc-links:
 	@tools/verify-doc-links.sh spec/03-approved/
 	@tools/verify-doc-links.sh README.md CONTRIBUTING.md ROADMAP.md \
 	  SECURITY.md CODE_OF_CONDUCT.md CHANGELOG.md RELEASE_NOTES_v*.md \
-	  AGENTS.md CLAUDE.md
+	  AGENTS.md $(wildcard CLAUDE.md)
+	@# CLAUDE.md is cx-private's (RULED: D82a): the public cx the same filter
+	@# makes from this tree does not carry it, and the checker refuses a named
+	@# file that is absent, so it is checked where it exists.
 	@# docs/llm/ (#938) is the GENERATED LLM layer. It is expected to carry
 	@# ZERO relative links: it is served from the published SITE ROOT, where a
 	@# repo-relative path resolves to nothing. So this row's job is to stay at
