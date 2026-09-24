@@ -703,9 +703,13 @@ fn test_accepted_by_one_red_proof() {
 	assert stale.len == 1, 'the column must refuse a reason for a divergence that is gone'
 	assert stale[0].contains('NO LONGER'), stale[0]
 
-	// and a divergence that changed sides is not silently re-labelled
+	// and a divergence that changed sides is not silently re-labelled.
+	// Anchor RETARGETED (K7a, RULED: RS-12) from conformance/code.cxd, which
+	// left with cx-core-code's extraction and is no longer in the table at
+	// all under any kind, to examples/article.cx, a `.data` entry the table
+	// still carries (reason_1579) and that this tree keeps for good.
 	side, _ := judge_accepted_by_one([
-		AcceptedByOne{'conformance/code.cxd', .program, ''},
+		AcceptedByOne{'examples/article.cx', .program, ''},
 	], accepted_by_one_table)
 	assert side.len == 1, 'the column must refuse an entry whose accepting reader changed'
 	assert side[0].contains('changed sides'), side[0]
