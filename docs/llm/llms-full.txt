@@ -1890,6 +1890,41 @@ visible in the import line.
 
 | Module | Scope |
 |---|---|
+| `audit` | The audit sink: the one durable, attributed, append-only, queryable record of what the platform did, who asked, under whose authority, on what, and what was decided. |
+| `authz-store` | The durable half of the XAP authority model: the trust store itself. |
+| `connector` | The connector kit: one engine every connector feature runs on, and the vocabulary that declaration is written in. |
+| `did-web` | Resolving a did:web — the one DID method whose document is not derivable from the identifier and has to be fetched. |
+| `flow` | General workflow on the saga substrate: flows as documents, runs as journaled records, and a runner that is a pure function rather than an engine. |
+| `fabric` | Platform-level eventing over the shipped primitives: one subscribe/emit surface with an explicit durability axis. |
+| `http` | The HTTP/1.1 SERVER: an event-loop accept/respond surface over the `cx-platform/net` transport, with Server-Sent Events streaming for held-open push. |
+| `imap` | Both halves of IMAP4rev2 (RFC 9051) on one token grammar: the client an agent or a human client reads a mailbox with, and the server core a CX process serves a mailbox from. |
+| `journal` | An append-only, hash-chained, tenant-partitioned event log and the deterministic projection of that log into state. |
+| `live` | The live modes over the one planar comprehension: the same quoted `[?for]` that runs once as a query is also a delta feed. |
+| `net` | Transport-level (L4) networking: opening and accepting stream connections (TCP, Unix-stream, TLS), exchanging datagrams (UDP, Unix-datagram, DTLS), name resolution, and TLS upgrade or termination. |
+| `session` | The server-held (principal, tenant) session for a web app. |
+| `smtp` | Both halves of ESMTP on one wire grammar: the submission client a CX program sends mail with (RFC 6409) and the receive server core it accepts mail with (RFC 5321 §4). |
+| `sso` | The enterprise-SSO deployment surface: the half of enterprise single sign-on that RECEIVES a request. |
+| `store` | A content-addressed object store with URL-dispatched backends. |
+| `vc-revocation` | The durable half of credential lifecycle: recording that a verifiable credential is revoked, and reading back the set of revoked ids. |
+| `xap` | The XAP orchestrator — the experience layer at the top of the CX web stack. |
+| `xsp-auth` | The XSP-AUTH mutual proof-of-control handshake calculus — SIGMA-style signed ephemeral X25519 over four messages riding ordinary XSP v1 frames on stream 0, with the per-request possession proof and the rotation-continuity proof beside it. |
+| `a2a` | A minimal A2A (Agent-to-Agent) protocol client (EXPERIMENTAL x/ tier, #6    Y2) — completing the agentic triad (S9 MCP client, Y1 MCP server, Y2 A2A) on the    shared substrate (jsonrpc + http + json), no new transport. |
+| `a2a-xap` | A2A tasks over the xap substrate (EXPERIMENTAL x/ tier, #6 Y2b). |
+| `adjudicate` | Out-of-band agent adjudicator for the similar review band (EXPERIMENTAL    x/ tier; cx-private #376, similar.md §5.3 ruling Q4). |
+| `llm` | A minimal LLM provider (EXPERIMENTAL x/ tier, #6 D2/S10) — the first    Runnable. |
+| `mcp` | A minimal MCP (Model Context Protocol) client (EXPERIMENTAL x/ tier, #6    S9). |
+| `mcp-server` | Minimal MCP server helpers (EXPERIMENTAL x/ tier, #6 Y1; stream 18) — the    server counterpart to cx-x/mcp, at the 2025-06-18 protocol revision (one    target). |
+| `run` | The Runnable convention + combinator library (EXPERIMENTAL x/ tier, #6    D2/M2). |
+| `tools` | The agent-tool projection (EXPERIMENTAL x/ tier; stream 18): ONE    tool-descriptor model derived from command definitions ([effects]-bearing    [?def]s — clause presence is the discriminator) at list time, no    materialized manifest. |
+| `ux` | The SEMANTIC CORE of the UX projection (EXPERIMENTAL x/ tier;    #787): the vocabulary, the fragment addressing, the validation, the three    projections (command→form, query→table, feature-grammar→form/columns), the    hint claims, the patch algebra a live feed lowers onto, and the surface    document's routing correspondence. |
+| `ux-tui` | The TERMINAL RENDERER of the UX projection (EXPERIMENTAL x/ tier;    #787 W5): the second of two peers over `cx-x/ux`'s semantic vocabulary, and    the reason R5's renderer-agnostic claim is testable rather than asserted. |
+| `ux-web` | The WEB RENDERER of the UX projection (EXPERIMENTAL x/ tier;    #787): one of two peers over `cx-x/ux`'s semantic vocabulary, not the    privileged one. |
+
+### Five you will reach for immediately
+
+`strings` is UTF-8 and codepoint-positioned — indexing, length, and slicing
+count codepoints, and case folding follows the Unicode tables:
+
 `prog.cx`
 ```cx
 [?lib 'cx-stdlib/strings']
