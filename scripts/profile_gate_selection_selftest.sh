@@ -72,7 +72,12 @@ check "bytes.cxd" "a module's Ring-1 V half selects its corpus file" "vcx/code/s
 # any more. xap's own code is the same shape and has not left (xap is the
 # composer, RS-24, and stays in cx-private).
 check "xap-serve.cxd" "a module's Ring-2 V code selects its corpus file" "vcx/xap/stdlib_xap.v"
-check "xsp-auth.cxd" "a module's `half=` file selects its corpus file too" "vcx/code/stdlib_xsp_auth.v"
+# xsp-auth's own vcx/code/stdlib_xsp_auth.v RETIRED as this example (RULED:
+# D65d, RS-31): it was the last declared `half=` in registry/modules.cxd, and it
+# left cx-private with the whole of cx-platform/xsp-auth for cx-platform-xsp's
+# vcx/xsp/ -- the row now reads half=none and names the pinned path, which this
+# rule's exact string match against a LOCAL vcx/code/ path can no longer reach.
+# No row declares a half= any more, so no local file can stand in for it.
 check "bytes.cxd map.cxd" "two module sources select both corpus files" "stdlib/map.cx" "vcx/code/stdlib_bytes.v"
 # connector's own stdlib/connector.cx RETIRED as this example (RULED: RS-12,
 # RS-8, RS-27; #1591 item K3): connector left cx-private with
