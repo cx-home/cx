@@ -2884,7 +2884,6 @@ fixtures-census-reset:
 SUITE_SERIAL_RETRY := vcx/tests/env_retention_test.v \
                       vcx/tests/process_pty_test.v \
                       vcx/tests/xap_umbrella_test.v \
-                      vcx/tests/fabric_umbrella_test.v \
                       vcx/tests/code_eval_fixtures_test.v \
                       vcx/tests/code_eval_fixtures_shard_1_test.v \
                       vcx/tests/code_eval_fixtures_shard_2_test.v \
@@ -3011,8 +3010,6 @@ RETRY_REASON_CASE = case "$$rel" in \
 	    reason="\#1125 pty master read races under the -j12 suite storm (empty child output); green in isolation and in the prior full run" ;; \
 	  vcx/tests/xap_umbrella_test.v) \
 	    reason="reference web client / store readiness bounds (calibrated ~30 s) exceeded only under the -j12 storm plus box load: measured 2026-09-09 OK 72 s alone, FAIL 98.7 s and 123 s with a step or build sharing the box" ;; \
-	  vcx/tests/fabric_umbrella_test.v) \
-	    reason="\#1650 publish starved under load: the first webhook POST of test_fabric_webhook_adapter after the SSE lane joined got no answer inside the 30 s client read deadline in the 14-job selected run on 6eecb5282 (the handler publish waits on the fabric handle mutex the pump holds across each deadline-bounded receive); 3 of 3 green at the same tree on the shared slot at load 6-9 (the test 3.8 s), the 30 s deadline is NOT loosened" ;; \
 	  vcx/tests/store_remote_umbrella_test.v) \
 	    reason="\#1425 daemon start under the -j12 suite storm (the readiness window expires before the listener line); green in isolation and in every prior full run" ;; \
 	  vcx/tests/connector_live_test.v) \
@@ -3398,7 +3395,7 @@ CODE_SERIAL_RETRY := vcx/code/code_module_umbrella_test.v
 # (found removing cx-platform-db's vcx/cxdb/, RULED: RS-12, RS-8, #1591 item
 # K3). The extracted product's own `v test` runs from the pin, same as its
 # `cx corpus`.
-CODE_TEST_DIRS := vcx/code/ vcx/fabric/ vcx/xap/
+CODE_TEST_DIRS := vcx/code/ vcx/xap/
 test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	@$(JS_CLOSE) log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
 	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(CODE_TEST_DIRS) 2>&1; echo $$? > $$stf; } | tee $$log; \
