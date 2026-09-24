@@ -1,0 +1,180 @@
+# scripts/check_no_ai_attribution.cx — the ZERO-AI-ATTRIBUTION gate (RULED:
+# RS-33; ledger/rulings_2026_09_24_no_ai_attribution_rs33.md).
+#
+# The owner's rule: zero AI attribution anywhere in any repository, ever —
+# commit messages, trailers, tracked files, docs, generated output.
+# Attribution is handled outside the repositories. This gate holds the line:
+# it scans (i) every commit message of `<base>..HEAD` and (ii) every tracked
+# text file for four patterns a harness template has been known to add on its
+# own: a Co-Authored-By trailer naming Claude, the anthropic.com noreply
+# address, a "Generated with" credit line, and the robot-face "Generated"
+# line.
+#
+# Every pattern is held here SPLIT across two or more string literals and
+# joined only at run time (see `all-patterns` below) — a whole pattern
+# written contiguously in this file's own tracked text would make this gate
+# flag itself the moment it scans its own source, which is the same
+# bootstrapping problem the ledger page (above) solves by splitting its
+# quotes. Do not "simplify" the split back into one literal.
+#
+# Usage (run from the checkout root):
+#   cx --allow-read --allow-write --allow-subprocess --allow-env \
+#     scripts/check_no_ai_attribution.cx
+#   BASE=<ref> cx --allow-read --allow-write --allow-subprocess --allow-env \
+#     scripts/check_no_ai_attribution.cx
+#   cx --allow-read --allow-write --allow-subprocess --allow-env \
+#     scripts/check_no_ai_attribution.cx --self-test
+# (or: make check-no-ai-attribution)
+#
+# BASE defaults to origin/release/0.18; the commit-message scan covers
+# `<base>..HEAD`. Each hit prints as `<sha|path>: <line>` (the offending
+# line, trimmed) on stdout.
+#
+# Exit 0 clean, 1 on any hit, 2 on an environment fault (git unavailable, the
+# base ref unknown, `git ls-files` or `git log` failed).
+#
+# --self-test builds a scratch repository (`git init`, three commits) with
+# ONE attributed commit (a trailer line in the commit message) and ONE
+# attributed file (a tracked file whose content carries a credit line), and
+# proves the scan catches both — red before this gate had a caller
+# (AGENTS.md rule 2: fixture before fix), and re-run on every invocation of
+# `make check-no-ai-attribution` so a detector that stops detecting fails
+# before the scan ever reports clean.
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/fp'      as=fp]
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def cat scope=private pure ($parts) [$strings:join $parts '']]
+
+[?def nonblank scope=private pure ($text::string)
+  [?for [in $l [$strings:split-lines $text]]
+    [where [not [= [$strings:trim $l] ""]]]
+    [yield [$strings:trim $l]]]]
+
+# all-patterns: the four RS-33 patterns, each assembled from parts that never
+# sit contiguously in THIS file's own tracked text (see the header note).
+[?def all-patterns scope=private pure ()
+  [?let
+    [= $p1 [$cat ("Co-Authored-By", ":", " Claude")]]
+    [= $p2 [$cat ("noreply", "@", "anthropic.com")]]
+    [= $p3 [$cat ("Generated with", " ", "[Claude Code]")]]
+    [= $p4 [$cat ("Generated with", " ", "Claude")]]
+    [= $p5 [$cat ("🤖", " ", "Generated")]]
+    ($p1, $p2, $p3, $p4, $p5)]]
+
+[?def line-hit scope=private pure [returns bool] ($l::string)
+  [> [$count [?for [in $p [$all-patterns]] [where [$strings:contains $l $p]] [yield 1]]] 0]]
+
+# run-git: [$process:run ("git", "-C", $dir, ...$argv)]; exit 2 on a non-zero
+# status or a process fault, because every git call this gate makes is one
+# whose failure means the environment is wrong rather than the tree.
+[?def run-git scope=private impure ($dir::string $argv $what::string)
+  [?let
+    [= $full ("git", "-C", $dir, [?splice $argv])]
+    [= $r [?fallback [$process:run $full]
+            [recover-with ([$cry [$cat ("check-no-ai-attribution: cannot run git (", $what, ")")]],
+                           [$env:exit 2], null)]]]
+    [?if [not [= [$string $r@exit-code] "0"]]
+      [then [?let [= $_f ([$cry [$cat ("check-no-ai-attribution: git ", $what, " failed (exit ",
+                                       [$string $r@exit-code], ")")]],
+                          [$cry [$string $r@stderr]])]
+              [?let [= $_x [$env:exit 2]] ""]]]
+      [else [$string $r@stdout]]]]]
+
+# scan-commits: every hit in every commit message of `<base>..HEAD`, read one
+# commit at a time (`git log -1 --format=%B <sha>`) so a hit reports the exact
+# sha that carries it.
+[?def scan-commits scope=private impure ($dir::string $base::string)
+  [?let
+    [= $shas [$nonblank [$run-git $dir ("log", "--format=%H", [$cat ($base, "..HEAD")]) "log --format=%H"]]]
+    [$fp:flat-map $shas [?fn ($sha)
+      [?let
+        [= $body [$run-git $dir ("log", "-1", "--format=%B", $sha) "log -1 --format=%B"]]
+        [?for [in $l [$nonblank $body]]
+          [where [$line-hit $l]]
+          [yield [hit key=$sha line=$l]]]]]]]]
+
+# scan-files: every hit in every tracked file `git ls-files` names. A file
+# that cannot be decoded as text is skipped (read recovers to the empty
+# string) — the "text only" half of the scan.
+[?def scan-files scope=private impure ($dir::string)
+  [?let
+    [= $paths [$nonblank [$run-git $dir ("ls-files") "ls-files"]]]
+    [$fp:flat-map $paths [?fn ($p)
+      [?let
+        [= $text [?fallback [$io:read-file [$cat ($dir, "/", $p)]] [recover-with ""]]]
+        [?if [= $text ""]
+          [then ()]
+          [else [?for [in $l [$nonblank $text]]
+                  [where [$line-hit $l]]
+                  [yield [hit key=$p line=$l]]]]]]]]]]
+
+# make-scratch-repo: a fresh git repository with a clean seed commit, then an
+# ATTRIBUTED FILE commit (a tracked file whose content carries a credit
+# line) and an ATTRIBUTED COMMIT (a clean file, a trailer line in the
+# message) — exactly the two shapes RS-33 forbids, each in its own commit so
+# the self-test can tell which detector caught which.
+[?def make-scratch-repo scope=private impure ($root::string)
+  [?let
+    [= $pats [$all-patterns]]
+    [= $credit [$nth $pats 3]]
+    [= $trailer [$nth $pats 1]]
+    [= $ident ("-c", "user.name=selftest", "-c", "user.email=selftest@example.invalid", "-c", "commit.gpgsign=false")]
+    [= $_i [$process:run ("git", "init", "-q", $root)]]
+    [= $_f0 [$io:write-file [$cat ($root, "/README.md")] "seed\n"]]
+    [= $_a0 [$process:run ("git", "-C", $root, "add", "README.md")]]
+    [= $_c0 [$process:run ("git", "-C", $root, [?splice $ident], "commit", "-q", "-m", "seed")]]
+    [= $base [$strings:trim [$run-git $root ("rev-parse", "HEAD") "rev-parse"]]]
+    [= $_f1 [$io:write-file [$cat ($root, "/NOTES.md")] [$cat ("notes\n", $credit, "\n")]]]
+    [= $_a1 [$process:run ("git", "-C", $root, "add", "NOTES.md")]]
+    [= $_c1 [$process:run ("git", "-C", $root, [?splice $ident], "commit", "-q", "-m", "add notes")]]
+    [= $_f2 [$io:write-file [$cat ($root, "/clean.txt")] "clean\n"]]
+    [= $_a2 [$process:run ("git", "-C", $root, "add", "clean.txt")]]
+    [= $msg [$cat ("add clean file\n\n", $trailer)]]
+    [= $_c2 [$process:run ("git", "-C", $root, [?splice $ident], "commit", "-q", "-m", $msg)]]
+    [scratch base=$base]]]
+
+[?def run-self-test scope=private impure ()
+  [?let
+    [= $root [$io:temp-dir "cx-no-ai-attr-"]]
+    [= $s [$make-scratch-repo $root]]
+    [= $base [$string $s@base]]
+    [= $commit-hits [$scan-commits $root $base]]
+    [= $file-hits [$scan-files $root]]
+    [= $_rm [$io:remove-tree $root]]
+    [?if [and [> [$count $commit-hits] 0] [> [$count $file-hits] 0]]
+      [then [?let
+        [= $_ok [$say [$cat ("check-no-ai-attribution self-test OK — the scratch repo's attributed COMMIT (",
+                             [$string [$count $commit-hits]], " line hit(s)) and its attributed FILE (",
+                             [$string [$count $file-hits]], " line hit(s)) were both caught")]]]
+        [$env:exit 0]]]
+      [else [?let
+        [= $_f [$cry [$cat ("check-no-ai-attribution self-test FAILED — commit-hits=",
+                            [$string [$count $commit-hits]], " file-hits=", [$string [$count $file-hits]],
+                            " (want both > 0)")]]]
+        [$env:exit 1]]]]]]
+
+[?if [> [$count [?for [in $a [$env:argv]] [where [= $a "--self-test"]] [yield 1]]] 0]
+  [then [$run-self-test]]
+  [else
+    [?let
+      [= $base [$string [$env:var-or-default "BASE" "origin/release/0.18"]]]
+      [= $commit-hits [$scan-commits "." $base]]
+      [= $file-hits [$scan-files "."]]
+      [= $all-hits ([?splice $commit-hits], [?splice $file-hits])]
+      [= $_p [?for [in $h $all-hits]
+               [yield [$say [$cat ([$string $h@key], ": ", [$string $h@line])]]]]]
+      [?if [> [$count $all-hits] 0]
+        [then [?let
+          [= $_s [$cry [$cat ("check-no-ai-attribution: FAILED — ", [$string [$count $all-hits]],
+                              " hit(s) — commit messages since ", $base, " and every tracked file.")]]]
+          [$env:exit 1]]]
+        [else [?let
+          [= $_ok [$say [$cat ("check-no-ai-attribution: clean — no AI attribution in commit messages since ",
+                               $base, " or in any tracked file")]]]
+          [$env:exit 0]]]]]]]
