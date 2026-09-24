@@ -78,10 +78,10 @@ the rule carries a `why=`. The recurring reasons, once:
   [repo name=cx-platform-sso group=platform ring=none ships=package status=extracted at=1e814e5aae6327a8218cc3fe69b43a03517e92bf about='enterprise sign-on, the interop lane' why='EXTRACTED (RULED: RS-12, #1591 item 11), the first of them. It has no [path] rules because it owns no tracked path here any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records, and the gate exempts a status=extracted repo from the empty-repo refusal for exactly that reason -- the row is the pin\'s counterpart, not a plan waiting to be executed']
   [repo name=cx-platform-ux group=platform ring=none ships=package status=extracted at=ef9248093389d42f6726042bfc254351445db4bc about='the web and terminal surfaces' why='EXTRACTED (RULED: RS-12, #1591 item 12), with cx-platform-agent: the x/ graduation. It owns no tracked path here any more; cx reaches it through deps.cxd at the sha at= records, and registry/modules.cxd\'s ux, ux-web and ux-tui rows name the pinned checkout']
   [repo name=cx-platform-agent group=platform ring=none ships=package status=extracted at=df505787c2498100ded95e45031fa2f9192b2d09 about='tools, mcp, mcp-server, a2a, a2a-xap, llm, run, adjudicate' why='EXTRACTED (RULED: RS-12, #1591 item 12), with cx-platform-ux: the x/ graduation. It owns no tracked path here any more; cx reaches it through deps.cxd at the sha at= records, and registry/modules.cxd\'s eight agent rows name the pinned checkout']
-  [repo name=cx-binding-python group=binding ring=none ships=pypi about='cxlib for Python']
-  [repo name=cx-binding-go group=binding ring=none ships=go-module about='cxlib for Go']
-  [repo name=cx-binding-rust group=binding ring=none ships=crate about='cxlib for Rust']
-  [repo name=cx-binding-v group=binding ring=none ships=v-module about='the native reference binding']
+  [repo name=cx-binding-python group=binding ring=none ships=pypi status=extracted about='cxlib for Python' why='EXTRACTED (RULED: RS-12, RS-8; #1591 item K3), one of the four active bindings left whole on one branch. It owns no tracked path here any more and there is no deps.cxd row — cx does not consume a binding — so, unlike a pinned repo, this row carries no at=: nothing here names a sha to check it against. cx-home/cx-binding-python carries a catch-up commit (named by sha in _gate_evidence/pipeline_xbindings/RESULTS.md) bringing its files to this branch\'s head byte-for-byte and re-pinning its own deps.cxd cx-private row to that head; the commit is not pushed (RS-8: a mover prepares, the integrator pushes)']
+  [repo name=cx-binding-go group=binding ring=none ships=go-module status=extracted about='cxlib for Go' why='EXTRACTED (RULED: RS-12, RS-8; #1591 item K3), with cx-binding-python/-rust/-v. It owns no tracked path here any more and there is no deps.cxd row — cx does not consume a binding. cx-home/cx-binding-go carries a catch-up commit (sha in _gate_evidence/pipeline_xbindings/RESULTS.md) to this branch\'s head, its own deps.cxd re-pinned; not pushed (RS-8)']
+  [repo name=cx-binding-rust group=binding ring=none ships=crate status=extracted about='cxlib for Rust' why='EXTRACTED (RULED: RS-12, RS-8; #1591 item K3), with cx-binding-python/-go/-v. It owns no tracked path here any more and there is no deps.cxd row — cx does not consume a binding. cx-home/cx-binding-rust carries a catch-up commit (sha in _gate_evidence/pipeline_xbindings/RESULTS.md) to this branch\'s head, its own deps.cxd re-pinned; not pushed (RS-8)']
+  [repo name=cx-binding-v group=binding ring=none ships=v-module status=extracted about='the native reference binding' why='EXTRACTED (RULED: RS-12, RS-8; #1591 item K3), with cx-binding-python/-go/-rust: the superseded lang/_archived/v-cffi/ FFI approach leaves with it (its history rode with the V binding). It owns no tracked path here any more and there is no deps.cxd row — cx does not consume a binding. cx-home/cx-binding-v carries a catch-up commit (sha in _gate_evidence/pipeline_xbindings/RESULTS.md) to this branch\'s head, its own deps.cxd re-pinned; not pushed (RS-8)']
   [repo name=cx-binding-typescript group=binding ring=none ships=archived about='archived at the ABI it was frozen with; lang/_archived/README.md names the version']
   [repo name=cx-binding-java group=binding ring=none ships=archived about='archived at the ABI it was frozen with; lang/_archived/README.md names the version']
   [repo name=cx-binding-kotlin group=binding ring=none ships=archived about='archived at the ABI it was frozen with; lang/_archived/README.md names the version']
@@ -381,11 +381,10 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='cx.pc.in' repo=cx-core-code why='pkg-config for libcx']
 
   [; ── bindings ─────────────────────────────────────────────────────── ]
-  [path prefix='lang/python/' repo=cx-binding-python]
-  [path prefix='lang/go/' repo=cx-binding-go]
-  [path prefix='lang/rust/' repo=cx-binding-rust]
-  [path prefix='lang/v/' repo=cx-binding-v]
-  [path prefix='lang/_archived/v-cffi/' repo=cx-binding-v why='the superseded FFI approach; its history rides with the V binding']
+  [; python, go, rust and v left whole (RULED: RS-12, RS-8; #1591 item K3, LAUNCH
+     KIT K3): the [repo] rows above carry status=extracted and no [path] rules —
+     see the four rows' why= near the top of this file. The six archived
+     bindings below are untouched by K3.]
   [path prefix='lang/_archived/typescript/' repo=cx-binding-typescript]
   [path prefix='lang/_archived/java/' repo=cx-binding-java]
   [path prefix='lang/_archived/kotlin/' repo=cx-binding-kotlin]

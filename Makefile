@@ -131,36 +131,31 @@ UNAME_S := $(shell uname -s)
 # (Xcode ships 3.9; the binding + emscripten need >= 3.10).
 PYTHON ?= $(shell if python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null; then echo python3; elif [ -x /opt/homebrew/bin/python3 ]; then echo /opt/homebrew/bin/python3; else echo python3; fi)
 
-.PHONY: all build build-wasm build-playground build-vcx build-vcx-dev build-lib build-lib-arrow build-rust build-rust-arrow \
- build-go build-go-arrow \
+.PHONY: all build build-wasm build-playground build-vcx build-vcx-dev build-lib build-lib-arrow \
  build-vscode \
  publish-v publish-v-push \
  publish-org \
  release-v release-all \
  dist install uninstall install-cli uninstall-cli verify-cli promote-cli \
- test test-no-parallel test-python test-python-arrow test-vcx test-rust test-rust-arrow \
- test-rust-parquet test-rust-arrow-conformance \
- test-go test-go-arrow \
- test-python-api test-python-stream test-v test-vcx-api test-vcx-stream test-go-api \
- test-xpath-parity test-xpath-parity-cx test-binding-api-parity \
+ test test-no-parallel test-vcx \
+ test-vcx-stream \
+ test-xpath-parity test-xpath-parity-cx \
  abi-c-test \
- conform conform-vcx conform-md bench bench-python bench-streaming bench-cxparse \
+ conform conform-vcx conform-md bench bench-streaming bench-cxparse \
  bench-code-pattern-compile bench-code-streaming bench-code-http bench-code-gates \
  bench-lazy-ceiling \
  bench-streamed-alloc \
- examples example-python example-v example-go example-rust \
- demos demo-v demo-go demo-rust \
  clean
 
 all: build
 
 # ── Build ──────────────────────────────────────────────────────────────────────
 
-# Active binding set (v0.8.0) — V + Python + Go + Rust (per decision d-2026-05-22-03).
-# Python has no compile step.
-# Archived bindings (TypeScript/Java/Kotlin/C#/Ruby/Swift) live in lang/_archived/
-# and are not wired into build or test targets.
-build: build-vcx build-rust build-go
+# The four active bindings (V, Python, Go, Rust) left cx-private whole
+# (RULED: RS-12, RS-8; #1591 item K3): cx-home/cx-binding-{python,go,rust,v}.
+# cx does not consume them (no deps.cxd row), so their build/test targets
+# retire from this Makefile with them; only libcx/the V build stay.
+build: build-vcx
 
 
 # ── Gate lock (#1339 follow-up, owner-authorized 2026-09-06) ─────────────────
@@ -607,35 +602,11 @@ wasm-bundle-fresh:
 	@./scripts/wasm/check_wasm_fresh.sh
 
 # Optional Apache Arrow C-Data interop library (libcx_arrow per ADR
-# 0015 D9 / spec/abi.md §2.11). Separate from libcx; bindings dlopen
-# this library independently. Built on demand by test-python-arrow
-# / the per-binding Arrow tests; not pulled into the default `build`
-# target since pyarrow / arrow ecosystems are opt-in per binding.
+# 0015 D9 / spec/abi.md §2.11). Separate from libcx; a binding dlopens
+# this library independently — none is built from this tree any more
+# (RULED: RS-12, RS-8; #1591 item K3: the four active bindings left whole).
 build-lib-arrow: build-vcx
 	$(MAKE) -C vcx lib-arrow
-
-build-rust: build-vcx
-	cargo build --manifest-path lang/rust/cxlib/Cargo.toml --release
-
-# Arrow C-Data Rust binding (Phase 7.74c-cont-bindings-multi-rust,
-# spec/abi.md §2.11). Gated behind the `arrow` Cargo feature so the
-# default `build-rust` does not require the `arrow` crate.
-build-rust-arrow: build-vcx build-lib-arrow
-	cargo build --features arrow --manifest-path lang/rust/cxlib/Cargo.toml --release
-
-# Go toolchain: prefer a go whose GOARCH matches the host — an Intel-brew
-# go in /usr/local shadowing an arm64 host cannot link the arm64 libcx
-# (cgo link failure). Falls back to plain `go` everywhere else.
-GO ?= $(shell if [ "$$(uname -sm)" = "Darwin arm64" ] && [ -x /opt/homebrew/bin/go ] && [ "$$(go env GOARCH 2>/dev/null)" != "arm64" ]; then echo /opt/homebrew/bin/go; else echo go; fi)
-
-build-go: build-vcx
-	cd lang/go/cxlib && $(GO) build ./...
-
-# Arrow C-Data Go binding (Phase 7.74c-cont-bindings-multi-go,
-# spec/abi.md §2.11). Gated behind `-tags arrow` so the default
-# `build-go` does not require the apache/arrow/go module.
-build-go-arrow: build-vcx build-lib-arrow
-	cd lang/go/cxlib && go build -tags arrow ./...
 
 build-lib: build-vcx
 
@@ -683,7 +654,7 @@ promote-cli: verify-cli install-cli
 
 # ── Experience gate (the evaluation-experience checklist) ──────────────────────────
 
-.PHONY: smoke-eval verify-examples verify-readme-blocks verify-binding-quickstarts \
+.PHONY: smoke-eval verify-examples verify-readme-blocks \
  verify-doc-blocks verify-doc-links bump-version-check release-verify
 
 # F1, F2, F4, F5, F6, F7, F9 — the experience-gate hard-fail checks.
@@ -716,9 +687,14 @@ verify-examples: build-vcx
 verify-readme-blocks: build-vcx
 	@tools/verify-readme-blocks.sh
 
-# F7 — per-binding quickstart blocks must exist and be well-formed.
-verify-binding-quickstarts:
-	@tools/verify-binding-quickstarts.sh
+# F7 — per-binding quickstart blocks — RETIRED (RULED: RS-12, RS-8; #1591 item
+# K3): the four active bindings left whole, so tools/verify-binding-quickstarts.sh's
+# LIVE_BINDINGS table would check zero rows — its own header calls that the
+# vacuous-gate failure mode ("no skip branch" was the point). Its own header
+# also says removing a binding's row is "the same commit that unwires its test
+# target", so the target retires here rather than being kept as a pass-on-nothing.
+# The script stays tracked (registry/repos.cxd: repo=cx) but unwired — see
+# RESULTS.md's LETTER for what would re-enable it.
 
 # Documentation hygiene — every fenced ```cx block parses. No args =
 # the script's defaults (spec/ docs-src/ docs/ README.md).
@@ -1570,23 +1546,17 @@ release-verify:
 
 # ── Test ───────────────────────────────────────────────────────────────────────
 
-# Test fan-out — independent per-language targets, plus the C-ABI conformance
-# harness. Listed once so `test` and `test-no-parallel` stay in sync.
-# Active binding set per backlog d-2026-05-22-03 (v0.8.0) — V + Python + Go + Rust.
-# Archived: TypeScript / Java / Kotlin / C# / Ruby / Swift moved to
-# lang/_archived/ in v0.8.0; their test targets are no longer wired into
-# `test`. Restoration is community opt-in once the Layer-1 16-method
-# surface stabilizes (spec/bindings.md §6).
-#
-# `test-binding-api-parity` joined this list on 2026-09-01 (#1180). It ran in
-# CI but NOT in `make test`, which is the declared exit gate — so the #1177
-# migration broke its fixture compiler outright and every local gate run
-# stayed green. It needs no toolchain that `test-python` / `test-rust` /
-# `test-go` do not already require. Measured warm: 79 s wall, against a gate
-# whose critical path is the 13.4-min serial `test-extraction-gate` chain, so
-# under `-j` it is absorbed entirely — no wall cost, and well under 1% of the
-# 10,924 CPU-s total (cost model: ledger/dead_ends_700_test_duration.md).
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-python test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite test-v test-rust test-go check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-sso-interop-lane test-xpath-parity-cx test-binding-api-parity corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+# Test fan-out — the C-ABI conformance harness plus every native gate.
+# Listed once so `test` and `test-no-parallel` stay in sync.
+# The four active bindings (V / Python / Go / Rust, per backlog
+# d-2026-05-22-03) LEFT cx-private WHOLE as cx-home/cx-binding-{v,python,go,rust}
+# (RULED: RS-12, RS-8; #1591 item K3): `test-v`, `test-python`, `test-go`,
+# `test-rust` and `test-binding-api-parity` retired from this list with them —
+# cx does not pin any binding, so nothing here can drive one any more. See
+# RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
+# The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
+# moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -2607,21 +2577,20 @@ test-xpath-parity: build-vcx
 	@CX_BIN=$(CURDIR)/vcx/target/cx bash scripts/test_xpath_parity.sh
 
 # ── v0.8.0 gates 28.6 + 28.9 — Layer-1 binding-API parity ────────────────
-# Runs conformance/binding_api.txt (49 Layer-1 parity fixtures, spec/
-# bindings.md §4.1) through every active binding (V / Python / Go / Rust)
-# and asserts byte-identical results across all four. Tier-2 archived
-# bindings (TS / Java / C# / Ruby / Kotlin / Swift) are out of scope per
-# d-2026-05-22-03.
+# RETIRED (RULED: RS-12, RS-8; #1591 item K3): the four active bindings this
+# gate ran (V / Python / Go / Rust, per d-2026-05-22-03) left cx-private whole
+# as cx-home/cx-binding-{v,python,go,rust} — `lang/<lang>/binding_api_driver/`
+# is gone from this tree, and the step's only inputs with it. cx does not pin
+# any binding (no deps.cxd row), so nothing in this repository can drive all
+# four any more. No successor runs the FOUR-WAY parity check today: each
+# binding repo's own `make check` is deps-check alone (its build is OWED,
+# per its own REPORT-REPO.md) and has no per-binding test wired in yet either
+# — see RESULTS.md's LETTER. `scripts/test_binding_api_parity.sh`,
+# `scripts/check_binding_api_jsonl.cx` and `scripts/compile_binding_api_fixtures.cx`
+# stay tracked here (registry/repos.cxd: repo=cx, not a binding path) but are
+# unwired and unreachable from any Makefile target until a future decision
+# gives the front door (`cx`) its own pin on all four to re-drive them.
 #
-# Driver architecture: `scripts/compile_binding_api_fixtures.cx` parses
-# the fixture file and emits a JSONL op-tree per fixture; per-binding
-# drivers under `lang/<lang>/binding_api_driver/` execute each op-tree
-# through their Layer-1 surface. The shell harness diffs the four
-# outputs and surfaces divergence cleanly.
-.PHONY: test-binding-api-parity
-test-binding-api-parity:
-	@CX_BIN=$(CURDIR)/vcx/target/cx bash scripts/test_binding_api_parity.sh
-
 # Pin the Python binding to the freshly-built libcx (vcx/target) so the gate
 # tests THIS build, not whatever libcx is installed system-wide. The cxlib
 # loader (lang/python/cxlib/cx.py) checks /usr/local/lib and /opt/homebrew/lib
@@ -2629,81 +2598,7 @@ test-binding-api-parity:
 # fresh one — which is exactly how a pre-`[; …]`-migration install made the
 # gate report spurious comment-parse failures. LIBCX_LIB_DIR (loader priority 2)
 # wins over the system paths. Go/Rust already pin vcx/target via rpath.
-test-python: export LIBCX_LIB_DIR := $(CURDIR)/vcx/target
-test-python: check-python-test-lane check-python-interpreter build-vcx
-	$(PYTHON) lang/python/test_fixture_loader.py
-	$(PYTHON) lang/python/conformance.py
-	$(PYTHON) lang/python/conformance_code.py
-	$(PYTHON) lang/python/test_api.py
-	$(PYTHON) lang/python/test_stream.py
-	$(PYTHON) lang/python/test_data_bin_one_shots.py
-	$(PYTHON) lang/python/test_namespaces.py
-	$(PYTHON) lang/python/test_identity.py
-	$(PYTHON) lang/python/test_delimited.py
-	$(PYTHON) lang/python/test_streaming_table.py
-	$(PYTHON) lang/python/test_iterator.py
-	cd lang/python && $(PYTHON) -m unittest test_code_eval -v
-	cd lang/python && $(PYTHON) -m unittest test_store_client -v
-	cd lang/python && $(PYTHON) -m unittest test_event_writer -v
-	cd lang/python && $(PYTHON) -m unittest test_surface -v
-	cd lang/python && $(PYTHON) -m unittest test_surfaces -v
-	cd lang/python && $(PYTHON) -m unittest test_table -v
-
-# Interpreter preflight (#512). cxlib needs Python >= 3.10 (cx.py carries
-# runtime `X | None` unions); stock macOS `python3` is the Xcode 3.9-era
-# build, which fails the import in ways that masquerade as cxlib bugs.
-# Fail loudly with the remedy instead.
-.PHONY: check-python-interpreter
-check-python-interpreter:
-	@$(PYTHON) -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null || { \
-	  echo "ERROR: test-python needs Python >= 3.10; '$(PYTHON)' reports: $$($(PYTHON) --version 2>&1)."; \
-	  echo "       Re-run as: make test-python PYTHON=/opt/homebrew/bin/python3 (or any modern python3)."; \
-	  exit 1; }
-
-# Step completeness (#512) — no test file in lang/python/ may sit outside
-# every Makefile step (that is how test_table.py silently missed #509).
-# Every lang/python/test_*.py must be referenced somewhere in this
-# Makefile — this step or an opt-in step (test-python-arrow, …).
-.PHONY: check-python-test-lane
-check-python-test-lane:
-	@missing=""; \
-	for f in lang/python/test_*.py; do \
-	  b=$$(basename $$f .py); \
-	  grep -qw "$$b" Makefile || missing="$$missing $$b"; \
-	done; \
-	if [ -n "$$missing" ]; then \
-	  echo "ERROR: python test files wired into NO Makefile step (#512):$$missing"; \
-	  echo "       Add each to test-python (or an opt-in step) in the top-level Makefile."; \
-	  exit 1; \
-	fi
-
-# Apache Arrow C-Data interop tests (Phase 7.74c-cont-bindings).
-# Skip-cleanly if pyarrow is not installed; otherwise builds libcx_arrow
-# and exercises the full 9-type round-trip surface. Install the optional
-# dep with `pip install pyarrow` (or `pip install lang/python[arrow]`).
-test-python-arrow: build-vcx build-lib-arrow
-	$(PYTHON) lang/python/test_arrow.py
-
-# Arrow conformance — runs the canonical conformance/data_bin_arrow.txt
-# fixtures through the Python binding. Cross-binding parity means each
-# active binding has an equivalent runner over the same fixture file
-# (see spec/abi.md §2.11 + spec/bindings.md §4.1).
-test-python-arrow-conformance: build-vcx build-lib-arrow
-	$(PYTHON) -m unittest lang.python.test_arrow_conformance -v
-
-# Phase 5 Tier-1 binding parity (Python) — exercises the v0.8.0
-# cx_code_eval* surface (spec/audits/code_abi_v1.md) and its
-# Pythonic eval_code / eval_code_streaming wrappers.
-test-python-code-eval: build-vcx
-	cd lang/python && $(PYTHON) -m unittest test_code_eval -v
-	$(PYTHON) lang/python/conformance_code.py
-
-test-python-api: build-vcx
-	$(PYTHON) lang/python/test_api.py
-
-test-python-stream: build-vcx
-	$(PYTHON) lang/python/test_stream.py
-
+#
 # C-level ABI conformance test (Phase 7.74c-abi-c-test). Compiles a
 # small C harness against libcx + libcx_arrow under UBSan, then runs
 # it. Catches the boundary-surface bugs binding rollouts have surfaced
@@ -2751,41 +2646,10 @@ abi-c-test: build-vcx build-lib-arrow
 	 CX_EXPECT_RELEASE='$(call MAKE_PRINT_VCX,CX_RELEASE)' \
 	 $(ABI_LIB_PATH_VAR)=vcx/target $(ABI_C_TEST_BIN) $(ABI_ARROW_LIB)
 
-# Pin the Rust binding to the freshly-built libcx (vcx/target), same
-# rationale as test-python above: build.rs probes /usr/local/lib and
-# /opt/homebrew/lib BEFORE the repo-relative fallback, so a stale
-# installed libcx.dylib silently shadows THIS build — and the arrow
-# steps fail to link outright, because system paths carry libcx but
-# never libcx_arrow (#511). LIBCX_LIB_DIR is build.rs's priority-1
-# override and also sets the rpath to vcx/target.
-test-rust: export LIBCX_LIB_DIR := $(CURDIR)/vcx/target
-test-rust: build-rust
-	cargo test --manifest-path lang/rust/cxlib/Cargo.toml -- --test-threads=1
-
-# Apache Arrow C-Data interop tests for the Rust binding
-# (Phase 7.74c-cont-bindings-multi-rust). Mirrors test-go-arrow:
-# builds libcx_arrow then exercises the 9-type round-trip surface
-# under `--features arrow`. Pulls in the `arrow` crate (v53.x) the
-# first time it runs.
-test-rust-arrow: export LIBCX_LIB_DIR := $(CURDIR)/vcx/target
-test-rust-arrow: build-vcx build-lib-arrow
-	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml -- --test-threads=1
-
-# Parquet bridge tests + smoke example (`parquet` implies `arrow`).
-# Before #511 this surface was wired into NO step, which is how the
-# missing `ipc` feature sat unbuildable on release/0.13.0.
-test-rust-parquet: export LIBCX_LIB_DIR := $(CURDIR)/vcx/target
-test-rust-parquet: build-vcx build-lib-arrow
-	cargo test --features parquet --manifest-path lang/rust/cxlib/Cargo.toml -- --test-threads=1
-	cargo run --features parquet --example parquet_smoke --manifest-path lang/rust/cxlib/Cargo.toml
-
-# Arrow conformance — runs the canonical conformance/data_bin_arrow.txt
-# fixtures through the Rust binding. Mirrors test-python-arrow-conformance
-# and test-go-arrow-conformance (cross-binding parity per spec/abi.md §2.11).
-test-rust-arrow-conformance: export LIBCX_LIB_DIR := $(CURDIR)/vcx/target
-test-rust-arrow-conformance: build-vcx build-lib-arrow
-	cargo test --features arrow --manifest-path lang/rust/cxlib/Cargo.toml \
-		--test arrow_conformance -- --nocapture
+# test-rust / test-rust-arrow / test-rust-parquet / test-rust-arrow-conformance
+# RETIRED with the Rust binding (RULED: RS-12, RS-8; #1591 item K3):
+# cx-home/cx-binding-rust now owns lang/rust/, cx does not pin it, and this
+# tree has no rustc/cargo target left to drive.
 
 # conform-all now covers EVERY suite in one process (the runner's
 # default list was extended at the #795 batch, 2026-08-15 — the
@@ -3867,47 +3731,17 @@ VFLAGS_VCX := -cc cc -path "$(V_MODULE_PATH)" $(CX_NATIVE_DEFINES)
 # scripts/run_fixture_shards.sh which invokes `v test` itself and reads no
 # Makefile variable, inherits the pinned search path from the environment.
 
-test-v: build-vcx
-	VFLAGS='$(VFLAGS_VCX)' v $(VFLAGS_VCX) run lang/v/conformance.v
-	VFLAGS='$(VFLAGS_VCX)' v test lang/v/tests/surface_test.v
-	VFLAGS='$(VFLAGS_VCX)' v test lang/v/tests/native_atom_test.v
-
-test-vcx-api: build-vcx
-	VFLAGS='$(VFLAGS_VCX)' v test lang/v/tests/surface_test.v
+# test-v / test-vcx-api RETIRED with the V binding (RULED: RS-12, RS-8;
+# #1591 item K3): cx-home/cx-binding-v now owns lang/v/ whole (native +
+# the archived lang/_archived/v-cffi/ FFI approach); cx does not pin it.
 
 test-vcx-stream: build-vcx
 	v test vcx/tests/stream_test.v
 
-# #743 INTERIM (documented, never silent): a dylib collection inside a
-# Go host can hang the STW ack-wait forever. 2026-08-14 finding: this is
-# NOT specific to SIGURG (the original report's theory) — a SIGXCPU
-# default was battery-green on pure-V soundness yet the Go-host hang
-# REPRODUCED under it (run 3 of 5, ~70min ack-wait spin; the Go runtime
-# intercepts/forwards signals generally). Only a signal-free suspend
-# path (the mach direction on #743) can clear the class. Until then the
-# Go steps pin the pacer headroom high (VGC_NEXT_GC_MB) so no collection
-# triggers in these SHORT-LIVED test processes.
-test-go: build-go
-	cd lang/go/cxlib && VGC_NEXT_GC_MB=65536 $(GO) test ./...
-	cd lang/go/conformance && VGC_NEXT_GC_MB=65536 $(GO) run .
-
-test-go-api: build-go
-	cd lang/go/cxlib && $(GO) test ./...
-
-# Apache Arrow C-Data interop tests for the Go binding
-# (Phase 7.74c-cont-bindings-multi-go). Mirrors test-python-arrow:
-# builds libcx_arrow then exercises the 9-type round-trip surface
-# under `-tags arrow`. Pulls in github.com/apache/arrow/go/v18 the
-# first time it runs.
-test-go-arrow: build-vcx build-lib-arrow
-	cd lang/go/cxlib && go test -tags arrow ./...
-
-# Arrow conformance — runs the canonical conformance/data_bin_arrow.txt
-# fixtures through the Go binding. Mirrors test-python-arrow-conformance;
-# both consume the same fixture file (cross-binding parity per
-# spec/abi.md §2.11).
-test-go-arrow-conformance: build-vcx build-lib-arrow
-	cd lang/go/cxlib && go test -tags arrow -v -run TestArrowConformance
+# test-go / test-go-api / test-go-arrow / test-go-arrow-conformance RETIRED
+# with the Go binding (RULED: RS-12, RS-8; #1591 item K3): cx-home/cx-binding-go
+# now owns lang/go/ whole; cx does not pin it, and no go toolchain target is
+# left in this tree to drive (the #743 dylib/STW note above moves with it).
 
 conform-md: build-vcx
 	$(MAKE) -C vcx conform-md
@@ -3919,34 +3753,12 @@ conform: conform-vcx
 conform-vcx: build-vcx
 	$(MAKE) -C vcx conform
 
-# ── Examples (transform showcase) ────────────────────────────────────────────
-
-examples: example-python example-v example-go example-rust
-
-example-python: build-vcx
-	$(PYTHON) lang/python/examples/transform.py
-
-example-v: build-vcx
-	v run lang/v/examples/transform.v
-
-example-go: build-go
-	cd lang/go/cxlib && go run ./examples/transform/
-
-example-rust: build-rust
-	cargo run --example transform --manifest-path lang/rust/cxlib/Cargo.toml
-
-# ── Demos (Document Model + Streaming + CXPath + Transform) ──────────────────
-
-demos: demo-v demo-go demo-rust
-
-demo-v: build-vcx
-	v run lang/v/examples/demo.v
-
-demo-go: build-go
-	cd lang/go/cxlib && go run ./examples/demo/
-
-demo-rust: build-rust
-	cargo run --example demo --manifest-path lang/rust/cxlib/Cargo.toml
+# ── Examples (transform showcase) / Demos ────────────────────────────────────
+# `examples`/`demos` and every example-*/demo-* target RETIRED with the four
+# active bindings (RULED: RS-12, RS-8; #1591 item K3): each ran a
+# `lang/<lang>/examples/` file that left with its binding repo, and none had
+# a non-binding member — an empty umbrella target is a skip dressed as a
+# pass, so the names are gone rather than kept as no-ops.
 
 # ── Publish ───────────────────────────────────────────────────────────────────
 # THE ALLOWLIST MIRROR RETIRED with the split (RULED: RS-11): "Public or private
@@ -4031,8 +3843,8 @@ bench: build-vcx
 	@"$(CX_BIN)" --allow-read --allow-write --allow-subprocess --allow-clock \
 	   --allow-env bench_report.cx
 
-bench-python: build-vcx
-	$(PYTHON) lang/python/bench.py
+# bench-python RETIRED with the Python binding (RULED: RS-12, RS-8;
+# #1591 item K3): cx-home/cx-binding-python now owns lang/python/ whole.
 
 # Y6 — Streaming evaluator throughput. Standalone V runner; surfaces
 # buffered vs streaming MB/s for a representative ?for-over-large-
@@ -4677,9 +4489,9 @@ bench-flow: build-vcx-dev
 clean:
 	$(MAKE) -C vcx clean
 	rm -rf $(DIST_DIR)
-	cargo clean --manifest-path lang/rust/cxlib/Cargo.toml
-	find lang/python -name '*.pyc' -delete
-	find lang/python -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null || true
+	# lang/rust, lang/python cleanup RETIRED with the bindings (RULED: RS-12,
+	# RS-8; #1591 item K3) — cx-home/cx-binding-{rust,python} own their own
+	# clean targets now.
 
 ## test-oriel-lane  ORIEL, the reference XAP, as its own CI step (#869): boot
 ##                  the store at spec/03-approved/xap/demos/oriel/, run the
