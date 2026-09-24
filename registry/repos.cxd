@@ -443,7 +443,6 @@ the rule carries a `why=`. The recurring reasons, once:
   [path prefix='.githooks/' repo=cx]
   [path prefix='third_party/' repo=cx why='the V fork pin and the README; every V repo pins the same SHA through its deps.cxd']
   [path prefix='vcx/corpus/' repo=cx why='the PROGRAM lane of the corpus grading core RS-16 moved out of vcx/tests/ into a linked module (vcx/corpus/grade.v, module corpus -- it imports code, the evaluator). The data-side cores that sat beside it (the document, diff/lint, fmt and streaming-write lanes) and the verb body moved to cx-core-data\'s vcx/grading/ (RULED: D56a, which answers #1624 for them); the program lane and the CX-program graders stay in cx, as D56a rules']
-  [path prefix='vcx/' repo=cx why='guard: vcx/.gitignore.cx-v and Makefile.cx-v, the retired mirror scripts']
   [path prefix='spec/03-approved/' repo=cx why='guard: a spec page no row above claims surfaces in the front door, never as unallocated']
   [path prefix='RELEASE_NOTES_' repo=cx]
   [path exact='VERSION' repo=cx]
@@ -466,9 +465,8 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='.gitmodules' repo=cx]
   [; `.publishignore` and scripts/publish.sh retired with the mirror on the
      front-door branch (RULED: RS-11): "Public or private is a setting per
-     repository." `.publishignore-v` stays -- it is scripts/publish_v.sh's
-     input, the V FORK's mirror, which is v-dependency-management.md's subject
-     and not the split's. ]
-  [path exact='.publishignore-v' repo=cx]
-  [path exact='.v-symlink-previous-target.txt' repo=cx]
+     repository." `.publishignore-v` and `.v-symlink-previous-target.txt` --
+     scripts/publish_v.sh's inputs, the V fork's mirror -- retired with it:
+     the cx-v mirror is archived at the cut with a README pointer at
+     cx-home/v (RULED: D81a), and both files are gone from this tree. ]
 ]

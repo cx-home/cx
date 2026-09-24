@@ -6,7 +6,8 @@
 # ── #700 wave 1, 2026-08-24: the differential/scaling fork lanes.
 # NOT listed: cxparse_full_corpus_diff_test.v (the pinned corpus
 # differential — it stays the file everyone reads first) and
-# cxparse_headline_rebless_scan_test.v (scripts/publish_v.sh --exclude).
+# cxparse_headline_rebless_scan_test.v (the retired cx-v mirror's --exclude,
+# RULED: D81a).
 # SPEC-CITATION DEBT: spec/03-approved/core/limits.md:63 cites
 # parse_amplification_test.v by path; not trued here (see diagram.files for
 # the full note and the standing precedent).
