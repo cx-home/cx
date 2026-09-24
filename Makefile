@@ -1556,7 +1556,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-no-stub-impl check-completions-drift check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -1879,11 +1879,17 @@ check-no-adr-citations:
 # reads the tracked specification tree and nothing a build or a documentation
 # render would have produced. The self-test runs first, so a detector that
 # stopped detecting fails before the scan reports clean.
-.PHONY: check-composition-seams
-check-composition-seams: CX_BIN ?= $(CURDIR)/vcx/target/cx
-check-composition-seams:
-	@"$(CX_BIN)" --allow-read --allow-write scripts/check_composition_seams.cx --self-test
-	@"$(CX_BIN)" --allow-read --allow-write scripts/check_composition_seams.cx
+# RETIRED from TEST_TARGETS (RULED: RS-12, RS-8, RS-7, RS-20; #1591 item K3):
+# scripts/check_composition_seams.cx and the composition.md/deployment-topology.md
+# pages it scans left with cx-platform-xap's extraction. The check is that
+# repository's own gate to carry, against its own tree, not a target this
+# Makefile can still run.
+#
+# .PHONY: check-composition-seams
+# check-composition-seams: CX_BIN ?= $(CURDIR)/vcx/target/cx
+# check-composition-seams:
+# 	@"$(CX_BIN)" --allow-read --allow-write scripts/check_composition_seams.cx --self-test
+# 	@"$(CX_BIN)" --allow-read --allow-write scripts/check_composition_seams.cx
 
 # ── NO-STUB-IMPL gate (global no-stub rule) — the stdlib impl bundle
 # (vcx/code/*.v) must contain no fake-success stub: an effectful prim returning
@@ -2275,10 +2281,15 @@ ring-tag-gate: build-vcx
 # (vcx/xap/stdlib_xap_dist.v) composes the store/did/vc/compose surfaces and
 # ships NO parallel primitive — no own hashing, no archive format, no
 # transport, no second compose gate.
-.PHONY: check-xap-dist-absences
-check-xap-dist-absences: CX_BIN ?= $(CURDIR)/vcx/target/cx
-check-xap-dist-absences:
-	@"$(CX_BIN)" --allow-read --allow-write scripts/check_xap_dist_absences.cx
+# RETIRED from TEST_TARGETS (RULED: RS-12, RS-8, RS-7, RS-20; #1591 item K3):
+# scripts/check_xap_dist_absences.cx left with cx-platform-xap's extraction,
+# checking xap's own dist engine against xap's own absences list -- that
+# repository's gate now, not this Makefile's.
+#
+# .PHONY: check-xap-dist-absences
+# check-xap-dist-absences: CX_BIN ?= $(CURDIR)/vcx/target/cx
+# check-xap-dist-absences:
+# 	@"$(CX_BIN)" --allow-read --allow-write scripts/check_xap_dist_absences.cx
 
 # ── Shell-completion drift gate (#423) — the bash/zsh/fish completions in
 # cx-tooling's tooling/completions/ (read from deps/cx-tooling/, the pin: they left
@@ -2879,7 +2890,6 @@ fixtures-census-reset:
 #     wrong answer fails again.
 SUITE_SERIAL_RETRY := vcx/tests/env_retention_test.v \
                       vcx/tests/process_pty_test.v \
-                      vcx/tests/xap_umbrella_test.v \
                       vcx/tests/code_eval_fixtures_test.v \
                       vcx/tests/code_eval_fixtures_shard_1_test.v \
                       vcx/tests/code_eval_fixtures_shard_2_test.v \
@@ -3004,8 +3014,6 @@ GAUGE_SERIAL_RETRY := bench/repr/run.sh
 RETRY_REASON_CASE = case "$$rel" in \
 	  vcx/tests/process_pty_test.v) \
 	    reason="\#1125 pty master read races under the -j12 suite storm (empty child output); green in isolation and in the prior full run" ;; \
-	  vcx/tests/xap_umbrella_test.v) \
-	    reason="reference web client / store readiness bounds (calibrated ~30 s) exceeded only under the -j12 storm plus box load: measured 2026-09-09 OK 72 s alone, FAIL 98.7 s and 123 s with a step or build sharing the box" ;; \
 	  vcx/tests/store_remote_umbrella_test.v) \
 	    reason="\#1425 daemon start under the -j12 suite storm (the readiness window expires before the listener line); green in isolation and in every prior full run" ;; \
 	  vcx/tests/connector_live_test.v) \
@@ -3265,15 +3273,20 @@ check-conformance-coverage:
 # a drift between the spec's declaration and the V constant generated from it.
 # `-repin` is the deliberate act that records the decision; `-regen` only
 # refreshes the generated constant.
-.PHONY: check-contract-revision contract-revision-regen contract-revision-repin
-check-contract-revision:
-	@bash scripts/check_contract_revision.sh
-
-contract-revision-regen:
-	@bash scripts/gen_contract_revision.sh
-
-contract-revision-repin:
-	@bash scripts/gen_contract_revision.sh --repin
+# RETIRED from TEST_TARGETS (RULED: RS-12, RS-8, RS-7, RS-20; #1591 item K3):
+# scripts/check_contract_revision.sh and scripts/gen_contract_revision.sh left
+# with cx-platform-xap's extraction -- xap's OWN contract revision, checked
+# and regenerated against xap's own tree there, not this Makefile's targets.
+#
+# .PHONY: check-contract-revision contract-revision-regen contract-revision-repin
+# check-contract-revision:
+# 	@bash scripts/check_contract_revision.sh
+#
+# contract-revision-regen:
+# 	@bash scripts/gen_contract_revision.sh
+#
+# contract-revision-repin:
+# 	@bash scripts/gen_contract_revision.sh --repin
 
 # ── #1216: the wall-clock step ──────────────────────────────────────────────
 # vcx/timing/*_test.v hold the assertions whose SUBJECT is elapsed time (boot
@@ -3391,7 +3404,7 @@ CODE_SERIAL_RETRY := vcx/code/code_module_umbrella_test.v
 # (found removing cx-platform-db's vcx/cxdb/, RULED: RS-12, RS-8, #1591 item
 # K3). The extracted product's own `v test` runs from the pin, same as its
 # `cx corpus`.
-CODE_TEST_DIRS := vcx/code/ vcx/xap/
+CODE_TEST_DIRS := vcx/code/
 test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	@$(JS_CLOSE) log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
 	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(CODE_TEST_DIRS) 2>&1; echo $$? > $$stf; } | tee $$log; \

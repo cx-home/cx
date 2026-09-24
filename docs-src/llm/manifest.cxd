@@ -103,8 +103,8 @@ deps/cx-platform-identity/conformance/platform/session
 stdlib/log
 deps/cx-platform-ux/conformance/xap/ux
 deps/cx-platform-ux/conformance/xap/ux-web
-xap/xap-compose
-xap/xap-dist
+deps/cx-platform-xap/conformance/xap/xap-compose
+deps/cx-platform-xap/conformance/xap/xap-dist
 ../deps/cx-core-data/conformance/xml
 ../deps/cx-core-data/conformance/table
 ../deps/cx-core-data/conformance/identity

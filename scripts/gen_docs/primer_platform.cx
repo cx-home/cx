@@ -57,6 +57,19 @@
 [?const TOPO-PATH "spec/03-approved/platform/deployment-topology.md"]
 [?const OUT-PATH  "docs-src/llm/primer-platform.chapter.md"]
 
+[; K3 (RULED: RS-12, RS-8, RS-7, RS-20; #1591 item K3): composition.md and
+   deployment-topology.md left with cx-platform-xap's extraction --
+   spec/03-approved/platform/ carries neither any more. Read the local path
+   while a repository has not done its own leave yet (unchanged for
+   everyone else); once gone, read the pin, the same fallback CODE_TEST_DIRS,
+   the wasm build and vcx/Makefile's build entry all use. impure (io:exists),
+   so this cannot be the `?const` initializer itself (pure-flow) -- resolved
+   where the path is actually read instead. ]
+[?def platform-path scope=private impure [returns string] ($local::string)
+  [?if [$io:exists $local]
+   [then $local]
+   [else [$concat "deps/cx-platform-xap/" $local]]]]
+
 [?def say scope=public impure ($s) [$io:write-line [$env:stdout] $s]]
 [?def cry scope=public impure ($s) [$io:write-line [$env:stderr] $s]]
 
@@ -245,8 +258,8 @@ skeleton with an authoring TODO wherever the pattern fixes no value."]
 # ── the chapter ──────────────────────────────────────────────────────────
 
 [?def chapter scope=public impure ()
-  [?let [= $comp [$io:read-file COMP-PATH]]
-        [= $topo [$io:read-file TOPO-PATH]]
+  [?let [= $comp [$io:read-file [platform-path COMP-PATH]]]
+        [= $topo [$io:read-file [platform-path TOPO-PATH]]]
     [$strings:join (
       CHAPTER-HEAD,
       HEAD-SHAPES,
