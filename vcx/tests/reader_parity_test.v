@@ -258,15 +258,28 @@ fn libcx_dir() string {
 	return ''
 }
 
+// python_door_present — the Python binding LEFT cx-private whole
+// (RULED: RS-12, RS-8; #1591 item K3): `lang/python/cxlib` is cx-home/
+// cx-binding-python's now, cx does not pin it, and no checkout of it lives
+// in this tree. Door (2) has no permanent home here any more, so this is a
+// standing skip condition, not a transient one like python3/libcx below —
+// but it is checked exactly the same way (loudly), because a permanent
+// precondition that fails silently is still how a parity door goes unwatched.
+fn python_door_present() bool {
+	return os.is_dir(os.join_path(repo_root(), 'lang', 'python', 'cxlib'))
+}
+
 fn test_python_reader_agrees_case_for_case() {
 	root := repo_root()
 	py := python_bin()
 	libdir := libcx_dir()
-	if py == '' || libdir == '' {
-		// Same preconditions `make test-python` sets (LIBCX_LIB_DIR pinned to
-		// the freshly-built libcx, a >= 3.10 interpreter). Say so out loud:
-		// a silently-skipped parity door is how #1521 stayed open.
-		eprintln('reader-parity: SKIPPED the python door — python3=${py != ""} libcx=${libdir != ""}')
+	has_door := python_door_present()
+	if py == '' || libdir == '' || !has_door {
+		// Same preconditions `make test-python` used to set (LIBCX_LIB_DIR
+		// pinned to the freshly-built libcx, a >= 3.10 interpreter) plus the
+		// binding's own source being present. Say so out loud: a
+		// silently-skipped parity door is how #1521 stayed open.
+		eprintln('reader-parity: SKIPPED the python door — python3=${py != ""} libcx=${libdir != ""} lang/python/cxlib=${has_door} (RULED: RS-12; #1591 item K3: the python binding left cx-private whole)')
 		return
 	}
 	files := corpus_files()

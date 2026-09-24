@@ -78,9 +78,8 @@ run "verify-readme-blocks" \
  "$ROOT/tools/verify-readme-blocks.sh"
 
 echo ""
-echo "── F7: per-binding quickstart blocks present ─────────────"
-run "verify-binding-quickstarts" \
- "$ROOT/tools/verify-binding-quickstarts.sh"
+echo "── F7: per-binding quickstart blocks — RETIRED (RULED: RS-12, RS-8;"
+echo "   #1591 item K3): the four active bindings left whole; see Makefile"
 
 echo ""
 echo "── Documentation hygiene ─────────────────────────────────"

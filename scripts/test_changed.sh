@@ -170,14 +170,14 @@ RING_LIB="$RING0 $RING_STORE $RING1 $RING_LEAF $RING2"
 step_globs() {
   case "$1" in
     abi-c-test)                    echo "$RING_LIB $RING_SUP include/* lang/*" ;;
-    test-python)                   echo "$RING_LIB $RING_SUP include/* lang/* conformance/*" ;;
+    # test-python / test-rust / test-go / test-v rows RETIRED with the four
+    # active bindings (RULED: RS-12, RS-8; #1591 item K3) — cx-home/cx-binding-
+    # {python,rust,go,v} own lang/python, lang/rust, lang/go, lang/v now, and
+    # none of their targets exists in this Makefile any more.
     # reader-parity (RULED: CXF-5, #1521): the three readers over the corpus
     # FILES — libcx (lang/), the V data parser and the program reader (RING_LIB),
     # the fixture loader (RING_SUP), every `.cxd` and the playground corpus.
     reader-parity)                 echo "$RING_LIB $RING_SUP lang/* conformance/* scripts/gen_guide/playground/*" ;;
-    test-rust)                     echo "$RING_LIB $RING_SUP include/* lang/*" ;;
-    test-go)                       echo "$RING_LIB $RING_SUP include/* lang/*" ;;
-    test-v)                        echo "$RING_LIB $RING_SUP lang/v/*" ;;
     # #1212: -prod REJECTS shapes build-dev accepts (a reference stored into a
     # value slot), and every test-vcx-* step builds -dev — so the ~2 s prod
     # checker runs on EVERY changed set, never gated behind a glob.
@@ -490,9 +490,9 @@ step_globs() {
     # #1374: the same playground corpus evaluated in the WASM bundle, and the
     # bundle is built from the ring closure (scripts/wasm/ + build-playground).
     test-playground-wasm-traps)    echo "scripts/gen_guide/playground/* scripts/test_playground_wasm_traps.mjs scripts/wasm/* $RING_LIB $RING_SUP $RING_EMBED" ;;
-    # #1180: the binding_api fixture file, the four drivers under lang/, the
-    # public header they call through, and libcx's own closure.
-    test-binding-api-parity)       echo "conformance/binding_api.txt lang/* include/* scripts/test_binding_api_parity.sh scripts/compile_binding_api_fixtures.cx $RING_LIB $RING_SUP" ;;
+    # test-binding-api-parity row RETIRED (RULED: RS-12, RS-8; #1591 item K3):
+    # the four drivers under lang/<lang>/binding_api_driver/ left with their
+    # binding repositories, and the target itself is gone from the Makefile.
     # #1065: the rosters live in vcx/Makefile and are re-derived from the module
     # set each artifact compiles, so any vcx/ module moving is an input.
     check-build-input-roster)      echo 'vcx/Makefile vcx/*' ;;
