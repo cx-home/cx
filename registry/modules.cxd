@@ -151,7 +151,7 @@ needs becomes its own Ring-1 module.
        `[module]` row can claim it; it is declared here so the placement
        check reads it as the catalog rather than as an unclaimed spec, and so
        a catalog directory can never lose the one page that enumerates it. ── ]
-  [catalog ring=1 path=spec/03-approved/stdlib/README.md]
+  [catalog ring=1 repo=cx-core-code path=deps/cx-core-code/spec/03-approved/stdlib/README.md]
   [catalog ring=1 group=platform repo=cx-platform-xap path=deps/cx-platform-xap/spec/03-approved/platform/README.md]
 
   [; ── The platform group's composition page (RULED: COMP-1). It declares no surface —
