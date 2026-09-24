@@ -58,7 +58,7 @@ check "ALL" "an engine change selects everything" "vcx/code/eval.v"
 check "map.cxd" "a stdlib module's source selects ITS corpus file" "stdlib/map.cx"
 check "bytes.cxd" "a module's Ring-1 V half selects its corpus file" "vcx/code/stdlib_bytes.v"
 check "audit.cxd" "a module's Ring-2 V code selects its corpus file" "vcx/store/stdlib_audit.v"
-check "imap.cxd" "a module's `half=` file selects its corpus file too" "vcx/code/stdlib_imap_server.v"
+check "xsp-auth.cxd" "a module's `half=` file selects its corpus file too" "vcx/code/stdlib_xsp_auth.v"
 check "bytes.cxd map.cxd" "two module sources select both corpus files" "stdlib/map.cx" "vcx/code/stdlib_bytes.v"
 check "connector.cxd db.cxd" "a module source and a corpus file together" "stdlib/connector.cx" "conformance/platform/db.cxd"
 
