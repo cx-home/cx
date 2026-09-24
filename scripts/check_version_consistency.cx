@@ -173,13 +173,15 @@
     [else
       [?let
         # 1. Static manifests — must contain the literal VERSION.
+        # lang/v/v.mod, lang/rust/cxlib/Cargo.{toml,lock} and lang/python/pyproject.toml
+        # rows RETIRED (RULED: RS-12, RS-8; #1591 item K3): the four active
+        # bindings left cx-private whole as cx-home/cx-binding-{v,rust,python,go}
+        # and each now stamps its own manifest in its own repository — this
+        # tree no longer carries a checkout to check. vcx/v.mod (the V FORK's
+        # own manifest, not a binding's) stays.
         [= $manifest-fails [?for [in $m (
             [mf path='cx.pc.in'                          rx="(?m)^Version:[ \\t]*([^ \\t\\n]+)[ \\t]*$"],
             [mf path='vcx/v.mod'                         rx="version:\\s*'([^']+)'"],
-            [mf path='lang/v/v.mod'                      rx="version:\\s*'([^']+)'"],
-            [mf path='lang/rust/cxlib/Cargo.toml'        rx="(?m)^version\\s*=\\s*\"([^\"]+)\""],
-            [mf path='lang/rust/cxlib/Cargo.lock'        rx="name = \"cxlib\"\\nversion = \"([^\"]+)\""],
-            [mf path='lang/python/pyproject.toml'        rx="(?m)^version\\s*=\\s*\"([^\"]+)\""],
             [mf path='tooling/vscode/package.json'       rx="(?m)^\\s*\"version\"\\s*:\\s*\"([^\"]+)\""],
             [mf path='tooling/vscode/package-lock.json'  rx="(?m)^\\s*\"version\"\\s*:\\s*\"([^\"]+)\""])]
           [= $f [$check-manifest [$string $m@path] [$string $m@rx] $version]]

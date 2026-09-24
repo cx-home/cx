@@ -72,7 +72,7 @@ for f in conformance/stdlib/*.cxd conformance/platform/*.cxd conformance/x/*.cxd
   printf '%s\t%s\n' "deps/cx-core-data/conformance/data_bin_arrow.cxd" "test-vcx-conform (conform-data-bin-arrow)"
   printf '%s\t%s\n' "conformance/code_diagram.cxd" "test-code-diagram (scripts/check_code_diagram_fixtures.cx)"
   printf '%s\t%s\n' "conformance/xpath_31_parity.cxd" "test-xpath-parity-cx (scripts/check_xpath_parity_fixtures.cx)"
-  printf '%s\t%s\n' "conformance/binding_api.cxd" "test-binding-api-parity (scripts/test_binding_api_parity.sh)"
+  printf '%s\t%s\n' "conformance/binding_api.cxd" "UNGRADED since the leave step (RULED: RS-12, RS-8; #1591 item K3): test-binding-api-parity retired with the four active bindings (lang/python, lang/go, lang/rust, lang/v all left); scripts/test_binding_api_parity.sh stays tracked here (registry/repos.cxd: repo=cx) but unwired — see _gate_evidence/pipeline_xbindings/RESULTS.md's LETTER"
   printf '%s\t%s\n' "conformance/deps_pins.cxd" "test-deps-pins (scripts/check_deps_pins_fixtures.cx — the deps.cxd pin document: wire form, canonical bytes and every refusal the format names)"
   printf '%s\t%s\n' "conformance/bundle_sources.cxd" "test-bundle-sources (scripts/check_bundle_sources_fixtures.cx — where a bundled CX module's source comes from: the two legal states and every refusal, including the pinned checkout missing its source that would otherwise make a smaller binary)"
   printf '%s\t%s\n' "conformance/docs_fragment.cxd" "test-docs-fragment (scripts/check_docs_fragment_fixtures.cx — the per-repository documentation fragment a component release publishes, every refusal of its contract, and the union's id and file collisions)"
