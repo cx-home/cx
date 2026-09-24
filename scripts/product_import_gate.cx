@@ -212,16 +212,22 @@
                  [else [?if [$member $h $vlib] [then [ok]]
                          [else [failure kind="unknown import" what=[$concat [$string $s@file] ": " $h]]]]]]]]]
     [= $edge-failures [?for [in $c $edge-checks] [where [?match $c [case [ok] false] [else true]]] [yield $c]]]
-    # a pinned ring's files: their own repository's modules and vlib, only.
+    # a pinned ring's files: their own repository's modules, their own
+    # repository's declared pins (K7a: cx-core-code, a SECOND core repository,
+    # pins cx-core-data -- Ring 1 on Ring 0 is the layering, not an up-edge;
+    # cx-core-data itself still has no pins, so this changes nothing for it),
+    # and vlib.
     [= $ring-checks
       [?for [in $s $psrcs]
+        [= $me [$string $s@repo]]
+        [= $mypins [$words [$string [$first [?for [in $x $repos] [where [= [$string $x@name] $me]] [yield [$string [?else $x@pins ""]]]]]]]]
         [in $h [$words [$string $s@imps]]]
         [where [not [= $h [$string $s@dir]]]]
         [yield [?if [$member $h $dirs]
                  [then [?let [= $o [$string [$first [?for [in $w $owners] [where [= [$string $w@dir] $h]] [yield [$string $w@repo]]]]]]
-                         [?if [= $o [$string $s@repo]] [then [ok]]
+                         [?if [?if [= $o $me] [then true] [else [$member $o $mypins]]] [then [ok]]
                            [else [failure kind="ring up-edge"
-                                   what=[$concat [$string $s@file] ": " [$string $s@dir] " (" [$string $s@repo] ") -> " $h " ("
+                                   what=[$concat [$string $s@file] ": " [$string $s@dir] " (" $me ") -> " $h " ("
                                           [?if [= $o ""] [then "no repository"] [else $o]] ")"]]]]]]
                  [else [?if [$member $h $vlib] [then [ok]]
                          [else [failure kind="unknown import" what=[$concat [$string $s@file] ": " $h]]]]]]]]]
