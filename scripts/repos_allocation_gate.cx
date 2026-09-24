@@ -25,7 +25,10 @@
 #                   moves whole. `half=` is the DECLARED Ring-1 half a Ring-2
 #                   module keeps in vcx/code for profile composition; it is
 #                   one of the module's files and is read here like the rest
-#                   (#1609)
+#                   (#1609). A Ring-1 row's (ring=1, no group) code= files
+#                   that are cx-core-code's are the exception: the ring decides
+#                   where a module's code lives, wherever its other artifacts
+#                   travel (RULED: D76c)
 #
 # A file belongs to the FIRST rule, in document order, whose exact= equals the
 # path or whose prefix= leads it. Nothing else is inferred.
@@ -170,7 +173,26 @@
                                                    [?match $h
                                                      [case [miss] [?if [= $row-repo ""] [then ""] [else $row-repo]]]
                                                      [else [$string $h@repo]]]]]]]
-                              [= $distinct [?for [in $h $homes] [group-by $h] [yield $key]]]
+                              # D76c: the ring decides where a module's CODE lives. A
+                              # Ring-1 row (ring=1, no group) whose code= files are
+                              # cx-core-code's is whole even when its spec, corpus and
+                              # source travel with the product that consumes it
+                              # (cx-stdlib/sasl, whose artifacts are cx-platform-mail's);
+                              # those code homes leave the comparison. A platform-group
+                              # row gets no such reading: its code moves with it.
+                              [= $ring1 [?if [= [$string [?else $m@ring ""]] "1"]
+                                          [then [= [$string [?else $m@group ""]] ""]]
+                                          [else false]]]
+                              [= $code-paths [?for [in $p [$strings:split-whitespace [$string [?else $m@code ""]]]]
+                                               [where [not [= $p "none"]]] [yield $p]]]
+                              [= $kept [?for [in $i [$range 1 [$count $paths]]]
+                                         [where [not [?if $ring1
+                                                        [then [?if [$member $paths[$i] $code-paths]
+                                                                [then [= $homes[$i] "cx-core-code"]]
+                                                                [else false]]]
+                                                        [else false]]]]
+                                         [yield $homes[$i]]]]
+                              [= $distinct [?for [in $h $kept] [group-by $h] [yield $key]]]
                          [?if [> [$count $distinct] 1]
                            [then [failure kind="split module" what=[$concat [$string $m@name] " -> " [$strings:join $distinct " + "]]]]
                            [else [ok]]]]]]]
