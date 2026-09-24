@@ -69,12 +69,15 @@ check "bytes.cxd" "a module's Ring-1 V half selects its corpus file" "vcx/code/s
 # path (deps/cx-platform-fabric/vcx/fabric/stdlib_fabric.v), which this
 # rule's exact string match against a LOCAL vcx/fabric/ path can no longer
 # reach — as it should not: nothing under vcx/fabric/ exists here to touch
-# any more. xap's own vcx/xap/stdlib_xap.v RETIRED as this example too
-# (RULED: RS-12, RS-8; #1591 item K3): xap left cx-private with cx-platform-
-# xap's extraction (3952c620e), its row names the pinned path
-# (deps/cx-platform-xap/vcx/xap/stdlib_xap.v), and with it the last product
-# V file in this tree -- no LOCAL path can stand in for a product's V code any
-# more, so the case goes rather than pointing at a file that is not here.
+# any more. xap's own vcx/xap/stdlib_xap.v was the last one of this SHAPE
+# (a module's Ring-2 V code, group=platform, at a LOCAL path) and is now
+# RETIRED as this example too (RULED: RS-12, RS-8, RS-7, RS-20; #1591 item
+# K3): xap left cx-private with cx-platform-xap's extraction, and
+# registry/modules.cxd's xap row now names the pinned path
+# (deps/cx-platform-xap/vcx/xap/stdlib_xap.v). Every group=platform module
+# row now reads code=none or code=deps/… (RULED: RS-12) — no product carries
+# LOCAL Ring-2 V code any more, so this class of check has no live example
+# left to check with.
 # xsp-auth's own vcx/code/stdlib_xsp_auth.v RETIRED as this example (RULED:
 # D65d, RS-31): it was the last declared `half=` in registry/modules.cxd, and it
 # left cx-private with the whole of cx-platform/xsp-auth for cx-platform-xsp's
@@ -110,4 +113,4 @@ if [ "$fails" -gt 0 ]; then
   echo "profile-gate selection self-test: $fails failure(s)"
   exit 1
 fi
-echo "profile-gate selection self-test OK — 20 rules (#1560 + #1587's module-to-corpus map)"
+echo "profile-gate selection self-test OK — 19 rules (#1560 + #1587's module-to-corpus map)"

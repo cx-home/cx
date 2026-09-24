@@ -4524,21 +4524,25 @@ clean:
 ##                  nokernel, diff drift=0), tear down. bench stays
 ##                  measured-not-asserted. Refuses if :8790 is already served.
 ##
-##                  THE LANE MOVED AND THE ESTATE DID NOT (RULED: RS-12,
-##                  #1591 item 12). scripts/oriel_lane.sh is cx-platform-ux's
-##                  now; the ORIEL estate it drives is still this tree's
-##                  (spec/03-approved/xap/demos/oriel/, cx-platform-xap's
-##                  allocation). So the step runs the script out of the
-##                  pinned checkout, against THIS tree's binary, with
-##                  ORIEL_ESTATE naming this checkout as the root it cds to.
-##                  It refuses with exit 2 and names `make deps-sync` when
-##                  the checkout is absent — never a skip.
+##                  THE LANE MOVED, THEN THE ESTATE DID TOO (RULED: RS-12,
+##                  RS-8, RS-7, RS-20; #1591 items 12 and K3). scripts/
+##                  oriel_lane.sh is cx-platform-ux's; the ORIEL estate it
+##                  drives (spec/03-approved/xap/demos/oriel/) was this
+##                  tree's and is cx-platform-xap's now (K3's leave). So the
+##                  step runs the script out of the UX pin, against THIS
+##                  tree's binary, with ORIEL_ESTATE naming the XAP pin's
+##                  checkout as the root it cds to. Both checkouts refuse by
+##                  name with exit 2 and name `make deps-sync` when absent —
+##                  never a skip.
 .PHONY: test-oriel-lane
 test-oriel-lane: build-vcx
 	@test -f deps/cx-platform-ux/scripts/oriel_lane.sh || { \
 	  echo "test-oriel-lane: deps/cx-platform-ux/ is not there — the lane script lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
 	  exit 2; }
-	@ORIEL_ESTATE="$(CURDIR)" CX_BIN="$(CURDIR)/vcx/target/cx" bash deps/cx-platform-ux/scripts/oriel_lane.sh
+	@test -f deps/cx-platform-xap/spec/03-approved/xap/demos/oriel/serve.cx || { \
+	  echo "test-oriel-lane: deps/cx-platform-xap/ is not there — the ORIEL estate lives in the pinned repository now (RS-12, RS-8; #1591 item K3); run \`make deps-sync\`" >&2; \
+	  exit 2; }
+	@ORIEL_ESTATE="$(CURDIR)/deps/cx-platform-xap" CX_BIN="$(CURDIR)/vcx/target/cx" bash deps/cx-platform-ux/scripts/oriel_lane.sh
 
 ## test-agent-real-lanes  The agent modules' four real-socket lanes as their
 ##                  own step (RULED: RS-12, #1591 item 12): an MCP client and
