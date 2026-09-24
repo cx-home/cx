@@ -191,7 +191,7 @@ corpus example or a measured number beside it — so the excitement is checkable
 holds: what is measured is labelled measured). It applies to the documentation epic after the cut;
 nothing before 2026-09-26 changes because of it.
 
-## RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1)
+## RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a)
 
 **Status: RULED (owner, 2026-09-23, in session, letter by letter).** The integrator posted D54–D56 and
 D62–D67 on [#1591](https://github.com/cx-home/cx-private/issues/1591) through the afternoon. The owner
@@ -209,7 +209,7 @@ earlier posting framed the options differently, that is said), the chosen option
 letters of the same kind — allocation and directory decisions — followed at the next integrator
 session's start (posted 21:2xZ) and were answered ~21:4xZ: **D68 = (a)** and **D69 = (b)**; then D70
 (#1636), put again with its long-term consequences at the owner's request, was answered ~21:5xZ:
-**D70 = (a1)**. The three are recorded last.
+**D70 = (a1)**. The three are recorded last. Three more followed after midnight (2026-09-24, posted on the board and answered there): **D71 = (a)** (~01:0xZ), **D72 = (a)** (~01:2xZ) and a second letter under D56a, on where its grading cores live (~02:1xZ, answered **(a)**); they are recorded after D70a1.
 
 **D54c — `vcx/tests/flow_umbrella_test.v` splits by subject.** The umbrella's 16 functions shell out
 to `cx flow run/serve/--help` and read `$flow:status` — they test cx's CLI verbs AND flow's package.
@@ -328,12 +328,50 @@ in the next Ring-1 batch, so the false FAILs and the unchecked exit codes stop t
 `primer_build.cx` keeps grading that file.** The reason given: the ruling is what agents need today,
 and the timing keeps RS-16's contract still during the split. #1636 stays open until (a) merges.
 
+**D71a — the builtin-dispatch registration hook.** Five mail files could not leave with
+cx-platform-mail (`vcx/code/stdlib_{imap,imap_server,smtp,smtp_server,sasl}.v`):
+`vcx/code/stdlib_dispatch.v` calls their `*_stdlib_builtin()` as plain intra-module V functions (the
+pre-RS-18 dispatch, never migrated to the per-family `ring2_register.v` shape), and a V module is one
+directory, so a file move cannot compile them outside `code`. The same pattern meets every V product
+whose row declares a `half=`. The options, as the board posted them (2026-09-23 ~22:4xZ): **(a) the
+registration hook — `code` exposes a builtin-dispatch registry; each product's own `init()` registers
+its `*_stdlib_builtin` (the shape every other split product already uses through `ring2_register.v`);
+the five files move to `vcx/mail/`, the rows' `half=` becomes `none`; one branch (RS-19's owed
+refactor) before the halves of any product leave. Long-term: `code` knows no product by name; every
+product registers the same way; a product repository holds ALL of its code**; (b) the five stay in
+`vcx/code`, re-allocated to `cx-core-code` with a `why=` each (a `half=` is a Ring-1 half by the
+AGENTS.md doctrine; sasl's row is Ring 1 already) — SMTP/IMAP server logic then lives in the core
+repository forever, and `code` keeps a by-name call into each product; (c) leave it —
+`cx-platform-mail`'s row stays partial, with the stale-copy risk and a lie in `repos.cxd`. The owner
+answered (a) (~01:0xZ); the survey of every `half=` row rides the same branch.
+
+**D72a — a `status=planned` row may carry `repo=`.** The net extraction gave the ftp and sftp rows
+`status=planned` beside `repo=` — no row had combined the two before, and `registry/modules.cxd`'s own
+comment described `repo=` without mentioning `status=planned`; the branch flagged it as a judgment,
+not a rule. The answer, as the board records it (~01:2xZ): **(a) a `status=planned` row may carry
+`repo=` — the repository where the module lands when it ships; one sentence in the registry README
+says so; `deps-present` skips planned rows.** The board recorded the answer only; the letter's other
+options were not posted there. Authorized sentence: one, in the registry README, saying the above.
+
+**D56a, its second letter — the Ring-0 grading cores move into cx-core-data (#1624).** Since the
+core-data leave, the data cx is built from `deps/cx-core-data/vcx/cmd_data`, which cannot import this
+tree's `vcx/corpus/` (allocated to `cx`; which repository owns the grading cores is #1624), and the
+ring-import gate's `cmd_data` contract admits `cx code cli cmd_data` only — so D56a above could not be
+implemented as written. The options, as the Ring-1 batch posted them (2026-09-24 ~02:0xZ): **(a) move
+`vcx/corpus/document`, `difflint` and `streaming` (Ring 0; `fmtlane` stays, it needs the evaluator)
+into cx-core-data as modules both `cmd_data` and `cx` import, then give the data cx the verb and
+`cx_partition.md` §4 the word — cx-core-data grades 25 of its 26 files with its own build**; (b) keep
+the cores in cx; the data cx stays without `cx corpus` and cx-core-data grades itself with the full
+cx. The owner answered (a) (~02:1xZ): `cx corpus` means the same in both repositories, and #1624's
+ownership question resolves the same way (the data-side cores are cx-core-data's). Its branch follows
+the D71a hook.
+
 ## Not decided here (RS-30, RS-31)
 
 The order of work is the board's, not this page's: D55c, D56a, D62a and D63a are decision-free fixes
 for the next Ring-1 batch; D54c and D64c are the package-lanes work; D65d, D67a and the documentation
 epic under RS-30 open after the cut. D66a records placements the store split already made; D68a and
 D69b are applied by the branches named with them; D70a1's interim (b) is the next Ring-1 batch's and
-its end state (a) a design item after the cut. The spec sentence (a) needs is not written by this
+its end state (a) a design item after the cut. D71a is its own branch, before any product's `half=` leaves; D72a's README sentence rides the next registry-touching branch; D56a's second letter is a branch after D71a's. The spec sentence (a) needs is not written by this
 page. No
 sentence of any spec beyond the ones named above is authorized by this page.
