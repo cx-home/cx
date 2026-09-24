@@ -191,7 +191,7 @@ corpus example or a measured number beside it — so the excitement is checkable
 holds: what is measured is labelled measured). It applies to the documentation epic after the cut;
 nothing before 2026-09-26 changes because of it.
 
-## RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a)
+## RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c)
 
 **Status: RULED (owner, 2026-09-23, in session, letter by letter).** The integrator posted D54–D56 and
 D62–D67 on [#1591](https://github.com/cx-home/cx-private/issues/1591) through the afternoon. The owner
@@ -209,7 +209,7 @@ earlier posting framed the options differently, that is said), the chosen option
 letters of the same kind — allocation and directory decisions — followed at the next integrator
 session's start (posted 21:2xZ) and were answered ~21:4xZ: **D68 = (a)** and **D69 = (b)**; then D70
 (#1636), put again with its long-term consequences at the owner's request, was answered ~21:5xZ:
-**D70 = (a1)**. The three are recorded last. Three more followed after midnight (2026-09-24, posted on the board and answered there): **D71 = (a)** (~01:0xZ), **D72 = (a)** (~01:2xZ) and a second letter under D56a, on where its grading cores live (~02:1xZ, answered **(a)**); they are recorded after D70a1.
+**D70 = (a1)**. The three are recorded last. Three more followed after midnight (2026-09-24, posted on the board and answered there): **D71 = (a)** (~01:0xZ), **D72 = (a)** (~01:2xZ) and a second letter under D56a, on where its grading cores live (~02:1xZ, answered **(a)**); they are recorded after D70a1. Two more were answered ~03:5xZ the same morning: **D73 = (a)** and **D74 = (c)**, recorded last.
 
 **D54c — `vcx/tests/flow_umbrella_test.v` splits by subject.** The umbrella's 16 functions shell out
 to `cx flow run/serve/--help` and read `$flow:status` — they test cx's CLI verbs AND flow's package.
@@ -365,6 +365,25 @@ the cores in cx; the data cx stays without `cx corpus` and cx-core-data grades i
 cx. The owner answered (a) (~02:1xZ): `cx corpus` means the same in both repositories, and #1624's
 ownership question resolves the same way (the data-side cores are cx-core-data's). Its branch follows
 the D71a hook.
+
+**D73a — the registration hook extends to the CLI verb table.** The store's leave (merged as
+`7b96250b2`) left three files by name: `vcx/cmd/store_{serve,rotate,principal}_d_cx_platform.v`, whose
+`run_store_serve` / `run_store_rotate_kek` / `run_store_mint_principal` the platform verb table in
+`vcx/cmd/platform_verbs_d_cx_platform.v` calls intra-module — the D71 wall one level up the tree (a
+scratch build that moved them failed `undefined ident: run_store_serve`). The options, as the store
+leave's RESULTS posted them (board, 2026-09-24 ~03:2xZ): **(a) extend the D71a branch's hook to the
+verb table, so a product registers its own CLI verbs from its own `init()`, and the three files move to
+cx-platform-store**; (b) leave the three files permanently allocated to `cx-core-code`/`cx`
+(re-allocate them in `repos.cxd`, drop the store's claim) if no other product ever needs the same
+shape; (c) leave them as they are, tracked here, `why='PARTLY EXTRACTED'`, indefinitely. The owner
+answered (a) (~03:5xZ): the second part of the D71a branch, or its follow-up branch.
+
+**D74c — pace: the weekly limit does not bind.** The integrator reported usage (5-hour 41 %, weekly
+50 % → 71 % in one window) and asked whether pace should drop before the weekly limit. The answer, as
+the board records it (~03:5xZ): **(c) the weekly limit does not bind — extra usage covers it — and full
+pace resumes**; the four bindings' leave and D56a's branch launch, the registry-editing branches wait
+for the leaves that edit the registries. The board recorded the answer only; the letter's other options
+were not posted there. No code, spec or allocation moves under it.
 
 ## Not decided here (RS-30, RS-31)
 
