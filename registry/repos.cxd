@@ -112,36 +112,6 @@ the rule carries a `why=`. The recurring reasons, once:
      status=extracted and owns no path here; these rules re-allocate the files it was
      allotted but that grade, build or document this tree, each with its reason ── ]
   [path prefix='third_party/re2' repo=cx why='the re2 submodule: the front door builds the archive cx-core-data\'s regex module links (-d cx_re2_lib_dir / cx_re2_static), beside the V fork pin it keeps (RULED: D68a)']
-  [path exact='include/cx.h' repo=cx-core-code why='libcx\'s whole C ABI, sixteen code and platform declarations with the data ones; libcx is the language repository\'s artifact (RULED: D68a)']
-  [path prefix='scripts/wasm/' repo=cx-core-code why='the wasm build compiles vcx/code (the evaluator) into libcx.wasm; it is a libcx build (RULED: D68a)']
-  [path prefix='tests/wasm/' repo=cx-core-code why='the wasm build\'s own probes, beside scripts/wasm/ (RULED: D68a)']
-  [path prefix='tests/abi/' repo=cx-core-code why='the C ABI test compiles against include/cx.h and links libcx (RULED: D68a)']
-  [path exact='spec/03-approved/core/codec.md' repo=cx-core-code why='the xml registry row\'s spec: the codec registry is vcx/code/stdlib_codec.v in module code, and a module moves whole (RULED: D68a)']
-  [path prefix='vcx/tests/parser_units' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/node_units' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/lexicon_surface' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/canonical' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/codecs_formats' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/numerics_temporal' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/identity' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/cxparse' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/table_stream' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/stream_' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/reader_parity' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/cabi' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/formal/' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/fixtures_grader' repo=cx-core-code why='the grader and its shard manifest grade every module corpus of this tree, Ring 1 and platform (RULED: D68a)']
-  [path prefix='vcx/tests/runners/extraction_gate' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/runners/abi_' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/runners/conformance/' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/runners/diff_lint/' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/runners/fmt/' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/runners/streaming_write/' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/runners/cxparse_baseline_bench' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/runners/sizeof_probe' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/runners/lazy_record_ceiling_probe' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/runners/address_baseline' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
-  [path prefix='vcx/tests/testdata/v015_pack_compat' repo=cx-core-code why='the tests grade this tree\'s own inputs (its examples, corpora, shard manifest and grader) through @VMODROOT, so they live with the language suite they sit in (RULED: D68a)']
 
   [; ── modules that LEAVE the frozen stdlib for the product that consumes them ── ]
   [; stdlib/ft.cx, spec/03-approved/stdlib/ft.md and conformance/stdlib/ft.cxd RETIRED
@@ -151,7 +121,6 @@ the rule carries a `why=`. The recurring reasons, once:
      here, but re-allocates below from cx-platform-store to cx-core-code (RULED: D84a):
      D71a's registration hook needs no env-aware twin because the file never leaves this
      tree -- ft is a two-repo module like sasl, not a pending whole-module move. ]
-  [path prefix='vcx/code/stdlib_ft' repo=cx-core-code why='ft\'s V half is Ring 1 and pure (imports cx and math only) and stdlib_similar.v calls its tokenizer as same-module functions; the ring decides where a module lives (RULED: D84a, D76c); spec, corpus and source travel with cx-platform-store as sasl\'s do with mail']
   [; stdlib/diagram.cx, spec/03-approved/stdlib/diagram.md, conformance/stdlib/diagram.cxd and
      tooling/web/ RETIRED (RULED: RS-12, D59a; #1591 item K3) -- cx-stdlib/diagram's CX-level
      surface and the web component left with the extraction of cx-tooling; registry/modules.cxd's
@@ -160,29 +129,8 @@ the rule carries a `why=`. The recurring reasons, once:
      scripts/check_code_diagram_fixtures.cx is no longer claimed here: it is the step
      test-code-diagram runs in THIS tree, so it falls to the scripts/ rule (repo=cx). The V half
      below re-allocates to cx-core-code (RULED: D78a), the libcx ABI\'s owner. ]
-  [path prefix='vcx/code/stdlib_diagram' repo=cx-core-code why='RULED: D78a -- the diagram V half re-allocates to cx-core-code: libcx exports cx_code_diagram, cx_code_diagram_with_level and cx_code_diagram_with_view_level from it (vcx/code/cabi.v, include/cx.h, scripts/wasm/cxlib.js), code\'s api.v renders `cx diagram` through render_diagram, and `cx code-diagram` (vcx/cmd/diagram.v) calls code_diagram_with_view_level -- same-module V calls, not a registration a hook can carry (D71a\'s table: blocked); the ABI is cx-core-code\'s, so the V half that backs it is too. diagram stays a two-repo module like ft: its CX-level surface (stdlib/diagram.cx) is cx-tooling\'s, above']
-  [path prefix='vcx/code/diagram' repo=cx-core-code why='RULED: D78a -- the diagram V half: see vcx/code/stdlib_diagram above']
-  [path prefix='vcx/code/code_diagram' repo=cx-core-code why='RULED: D78a -- the diagram V half: see vcx/code/stdlib_diagram above']
-  [path prefix='vcx/tests/diagram_umbrella' repo=cx-core-code why='RULED: D78a -- compiles against module code and grades the V half above; stays with it']
-  [path prefix='vcx/tests/code_diagram_roundtrip' repo=cx-core-code why='RULED: D78a -- compiles against module code and grades the V half above; stays with it']
-  [path prefix='vcx/tests/testdata/code_diagram_golden' repo=cx-core-code why='RULED: D78a -- the byte-level pins diagram_umbrella_test.v compares the V half against; stays with it']
-  [path prefix='vcx/tests/testdata/diagram_' repo=cx-core-code why='RULED: D78a -- the byte-level pins diagram_umbrella_test.v compares the V half against; stays with it']
-  [path exact='conformance/code_diagram.cxd' repo=cx-core-code why='RULED: D78a -- the V half\'s own corpus: it grades `cx code-diagram` and `cx code-tree` (vcx/cmd over code_diagram.v), and `cx corpus` refuses it (all 52 cases are of a kind no document lane grades, exit 2), so its one grader is test-code-diagram, scripts/check_code_diagram_fixtures.cx against THIS tree\'s binary. It stays with the V half']
 
   [; ── modules that ENTER Ring 1 by the membership test (import nothing, no socket) ── ]
-  [path prefix='vcx/code/stdlib_did' repo=cx-core-code why='pure; did:web resolution split off to identity (RULED: RS-14)']
-  [path prefix='vcx/code/stdlib_vc' repo=cx-core-code why='pure signatures; the revocation journal split off to identity (RULED: RS-14)']
-  [path prefix='vcx/code/stdlib_authz' repo=cx-core-code why='the decision function imports nothing (RULED: RS-13); the journaled store split off to identity']
-  [path exact='stdlib/did.cx' repo=cx-core-code]
-  [path exact='stdlib/vc.cx' repo=cx-core-code]
-  [path exact='stdlib/authz.cx' repo=cx-core-code]
-  [path exact='stdlib/bus.cx' repo=cx-core-code]
-  [path exact='spec/03-approved/stdlib/did.md' repo=cx-core-code]
-  [path exact='spec/03-approved/stdlib/vc.md' repo=cx-core-code]
-  [path exact='spec/03-approved/stdlib/authz.md' repo=cx-core-code]
-  [path exact='conformance/stdlib/did.cxd' repo=cx-core-code]
-  [path exact='conformance/stdlib/vc.cxd' repo=cx-core-code]
-  [path exact='conformance/stdlib/authz.cxd' repo=cx-core-code]
   [; stdlib/xsp.cx, spec/03-approved/stdlib/xsp.md, spec/03-approved/xap/xsp.md
      and conformance/stdlib/xsp.cxd RETIRED (RULED: D65d, RS-31, RS-12) --
      cx-stdlib/xsp's CX-level surface and the protocol page left with the
@@ -336,40 +284,10 @@ the rule carries a `why=`. The recurring reasons, once:
      extraction prep, F-1; the ux prep reads it again as F-U1). ]
   [; examples/platform/sso/ left with the extraction; see the retired sso block above. ]
   [; examples/platform/flow/ left with the extraction; see the retired flow block above. ]
-  [path prefix='examples/platform/scim/' repo=cx-core-code why='scim is a shared codec that stays in the language repo, so its provisioning and projection examples go where the module is']
 
-  [path exact='vcx/code/stdlib_codec.v' repo=cx-core-code why='the codec registry is module code and a V module is one directory; the xml row (spec, corpus, code) moves whole with it (RULED: D68a)']
-  [path exact='vcx/code/stdlib_sasl.v' repo=cx-core-code why='cx-stdlib/sasl\'s V dispatch: Ring 1 and pure, so it lives in vcx/code and is the core\'s, although the module\'s spec, corpus and source travel with cx-platform-mail, its only consumer -- the ring decides where a module\'s code lives, and a binary without mail still answers sasl (RULED: D76c)']
 
   [; ── Ring 1: the language and its stdlib (everything of vcx/code and stdlib not claimed above) ── ]
-  [path prefix='vcx/code/' repo=cx-core-code]
-  [path prefix='vcx/cmd/' repo=cx-core-code why='the CLI: main, eval, lsp, primer, scaffold, select, table, tools, stdlib verbs']
-  [path prefix='vcx/testenv/' repo=cx-core-code]
-  [path prefix='vcx/timing/' repo=cx-core-code]
-  [path prefix='vcx/tools/' repo=cx-core-code]
-  [path prefix='vcx/bench/' repo=cx-core-code]
-  [path exact='vcx/v.mod' repo=cx-core-code]
-  [path exact='vcx/Makefile' repo=cx-core-code why='the V build; each extracted repo takes its own recipes out of it']
-  [path exact='vcx/README.md' repo=cx-core-code]
-  [path prefix='vcx/tests/' repo=cx-core-code why='the language suite, the eval shards, the umbrellas and the soundness lane; every product-owned test file is claimed above']
-  [path prefix='stdlib/' repo=cx-core-code]
-  [path prefix='spec/03-approved/stdlib/' repo=cx-core-code]
-  [path prefix='conformance/stdlib/' repo=cx-core-code]
-  [path exact='conformance/code.cxd' repo=cx-core-code]
-  [path exact='conformance/binding_api.cxd' repo=cx-core-code]
-  [path exact='spec/03-approved/core/code.md' repo=cx-core-code]
-  [path exact='spec/03-approved/core/code-identity.md' repo=cx-core-code]
-  [path exact='spec/03-approved/core/commands_effects.md' repo=cx-core-code]
-  [path exact='spec/03-approved/core/computation_identity.md' repo=cx-core-code]
-  [path exact='spec/03-approved/core/planar_algebra.md' repo=cx-core-code]
-  [path exact='spec/03-approved/core/runtime_representation.md' repo=cx-core-code]
-  [path exact='spec/03-approved/core/security.md' repo=cx-core-code]
-  [path exact='spec/03-approved/core/limits.md' repo=cx-core-code]
-  [path exact='spec/03-approved/core/delivery.md' repo=cx-core-code]
-  [path exact='spec/03-approved/misc/cli.md' repo=cx-core-code]
-  [path exact='spec/03-approved/misc/debug.md' repo=cx-core-code]
   [; spec/03-approved/modules/tree-sitter.md RETIRED (RULED: RS-12, D59a): it left with cx-tooling, beside the grammar it specifies. ]
-  [path exact='cx.pc.in' repo=cx-core-code why='pkg-config for libcx']
 
   [; ── bindings ─────────────────────────────────────────────────────── ]
   [; python, go, rust and v left whole (RULED: RS-12, RS-8; #1591 item K3, LAUNCH
@@ -439,11 +357,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='conformance/gates_register.cxd' repo=cx why='the drift check of the cx-wide gate register: a suite status lives on its own [test-suite] element and conformance/gates.cxd is derived from the elements -- scripts/gates_register.cx is the check and this corpus its executable half (RULED: RS-27)']
   [path exact='conformance/gates.cxd' repo=cx why='the cx-wide gate register D49a derives from every suite element; conformance/gates_register.cxd, the front door\'s, is its drift check (RULED: D68a)']
   [path exact='conformance/llm/antipatterns.cxd' repo=cx why='the primer\'s anti-pattern corpus, graded by scripts/gen_docs/primer_build.cx; the LLM docs are the front door\'s (RULED: D68a)']
-  [path exact='conformance/migrate_namespace.cxd' repo=cx-core-code why='cx --migrate-namespace is a CLI verb of vcx/cmd and reads the loader\'s retirement table (RULED: D68a)']
-  [path exact='conformance/xml_codec.cxd' repo=cx-core-code why='the xml registry row\'s corpus: the row (codec.md, this file, vcx/code/stdlib_codec.v) moves whole (RULED: D68a)']
-  [path exact='conformance/xpath_31_parity.cxd' repo=cx-core-code why='the XPath 3.1 parity corpus grades the language\'s cxpath surface (test-xpath-parity-cx) (RULED: D68a)']
   [path prefix='conformance/' repo=cx why='what remains of the root corpus after the rows above is the corpus READMEs and triage notes, which describe the corpus of every repository (RULED: D68a)']
-  [path prefix='fixtures/' repo=cx-core-code why='the golden output of `cx demo` (vcx/cmd/demo.v), graded by cli_umbrella_test.v and tools/smoke-eval.sh (RULED: D68a)']
   [; _gate_evidence/ and .claude/ RE-ALLOCATED to cx-private above (RULED: D82a, RS-32): runner
      evidence and per-tool scaffolding are the orchestration repository's, not the public front
      door's. ]
