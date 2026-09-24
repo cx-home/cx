@@ -37,4 +37,7 @@ organisation moves.
   [dep repo=cx-platform-sso sha=c43dc5cd9c804dc3d34e3e1a5a1e4fa6969b5598 module='cx-platform/sso']
   [dep repo=cx-platform-flow sha=78ea045510278dee3b0a522ab7f168e42e020fab module='cx-platform/flow']
   [dep repo=cx-core-data sha=c5260d8ecfb3feb1e44646dc408e93a4a8dc9591 module=cx-core-data v-fork=501ce6e5f92643eb909adc3f7a7b4c2d1adaeeec]
+  [dep repo=cx-platform-db sha=1834c802b4da2c4e6cba362ceb790f46b392157d module='db sql redis' v-fork=501ce6e5f92643eb909adc3f7a7b4c2d1adaeeec]
+  [dep repo=cx-platform-net sha=0a4f2114af1e29a19362b24069061c913c9a0374 module='cx-platform/net cx-platform/http' v-fork=501ce6e5f92643eb909adc3f7a7b4c2d1adaeeec]
+  [dep repo=cx-platform-mail sha=8afacaaeae929436dcd24074cabe8ae4cf8b50c4 module='cx-platform/imap cx-platform/smtp cx-stdlib/sasl' v-fork=501ce6e5f92643eb909adc3f7a7b4c2d1adaeeec]
 ]

@@ -314,7 +314,20 @@
       [= $f7 [?if [= [$place-of-dir "vcx/cxnet/stdlib_net.v" ("platform")] ""]
                [then ""]
                [else "FALSE POSITIVE: an undeclared directory under vcx/ must not read as a place"]]]
-      [= $failures [?for [in $x ($f1, $f2, $f3, $f4, $f5, $f6, $f7, $r1, $r2, $r3, $r4, $r5, $r6, $r7, $r8, $r9, $r10, $r11, $r12)] [where [not [= $x ""]]] [yield $x]]]
+      # a `[catalog]` row's own `repo=` (RS-7, RS-12), the same transport a
+      # `[module]` row's `[dep path]` carries: the catch is a catalog whose
+      # path is still the old in-tree spelling despite repo= being set; the
+      # no-catch is a pinned catalog path reading its ring correctly once the
+      # deps/<repo>/ prefix is stripped.
+      [= $f8 [?if [$strings:starts-with "spec/03-approved/platform/file_surface.md"
+                    [$dep-prefix "cx-platform-net"]]
+               [then "MISSED (should catch): a catalog repo= row whose path column is still the old in-tree path"]
+               [else ""]]]
+      [= $f9 [?if [= [$in-repo "deps/cx-platform-net/spec/03-approved/platform/file_surface.md" "cx-platform-net"]
+                     "spec/03-approved/platform/file_surface.md"]
+               [then ""]
+               [else "FALSE POSITIVE: a pinned catalog path must read its ring from what follows deps/<repo>/"]]]
+      [= $failures [?for [in $x ($f1, $f2, $f3, $f4, $f5, $f6, $f7, $f8, $f9, $r1, $r2, $r3, $r4, $r5, $r6, $r7, $r8, $r9, $r10, $r11, $r12)] [where [not [= $x ""]]] [yield $x]]]
       [?if [> [$count $failures] 0]
         [then
           [?let [= $_bad [$io:write-line [$env:stderr]
@@ -323,7 +336,7 @@
             [$env:exit 1]]]
         [else
           [?let [= $_ok [$io:write-line [$env:stdout]
-                  "placement-gate self-test OK -- 1 catch + 1 no-catch case for [integration map], 1 catch + 2 no-catch cases for [dep path] and the ring read beneath deps/<repo>/ (RS-12), 1 catch + 1 no-catch case for a split product's directory reading as the platform group (RS-24), and 7 catch + 5 no-catch cases for the two rings and the platform group (RS-1, RS-31), pass."]]
+                  "placement-gate self-test OK -- 1 catch + 1 no-catch case for [integration map], 1 catch + 2 no-catch cases for [dep path] and the ring read beneath deps/<repo>/ (RS-12), 1 catch + 1 no-catch case for a split product's directory reading as the platform group (RS-24), 1 catch + 1 no-catch case for a catalog row's own repo= (RS-12), and 7 catch + 5 no-catch cases for the two rings and the platform group (RS-1, RS-31), pass."]]
             [$env:exit 0]]]]]]
   [else ""]]
 
@@ -687,17 +700,29 @@
           [= $p [$string [?else $m@path ""]]]
           [= $r [$string [?else $m@ring "?"]]]
           [= $g [$string [?else $m@group ""]]]
+          # `repo=` -- an extracted catalog page (RULED: RS-7, RS-12), same
+          # transport a `[module]` row's `[dep path]` uses: the page still
+          # indexes the group from here, but it reaches this tree only as
+          # the pinned checkout deps.cxd names, so the ring is read from
+          # what follows `deps/<repo>/` and existence is checked at the
+          # literal (pinned) path.
+          [= $repo [$string [?else $m@repo ""]]]
           [= $rg [?if [= $g ""] [then [$concat "ring=" $r]] [else [$concat "ring=" $r " group=" $g]]]]
           [= $shape [$ring-shape $r $g "none"]]
           [= $l1 [?if [= $shape ""] [then ""]
                    [else [$concat "  [ring group]     catalog " $p "  -- " $rg ": " $shape]]]]
-          [= $l2 [?if [$place-dir-ok $p [$row-place $r $g] $pdirs] [then ""]
+          [= $l2 [?if [$place-dir-ok [$in-repo $p $repo] [$row-place $r $g] $pdirs] [then ""]
                    [else [$concat "  [spec ring]      catalog " $p "  -- " $rg
                            ", but the page is in the other side's directory"]]]]
           [= $l3 [?if [$io:exists $p] [then ""]
                    [else [$concat "  [catalog]        " $rg
-                           "  -- the catalog page " $p " is declared and not on disk"]]]]
-          [= $hit [$strings:join [?for [in $x ($l1, $l2, $l3)] [where [not [= $x ""]]] [yield $x]] "\n"]]
+                           "  -- the catalog page " $p " is declared and not on disk"
+                           [?if [= $repo ""] [then ""] [else [$concat "  (repo=" $repo "; run `make deps-sync`)"]]]]]]]
+          [= $l4 [?if [= $repo ""] [then ""]
+                   [else [?if [$strings:starts-with $p [$dep-prefix $repo]] [then ""]
+                     [else [$concat "  [dep path]       catalog " $p "  -- repo=" $repo
+                             " says the page is in that repository; path must begin " [$dep-prefix $repo]]]]]]]
+          [= $hit [$strings:join [?for [in $x ($l1, $l2, $l3, $l4)] [where [not [= $x ""]]] [yield $x]] "\n"]]
           [where [not [= $hit ""]]]
           [yield $hit]]]
 

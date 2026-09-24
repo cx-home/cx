@@ -172,7 +172,7 @@ needs becomes its own Ring-1 module.
        the same reason composition.md is. A later object-storage kind
        instantiates the same page (1430-e's catalog, #1464). See
        spec/03-approved/platform/file_surface.md §0. ────────────────────── ]
-  [catalog ring=1 group=platform path=spec/03-approved/platform/file_surface.md]
+  [catalog ring=1 group=platform repo=cx-platform-net path=deps/cx-platform-net/spec/03-approved/platform/file_surface.md]
 
   [; ── Ring 1 — cx-stdlib ───────────────────────────────────────────── ]
   [; authz — the DECISION half, Ring 1 since RS-13: check / authorize /
@@ -233,7 +233,7 @@ needs becomes its own Ring-1 module.
   [module name=random ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/random.md corpus=conformance/stdlib/random.cxd source=stdlib/random.cx code=vcx/code/stdlib_random_notd_cx_no_pack_random.v half=none status=current]
   [module name=re ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/re.md corpus=conformance/stdlib/re.cxd source=stdlib/re.cx code=vcx/code/stdlib_re.v half=none status=current]
   [module name=saml ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/saml.md corpus=conformance/stdlib/saml.cxd source=stdlib/saml.cx code='vcx/code/stdlib_saml.v vcx/code/stdlib_saml_binding.v vcx/code/stdlib_saml_c14n.v vcx/code/stdlib_saml_metadata.v vcx/code/stdlib_saml_xml.v vcx/code/stdlib_saml_xmlenc.v' half=none status=current]
-  [module name=sasl ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/sasl.md corpus=conformance/stdlib/sasl.cxd source=stdlib/sasl.cx code=vcx/code/stdlib_sasl.v half=none status=current]
+  [module name=sasl ring=1 ns=cx-stdlib kind=module repo=cx-platform-mail spec=deps/cx-platform-mail/spec/03-approved/stdlib/sasl.md corpus=deps/cx-platform-mail/conformance/stdlib/sasl.cxd source=deps/cx-platform-mail/stdlib/sasl.cx code=vcx/code/stdlib_sasl.v half=none status=current]
   [module name=sched ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/sched.md corpus=conformance/stdlib/sched.cxd source=stdlib/sched.cx code='vcx/code/stdlib_sched_notd_cx_no_pack_sched.v vcx/code/sched_close_d_cx_no_pack_sched.v' half=none status=current]
   [module name=scim ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/scim.md corpus=conformance/stdlib/scim.cxd source=stdlib/scim.cx code=vcx/code/stdlib_scim.v half=none status=current]
   [module name=similar ring=1 ns=cx-stdlib kind=module spec=spec/03-approved/stdlib/similar.md corpus=conformance/stdlib/similar.cxd source=stdlib/similar.cx code='vcx/code/stdlib_similar.v vcx/code/stdlib_similar_verbs.v vcx/code/stdlib_similar_assign.v vcx/code/stdlib_similar_metaphone.v' half=none status=current]
@@ -320,21 +320,21 @@ needs becomes its own Ring-1 module.
   [; ftp and sftp — the connector kit's two file-transfer transports (RULED:
      1430-c, 1430-e), spec first: planned, their columns naming where #1430
      writes them. ]
-  [module name=ftp ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/ftp.md corpus=conformance/platform/ftp.cxd source=stdlib/ftp.cx code=vcx/platform/stdlib_ftp.v half=none status=planned]
+  [module name=ftp ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-net spec=deps/cx-platform-net/spec/03-approved/platform/ftp.md corpus=deps/cx-platform-net/conformance/platform/ftp.cxd source=deps/cx-platform-net/stdlib/ftp.cx code=deps/cx-platform-net/vcx/cxnet/stdlib_ftp.v half=none status=planned]
   [; http is the 1427-e split: the serve half stays here and keeps the name,
      the client+codec half is the `http-client` row above. ]
-  [module name=http ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/http.md corpus=conformance/platform/http.cxd source=stdlib/http.cx code='vcx/cxnet/stdlib_http_serve.v vcx/cxnet/http_h2_serve_notd_wasm32_emcc.v vcx/cxnet/serve_file.v vcx/cxnet/stdlib_http_serve_register.v vcx/cxnet/serve_file_register.v' half=none status=current]
+  [module name=http ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-net spec=deps/cx-platform-net/spec/03-approved/platform/http.md corpus=deps/cx-platform-net/conformance/platform/http.cxd source=deps/cx-platform-net/stdlib/http.cx code='deps/cx-platform-net/vcx/cxnet/stdlib_http_serve.v deps/cx-platform-net/vcx/cxnet/http_h2_serve_notd_wasm32_emcc.v deps/cx-platform-net/vcx/cxnet/serve_file.v deps/cx-platform-net/vcx/cxnet/stdlib_http_serve_register.v deps/cx-platform-net/vcx/cxnet/serve_file_register.v' half=none status=current]
   [; imap and smtp go whole to cx-platform (1427-e): they SERVE, and their
      client/codec halves stay declared in vcx/code until a Ring-1 consumer
      asks for a module of their own. Both corpora still carry the ring=1
      header the old tier-based placement gave them. ]
-  [module name=imap ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/imap.md corpus=conformance/platform/imap.cxd source=stdlib/imap.cx code='vcx/mail/stdlib_imap_wire.v vcx/mail/stdlib_imap_wire_register.v' half='vcx/code/stdlib_imap.v vcx/code/stdlib_imap_server.v' status=current]
+  [module name=imap ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-mail spec=deps/cx-platform-mail/spec/03-approved/platform/imap.md corpus=deps/cx-platform-mail/conformance/platform/imap.cxd source=deps/cx-platform-mail/stdlib/imap.cx code='deps/cx-platform-mail/vcx/mail/stdlib_imap_wire.v deps/cx-platform-mail/vcx/mail/stdlib_imap_wire_register.v' half='vcx/code/stdlib_imap.v vcx/code/stdlib_imap_server.v' status=current]
   [module name=journal ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/journal.md corpus=conformance/platform/journal.cxd source=stdlib/journal.cx code='vcx/store/stdlib_journal.v vcx/store/journal_ingest.v vcx/store/stdlib_journal_register.v' half=none status=current]
   [module name=live ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/live.md corpus=conformance/platform/live.cxd source=stdlib/live.cx code='vcx/store/stdlib_live.v vcx/store/stdlib_live_register.v' half=none status=current]
-  [module name=net ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/net.md corpus=conformance/platform/net.cxd source=stdlib/net.cx code='vcx/cxnet/stdlib_net.v vcx/cxnet/stdlib_net_register.v' half=none status=current]
+  [module name=net ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-net spec=deps/cx-platform-net/spec/03-approved/platform/net.md corpus=deps/cx-platform-net/conformance/platform/net.cxd source=deps/cx-platform-net/stdlib/net.cx code='deps/cx-platform-net/vcx/cxnet/stdlib_net.v deps/cx-platform-net/vcx/cxnet/stdlib_net_register.v' half=none status=current]
   [module name=session ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/session.md corpus=conformance/platform/session.cxd source=stdlib/session.cx code='vcx/platform/stdlib_session.v vcx/platform/identity_connector_builtins.v vcx/platform/stdlib_session_register.v' half=none status=current]
-  [module name=sftp ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/sftp.md corpus=conformance/platform/sftp.cxd source=stdlib/sftp.cx code=vcx/platform/stdlib_sftp.v half=none status=planned]
-  [module name=smtp ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/smtp.md corpus=conformance/platform/smtp.cxd source=stdlib/smtp.cx code='vcx/mail/stdlib_smtp_wire.v vcx/mail/stdlib_smtp_wire_register.v' half='vcx/code/stdlib_smtp.v vcx/code/stdlib_smtp_server.v' status=current]
+  [module name=sftp ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-net spec=deps/cx-platform-net/spec/03-approved/platform/sftp.md corpus=deps/cx-platform-net/conformance/platform/sftp.cxd source=deps/cx-platform-net/stdlib/sftp.cx code=deps/cx-platform-net/vcx/cxnet/stdlib_sftp.v half=none status=planned]
+  [module name=smtp ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-mail spec=deps/cx-platform-mail/spec/03-approved/platform/smtp.md corpus=deps/cx-platform-mail/conformance/platform/smtp.cxd source=deps/cx-platform-mail/stdlib/smtp.cx code='deps/cx-platform-mail/vcx/mail/stdlib_smtp_wire.v deps/cx-platform-mail/vcx/mail/stdlib_smtp_wire_register.v' half='vcx/code/stdlib_smtp.v vcx/code/stdlib_smtp_server.v' status=current]
   [; sso — #1394's enterprise-SSO handler surface, pure CX over
      oidc/saml/scim/session; declared `incoming` before its merge (OL-15) and
      current since release/0.18 carries it.
@@ -410,11 +410,11 @@ needs becomes its own Ring-1 module.
        whose parent spec is not a module of its own (1427-e). ──────────── ]
   [module name=term ring=1 ns=none kind=natives spec=spec/03-approved/stdlib/term.md corpus=conformance/stdlib/term.cxd source=none code=vcx/code/stdlib_term_notd_cx_no_pack_term.v half=none status=current]
   [module name=xap_dist ring=1 group=platform ns=none kind=natives spec=spec/03-approved/xap/xap_dist.md corpus=conformance/xap/xap-dist.cxd source=none code=vcx/xap/stdlib_xap_dist.v half=none status=current]
-  [module name=redis ring=1 group=platform ns=none kind=backend spec=spec/03-approved/platform/store/redis.md corpus=conformance/platform/db.cxd source=none code=vcx/cxdb/redis_d_cx_db_redis.v half=none status=current]
-  [module name=sql ring=1 group=platform ns=none kind=backend spec=spec/03-approved/platform/store/sql.md corpus=conformance/platform/db.cxd source=none code='vcx/cxdb/sql.v vcx/cxdb/sql_register.v' half=none status=current]
+  [module name=redis ring=1 group=platform ns=none kind=backend repo=cx-platform-db spec=deps/cx-platform-db/spec/03-approved/platform/store/redis.md corpus=deps/cx-platform-db/conformance/platform/db.cxd source=none code=deps/cx-platform-db/vcx/cxdb/redis_d_cx_db_redis.v half=none status=current]
+  [module name=sql ring=1 group=platform ns=none kind=backend repo=cx-platform-db spec=deps/cx-platform-db/spec/03-approved/platform/store/sql.md corpus=deps/cx-platform-db/conformance/platform/db.cxd source=none code='deps/cx-platform-db/vcx/cxdb/sql.v deps/cx-platform-db/vcx/cxdb/sql_register.v' half=none status=current]
   [module name=distributed_store ring=1 group=platform ns=none kind=design spec=spec/03-approved/platform/store/distributed_store.md corpus=conformance/platform/store.cxd source=none code=none half=none status=current]
   [module name=erasure_compliance ring=1 group=platform ns=none kind=design spec=spec/03-approved/platform/store/erasure_compliance.md corpus=conformance/platform/store.cxd source=none code=none half=none status=current]
-  [module name=db ring=1 group=platform ns=none kind=suite spec=spec/03-approved/core/db_access.md corpus=conformance/platform/db.cxd source=none code=none half=none status=current]
+  [module name=db ring=1 group=platform ns=none kind=suite repo=cx-platform-db spec=deps/cx-platform-db/spec/03-approved/core/db_access.md corpus=deps/cx-platform-db/conformance/platform/db.cxd source=none code=none half=none status=current]
   [module name=xap-compose ring=1 group=platform ns=none kind=suite spec=spec/03-approved/xap/xap_grammar_composition.md corpus=conformance/xap/xap-compose.cxd source=none code=none half=none status=current]
   [module name=xap-schema ring=1 group=platform ns=none kind=suite spec=spec/03-approved/xap/xap_schema_as_data.md corpus=conformance/xap/xap-schema.cxd source=none code=none half=none status=current]
   [module name=xap-on ring=1 group=platform ns=none kind=suite spec=spec/03-approved/xap/xap.md corpus=conformance/xap/xap-on.cxd source=none code=none half=none status=current]
