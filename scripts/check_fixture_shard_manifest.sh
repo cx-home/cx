@@ -3,7 +3,7 @@
 # stdlib corpus across grader shards is COMPLETE and DISJOINT, or the step is
 # red.
 #
-# 1448-a splits `vcx/tests/code_eval_fixtures_test.v`'s single-threaded walk
+# 1448-a splits `deps/cx-core-code/vcx/tests/code_eval_fixtures_test.v`'s single-threaded walk
 # over the module corpus into shard test files the V runner's parallel jobs
 # carry. That buys 12–25 minutes off every run and introduces exactly one
 # new failure mode: a module file assigned to NO shard is graded by nothing,
@@ -22,14 +22,14 @@
 #   3. every [file name=…] row resolves to a file that EXISTS under
 #      conformance/;
 #   4. every [shard … test=…] row names a test file that EXISTS;
-#   5. every vcx/tests/code_eval_fixtures_shard_*_test.v in the tree has a
+#   5. every deps/cx-core-code/vcx/tests/code_eval_fixtures_shard_*_test.v in the tree has a
 #      manifest row — a shard file with no row grades nothing and passes.
 #
 # (macOS bash 3.2: no associative arrays — the sets are sorted text streams.)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-MANIFEST=vcx/tests/fixtures_grader/fixture_shards.cxd
+MANIFEST=deps/cx-core-code/vcx/tests/fixtures_grader/fixture_shards.cxd
 [ -f "$MANIFEST" ] || { echo "check-fixture-shard-manifest: no $MANIFEST"; exit 1; }
 
 tmp="$(mktemp -d "${TMPDIR:-/tmp}/cx-shard-manifest.XXXXXX")"
@@ -74,7 +74,7 @@ done < "$tmp/shards"
 
 # ── property 5: every shard test file in the tree has a row ─────────────────
 cut -d' ' -f2 "$tmp/shards" | sort > "$tmp/claimed_tests"
-ls vcx/tests/code_eval_fixtures_shard_*_test.v 2>/dev/null | sort > "$tmp/tree_tests" || true
+ls deps/cx-core-code/vcx/tests/code_eval_fixtures_shard_*_test.v 2>/dev/null | sort > "$tmp/tree_tests" || true
 orphan_tests=$(comm -13 "$tmp/claimed_tests" "$tmp/tree_tests")
 if [ -n "$orphan_tests" ]; then
   echo "check-fixture-shard-manifest: shard test file(s) with NO manifest row —"

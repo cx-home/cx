@@ -201,12 +201,13 @@
       # with no hyphenated counterpart keeps its own spelling and is still
       # reported if nothing specs it.
       [?let [= $dispatch-rx [$re:compile "([a-z0-9_]+)_stdlib_builtin"]]
-             [= $dispatch-raw [$concat [$io:read-file "vcx/code/stdlib_dispatch.v"]
+             [= $code-dir [?if [$io:exists "vcx/code"] [then "vcx/code"] [else "deps/cx-core-code/vcx/code"]]]
+             [= $dispatch-raw [$concat [$io:read-file [$concat $code-dir "/stdlib_dispatch.v"]]
                                        [$strings:join
                                          [?for [in $rg ([$io:glob "vcx/*/*_register.v"],
                                                         [$io:glob "deps/*/vcx/*/*_register.v"])]
                                            [in $rf $rg]
-                                           [where [not [$strings:starts-with $rf "vcx/code/"]]]
+                                           [where [not [$strings:starts-with $rf [$concat $code-dir "/"]]]]
                                            [yield [$io:read-file $rf]]]
                                          "\n"]]]
         [?let [= $dispatch-set

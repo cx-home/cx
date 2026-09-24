@@ -4,7 +4,7 @@
 #
 # The document runner (tests/runners/conformance/conformance_run.v) lists the
 # suites it drives; it is the DOCUMENT step and refuses [in-code …] fixtures by
-# design (#1134), so `test-vcx-conform` never covered conformance/code.cxd —
+# design (#1134), so `test-vcx-conform` never covered deps/cx-core-code/conformance/code.cxd —
 # the largest corpus — while its name said "conformance". That corpus is graded
 # by the EVAL step (test-vcx-suite's code_eval_fixtures_test.v, plus the profile
 # gate), and other suites by their own runners. Nothing was uncovered — but the
@@ -15,9 +15,9 @@
 #
 # THE CLAIM MUST NAME A STEP THAT ACTUALLY RUNS THE FILE. Until 2026-09-08 the
 # code.cxd and stdlib/*.cxd rows claimed `test-vcx-code`, which runs
-# `v test vcx/code/ vcx/platform/` (Makefile:2088) -- two directories that do
-# NOT contain vcx/tests/code_eval_fixtures_test.v. `test-vcx-suite` runs
-# `v test vcx/tests/` (Makefile:2024), which does. The rows also named
+# `v test deps/cx-core-code/vcx/code/ vcx/platform/` (Makefile:2088) -- two directories that do
+# NOT contain deps/cx-core-code/vcx/tests/code_eval_fixtures_test.v. `test-vcx-suite` runs
+# `v test deps/cx-core-code/vcx/tests/` (Makefile:2024), which does. The rows also named
 # test-profile-gate, which runs tests/runners/profile_gate/ against the
 # cli/embed profile binaries (vcx/Makefile:950-952) -- a different corpus.
 # Nothing was ungraded (test-vcx-suite is in TEST_TARGETS), but a worker who
@@ -29,7 +29,7 @@
 # the claims are a two-column file.)
 set -euo pipefail
 cd "$(dirname "$0")/.."
-runner=vcx/tests/runners/conformance/conformance_run.v
+runner=deps/cx-core-code/vcx/tests/runners/conformance/conformance_run.v
 claims="$(mktemp "${TMPDIR:-/tmp}/cx-conf-claims.XXXXXX")"
 trap 'rm -f "$claims"' EXIT
 # 1. the document step: the runner's own suite list
@@ -40,25 +40,25 @@ done >> "$claims"
 #    split that corpus into the ring-legible directories the specs sit in, so
 #    the walk is the UNION of them plus the two suites that belong to no ring
 #    directory — extended.cxd (#1379) and the ring-0 codec suite xml_codec.cxd,
-#    which is the file conformance/xml_codec.cxd became. A glob left on
+#    which is the file deps/cx-core-code/conformance/xml_codec.cxd became. A glob left on
 #    stdlib/ alone would leave 35 suites unclaimed here, which is the failure
 #    this step exists to raise.
 #
 #    #1448 (RULED: 1448-a): that union is graded by the SHARD test files, not
 #    by code_eval_fixtures_test.v, which keeps code.cxd, the packages and the
 #    four fast-path differs. Which shard grades which corpus file is
-#    vcx/tests/fixtures_grader/fixture_shards.cxd's business, and
+#    deps/cx-core-code/vcx/tests/fixtures_grader/fixture_shards.cxd's business, and
 #    check-fixture-shard-manifest
 #    refuses a file in no shard or in two -- so the claim names the step that
 #    runs them all and the guard that holds the partition complete. A map that
 #    names the wrong step is worse than no map, because it is believed (the
 #    2026-09-08 note above), and "code_eval_fixtures_test.v" would now be
 #    exactly that.
-printf '%s\t%s\n' "conformance/code.cxd" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_test.v: parse_all_code_fixtures) or 'make fixtures'; also test-vcx-resilience-matrix and test-vcx-services, which run that file by name" >> "$claims"
-for f in conformance/stdlib/*.cxd conformance/platform/*.cxd conformance/x/*.cxd conformance/xap/*.cxd deps/cx-core-data/conformance/extended.cxd conformance/xml_codec.cxd; do printf '%s\t%s\n' "$f" "test-vcx-suite (v test vcx/tests/ -> code_eval_fixtures_shard_<k>_test.v, partitioned by vcx/tests/fixtures_grader/fixture_shards.cxd and held complete by check-fixture-shard-manifest) or 'make fixtures'"; done >> "$claims"
+printf '%s\t%s\n' "deps/cx-core-code/conformance/code.cxd" "test-vcx-suite (v test deps/cx-core-code/vcx/tests/ -> code_eval_fixtures_test.v: parse_all_code_fixtures) or 'make fixtures'; also test-vcx-resilience-matrix and test-vcx-services, which run that file by name" >> "$claims"
+for f in deps/cx-core-code/conformance/stdlib/*.cxd conformance/platform/*.cxd conformance/x/*.cxd conformance/xap/*.cxd deps/cx-core-data/conformance/extended.cxd deps/cx-core-code/conformance/xml_codec.cxd; do printf '%s\t%s\n' "$f" "test-vcx-suite (v test deps/cx-core-code/vcx/tests/ -> code_eval_fixtures_shard_<k>_test.v, partitioned by deps/cx-core-code/vcx/tests/fixtures_grader/fixture_shards.cxd and held complete by check-fixture-shard-manifest) or 'make fixtures'"; done >> "$claims"
 # The shard manifest itself needs NO claim row: it is not a conformance suite
 # and it does not live in conformance/. It sits beside the grader that reads it,
-# vcx/tests/fixtures_grader/fixture_shards.cxd, because every walker of
+# deps/cx-core-code/vcx/tests/fixtures_grader/fixture_shards.cxd, because every walker of
 # conformance/**/*.cxd treats what it finds there as a corpus suite --
 # ring-tag-gate red the post-merge run on 942e7d513 with
 # `UNTAGGED suite header (no ring=)` when the manifest was filed under
@@ -70,14 +70,14 @@ for f in conformance/stdlib/*.cxd conformance/platform/*.cxd conformance/x/*.cxd
   printf '%s\t%s\n' "deps/cx-core-data/conformance/fmt.cxd" "test-vcx-conform (conform-fmt)"
   printf '%s\t%s\n' "deps/cx-core-data/conformance/streaming_write.cxd" "test-vcx-conform (conform-streaming-write: tests/runners/streaming_write/streaming_write_run.v — #1635: it was claimed through conform-all's list, where it passed vacuously)"
   printf '%s\t%s\n' "deps/cx-core-data/conformance/data_bin_arrow.cxd" "test-vcx-conform (conform-data-bin-arrow)"
-  printf '%s\t%s\n' "conformance/code_diagram.cxd" "test-code-diagram (scripts/check_code_diagram_fixtures.cx)"
-  printf '%s\t%s\n' "conformance/xpath_31_parity.cxd" "test-xpath-parity-cx (scripts/check_xpath_parity_fixtures.cx)"
-  printf '%s\t%s\n' "conformance/binding_api.cxd" "UNGRADED since the leave step (RULED: RS-12, RS-8; #1591 item K3): test-binding-api-parity retired with the four active bindings (lang/python, lang/go, lang/rust, lang/v all left); scripts/test_binding_api_parity.sh stays tracked here (registry/repos.cxd: repo=cx) but unwired — see _gate_evidence/pipeline_xbindings/RESULTS.md's LETTER"
+  printf '%s\t%s\n' "deps/cx-core-code/conformance/code_diagram.cxd" "test-code-diagram (scripts/check_code_diagram_fixtures.cx)"
+  printf '%s\t%s\n' "deps/cx-core-code/conformance/xpath_31_parity.cxd" "test-xpath-parity-cx (scripts/check_xpath_parity_fixtures.cx)"
+  printf '%s\t%s\n' "deps/cx-core-code/conformance/binding_api.cxd" "UNGRADED since the leave step (RULED: RS-12, RS-8; #1591 item K3): test-binding-api-parity retired with the four active bindings (lang/python, lang/go, lang/rust, lang/v all left); scripts/test_binding_api_parity.sh stays tracked here (registry/repos.cxd: repo=cx) but unwired — see _gate_evidence/pipeline_xbindings/RESULTS.md's LETTER"
   printf '%s\t%s\n' "conformance/abi.cxd" "abi-c-test (tests/abi/c_abi_test.c reads conformance/abi.cxd and asserts every vector against libcx directly — RULED: D75a, RS-31, the successor to the retired test-binding-api-parity's LETTER above); also gradeable directly by \`cx corpus conformance/abi.cxd\` per cli.md §3.11 (the DOCUMENT lane, no [in-code …] section), and by each of the four binding repositories' own lanes/abi_vectors_lane.* against the released cx"
   printf '%s\t%s\n' "conformance/deps_pins.cxd" "test-deps-pins (scripts/check_deps_pins_fixtures.cx — the deps.cxd pin document: wire form, canonical bytes and every refusal the format names)"
   printf '%s\t%s\n' "conformance/bundle_sources.cxd" "test-bundle-sources (scripts/check_bundle_sources_fixtures.cx — where a bundled CX module's source comes from: the two legal states and every refusal, including the pinned checkout missing its source that would otherwise make a smaller binary)"
   printf '%s\t%s\n' "conformance/docs_fragment.cxd" "test-docs-fragment (scripts/check_docs_fragment_fixtures.cx — the per-repository documentation fragment a component release publishes, every refusal of its contract, and the union's id and file collisions)"
-  printf '%s\t%s\n' "conformance/migrate_namespace.cxd" "test-migrate-namespace (scripts/check_migrate_namespace_fixtures.cx — cx --migrate-namespace --retired: the rewritten file, one line per site, and an idempotent second run)"
+  printf '%s\t%s\n' "deps/cx-core-code/conformance/migrate_namespace.cxd" "test-migrate-namespace (scripts/check_migrate_namespace_fixtures.cx — cx --migrate-namespace --retired: the rewritten file, one line per site, and an idempotent second run)"
   printf '%s\t%s\n' "conformance/gates.cxd" "POLICY — the enforced/advisory register, DERIVED from the suites' [test-suite] elements and held equal to them by gates-manifest-gate (D49a; not a fixture suite)"
   printf '%s\t%s\n' "conformance/gates_register.cxd" "gates-manifest-gate (cx corpus conformance/gates_register.cxd — the derived gate register's drift check, scripts/gates_register.cx: every refusal over described trees, D49a)"
 } >> "$claims"

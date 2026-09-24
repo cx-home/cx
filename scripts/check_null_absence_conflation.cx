@@ -87,7 +87,7 @@
     # scanned in its pinned checkout deps/<repo>/vcx/<vmodule>/ once
     # vcx/<vmodule>/ is gone: its code still ships in cx, and globbing the
     # absent directory scanned nothing and passed (#1651).
-    [$fp:flat-map [$fp:flat-map ("vcx/code",
+    [$fp:flat-map [$fp:flat-map ([?if [$io:exists "vcx/code"] [then ("vcx/code")] [else ("deps/cx-core-code/vcx/code")]],
                                   [?if [$io:exists "vcx/platform"] [then ("vcx/platform")] [else ()]],
                                   [?for [in $x [$cx:parse [$io:read-file "registry/repos.cxd"]]//repo]
                                     [where [not [= [$string [?else $x@vmodule ""]] ""]]]
