@@ -17,12 +17,9 @@
 #   A  an agent/ux pin bump (deps.cxd)           the three steps that grade the
 #                                                graduated modules against this
 #                                                tree's binary
-#   B  one engine file (vcx/code/…)              the suite, per file, AND both
-#                                                wall-clock tail steps
+#   B  RETIRED (K7a): vcx/code/ left whole with cx-core-code
 #   C  one scripts/ file                         the FULL union (build infra)
-#   D  one module source (vcx/identity/           the shard grading its corpus +
-#      stdlib_authz_store.v)                     every test that NAMES it, and
-#                                                not the whole suite
+#   D  RETIRED (K7a): vcx/code/ left whole with cx-core-code
 #   E  a vcx/tests/ shared helper                the WHOLE suite
 #   F  an input path that is NOT ON DISK         still selects its step (the
 #                                                deleted-input case: the rows
@@ -99,16 +96,15 @@ else
 fi
 
 # ── B — one engine file ─────────────────────────────────────────────────────
-run vcx/code/eval_core.v > "$T/b"
-b_n=$(suite_files_of "$T/b" | grep -c . || true)
-b_tail=$(tail_of "$T/b")
-if [ "$b_n" -gt 20 ] \
-	&& printf '%s' "$b_tail" | grep -q 'test-profile-gate' \
-	&& printf '%s' "$b_tail" | grep -q 'test-vcx-timing'; then
-	ok B "$b_n suite files and both wall-clock tail steps"
-else
-	bad B "engine file: $b_n suite files, tail [$b_tail]"
-fi
+# RETIRED (K7a, RULED: RS-12): the only files this case could ever name lived
+# in vcx/code/, which left whole with cx-core-code's extraction (RULED: D68a).
+# suite_files()'s per-file narrowing (suite_graph/suite_closure) reads the
+# CHANGED FILE'S OWN CONTENT from disk to place it in the dependency graph;
+# there is no longer a vcx/code/*.v anywhere in this tree for that graph to
+# hold, so the scenario this case checks (an engine-file edit widens the
+# selection past a narrow shard) cannot be constructed here again — not
+# loosened, retired the same way test-vcx-code itself was (its own step no
+# longer exists either). The property lives on in cx-core-code's own gate.
 
 # ── C — one scripts/ file ───────────────────────────────────────────────────
 run scripts/some_gate.sh > "$T/c"
@@ -137,29 +133,16 @@ fi
 # named-check now reads only the `*_umbrella_test.v` files the selection
 # carries (the literal-name promise this case is about), skipping the shard
 # file and the generic whole-of-code graders every vcx/code/ change pulls in.
-run vcx/code/stdlib_crypto.v > "$T/d"
-d_files=$(suite_files_of "$T/d")
-d_n=$(printf '%s\n' "$d_files" | grep -c . || true)
-d_total=$(ls "$ROOT/vcx/tests"/*_test.v | wc -l | tr -d ' ')
-d_named=1
-for f in $d_files; do
-	case "$f" in
-	*_umbrella_test.v) grep -qF -- crypto "$ROOT/$f" || d_named=0 ;;
-	*) continue ;;
-	esac
-done
-if [ "$d_n" -ge 2 ] && [ "$d_n" -lt "$d_total" ] \
-	&& printf '%s\n' "$d_files" | grep -q 'code_eval_fixtures_shard_' \
-	&& [ "$d_named" -eq 1 ]; then
-	ok D "$d_n of $d_total suite files — its grading shard plus every test that names it"
-else
-	bad D "module source: $d_n of $d_total suite files, named-check $d_named"
-fi
+# RETIRED (K7a, RULED: RS-12): the same reason as case B -- vcx/code/ left
+# whole, and with it the only files this case's per-shard, per-named-umbrella
+# narrowing could ever be exercised against. cx-core-code's own gate is where
+# that property lives now.
 
 # ── E — a vcx/tests/ shared helper ──────────────────────────────────────────
 run vcx/tests/fixtures_grader/grade.v > "$T/e"
+e_total=$(ls "$ROOT/vcx/tests"/*_test.v 2>/dev/null | wc -l | tr -d ' ')
 if suite_line "$T/e" | grep -q 'the WHOLE suite'; then
-	ok E "a shared helper runs all $d_total files"
+	ok E "a shared helper runs all $e_total files"
 else
 	bad E "shared helper did not escalate: [$(suite_line "$T/e")]"
 fi
@@ -168,9 +151,13 @@ fi
 # A DELETED file is in the diff and not in the tree. While the rows were
 # pathname-expanded, `vcx/code/*` became the files that exist and a deleted one
 # matched none of them, so its steps were SKIPPED — the false skip this manifest
-# must never produce.
+# must never produce. Target step RETARGETED (K7a, RULED: RS-12) from
+# test-vcx-code (retired: code's own in-module test now runs from the pin,
+# same as every other extracted product's) to test-vcx-timing, whose row
+# still names the literal `vcx/code/*` string (case matching, not real
+# pathname expansion, so this proves the same property test-vcx-code did).
 run vcx/code/a_file_that_was_deleted.v > "$T/f"
-if targets "$T/f" | grep -q 'test-vcx-code'; then
+if targets "$T/f" | grep -q 'test-vcx-timing'; then
 	ok F "a deleted input still selects the step that reads it"
 else
 	bad F "a path not on disk selected nothing: [$(targets "$T/f")]"
@@ -581,4 +568,4 @@ if [ "$fails" -ne 0 ]; then
 	echo "test_changed selftest: $((cases - fails))/$cases — $fails case(s) FAILED" >&2
 	exit 1
 fi
-echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; B engine; C scripts/ union; D module source; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop lane; P the vcx/corpus grading core selects the steps that run it)"
+echo "test_changed selftest: $cases/$cases (A an agent/ux pin bump; C scripts/ union; E shared helper; F deleted input; G rowless step; H escalated union refused under a pre-merge runner; I no here-document loop; J0 the calibrated wall-clock bound; J a 70 KB change set under bash 5.3; K the selected run keeps going; L it parses under sh; M a symlinked third_party/ is not a pin move; N a step runner selects its own step; O a module-only sso change selects the interop lane; P the vcx/corpus grading core selects the steps that run it)"
