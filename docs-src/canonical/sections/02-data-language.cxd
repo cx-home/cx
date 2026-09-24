@@ -12,9 +12,9 @@
        you mean "this is data." It is also what every CX code expression
        evaluates to — programs and values share one shape. This section is
        the working reference for the data surface; the normative grammar
-       is in [`spec/03-approved/formal/grammar.ebnf`](../../spec/03-approved/formal/grammar.ebnf)
+       is in [`spec/03-approved/formal/grammar.ebnf`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/formal/grammar.ebnf)
        and the value model is in
-       [`spec/03-approved/core/cxdm.md`](../../spec/03-approved/core/cxdm.md)."""]
+       [`spec/03-approved/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md)."""]
 
   [child id=lexical n=2.1 title='Lexical structure'
     [intro
@@ -22,7 +22,7 @@
          scalar literals, brackets (`[`, `]`), parentheses (used for sequences
          and argument lists), curly braces (used for map literals), sigils,
          strings, and comments. The full lexical rules are in
-         [`spec/03-approved/formal/lexicon.ebnf`](../../spec/03-approved/formal/lexicon.ebnf)."""]
+         [`spec/03-approved/formal/lexicon.ebnf`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/formal/lexicon.ebnf)."""]
 
     [child id=identifiers n=2.1.1 title='Identifiers'
       [body
@@ -80,7 +80,7 @@
       """An **element** is the basic CX data structure: a name, zero or more
          attributes, and a body. Every bracketed form is an element. The
          normative production is
-         [`spec/03-approved/formal/grammar.ebnf`](../../spec/03-approved/formal/grammar.ebnf)
+         [`spec/03-approved/formal/grammar.ebnf`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/formal/grammar.ebnf)
          `[51] Element`."""]
 
     [child id=names n=2.2.1 title='Element names'
@@ -132,7 +132,7 @@
            [list [item 1] [item 2] [item 3]]"""]
       [body
         """A bare scalar body is auto-typed per the rules in
-           [`spec/03-approved/core/ast.md`](../../spec/03-approved/core/ast.md)
+           [`spec/03-approved/core/ast.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/ast.md)
            §Scalar — `42` becomes an int, `3.14` a float, `2026-05-22` a
            date, etc. To force a type, glue an ascription to the name:
            `[port::u16 8080]`."""]]]
@@ -140,13 +140,13 @@
   [child id=scalars n=2.3 title='Scalar kinds'
     [intro
       """CX has **nine** scalar kinds per
-         [`spec/03-approved/core/cxdm.md`](../../spec/03-approved/core/cxdm.md)
+         [`spec/03-approved/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md)
          §2: string, int, float, bool, date, datetime, bytes, null, and
          atom. Additional type names refine storage and precision on top
          of those kinds — `decimal`, `bigint`, the sized integer / float
          widths, `duration`, `period`, `instant`, `secret`. The
          wire encoding for each kind is in
-         [`spec/03-approved/core/data-bin.md`](../../spec/03-approved/core/data-bin.md)
+         [`spec/03-approved/core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md)
          §3. Each kind can be introduced literally (e.g. `42` for int) or
          forced with a glued type ascription (`count::int`, `port::u32`)."""]
 
@@ -232,7 +232,7 @@
            value — `null` is a single-item sequence containing the null
            scalar, `()` is an empty sequence, and presence tests tell
            them apart. Under the effective-boolean-value rule
-           ([`spec/03-approved/core/cxdm.md`](../../spec/03-approved/core/cxdm.md)
+           ([`spec/03-approved/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md)
            §6) **both are falsy**: a singleton `null` evaluates to
            false, and `()` evaluates to false."""]]
 
@@ -282,7 +282,7 @@
       """CX has three collection literal forms: **sequence**, **array**,
          and **map**. The distinction is load-bearing for function
          signatures — see
-         [`spec/03-approved/core/cxdm.md`](../../spec/03-approved/core/cxdm.md)
+         [`spec/03-approved/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md)
          §2 and [[container-atom]] below."""]
 
     [child id=seq n=2.4.1 title='Sequence literals (a, b, c)'
@@ -309,7 +309,7 @@
       [body
         """Array indexing is **1-based**, like CXPath positional
            predicates (`$doc/item[1]` selects the first item) — per
-           [`spec/03-approved/core/cxdm.md`](../../spec/03-approved/core/cxdm.md)
+           [`spec/03-approved/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md)
            §2.5. Out-of-range access yields the empty sequence rather
            than an error. There is no negative-index shorthand."""]]
 
@@ -386,7 +386,7 @@
         """The value model draws a load-bearing distinction between **atom**
            Items (Node, Scalar) and **container** Items (Array, Map,
            Sequence-as-Item) per
-           [`spec/03-approved/core/cxdm.md`](../../spec/03-approved/core/cxdm.md)
+           [`spec/03-approved/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md)
            §2.1:"""]
       [list
         [item """**Atoms** are leaf values from the value-model perspective.
@@ -461,7 +461,7 @@
            Identities differ from anchors: anchors are for shape reuse
            (data-level), identities are for cross-references (semantic
            link). Full semantics in
-           [`spec/03-approved/core/cxdm.md`](../../spec/03-approved/core/cxdm.md) §4."""]
+           [`spec/03-approved/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md) §4."""]
       [example lang=cx
         """[user #ada email='ada@example.com']
            [post author-id=@ada 'First post']"""]
@@ -572,7 +572,7 @@
          glued `[table[…]]` clause on the element head declares the
          columns once, and the body is the cells. The physical wire
          format is CXCol (see [[cxcol]]) and the normative table API is
-         in [`spec/03-approved/misc/table-api.md`](../../spec/03-approved/misc/table-api.md)."""]
+         in [`spec/03-approved/misc/table-api.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/misc/table-api.md)."""]
     [example lang=cx
       """[orders [table[id::int customer amount::float ts::datetime]]
            1 Ada   42.50 2026-05-22T10:00:00Z
@@ -588,7 +588,7 @@
          There is no nullable marker in the header — a `null` cell is
          legal in any typed column, and the binary wire carries such
          columns under a nullable-column wrapper
-         ([`spec/03-approved/core/data-bin.md`](../../spec/03-approved/core/data-bin.md)
+         ([`spec/03-approved/core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md)
          §3.10.5)."""]
     [body
       """**Rows are count-driven:** whitespace separates both cells and
@@ -620,7 +620,7 @@
       """A `.cxs` file is a CX schema: an element-shape declaration that
          the validator can enforce. Schemas are CX documents themselves —
          no separate grammar to learn. Full spec in
-         [`spec/03-approved/core/schema.md`](../../spec/03-approved/core/schema.md)."""]
+         [`spec/03-approved/core/schema.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/schema.md)."""]
     [example lang=cx
       """[; users.cxs ]
          [schema of=user]
@@ -650,7 +650,7 @@
         """The default mode is open. Override per-schema with
            `[schema of=… mode=strict]` — mode is per-schema, not
            per-element. See
-           [`spec/03-approved/core/schema.md`](../../spec/03-approved/core/schema.md)
+           [`spec/03-approved/core/schema.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/schema.md)
            §9 for the full normative behavior."""]]
 
     [child id=schema-constraints n=2.8.2 title='Constraint vocabulary'
@@ -670,7 +670,7 @@
            (`S002` missing required attribute, `S006` range violation,
            …) with the failing constraint identified in the message.
            Full vocabulary + error-code registry:
-           [`spec/03-approved/core/schema.md`](../../spec/03-approved/core/schema.md)
+           [`spec/03-approved/core/schema.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/schema.md)
            §7 + §12."""]]
 
     [child id=schema-defaults n=2.8.3 title='Defaults and inheritance'
@@ -692,7 +692,7 @@
            `cx validate doc.cx --schema=users.cxs`. There is no
            sibling-file convention and no implicit lookup. The
            in-document `[?cx schema=…]` directive is defined by
-           [`spec/03-approved/core/schema.md`](../../spec/03-approved/core/schema.md)
+           [`spec/03-approved/core/schema.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/schema.md)
            §13 and parses cleanly, but the shipped validator does not
            consume it — it requires the flag."""]
       [body
@@ -711,7 +711,7 @@
          directives, an unresolved include **silently vanishes** from
          `cx canonical` / `cx hash` output. Resolve before you hash.
          The refusal catalog (`cx-err:E901`–`E905`) is in
-         [`spec/03-approved/core/cxdm.md`](../../spec/03-approved/core/cxdm.md)."""]
+         [`spec/03-approved/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md)."""]
     [example lang=cx
       """[config
            [?cx include=base.cx]
@@ -762,9 +762,9 @@
     [intro
       """CX supports XML-namespace-style scoping via `xmlns:` attribute
          declarations. The normative spec is
-         [`cxdm.md`](../../spec/03-approved/core/cxdm.md) §3 (model)
+         [`cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md) §3 (model)
          with the canonical-form rules in
-         [`canonical.md`](../../spec/03-approved/core/canonical.md) §2.7a."""]
+         [`canonical.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/canonical.md) §2.7a."""]
 
     [child id=ns-prefix-decl n=2.10.1 title='Prefix declarations'
       [body
@@ -862,7 +862,7 @@
       """CX defines a SAX/StAX-style streaming event API — read events
          via `cx_events_open` / `next` / `close`, write events via the
          `cx_events_writer_*` family. Normative spec:
-         [`spec/03-approved/core/streaming.md`](../../spec/03-approved/core/streaming.md)."""]
+         [`spec/03-approved/core/streaming.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/streaming.md)."""]
     [body
       """The API contract is streaming — the consumer sees one event at
          a time and never needs the whole tree. The current engine
@@ -881,7 +881,7 @@
            [yield [?let [= $rec [$cx:parse $line]] $rec/@code]]]"""]
     [body
       """Performance is tracked against the per-operation budgets in
-         [`spec/03-approved/core/abi.md`](../../spec/03-approved/core/abi.md)
+         [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md)
          §4 (parse and event-delivery targets per input size), enforced
          by the perf-regression suite rather than quoted as a single
          throughput figure."""]
@@ -1235,12 +1235,12 @@
            paths (`E903`). Cycle detection (`E904`) and depth
            limits (`E905`, default 8) protect against runaway
            recursion. The error catalog lives in
-           [`spec/03-approved/core/cxdm.md`](../../spec/03-approved/core/cxdm.md)."""]]
+           [`spec/03-approved/core/cxdm.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/cxdm.md)."""]]
 
     [child id=streaming-quickref n=2.19.3 title='Streaming — event shape and throughput'
       [body
         """The streaming API is a SAX/StAX-style event sequence
-           ([`spec/03-approved/core/streaming.md`](../../spec/03-approved/core/streaming.md)).
+           ([`spec/03-approved/core/streaming.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/streaming.md)).
            The read side is lossless: **32 event types** in six
            groups — lifecycle (`StartDoc`/`EndDoc`), prolog and
            markup, element + body (`StartElement` carries the name
@@ -1272,7 +1272,7 @@
            emitted bytes flow to the destination and the only
            backpressure is the operating system's own `write(2)`
            blocking. Performance is tracked against the budgets in
-           [`spec/03-approved/core/abi.md`](../../spec/03-approved/core/abi.md)
+           [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md)
            §4."""]]
 
     [child id=tables-quickref n=2.19.4 title='Tables and binary forms'

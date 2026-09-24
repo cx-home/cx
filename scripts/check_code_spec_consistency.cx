@@ -356,6 +356,13 @@
                missing_from_spec: [$to-arr $missing-spec],
                pass: [and [$empty $missing-comp] [$empty $missing-spec]]}]]]]]]]
 
+# companion: a spec companion (grammar.ebnf, ast.md) where it is -- this tree,
+# or cx-core-data's pinned checkout, which the data-format pages left this tree
+# for (RULED: RS-7, RS-12). code.md stays here; its companions are read at the
+# pin, the version the build compiles.
+[?def companion scope=private impure [returns string] ($p::string)
+  [?if [$io:is-file $p] [then $p] [else [$concat "deps/cx-core-data/" $p]]]]
+
 # ── main ─────────────────────────────────────────────────────────────
 [?let
   [= $argv [$env:argv]]
@@ -400,12 +407,12 @@
         # gate 3 companions: current home first, then the legacy sibling.
         [= $spec-dir [$path:dirname $spec-path]]
         [= $formal-dir [$path:join [$path:dirname $spec-dir] "formal"]]
-        [= $grammar-path [?if [$io:is-file [$path:join $formal-dir "grammar.ebnf"]]
-          [then [$path:join $formal-dir "grammar.ebnf"]]
+        [= $grammar-path [?if [$io:is-file [$companion [$path:join $formal-dir "grammar.ebnf"]]]
+          [then [$companion [$path:join $formal-dir "grammar.ebnf"]]]
           [else [$path:join $spec-dir "grammar.ebnf"]]]]
         [= $registry-list [$sorted-keys $registry-dirs]]
         [= $grammar-report [$audit-grammar $grammar-path $registry-list]]
-        [= $ast-report [$audit-ast [$path:join $spec-dir "ast.md"]]]
+        [= $ast-report [$audit-ast [$companion [$path:join $spec-dir "ast.md"]]]]
         [= $eval-path [$path:join $spec-dir "eval.md"]]
         [= $eval-report [$audit-eval $eval-path $registry-list]]
         [= $eval-ok [or [$map:get $eval-report "pass"]

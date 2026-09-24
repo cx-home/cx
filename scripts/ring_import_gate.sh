@@ -53,8 +53,25 @@ set -euo pipefail
 # broke test-extraction-gate under parallel make, 2026-08-07).
 ROOT="${RING_GATE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 VCX="$ROOT/vcx"
+# cx-core-data's modules (cx, cli, cmd_data, arrow, fixtures) left vcx/ for its
+# pinned checkout (RULED: RS-7, RS-12). They are still cx's rings and still
+# scanned: ring_dir answers where a module lives, and a module in NEITHER place
+# is a failure -- scan_ring skips a missing directory, and a ring the gate
+# silently stopped reading would pass every tree.
+PIN_V="${RING_GATE_PIN:-$ROOT/deps/cx-core-data/vcx}"
+ring_dir() {
+  if [ -d "$VCX/$1" ]; then printf '%s\n' "$VCX/$1"
+  elif [ -d "$PIN_V/$1" ]; then printf '%s\n' "$PIN_V/$1"
+  else printf '%s\n' "$VCX/$1"; fi
+}
 
 fail=0
+for m in cx arrow cli cmd_data; do
+  if [ ! -d "$VCX/$m" ] && [ ! -d "$PIN_V/$m" ]; then
+    echo "ring_import_gate: FAILED -- module '$m' is neither $VCX/$m nor $PIN_V/$m (run \`make deps-sync\`)"
+    fail=1
+  fi
+done
 
 # hits_sibling <line> <sibling> — does this #flag/#include line reference the
 # vcx sibling dir <sibling> by ANY spellable form? (F-17: the pre-repair gate
@@ -79,18 +96,20 @@ hits_sibling() {
 # via them must still fail, so they stay policed and only these exact edges pass:
 #   cx/regex_re2.v  → deps/re2_shim (RE2 header), target (RE2 -L / shim lib)
 #   arrow/*         → target/libcx_arrow_shim.a (the arrow native shim)
+# spelled @VMODROOT/<sib> or, since the module compiles from a pinned checkout
+# where @VMODROOT names nothing, @DIR/../<sib> (RULED: RS-7, RS-12).
 # Anything else — a NEW edge, or an edge into a code/platform/… source — fails.
 c_edge_allowed() {
   local base="$1" sib="$2" line="$3"
   case "$base" in
     regex_re2.v)
       case "$sib" in
-        deps)   printf '%s\n' "$line" | grep -qE "@VMODROOT/deps/re2_shim(/|[[:space:]]|\$)" && return 0 ;;
-        target) printf '%s\n' "$line" | grep -qE "@VMODROOT/target(/|[[:space:]]|\$)"        && return 0 ;;
+        deps)   printf '%s\n' "$line" | grep -qE "(@VMODROOT|@DIR/\.\.)/deps/re2_shim(/|[[:space:]]|\$)" && return 0 ;;
+        target) printf '%s\n' "$line" | grep -qE "(@VMODROOT|@DIR/\.\.)/target(/|[[:space:]]|'|\$)"        && return 0 ;;
       esac ;;
     arrow_files_d_cx_arrow_files.v)
       case "$sib" in
-        target) printf '%s\n' "$line" | grep -qE "@VMODROOT/target/libcx_arrow_shim\.a(/|[[:space:]]|\$)" && return 0 ;;
+        target) printf '%s\n' "$line" | grep -qE "(@VMODROOT|@DIR/\.\.)/target/libcx_arrow_shim\.a(/|[[:space:]]|'|\$)" && return 0 ;;
       esac ;;
   esac
   return 1
@@ -147,13 +166,13 @@ scan_ring() {
 # deny_but <keep…> — every internal sibling under vcx/ EXCEPT the kept names.
 deny_but() {
   local keep=" $* "
-  (cd "$VCX" && find . -maxdepth 1 -mindepth 1 -type d | sed 's|^\./||' | LC_ALL=C sort) \
+  { (cd "$VCX" && find . -maxdepth 1 -mindepth 1 -type d); [ -d "$PIN_V" ] && (cd "$PIN_V" && find . -maxdepth 1 -mindepth 1 -type d); } | sed 's|^\./||' | LC_ALL=C sort -u \
     | while IFS= read -r d; do case "$keep" in *" $d "*) : ;; *) printf '%s\n' "$d" ;; esac; done
 }
 
 # Ring 0 (vcx/cx): strict sink — imports/links nothing internal but cx, save
 # the two acknowledged re2 C edges.
-scan_ring "$VCX/cx" "Ring-0 (cx)" 1 $(deny_but cx)
+scan_ring "$(ring_dir cx)" "Ring-0 (cx)" 1 $(deny_but cx)
 
 # Store engine (vcx/cxstore): Ring-0-only + evaluator-free (spec §2).
 scan_ring "$VCX/cxstore" "store engine (cxstore)" 0 $(deny_but cx cxstore)
@@ -198,7 +217,7 @@ done
 
 # Leaf siblings (vcx/arrow, vcx/transport): consumed FROM the platform group; import cx
 # (Ring 0) only, plus their own submodules (self kept in the allow-set).
-scan_ring "$VCX/arrow" "leaf (arrow)" 1 $(deny_but cx arrow)
+scan_ring "$(ring_dir arrow)" "leaf (arrow)" 1 $(deny_but cx arrow)
 scan_ring "$VCX/transport" "leaf (transport)" 0 $(deny_but cx transport)
 
 # Platform-free profile surface (vcx/cli, vcx/cmd_data): the data/cli profiles
@@ -206,8 +225,8 @@ scan_ring "$VCX/transport" "leaf (transport)" 0 $(deny_but cx transport)
 # siblings. cli imports cx (+ code, allowed for the cli profile); cmd_data
 # imports cli. Everything in the platform group is denied. (F-17: was manual,
 # now gated.)
-scan_ring "$VCX/cli" "platform-free (cli)" 0 $(deny_but cx code cli cmd_data)
-scan_ring "$VCX/cmd_data" "platform-free (cmd_data)" 0 $(deny_but cx code cli cmd_data)
+scan_ring "$(ring_dir cli)" "platform-free (cli)" 0 $(deny_but cx code cli cmd_data)
+scan_ring "$(ring_dir cmd_data)" "platform-free (cmd_data)" 0 $(deny_but cx code cli cmd_data)
 
 if [ "$fail" -ne 0 ]; then
   echo "ring_import_gate: FAILED — a ring module violates its §3 import contract."

@@ -22,7 +22,7 @@
       """The three pieces are: a **logical data shape** (the `[table[…]]`
          block, with typed columns and nullable cells); a **physical wire
          format** (CXCol, the column-oriented streaming binary form,
-         tag `0x63` in [`spec/core/data-bin.md`](../../spec/03-approved/core/data-bin.md) §3.11);
+         tag `0x63` in [`spec/core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md) §3.11);
          and **bridges to the broader ecosystem** (Apache Arrow C Data
          Interface for zero-copy interop, Apache Parquet for cross-tool
          storage)."""]
@@ -40,7 +40,7 @@
               handoff) and Parquet (cross-ecosystem storage). See
               [[arrow-bridge]] and [[parquet-bridge]]."""]
       [item """**Streaming**: the CX streaming evaluator (see
-              [`spec/core/streaming.md`](../../spec/03-approved/core/streaming.md)) emits
+              [`spec/core/streaming.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/streaming.md)) emits
               `StartTable` / `RowGroup` / `EndTable` events over CXCol
               data, so directives like `[?for]` and `[?modify]` can
               operate on tables that don't fit in memory."""]
@@ -51,9 +51,9 @@
 
     [body
       """The rest of this section walks each piece. The normative spec
-         documents are [`spec/core/data-bin.md`](../../spec/03-approved/core/data-bin.md)
+         documents are [`spec/core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md)
          §3.10-3.13 (wire format) and
-         [`spec/misc/table-api.md`](../../spec/03-approved/misc/table-api.md)
+         [`spec/misc/table-api.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/misc/table-api.md)
          (host binding API). This guide is the working developer
          summary."""]
 
@@ -65,7 +65,7 @@
          the file extension (`.cxcol` is a deprecated alias, recognized
          read-only — [`spec/process/governance.md`](../../spec/03-approved/process/governance.md)
          §12.2); the `cx_table_*` prefix appears on the C ABI streaming
-         identifiers ([`spec/core/abi.md`](../../spec/03-approved/core/abi.md) §2.10)."""]]
+         identifiers ([`spec/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) §2.10)."""]]
 
   [child id=table-shape n=5.2 title='The [table[…]] data shape'
     [intro
@@ -90,7 +90,7 @@
          column count (grammar [29c] — each row supplies exactly one
          cell per column). A cell that cannot carry the declared column
          type refuses loudly rather than coercing — the encode-refusal
-         rule of [`spec/core/data-bin.md`](../../spec/03-approved/core/data-bin.md)
+         rule of [`spec/core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md)
          §3.10.3 (never wrap, never widen, never approximate)."""]
 
     [body
@@ -99,8 +99,8 @@
          `bigint`, `float` and the reduced widths (`f32`, `f16`),
          `decimal`, `bool`, `string`, `bytes`, `date`, and `datetime`.
          The full type catalog with byte encodings is in
-         [`spec/core/data-bin.md`](../../spec/03-approved/core/data-bin.md)
-         §3.10.3 + [`spec/misc/type-mapping.md`](../../spec/03-approved/misc/type-mapping.md)."""]
+         [`spec/core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md)
+         §3.10.3 + [`spec/misc/type-mapping.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/misc/type-mapping.md)."""]
 
     [child id=nullable n=5.2.1 title='Null cells'
       [body
@@ -114,7 +114,7 @@
              3 Linus '555-9999']"""]
       [body
         """On the wire, a column with null cells uses the nullable
-           wrapper of [`spec/core/data-bin.md`](../../spec/03-approved/core/data-bin.md)
+           wrapper of [`spec/core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md)
            §3.10.5: type code `0x80`, then the inner type code, then a
            null bitmap of `ceil(rows/8)` bytes (bit set = null), then
            the packed payload of the non-null cells only. The host
@@ -124,7 +124,7 @@
     [child id=dict-encoding n=5.2.2 title='Dictionary encoding'
       [body
         """Dictionary encoding is an **opt-in container form** — tag
-           `0x62` in [`spec/core/data-bin.md`](../../spec/03-approved/core/data-bin.md)
+           `0x62` in [`spec/core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md)
            §3.10.2. Each column's payload starts with a marker: plain
            (the §3.10.3 layout) or dictionary-encoded (distinct values
            in insertion order, then one varint index per row). Decoders
@@ -144,7 +144,7 @@
       [body
         """Tables validate against `.cxs` schemas the same way ordinary
            elements do — the table block is an element, and the schema
-           language of [`spec/core/schema.md`](../../spec/03-approved/core/schema.md)
+           language of [`spec/core/schema.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/schema.md)
            applies to it as to any other element. See [[data#schema]]
            for the schema language. At the binary layer, a CXCol file
            can carry a schema reference that names its schema by
@@ -155,7 +155,7 @@
         """Bindings expose a `Table` value type for `[table[…]]`
            blocks. Methods match across bindings up to host-idiom
            differences; the canonical surface is documented in
-           [`spec/misc/table-api.md`](../../spec/03-approved/misc/table-api.md)."""]
+           [`spec/misc/table-api.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/misc/table-api.md)."""]
       [example lang=python
         """import cxlib
            t = cxlib.Table.from_cx(open('orders.cx').read())
@@ -171,7 +171,7 @@
            print(sub.to_cx())"""]
       [body
         """The canonical surface
-           ([`spec/misc/table-api.md`](../../spec/03-approved/misc/table-api.md) §3)
+           ([`spec/misc/table-api.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/misc/table-api.md) §3)
            is: the `cols` / `types` / `row_count` / `col_count`
            properties; the `row` / `column` / `col_at` / `cell` /
            `cell_by_name` accessors; the `slice` / `head` / `tail` /
@@ -186,7 +186,7 @@
          row-group-chunked, content-addressable, and streamable in bounded
          memory. The data-bin tag is `0x63`; the file extension is
          `.cxbin`. The normative byte-level layout is in
-         [`spec/core/data-bin.md`](../../spec/03-approved/core/data-bin.md) §3.11."""]
+         [`spec/core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md) §3.11."""]
 
     [body
       """The format is a single sequential pass: header, column spec,
@@ -259,7 +259,7 @@
     [child id=cxcol-streaming-api n=5.3.3 title='Streaming reader / writer'
       [intro
         """The streaming surface is the C ABI reader / writer family in
-           [`spec/core/abi.md`](../../spec/03-approved/core/abi.md) §2.10
+           [`spec/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) §2.10
            (capability bit 21): `cx_table_reader_open` /
            `cx_table_reader_open_fd` / `cx_table_reader_schema` /
            `cx_table_reader_next` / `cx_table_reader_close`, and
@@ -310,7 +310,7 @@
            the encoder. The schema reference forms (`0x10` content-hash,
            `0x11` inline, `0x12` content-hash + name hint, `0x13`
            self-describing multihash) are documented in
-           [`spec/core/data-bin.md`](../../spec/03-approved/core/data-bin.md) §3.13.1;
+           [`spec/core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md) §3.13.1;
            the `cx table` subcommand resolves `--schema-from=` arguments
            to a content hash before emit."""]
       [note
@@ -330,7 +330,7 @@
 
     [body
       """The bridge exports four C ABI symbols
-         ([`spec/core/abi.md`](../../spec/03-approved/core/abi.md) §2.11):
+         ([`spec/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) §2.11):
          `cx_arrow_export_open` / `cx_arrow_export_open_fd` for
          CXCol → Arrow, and `cx_arrow_import_to_data_bin` /
          `cx_arrow_import_to_data_bin_fd` for Arrow → CXCol. The Python
@@ -369,13 +369,13 @@
         """Go and Rust use the same four symbols through the C ABI with
            each host's Arrow FFI layer (`arrow-go`, the `arrow` crate's
            `ffi_stream` module) — the per-binding Arrow libraries are
-           tabulated in [`spec/core/abi.md`](../../spec/03-approved/core/abi.md)
+           tabulated in [`spec/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md)
            §2.11."""]]
 
     [child id=arrow-type-mapping n=5.4.2 title='Type mapping'
       [body
         """The CX ↔ Arrow type map is normative
-           ([`spec/misc/type-mapping.md`](../../spec/03-approved/misc/type-mapping.md)).
+           ([`spec/misc/type-mapping.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/misc/type-mapping.md)).
            The high-level summary:"""]
       [list
         [item """`int` / `i64` ↔ `Int64`; `i32` ↔ `Int32`; sized
@@ -475,7 +475,7 @@
            defaults to minimize friction with the consumers of
            each."""]
       [body
-        """[`spec/misc/table-api.md`](../../spec/03-approved/misc/table-api.md) §3
+        """[`spec/misc/table-api.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/misc/table-api.md) §3
            declares the per-binding adapter slots (Rust via `arrow-rs` +
            the `parquet` crate, Go via `arrow-go`); those bindings reach
            Parquet through the Arrow C ABI today — the packaged one-call
@@ -570,7 +570,7 @@
            schema-driven file names its schema by content hash (the
            §3.13.1 reference forms), and the `cx table` subcommand
            resolves `--schema-from=` arguments to a content hash before
-           emit ([`spec/core/data-bin.md`](../../spec/03-approved/core/data-bin.md)
+           emit ([`spec/core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md)
            §3.13.1). A Parquet round-trip re-enters CX as a
            self-describing table; re-attach the schema by validating or
            re-encoding schema-driven against the same schema hash."""]]]
@@ -578,7 +578,7 @@
   [child id=streaming n=5.6 title='Streaming evaluator over columnar data'
     [intro
       """The CX streaming evaluator
-         ([`spec/core/streaming.md`](../../spec/03-approved/core/streaming.md))
+         ([`spec/core/streaming.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/streaming.md))
          operates over CXCol chunks one at a time. The normative
          throughput gate is **≥ 200 MB/s sustained per streaming
          shape** ([`spec/core/code.md`](../../spec/03-approved/core/code.md)
@@ -613,7 +613,7 @@
     [child id=streaming-events n=5.6.1 title='Streaming events'
       [body
         """The event vocabulary
-           ([`spec/core/streaming.md`](../../spec/03-approved/core/streaming.md))
+           ([`spec/core/streaming.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/streaming.md))
            extends the standard `StartElement` / `Scalar` / `EndElement`
            events with three table-specific variants."""]
       [list
@@ -651,7 +651,7 @@
            On the write side, the ABI streaming writer compresses a row
            group only when its body exceeds 64 KiB and compression
            beats 0.85 of the original size
-           ([`spec/core/abi.md`](../../spec/03-approved/core/abi.md) §2.10)."""]]]
+           ([`spec/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) §2.10)."""]]]
 
   [child id=integrations n=5.7 title='Ecosystem integrations'
     [intro
@@ -728,7 +728,7 @@
            # PyArrow → pandas; one copy at the pandas boundary
            df = cxa.export(framed).read_all().to_pandas()"""]
       [body
-        """[`spec/misc/table-api.md`](../../spec/03-approved/misc/table-api.md) §3
+        """[`spec/misc/table-api.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/misc/table-api.md) §3
            declares a `to_pandas()` adapter slot on the Table type; the
            Python binding has not implemented it yet — the explicit
            Arrow route above is the shipped path."""]
@@ -811,7 +811,7 @@
               without statistics degrade to a full scan."""]
       [item """**Memory budget per stream stage.** One row group in
               flight. The streaming evaluator
-              ([`spec/core/streaming.md`](../../spec/03-approved/core/streaming.md))
+              ([`spec/core/streaming.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/streaming.md))
               is bounded by `max(row_group_byte_size)` regardless of
               table size."""]]
 
@@ -887,13 +887,13 @@
       [item """[[code#streaming]] — the directive-level streaming view:
               `[?for]` / `[?modify]` over CXCol inputs in bounded
               memory."""]
-      [item """[`spec/misc/table-api.md`](../../spec/03-approved/misc/table-api.md) — the
+      [item """[`spec/misc/table-api.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/misc/table-api.md) — the
               typed columnar Table API ratified across the four
               bindings."""]
-      [item """[`spec/core/data-bin.md`](../../spec/03-approved/core/data-bin.md) §3.10-3.13 —
+      [item """[`spec/core/data-bin.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/data-bin.md) §3.10-3.13 —
               chunked-table wire format, page-compression wrapper,
               schema-driven mode."""]
-      [item """[`spec/core/streaming.md`](../../spec/03-approved/core/streaming.md) — streaming
+      [item """[`spec/core/streaming.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/streaming.md) — streaming
               evaluator design and the StartTable / RowGroup / EndTable
               event vocabulary."""]]]]
 

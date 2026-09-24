@@ -97,7 +97,7 @@ regressions through `make conform`.
 
 Every binding reads `cx_features` from `libcx` at load time and refuses
 to claim a capability the loaded library does not advertise. The bit
-registry is in [`core/abi.md`](../core/abi.md). The bitmask is
+registry is in [`core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md). The bitmask is
 **append-only**: a bit, once assigned a meaning, never changes meaning.
 Removing a bit requires a major libcx version bump.
 
@@ -142,13 +142,13 @@ bindings:
   one C call.
 - CXPath routes through `cx_code_eval` with a path-value expression
   (the standalone `cx_select` / `cx_select_all` C ABI was retired at
-  see [`core/abi.md §2.7`](../core/abi.md)). Bindings retain
+  see [`core/abi.md §2.7`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md)). Bindings retain
   their `Doc.select()` / `Doc.select_all()` Layer-1 surfaces; only the
   underlying ABI symbol changed.
 - Streaming uses the `cx_events_*` family.
 - Diff / lint use `cx_diff` / `cx_lint`
-  ([`core/abi.md §2.17`](../core/abi.md) and
-  [`§2.18`](../core/abi.md)).
+  ([`core/abi.md §2.17`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) and
+  [`§2.18`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md)).
 
 No binding routes through a host-language intermediate format.
 
@@ -187,7 +187,7 @@ restored.
 
 - [`process/governance.md`](../process/governance.md) — the parity
   rule this document implements.
-- [`core/abi.md`](../core/abi.md) — C ABI surface and capability-bit
+- [`core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) — C ABI surface and capability-bit
   registry.
 - [`misc/bindings.md`](bindings.md) — Layer-1 16-method canonical
   surface.

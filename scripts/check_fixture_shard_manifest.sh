@@ -114,7 +114,7 @@ fi
   for d in stdlib platform x xap; do
     for f in conformance/$d/*.cxd; do [ -e "$f" ] && echo "$d/$(basename "$f")"; done
   done
-  echo "extended.cxd"
+  echo "../deps/cx-core-data/conformance/extended.cxd"   # pinned (RULED: RS-12)
   echo "xml_codec.cxd"
 } | sort > "$tmp/corpus"
 uniq "$tmp/assigned_sorted" > "$tmp/assigned_uniq"
