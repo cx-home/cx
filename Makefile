@@ -375,8 +375,25 @@ check-gate-lock:
 # that does not name that root, and — the silent case — a directory under vcx/
 # named like a pinned module that tracks no file: a copy left behind by the
 # module's own leave, which V would find first (vcx/ is its v.mod folder).
+# sync-cmd-split — `module main` is split across two physical trees now that
+# cx-core-code owns cmd/'s anchor (main.v) while this repository keeps the
+# platform-profile and flow companions that never leave it (flow.v,
+# flow_serve.v, platform_verbs_d_cx_platform.v, the xap_*.v module-main
+# stay-files, RS-8, D73a): `v` refuses two directory targets ("Too many
+# targets"), so the pinned checkout's own vcx/cmd/ gains a SYMLINK per
+# stay-file instead of a second compile root — deps/ is gitignored, so this
+# never touches a tracked byte of the pin, and a stale symlink from an older
+# pin is cleared first (find -type l).
+.PHONY: sync-cmd-split
+sync-cmd-split:
+	@[ -d deps/cx-core-code/vcx/cmd ] || exit 0; \
+	find deps/cx-core-code/vcx/cmd -maxdepth 1 -type l -delete; \
+	for f in vcx/cmd/*.v; do \
+	  ln -sf "$(CURDIR)/$$f" "deps/cx-core-code/vcx/cmd/$$(basename $$f)"; \
+	done
+
 .PHONY: deps-present
-deps-present:
+deps-present: sync-cmd-split
 	@missing=""; \
 	for f in $$(grep '\[module ' registry/modules.cxd | grep -v 'status=planned' | grep -oE 'source=deps/[^] ]+' | sed 's/^source=//' | sort -u); do \
 	  [ -f "$$f" ] || missing="$$missing $$f"; \
@@ -418,19 +435,19 @@ deps-present:
 	fi
 
 build-vcx: check-gate-lock deps-present
-	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd build
+	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx build
 
 # Unoptimised dev build of libcx + cx (no -prod/-Os). Functionally
 # identical for tests but compiles far faster; the test path depends on
 # this instead of the -prod `build-vcx`. Shipped artifacts use `build-vcx`.
 build-vcx-dev: check-gate-lock deps-present
-	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd build-dev CX_DFLAGS='$(CX_DFLAGS)'
+	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx build-dev CX_DFLAGS='$(CX_DFLAGS)'
 
 # ── The §4 PROFILE MATRIX as ordinary build steps (#1449, RULED: 1449-a) ─────
 # These used to be built nowhere: `test-profile-gate` built the whole matrix
 # from scratch inside the SERIAL TAIL of `make test`, after the -j block had
 # drained, and `test-extraction-gate` and `abi-gc-gate` each ran their own
-# `$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd build-data-dev` inside the block — two concurrent recursive
+# `$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx build-data-dev` inside the block — two concurrent recursive
 # sub-makes writing the same two artifacts, with nothing sequencing them.
 #
 # Both halves are fixed by naming the builds ONCE, here, as targets that
@@ -466,10 +483,10 @@ PROFILE_BUILD_JOBS ?= 5
 PROFILE_BUILD_J = $(if $(findstring jobserver,$(MAKEFLAGS)),,-j$(PROFILE_BUILD_JOBS))
 .PHONY: build-profile-data build-profiles-dev
 build-profile-data: build-vcx
-	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd $(PROFILE_BUILD_J) build-data-dev
+	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx $(PROFILE_BUILD_J) build-data-dev
 
 build-profiles-dev: build-profile-data
-	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd $(PROFILE_BUILD_J) build-profiles-dev
+	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx $(PROFILE_BUILD_J) build-profiles-dev
 
 # v0.7.5 — build libcx.wasm + libcx.js (emscripten
 # loader) + cxlib.js (hand-written wrapper). Produces dist/wasm/.
@@ -605,7 +622,7 @@ wasm-bundle-fresh:
 # this library independently — none is built from this tree any more
 # (RULED: RS-12, RS-8; #1591 item K3: the four active bindings left whole).
 build-lib-arrow: build-vcx
-	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd lib-arrow
+	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx lib-arrow
 
 build-lib: build-vcx
 
@@ -2195,7 +2212,7 @@ libcx-abi-gate: build-vcx
 # are pinned by `make check-profile-gate-selection`.
 PROFILE_GATE_FILES ?=
 test-profile-gate: build-profiles-dev
-	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd test-profile-gate PROFILE_GATE_FILES="$(PROFILE_GATE_FILES)"
+	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx test-profile-gate PROFILE_GATE_FILES="$(PROFILE_GATE_FILES)"
 
 .PHONY: check-profile-gate-selection
 check-profile-gate-selection:
@@ -2261,9 +2278,9 @@ check-verification-timings:
 .PHONY: test-ring0 test-ring1 test-ring2
 test-ring0: test-vcx-cx test-extraction-gate libcx-abi-gate ring-import-gate ring-tag-gate gates-manifest-gate
 test-ring1: test-ring0 test-profile-gate check-effect-alignment
-	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd conform-fmt
+	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx conform-fmt
 test-ring2: test-ring1 test-vcx-suite test-vcx-cmd
-	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd conform-all
+	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx conform-all
 
 # ── RING QUERY (corpus audit §2 tagging mechanics; C8 repair, I0) — the
 # ring-step corpus query, dog-food CX. Parameters via env: RING=0|1|2,
@@ -2687,14 +2704,14 @@ test-vcx-gates: build-vcx-dev
 	@bash scripts/cxer_registry_report.sh --strict
 
 test-vcx: build-vcx-dev test-vcx-gates test-vcx-suite test-vcx-cmd test-vcx-cx
-	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd conform-all
-	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd conform-fmt
-	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd conform-data-bin-arrow
+	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx conform-all
+	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx conform-fmt
+	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx conform-data-bin-arrow
 	# #1134 — see the test-vcx-conform block below. diff.cxd / lint.cxd left
 	# conform-all's suite list (34 vacuous PASSes) and are graded by their own
 	# runner here, which no `make test` step reached before.
-	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd conform-diff
-	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd conform-lint
+	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx conform-diff
+	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx conform-lint
 	# RULED: R5.8 (#860) — the corpus/spec agreement gates run IN THIS STEP now.
 	# Both were in TEST_TARGETS but not a test-vcx dependency, so a green full
 	# `make test-vcx` never executed them: check-code-spec-consistency sat red
@@ -2746,12 +2763,12 @@ test-vcx: build-vcx-dev test-vcx-gates test-vcx-suite test-vcx-cmd test-vcx-cx
 # every gate; the banner says it so a green here is read for what it covers.
 test-vcx-conform: build-vcx-dev
 	@echo "test-vcx-conform covers the DOCUMENT suites (conform-all's list) + fmt + data-bin-arrow + diff + lint + streaming-write; code.cxd and stdlib/*.cxd are the eval step's (test-vcx-code, test-profile-gate) — see check-conformance-coverage"
-	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd conform-all
-	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd conform-fmt
-	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd conform-data-bin-arrow
-	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd conform-diff
-	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd conform-lint
-	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd conform-streaming-write
+	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx conform-all
+	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx conform-fmt
+	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx conform-data-bin-arrow
+	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx conform-diff
+	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx conform-lint
+	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx conform-streaming-write
 
 # Convenience wrapper: run the full V suite ONCE, stream live output to a
 # log, then print a digest of just the FAIL lines + per-file counts + the
@@ -3476,7 +3493,7 @@ CX_INMODULE_TESTS_EXCLUDED := $(CXD)/vcx/cx/parser_multidoc_test.v
 # BINARY under a green guard, which has escaped twice.
 .PHONY: check-build-input-roster
 check-build-input-roster:
-	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd check-build-input-roster
+	@$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx check-build-input-roster
 
 # check-selection-manifest (#1516, RULED: RUN-1) — the third roster of the same
 # family: every TEST_TARGETS entry has an input-glob row in
@@ -3641,7 +3658,7 @@ test-vcx-columnar: build-vcx-dev skip-ledger-reset
 	  line="SKIP test-vcx-columnar: Apache Arrow/Parquet not discoverable via pkg-config (absent prerequisite, #318 — brew install apache-arrow / apt libarrow-dev libparquet-dev)"; \
 	  echo "$$line"; mkdir -p $(CX_SKIP_DIR); echo "$$line" > $(call CX_SKIP_FILE,test-vcx-columnar); \
 	fi
-	@$(JS_CLOSE) if [ ! -f "$(call CX_SKIP_FILE,test-vcx-columnar)" ]; then $(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd arrow-shim; fi
+	@$(JS_CLOSE) if [ ! -f "$(call CX_SKIP_FILE,test-vcx-columnar)" ]; then $(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx arrow-shim; fi
 	@$(JS_CLOSE) if [ ! -f "$(call CX_SKIP_FILE,test-vcx-columnar)" ]; then \
 	  PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test deps/cx-platform-store/vcx/store/store_columnar_test.v deps/cx-platform-store/vcx/store/store_columnar_lineage_test.v; \
 	fi
@@ -3761,14 +3778,14 @@ test-vcx-stream: build-vcx
 # left in this tree to drive (the #743 dylib/STW note above moves with it).
 
 conform-md: build-vcx
-	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd conform-md
+	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx conform-md
 
 # ── Conformance ────────────────────────────────────────────────────────────────
 
 conform: conform-vcx
 
 conform-vcx: build-vcx
-	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd conform
+	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx conform
 
 # ── Examples (transform showcase) / Demos ────────────────────────────────────
 # `examples`/`demos` and every example-*/demo-* target RETIRED with the four
@@ -4500,7 +4517,7 @@ bench-flow: build-vcx-dev
 # ── Clean ──────────────────────────────────────────────────────────────────────
 
 clean:
-	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx DEPS_EXTRA_CMD_DIR=$(CURDIR)/vcx/cmd clean
+	$(MAKE) -C deps/cx-core-code/vcx DEPS_CXD_PATH=$(CURDIR)/deps.cxd DEPS_ROOT_PATH=$(CURDIR)/deps CX_V_PIN=$(CURDIR)/third_party/v/v DEPS_THIRD_PARTY_PATH=$(CURDIR) DEPS_EXTRA_VPATH=$(CURDIR)/vcx clean
 	rm -rf $(DIST_DIR)
 	# lang/rust, lang/python cleanup RETIRED with the bindings (RULED: RS-12,
 	# RS-8; #1591 item K3) — cx-home/cx-binding-{rust,python} own their own
