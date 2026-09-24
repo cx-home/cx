@@ -542,7 +542,7 @@ const accepted_by_one_table = [
 	AcceptedByOne{'deps/cx-core-data/conformance/fmt.cxd', .data, reason_datalane},
 	AcceptedByOne{'deps/cx-core-data/conformance/xml.cxd', .data, reason_datalane},
 	AcceptedByOne{'conformance/xml_codec.cxd', .data, reason_datalane},
-	// ── #1536 — a call-shaped head beside a ws-delimited literal (22) ──
+	// ── #1536 — a call-shaped head beside a ws-delimited literal (23) ──
 	// 33 -> 22: eleven of these were cx-platform-sso's and left with the
 	// extraction (RULED: RS-12, #1591 item 11) -- the module, the four interop
 	// programs' three judged files and the seven example programs. The scan
@@ -574,6 +574,13 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/lang_stats.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/run_bench_json.cx', .program, reason_1536},
 	AcceptedByOne{'stdlib/supervise.cx', .program, reason_1536},
+	// 21 -> 23: RS-33's K12 branch, scripts/check_no_ai_attribution.cx and
+	// scripts/strip_attribution.cx -- the class's own shape,
+	// `[$process:run ("git", "clone", "--mirror", $source, $mirror)]` and
+	// `[$process:run ("git", "-C", $dir, ...)]`, same as deps_cx_selftest.cx
+	// above (RULED: RS-33; fix(ff8ebdc35), CXF-8).
+	AcceptedByOne{'scripts/check_no_ai_attribution.cx', .program, reason_1536},
+	AcceptedByOne{'scripts/strip_attribution.cx', .program, reason_1536},
 	// ── recorded exception — a computed attribute `name=[EXPR]` (26) ──
 	// 22 -> 21: scripts/sso_interop/idp.cx left with the sso extraction (RS-12).
 	// 21 -> 22: scripts/check_migrate_namespace_fixtures.cx, RS-4's sweep grader.
