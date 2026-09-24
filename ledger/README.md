@@ -535,6 +535,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `fl-3` | [rulings_2026_08_20_columnar_lineage.md](rulings_2026_08_20_columnar_lineage.md) | FL-3 — the columnar backend joins the FL-1/FL-2 durability contract |
 | `fmt-1` | [rulings_2026_09_16_fmt_ratchet_fmt1.md](rulings_2026_09_16_fmt_ratchet_fmt1.md) | Integrator decision 2026-09-16 ~11:30Z — the fmt-sweep ratchet moves one way, and a decline fixed under it needs no spec sentence (RULED: FMT-1) |
 | `fmt-2` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | Integrator decisions, 2026-09-17 — the Ring 0 rulings owed (1363-b, 1387-a, FMT-2, GRADER-1, 1150-a, 1250-b) |
+| `fw-1` | [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) | RULED: FW-1, FW-2 — every named landing of `flow.md` lands in v0.18, end-user automation authoring (#1498) with it, and the v0.18.0 tag waits for them while the repo split lands (owner, 2026-09-24, in session on dev2) |
+| `fw-2` | [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) | RULED: FW-1, FW-2 — every named landing of `flow.md` lands in v0.18, end-user automation authoring (#1498) with it, and the v0.18.0 tag waits for them while the repo split lands (owner, 2026-09-24, in session on dev2) |
 | `ga-1` | [rulings_2026_08_20_guest_attach.md](rulings_2026_08_20_guest_attach.md) | Ruling GA-1 (2026-08-20) — attach-guest: the anonymous-floor transport (#857, owner "857a") |
 | `ge-0` | [rulings_2026_09_05_grammar_expression_env.md](rulings_2026_09_05_grammar_expression_env.md) | Rulings 2026-09-05 — the grammar-expression environment (GE-0..GE-3) |
 | `ge-0` | [rulings_2026_09_05_grammar_expression_env.md](rulings_2026_09_05_grammar_expression_env.md) | GE-0 — the caller-dependence is a DEFECT — RULED (a) |
@@ -709,6 +711,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `rs-31` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-26…RS-31 — five spec-sentence authorizations, the afternoon letters, documentation and CI/CD, the documentation voice and the evening letters (owner, 2026-09-23, in session on dev2) |
 | `rs-31` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
 | `rs-31` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | Not decided here (RS-30, RS-31) |
+| `rs-32` | [rulings_2026_09_24_front_door_letters.md](rulings_2026_09_24_front_door_letters.md) | RS-32 — the front-door letters of 2026-09-24 (owner: D79a, D80a, D81a, D82a, D83a, D84a) |
 | `run-1` | [rulings_2026_09_16_run_selection_run1.md](rulings_2026_09_16_run_selection_run1.md) | Owner decision 2026-09-16 ~05:05Z — the post-merge run tests what changed and what reads it (RULED: RUN-1) |
 | `run-2` | [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md) | Owner decisions 2026-09-19 ~04:45Z — a failed run reports every red class (RUN-2); the daily full union runs on an idle runner (RUN-3); an escalated branch runs the computed selection pre-merge (RUN-4); the run log carries step timing and the timings file (RUN-5); the two agents and their order (AGENTS-1); the budget step stays open until it measures (1562-a) |
 | `run-3` | [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md) | Owner decisions 2026-09-19 ~04:45Z — a failed run reports every red class (RUN-2); the daily full union runs on an idle runner (RUN-3); an escalated branch runs the computed selection pre-merge (RUN-4); the run log carries step timing and the timings file (RUN-5); the two agents and their order (AGENTS-1); the budget step stays open until it measures (1562-a) |
@@ -997,7 +1000,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `1265-pb-3` | [rulings_2026_09_06_flow_binding_start_contract_789.md](rulings_2026_09_06_flow_binding_start_contract_789.md), [rulings_2026_09_08_local_runner_rearm_1313.md](rulings_2026_09_08_local_runner_rearm_1313.md) |
 | `1265-pb-5` | [rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md](rulings_2026_09_08_flow_retry_wait_timer_kind_1314.md) |
 | `1265-pb-6` | [bench_flow_first_measurement_2026_09_04.md](bench_flow_first_measurement_2026_09_04.md) |
-| `1265-pb-8` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md) |
+| `1265-pb-8` | [rulings_2026_09_04_flow_w1_runner_seam_1265.md](rulings_2026_09_04_flow_w1_runner_seam_1265.md), [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) |
 | `1265-pc-2` | [bench_flow_w1e_anchored_reader_2026_09_06.md](bench_flow_w1e_anchored_reader_2026_09_06.md), [rulings_2026_09_06_flow_snapshot_interval_1265.md](rulings_2026_09_06_flow_snapshot_interval_1265.md), [rulings_2026_09_09_flow_activation_seq_1316c1.md](rulings_2026_09_09_flow_activation_seq_1316c1.md) |
 | `1265-pc-3` | [rulings_2026_09_04_flow_w1_map_scale_1265.md](rulings_2026_09_04_flow_w1_map_scale_1265.md) |
 | `1265-pw-3` | [rulings_2026_09_04_flow_w3_performers_1265.md](rulings_2026_09_04_flow_w3_performers_1265.md) |
@@ -1333,4 +1336,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*320 ledger pages; 678 ids declared, 384 cited only.*
+*322 ledger pages; 681 ids declared, 384 cited only.*
