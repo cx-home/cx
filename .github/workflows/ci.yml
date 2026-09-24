@@ -9,16 +9,21 @@ on:
 
 jobs:
   test-matrix:
-    name: ${{ matrix.os }} / ${{ matrix.lang }}
+    name: ${{ matrix.os }} / vcx
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04, macos-14]
-        # Active binding set per decision d-2026-05-22-03 (v0.8.0).
-        # Archived bindings (typescript/java/kotlin/csharp/ruby/swift) live
-        # in lang/_archived/ and are not CI-tested. Restore via lang/_archived/README.md.
-        lang: [vcx, python, go, rust]
+        # The four active bindings (python/go/rust here; the V binding was
+        # never in this matrix) LEFT cx-private WHOLE as
+        # cx-home/cx-binding-{python,go,rust,v} (RULED: RS-12, RS-8; #1591
+        # item K3): `test-python`/`test-go`/`test-rust` retired with them, so
+        # this matrix now grades only the native `vcx` suite. Each binding
+        # repository owns its own CI going forward — see RESULTS.md's LETTER
+        # for what (if anything) covers per-binding testing today. The six
+        # archived bindings (typescript/java/kotlin/csharp/ruby/swift) were
+        # never CI-tested here either; see lang/_archived/README.md.
 
     steps:
       - uses: actions/checkout@v4
@@ -29,25 +34,11 @@ jobs:
           (cd /tmp/v && make && sudo ./v symlink)
           v version
 
-      - name: Set up Python
-        if: matrix.lang == 'python'
-        uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
-
-      - name: Set up Go
-        if: matrix.lang == 'go'
-        uses: actions/setup-go@v5
-        with: { go-version: '1.22' }
-
-      - name: Set up Rust
-        if: matrix.lang == 'rust'
-        uses: dtolnay/rust-toolchain@stable
-
       - name: Build libcx
         run: make build-vcx
 
-      - name: Run binding test
-        run: make test-${{ matrix.lang }}
+      - name: Run vcx test
+        run: make test-vcx
 
   experience-gate:
     name: Experience gate (F1–F9)
@@ -76,8 +67,9 @@ jobs:
       - name: Verify doc links
         run: make verify-doc-links
 
-      - name: Verify binding quickstarts (F7)
-        run: make verify-binding-quickstarts
+      # F7 (verify-binding-quickstarts) RETIRED (RULED: RS-12, RS-8; #1591
+      # item K3): the four active bindings left whole, so its LIVE_BINDINGS
+      # table would check zero rows. See Makefile / RESULTS.md.
 
       - name: Run smoke-eval
         run: make smoke-eval
@@ -117,11 +109,11 @@ jobs:
       - name: CXPath / XPath 3.1 alignment, CX side (gate 28.5a)
         run: make test-xpath-parity-cx
 
-      # Gate 28.6 — Layer-1 binding-API parity. Runner stub until Phase 3
-      # bindings land per spec/v0_8_0_status.md gate 28.6.
-      - name: Layer-1 binding-API parity (gate 28.6)
-        run: make test-binding-api-parity
-        continue-on-error: true
+      # Gate 28.6 (Layer-1 binding-API parity) RETIRED (RULED: RS-12, RS-8;
+      # #1591 item K3): the four active bindings this gate drove left
+      # cx-private whole, and `lang/<lang>/binding_api_driver/` left with
+      # them — nothing here can drive all four any more. See RESULTS.md's
+      # LETTER.
 
   cold-install:
     name: Cold install + first demo (F1, F2, F5)
