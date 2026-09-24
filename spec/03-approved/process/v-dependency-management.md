@@ -14,7 +14,7 @@ this document is the authoritative *policy and rationale*.
 ## 1 — The layering
 
 - **V** is the language, compiler, runtime, and memory model. CX builds against a
-  **fork** (`github.com/cx-home/v`, branch `cx-home/v-cx-patches`), vendored as the
+  **fork** (`github.com/cx-home/v`, branch `cx-patches-0.18`), vendored as the
   `third_party/v` submodule. The fork is *temporary*: it carries only patches that
   are bound for upstream `vlang/v` (see §6).
 - **CX** is the interpreter for the CX language, written *in* V (`vcx/`). It
