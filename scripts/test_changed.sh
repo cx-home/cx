@@ -409,6 +409,10 @@ step_globs() {
     # the four agent real-socket lanes, CX programs run from the pinned
     # checkout by this tree's binary (RS-12, RS-31)
     test-agent-real-lanes)         echo 'deps.cxd registry/modules.cxd vcx/* stdlib/*' ;;
+    # connector's two real-socket lanes, V test files run from the pinned
+    # checkout by this tree's binary (RULED: RS-12, RS-8, RS-27; #1591 item
+    # K3) — a pin bump, plus the in-tree mock the lanes still boot
+    test-connector-real-lanes)     echo 'deps.cxd registry/modules.cxd reference/acme/*' ;;
     # the roster rows live in the Makefile and name files under vcx/
     check-serial-retry-rosters)    echo 'Makefile vcx/*' ;;
     # #1448: the partition guard reads the manifest, the corpus it partitions

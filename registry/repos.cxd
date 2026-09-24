@@ -74,7 +74,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [repo name=cx-platform-fabric group=platform ring=none ships=binary pins='cx-platform-store cx-platform-identity' about='messaging and fabric-serve']
   [repo name=cx-platform-xap group=platform ring=none ships=binary vmodule=xap pins='cx-platform-net cx-platform-mail cx-platform-identity cx-platform-store cx-platform-db cx-platform-fabric' about='the application host, compose, dist, schema, market, the reference deployments']
   [repo name=cx-platform-flow group=platform ring=none ships=package status=extracted at=2ed490d6ab328cad54071a46b2d1dbc4231144aa about='workflow; its CLI verbs stay in the binary' why='EXTRACTED (RULED: RS-12, RS-20, #1591 item 15), the second of them. Its [path] rules are retired because it owns no tracked path here any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records. What RS-20 kept in `cx` is claimed by rules of its own and not by this row: the `cx flow` verbs (vcx/cmd/flow*.v, repo=cx) and the flow-perform act seam (vcx/platform/coordination.v, repo=cx-platform-xap)']
-  [repo name=cx-platform-connector group=platform ring=none ships=package about='the connector kit and sync']
+  [repo name=cx-platform-connector group=platform ring=none ships=package status=extracted at=5d4bebe7fc0d00b18e8b69fa8c257afa89ff834c about='the connector kit and sync' why='EXTRACTED (RULED: RS-12, RS-8, RS-27; #1591 item K3), a pure-CX package (RS-25: connector\'s twelfth native builtin retired with the mock\'s own declaration, so code=none). stdlib/connector.cx, spec/03-approved/platform/{connector,sync}.md, conformance/platform/{connector,sync}.cxd and reference/connectors/ leave whole; registry/modules.cxd\'s connector and sync rows now name deps/cx-platform-connector/ directly. The two real-socket lane V test files (vcx/tests/connector_live_test.v, connector_webhook_test.v) leave too, byte-identical, into the pinned repository\'s own vcx/tests/ -- but a ships=package repo carries no V toolchain of its own (RS-25), so the LANE MOVED AND THE STEP DID NOT, the test-sso-interop-lane shape (RULED: RS-12, #1591 item 11): make target test-connector-real-lanes runs them out of deps/cx-platform-connector/vcx/tests/, against THIS tree\'s binary. It has no [path] rules any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records']
   [repo name=cx-platform-sso group=platform ring=none ships=package status=extracted at=1e814e5aae6327a8218cc3fe69b43a03517e92bf about='enterprise sign-on, the interop lane' why='EXTRACTED (RULED: RS-12, #1591 item 11), the first of them. It has no [path] rules because it owns no tracked path here any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records, and the gate exempts a status=extracted repo from the empty-repo refusal for exactly that reason -- the row is the pin\'s counterpart, not a plan waiting to be executed']
   [repo name=cx-platform-ux group=platform ring=none ships=package status=extracted at=ef9248093389d42f6726042bfc254351445db4bc about='the web and terminal surfaces' why='EXTRACTED (RULED: RS-12, #1591 item 12), with cx-platform-agent: the x/ graduation. It owns no tracked path here any more; cx reaches it through deps.cxd at the sha at= records, and registry/modules.cxd\'s ux, ux-web and ux-tui rows name the pinned checkout']
   [repo name=cx-platform-agent group=platform ring=none ships=package status=extracted at=df505787c2498100ded95e45031fa2f9192b2d09 about='tools, mcp, mcp-server, a2a, a2a-xap, llm, run, adjudicate' why='EXTRACTED (RULED: RS-12, #1591 item 12), with cx-platform-ux: the x/ graduation. It owns no tracked path here any more; cx reaches it through deps.cxd at the sha at= records, and registry/modules.cxd\'s eight agent rows name the pinned checkout']
@@ -262,14 +262,15 @@ the rule carries a `why=`. The recurring reasons, once:
      local profile, V only the front door compiles, so they stay here. ]
   [path prefix='vcx/cmd/flow' repo=cx why='flow ships=package and vcx/cmd/flow*.v is V that only the front door compiles: the local profile verbs stay in the binary, so they stay in the repo that BUILDS the binary. Not owned by flow (RULED: RS-20)']
 
-  [; ── platform: connector ───────────────────────────────────────────── ]
-  [path exact='stdlib/connector.cx' repo=cx-platform-connector]
-  [path exact='spec/03-approved/platform/connector.md' repo=cx-platform-connector]
-  [path exact='spec/03-approved/platform/sync.md' repo=cx-platform-connector]
-  [path exact='conformance/platform/connector.cxd' repo=cx-platform-connector]
-  [path exact='conformance/platform/sync.cxd' repo=cx-platform-connector]
-  [path prefix='vcx/tests/connector_' repo=cx-platform-connector]
-  [path prefix='reference/connectors/' repo=cx-platform-connector]
+  [; ── platform: connector RETIRED (RULED: RS-12, RS-8, RS-27; #1591 item
+     K3) ─────────────────────────────────────────────────────────────────
+     Every rule of this block left with cx-platform-connector's leave step:
+     stdlib/connector.cx, spec/03-approved/platform/{connector,sync}.md,
+     conformance/platform/{connector,sync}.cxd, vcx/tests/connector_* and
+     reference/connectors/. The repository's own row (above) carries `at=`
+     and its full why=; each artifact's new home is registry/modules.cxd's
+     connector and sync rows, which name deps/cx-platform-connector/
+     directly. ]
   [path exact='scripts/check_composition_seams.cx' repo=cx-platform-xap why='composition.md is the platform catalog page']
 
   [; ── platform: sso ─────────────────────────────────────────────────── ]

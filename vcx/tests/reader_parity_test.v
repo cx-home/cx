@@ -709,11 +709,13 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/repo_paths.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/ring_query.cx', .program, reason_attr},
 	AcceptedByOne{'stdlib/diagram.cx', .program, reason_attr},
-	// ── recorded exception — a program document the data balancer cannot read (10) ──
+	// ── recorded exception — a program document the data balancer cannot read (9) ──
 	// 8 -> 9: scripts/docs_fragment.cx, the RS-9 fragment contract (a `"#]"` literal).
 	// 9 -> 8: scripts/flow_vocabulary_gate.cx left with the flow extraction (RS-12).
 	// 8 -> 10: scripts/gate_on_suite_migrate.cx, D49a's migration (a `"]"` literal;
 	// the heading read 8 over nine rows before it).
+	// 10 -> 9: stdlib/connector.cx left with cx-platform-connector's extraction
+	// (RULED: RS-12, RS-8, RS-27; #1591 item K3).
 	AcceptedByOne{'scripts/bisect_batch.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/check_editor_surface_parity.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/diagnostics_census.cx', .program, reason_prog},
@@ -723,7 +725,6 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/gen_docs/primer_platform.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/repos_allocation_gate.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/store_session_dep_gate.cx', .program, reason_prog},
-	AcceptedByOne{'stdlib/connector.cx', .program, reason_prog},
 ]
 
 // judge_accepted_by_one is the verdict, as a PURE function of the scan and the
