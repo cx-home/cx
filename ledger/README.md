@@ -712,6 +712,7 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `rs-31` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a) |
 | `rs-31` | [rulings_2026_09_23_spec_sentence_letters.md](rulings_2026_09_23_spec_sentence_letters.md) | Not decided here (RS-30, RS-31) |
 | `rs-32` | [rulings_2026_09_24_front_door_letters.md](rulings_2026_09_24_front_door_letters.md) | RS-32 — the front-door letters of 2026-09-24 (owner: D79a, D80a, D81a, D82a, D83a, D84a) |
+| `rs-33` | [rulings_2026_09_24_no_ai_attribution_rs33.md](rulings_2026_09_24_no_ai_attribution_rs33.md) | RS-33 — zero AI attribution anywhere in any repository, ever (owner: D87, D88b) |
 | `run-1` | [rulings_2026_09_16_run_selection_run1.md](rulings_2026_09_16_run_selection_run1.md) | Owner decision 2026-09-16 ~05:05Z — the post-merge run tests what changed and what reads it (RULED: RUN-1) |
 | `run-2` | [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md) | Owner decisions 2026-09-19 ~04:45Z — a failed run reports every red class (RUN-2); the daily full union runs on an idle runner (RUN-3); an escalated branch runs the computed selection pre-merge (RUN-4); the run log carries step timing and the timings file (RUN-5); the two agents and their order (AGENTS-1); the budget step stays open until it measures (1562-a) |
 | `run-3` | [rulings_2026_09_19_owner_decisions_0445z.md](rulings_2026_09_19_owner_decisions_0445z.md) | Owner decisions 2026-09-19 ~04:45Z — a failed run reports every red class (RUN-2); the daily full union runs on an idle runner (RUN-3); an escalated branch runs the computed selection pre-merge (RUN-4); the run log carries step timing and the timings file (RUN-5); the two agents and their order (AGENTS-1); the budget step stays open until it measures (1562-a) |
@@ -1336,4 +1337,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*322 ledger pages; 681 ids declared, 384 cited only.*
+*323 ledger pages; 682 ids declared, 384 cited only.*
