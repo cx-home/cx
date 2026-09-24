@@ -1,0 +1,308 @@
+# scripts/strip_attribution.cx — the RS-33 history strip tool.
+#
+# Given repository names (or `--all-public`: every `registry/repos.cxd`
+# `[repo name=]` row that is not `cx-private`, plus the V fork, named `v`),
+# for each one: mirror-clone it, run `git filter-repo --message-callback` to
+# drop exactly the RS-33 lines from every commit message (message text only —
+# no path, author or date is touched), verify with this gate's own scanner
+# that zero remain across the WHOLE rewritten history and that the commit
+# count is unchanged, write the old-sha -> new-sha map, and print the re-pin
+# list every mover and the integrator needs.
+#
+# It PUSHES NOTHING. The integrator force-pushes from the mirrors this tool
+# produces and applies the printed re-pins; this tool only prepares.
+#
+# The four RS-33 patterns are held split across string literals, here and in
+# the Python callback source this tool builds, for the same reason
+# scripts/check_no_ai_attribution.cx's are: a whole pattern sitting
+# contiguously in this file's own tracked text would make the gate flag this
+# file the moment it scans it. The pattern set is scripts/check_no_ai_attribution.cx's
+# to define; this file's copy must be kept in step with it by hand (no CX
+# import-from-script exists yet to share it — noted, not filed as a cx-gap:
+# every other checker in this tree duplicates its own small helpers the same
+# way).
+#
+# Usage (run from the checkout root; needs `git-filter-repo` from
+# ~/Library/Python/3.9/bin on this box):
+#   cx --allow-read --allow-write --allow-subprocess --allow-env \
+#     scripts/strip_attribution.cx cx-platform-fabric work=/path/to/work \
+#     source:cx-platform-fabric=/path/to/local/mirror.git
+#   cx ... scripts/strip_attribution.cx --all-public work=/path/to/work --dry-run
+#
+# Flags are single tokens (this tree's own key=value idiom, not getopt):
+#   --all-public          every public repository (registry/repos.cxd minus
+#                          cx-private) plus the V fork ("v")
+#   --dry-run              print the plan; clone, rewrite and verify nothing
+#   work=<dir>             where each <name>.git mirror and <name>.map land
+#                          (default: a fresh temp dir, printed)
+#   source:<name>=<path>   clone FROM <path> instead of the default
+#                          git@github.com:cx-home/<name>.git (a local mirror
+#                          path for testing, or an alternate remote)
+#
+# Exit 0 every named repository verified clean and count-preserving, 1 a
+# repository failed verification, 2 an environment fault (git, git-filter-repo,
+# a clone, or a rewrite failed).
+
+[?lib 'cx-stdlib/io'      as=io]
+[?lib 'cx-stdlib/env'     as=env]
+[?lib 'cx-stdlib/cx'      as=cx]
+[?lib 'cx-stdlib/strings' as=strings]
+[?lib 'cx-stdlib/process' as=process]
+[?lib 'cx-stdlib/re'      as=re]
+[?lib 'cx-stdlib/fp'      as=fp]
+
+[?def say scope=private impure ($s) [$io:write-line [$env:stdout] $s]]
+[?def cry scope=private impure ($s) [$io:write-line [$env:stderr] $s]]
+[?def cat scope=private pure ($parts) [$strings:join $parts '']]
+
+[?def nonblank scope=private pure ($text::string)
+  [?for [in $l [$strings:split-lines $text]]
+    [where [not [= [$strings:trim $l] ""]]]
+    [yield [$strings:trim $l]]]]
+
+[?def member scope=private pure [returns bool] ($x $xs)
+  [> [$count [?for [in $y $xs] [where [= $y $x]] [yield 1]]] 0]]
+
+# -- the RS-33 patterns (split; see the header note) -------------------------
+
+[?def all-patterns scope=private pure ()
+  [?let
+    [= $p1 [$cat ("Co-Authored-By", ":", " Claude")]]
+    [= $p2 [$cat ("noreply", "@", "anthropic.com")]]
+    [= $p3 [$cat ("Generated with", " ", "[Claude Code]")]]
+    [= $p4 [$cat ("Generated with", " ", "Claude")]]
+    [= $p5 [$cat ("🤖", " ", "Generated")]]
+    ($p1, $p2, $p3, $p4, $p5)]]
+
+[?def line-hit scope=private pure [returns bool] ($l::string)
+  [> [$count [?for [in $p [$all-patterns]] [where [$strings:contains $l $p]] [yield 1]]] 0]]
+
+# the git-filter-repo `--message-callback` source. Assembled at run time from
+# parts that never sit contiguous in THIS file (the header note again): every
+# `\n` below is a REAL newline in the assembled Python source (a CX escape),
+# every `\\n` is the two characters backslash-n, Python's OWN newline escape
+# inside the byte literals the callback splits and rejoins on.
+[?def message-callback-code scope=private pure ()
+  [$cat (
+    "pats = [b'", "Co-Authored-By", "'", " + b':'", " + b' Claude',\n",
+    "        b'", "noreply", "'", " + b'@'", " + b'anthropic.com',\n",
+    "        b'Generated with'", " + b' '", " + b'[Claude Code]',\n",
+    "        b'Generated with'", " + b' '", " + b'Claude',\n",
+    "        '🤖'.encode('utf-8')", " + b' Generated']\n",
+    "lines = message.split(b'\\n')\n",
+    "kept = [l for l in lines if not any(p in l for p in pats)]\n",
+    "return b'\\n'.join(kept)\n")]]
+
+# -- git / filter-repo plumbing ----------------------------------------------
+
+[?def run-git scope=private impure ($dir::string $argv $what::string)
+  [?let
+    [= $full ("git", "-C", $dir, [?splice $argv])]
+    [= $r [?fallback [$process:run $full]
+            [recover-with ([$cry [$cat ("strip-attribution: cannot run git (", $what, ")")]],
+                           [$env:exit 2], null)]]]
+    [?if [not [= [$string $r@exit-code] "0"]]
+      [then [?let [= $_f ([$cry [$cat ("strip-attribution: git ", $what, " failed (exit ",
+                                       [$string $r@exit-code], ")")]],
+                          [$cry [$string $r@stderr]])]
+              [?let [= $_x [$env:exit 2]] ""]]]
+      [else [$string $r@stdout]]]]]
+
+[?def commit-count scope=private impure ($dir::string)
+  [$strings:trim [$run-git $dir ("rev-list", "--count", "--all") "rev-list --count --all"]]]
+
+# scan-all-messages: every hit over the WHOLE history (every ref), not a
+# base..HEAD range — the verification this tool runs after the rewrite, over
+# a bare mirror with no working tree, so only messages are in scope (the only
+# thing this tool ever touches).
+[?def scan-all-messages scope=private impure ($dir::string)
+  [?let
+    [= $shas [$nonblank [$run-git $dir ("log", "--all", "--format=%H") "log --all --format=%H"]]]
+    [$fp:flat-map $shas [?fn ($sha)
+      [?let
+        [= $body [$run-git $dir ("log", "-1", "--format=%B", $sha) "log -1 --format=%B"]]
+        [?for [in $l [$nonblank $body]]
+          [where [$line-hit $l]]
+          [yield [hit sha=$sha line=$l]]]]]]]]
+
+[?def default-source scope=private pure [returns string] ($name::string)
+  [$cat ("git@github.com:cx-home/", $name, ".git")]]
+
+[?def source-for scope=private pure [returns string] ($name::string $overrides)
+  [?let [= $hit [?for [in $o $overrides] [where [= [$string $o@name] $name]] [yield [$string $o@source]]]]
+    [?if [= [$count $hit] 0] [then [$default-source $name]] [else [$first $hit]]]]]
+
+# -- the re-pin list ----------------------------------------------------------
+# every sha=/at=/v-fork= naming an OLD sha, in $path, printed with its NEW sha.
+[?def re-pins-in scope=private impure ($label::string $path::string $map)
+  [?let
+    [= $text [?fallback [$io:read-file $path] [recover-with ""]]]
+    [?if [= $text ""]
+      [then ()]
+      [else
+        [?let [= $rx [$re:compile "(sha|at|v-fork)=([0-9a-fA-F]{40})"]]
+          [?for
+            [in $m [$re:find-all $rx $text]]
+            [= $key [$re:group $m 1]]
+            [= $old [$strings:lower [$re:group $m 2]]]
+            [in $new [?for [in $pr $map] [where [= [$string $pr@old] $old]] [yield [$string $pr@new]]]]
+            [yield [repin label=$label file=$path key=$key old=$old new=$new]]]]]]]]
+
+# try-show-deps: HEAD:deps.cxd out of a mirror, or "" — a repository with no
+# deps.cxd (a ships=package/binding/archived row) is not an environment
+# fault, just nothing to scan.
+[?def try-show-deps scope=private impure ($dir::string)
+  [?let [= $r [?fallback [$process:run ("git", "-C", $dir, "show", "HEAD:deps.cxd")]
+                [recover-with null]]]
+    [?if [or [= $r null] [not [= [$string $r@exit-code] "0"]]] [then ""] [else [$string $r@stdout]]]]]
+
+[?def read-map scope=private impure ($path::string)
+  [?let [= $text [?fallback [$io:read-file $path] [recover-with ""]]]
+    [?for [in $l [$nonblank $text]]
+      [= $cols [$strings:split-whitespace $l]]
+      [where [= [$count $cols] 2]]
+      [= $c1 [$strings:lower [$nth $cols 1]]]
+      [= $c2 [$strings:lower [$nth $cols 2]]]
+      [where [not [= $c1 "old"]]]
+      [yield [pair old=$c1 new=$c2]]]]]
+
+# -- one repository -----------------------------------------------------------
+
+[?def strip-one scope=private impure ($name::string $work::string $overrides $dry::bool)
+  [?let
+    [= $source [$source-for $name $overrides]]
+    [= $mirror [$cat ($work, "/", $name, ".git")]]
+    [= $map-path [$cat ($work, "/", $name, ".map")]]
+    [?if $dry
+      [then [?let
+        [= $_p1 [$say [$cat ("[dry-run] ", $name, ": clone --mirror ", $source, " -> ", $mirror)]]]
+        [= $_p2 [$say [$cat ("[dry-run] ", $name, ": git-filter-repo --message-callback <RS-33 code> --force")]]]
+        [= $_p3 [$say [$cat ("[dry-run] ", $name, ": verify zero hits + unchanged rev-list --count --all")]]]
+        [= $_p4 [$say [$cat ("[dry-run] ", $name, ": write ", $map-path, " from filter-repo's commit-map")]]]
+        [ok name=$name clean=true]]]
+      [else [?let
+        [= $_mk [$io:make-dirs $work]]
+        [= $_cl [$process:run ("git", "clone", "--mirror", $source, $mirror)]]
+        [= $_clchk [?if [not [= [$string $_cl@exit-code] "0"]]
+          [then [?let [= $_e ([$cry [$cat ("strip-attribution: ", $name, ": git clone --mirror failed")]],
+                              [$cry [$string $_cl@stderr]])]
+                  [$env:exit 2]]]
+          [else ()]]]
+        [= $before [$commit-count $mirror]]
+        [= $home [$string [$env:var-or-default "HOME" ""]]]
+        [= $gfr [$cat ($home, "/Library/Python/3.9/bin/git-filter-repo")]]
+        [= $_gfrchk [?if [not [$io:exists $gfr]]
+          [then [?let [= $_e [$cry [$cat ("strip-attribution: ", $gfr, " not found — install git-filter-repo")]]]
+                  [$env:exit 2]]]
+          [else ()]]]
+        [= $code [$message-callback-code]]
+        [= $_fr [$process:run ($gfr, "--message-callback", $code, "--force",
+                               "--source", $mirror, "--target", $mirror)]]
+        [= $_frchk [?if [not [= [$string $_fr@exit-code] "0"]]
+          [then [?let [= $_e ([$cry [$cat ("strip-attribution: ", $name, ": git-filter-repo failed")]],
+                              [$cry [$string $_fr@stderr]])]
+                  [$env:exit 2]]]
+          [else ()]]]
+        [= $after [$commit-count $mirror]]
+        [= $hits [$scan-all-messages $mirror]]
+        [= $map-src [$cat ($mirror, "/filter-repo/commit-map")]]
+        [= $map-text [?fallback [$io:read-file $map-src] [recover-with ""]]]
+        [= $_wm [$io:write-file $map-path $map-text]]
+        [= $count-ok [= $before $after]]
+        [= $clean [and $count-ok [= [$count $hits] 0]]]
+        [= $_report ([$say [$cat ($name, ": ", $before, " -> ", $after, " commits (unchanged: ",
+                                  [$string $count-ok], "), ", [$string [$count $hits]],
+                                  " residual attribution hit(s), map written to ", $map-path)]],
+                     [?for [in $h $hits] [yield [$cry [$cat ("  RESIDUAL ", [$string $h@sha], ": ", [$string $h@line])]]]])]
+        [ok name=$name clean=$clean]]]]]]
+
+
+# -- --all-public --------------------------------------------------------------
+
+[?def all-public-names scope=private impure ()
+  [?let
+    [= $reg [$cx:parse [$io:read-file "registry/repos.cxd"]]]
+    [= $names [?for [in $r $reg//repo] [where [not [= [$string $r@name] "cx-private"]]] [yield [$string $r@name]]]]
+    ([?splice $names], "v")]]
+
+# -- the header, the re-pin printer and the verdict (broken out of the final
+# ?let so each one's brackets are checkable on their own) --------------------
+
+[?def print-header scope=private impure ($names $work::string $dry::bool)
+  [?if [= [$count $names] 0]
+    [then [?let [= $_ [$cry "strip-attribution: name a repository, or pass --all-public"]] [$env:exit 2]]]
+    [else
+      [?let
+        [= $suffix [?if $dry [then " (dry-run)"] [else ""]]]
+        [= $plural [?if [= [$count $names] 1] [then "y"] [else "ies"]]]
+        [$say [$cat ("strip-attribution: work=", $work, $suffix, " -- ",
+                     [$string [$count $names]], " repositor", $plural)]]]]]]
+
+# deps-repins-for: the re-pins in ONE mirrored repository's own deps.cxd (git
+# show HEAD:deps.cxd into a scratch file, then the same scan as this tree's).
+[?def deps-repins-for scope=private impure ($n::string $work::string $map)
+  [?let
+    [= $dtxt [$try-show-deps [$cat ($work, "/", $n, ".git")]]]
+    [?if [= $dtxt ""]
+      [then ()]
+      [else
+        [?let
+          [= $tmp-path [$cat ($work, "/", $n, ".deps.cxd.tmp")]]
+          [= $_w [$io:write-file $tmp-path $dtxt]]
+          [$re-pins-in $n $tmp-path $map]]]]]]
+
+[?def print-repins scope=private impure ($names $work::string $map)
+  [?let
+    [= $r1 [$re-pins-in "this tree" "deps.cxd" $map]]
+    [= $r2 [$re-pins-in "this tree" "registry/repos.cxd" $map]]
+    [= $r3 [$fp:flat-map $names [?fn ($n) [$deps-repins-for $n $work $map]]]]
+    [= $all-repins ([?splice $r1], [?splice $r2], [?splice $r3])]
+    [?for [in $rp $all-repins]
+      [yield [$say [$cat ("re-pin  ", [$string $rp@label], " ", [$string $rp@file], ": ",
+                          [$string $rp@key], "=", [$string $rp@old], " -> ", [$string $rp@new])]]]]]]
+
+[?def print-verdict scope=private impure ($bad $total::string $dry::bool)
+  [?if [and [not $dry] [> [$count $bad] 0]]
+    [then [?let
+      [= $_ [$cry [$cat ("strip-attribution: FAILED — ", [$string [$count $bad]], " of ",
+                         $total, " repositor(y/ies) did not verify clean")]]]
+      [$env:exit 1]]]
+    [else [?let
+      [= $_ [$say [?if $dry
+                    [then "strip-attribution: dry-run OK — plan printed, nothing cloned or rewritten"]
+                    [else "strip-attribution: OK — every named repository verified clean and count-preserving"]]]]
+      [$env:exit 0]]]]]
+
+# -- argv ----------------------------------------------------------------------
+
+[?let
+  # $env:argv's first element is the script's own path (proven by probe, not
+  # documented in the primer set this branch loaded) — drop it before
+  # treating the rest as repository names and flags.
+  [= $raw-argv [$env:argv]]
+  [= $argv [?for [in $i [$range 2 [$count $raw-argv]]] [yield [$nth $raw-argv $i]]]]
+  [= $dry [$member "--dry-run" $argv]]
+  [= $all-public [$member "--all-public" $argv]]
+  [= $work-tok [?for [in $a $argv] [where [$strings:starts-with $a "work="]] [yield $a]]]
+  [= $work [?if [= [$count $work-tok] 0]
+             [then [$io:temp-dir "cx-strip-attr-"]]
+             [else [$strings:slice [$first $work-tok] 6 [$strings:length [$first $work-tok]]]]]]
+  [= $source-toks [?for [in $a $argv] [where [$strings:starts-with $a "source:"]] [yield $a]]]
+  [= $overrides [?for [in $t $source-toks]
+                  [= $body [$strings:slice $t 8 [$strings:length $t]]]
+                  [= $kv [$strings:split-limit $body "=" 2]]
+                  [where [= [$count $kv] 2]]
+                  [= $kn [$nth $kv 1]]
+                  [= $ks [$nth $kv 2]]
+                  [yield [src name=$kn source=$ks]]]]
+  [= $flag [?fn ($a) [or [= $a "--dry-run"] [or [= $a "--all-public"]
+              [or [$strings:starts-with $a "work="] [$strings:starts-with $a "source:"]]]]]]
+  [= $explicit [?for [in $a $argv] [where [not [$flag $a]]] [yield $a]]]
+  [= $names [?if $all-public [then [$all-public-names]] [else $explicit]]]
+  [= $_hdr [$print-header $names $work $dry]]
+  [= $results [?for [in $n $names] [yield [$strip-one $n $work $overrides $dry]]]]
+  [= $maps [?if $dry [then ()] [else [?for [in $n $names] [yield [$read-map [$cat ($work, "/", $n, ".map")]]]]]]]
+  [= $all-map ([?for [in $ms $maps] [in $p $ms] [yield $p]])]
+  [= $_repins [?if $dry [then ()] [else [$print-repins $names $work $all-map]]]]
+  [= $bad [?for [in $r $results] [where [not $r@clean]] [yield $r]]]
+  [$print-verdict $bad [$string [$count $results]] $dry]]
