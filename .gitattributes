@@ -1,7 +1,7 @@
 # Linguist classification marks (#954): keep GitHub's language bar truthful
 # where it CAN be. CX itself is not in Linguist's registry yet — every
 # .cx/.cxd/.cxs byte is invisible to the bar until the staged submission in
-# tooling/linguist/ clears Linguist's adoption criteria; the README's CX
+# cx-tooling's tooling/linguist/ clears Linguist's adoption criteria; the README's CX
 # badge (scripts/lang_stats.cx) is the self-reported number meanwhile.
 third_party/** linguist-vendored
 docs/** linguist-generated
@@ -21,7 +21,7 @@ lang/_archived/** linguist-vendored
 *.v linguist-language=V
 
 # CX's own extensions, staged AHEAD of the Linguist submission in
-# tooling/linguist/. These three lines are INERT until CX is merged into
+# cx-tooling's tooling/linguist/. These three lines are INERT until CX is merged into
 # their languages.yml: an unknown name in linguist-language is dropped and
 # normal detection resumes (lazy_blob.rb falls through to `super` when
 # `Language.find_by_alias` returns nil), and Linguist's override docs state

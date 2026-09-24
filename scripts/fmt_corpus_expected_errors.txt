@@ -21,18 +21,10 @@
 # this tree's tracked files, so their rows retire here; cx-core-data's own lint
 # excludes them for the same reason.
 
-# LSP diagnostic inputs — deliberately ill-formed, for the language server to
-# report on. Formatting them is not a thing anyone asks for.
-#   cx-err:CXER0100: [?modify] action '[set-attr …]' requires an element-step focus path
-tooling/lsp/tests/cxls004_modify_attr_mismatch.cx
-#   cx-err:CXER0100: unexpected token ']' opening a CXPath predicate body
-tooling/lsp/tests/cxpath_completion_predicate.cx
-
-# NOT deliberately invalid — a REAL formatter gap, and the reason this file is
-# a roster rather than a budget. `0o17` at line 39 is an OCTAL integer literal
-# the temporal-literal scanner claims, the same family as #1347's hex and
-# underscore cases. When #1347 reaches it this entry goes STALE and the gate
-# will say so; delete the line in that landing.
-#   cx-err:CXER0100: invalid temporal literal '0o17' (duration units ns|us|ms|s|m|h|d|w;
-#   period units mo|y) at line 39
-tooling/vscode/test/grammar/basic.cx
+# tooling/lsp/tests/{cxls004_modify_attr_mismatch,cxpath_completion_predicate}.cx --
+# deliberately ill-formed LSP diagnostic inputs -- and tooling/vscode/test/grammar/basic.cx
+# -- the real `0o17` formatter gap (#1347's family) -- left this tree with the editor
+# surface for cx-tooling's pinned checkout (RULED: RS-12, D59a). The sweep covers this
+# tree's tracked files, so their rows retire here; cx-tooling's lint excludes the two
+# LSP inputs and the grammar sample for the same reason. The #1347 gap is still real
+# and still reproduces there; this roster no longer carries a file that shows it.

@@ -80,13 +80,6 @@ lang/_archived/**/build/
 lang/_archived/**/.build/
 lang/_archived/**/node_modules/
 
-# Editor tooling build artifacts
-tooling/lsp/node_modules/
-tooling/lsp/out/
-tooling/vscode/node_modules/
-tooling/vscode/out/
-tooling/vscode/*.vsix
-
 # Playground diagram-validity gate (#992) — dev-only jsdom, installed by the
 # devbox init hook with `npm ci`. The manifest AND the lockfile are committed —
 # `npm ci` refuses to run without a lockfile, and until 2026-09-21 the lockfile

@@ -63,7 +63,7 @@ endif
 docs: $(DOCS_CX_DEP)
 	@CX_BIN="$(DOCS_CX_BIN)" $(DOCS_CX_BIN) $(DOCS_CAPS) $(DOCS_GEN)/primer_build.cx
 	# #954: refresh the README's self-reported CX-share badge alongside the
-	# docs layer (Linguist can't count CX until tooling/linguist/ upstreams).
+	# docs layer (Linguist can't count CX until cx-tooling's tooling/linguist/ upstreams).
 	@$(DOCS_CX_BIN) --allow-read --allow-write --allow-subprocess scripts/lang_stats.cx
 
 ## docs-check   DRIFT GATE. Regenerates the layer without writing and fails if

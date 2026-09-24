@@ -40,8 +40,10 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-COMPONENT="tooling/web/cx-diagram.js"
-DEMO="tooling/web/demo.html"
+# The component and its demo page left with cx-tooling (RULED: RS-12, D59a) and are
+# read from its pinned checkout; the vendored mermaid they must match stays here.
+COMPONENT="deps/cx-tooling/tooling/web/cx-diagram.js"
+DEMO="deps/cx-tooling/tooling/web/demo.html"
 VENDOR_SRC="scripts/gen_guide/playground/vendor/mermaid.min.js"
 VENDOR_LICENSE_SRC="scripts/gen_guide/playground/vendor/LICENSE-mermaid.txt"
 STAGE="dist/web-component-preview"

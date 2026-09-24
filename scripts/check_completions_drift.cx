@@ -89,9 +89,11 @@
   # I4 (#651/#516): the platform-profile verbs (store/fabric daemons +
   # operator helpers) live in their own `-d cx_platform`-gated file.
   [= $platform-v "vcx/cmd/platform_verbs_d_cx_platform.v"]
-  [= $bash-f "tooling/completions/cx.bash"]
-  [= $zsh-f  "tooling/completions/_cx.zsh"]
-  [= $fish-f "tooling/completions/cx.fish"]
+  # The completions left with cx-tooling and are read from its pinned checkout;
+  # this step stays here because it grades THIS tree's verb table (RULED: RS-12, D59a).
+  [= $bash-f "deps/cx-tooling/tooling/completions/cx.bash"]
+  [= $zsh-f  "deps/cx-tooling/tooling/completions/_cx.zsh"]
+  [= $fish-f "deps/cx-tooling/tooling/completions/cx.fish"]
 
   # Fabricated diagram surface (#423 item 1) — must never reappear.
   [= $diagram-forbidden ("graphviz", "--output=", "--depth=")]

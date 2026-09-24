@@ -71,7 +71,14 @@
        the ABSENT policy is the EMPTY policy, and nothing here downgrades it.
        The row's reason text is in this file's history. ]
     [module name=crypto   gate=enforced reason='full §3 impl complete + spec-faithful (ENFORCED, all cases green); crypto-015/028 fixtures corrected to the spec [?fallback PRIMARY [recover-with SECONDARY]] form (§10.2.4; the 2-arg shorthand is not grammar, SPEC-FINDINGS AD); 18 capability-denial cases enforced (random cap-guard on the 4 entropy generators, SPEC-FINDINGS M/N); §3.8/§3.10 JWT amendment landed — rsa-verify (RSASSA-PKCS1-v1_5) + ecdsa-verify (P-256 JOSE raw r‖s) over math.big + fail-closed jwt-verify/jwks-parse/claim/jwk-by-kid, cross-validated against OpenSSL vectors (crypto-062..088); jwks-fetch net-gated (live transport pending like net/http, denial case enforced)']
-    [module name=diagram  gate=enforced reason='BOTH diagram renderers in pure CX (#758 waves 1-2, #889 wave 3). The 18 cases here ARE the public fn-doc examples, pinned verbatim by scripts/gen_guide/stdlib_docs_check.cx; render-svg/render-png run WITHOUT the subprocess capability, so they exercise the dot-less envelope contract. The byte-level pins are stronger and live in V: diagram_mermaid_golden (120), diagram_vector_golden, code_diagram_golden (264)']
+    [; diagram RETIRED (RULED: RS-12, D59a; #1591 item K3) -- conformance/stdlib/diagram.cxd left
+       with the extraction of cx-tooling; the module's V half (vcx/code/stdlib_diagram.v,
+       diagram.v, diagram_cx_seam.v, code_diagram.v) stays cx-private's (libcx's C ABI exports it),
+       and its golden pins (diagram_mermaid_golden, diagram_vector_golden, code_diagram_golden) stay
+       with it, but its CX-level surface (stdlib/diagram.cx, the spec and the corpus) leaves whole,
+       ft's precedent. `cx corpus` grades the moved file with no gates.cxd beside it -- the ABSENT
+       policy is the EMPTY policy, and nothing here downgrades it. The row's reason text is in this
+       file's history. ]
     [module name=csv      gate=enforced reason='RFC-4180 impl complete (ENFORCED, all cases green); csv-032 asserts CRLF emission via strings:contains; csv-013 unblocked by the iterate() array-atomization core fix ($nth/$arr[N] now expand __cx_arr__ transparently per code.md §6.6, SPEC-FINDINGS AF); csv-007 comma quote-convention re-derived via real render_value']
     [; db RETIRED (RULED: RS-12, RS-8; #1591 item K3) -- conformance/platform/db.cxd left with
        the extraction of cx-platform-db, as sso's and flow's did, and this suite resolves a

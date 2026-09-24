@@ -43,13 +43,16 @@
 [?lib 'cx-stdlib/re'      as=re]
 [?lib 'cx-stdlib/strings' as=strings]
 
-[?const REGISTER 'tooling/EDITOR_SURFACE_PARITY.md']
+[; the register and the three editor surfaces left with cx-tooling and are read from its
+   pinned checkout; the step stays here because it grades THIS tree's lexer and LSP
+   (RULED: RS-12, D59a). ]
+[?const REGISTER 'deps/cx-tooling/tooling/EDITOR_SURFACE_PARITY.md']
 [; vcx/cx is cx-core-data's, read from its pinned checkout (RULED: RS-7, RS-12). ]
 [?const TOKENS   'deps/cx-core-data/vcx/cx/program_tokens.v']
 [?const LSP      'vcx/cmd/lsp_content.v']
-[?const TMLANG   'tooling/vscode/syntaxes/cx.tmLanguage.json']
-[?const SNIPPETS 'tooling/vscode/snippets/cx.json']
-[?const VIM      'tooling/neovim/syntax/cx.vim']
+[?const TMLANG   'deps/cx-tooling/tooling/vscode/syntaxes/cx.tmLanguage.json']
+[?const SNIPPETS 'deps/cx-tooling/tooling/vscode/snippets/cx.json']
+[?const VIM      'deps/cx-tooling/tooling/neovim/syntax/cx.vim']
 
 # `cx` is the real [?cx …] self-host head and is not in directive_names, so it
 # is an allowed non-registry key. `include` is NOT exempt: the completion set

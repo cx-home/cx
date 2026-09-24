@@ -77,7 +77,6 @@
 # Whole files allowed to carry release literals as legitimate history.
 [?const STRAY-ALLOW-FILES (
   'docs-src/canonical/sections/10-migration.cxd',
-  'tooling/lsp/diagnostics.md',
   'ledger/partition_I5_audit.md')]
 
 [?def excluded scope=public ($p)
@@ -178,12 +177,12 @@
         # bindings left cx-private whole as cx-home/cx-binding-{v,rust,python,go}
         # and each now stamps its own manifest in its own repository — this
         # tree no longer carries a checkout to check. vcx/v.mod (the V FORK's
-        # own manifest, not a binding's) stays.
+        # own manifest, not a binding's) stays. tooling/vscode/package{,-lock}.json
+        # rows RETIRED the same way (RULED: RS-12, D59a): the VS Code extension left
+        # with cx-tooling, which stamps its own manifest.
         [= $manifest-fails [?for [in $m (
             [mf path='cx.pc.in'                          rx="(?m)^Version:[ \\t]*([^ \\t\\n]+)[ \\t]*$"],
-            [mf path='vcx/v.mod'                         rx="version:\\s*'([^']+)'"],
-            [mf path='tooling/vscode/package.json'       rx="(?m)^\\s*\"version\"\\s*:\\s*\"([^\"]+)\""],
-            [mf path='tooling/vscode/package-lock.json'  rx="(?m)^\\s*\"version\"\\s*:\\s*\"([^\"]+)\""])]
+            [mf path='vcx/v.mod'                         rx="version:\\s*'([^']+)'"])]
           [= $f [$check-manifest [$string $m@path] [$string $m@rx] $version]]
           [where [not [$empty $f]]]
           [yield $f]]]

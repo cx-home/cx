@@ -90,7 +90,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [repo name=cx-binding-ruby group=binding ring=none ships=archived about='archived at the ABI it was frozen with; lang/_archived/README.md names the version']
   [repo name=cx-registry group=ecosystem ring=none ships=none about='the package index: the store, publisher keys, the publish program']
   [repo name=cx-decisions group=ecosystem ring=none ships=none about='the ledger, the process specs, the standing rules, design texts']
-  [repo name=cx-tooling group=ecosystem ring=none ships=editor about='vscode, neovim, tree-sitter, completions, syntax, the installer, diagram']
+  [repo name=cx-tooling group=ecosystem ring=none ships=editor at=9ec93d70e464b90593bfaf24aae7752eaf3fefb4 about='vscode, neovim, tree-sitter, completions, syntax, the installer, diagram' why='PARTLY EXTRACTED (RULED: RS-12, RS-8, D59a; #1591 item K3): the editor surface under tooling/, the tree-sitter spec, scripts/retry_nvim_treesitter_pr.sh, and cx-stdlib/diagram\'s CX-level surface (stdlib/diagram.cx, its spec, its corpus) and the web component left for cx-tooling, which deps.cxd pins at the sha at= records -- NOT YET PUSHED to cx-home/cx-tooling (component-repo pushes are the integrator\'s, RS-8; the commit is prepared in the mover\'s clone and named by sha in _gate_evidence/pipeline_xtooling/RESULTS.md). registry/modules.cxd\'s diagram row names the pinned checkout. What remains below is the diagram V half with its V tests, its goldens and its own corpus, conformance/code_diagram.cxd (cx corpus refuses it; its one grader is this tree\'s test-code-diagram): libcx\'s C ABI exports it, a permanent consequence of where the ABI lives rather than a wall a hook removes, so the row takes status=extracted when the owner re-allocates it (the LETTER in that RESULTS.md) or the ABI changes. D59a keeps in cx-private the four scripts a step of this tree runs (check_completions_drift, check_editor_surface_parity, check_editor_distribution, check_code_diagram_fixtures); the three editor checks read the editor files from deps/cx-tooling/']
 
   [; ── what the data format's extraction could not release (RULED: D68a): cx-core-data is
      status=extracted and owns no path here; these rules re-allocate the files it was
@@ -134,19 +134,22 @@ the rule carries a `why=`. The recurring reasons, once:
      deps/cx-platform-store/ for spec=/corpus=/source=. Its V dispatch half did not: the
      rule below stays, unchanged, because the file does not leave (D71a). ]
   [path prefix='vcx/code/stdlib_ft' repo=cx-platform-store why='ft\'s V dispatch half: code\'s stdlib_dispatch.v calls ft_stdlib_builtin() as a same-module V function call, not an import -- it cannot leave without stdlib_dispatch.v importing and qualifying a second module (D71a, the mail leave step\'s LETTER shape); moves through the registration hook once impl/cx-F-dispatch-registry merges']
-  [path exact='stdlib/diagram.cx' repo=cx-tooling why='developer tooling under active redesign (spec/02-working/diagram_renderer_cx.md)']
-  [path exact='spec/03-approved/stdlib/diagram.md' repo=cx-tooling]
-  [path exact='conformance/stdlib/diagram.cxd' repo=cx-tooling]
-  [path exact='conformance/code_diagram.cxd' repo=cx-tooling]
-  [path prefix='vcx/code/stdlib_diagram' repo=cx-tooling]
-  [path prefix='vcx/code/diagram' repo=cx-tooling]
-  [path prefix='vcx/code/code_diagram' repo=cx-tooling]
-  [path prefix='vcx/tests/diagram_umbrella' repo=cx-tooling]
-  [path prefix='vcx/tests/code_diagram_roundtrip' repo=cx-tooling]
-  [path prefix='vcx/tests/testdata/code_diagram_golden' repo=cx-tooling]
-  [path prefix='vcx/tests/testdata/diagram_' repo=cx-tooling]
-  [path exact='scripts/check_code_diagram_fixtures.cx' repo=cx-tooling]
-  [path prefix='tooling/web/' repo=cx-tooling why='the browser half of the same product: the <cx-diagram> reference web component, its demo page and the bracket-highlighting comparison. Nothing under it is a ux module surface, and no target reads it (the ux extraction prep, F-U2)']
+  [; stdlib/diagram.cx, spec/03-approved/stdlib/diagram.md, conformance/stdlib/diagram.cxd and
+     tooling/web/ RETIRED (RULED: RS-12, D59a; #1591 item K3) -- cx-stdlib/diagram's CX-level
+     surface and the web component left with the extraction of cx-tooling; registry/modules.cxd's
+     diagram row names deps/cx-tooling/ for spec=/corpus=/source= and vcx/code/stdlib_bundle.v
+     embeds the pinned source (ft's shape under the store leave).
+     scripts/check_code_diagram_fixtures.cx is no longer claimed here: it is the step
+     test-code-diagram runs in THIS tree, so it falls to the scripts/ rule (repo=cx). The V half
+     below does not leave, named in _gate_evidence/pipeline_xtooling/RESULTS.md. ]
+  [path prefix='vcx/code/stdlib_diagram' repo=cx-tooling why='the diagram V half does not leave with the CX surface: libcx exports cx_code_diagram, cx_code_diagram_with_level and cx_code_diagram_with_view_level (vcx/code/cabi.v, include/cx.h, scripts/wasm/cxlib.js), code\'s api.v renders `cx diagram` through render_diagram, and `cx code-diagram` (vcx/cmd/diagram.v) calls code_diagram_with_view_level -- same-module V calls, not a registration a hook can carry (D71a\'s table: blocked). Moving it changes the C ABI; a LETTER in the leave step\'s RESULTS.md']
+  [path prefix='vcx/code/diagram' repo=cx-tooling why='the diagram V half: see vcx/code/stdlib_diagram above']
+  [path prefix='vcx/code/code_diagram' repo=cx-tooling why='the diagram V half: see vcx/code/stdlib_diagram above']
+  [path prefix='vcx/tests/diagram_umbrella' repo=cx-tooling why='compiles against module code and grades the V half above; stays with it']
+  [path prefix='vcx/tests/code_diagram_roundtrip' repo=cx-tooling why='compiles against module code and grades the V half above; stays with it']
+  [path prefix='vcx/tests/testdata/code_diagram_golden' repo=cx-tooling why='the byte-level pins diagram_umbrella_test.v compares the V half against; stays with it']
+  [path prefix='vcx/tests/testdata/diagram_' repo=cx-tooling why='the byte-level pins diagram_umbrella_test.v compares the V half against; stays with it']
+  [path exact='conformance/code_diagram.cxd' repo=cx-tooling why='the V half\'s own corpus: it grades `cx code-diagram` and `cx code-tree` (vcx/cmd over code_diagram.v), and `cx corpus` refuses it (all 52 cases are of a kind no document lane grades, exit 2), so its one grader is test-code-diagram, scripts/check_code_diagram_fixtures.cx against THIS tree\'s binary -- in cx-tooling nothing would grade it. It stays with the V half']
 
   [; ── modules that ENTER Ring 1 by the membership test (import nothing, no socket) ── ]
   [path prefix='vcx/code/stdlib_did' repo=cx-core-code why='pure; did:web resolution split off to identity (RULED: RS-14)']
@@ -336,7 +339,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='spec/03-approved/core/delivery.md' repo=cx-core-code]
   [path exact='spec/03-approved/misc/cli.md' repo=cx-core-code]
   [path exact='spec/03-approved/misc/debug.md' repo=cx-core-code]
-  [path exact='spec/03-approved/modules/tree-sitter.md' repo=cx-tooling]
+  [; spec/03-approved/modules/tree-sitter.md RETIRED (RULED: RS-12, D59a): it left with cx-tooling, beside the grammar it specifies. ]
   [path exact='cx.pc.in' repo=cx-core-code why='pkg-config for libcx']
 
   [; ── bindings ─────────────────────────────────────────────────────── ]
@@ -375,11 +378,16 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='AGENTS.md' repo=cx why='read from a fresh clone of the front door; each repo carries a short one pointing here']
   [path exact='CLAUDE.md' repo=cx]
   [path prefix='docs/internal/' repo=cx-decisions]
-  [path prefix='tooling/' repo=cx-tooling]
-  [path exact='scripts/check_editor_distribution.cx' repo=cx-tooling]
-  [path exact='scripts/check_editor_surface_parity.cx' repo=cx-tooling]
-  [path exact='scripts/check_completions_drift.cx' repo=cx-tooling]
-  [path exact='scripts/retry_nvim_treesitter_pr.sh' repo=cx-tooling]
+  [; tooling/ (but tooling/cxfabric/ and tooling/binding_native_status.json, claimed above)
+     and scripts/retry_nvim_treesitter_pr.sh RETIRED (RULED: RS-12, D59a; #1591 item K3):
+     the editor surface -- vscode, neovim, tree-sitter, completions, syntax, lsp configs,
+     linguist, the editor installer, the repo template, the web component -- left with the
+     extraction of cx-tooling. Three scripts it was allotted do NOT leave, because a step of
+     THIS tree runs each (D59a: cx-private keeps the orchestration): check_completions_drift.cx
+     (check-completions-drift reads vcx/cmd's verb table), check_editor_surface_parity.cx
+     (check-editor-surface-parity reads the lexer and the LSP) and check_editor_distribution.cx
+     (a tools/release-verify.sh row). Their rules are retired, so they fall to the scripts/
+     rule below (repo=cx); each reads the editor files from deps/cx-tooling/. ]
 
   [; ── the distribution: build, release, site, evidence, everything else ── ]
   [path prefix='scripts/' repo=cx why='the gate, pipeline, release and generator machinery of the whole; each extraction carries its own steps out']

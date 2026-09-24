@@ -1200,7 +1200,7 @@ store-session-dep-gate: build-vcx
 # what makes `deps/`. A `deps-sync: build-vcx` edge is therefore a cycle, and
 # it would fail in the one situation the target exists for: a tree that has not
 # synced yet. So these two resolve a cx the way a COMPONENT repository's gate
-# does (tooling/repo-template/Makefile, `cx-present`): the one this tree built
+# does (cx-tooling's tooling/repo-template/Makefile, `cx-present`): the one this tree built
 # if it is there, otherwise the one on PATH, and a named refusal if there is
 # neither. `cx deps sync` reads a document and runs `git`; any released cx can
 # do it, and that is the bootstrap.
@@ -1556,7 +1556,7 @@ release-verify:
 # RESULTS.md's LETTER for what (if anything) now covers per-binding testing.
 # The six archived bindings (TypeScript / Java / Kotlin / C# / Ruby / Swift)
 # moved to lang/_archived/ in v0.8.0 and were never wired into `test`.
-TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-tmlanguage-sync check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
+TEST_TARGETS := check-vcache-soundness check-build-failure-classifier test-vcx-timing check-conformance-coverage check-contract-revision check-shim-archives abi-c-test check-v-fork check-portable-links check-serial-retry-rosters check-fixture-shard-manifest check-consolidation-manifests test-vcx-suite test-vcx-code test-vcx-cmd test-vcx-cx test-vcx-conform test-vcx-columnar test-vcx-sqlite check-prod-build check-no-legacy-try check-pipefail-pipes check-exec-redirect check-exit-status-probe check-bench-isolation check-no-infix-range check-no-cxl-token check-no-consumer-terms check-version-consistency check-effect-alignment check-null-absence-conflation check-docs-tier1-guardrail check-no-adr-citations check-composition-seams check-no-stub-impl check-xap-dist-absences check-completions-drift check-editor-surface-parity guide-check guide-render-gate directive-docs-check verify-doc-blocks verify-doc-links verify-examples verify-playground-examples docs-check primer-platform-check ring-import-gate gates-manifest-gate ring-tag-gate cxer-registry-gate spec-freeze-gate test-extraction-gate abi-gc-gate libcx-abi-gate test-profile-gate check-code-spec-consistency check-code-fixtures reader-parity stdlib-catalog-gate placement-gate repos-allocation-gate product-import-gate test-deps-pins test-bundle-sources test-docs-fragment test-migrate-namespace store-session-dep-gate flow-vocabulary-gate flow-dogfood-gate test-flow-umbrella address-baseline-gate tools-export-gate test-code-diagram test-playground-mermaid test-playground-nav test-oriel-lane test-agent-real-lanes test-connector-real-lanes test-sso-interop-lane test-xpath-parity-cx corpus-audit repr-guard check-inmodule-test-roster check-build-input-roster check-selection-manifest fmt-sweep-gate test-playground-wasm-traps ledger-index-check check-profile-gate-selection check-verification-budget check-verification-budget-selftest check-storm-keep-going check-verification-timings
 
 # ── test-changed (#700, ruled 1a 2026-08-09) — the step-input skip manifest ──
 # THE DEVELOPMENT-LOOP ENTRY POINT. Runs only the TEST_TARGETS steps whose
@@ -2281,7 +2281,9 @@ check-xap-dist-absences:
 	@"$(CX_BIN)" --allow-read --allow-write scripts/check_xap_dist_absences.cx
 
 # ── Shell-completion drift gate (#423) — the bash/zsh/fish completions in
-# tooling/completions/ must mention every subcommand in the vcx/cmd/main.v
+# cx-tooling's tooling/completions/ (read from deps/cx-tooling/, the pin: they left
+# with cx-tooling and the step stays here because it grades THIS tree's verb
+# table, RULED: RS-12, D59a) must mention every subcommand in the vcx/cmd/main.v
 # dispatch table (and none it doesn't have), and the `cx diagram` flag surface
 # must match vcx/cmd/diagram.v (--format=mermaid|svg|png + -o; the fabricated
 # --format=graphviz / --output= / --depth= surface must never reappear).
@@ -2290,21 +2292,16 @@ check-completions-drift: CX_BIN ?= $(CURDIR)/vcx/target/cx
 check-completions-drift:
 	@"$(CX_BIN)" --allow-read --allow-write scripts/check_completions_drift.cx
 
-# ── TextMate grammar single-sourcing gate (#423) — the canonical grammar is
-# tooling/vscode/syntaxes/cx.tmLanguage.json (scope-tested via
-# `npm run test:grammar`); tooling/syntax/cx.tmLanguage.json is a derived
-# byte-identical copy for path-stable consumers (GitHub web view / Shiki /
-# docs-site configs). Regenerate with `make sync-tmlanguage`.
-.PHONY: check-tmlanguage-sync
-check-tmlanguage-sync:
-	@cmp -s tooling/vscode/syntaxes/cx.tmLanguage.json tooling/syntax/cx.tmLanguage.json \
-		|| { echo "check-tmlanguage-sync: tooling/syntax/cx.tmLanguage.json has drifted from the canonical tooling/vscode/syntaxes/cx.tmLanguage.json — run 'make sync-tmlanguage'"; exit 1; }
-	@echo "check-tmlanguage-sync: OK — tooling/syntax copy is byte-identical to the canonical vscode grammar"
+# ── check-tmlanguage-sync / sync-tmlanguage (#423) RETIRED here (RULED: RS-12, D59a):
+# both TextMate grammar copies left with cx-tooling, and the byte-identity check
+# between them is that repository's own `make check` now -- it reads nothing of
+# this tree.
 
 # check-editor-surface-parity (#1171) — the editor surfaces vs the directive
 # registry, held by a checked-in register that may only SHRINK.
 #
-# `tooling/EDITOR_SURFACE_PARITY.md` carries one row per registry directive and
+# cx-tooling's `tooling/EDITOR_SURFACE_PARITY.md` (read with the three editor
+# surfaces from deps/cx-tooling/, RULED: RS-12, D59a) carries one row per registry directive and
 # one cell per surface column, each `yes` or `defer: #1171`. The gate re-derives
 # every column from the surface itself and fails on ANY disagreement in BOTH
 # directions — a `yes` the surface lacks, AND coverage the register still
@@ -2322,11 +2319,6 @@ check-tmlanguage-sync:
 .PHONY: check-editor-surface-parity
 check-editor-surface-parity: build-vcx-dev
 	@vcx/target/cx-dev --allow-read --allow-write scripts/check_editor_surface_parity.cx
-
-.PHONY: sync-tmlanguage
-sync-tmlanguage:
-	@cp tooling/vscode/syntaxes/cx.tmLanguage.json tooling/syntax/cx.tmLanguage.json
-	@echo "sync-tmlanguage: tooling/syntax/cx.tmLanguage.json refreshed from tooling/vscode/syntaxes/"
 
 # Stage-1 registry publish (distribution spec §4.1 — publish-by-PR): seal +
 # sign + alias a package directory into registry/store, then re-verify.
@@ -3831,11 +3823,13 @@ cut-release:
 #
 # Since v0.7.0 the language server is built into the `cx` binary itself —
 # `cx lsp` speaks JSON-RPC 2.0 over stdio (see vcx/cmd/lsp.v and
-# tooling/lsp/README.md). Editor integration is `cx` on $PATH plus the
-# example configs at tooling/lsp/{vscode,neovim,helix}.example.*.
+# cx-tooling's tooling/lsp/README.md). Editor integration is `cx` on $PATH plus
+# cx-tooling's example configs at tooling/lsp/{vscode,neovim,helix}.example.*.
 #
 # `make build-vscode` produces a publishable .vsix wrapping the VS Code
-# extension at tooling/vscode/. The .vsix bundles the TextMate grammar,
+# extension at cx-tooling's tooling/vscode/, built in its pinned checkout
+# (deps/cx-tooling/; the extension left with cx-tooling, RULED: RS-12, D59a).
+# The .vsix bundles the TextMate grammar,
 # snippets, language configuration, and the esbuild-bundled extension
 # (LSP-client glue compiled into out/extension.js); it does NOT bundle
 # a `cx` binary — users install that separately. `npm run package`
@@ -3843,7 +3837,7 @@ cut-release:
 # vscode:prepublish. Needs node >= 18.13.
 
 build-vscode:
-	cd tooling/vscode && npm ci --silent && npm run package
+	cd deps/cx-tooling/tooling/vscode && npm ci --silent && npm run package
 
 # ── Benchmark ──────────────────────────────────────────────────────────────────
 
@@ -4205,10 +4199,10 @@ fmt-sweep-timed: build-vcx
 # total drops below the budget while the step stays green, and a genuinely new
 # error is invisible until it is the sixth. The roster reds BOTH ways — a file
 # that errors and is not listed, and a listed file that has STOPPED erroring.
-# The second is the half a count cannot express, and it is load-bearing here:
-# `tooling/vscode/test/grammar/basic.cx` is on the roster for a real
-# #1347-family gap, so when that lands this step says the line must go. Same
-# shape as the #1350 golden MANIFEST (`99c25169d`).
+# The second is the half a count cannot express, and it is load-bearing: a
+# roster entry for a real gap (`tooling/vscode/test/grammar/basic.cx`, #1347's
+# family, until it left with cx-tooling, RULED: RS-12) makes this step say the
+# line must go when the gap is fixed. Same shape as the #1350 golden MANIFEST (`99c25169d`).
 #
 # DECLINED stays a count, ratcheted at the committed census, and it is a
 # ONE-WAY ratchet by convention: whoever lowers it edits the number down in the
@@ -4627,7 +4621,9 @@ test-sso-interop-lane: build-vcx
 
 # ── <cx-diagram> web-component offline step (#1015) ────────────────────────────
 # Sibling of the playground's no-CDN gate (#1007), for the OTHER surface that
-# was still script-loading mermaid@10 from jsDelivr: tooling/web/cx-diagram.js.
+# was still script-loading mermaid@10 from jsDelivr: tooling/web/cx-diagram.js,
+# cx-tooling's since its leave and staged from its pinned checkout under deps/
+# (RULED: RS-12, D59a) beside the one vendored mermaid this tree keeps.
 #
 # ONE ARTIFACT, NOT TWO PINS — the same discipline #1007 set. The repo keeps a
 # single vendored mermaid (scripts/gen_guide/playground/vendor/, pin of record in
@@ -4644,8 +4640,8 @@ stage-web-component:
 	@echo "[stage-web-component] staging dist/web-component-preview/"
 	@rm -rf dist/web-component-preview
 	@mkdir -p dist/web-component-preview/vendor
-	@cp tooling/web/cx-diagram.js dist/web-component-preview/
-	@cp tooling/web/demo.html dist/web-component-preview/
+	@cp deps/cx-tooling/tooling/web/cx-diagram.js dist/web-component-preview/
+	@cp deps/cx-tooling/tooling/web/demo.html dist/web-component-preview/
 	@cp scripts/gen_guide/playground/vendor/mermaid.min.js dist/web-component-preview/vendor/
 	@cp scripts/gen_guide/playground/vendor/LICENSE-mermaid.txt dist/web-component-preview/vendor/
 	@echo "[stage-web-component] docroot ready — open dist/web-component-preview/demo.html"

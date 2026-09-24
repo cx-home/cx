@@ -40,7 +40,8 @@
 [?def cry impure ($s) [$io:write-line [$env:stderr] $s]]
 [?def cat scope=public ($parts) [$strings:join $parts '']]
 
-[?const REGISTER 'tooling/tree-sitter-cx/REGISTRY.md']
+# The register left with cx-tooling and is read from its pinned checkout (RULED: RS-12, D59a).
+[?const REGISTER 'deps/cx-tooling/tooling/tree-sitter-cx/REGISTRY.md']
 
 # cell: trim a markdown table cell.
 [?def cell scope=public ($s) [$strings:trim $s]]
@@ -110,5 +111,5 @@
                         ' of ', [$string [$count $rows]],
                         ' external submission(s) unaccounted for at ', $ver, ':')]],
            [?for [in $b $bad] [yield [$cry $b]]],
-           [$cry [$cat ('  Edit the submission-status table in ', REGISTER, '.')]])]]]
+           [$cry [$cat ('  Edit the submission-status table in cx-tooling (', REGISTER, ' is its pinned checkout), then move the deps.cxd pin.')]])]]]
   [?if [= [$count $bad] 0] [then [$env:exit 0]] [else [$env:exit 1]]]]
