@@ -1,6 +1,6 @@
-# RULED: FW-1 — every named landing of `flow.md` lands in v0.18, and end-user automation authoring (#1498) with it (owner, 2026-09-24, in session on dev2)
+# RULED: FW-1, FW-2 — every named landing of `flow.md` lands in v0.18, end-user automation authoring (#1498) with it, and the v0.18.0 tag waits for them while the repo split lands (owner, 2026-09-24, in session on dev2)
 
-**Status: RULED (owner, 2026-09-24, three letters in one session).** The owner asked whether
+**Status: RULED (owner, 2026-09-24, four letters in one session; FW-2 added the same evening).** The owner asked whether
 `cx flow` is architected to orchestrate heterogeneous internal and external systems as one
 control plane, from web UX flows to workflows across hybrid clouds. The answer from the spec
 (`deps/cx-platform-flow/spec/03-approved/platform/flow.md` §1.2, §4.6, §4.15, §4.23, §4.24,
@@ -31,6 +31,7 @@ that already state it.
 | Id | Decision |
 |---|---|
 | **FW-1** | **(owner, letters (a), (a))** Every named landing of `flow.md` lands in **v0.18**, under INT-17's default-in rule, because the cx ecosystem's CI/CD runs on flow with this release. Filed post-split in the repositories that own them (RS-12; a component repository's `LABELS.md` carries no release label, so the title carries `v0.18`): **W3** the performer axis — `by=:principal` / `:agent` / `:peer`, offers, ladders, `quorum=`, `[notify]`, `claim` / `release` / `reassign` (cx-home/cx-platform-flow#3; RULED: WF-4, WF-12, WF-21, WF-23, 1265-PW-1..3; first in the ladder); **W4** `fleet` and the pure stall predicate (cx-home/cx-platform-flow#4; WF-7); **W5** `migrate`, the `[flow-lineage]` claim and the dry-run classification (cx-home/cx-platform-flow#5; WF-6); **W6** the cross-company profile, the signed `step-ack` and the XSP `flow` token (cx-home/cx-platform-flow#6; WF-8); the **operator acts** `cancel` / `pause` / `resume` / `skip` / `retry-now` and `resolve` (cx-home/cx-platform-flow#7; WF-19, WF-25, 1265-PB-8); **vocabulary round 2**'s three words still refused by landing, `until`, `flow=`, `calendar=` (cx-home/cx-platform-flow#8; WF-18, WF-22, WF-24); the **XAP host embedding the runner** — the `[on …]` row admitted into the deployment document, the host-side courier and `rearm` loop, byte-identical with `cx flow serve` (cx-home/cx-platform-xap#1; the one landing that still needs its own ruling before code, WF-28b, WF-29 — spec first, the owner reads); and **#1498** end-user automation authoring — "when X then Y" from the surface through the studio and `cx xap scaffold`, published as a versioned feature — **reopened into v0.18**, last in Lane 2 behind cx-home/cx-platform-xap#1, W3, vocabulary round 2 and SD-1. Recommended order (integrator, under INT-17 — an order, never membership): W3 → vocabulary round 2 → the operator acts → W4 → W5 → W6, the host issue on its ruling, #1498 last. Board: cx-home/cx-private#1354, Lane 2 addenda of 2026-09-24. |
+| **FW-2** | **(owner, letter (a), the same session, on the collision between FW-1 and D85)** The repo split and the v0.18.0 cut are DECOUPLED. The split's critical path on #1591 (K9r → K7a → K7b → the forced push of `cx-home/cx` → K10) lands as planned, tomorrow if it can; **the `v0.18.0` tag waits for FW-1's issues** — cx-home/cx-platform-flow#3–#8, cx-home/cx-platform-xap#1 and #1498 — because the owner ruled them into v0.18 and a tag that shipped without them would make FW-1's "in v0.18" a point release's promise. D85 (#1591) is amended accordingly: its letter (a) still governs the split's own gate — `cx-home/cx` pushed, `make test` green, reported on the board, no wait for a word — and the TAG is struck from that trigger; the tag is the cut's last act, run when FW-1's issues are closed and the board reports it. K10p's `RELEASE_NOTES_v0.18.0.md` is written against FW-1's scope, not the 20:30Z board's. Rejected: (b) tag tomorrow with flow at W1 + serve and FW-1's items as v0.18.x — contradicts FW-1; (c) tag tomorrow as `v0.18.0-pre.2` — a second pre-release the notes and installer would have to carry for no reader's benefit. |
 
 ## What this page does not decide
 
@@ -39,5 +40,5 @@ that already state it.
   cx-home/cx-platform-xap#1 before its code, per WF-28b.
 - SD-1's condition stands: the schema-as-data code lands in v0.18 only if ready before the final
   cut, which follows the transports (INT-3 addendum 2). #1498 depends on it and sits behind it.
-- The cut date. Today's letter D85 on #1591 governs the trigger of the v0.18.0 cut; this page adds
-  scope to Lane 2 and says nothing about when the cut runs.
+- The split's own timing. FW-2 decouples the tag from the split and says nothing about the K-steps'
+  order or the forced push's hour; #1591's board owns both.

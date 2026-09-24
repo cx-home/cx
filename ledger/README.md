@@ -535,7 +535,8 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `fl-3` | [rulings_2026_08_20_columnar_lineage.md](rulings_2026_08_20_columnar_lineage.md) | FL-3 — the columnar backend joins the FL-1/FL-2 durability contract |
 | `fmt-1` | [rulings_2026_09_16_fmt_ratchet_fmt1.md](rulings_2026_09_16_fmt_ratchet_fmt1.md) | Integrator decision 2026-09-16 ~11:30Z — the fmt-sweep ratchet moves one way, and a decline fixed under it needs no spec sentence (RULED: FMT-1) |
 | `fmt-2` | [rulings_2026_09_17_integrator_decisions.md](rulings_2026_09_17_integrator_decisions.md) | Integrator decisions, 2026-09-17 — the Ring 0 rulings owed (1363-b, 1387-a, FMT-2, GRADER-1, 1150-a, 1250-b) |
-| `fw-1` | [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) | RULED: FW-1 — every named landing of `flow.md` lands in v0.18, and end-user automation authoring (#1498) with it (owner, 2026-09-24, in session on dev2) |
+| `fw-1` | [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) | RULED: FW-1, FW-2 — every named landing of `flow.md` lands in v0.18, end-user automation authoring (#1498) with it, and the v0.18.0 tag waits for them while the repo split lands (owner, 2026-09-24, in session on dev2) |
+| `fw-2` | [rulings_2026_09_24_flow_waves_v018_fw1.md](rulings_2026_09_24_flow_waves_v018_fw1.md) | RULED: FW-1, FW-2 — every named landing of `flow.md` lands in v0.18, end-user automation authoring (#1498) with it, and the v0.18.0 tag waits for them while the repo split lands (owner, 2026-09-24, in session on dev2) |
 | `ga-1` | [rulings_2026_08_20_guest_attach.md](rulings_2026_08_20_guest_attach.md) | Ruling GA-1 (2026-08-20) — attach-guest: the anonymous-floor transport (#857, owner "857a") |
 | `ge-0` | [rulings_2026_09_05_grammar_expression_env.md](rulings_2026_09_05_grammar_expression_env.md) | Rulings 2026-09-05 — the grammar-expression environment (GE-0..GE-3) |
 | `ge-0` | [rulings_2026_09_05_grammar_expression_env.md](rulings_2026_09_05_grammar_expression_env.md) | GE-0 — the caller-dependence is a DEFECT — RULED (a) |
@@ -1334,4 +1335,4 @@ A commit subject ends `(RULED: <id>)`; this is how that id resolves.
 | `xsp-1` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 | `xsp-3` | [partition_campaign_PLAN.md](partition_campaign_PLAN.md) |
 
-*321 ledger pages; 679 ids declared, 384 cited only.*
+*321 ledger pages; 680 ids declared, 384 cited only.*
