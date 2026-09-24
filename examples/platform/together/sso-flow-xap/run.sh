@@ -28,6 +28,9 @@
 # exactly — `deps/cx-platform-sso/examples/platform/sso` — and nothing wider.
 # Two roots rather than one repo-root grant, because the whole point of a
 # granted root is that it is the narrowest one that covers the read.
+#
+# storefront.compose.cx is cx-platform-xap's now too (K3, RULED: RS-12): read
+# out of its checkout, the same shape as flow's and sso's above.
 set -u
 CX="${CX:-cx}"
 
@@ -48,7 +51,7 @@ echo '$ cx flow run ../../../../deps/cx-platform-flow/examples/platform/flow/che
 echo "exit=$rc"
 
 echo
-echo '$ cx --allow-read ../../xap/storefront/compose.cx'
-( cd ../../xap/storefront && "$CX" --allow-read compose.cx ); rc=$?
+echo '$ cx --allow-read ../../../../deps/cx-platform-xap/examples/platform/xap/storefront/compose.cx'
+( cd ../../../../deps/cx-platform-xap/examples/platform/xap/storefront && "$CX" --allow-read compose.cx ); rc=$?
 echo
 echo "exit=$rc"
