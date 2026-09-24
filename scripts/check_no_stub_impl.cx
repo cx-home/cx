@@ -48,12 +48,20 @@
   # declares (`vmodule=`, RULED: RS-24) -- a split product's prims are the same
   # implementation surface they were inside vcx/platform. Since xap's split
   # no row declares vcx/platform (it is the residue of the products not yet
-  # split), so it is named here for as long as it exists.
+  # split), so it is named here for as long as it exists. A product whose V
+  # module LEFT with its repository (RULED: RS-12) still ships in cx, compiled
+  # from the pinned checkout deps/<repo>/vcx/<vmodule>/, so once vcx/<vmodule>/
+  # is gone that checkout is the directory scanned (#1651); a directory absent
+  # from both is still refused.
   [= $impl-dirs [$fp:flat-map ("vcx/code",
                                 [?if [$io:exists "vcx/platform"] [then ("vcx/platform")] [else ()]],
                                 [?for [in $x [$cx:parse [$io:read-file "registry/repos.cxd"]]//repo]
                                   [where [not [= [$string [?else $x@vmodule ""]] ""]]]
-                                  [yield [$cat ("vcx/", [$string $x@vmodule])]]])
+                                  [= $local [$cat ("vcx/", [$string $x@vmodule])]]
+                                  [yield [?if [and [not [$io:is-directory $local]]
+                                                   [$io:is-directory [$cat ("deps/", [$string $x@name], "/vcx/", [$string $x@vmodule])]]]
+                                           [then [$cat ("deps/", [$string $x@name], "/vcx/", [$string $x@vmodule])]]
+                                           [else $local]]]])
                   [?fn ($x) $x]]]
 
   # Fake-success stub-confession phrases (case-insensitive). Each only shows
