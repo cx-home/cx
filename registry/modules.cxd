@@ -315,7 +315,7 @@ needs becomes its own Ring-1 module.
      under cx-platform like every other platform row; the bare names are retired
      and the loader refuses them naming the new spelling. Their spec, corpus,
      source and code columns did not move with the namespace. ]
-  [module name=fabric ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/fabric.md corpus=conformance/platform/fabric.cxd source=stdlib/fabric.cx code='vcx/platform/stdlib_fabric.v vcx/platform/stdlib_fabric_remote.v vcx/platform/fabric_service.v vcx/platform/stdlib_fabric_register.v' half=none status=current]
+  [module name=fabric ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/fabric.md corpus=conformance/platform/fabric.cxd source=stdlib/fabric.cx code='vcx/fabric/stdlib_fabric.v vcx/fabric/stdlib_fabric_remote.v vcx/fabric/fabric_service.v vcx/fabric/stdlib_fabric_register.v' half=none status=current]
   [; ftp and sftp — the connector kit's two file-transfer transports (RULED:
      1430-c, 1430-e), spec first: planned, their columns naming where #1430
      writes them. ]
