@@ -538,12 +538,14 @@ step_globs() {
 # layer, _gate_evidence/, .github/, root prose) selects nothing.
 SUITE_DIR='vcx/tests'
 # The vcx/ directories that are V modules a test file can import.
-VCX_MODULES='cx code platform cxnet mail cxdb store identity xap cxstore arrow transport cli cmd cmd_data corpus testenv fixtures timing tools bench fuzz'
+VCX_MODULES='cx code platform cxnet mail cxdb store identity xap cxstore arrow transport cli cmd cmd_data corpus grading testenv fixtures timing tools bench fuzz'
 # The directories the shipped `cx` and libcx compile from — testenv's edge,
 # because a test that runs the binary runs all of this.
 # `corpus` (#1634) is both: `cmd` links it for `cx corpus`, and the fixtures
-# grader imports it for the shards.
-BINARY_MODULES='cx code platform cxnet mail cxdb store identity xap cxstore arrow transport cli cmd cmd_data corpus'
+# grader imports it for the shards. `grading` (RULED: D56a) is cx-core-data's:
+# the document / diff / lint / fmt / streaming-write cores and the `cx corpus`
+# body `cmd` links, compiled from the pin (a pin move is deps.cxd, which is ALL).
+BINARY_MODULES='cx code platform cxnet mail cxdb store identity xap cxstore arrow transport cli cmd cmd_data corpus grading'
 
 # vcx_module_of <import-name> — the vcx/ module directory it names, or nothing
 # when it is V's own stdlib (os, net, time, encoding.base64, x.json2, …). The V

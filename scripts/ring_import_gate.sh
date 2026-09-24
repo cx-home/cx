@@ -22,6 +22,11 @@
 #   cli lyr = vcx/cli, vcx/cmd_data — the data/cli-profile surface: MUST stay
 #                             platform-FREE (no platform-group import), or the
 #                             data/cli profiles would pull the daemon stack (§4).
+#   grading = cx-core-data's corpus grading cores (RULED: D56a) — the document,
+#                             diff, lint, fmt and streaming-write lanes and the
+#                             `cx corpus` body both profiles run: MAY import cx
+#                             and fixtures only (never code), so the data profile
+#                             can link it; cmd_data may import it.
 # The pin direction BETWEEN platform products is not this gate's: that is
 # scripts/product_import_gate.cx (RULED: RS-24).
 #
@@ -53,7 +58,7 @@ set -euo pipefail
 # broke test-extraction-gate under parallel make, 2026-08-07).
 ROOT="${RING_GATE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 VCX="$ROOT/vcx"
-# cx-core-data's modules (cx, cli, cmd_data, arrow, fixtures) left vcx/ for its
+# cx-core-data's modules (cx, cli, cmd_data, arrow, fixtures, grading) left vcx/ for its
 # pinned checkout (RULED: RS-7, RS-12). They are still cx's rings and still
 # scanned: ring_dir answers where a module lives, and a module in NEITHER place
 # is a failure -- scan_ring skips a missing directory, and a ring the gate
@@ -66,7 +71,7 @@ ring_dir() {
 }
 
 fail=0
-for m in cx arrow cli cmd_data; do
+for m in cx arrow cli cmd_data grading; do
   if [ ! -d "$VCX/$m" ] && [ ! -d "$PIN_V/$m" ]; then
     echo "ring_import_gate: FAILED -- module '$m' is neither $VCX/$m nor $PIN_V/$m (run \`make deps-sync\`)"
     fail=1
@@ -226,11 +231,16 @@ scan_ring "$VCX/transport" "leaf (transport)" 0 $(deny_but cx transport)
 # imports cli. Everything in the platform group is denied. (F-17: was manual,
 # now gated.)
 scan_ring "$(ring_dir cli)" "platform-free (cli)" 0 $(deny_but cx code cli cmd_data)
-scan_ring "$(ring_dir cmd_data)" "platform-free (cmd_data)" 0 $(deny_but cx code cli cmd_data)
+scan_ring "$(ring_dir cmd_data)" "platform-free (cmd_data)" 0 $(deny_but cx code cli cmd_data grading)
+
+# The corpus grading cores (RULED: D56a): Ring 0, so the data profile links
+# them -- cx and the fixture loader only, never the evaluator. The PROGRAM lane
+# (vcx/corpus, which imports code) is the full cx's and is not this module.
+scan_ring "$(ring_dir grading)" "Ring-0 grading (grading)" 0 $(deny_but cx fixtures grading)
 
 if [ "$fail" -ne 0 ]; then
   echo "ring_import_gate: FAILED — a ring module violates its §3 import contract."
   exit 1
 fi
-echo "ring_import_gate: OK — Ring-0 strict sink; cxstore Ring-0-only+evaluator-free; code→cx only; platform group within the rings + cxstore/arrow/transport + the product modules below xap; each product (${PRODUCTS% }) within the rings + cxstore/arrow/transport + the products, xap alone also over the residue and none into xap; arrow/transport→cx only; cli/cmd_data platform-free"
+echo "ring_import_gate: OK — Ring-0 strict sink; cxstore Ring-0-only+evaluator-free; code→cx only; platform group within the rings + cxstore/arrow/transport + the product modules below xap; each product (${PRODUCTS% }) within the rings + cxstore/arrow/transport + the products, xap alone also over the residue and none into xap; arrow/transport→cx only; cli/cmd_data platform-free; grading→cx+fixtures only"
 exit 0
