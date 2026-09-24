@@ -63,8 +63,9 @@ check "bytes.cxd" "a module's Ring-1 V half selects its corpus file" "vcx/code/s
 # (deps/cx-platform-store/vcx/store/stdlib_audit.v), which this rule's exact
 # string match against a LOCAL vcx/store/ path can no longer reach — as it
 # should not: nothing under vcx/store/ exists here to touch any more.
-# fabric's own code is the same shape and has not split yet.
-check "fabric.cxd" "a module's Ring-2 V code selects its corpus file" "vcx/platform/stdlib_fabric.v"
+# fabric's own code is the same shape, local in vcx/fabric/ since its split
+# (RS-24) and not extracted.
+check "fabric.cxd" "a module's Ring-2 V code selects its corpus file" "vcx/fabric/stdlib_fabric.v"
 check "imap.cxd" "a module's `half=` file selects its corpus file too" "vcx/code/stdlib_imap_server.v"
 check "bytes.cxd map.cxd" "two module sources select both corpus files" "stdlib/map.cx" "vcx/code/stdlib_bytes.v"
 check "connector.cxd db.cxd" "a module source and a corpus file together" "stdlib/connector.cx" "conformance/platform/db.cxd"
