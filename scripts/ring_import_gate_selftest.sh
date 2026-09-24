@@ -26,7 +26,7 @@ fi
 # fake tree: the sibling-dir set the deny-set derivation needs, empty.
 FAKE="$(mktemp -d "${TMPDIR:-/tmp}/ring_gate_selftest.XXXXXX")"
 trap 'rm -rf "$FAKE"' EXIT
-for d in cx code platform cxstore arrow transport cli cmd_data grading deps target fixtures testenv; do
+for d in cx code cxstore arrow transport cli cmd_data grading deps target fixtures testenv; do
   mkdir -p "$FAKE/vcx/$d"
 done
 # RS-24: two declared V product modules -- a lower one (net) and xap, the one
@@ -69,7 +69,7 @@ probe "vmodroot-updown" "cx/selftest_updown_probe.v" \
 
 # ── F-17 bypass #3: a RAW .c file in a ring dir including a sibling header ──
 probe "raw-c-include" "cx/selftest_raw_probe.c" \
-  '#include "../platform/whatever.h"
+  '#include "../cxnet/whatever.h"
 int selftest_raw(void){return 0;}'
 
 # ── the classic V import edge (M34) still caught ──
@@ -87,12 +87,12 @@ probe "allowlist-not-blanket" "cx/selftest_re2_blanket.v" \
 # ── new lane: arrow (leaf) importing a non-cx sibling ──
 probe "arrow-leaf" "arrow/selftest_arrow_probe.v" \
   'module arrow
-import platform'
+import cxnet'
 
 # ── new lane: cli must stay platform-free ──
 probe "cli-platform-free" "cli/selftest_cli_probe.v" \
   'module cli
-import platform'
+import cxnet'
 
 # ── new lane: cmd_data must stay platform-free ──
 probe "cmd_data-platform-free" "cmd_data/selftest_cmddata_probe.v" \
@@ -115,10 +115,10 @@ else
 fi
 rm -f "$FAKE/vcx/grading/selftest_grading_ok.v" "$FAKE/vcx/cmd_data/selftest_cmddata_grading.v"
 
-# ── Ring 1 (code) importing the platform group (platform) ──
-probe "code-imports-platform" "code/selftest_code_probe.v" \
+# ── Ring 1 (code) importing the platform group's composer (xap) ──
+probe "code-imports-xap" "code/selftest_code_probe.v" \
   'module code
-import platform'
+import xap'
 
 # ── RS-24: Ring 1 importing a split product module ──
 probe "code-imports-product" "code/selftest_code_product_probe.v" \
@@ -130,25 +130,18 @@ probe "product-imports-cli" "cxnet/selftest_product_probe.v" \
   'module cxnet
 import cli'
 
-# ── RS-24: a product module importing the residue above it ──
-probe "product-imports-residue" "cxnet/selftest_residue_probe.v" \
-  'module cxnet
-import platform'
-
-# ── RS-24, xap's split: a lower product or the residue importing xap ──
+# ── RS-24, xap's split: a lower product importing xap ──
 probe "product-imports-xap" "cxnet/selftest_xap_probe.v" \
   'module cxnet
 import xap'
-probe "residue-imports-xap" "platform/selftest_residue_xap_probe.v" \
-  'module platform
-import xap'
 
-# ── ...and xap importing the residue and a lower product stays GREEN ──
-printf '%s\n' 'module xap' 'import platform' 'import cxnet' > "$FAKE/vcx/xap/selftest_xap_down.v"
+# ── ...and xap importing a lower product stays GREEN (the residue it once
+#    also imported is gone since xap's PHASE B, RULED: RS-24) ──
+printf '%s\n' 'module xap' 'import cxnet' > "$FAKE/vcx/xap/selftest_xap_down.v"
 if RING_GATE_ROOT="$FAKE" bash "$GATE" >/dev/null 2>&1; then
-  echo "  ok — xap-imports-residue (xap over the residue and a lower product is allowed)"
+  echo "  ok — xap-imports-lower (xap over a lower product is allowed)"
 else
-  echo "SELFTEST FAIL [xap-imports-residue]: the gate refused xap importing the residue it pins."
+  echo "SELFTEST FAIL [xap-imports-lower]: the gate refused xap importing a product it pins."
   rc_ok=1
 fi
 rm -f "$FAKE/vcx/xap/selftest_xap_down.v"
@@ -156,29 +149,29 @@ rm -f "$FAKE/vcx/xap/selftest_xap_down.v"
 # ── RS-1: the platform GROUP imports the rings and what its manifest declares
 #    (cxstore, arrow, transport) — nothing else. The profile-surface dirs are
 #    not in its graph ──
-probe "platform-group-undeclared" "platform/selftest_group_probe.v" \
-  'module platform
+probe "platform-group-undeclared" "xap/selftest_group_probe.v" \
+  'module xap
 import cli'
 
 # ── RS-1: the words. Two rings, data and code, and the platform group above
-#    them; "Ring 2" left the vocabulary, so a violation in vcx/platform is
+#    them; "Ring 2" left the vocabulary, so a violation in a product module is
 #    reported as the platform group's, and neither the refusal nor the live
 #    OK line names a Ring 2 ──
-printf '%s\n' 'module platform' 'import cmd_data' > "$FAKE/vcx/platform/selftest_words_probe.v"
+printf '%s\n' 'module cxnet' 'import cmd_data' > "$FAKE/vcx/cxnet/selftest_words_probe.v"
 words_out="$(RING_GATE_ROOT="$FAKE" bash "$GATE" 2>&1 || true)"
-rm -f "$FAKE/vcx/platform/selftest_words_probe.v"
+rm -f "$FAKE/vcx/cxnet/selftest_words_probe.v"
 live_out="$(bash "$GATE" 2>&1 || true)"
 words_ok=0
 case "$words_out" in
   *"platform group"*) : ;;
-  *) echo "SELFTEST FAIL [group-words]: a vcx/platform violation is not reported as the platform group's (RULED: RS-1)"; words_ok=1 ;;
+  *) echo "SELFTEST FAIL [group-words]: a product-module violation is not reported as the platform group's (RULED: RS-1)"; words_ok=1 ;;
 esac
 case "$words_out$live_out" in
   *Ring-2*|*"Ring 2"*|*Ring-3*|*"Ring 3"*)
     echo "SELFTEST FAIL [ring-words]: the gate still names a Ring 2/Ring 3 — two rings, then groups (RULED: RS-1)"; words_ok=1 ;;
 esac
 if [ "$words_ok" -eq 0 ]; then
-  echo "  ok — group-words (a vcx/platform refusal names the platform group; no Ring 2/3 in the gate's words)"
+  echo "  ok — group-words (a product-module refusal names the platform group; no Ring 2/3 in the gate's words)"
 else
   rc_ok=1
 fi
@@ -191,7 +184,7 @@ fi
 #    and red when a pinned module is in neither place. ──
 PFAKE="$(mktemp -d "${TMPDIR:-/tmp}/ring_gate_selftest_pin.XXXXXX")"
 trap 'rm -rf "$FAKE" "$PFAKE"' EXIT
-for d in code platform cxstore transport target testenv; do mkdir -p "$PFAKE/vcx/$d"; done
+for d in code cxstore transport target testenv; do mkdir -p "$PFAKE/vcx/$d"; done
 for d in cx arrow cli cmd_data grading deps fixtures; do mkdir -p "$PFAKE/deps/cx-core-data/vcx/$d"; done
 if ! RING_GATE_ROOT="$PFAKE" bash "$GATE" >/dev/null 2>&1; then
   echo "SELFTEST FAIL [pinned-clean]: the pinned-layout fake tree is not green."

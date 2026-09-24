@@ -98,8 +98,8 @@ stdlib/env
 stdlib/cx
 stdlib/format
 stdlib/authz
-platform/authz-store
-platform/session
+deps/cx-platform-identity/conformance/platform/authz-store
+deps/cx-platform-identity/conformance/platform/session
 stdlib/log
 deps/cx-platform-ux/conformance/xap/ux
 deps/cx-platform-ux/conformance/xap/ux-web

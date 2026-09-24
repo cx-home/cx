@@ -119,19 +119,20 @@ else
 fi
 
 # ── D — one module source ───────────────────────────────────────────────────
-# vcx/store/stdlib_journal.v RETIRED as this case's example (RULED: RS-12,
-# RS-8; #1591 item K3): vcx/store/ left with the extraction of
-# cx-platform-store. vcx/identity/stdlib_authz_store.v is the same shape (a
+# vcx/identity/stdlib_authz_store.v RETIRED as this case's example (RULED:
+# RS-12, RS-8; #1591 item K3): vcx/identity/ left with the extraction of
+# cx-platform-identity. vcx/fabric/stdlib_fabric.v (vcx/platform/ until fabric's
+# split, RS-24) is the same shape (a
 # module source graded through one fixture shard AND named literally by
 # umbrella tests outside it).
-run vcx/identity/stdlib_authz_store.v > "$T/d"
+run vcx/fabric/stdlib_fabric.v > "$T/d"
 d_files=$(suite_files_of "$T/d")
 d_n=$(printf '%s\n' "$d_files" | grep -c . || true)
 d_total=$(ls "$ROOT/vcx/tests"/*_test.v | wc -l | tr -d ' ')
 d_named=1
 for f in $d_files; do
 	case "$f" in *code_eval_fixtures_shard_*) continue ;; esac
-	grep -qF -- authz-store "$ROOT/$f" || d_named=0
+	grep -qF -- fabric "$ROOT/$f" || d_named=0
 done
 if [ "$d_n" -ge 2 ] && [ "$d_n" -lt "$d_total" ] \
 	&& printf '%s\n' "$d_files" | grep -q 'code_eval_fixtures_shard_' \

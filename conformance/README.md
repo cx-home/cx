@@ -138,7 +138,7 @@ excluded and counted.
 | streaming-write family | `vcx/tests/runners/streaming_write/streaming_write_run.v` | `conform-streaming-write` |
 | code.cxd parse lane (Ring 0) | `vcx/tests/code_parse_fixtures_test.v` | `make test-vcx-suite` |
 | code.cxd + stdlib eval lanes (Ring 1+) | `vcx/tests/code_eval_fixtures_test.v` | `make test-vcx-suite` |
-| Binding parity (FFI) | `lang/*` harnesses over `binding_api.cxd` + shared families | `make test-binding-api-parity`, `make test-python` / `test-go` / `test-rust` |
+| Binding parity (FFI) | RETIRED here (RULED: RS-12, RS-8; #1591 item K3): the four active bindings left cx-private whole (cx-home/cx-binding-{v,python,go,rust}); `binding_api.cxd` stays but no step in this repository drives it any more | none — see `_gate_evidence/pipeline_xbindings/RESULTS.md`'s LETTER |
 | Ring-0 extraction gate | `vcx/tests/runners/extraction_gate/` (ABI + CLI differential) | `make test-extraction-gate` |
 
 ## Conformance levels
