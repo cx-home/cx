@@ -66,7 +66,7 @@ fi
 
 while read -r name test; do
   [ -n "$name" ] || continue
-  if [ ! -f "$test" ]; then
+  if [ ! -f "$test" ] && [ ! -f "deps/cx-core-code/$test" ]; then
     echo "check-fixture-shard-manifest: shard '$name' names test file '$test', which does not exist"
     fail=1
   fi
@@ -99,7 +99,7 @@ fi
 missing=""
 while read -r f; do
   [ -n "$f" ] || continue
-  if [ ! -f "conformance/$f" ]; then missing="$missing $f"; fi
+  if [ ! -f "conformance/$f" ] && [ ! -f "deps/cx-core-code/conformance/$f" ]; then missing="$missing $f"; fi
 done < "$tmp/assigned"
 if [ -n "$missing" ]; then
   echo "check-fixture-shard-manifest: manifest row(s) naming a corpus file that does not exist —"
@@ -112,7 +112,7 @@ fi
 # step with fixtures_grader's corpus_dirs / corpus_loose.
 {
   for d in stdlib platform x xap; do
-    for f in conformance/$d/*.cxd; do [ -e "$f" ] && echo "$d/$(basename "$f")"; done
+    for f in conformance/$d/*.cxd deps/cx-core-code/conformance/$d/*.cxd; do [ -e "$f" ] && echo "$d/$(basename "$f")"; done
   done
   echo "../deps/cx-core-data/conformance/extended.cxd"   # pinned (RULED: RS-12)
   echo "xml_codec.cxd"
