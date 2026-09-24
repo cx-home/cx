@@ -7,25 +7,37 @@ import fixtures
 import crypto.sha1
 import os
 
-// reader_parity_test — ONE READER (RULED: CXF-5, #1521, epic #1522).
+// reader_parity_test — ONE READER (RULED: CXF-5, #1521, epic #1522;
+// RULED: RUN-2, RS-12, RS-8 for the python door's retirement below).
 //
-// CX has three doors into the same bytes:
+// CX has three doors into the same bytes, of which THIS FILE grades two:
 //   (1) the DATA parser  — `cx.parse` / `cx.parse_cx` (vcx/cx/parser.v), which
 //       the V fixture grader reaches through `vcx/fixtures/fixture_loader.v`
 //       and which libcx's C ABI (`vcx/cx/cabi.v` `cx_to_ast_bin`) exports;
-//   (2) the PYTHON binding — `cxlib.load_fixtures` (lang/python/cxlib/
-//       fixtures.py) → `cxlib.parse` → `cx_to_ast_bin`, i.e. door (1) THROUGH
-//       the shipped library rather than through this build's V modules;
+//   (2) the PYTHON binding — `cxlib.load_fixtures`. RETIRED FROM THIS FILE
+//       (RULED: RS-12, RS-8; #1591 item K3): the python binding left
+//       cx-private whole as cx-home/cx-binding-python, so `lang/python/`
+//       is gone from this tree and there is no in-tree door (2) to open any
+//       more. A prior fix here tried to detect that and skip loudly, but an
+//       installed `cxlib` elsewhere on the runner's Python path (not this
+//       tree's, which left) still satisfied `import cxlib` and the test read
+//       its `AttributeError` as a real disagreement rather than a missing
+//       door — so `test_python_reader_agrees_case_for_case` and its
+//       `python_bin`/`libcx_dir`/`python_door_present` helpers are gone, not
+//       skipped. Door (1) vs. door (2) parity is now
+//       cx-home/cx-binding-python's own concern to prove against its pinned
+//       cx-private checkout, until D75 (open) rules on a cross-repo successor;
 //   (3) the PROGRAM reader — `cx.parse_program` (vcx/cx/program_parser.v +
 //       program_lexer.v), which `cx FILE` and the grader's `in_code` lane use.
 //
-// #1521 measured them disagreeing on one shape: `[title a pattern's captures
-// join the group binder list in pattern source order, left to right, depth
-// first]` — an apostrophe INSIDE a word, a comma later on the line. Door (1)
-// opened quoted text at the apostrophe and swallowed the three `[case]`
-// siblings that followed; door (3) refused the same bytes with a DIFFERENT
-// diagnostic at a different position; and the only step that noticed anything
-// was the Python fixture-loader smoke's case count. A silent wrong answer is
+// #1521 measured doors (1) and (3) disagreeing on one shape: `[title a
+// pattern's captures join the group binder list in pattern source order,
+// left to right, depth first]` — an apostrophe INSIDE a word, a comma later
+// on the line. Door (1) opened quoted text at the apostrophe and swallowed
+// the three `[case]` siblings that followed; door (3) refused the same bytes
+// with a DIFFERENT diagnostic at a different position; and the only step
+// that noticed anything at the time was the Python fixture-loader smoke's
+// case count (also gone with the binding, above). A silent wrong answer is
 // the one outcome the refuse-to-lie posture forbids.
 //
 // This step is the standing form of "or a parity step in TEST_TARGETS fails
@@ -36,12 +48,6 @@ import os
 //       answers. A swallow drops ids; a run-away quote duplicates none — so
 //       the marker census is the ground truth, and the first missing id names
 //       the divergence.
-//   test_python_reader_agrees_case_for_case
-//       Door (2) against door (1), file by file: the same id list AND the same
-//       reconstructed sections (a per-case digest over the section keys in
-//       document order and their bodies). Skipped, loudly, when no python3 or
-//       no built libcx is present — the same preconditions `make test-python`
-//       sets.
 //   test_program_reader_agrees_on_bare_prose_titles
 //       Door (3) against door (1) on the `[title …]` elements of the whole
 //       corpus — bare-prose titles only (no nested bracket, hole or entity,
@@ -236,121 +242,6 @@ fn case_digest(order []string, sections map[string]string) string {
 		parts << '${k}=${sections[k]}'
 	}
 	return sha1.hexhash(parts.join('\x00'))
-}
-
-fn python_bin() string {
-	for cand in ['python3', 'python'] {
-		r := os.execute('${cand} -c "import sys; sys.exit(0 if sys.version_info >= (3,10) else 1)"')
-		if r.exit_code == 0 {
-			return cand
-		}
-	}
-	return ''
-}
-
-fn libcx_dir() string {
-	d := os.join_path(repo_root(), 'vcx', 'target')
-	for name in ['libcx.dylib', 'libcx.so', 'cx.dll'] {
-		if os.exists(os.join_path(d, name)) {
-			return d
-		}
-	}
-	return ''
-}
-
-// python_door_present — the Python binding LEFT cx-private whole
-// (RULED: RS-12, RS-8; #1591 item K3): `lang/python/cxlib` is cx-home/
-// cx-binding-python's now, cx does not pin it, and no checkout of it lives
-// in this tree. Door (2) has no permanent home here any more, so this is a
-// standing skip condition, not a transient one like python3/libcx below —
-// but it is checked exactly the same way (loudly), because a permanent
-// precondition that fails silently is still how a parity door goes unwatched.
-fn python_door_present() bool {
-	return os.is_dir(os.join_path(repo_root(), 'lang', 'python', 'cxlib'))
-}
-
-fn test_python_reader_agrees_case_for_case() {
-	root := repo_root()
-	py := python_bin()
-	libdir := libcx_dir()
-	has_door := python_door_present()
-	if py == '' || libdir == '' || !has_door {
-		// Same preconditions `make test-python` used to set (LIBCX_LIB_DIR
-		// pinned to the freshly-built libcx, a >= 3.10 interpreter) plus the
-		// binding's own source being present. Say so out loud: a
-		// silently-skipped parity door is how #1521 stayed open.
-		eprintln('reader-parity: SKIPPED the python door — python3=${py != ""} libcx=${libdir != ""} lang/python/cxlib=${has_door} (RULED: RS-12; #1591 item K3: the python binding left cx-private whole)')
-		return
-	}
-	files := corpus_files()
-	list := files.join('\n')
-	list_file := os.join_path(os.temp_dir(), 'cx_reader_parity_files_${os.getpid()}.txt')
-	os.write_file(list_file, list) or {
-		assert false, 'reader-parity: cannot write the file list: ${err}'
-		return
-	}
-	defer {
-		os.rm(list_file) or {}
-	}
-	// The snippet drives the SHIPPED reader under test (cxlib.load_fixtures)
-	// and prints one row per case: file, id, and the same digest inputs the V
-	// side hashes. Nothing is computed here that the loader does not already
-	// answer.
-	snippet := 'import sys, os, hashlib\n' +
-		'sys.path.insert(0, os.path.join(sys.argv[1], "lang", "python"))\n' +
-		'import cxlib\n' +
-		'for rel in open(sys.argv[2]).read().split("\\n"):\n' +
-		'    if not rel: continue\n' +
-		'    for c in cxlib.load_fixtures(os.path.join(sys.argv[1], rel)):\n' +
-		'        parts = [",".join(c.order)] + ["%s=%s" % (k, c.sections[k]) for k in sorted(c.sections)]\n' +
-		'        d = hashlib.sha1("\\x00".join(parts).encode("utf-8")).hexdigest()\n' +
-		'        print("%s\\t%s\\t%s" % (rel, c.name.split(" ")[0], d))\n'
-	snippet_file := os.join_path(os.temp_dir(), 'cx_reader_parity_${os.getpid()}.py')
-	os.write_file(snippet_file, snippet) or {
-		assert false, 'reader-parity: cannot write the loader driver: ${err}'
-		return
-	}
-	defer {
-		os.rm(snippet_file) or {}
-	}
-	res := os.execute('LIBCX_LIB_DIR=${libdir} ${py} ${snippet_file} ${root} ${list_file} 2>&1')
-	assert res.exit_code == 0, 'reader-parity: the python door (cxlib.load_fixtures) failed:\n${res.output}'
-	mut py_rows := map[string]string{}
-	mut py_ids := map[string][]string{}
-	for line in res.output.split('\n') {
-		if line.trim_space() == '' {
-			continue
-		}
-		f := line.split('\t')
-		if f.len != 3 {
-			continue
-		}
-		py_rows['${f[0]}\t${f[1]}'] = f[2]
-		py_ids[f[0]] << f[1]
-	}
-	assert py_rows.len > 0, 'reader-parity: the python door answered no cases — refusing to vouch'
-	for rel in files {
-		path := os.join_path(root, rel)
-		v_cases := fixtures.load_fixtures(path)
-		if v_cases.len == 0 && py_ids[rel].len == 0 {
-			continue
-		}
-		mut v_ids := []string{}
-		for c in v_cases {
-			v_ids << c.name.all_before(' ')
-		}
-		assert v_ids == py_ids[rel], 'reader-parity: ${rel} — the V data reader and the python binding (libcx) disagree:\n' +
-			'  ${first_divergence(v_ids, py_ids[rel])}\n' +
-			'  V cases=${v_ids.len} python cases=${py_ids[rel].len} (RULED: CXF-5, #1521).'
-		for c in v_cases {
-			id := c.name.all_before(' ')
-			v_digest := case_digest(c.order, c.sections)
-			p_digest := py_rows['${rel}\t${id}'] or { '' }
-			assert v_digest == p_digest, 'reader-parity: ${rel} — case `${id}` reconstructs differently:\n' +
-				'  V digest=${v_digest} python digest=${p_digest}\n' +
-				'  the two doors must answer the same element tree for the same bytes (RULED: CXF-5, #1521).'
-		}
-	}
 }
 
 // bare_prose_title_lines — every `[title …]` line of a corpus file whose body
@@ -722,11 +613,13 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/repo_paths.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/ring_query.cx', .program, reason_attr},
 	AcceptedByOne{'stdlib/diagram.cx', .program, reason_attr},
-	// ── recorded exception — a program document the data balancer cannot read (10) ──
+	// ── recorded exception — a program document the data balancer cannot read (9) ──
 	// 8 -> 9: scripts/docs_fragment.cx, the RS-9 fragment contract (a `"#]"` literal).
 	// 9 -> 8: scripts/flow_vocabulary_gate.cx left with the flow extraction (RS-12).
 	// 8 -> 10: scripts/gate_on_suite_migrate.cx, D49a's migration (a `"]"` literal;
 	// the heading read 8 over nine rows before it).
+	// 10 -> 9: stdlib/connector.cx left with cx-platform-connector's extraction
+	// (RULED: RS-12, RS-8, RS-27; #1591 item K3).
 	AcceptedByOne{'scripts/bisect_batch.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/check_editor_surface_parity.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/diagnostics_census.cx', .program, reason_prog},
@@ -736,7 +629,6 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/gen_docs/primer_platform.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/repos_allocation_gate.cx', .program, reason_prog},
 	AcceptedByOne{'scripts/store_session_dep_gate.cx', .program, reason_prog},
-	AcceptedByOne{'stdlib/connector.cx', .program, reason_prog},
 ]
 
 // judge_accepted_by_one is the verdict, as a PURE function of the scan and the

@@ -298,7 +298,7 @@ needs becomes its own Ring-1 module.
      `connector-test-build` that gated the §10.1 mock adapter, retired by
      RS-25 (owner D30d): the mock is declared by the kit's own CX, so the kit
      is pure CX and `code=` is none. ]
-  [module name=connector ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/connector.md corpus=conformance/platform/connector.cxd source=stdlib/connector.cx code=none half=none status=current]
+  [module name=connector ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-connector spec=deps/cx-platform-connector/spec/03-approved/platform/connector.md corpus=deps/cx-platform-connector/conformance/platform/connector.cxd source=deps/cx-platform-connector/stdlib/connector.cx code=none half=none status=current]
   [; did-web and vc-revocation — the halves RS-14 left above the rings when
      did and vc moved into Ring 1, each named for what leaves: did-web
      resolves a did:web over HTTPS (a socket), vc-revocation appends a
@@ -370,7 +370,7 @@ needs becomes its own Ring-1 module.
      second adapts, so the artifacts #1434 wrote under the pre-cutover
      std-lib/ and conformance/stdlib/ are in the platform directories here and
      its four `-to` columns are spent rather than carried. ]
-  [module name=sync ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/sync.md corpus=conformance/platform/sync.cxd source=stdlib/sync.cx code=vcx/platform/stdlib_sync.v half=none status=planned]
+  [module name=sync ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-connector spec=deps/cx-platform-connector/spec/03-approved/platform/sync.md corpus=deps/cx-platform-connector/conformance/platform/sync.cxd source=deps/cx-platform-connector/stdlib/sync.cx code=deps/cx-platform-connector/vcx/platform/stdlib_sync.v half=none status=planned]
   [module name=vc-revocation ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-identity spec=deps/cx-platform-identity/spec/03-approved/platform/vc-revocation.md corpus=deps/cx-platform-identity/conformance/platform/vc-revocation.cxd source=deps/cx-platform-identity/stdlib/vc-revocation.cx code='deps/cx-platform-identity/vcx/identity/stdlib_vc_revocation.v deps/cx-platform-identity/vcx/identity/stdlib_vc_revocation_register.v' half=none status=current]
   [module name=xap ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/xap/xap_module.md corpus=conformance/xap/xap-serve.cxd source=stdlib/xap.cx code='vcx/xap/stdlib_xap.v vcx/xap/stdlib_xap_register.v' half=none status=current]
   [; xsp-auth — the XSP-AUTH handshake calculus, a MODULE since RS-15 rather
