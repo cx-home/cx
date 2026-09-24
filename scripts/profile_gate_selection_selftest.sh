@@ -69,9 +69,17 @@ check "bytes.cxd" "a module's Ring-1 V half selects its corpus file" "vcx/code/s
 # path (deps/cx-platform-fabric/vcx/fabric/stdlib_fabric.v), which this
 # rule's exact string match against a LOCAL vcx/fabric/ path can no longer
 # reach — as it should not: nothing under vcx/fabric/ exists here to touch
-# any more. xap's own code is the same shape and has not left (xap is the
-# composer, RS-24, and stays in cx-private).
-check "xap-serve.cxd" "a module's Ring-2 V code selects its corpus file" "vcx/xap/stdlib_xap.v"
+# any more. xap's own vcx/xap/stdlib_xap.v was the last one of this SHAPE
+# (a module's Ring-2 V code, group=platform, at a LOCAL path) and is now
+# RETIRED as this example too (RULED: RS-12, RS-8, RS-7, RS-20; #1591 item
+# K3): xap left cx-private with cx-platform-xap's extraction, and
+# registry/modules.cxd's xap row now names the pinned path
+# (deps/cx-platform-xap/vcx/xap/stdlib_xap.v). Every group=platform module
+# row now reads code=none or code=deps/… (RULED: RS-12) — no product carries
+# LOCAL Ring-2 V code any more, so this class of check has no live example
+# left to check with; the selection SCRIPT'S own rule for a `code=` row is
+# still exercised by the `half=` check below, which is a group=platform row
+# too (RS-24/D34a's declared architecture split keeps xsp-auth's half local).
 check "xsp-auth.cxd" "a module's `half=` file selects its corpus file too" "vcx/code/stdlib_xsp_auth.v"
 check "bytes.cxd map.cxd" "two module sources select both corpus files" "stdlib/map.cx" "vcx/code/stdlib_bytes.v"
 # connector's own stdlib/connector.cx RETIRED as this example (RULED: RS-12,
@@ -102,4 +110,4 @@ if [ "$fails" -gt 0 ]; then
   echo "profile-gate selection self-test: $fails failure(s)"
   exit 1
 fi
-echo "profile-gate selection self-test OK — 20 rules (#1560 + #1587's module-to-corpus map)"
+echo "profile-gate selection self-test OK — 19 rules (#1560 + #1587's module-to-corpus map)"
