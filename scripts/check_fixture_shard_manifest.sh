@@ -74,7 +74,8 @@ done < "$tmp/shards"
 
 # ── property 5: every shard test file in the tree has a row ─────────────────
 cut -d' ' -f2 "$tmp/shards" | sort > "$tmp/claimed_tests"
-ls deps/cx-core-code/vcx/tests/code_eval_fixtures_shard_*_test.v 2>/dev/null | sort > "$tmp/tree_tests" || true
+ls deps/cx-core-code/vcx/tests/code_eval_fixtures_shard_*_test.v 2>/dev/null \
+  | sed 's#^deps/cx-core-code/##' | sort > "$tmp/tree_tests" || true
 orphan_tests=$(comm -13 "$tmp/claimed_tests" "$tmp/tree_tests")
 if [ -n "$orphan_tests" ]; then
   echo "check-fixture-shard-manifest: shard test file(s) with NO manifest row —"
