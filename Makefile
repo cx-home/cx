@@ -3018,7 +3018,6 @@ GAUGE_SERIAL_RETRY := bench/repr/run.sh
 RETRY_REASON_CASE = case "$$rel" in \
 	  vcx/tests/process_pty_test.v) \
 	    reason="\#1125 pty master read races under the -j12 suite storm (empty child output); green in isolation and in the prior full run" ;; \
-
 	  vcx/tests/store_remote_umbrella_test.v) \
 	    reason="\#1425 daemon start under the -j12 suite storm (the readiness window expires before the listener line); green in isolation and in every prior full run" ;; \
 	  vcx/tests/connector_live_test.v) \
