@@ -26,7 +26,7 @@
 # both from the #1427 ring move) and without them the spec's and the corpus's
 # history stopped there. A truncated history is not a failure anyone sees.
 #
-# tooling/repo-template/HISTORY-FILTER.md is the `git filter-repo` invocation
+# cx-tooling's tooling/repo-template/HISTORY-FILTER.md is the `git filter-repo` invocation
 # that consumes this list.
 #
 # Exit: 0 the list was produced, 1 no repository named / no file allocated to

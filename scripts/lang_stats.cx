@@ -2,7 +2,7 @@
 #
 # GitHub's language bar is computed by Linguist, which does not know CX —
 # every .cx/.cxd/.cxs byte is invisible there until the language clears
-# Linguist's in-the-wild adoption bar (tooling/linguist/ holds the staged
+# Linguist's in-the-wild adoption bar (cx-tooling's tooling/linguist/ holds the staged
 # submission). Until then the README badge is the honest self-report, and
 # this script is its one source of truth: it classifies TRACKED source
 # bytes by extension, prints the share table, and stamps the CX badge

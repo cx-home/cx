@@ -60,13 +60,8 @@ stamp vcx/README.md               "s|badge/version-v[0-9.]*-blue|badge/version-v
 # (it sat at "0.7.x" for five releases before the 2026-07-14 audit caught it).
 SERIES="$(printf '%s' "$NEW" | cut -d. -f1-2).x"
 stamp SECURITY.md                 "s/\*\*[0-9][0-9]*\.[0-9][0-9]*\.x\*\*/**$SERIES**/"
-# VS Code extension version — user-visible in the marketplace. npm needs a
-# literal semver, so stamp it (package.json has a single `"version"` key).
-stamp tooling/vscode/package.json "s/\"version\": \"[^\"]*\"/\"version\": \"$NEW\"/"
-# package-lock mirrors it in TWO spots (top-level + the \"\" self-package node),
-# each immediately preceded by `\"name\": \"cx-language\"`. Stamp only those —
-# never the dependency versions (which carry no cx-language name line above).
-stamp tooling/vscode/package-lock.json "/\"name\": \"cx-language\"/{n;s/\"version\": \"[^\"]*\"/\"version\": \"$NEW\"/;}"
+# The VS Code extension's package.json/package-lock.json stamps RETIRED (RULED:
+# RS-12, D59a): the extension left with cx-tooling, which stamps its own version.
 
 echo
 echo "VERSION = $NEW. Code (cabi.v/main.v) derives via the build define — not stamped."

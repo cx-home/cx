@@ -342,9 +342,9 @@
            UNEXPECTED is a file that errored and is not on the roster.
            STALE is a roster entry that did NOT error, i.e. it was fixed or
            removed and the line must go — the half a count cannot express, and
-           the half that matters, because
-           `tooling/vscode/test/grammar/basic.cx` is a real #1347-family gap
-           that somebody will fix. ]
+           the half that matters: a roster entry is a real gap somebody will
+           fix (`tooling/vscode/test/grammar/basic.cx`, #1347's family, was the
+           one until it left with cx-tooling, RULED: RS-12). ]
         [= $roster-path [$env:flag $args 'expected-errors']]
         [= $roster [?if [= $roster-path '']
                      [then [?to-sequence [?for [in $x ()] [yield $x]]]]

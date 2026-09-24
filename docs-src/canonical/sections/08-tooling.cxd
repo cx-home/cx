@@ -136,7 +136,7 @@
          top of the `cx` binary: TextMate grammar for display
          contexts, LSP for live editing intelligence, tree-sitter
          for structural / injection duty. See
-         [`tooling/install/README.md`](../../tooling/install/README.md)
+         [`tooling/install/README.md`](https://github.com/cx-home/cx-tooling/blob/main/tooling/install/README.md)
          for one-command install scripts."""]
 
     [child id=editor-vscode n=8.2.1 title='VS Code'
@@ -164,16 +164,16 @@
            file extensions. LSP client config (server path, env vars,
            tracing) lives in the VS Code settings panel under "CX
            Language". A sample workspace settings file is at
-           [`tooling/lsp/vscode.example.json`](../../tooling/lsp/vscode.example.json)."""]]
+           [`tooling/lsp/vscode.example.json`](https://github.com/cx-home/cx-tooling/blob/main/tooling/lsp/vscode.example.json)."""]]
 
     [child id=editor-neovim n=8.2.2 title='Neovim'
       [body
         """Neovim integration uses `nvim-treesitter` for structural
            highlighting + LSP via `nvim-lspconfig` (or the built-in
            LSP client on Neovim 0.11+). A sample config is at
-           [`tooling/lsp/neovim.example.lua`](../../tooling/lsp/neovim.example.lua);
+           [`tooling/lsp/neovim.example.lua`](https://github.com/cx-home/cx-tooling/blob/main/tooling/lsp/neovim.example.lua);
            the install script
-           [`tooling/install/install-nvim.sh`](../../tooling/install/install-nvim.sh)
+           [`tooling/install/install-nvim.sh`](https://github.com/cx-home/cx-tooling/blob/main/tooling/install/install-nvim.sh)
            installs the signed tree-sitter grammar (with a headless
            load-proof) and writes a lazy.nvim `dir =` spec pointing at
            the in-repo plugin root — LSP included via native
@@ -198,7 +198,7 @@
         """Helix consumes the tree-sitter grammar directly and
            connects to `cx lsp` for diagnostics, hover, and
            completion. Drop the
-           [`tooling/lsp/helix.example.toml`](../../tooling/lsp/helix.example.toml)
+           [`tooling/lsp/helix.example.toml`](https://github.com/cx-home/cx-tooling/blob/main/tooling/lsp/helix.example.toml)
            snippet into your `~/.config/helix/languages.toml`."""]
 
       [example lang=toml
@@ -276,7 +276,7 @@
         """Implementation lives in `vcx/cmd/lsp_features.v`. The
            CXLS001-004 diagnostic
            emitters per
-           [`tooling/lsp/diagnostics.md`](../../tooling/lsp/diagnostics.md)."""]]
+           [`tooling/lsp/diagnostics.md`](https://github.com/cx-home/cx-tooling/blob/main/tooling/lsp/diagnostics.md)."""]]
 
     [child id=lsp-diagnostics n=8.3.2 title='Diagnostic codes'
       [body
@@ -309,7 +309,7 @@
         """Codes are stable strings; editor configs may key off them
            to surface custom UI (e.g. fold a CXLS003 cluster into a
            single inlay). See
-           [`tooling/lsp/diagnostics.md`](../../tooling/lsp/diagnostics.md)
+           [`tooling/lsp/diagnostics.md`](https://github.com/cx-home/cx-tooling/blob/main/tooling/lsp/diagnostics.md)
            for the emit contracts."""]]
 
     [child id=lsp-hover n=8.3.3 title='Hover'
@@ -359,7 +359,7 @@
         """All completion items carry `data.kind` so editors can
            sort and group them. CXPath items are tagged
            `data.path_axis=true` per
-           [`tooling/lsp/diagnostics.md`](../../tooling/lsp/diagnostics.md)."""]]
+           [`tooling/lsp/diagnostics.md`](https://github.com/cx-home/cx-tooling/blob/main/tooling/lsp/diagnostics.md)."""]]
 
     [child id=lsp-codeactions n=8.3.5 title='Code actions'
       [body

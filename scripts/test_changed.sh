@@ -240,8 +240,9 @@ step_globs() {
     check-no-adr-citations)        echo '*' ;;
     check-no-stub-impl)            echo 'vcx/* registry/repos.cxd' ;;
     check-xap-dist-absences)       echo 'vcx/*' ;;
-    check-completions-drift)       echo 'vcx/* tooling/*' ;;
-    check-tmlanguage-sync)         echo 'tooling/*' ;;
+    # the completions are cx-tooling's since its leave (RULED: RS-12, D59a): a moved
+    # completion file reaches this tree as a deps.cxd pin bump.
+    check-completions-drift)       echo 'vcx/* deps.cxd scripts/check_completions_drift.cx' ;;
     guide-check)                   echo 'docs-src/* vcx/* stdlib/*' ;;
     # #1412 — the RENDERER, not the doc graders. Its inputs are the generator
     # itself, the canonical sources it reads, and the two module tiers whose
@@ -470,8 +471,9 @@ step_globs() {
     # from (scripts/check_composition_seams.cx reads spec/03-approved/{platform,stdlib}).
     check-composition-seams)       echo 'spec/* scripts/check_composition_seams.cx' ;;
     # #1171: the directive registry (vcx/cx/program_tokens.v) on one side and
-    # every editor surface + the checked-in register under tooling/ on the other.
-    check-editor-surface-parity)   echo 'vcx/cx/* tooling/* scripts/check_editor_surface_parity.cx' ;;
+    # every editor surface + the checked-in register, cx-tooling's since its leave
+    # (a deps.cxd bump), on the other; vcx/cmd/lsp_content.v is the LSP column.
+    check-editor-surface-parity)   echo 'vcx/cx/* vcx/cmd/* deps.cxd scripts/check_editor_surface_parity.cx' ;;
     # INT-11 (#1475): the four document sets the recipe walks — docs-src/,
     # spec/03-approved/, the root prose files, and the generated LLM layer.
     verify-doc-links)              echo 'docs-src/* spec/* docs/llm/* tools/verify-doc-links.sh README.md CONTRIBUTING.md ROADMAP.md SECURITY.md CODE_OF_CONDUCT.md CHANGELOG.md RELEASE_NOTES_v AGENTS.md CLAUDE.md AGENT-STANDING-RULES.md' ;;

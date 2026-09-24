@@ -577,7 +577,7 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/lang_stats.cx', .program, reason_1536},
 	AcceptedByOne{'scripts/run_bench_json.cx', .program, reason_1536},
 	AcceptedByOne{'stdlib/supervise.cx', .program, reason_1536},
-	// ── recorded exception — a computed attribute `name=[EXPR]` (27) ──
+	// ── recorded exception — a computed attribute `name=[EXPR]` (26) ──
 	// 22 -> 21: scripts/sso_interop/idp.cx left with the sso extraction (RS-12).
 	// 21 -> 22: scripts/check_migrate_namespace_fixtures.cx, RS-4's sweep grader.
 	// 22 -> 26: the front door's bundled-source table, its tree check, and the two
@@ -586,6 +586,8 @@ const accepted_by_one_table = [
 	// 27 -> 25: stdlib/flow.cx and examples/platform/flow/checkout/orders.cx left with the flow extraction (RS-12).
 	// 25 -> 27: the derived gate register's check and its tree driver (D49a,
 	// RULED: RS-27).
+	// 27 -> 26: stdlib/diagram.cx left with cx-tooling's extraction (RULED: RS-12,
+	// D59a); the scan walks stdlib/ of THIS tree and does not follow deps/.
 	AcceptedByOne{'examples/code-tour.cx', .program, reason_attr},
 	AcceptedByOne{'examples/cxpath-tour.cx', .program, reason_attr},
 	AcceptedByOne{'examples/htmx/serve.cx', .program, reason_attr},
@@ -612,7 +614,6 @@ const accepted_by_one_table = [
 	AcceptedByOne{'scripts/product_import_gate.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/repo_paths.cx', .program, reason_attr},
 	AcceptedByOne{'scripts/ring_query.cx', .program, reason_attr},
-	AcceptedByOne{'stdlib/diagram.cx', .program, reason_attr},
 	// ── recorded exception — a program document the data balancer cannot read (9) ──
 	// 8 -> 9: scripts/docs_fragment.cx, the RS-9 fragment contract (a `"#]"` literal).
 	// 9 -> 8: scripts/flow_vocabulary_gate.cx left with the flow extraction (RS-12).
