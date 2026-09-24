@@ -68,7 +68,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [repo name=cx-core-code group=core ring=1 ships=binary about='the language: evaluator, stdlib, LSP, libcx, the cli and embed builds']
   [repo name=cx-platform-net group=platform ring=none ships=binary vmodule=cxnet status=extracted at=0a4f2114af1e29a19362b24069061c913c9a0374 pins='cx-core-code' about='sockets, TLS, the HTTP server, the XSP transport bindings, ftp, sftp, file_surface' why='EXTRACTED (RULED: RS-12, RS-24, #1591 item 20), the third V product (after core-data): its own vcx/cxnet/ (module cxnet) and vcx/transport/ leave with it. It owns no tracked path here any more; cx reaches it through deps.cxd, which pins it at the sha at= records, and registry/modules.cxd\'s http, net, ftp and sftp rows -- plus the file_surface catalog row -- name the pinned checkout']
   [repo name=cx-platform-mail group=platform ring=none ships=binary vmodule=mail status=extracted at=7bd817287cdca46c64bf4fae9c7325d9e7e894db pins='cx-platform-net' about='SMTP and IMAP, server and client cores, sasl' why='EXTRACTED (RULED: RS-12, RS-19, D71a; #1591 item 20): its V module vcx/mail/ (module mail) compiles from deps/cx-platform-mail/vcx through -path and its spec, corpus and source are graded from the pin. The five files that stayed until D71a -- the declared pure halves of imap and smtp and sasl\'s dispatch, once called INTRA-MODULE by vcx/code/stdlib_dispatch.v -- left with the builtin-dispatch registration hook: code exposes register_stdlib_builtin and mail\'s own init() registers sasl, smtp and imap. It owns no tracked path here any more; cx reaches it through deps.cxd, which pins it at the sha at= records, and registry/modules.cxd\'s sasl, imap and smtp rows name the pinned checkout']
-  [repo name=cx-platform-identity group=platform ring=none ships=binary vmodule=identity pins='cx-platform-store cx-platform-net' about='sessions, the XSP-AUTH handshake, principal mint, did:web']
+  [repo name=cx-platform-identity group=platform ring=none ships=binary vmodule=identity pins='cx-platform-store cx-platform-net' at=4cfa0234d63bf86dacbbafe53f7dab29e9bd4add about='sessions, the XSP-AUTH handshake, did:web, authz-store, vc-revocation' why='PARTLY EXTRACTED (RULED: RS-12, RS-8; #1591 item K3): deps.cxd pins it with a v-fork -- NOT YET PUSHED to cx-home/cx-platform-identity (component-repo pushes are the integrator\'s, RS-8; the commit is prepared in the mover\'s clone and named by sha in RESULTS.md, per the K3 brief) -- its V module (vcx/identity/, module identity) compiles from deps/cx-platform-identity/vcx through -path, and its session/authz-store/did-web/vc-revocation/xsp-auth spec/corpus/source are graded from the pin. One file remains below: xsp-auth\'s declared Ring-1 half (modules.cxd half=), vcx/code/stdlib_xsp_auth.v -- a permanent architecture split (RS-24/D34a: the store server runs it and the store V module may not import identity), not a discovered same-module wall awaiting a hook, so it is named here and in K3\'s RESULTS.md, not a LETTER. The row takes status=extracted the day it is pushed']
   [repo name=cx-platform-store group=platform ring=none ships=binary vmodule=store pins='cx-core-code cx-platform-net' at=36bdd0fb08ac793fde1a567a62e1e518d010c1c9 about='the storage engine, its substrates, journal/live/audit, ft, and the store server' why='PARTLY EXTRACTED (RULED: RS-12, RS-8, D71a, D73a; #1591 item K3): the RS-24 vcx/store/ split (module store) already stood alone from vcx/platform/, so extraction moved it, vcx/cxstore/ and vcx/cmd/store_ whole out -- store\'s, journal\'s, live\'s and audit\'s spec, corpus and source now name deps/cx-platform-store/ in registry/modules.cxd, and so does ft\'s CX-level surface (stdlib/ft.cx, its spec, its corpus), even though ft is a Ring-1 cx-stdlib module the store repository merely carries as its only consumer. One file remains: vcx/code/stdlib_ft.v, ft\'s V dispatch half -- code\'s stdlib_dispatch.v names ft_stdlib_builtin() and both of eval.v\'s env chains name ft_stdlib_builtin_env(); the D71a hook carries the env-free half as is, the env half needs the hook\'s env-aware twin first (a follow-up branch, named in _gate_evidence/pipeline_dispatch/RESULTS.md). The three vcx/cmd/store_{serve,rotate,principal}_d_cx_platform.v files that stayed with it left under D73a: code exposes register_cli_verb and the store\'s own init() registers store-serve, store-health, store-rotate-kek and store-mint-principal into cmd\'s verb table. The row takes status=extracted the day ft\'s half leaves or is re-allocated']
   [repo name=cx-platform-db group=platform ring=none ships=binary vmodule=cxdb pins='cx-core-code' status=extracted at=1834c802b4da2c4e6cba362ceb790f46b392157d about='external database access: $sql-*, $redis-*, the drivers' why='EXTRACTED (RULED: RS-12, RS-8; #1591 item K3), a V product: the RS-24 vcx/cxdb/ split (module cxdb) already stood alone from vcx/platform/, so extraction moved it out whole -- the sql, redis and db rows of registry/modules.cxd now name their spec, corpus and code under deps/cx-platform-db/, and xap (its only in-tree consumer, per its own pins=) reaches the dispatch registration through the pin, not a tracked path. It has no [path] rules any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records']
   [repo name=cx-platform-fabric group=platform ring=none ships=binary pins='cx-platform-store cx-platform-identity' about='messaging and fabric-serve']
@@ -78,10 +78,10 @@ the rule carries a `why=`. The recurring reasons, once:
   [repo name=cx-platform-sso group=platform ring=none ships=package status=extracted at=1e814e5aae6327a8218cc3fe69b43a03517e92bf about='enterprise sign-on, the interop lane' why='EXTRACTED (RULED: RS-12, #1591 item 11), the first of them. It has no [path] rules because it owns no tracked path here any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records, and the gate exempts a status=extracted repo from the empty-repo refusal for exactly that reason -- the row is the pin\'s counterpart, not a plan waiting to be executed']
   [repo name=cx-platform-ux group=platform ring=none ships=package status=extracted at=ef9248093389d42f6726042bfc254351445db4bc about='the web and terminal surfaces' why='EXTRACTED (RULED: RS-12, #1591 item 12), with cx-platform-agent: the x/ graduation. It owns no tracked path here any more; cx reaches it through deps.cxd at the sha at= records, and registry/modules.cxd\'s ux, ux-web and ux-tui rows name the pinned checkout']
   [repo name=cx-platform-agent group=platform ring=none ships=package status=extracted at=df505787c2498100ded95e45031fa2f9192b2d09 about='tools, mcp, mcp-server, a2a, a2a-xap, llm, run, adjudicate' why='EXTRACTED (RULED: RS-12, #1591 item 12), with cx-platform-ux: the x/ graduation. It owns no tracked path here any more; cx reaches it through deps.cxd at the sha at= records, and registry/modules.cxd\'s eight agent rows name the pinned checkout']
-  [repo name=cx-binding-python group=binding ring=none ships=pypi about='cxlib for Python']
-  [repo name=cx-binding-go group=binding ring=none ships=go-module about='cxlib for Go']
-  [repo name=cx-binding-rust group=binding ring=none ships=crate about='cxlib for Rust']
-  [repo name=cx-binding-v group=binding ring=none ships=v-module about='the native reference binding']
+  [repo name=cx-binding-python group=binding ring=none ships=pypi status=extracted about='cxlib for Python' why='EXTRACTED (RULED: RS-12, RS-8; #1591 item K3), one of the four active bindings left whole on one branch. It owns no tracked path here any more and there is no deps.cxd row — cx does not consume a binding — so, unlike a pinned repo, this row carries no at=: nothing here names a sha to check it against. cx-home/cx-binding-python carries a catch-up commit (named by sha in _gate_evidence/pipeline_xbindings/RESULTS.md) bringing its files to this branch\'s head byte-for-byte and re-pinning its own deps.cxd cx-private row to that head; the commit is not pushed (RS-8: a mover prepares, the integrator pushes)']
+  [repo name=cx-binding-go group=binding ring=none ships=go-module status=extracted about='cxlib for Go' why='EXTRACTED (RULED: RS-12, RS-8; #1591 item K3), with cx-binding-python/-rust/-v. It owns no tracked path here any more and there is no deps.cxd row — cx does not consume a binding. cx-home/cx-binding-go carries a catch-up commit (sha in _gate_evidence/pipeline_xbindings/RESULTS.md) to this branch\'s head, its own deps.cxd re-pinned; not pushed (RS-8)']
+  [repo name=cx-binding-rust group=binding ring=none ships=crate status=extracted about='cxlib for Rust' why='EXTRACTED (RULED: RS-12, RS-8; #1591 item K3), with cx-binding-python/-go/-v. It owns no tracked path here any more and there is no deps.cxd row — cx does not consume a binding. cx-home/cx-binding-rust carries a catch-up commit (sha in _gate_evidence/pipeline_xbindings/RESULTS.md) to this branch\'s head, its own deps.cxd re-pinned; not pushed (RS-8)']
+  [repo name=cx-binding-v group=binding ring=none ships=v-module status=extracted about='the native reference binding' why='EXTRACTED (RULED: RS-12, RS-8; #1591 item K3), with cx-binding-python/-go/-rust: the superseded lang/_archived/v-cffi/ FFI approach leaves with it (its history rode with the V binding). It owns no tracked path here any more and there is no deps.cxd row — cx does not consume a binding. cx-home/cx-binding-v carries a catch-up commit (sha in _gate_evidence/pipeline_xbindings/RESULTS.md) to this branch\'s head, its own deps.cxd re-pinned; not pushed (RS-8)']
   [repo name=cx-binding-typescript group=binding ring=none ships=archived about='archived at the ABI it was frozen with; lang/_archived/README.md names the version']
   [repo name=cx-binding-java group=binding ring=none ships=archived about='archived at the ABI it was frozen with; lang/_archived/README.md names the version']
   [repo name=cx-binding-kotlin group=binding ring=none ships=archived about='archived at the ABI it was frozen with; lang/_archived/README.md names the version']
@@ -184,41 +184,20 @@ the rule carries a `why=`. The recurring reasons, once:
      deps/cx-platform-store/ directly. ]
   [path prefix='bench/repr/' repo=cx why='the CXDM live-memory ratchet writes into its own directory and builds with third_party/v at the repository root; bench/ is the front door\'s (RULED: D68a)']
 
-  [; ── platform: identity ────────────────────────────────────────────── ]
-  [path prefix='vcx/identity/' repo=cx-platform-identity why='identity\'s V module, module identity (RULED: RS-24, D31a, D32a): the session, authz-store, did-web and vc-revocation dispatchers and the xsp-auth registration, each with its register file (unchanged), moved whole out of vcx/platform/ (six prefix rules became this one) -- among them identity_connector_builtins.v, the credential binding, the token store and the secret handle that were the connector kit native half (RS-6, #1589, #1591 item 9), and stdlib_vc_revocation.v, credential lifecycle being identity\'s product and the journal it writes to the substrate, not the owner. It imports store, cxnet, code, cx and cxstore only; the pure XSP-AUTH calculus stays in vcx/code as xsp-auth\'s declared half (the rule below)']
-  [path prefix='vcx/code/stdlib_xsp_auth' repo=cx-platform-identity why='the DECLARED Ring-1 half of cx-platform/xsp-auth (modules.cxd half=): the pure XSP-AUTH calculus, which RS-24 moved into vcx/code because the store server runs it and the store V module may not import identity (D34a). A module moves whole (#1609), so the half stays with the module, as the smtp/imap halves do (RS-19); the store\'s calls into it are the RS-24 store branch\'s LETTER']
-  [path exact='stdlib/session.cx' repo=cx-platform-identity]
-  [path exact='stdlib/xsp-auth.cx' repo=cx-platform-identity why='the handshake calculus became a module of its own (RULED: RS-15); its natives are here too, as its declared Ring-1 half in vcx/code since RS-24']
-  [; RS-14's two new surfaces. did-web is #1589's own words — identity holds
-     "did:web resolution (the one impure did verb)" — so the module, its page,
-     its corpus and its natives land here. vc-revocation is NOT named by
-     #1589's per-repo bullets: the journal it appends to is the store's, but
-     the PRODUCT is credential lifecycle, and identity is where the credential
-     surface lives beside session, the handshake and the principal mint. The
-     alternative (cx-platform-store, on the substrate) is a LETTER on this
-     branch's RESULTS.md, not a settled reading. ]
-  [path exact='stdlib/did-web.cx' repo=cx-platform-identity]
-  [path exact='spec/03-approved/platform/did-web.md' repo=cx-platform-identity]
-  [path exact='conformance/platform/did-web.cxd' repo=cx-platform-identity]
-  [path exact='stdlib/vc-revocation.cx' repo=cx-platform-identity]
-  [path exact='spec/03-approved/platform/vc-revocation.md' repo=cx-platform-identity]
-  [path exact='conformance/platform/vc-revocation.cxd' repo=cx-platform-identity]
-  [; authz-store — the journaled trust store RS-13 cut out of authz. #1589's
-     per-repo bullets do not name it: the journal it appends to is the store's,
-     but the PRODUCT is the authority/trust model, and RS-6 has the store
-     server CONSUME the trust primitives rather than own them. Identity is
-     where that model sits, beside session, the handshake and the principal
-     mint. The alternative (cx-platform-store, on the substrate) is a LETTER on
-     this branch's RESULTS.md, not a settled reading. ]
-  [path exact='stdlib/authz-store.cx' repo=cx-platform-identity]
-  [path exact='spec/03-approved/platform/authz-store.md' repo=cx-platform-identity]
-  [path exact='conformance/platform/authz-store.cxd' repo=cx-platform-identity]
-  [path exact='spec/03-approved/platform/session.md' repo=cx-platform-identity]
-  [path exact='spec/03-approved/xap/xap_identity_model.md' repo=cx-platform-identity]
-  [path exact='spec/03-approved/xap/xsp-auth.md' repo=cx-platform-identity]
-  [path exact='conformance/platform/session.cxd' repo=cx-platform-identity]
-  [path exact='conformance/xap/xsp-auth.cxd' repo=cx-platform-identity]
-  [path prefix='vcx/tests/session_' repo=cx-platform-identity]
+  [; ── platform: identity RETIRED (RULED: RS-12, RS-8; #1591 item K3) ─────
+     Every rule of this block but one left with cx-platform-identity's leave
+     step: vcx/identity/ (module identity; the session, authz-store, did-web
+     and vc-revocation dispatchers and the xsp-auth registration, each with
+     its register file, unchanged but for the path -- among them
+     identity_connector_builtins.v, the connector kit native half, and
+     stdlib_vc_revocation.v), stdlib/{session,authz-store,did-web,vc-
+     revocation,xsp-auth}.cx, their specs (including
+     spec/03-approved/xap/xap_identity_model.md) and corpora, and
+     vcx/tests/session_persistence_test.v. The repository's own row (above)
+     carries `at=` and its full why=; each artifact's new home is
+     registry/modules.cxd's session/authz-store/did-web/vc-revocation/xsp-
+     auth rows, which name deps/cx-platform-identity/ directly. ]
+  [path prefix='vcx/code/stdlib_xsp_auth' repo=cx-platform-identity why='the DECLARED Ring-1 half of cx-platform/xsp-auth (modules.cxd half=): the pure XSP-AUTH calculus, which RS-24 moved into vcx/code because the store server runs it and the store V module may not import identity (D34a). A module moves whole (#1609), so the half stays with the module, as the smtp/imap halves do (RS-19); it is the ONE identity-allocated path that stays tracked here (K3\'s RESULTS.md names it by name, not a LETTER — this is a declared architecture split, not a discovered wall); the store\'s calls into it are the RS-24 store branch\'s LETTER']
 
   [; ── platform: fabric ──────────────────────────────────────────────── ]
   [path prefix='vcx/platform/stdlib_fabric' repo=cx-platform-fabric]
@@ -361,11 +340,10 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='cx.pc.in' repo=cx-core-code why='pkg-config for libcx']
 
   [; ── bindings ─────────────────────────────────────────────────────── ]
-  [path prefix='lang/python/' repo=cx-binding-python]
-  [path prefix='lang/go/' repo=cx-binding-go]
-  [path prefix='lang/rust/' repo=cx-binding-rust]
-  [path prefix='lang/v/' repo=cx-binding-v]
-  [path prefix='lang/_archived/v-cffi/' repo=cx-binding-v why='the superseded FFI approach; its history rides with the V binding']
+  [; python, go, rust and v left whole (RULED: RS-12, RS-8; #1591 item K3, LAUNCH
+     KIT K3): the [repo] rows above carry status=extracted and no [path] rules —
+     see the four rows' why= near the top of this file. The six archived
+     bindings below are untouched by K3.]
   [path prefix='lang/_archived/typescript/' repo=cx-binding-typescript]
   [path prefix='lang/_archived/java/' repo=cx-binding-java]
   [path prefix='lang/_archived/kotlin/' repo=cx-binding-kotlin]
