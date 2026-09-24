@@ -40,6 +40,13 @@
 # afterwards. The temporary root, the two commits and nothing else
 # are written back as <root>, <old> and <new>, so the text is the same on
 # every machine.
+#
+# THE SEARCH-PATH CASES (deps-03x, spec Sec 3.3). `runs=vpath` runs the sync
+# with --vpath and renders the one line it prints; `v-fork=true` on the
+# [sync] gives the fixture row a v-fork, which is what makes its checkout a V
+# repository. The line is the pinned roots FIRST, each the vcx/ directory of its
+# checkout, then @vmodules and @vlib -- the order and the root the V build
+# needs (the V standard library carries a `cli` module of its own).
 #]]
 
  [case id=deps-001-empty-document level=core
@@ -340,6 +347,30 @@ checkout at new clean
 run check
 exit 0
 deps-sync: 1 pins, 0 fetched, 1 already at their sha, 0 refused (--check: nothing was fetched)
+checkout at new clean
+#]]
+ ]
+
+ [case id=deps-030-vpath-names-the-vcx-root-of-a-v-repository-first level=core
+  [tags deps vpath v-fork search-path]
+  [title a V repository row puts the vcx directory of its checkout on the V search path ahead of the library roots -- a pinned module shadows a like-named library module and never the reverse]
+  [sync checkout=new dirty=false pin=new v-fork=true runs=vpath]
+  [out-text [#
+run vpath
+exit 0
+<root>/deps/fixture/vcx|@vmodules|@vlib
+checkout at new clean
+#]]
+ ]
+
+ [case id=deps-031-vpath-leaves-a-package-row-off-the-search-path level=core
+  [tags deps vpath search-path]
+  [title a row with no v-fork is a package and not a V repository -- the search path is the library roots alone]
+  [sync checkout=new dirty=false pin=new runs=vpath]
+  [out-text [#
+run vpath
+exit 0
+@vmodules|@vlib
 checkout at new clean
 #]]
  ]

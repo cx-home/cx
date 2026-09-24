@@ -159,8 +159,21 @@
 # --vpath: the V `-path` value for this pin set, and nothing else. RS-7's
 # "read by the V build via `-path`" is a sentence about the build, so it is a
 # thing the transport ANSWERS rather than a comment somebody re-derives: every
-# row carrying a `v-fork=` is a V repository, and its checkout is a search
-# root. Printed on stdout with no census, so a Makefile can read it directly.
+# row carrying a `v-fork=` is a V repository, and its `vcx/` directory is a
+# search root. Printed on stdout with no census, so a Makefile can read it
+# directly (spec §3.3).
+#
+# THE ROOT IS deps/<repo>/vcx, NOT deps/<repo>. A V repository is cut from this
+# tree by a history filter that keeps every path as it was, so its modules sit
+# at vcx/<module>/ in its own checkout exactly as they did here, and V resolves
+# `import <module>` as <root>/<module>. A module a later layout places at
+# vcx/<product>/ is found through the same root with nothing added here.
+#
+# THE ROOTS COME FIRST. V searches -path in order and takes the first
+# directory named like the import; the V standard library carries a `cli`
+# module, and cx-core-data a `cli` module of its own. With @vlib ahead of the
+# pinned roots, `import cli` compiles V's library instead of the pinned one —
+# measured, not supposed.
 [?if [$member "--vpath" [$env:argv]]
   [then
     [?let
@@ -173,8 +186,8 @@
                 [$env:exit 1]]]
         [else [?let
           [= $roots [?for [in $r [$pins:rows $doc]] [where [$present $r@v-fork]]
-                      [yield [$concat $root "/" [$string $r@repo]]]]]
-          [= $_ [$say [$strings:join ("@vlib", "@vmodules", [?splice $roots]) "|"]]]
+                      [yield [$concat $root "/" [$string $r@repo] "/vcx"]]]]
+          [= $_ [$say [$strings:join ([?splice $roots], "@vmodules", "@vlib") "|"]]]
           [$env:exit 0]]]]]]
   [else ""]]
 

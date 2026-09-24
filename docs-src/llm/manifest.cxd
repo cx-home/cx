@@ -71,12 +71,15 @@ correctly.
   [; #1427-c put a module's corpus in its RING's directory, so a suite is
      named by the directory it is in: `stdlib/` is Ring 1, `platform/` is
      in the platform group, `x/` and `xap/` are the tiers the ring split does not govern.
-     The `http` suite became two when 1427-e split the module. ]
+     The `http` suite became two when 1427-e split the module. The
+     data-language suites are cx-core-data's and are read from its pinned
+     checkout, spelled from conformance/ (RULED: RS-7, RS-9, RS-12): the docs
+     a build embeds cite exactly the corpus of the module version it compiles. ]
   [suites [#
 code
-core
+../deps/cx-core-data/conformance/core
 llm/antipatterns
-operator_heads
+../deps/cx-core-data/conformance/operator_heads
 platform/store
 platform/journal
 platform/http
@@ -102,9 +105,9 @@ deps/cx-platform-ux/conformance/xap/ux
 deps/cx-platform-ux/conformance/xap/ux-web
 xap/xap-compose
 xap/xap-dist
-xml
-table
-identity
+../deps/cx-core-data/conformance/xml
+../deps/cx-core-data/conformance/table
+../deps/cx-core-data/conformance/identity
 stdlib/validate
 #]]
 

@@ -17,7 +17,7 @@
        archived under `lang/_archived/` pending restoration — see
        [[migration]]. Normative spec:
        [`spec/03-approved/misc/bindings.md`](../../spec/03-approved/misc/bindings.md). C ABI surface:
-       [`spec/03-approved/core/abi.md`](../../spec/03-approved/core/abi.md). Per-binding gate status:
+       [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md). Per-binding gate status:
        [`spec/03-approved/misc/parity-matrix.md`](../../spec/03-approved/misc/parity-matrix.md)."""]
 
   [child id=c-abi n=7.1 title='The C ABI surface'
@@ -27,7 +27,7 @@
          binding what optional features the loaded libcx supports.
          The full ABI surface — including signatures, error channels,
          and lifetime rules — is documented in
-         [`spec/03-approved/core/abi.md`](../../spec/03-approved/core/abi.md);
+         [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md);
          this section is the working summary for binding authors."""]
 
     [body
@@ -59,7 +59,7 @@
         """Three functions form the binding-to-libcx handshake. They
            are mandatory for every Tier-1 binding and
            cheap-and-harmless for every other binding. Per
-           [`spec/03-approved/core/abi.md`](../../spec/03-approved/core/abi.md) §1.6."""]
+           [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) §1.6."""]
       [list
         [item """`cx_init()` — idempotent. Every binding calls
                 it once at module load. Enables host-thread
@@ -484,7 +484,7 @@
          follows. The leftmost column lists the CX type annotation
          (the `::` glue); each subsequent column gives the host's
          primary representation. Normative source:
-         [`spec/03-approved/misc/type-mapping.md`](../../spec/03-approved/misc/type-mapping.md)."""]
+         [`spec/03-approved/misc/type-mapping.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/misc/type-mapping.md)."""]
 
     [table
       [tr [th 'cx-type'] [th 'v'] [th 'python'] [th 'go'] [th 'rust']]
@@ -609,7 +609,7 @@
            runs on thread B is safe; neither call mutates anything
            the other reads. The C ABI symbols backing them are
            classified `(S) stateless` in
-           [`spec/03-approved/core/abi.md`](../../spec/03-approved/core/abi.md) §1.4 — concurrent
+           [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) §1.4 — concurrent
            calls on disjoint inputs are safe without external
            synchronization, and concurrent calls on the same input
            buffer are also safe because the buffer is read-only."""]
@@ -695,7 +695,7 @@
          bitmask returned by `cx_features()` is the runtime contract:
          the binding declares what it needs, libcx declares what it
          supports, and the binding either degrades, errors, or
-         proceeds. Per [`spec/03-approved/core/abi.md`](../../spec/03-approved/core/abi.md) §3."""]
+         proceeds. Per [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) §3."""]
 
     [body
       """**The bitmask is a NUL-terminated lowercase hex string**
@@ -731,7 +731,7 @@
 
     [body
       """**Selected capability bits** (full registry in
-         [`spec/03-approved/core/abi.md`](../../spec/03-approved/core/abi.md) §3):"""]
+         [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md) §3):"""]
     [table
       [tr [th 'bit'] [th 'mask'] [th 'feature']]
       [tr [td '0'] [td '0x1'] [td 'ABI core conversion symbols (always set)']]
@@ -1115,7 +1115,7 @@
          scalar kind, schema validation, and the
          type-mapping table. The full normative contract is
          [`spec/03-approved/misc/bindings.md §2.1`](../../spec/03-approved/misc/bindings.md); the C ABI
-         is [`spec/03-approved/core/abi.md`](../../spec/03-approved/core/abi.md)."""]
+         is [`spec/03-approved/core/abi.md`](https://github.com/cx-home/cx-core-data/blob/main/spec/03-approved/core/abi.md)."""]
 
     [child id=c-abi-detail n=7.11.1 title='C ABI — symbol catalog'
       [body
