@@ -2320,20 +2320,16 @@ check-completions-drift:
 check-editor-surface-parity: build-vcx-dev
 	@vcx/target/cx-dev --allow-read --allow-write scripts/check_editor_surface_parity.cx
 
-# Stage-1 registry publish (distribution spec §4.1 — publish-by-PR): seal +
-# sign + alias a package directory into registry/store, then re-verify.
-#   CX_PKG_DIR=packages/gtin CX_PKG_NAME=gtin CX_PKG_VERSION=0.1.0 \
-#     make registry-publish
-.PHONY: registry-publish
-registry-publish: build-vcx-dev
-	@vcx/target/cx-dev --allow-all registry/publish.cx
-
-# Stage-2 served registry (distribution spec §4.2): the SAME store, re-hosted
-# behind the store daemon on loopback. Consumers open
-# cx-store+http://127.0.0.1:8460/registry/ — hashes/signatures unchanged.
-.PHONY: registry-serve
-registry-serve: build-vcx-dev
-	@vcx/target/cx-dev store-serve --config registry/cxstore.service.cx --allow-net=127.0.0.1:8460
+# registry-publish / registry-serve RETIRED here (RULED: RS-12, RS-8, D59a,
+# D77d; #1591 item K3): registry/publish.cx, registry/keys/cx-home.cxd and
+# registry/store/ left whole for cx-registry (RS-25-shaped gap — a
+# ships=none package repo carries no V toolchain of its own yet, so unlike
+# test-connector-real-lanes there is no lane to re-point the two targets
+# through; cx-private's deps.cxd carries no row for cx-registry either,
+# since this repo consumes none of its namespaces, RS-7). Run these two
+# dev conveniences from a checkout of cx-home/cx-registry against a `cx`
+# binary once that repository's own Makefile carries them (flagged, not
+# fixed, in _gate_evidence/pipeline_xdecreg/RESULTS.md).
 
 # Default parallelism: detected core count, override with `make test TEST_JOBS=N`.
 # Measured speedup on a warm build: ~10× wall-clock vs sequential (342s → 33s).
@@ -4397,7 +4393,15 @@ fmt-sweep-timed: build-vcx
 # pin that as fail-closed today), and three on shapes not yet reduced:
 # `design/787/w1/serve.cx`, `spec/…/oriel/tui.cx`, `x/ux-web.cx`. The other
 # five declines are the census's OTHER classes, none of them #1436's.
-FMT_SWEEP_MAX_DECLINED ?= 9
+#
+# 9 -> 8 by the decisions/registry leave (RULED: RS-12, D59a; #1591 item K3):
+# design/787/w1/serve.cx left whole for cx-decisions, one of the three
+# not-yet-reduced files named just above (the other two are unmoved). Not a
+# formatter improvement; the file still declines, in cx-decisions, where
+# that repository's own `make lint` never runs `cx fmt` at all. Measured on
+# the branch's own binary: SWEEP-FILES=226 FORMATTED=214 DECLINED=8
+# TREE-REFUSED=4 UNSTABLE=0 ERROR=0
+FMT_SWEEP_MAX_DECLINED ?= 8
 FMT_SWEEP_MAX_TREE_REFUSED ?= 9
 FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
 .PHONY: fmt-sweep-gate

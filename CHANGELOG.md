@@ -2306,7 +2306,7 @@ wire formats, spec-normative grammar).
 - **`columns` → `cols` rename** across the Table API surface.
 - **`select` → `select_cols`** rename across bindings (avoids LINQ / Enumerable conflicts in .NET / Ruby; uniform for consistency).
 - Migration docs restructured: per-version under `docs/migrations/` (tree since retired; migration notes live in the release-notes files) with an index README.
-- Private docs (`CONTEXT.md`, `community/`) moved to [`docs/internal/`](docs/internal/); simplifies `.publishignore`.
+- Private docs (`CONTEXT.md`, `community/`) moved to [`docs/internal/`](https://github.com/cx-home/cx-decisions/blob/main/docs/internal/); simplifies `.publishignore`.
 - Internal grammar revisions during this cycle (v3.3 → v3.4 → v3.5 → v3.6) are now hidden from user-facing docs; users observe only the v0.5 → v0.6.0 transition.
 
 ### Fixed
