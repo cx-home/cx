@@ -128,12 +128,11 @@ printf '%s\n' "$CHANGED" | sed 's/^/  /'
 #   vcx/cxstore   <- cx
 #   vcx/code      Ring-1 <- cx
 #   vcx/arrow     <- cx        vcx/transport <- cx
-#   vcx/platform  Ring-2 <- cx code cxstore arrow transport cxnet mail cxdb store identity
-#   vcx/cxnet, vcx/mail, vcx/cxdb, vcx/store, vcx/identity, vcx/xap   the V product modules split out
-#                 of vcx/platform (RULED: RS-24) <- cx code transport + their
-#                 pins; xap, which pins every one, also <- platform (the residue)
-#   vcx/cli, vcx/cmd_data      platform-free <- cx code cli cmd_data
-#   vcx/cmd       <- cli code cx platform xap
+#   vcx/cxnet, vcx/mail, vcx/cxdb, vcx/store, vcx/identity, vcx/fabric, vcx/xap   the V product modules
+#                 the old vcx/platform split into (RULED: RS-24; it is gone since xap's
+#                 PHASE B) <- cx code transport + their pins; xap pins every one
+#   vcx/cli, vcx/cmd_data      product-free <- cx code cli cmd_data
+#   vcx/cmd       <- cli code cx xap fabric store
 #
 # Every vcx/ subdir must be named by at least one row below. Narrowing the
 # old blanket `vcx/*` rows means a path named by NO row would skip every
@@ -151,7 +150,7 @@ RING0='vcx/cx/* deps.cxd'
 RING_STORE='vcx/cxstore/*'
 RING1='vcx/code/*'
 RING_LEAF='vcx/arrow/* vcx/transport/*'
-RING2='vcx/platform/* vcx/cxnet/* vcx/mail/* vcx/cxdb/* vcx/store/* vcx/identity/* vcx/xap/*'
+RING2='vcx/cxnet/* vcx/mail/* vcx/cxdb/* vcx/store/* vcx/identity/* vcx/fabric/* vcx/xap/*'
 RING_CLI='vcx/cli/* vcx/cmd_data/*'
 RING_CMD='vcx/cmd/*'
 RING_SUP='vcx/testenv/* vcx/fixtures/* vcx/corpus/* vcx/deps/* vcx/bench/* vcx/fuzz/* vcx/tools/* vcx/v.mod third_party/*'
@@ -161,7 +160,7 @@ RING_SUP='vcx/testenv/* vcx/fixtures/* vcx/corpus/* vcx/deps/* vcx/bench/* vcx/f
 # them even when no .v file moved. Previously the binary-driving steps carried
 # `vcx/*` and picked these up only by accident of also listing stdlib/x.
 RING_EMBED='stdlib/* deps.cxd docs/llm/* VERSION'
-# libcx is built from platform/ (vcx/Makefile:222) — the TOP of the DAG — so
+# libcx is built from xap/ (vcx/Makefile's LIB_INPUT_DIRS) — the TOP of the DAG — so
 # every binding/ABI/prod step legitimately depends on the whole closure. This
 # is the honest bound on ring selection: it narrows those steps away from
 # vcx/tests, vcx/cmd and vcx/cli, and no further.
@@ -332,7 +331,7 @@ step_globs() {
     # the placement declaration and every artifact class it compares against
     # (RULED: 1427-f) — a spec, a corpus, a bundled source or a ring's V
     # directory moving is exactly what this step exists to catch.
-    placement-gate)                echo 'registry/modules.cxd registry/repos.cxd scripts/placement_gate.cx spec/* conformance/* stdlib/* deps.cxd vcx/code/* vcx/platform/* vcx/cxnet/* vcx/mail/* vcx/cxdb/* vcx/store/* vcx/identity/* vcx/xap/*' ;;
+    placement-gate)                echo 'registry/modules.cxd registry/repos.cxd scripts/placement_gate.cx spec/* conformance/* stdlib/* deps.cxd vcx/code/* vcx/cxnet/* vcx/mail/* vcx/cxdb/* vcx/store/* vcx/identity/* vcx/fabric/* vcx/xap/*' ;;
     repos-allocation-gate)         echo '*' ;;   # any added or removed file can change the allocation
     # RS-24: any vcx/ file can move an import or make a module directory; the
     # vlib listing (the V pin) decides what an import that is not vcx/'s names.
@@ -542,12 +541,12 @@ step_globs() {
 # layer, _gate_evidence/, .github/, root prose) selects nothing.
 SUITE_DIR='vcx/tests'
 # The vcx/ directories that are V modules a test file can import.
-VCX_MODULES='cx code platform cxnet mail cxdb store identity xap cxstore arrow transport cli cmd cmd_data corpus testenv fixtures timing tools bench fuzz'
+VCX_MODULES='cx code cxnet mail cxdb store identity fabric xap cxstore arrow transport cli cmd cmd_data corpus testenv fixtures timing tools bench fuzz'
 # The directories the shipped `cx` and libcx compile from — testenv's edge,
 # because a test that runs the binary runs all of this.
 # `corpus` (#1634) is both: `cmd` links it for `cx corpus`, and the fixtures
 # grader imports it for the shards.
-BINARY_MODULES='cx code platform cxnet mail cxdb store identity xap cxstore arrow transport cli cmd cmd_data corpus'
+BINARY_MODULES='cx code cxnet mail cxdb store identity fabric xap cxstore arrow transport cli cmd cmd_data corpus'
 
 # vcx_module_of <import-name> — the vcx/ module directory it names, or nothing
 # when it is V's own stdlib (os, net, time, encoding.base64, x.json2, …). The V
@@ -778,7 +777,7 @@ suite_files() {
       # `tests` is not in VCX_MODULES.
       "$SUITE_DIR"/runners/*)
         ;;
-      stdlib/*.cx|vcx/platform/stdlib_*.v|vcx/cxnet/stdlib_*.v|vcx/mail/stdlib_*.v|vcx/store/stdlib_*.v|vcx/identity/stdlib_*.v|vcx/xap/stdlib_*.v|vcx/code/stdlib_*.v)
+      stdlib/*.cx|vcx/cxnet/stdlib_*.v|vcx/mail/stdlib_*.v|vcx/store/stdlib_*.v|vcx/identity/stdlib_*.v|vcx/fabric/stdlib_*.v|vcx/xap/stdlib_*.v|vcx/code/stdlib_*.v)
         # the corpus side is already in `sel`; this is the NAME clause on top,
         # plus the ring rule for the two V spellings.
         case "$f" in

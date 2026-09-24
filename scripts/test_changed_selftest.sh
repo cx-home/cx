@@ -121,10 +121,11 @@ fi
 # ── D — one module source ───────────────────────────────────────────────────
 # vcx/identity/stdlib_authz_store.v RETIRED as this case's example (RULED:
 # RS-12, RS-8; #1591 item K3): vcx/identity/ left with the extraction of
-# cx-platform-identity. vcx/platform/stdlib_fabric.v is the same shape (a
+# cx-platform-identity. vcx/fabric/stdlib_fabric.v (vcx/platform/ until fabric's
+# split, RS-24) is the same shape (a
 # module source graded through one fixture shard AND named literally by
 # umbrella tests outside it).
-run vcx/platform/stdlib_fabric.v > "$T/d"
+run vcx/fabric/stdlib_fabric.v > "$T/d"
 d_files=$(suite_files_of "$T/d")
 d_n=$(printf '%s\n' "$d_files" | grep -c . || true)
 d_total=$(ls "$ROOT/vcx/tests"/*_test.v | wc -l | tr -d ' ')

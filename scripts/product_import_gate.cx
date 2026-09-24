@@ -8,12 +8,13 @@
 # graph, once, on its `[repo ...]` rows:
 #
 #   vmodule=<m>   the V module a repository compiles from vcx/<m>/ (D31a: the
-#                 layout is flat). Since xap's split xap is vcx/xap/ (module
-#                 xap, the composer with it); what is left in vcx/platform/
-#                 (module platform) is the RESIDUE of the products whose
-#                 own split has not merged yet -- each residue file belongs
-#                 to the repository repos.cxd's first-match rule sends it to,
-#                 all of them below xap -- until the last split empties it
+#                 layout is flat). xap is vcx/xap/ (module xap, the composer
+#                 with it). The shared vcx/platform/ (module platform) that
+#                 held the products whose split had not merged is GONE since
+#                 xap's PHASE B (fabric's split emptied it), and with it the
+#                 [residue up-edge] rule that held its files: every V file of
+#                 a product is now in its own vcx/<m>/, and an `import
+#                 platform` names no module at all -- [unknown import]
 #   pins='<repo> ...'
 #                 the repositories it builds on (RS-7's deps.cxd pins, as a
 #                 declaration the tree is held to before the repository exists)
@@ -42,17 +43,7 @@
 #                      without a repository to own it
 #   [dir owner]        a file under a product directory vcx/<m>/ that the
 #                      allocation (repos.cxd's first-match rule) sends to a
-#                      repository other than the one declaring vmodule=<m>. The
-#                      residue vcx/platform/ is exempt: it IS the one directory
-#                      several repositories share until each product's split
-#                      moves its files out (D31a)
-#   [residue up-edge]  a file of the residue vcx/platform/ imports a vcx/
-#                      module whose owning repository builds on the file's own
-#                      repository (the file's first-match rule), directly or
-#                      through its pins' pins -- a lower product reaching UP,
-#                      into xap or any product above it. The residue is one V
-#                      package, so this is also the import V refuses as a
-#                      cycle; the gate names the edge and the repositories
+#                      repository other than the one declaring vmodule=<m>
 #   [vlib shadow]      a declared vmodule that is also a top-level vlib module.
 #                      V resolves a project directory before vlib, so a
 #                      vcx/net/ would shadow vlib's `net` for the whole tree,
@@ -126,18 +117,6 @@
   [?let [= $hits [?for [in $r $rules] [where [$rule-matches $r $f]] [yield [$string $r@repo]]]]
     [?if [= [$count $hits] 0] [then ""] [else [$string [$first $hits]]]]]]
 
-# reach: every repository $frontier builds on, through pins' pins -- the
-# closure the residue up-edge check reads. $seen grows on every step and the
-# walk stops when a step adds nothing, so a pin cycle ([cycle] reports it)
-# cannot keep it from ending.
-[?def reach scope=private pure ($frontier $edges $seen)
-  [?let [= $next [$distinct [?for [in $f $frontier] [in $e $edges]
-                              [where [= [$string $e@from] $f]]
-                              [where [not [$member [$string $e@to] $seen]]]
-                              [yield [$string $e@to]]]]]
-    [?if [= [$count $next] 0] [then $seen]
-      [else [$reach $next $edges [?for [in $g ($seen, $next)] [in $x $g] [yield $x]]]]]]]
-
 # peel: the nodes left when sinks are removed until none is -- empty when the
 # graph is acyclic, else exactly the nodes on or behind a cycle.
 [?def peel scope=private pure ($nodes $edges)
@@ -191,7 +170,6 @@
                   [yield [failure kind="no repo row" what=[$concat "vcx/" $d "/ (module " $d ")"]]]]]
     [= $product-srcs [?for [in $s $srcs] [where [$member [$string $s@dir] $vmods]] [yield $s]]]
     [= $misplaced [?for [in $s $product-srcs]
-                    [where [not [= [$string $s@dir] "platform"]]]
                     [= $mine [$string [$first [?for [in $x $vrows] [where [= [$string $x@vmodule] [$string $s@dir]]] [yield [$string $x@name]]]]]]
                     [= $got [$first-repo $rules [$string $s@file]]]
                     [where [not [= $got $mine]]]
@@ -215,23 +193,6 @@
                  [else [?if [$member $h $vlib] [then [ok]]
                          [else [failure kind="unknown import" what=[$concat [$string $s@file] ": " $h]]]]]]]]]
     [= $edge-failures [?for [in $c $edge-checks] [where [?match $c [case [ok] false] [else true]]] [yield $c]]]
-    # the residue (vcx/platform/ once no row declares it as a vmodule): each
-    # file is held to its OWN repository, and may not import a module whose
-    # owner builds on that repository.
-    [= $residue-srcs [?if [$member "platform" $vmods] [then ()]
-                       [else [?for [in $s $srcs] [where [= [$string $s@dir] "platform"]] [yield $s]]]]]
-    [= $up-edges
-      [?for [in $s $residue-srcs]
-        [= $mine [$first-repo $rules [$string $s@file]]]
-        [in $h [$words [$string $s@imps]]]
-        [where [not [= $h "platform"]]]
-        [where [$member $h $dirs]]
-        [= $o [$string [$first [?for [in $w $owners] [where [= [$string $w@dir] $h]] [yield [$string $w@repo]]]]]]
-        [where [not [= $o ""]]]
-        [where [not [= $o $mine]]]
-        [where [$member $mine [$reach ($o) $edges ()]]]
-        [yield [failure kind="residue up-edge"
-                 what=[$concat [$string $s@file] ": platform (" $mine ") -> " $h " (" $o ", which builds on " $mine ")"]]]]]
     [= $census [?for [in $m $vmods]
                  [yield [line text=[$concat $m " ("
                                     [$string [$first [?for [in $x $vrows] [where [= [$string $x@vmodule] $m]] [yield [$string $x@name]]]]]
@@ -246,18 +207,19 @@
                 [?for [in $x $shadows] [yield $x]]
                 [?for [in $x $rowless] [yield $x]]
                 [?for [in $x $misplaced] [yield $x]]
-                [?for [in $x $edge-failures] [yield $x]]
-                [?for [in $x $up-edges] [yield $x]]]
+                [?for [in $x $edge-failures] [yield $x]]]
       [census [?for [in $c $census] [yield $c]]]]]]
 
 # -- the self-test: a synthetic registry over synthetic sources ---------------
 #
 # The planted violation RS-24 asks the gate to be red-proofed on before any
 # file moves is here as `vcx/cxnet/planted.v` -- `import store` in a net file.
-# xap's split (vcx/xap/, module xap) adds the other direction's two plants: a
-# net file importing xap (`vcx/cxnet/up.v`) and a residue file of the store
-# importing xap (`vcx/platform/store_up.v`); xap importing every product and
-# the residue passes.
+# xap's split (vcx/xap/, module xap) adds the other direction's plant: a net
+# file importing xap (`vcx/cxnet/up.v`); xap importing every product passes.
+# PHASE B (vcx/platform/ gone, RULED: RS-24) retired the residue's own rule and
+# its plant; what stands in their place is `vcx/store/residue.v`, a product
+# file importing `platform` -- a module no directory, pinned root or vlib
+# provides, so it is an [unknown import].
 
 [?if [$member "--self-test" [$env:argv]]
   [then
@@ -268,7 +230,7 @@
         [repo name=cx-platform-net group=platform vmodule=cxnet pins='cx-core-code']
         [repo name=cx-platform-store group=platform vmodule=store pins='cx-core-code cx-platform-net']
         [repo name=cx-platform-mail group=platform vmodule=mail pins='cx-platform-net']
-        [repo name=cx-platform-identity group=platform pins='cx-platform-store cx-platform-net']
+        [repo name=cx-platform-identity group=platform vmodule=identity pins='cx-platform-store cx-platform-net']
         [repo name=cx-platform-xap group=platform vmodule=xap pins='cx-platform-net cx-platform-store cx-platform-mail cx-platform-identity']
         [repo name=loop-a group=platform pins='loop-b']
         [repo name=loop-b group=platform pins='loop-a']
@@ -281,10 +243,8 @@
         [path prefix='vcx/cxnet/' repo=cx-platform-net]
         [path prefix='vcx/store/' repo=cx-platform-store]
         [path prefix='vcx/mail/' repo=cx-platform-mail]
+        [path prefix='vcx/identity/' repo=cx-platform-identity]
         [path prefix='vcx/xap/' repo=cx-platform-xap]
-        [path prefix='vcx/platform/store_' repo=cx-platform-store]
-        [path prefix='vcx/platform/session_' repo=cx-platform-identity]
-        [path prefix='vcx/platform/' repo=cx-platform-xap]
       ]"]]
       [= $srcs ([src file='vcx/cxnet/ok.v' dir=cxnet module=cxnet imps='code cx net os transport'],
                 [src file='vcx/cxnet/planted.v' dir=cxnet module=cxnet imps='store'],
@@ -293,20 +253,18 @@
                 [src file='vcx/mail/ok.v' dir=mail module=mail imps='cxnet code transport time'],
                 [src file='vcx/mail/stray.v' dir=mail module=mail imps='code'],
                 [src file='vcx/store/ok.v' dir=store module=store imps='cxnet cx'],
-                [src file='vcx/platform/ok.v' dir=platform module=platform imps='cxnet store mail cx'],
-                [src file='vcx/platform/store_x.v' dir=platform module=platform imps='cxnet'],
-                [src file='vcx/platform/session_x.v' dir=platform module=platform imps='cxnet store platform'],
-                [src file='vcx/platform/store_up.v' dir=platform module=platform imps='xap'],
-                [src file='vcx/xap/ok.v' dir=xap module=xap imps='cxnet store mail platform code cx'],
+                [src file='vcx/identity/ok.v' dir=identity module=identity imps='cxnet store cx'],
+                [src file='vcx/store/residue.v' dir=store module=store imps='platform'],
+                [src file='vcx/xap/ok.v' dir=xap module=xap imps='cxnet store mail identity code cx'],
                 [src file='vcx/cxnet/up.v' dir=cxnet module=cxnet imps='xap'],
                 [src file='vcx/ghost/g.v' dir=ghost module=ghost imps='cx'],
-                [src file='vcx/cmd/main.v' dir=cmd module=main imps='platform'],
+                [src file='vcx/cmd/main.v' dir=cmd module=main imps='xap'],
                 # a module compiled from a pinned V root (deps/<repo>/vcx/<m>/,
                 # RS-7's -path): a ring's passes, a product's is held to the pins.
                 [src file='vcx/store/pinned.v' dir=store module=store imps='cxp'],
                 [src file='vcx/cxnet/pinup.v' dir=cxnet module=cxnet imps='xpin'])]
       [= $pinned ([own dir=cxp repo=cx-core-data], [own dir=xpin repo=cx-platform-xap])]
-      [= $dirs ("cx", "code", "transport", "cxnet", "store", "mail", "platform", "xap", "ghost", "cmd")]
+      [= $dirs ("cx", "code", "transport", "cxnet", "store", "mail", "identity", "xap", "ghost", "cmd")]
       [= $vlib ("net", "os", "time")]
       [= $v [$check [?for [in $r $reg//repo] [yield $r]] [?for [in $r $reg//path] [yield $r]] $srcs $dirs $vlib $pinned]]
       [= $kinds [?for [in $f $v/failures/failure] [yield [$concat [$string $f@kind] ":" [$string $f@what]]]]]
@@ -325,13 +283,14 @@
                 "undeclared edge:vcx/cxnet/up.v: cxnet (cx-platform-net) -> xap (cx-platform-xap)",
                 # a pinned V root's module is owned by the pinned repository.
                 "undeclared edge:vcx/cxnet/pinup.v: cxnet (cx-platform-net) -> xpin (cx-platform-xap)",
-                # ... and so does a residue file of the store reaching up into xap.
-                "residue up-edge:vcx/platform/store_up.v: platform (cx-platform-store) -> xap (cx-platform-xap, which builds on cx-platform-store)",
-                "unknown import:vcx/cxnet/typo.v: nosuchmod")]
+                "unknown import:vcx/cxnet/typo.v: nosuchmod",
+                # PHASE B: the residue module is gone, so importing it names
+                # nothing any repository could pin.
+                "unknown import:vcx/store/residue.v: platform")]
       [= $missing [?for [in $w $want] [where [not [$member $w $kinds]]] [yield $w]]]
       [= $extra   [?for [in $k $kinds] [where [not [$member $k $want]]] [yield $k]]]
       [?if [?if [= [$count $missing] 0] [then [= [$count $extra] 0]] [else false]]
-        [then [?let [= $_ [$say "product-import-gate self-test OK -- the planted `import store` in a net file and a sideways net->mail import are undeclared edges; an unknown import, a pin cycle, a dangling pin, a product directory with no repository row, a file allocated away from its product directory and a vmodule shadowing vlib are each caught once; xap's split's two plants (a net file importing xap, a residue store file importing xap) are refused; own-leaf (transport), ring, vlib, pinned-product, xap-to-residue and residue-to-lower imports pass, and a module-main directory is not a product."]]
+        [then [?let [= $_ [$say "product-import-gate self-test OK -- the planted `import store` in a net file and a sideways net->mail import are undeclared edges; an unknown import, a pin cycle, a dangling pin, a product directory with no repository row, a file allocated away from its product directory and a vmodule shadowing vlib are each caught once; xap's split's plant (a net file importing xap) is refused, and so is a product file importing the retired residue `platform` (an unknown import since PHASE B); own-leaf (transport), ring, vlib, pinned-product, identity-to-lower and xap-to-every-product imports pass, and a module-main directory is not a product."]]
                 [$env:exit 0]]]
         [else [?let [= $_ [$cry [$concat "product-import-gate self-test FAILED -- missing: "
                                           [$strings:join $missing "; "]
@@ -372,12 +331,12 @@
                            [$env:exit 2]]]]]
   [= $pinned [?for [in $r $vroots] [in $p [$io:glob [$concat "deps/" $r "/vcx/*"]]] [where [$io:is-directory $p]]
                [yield [own dir=[$dir-name $p [$concat "deps/" $r "/vcx/"]] repo=$r]]]]
-  # Every file of a product directory and of the residue vcx/platform/ is read
+  # Every file of a product directory is read
   # for its imports; any OTHER vcx/ directory only for the module its first
   # file declares ([no repo row]).
   [= $srcs [?for [in $d $dirs]
              [= $files [$io:glob [$concat "vcx/" $d "/*.v"]]]
-             [= $whole [or [$member $d $vmods] [= $d "platform"]]]
+             [= $whole [$member $d $vmods]]
              [in $f [?if $whole [then $files]
                       [else [?if [= [$count $files] 0] [then ()] [else [$first $files]]]]]]
              [= $text [$io:read-file [$string $f]]]

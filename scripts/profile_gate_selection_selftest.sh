@@ -63,8 +63,9 @@ check "bytes.cxd" "a module's Ring-1 V half selects its corpus file" "vcx/code/s
 # (deps/cx-platform-store/vcx/store/stdlib_audit.v), which this rule's exact
 # string match against a LOCAL vcx/store/ path can no longer reach — as it
 # should not: nothing under vcx/store/ exists here to touch any more.
-# fabric's own code is the same shape and has not split yet.
-check "fabric.cxd" "a module's Ring-2 V code selects its corpus file" "vcx/platform/stdlib_fabric.v"
+# fabric's own code is the same shape, local in vcx/fabric/ since its split
+# (RS-24) and not extracted.
+check "fabric.cxd" "a module's Ring-2 V code selects its corpus file" "vcx/fabric/stdlib_fabric.v"
 check "xsp-auth.cxd" "a module's `half=` file selects its corpus file too" "vcx/code/stdlib_xsp_auth.v"
 check "bytes.cxd map.cxd" "two module sources select both corpus files" "stdlib/map.cx" "vcx/code/stdlib_bytes.v"
 # connector's own stdlib/connector.cx RETIRED as this example (RULED: RS-12,
@@ -80,7 +81,7 @@ check "db.cxd geo.cxd" "a module source and a corpus file together" "stdlib/geo.
 # ALL still wins wherever a module cannot be named, and wherever the change is
 # the ENGINE rather than a module: those are the doubts the fail-safe exists for.
 check "ALL" "an evaluator core file still selects everything" "vcx/code/eval_core.v"
-check "ALL" "a platform file belonging to no module row selects everything" "vcx/platform/stdlib_unregistered_xyz.v"
+check "ALL" "a product file belonging to no module row selects everything" "vcx/fabric/stdlib_unregistered_xyz.v"
 check "ALL" "a stdlib source with no registry row selects everything" "stdlib/not-a-registered-module.cx"
 check "code.cxd" "conformance/code.cxd stays selectable by name, as #1560 made it" "conformance/code.cxd"
 check "ALL" "an x/ surface still selects everything" "x/ux-web.cx"

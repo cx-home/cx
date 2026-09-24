@@ -6,8 +6,8 @@
 # the ones where it must NOT shrink the step:
 #
 #   A  a corpus file in the walk              → that file            (rule 2)
-#   B  vcx/platform/stdlib_<m>.v              → <m>.cxd              (rule 3)
-#   C  vcx/platform/stdlib_<m>_*.v            → <m>.cxd, by dropping the tail
+#   B  vcx/<product>/stdlib_<m>.v          → <m>.cxd              (rule 3)
+#   C  vcx/<product>/stdlib_<m>_*.v        → <m>.cxd, by dropping the tail
 #   D  vcx/code/stdlib_<m>.v                  → code.cxd AND <m>.cxd (3 + 4)
 #   E  stdlib/<m>.cx                          → <m>.cxd              (rule 3)
 #   F  vcx/cx/ only                           → code.cxd             (rule 4)
@@ -52,7 +52,7 @@ git config user.email t@t
 git config user.name t
 
 mkdir -p conformance/stdlib conformance/platform conformance/x conformance/xap \
-	conformance/llm vcx/platform vcx/code vcx/cx vcx/tests/fixtures_grader \
+	conformance/llm vcx/store vcx/xap vcx/code vcx/cx vcx/tests/fixtures_grader \
 	stdlib third_party/v docs
 # a synthetic corpus with the shapes the rules turn on: an exact name, the same
 # name in two rings, a family with no exact file, and a file OUTSIDE the walk
@@ -64,10 +64,10 @@ for f in conformance/stdlib/saml.cxd conformance/stdlib/json.cxd \
 	conformance/code.cxd conformance/core.cxd conformance/llm/prompts.cxd; do
 	printf '[test-suite ring=1]\n' > "$f"
 done
-printf 'source\n' > vcx/platform/stdlib_connector.v
-printf 'source\n' > vcx/platform/stdlib_saml_binding.v
-printf 'source\n' > vcx/platform/stdlib_xap.v
-printf 'source\n' > vcx/platform/stdlib_iowatch.v
+printf 'source\n' > vcx/store/stdlib_connector.v
+printf 'source\n' > vcx/store/stdlib_saml_binding.v
+printf 'source\n' > vcx/xap/stdlib_xap.v
+printf 'source\n' > vcx/store/stdlib_iowatch.v
 printf 'source\n' > vcx/code/stdlib_json.v
 printf 'source\n' > vcx/cx/parser.v
 printf 'source\n' > vcx/tests/fixtures_grader/grader.v
@@ -117,13 +117,13 @@ printf 'a case\n' >> conformance/xap/xap-on.cxd
 git add -A && git commit -qm A
 check A "conformance/xap/xap-on.cxd"
 
-# B — vcx/platform/stdlib_<m>.v
-printf 'a fn\n' >> vcx/platform/stdlib_connector.v
+# B — vcx/store/stdlib_<m>.v
+printf 'a fn\n' >> vcx/store/stdlib_connector.v
 git add -A && git commit -qm B
 check B "conformance/platform/connector.cxd"
 
-# C — vcx/platform/stdlib_<m>_*.v: saml-binding has no corpus file, saml does
-printf 'a fn\n' >> vcx/platform/stdlib_saml_binding.v
+# C — vcx/store/stdlib_<m>_*.v: saml-binding has no corpus file, saml does
+printf 'a fn\n' >> vcx/store/stdlib_saml_binding.v
 git add -A && git commit -qm C
 check C "conformance/stdlib/saml.cxd"
 
@@ -183,7 +183,7 @@ git add -A && git commit -qm M
 check M "ALL" deadbee
 
 # N — a module source with a FAMILY and no exact file
-printf 'a fn\n' >> vcx/platform/stdlib_xap.v
+printf 'a fn\n' >> vcx/xap/stdlib_xap.v
 git add -A && git commit -qm N
 check N "conformance/xap/xap-compose.cxd conformance/xap/xap-dist.cxd conformance/xap/xap-on.cxd"
 
@@ -195,7 +195,7 @@ check O ""
 # P — two corpus files at once, sorted and deduplicated (the same file named by
 #     its own edit AND by its module source must appear once)
 printf 'a case\n' >> conformance/platform/connector.cxd
-printf 'a fn\n' >> vcx/platform/stdlib_connector.v
+printf 'a fn\n' >> vcx/store/stdlib_connector.v
 printf 'a case\n' >> conformance/stdlib/saml.cxd
 git add -A && git commit -qm P
 check P "conformance/platform/connector.cxd conformance/stdlib/saml.cxd"
