@@ -83,11 +83,19 @@
     # registry/repos.cxd `vmodule=`): mime.v and the stdlib_net/http_serve/smtp/
     # imap bundle files moved with their products. Since xap's split no row
     # declares vcx/platform (the residue), so it is named for as long as it exists.
+    # A product whose V module LEFT with its repository (RULED: RS-12) is
+    # scanned in its pinned checkout deps/<repo>/vcx/<vmodule>/ once
+    # vcx/<vmodule>/ is gone: its code still ships in cx, and globbing the
+    # absent directory scanned nothing and passed (#1651).
     [$fp:flat-map [$fp:flat-map ("vcx/code",
                                   [?if [$io:exists "vcx/platform"] [then ("vcx/platform")] [else ()]],
                                   [?for [in $x [$cx:parse [$io:read-file "registry/repos.cxd"]]//repo]
                                     [where [not [= [$string [?else $x@vmodule ""]] ""]]]
-                                    [yield [$cat ("vcx/", [$string $x@vmodule])]]])
+                                    [= $local [$cat ("vcx/", [$string $x@vmodule])]]
+                                    [yield [?if [and [not [$io:is-directory $local]]
+                                                     [$io:is-directory [$cat ("deps/", [$string $x@name], "/vcx/", [$string $x@vmodule])]]]
+                                             [then [$cat ("deps/", [$string $x@name], "/vcx/", [$string $x@vmodule])]]
+                                             [else $local]]]])
                     [?fn ($x) $x]] [?fn ($d)
       [?for [in $p [$io:glob [$cat ($d, "/**/*.v")]]]
         [= $bn [$path:basename $p]]
