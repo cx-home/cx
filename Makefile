@@ -1229,7 +1229,7 @@ store-session-dep-gate: build-vcx
 # scripts/deps_cx_selftest.cx (run by test-deps-pins) proves each place.
 DEPS_CX_GIVEN := $(CX_BIN)
 DEPS_CX_MAIN = $(shell git -C "$(CURDIR)" worktree list --porcelain 2>/dev/null | sed -n '1s/^worktree //p')
-DEPS_CX_FOUND = $(shell for c in "$(CURDIR)/deps/cx-core-code/vcx/target/cx" "$(DEPS_CX_MAIN)/deps/cx-core-code/vcx/target/cx" "$$(command -v cx 2>/dev/null)" "$(HOME)/.local/bin/cx"; do [ -n "$$c" ] && [ -x "$$c" ] && { echo "$$c"; break; }; done)
+DEPS_CX_FOUND = $(shell for c in "$(CURDIR)/deps/cx-core-code/vcx/target/cx" "$(DEPS_CX_MAIN)/vcx/target/cx" "$$(command -v cx 2>/dev/null)" "$(HOME)/.local/bin/cx"; do [ -n "$$c" ] && [ -x "$$c" ] && { echo "$$c"; break; }; done)
 deps-sync deps-check deps-cx deps-present: CX_BIN ?= $(DEPS_CX_FOUND)
 
 .PHONY: deps-sync deps-check deps-cx
@@ -1238,7 +1238,7 @@ deps-cx:
 	if [ -z "$(DEPS_CX_GIVEN)" ] && [ -n "$(CX_BIN)" ] && [ -x "$(CX_BIN)" ]; then \
 	  case "$(CX_BIN)" in \
 	  "$(CURDIR)/deps/cx-core-code/vcx/target/cx") why="this tree's build" ;; \
-	  "$(DEPS_CX_MAIN)/deps/cx-core-code/vcx/target/cx") why="the main checkout's build: git worktree list" ;; \
+	  "$(DEPS_CX_MAIN)/vcx/target/cx") why="the main checkout's build: git worktree list" ;; \
 	  "$(HOME)/.local/bin/cx") why="~/.local/bin/cx" ;; \
 	  *) why="cx on PATH" ;; \
 	  esac; \
