@@ -191,7 +191,7 @@ corpus example or a measured number beside it — so the excitement is checkable
 holds: what is measured is labelled measured). It applies to the documentation epic after the cut;
 nothing before 2026-09-26 changes because of it.
 
-## RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c)
+## RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1, D71a, D72a, D73a, D74c, D75a, D76c, D77d, D78a)
 
 **Status: RULED (owner, 2026-09-23, in session, letter by letter).** The integrator posted D54–D56 and
 D62–D67 on [#1591](https://github.com/cx-home/cx-private/issues/1591) through the afternoon. The owner
@@ -209,7 +209,7 @@ earlier posting framed the options differently, that is said), the chosen option
 letters of the same kind — allocation and directory decisions — followed at the next integrator
 session's start (posted 21:2xZ) and were answered ~21:4xZ: **D68 = (a)** and **D69 = (b)**; then D70
 (#1636), put again with its long-term consequences at the owner's request, was answered ~21:5xZ:
-**D70 = (a1)**. The three are recorded last. Three more followed after midnight (2026-09-24, posted on the board and answered there): **D71 = (a)** (~01:0xZ), **D72 = (a)** (~01:2xZ) and a second letter under D56a, on where its grading cores live (~02:1xZ, answered **(a)**); they are recorded after D70a1. Two more were answered ~03:5xZ the same morning: **D73 = (a)** and **D74 = (c)**, recorded last. D76, the consequence the D71a branch measured, was answered ~08:0xZ: **D76 = (c)**, recorded after them. D75 followed ~08:1xZ: **D75 = (a)**, recorded last.
+**D70 = (a1)**. The three are recorded last. Three more followed after midnight (2026-09-24, posted on the board and answered there): **D71 = (a)** (~01:0xZ), **D72 = (a)** (~01:2xZ) and a second letter under D56a, on where its grading cores live (~02:1xZ, answered **(a)**); they are recorded after D70a1. Two more were answered ~03:5xZ the same morning: **D73 = (a)** and **D74 = (c)**, recorded last. D76, the consequence the D71a branch measured, was answered ~08:0xZ: **D76 = (c)**, recorded after them. D75 followed ~08:1xZ: **D75 = (a)**, recorded after D76c. Two more followed later the same day (2026-09-24), posted and answered on the board as the tooling and xap leaves ran: **D78 = (a)** (~16:4xZ) and **D77 = (d)** (~16:5xZ, a fourth option put after D78's letter); they are recorded last.
 
 **D54c — `vcx/tests/flow_umbrella_test.v` splits by subject.** The umbrella's 16 functions shell out
 to `cx flow run/serve/--help` and read `$flow:status` — they test cx's CLI verbs AND flow's package.
@@ -388,6 +388,40 @@ were not posted there. No code, spec or allocation moves under it.
 **D76c — sasl stays in `vcx/code`; the ring decides where a module lives.** Moving the five mail files under D71a took the sasl, smtp and imap natives out of every composition without cx-platform-mail — the `cli` and `embed` profiles, libcx and the wasm build — where they had answered inside `code`: measured on the D71a branch, `[$sasl:mechanisms …]` refused there as `CXER0136 no callable "sasl-mechanisms"`. sasl's own row reads `ring=1 ns=cx-stdlib` (pure, no network) yet its code was allocated to cx-platform-mail. The options, as the D71a branch's RESULTS posted them (board, 2026-09-24 ~07:1xZ): (a) accept: re-row sasl into the platform group (its only callers are smtp and imap, RS-5) — the profiles refuse all three like any platform name; (b) a second V module in cx-platform-mail holding the three pure halves (importing only `code` and `cx`) that the cli, embed and libcx compositions import — the Ring-1 halves stay in every profile and the product keeps its code, but `cmd`'s cli profile then imports a product module; **(c) sasl alone returns to `vcx/code` (cx-core-code) and smtp and imap stay moved.** The owner answered (c) (~08:0xZ): sasl is Ring 1 and pure, so it lives in `vcx/code` and its `registry/repos.cxd` allocation moves from cx-platform-mail to cx-core-code; smtp and imap stay in cx-platform-mail, and their absence from the embed profile is by design. The branch recommended (a); the owner chose (c). Applied on `impl/cx-F-dispatch-registry`.
 
 **D75a — binding-API parity: cx publishes the ABI test vectors, each binding grades itself.** The four bindings' leave (merged as `b648d8839`) retired `test-binding-api-parity` with its inputs, and no successor grades four-way binding-API parity: each binding repository's own gate runs `deps-check` alone, and `conformance/binding_api.cxd` and its three scripts stay tracked in cx, unwired (the leave's RESULTS, `_gate_evidence/pipeline_xbindings/RESULTS.md`; board, 2026-09-24 ~05:4xZ, which posted the gap as the letter). The answer, as the board records it (~08:1xZ): **(a) cx publishes the ABI test vectors — `tests/abi`'s cases as a corpus file — and each binding repository grades itself against them in its own lane with the released cx; parity becomes a property each binding proves alone.** The board recorded the answer and the gap only; the letter's other options were not posted there. A small item after the cut (queued with cx-platform-xsp, the reference-apps repository, the documentation and CI); nothing moves under it before then.
+
+**D78a — the diagram V half re-allocates to `cx-core-code`.** The tooling leave's own RESULTS
+posted the letter (`_gate_evidence/pipeline_xtooling/RESULTS.md` §Flags item 2, board ~16:3xZ): the
+diagram V half — `vcx/code/{stdlib_diagram,diagram,diagram_cx_seam,code_diagram}.v`,
+`vcx/tests/{diagram_umbrella,code_diagram_roundtrip}_test.v`, the 746 goldens under
+`vcx/tests/testdata/{code_diagram,diagram_*}_golden/` and `conformance/code_diagram.cxd` — could
+not leave for cx-tooling with the rest of `tooling/`: libcx's C ABI exports `cx_code_diagram`,
+`cx_code_diagram_with_level` and `cx_code_diagram_with_view_level` from it (`cabi.v`,
+`include/cx.h`, `scripts/wasm/cxlib.js`), `api.v` renders `cx diagram` from it and
+`vcx/cmd/diagram.v` calls `code_diagram_with_view_level` — same-module calls, and D71a's hook
+does not reach an ABI export. The options, as the tooling leave posted them: **(a) re-allocate the
+V half, its tests, goldens and `code_diagram.cxd` to `cx-core-code` — the libcx ABI's owner; the
+row then takes `status=extracted`; diagram stays a two-repo module like ft**; (b) move it behind
+the hooks and retire the three `cx_code_diagram*` exports from libcx and the wasm playground (an
+ABI change: bindings and the playground lose diagram); (c) keep it PARTLY EXTRACTED, as now.
+Recommended (a). The owner answered (a) (~16:4xZ): diagramming code is a core ability of the
+language (the owner's words); the cx-tooling row takes `status=extracted` once the re-allocation
+lands, in a follow-up commit on the next registry-touching branch.
+
+**D77d — xap's corpus carries its own registry-store fixture.** Posed on the board (~14:0xZ, at
+the xap leave's repository step): `conformance/xap/xap-dist.cxd` cases 025/028/037/038
+(git-registry install/catalog) read `registry/store/`, allocated to cx-registry (extracted) —
+xap's own corpus needs a fixture another repository owns, and neither a pin on cx-registry (xap's
+conformance would then follow live registry content) nor a copy of the live store (drift) was
+wanted. A fourth option was put with D78's letter (~16:4xZ): **(d) xap's corpus carries its OWN
+minimal registry-store fixture written to the registry spec; cx-registry's corpus grades the live
+store against the same spec; the real-store integration is the cross-repository lane after the cut
+(RS-29)**. Recommended (d). The owner answered (d) (~16:5xZ), in the same words: xap's corpus
+carries its own minimal registry-store fixture written to the registry spec; cx-registry's corpus
+grades the live store against the same spec; the real-store integration is RS-29's cross-repository
+lane after the cut. Applied by the xap leave agent in `xap-work` — a fixture at
+`conformance/xap/fixtures/registry-store/` (a minimal cxstore fixture of xap's own, published from
+`packages/gtin/gtin.cx`) replaces the read of `registry/store/` in xap-dist-025/028/037/038,
+re-expected against the fixture's own hashes; 246/246.
 
 ## Not decided here (RS-30, RS-31)
 
