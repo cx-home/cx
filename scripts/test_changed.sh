@@ -188,8 +188,9 @@ step_globs() {
     # Ring-0 step: vcx/cx/*_test.v + the vcx/fixtures corpus loader. Cannot
     # be reached by a code/ or platform/ edit — cx imports nothing above it.
     test-vcx-cx)                   echo "$RING0 $RING_SUP conformance/*" ;;
-    # cxstore imports cx only.
-    test-vcx-cxstore)              echo "$RING0 $RING_STORE $RING_SUP" ;;
+    # test-vcx-cxstore RETIRED (RULED: RS-12, RS-8; #1591 item K3): vcx/cxstore/
+    # left with the extraction of cx-platform-store; the target and its
+    # TEST_TARGETS entry are gone too (Makefile).
     # in-module tests for vcx/code + vcx/platform.
     test-vcx-code)                 echo "$RING_LIB $RING_SUP conformance/* stdlib/* deps.cxd" ;;
     # vcx/tests/ is `module main` importing code + platform + cx + fixtures.

@@ -20,8 +20,8 @@
 #   B  one engine file (vcx/code/…)              the suite, per file, AND both
 #                                                wall-clock tail steps
 #   C  one scripts/ file                         the FULL union (build infra)
-#   D  one module source (vcx/platform/          the shard grading its corpus +
-#      stdlib_journal.v)                         every test that NAMES it, and
+#   D  one module source (vcx/identity/           the shard grading its corpus +
+#      stdlib_authz_store.v)                     every test that NAMES it, and
 #                                                not the whole suite
 #   E  a vcx/tests/ shared helper                the WHOLE suite
 #   F  an input path that is NOT ON DISK         still selects its step (the
@@ -119,14 +119,19 @@ else
 fi
 
 # ── D — one module source ───────────────────────────────────────────────────
-run vcx/store/stdlib_journal.v > "$T/d"
+# vcx/store/stdlib_journal.v RETIRED as this case's example (RULED: RS-12,
+# RS-8; #1591 item K3): vcx/store/ left with the extraction of
+# cx-platform-store. vcx/identity/stdlib_authz_store.v is the same shape (a
+# module source graded through one fixture shard AND named literally by
+# umbrella tests outside it).
+run vcx/identity/stdlib_authz_store.v > "$T/d"
 d_files=$(suite_files_of "$T/d")
 d_n=$(printf '%s\n' "$d_files" | grep -c . || true)
 d_total=$(ls "$ROOT/vcx/tests"/*_test.v | wc -l | tr -d ' ')
 d_named=1
 for f in $d_files; do
 	case "$f" in *code_eval_fixtures_shard_*) continue ;; esac
-	grep -qF -- journal "$ROOT/$f" || d_named=0
+	grep -qF -- authz-store "$ROOT/$f" || d_named=0
 done
 if [ "$d_n" -ge 2 ] && [ "$d_n" -lt "$d_total" ] \
 	&& printf '%s\n' "$d_files" | grep -q 'code_eval_fixtures_shard_' \
