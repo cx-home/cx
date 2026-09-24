@@ -3537,7 +3537,7 @@ CODE_SERIAL_RETRY := vcx/code/code_module_umbrella_test.v
 # (found removing cx-platform-db's vcx/cxdb/, RULED: RS-12, RS-8, #1591 item
 # K3). The extracted product's own `v test` runs from the pin, same as its
 # `cx corpus`.
-CODE_TEST_DIRS := vcx/code/ vcx/identity/ vcx/fabric/ vcx/xap/
+CODE_TEST_DIRS := vcx/code/ vcx/fabric/ vcx/xap/
 test-vcx-code: build-vcx-dev check-serial-retry-rosters
 	@$(JS_CLOSE) log=vcx/target/test-code-run.log; stf=vcx/target/test-code-status; \
 	{ $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(CODE_TEST_DIRS) 2>&1; echo $$? > $$stf; } | tee $$log; \
@@ -3774,8 +3774,11 @@ test-vcx-columnar: build-vcx-dev skip-ledger-reset
 	fi
 	@$(JS_CLOSE) if [ ! -f "$(call CX_SKIP_FILE,test-vcx-columnar)" ]; then $(MAKE) -C vcx arrow-shim; fi
 	@$(JS_CLOSE) if [ ! -f "$(call CX_SKIP_FILE,test-vcx-columnar)" ]; then \
-	  PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test vcx/store/store_columnar_test.v vcx/store/store_columnar_lineage_test.v; \
+	  PKG_CONFIG_PATH="$(COLUMNAR_ARROW_PKGCONFIG):$$PKG_CONFIG_PATH" $(V) -cc cc -enable-globals $(CX_GC) -d cxstore_columnar -d cx_arrow_files test deps/cx-platform-store/vcx/store/store_columnar_test.v deps/cx-platform-store/vcx/store/store_columnar_lineage_test.v; \
 	fi
+	# vcx/store/ RETIRED (RULED: RS-12, RS-8; #1591 item K3) — same fix as
+	# test-vcx-sqlite below: these two files moved with cx-platform-store's
+	# extraction and are read from the pinned checkout.
 
 # ── sqlite [$store] backend gate — #77 / #220 (concurrent-writer durability) ──
 # The sqlite:// store backend lives behind `-d cxstore_sqlite` (links libsqlite3).
@@ -3837,8 +3840,17 @@ test-vcx-sqlite: build-vcx-dev skip-ledger-reset
 	  line="SKIP test-vcx-sqlite: libsqlite3 development headers not discoverable via pkg-config (absent prerequisite, #318 — brew install sqlite / apt libsqlite3-dev)"; \
 	  echo "$$line"; mkdir -p $(CX_SKIP_DIR); echo "$$line" > $(call CX_SKIP_FILE,test-vcx-sqlite); \
 	else \
-	  $(V) -cc cc $(CX_GC) -d cxstore_sqlite -cflags "$(SQLITE_CFLAGS)" -ldflags "$(SQLITE_LDFLAGS)" test vcx/store/store_sqlite_test.v vcx/store/store_sqlite_encryption_test.v vcx/store/store_concurrent_writer_test.v; \
+	  $(V) -cc cc $(CX_GC) -d cxstore_sqlite -cflags "$(SQLITE_CFLAGS)" -ldflags "$(SQLITE_LDFLAGS)" test deps/cx-platform-store/vcx/store/store_sqlite_test.v deps/cx-platform-store/vcx/store/store_sqlite_encryption_test.v deps/cx-platform-store/vcx/store/store_concurrent_writer_test.v; \
 	fi
+	# vcx/store/ RETIRED (RULED: RS-12, RS-8; #1591 item K3): the three files
+	# above moved with cx-platform-store's extraction; this recipe reads them
+	# from the pinned checkout deps.cxd fetches (`build-vcx-dev`'s own
+	# `deps-present` prerequisite already refuses a run with no checkout).
+	# Found stale because pkg-config is absent on this box (a DIFFERENT #318
+	# skip masked it): a direct compile against deps/cx-platform-store/vcx/
+	# store/{store_sqlite_test.v,store_sqlite_encryption_test.v,store_
+	# concurrent_writer_test.v} with the same flags, sqlite headers found via
+	# Homebrew directly, passed 3/3.
 
 # V module search path. `lang/v/native/` + `lang/v/conformance.v` import
 # `cx` and `code` modules whose source lives under `vcx/`. The historical

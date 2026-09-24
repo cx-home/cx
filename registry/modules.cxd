@@ -275,7 +275,7 @@ needs becomes its own Ring-1 module.
      cx-platform/audit at the cutover; declared `incoming` ahead of its merge
      (OL-15) and current since release/0.18 carries it (861ca66ec). ]
   [module name=audit ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-store spec=deps/cx-platform-store/spec/03-approved/platform/audit.md corpus=deps/cx-platform-store/conformance/platform/audit.cxd source=deps/cx-platform-store/stdlib/audit.cx code='deps/cx-platform-store/vcx/store/stdlib_audit.v deps/cx-platform-store/vcx/store/stdlib_audit_register.v' half=none status=current]
-  [module name=authz-store ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/authz-store.md corpus=conformance/platform/authz-store.cxd source=stdlib/authz-store.cx code='vcx/identity/stdlib_authz_store.v vcx/identity/stdlib_authz_store_register.v' half=none status=current]
+  [module name=authz-store ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-identity spec=deps/cx-platform-identity/spec/03-approved/platform/authz-store.md corpus=deps/cx-platform-identity/conformance/platform/authz-store.cxd source=deps/cx-platform-identity/stdlib/authz-store.cx code='deps/cx-platform-identity/vcx/identity/stdlib_authz_store.v deps/cx-platform-identity/vcx/identity/stdlib_authz_store_register.v' half=none status=current]
   [; connector — #1430's connector kit, spec-first: the spec and its 134-case
      attack corpus landed before any code, so this row read `planned` while
      its source and code columns named where #1430 would write them. #1430's
@@ -298,7 +298,7 @@ needs becomes its own Ring-1 module.
      revocation to a journal and folds it back (an effect that outlives the
      process). Their natives register under the `did` / `vc` index prefixes
      beside the Ring-1 dispatchers, with disjoint names. ]
-  [module name=did-web ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/did-web.md corpus=conformance/platform/did-web.cxd source=stdlib/did-web.cx code='vcx/identity/stdlib_did_web.v vcx/identity/stdlib_did_web_register.v' half=none status=current]
+  [module name=did-web ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-identity spec=deps/cx-platform-identity/spec/03-approved/platform/did-web.md corpus=deps/cx-platform-identity/conformance/platform/did-web.cxd source=deps/cx-platform-identity/stdlib/did-web.cx code='deps/cx-platform-identity/vcx/identity/stdlib_did_web.v deps/cx-platform-identity/vcx/identity/stdlib_did_web_register.v' half=none status=current]
   [; flow is a pure-CX orchestrator over the journal, sched and uuid
      primitives — in the platform group by what it reaches, with no V file of its own.
 
@@ -333,7 +333,7 @@ needs becomes its own Ring-1 module.
   [module name=journal ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-store spec=deps/cx-platform-store/spec/03-approved/platform/journal.md corpus=deps/cx-platform-store/conformance/platform/journal.cxd source=deps/cx-platform-store/stdlib/journal.cx code='deps/cx-platform-store/vcx/store/stdlib_journal.v deps/cx-platform-store/vcx/store/journal_ingest.v deps/cx-platform-store/vcx/store/stdlib_journal_register.v' half=none status=current]
   [module name=live ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-store spec=deps/cx-platform-store/spec/03-approved/platform/live.md corpus=deps/cx-platform-store/conformance/platform/live.cxd source=deps/cx-platform-store/stdlib/live.cx code='deps/cx-platform-store/vcx/store/stdlib_live.v deps/cx-platform-store/vcx/store/stdlib_live_register.v' half=none status=current]
   [module name=net ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-net spec=deps/cx-platform-net/spec/03-approved/platform/net.md corpus=deps/cx-platform-net/conformance/platform/net.cxd source=deps/cx-platform-net/stdlib/net.cx code='deps/cx-platform-net/vcx/cxnet/stdlib_net.v deps/cx-platform-net/vcx/cxnet/stdlib_net_register.v' half=none status=current]
-  [module name=session ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/session.md corpus=conformance/platform/session.cxd source=stdlib/session.cx code='vcx/identity/stdlib_session.v vcx/identity/identity_connector_builtins.v vcx/identity/stdlib_session_register.v' half=none status=current]
+  [module name=session ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-identity spec=deps/cx-platform-identity/spec/03-approved/platform/session.md corpus=deps/cx-platform-identity/conformance/platform/session.cxd source=deps/cx-platform-identity/stdlib/session.cx code='deps/cx-platform-identity/vcx/identity/stdlib_session.v deps/cx-platform-identity/vcx/identity/identity_connector_builtins.v deps/cx-platform-identity/vcx/identity/stdlib_session_register.v' half=none status=current]
   [module name=sftp ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-net spec=deps/cx-platform-net/spec/03-approved/platform/sftp.md corpus=deps/cx-platform-net/conformance/platform/sftp.cxd source=deps/cx-platform-net/stdlib/sftp.cx code=deps/cx-platform-net/vcx/cxnet/stdlib_sftp.v half=none status=planned]
   [module name=smtp ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-mail spec=deps/cx-platform-mail/spec/03-approved/platform/smtp.md corpus=deps/cx-platform-mail/conformance/platform/smtp.cxd source=deps/cx-platform-mail/stdlib/smtp.cx code='deps/cx-platform-mail/vcx/mail/stdlib_smtp_wire.v deps/cx-platform-mail/vcx/mail/stdlib_smtp_wire_register.v' half='vcx/code/stdlib_smtp.v vcx/code/stdlib_smtp_server.v' status=current]
   [; sso — #1394's enterprise-SSO handler surface, pure CX over
@@ -361,7 +361,7 @@ needs becomes its own Ring-1 module.
      std-lib/ and conformance/stdlib/ are in the platform directories here and
      its four `-to` columns are spent rather than carried. ]
   [module name=sync ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/sync.md corpus=conformance/platform/sync.cxd source=stdlib/sync.cx code=vcx/platform/stdlib_sync.v half=none status=planned]
-  [module name=vc-revocation ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/platform/vc-revocation.md corpus=conformance/platform/vc-revocation.cxd source=stdlib/vc-revocation.cx code='vcx/identity/stdlib_vc_revocation.v vcx/identity/stdlib_vc_revocation_register.v' half=none status=current]
+  [module name=vc-revocation ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-identity spec=deps/cx-platform-identity/spec/03-approved/platform/vc-revocation.md corpus=deps/cx-platform-identity/conformance/platform/vc-revocation.cxd source=deps/cx-platform-identity/stdlib/vc-revocation.cx code='deps/cx-platform-identity/vcx/identity/stdlib_vc_revocation.v deps/cx-platform-identity/vcx/identity/stdlib_vc_revocation_register.v' half=none status=current]
   [module name=xap ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/xap/xap_module.md corpus=conformance/xap/xap-serve.cxd source=stdlib/xap.cx code='vcx/xap/stdlib_xap.v vcx/xap/stdlib_xap_register.v' half=none status=current]
   [; xsp-auth — the XSP-AUTH handshake calculus, a MODULE since RS-15 rather
      than the natives family it was: the thirteen `auth-*` defs left
@@ -374,7 +374,7 @@ needs becomes its own Ring-1 module.
      connections and the store V module may not import identity. The module
      still moves whole with identity (#1609), so the store's calls into the half
      are the RS-24 store branch's LETTER to the owner. ]
-  [module name=xsp-auth ring=1 group=platform ns=cx-platform kind=module spec=spec/03-approved/xap/xsp-auth.md corpus=conformance/xap/xsp-auth.cxd source=stdlib/xsp-auth.cx code=vcx/identity/stdlib_xsp_auth_register.v half=vcx/code/stdlib_xsp_auth.v status=current]
+  [module name=xsp-auth ring=1 group=platform ns=cx-platform kind=module repo=cx-platform-identity spec=deps/cx-platform-identity/spec/03-approved/xap/xsp-auth.md corpus=deps/cx-platform-identity/conformance/xap/xsp-auth.cxd source=deps/cx-platform-identity/stdlib/xsp-auth.cx code=deps/cx-platform-identity/vcx/identity/stdlib_xsp_auth_register.v half=vcx/code/stdlib_xsp_auth.v status=current]
 
   [; ── The x/ graduation (RULED: RS-4, RS-1 — owner D45a,
        ledger/rulings_2026_09_23_x_graduation_d45a.md). These eleven were the

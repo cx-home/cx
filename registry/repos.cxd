@@ -68,7 +68,7 @@ the rule carries a `why=`. The recurring reasons, once:
   [repo name=cx-core-code group=core ring=1 ships=binary about='the language: evaluator, stdlib, LSP, libcx, the cli and embed builds']
   [repo name=cx-platform-net group=platform ring=none ships=binary vmodule=cxnet status=extracted at=0a4f2114af1e29a19362b24069061c913c9a0374 pins='cx-core-code' about='sockets, TLS, the HTTP server, the XSP transport bindings, ftp, sftp, file_surface' why='EXTRACTED (RULED: RS-12, RS-24, #1591 item 20), the third V product (after core-data): its own vcx/cxnet/ (module cxnet) and vcx/transport/ leave with it. It owns no tracked path here any more; cx reaches it through deps.cxd, which pins it at the sha at= records, and registry/modules.cxd\'s http, net, ftp and sftp rows -- plus the file_surface catalog row -- name the pinned checkout']
   [repo name=cx-platform-mail group=platform ring=none ships=binary vmodule=mail pins='cx-platform-net' at=8afacaaeae929436dcd24074cabe8ae4cf8b50c4 about='SMTP and IMAP, server and client cores, sasl' why='PARTLY EXTRACTED (RULED: RS-12, RS-19, #1591 item 20): deps.cxd pins it with a v-fork -- NOT YET PUSHED to cx-home/cx-platform-mail (component-repo pushes are the integrator\'s, RS-8; the commit is prepared in the mover\'s clone and named by sha in RESULTS.md, per the K3 brief) -- its wire V module (vcx/mail/, module mail) compiles from deps/cx-platform-mail/vcx through -path, and its spec/corpus/source are graded from the pin. Five files remain below: the declared Ring-1 halves of imap and smtp and sasl\'s own dispatch, each still called INTRA-MODULE by vcx/code/stdlib_dispatch.v (sasl_stdlib_builtin, smtp_stdlib_builtin, imap_stdlib_builtin) -- a plain same-module V call, not an `import`, so the file cannot physically leave the `code` V module without becoming a second module those call sites would then have to import and qualify. Named, with why, in the LETTER of _gate_evidence/pipeline_xmail/RESULTS.md; the row takes status=extracted the day they leave or are re-allocated']
-  [repo name=cx-platform-identity group=platform ring=none ships=binary vmodule=identity pins='cx-platform-store cx-platform-net' about='sessions, the XSP-AUTH handshake, principal mint, did:web']
+  [repo name=cx-platform-identity group=platform ring=none ships=binary vmodule=identity pins='cx-platform-store cx-platform-net' at=4cfa0234d63bf86dacbbafe53f7dab29e9bd4add about='sessions, the XSP-AUTH handshake, did:web, authz-store, vc-revocation' why='PARTLY EXTRACTED (RULED: RS-12, RS-8; #1591 item K3): deps.cxd pins it with a v-fork -- NOT YET PUSHED to cx-home/cx-platform-identity (component-repo pushes are the integrator\'s, RS-8; the commit is prepared in the mover\'s clone and named by sha in RESULTS.md, per the K3 brief) -- its V module (vcx/identity/, module identity) compiles from deps/cx-platform-identity/vcx through -path, and its session/authz-store/did-web/vc-revocation/xsp-auth spec/corpus/source are graded from the pin. One file remains below: xsp-auth\'s declared Ring-1 half (modules.cxd half=), vcx/code/stdlib_xsp_auth.v -- a permanent architecture split (RS-24/D34a: the store server runs it and the store V module may not import identity), not a discovered same-module wall awaiting a hook, so it is named here and in K3\'s RESULTS.md, not a LETTER. The row takes status=extracted the day it is pushed']
   [repo name=cx-platform-store group=platform ring=none ships=binary vmodule=store pins='cx-core-code cx-platform-net' at=57cd960b901ac5be0828619cfa718f706143f0d4 about='the storage engine, its substrates, journal/live/audit, ft, and the store server' why='PARTLY EXTRACTED (RULED: RS-12, RS-8, D71a; #1591 item K3): the RS-24 vcx/store/ split (module store) already stood alone from vcx/platform/, so extraction moved it, vcx/cxstore/ and vcx/cmd/store_ whole out -- store\'s, journal\'s, live\'s and audit\'s spec, corpus and source now name deps/cx-platform-store/ in registry/modules.cxd, and so does ft\'s CX-level surface (stdlib/ft.cx, its spec, its corpus), even though ft is a Ring-1 cx-stdlib module the store repository merely carries as its only consumer. Four files remain: vcx/code/stdlib_ft.v, ft\'s V dispatch half -- code\'s stdlib_dispatch.v calls ft_stdlib_builtin() as a same-module V function call, not an import (D71a, the same wall the mail leave step\'s LETTER found for imap/smtp/sasl); and vcx/cmd/store_{serve,rotate,principal}_d_cx_platform.v, found building this branch (RS-8): platform_verbs_d_cx_platform.v (module main, the platform verb table) calls run_store_serve/run_store_rotate_kek/run_store_mint_principal intra-module, the identical wall one level up the tree. All four stay cx-private\'s; the code half moves through the registration hook once impl/cx-F-dispatch-registry merges, the cmd half has no such hook yet (a LETTER: the same registration-hook shape D71a names would let a product register its own verbs into platform_verbs_d_cx_platform.v\'s table instead of being called by name from it). The row takes status=extracted the day all four leave or are re-allocated']
   [repo name=cx-platform-db group=platform ring=none ships=binary vmodule=cxdb pins='cx-core-code' status=extracted at=1834c802b4da2c4e6cba362ceb790f46b392157d about='external database access: $sql-*, $redis-*, the drivers' why='EXTRACTED (RULED: RS-12, RS-8; #1591 item K3), a V product: the RS-24 vcx/cxdb/ split (module cxdb) already stood alone from vcx/platform/, so extraction moved it out whole -- the sql, redis and db rows of registry/modules.cxd now name their spec, corpus and code under deps/cx-platform-db/, and xap (its only in-tree consumer, per its own pins=) reaches the dispatch registration through the pin, not a tracked path. It has no [path] rules any more; `cx` reaches it through deps.cxd, which pins it at the sha `at=` records']
   [repo name=cx-platform-fabric group=platform ring=none ships=binary vmodule=fabric pins='cx-platform-store cx-platform-identity cx-platform-net' about='messaging and fabric-serve']
@@ -204,41 +204,20 @@ the rule carries a `why=`. The recurring reasons, once:
   [path exact='vcx/code/stdlib_smtp.v' repo=cx-platform-mail why='the DECLARED Ring-1 half of the smtp module (modules.cxd half=): smtp_stdlib_builtin is called intra-module by vcx/code/stdlib_dispatch.v; it cannot leave the `code` V module (RULED: RS-19\'s LETTER)']
   [path exact='vcx/code/stdlib_smtp_server.v' repo=cx-platform-mail why='the smtp half\'s server core, same file as its pair above']
 
-  [; ── platform: identity ────────────────────────────────────────────── ]
-  [path prefix='vcx/identity/' repo=cx-platform-identity why='identity\'s V module, module identity (RULED: RS-24, D31a, D32a): the session, authz-store, did-web and vc-revocation dispatchers and the xsp-auth registration, each with its register file (unchanged), moved whole out of vcx/platform/ (six prefix rules became this one) -- among them identity_connector_builtins.v, the credential binding, the token store and the secret handle that were the connector kit native half (RS-6, #1589, #1591 item 9), and stdlib_vc_revocation.v, credential lifecycle being identity\'s product and the journal it writes to the substrate, not the owner. It imports store, cxnet, code, cx and cxstore only; the pure XSP-AUTH calculus stays in vcx/code as xsp-auth\'s declared half (the rule below)']
-  [path prefix='vcx/code/stdlib_xsp_auth' repo=cx-platform-identity why='the DECLARED Ring-1 half of cx-platform/xsp-auth (modules.cxd half=): the pure XSP-AUTH calculus, which RS-24 moved into vcx/code because the store server runs it and the store V module may not import identity (D34a). A module moves whole (#1609), so the half stays with the module, as the smtp/imap halves do (RS-19); the store\'s calls into it are the RS-24 store branch\'s LETTER']
-  [path exact='stdlib/session.cx' repo=cx-platform-identity]
-  [path exact='stdlib/xsp-auth.cx' repo=cx-platform-identity why='the handshake calculus became a module of its own (RULED: RS-15); its natives are here too, as its declared Ring-1 half in vcx/code since RS-24']
-  [; RS-14's two new surfaces. did-web is #1589's own words — identity holds
-     "did:web resolution (the one impure did verb)" — so the module, its page,
-     its corpus and its natives land here. vc-revocation is NOT named by
-     #1589's per-repo bullets: the journal it appends to is the store's, but
-     the PRODUCT is credential lifecycle, and identity is where the credential
-     surface lives beside session, the handshake and the principal mint. The
-     alternative (cx-platform-store, on the substrate) is a LETTER on this
-     branch's RESULTS.md, not a settled reading. ]
-  [path exact='stdlib/did-web.cx' repo=cx-platform-identity]
-  [path exact='spec/03-approved/platform/did-web.md' repo=cx-platform-identity]
-  [path exact='conformance/platform/did-web.cxd' repo=cx-platform-identity]
-  [path exact='stdlib/vc-revocation.cx' repo=cx-platform-identity]
-  [path exact='spec/03-approved/platform/vc-revocation.md' repo=cx-platform-identity]
-  [path exact='conformance/platform/vc-revocation.cxd' repo=cx-platform-identity]
-  [; authz-store — the journaled trust store RS-13 cut out of authz. #1589's
-     per-repo bullets do not name it: the journal it appends to is the store's,
-     but the PRODUCT is the authority/trust model, and RS-6 has the store
-     server CONSUME the trust primitives rather than own them. Identity is
-     where that model sits, beside session, the handshake and the principal
-     mint. The alternative (cx-platform-store, on the substrate) is a LETTER on
-     this branch's RESULTS.md, not a settled reading. ]
-  [path exact='stdlib/authz-store.cx' repo=cx-platform-identity]
-  [path exact='spec/03-approved/platform/authz-store.md' repo=cx-platform-identity]
-  [path exact='conformance/platform/authz-store.cxd' repo=cx-platform-identity]
-  [path exact='spec/03-approved/platform/session.md' repo=cx-platform-identity]
-  [path exact='spec/03-approved/xap/xap_identity_model.md' repo=cx-platform-identity]
-  [path exact='spec/03-approved/xap/xsp-auth.md' repo=cx-platform-identity]
-  [path exact='conformance/platform/session.cxd' repo=cx-platform-identity]
-  [path exact='conformance/xap/xsp-auth.cxd' repo=cx-platform-identity]
-  [path prefix='vcx/tests/session_' repo=cx-platform-identity]
+  [; ── platform: identity RETIRED (RULED: RS-12, RS-8; #1591 item K3) ─────
+     Every rule of this block but one left with cx-platform-identity's leave
+     step: vcx/identity/ (module identity; the session, authz-store, did-web
+     and vc-revocation dispatchers and the xsp-auth registration, each with
+     its register file, unchanged but for the path -- among them
+     identity_connector_builtins.v, the connector kit native half, and
+     stdlib_vc_revocation.v), stdlib/{session,authz-store,did-web,vc-
+     revocation,xsp-auth}.cx, their specs (including
+     spec/03-approved/xap/xap_identity_model.md) and corpora, and
+     vcx/tests/session_persistence_test.v. The repository's own row (above)
+     carries `at=` and its full why=; each artifact's new home is
+     registry/modules.cxd's session/authz-store/did-web/vc-revocation/xsp-
+     auth rows, which name deps/cx-platform-identity/ directly. ]
+  [path prefix='vcx/code/stdlib_xsp_auth' repo=cx-platform-identity why='the DECLARED Ring-1 half of cx-platform/xsp-auth (modules.cxd half=): the pure XSP-AUTH calculus, which RS-24 moved into vcx/code because the store server runs it and the store V module may not import identity (D34a). A module moves whole (#1609), so the half stays with the module, as the smtp/imap halves do (RS-19); it is the ONE identity-allocated path that stays tracked here (K3\'s RESULTS.md names it by name, not a LETTER — this is a declared architecture split, not a discovered wall); the store\'s calls into it are the RS-24 store branch\'s LETTER']
 
   [; ── platform: fabric ──────────────────────────────────────────────── ]
   [path prefix='vcx/fabric/' repo=cx-platform-fabric why='fabric\'s V module, module fabric (RULED: RS-24, D31a, D32a): the fabric dispatcher (embedded tier), its remote tier, the served tier fabric-serve runs (fabric_service.v) and the register file (unchanged), moved whole out of vcx/platform/ (two prefix rules became this one); it imports store, identity, cxnet and the rings only']
