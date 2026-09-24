@@ -1,0 +1,288 @@
+[test-suite name=abi ring=0
+  [doc [#
+# CX ABI test vectors — the four bindings' shared witness (D75a, RS-31)
+#
+# Normative reference: core/abi.md §2 (symbol catalog).
+#
+# RS-31/D75a: the four active bindings (python, go, rust, v) left this
+# repository whole (#1591 item K3, RULED: RS-12, RS-8). Their four-way
+# Layer-1 parity check (`test-binding-api-parity`, graded against
+# conformance/binding_api.cxd's bespoke `[call …]`/`[out-text …]` mini
+# syntax) retired with them — LETTER D75 on that leave's own RESULTS
+# (_gate_evidence/pipeline_xbindings/RESULTS.md §2,4): no successor ran
+# four-way binding-API parity after the leave.
+#
+# D75a's ruling: cx PUBLISHES the vectors instead of driving the check
+# itself. Each case below states, for one libcx C ABI entry point a
+# binding wraps, an input document and the canonical output / hash /
+# error code that entry point must produce — expressed ENTIRELY in the
+# DOCUMENT-lane vocabulary `cx corpus` already grades every corpus file
+# with (cli.md §3.11; vcx/grading/document.v, pinned from cx-core-data
+# per #1631/D56a) — no [in-code …] program section anywhere in this
+# file. `tests/abi/c_abi_test.c` gained one more assertion (RULED:
+# D75a) that reads this file and checks every vector against libcx
+# directly, so the vectors are proven against the very ABI they
+# describe (red-proof: a planted wrong expected value fails that
+# assertion). Each binding repository's own `lanes/abi_vectors_lane.*`
+# loads this file from the `deps/cx-private` pin and asserts every
+# vector through ITS OWN wrapper of the same entry point, with the
+# released cx.
+#
+# Scope: the pure-data ABI (canonical/hash/equality, format conversion,
+# data-bin encode/decode) — the surface tests/abi/c_abi_test.c and the
+# retired parity check both witness. `cx_code_eval*` (abi.md §2.16) is
+# out of scope: that surface takes a PROGRAM, and this file carries no
+# [in-code …] section by ruling — code.cxd already pins it exhaustively.
+# The Arrow C-Data entry points (abi.md §2.11) are out of scope too:
+# their runner links libcx_arrow, which cli.md §3.11 refuses by name in
+# this lane; they stay covered only by c_abi_test.c's dlopen half.
+#]]
+
+# ═════════════════════════════════════════════════════════════════
+# §1. Canonical-form operations (abi.md §2.6: cx_fmt / cx_canonical /
+#     cx_hash / cx_eq) — restates retired binding_api-001..005
+# ═════════════════════════════════════════════════════════════════
+
+ [case id=abi-001-fmt-lossless-retains-comment level=core
+  [tags abi cx_fmt canonical]
+  [title cx_fmt: lossless canonical text keeps a presentation comment]
+  [in-cx [#
+# a note about the user
+[user id=1 name="Alice"]
+#]]
+  [out-cx [#
+# a note about the user
+[user id=1 name=Alice]
+#]]
+ ]
+
+ [case id=abi-002-canonical-strips-comment level=core
+  [tags abi cx_canonical canonical]
+  [title cx_canonical: strict canonical text strips the same comment]
+  [in-cx [#
+# a note about the user
+[user id=1 name="Alice"]
+#]]
+  [out-canonical [#
+[user id=1 name=Alice]
+#]]
+ ]
+
+ [case id=abi-003-hash-single level=core
+  [tags abi cx_hash identity-hash]
+  [title cx_hash: SHA-256 hex over the strict-canonical bytes]
+  [in-cx [#
+[user id=1 name="Alice"]
+#]]
+  [out-hash [#
+sha2-256:676b2168b3552677406b1ed6328ddc17cf1f5495bd43b1f869486dd4f8ef5a12
+#]]
+ ]
+
+ [case id=abi-004-eq-formatting-insignificant level=core
+  [tags abi cx_eq canonical]
+  [title cx_eq: differing quote style and spacing are the same document — restates binding-api-004]
+  [in-a [#
+[user id=1 name="Alice"]
+#]]
+  [in-b [#
+[user   id=1   name='Alice']
+#]]
+  [out-hash-eq [#
+true
+#]]
+ ]
+
+ [case id=abi-005-eq-attribute-order-significant level=core
+  [tags abi cx_eq canonical]
+  [title cx_eq: attribute order is never a normalization axis — restates binding-api-005]
+  [in-a [#
+[user id=1 name="Alice"]
+#]]
+  [in-b [#
+[user name="Alice" id=1]
+#]]
+  [out-hash-eq [#
+false
+#]]
+ ]
+
+# ═════════════════════════════════════════════════════════════════
+# §2. Format conversion (abi.md §2.2, §2.2.1) — cx_to_<fmt> /
+#     cx_<fmt>_to_cx / cx_convert
+# ═════════════════════════════════════════════════════════════════
+
+ [case id=abi-006-to-xml level=core
+  [tags abi cx_to_xml conversion]
+  [in-cx [#
+[user id=1 name="Alice"]
+#]]
+  [out-xml [#
+<user id="1" name="Alice"/>
+#]]
+ ]
+
+ [case id=abi-007-to-json level=core
+  [tags abi cx_to_json conversion]
+  [in-cx [#
+[user id=1 name="Alice"]
+#]]
+  [out-json [#
+{"user": {"id": 1, "name": "Alice"}}
+#]]
+ ]
+
+ [case id=abi-008-to-yaml level=core
+  [tags abi cx_to_yaml conversion]
+  [in-cx [#
+[user id=1 name="Alice"]
+#]]
+  [out-yaml [#
+user:
+  id: 1
+  name: Alice
+#]]
+ ]
+
+ [case id=abi-009-to-toml level=core
+  [tags abi cx_to_toml conversion]
+  [in-cx [#
+[config host=localhost port=8080 name=svc1]
+#]]
+  [out-toml [#
+[config]
+host = "localhost"
+port = 8080
+name = "svc1"
+#]]
+ ]
+
+ [case id=abi-010-xml-to-cx level=core
+  [tags abi cx_xml_to_cx conversion]
+  [in-xml [#
+<user id="1" name="Alice"/>
+#]]
+  [out-cx [#
+[user id=1 name=Alice]
+#]]
+ ]
+
+ [case id=abi-011-json-to-cx level=core
+  [tags abi cx_json_to_cx conversion]
+  [title cx_json_to_cx: a generic JSON object imports as a CX map rather than an Element — the semantic non-lossless lane does not invert the to_json of abi-007]
+  [in-json [#
+{"user": {"id": 1, "name": "Alice"}}
+#]]
+  [out-cx [#
+{user: {id: 1, name: Alice}}
+#]]
+ ]
+
+ [case id=abi-012-xml-malformed-refused level=core
+  [tags abi cx_xml_to_cx conversion error]
+  [title cx_xml_to_cx: an unclosed start tag is refused rather than silently repaired]
+  [in-xml [#
+<user id="1"
+#]]
+  [out-err [#
+expected '>' got EOF
+#]]
+ ]
+
+ [case id=abi-013-yaml-foreign-tag-refused level=core
+  [tags abi cx_yaml_to_cx conversion error]
+  [title cx_yaml_to_cx: a tag outside the lossless envelope refuses as UNSUPPORTED rather than importing as text]
+  [in-yaml [#
+odd: !!python/none whatever
+#]]
+  [out-err [#
+unsupported: the tag `!!python/none`
+#]]
+ ]
+
+# ═════════════════════════════════════════════════════════════════
+# §3. Delimited (abi.md §2.5) — cx_to_csv / cx_from_csv
+# ═════════════════════════════════════════════════════════════════
+
+ [case id=abi-014-to-csv level=core
+  [tags abi cx_to_csv conversion delimited]
+  [in-cx [#
+[ratios [table[name::string ratio::float]]
+  alice 0.91
+  bob   0.88
+]
+#]]
+  [out-csv [#
+name,ratio
+alice,9.1e-1
+bob,8.8e-1
+#]]
+ ]
+
+ [case id=abi-015-from-csv level=core
+  [tags abi cx_from_csv conversion delimited]
+  [in-csv [#
+name,ratio
+alice,0.91
+bob,0.88
+#]]
+  [out-cx [#
+[table [table[name ratio]]
+  alice 0.91
+  bob 0.88
+]
+#]]
+ ]
+
+# ═════════════════════════════════════════════════════════════════
+# §4. Data binding (abi.md §2.4, §2.10) — cx_to_data_bin /
+#     cx_from_data_bin (plain) and cx_to_data_bin_chunked /
+#     cx_table_reader_open (chunked-table; tests/abi/c_abi_test.c's
+#     surface)
+# ═════════════════════════════════════════════════════════════════
+
+ [case id=abi-016-to-data-bin-plain level=core
+  [tags abi cx_to_data_bin data_bin]
+  [in-cx [#
+[user id=1 name="Alice"]
+#]]
+  [out-data-bin-plain-hex [#
+43 58 43 6F 6C 01 01 40 00 00 00 00 50 01 30 04 75 73 65 72 50 02 30 02 69 64 10 01 30 04 6E 61 6D 65 30 05 41 6C 69 63 65
+#]]
+ ]
+
+ [case id=abi-017-from-data-bin-plain level=core
+  [tags abi cx_from_data_bin data_bin]
+  [in-data-bin-hex [#
+43 58 43 6F 6C 01 01 40 00 00 00 00 50 01 30 04 75 73 65 72 50 02 30 02 69 64 10 01 30 04 6E 61 6D 65 30 05 41 6C 69 63 65
+#]]
+  [out-cx [#
+[user id=1 name=Alice]
+#]]
+ ]
+
+ [case id=abi-018-to-data-bin-chunked level=core
+  [tags abi cx_to_data_bin_chunked data_bin table]
+  [title cx_to_data_bin_chunked — same SAMPLE_TABLE tests/abi/c_abi_test.c encodes]
+  [in-cx [#
+[ratios [table[name::string ratio::float]]
+  alice 0.91
+  bob   0.88
+]
+#]]
+  [out-data-bin-hex [#
+43 58 43 6F 6C 01 01 40 00 00 00 00 50 01 30 06 72 61 74 69 6F 73 63 02 30 04 6E 61 6D 65 82 30 06 73 74 72 69 6E 67 30 30 05 72 61 74 69 6F 20 1C 01 02 05 61 6C 69 63 65 03 62 6F 62 1F 85 EB 51 B8 1E ED 3F 29 5C 8F C2 F5 28 EC 3F 00
+#]]
+ ]
+
+ [case id=abi-019-table-reader-open-bad-header level=core
+  [tags abi cx_table_reader_open data_bin error]
+  [title cx_table_reader_open: a well-framed but too-short payload is refused rather than read out of bounds — restates test_table_reader_bad_input in tests/abi/c_abi_test.c]
+  [in-data-bin-hex [#
+00 00 00 00    # 4 zero bytes: shorter than the 12-byte CXCol header
+#]]
+  [expected-decode-error [#
+cxcol: payload too short for 12-byte header
+#]]
+ ]
+]
