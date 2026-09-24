@@ -1,4 +1,4 @@
-# RS-26…RS-29 — five spec-sentence authorizations, then the afternoon letters, then documentation and CI/CD (owner, 2026-09-23, in session on dev2)
+# RS-26…RS-31 — five spec-sentence authorizations, the afternoon letters, documentation and CI/CD, the documentation voice and the evening letters (owner, 2026-09-23, in session on dev2)
 
 **Status: RULED (owner, 2026-09-23, confirmed letter by letter).** On 2026-09-23 the integrator posted
 five lettered letters on [#1591](https://github.com/cx-home/cx-private/issues/1591) — D39, D40, D41,
@@ -167,3 +167,173 @@ before the cut (2–3 agent-days on the critical path) and keeping YAML were ref
 D54, D55 and D56 stay open. Nothing before 2026-09-26 changes because of this page: the `cx`
 repository is created at the residue step (item 21 of the split) by the recipe like every other
 repository, and both the documentation-restructure epic and the flow-CI epic open only after the cut.
+
+## RS-30 — the documentation voice (owner, 2026-09-23 ~16:4xZ)
+
+**Status: RULED (owner, 2026-09-23 ~16:4xZ, in session).** Recorded here, as the board said it would
+be, by the first ledger-touching branch after it was given; the integrator posted it on
+[#1591](https://github.com/cx-home/cx-private/issues/1591) the same hour. It governs the voice of the
+documentation-restructure epic that RS-28 opened. The owner's words, verbatim:
+
+> in restructuring the documentation, the content and tone is trying to be too much of an agnostic
+> consultant when comparing cx data format and cx code to options. We need to spend more time TLDR
+> showing why its best to reach for CX, how it's the best option for nearly every data format use
+> case and most use cases for a general purpose language. That the CX bar is equal to or better than
+> python and we continue to invest and prove that path. Not that our goal is to replace Python but
+> that it sets an admirable standard that we want to equal and exceed. We want to get people excited
+> about all they can do with CX, not try to position ourselves as a 3rd party, unbiased advisor.
+
+**How the epic applies it (the integrator's reading on the board, recorded with it):** the primer,
+the guide, the READMEs and the site lead with a TL;DR of why to reach for CX and what one can do with
+it; a comparison states CX's case rather than referees; Python is named as the standard to equal and
+exceed, never as a target to replace; and every claim keeps the primer's own discipline — a runnable
+corpus example or a measured number beside it — so the excitement is checkable (AGENTS.md rule 10
+holds: what is measured is labelled measured). It applies to the documentation epic after the cut;
+nothing before 2026-09-26 changes because of it.
+
+## RS-31 — the evening letters of 2026-09-23 (owner: D54c, D55c, D56a, D62a, D63a, D64c, D65d, D66a, D67a, D68a, D69b, D70a1)
+
+**Status: RULED (owner, 2026-09-23, in session, letter by letter).** The integrator posted D54–D56 and
+D62–D67 on [#1591](https://github.com/cx-home/cx-private/issues/1591) through the afternoon. The owner
+answered D63a first (~17:3xZ), then asked for better information on the rest — *"the repos should
+allow for independent testing … you are forcing things back together at every chance"* — and the
+integrator restated each letter with the independence principle leading (17:36Z). The owner's word,
+verbatim, ~17:5xZ: **"d54 c / d55 c / d56 a / d62 a / d64 lets discuss. why not have these in their
+own agent repo. more agent packages coming our way for sure. / d65 xsp is a product, at least
+internally for usage across all cx platform. and its expected to provide push down across any of its
+connections. so what does that change in your recommendation if anything? / D66 a) if thats the best
+recommendation but I really don't understand this one / D67 a"**; then, ~18:0xZ, after the
+discussion of D64 and the revision of D65: **"d64 c d65 d"**. Each letter below is recorded with its
+options as the board states them (the 17:36Z restatement, which is what the owner answered; where an
+earlier posting framed the options differently, that is said), the chosen option first. Two more
+letters of the same kind — allocation and directory decisions — followed at the next integrator
+session's start (posted 21:2xZ) and were answered ~21:4xZ: **D68 = (a)** and **D69 = (b)**; then D70
+(#1636), put again with its long-term consequences at the owner's request, was answered ~21:5xZ:
+**D70 = (a1)**. The three are recorded last.
+
+**D54c — `vcx/tests/flow_umbrella_test.v` splits by subject.** The umbrella's 16 functions shell out
+to `cx flow run/serve/--help` and read `$flow:status` — they test cx's CLI verbs AND flow's package.
+The options: (a) leave (the transitional state); (b) move it to cx; **(c) split by subject — the
+package assertions become CX cases/lanes in the flow repository, graded by the released cx alone; the
+CLI-shape assertions (`cx flow --help`, exit codes) stay in cx as a small V test.** (The 14:13Z
+posting offered (a) leave, (b) a `repo=cx` rule for `vcx/tests/flow_`, (c) split it; the owner
+answered the restatement.)
+
+**D55c — `cx corpus` grades diff, lint, fmt and streaming-write.** `cx corpus` refused seven suite
+kinds whose graders live in cx's V tests. The options: (a) every grader into the binary (Arrow's C
+library then rides in every cx); (b) component repositories list only what `cx corpus` grades; **(c)
+= (a) for the `cx diff`, `cx lint`, `cx fmt` and streaming-write runners — each moved into
+`vcx/corpus/` the way #1631 moved the document lane — and (b) for Arrow (a C dependency) and the
+three CX-program graders (namespace migration, XPath parity, code diagram) that any repository
+already runs with `cx <script>`; those stay refused by name.** Authorized spec sentence:
+`spec/03-approved/misc/cli.md` §3.11's document-lane paragraph names the four kinds `cx corpus` now
+grades and the kinds it still refuses by name; nothing else on the page moves.
+
+**D56a — the data profile gets the document lane.** The data-only cx refused `cx corpus` outright,
+although cx-core-data's suites are 28 of 32 document-lane and need no evaluator. The options: **(a)
+the data profile gets the document lane, so cx-core-data tests itself with its own build**; (b) keep
+the refusal. A program case (an `[in-code …]` program) stays ungradeable there — the data profile
+has no evaluator by ruling — and is refused by name, never passed. Authorized spec sentence:
+`spec/03-approved/core/cx_partition.md` §4's data-profile verb list (the profile matrix) gains
+`corpus`, limited to the document lane; the cannot-execute property is untouched.
+
+**D62a — `env_retention_test.v` asserts absolute retained bytes per env.** The gauge asserted a RATIO
+of retained bytes, and on kilobytes a ratio is noise — one trial read 243.6× on +1,488 bytes against
++362 KB, with no per-load growth in the data. The options: **(a) the gauge asserts the ABSOLUTE
+retained bytes per env against a stated bound (RS-17's own words: the per-case cost must be flat)
+and the ratio arm retires**; (b) keep the ratio arm with a floor on its denominator; (c) leave it.
+
+**D63a — the `x/` experimental tier retires.** The tier has no members left since D45a moved its
+eleven modules into the platform group. The options: **(a) retire it — the AGENTS.md sentence,
+`spec/03-approved/stdlib/README.md` §3.3, `spec/03-approved/core/code.md` §12.1 and the
+directories**; (b) keep it empty for a future graduate; (c) keep the words, move only the
+directories. Authorized: §3.3 goes, and with it the README's own sentences that point at it; code.md
+§12.1's bundled-namespaces sentence stops naming the tier; the AGENTS.md sentence goes; tooling that
+still admits the tier's namespace or directories stops. The `cx-x/<name>` spellings keep refusing by
+name (CXER0213, D45a) — retiring the tier does not un-retire a spelling.
+
+**D64c — the agent kit's four real-socket tests become CX lanes in the agent repository.** The four
+V tests (`vcx/tests/{mcp_,a2a_,llm_}*`) already live in cx-platform-agent, which has no V toolchain,
+so cx runs them from the pin. The options: (a) keep them as they are (transitional); (b) move them
+back into cx; **(c) rewrite them as CX lanes in cx-platform-agent, runnable by the released `cx`
+alone — the shape every coming agent package uses; cx runs them from the pin until then.** One rule
+with D54c: a package repository tests itself in CX, and cx keeps only the tests of its own verbs.
+(The 16:40Z posting offered (a) keep, (b) move back, (c) give the package repository a V build; the
+owner discussed and answered the restatement.)
+
+**D65d — `cx-platform-xsp` becomes a PRODUCT repository, after the cut.** xsp is a product used
+across the platform and is expected to provide push-down over any of its connections (the owner's
+information, ~17:5xZ). The options, as restated: (a) the pure XSP-AUTH calculus joins Ring 1
+(xsp-auth's `half=`, or folded into `cx-stdlib/xsp`), the impure natives stay identity's — no new
+repository, nothing before the cut; (b) xsp-auth whole to store (the wrong owner); (c) a hook the
+store declares and identity installs (12 store tests leave, about 15 internals open); **(d)
+`cx-platform-xsp` for the whole protocol: the frame codec (`cx-stdlib/xsp`, still Ring 1), the auth
+handshake (its pure calculus in Ring 1 code, its impure natives as xsp's own platform module) and the
+push-down surface; pins xsp → core-code and net; store, identity and fabric → xsp.** It amends RS-2
+(a product, not a per-library repository), RS-3 (one more repository) and RS-15 (the natives are
+xsp's, not identity's). Tonight's interim is the store split's, which is option (a)'s shape.
+
+**D66a — two allocation moves confirmed.** The principal mint (`cx store-mint-principal`, offline,
+whose only caller is the store verb) moves identity → store, and `consistency_vocab.v` (pure `floor`
+/ `pin` checks called by store, fabric and xap) moves to Ring 1 code. The options: **(a) confirm both
+— placement by highest verb and by caller, the split's own rule**; (b) keep the mint with identity
+behind a hook.
+
+**D67a — a reference-apps repository.** Measured in xap's allocation: `reference/shop` (13 paths),
+`reference/acme` (6), `reference/shop-web-client`, `reference/archetypes`, `market/` (4),
+`examples/platform/xap/storefront` (9), `sso-flow-xap` and the htmx examples; store carries 18
+example paths. The options: **(a) a reference-apps repository — pure CX, pinning every product,
+gated by the released cx; xap keeps the host; the apps become the independent end-to-end test bed**
+(RS-2's test: one owner, one line, its own cadence); (b) they stay in cx-platform-xap (RS-3); (c)
+into `cx` beside the site.
+
+**D68a — core-data's 87 allocated files that cannot leave re-allocate.** The files: `third_party/re2`;
+`vcx/code/stdlib_codec.v` and its xml row; 35 `vcx/tests/**` files grading this tree's own inputs;
+`include/cx.h`; `scripts/wasm` and `tests/wasm` (32); `bench/repr`;
+`conformance/{gates,migrate_namespace,xpath_31_parity,llm/antipatterns}.cxd` and their READMEs;
+`fixtures/expected_demo_output.txt`. The options: **(a) re-allocate them in `registry/repos.cxd` to
+`cx` / `cx-core-code` with a `why=` each; their dead copies leave `cx-core-data` in a prepared
+commit; the row takes `status=extracted` — every file has exactly one home that grades it, and
+cx-core-data is the data ring alone**; (b) keep the allocation and do a portability pass
+(`@VMODROOT`→`@FILE`, move the integration tests' inputs) before they leave — cx-core-data then
+carries whole-tree integration tests and every change touches two repositories; (c) leave as is —
+copies nobody grades drift. Applied by the core-data extraction branch, not this page's.
+
+**D69b — the V fork's tracked branch is `cx-patches-0.18`.** `.gitmodules` named
+`cx-home/v-cx-patches` (tip `a469af9cf`), and neither the head's pin `d51c31ccb` nor #1605's
+`501ce6e5f` descends from it: the pinned line carries every fix of the old line by subject except the
+four patches the old line itself removed, so there is no fast-forward. The options: (a) move
+`cx-home/v-cx-patches` to `501ce6e5f` by a force update, keeping `a469af9cf` as
+`archive/v-cx-patches-2026-09-23`; **(b) a new tracked name, `cx-patches-0.18`, at `501ce6e5f`
+(created on `cx-home/v` by the integrator, 21:46Z), with `.gitmodules`' `branch=` and every reader of
+the old name moving to it; `cx-home/v-cx-patches` stays untouched**; (c) leave it — the pin resolves
+by sha, and a stale `branch=` misleads every future pin bump. Applied on the #1605 branch, not this
+page's.
+
+**D70a1 — `cx corpus`'s program lane owns the corpus vocabulary, after the cut; until then it refuses
+what it does not read (#1636).** The program lane graded cases whose sections it never reads
+(`[cli-argv]`, `[exit-code]`, `[init]`): `conformance/llm/antipatterns.cxd` showed three false FAILs
+and twenty exit codes passing unchecked. The options as first posted: (a) the program lane owns
+`[cli-argv]` / `[exit-code]` — it spawns the binary when `[cli-argv]` is present and checks the exit;
+a corpus-vocabulary spec sentence; the shards' contract and census move (RS-16's condition) — one
+grader for the whole vocabulary, every CLI example graded for real; (b) mirror #1631 — the program
+lane REFUSES by name a file carrying a section it does not read (`corpus.program.gradeable`),
+`antipatterns.cxd` stays graded by `primer_build.cx` — no false pass and no false fail, the CLI lane a
+later decision; (c) leave it — false FAILs and silent passes stay. **The owner's answer, (a1): (a) is
+the END STATE — the program lane owns every section the corpus vocabulary allows (`[cli-argv]`,
+`[exit-code]`, `[init]` …), spawning the binary when `[cli-argv]` is present and checking the exit —
+implemented AFTER the cut as its own design item, with its corpus-vocabulary spec sentence, the
+shards' contract and census moving then on a still tree (RS-16's condition met); MEANWHILE (b) merges
+in the next Ring-1 batch, so the false FAILs and the unchecked exit codes stop this week and
+`primer_build.cx` keeps grading that file.** The reason given: the ruling is what agents need today,
+and the timing keeps RS-16's contract still during the split. #1636 stays open until (a) merges.
+
+## Not decided here (RS-30, RS-31)
+
+The order of work is the board's, not this page's: D55c, D56a, D62a and D63a are decision-free fixes
+for the next Ring-1 batch; D54c and D64c are the package-lanes work; D65d, D67a and the documentation
+epic under RS-30 open after the cut. D66a records placements the store split already made; D68a and
+D69b are applied by the branches named with them; D70a1's interim (b) is the next Ring-1 batch's and
+its end state (a) a design item after the cut. The spec sentence (a) needs is not written by this
+page. No
+sentence of any spec beyond the ones named above is authorized by this page.
