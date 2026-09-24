@@ -181,7 +181,7 @@ tier, integrating on the current release line:
 - **cx store** — a content-addressed multimodel store, embeddable in-process
   ([`docs/dev/store-embedded.md`](docs/dev/store-embedded.md)) across mem /
   file / sqlite / s3 substrates. Stdlib surface:
-  [`spec/03-approved/platform/store.md`](spec/03-approved/platform/store.md).
+  [`spec/03-approved/platform/store.md`](https://github.com/cx-home/cx-platform-store/blob/main/spec/03-approved/platform/store.md).
 - **store-serve** — the store's single-node service tier: a daemon with auth,
   observability, and the XSP store-profile and gRPC remote transports
   ([`docs/dev/store-service.md`](docs/dev/store-service.md)).
