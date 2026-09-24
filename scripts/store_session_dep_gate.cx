@@ -160,14 +160,28 @@
 
 # -- the tree ------------------------------------------------------------
 
-[?let [= $sess-path "vcx/identity/stdlib_session.v"]
+[?let
+  [; RULED: RS-12, RS-8; #1591 item K3 -- vcx/identity/ left this tree with the
+     extraction of cx-platform-identity (the same finding this file already
+     made for vcx/store/ below, applied to its own derivation source): the
+     session symbol set derives from stdlib_session.v wherever it now lives,
+     the in-tree copy if the identity split has not left yet, the pinned
+     checkout once it has. ]
+  [= $sess-path [?if [$io:exists "vcx/identity/stdlib_session.v"] [then "vcx/identity/stdlib_session.v"]
+                  [else [?if [$io:exists "deps/cx-platform-identity/vcx/identity/stdlib_session.v"]
+                          [then "deps/cx-platform-identity/vcx/identity/stdlib_session.v"]
+                          [else "vcx/identity/stdlib_session.v"]]]]]
   [?if [not [$io:exists $sess-path]]
     [then [?let [= $_ [$cry [$concat "store-session-dep: cannot read " $sess-path " -- run from the checkout root"]]]
             [$env:exit 2]]]
     [else ""]]]
 
 [?let
-  [= $sess-text [$io:read-file "vcx/identity/stdlib_session.v"]]
+  [= $sess-path [?if [$io:exists "vcx/identity/stdlib_session.v"] [then "vcx/identity/stdlib_session.v"]
+                  [else [?if [$io:exists "deps/cx-platform-identity/vcx/identity/stdlib_session.v"]
+                          [then "deps/cx-platform-identity/vcx/identity/stdlib_session.v"]
+                          [else "vcx/identity/stdlib_session.v"]]]]]
+  [= $sess-text [$io:read-file $sess-path]]
   [; RULED: RS-12, RS-8; #1591 item K3 -- vcx/store/ left this tree with the
      extraction of cx-platform-store (same finding #1651 made for
      check-no-stub-impl and check-null-absence-conflation): a deny-by-default

@@ -115,7 +115,11 @@
        `cx corpus` grades the moved file with no gates.cxd beside it -- the ABSENT policy is
        the EMPTY policy, and nothing here downgrades it. The row's reason text is in this
        file's history. ]
-    [module name=session gate=enforced reason='full §3 (principal,tenant) session impl complete + spec-faithful (ENFORCED, all cases green): the thin XAP session layer COMPOSES the shipped cx-stdlib/crypto jwt-verify (token verification delegated ENTIRELY, §2.2/N-SESSION-1) + cx-platform/http (Authorization/Cookie header reads + Set-Cookie writes) — session adds NO crypto and NO transport. FAIL-CLOSED attach (verify→map→bind→mirror-attach all-or-nothing); the four-channel split honored (unattached of→absence () NOT null NOT err; rejected attach→[err]; established→[session] value). Server-held registry (mirror-attach, by-id/by-client/of/from-cookie); opaque session id + CSRF synchronizer token are CSPRNG (never asserted by literal value — fixtures pin prefix/length/round-trip). CAPABILITY-FREE (no new cap, no effect_alignment entry — only net reach is crypto JWKS fetch). Error band CXER4800-4849: 4801 token-reject (wraps verbatim crypto fault as [cause]), 4802 no-tenant, 4803 no-principal, 4804 invalid/detached-op, 4805 rebind-refused (immutable binding), 4806 insecure-transport, 4807 no-token, 4808/4809 csrf-missing/mismatch, 4810/4811 cookie-insecure/unsafe-flags. Hermetic: reuses the crypto-071 golden RS256 token + literal JWKS + pinned now=[$time:datetime 2023 11 14 22 13 20]; tenant derived from the aud claim (no tid in the golden token).']
+    [; session RETIRED (RULED: RS-12, RS-8; #1591 item K3) -- conformance/platform/session.cxd
+       left with the extraction of cx-platform-identity, same shape as journal's own row above.
+       `cx corpus` grades the moved file with no gates.cxd beside it -- the ABSENT policy is
+       the EMPTY policy, and nothing here downgrades it. The row's reason text is in this
+       file's history. ]
     [; sso RETIRED (RULED: RS-12, #1591 item 11) -- conformance/platform/sso.cxd left with the
        extraction of cx-platform-sso and this suite resolves a [module] row to a file. The
        corpus keeps its policy where it lives now: `cx corpus` reads a gates.cxd beside the
