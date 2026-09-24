@@ -611,9 +611,13 @@ const accepted_by_one_table = [
 	// ── #1559 — a bare URL's `://` (RULED: 1384-a keeps `/` out of the run) (3) ──
 	AcceptedByOne{'examples/chapter.cx', .data, reason_1578},
 	AcceptedByOne{'examples/post.cx', .data, reason_1578},
-	// ── #1541 residue — a nested node in a comma slot (3) ──
+	// ── #1541 residue — a nested node in a comma slot (2; conformance/platform/
+	//    store.cxd's own entry left with cx-platform-store's extraction (RULED:
+	//    RS-12, RS-8; #1591 item K3) — this test's population walks conformance/
+	//    and deps/cx-core-data/conformance/ only (pinned_conformance_dir(), RS-7),
+	//    so the entry cannot be repointed at the pin the way a corpus grader's
+	//    would be; it is simply gone from the population this step scans) ──
 	AcceptedByOne{'conformance/gates.cxd', .data, reason_l25c_residue},
-	AcceptedByOne{'conformance/platform/store.cxd', .data, reason_l25c_residue},
 	AcceptedByOne{'examples/doc.cx', .data, reason_l25c_residue},
 	// ── recorded exception — an `&Name;` entity reference (2) ──
 	AcceptedByOne{'examples/cx-tour.cx', .data, reason_entity},

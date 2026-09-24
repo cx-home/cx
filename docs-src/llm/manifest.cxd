@@ -80,8 +80,8 @@ code
 ../deps/cx-core-data/conformance/core
 llm/antipatterns
 ../deps/cx-core-data/conformance/operator_heads
-platform/store
-platform/journal
+deps/cx-platform-store/conformance/platform/store
+deps/cx-platform-store/conformance/platform/journal
 deps/cx-platform-net/conformance/platform/http
 stdlib/http-client
 deps/cx-platform-agent/conformance/x/mcp

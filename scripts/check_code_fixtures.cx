@@ -103,7 +103,7 @@
 [?const CROSS-SUITE (
   [xs code='CXER0120' file='conformance/stdlib/cx.cxd'],
   [xs code='CXER0273' file='vcx/tests/eval_semantics_umbrella_test.v'],
-  [xs code='CXER0275' file='conformance/platform/store.cxd'],
+  [xs code='CXER0275' file='deps/cx-platform-store/conformance/platform/store.cxd'],
   [xs code='CXER0282' file='conformance/stdlib/diagram.cxd'])]
 
 # Spec-defined codes NO implementation can raise today — pinned NAMED to

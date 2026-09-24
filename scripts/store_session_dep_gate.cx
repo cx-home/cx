@@ -168,7 +168,19 @@
 
 [?let
   [= $sess-text [$io:read-file "vcx/identity/stdlib_session.v"]]
-  [= $paths [?for [in $p [$io:glob "vcx/store/*.v"]]
+  [; RULED: RS-12, RS-8; #1591 item K3 -- vcx/store/ left this tree with the
+     extraction of cx-platform-store (same finding #1651 made for
+     check-no-stub-impl and check-null-absence-conflation): a deny-by-default
+     gate over a glob that now matches nothing would refuse loud (the
+     "matched NO store source" guard below), not pass quiet, but the RULE
+     itself -- no store file names a session symbol -- still holds and is
+     still worth grading, from the pinned checkout, exactly as those two
+     gates now read deps/<repo>/vcx/<m>/ once a product is extracted. ]
+  [= $store-dir [?if [$io:exists "vcx/store"] [then "vcx/store"]
+                  [else [?if [$io:exists "deps/cx-platform-store/vcx/store"]
+                          [then "deps/cx-platform-store/vcx/store"]
+                          [else "vcx/store"]]]]]
+  [= $paths [?for [in $p [$io:glob [$concat $store-dir "/*.v"]]]
               [where [not [$strings:ends-with $p "_test.v"]]]
               [order-by $p]
               [yield $p]]]
