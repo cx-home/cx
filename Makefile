@@ -1825,31 +1825,34 @@ flow-dogfood-gate: build-vcx
 	  exit 2; }
 	@cd deps/cx-platform-flow && CX_BIN="$(CX_BIN)" "$(CX_BIN)" --allow-read --allow-write --allow-env --allow-subprocess scripts/flow_dogfood_gate.cx
 
-# ── test-flow-umbrella — the `cx flow` lane, run out of the pinned checkout ──
+# ── test-flow-umbrella — cx-platform-flow's process lanes, out of the pin ──
 # vcx/tests/flow_umbrella_test.v was one file of test-vcx-suite's directory
 # until the extraction (RULED: RS-12, #1591 item 15) allocated it to
-# cx-platform-flow. What it grades did NOT move: eight real `cx` processes
-# advancing one journaled run, and the `cx flow` command line — argv, exit
-# codes, the stdout/stderr split, a run resuming between two processes. Those
-# are the local-profile verbs RS-20 kept in the binary, and the repository has
-# no V build to run a V test with. So this step runs the pinned file against
-# THIS tree's module path (`-path` names vcx/, where `testenv` is; testenv
-# finds the binary under @VMODROOT, which is vcx/ whatever directory the test
-# file sits in) with test-vcx-suite's gc and engine flags, and refuses by name
-# when the checkout is absent — a skip and a pass would be the same line.
-#
-# The module path is ABSOLUTE and the step carries no -usecache. Measured on
-# the xflow branch: with test-vcx-suite's `-usecache` and VFLAGS_VCX's relative
-# `vcx`, V's cache rebuild could not find the module ("builder error:
-# vcx/testenv doesn't exist ... could not rebuild cache module", run 4); with
-# this line the lane passes (run 5). A file outside vcx/ has no v.mod above it
-# to anchor a relative path to.
+# cx-platform-flow, and the owner's D54c split it by subject (RULED: RS-31):
+# what grades the PACKAGE — eight real `cx` processes advancing one journaled
+# run, a run resuming between two invocations, the resolver a real `--env`
+# scan builds, a `cx flow serve` runner that boots, binds, ticks and is
+# delivered to over HTTP — is the repository's own CX lanes, which a released
+# cx runs alone; the `cx flow` command line's own shape (--help, usage exits,
+# the stdout/stderr split, the CLI's defaults) stays here, a section of
+# vcx/tests/cli_umbrella_test.v. What this step grades is still THIS tree's
+# binary: each lane runs from the checkout's root with CX_BIN naming
+# vcx/target/cx, which it starts for every process. The lane names are the
+# contract, so a lane the checkout lacks refuses with exit 2 naming
+# `make deps-sync` — a skip and a pass would be the same line. Real sockets
+# (the serve lane binds 18700..19499): the shared runner's step.
+FLOW_LANES := racing_advancers_lane.cx flow_cli_lane.cx flow_serve_lane.cx
 .PHONY: test-flow-umbrella
-test-flow-umbrella: build-vcx-dev
-	@test -f deps/cx-platform-flow/vcx/tests/flow_umbrella_test.v || { \
-	  echo "test-flow-umbrella: deps/cx-platform-flow/ is not there — the lane lives in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
-	  exit 2; }
-	@$(JS_CLOSE) VFLAGS='-cc cc -path "@vlib|@vmodules|$(CURDIR)/vcx"' $(V) -cc cc $(CX_GC) $(CX_ENGINES) test deps/cx-platform-flow/vcx/tests/flow_umbrella_test.v
+test-flow-umbrella: build-vcx
+	@for t in $(FLOW_LANES); do \
+	  test -f deps/cx-platform-flow/lanes/$$t || { \
+	    echo "test-flow-umbrella: deps/cx-platform-flow/lanes/$$t is not there — the lanes live in the pinned repository (RULED: RS-12, RS-31); run \`make deps-sync\`" >&2; \
+	    exit 2; }; \
+	done
+	@cd deps/cx-platform-flow && st=0; \
+	for t in $(FLOW_LANES); do \
+	  CX_BIN="$(CURDIR)/vcx/target/cx" "$(CURDIR)/vcx/target/cx" --allow-all lanes/$$t || st=1; \
+	done; exit $$st
 
 # ── check-code-fixtures (gate 4; repaired + wired by the #805 gate-truth
 # batch — it was RED and in no step, so no stream gate ever ran it). The
@@ -4649,8 +4652,8 @@ repr-guard: build-vcx
 # The load-insensitive halves of this step ARE gated: the two per-item COUNT
 # rows are pinned exactly in conformance/platform/flow.cxd (flow-040), which
 # cx-platform-flow's own gate grades with `cx corpus` since the extraction, and
-# the racing-advancer count in vcx/tests/flow_umbrella_test.v, which
-# `test-flow-umbrella` runs out of the pinned checkout in `make test`.
+# the racing-advancer count in the repository's lanes/racing_advancers_lane.cx,
+# which `test-flow-umbrella` runs out of the pinned checkout in `make test`.
 # Run this target deliberately — before a release, and at every #1265 wave
 # exit, whose ledger row re-pins what it improved. Contract + numbers:
 # bench/flow/README.md.
@@ -4699,35 +4702,30 @@ test-oriel-lane: build-vcx
 	@ORIEL_ESTATE="$(CURDIR)" CX_BIN="$(CURDIR)/vcx/target/cx" bash deps/cx-platform-ux/scripts/oriel_lane.sh
 
 ## test-agent-real-lanes  The agent modules' four real-socket lanes as their
-##                  own step (RULED: RS-12, #1591 item 12): mcp_real_test.v,
-##                  mcp_server_real_test.v, a2a_real_test.v, llm_real_test.v —
-##                  each drives THIS tree's cx through a real loopback round
-##                  trip (an MCP client and server, an A2A server and client,
-##                  an Ollama-shaped chat endpoint). The four files are
-##                  cx-platform-agent's since the extraction and ride the
-##                  test-vcx-suite directory walk no longer; they are V
-##                  programs that compile only against this tree's testenv, and
-##                  a package repository has no V build (ships=package), so
-##                  this step copies them out of the pinned checkout into
-##                  vcx/target/ — under vcx/v.mod, where `import testenv`
-##                  resolves — runs them against the binary this tree built,
-##                  and removes the copies. Real sockets: the shared runner's
-##                  step. It refuses with exit 2 and names `make deps-sync`
-##                  when the checkout is absent — never a skip. (Where these
-##                  files belong is flag F-A3 of the agent extraction.)
-AGENT_REAL_LANES := mcp_real_test.v mcp_server_real_test.v a2a_real_test.v llm_real_test.v
-AGENT_LANE_DIR := vcx/target/pinned-tests/cx-platform-agent
+##                  own step (RULED: RS-12, #1591 item 12): an MCP client and
+##                  server, an A2A server and client, an Ollama-shaped chat
+##                  endpoint — each a real loopback round trip between two
+##                  cx processes. They were V test files this step copied
+##                  under vcx/ to compile against testenv; the owner's D64c
+##                  made them CX lanes in cx-platform-agent (RULED: RS-31),
+##                  runnable by a released cx alone, so this step runs them
+##                  the way the repository does: from the checkout's root,
+##                  with CX_BIN naming THIS tree's vcx/target/cx. The lane
+##                  names are the contract; one the checkout lacks refuses
+##                  with exit 2 and names `make deps-sync` — never a skip.
+##                  Real sockets: the shared runner's step.
+AGENT_REAL_LANES := llm_real_lane.cx mcp_real_lane.cx mcp_server_real_lane.cx a2a_real_lane.cx
 .PHONY: test-agent-real-lanes
-test-agent-real-lanes: build-vcx-dev
+test-agent-real-lanes: build-vcx
 	@for t in $(AGENT_REAL_LANES); do \
-	  test -f deps/cx-platform-agent/vcx/tests/$$t || { \
-	    echo "test-agent-real-lanes: deps/cx-platform-agent/vcx/tests/$$t is not there — the lanes live in the pinned repository now (RS-12); run \`make deps-sync\`" >&2; \
+	  test -f deps/cx-platform-agent/lanes/$$t || { \
+	    echo "test-agent-real-lanes: deps/cx-platform-agent/lanes/$$t is not there — the lanes live in the pinned repository (RULED: RS-12, RS-31); run \`make deps-sync\`" >&2; \
 	    exit 2; }; \
 	done
-	@rm -rf $(AGENT_LANE_DIR) && mkdir -p $(AGENT_LANE_DIR) && \
-	for t in $(AGENT_REAL_LANES); do cp deps/cx-platform-agent/vcx/tests/$$t $(AGENT_LANE_DIR)/$$t; done; \
-	st=0; $(V) -cc cc $(CX_GC) $(CX_ENGINES) $(CX_CACHE) test $(AGENT_LANE_DIR) || st=$$?; \
-	rm -rf $(AGENT_LANE_DIR); exit $$st
+	@cd deps/cx-platform-agent && st=0; \
+	for t in $(AGENT_REAL_LANES); do \
+	  CX_BIN="$(CURDIR)/vcx/target/cx" "$(CURDIR)/vcx/target/cx" --allow-all lanes/$$t || st=1; \
+	done; exit $$st
 
 ## test-sso-interop-lane  Identity-provider interop as its own CI step
 ##                  (#1403): boot the in-tree identity provider at
