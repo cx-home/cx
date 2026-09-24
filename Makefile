@@ -4393,7 +4393,15 @@ fmt-sweep-timed: build-vcx
 # pin that as fail-closed today), and three on shapes not yet reduced:
 # `design/787/w1/serve.cx`, `spec/…/oriel/tui.cx`, `x/ux-web.cx`. The other
 # five declines are the census's OTHER classes, none of them #1436's.
-FMT_SWEEP_MAX_DECLINED ?= 9
+#
+# 9 -> 8 by the decisions/registry leave (RULED: RS-12, D59a; #1591 item K3):
+# design/787/w1/serve.cx left whole for cx-decisions, one of the three
+# not-yet-reduced files named just above (the other two are unmoved). Not a
+# formatter improvement; the file still declines, in cx-decisions, where
+# that repository's own `make lint` never runs `cx fmt` at all. Measured on
+# the branch's own binary: SWEEP-FILES=226 FORMATTED=214 DECLINED=8
+# TREE-REFUSED=4 UNSTABLE=0 ERROR=0
+FMT_SWEEP_MAX_DECLINED ?= 8
 FMT_SWEEP_MAX_TREE_REFUSED ?= 9
 FMT_SWEEP_EXPECTED_ERRORS ?= scripts/fmt_corpus_expected_errors.txt
 .PHONY: fmt-sweep-gate
