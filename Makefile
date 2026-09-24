@@ -843,7 +843,7 @@ guide-check: build-vcx
 ## process — absorbed under -j against a ~3 h gate.
 .PHONY: guide-render-gate
 guide-render-gate: build-vcx
-	@mkdir -p vcx/target
+	@mkdir -p deps/cx-core-code/vcx/target
 	@rm -f deps/cx-core-code/vcx/target/.guide-render-gate.stamp
 	@touch deps/cx-core-code/vcx/target/.guide-render-gate.stamp
 	@$(MAKE) --no-print-directory guide GUIDE_SKIP_CX_BUILD=1
@@ -1296,7 +1296,7 @@ CX_SPACE := $(CX_EMPTY) $(CX_EMPTY)
 CX_DEPS_V_REPOS := $(shell grep -oE '\[dep [^]]*v-fork=[0-9a-f]+' deps.cxd 2>/dev/null | grep -oE 'repo=[^] ]+' | sed 's/^repo=//')
 export CX_DEPS_VPATH := $(subst $(CX_SPACE),|,$(strip $(foreach r,$(CX_DEPS_V_REPOS),$(CURDIR)/deps/$(r)/vcx) @vmodules @vlib))
 export CX_V_SEARCH := $(CURDIR)/vcx|$(or $(CX_DEPS_VPATH),@vmodules|@vlib)
-export CX_NATIVE_DEFINES := -d cx_re2_lib_dir=$(CURDIR)/vcx/target -d cx_re2_static=$(CURDIR)/third_party/re2/obj/libre2.a -d cx_arrow_shim_lib=$(CURDIR)/deps/cx-core-code/vcx/target/libcx_arrow_shim.a
+export CX_NATIVE_DEFINES := -d cx_re2_lib_dir=$(CURDIR)/deps/cx-core-code/vcx/target -d cx_re2_static=$(CURDIR)/third_party/re2/obj/libre2.a -d cx_arrow_shim_lib=$(CURDIR)/deps/cx-core-code/vcx/target/libcx_arrow_shim.a
 export VFLAGS := -path "$(CX_V_SEARCH)" $(CX_NATIVE_DEFINES)
 
 # BOTH END ON THE BUNDLED SOURCES (#1589 item 23): once the pins are fetched
@@ -2671,11 +2671,11 @@ abi-c-test: build-vcx build-lib-arrow
 	 -fsanitize=$(ABI_C_TEST_SAN) \
 	 -I include -I $(CXD)/vcx/arrow \
 	 deps/cx-core-code/tests/abi/c_abi_test.c \
-	 -L vcx/target -lcx -ldl \
+	 -L deps/cx-core-code/vcx/target -lcx -ldl \
 	 -o $(ABI_C_TEST_BIN)
 	CX_EXPECT_VERSION='$(call MAKE_PRINT_VCX,CX_VERSION)' \
 	 CX_EXPECT_RELEASE='$(call MAKE_PRINT_VCX,CX_RELEASE)' \
-	 $(ABI_LIB_PATH_VAR)=vcx/target $(ABI_C_TEST_BIN) $(ABI_ARROW_LIB)
+	 $(ABI_LIB_PATH_VAR)=deps/cx-core-code/vcx/target $(ABI_C_TEST_BIN) $(ABI_ARROW_LIB)
 
 # test-rust / test-rust-arrow / test-rust-parquet / test-rust-arrow-conformance
 # RETIRED with the Rust binding (RULED: RS-12, RS-8; #1591 item K3):
@@ -4478,7 +4478,7 @@ fmt-sweep-gate: build-vcx
 .PHONY: repr-guard
 repr-guard: build-vcx
 	@log=deps/cx-core-code/vcx/target/repr-guard-run.log; stf=deps/cx-core-code/vcx/target/repr-guard-status; \
-	mkdir -p vcx/target; \
+	mkdir -p deps/cx-core-code/vcx/target; \
 	{ bench/repr/run.sh 2>&1; echo $$? > $$stf; } | tee $$log; \
 	st=$$(cat $$stf); \
 	if [ $$st -ne 0 ]; then \
