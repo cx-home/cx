@@ -133,9 +133,8 @@ PYTHON ?= $(shell if python3 -c 'import sys; sys.exit(0 if sys.version_info >= (
 
 .PHONY: all build build-wasm build-playground build-vcx build-vcx-dev build-lib build-lib-arrow \
  build-vscode \
- publish-v publish-v-push \
  publish-org \
- release-v release-all \
+ release-all \
  dist install uninstall install-cli uninstall-cli verify-cli promote-cli \
  test test-no-parallel test-vcx \
  test-vcx-stream \
@@ -3787,32 +3786,18 @@ conform-vcx: build-vcx
 # used to install (CNAME, the quickstart `install` script) moved to docs/, the
 # site root itself.
 #
-# WHAT REMAINS HERE IS NOT THE cx MIRROR. `publish-v` mirrors the V FORK to
-# cx-home/cx-v — the fork is not a repository of the shape and its distribution
-# is v-dependency-management.md's subject, not RS-11's — and `publish-org` syncs
-# the org profile README.
-
-publish-v:
-	@bash scripts/publish_v.sh
-
-publish-v-push:
-	@bash scripts/publish_v_push.sh
+# THE cx-v MIRROR RETIRED AT THE CUT (RULED: D81a): `cx-home/cx-v` is
+# archived with a README pointer at `cx-home/v` (the V fork, tracked branch
+# `cx-patches-0.18`, pinned by every V repository's `deps.cxd` `v-fork=`), and
+# takes no further pushes or tags — one fork, one pin, no second copy to drift.
+# `publish-v`/`publish-v-push`/`tag-public` (scripts/publish_v.sh,
+# publish_v_push.sh, tag_public.sh) retired with it. WHAT REMAINS HERE IS NOT
+# THE cx MIRROR: `publish-org` syncs the org profile README, best-effort.
 
 publish-org:
 	@bash scripts/publish_org.sh
 
-release-v: publish-v publish-v-push
-
-# Tag the cx-v mirror at the VERSION release version. Run AFTER release-v so the
-# tag lands on the pushed content. Use `make tag-public FORCE=--force` to move an
-# existing published tag. It used to tag the cx mirror too; that mirror retired
-# with RS-11 and this repository's own tag is the release's tag.
-tag-public:
-	@bash scripts/tag_public.sh $(FORCE)
-
-# tag-public runs BEFORE publish-org (best-effort org branding), so a failed or
-# empty org-README sync can never block tagging a release.
-release-all: release-v tag-public publish-org
+release-all: publish-org
 
 # ── The ONE end-to-end local release command ─────────────────────────────────
 # gate (make test + verify-doc-links) → bump → build → tag → push → GitHub

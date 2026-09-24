@@ -3,9 +3,9 @@
 # (~2,200 CPU-s of compile for ~12 s of work in the v0.16.0 record run).
 #
 # NOT listed, on purpose:
-#   code_diagram_roundtrip_test.v — named in scripts/publish_v.sh's rsync
-#     --exclude list (it reads @VMODROOT/../stdlib/diagram.cx, which escapes
-#     the relocated cx-v package). Absorbing it would force that exclusion
+#   code_diagram_roundtrip_test.v — named in the retired cx-v mirror's rsync
+#     --exclude list (RULED: D81a; it reads @VMODROOT/../stdlib/diagram.cx,
+#     which escaped the mirror's package). Absorbing it would force that exclusion
 #     onto the whole umbrella and drop every lane below out of the cx-v
 #     package smoke test.
 #
