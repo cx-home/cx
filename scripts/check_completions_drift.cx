@@ -133,7 +133,22 @@
                        [yield [$re:group $m 1]]]]
       [= $verbs-plat [?for [in $m [$re:find-all $name-rx [$re:group $plat-m 1]]]
                        [yield [$re:group $m 1]]]]
-      [= $verbs [$fp:flat-map ($verbs-main, $verbs-plat) [?fn ($x) $x]]]
+      # Since D73a a PRODUCT's verbs reach the platform table through code's
+      # CLI verb registry, registered from the product's own init() in a
+      # register file (the store's four: deps/cx-platform-store/vcx/store/
+      # store_cli_verbs_register_d_cx_platform.v), so the union reads those
+      # registrations too — in this tree and in every pinned checkout, the
+      # stdlib-catalog gate's both-halves glob (RULED: D73a, D71a, RS-18). Two
+      # suffix globs each rather than one `*register*`: a segment with two `*`
+      # matches nothing through $io:glob (#1655).
+      [= $reg-rx [$re:compile "register_cli_verb\\(code\\.CliVerb\\{\\s*name:\\s*'([a-z][a-z0-9-]*)'"]]
+      [= $verbs-reg [?for [in $g ([$io:glob "vcx/*/*_register.v"], [$io:glob "vcx/*/*_register_d_cx_platform.v"],
+                                 [$io:glob "deps/*/vcx/*/*_register.v"], [$io:glob "deps/*/vcx/*/*_register_d_cx_platform.v"])]
+                      [in $rf $g]
+                      [where [not [$strings:ends-with $rf "_test.v"]]]
+                      [in $m [$re:find-all $reg-rx [$io:read-file $rf]]]
+                      [yield [$re:group $m 1]]]]
+      [= $verbs [$fp:flat-map ($verbs-main, $verbs-plat, $verbs-reg) [?fn ($x) $x]]]
 
       [?if [= [$count $verbs] 0]
         [then [?let [= $_e [$cry "check_completions_drift: registry parsed but no verbs found"]]

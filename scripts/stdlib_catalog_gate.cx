@@ -187,7 +187,10 @@
       # the pure codec and state machine / smtp_wire_stdlib_builtin Ring 2,
       # the dialer and the serve loop) — the catalog modules are `http` and
       # `smtp`. `ring2` is the seam probe itself, not a module, and is
-      # excluded.
+      # excluded; so are `register` and `registered` -- code's builtin-dispatch
+      # hook (register_stdlib_builtin, which a product's register file calls,
+      # and the chain's registered_stdlib_builtin probe), the mechanism and
+      # not a module (RULED: D71a).
       # A V identifier cannot carry a hyphen, so a module whose NAME has one
       # spells its dispatch with an underscore: `xsp_auth_stdlib_builtin` is
       # `cx-platform/xsp-auth`, `did_web_stdlib_builtin` is
@@ -208,7 +211,7 @@
                                          "\n"]]]
         [?let [= $dispatch-set
           [?for [in $dm [$re:find-all $dispatch-rx $dispatch-raw]]
-            [where [not [= [$re:group $dm 1] "ring2"]]]
+            [where [not [$has-name ("ring2", "register", "registered") [$re:group $dm 1]]]]
             [yield [?if [or [= [$re:group $dm 1] "http_client"]
                             [= [$re:group $dm 1] "http_serve"]]
               [then "http"]
